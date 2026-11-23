@@ -8,6 +8,11 @@ package audit
 // accept the registration's tokens again. Their entry is the registration's principal ID and name; the replay
 // disables the registration. A deletion also journals each token it revokes (token.revoked). bastion.updated
 // (the description) and bastion.enabled narrow nothing and carry no entry.
+//
+// The switch of the handover per blob (R-BAS-071, Q-BAS-232): bastion.handover.enabled and bastion.handover.disabled, about
+// the registration as well. Switching it off narrows what leaves the main installation, so it is journaled with the entry
+// {principalId, name}, and the replay switches the member off (internal/bastionmain/handover.go); switching it on widens and
+// carries no entry.
 
 // Names of the Bastion registration events, for the producers.
 const (
@@ -16,6 +21,9 @@ const (
 	EventBastionDisabled = "bastion.disabled"
 	EventBastionEnabled  = "bastion.enabled"
 	EventBastionDeleted  = "bastion.deleted"
+
+	EventBastionHandoverEnabled  = "bastion.handover.enabled"
+	EventBastionHandoverDisabled = "bastion.handover.disabled"
 )
 
 func init() {
@@ -27,4 +35,6 @@ func init() {
 	bastion(EventBastionDisabled, JournalRevocation, `{"type":"object"}`)
 	bastion(EventBastionEnabled, NoJournal, `{"type":"object"}`)
 	bastion(EventBastionDeleted, JournalRevocation, `{"type":"object","properties":{"tokensRevoked":{"type":"integer"}}}`)
+	bastion(EventBastionHandoverEnabled, NoJournal, `{"type":"object"}`)
+	bastion(EventBastionHandoverDisabled, JournalRevocation, `{"type":"object"}`)
 }

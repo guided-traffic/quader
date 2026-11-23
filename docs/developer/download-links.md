@@ -82,6 +82,20 @@ What the handover's builder finds: the public addresses (`Settings.PublicAddress
 (`Connection.Presign` with `PresignOptions` without overrides), the link check's first part (`LinkCheck.Works`) and the decided
 `ConnectionState.HandoverUsable` with its reasons; the serve point takes a second option beside `ServeOptions.Link`.
 
+**The handover beside the links** (package 2 of [bastion-handover.md](bastion-handover.md), built on 2026-11-23): the serve point's second
+option, decided after the gates and `Admit` as a link is, and only for a recognized forward of a Bastion that offered one.
+
+| File | Responsibility |
+|---|---|
+| [downloadlinks/handover.go](../../internal/downloadlinks/handover.go) | `Links.HandoverOptions`: step 1 of R-STOR-095 (the `Recognition`'s offer, the registration's switch from `Options.Handovers`), the serve point's steps 2 and 3 as `HandoverDownload.Artifact` and `Decided`, steps 5, 7 (a plain copy only: an encrypted one waits for package 4) and 9 in `handover`, the counting of step 11 (`ChargeLink`, `Record` with `Delivery: "handover"`, the request log's `delivery`, the metric); the closed reasons of the declined offers |
+| [downloadlinks/metrics.go](../../internal/downloadlinks/metrics.go) | `quader_storage_download_handovers_total{bastion, kind}` and `quader_storage_download_handovers_declined_total{reason}` beside the links' families |
+| [downloadlinks/snapshot.go](../../internal/downloadlinks/snapshot.go) | `Snapshot.CheckLinks`: the link checks again when a registration's handover was turned on (R-STOR-096) |
+| [formathost/download_links.go](../../internal/formathost/download_links.go) | `itemStore.handoverOptions`: a route of the kind `Download`, never a system read, the gates' `decided`; it does not read `ClientDigest` |
+| [api/rawfiles/handler.go](../../internal/api/rawfiles/handler.go), [files/download.go](../../internal/files/download.go) | every file of `/files/` (`Stat` reports `Decided` from `RunDecided`), `Service.HandedOver`; `/files/` still never gets a client's link (`TestR_STOR_070_FilesIsNeverALink`) |
+| [api/edge/content.go](../../internal/api/edge/content.go) | `ServeOptions.Handover` before `Link`: the file's `200` with its headers and `Content-Length: 0`, the object not opened, then `HandedOver` |
+| [bastionmain/absence.go](../../internal/bastionmain/absence.go), [api/bastionmark/mark.go](../../internal/api/bastionmark/mark.go) | `NoteHandover` and `MarksHandover`; the marking writes the class `handover` and `Quader-Bastion-Handover` from the noted value |
+| [bastionmain/handover.go](../../internal/bastionmain/handover.go) | `HandoverSwitches`, the snapshot of the registrations whose handover is on, and the replay of `bastion.handover.disabled` |
+
 ## Package 3 as built
 
 Built on 2026-11-23. What each file does:

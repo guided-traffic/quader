@@ -61,6 +61,7 @@ export function sampleBastion(over: Partial<Bastion> = {}): Bastion {
     name: 'partners',
     description: 'The partner network',
     enabled: true,
+    handover: false,
     createdAt: inDays(-170),
     tokens: [sampleBastionToken()],
     contacts: [

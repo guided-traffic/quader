@@ -607,6 +607,13 @@ object of connection id to origin, `version` the `If-Match` revision, registered
 export class `data`, and the `cluster_epoch` row of the change area `download_link_settings`. [internal/downloadlinks](../../internal/downloadlinks/store.go)
 is the one door to it.
 
+**00110_bastion_handover** ([bastion.md](../spec/bastion.md) R-BAS-071): the column `bastion.handover` (`boolean NOT NULL DEFAULT false`),
+the switch of a registration's handover per blob, the trigger `bastion_revision` replaced so that a change of it raises the registration's
+revision (the ETag) as a new description does, and the `cluster_epoch` row of the change area `bastion_handover`. The table keeps its export
+class `data` ([tables_bastion.go](../../internal/meta/postgres/tables_bastion.go)); the statements `BastionSetHandover`, `BastionHandoverOn`
+(every replica's snapshot) and `BastionHandoverOff` (the journal's replay) are in
+[bastion_registration.sql](../../internal/meta/postgres/queries/bastion_registration.sql); no forward reads the column.
+
 ## The database's repository of the image scanning (00089)
 
 [00089_vuln_image_db_drop](../../internal/meta/postgres/migrations/00089_vuln_image_db_drop.sql) removes the private slot of the image

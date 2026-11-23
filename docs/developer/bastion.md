@@ -71,10 +71,16 @@ with the directories each owns and what each needs verified with a real client b
 B and C run in parallel after A, in disjoint directories; C's integration tests in `test/integration/bastion` need B on the same
 commit, so C lands after B. The manual is changed by D and not before, because it describes what a running installation does.
 
-**The handover per blob (specified, not built).** The owner's decision 12 (b) of 2026-11-22, a link and the data key per released blob, so
-that a Bastion reads large files from the main installation's object store itself ([The handover per blob](../spec/bastion.md#the-handover-per-blob),
-R-BAS-070 to R-BAS-079). Its five packages, what each owns and after which package of the signed links, several connections and the
-encryption each starts, are on [bastion-handover.md](bastion-handover.md); it raises the interface to version 6.
+**The handover per blob (the wire and the main installation's side for plain copies built, the Bastion's side not).** The owner's decision
+12 (b) of 2026-11-22, a link and the data key per released blob, so that a Bastion reads large files from the main installation's object
+store itself ([The handover per blob](../spec/bastion.md#the-handover-per-blob), R-BAS-070 to R-BAS-079). Its five packages, what each owns
+and after which package of the signed links, several connections and the encryption each starts, are on
+[bastion-handover.md](bastion-handover.md); it raised the interface to version 6. On the main installation, the registration's member
+`handover` ([registrations.go](../../internal/bastionmain/registrations.go)) and the replica's snapshot of it
+([handover.go](../../internal/bastionmain/handover.go)) decide with the recognition's offer (`Recognition.Offer`, read and taken out of the
+request by the Recognize stage) whether the serve point may hand a forward over; the decision is
+[downloadlinks/handover.go](../../internal/downloadlinks/handover.go)'s, the value reaches the marking through `bastionmain.NoteHandover`,
+and the marking stage writes the class `handover` and `Quader-Bastion-Handover` ([mark.go](../../internal/api/bastionmark/mark.go)).
 
 **Read shapes per package (specified, not built).** The development agent's decision of 2026-11-22 on Q-BAS-167, option (b): a registry token
 and every reader narrowed by package can be `full` on one package, so a warm image pull costs the main installation its token request and one
@@ -136,11 +142,12 @@ What the Recognize stage decides, in order (Q-BAS-115, Q-BAS-116):
 
 | File | Responsibility |
 |---|---|
-| [bastionmain/recognize.go](../../internal/bastionmain/recognize.go) | `Recognize`, `RecognizeOptions`, `Throttle`, the interface metrics, the removal of the Bastion token from the request behind it |
+| [bastionmain/recognize.go](../../internal/bastionmain/recognize.go) | `Recognize`, `RecognizeOptions`, `Throttle`, the interface metrics, the removal of the Bastion token from the request behind it; the offer of a handover per blob read into `Recognition.Offer` and `Quader-Bastion-Handover` taken out of every request (R-BAS-073) |
 | [bastionmain/feed.go](../../internal/bastionmain/feed.go) | `Feed` (`Read`, `Position`; a cursor older than `system_state` `restored_at` answers reset, because the replay of a restore writes no audit event, `mustReset`, and the position of a handshake or a reset is the database clock then, `Feed.now`), `mapEvent`: the table of R-BAS-015 (`mappers`, one function per action) (`repository.narrowed` yields `content` for its repository and the virtual ones above it; `repository.claims_changed` goes through `claimsEntries`: a `global` claim among the added ones yields `grants`, claims of scope `members` yield `content`, a change that only removed or narrowed claims none, Q-BAS-146), `noFeedEntry`: the journaled events without an entry and why, the cursor, the resets |
 | [bastionmain/contact.go](../../internal/bastionmain/contact.go) | `Contacts.Record`: the contact upsert, the memory gate, the cap of 256 rows, `bastion.contact`; `Release` |
 | [bastionmain/downloads.go](../../internal/bastionmain/downloads.go) | `Intake.Accept`: the budget of the registration (`EventBudget`; the composition root charges units of 100 events), `artifact.downloaded` per event, `bastion.downloads.dropped` |
-| [api/v1/bastion_services.go](../../internal/api/v1/bastion_services.go) | `BastionServices` (with `Formats`, `BoundRepository` and the feed as `BastionFeedSource`, which `*bastionmain.Feed` implements), `writeInterface`, `BastionPrincipal`, `BastionRouteAuth` |
+| [bastionmain/handover.go](../../internal/bastionmain/handover.go) | `HandoverSwitches`: the replica's snapshot of the registrations whose handover per blob is on (the change area `bastion_handover`, a minute's safety reload, the link checks asked again when one turns on); the replay of `bastion.handover.disabled` (R-BAS-071) |
+| [api/v1/bastion_services.go](../../internal/api/v1/bastion_services.go) | `BastionServices` (with `Formats`, `BoundRepository`, `Handover` (the snapshot the handshake reads) and the feed as `BastionFeedSource`, which `*bastionmain.Feed` implements), `writeInterface`, `BastionPrincipal`, `BastionRouteAuth` |
 | [api/v1/bastion_handshake_api.go](../../internal/api/v1/bastion_handshake_api.go), [bastion_check_api.go](../../internal/api/v1/bastion_check_api.go), [bastion_feed_api.go](../../internal/api/v1/bastion_feed_api.go), [bastion_downloads_api.go](../../internal/api/v1/bastion_downloads_api.go) | the four operations; `BastionFormatTable` builds the handshake's format table (R-BAS-057); the check presents a registry token on `/v2/bastion-check` and caps its shapes (R-BAS-052), and answers its pairs per package in request order (`checkPackages`, R-BAS-083) |
 | [app/wire_bastion.go](../../internal/app/wire_bastion.go) (the `package 2` block) | the Recognize stage, `bastionForwarded` (the re-derivation over `bastions.trusted_proxies`), `bastionEventBudget` (the limiter `bastion.download_events`), `bastionServices` (the table of `formats.List()`, `bastionBoundRepository` = the dispatcher's `BoundRepository`), `bastionCheckStage` (the default endpoint's stage with every family served, Q-BAS-190), the metrics, the throttle; `bastionTokens` and `bastionShapes` are the two accessors packages 1 and 3 fill |
 | [audit/events_bastion_iface.go](../../internal/audit/events_bastion_iface.go) | `bastion.contact`, `bastion.downloads.dropped` |
@@ -239,7 +246,7 @@ internal/bastionmain/ the main installation's seams (a domain package)
 | [bastionmain/auth.go](../../internal/bastionmain/auth.go) | `TokenAuthenticator`, `BastionToken`, `ErrTokenInvalid` |
 | [bastionmain/shape.go](../../internal/bastionmain/shape.go) | `ShapeResolver`, `Shape`, `CapRegistryShape` (a registry token is `partial` at most, R-BAS-052) |
 | [bastionmain/shape_resolver.go](../../internal/bastionmain/shape_resolver.go) | `NewShapeResolver`: the resolver over `authz.Reacher`, the status of a `none` |
-| [bastionmain/absence.go](../../internal/bastionmain/absence.go) | `Absence`, `WithAbsence`, `NoteMissing`, `NoteUnknown`, `NoteCounted`, `CountingWriter`: the per-request record of what the lookups and the counting serves found |
+| [bastionmain/absence.go](../../internal/bastionmain/absence.go) | `Absence`, `WithAbsence`, `NoteMissing`, `NoteUnknown`, `NoteCounted`, `CountingWriter`: the per-request record of what the lookups and the counting serves found; `NoteHandover` and `MarksHandover`, the value of a handover per blob for the marking (R-BAS-073) |
 | [api/bastionmark/mark.go](../../internal/api/bastionmark/mark.go) | `New`, `Marker.Stage`: the Mark stage, its observer, the marking at the status line, the write refusal and the probe answer, the strip; `NoteCaller` (the token service's caller) |
 | [api/registry/bastion.go](../../internal/api/registry/bastion.go) | `tellRoute`: the token service and the catalog tell the marking their kind (R-BAS-051) |
 | [bastionmain/route.go](../../internal/bastionmain/route.go) | `RouteObserver`, `RouteMatch`, `RouteDecision`, `WithObserver`, `ObserverFrom`, the kind names |

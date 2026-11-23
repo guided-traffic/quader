@@ -228,6 +228,10 @@ func newRig(t *testing.T, fs ...formats.Format) *rig {
 			case "":
 			case "forward":
 				req = req.WithContext(bastionmain.WithRecognition(req.Context(), bastionmain.Recognition{Bastion: "edge-1", Interface: iface.InterfaceVersion}))
+			case "forward-offer": // a forward that offered to take a handover per blob (R-BAS-072)
+				req = req.WithContext(bastionmain.WithRecognition(req.Context(), bastionmain.Recognition{
+					Bastion: "edge-1", Interface: iface.InterfaceVersion, Offer: iface.HandoverOffer{MaxSize: 1 << 20}, Offered: true,
+				}))
 			case "probe":
 				req = req.WithContext(bastionmain.WithRecognition(req.Context(), bastionmain.Recognition{Bastion: "edge-1", Interface: iface.InterfaceVersion, Probe: true}))
 			case "route":

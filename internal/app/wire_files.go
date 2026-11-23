@@ -150,7 +150,10 @@ func (a *App) wireServeCheckHost(in infra, repo repositoryArea, az authzArea, fm
 // routes without a service, where they answer 503.
 func (a *App) registerFiles(r *httpserver.Router) {
 	fa := part[filesArea](a.parts)
-	h := rawfiles.New(rawfiles.Options{Service: fa.service, Decider: fa.decider, Download: a.cfg.Storage.Download, API: a.cfg.API})
+	// The replica's side of the signed links decides a handover per blob to a Bastion's forward of a file (storage.md R-STOR-095).
+	h := rawfiles.New(rawfiles.Options{
+		Service: fa.service, Decider: fa.decider, Download: a.cfg.Storage.Download, API: a.cfg.API, Links: part[downloadLinksArea](a.parts).links,
+	})
 	h.Register(r)
 	// The UI's content routes below /api/v1/ (R-API-025, Q-UI-106) are of the family api: the router drops them on a
 	// role or endpoint that does not serve it. They share the service of /files/, so they sit beside it for now.

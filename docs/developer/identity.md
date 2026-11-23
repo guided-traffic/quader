@@ -28,7 +28,7 @@ the decisions of this area are Q-AUTH-18 to Q-AUTH-22 and Q-AUTH-41 to Q-AUTH-48
 | [internal/auth/registrytoken](../../internal/auth/registrytoken) | The registry token of the OCI token service (R-OCI-005): form, HKDF keys from the key ring, scope grammar, grant, challenge text, metrics; see [oci.md](oci.md#registry-tokens-and-the-token-service) |
 | [internal/avatar](../../internal/avatar) | The user avatar (R-API-055): `Processor.Process` turns an upload into a 256 x 256 PNG, `Store` keeps it in the blob store and `user_avatars` |
 | [internal/audit/events_identity.go](../../internal/audit/events_identity.go) | The identity event types with their data schemas and journal flags |
-| [internal/audit/events_bastion.go](../../internal/audit/events_bastion.go) | `bastion.created`, `bastion.updated`, `bastion.disabled`, `bastion.enabled`, `bastion.deleted`; the disable and the deletion carry the journal entry (Q-BAS-145) |
+| [internal/audit/events_bastion.go](../../internal/audit/events_bastion.go) | `bastion.created`, `bastion.updated`, `bastion.disabled`, `bastion.enabled`, `bastion.deleted`; the disable and the deletion carry the journal entry (Q-BAS-145); `bastion.handover.enabled` and `bastion.handover.disabled`, the switch-off journaled (R-BAS-071) |
 | [internal/bastionmain](../../internal/bastionmain) | The Bastion registrations (`registrations.go`: `Registrations`, the service behind `/api/v1/bastions` and `quader admin bastion`) and the `TokenAuthenticator` over the token service (`authenticator.go`); see [bastion.md](bastion.md) |
 | [internal/cluster/valkey_tokseen.go](../../internal/cluster/valkey_tokseen.go) | `TokenSeen`: the throttle-exemption marker (key family `tokseen`) |
 | [internal/meta/postgres/queries/identity.sql](../../internal/meta/postgres/queries/identity.sql) | Every identity query; parameters are plain Go types because the packages above import no driver |
@@ -447,7 +447,9 @@ A Bastion registration is a principal of the kind `bastion` plus a row of the ta
 - **Events**: the five `bastion.*` events and `token.created` / `token.revoked` with `resource_type` `bastion` (the token as the resource,
   the registration in `details.bastion`). `Update` records `bastion.updated` for a description, `bastion.disabled` (journaled,
   `registrationEntry`) for a disable and `bastion.enabled` for an enable; `Delete` journals `bastion.deleted` as well. The replay
-  of both is `replayDisableAccount` with the kind bastion in `internal/auth/principal/journal_replay.go` (Q-BAS-145).
+  of both is `replayDisableAccount` with the kind bastion in `internal/auth/principal/journal_replay.go` (Q-BAS-145). A `handover` of the
+  patch records `bastion.handover.enabled` or `bastion.handover.disabled` (journaled, the same entry), replayed by `replayHandoverOff` in
+  [bastionmain/handover.go](../../internal/bastionmain/handover.go) (R-BAS-071).
 - **Wiring**: the `package 1` block of [wire_bastion.go](../../internal/app/wire_bastion.go) builds `bastionRegistrations` (passed as
   `v1.Options.Bastions`) and `bastionAuthenticator`, which the recognition stage of the interface consumes.
 

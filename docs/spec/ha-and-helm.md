@@ -3874,6 +3874,7 @@ to this mechanism. At least these events are flagged:
 | `serviceaccount.disabled`, `serviceaccount.deleted` | identity R-AUTH-020 | Disable the service account |
 | `serviceaccount.updated` | identity R-AUTH-020, R-AUTHZ-039 | Narrow the actions of a repository's service account to the journaled after-set; disable it when that is a narrowing on top of a broadening the restored database lacks |
 | `bastion.disabled`, `bastion.deleted` | [bastion.md](bastion.md) R-BAS-004 | Disable the Bastion registration ([Q-BAS-145](bastion.md#q-bas-145--a-disabled-or-deleted-registration-is-journaled-and-replayed-as-disabled)) |
+| `bastion.handover.disabled` | [bastion.md](bastion.md) R-BAS-071 | Switch the registration's handover per blob off (`bastion.handover`), which keeps the links of the object store from that Bastion; `already in effect` when it is off, `subject unknown` for an ID that names no registration; the entry is `{principalId, name}` ([handover.go](../../internal/bastionmain/handover.go)) |
 | `group.deleted` | identity R-AUTH-018 | Delete the group |
 | `group.members.changed`, `user.groups.synced` | identity R-AUTH-018, R-AUTH-008, R-AUTH-039 | Remove each removed membership with its source; added members are ignored |
 | `authz.role.unbound` | [authorization.md](authorization.md) R-AUTHZ-022 | Remove the role binding |

@@ -348,3 +348,17 @@ func init() {
 }
 
 // <<< download links
+
+// >>> bastion handover
+
+// AreaBastionHandover carries a change of a Bastion registration's switch of the handover per blob (bastion.md R-BAS-071): every
+// replica reloads its snapshot of the registrations whose handover is on, which the serve point reads instead of the database, and
+// runs the connections' link checks again when a registration's handover was turned on (storage.md R-STOR-096). The payload is
+// {"bastion": "<the registration's principal ID>"}. Its cluster_epoch row is seeded by 00110_bastion_handover.
+const AreaBastionHandover = "bastion_handover"
+
+func init() {
+	RegisterArea(Area{Name: AreaBastionHandover, Owner: "R-BAS-071", Class: ChangeArea, PayloadVersion: 1})
+}
+
+// <<< bastion handover

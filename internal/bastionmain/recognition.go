@@ -3,6 +3,8 @@ package bastionmain
 import (
 	"context"
 	"time"
+
+	"github.com/guided-traffic/quader/internal/bastion/iface"
 )
 
 // Recognition is the result of recognizing a request of a Bastion (R-BAS-008, Q-BAS-25): the request carried a
@@ -34,6 +36,13 @@ type Recognition struct {
 	// Authorization and the request is no forwarded read. False on a forwarded request, which the caller's
 	// own credential decides (R-BAS-005).
 	Route bool
+	// Offer is the Bastion's offer to take a handover per blob instead of the bytes (R-BAS-072): the value of
+	// Quader-Bastion-Handover on a forwarded GET, read by the recognition stage. Offered is false when the forward carried no
+	// offer, more than one, or a value iface.ParseHandoverOffer refuses (no offer, R-BAS-073), and on every other request. The
+	// header itself never reaches a stage behind the recognition: the serve point reads the offer from here alone
+	// (storage.md R-STOR-095 step 1).
+	Offer   iface.HandoverOffer
+	Offered bool
 }
 
 type recognitionKey struct{}

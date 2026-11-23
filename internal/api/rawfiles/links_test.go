@@ -5,15 +5,15 @@ import (
 	"go/parser"
 	"go/token"
 	"os"
-	"strconv"
 	"strings"
 	"testing"
 )
 
 // TestR_STOR_070_FilesIsNeverALink: /files/ is never answered with a signed link of the object store, whatever the installation's
-// switch says, because its clients are plain download tools that check no digest (R-STOR-071). The switch is no input of the
-// package: no file of it imports internal/downloadlinks, and no edge.ServeOptions it builds sets Link or Linked, so every file of
-// /files/ goes through the stream of edge.ServeItem.
+// switch says, because its clients are plain download tools that check no digest (R-STOR-071). The package imports
+// internal/downloadlinks for the handover per blob to a Bastion alone (storage.md R-STOR-095 step 2), which a Bastion verifies
+// itself: no file of it calls Links.Sign, and no edge.ServeOptions it builds sets Link or Linked, by a literal or an assignment,
+// so every file of /files/ that is not handed over goes through the stream of edge.ServeItem.
 func TestR_STOR_070_FilesIsNeverALink(t *testing.T) {
 	entries, err := os.ReadDir(".")
 	if err != nil {
@@ -29,12 +29,19 @@ func TestR_STOR_070_FilesIsNeverALink(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, imp := range f.Imports {
-			if p, _ := strconv.Unquote(imp.Path.Value); strings.HasSuffix(p, "/internal/downloadlinks") {
-				t.Errorf("%s imports %s", e.Name(), p)
-			}
-		}
 		ast.Inspect(f, func(n ast.Node) bool {
+			switch x := n.(type) {
+			case *ast.SelectorExpr:
+				if x.Sel.Name == "Sign" {
+					t.Errorf("%s: calls Sign, the signing of a client's link", fset.Position(x.Pos()))
+				}
+			case *ast.AssignStmt:
+				for _, lhs := range x.Lhs {
+					if sel, ok := lhs.(*ast.SelectorExpr); ok && (sel.Sel.Name == "Link" || sel.Sel.Name == "Linked") {
+						t.Errorf("%s: sets %s", fset.Position(sel.Pos()), sel.Sel.Name)
+					}
+				}
+			}
 			lit, ok := n.(*ast.CompositeLit)
 			if !ok {
 				return true

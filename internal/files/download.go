@@ -23,6 +23,9 @@ type Resolved struct {
 	// Item is the file, or the folder when IsFolder.
 	Item     items.Item
 	IsFolder bool
+	// Decided reports whether every check of a stored file that applies passed at its first decision on a decided state
+	// (sgate.Serve.RunDecided), the condition of a handover per blob (storage.md R-STOR-095 step 3); false for a folder.
+	Decided bool
 }
 
 // Stat resolves a GET or HEAD of /files/ (R-ARCH-011 steps 4 to 6): `read` on the
@@ -107,10 +110,11 @@ func (s *Service) Stat(ctx context.Context, c Caller, repoKey qname.Repo, p repo
 			Actor: c.Actor, Source: c.Source, Endpoint: c.Subject.Endpoint,
 		}
 	}
-	if err := srv.Run(ctx); err != nil {
+	decided, err := srv.RunDecided(ctx)
+	if err != nil {
 		return Resolved{}, err
 	}
-	return Resolved{Repo: repo, Item: it}, nil
+	return Resolved{Repo: repo, Item: it, Decided: decided}, nil
 }
 
 // Open opens the content of a resolved file for streaming ([items.Store.Open]).
@@ -123,4 +127,11 @@ func (s *Service) Served(ctx context.Context, c Caller, res Resolved, countStats
 	s.items.Served(ctx, items.ServedEvent{
 		Item: res.Item, Actor: c.Actor, Source: c.Source, Endpoint: c.Subject.Endpoint, CountStats: countStats,
 	})
+}
+
+// HandedOver records a download handed over to a Bastion ([items.Store.Served], storage.md R-STOR-095): e carries the item and
+// the handover's delivery; the caller's actor, source and endpoint are added here, and countStats as for [Service.Served].
+func (s *Service) HandedOver(ctx context.Context, c Caller, e items.ServedEvent, countStats bool) {
+	e.Actor, e.Source, e.Endpoint, e.CountStats = c.Actor, c.Source, c.Subject.Endpoint, countStats
+	s.items.Served(ctx, e)
 }

@@ -3202,7 +3202,10 @@ gigabytes; the handover takes them off the main installation.
 
 Status: specified on 2026-11-22 by the planner; the wire is built (package 1, 2026-11-23: interface version 6, R-BAS-073's types and
 checks, [Q-BAS-280](#q-bas-280--the-wire-checks-storedsize-against-ssize-itself) and
-[Q-BAS-281](#q-bas-281--the-wires-checks-are-narrower-than-the-list-of-r-bas-073)), nothing that offers, hands over or reads. It builds on specifications whose code is not on `main`: the serve point and
+[Q-BAS-281](#q-bas-281--the-wires-checks-are-narrower-than-the-list-of-r-bas-073)); the main installation's side for plain copies is
+built (package 2, 2026-11-23: the registration's switch, the serve point's decision of R-STOR-095 steps 1 to 7, 9 and 11, the marking,
+[Q-BAS-285](#q-bas-285--only-the-journaled-switch-off-is-listed-as-yielding-no-feed-entry)), and no Bastion offers or reads yet
+(package 3), so nothing is handed over until it does; an encrypted copy is never handed over before package 4. It builds on specifications whose code is not on `main`: the serve point and
 the domain package of the signed links ([storage.md](storage.md) R-STOR-070 to R-STOR-074, package 2 of
 [developer/download-links.md](../developer/download-links.md)), the copies a read would try now (`blob.Store.Servable`, R-STOR-062, stage
 1's package A), and for an encrypted connection the storage keys and `blob.Store.CopyDataKey` (R-STOR-083, packages 2 and 3 of
@@ -3287,6 +3290,13 @@ Acceptance criteria:
   second `GET` is a hit; with the handover off, the same cold `GET` is a forward whose line has no `delivery`
   (`TestR_BAS_070_ALargeFileIsReadFromTheObjectStore`).
 
+*As built on 2026-11-23, the main installation's half of the criterion (package 2):* with no Bastion that offers yet, the integration
+case of the area `bastion` sends the forward itself, as the Bastion will, to the stack's main installation: a recognized `GET` of a file
+of 64 KiB below `/files/` with `Quader-Bastion-Handover: accept; max-size=1048576` is streamed while the registration's switch is off, and
+once it is on answered with the file's `200` without its bytes, the class `handover` and a value whose link a client without a credential
+reads the file from at the stack's object store; the request log's line has `delivery` `handover` and `response_bytes` 0
+(`TestR_STOR_095_AForwardThatOfferedIsHandedOverFromTheStacksStore`). `TestR_BAS_070_ALargeFileIsReadFromTheObjectStore` is package 3's.
+
 ### R-BAS-071 · The switch: per registration at the main installation, off by default
 Priority: **P1** · Covers: quader-only
 
@@ -3319,6 +3329,25 @@ Acceptance criteria:
   `handover` answers `400`; the handshake of `partners` says `"handover": true` after the change; `bastion.handover.disabled` is in
   `noFeedEntry` (`TestR_BAS_071_TheSwitchIsPerRegistration`, `TestR_BAS_015_EveryJournaledEventIsClassified`).
 - Vitest: the card shows the switch off for a new registration and, once on, a connection's reason `not_https`.
+
+*As built on 2026-11-23, the main installation's side (package 2 of [the build plan](../developer/bastion-handover.md)):* the column
+`bastion.handover` (migration `00110_bastion_handover`, which also makes a change of it a new revision of the registration, the ETag)
+and the member `handover` of `GET`, `PATCH` and of the answers of `POST` ([registrations.go](../../internal/bastionmain/registrations.go),
+[bastion_registrations_api.go](../../internal/api/v1/bastion_registrations_api.go)); `POST` refuses the member as every unknown one
+(`400`), and a `null` of `handover` or `enabled` in a `PATCH` reads as absent: before, a `null` of `enabled` decoded as `false` and
+disabled the registration. `PATCH` records `bastion.handover.enabled` or `bastion.handover.disabled` with the journal entry
+`{principalId, name}` and announces the change area `bastion_handover`; the journal's replay (domain `bastion`,
+[handover.go](../../internal/bastionmain/handover.go)) switches the member off, `already in effect` when it is off, `subject unknown` for
+an ID that names no registration. Only `bastion.handover.disabled` is in `noFeedEntry`
+([Q-BAS-285](#q-bas-285--only-the-journaled-switch-off-is-listed-as-yielding-no-feed-entry)). Every replica that serves downloads keeps
+the snapshot `bastionmain.HandoverSwitches` (the registrations whose member is on, by principal ID; read at start, on every change of
+the area and once a minute; a failed read keeps the last one, off before the first), which the serve point and the handshake read; a
+registration turned on after the first read asks the connections' link checks again (R-STOR-096). The handshake's `handover` is the
+snapshot's value for the calling registration. The criterion is split by what it needs: the operations' answers before the service, the
+handshake, the snapshot and the registry and replay handler are unit tests (`TestR_BAS_071_TheOperationsOfTheSwitchAndTheHandshake` in
+`internal/api/v1`, `TestR_BAS_071_TheSnapshotOfTheSwitches` and `TestR_BAS_071_TheSwitchOffIsJournaledAndReplayed` in
+`internal/bastionmain`); what the service writes, records and journals and the replay against PostgreSQL are the integration area
+`bastionreg`'s (`TestR_BAS_071_TheSwitchIsPerRegistration`). The screen's switch and the Vitest criterion are package 5's.
 
 ### R-BAS-072 · The Bastion offers to take a handover on a miss
 Priority: **P1** · Covers: quader-only
@@ -3423,6 +3452,19 @@ yet and refuses an answer of the class `handover`, or one that carries the heade
 reaches the engine as an empty `200` (`TestR_BAS_073_TheClientAndTheFakeSpeakVersion6`, which also shows that a caller's own
 `Quader-Bastion-Handover` never reaches the main installation). Nobody offers and nobody hands over: the marking stage (package 2) and the
 engine's offer and read (package 3) are not built, nor is `TestR_BAS_073_OnlyARecognizedForwardThatOfferedGetsAHandover`.
+
+*As built on 2026-11-23, the main installation's side (package 2):* the recognition stage reads the offer of a forwarded `GET` into the
+`Recognition` (`Offer`, `Offered`; a refused value or two values is no offer) and takes `Quader-Bastion-Handover` out of every request,
+recognized or not, so no stage behind it, and no handler, sees the header
+([recognize.go](../../internal/bastionmain/recognize.go)). The serve point, which decides on the `Recognition` alone, notes the encoded
+value in the marking stage's record of the request (`bastionmain.NoteHandover`, refused on a request that is no recognized forward that
+offered or that the stage does not mark, so that the serve point then streams) right before it writes the file's `200` with
+`Content-Length: 0`; the marking stage, which strips every `Quader-Bastion-*` header a handler set, writes the class `handover` and the
+value for a `200` of a forward that offered, with the rest of the marking as for every answer (`Quader-Bastion-Counted: download`, the
+package and its shape of R-BAS-082), and counts `quader_bastion_forwarded_requests_total{class="handover"}`
+([mark.go](../../internal/api/bastionmark/mark.go)). A value on another status is no handover. Tests:
+`TestR_BAS_073_OnlyARecognizedForwardThatOfferedGetsAHandover` (`internal/api/bastionmark`), `TestR_BAS_072_TheRecognitionReadsTheOffer`
+and `TestR_BAS_073_NoteHandoverOnlyOnAMarkedForwardThatOffered` (`internal/bastionmain`).
 
 ### R-BAS-074 · The direct read and its verification
 Priority: **P1** · Covers: quader-only
@@ -8710,6 +8752,25 @@ credential (R-BAS-074), and Go's HTTP client sends the user information of a URL
 **Choice:** (a). **Rationale:** every addition refuses a value the main installation never writes, and a refusal ends in the bytes through
 the main installation (R-BAS-075), never in a failed download. **Applied in the spec:** R-BAS-073 (amended); code:
 [handover.go](../../internal/bastion/iface/handover.go).
+
+### Q-BAS-285 · Only the journaled switch-off is listed as yielding no feed entry
+
+Status: **Decided by the development agent** during the build of R-BAS-071 (package 2 of the handover) — selected from the options below;
+the owner sees it when it is built.
+
+Context: R-BAS-071 says that both events of the switch are listed in `noFeedEntry` with their reason. That list holds the journaled events
+that yield no entry of the feed (R-BAS-015): the feed reads journaled events only, and `TestR_BAS_015_EveryJournaledEventIsClassified`
+refuses an event in the list that is not journaled, so that no stale or mistyped entry hides there. `bastion.handover.enabled` is not
+journaled (R-BAS-071: switching on widens).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `bastion.handover.disabled` in `noFeedEntry` with its reason; `bastion.handover.enabled` nowhere, since an event outside the journal never reaches the feed (chosen) | The list stays the journaled events | The test keeps refusing an event the feed can never read | The requirement's sentence is narrower than written |
+| (b) Both, and the test accepts an event that is not journaled | The sentence as written | | The list would hold events the feed never reads, and the test's guard against a stale entry is gone |
+| (c) Journal the switch-on too | Both in the list | | A journal entry that widens, which R-HA-054's replay never applies |
+
+**Choice:** (a). **Rationale:** what the sentence wants, that the feed is classified for both events, holds for the switch-on by
+construction. **Applied in the spec:** R-BAS-071's as-built note; code: `noFeedEntry` in [feed.go](../../internal/bastionmain/feed.go).
 
 ## What this does not cover
 

@@ -441,8 +441,10 @@ func (s itemStore) Serve(ctx context.Context, rq *formats.Request, w http.Respon
 			})
 		},
 	}
-	// A download whose conditions hold may be answered with a signed link of the object store instead (R-STOR-070).
+	// A download whose conditions hold may be answered with a signed link of the object store instead (R-STOR-070), and a Bastion's
+	// forward that offered one with a handover per blob (R-STOR-095); a Bastion's request never gets a link.
 	s.linkOptions(ctx, rq, it, row, decided, &o)
+	s.handoverOptions(ctx, rq, row, decided, &o)
 	return edge.ServeItem(bastionmain.CountingWriter(rq.Request, w), rq.Request, row,
 		func(rng *items.Range) (io.ReadCloser, error) { return s.h.o.Items.Open(ctx, row, rng) }, o)
 }

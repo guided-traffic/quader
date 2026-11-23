@@ -31,21 +31,22 @@ func perDownload(t *testing.T, e *env, r *testenv.Replica, path string) map[stri
 }
 
 // perRequestAs is perDownload for the caller of a token. The budget is the default installation's: the malware scanning is on
-// (malware.enabled, its default) and nothing is strict, which the window checks before it starts (R-MAL-013, Q-MAL-92).
-func perRequestAs(t *testing.T, e *env, r *testenv.Replica, path, token string) map[string]int {
+// (malware.enabled, its default) and nothing is strict, which the window checks before it starts (R-MAL-013, Q-MAL-92). hdr are
+// header pairs every download sends (a Bastion's forward, handover_test.go).
+func perRequestAs(t *testing.T, e *env, r *testenv.Replica, path, token string, hdr ...string) map[string]int {
 	t.Helper()
 	if a := e.st.Do(r, "GET", "/api/v1/malware/switch", token, nil); a.Status != 200 ||
 		!strings.Contains(string(a.Body), `"enabled":true`) || !strings.Contains(string(a.Body), `"onlyChecked":false`) {
 		t.Fatalf("the malware scanning is not on and lax as in a default installation: %d %s", a.Status, a.Body)
 	}
-	if a := e.st.Do(r, "GET", path, token, nil); a.Status != 200 {
+	if a := e.st.Do(r, "GET", path, token, nil, hdr...); a.Status != 200 {
 		t.Fatalf("warm-up %s: %d %.200s", path, a.Status, a.Body)
 	}
 	time.Sleep(time.Second)
 	starts := make([]time.Time, 0, requests)
 	for range requests {
 		starts = append(starts, time.Now())
-		if a := e.st.Do(r, "GET", path, token, nil); a.Status != 200 {
+		if a := e.st.Do(r, "GET", path, token, nil, hdr...); a.Status != 200 {
 			t.Fatalf("%s: %d", path, a.Status)
 		}
 	}
@@ -137,4 +138,6 @@ func TestR_ARCH_027_ADownloadCostsOneStatement(t *testing.T) {
 	}
 	// A download handed to a signed link of the object store costs what a streamed one does (link_test.go).
 	t.Run("an OCI blob of a local repository handed to a signed link", func(t *testing.T) { linkBudget(t, e) })
+	// And a download handed over to a Bastion (handover_test.go).
+	t.Run("an OCI blob of a local repository handed over to a Bastion", func(t *testing.T) { handoverBudget(t, e) })
 }

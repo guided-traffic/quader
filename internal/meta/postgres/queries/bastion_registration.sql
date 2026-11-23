@@ -13,8 +13,9 @@
 INSERT INTO bastion (principal_id, description) VALUES (sqlc.arg(id)::text::uuid, sqlc.arg(description)::text);
 
 -- name: BastionGet :many
--- A registration by name. revision is the ETag (R-API-012); enabled is the principal's status.
-SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description
+-- A registration by name. revision is the ETag (R-API-012); enabled is the principal's status; handover is the switch of the
+-- handover per blob (R-BAS-071, 00110).
+SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover
   FROM principal p JOIN bastion b ON b.principal_id = p.id
  WHERE p.kind = 'bastion' AND p.name = sqlc.arg(name)::text;
 
@@ -29,7 +30,7 @@ SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.re
 -- name: BastionList :many
 -- Keyset order by name; there are at most bastions.max_registrations of them, so the caller may pass an empty
 -- after and a generous max_rows.
-SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description
+SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover
   FROM principal p JOIN bastion b ON b.principal_id = p.id
  WHERE p.kind = 'bastion' AND p.name > sqlc.arg(after)::text
  ORDER BY p.name
@@ -41,6 +42,27 @@ SELECT count(*) FROM principal WHERE kind = 'bastion';
 
 -- name: BastionUpdateDescription :exec
 UPDATE bastion SET description = sqlc.arg(description)::text WHERE principal_id = sqlc.arg(id)::text::uuid;
+
+-- name: BastionSetHandover :many
+-- Switch the handover per blob of a registration on or off (R-BAS-071). No row when the member already is the one asked for.
+UPDATE bastion SET handover = sqlc.arg(handover)::boolean
+ WHERE principal_id = sqlc.arg(id)::text::uuid AND handover <> sqlc.arg(handover)::boolean
+RETURNING principal_id::text AS id;
+
+-- name: BastionHandoverOn :many
+-- The registrations whose handover is on, for every replica's snapshot (R-BAS-071): at most bastions.max_registrations rows,
+-- read at the start, on a change of the area bastion_handover and once a minute; never by a forward.
+SELECT b.principal_id::text AS id
+  FROM bastion b JOIN principal p ON p.id = b.principal_id
+ WHERE p.kind = 'bastion' AND b.handover
+ ORDER BY b.principal_id;
+
+-- name: BastionHandoverOff :many
+-- The journal's replay of bastion.handover.disabled (R-BAS-071, R-HA-054): the member off for the registration of the entry. No row
+-- when it is off already or the registration is not in the database.
+UPDATE bastion SET handover = false
+ WHERE principal_id = sqlc.arg(id)::text::uuid AND handover
+RETURNING principal_id::text AS id;
 
 -- name: BastionSetEnabled :many
 -- Enable or disable (R-BAS-004): a disabled registration refuses its tokens like a disabled service account

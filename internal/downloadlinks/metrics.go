@@ -26,12 +26,16 @@ func DeclinedReasons() []string {
 	}
 }
 
-// Metrics are the families of R-STOR-073. A nil *Metrics records nothing, which unit tests use.
+// Metrics are the families of R-STOR-073 and of the handover per blob (R-STOR-095). A nil *Metrics records nothing, which unit
+// tests use.
 type Metrics struct {
 	issued   *prometheus.CounterVec
 	bytes    *prometheus.CounterVec
 	declined *prometheus.CounterVec
 	usable   *prometheus.GaugeVec
+
+	handovers        *prometheus.CounterVec
+	handoverDeclined *prometheus.CounterVec
 }
 
 // NewMetrics registers the families on m; like every registration it panics when called twice for one registry. The label format
@@ -46,6 +50,25 @@ func NewMetrics(m *observability.Metrics) *Metrics {
 			"GET requests of a route whose clients check a digest that were streamed while the delivery by signed links was on, by the first condition that did not hold (R-STOR-073).", "reason"),
 		usable: m.NewGaugeVec("quader_storage_download_links_usable",
 			"1 while the connection can serve signed links on this replica (R-STOR-074).", "connection"),
+		// The label bastion is a registration's name, bounded by bastions.max_registrations; kind and reason are closed sets.
+		handovers: m.NewCounterVec("quader_storage_download_handovers_total",
+			"Downloads of a Bastion's forward handed over as a link of the object store, counted when the handover was issued (R-STOR-095).", "bastion", "kind"),
+		handoverDeclined: m.NewCounterVec("quader_storage_download_handovers_declined_total",
+			"Offers of a Bastion to take a handover that were streamed, by the first condition that did not hold (R-STOR-095).", "reason"),
+	}
+}
+
+// HandedOver counts a handover issued to a registration, of a kind (link).
+func (m *Metrics) HandedOver(bastion, kind string) {
+	if m != nil {
+		m.handovers.WithLabelValues(bastion, kind).Inc()
+	}
+}
+
+// HandoverDeclined counts an offer that was streamed for reason.
+func (m *Metrics) HandoverDeclined(reason string) {
+	if m != nil {
+		m.handoverDeclined.WithLabelValues(reason).Inc()
 	}
 }
 

@@ -7640,12 +7640,17 @@ type BannerInputSeverity string
 // Bastion A Bastion registration, a principal of the kind `bastion` (R-BAS-004).
 type Bastion struct {
 	// Contacts The last contact of each replica, the most recent first (R-BAS-010).
-	Contacts    []BastionContact   `json:"contacts"`
-	CreatedAt   time.Time          `json:"createdAt"`
-	Description string             `json:"description"`
-	Enabled     bool               `json:"enabled"`
-	Id          openapi_types.UUID `json:"id"`
-	Name        string             `json:"name"`
+	Contacts    []BastionContact `json:"contacts"`
+	CreatedAt   time.Time        `json:"createdAt"`
+	Description string           `json:"description"`
+	Enabled     bool             `json:"enabled"`
+
+	// Handover The switch of the handover per blob (R-BAS-071): while it is on, the main installation may answer a forward of this
+	// Bastion for a large file with a short-lived signed link of the object store, so the Bastion reads the bytes from the
+	// store itself (R-STOR-095). Off for a new registration; changed by `PATCH` only.
+	Handover bool               `json:"handover"`
+	Id       openapi_types.UUID `json:"id"`
+	Name     string             `json:"name"`
 
 	// Tokens The unrevoked tokens, newest first. Neither the value nor its hash is part of it.
 	Tokens []BastionTokenSummary `json:"tokens"`
@@ -7808,6 +7813,9 @@ type BastionPackageReadRead string
 type BastionPatch struct {
 	Description *string `json:"description,omitempty"`
 	Enabled     *bool   `json:"enabled,omitempty"`
+
+	// Handover Switches the handover per blob on or off (R-BAS-071); `null` is refused.
+	Handover *bool `json:"handover,omitempty"`
 }
 
 // BastionRepositoryRead defines model for BastionRepositoryRead.

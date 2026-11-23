@@ -45,6 +45,9 @@ type BastionServices struct {
 	// .BoundRepository): the repository of the format that declares the registry root which host_roots binds the host to,
 	// false for an unbound host (R-EP-006, R-BAS-057, Q-BAS-188). Nil binds nothing.
 	BoundRepository func(*http.Request) (qname.Repo, bool, error)
+	// Handover is the replica's snapshot of the registrations whose handover per blob is on (R-BAS-071,
+	// *bastionmain.HandoverSwitches); nil answers false in every handshake.
+	Handover interface{ On(bastionID string) bool }
 }
 
 // BastionFeedSource is what the handshake and the feed operation read of the revocation feed (R-BAS-010, R-BAS-015):

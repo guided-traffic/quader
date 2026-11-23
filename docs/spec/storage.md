@@ -1789,7 +1789,8 @@ Priority: **P1** · Covers: quader-only
 
 The owner's decision 12 (b) of 2026-11-22 ([bastion.md](bastion.md) R-BAS-070): for a forward of a Bastion, the main installation may
 answer a download with a link of the object store and, for a copy on an encrypted connection, the copy's data key, instead of the bytes;
-the Bastion reads the object itself. Specified, not built. The decision is made at the serve point of R-STOR-070 (`edge.ServeItem`, through
+the Bastion reads the object itself. Built for plain copies (package 2 of
+[developer/bastion-handover.md](../developer/bastion-handover.md), as built below); steps 8 and 10 are not. The decision is made at the serve point of R-STOR-070 (`edge.ServeItem`, through
 `itemStore.Serve` for a format's routes and through `/files/`), in `internal/downloadlinks` beside the links'
 ([Q-STOR-340](#q-stor-340--the-handover-is-decided-in-the-package-of-the-links-the-one-caller-of-copydatakey-besides-the-store));
 `edge.ServeItem` takes it as `ServeOptions.Handover`, which it calls after `Admit` and only for a `GET` that would carry the whole body.
@@ -1851,6 +1852,32 @@ Acceptance criteria:
   one `artifact.downloaded` with `delivery: "handover"` (`TestR_STOR_095_TheConditionsOfAHandover`).
 - Unit (`internal/api/rawfiles`): a file of `/files/` is handed over like a format's artifact (`TestR_STOR_095_AFileOfFilesIsHandedOver`).
 
+*As built on 2026-11-23 (package 2, plain copies):* [handover.go](../../internal/downloadlinks/handover.go) holds step 1 (the offer from
+the `Recognition`, which the recognition stage alone fills, and the registration's switch from the replica's snapshot,
+`bastionmain.HandoverSwitches`), 5, 7 and 9, and what step 11 counts; `Links.HandoverOptions` gives the serve point
+`ServeOptions.Handover` and `HandedOver`, which `edge.ServeItem` calls after `Admit` for a `GET` whose answer is the whole file with `200`
+([content.go](../../internal/api/edge/content.go)), and which [ingest.go](../../internal/formathost/ingest.go) (`handoverOptions` in
+[download_links.go](../../internal/formathost/download_links.go): a route of the kind `Download`, not a system read, the gates decided)
+and [handler.go](../../internal/api/rawfiles/handler.go) (every file, the gates of `files.Service.Stat`, which now reports whether they
+passed on a decided state) set. The route's `ClientDigest` is no condition, nor are the switch of the clients' links and a repository's
+`storage.downloadLinks` (Q-STOR-345). Step 7 names no copy on an encrypted connection: steps 8 and 10 are package 4's, so a blob whose
+servable copies are all encrypted is streamed with the reason `connection`; a plain copy whose `stored_size` is not the blob's size is
+skipped. The answer is the file's `200` through the format's own writers with `Content-Length: 0`; the value is noted for the marking
+stage, which writes the class and the header (R-BAS-073's as-built note), and a refusal of `iface.EncodeHandover` streams. Counted at the
+issue as a link is: `Charge.ChargeLink` (the size as cached bytes, the request log's `bytes_cached`), `items.Store.Served` with
+`Delivery: "handover"`, the registration, the connection and `encrypted` (`artifact.downloaded`'s details, whose schema gains them), the
+request log's `delivery` `handover`, `quader_storage_download_handovers_total{bastion, kind="link"}`; the label `bastion` joins R-OPS-007's
+list ([Q-STOR-430](#q-stor-430--the-label-bastion-joins-the-allowed-labels-of-r-ops-007)). `quader_storage_download_handovers_declined_total`
+counts `switch_off`, `not_artifact`, `gate` (and a content state that is not `ok` as `connection`, as the links count it), `size`,
+`connection`, `credential` and `signing`; `key` and `trace` come with package 4. An offer answered by Quader's own `304`, `206`, `412` or
+`429` is no declined handover and is not counted. A writer's read the signature gate passed is traced (`signature.download_by_writer`) by
+`sgate.Serve.RunDecided` before the decision, whether it is then handed over, linked or streamed. Tests:
+`TestR_STOR_095_TheConditionsOfAHandover` and `TestR_STOR_095_WhatAHandoverCounts` (`internal/formathost`, the in-memory store; each
+condition taken away alone, the link's life bounded by a credential that ends in 20 s, a speed figure no condition),
+`TestR_STOR_095_AFileOfFilesIsHandedOver` (`internal/api/rawfiles`), `TestR_STOR_096_TheCopyOfAHandover` (`internal/downloadlinks`); the
+integration cases `TestR_STOR_095_AForwardThatOfferedIsHandedOverFromTheStacksStore` (area `bastion`) and the query budget's handed-over
+OCI blob (area `querybudget`, one statement, R-ARCH-027).
+
 ### R-STOR-096 · The connection a handover names, its link check and the trace of a data key
 Priority: **P1** · Covers: quader-only
 
@@ -1886,10 +1913,13 @@ Acceptance criteria:
 - Unit (`internal/downloadlinks`, the in-memory store with a plain and an encrypted connection): with a copy on each, the plain one is named
   and no key is handed; with the encrypted copy alone, the handed data key is the copy's (it opens the object), `bastion.data_key.handed` is
   written before the answer with its details and without the key, and a failing insert streams the download
-  (`TestR_STOR_096_ThePlainCopyFirstAndTheTraceOfAKey`).
+  (`TestR_STOR_096_ThePlainCopyFirstAndTheTraceOfAKey`). *As built on 2026-11-23 (package 2):* the plain copy first and an encrypted copy
+  alone streamed (`TestR_STOR_096_TheCopyOfAHandover`); the handed key and its trace are package 4's.
 - Unit (`internal/blob`): a store fake that ignores `response-content-disposition` passes the first part of the link check and fails the
   second, so its connection can serve a handover and no link (`TestR_STOR_096_TheLinkCheckHasTwoParts`). Built with the links' package 2,
-  which records the two parts and decides `HandoverUsable` with its reasons; the handover itself is not built.
+  which records the two parts and decides `HandoverUsable` with its reasons, and offers the test link for an encrypted connection;
+  package 2 of the handover adds the run of the link checks when a registration's handover is turned on (`Snapshot.CheckLinks`, asked by
+  the snapshot of the switches, `TestR_BAS_071_TheSnapshotOfTheSwitches`).
 - Unit (`internal/archtest`): a call of `CopyDataKey` from a package other than `internal/blob` and `internal/downloadlinks` fails
   (`TestR_STOR_096_CopyDataKeyHasTwoCallers`).
 
@@ -10325,6 +10355,26 @@ segment and, where it hashes, the SHA-256 have passed.
 | (b) A second hold-back of `hold_back` bytes in front of the reader | As a plain read | The same number as a plain read | A buffer that protects nothing more: no byte it holds is unauthenticated |
 
 **Choice:** (a). **Applied in the spec:** R-STOR-082; code: `sealedDownload` of [sealedread.go](../../internal/blob/sealedread.go).
+
+### Q-STOR-430 · The label bastion joins the allowed labels of R-OPS-007
+
+Status: **Decided by the development agent** during the build of R-STOR-095 (package 2 of the handover) — selected from the options
+below; the owner sees it when it is built.
+
+Context: R-STOR-095 names `quader_storage_download_handovers_total{bastion, kind}`. R-OPS-007 permits only the labels of its table, and
+the registry of `internal/observability` refuses any other when a family is registered. The main installation's
+`quader_bastion_interface_requests_total` and `quader_bastion_forwarded_requests_total` carry the label `bastion` already, registered
+beside that check on the same registry (bastion.md R-BAS-008), with the registration's name as its value, bounded by
+`bastions.max_registrations`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `bastion` joins R-OPS-007's table: a Bastion registration's name, bounded by `bastions.max_registrations` (chosen) | One rule for the families of both sides of the main installation | The operator sees which Bastion receives handovers; the registry's check holds the new family | A principal's name as a label value, which the forbidden labels name for users and service accounts; a registration's name is an operator's choice in a list of at most 256 |
+| (b) The family without the label | No per-Bastion count | Nothing to change | The handovers of a partner's Bastion and the DMZ's cannot be told apart |
+| (c) Registered beside the check, as `internal/bastionmain` does | The requirement as written | | The rule is bypassed in silence a second time |
+
+**Choice:** (a). **Applied in the spec:** [operations-and-observability.md](operations-and-observability.md) R-OPS-007's table; code:
+`allowedLabels` in [labels.go](../../internal/observability/labels.go).
 
 ## What this does not cover
 

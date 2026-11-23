@@ -37,7 +37,9 @@ type Registration struct {
 	Name        string
 	Description string
 	Enabled     bool
-	CreatedAt   time.Time
+	// Handover is the switch of the handover per blob (R-BAS-071): off by default, never set by Create.
+	Handover  bool
+	CreatedAt time.Time
 	// Revision is the ETag of the registration (principal.revision, R-API-012).
 	Revision int64
 	// Tokens are the unrevoked tokens, newest first. They hold neither a value nor a hash.
@@ -81,6 +83,8 @@ type NewRegistration struct {
 type Patch struct {
 	Description *string
 	Enabled     *bool
+	// Handover switches the handover per blob on or off (R-BAS-071).
+	Handover *bool
 }
 
 // RegistrationOptions configure [NewRegistrations].
@@ -181,7 +185,7 @@ func load(ctx context.Context, qs *q.Queries, name string) (Registration, error)
 		return Registration{}, notFound()
 	}
 	g := rows[0]
-	out := Registration{ID: g.ID, Name: g.Name, Description: g.Description, Enabled: g.Enabled, CreatedAt: g.CreatedAt.Time, Revision: g.Revision}
+	out := Registration{ID: g.ID, Name: g.Name, Description: g.Description, Enabled: g.Enabled, Handover: g.Handover, CreatedAt: g.CreatedAt.Time, Revision: g.Revision}
 	toks, err := qs.BastionListTokens(ctx, q.BastionListTokensParams{ID: g.ID})
 	if err != nil {
 		return Registration{}, err
@@ -249,7 +253,7 @@ func (r *Registrations) List(ctx context.Context) ([]Registration, error) {
 		for _, g := range rows {
 			byID[g.ID] = len(out)
 			out = append(out, Registration{
-				ID: g.ID, Name: g.Name, Description: g.Description, Enabled: g.Enabled, CreatedAt: g.CreatedAt.Time, Revision: g.Revision,
+				ID: g.ID, Name: g.Name, Description: g.Description, Enabled: g.Enabled, Handover: g.Handover, CreatedAt: g.CreatedAt.Time, Revision: g.Revision,
 				Tokens: []RegistrationToken{}, Contacts: []Contact{},
 			})
 		}
@@ -276,8 +280,9 @@ func (r *Registrations) List(ctx context.Context) ([]Registration, error) {
 // tokens like a disabled service account's (R-AUTH-020) within the revocation bound; enabling it restores them,
 // because disabling revokes nothing. A new description records bastion.updated; a disable records
 // bastion.disabled with its journal entry, so a restore to a point before it disables the registration again
-// (R-HA-054, Q-BAS-145); an enable records bastion.enabled. A patch that changes nothing writes nothing and
-// records nothing.
+// (R-HA-054, Q-BAS-145); an enable records bastion.enabled. The switch of the handover per blob records
+// bastion.handover.enabled or the journaled bastion.handover.disabled (R-BAS-071). A patch that changes nothing writes
+// nothing and records nothing.
 func (r *Registrations) Update(ctx context.Context, c principal.Caller, name string, p Patch, expected int64) (Registration, error) {
 	if p.Description != nil {
 		if err := checkDescription("/description", *p.Description); err != nil {
@@ -335,6 +340,11 @@ func (r *Registrations) Update(ctx context.Context, c principal.Caller, name str
 				}
 			}
 		}
+		if p.Handover != nil && *p.Handover != cur.Handover {
+			if err := r.setHandover(ctx, tx, c, subject, *p.Handover); err != nil {
+				return err
+			}
+		}
 		out, err = load(ctx, qs, name)
 		return err
 	})
@@ -342,6 +352,30 @@ func (r *Registrations) Update(ctx context.Context, c principal.Caller, name str
 		return Registration{}, principal.DBErr("bastion.update", err)
 	}
 	return out, nil
+}
+
+// setHandover switches the handover per blob of the registration subject (R-BAS-071) inside the update's transaction: the
+// member, the change area every replica's snapshot follows, and bastion.handover.enabled, or bastion.handover.disabled with the
+// journal entry, so that a restore to a point before the switch-off keeps the handover off (R-HA-054). A member that already
+// has the value writes nothing.
+func (r *Registrations) setHandover(ctx context.Context, tx meta.Tx, c principal.Caller, subject audit.Subject, on bool) error {
+	changed, err := principal.Queries(tx).BastionSetHandover(ctx, q.BastionSetHandoverParams{ID: subject.ID, Handover: on})
+	if err != nil || len(changed) == 0 {
+		return err
+	}
+	if r.o.Notifier != nil {
+		if err := r.o.Notifier.Notify(tx, cluster.AreaBastionHandover, 1, map[string]string{"bastion": subject.ID}); err != nil {
+			return err
+		}
+	}
+	ev := audit.Event{
+		Type: audit.EventBastionHandoverEnabled, Outcome: audit.Success, Actor: c.Actor, Source: c.Source,
+		Subject: subject, Details: mustJSON(map[string]any{}),
+	}
+	if !on {
+		ev.Type, ev.Journal = audit.EventBastionHandoverDisabled, handoverEntry(subject.ID, subject.Name)
+	}
+	return r.o.Recorder.RecordTx(ctx, tx, ev)
 }
 
 // Delete deletes a registration: its tokens are revoked first (token.revoked with the journal entry of each,

@@ -32241,6 +32241,24 @@
         <target>Bastion aktiviert</target>
       </segment>
     </unit>
+    <unit id="audit.action.bastion.handover.disabled">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:103</note>
+      </notes>
+      <segment>
+        <source>Direct reads of a Bastion from the object store switched off</source>
+        <target>Direkte Lesezugriffe einer Bastion auf den Objektspeicher ausgeschaltet</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.bastion.handover.enabled">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:105</note>
+      </notes>
+      <segment>
+        <source>Direct reads of a Bastion from the object store switched on</source>
+        <target>Direkte Lesezugriffe einer Bastion auf den Objektspeicher eingeschaltet</target>
+      </segment>
+    </unit>
     <unit id="docs.back">
       <notes>
         <note category="location">src/app/features/packages/ansible-docs.html:132,133</note>

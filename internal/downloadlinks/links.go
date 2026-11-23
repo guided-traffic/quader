@@ -57,6 +57,9 @@ type Options struct {
 	// every download, Q-STOR-275). Nil streams such a download.
 	Copies func(ctx context.Context, d blob.Digest) ([]blob.Copy, error)
 	Rule   HostRule
+	// Handovers is the replica's snapshot of the Bastion registrations whose handover per blob is on (R-BAS-071); nil hands
+	// nothing over.
+	Handovers HandoverSwitch
 	// Replica names the probe objects of the link check.
 	Replica string
 	Metrics *Metrics

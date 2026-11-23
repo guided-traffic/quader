@@ -3761,6 +3761,7 @@ or authorization codes.
 | `serviceaccount.created`, `serviceaccount.updated`, `serviceaccount.disabled`, `serviceaccount.deleted` | R-AUTH-020, R-AUTH-046; `details.level` (`instance`, `project`, `repository`), `details.repository` for a repository's account, `details.actions` on a change of its rights, `details.moved` with the old and new name when its repository moved | yes |
 | `technicaltoken.created`, `technicaltoken.updated`, `technicaltoken.deleted` | R-AUTH-045: the account, the token's ID and name; `token.created` and `token.revoked` of its secrets carry `technicalToken` | yes |
 | `bastion.created`, `bastion.updated`, `bastion.disabled`, `bastion.enabled`, `bastion.deleted` | R-BAS-004 ([bastion.md](bastion.md)); the token events of a Bastion token (`token.created`, `token.revoked`) carry `resource_type` `bastion` | yes; `bastion.disabled` and `bastion.deleted` carry a journal entry (Q-BAS-145) |
+| `bastion.handover.enabled`, `bastion.handover.disabled` | R-BAS-071 ([bastion.md](bastion.md)): the switch of a registration's handover per blob | yes; `bastion.handover.disabled` carries a journal entry |
 | `cli_login.approved`, `cli_login.denied` | R-AUTH-034, R-AUTH-036 | yes |
 | `cli_login.poll_refused` | R-AUTH-034 address binding, with the refused and the requesting address | yes, once per change of the refused address within a login, decided under the row's lock (R-AUTH-034) |
 | `settings.auth.changed` | R-AUTH-040 | yes |
@@ -3787,6 +3788,7 @@ is MVP. `quader admin post-restore` re-applies it after a platform restore (Q-HA
 | `group.deleted` | Principal ID and name | Delete the group |
 | `group.updated` | Principal ID and name; `autoJoin` before and after, on every update; `renamedFrom`, the name before, when the update renamed the group | Update rule with the comparator below: clear the flag, never set it. A rename is not replayed as a rename: the group keeps its restored name and is detached from group synchronization ([Q-AUTH-206](#q-auth-206--a-group-renamed-after-the-restore-point-is-detached-from-group-synchronization-not-renamed)) |
 | `bastion.disabled`, `bastion.deleted` | The registration's principal ID and name ([bastion.md](bastion.md) R-BAS-004, Q-BAS-145) | Disable the registration |
+| `bastion.handover.disabled` | The registration's principal ID and name ([bastion.md](bastion.md) R-BAS-071) | Switch the registration's handover per blob off |
 | `group.members.changed` | The group, and the removed memberships, each with its member and source (`manual`, `auto`, `scim`) | Remove each removed membership with its source |
 | `user.groups.synced` | The user, and the removed memberships, each with its group and source `oidc:<providerId>` | Remove each removed membership with its source |
 | `settings.auth.changed` | On every change: `tokens.pat.maxTTLSeconds` and `tokens.sat.maxTTLSeconds` before and after (`null` is the YAML value); the defaults, the expiry notice and `newUsersExternal` are not part of the entry | Update rule with the comparators below, value by value ([Q-AUTH-207](#q-auth-207--the-token-lifetime-maxima-are-journaled-and-the-replay-lowers-each-to-the-smaller-value)) |

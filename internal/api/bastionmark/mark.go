@@ -284,11 +284,26 @@ func (s *state) marking(status int, h http.Header) iface.Marking {
 			mk.Package, mk.PackageRead = pkg, s.m.packageRead(whole, decided, grant, match.Repo, pkg)
 		}
 		mk.Class = classOf(kind, mk)
+		if status == http.StatusOK && s.handover() != "" {
+			// The serve point answered the forward with the file's 200 without its bytes and noted the handover's value
+			// (storage.md R-STOR-095 step 11): only the class handover explains the empty body (R-BAS-073).
+			mk.Class = iface.ClassHandover
+		}
 	case content && status == http.StatusNotFound && mk.Read == iface.ReadFull && s.absence.Absent():
 		// absent stays tied to a full shape on the repository (Q-BAS-243).
 		mk.Class = iface.ClassAbsent
 	}
 	return mk
+}
+
+// handover is the encoded value of the handover the serve point noted for a forward that offered one (R-BAS-073), "" for none:
+// the class handover and the header Quader-Bastion-Handover go to a recognized forward that carried the offer and to nothing
+// else.
+func (s *state) handover() string {
+	if !s.rec.Offered || s.rec.Route || s.rec.Probe {
+		return ""
+	}
+	return s.absence.Handover()
 }
 
 // classOf is the class of a 200 or 304 of a content route: an artifact for a download; for a document, shared when the caller
@@ -349,6 +364,11 @@ func (w *markWriter) mark(code int) {
 	}
 	mk := w.st.marking(code, h)
 	mk.Set(h)
+	if mk.Class == iface.ClassHandover {
+		// The value is a bearer link for its life (H-12): it goes into this one header, which the Bastion's client strips before
+		// its engine sees the answer, and no request log keeps a header (R-OPS-010, R-OPS-013).
+		h.Set(iface.HeaderHandover, w.st.handover())
+	}
 	if mt := w.st.m.o.Metrics; mt != nil && mt.Forwarded != nil {
 		class := string(mk.Class)
 		if w.st.probe {

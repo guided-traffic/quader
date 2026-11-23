@@ -30,6 +30,9 @@ import (
 //     the format's Classify places it in, and each MayRead row of the read scope the host hands out. These are the
 //     decisions the conformance kit's host records for check 21 (R-BAS-086), which holds every format to deciding all
 //     of a response's reads before its status line.
+//   - [NoteHandover] is called by the serve point right before it writes the file's 200 without its body, with the encoded
+//     value of a handover per blob (storage.md R-STOR-095 step 11): the marking stage writes the class handover and the
+//     value as Quader-Bastion-Handover (R-BAS-073), so that the marking stays written in one place.
 //
 // A 404 is absent exactly when something was noted missing, nothing unknown, and the caller's read shape of
 // the addressed repository is full, so that no subject-dependent hiding exists to begin with.
@@ -39,6 +42,21 @@ type Absence struct {
 	pkgMu sync.Mutex
 	pkg   string
 	named packageState
+
+	// handover is the encoded value of a handover (iface.EncodeHandover), "" for none. It holds a bearer link for its life and,
+	// from package 4, a data key: it lives in the request's memory only and the marking writes it into one header.
+	handover atomic.Pointer[string]
+}
+
+// Handover returns the encoded value of the handover the serve point noted, "" for none.
+func (a *Absence) Handover() string {
+	if a == nil {
+		return ""
+	}
+	if v := a.handover.Load(); v != nil {
+		return *v
+	}
+	return ""
 }
 
 // packageState is what the decisions of a request said about its package so far.
@@ -135,6 +153,31 @@ func NoteCounted(ctx context.Context) {
 	if a := absenceFrom(ctx); a != nil {
 		a.counted.Store(true)
 	}
+}
+
+// NoteHandover records the encoded value of a handover per blob for the marking stage (R-BAS-073, storage.md R-STOR-095 step
+// 11) and reports whether it was recorded: only on a recognized forward that offered a handover (Recognition.Offered) and whose
+// answer the marking stage marks. On every other request it records nothing and reports false, and the serve point streams the
+// download, so that no empty 200 ever leaves without the value that explains it.
+func NoteHandover(ctx context.Context, value string) bool {
+	rec, ok := RecognitionFrom(ctx)
+	a := absenceFrom(ctx)
+	if !ok || !rec.Offered || rec.Route || rec.Probe || a == nil || value == "" {
+		return false
+	}
+	a.handover.Store(&value)
+	return true
+}
+
+// MarksHandover reports whether a handover the serve point decided could reach the Bastion: the request is a recognized forward
+// that offered one, and the marking stage marks its answer. The serve point asks it before it decides anything else, so an
+// ordinary request pays a context lookup and nothing more.
+func MarksHandover(ctx context.Context) (Recognition, bool) {
+	rec, ok := RecognitionFrom(ctx)
+	if !ok || !rec.Offered || rec.Route || rec.Probe || absenceFrom(ctx) == nil {
+		return Recognition{}, false
+	}
+	return rec, true
 }
 
 // CountingWriter returns the writer a counting serve of the core answers r through: on a recognized Bastion request it

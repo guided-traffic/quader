@@ -87,6 +87,25 @@ func (s itemStore) linkOptions(ctx context.Context, rq *formats.Request, it form
 	}
 }
 
+// handoverOptions sets ServeOptions.Handover and HandedOver on o for a recognized forward of a Bastion that offered to take a
+// handover per blob (storage.md R-STOR-095): steps 1, 5, 7, 9 and the counting of 11 are internal/downloadlinks', 4 and 6
+// edge.ServeItem's, and this serve point says what it decided of step 2 (a stored file of a route of the kind Download, never a
+// system read) and step 3 (decided is whether every gate passed on a decided state). Unlike a link it does not read the route's
+// ClientDigest: the Bastion checks every byte itself (R-BAS-074), so every format's artifact can be handed over.
+func (s itemStore) handoverOptions(ctx context.Context, rq *formats.Request, row items.Item, decided bool, o *edge.ServeOptions) {
+	links := s.h.o.Links
+	if links == nil || rq == nil || rq.Request == nil || rq.Method != http.MethodGet {
+		return
+	}
+	o.Handover, o.HandedOver = links.HandoverOptions(ctx, downloadlinks.HandoverDownload{
+		Item: row, Artifact: rq.Route != nil && rq.Route.Kind == formats.Download && !systemRead(rq), Decided: decided,
+		Record: func(e items.ServedEvent) {
+			e.Actor, e.Source, e.Endpoint = edge.ActorFrom(httpserver.PrincipalFrom(ctx)), httpserver.SourceFrom(ctx), rq.Subject.Endpoint
+			s.h.o.Items.Served(ctx, e)
+		},
+	})
+}
+
 // fileName is the last segment of a path, the name of Content-Disposition (as edge.ServeItem names it).
 func fileName(p string) string {
 	if i := strings.LastIndexByte(p, '/'); i >= 0 {

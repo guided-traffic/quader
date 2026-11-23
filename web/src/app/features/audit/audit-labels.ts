@@ -99,6 +99,10 @@ export function auditActionLabel(action: string): string {
       return $localize`:@@audit.action.bastion.downloads.dropped:Bastion lost download records`;
     case 'bastion.enabled':
       return $localize`:@@audit.action.bastion.enabled:Bastion enabled`;
+    case 'bastion.handover.disabled':
+      return $localize`:@@audit.action.bastion.handover.disabled:Direct reads of a Bastion from the object store switched off`;
+    case 'bastion.handover.enabled':
+      return $localize`:@@audit.action.bastion.handover.enabled:Direct reads of a Bastion from the object store switched on`;
     case 'bastion.updated':
       return $localize`:@@audit.action.bastion.updated:Bastion changed`;
     case 'ci.exchange.denied':

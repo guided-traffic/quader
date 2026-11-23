@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -39,7 +40,7 @@ func (s *Server) bastionsReady(w http.ResponseWriter, r *http.Request) bool {
 
 func toBastion(b bastionmain.Registration) gen.Bastion {
 	out := gen.Bastion{
-		Id: uuidOf(b.ID), Name: b.Name, Description: b.Description, Enabled: b.Enabled, CreatedAt: utc(b.CreatedAt),
+		Id: uuidOf(b.ID), Name: b.Name, Description: b.Description, Enabled: b.Enabled, Handover: b.Handover, CreatedAt: utc(b.CreatedAt),
 		Tokens: make([]gen.BastionTokenSummary, 0, len(b.Tokens)), Contacts: make([]gen.BastionContact, 0, len(b.Contacts)),
 	}
 	for _, t := range b.Tokens {
@@ -122,6 +123,7 @@ func (s *Server) GetBastion(w http.ResponseWriter, r *http.Request, name string,
 type bastionPatchBody struct {
 	Description json.RawMessage `json:"description"`
 	Enabled     json.RawMessage `json:"enabled"`
+	Handover    json.RawMessage `json:"handover"`
 
 	ID        json.RawMessage `json:"id"`
 	Name      json.RawMessage `json:"name"`
@@ -151,6 +153,10 @@ func (s *Server) UpdateBastion(w http.ResponseWriter, r *http.Request, name stri
 	if err == nil {
 		patch.Enabled, err = patchEnabled(in.Enabled, "/enabled")
 	}
+	if err == nil {
+		// The switch of the handover per blob (R-BAS-071): true or false, a null switches nothing.
+		patch.Handover, err = patchEnabled(in.Handover, "/handover")
+	}
 	if err != nil {
 		httpserver.Problem(w, r, err)
 		return
@@ -164,10 +170,12 @@ func (s *Server) UpdateBastion(w http.ResponseWriter, r *http.Request, name stri
 	writeJSON(w, r, http.StatusOK, toBastion(b))
 }
 
-// patchEnabled reads the member enabled of a merge patch: absent is unchanged; null and any other type are
-// refused, because a null must never switch a registration off.
+// patchEnabled reads a switch of a merge patch, enabled or handover: absent and null are unchanged, because a null must never
+// switch a registration off, nor its handover on or off; any other type is refused.
 func patchEnabled(raw json.RawMessage, pointer string) (*bool, error) {
-	if raw == nil {
+	// A JSON null decodes into a bool as false without an error, which would switch off what the patch did not change: it is
+	// read as absent before the decode.
+	if raw == nil || string(bytes.TrimSpace(raw)) == "null" {
 		return nil, nil
 	}
 	var v bool

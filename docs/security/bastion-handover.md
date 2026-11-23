@@ -1,14 +1,16 @@
 # The handover per blob to a Bastion
 
-Status: specified on 2026-11-22, not built ([bastion.md](../spec/bastion.md#the-handover-per-blob) R-BAS-070 to R-BAS-079;
+Status: specified on 2026-11-22; the wire and the main installation's side for plain copies built on 2026-11-23
+([bastion.md](../spec/bastion.md#the-handover-per-blob) R-BAS-070 to R-BAS-079;
 [storage.md](../spec/storage.md) R-STOR-095, R-STOR-096;
 [ADR-250](../decisions.md#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward)).
-Nothing of it runs: no forward is answered with a handover, `blob.Store.CopyDataKey` exists (encryption's package 2) but nothing calls it,
-and a Bastion makes no request to the main installation's object store. The wire is built (interface version 6,
-[handover.go](../../internal/bastion/iface/handover.go)): the value's checks, a data key type that renders `[REDACTED]` in every form, and
-the redaction of `Quader-Bastion-Handover` in logs, spans and support bundles; the Bastion's client refuses a handover answer, since it offers
-none yet. Every gap below is dormant until the design is built and an administrator switches the handover on for a
-Bastion registration; the sections describe that design.
+The wire (interface version 6, [handover.go](../../internal/bastion/iface/handover.go)) holds the value's checks, a data key type that
+renders `[REDACTED]` in every form, and the redaction of `Quader-Bastion-Handover` in logs, spans and support bundles. The main installation
+answers a recognized forward that offered with a link of a **plain** copy while the registration's switch is on and every condition of
+R-STOR-095 holds ([downloadlinks/handover.go](../../internal/downloadlinks/handover.go)); it hands out no data key: an encrypted copy is never
+named, and `blob.Store.CopyDataKey` still has no caller (package 4). No Bastion offers yet (package 3), and its client refuses a handover
+answer, so no link leaves today. The gaps of a data key (H-1340, H-1341) stay dormant until package 4; the others are dormant until a
+Bastion offers and an administrator switches the handover on for its registration.
 
 The perspective of this page is what changes in the trust between the main installation, a Bastion in the DMZ and the object store when a
 Bastion reads a blob from the store by a link the main installation hands it: what leaves the main installation and how long it is worth
@@ -49,6 +51,14 @@ check, the three gates on decided passing states and the download limits (R-STOR
 caller's request that may read the blob. A taken-over Bastion sees the credentials of the callers passing through it
 ([H-386](../spec/bastion.md#h-386--whoever-holds-the-bastion-token-can-test-credentials-name-client-addresses-and-add-download-events) and
 R-BAS-051) and can ask with them: it obtains handovers for what those callers may read, which is what it can read through them today.
+
+**Who can ask at all:** only a request with a valid Bastion token of a registration whose switch is on. The recognition stage reads the offer
+into the request's recognition after the token check and takes `Quader-Bastion-Handover` out of every request, recognized or not; the serve
+point decides on the recognition alone, and notes the value for the marking stage, which writes it only for a recognized forward that
+offered and strips every `Quader-Bastion-*` header a handler set. An ordinary caller that sends the offer gets the file and no marking
+header, and a forward whose answer the marking stage would not mark is streamed rather than answered with an empty `200`
+([recognize.go](../../internal/bastionmain/recognize.go), [absence.go](../../internal/bastionmain/absence.go),
+[mark.go](../../internal/api/bastionmark/mark.go)).
 
 ## Integrity: the Bastion's check
 

@@ -314,6 +314,7 @@ type BackupRun struct {
 type Bastion struct {
 	PrincipalID pgtype.UUID
 	Description string
+	Handover    bool
 }
 
 type BastionContact struct {

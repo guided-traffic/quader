@@ -39,7 +39,7 @@ func (q *Queries) BastionCountActiveTokens(ctx context.Context, id string) (int6
 }
 
 const bastionGet = `-- name: BastionGet :many
-SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description
+SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover
   FROM principal p JOIN bastion b ON b.principal_id = p.id
  WHERE p.kind = 'bastion' AND p.name = $1::text
 `
@@ -51,9 +51,11 @@ type BastionGetRow struct {
 	CreatedAt   pgtype.Timestamptz
 	Revision    int64
 	Description string
+	Handover    bool
 }
 
-// A registration by name. revision is the ETag (R-API-012); enabled is the principal's status.
+// A registration by name. revision is the ETag (R-API-012); enabled is the principal's status; handover is the switch of the
+// handover per blob (R-BAS-071, 00110).
 func (q *Queries) BastionGet(ctx context.Context, name string) ([]BastionGetRow, error) {
 	rows, err := q.db.Query(ctx, bastionGet, name)
 	if err != nil {
@@ -70,10 +72,68 @@ func (q *Queries) BastionGet(ctx context.Context, name string) ([]BastionGetRow,
 			&i.CreatedAt,
 			&i.Revision,
 			&i.Description,
+			&i.Handover,
 		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const bastionHandoverOff = `-- name: BastionHandoverOff :many
+UPDATE bastion SET handover = false
+ WHERE principal_id = $1::text::uuid AND handover
+RETURNING principal_id::text AS id
+`
+
+// The journal's replay of bastion.handover.disabled (R-BAS-071, R-HA-054): the member off for the registration of the entry. No row
+// when it is off already or the registration is not in the database.
+func (q *Queries) BastionHandoverOff(ctx context.Context, id string) ([]string, error) {
+	rows, err := q.db.Query(ctx, bastionHandoverOff, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const bastionHandoverOn = `-- name: BastionHandoverOn :many
+SELECT b.principal_id::text AS id
+  FROM bastion b JOIN principal p ON p.id = b.principal_id
+ WHERE p.kind = 'bastion' AND b.handover
+ ORDER BY b.principal_id
+`
+
+// The registrations whose handover is on, for every replica's snapshot (R-BAS-071): at most bastions.max_registrations rows,
+// read at the start, on a change of the area bastion_handover and once a minute; never by a forward.
+func (q *Queries) BastionHandoverOn(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, bastionHandoverOn)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -107,7 +167,7 @@ func (q *Queries) BastionInsert(ctx context.Context, arg BastionInsertParams) er
 }
 
 const bastionList = `-- name: BastionList :many
-SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description
+SELECT p.id::text AS id, p.name, (p.status = 'active')::boolean AS enabled, p.created_at, p.revision, b.description, b.handover
   FROM principal p JOIN bastion b ON b.principal_id = p.id
  WHERE p.kind = 'bastion' AND p.name > $1::text
  ORDER BY p.name
@@ -126,6 +186,7 @@ type BastionListRow struct {
 	CreatedAt   pgtype.Timestamptz
 	Revision    int64
 	Description string
+	Handover    bool
 }
 
 // Keyset order by name; there are at most bastions.max_registrations of them, so the caller may pass an empty
@@ -146,6 +207,7 @@ func (q *Queries) BastionList(ctx context.Context, arg BastionListParams) ([]Bas
 			&i.CreatedAt,
 			&i.Revision,
 			&i.Description,
+			&i.Handover,
 		); err != nil {
 			return nil, err
 		}
@@ -322,6 +384,38 @@ type BastionSetEnabledParams struct {
 // (R-AUTH-020). No row when the status already is the one asked for.
 func (q *Queries) BastionSetEnabled(ctx context.Context, arg BastionSetEnabledParams) ([]string, error) {
 	rows, err := q.db.Query(ctx, bastionSetEnabled, arg.Enabled, arg.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const bastionSetHandover = `-- name: BastionSetHandover :many
+UPDATE bastion SET handover = $1::boolean
+ WHERE principal_id = $2::text::uuid AND handover <> $1::boolean
+RETURNING principal_id::text AS id
+`
+
+type BastionSetHandoverParams struct {
+	Handover bool
+	ID       string
+}
+
+// Switch the handover per blob of a registration on or off (R-BAS-071). No row when the member already is the one asked for.
+func (q *Queries) BastionSetHandover(ctx context.Context, arg BastionSetHandoverParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, bastionSetHandover, arg.Handover, arg.ID)
 	if err != nil {
 		return nil, err
 	}

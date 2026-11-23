@@ -19,7 +19,7 @@ import (
 // BastionHandshake implements GET /api/v1/bastion/handshake (R-BAS-010): the interface version, the identity
 // and token expiry of the Bastion, the response base URL derived for this request, whether anonymous requests read
 // anything, the download switch, the feed position, the format table and the repository the Bastion's host is bound
-// to (R-BAS-057). It records the last contact of the replica.
+// to (R-BAS-057), and the registration's switch of the handover per blob (R-BAS-071). It records the last contact of the replica.
 func (s *Server) BastionHandshake(w http.ResponseWriter, r *http.Request, _ gen.BastionHandshakeParams) {
 	ctx := r.Context()
 	b := s.o.Bastion
@@ -73,6 +73,9 @@ func (s *Server) BastionHandshake(w http.ResponseWriter, r *http.Request, _ gen.
 		ServerTime:       time.Now().UTC(),
 		Formats:          table,
 		BoundRepository:  bound,
+		// The registration's switch of the handover per blob, from the replica's snapshot (R-BAS-071): the Bastion offers to take
+		// one only while it is true (R-BAS-072).
+		Handover: b.Handover != nil && b.Handover.On(rec.BastionID),
 	})
 }
 

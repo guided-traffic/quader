@@ -4765,7 +4765,8 @@ export interface paths {
          * Register a Bastion
          * @description Creates a principal of the kind `bastion` (reference `bastion:<name>`, R-AUTHZ-002) that holds no grant, role, ownership
          *     or membership. At most `bastions.max_registrations` exist (`409` beyond). Records `bastion.created`. Its token is issued
-         *     by `POST /api/v1/bastions/{name}/tokens`.
+         *     by `POST /api/v1/bastions/{name}/tokens`. A new registration has the handover per blob off; the request does not take
+         *     `handover` (`400`), which only `PATCH` switches (R-BAS-071).
          */
         post: operations["createBastion"];
         delete?: never;
@@ -4802,11 +4803,13 @@ export interface paths {
         head?: never;
         /**
          * Change or disable a Bastion registration
-         * @description Changes the description and enables or disables the registration (JSON merge patch). A disabled registration refuses its
-         *     tokens like a disabled service account's (R-AUTH-020) within the revocation bound of every replica; the tokens stay
-         *     unrevoked, so enabling the registration again restores them. A new description records `bastion.updated`; a disable
-         *     records `bastion.disabled`, journaled, so a restore to a point before it disables the registration again (R-HA-054,
-         *     Q-BAS-145); an enable records `bastion.enabled`.
+         * @description Changes the description, enables or disables the registration and switches its handover per blob (JSON merge patch). A
+         *     disabled registration refuses its tokens like a disabled service account's (R-AUTH-020) within the revocation bound of
+         *     every replica; the tokens stay unrevoked, so enabling the registration again restores them. A new description records
+         *     `bastion.updated`; a disable records `bastion.disabled`, journaled, so a restore to a point before it disables the
+         *     registration again (R-HA-054, Q-BAS-145); an enable records `bastion.enabled`. `handover` true records
+         *     `bastion.handover.enabled`, false `bastion.handover.disabled`, journaled, so a restore keeps the handover off; every
+         *     replica follows the switch within 2 seconds, and the Bastion learns it at its next handshake (R-BAS-071).
          */
         patch: operations["updateBastion"];
         trace?: never;
@@ -12091,6 +12094,7 @@ export interface components {
          *       "name": "partners",
          *       "description": "The partner network",
          *       "enabled": true,
+         *       "handover": false,
          *       "createdAt": "2026-11-02T10:00:00Z",
          *       "tokens": [
          *         {
@@ -12120,6 +12124,12 @@ export interface components {
             name: string;
             description: string;
             enabled: boolean;
+            /**
+             * @description The switch of the handover per blob (R-BAS-071): while it is on, the main installation may answer a forward of this
+             *     Bastion for a large file with a short-lived signed link of the object store, so the Bastion reads the bytes from the
+             *     store itself (R-STOR-095). Off for a new registration; changed by `PATCH` only.
+             */
+            handover: boolean;
             /** Format: date-time */
             createdAt: string;
             /** @description The unrevoked tokens, newest first. Neither the value nor its hash is part of it. */
@@ -12166,6 +12176,8 @@ export interface components {
         BastionPatch: {
             description?: string;
             enabled?: boolean;
+            /** @description Switches the handover per blob on or off (R-BAS-071); `null` is refused. */
+            handover?: boolean;
         };
         /**
          * @example {

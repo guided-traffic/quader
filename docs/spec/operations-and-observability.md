@@ -1020,6 +1020,7 @@ Rules for every metric family, including families that format pages and other sp
 | `figure` | The figures of [usage-and-limits.md](usage-and-limits.md) R-LIM-004 by their API names, and `ceiling`; fixed in code |
   | `key_id` | Key IDs of the stored-secret key ring and key IDs that sealed values still reference ([architecture.md](architecture.md) R-ARCH-021); bounded by configuration |
   | `ecosystem`, `severity` | From M4b ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-024): the OSV ecosystem names of the formats with the vulnerability adapter (`npm`, `NuGet`), `""` for a source without ecosystems; the severity levels `critical`, `high`, `medium`, `low`, `none`, `unknown` |
+  | `bastion` | Bastion registration names ([bastion.md](bastion.md) R-BAS-004), bounded by `bastions.max_registrations`; the one principal name a label may carry ([storage.md](storage.md) Q-STOR-430) |
   | `version`, `revision`, `goversion`, `role` | Only on `quader_build_info` |
 
   Target labels that the scraper attaches (`role`, `pool`, `namespace`, `pod`, Q-OPS-13) are
@@ -1531,7 +1532,7 @@ consumers can rely on every key being present.
 | `limits_outcome` | `admitted`, `limited:<figure>`, `would_limit:<figure>` (mode `audit`), `paced`, `blocked`; else `null` |
 | `bytes_cached` | Cached bytes of the request (R-LIM-006), `0` when none; `null` off the protocol paths |
 | `bytes_uncached` | Uncached bytes charged to the request as a leader (R-LIM-006), `0` when none; `null` off the protocol paths |
-| `delivery` | `link` for a download answered with a signed link of the object store, status `307` ([storage.md](storage.md) R-STOR-073; built: `RequestInfo.SetDelivery`, [requestlog.go](../../internal/observability/requestlog.go)); `handover` for a download a Bastion's forward was answered with a handover, status `200` without a body ([storage.md](storage.md) R-STOR-095; specified, not built); `null` for every other request |
+| `delivery` | `link` for a download answered with a signed link of the object store, status `307` ([storage.md](storage.md) R-STOR-073; built: `RequestInfo.SetDelivery`, [requestlog.go](../../internal/observability/requestlog.go)); `handover` for a download a Bastion's forward was answered with a handover, status `200` without a body ([storage.md](storage.md) R-STOR-095; built for plain copies: `downloadlinks.Links.HandoverOptions`); `null` for every other request |
 
 </details>
 
@@ -2041,6 +2042,7 @@ asynchronous. "Hook" marks events that webhooks may select (R-OPS-037).
 | `serviceaccount.created`, `serviceaccount.updated`, `serviceaccount.disabled`, `serviceaccount.deleted` | T | — | Service-account change; names as [identity-and-authentication.md](identity-and-authentication.md) registers them | `changes` |
 | `technicaltoken.created`, `technicaltoken.updated`, `technicaltoken.deleted` | T | — | A technical token of a service account ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-045); its secrets are `token.*` | `changes` |
 | `bastion.created`, `bastion.updated`, `bastion.disabled`, `bastion.enabled`, `bastion.deleted` | T | — | A Bastion registration was created, given a new description, disabled, enabled or deleted ([bastion.md](bastion.md) R-BAS-004, Q-BAS-61, Q-BAS-145); `resource_type` is `bastion`; `bastion.disabled` and `bastion.deleted` carry the journal flag; a Bastion token's `token.created` and `token.revoked` carry the same resource type | `source`, `description`, `fields`, `tokensRevoked` |
+| `bastion.handover.enabled`, `bastion.handover.disabled` | T | `bastion.handover.disabled` | A Bastion registration's handover per blob was switched on or off ([bastion.md](bastion.md) R-BAS-071); `resource_type` is `bastion`; the switch-off's entry `{principalId, name}` switches the member off again after a restore ([ha-and-helm.md](ha-and-helm.md) R-HA-054) | none |
 | `admin_role.granted`, `admin_role.revoked` | T | — | System administration role or delegated system permission changed | `permission` |
 | `authz.policy.created`, `authz.policy.updated`, `authz.policy.deleted` | T | — | Permission policy change (INV-9); names as [authorization.md](authorization.md) registers them | `changes` |
 | `endpoint.exposure.created`, `endpoint.exposure.updated`, `endpoint.exposure.deleted` | T | — | Exposure rule change of an endpoint ([endpoints.md](endpoints.md) R-EP-016); updates and deletions carry the journal flag (R-EP-020) | `changes`, `endpoint`, `before`, `after` |
@@ -2072,7 +2074,7 @@ asynchronous. "Hook" marks events that webhooks may select (R-OPS-037).
 | `artifact.deployed` | T | yes | A file was stored in a local repository by any upload path | `path`, `sha256`, `size`, `overwritten` |
 | `artifact.deleted` | T | yes | A file was removed | `path`, `sha256`, `size` |
 | `artifact.delete_stopped` | A | — | The job of a large delete stopped because a batch was refused or the subject that asked was withdrawn ([storage.md](storage.md) R-STOR-018, Q-STOR-193); the subject as actor, the reason code as `reason`, outcome `denied`; what earlier batches removed stays removed | `path` (the root the request named), `reason`, `job`, `removed` |
-| `artifact.downloaded` | A | — | Only with `audit.record_downloads` | `path`, `sha256`; `delivery` (`link`) and `linkExpiresAt` for a download handed to a signed link of the object store ([storage.md](storage.md) R-STOR-073) |
+| `artifact.downloaded` | A | — | Only with `audit.record_downloads` | `path`, `sha256`; `delivery` (`link`) and `linkExpiresAt` for a download handed to a signed link of the object store ([storage.md](storage.md) R-STOR-073); `delivery` (`handover`), `linkExpiresAt`, `bastion`, `connection` and `encrypted` for one handed over to a Bastion (R-STOR-095) |
 | `system.config_applied` | T | — | Configuration document applied (R-OPS-030, R-OPS-031) | `document`, `digest`, `summary`, `source` |
 | `system.config_exported` | A | — | R-OPS-032 | `kinds` |
 | `system.maintenance_mode_changed` | T | — | R-OPS-024 | `from`, `to`, `message` |

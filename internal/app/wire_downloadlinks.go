@@ -4,25 +4,29 @@ import (
 	"context"
 
 	v1 "github.com/guided-traffic/quader/internal/api/v1"
+	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/downloadlinks"
 )
 
 // AreaDownloadLinks is the delivery by signed links of the object store (storage.md R-STOR-014, R-STOR-070 to R-STOR-074): the
 // store of the installation's switch, the replica's snapshot of it, each connection's state with its link check, and the signing
 // of a link. Every role with a client listener builds it: the format host asks it at the serve point, and the management API answers
-// the settings with this replica's view of its connections. The worker serves no download and builds none.
+// the settings with this replica's view of its connections. The worker serves no download and builds none. It holds the handover
+// per blob to a Bastion as well (R-STOR-095), with the replica's snapshot of the registrations whose handover is on (R-BAS-071).
 const AreaDownloadLinks Area = "download_links"
 
-// downloadLinksArea is the result of the step: the store the operations of the management API write through, and the replica's
-// side the serve point asks.
+// downloadLinksArea is the result of the step: the store the operations of the management API write through, the replica's
+// side the serve point asks, and the snapshot of the Bastions' switches the serve point and the handshake read.
 type downloadLinksArea struct {
-	store *downloadlinks.Store
-	links *downloadlinks.Links
+	store     *downloadlinks.Store
+	links     *downloadlinks.Links
+	handovers *bastionmain.HandoverSwitches
 }
 
-// wireDownloadLinks builds the store over the main pool, the replica's side over the blob store's connections, and the snapshot
+// wireDownloadLinks builds the store over the main pool, the replica's side over the blob store's connections, the snapshot
 // component, which reads the row at start and on every change of the area download_link_settings and runs each connection's link
-// check at start and when the switch is turned on.
+// check at start and when the switch is turned on, and the snapshot of the Bastions' switches, which follows the area
+// bastion_handover and runs the link checks again when a registration's handover is turned on (R-STOR-096).
 func (a *App) wireDownloadLinks(ctx context.Context, in infra, bl blobArea) (downloadLinksArea, error) {
 	if err := requireInputs(AreaDownloadLinks, given("database", in.db), given("blob store", bl.store)); err != nil {
 		return downloadLinksArea{}, err
@@ -33,14 +37,20 @@ func (a *App) wireDownloadLinks(ctx context.Context, in infra, bl blobArea) (dow
 	if a.tele != nil {
 		m = downloadlinks.NewMetrics(a.tele.metrics)
 	}
+	handovers := bastionmain.NewHandoverSwitches(in.db, in.caches, a.log.With("component", "bastion"))
 	links := downloadlinks.New(downloadlinks.Options{
 		Connections: bl.store.Connections(), Copies: bl.store.Copies, Rule: downloadlinks.NewHostRule(a.cfg.Server),
-		Replica: a.id.Instance, Metrics: m, Log: log,
+		Handovers: handovers, Replica: a.id.Instance, Metrics: m, Log: log,
 	})
-	if err := a.startComponent(ctx, downloadlinks.NewSnapshot(links, store, in.caches)); err != nil {
+	snap := downloadlinks.NewSnapshot(links, store, in.caches)
+	if err := a.startComponent(ctx, snap); err != nil {
 		return downloadLinksArea{}, err
 	}
-	return downloadLinksArea{store: store, links: links}, nil
+	handovers.OnSwitchedOn(snap.CheckLinks)
+	if err := a.startComponent(ctx, handovers); err != nil {
+		return downloadLinksArea{}, err
+	}
+	return downloadLinksArea{store: store, links: links, handovers: handovers}, nil
 }
 
 // downloadLinksAPI is the services of the operations of the signed links (download_links_api.go): the store and the replica's

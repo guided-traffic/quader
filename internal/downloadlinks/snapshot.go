@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/cache"
@@ -18,12 +19,13 @@ import (
 // again.
 const Reload = time.Minute
 
-// Snapshot is the component that keeps a [Links]' settings current and runs the link checks: at its start and when the switch is
-// turned on (R-STOR-074).
+// Snapshot is the component that keeps a [Links]' settings current and runs the link checks: at its start, when the switch is
+// turned on (R-STOR-074) and when a Bastion registration's handover is turned on (R-STOR-096, [Snapshot.CheckLinks]).
 type Snapshot struct {
 	links *Links
 	store *Store
 
+	check  atomic.Bool // a link check run is asked for (CheckLinks)
 	kick   chan struct{}
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
@@ -41,6 +43,13 @@ func NewSnapshot(links *Links, store *Store, r *cache.Registry) *Snapshot {
 		})
 	}
 	return x
+}
+
+// CheckLinks asks the loop to run the link checks on every connection now, as when the switch of links is turned on: a Bastion
+// registration's handover was turned on, which needs the link check's first part (R-STOR-096).
+func (x *Snapshot) CheckLinks() {
+	x.check.Store(true)
+	x.Reload()
 }
 
 // Reload asks the loop to read the row now.
@@ -72,7 +81,8 @@ func (x *Snapshot) Start(ctx context.Context) error {
 			case <-t.C:
 			case <-x.kick:
 			}
-			if x.load(lctx) || x.links.unanswered() {
+			asked := x.check.Swap(false)
+			if x.load(lctx) || asked || x.links.unanswered() {
 				x.links.RunLinkChecks(lctx)
 			}
 		}

@@ -91,6 +91,8 @@ func noFeedEntry() map[string]string {
 		audit.EventSigningRetired: "withdraws a signing identity; the keys document and the npm documents it changes reach a Bastion as their new revisions (R-SIG-048)",
 		// The signed links of the object store (storage.md R-STOR-014): a Bastion's request never gets one (R-STOR-070 step 2).
 		audit.EventStorageDownloadLinksChanged: "switches how the main installation hands its clients a download, never what it serves: a Bastion's forward is never answered with a link (R-STOR-070 step 2)",
+		// The handover per blob (R-BAS-071): bastion.handover.enabled is not journaled, so the feed never reads it (Q-BAS-285).
+		audit.EventBastionHandoverDisabled: "switches how the main installation answers a Bastion's forward, never what the caller may read: the main installation decides each forward from its snapshot, and a Bastion learns the member at its next handshake (R-BAS-071)",
 	}
 }
 

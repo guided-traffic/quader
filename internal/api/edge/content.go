@@ -32,6 +32,15 @@ type ServeOptions struct {
 	Link func() (blob.Link, bool)
 	// Linked runs after the redirect to a link was written (R-STOR-073): the caller counts the download and charges its size there.
 	Linked func(blob.Link)
+	// Handover is the last steps of the handover per blob to a Bastion (storage.md R-STOR-095 steps 5, 7, 9 and 11): it runs after
+	// Admit, only for a GET that would carry the whole file with 200, and reports true when it noted a handover's value for the
+	// marking (bastionmain.NoteHandover); ServeItem then writes the file's own 200 with its headers, the format's included, and
+	// Content-Length: 0, without opening the object. False streams the file as without it. The caller sets it only for a
+	// recognized forward that offered a handover and where the earlier conditions held. Nil streams.
+	Handover func() bool
+	// HandedOver runs after the 200 of a handover was written: the caller counts the download and charges its size there, as for a
+	// link (R-STOR-095).
+	HandedOver func()
 }
 
 // CacheControl is `private, no-cache` for an authenticated request and `no-cache`
@@ -110,6 +119,16 @@ func ServeItem(w http.ResponseWriter, r *http.Request, it items.Item, open func(
 		if err := o.Admit(); err != nil { // before the status line, like a failure of open
 			return err
 		}
+	}
+	if o.Handover != nil && status == http.StatusOK && o.Handover() {
+		// The file's 200 without its bytes (R-BAS-073, Q-BAS-231): every header the file's own 200 carries, Content-Length: 0;
+		// the marking adds the class handover and the value. The object is not opened.
+		hd.Set("Content-Length", "0")
+		content().WriteHeader(http.StatusOK)
+		if o.HandedOver != nil {
+			o.HandedOver()
+		}
+		return nil
 	}
 	if o.Link != nil && status == http.StatusOK {
 		if link, ok := o.Link(); ok {

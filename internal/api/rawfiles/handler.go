@@ -28,6 +28,7 @@ import (
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/downloadlinks"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/files"
 	"github.com/guided-traffic/quader/internal/httpserver"
@@ -49,6 +50,9 @@ type Options struct {
 	// API supplies the paging of a directory index; its page sizes are replaced by
 	// the 1,000 and 10,000 of R-STOR-017.
 	API config.API
+	// Links is the replica's side of the signed links of the object store, which decides a handover per blob to a Bastion
+	// (storage.md R-STOR-095); nil hands nothing over. A file of /files/ never gets a client's link (R-STOR-070).
+	Links *downloadlinks.Links
 }
 
 // Handler serves /files/.
@@ -57,13 +61,14 @@ type Handler struct {
 	decider authz.Decider
 	buf     int
 	api     config.API
+	dlinks  *downloadlinks.Links
 }
 
 // New creates the handler.
 func New(o Options) *Handler {
 	api := o.API
 	api.PageSizeDefault, api.PageSizeMax = 1000, 10_000
-	return &Handler{svc: o.Service, decider: o.Decider, buf: max(int(o.Download.BufferSize), 4096), api: api}
+	return &Handler{svc: o.Service, decider: o.Decider, buf: max(int(o.Download.BufferSize), 4096), api: api, dlinks: o.Links}
 }
 
 // Register mounts the routes of the files family on the router: the four methods
@@ -282,13 +287,22 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request, caller files.Calle
 	// a Bastion the status line of an answer Served counts carries Quader-Bastion-Counted (R-BAS-059, Q-BAS-186).
 	charge := limits.FromContext(r.Context())
 	charge.Served(res.Item.RepoID)
+	stats := r.URL.Query().Get("stats") != "false"
+	o := edge.ServeOptions{
+		Admit:  func() error { return charge.Admit(r.Context()) },
+		Buffer: h.buf,
+		Served: func() { h.svc.Served(r.Context(), caller, res, stats) },
+	}
+	if h.dlinks != nil && r.Method == http.MethodGet {
+		// A Bastion's forward that offered to take a handover per blob may get one (storage.md R-STOR-095): every file of /files/
+		// is an artifact (step 2), and Stat decided the gates (step 3).
+		o.Handover, o.HandedOver = h.dlinks.HandoverOptions(r.Context(), downloadlinks.HandoverDownload{
+			Item: res.Item, Artifact: true, Decided: res.Decided,
+			Record: func(e items.ServedEvent) { h.svc.HandedOver(r.Context(), caller, e, stats) },
+		})
+	}
 	if err := edge.ServeItem(bastionmain.CountingWriter(r, w), r, res.Item,
-		func(rng *items.Range) (io.ReadCloser, error) { return h.svc.Open(r.Context(), res.Item, rng) },
-		edge.ServeOptions{
-			Admit:  func() error { return charge.Admit(r.Context()) },
-			Buffer: h.buf,
-			Served: func() { h.svc.Served(r.Context(), caller, res, r.URL.Query().Get("stats") != "false") },
-		}); err != nil {
+		func(rng *items.Range) (io.ReadCloser, error) { return h.svc.Open(r.Context(), res.Item, rng) }, o); err != nil {
 		// The object cannot be opened: 503 content_unavailable when it is missing, 500 when it failed verification,
 		// 503 object_store_unavailable during an outage (R-STOR-012, R-STOR-036). /files/ never contacts an upstream, so
 		// an item of a remote repository answers the same here; its own route fills it again (R-STOR-027).

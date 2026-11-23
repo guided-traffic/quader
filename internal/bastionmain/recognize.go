@@ -86,6 +86,10 @@ const maxReplicaName = 253
 //     forwarded request Quader-Bastion-Authorization is taken out of the request the stages behind receive
 //     (nothing downstream needs it, and a remote repository must never be able to forward it). The forwarded
 //     headers are re-derived with the Bastions' egress addresses trusted ([RecognizeOptions.Forwarded]).
+//   - The offer of a handover per blob, Quader-Bastion-Handover, is read into the Recognition of a forwarded GET
+//     ([Recognition.Offer], R-BAS-072) and taken out of every request, recognized or not, before the stages behind: the
+//     serve point decides a handover on the Recognition alone, so an ordinary caller that sends the header gets the file
+//     (R-BAS-073, storage.md R-STOR-095 step 1).
 //
 // The 401, 404, 429 and 400 answers are written by o.Problem as the management API's problem details, also on
 // a package route. Interface requests are counted by registration, operation and outcome.
@@ -97,7 +101,9 @@ func Recognize(o RecognizeOptions) func(http.Handler) http.Handler {
 			route := !forward && interfacePath(segs)
 			raw := bastionCredential(r, route)
 			if !strings.HasPrefix(raw, iface.TokenPrefix) {
-				next.ServeHTTP(w, r)
+				// An ordinary request that sends the offer gets what any request gets: the header reaches no stage behind this
+				// one (R-BAS-008, R-BAS-073).
+				next.ServeHTTP(w, withoutOffer(r))
 				return
 			}
 			op := operationOf(r, route)
@@ -133,6 +139,10 @@ func Recognize(o RecognizeOptions) func(http.Handler) http.Handler {
 				Interface: iface.InterfaceVersion, Replica: clip(r.Header.Get(iface.HeaderReplica), maxReplicaName), Route: route,
 				Probe: !route && r.Header.Get(iface.HeaderProbe) == iface.ProbeValue && r.Method != http.MethodGet && r.Method != http.MethodHead,
 			}
+			if !route && r.Method == http.MethodGet {
+				// The offer of a handover per blob (R-BAS-072): a value the interface refuses, or more than one, is no offer.
+				rec.Offer, rec.Offered, _ = iface.HandoverOfferFrom(r.Header)
+			}
 			// The stages behind this one get a request of their own: the credential that proved the
 			// Bastion is not in it, and the forwarded headers count with the Bastion's egress trusted.
 			ctx := WithRecognition(r.Context(), rec)
@@ -145,6 +155,7 @@ func Recognize(o RecognizeOptions) func(http.Handler) http.Handler {
 			} else {
 				r2.Header.Del(iface.HeaderAuthorization)
 			}
+			r2.Header.Del(iface.HeaderHandover) // the offer is the Recognition's; no handler reads the header
 			if !route || op == "" {
 				next.ServeHTTP(w, r2)
 				return
@@ -244,6 +255,17 @@ func storeError(err error) error {
 		return err
 	}
 	return errs.E(errs.Unavailable, errs.CodeDatabaseUnavailable, "The Bastion token cannot be checked right now.", errs.WithCause(err))
+}
+
+// withoutOffer returns r, or a copy of it without Quader-Bastion-Handover when it carries one: on a request that is no
+// recognized forward the offer is an ordinary header that no handler may read (R-BAS-073). A request without it pays nothing.
+func withoutOffer(r *http.Request) *http.Request {
+	if len(r.Header.Values(iface.HeaderHandover)) == 0 {
+		return r
+	}
+	r2 := r.Clone(r.Context())
+	r2.Header.Del(iface.HeaderHandover)
+	return r2
 }
 
 // bastionCredential returns the raw credential of the request that may be a Bastion token: the Bearer value

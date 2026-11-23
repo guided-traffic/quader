@@ -168,10 +168,18 @@ type ServedEvent struct {
 	// (`?stats=false`).
 	CountStats bool
 	// Delivery is "link" for a download handed to a signed link of the object store, counted when the link was issued (storage.md
-	// R-STOR-073, Q-STOR-292); empty for a download whose bytes Quader wrote. LinkExpiresAt is the link's expiry.
+	// R-STOR-073, Q-STOR-292), "handover" for one handed over to a Bastion (R-STOR-095); empty for a download whose bytes Quader
+	// wrote. LinkExpiresAt is the link's expiry.
 	Delivery      string
 	LinkExpiresAt time.Time
+	// Bastion, Connection and Encrypted name a handover's registration, the connection its link names and whether the copy is
+	// encrypted (R-STOR-095); they are written only with the delivery handover.
+	Bastion, Connection string
+	Encrypted           bool
 }
+
+// DeliveryHandover is the delivery of a download handed over to a Bastion (storage.md R-STOR-095).
+const DeliveryHandover = "handover"
 
 // Served records a download that was answered with its content: 200 with the
 // whole file, or 206 for a range that starts at byte 0 (R-STOR-015). HEAD, 304
@@ -187,6 +195,9 @@ func (s *Store) Served(ctx context.Context, e ServedEvent) {
 		details := map[string]any{"path": e.Item.Path, "sha256": e.Item.Digest.Hex()}
 		if e.Delivery != "" {
 			details["delivery"], details["linkExpiresAt"] = e.Delivery, e.LinkExpiresAt.UTC().Format(time.RFC3339)
+		}
+		if e.Delivery == DeliveryHandover {
+			details["bastion"], details["connection"], details["encrypted"] = e.Bastion, e.Connection, e.Encrypted
 		}
 		raw, _ := json.Marshal(details)
 		s.rec.Record(ctx, audit.Event{

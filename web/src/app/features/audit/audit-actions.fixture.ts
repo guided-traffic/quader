@@ -51,6 +51,8 @@ export const REGISTERED_AUDIT_ACTIONS: readonly string[] = [
   'bastion.disabled',
   'bastion.downloads.dropped',
   'bastion.enabled',
+  'bastion.handover.disabled',
+  'bastion.handover.enabled',
   'bastion.updated',
   'ci.exchange.denied',
   'ci.exchange.repeated',

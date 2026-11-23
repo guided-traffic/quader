@@ -274,7 +274,15 @@ func (a *App) bastionServices(rt *endpointRuntime) v1.BastionServices {
 		// The handshake's format table (R-BAS-057) and the binding of the Bastion's host as the match of /v2/ reads it.
 		Formats:         v1.BastionFormatTable(formats.List()),
 		BoundRepository: a.bastionBoundRepository(),
+		Handover:        a.bastionHandovers(),
 	}
+}
+
+// bastionHandovers is the replica's snapshot of the registrations whose handover per blob is on (R-BAS-071), which the handshake
+// reports. On a replica without the area of the signed links, which hands nothing over either, it is a nil snapshot, whose On says
+// false for every registration.
+func (a *App) bastionHandovers() *bastionmain.HandoverSwitches {
+	return part[downloadLinksArea](a.parts).handovers
 }
 
 // bastionCheckStage is the authentication stage the check runs a caller's credential through (R-BAS-011, Q-BAS-66): the
