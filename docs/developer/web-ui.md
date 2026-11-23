@@ -1591,7 +1591,7 @@ a holder of `settings:write`.
 5. Add the navigation entry to `NAV_AREAS` in [core/navigation.ts](../../web/src/app/core/navigation.ts) with its icon and the capability that shows it, and `data: wrapper(<title>)` to the `loadChildren` route in `app.routes.ts` so that the breadcrumbs link the list from the detail screens.
 6. Mark every text with `i18n`/`$localize`, run `make web-i18n`, add the German `<target>`s it names as missing to `messages.de.xlf`, extend the
    glossary, and run `make web-i18n-check` until it passes.
-7. Write specs next to the code with the requirement ID in the test name, add the route to `SCREENS` in `app.routes.spec.ts` (heading, title and the axe check come with it),
+7. Write specs next to the code with the requirement ID in the test name, never a decision's number (a `Q-…` or an `ADR-…`), add the route to `SCREENS` in `app.routes.spec.ts` (heading, title and the axe check come with it),
    run `npm run lint` and `npm test`.
 8. Every new route is a row of the route table of R-UI-003 in the same change: [app.route-table.spec.ts](../../web/src/app/app.route-table.spec.ts)
    loads every lazy area of the router, reads the table from `docs/spec/api-and-ui.md` (the builder's `text` loader) and fails for a route

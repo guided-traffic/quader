@@ -60,8 +60,8 @@ const OWNER: Me = {
 };
 const READER: Me = { ...OWNER, projects: [{ key: 'web', role: 'reader' }] };
 
-describe('The project is the context of the content (Q-UI-129)', () => {
-  it('Q-UI-129 a caller with exactly one project starts in it, with the project sidebar', async () => {
+describe('The project is the context of the content (R-UI-041)', () => {
+  it('R-UI-041 a caller with exactly one project starts in it, with the project sidebar', async () => {
     const { root } = await render('/', OWNER);
     expect(TestBed.inject(Router).url).toBe('/projects/web/repositories');
     expect(root.querySelector('.project-switcher .switcher-name')?.textContent).toContain('Web platform');
@@ -81,7 +81,7 @@ describe('The project is the context of the content (Q-UI-129)', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
-  it('Q-UI-129 a caller with several projects starts on the list of them, and an entry opens the project', async () => {
+  it('R-UI-041 a caller with several projects starts on the list of them, and an entry opens the project', async () => {
     const { fixture, root } = await render('/', undefined, TWO);
     expect(TestBed.inject(Router).url).toBe('/projects');
     expect(root.querySelector('main h1')?.textContent?.trim()).toBe('Projects');
@@ -96,7 +96,7 @@ describe('The project is the context of the content (Q-UI-129)', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
-  it('Q-UI-129 a caller without a project is told how to get one', async () => {
+  it('a caller without a project is told how to get one', async () => {
     const { root } = await render('/', { roles: [], capabilities: [], principals: ['user:alice'], projects: [] }, (api) => {
       api.projects = [];
     });
@@ -104,19 +104,19 @@ describe('The project is the context of the content (Q-UI-129)', () => {
     expect(root.querySelector('main')?.textContent).toContain('You are not a member of a project yet');
   });
 
-  it('Q-UI-129 R-UI-041 the top bar has no project filter any more', async () => {
+  it('R-UI-041 the top bar has no project filter any more', async () => {
     const { root } = await render('/', undefined, TWO);
     expect(root.querySelector('button.project-button')).toBeNull();
     expect(root.querySelector('header')?.textContent).not.toContain('All projects');
   });
 
-  it('Q-UI-129 a reader sees the project without the screens that need the Owner role or a capability', async () => {
+  it('R-UI-041 a reader sees the project without the screens that need the Owner role or a capability', async () => {
     const { root } = await render('/projects/web/packages', READER);
     // A plain user gets the content alone; members and settings are the About section of the list (Q-UI-317).
     expect(navLabels(root)).toEqual(['Repositories', 'Packages', 'Vulnerabilities']);
   });
 
-  it('Q-UI-129 the switcher is a disclosure: it lists the recent projects and the matches, narrows by typing and closes with Escape', async () => {
+  it('R-UI-002 the switcher is a disclosure: it lists the recent projects and the matches, narrows by typing and closes with Escape', async () => {
     const { fixture, root } = await render('/projects/web/packages', undefined, TWO);
     // Visiting a project remembers it.
     TestBed.inject(Router).navigateByUrl('/projects/data/packages');
@@ -154,7 +154,7 @@ describe('The project is the context of the content (Q-UI-129)', () => {
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
   });
 
-  it('Q-UI-129 choosing a project in the switcher opens it', async () => {
+  it('R-UI-002 choosing a project in the switcher opens it', async () => {
     const { fixture, root } = await render('/projects/web/members', undefined, TWO);
     root.querySelector<HTMLButtonElement>('.switcher-button')!.click();
     await settleApp(fixture);
@@ -165,20 +165,20 @@ describe('The project is the context of the content (Q-UI-129)', () => {
     expect(root.querySelector('.switcher-name')?.textContent).toContain('Data');
   });
 
-  it('Q-UI-129 R-UI-096 the recent projects are kept per signed-in principal in the search\'s store', async () => {
+  it('R-UI-096 the recent projects are kept per signed-in principal in the search\'s store', async () => {
     await render('/projects/web/packages', undefined, TWO);
     const stored = JSON.parse(new BrowserStorage().get('local', 'quader.frequent.00000000-0000-0000-0000-000000000001') ?? '{}');
     expect(stored.projects.map((v: { id: string }) => v.id)).toEqual(['web']);
   });
 
-  it('Q-UI-129 the breadcrumbs of a project screen read projects, the project, the section', async () => {
+  it('the breadcrumbs of a project screen read projects, the project, the section', async () => {
     const { root } = await render('/projects/web/repositories', undefined, TWO);
     const crumbs = [...root.querySelectorAll('nav.breadcrumbs li')].map((li) => li.textContent?.trim());
     expect(crumbs).toEqual(['Projects', 'web', 'Repositories']);
     expect([...root.querySelectorAll('nav.breadcrumbs a')].map((a) => a.getAttribute('href'))).toEqual(['/projects', '/projects/web']);
   });
 
-  it('R-UI-020 Q-UI-426 inside a project the repository list has the columns repository, format and class, no client address and no project', async () => {
+  it('R-UI-020 inside a project the repository list has the columns repository, format and class, no client address and no project', async () => {
     const { root } = await render('/projects/web/repositories', undefined, TWO);
     const heads = [...root.querySelectorAll('main thead th')].map((th) => th.textContent?.replace(/help_outline/g, '').trim());
     expect(heads).toEqual(['Repository', 'Format', 'Class', 'Actions']);
@@ -191,7 +191,7 @@ describe('The project is the context of the content (Q-UI-129)', () => {
     expect(heads).not.toContain('Last activity');
   });
 
-  it('R-UI-102 Q-UI-426 Q-UI-425 a row of a project\'s list offers Set up client for its repository, and its key stands beside its visibility icon', async () => {
+  it('R-UI-102 a row of a project\'s list offers Set up client for its repository, and its key stands beside its visibility icon', async () => {
     const { root } = await render('/projects/web/repositories', undefined, TWO);
     const row = root.querySelector('main tbody tr')!;
     const name = row.querySelector('th[scope="row"] .icon-name')!;
@@ -204,8 +204,8 @@ describe('The project is the context of the content (Q-UI-129)', () => {
   });
 });
 
-describe('The administration area (R-UI-041, Q-UI-129)', () => {
-  it('Q-UI-129 an Owner without any capability manages the project inside it and has no admin area', async () => {
+describe('The administration area (R-UI-041)', () => {
+  it('R-UI-041 an Owner without any capability manages the project inside it and has no admin area', async () => {
     const { root } = await render('/projects/web/policies', OWNER);
     expect(root.querySelector('header a.admin-button')).toBeNull();
     expect(root.querySelector('#nav-admin')).toBeNull();
@@ -217,7 +217,7 @@ describe('The administration area (R-UI-041, Q-UI-129)', () => {
     expect(root.querySelector('#nav-admin')).toBeNull();
   });
 
-  it('Q-UI-1040 the admin area has no Projects and no Repositories: they are entries of Your work, for the administrator and the auditor too', async () => {
+  it('R-UI-041 the admin area has no Projects and no Repositories: they are entries of Your work, for the administrator and the auditor too', async () => {
     const admin = await render('/admin/dashboard');
     expect(navLabels(admin.root)).not.toContain('Projects');
     expect(navLabels(admin.root)).not.toContain('Repositories');
@@ -237,13 +237,13 @@ describe('The administration area (R-UI-041, Q-UI-129)', () => {
     }
   });
 
-  it('R-UI-041 Q-UI-1043 a caller with projects:read and no entry of the admin area has no Admin button', async () => {
+  it('R-UI-041 a caller with projects:read and no entry of the admin area has no Admin button', async () => {
     const { root } = await render('/projects', { roles: [], capabilities: ['projects:read'], principals: [], projects: [] });
     expect(root.querySelector('header a.admin-button')).toBeNull();
     expect(root.querySelector('#nav-admin')).toBeNull();
   });
 
-  it('Q-UI-129 Q-UI-330 Q-UI-1042 the lists across projects name the project in a column and link to it', async () => {
+  it('R-UI-041 the lists across projects name the project in a column and link to it', async () => {
     const repositories = await render('/repositories');
     expect([...repositories.root.querySelectorAll('th[scope="col"]')].map((h) => h.textContent?.trim())).toContain('Project');
     expect(repositories.root.querySelector('tbody td.project-cell a[href="/projects/web"]')).toBeTruthy();

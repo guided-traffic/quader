@@ -49,7 +49,7 @@ test('R-UI-046 a component that follows the rules passes them', async () => {
   assert.ok(!got.some((m) => m.includes('R-UI-046')), `messages: ${got.join(' | ')}`);
 });
 
-test('Q-UI-335 a number field without a number width fails the check, one with its width passes', () => {
+test('a number field without a number width fails the check, one with its width passes', () => {
   const bad = [
     '<quader-text-field label="Priority" name="priority" type="number" [(value)]="p" />',
     '<quader-text-field width="full" label="Days" type="number" />',
@@ -109,7 +109,7 @@ test('R-UI-158 a link to the removed route /admin/security fails the check, the 
   for (const t of good) assert.deepEqual(linksToRemovedRoutes(t), [], t);
 });
 
-test('Q-UI-1040 a link to the removed routes /admin/projects and /admin/repositories fails the check, /projects and /repositories pass', () => {
+test('a link to the removed routes /admin/projects and /admin/repositories fails the check, /projects and /repositories pass', () => {
   const bad = [
     '<a routerLink="/admin/repositories">View repositories</a>',
     '<a routerLink="/admin/repositories/new">New repository</a>',
@@ -129,7 +129,7 @@ test('Q-UI-1040 a link to the removed routes /admin/projects and /admin/reposito
   for (const t of good) assert.deepEqual(linksToRemovedRoutes(t), [], t);
 });
 
-test('Q-UI-560 an icon directly in a table cell fails the check, an icon inside its badge or its .icon-name passes', () => {
+test('R-UI-145 an icon directly in a table cell fails the check, an icon inside its badge or its .icon-name passes', () => {
   const bad = [
     '<td>\n  @if (ok) {\n    <span class="material-icons inline ok" aria-hidden="true">check_circle</span>\n  }\n  {{ word }}\n</td>',
     '<td><span class="material-icons bad" aria-hidden="true">error</span><span>lost</span></td>',

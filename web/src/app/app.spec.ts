@@ -81,7 +81,7 @@ describe('App shell', () => {
     expect(root.querySelector('main h1')?.textContent).toContain('Page not found');
   });
 
-  it('R-UI-002 Q-UI-127 the admin area has a sidebar of its own behind the Admin button, which only its users see', async () => {
+  it('R-UI-002 the admin area has a sidebar of its own behind the Admin button, which only its users see', async () => {
     const admin = await render();
     const sidebar = () => admin.root.querySelector('aside.sidebar')?.textContent ?? '';
     expect(sidebar()).toContain('Web platform');
@@ -180,7 +180,7 @@ describe('App shell', () => {
     expect(TestBed.inject(SessionStore).state()).toBe('anonymous');
   });
 
-  it('R-UI-004 Q-UI-125 the sign-in screen stands alone, whether opened directly or reached from a guarded route', async () => {
+  it('R-UI-004 the sign-in screen stands alone, whether opened directly or reached from a guarded route', async () => {
     const shellOf = (root: HTMLElement) => ({
       toolbar: root.querySelector('header.topbar') !== null,
       sidebar: root.querySelector('aside.sidebar') !== null,
@@ -198,7 +198,7 @@ describe('App shell', () => {
     expect(await seriousViolations(direct.root)).toEqual([]);
   });
 
-  it('Q-UI-125 the signed-out screen stands alone, and the shell returns on the next screen', async () => {
+  it('R-UI-004 the signed-out screen stands alone, and the shell returns on the next screen', async () => {
     const { root, fixture } = await render('/logged-out');
     expect(root.querySelector('header.topbar')).toBeNull();
     expect(root.querySelector('main h1')?.textContent).toContain('Signed out');
@@ -254,7 +254,7 @@ describe('App shell', () => {
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
   });
 
-  it('R-UI-002 Q-UI-127 the pinned sidebar can be collapsed and opened again from the top bar, and the choice is stored', async () => {
+  it('R-UI-002 the pinned sidebar can be collapsed and opened again from the top bar, and the choice is stored', async () => {
     const { fixture, root } = await render('/admin/users', undefined, true);
     const open = () => root.querySelector<HTMLButtonElement>('header button[aria-label="Open navigation"]');
     expect(root.querySelector('aside.sidebar')).toBeTruthy();

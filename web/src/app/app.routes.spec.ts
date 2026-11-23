@@ -119,20 +119,20 @@ describe('route map', () => {
     return route;
   };
 
-  it('R-UI-003 Q-UI-510 the files route of a repository captures the project, the repository key and the slash-containing path', async () => {
+  it('R-UI-003 the files route of a repository captures the project, the repository key and the slash-containing path', async () => {
     await open('/projects/web/repositories/npm-local/files/@team-a/ui/-/ui-1.0.0.tgz');
     expect(leaf().params['project']).toBe('web');
     expect(leaf().params['key']).toBe('npm-local');
     expect(leaf().params['filePath']).toBe('@team-a/ui/-/ui-1.0.0.tgz');
   });
 
-  it('R-UI-052 Q-UI-216 /projects/{project} answers with the repositories of the project, so that its breadcrumb step links to a route that exists', async () => {
+  it('R-UI-052 /projects/{project} answers with the repositories of the project, so that its breadcrumb step links to a route that exists', async () => {
     const root = await open('/projects/web');
     expect(TestBed.inject(Router).url).toBe('/projects/web/repositories');
     expect(root.querySelector('main h1')?.textContent?.trim()).toBe('Repositories');
   });
 
-  it('Q-UI-129 ADR-203 R-UI-126 R-UI-158 Q-UI-1040 the old routes are gone: /packages, /browse, the /browse of a project, /vulnerabilities, /setup, /admin/repositories…, /admin/projects… and /admin/security are not found', async () => {
+  it('R-UI-003 R-UI-126 R-UI-158 the old routes are gone: /packages, /browse, the /browse of a project, /vulnerabilities, /setup, /admin/repositories…, /admin/projects… and /admin/security are not found', async () => {
     for (const url of ['/packages', '/browse', '/projects/web/browse', '/projects/web/browse/generic-local/releases', '/vulnerabilities', '/admin/repositories', '/admin/repositories/new', '/admin/repositories/new/npm', '/admin/repositories/web/npm-local', '/admin/projects', '/admin/projects/web', '/setup', '/admin/security', '/admin/security/findings/0193a000-0000-7000-8000-000000000001']) {
       const root = await open(url);
       expect(root.querySelector('main h1')?.textContent?.trim(), url).toBe('Page not found');
@@ -188,7 +188,7 @@ describe('route map', () => {
     }
   });
 
-  it('R-UI-158 Q-UI-622 /security is Page not found for a caller without content:metadata-read, a security administrator included', async () => {
+  it('R-UI-158 /security is Page not found for a caller without content:metadata-read, a security administrator included', async () => {
     for (const capabilities of [[], ['vulnerabilities:triage', 'settings:read', 'audit:read']]) {
       const root = await open('/security', capabilities);
       expect(root.querySelector('main h1')?.textContent?.trim(), capabilities.join()).toBe('Page not found');
