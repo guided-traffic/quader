@@ -287,12 +287,12 @@ starts from it and from his word how the work goes on, not from the order of the
   left").
 - **The layout checks' fixtures in three browsers** (section 8, "The layout checks' fixtures in Firefox and
   WebKit were taken back"): reverted today, to come back with markings that hold on the runner.
-- **The repair of the evidence record's publish** (section 8, "The first publish of the evidence record was
-  refused"): one commit of a builder; until then the README's badge is invalid and no record is
-  published.
-- **Three single sets of the nightly workflow, each dispatched alone in a pipeline window with no code
-  push beside it:** `upgrade-release`, the vulnerability performance set, `drain-roles` (section 8, "The
-  drain of the roles missed its latency criterion", and the entry of the one run itself); the two
+- **The repair of the evidence record's publish**: built by 22:45 and landed as the commit "the coverage badge and the record … are published again" (Q-ARCH-1040); the
+  next release's log shows whether the branch `coverage` is made (section 8, "The first publish of the
+  evidence record was refused", with the lines to read).
+- **Two single sets of the nightly workflow, each dispatched alone in a pipeline window with no code
+  push beside it:** `upgrade-release` and the vulnerability performance set (`drain-roles` ran alone at
+  22:24 and closed its entry); the two
   changed nightly sets `npm-ha` and `nuget-ha` have not run since their change either.
 - **What W4 did not do** (its builder's list of 17:46, word for word in the run record): a unit test of a
   real Sentinel failover while a start waits for Valkey's first answer (F-249; needs a fake Sentinel in
@@ -718,9 +718,13 @@ records the recorder that tells such a stall apart).
   `signature.download_refused` twice, once as specified and not built beside its built row; the README's naming
   tables held no event and no metric of the signatures before the gate's two were added; the location notes of
   the German translation file are stale.
-- **Partly closed; open: what only a run shows of (2): the evidence job's summary with the lines `carried:`
-  and the commit each report was made for (the run of the push of 17:06 ended that job green; its summary is
-  not read yet).** Closed: (1), by d9e79a585 (2026-11-23): the Makefile reads `INTEGRATION_ALL`, the list of
+- **Partly closed; open: whether the gating jobs without the module cache stopped downloading the module
+  graph after d9e79a585 (read from the first run after it).** Closed on 2026-11-23, 22:50, by the reading of the
+  builder of the evidence record's publish: (2)'s summary, the job `coverage evidence` of run 45212749706,
+  logged 31 `carried:` lines, each with run, commit, distance and date (for example `carried:
+  e2e-bastion-report-bastion from run 45202783240 (commit 7ed0f9d33, 7 commits before this one, …)`), then
+  `carried reports: 31` and `tests: 30491 results read, 1060 requirements with passing evidence, 9 with a
+  failing test, 4 held as not built`. Closed before: (1), by d9e79a585 (2026-11-23): the Makefile reads `INTEGRATION_ALL`, the list of
   the integration packages, the first time a recipe expands it, and the checkout's image tag the same way;
   held by `TestMakeListsTheIntegrationPackagesOnlyWhenARecipeNeedsThem` (unit, `internal/tools/ciworkflows`,
   about 3 s), which holds that `make -n cyclo` runs no `go list` and no `git` and that
@@ -759,19 +763,6 @@ records the recorder that tells such a stall apart).
   a system mapping are chosen from the search" (no match for `web-leads`; alone the file passed 41 of 41),
   and `TestR_HA_011_UploadsDuringARolloutRestart` of the area `files` (the committing upload got `EOF`
   during the rolling restart). To do (W4, W8): what each waits for.
-- **The drain of the roles missed its latency criterion in the scheduled nightly of 2026-11-23 (HA and
-  Performance 45158700734, job 137640102202; read on 2026-11-23 at 17:01).** Nothing failed in function:
-  ten evictions in 3 min 18 s, 72,786 pings all 200, 5,723 transfers without a wrong checksum, 473 `npm
-  ci` and 73 publishes without a failure, every job resumed. Red is R-HA-059 alone: the p99 of the npm
-  requests from the first eviction until two minutes after the last replacement was 1.306 s against a
-  warm-up of 534 ms (2.4 times, the bound is twice), and of the documents 579 ms against 230 ms (2.5
-  times). The run stood beside sixteen other legs of the kind cluster, seven of which sat in the stalled
-  build of the NuGet clients' image at that time (their only failed step; the entry of that stall is
-  closed by the profiles' package), and the run was cancelled at 12:42 by somebody else. Not looked
-  into: whether the ratio is the product's (a drained packages pod's last requests arrived up to 1.9 s
-  after its readiness flip) or the neighbours'. To do: the set `drain-roles` dispatched alone in a
-  pipeline window with no push beside it, with the two other single sets that wait for one; a ratio
-  that holds alone closes this as the neighbours' load, one that does not is a finding of the product.
 - **`TestR_REPO_054_SlowDownWithoutAHintBacksOffExponentially` (area `mirror`) missed its lower bound once
   (2026-11-23, at the gates of the contracts' builder):** its third wait measured 1.9986 s against a floor
   of 2 s; the rerun passed. A wait compared with a floor to the millisecond. Not looked into. To do: the
@@ -795,7 +786,16 @@ records the recorder that tells such a stall apart).
   pages, the README's badge address, whether a path under `.github/` that is no workflow is accepted); a
   refusal that is not a non-fast-forward is not retried and is reported in the remote's words; the
   publish's test gets a remote that refuses a tree with a workflow file, as GitHub did. Then the next
-  release's log must say `published to coverage:` and the branch must exist.
+  release's log must say `published to coverage:` and the branch must exist. **Repaired by the commit "the coverage badge and the record … are published again"
+  (2026-11-23, 22:50, Q-ARCH-1040):** a commit on `coverage` holds `docs/coverage/{implemented.txt,checklist.md,README.md}`
+  and `badges/coverage.json` (moved out of `.github/`, the README's address with it) and nothing else, its only
+  parent the branch's head; links to files the branch does not hold point at the record's commit (`-links-at`);
+  a refusal is retried only when the branch moved and is otherwise reported in the remote's words; held by
+  `TestPublishCoverageRecordRetriesARaceAndNothingElse` (unit, about 10 s) against a remote whose hook refuses a
+  workflow file, as GitHub did. Closes when the next release's step logs `published to coverage:` with no
+  `::warning::`, `git ls-tree -r --name-only origin/coverage` lists the four files, and the badge shows a number;
+  the first publish may carry a record of a run before that commit whose `../spec/` links lead nowhere, which a
+  later publish replaces (`git show origin/coverage:docs/coverage/checklist.md | grep -c '](\.\./'` prints 0).
 - **The layout checks' fixtures in Firefox and WebKit were taken back the day they landed (2026-11-23;
   Q-UI-1008, commit 5d5d29e11 of the screens' rest, reverted at 18:19).** Two fixtures of the check
   `label-apart` were marked as expected to fail in Firefox; they fail in the development machine's Firefox
@@ -896,20 +896,6 @@ records the recorder that tells such a stall apart).
   helpers) and fail on a loaded machine; they passed alone each time (seen by three builders on 2026-11-21 at host loads
   of 60 to 120, left). A comment of the UI development profile still says the role `all` calls its own image scanner.
 - The coverage badge and the evidence record stand still until the first stable release (Q-ARCH-457).
-- **Partly closed; open: the first files themselves, which the next kind leg that records evidence writes
-  (`db-pools.csv`, and the column `anon_kib` of `db-connections.csv`).** Closed: the primary's connections by
-  application, by d9e79a585 (2026-11-23, F-169): the evidence recorder samples `pg_stat_activity` of the
-  primary of `quader-db` every 5 s by `application_name` and state into `db-connections.csv` (`db_sampler` of
-  `deploy/dev/e2e-evidence.sh`, described in `docs/developer/e2e.md`), and every connection names its replica
-  and pool in `application_name` (`internal/meta/postgres/connect.go`). No test holds the sampler; its first
-  file comes from the next kind leg that records evidence. Closed too: the recorder, by 1fb97546d
-  (2026-11-23): it reads each replica's `quader_db_pool_max_connections` once per pod and the anonymous memory
-  of the primary's backends per client and state from `/proc` (PostgreSQL tells a backend's memory only to
-  that backend or into its log); held by `TestEvidenceRecordsEachPoolsSizeAndTheMemoryOfTheConnections`
-  (`internal/tools/ciworkflows`, about 2 s, stand-ins). As it stood:
-  The nightly's legs record the pods' memory but not the primary's connections by application, the memory of a
-  connection or each pool's size, so a growth of the database's memory between two runs cannot be assigned
-  (2026-11-20).
 - The clients' cases for the download limits (five formats, end to end) wait a fixed three seconds for a new rule
   to reach every replica; a replica that takes longer counts the first document against the instance and the
   archive is admitted where the case expects a 429 (read on 2026-11-21, not seen).
@@ -965,7 +951,10 @@ records the recorder that tells such a stall apart).
   only naming test is the exposure rule's journey, and for R-NPM-018 and R-NPM-021, whose tests hold
   the refusals; and the record has no row of R-ANS or R-SIG at all: given to W6b at 15:49 as the
   general question of a test that holds a refusal. W6b is built and answers it (run record, 16:10); the
-  entry closes when its first published record shows the rows gone.
+  entry closes when its first published record shows the rows gone. Read on 2026-11-23, 22:50: the artifact `coverage-evidence`
+  of run 45212749706 (commit a0563bf86) holds none of R-NPM-018, R-NPM-020, R-NPM-021, R-NPM-037 and R-UI-039,
+  and 46 rows of R-ANS and 70 of R-SIG; it closes when `git show origin/coverage:docs/coverage/implemented.txt |
+  grep -cE '^R-(NPM-0(18|20|21|37)|UI-039)$'` prints 0.
 - **Partly closed; open: a render state of it, looked at: the walk's state `none` of `malwareSettings`
   (`web/e2e/renders/screens.ts`) takes the database's version away but keeps the scanners' answer of the
   render seed, which holds a ready updater (`web/e2e/renders/scanners.ts`), so the page's sentence for a
@@ -996,6 +985,41 @@ records the recorder that tells such a stall apart).
   not reworded.
 
 ### Closed
+
+- **Closed on 2026-11-23, 22:55, as the neighbours' load: the drain of the roles missed its latency criterion in
+  the scheduled nightly of 2026-11-23.** The set `drain-roles` dispatched alone in the pipeline window with no
+  push beside it (HA and Performance 45269356844, job 138027358993, green) held R-HA-059 by far: the p99 of
+  every npm request 251 ms against a warm-up of 226 ms (1.1 times, the bound is twice), of the documents
+  109 ms against 82 ms (1.3 times), of the tarballs 309 ms against 282 ms; 72,506 pings all 200, 87,394 npm
+  requests without a failure. As it stood (HA and Performance 45158700734, job 137640102202; read at 17:01): Nothing failed in function:
+  ten evictions in 3 min 18 s, 72,786 pings all 200, 5,723 transfers without a wrong checksum, 473 `npm
+  ci` and 73 publishes without a failure, every job resumed. Red is R-HA-059 alone: the p99 of the npm
+  requests from the first eviction until two minutes after the last replacement was 1.306 s against a
+  warm-up of 534 ms (2.4 times, the bound is twice), and of the documents 579 ms against 230 ms (2.5
+  times). The run stood beside sixteen other legs of the kind cluster, seven of which sat in the stalled
+  build of the NuGet clients' image at that time (their only failed step; the entry of that stall is
+  closed by the profiles' package), and the run was cancelled at 12:42 by somebody else. Not looked
+  into: whether the ratio is the product's (a drained packages pod's last requests arrived up to 1.9 s
+  after its readiness flip) or the neighbours'. To do: the set `drain-roles` dispatched alone in a
+  pipeline window with no push beside it, with the two other single sets that wait for one; a ratio
+  that holds alone closes this as the neighbours' load, one that does not is a finding of the product.
+
+- **Closed on 2026-11-23, 22:50: the first files of the database's evidence** (`db-pools.csv`, and the column
+  `anon_kib` of `db-connections.csv`): the artifact `e2e-artifacts-push` of run 45229955480 (commit 0c158f5a4)
+  holds `evidence/db-connections.csv` (2,390 rows, its header ends in `anon_kib`) and `evidence/db-pools.csv`
+  (37 rows); only that leg's artifact was read. Closed before: the primary's connections by
+  application, by d9e79a585 (2026-11-23, F-169): the evidence recorder samples `pg_stat_activity` of the
+  primary of `quader-db` every 5 s by `application_name` and state into `db-connections.csv` (`db_sampler` of
+  `deploy/dev/e2e-evidence.sh`, described in `docs/developer/e2e.md`), and every connection names its replica
+  and pool in `application_name` (`internal/meta/postgres/connect.go`). No test holds the sampler; its first
+  file comes from the next kind leg that records evidence. Closed too: the recorder, by 1fb97546d
+  (2026-11-23): it reads each replica's `quader_db_pool_max_connections` once per pod and the anonymous memory
+  of the primary's backends per client and state from `/proc` (PostgreSQL tells a backend's memory only to
+  that backend or into its log); held by `TestEvidenceRecordsEachPoolsSizeAndTheMemoryOfTheConnections`
+  (`internal/tools/ciworkflows`, about 2 s, stand-ins). As it stood:
+  The nightly's legs record the pods' memory but not the primary's connections by application, the memory of a
+  connection or each pool's size, so a growth of the database's memory between two runs cannot be assigned
+  (2026-11-20).
 
 Findings of this section that are closed, each with what closed it and what holds it; nothing is deleted from
 the plan.
