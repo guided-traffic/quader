@@ -21040,7 +21040,7 @@ components:
           format: int64
     StorageConnectionKey:
       type: object
-      required: [id, generation, state, createdAt, copies]
+      required: [id, generation, state, createdAt, destroyedAt, copies]
       properties:
         id:
           type: string
@@ -21048,10 +21048,14 @@ components:
           type: integer
         state:
           type: string
-          description: "`active` (wraps new copies) or `retired` (opens what it wrapped)."
+          description: "`active` (wraps new copies), `retired` (opens what it wrapped) or `destroyed` (destroyed on command once its connection was retired; nothing opens it again, storage.md R-STOR-097)."
         createdAt:
           type: string
           format: date-time
+        destroyedAt:
+          type: [string, "null"]
+          format: date-time
+          description: The time of a destroyed key's destruction; `null` for any other.
         copies:
           type: [integer, "null"]
           format: int64

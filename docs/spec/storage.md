@@ -4410,9 +4410,10 @@ connection is the stored format with its record (R-STOR-080), the sessions seal 
 open the record and authenticate every segment and mark as R-STOR-082 says, and the objects get keyed names (R-STOR-086). The connections'
 API shows `keyedNames` and `storageKeys[]` (R-STOR-088, built ahead with stage 1's package F). The jobs of R-STOR-087, the backup's pool with
 its keys and the restore (backup-and-restore.md R-BAK-031, R-BAK-032) are built (package 4, on 2026-11-23): every stage-1 job reads and
-writes an encrypted connection in the stored format, the backup and the restore handle its copies. The offline tool (R-STOR-089) and the
-chart's acceptance (R-STOR-088) are not built; the chart still refuses `encrypted: true` until package 6. The order of the packages is on the
-developer page
+writes an encrypted connection in the stored format, the backup and the restore handle its copies. The offline tool (R-STOR-089), the chart's
+acceptance of `encrypted` with its refusal of `keyed_names` alone ([ha-and-helm.md](ha-and-helm.md) R-HA-072), the alert
+`QuaderStorageUnknownKey`, the API's `state: destroyed` with `destroyedAt` and R-STOR-090's sentences are built (package 6, on 2026-11-23).
+The order of the packages is on the developer page
 [stored-content-encryption.md](../developer/stored-content-encryption.md). The destruction of a retired connection's keys, so that what stays
 at a provider becomes unreadable (R-STOR-097 to R-STOR-103,
 [Q-STOR-309](#q-stor-309--a-storage-key-is-a-row-with-an-identifier-of-its-own-drawn-at-the-connections-first-start-never-deleted) (b),
@@ -5143,6 +5144,11 @@ Acceptance criteria (integration, `test/integration/blob`, PostgreSQL of the sta
 ### R-STOR-088 · What an encrypted connection changes elsewhere
 Priority: **P1** · Covers: STOR-022
 
+**Built**: the links and the handover with package 3 and the links' packages; the API with stage 1's package F and, for its acceptance case
+and `state: destroyed` with `destroyedAt`, package 6 ([storage_connections_api.go](../../internal/api/v1/storage_connections_api.go); the
+statement reads `destroyed_at` once package 7's migration adds the column, until then every `destroyedAt` is `null`); the alert with
+package 6 ([_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl), on 2026-11-23).
+
 - **Signed links** (R-STOR-014, R-STOR-070 step 12, R-STOR-074): an encrypted connection never serves a link, because a link would hand out
   ciphertext; a plain connection that holds a sound copy of the same blob still may
   ([Q-STOR-291](#q-stor-291--any-connection-that-is-not-encrypted-and-holds-a-sound-copy-serves-the-link)), which is why an installation that
@@ -5173,7 +5179,9 @@ Priority: **P1** · Covers: STOR-022
   and the quotas count plaintext sizes, as before (Q-STOR-155).
 - **The alert** `QuaderStorageUnknownKey` fires, critical, when `quader_storage_encrypted_read_failures_total{reason="unknown_key"}` grows on a
   connection for 10 minutes: storage keys are missing and copies are unreadable until the export is imported (rendered and tested by
-  [ha-and-helm.md](ha-and-helm.md) R-HA-045 like stage 1's alerts). It does not count `reason="destroyed_key"`: the import would refuse
+  [ha-and-helm.md](ha-and-helm.md) R-HA-045 like stage 1's alerts). The expression is
+  `sum by (connection) (increase(quader_storage_encrypted_read_failures_total{reason="unknown_key"}[5m])) > 0` for 10 minutes: one such read
+  does not fire it, reads that keep meeting unknown keys do. It does not count `reason="destroyed_key"`: the import would refuse
   a destroyed key, so its advice would be wrong, and such a copy is marked and repaired instead (R-STOR-101).
 - **Throughput.** The targets of the transfer path are measured again with an encrypted connection once it is built; a measurement, not a test.
 
@@ -5188,14 +5196,19 @@ Acceptance criteria:
 ### R-STOR-089 · The offline tool
 Priority: **P1** · Covers: STOR-022
 
+**Built** on 2026-11-23 (package 6): [internal/blob/offline](../../internal/blob/offline/doc.go), the command in
+[admin_storage_offline.go](../../cmd/quader/admin_storage_offline.go), with the decisions
+[Q-STOR-450](#q-stor-450--a-pull-writes-a-directory-of-its-own-the-objects-their-record-files-and-the-connections-facts) to
+[Q-STOR-452](#q-stor-452--the-offline-tool-opens-every-key-of-the-export-before-it-reads-and-looks-a-record-up-across-the-export).
+
 A command of Quader's binary that reads and verifies blobs of an encrypted connection without a database, without Valkey and without a
 running Quader (the owner's decision 1 (a); [Q-STOR-316](#q-stor-316--the-offline-tool-is-a-command-of-the-binary-and-reads-a-bucket-or-a-directory-with-record-files)).
 
 ```text
 quader admin storage offline list   --keys <export.json> --key-ring <dir> (--connection-file <element.yaml> | --dir <path>) [--json]
-quader admin storage offline get    --keys <export.json> --key-ring <dir> (--connection-file … | --dir …) <sha256 or object name> --out <file>
+quader admin storage offline get    --keys <export.json> --key-ring <dir> (--connection-file … | --dir …) <sha256 or object name> --out <file> [--json]
 quader admin storage offline verify --keys <export.json> --key-ring <dir> (--connection-file … | --dir …) [--concurrency N] [--json]
-quader admin storage offline pull   --connection-file <element.yaml> --to <dir>
+quader admin storage offline pull   --connection-file <element.yaml> --to <dir> [--json]
 ```
 
 - **What it needs**: the files of the key ring that sealed the export (`--key-ring`, a directory of `*.key` files, the format of R-ARCH-021;
@@ -5214,6 +5227,19 @@ quader admin storage offline pull   --connection-file <element.yaml> --to <dir>
   copy of a bucket by a tool that does not keep metadata loses the records, and with them every data key
   ([H-1303](../security/stored-content-format.md#h-1303--a-copy-of-an-encrypted-bucket-that-drops-the-metadata-cannot-be-read)).
 - It writes nothing to a bucket. It reads a plain connection too (no record: printed as `plain`, verified against the digest its name carries).
+- **As built.** The element file is read through the configuration's own loader as the only element of `storage.connections`, so its rules
+  and defaults are the binary's (a `keyed_names` without `encrypted`, an unknown key, an endpoint without TLS refused with their sentences);
+  the shared client settings and the outbound settings take their defaults, and nothing of an installation's configuration or environment is
+  read. Every sealed key of the export is opened before anything is read, and a ring that lacks a root key the export is sealed with is
+  refused naming each such root key (Q-STOR-452). A line of `list` and `verify` is `<status> <object name> stored=<n> size=<n> sha256=<hex>
+  key=<id>[: <detail>]`, then a line of totals; `--json` streams one document `{source, objects[], totals, error}`. The statuses are `ok`,
+  `plain`, `name_mismatch` (also a name that is not of the layout), `unknown_key`, `destroyed_key`, the reasons of R-STOR-077 (`format`,
+  `record`, `size`, `commitment`, and for `verify` and `get` `segment`, `final`, `digest`) and `unread` (the store did not answer). `list` and
+  `verify` exit `0` when every object is sound, `5` with a finding, `75` when objects stayed unread and none was refused; `get` exits `5`
+  for a refusal and for a blob in none of the places it looks (its keyed name, its plain name, the pool), and `2` for an `--out` that exists
+  (Q-STOR-451); an export, ring or element that does not fit exits `2`. `pull` writes into an empty or new directory only (Q-STOR-450).
+- **Destroyed keys.** An export's entry of R-STOR-103 (`state: destroyed`, `destroyedAt`, no `sealed`) is read; a record that names it is
+  `destroyed_key`. Nothing else of the destruction is the tool's.
 
 Acceptance criteria (unit, `cmd/quader`, an in-memory store and a temporary directory, kilobytes):
 
@@ -5251,7 +5277,8 @@ Priority: **P1** · Covers: STOR-022
   8. export the storage keys again.
 - These edits land with the build of the feature (the documentation rule of the repository: a page describes what runs), not before; the
   sentences about leaving a provider land with package 7, which builds the command. The others landed with package 3, which makes
-  `encrypted: true` accepted; the offline tool they name comes with package 6.
+  `encrypted: true` accepted; the offline tool they name, its section in the manual's backup page, the installation page's paragraph on an
+  encrypted connection and the runbook's entry of `QuaderStorageUnknownKey` landed with package 6 (2026-11-23).
 
 Acceptance criteria:
 
@@ -5476,7 +5503,8 @@ Specified, not built (package 7).
   marked `corrupt` and its repair queued, and `quader_storage_encrypted_read_failures_total{reason="destroyed_key"}` counts it.
   `QuaderStorageUnknownKey` does not fire (R-STOR-088). The scrub does the same (R-STOR-087), and the orphan sweep reports such an object as
   foreign and never deletes it (Q-STOR-314).
-- The offline tool's `list` prints `destroyed_key` when the export lists the key as destroyed (R-STOR-089, R-STOR-103).
+- The offline tool's `list` prints `destroyed_key` when the export lists the key as destroyed (R-STOR-089, R-STOR-103); built with package 6, it
+  reads an export entry of R-STOR-103's form.
 
 Acceptance criteria:
 
@@ -5538,7 +5566,8 @@ kilobytes.
 | Writes, retries, reads whole and ranged, marks, `unknown_key`, A6 (R-STOR-080, R-STOR-082) | unit, `internal/blob`, the in-memory store with an encrypted connection and the fault hook | objects up to 192 KiB | 0.5 s |
 | Sessions: sealed data key, tails, counter, finalize by copy and by stream (R-STOR-081) | unit, `internal/uploads`, two in-memory stores | parts of 64 KiB, below 256 KiB | 0.4 s |
 | Keys: drawing, the refusal over a used location, generations, reload, the handover's architecture test (R-STOR-083) | unit, `internal/blob/keys`, `internal/archtest` | — | 0.2 s |
-| Export and import (R-STOR-085), the offline tool (R-STOR-089) | unit, `cmd/quader` | three objects of 1 KiB | 0.3 s |
+| Export and import (R-STOR-085), the offline tool (R-STOR-089) | unit, `cmd/quader`, `internal/blob/offline` (the vector files among them), `internal/blob` (what the store wrote) | three objects of 1 KiB; the vector files; objects up to 131,073 bytes | 0.3 s (the offline tool measured 0.55 s on 2026-11-23) |
+| The offline tool against the stack's bucket filled by a store with an encrypted connection, without the database (R-STOR-089) | integration, `test/integration/blob` | two objects, 1 KiB and 131,073 bytes | 0.8 s (measured) |
 | Configuration and start-check refusals (R-STOR-075); the API's fields (R-STOR-088); the link to the plain copy (R-STOR-088) | unit, `internal/config`, `internal/app`, `internal/api/v1`, `internal/formathost` | — | 0.3 s |
 | The Bastion's encrypted cache (bastion.md R-BAS-061) | unit, `internal/bastion/cache`, a temporary volume | objects of 1 KiB | 0.3 s |
 | Chart: `encrypted` and `keyed_names` accepted, the refusal, the alert's rule ([ha-and-helm.md](ha-and-helm.md) R-HA-072, R-HA-045) | chart render tests | — | 0.5 s |
@@ -10443,6 +10472,56 @@ now, which is what the operator check reports.
 **Choice:** (a). **Applied in the spec:** R-STOR-087; code: `openRecord` of [verify.go](../../internal/blob/verify/verify.go), `recordKeys`
 of [admin_storage.go](../../cmd/quader/admin_storage.go).
 
+### Q-STOR-450 · A pull writes a directory of its own: the objects, their record files and the connection's facts
+
+Status: **Decided by the builder** (package 6) — selected from the options below; the owner reviews it.
+
+Context: R-STOR-089 says that `pull` copies the objects with each record as `<object name>.record.json` and that `list`, `get` and `verify`
+read such a directory with `--dir`. Those need the connection's id (its name key), its prefix and whether it is encrypted with keyed names,
+which the element names and a directory of objects does not.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Each object at `<dir>/<object name>`, its metadata as `<object name>.record.json`, the element's facts in `<dir>/quader-pull.json` (format `quader-offline-pull-v1`); `--to` empty or new, every file created new (0600, directories 0700), an object whose name is not of the layout skipped and counted (chosen) | A pull is one self-describing directory | `--dir` reads it as `--connection-file` reads the bucket; no name of the bucket leads out of the directory; nothing of another pull is mixed in | A pull that stops cannot be resumed: it starts again in a new directory |
+| (b) No facts file: the prefix and the connection taken from the names and the records | Nothing beside the objects | One file less | A plain object and a stripped encrypted one look alike; the name key's connection is a guess |
+| (c) Resume into a directory that holds a pull | Skip what is there | Long pulls survive a stop | A file of another pull, or one changed since, could be taken for the object |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-089; code: [pull.go](../../internal/blob/offline/pull.go), `Dir` of
+[source.go](../../internal/blob/offline/source.go).
+
+### Q-STOR-451 · Get writes a temporary file beside --out and links it only after the digest passed
+
+Status: **Decided by the builder** (package 6) — selected from the options below; the owner reviews it.
+
+Context: R-STOR-089: "a failure writes nothing and exits `5`". The reader of `blobcrypt` hands out only authenticated segments and holds the
+last back until the final segment and the SHA-256 passed, but everything before the last segment has left by then.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `--out` must not exist; the plaintext goes to `.<out>.partial-<random>` beside it (mode 0600), which becomes `--out` by a hard link, which never replaces a file, only after the reader's end; any refusal removes it (chosen) | The file the operator named appears whole or not at all | A script never finds a partial `--out`; no file is overwritten, also one created meanwhile | A process killed before its end leaves the temporary file ([H-1451](../security/stored-content-keys.md#h-1451--a-get-that-is-killed-leaves-the-plaintext-it-had-written-in-a-temporary-file)); a file system without hard links refuses |
+| (b) Write `--out` directly and remove it on a refusal | One file | Simple | A partial file under the operator's name while the read runs, and after a kill |
+| (c) Hold the plaintext in memory | Nothing on disk until it passed | No partial file | A blob of gigabytes |
+| (d) Standard output | A pipe | Composable | Bytes leave before the digest is checked and cannot be called back |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-089; code: `Get` of [read.go](../../internal/blob/offline/read.go).
+
+### Q-STOR-452 · The offline tool opens every key of the export before it reads, and looks a record up across the export
+
+Status: **Decided by the builder** (package 6) — selected from the options below; the owner reviews it.
+
+Context: an export may hold the keys of several connections (R-STOR-085). A connection's objects name its own storage keys; a backup's pool
+names the keys of the connections each object came from (R-BAK-032). Without the copy rows, the name stands in for the database: a keyed
+name is the name key's MAC of the digest (R-STOR-086).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Open every sealed key of the export at the start, refusing a ring that lacks a root key of the export by name; look a record's key up among all of them; check a keyed name under the name key of the connection the record's key names (chosen) | One export reads a connection and a pool alike | A wrong ring is refused before the first object; a pool reads; a connection whose element names another id still checks its names | Every key of the export lies in the machine's memory for the run ([H-1450](../security/stored-content-keys.md#h-1450--the-offline-tool-opens-every-key-of-the-export-on-the-operators-machine)); a ring without an old root key refuses an export whose other rows it could open |
+| (b) Open only the keys of the element's connection, lazily | The fewest keys in memory | Smaller exposure | A pool cannot be read; a wrong ring shows only at the first object; an element without the right id reads nothing |
+| (c) The keys of the record's connection only for a connection's objects, all for a pool | Two rules | Closer to the store's lookup per connection | Two behaviours to explain for one bucket's names |
+
+**Choice:** (a). An export narrowed with `--connection` holds only that connection's keys. **Applied in the spec:** R-STOR-089; code:
+`LoadKeys`, `lookup` and `checkName` of [internal/blob/offline](../../internal/blob/offline/keys.go).
+
 ## What this does not cover
 
 ### H-11 · Object-store principals bypass Quader's authorization and integrity checks
@@ -10454,8 +10533,8 @@ bucket holds, and between two scrub passes altered content can be served this wa
 client-side encryption and no object signature. Live today for every installation; the exposure
 is the set of principals with access to the bucket, which Quader cannot see. Mitigations are
 operational: least-privilege bucket policy, no other principals on the prefix, S3 Object Lock or
-versioning to make replacement detectable and reversible. An encrypted connection (R-STOR-075, specified,
-not built) narrows it for that connection: its readers see ciphertext under keyed names, and a replaced
+versioning to make replacement detectable and reversible. An encrypted connection (R-STOR-075, built) narrows it for
+that connection: its readers see ciphertext under keyed names, and a replaced
 object fails authentication on every read, ranged ones included (R-STOR-082); what stays is on the pages
 [stored-content-format.md](../security/stored-content-format.md) and
 [stored-content-visibility.md](../security/stored-content-visibility.md), and the gap stays whole on every

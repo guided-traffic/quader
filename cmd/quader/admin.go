@@ -20,6 +20,7 @@ commands:
   storage verify [--connection <id>] [--since <time>] [--json]   check that the copies of every stored blob are in their object stores (R-STOR-058)
   storage restore-versions --before <time> [--connection <id>] [--credentials-file <path>] [--dry-run]   make the objects deleted after a point-in-time restore point current again (R-HA-025)
   storage keys export|import <file>|new-generation --connection <id>   keep, bring back or renew the storage keys of the encrypted connections (R-STOR-083, R-STOR-085)
+  storage offline list|get|verify|pull --keys <export> --key-ring <dir> (--connection-file <element> | --dir <path>)   read an encrypted connection's objects without a database (R-STOR-089)
   maintenance pause-deletions --reason <text> | resume-deletions   set or clear the deletion pause (R-HA-025)
   backup check [--json]                        verify the declared platform protection: archive_mode, bucket versioning (R-HA-023)
   npm reinstate <projectKey>/<repoKey> <name>@<version>   put back a version a journal replay withheld (R-NPM-047)
@@ -30,7 +31,7 @@ commands:
   bastion token create <name> [--ttl 8760h]     print a Bastion token once (R-BAS-004)
   bastion token revoke <name> <token-id>        revoke a Bastion token (R-BAS-004)
 
-every command takes --config <file> and --log-level <level>`
+every command but storage offline, which reads no configuration, takes --config <file> and --log-level <level>`
 
 // adminCmd dispatches the bootstrap and recovery commands (R-ARCH-001,
 // R-AUTH-015).

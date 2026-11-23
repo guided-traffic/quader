@@ -442,6 +442,7 @@ config:
         force_path_style: false         # true for SeaweedFS, MinIO and Ceph RGW
         credentials_source: default     # default | webIdentity | static (an entry of secrets.storageConnections with existingSecret)
         role_arn: ""                    # example (webIdentity): arn:aws:iam::123456789012:role/quader-blobs
+        encrypted: false                # true: Quader encrypts the connection's blobs and keeps the keys, so its provider reads ciphertext only; fixed once it holds data; keep the key ring and the export of the storage keys (storage.md R-STOR-075, R-STOR-090)
     upload:
       max_size: 10GiB                   # must fit the spool
   metrics:

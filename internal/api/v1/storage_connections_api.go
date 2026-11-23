@@ -118,6 +118,9 @@ func storageConnectionView(v summary.View) gen.StorageConnection {
 	}
 	for _, k := range v.Keys {
 		gk := gen.StorageConnectionKey{Id: k.ID, Generation: k.Generation, State: k.State, CreatedAt: k.CreatedAt.UTC()}
+		if k.DestroyedAt != nil {
+			gk.DestroyedAt = optionalTime(k.DestroyedAt.UTC())
+		}
 		if v.Figures != nil {
 			n := v.Figures.KeyCopies[k.ID]
 			gk.Copies = &n

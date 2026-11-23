@@ -158,3 +158,61 @@ func TestR_STOR_061_TheConnectionsInTheAPI(t *testing.T) {
 		}
 	})
 }
+
+func TestR_STOR_088_AnEncryptedConnectionInTheAPI(t *testing.T) {
+	val := newValidator(t)
+	created := time.Date(2026, 11, 22, 8, 0, 0, 0, time.UTC)
+	retired := created.Add(48 * time.Hour)
+	destroyed := retired.Add(24 * time.Hour)
+	views := summary.Views([]summary.Row{
+		{
+			ID: "archive", Bucket: "quader-archive", Prefix: "quader", Encrypted: true, KeyedNames: true, Configured: 2, LiveReplicas: 2, Undrained: true,
+			FilledAt: &created, HoldsCopies: true,
+			Keys: []summary.StorageKey{
+				{ID: "sk-archive-1-3f9a0c2e", Generation: 1, State: "retired", CreatedAt: created},
+				{ID: "sk-archive-2-9b1d77e0", Generation: 2, State: "active", CreatedAt: retired},
+			},
+		},
+		{
+			ID: "gone", Bucket: "quader-gone", Prefix: "quader", Encrypted: true, KeyedNames: true, LiveReplicas: 2, RetiredAt: &retired,
+			Keys: []summary.StorageKey{{ID: "sk-gone-1-0a1b2c3d", Generation: 1, State: "destroyed", CreatedAt: created, DestroyedAt: &destroyed}},
+		},
+	}, nil, &summary.Summary{ComputedAt: retired, Connections: []summary.Connection{{ID: "archive", PresentCopies: 3, KeyCopies: map[string]int64{"sk-archive-1-3f9a0c2e": 1, "sk-archive-2-9b1d77e0": 2}}}})
+	s := newSetup(t, func(o *Options) {
+		o.API.Config = apiConfigForTest()
+		o.Storage = StorageServices{Connections: func(context.Context) ([]summary.View, error) { return views, nil }}
+	}, authed)
+	h := val.Handler(t, s.handler)
+
+	w := httpRecorder(h, http.MethodGet, "/api/v1/system/storage-connections")
+	var out gen.StorageConnectionList
+	if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &out) != nil || len(out.Connections) != 2 {
+		t.Fatalf("%d %s", w.Code, w.Body.String())
+	}
+	t.Run("R-STOR-088 an encrypted connection lists keyedNames and its storage keys by identifier, generation, state and copies", func(t *testing.T) {
+		a := out.Connections[0]
+		if a.Id != "archive" || !a.Encrypted || !a.KeyedNames || len(a.StorageKeys) != 2 {
+			t.Fatalf("archive = %+v", a)
+		}
+		k1, k2 := a.StorageKeys[0], a.StorageKeys[1]
+		if k1.Id != "sk-archive-1-3f9a0c2e" || k1.Generation != 1 || k1.State != "retired" || *k1.Copies != 1 || k1.DestroyedAt != nil ||
+			k2.Id != "sk-archive-2-9b1d77e0" || k2.Generation != 2 || k2.State != "active" || *k2.Copies != 2 {
+			t.Errorf("keys = %+v %+v", k1, k2)
+		}
+	})
+	t.Run("R-STOR-088 R-STOR-097 a destroyed key of a retired connection is listed with its state and the time of its destruction", func(t *testing.T) {
+		g := out.Connections[1]
+		if g.State != summary.StateRetired || len(g.StorageKeys) != 1 || g.StorageKeys[0].State != "destroyed" || g.StorageKeys[0].DestroyedAt == nil ||
+			!g.StorageKeys[0].DestroyedAt.Equal(destroyed) || g.StorageKeys[0].Copies != nil {
+			t.Errorf("gone = %+v", g)
+		}
+	})
+	t.Run("R-STOR-088 no field holds a sealed value or a key", func(t *testing.T) {
+		body := strings.ToLower(w.Body.String())
+		for _, bad := range []string{"sealed", "\"v1:", "wrap", "namekey"} {
+			if strings.Contains(body, bad) {
+				t.Errorf("the list holds %q: %s", bad, w.Body.String())
+			}
+		}
+	})
+}

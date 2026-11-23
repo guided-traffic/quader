@@ -272,7 +272,8 @@ func TestR_HA_072_Refusals(t *testing.T) {
 		{"an existingSecret nothing reads", required(), entry("secrets.storageConnections[0].existingSecret=quader-s3"), []string{"existingSecret quader-s3 for connection default", "nothing reads it", "credentials_source: static"}},
 		{"an entry of no connection", required(), []string{"secrets.storageConnections[0].connectionId=archive"}, []string{"secrets.storageConnections[0].connectionId", "archive", "names no element"}},
 		{"two entries of one connection", required(), []string{"secrets.storageConnections[0].connectionId=default", "secrets.storageConnections[1].connectionId=default"}, []string{"secrets.storageConnections[0] and [1]", "connectionId \"default\""}},
-		{"encrypted true", required(), []string{"config.storage.connections[0].encrypted=true"}, []string{"config.storage.connections[0] (default): encrypted: true is not supported yet: the encryption of stored content is not built (storage.md R-STOR-050)"}},
+		{"keyed_names without encrypted", required(), []string{"config.storage.connections[0].keyed_names=false"}, []string{"config.storage.connections[0] (default) has keyed_names without encrypted: true: keyed_names is a detail of an encrypted connection; on a connection that is not encrypted the content is readable anyway (storage.md R-STOR-075)"}},
+		{"keyed_names beside encrypted false", required(), []string{"config.storage.connections[0].encrypted=false", "config.storage.connections[0].keyed_names=true"}, []string{"config.storage.connections[0] (default) has keyed_names without encrypted: true"}},
 		{"drain on every element", required(), []string{"config.storage.connections[0].drain=true"}, []string{"every element of config.storage.connections has drain: true"}},
 		{"min_copies above the connections without drain", required(), append(second("archive", "b2", "config.storage.connections[1].drain=true"), "config.storage.replication.min_copies=2"), []string{"config.storage.replication.min_copies (2)", "without drain: true (1)"}},
 		{"two elements at one location", required(), second("nested", "quader-blobs", "config.storage.connections[1].prefix=quader/a"), []string{"config.storage.connections[0] (default) and config.storage.connections[1] (nested) lie at one location", "\"quader\"", "\"quader/a\""}},
@@ -294,6 +295,36 @@ func TestR_HA_072_Refusals(t *testing.T) {
 		render(t, required(), "config.storage.connections[1].id=archive", "config.storage.connections[1].bucket=quader-blobs", "config.storage.connections[1].prefix=archive")
 		render(t, required(), "config.storage.connections[1].id=archive", "config.storage.connections[1].bucket=quader-blobs", "config.storage.connections[1].endpoint=https://other.example.com")
 		render(t, required(), "config.storage.connections[1].id=archive", "config.storage.connections[1].bucket=quader-archive", "config.storage.connections[1].drain=true")
+	})
+}
+
+// TestR_HA_072_AnEncryptedConnection: encrypted passes through like every key of an element, with keyed_names beside it, and the chart
+// renders no key, no Secret and no file for the stored content (storage.md R-STOR-075, Q-HA-415). The value set ci/connections.yaml
+// renders its second connection encrypted, so every render test of that set and the binary's validator see one.
+func TestR_HA_072_AnEncryptedConnection(t *testing.T) {
+	t.Run("R-STOR-075 encrypted true alone and with keyed_names false render the element as given, and no pod mounts more than a plain connection's", func(t *testing.T) {
+		_, plain := render(t, required())
+		for _, sets := range [][]string{
+			{"config.storage.connections[0].encrypted=true"},
+			{"config.storage.connections[0].encrypted=true", "config.storage.connections[0].keyed_names=false"},
+		} {
+			_, docs := render(t, required(), sets...)
+			c := connectionOf(t, docs, 0)
+			if c["encrypted"] != true || len(sets) == 2 && c["keyed_names"] != false || len(sets) == 1 && c["keyed_names"] != nil {
+				t.Errorf("%v: element = %v", sets, c)
+			}
+			for name, pod := range podSpecs(docs) {
+				if got, want := len(list(pod, "volumes")), len(list(podSpecs(plain)[name], "volumes")); got != want {
+					t.Errorf("%v: %s has %d volumes, a plain connection's %d", sets, name, got, want)
+				}
+			}
+		}
+	})
+	t.Run("R-STOR-075 the second connection of ci/connections.yaml is encrypted and mounts its credential and CA only", func(t *testing.T) {
+		_, docs := render(t, connectionsSet())
+		if c := connectionOf(t, docs, 1); c["id"] != "secondary" || c["encrypted"] != true {
+			t.Errorf("element secondary = %v", c)
+		}
 	})
 }
 

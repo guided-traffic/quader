@@ -894,7 +894,9 @@ gone and refused with the keys that took their place
 ([Q-HA-395](#q-ha-395--the-values-of-the-one-store-are-refused-by-the-templates-with-the-keys-that-took-their-place)). The backup's
 read login and the journal reader of every connection are rendered in their target form since the rest of package E: an element of
 `backup.source.connections` per entry with `backupSource`, an element of the journal credentials file per connection
-([backup-and-restore.md](backup-and-restore.md) R-BAK-030; Q-HA-396 is superseded).
+([backup-and-restore.md](backup-and-restore.md) R-BAK-030; Q-HA-396 is superseded). `encrypted` is passed through and `keyed_names` without it
+refused since package 6 of the encryption of stored content (2026-11-23, `TestR_HA_072_AnEncryptedConnection`); the value set
+`ci/connections.yaml` renders its second connection encrypted.
 
 - **The list** is `config.storage.connections`, passed through like every key of `config` with each element's `id` filled in and the
   `*_file` keys below; the values file holds one element with the defaults of the plain path. A list given in the values replaces it
@@ -914,6 +916,7 @@ read login and the journal reader of every connection are rendered in their targ
           endpoint: ""                # example: object.storage.eu01.onstackit.cloud (a host means https://)
           force_path_style: false
           credentials_source: default # default | webIdentity | static
+          encrypted: false            # the default of storage.md R-STOR-075; true: the provider keeps ciphertext only; no Secret of the chart for it
   secrets:
     storageConnections: []            # one entry per connection that needs a Secret; example:
     #  - connectionId: default        # matches config.storage.connections[].id
@@ -967,9 +970,11 @@ read login and the journal reader of every connection are rendered in their targ
   - an entry whose `connectionId` names no element, two entries of one connection, a `bucketKey`, `regionKey`, `endpointKey` or
     `sessionTokenKey` without `existingSecret`, and an `existingSecret` that nothing reads (neither `credentials_source: static` nor a
     `*Key`, Q-HA-398);
-  - `encrypted: true` on an element until the encryption of stored content is built ("the encryption of stored content is not built,
-    storage.md R-STOR-050"); afterwards `encrypted: true` passes through like every key, and the chart refuses only `keyed_names` on an
-    element without `encrypted: true` (storage.md R-STOR-075). The chart renders no key and no Secret for the stored content: Quader draws
+  - `keyed_names` on an element without `encrypted: true` ("config.storage.connections[0] (default) has keyed_names without encrypted:
+    true: keyed_names is a detail of an encrypted connection; on a connection that is not encrypted the content is readable anyway
+    (storage.md R-STOR-075)"); `encrypted: true` passes through like every key (until the encryption of stored content was built the chart
+    refused it). The part sizes that an encrypted element needs are the binary's to check at start (storage.md R-STOR-075 rule 2): the
+    chart's byte parser does not read every unit the binary does. The chart renders no key and no Secret for the stored content: Quader draws
     the storage keys and keeps them sealed in the database ([Q-HA-415](#q-ha-415--the-chart-carries-no-key-of-the-stored-content));
   - `drain: true` on every element, or `config.storage.replication.min_copies` outside 1 to the number of elements without it;
   - two elements on one endpoint and bucket whose prefixes are equal or contain each other (an empty endpoint compares as the AWS
@@ -978,7 +983,7 @@ read login and the journal reader of every connection are rendered in their targ
   - with `backup.enabled`, an element with `credentials_source: static` whose entry has no `backupSource` (R-BAK-030, Q-BAK-64); with a
     `journalCredentials.source: static` of `restore` or `postRestore`, an element without `drain: true` whose entry has no `journalReader`
     (the refusal names each, [Q-HA-399](#q-ha-399--a-static-journal-reader-is-required-for-every-connection-without-drain)).
-- **The PrometheusRule** carries the alerts of [storage.md](storage.md) R-STOR-060 (R-HA-045).
+- **The PrometheusRule** carries the alerts of [storage.md](storage.md) R-STOR-060 and `QuaderStorageUnknownKey` of R-STOR-088 (R-HA-045).
 - The development and test profiles (`deploy/dev`, the stack of `test/integration`) render one connection; the integration case with
   two connections sets the list itself ([storage.md](storage.md) R-STOR-063). The chart's value set `ci/connections.yaml` renders two,
   one from a provisioner's Secret, in place of the one of the provisioner before, so the render tests of every value set see two
@@ -994,6 +999,8 @@ Acceptance criteria (chart render tests, about 1 s):
   naming the element (`TestR_HA_072_SeveralConnectionsAndAProvisioner`, `TestR_HA_072_Refusals`).
 - Each refusal above fails the render with the values named (`TestR_HA_072_Refusals`); each value of before fails naming its new keys
   (`TestR_HA_072_MovedValues`, `TestR_HA_072_AnInstallationMoves`).
+- `encrypted: true`, alone and with `keyed_names: false`, renders the element as given, and no pod mounts more than with a plain connection
+  (`TestR_HA_072_AnEncryptedConnection`).
 - The rendered file passes the binary's own validator for every pod of every value set, with the files of the pod's object-store
   mounts in place (`TestRenderedConfigurationPassesTheBinary`).
 
@@ -4813,6 +4820,7 @@ config:
         force_path_style: false         # true for MinIO, SeaweedFS and Ceph RGW
         credentials_source: default     # default | webIdentity | static (an entry of secrets.storageConnections with existingSecret)
         role_arn: ""                    # example (webIdentity): arn:aws:iam::123456789012:role/quader-blobs
+        encrypted: false                # true: Quader encrypts the connection's blobs and keeps the keys, so its provider reads ciphertext only; fixed once it holds data; keep the key ring and the export of the storage keys (storage.md R-STOR-075, R-STOR-090)
     upload:
       max_size: 10GiB                   # must fit the spool
     gc:
@@ -6103,7 +6111,9 @@ Q-STOR-152); and these sixteen rows of the table below: `QuaderReplicasNotReady`
 connection ([storage.md](storage.md) R-STOR-060, R-HA-072): `QuaderObjectStoreUnreachable` for every connection down on every replica,
 `QuaderObjectStoreConnectionUnreachable` for one of several (Q-HA-391), `QuaderObjectStoreUnreachableSingleReplica` per connection,
 `QuaderStorageReplicationBacklog`, `QuaderStorageCopyDamaged`, `QuaderStorageScrubBehind`, `QuaderStorageConnectionDetached` and
-`QuaderBlobCorrupt` beside `QuaderBlobMissing`, each with a rule test that fires and one that stays silent. The ServiceMonitor is rendered
+`QuaderBlobCorrupt` beside `QuaderBlobMissing`, each with a rule test that fires and one that stays silent; `QuaderStorageUnknownKey`
+([storage.md](storage.md) R-STOR-088, package 6 of the encryption of stored content) with one that fires and two that stay silent, one read of
+an unknown key and reads of a destroyed one (R-STOR-101). The ServiceMonitor is rendered
 ([servicemonitor.yaml](../../deploy/helm/quader/templates/servicemonitor.yaml), render test `TestServiceMonitor`). The rule scopes its selectors by
 `namespace`, which every scrape through the Prometheus operator carries. The binary exports every metric these rows read under the name of their
 expression (Q-HA-135): the copies per state of `QuaderStorageCopyDamaged` from the hourly storage summary (package F,
@@ -6172,6 +6182,7 @@ templates over metrics the MVP already exports, so the change adds no backend wo
 | `QuaderStorageCopyDamaged` | `max by (connection) (quader_storage_copies{state=~"missing\|corrupt"}) > 0`: a damaged copy not repaired (R-STOR-055, R-STOR-027) | 1h | warning |
 | `QuaderStorageScrubBehind` | `max by (connection) (quader_storage_scrub_overdue_copies) > 0` (R-STOR-027) | 6h | warning |
 | `QuaderStorageConnectionDetached` | `max by (connection) (quader_storage_connection_detached) == 1` (R-STOR-051) | 15m | warning |
+| `QuaderStorageUnknownKey` | `sum by (connection) (increase(quader_storage_encrypted_read_failures_total{reason="unknown_key"}[5m])) > 0`: reads of an encrypted connection keep meeting records of storage keys the database lacks, until the export is imported; never `reason="destroyed_key"` ([storage.md](storage.md) R-STOR-088) | 10m | critical |
 | `QuaderDatabasePoolSaturated` | `histogram_quantile(0.95, rate(quader_db_pool_acquire_duration_seconds_bucket{db_pool="request"}[5m])) > 0.1`; the control connection's waits are the next row's ([operations-and-observability.md](operations-and-observability.md) R-OPS-046) | 10m | warning |
 | `QuaderControlConnectionWaits` | `histogram_quantile(0.95, rate(quader_db_pool_acquire_duration_seconds_bucket{db_pool="control"}[5m])) > 1`: readiness-critical loops wait for the control connection (Q-HA-20), before `invalidation` and `database` start failing on every replica (R-OPS-046) | 5m | warning |
 | `QuaderJobsStuck` | `max(quader_jobs_oldest_queued_age_seconds) > 900` | 5m | warning |

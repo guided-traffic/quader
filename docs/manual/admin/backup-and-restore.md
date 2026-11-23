@@ -60,7 +60,7 @@ With an encrypted connection (`encrypted: true`, see the [configuration](configu
 
 A backup keeps each blob of an encrypted connection as the connection stores it, encrypted, with its record; the pool object's name ends in the identifier of the storage key that opens it (`pool/sha256/ab/cd/<sha256>.sk-archive-1-3f9a0c2e`, example). The backup pod holds no key and decrypts nothing, and the backup's database holds the storage keys sealed under the key ring. A restore opens those keys with the key ring before it writes anything (check 3 below), so `secrets.encryption` must hold the key ring the backup's database was sealed with. Into an encrypted first connection with the id of the backed-up one the restore writes the objects as they are; into an encrypted connection of another id it draws new keys and encrypts every blob anew; into a plain one it decrypts. Export the storage keys again after a restore.
 
-A copy of an encrypted bucket made by a tool that drops object metadata cannot be read: each object's key lies in its metadata. Copy such a bucket only with a tool that keeps metadata. An offline tool that reads a bucket without Quader is not built yet.
+A copy of an encrypted bucket made by a tool that drops object metadata cannot be read: each object's key lies in its metadata. Copy such a bucket with `quader admin storage offline pull` ([below](#read-an-encrypted-bucket-without-quader)), or only with a tool that keeps metadata.
 
 **Run a backup now.** The Backups screen shows the command, or run it from a shell:
 
@@ -251,6 +251,35 @@ If the replay leaves no administrator, the output says so; sign in with the brea
 - a row that could not be written to the journal: `QuaderRevocationJournalQuarantined` fires and `quader admin post-restore` reports it.
 
 For those, read the `log: audit` stream from *t* to the restore and repeat each revocation and removal with `quader admin token revoke` and the management API. Access granted after *t* is not restored in any case: grant it again.
+
+## Read an encrypted bucket without Quader
+
+When the database is lost and no backup holds the blobs, `quader admin storage offline` reads an encrypted connection's objects without a database, Valkey or a running Quader, from any machine with the `quader` binary. It needs three things you keep yourself: the export of the storage keys, the directory of the key ring files that sealed it (your copy of `secrets.encryption`, one `<key id>.key` file per key), and read access to the bucket, given as one element of `storage.connections` in a file. It writes nothing to the bucket, and it takes the keys only from those files, never from a command-line argument.
+
+```yaml
+# archive.yaml: the connection's element, as in config.storage.connections
+id: archive                                          # example: the connection's id
+bucket: quader-archive                               # example
+endpoint: https://s3.example.com                     # example
+credentials_source: static                           # example
+access_key_id_file: /secure/archive/access-key-id    # example: a login that may read the bucket
+secret_access_key_file: /secure/archive/secret-access-key   # example
+encrypted: true
+```
+
+```shell
+quader admin storage offline list   --connection-file archive.yaml --keys quader-storage-keys.json --key-ring keyring/   # one line per object
+quader admin storage offline verify --connection-file archive.yaml --keys quader-storage-keys.json --key-ring keyring/   # reads every object whole
+quader admin storage offline get 3f9a…c2e1 --out artifact.tgz --connection-file archive.yaml --keys quader-storage-keys.json --key-ring keyring/   # example: one blob by its SHA-256
+quader admin storage offline pull   --connection-file archive.yaml --to archive-copy/                                   # a copy with every object's record
+```
+
+- **`list`** prints one line per object below `keyed/`, `sha256/` and a backup target's `pool/sha256/`: `ok` when its record opens with the export and its name belongs to its content, `name_mismatch`, `unknown_key` when the export lacks the key its record names (use a newer export), `destroyed_key` when the export lists that key as destroyed, or the record's refusal.
+- **`get`** writes one blob into `--out`, a file that must not exist. The file appears only after every segment and the SHA-256 were checked; a damaged object writes nothing and exits `5`. Until then the bytes go to `.<file>.partial-…` beside it, which a `get` that was killed leaves behind: delete it.
+- **`verify`** reads every object whole and exits `5` when one is damaged or unreadable with the export.
+- **`pull`** copies the objects with their records into an empty directory; `list`, `get` and `verify` then read it with `--dir archive-copy/` in place of `--connection-file`. It needs no key.
+
+A key ring that lacks a key the export was sealed with exits `2` and names it. An unencrypted connection reads too: its objects show as `plain` and are checked against the digest their names carry.
 
 ## Reference
 

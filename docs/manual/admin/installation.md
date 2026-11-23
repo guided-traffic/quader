@@ -154,6 +154,20 @@ secrets:
 
 The `config` subtree becomes Quader's configuration file; [Configuration](configuration.md) lists its keys. Do not set the paths of mounted Secrets, `storage.spool.dir`, `server.tls` or `server.endpoints` inside `config`: the chart manages them and fails the render when you do. To make the client address of each request visible to Quader (for rate limits and the audit log), list the addresses of your ingress controller pods in `config.server.trusted_proxies`; never list a whole pod network, because every pod in it could then claim any client address.
 
+**An encrypted connection.** When the provider of a connection must not read the artifacts, add `encrypted: true` to its element: Quader then stores its blobs in its own encrypted format, draws the connection's storage key and name key when a replica first sees it, and keeps them sealed by the key ring in PostgreSQL; the chart mounts nothing more for it. Decide before the connection holds data: `encrypted` is fixed from its first copy, and switching it later is a new connection that the reconciliation fills ([configuration](configuration.md)). With an encrypted connection the key ring is also the key to your artifacts: without it every blob of every encrypted connection is lost, in the bucket and in every backup. Keep the export of the storage keys beside your copy of the key ring, made after the first start and again after you add an encrypted connection, draw a new generation or rotate the key ring:
+
+```yaml
+config:
+  storage:
+    connections:
+      - bucket: quader-blobs                      # example
+        encrypted: true                          # default: false; keyed_names: true comes with it
+```
+
+```shell
+kubectl -n quader exec deploy/quader-api -- /usr/local/bin/quader admin storage keys export > quader-storage-keys.json   # keep it beside the key ring's copy
+```
+
 Quader reaches your OIDC provider over HTTPS and trusts the system roots. If the provider's certificate comes from a private CA, the chart has no value for it yet: mount the CA file with `extraVolumes` and `extraVolumeMounts` and list its path in `config.proxy.outbound.tls.ca_files`.
 
 Quader's own backup is off by default, so the values above need nothing for it. To turn it on, add the switch and a bucket of its own for the backups, in another account or project if you can; with the switch on, the chart refuses to render without the bucket:

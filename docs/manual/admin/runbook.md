@@ -66,6 +66,21 @@ Every answer of Quader on a client listener carries `X-Request-Id`. A `503` with
 
 **When to escalate.** To the team that runs the store. To the maintainers when the store answers and the circuit does not close. `QuaderRevocationJournalBacklog` during the outage is expected and clears afterwards; if it does not, see the [Alerts](#alerts) below.
 
+## Storage keys are missing
+
+**What you see.** `QuaderStorageUnknownKey`; the label `connection` names an encrypted connection. Downloads of a blob that another connection also holds keep working; a blob that only this connection holds answers `503`. Nothing is marked damaged.
+
+**What it means.** The objects of that connection carry records of storage keys the database does not hold: it was restored to a point before the connection or a generation of its key existed, or its rows of `storage_keys` were lost. The objects are sound; the keys are what is missing, and the export of the storage keys brings them back.
+
+**What to do.**
+
+1. Compare what the database holds with your latest export: `kubectl -n quader exec deploy/quader-api -- /usr/local/bin/quader admin storage keys export --connection <id>` prints the identifiers it has (or exits `2` when it has none); the export you kept beside the key ring lists the ones it had.
+2. Import the export in a pod of the release, which holds the key ring: `kubectl -n quader exec -i deploy/quader-api -- /usr/local/bin/quader admin storage keys import /dev/stdin < quader-storage-keys.json` (an export of another installation needs `--other-installation`). It opens every key before it writes, adds what is missing, keeps what is equal and exits `2`, writing nothing, when the ring lacks a key the export was sealed with or the export does not fit the database.
+3. The replicas learn the keys through the change log and read the copies again at once; no restart. `quader_storage_encrypted_read_failures_total{reason="unknown_key"}` stops growing, and the alert resolves within ten minutes.
+4. Export again: `quader admin storage keys export > quader-storage-keys.json`, and keep the new file beside the key ring.
+
+**When to escalate.** When no export holds the keys, the objects they wrapped on that connection cannot be read by Quader or by `quader admin storage offline`; what another connection holds is still served and the reconciliation copies it back to a new connection. To the maintainers when the import succeeds and the counter keeps growing.
+
 ## A node drain, and a replica that does not stop in time
 
 **What you see.** `kubectl drain` waits with a message about a PodDisruptionBudget, or a pod stays in `Terminating`. A replica shows **draining** on **System status**, and the summary says **Replicas are being replaced**, which is no fault; **Not drain-safe** appears when a role has fewer than two ready replicas or all of them on one node. Clients see connection errors during drains, and long transfers are cut (`quader_http_transfers_cut_total`).
@@ -289,6 +304,7 @@ The chart's PrometheusRule holds the alerts below when `metrics.prometheusRule.e
 | `QuaderObjectStoreUnreachableSingleReplica` | warning | Some replicas have the circuit of a connection open | The path of those pods, on `quader_storage_s3_circuit_open` |
 | `QuaderStorageReplicationBacklog` | warning | The oldest copy the reconciliation has to make for a connection that is not filling waits for more than an hour | The connection's circuit (`quader_storage_s3_circuit_open`), `quader_storage_reconcile_failures_total{reason}` and the last runs of the task `storage-reconcile` |
 | `QuaderStorageConnectionDetached` | warning | A connection holds copies and no running replica has it in its configuration | Put its element back into `storage.connections`, or drain it first; `quader admin storage forget-connection` gives up one that is gone for good |
+| `QuaderStorageUnknownKey` | critical | Reads of an encrypted connection meet records of storage keys the database does not hold | [Storage keys are missing](#storage-keys-are-missing) |
 | `QuaderStorageCopyDamaged` | warning | A connection has held a missing or corrupt copy for an hour, counted by the hourly storage summary | The tab Storage of System status (the connection's damaged copies and the blobs no connection holds whole), `GET /api/v1/storage/damaged-blobs?scope=copies&connection=<id>`, and `quader_storage_reconcile_failures_total{reason}` of the connection: the reconciliation rewrites a damaged copy from another connection that holds the blob |
 | `QuaderStorageScrubBehind` | warning | The scrub has not read some present copies of a connection whole within its `scrub_period` and a day | The results of the last `scrub` jobs (`GET /api/v1/system/jobs?kind=scrub`): a connection that ends at `duration` every run needs a higher `scrub_bytes_per_second` or a longer `scrub_period`; one that ends at `circuit_open` or counts errors is unreachable |
 | `QuaderBlobMissing` | critical | A read found a blob's object missing on every connection that held it within the last hour | The log line with the digest; the bucket, its lifecycle rules and anything in front of it ([Loses objects](operations.md#when-a-dependency-is-unavailable)) |

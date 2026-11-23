@@ -119,6 +119,6 @@ Component: the record in the object's metadata (the owner's decision 2 (e), [sto
 bucket made outside Quader. A tool that copies objects to a file system or another store without their user metadata (many do by default when
 the target is a disk) loses every record and with it every data key: the copy is ciphertext nobody can open. Quader's own copies keep it (the
 reconciliation writes records, a backup's pool keeps them (package 4), `quader admin storage offline pull` writes each record beside its object
-(package 6, not built)). Live for every operator who backs up an encrypted bucket with a tool of his own; the manual says to use a copy that
-keeps metadata, and `offline pull` once it is built.
+as `<object name>.record.json`, R-STOR-089). Live for every operator who backs up an encrypted bucket with a tool of his own; the manual says
+to copy it with `offline pull` or a tool that keeps metadata.
 

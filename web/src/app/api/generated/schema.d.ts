@@ -8339,10 +8339,15 @@ export interface components {
         StorageConnectionKey: {
             id: string;
             generation: number;
-            /** @description `active` (wraps new copies) or `retired` (opens what it wrapped). */
+            /** @description `active` (wraps new copies), `retired` (opens what it wrapped) or `destroyed` (destroyed on command once its connection was retired; nothing opens it again, storage.md R-STOR-097). */
             state: string;
             /** Format: date-time */
             createdAt: string;
+            /**
+             * Format: date-time
+             * @description The time of a destroyed key's destruction; `null` for any other.
+             */
+            destroyedAt: string | null;
             /**
              * Format: int64
              * @description The copies that name the key, from the latest storage summary; `null` before the first.

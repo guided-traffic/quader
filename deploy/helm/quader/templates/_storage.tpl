@@ -340,8 +340,9 @@ anything else is checked, so the operator reads the move and not a consequence o
 {{- if and $e.existingSecret (ne $cs "static") (not (or $e.bucketKey $e.regionKey $e.endpointKey)) -}}
 {{- fail (printf "quader: secrets.storageConnections names existingSecret %s for connection %s, but nothing reads it: %s has credentials_source %s, and the entry names no bucketKey, regionKey or endpointKey. Set credentials_source: static to use its keys, or remove existingSecret" $e.existingSecret $id $at $cs) -}}
 {{- end -}}
-{{- if eq (toString (get $el "encrypted")) "true" -}}
-{{- fail (printf "quader: %s: encrypted: true is not supported yet: the encryption of stored content is not built (storage.md R-STOR-050)" $at) -}}
+{{- /* encrypted passes through like every key of the element; Quader draws the connection's keys and keeps them sealed in the database, so the chart renders no key and no Secret for it (Q-HA-415). keyed_names is a detail of an encrypted element (storage.md R-STOR-075). */ -}}
+{{- if and (hasKey $el "keyed_names") (ne (toString (get $el "encrypted")) "true") -}}
+{{- fail (printf "quader: %s has keyed_names without encrypted: true: keyed_names is a detail of an encrypted connection; on a connection that is not encrypted the content is readable anyway (storage.md R-STOR-075)" $at) -}}
 {{- end -}}
 {{- if ne (toString (get $el "drain")) "true" -}}
 {{- $writable = add1 $writable -}}

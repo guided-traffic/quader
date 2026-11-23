@@ -43,12 +43,14 @@ type Row struct {
 	Keys           []StorageKey
 }
 
-// StorageKey is a storage key of a connection by identifier (R-STOR-088, Q-API-405): never the key or its sealed value.
+// StorageKey is a storage key of a connection by identifier (R-STOR-088, Q-API-405): never the key or its sealed value. State is
+// active, retired or destroyed; DestroyedAt is the time of a destroyed key's destruction (R-STOR-097), nil for any other.
 type StorageKey struct {
-	ID         string
-	Generation int
-	State      string
-	CreatedAt  time.Time
+	ID          string
+	Generation  int
+	State       string
+	CreatedAt   time.Time
+	DestroyedAt *time.Time
 }
 
 // State derives the connection's state (R-STOR-051) from what PostgreSQL knows, the same for every replica that answers: retired once

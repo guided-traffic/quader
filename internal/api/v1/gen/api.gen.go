@@ -14179,12 +14179,15 @@ type StorageConnectionFigures struct {
 // StorageConnectionKey defines model for StorageConnectionKey.
 type StorageConnectionKey struct {
 	// Copies The copies that name the key, from the latest storage summary; `null` before the first.
-	Copies     *int64    `json:"copies"`
-	CreatedAt  time.Time `json:"createdAt"`
-	Generation int       `json:"generation"`
-	Id         string    `json:"id"`
+	Copies    *int64    `json:"copies"`
+	CreatedAt time.Time `json:"createdAt"`
 
-	// State `active` (wraps new copies) or `retired` (opens what it wrapped).
+	// DestroyedAt The time of a destroyed key's destruction; `null` for any other.
+	DestroyedAt *time.Time `json:"destroyedAt"`
+	Generation  int        `json:"generation"`
+	Id          string     `json:"id"`
+
+	// State `active` (wraps new copies), `retired` (opens what it wrapped) or `destroyed` (destroyed on command once its connection was retired; nothing opens it again, storage.md R-STOR-097).
 	State string `json:"state"`
 }
 

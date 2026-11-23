@@ -604,6 +604,7 @@ tests:
       - {series: "quader_storage_copies{namespace=\"default\",connection=\"secondary\",state=\"missing\",pod=\"p1\"}", values: "0x400"}
       - {series: "quader_storage_scrub_overdue_copies{namespace=\"default\",connection=\"secondary\",pod=\"p1\"}", values: "0x400"}
       - {series: "quader_storage_connection_detached{namespace=\"default\",connection=\"secondary\",pod=\"p1\"}", values: "0x400"}
+      - {series: "quader_storage_encrypted_read_failures_total{namespace=\"default\",connection=\"secondary\",reason=\"unknown_key\",pod=\"p1\"}", values: "0x400"}
       - {series: "quader_valkey_available{namespace=\"default\",pod=\"p1\"}", values: "1x400"}
       - {series: "quader_valkey_available{namespace=\"default\",pod=\"p2\"}", values: "1x400"}
       - {series: "quader_valkey_sentinels_reachable{namespace=\"default\",pod=\"p1\"}", values: "3x400"}
@@ -633,6 +634,7 @@ tests:
       - {eval_time: 300m, alertname: QuaderStorageCopyDamaged, exp_alerts: []}
       - {eval_time: 300m, alertname: QuaderStorageScrubBehind, exp_alerts: []}
       - {eval_time: 300m, alertname: QuaderStorageConnectionDetached, exp_alerts: []}
+      - {eval_time: 300m, alertname: QuaderStorageUnknownKey, exp_alerts: []}
       - {eval_time: 300m, alertname: QuaderDatabasePoolSaturated, exp_alerts: []}
       - {eval_time: 300m, alertname: QuaderControlConnectionWaits, exp_alerts: []}
       - {eval_time: 300m, alertname: QuaderJobsStuck, exp_alerts: []}
@@ -862,6 +864,27 @@ tests:
             exp_annotations:
               summary: "The connection archive holds copies but no replica has it in its configuration."
               description: "Its element was removed from config.storage.connections without a drain (R-STOR-051). Its copies count for no blob, and the blobs only it holds answer 503. Put the element back, drain it with drain true and remove it once it is drained, or forget it with quader admin storage forget-connection."
+
+  # Records of storage keys the database lacks (storage.md R-STOR-088): reads that meet them for ten minutes fire, critical; one such
+  # read does not, and reads that meet destroyed keys never do, since importing the export would not bring a destroyed key back
+  # (R-STOR-101).
+  - name: "QuaderStorageUnknownKey fires when reads meet unknown storage keys for ten minutes, not for one read and never for destroyed keys"
+    interval: 1m
+    input_series:
+      - {series: "quader_storage_encrypted_read_failures_total{namespace=\"default\",connection=\"archive\",reason=\"unknown_key\",pod=\"p1\"}", values: "0x5 1+1x40"}
+      - {series: "quader_storage_encrypted_read_failures_total{namespace=\"default\",connection=\"archive\",reason=\"unknown_key\",pod=\"p2\"}", values: "0x45"}
+      - {series: "quader_storage_encrypted_read_failures_total{namespace=\"default\",connection=\"default\",reason=\"unknown_key\",pod=\"p1\"}", values: "0x5 1x40"}
+      - {series: "quader_storage_encrypted_read_failures_total{namespace=\"default\",connection=\"retired\",reason=\"destroyed_key\",pod=\"p1\"}", values: "0+3x45"}
+      - {series: "quader_storage_encrypted_read_failures_total{namespace=\"default\",connection=\"default\",reason=\"segment\",pod=\"p1\"}", values: "0+1x45"}
+    alert_rule_test:
+      - {eval_time: 12m, alertname: QuaderStorageUnknownKey, exp_alerts: []}
+      - eval_time: 25m
+        alertname: QuaderStorageUnknownKey
+        exp_alerts:
+          - exp_labels: {severity: "critical", connection: "archive"}
+            exp_annotations:
+              summary: "Reads of the encrypted connection archive meet records of storage keys the database does not hold."
+              description: "Storage keys are missing and the copies they wrapped are unreadable until the export of the storage keys is imported (storage.md R-STOR-082, R-STOR-088). The database was restored to a point before a connection or a generation existed, or its rows were lost. Import the latest export with quader admin storage keys import <file> in a pod of the release; the reads then open the copies again without a restart. Reads fall over to another connection's copy meanwhile. A destroyed key (reason destroyed_key) does not fire this alert."
 
   - name: "QuaderDatabasePoolSaturated fires when the 95th percentile of the request pool wait is above 100 ms for ten minutes, not the control alert"
     interval: 1m

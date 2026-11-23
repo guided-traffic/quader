@@ -2,10 +2,12 @@
 
 Status: specified on 2026-11-22; package 1, the format and its tools, built on 2026-11-22 ([below](#package-1-the-format-as-built));
 package 2, the keys, built on 2026-11-22 ([below](#package-2-the-keys-as-built)); package 3, the encrypted connections in the store and the
-sessions, built on 2026-11-22 ([below](#package-3-encrypted-connections-as-built)): `encrypted: true` is accepted by the configuration (the
-chart refuses it until package 6); package 4, the jobs, the backup and the restore, built on 2026-11-23
+sessions, built on 2026-11-22 ([below](#package-3-encrypted-connections-as-built)): `encrypted: true` is accepted by the configuration
+and, since package 6, by the chart; package 4, the jobs, the backup and the restore, built on 2026-11-23
 ([below](#package-4-as-built)); package 5, the Bastion's cache, built on 2026-11-22 on the format
-([below](#package-5-the-bastions-cache-as-built)); package 6 not built; package 7, the destruction of a retired connection's keys,
+([below](#package-5-the-bastions-cache-as-built)); package 6, the offline tool, the chart's acceptance, the rest of the API and the
+documentation, built on 2026-11-23 ([below](#package-6-the-offline-tool-the-chart-the-api-and-the-documentation-as-built));
+package 7, the destruction of a retired connection's keys,
 specified on 2026-11-22, not built ([below](#package-7-destroying-a-retired-connections-keys-specified)) ([storage.md](../spec/storage.md#encryption-of-stored-content) R-STOR-048, R-STOR-075 to
 R-STOR-091, R-STOR-097 to R-STOR-103; [backup-and-restore.md](../spec/backup-and-restore.md) R-BAK-031, R-BAK-032; [bastion.md](../spec/bastion.md) R-BAS-061;
 [architecture.md](../spec/architecture.md) R-ARCH-021; [ha-and-helm.md](../spec/ha-and-helm.md) R-HA-072;
@@ -50,8 +52,8 @@ at the same time are disjoint.
 | **3 · Encrypted connections in the store, and the sessions** (built, [below](#package-3-encrypted-connections-as-built)) | 1, 2, and stage 1's packages A and B | `encrypted: true` accepted with `keyed_names` and the part-size rule (R-STOR-075); the start check's requirement of `metadata`; the naming function for keyed names; the connection's encrypting writer and decrypting reader: the commit's writes with the record and `HeadObject`'s check, the copy row's `stored_size` and `storage_key_id` (R-STOR-080); whole and ranged reads, the marks, `unknown_key`, the metric (R-STOR-082); the sessions with the sealed data key, the tails, the counter and both finalize paths (R-STOR-081); the conformance pass with an encrypted connection; the integration case of a rotation (R-STOR-084) | `internal/config/storage.go` (stage 2's rules), `internal/blob` (all files but `gc*.go`, `sweep.go` and the packages `blobcrypt`, `keys`, `reconcile`, `scrub`, `verify`), `internal/blob/s3`, `internal/blob/blobtest`, `internal/uploads`, `internal/app/wire_blob.go`, `test/integration/blob/rotation_test.go`, the encrypted pass in `test/integration/blob/conformance_test.go` |
 | **4 · The jobs, the backup and the restore** (built, [below](#package-4-as-built)) | 3, and stage 1's packages B (orphan sweep), C (reconciliation), D (scrub, operator check) and E (backup, restore) | The reconciliation's four cases and the spool for streams into an encrypted connection, the scrub's marks and repair, the orphan sweep's reading of the record, the operator check's record (R-STOR-087); the pool with records, `verify --deep` with and without `--key-ring`, the restore's table and its drawing of keys (R-BAK-031); the pool's keys and the re-pool (R-BAK-032): pool names with the key's identifier, the blob list's pool column and its final write after the copies, pins with `pool` kept until the run's end, the manifest's `storageKeys` and its schema, `retained[].poolKeyIds` and `sealedKeyIds`, the re-pool, a draining connection's copies after every other (Q-BAK-76), and the sweep, `verify` and the restore by pool name; the integration cases of the jobs and of the backup | `internal/blob/reconcile/`, `internal/blob/scrub/`, `internal/blob/sweep.go`, `internal/blob/verify`, `internal/backup`, `internal/backup/format` (blob list, manifest, schema), `cmd/quader/backup_*.go`, a migration step for `backup_blob_pin.pool`, `test/integration/blob/encrypted_jobs_test.go`, `test/integration/backup/encrypted_test.go` |
 | **5 · The Bastion's cache** | 1 | R-BAS-061: the encrypted layout below the key's tree, the sealed entries, the audit spool in the format, the sweep of other trees; `bastion.cache.encryption_key_file`; `secrets.cacheKey` in the Bastion's chart and its render tests | `internal/bastion/cache`, `internal/config/bastion_role.go`, `deploy/helm/quader-bastion`, the Bastion's chart tests under `test/chart` |
-| **6 · Offline tool, chart, API and documentation** | 2 and 3, and stage 1's packages E (chart) and F (API, manual) | `quader admin storage offline` (R-STOR-089); the chart's acceptance of `encrypted`, the refusal of `keyed_names` alone and the rule of `QuaderStorageUnknownKey` (R-HA-072, R-HA-045, R-STOR-088); `keyedNames` and `storageKeys[]` in the connections' API (R-STOR-088, Q-API-405; built ahead with stage 1's package F, which leaves this package the acceptance case of an encrypted connection and `state: destroyed` with `destroyedAt`); `destroyed_key` in `offline list` (R-STOR-089, R-STOR-103); the README's and the manual's sentences of R-STOR-090; this page and the developer pages of the store brought to what runs | `cmd/quader/admin_storage_offline.go`, `deploy/helm/quader` (stage 2's lines), `test/chart` (the main chart's cases), the connections' handler file in `internal/api/v1` and its paths in `api/openapi.yaml`, `README.md`, `docs/manual`, `docs/developer` |
-| **7 · Destroying a retired connection's keys** (specified, [below](#package-7-destroying-a-retired-connections-keys-specified)) | 2 and 3; it may land before 4, because the backups' check refuses what it cannot read (R-STOR-100) | R-STOR-097 to R-STOR-103: the migration step (`sealed_key` nullable, `destroyed_at`, the state CHECKs, `storage_key_exports`), the walk skipping destroyed rows; the holders and the backups' check read in one transaction; `quader admin storage keys destroy` with its dry run, confirmation, exit codes, text and JSON, the change payload version 2 and the journaled event `system.storage.keys_destroyed`; the holders forgetting and loading over destroyed rows; `destroyed_key` in `blobcrypt` and its mapping in the store's reader, the scrub and the orphan sweep; the destroyed-id rule at start, in `Ensure` and in the restore's drawing; export and import of destroyed rows; the journal's replay handler (ha-and-helm.md R-HA-054, Q-HA-416); the audit registry and labels; the promise and the operator's steps in the README and the manual (R-STOR-090) | the migration step and `queries/storage_keys.sql` under `internal/meta/postgres/`; `internal/blob/keys` (new `destroy.go` and `replay.go`; `holder.go`, `export.go`, `draw.go`, `rows.go`, `keystest`); one reason in `internal/blob/blobcrypt/errors.go`; the mapping of `destroyed_key` in `internal/blob`'s reader (package 3's file, after 3 has landed); the destroyed-id rule in `internal/blob/record.go`; `cmd/quader/admin_storage_keys.go`; the handler's registration in `internal/app/wire_storage_keys.go`; `internal/audit/events_storage.go` and the audit labels with both translation files; `test/integration/blob/storage_keys_test.go`; `README.md`, `docs/manual`, the security pages, this page |
+| **6 · Offline tool, chart, API and documentation** (built, [below](#package-6-the-offline-tool-the-chart-the-api-and-the-documentation-as-built)) | 2 and 3, and stage 1's packages E (chart) and F (API, manual) | `quader admin storage offline` (R-STOR-089); the chart's acceptance of `encrypted`, the refusal of `keyed_names` alone and the rule of `QuaderStorageUnknownKey` (R-HA-072, R-HA-045, R-STOR-088); `keyedNames` and `storageKeys[]` in the connections' API (R-STOR-088, Q-API-405; built ahead with stage 1's package F, which leaves this package the acceptance case of an encrypted connection and `state: destroyed` with `destroyedAt`); `destroyed_key` in `offline list` (R-STOR-089, R-STOR-103); the README's and the manual's sentences of R-STOR-090; this page and the developer pages of the store brought to what runs | `cmd/quader/admin_storage_offline.go`, `deploy/helm/quader` (stage 2's lines), `test/chart` (the main chart's cases), the connections' handler file in `internal/api/v1` and its paths in `api/openapi.yaml`, `README.md`, `docs/manual`, `docs/developer` |
+| **7 · Destroying a retired connection's keys** (specified, [below](#package-7-destroying-a-retired-connections-keys-specified)) | 2 and 3; it may land before 4, because the backups' check refuses what it cannot read (R-STOR-100) | R-STOR-097 to R-STOR-103: the migration step (`sealed_key` nullable, `destroyed_at`, the state CHECKs, `storage_key_exports`), the walk skipping destroyed rows; the holders and the backups' check read in one transaction; `quader admin storage keys destroy` with its dry run, confirmation, exit codes, text and JSON, the change payload version 2 and the journaled event `system.storage.keys_destroyed`; the holders forgetting and loading over destroyed rows; `destroyed_key` in `blobcrypt` and its mapping in the store's reader, the scrub and the orphan sweep; the destroyed-id rule at start, in `Ensure` and in the restore's drawing; export and import of destroyed rows; the journal's replay handler (ha-and-helm.md R-HA-054, Q-HA-416); the audit registry and labels; the promise and the operator's steps in the README and the manual (R-STOR-090) | the migration step and `queries/storage_keys.sql` under `internal/meta/postgres/`; `internal/blob/keys` (new `destroy.go` and `replay.go`; `holder.go`, `export.go`, `draw.go`, `rows.go`, `keystest`); the column `destroyed_at` in the statement `StorageConnectionKeys` of `queries/storage_summary.sql` and its mapping in `internal/blob/summary` (the API's field is package 6's); one reason in `internal/blob/blobcrypt/errors.go`; the mapping of `destroyed_key` in `internal/blob`'s reader (package 3's file, after 3 has landed); the destroyed-id rule in `internal/blob/record.go`; `cmd/quader/admin_storage_keys.go`; the handler's registration in `internal/app/wire_storage_keys.go`; `internal/audit/events_storage.go` and the audit labels with both translation files; `test/integration/blob/storage_keys_test.go`; `README.md`, `docs/manual`, the security pages, this page |
 
 The order: 1 first (now); 2 as soon as stage 1's package A is on `main`; 5 beside 2, after 1; 3 when 1, 2 and stage 1's B have landed; 4 after
 3 and stage 1's C, D and E; 6 after 3 with stage 1's E and F; 7 after 2 and 3 (4 has landed, so every backup run records the
@@ -186,7 +188,7 @@ integration walk).
 
 [R-STOR-075](../spec/storage.md#r-stor-075--an-encrypted-connection), R-STOR-080 to R-STOR-082, R-STOR-084's case with objects and R-STOR-086's
 naming, with the builder's decisions Q-STOR-380 to Q-STOR-385. `encrypted: true` and `keyed_names` are accepted by the configuration; the
-Helm chart still refuses `encrypted: true` (package 6). Nothing above `internal/blob` and `internal/uploads` learned of the encryption: a
+Helm chart refused `encrypted: true` until package 6. Nothing above `internal/blob` and `internal/uploads` learned of the encryption: a
 format, the scanners and every caller of `blob.Store.Open` see plaintext.
 
 | File | Responsibility |
@@ -388,6 +390,106 @@ measured cost are in that page's [Tests](bastion.md#tests): about 0.2 s of unit 
 0.3 s), 0.2 s in the integration area `bastioncache`, eight chart renders, nothing in any end-to-end leg; with 25 formats the cost is the
 same, since no format sees the cache's key.
 
+## Package 6: the offline tool, the chart, the API and the documentation as built
+
+[R-STOR-089](../spec/storage.md#r-stor-089--the-offline-tool) (the offline tool), R-STOR-088's alert, the API's acceptance case and the
+API's `state: destroyed` with `destroyedAt`, [R-HA-072](../spec/ha-and-helm.md#r-ha-072--the-object-store-connections-in-the-chart)'s
+acceptance of `encrypted` and refusal of `keyed_names` alone, [R-HA-045](../spec/ha-and-helm.md#r-ha-045--monitoring-integration)'s row
+`QuaderStorageUnknownKey`, and R-STOR-090's sentences in the README and the manual, with the decisions
+[Q-STOR-450](../spec/storage.md#q-stor-450--a-pull-writes-a-directory-of-its-own-the-objects-their-record-files-and-the-connections-facts)
+to Q-STOR-452 and the gaps H-1450 and H-1451 of [stored-content-keys.md](../security/stored-content-keys.md#what-this-does-not-cover).
+
+| File | Responsibility |
+|---|---|
+| [offline/keys.go](../../internal/blob/offline/keys.go) | `LoadKeys`: the export read strictly (the rows of R-STOR-085, a destroyed key of R-STOR-103 without `sealed` and with `destroyedAt`), the key ring of a directory of `<key id>.key` files (only opening, so the first file is named active), the root keys' check before any key is opened, every sealed key opened once; `Keys.lookup` (a key of the export, an error for a destroyed one, nil for an unknown one), `nameKey`, `Close`; `Refusal` |
+| [offline/names.go](../../internal/blob/offline/names.go) | `parseName` (the three families `keyed/`, `sha256/` and a backup's `pool/sha256/` with its `.<key id>`), `checkName` (a keyed name under the name key of the record key's connection, a plain name carrying the digest, a pool name carrying the digest and the key) |
+| [offline/source.go](../../internal/blob/offline/source.go) | `Source`; `Bucket` over any `blob.ObjectStore`; `OpenElement`: the element of a file read through `config.Load` as the only element of `storage.connections` (`CommandImport`, an empty environment), so its rules and defaults are the binary's, and the client built with the default outbound settings; `Dir`: the directory of a pull, its `quader-pull.json`, names held below the directory |
+| [offline/read.go](../../internal/blob/offline/read.go) | `Reader`: `check` (one Head, `blobcrypt.Open` with `Want{Known: false}` against the size the source answered, the name), `readBody` (`blobcrypt.NewReader` with the SHA-256, or a plain object hashed against its name), `List`, `Verify` (n at once, results in the walk's order), `Locate`, `Get` (a temporary file beside `--out`, a hard link that never replaces a file) |
+| [offline/pull.go](../../internal/blob/offline/pull.go) | `Pull`: an empty or new directory, the manifest first, every object of a name of the layout with its record file, every file created new |
+| [admin_storage_offline.go](../../cmd/quader/admin_storage_offline.go) | `quader admin storage offline list`, `get`, `verify`, `pull`: the flags (files only, no flag takes a key), the text lines and the streamed JSON document, the exit codes |
+| [_storage.tpl](../../deploy/helm/quader/templates/_storage.tpl), [_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl), [values.yaml](../../deploy/helm/quader/values.yaml), [ci/connections.yaml](../../deploy/helm/quader/ci/connections.yaml) | `encrypted` passed through, `keyed_names` without `encrypted: true` refused; `QuaderStorageUnknownKey`; `encrypted: false` in the default element; the value set's second connection encrypted |
+| [storage_connections_api.go](../../internal/api/v1/storage_connections_api.go), [summary/connections.go](../../internal/blob/summary/connections.go), `StorageConnectionKey` of [openapi.yaml](../../api/openapi.yaml) | `destroyedAt` of a key, `null` for any other; `state` names `destroyed` |
+
+**The offline tool, step by step.** `LoadKeys` reads the export (at most 4 MiB, one JSON document, the identifier rule of Q-STOR-324, the
+three states) and the ring, names every root key the export is sealed with that the ring lacks, then opens every sealed key. A source walks
+`<prefix>/keyed/`, `<prefix>/sha256/` and `<prefix>/pool/sha256/` in name order. Per object `check` sends one Head (or reads the record file
+of a pull's directory); an object without a record on a plain layout of a plain connection is `plain` with the digest its name carries;
+otherwise `blobcrypt.Open` runs steps 1 to 6 with the export's lookup and the size the source answered, and the name is compared with the
+wrap's digest (Q-STOR-452). `List` stops there; `Verify` and `Get` read the body through `blobcrypt.NewReader` with the SHA-256, which holds
+the last segment back until the final segment and the digest passed. `Get` writes into `CreateTemp(dir(out), ".<out>.partial-*")` (mode
+0600) and links it to `--out` only after the reader's end, so a refusal leaves nothing (Q-STOR-451); `os.Lstat` refuses an existing
+`--out` first and the link refuses one that appeared meanwhile. `Pull` needs no key and copies the bytes as stored (Q-STOR-450). The reasons
+of `blobcrypt` are the statuses as they are; `destroyed_key` is the export's tombstone, a status of the tool and no reason of `blobcrypt`
+(package 7 adds its reason there for the store's reader). No message holds a key: `blobcrypt`'s refusals carry steps and positions, the
+tool's carry identifiers, root keys, files and object names.
+
+**The independent check of the format, a second time.** The offline tool is the second reader of the stored format beside the store's: it
+reads without the copy rows (`Want{Known: false}`), so the digest and size come from the wrap and the name stands in for the database.
+`TestR_STOR_079_TheOfflineToolReadsEveryObjectOfTheVectors` lays every object case of [testdata/vectors.json](../../internal/blob/blobcrypt/testdata/vectors.json)
+into a pull's directory at the plain name of its copy's digest with the vectors' record file and an export of its reader keys sealed by a
+ring of the test: **33 of the 33 object cases read as the vectors say** on the first run, on 2026-11-23: the 8 genuine objects `ok` with
+their digest and size, the 25 negative ones refused with their reason, of which the two whose `record` comes from the copy's digest
+(`other-name`, `other-record`) are `name_mismatch` without a database. The keyed name's known answer (R-STOR-086) reads `ok` at its name
+and `name_mismatch` at another. The staging tail (`tail-131072`) is no object of a connection and is not read by the tool.
+`TestR_STOR_089_TheOfflineToolReadsWhatTheStoreWrote` (`internal/blob`) holds the second reader to the first writer: two blobs written by the
+store to an encrypted connection with keyed names, one of 131,073 bytes in three multipart parts of 64 KiB, verify and get `ok`, and a bit
+flipped in the second data segment (the second part's) is `segment`.
+
+**The chart.** `encrypted` passes through like every key of an element; `keyed_names` on an element without `encrypted: true` fails the
+render with the binary's sentence; nothing else of R-HA-072 changes (the part sizes stay the binary's to check: the chart's byte parser
+does not read every unit the binary does). The chart renders no key and no Secret for the stored content (Q-HA-415):
+`TestR_HA_072_AnEncryptedConnection` compares every pod's volumes with a plain connection's. `ci/connections.yaml` renders its second
+connection encrypted, so `TestRenderedConfigurationPassesTheBinary` runs the binary's validator over an encrypted element in every pod.
+
+**The alert.** `QuaderStorageUnknownKey` is `sum by (connection) (increase(quader_storage_encrypted_read_failures_total{reason="unknown_key"}[5m])) > 0`
+for 10 minutes, critical: reads that keep meeting unknown keys fire; one such read does not (its window holds 5 minutes, the alert waits
+10); `reason="destroyed_key"` and every other reason never do. Its promtool test has the three cases.
+
+**The API.** `storageKeys[].destroyedAt` is in the contract and mapped from `summary.StorageKey.DestroyedAt`; the statement
+`StorageConnectionKeys` does not select `destroyed_at`, because the column is package 7's migration: until then every key's
+`destroyedAt` is `null`. `TestR_STOR_088_AnEncryptedConnectionInTheAPI` shows the acceptance case of R-STOR-088 (an encrypted connection
+with `keyedNames`, its two generations, the copies per key, no sealed value) and a destroyed key of a retired connection, from views written
+by the test. The tab Storage prints a key's state as the API gives it and does not show `destroyedAt`; nothing on its screen changes with
+this package (the column **Encrypted** read `encrypted` already).
+
+**What package 7 must know.** The export's destroyed entry is read by the tool in the form of R-STOR-103 (`state: destroyed`,
+`destroyedAt`, `retiredAt`, no `sealed`); `keys.DocumentKey` and `checkKeys` of [export.go](../../internal/blob/keys/export.go) do not
+know it yet, so the export and the import of package 7 add `DestroyedAt` (`omitempty`) and make `Sealed` `omitempty`, and the tool's test
+`…a record of a key the export lists as destroyed is destroyed_key…` is the check that the two agree. The API needs only the column in
+`StorageConnectionKeys` and its mapping in `summary.Rows`. The alert needs nothing: it never counts `destroyed_key`, and the destroyed case
+of its promtool test is in place.
+
+**Tests and their cost**, measured on 2026-11-23 in the unit job's mode (`go test -race -covermode=atomic -coverpkg=./...`) on the
+development machine, and the integration case under the stack's lock:
+
+| Test | Tier | Data | Time |
+|---|---|---|---|
+| `TestR_STOR_089_TheOfflineReader` (destroyed and unknown keys, an export made before, foreign names and pull's skip, plain objects, pool objects and `Locate`, the directory's bounds, refused exports), `TestR_STOR_089_TheConnectionElement` | unit, `internal/blob/offline`, the in-memory store and temporary directories | objects of 10 bytes to 70 KB | 0.2 s |
+| `TestR_STOR_079_TheOfflineToolReadsEveryObjectOfTheVectors` | unit, `internal/blob/offline` | the vector files, 651,536 bytes, one directory per case | 0.26 s |
+| `TestR_STOR_089_TheOfflineToolReadsWhatTheStoreWrote` | unit, `internal/blob` (the sealed fixture) | 1 KiB and 131,073 bytes | 0.03 s |
+| `TestR_STOR_089_QuaderAdminStorageOffline` (list, get and its refusal of an existing file, pull and `verify --dir`, a flipped bit, a ring without the root key, the usage, no key in any output) | unit, `cmd/quader`, the in-memory store | three objects of 1 KiB | 0.04 s |
+| `TestR_STOR_088_AnEncryptedConnectionInTheAPI` | unit, `internal/api/v1` (the shared validator, parsed once per package) | — | 0.02 s |
+| `TestR_HA_072_AnEncryptedConnection`, the two rows of `keyed_names` in `TestR_HA_072_Refusals`, the alert's rows of `TestR_HA_045_PrometheusRule` and its promtool case | chart | renders | about 0.5 s |
+| `TestR_STOR_089_TheOfflineToolReadsTheStacksBucket` | integration, area `blob`, PostgreSQL and the S3 store of the stack | 1 KiB and 131,073 bytes | 0.8 s |
+
+The unit job gains about 0.55 s of tests and one package's start (`internal/blob/offline`, about 2 s of process time, almost all of it the
+start of a binary built with the race detector and the module's coverage); the chart job about 0.5 s; the integration shard that runs
+`blob` about 1 s; no end-to-end leg, nightly job or `s3-conformance` gains anything. With 25 formats the cost is the same: no format sees
+a connection or a key.
+
+**Every defence taken out once**, one at a time, and the test that failed: the digest's check of an encrypted object
+(`blobcrypt.NewReader` without the SHA-256: the vectors' `spliced` case); the digest's check of a plain object (`…a changed byte is
+digest…`); the refusal of a record whose key the export does not hold (a lookup that falls back to another key: `…destroyed_key, one of a key
+it lacks unknown_key…` and the vectors' `changed-key-unknown`); the refusal of a wrong key ring (the root keys' check and the opening's
+refusal: `…a key ring without the export's root key exits 2 naming it`); the refusal to overwrite an existing file (the `Lstat` check, and
+the link replaced by a rename: `…get of a digest writes its bytes and refuses to write over an existing file`); the name's check (`…another
+keyed name…`, `…pool object…` and the vectors' `other-name`, `other-record`); that no key appears in an output (the data key's hex added to a
+refusal's detail: `…no output of any command holds a key, a part of one or a sealed value`).
+
+**What the integration case found.** The first run of the element's client failed every request: `OpenElement` had built it with the zero
+`config.Outbound`, which trusts no root at all, while the binary's default trusts the system's store. The element is now loaded with the
+configuration's defaults, `proxy.outbound` among them.
+
 ## Package 7: destroying a retired connection's keys (specified)
 
 [R-STOR-097](../spec/storage.md#r-stor-097--a-destroyed-key) to R-STOR-103, with the decisions Q-STOR-400 to Q-STOR-413, and in the backup
@@ -514,6 +616,10 @@ the hold-back of the last segment, the identifier in the wrap's additional data,
 last mark of a tail segment, the segment key's own label, and the refusal of a body longer than the object.
 
 ## Not verified
+
+- Package 6: the offline tool against a provider other than the stack's store (Silo), and `pull` of a bucket with more than a few objects;
+  `kubectl exec -i … import /dev/stdin`, the runbook's way to bring an export into a pod, was not run in a pod; the tool on Windows (the
+  hard link of `get`, the paths of a pull) was not run.
 
 - Package 3 ran against the stack's store (Silo) only: the encrypted pass of the conformance check and the session case of the area `uploads`.
   Whether the owner's in-cluster object gateway (Ceph 19.2.3, read from his cluster on 2026-11-22) keeps user metadata on a write and replaces
