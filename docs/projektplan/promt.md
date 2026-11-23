@@ -2246,7 +2246,14 @@ runs are in `git log`; this section holds the current state.
   opt a repository out before the switch goes on (its own gap H-1353), which the brief's wording had
   caused: it becomes usable whenever the format's clients check, with a sentence while the switch is off,
   and the gap goes. That the section stands on every repository as one closed section with its reason
-  stays, as the signatures' section does. It lands after package F, onto which it is moved.
+  stays, as the signatures' section does. It lands after package F, onto which it is moved. **It reported
+  again at 02:53, on the landing's top:** both changes are in, with the sentence brought in line wherever it
+  stood (the page's hint, the refusal's text, five descriptions of the API, the manual, the security page),
+  the gap H-1353 removed, and the section rendered again in its three states; the narrow render of the
+  state with the switch off looked at by the development agent: the control is usable and its sentence
+  stands between it and the save. Moved onto the Bastion's P4 and package F with two conflicts in documents,
+  both sides kept; every gate exit 0 on that base, the lint over the whole repository and the areas `api`
+  and `blob` among them. It is pushed with those two after their gates.
 - **The timer's check at 19:44:** none of the three builders has reported; the run of the landing has no
   failed job (the four integration shards, the layout checks and five end-to-end legs run); the load is
   about 20 on 20 cores with the three builders, so no fourth is started while the owner works on the
