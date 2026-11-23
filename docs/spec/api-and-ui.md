@@ -22544,6 +22544,22 @@ The development agent would revisit a sort by status if triagers ask for it.
 **Applied in the spec:** [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022. Code:
 [vulnerability-report.html](../../web/src/app/features/vulnerabilities/vulnerability-report.html).
 
+### Q-UI-1000 · A malware find's repositories and its time stand under its file
+
+Status: **Decided by the development agent** on 2026-11-23, closing point 4 of the open finding "Seen by the builder of the screens' first
+round on its renders" for the malware finds by the rule of Q-UI-969; the owner reviews it at the walkthrough.
+
+Context: the dashboard's malware finds needed 1,045 px against 697 at 1,024 px (**File** 15 rem, **Verdict** 14 rem, **Repositories** 12
+rem, **Found**, the action).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **File** (12 rem) with its hash, the repositories that hold it and "found 1 hour ago" under its name; **Verdict**; the action: 653 px (chosen) | Q-UI-969's rule | A table at 1,440 and 1,024 px | Where it is and when are read under the name |
+| (b) Narrower columns, the five kept | — | Every fact a column | About 730 px even at 11 rem: blocks at 1,024 px |
+
+**Choice:** (a). **Applied in the spec:** R-MAL-025 of [malware-scanning.md](malware-scanning.md). Code:
+[malware-finds.html](../../web/src/app/features/vulnerabilities/malware-finds.html).
+
 ## What this does not cover
 
 

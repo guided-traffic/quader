@@ -62,10 +62,8 @@ vulnerability findings of the other view block known malicious packages by name.
 
 | Column | What it shows |
 |---|---|
-| **File** | The name of the first file that holds the bytes and the first twelve characters of their SHA-256. The button before it opens the row: every file that holds the bytes, with its repository, its path and its package and version, and the reason of a release |
+| **File** | The name of the first file that holds the bytes and the first twelve characters of their SHA-256; under it the first repository that holds the bytes, how many more do, and when the scan found them, the newest first. The button before it opens the row: every file that holds the bytes, with its repository, its path and its package and version, and the reason of a release |
 | **Verdict** | **Malware found** with the signature (and the file inside an archive it was found in), **Not checkable** with the reason (too large, a scan limit reached inside it, encrypted), or **Scan failed** with the last error; the date of the ClamAV database; and, for released bytes, **Released** by whom and when |
-| **Repositories** | The first repository that holds the bytes, and how many more do |
-| **Found** | When the scan found it, the newest first |
 
 **Search by path or signature** finds a part of a file's path or of a signature. **Filters** offers **State**, **Release** (released or
 not) and **Repository** (without the system repositories of the project Upstream, which are never scanned for malware); each filter that is set is a chip beside **Filters**, and everything is part of the address. When nothing was

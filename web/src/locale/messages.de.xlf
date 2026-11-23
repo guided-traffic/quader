@@ -22167,24 +22167,6 @@
         <target>Prüfergebnis</target>
       </segment>
     </unit>
-    <unit id="malware.col.repositories">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:192</note>
-      </notes>
-      <segment>
-        <source>Repositories</source>
-        <target>Repositorys</target>
-      </segment>
-    </unit>
-    <unit id="malware.col.found">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:193</note>
-      </notes>
-      <segment>
-        <source>Found</source>
-        <target>Gefunden</target>
-      </segment>
-    </unit>
     <unit id="malware.col.actions">
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.ts:195</note>
@@ -50095,6 +50077,12 @@
       <segment>
         <source>Resource kind</source>
         <target>Ressourcenart</target>
+      </segment>
+    </unit>
+    <unit id="malware.found-at">
+      <segment>
+        <source>found</source>
+        <target>gefunden</target>
       </segment>
     </unit>
   </file>
