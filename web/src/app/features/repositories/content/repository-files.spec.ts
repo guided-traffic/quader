@@ -238,6 +238,9 @@ describe('The files of a repository', () => {
     const facts = text(root.querySelector('.file-facts')!);
     expect(facts).toContain('2.0 KiB');
     expect(facts).toContain('SHA-256');
+    // Q-UI-1004: who created and changed it is named as a person, not in a principal's syntax.
+    expect(text(root.querySelector('.file-view dl.facts')!)).toContain('by alice');
+    expect(text(root.querySelector('.file-view dl.facts')!)).not.toContain('user:alice');
     const details = root.querySelector<HTMLElement>('quader-disclosure.details')!;
     details.querySelector<HTMLButtonElement>('button[aria-expanded]')!.click();
     await settle(fixture);

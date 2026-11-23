@@ -22641,6 +22641,27 @@ and the setting of the scanner, and its section **Signature database** "None yet
 [scanner-replicas.ts](../../web/src/app/shared/scanner/scanner-replicas.ts),
 [malware-settings.html](../../web/src/app/features/settings/malware-settings.html).
 
+### Q-UI-1004 · A page names a person without a principal's syntax
+
+Status: **Decided by the development agent** on 2026-11-23 for point 11 of the open finding "Seen by the builder of the screens' first
+round on its renders", as far as nothing new is decided; the owner reviews it at the walkthrough, and option (a) waits for his word.
+
+Context: a file's page said "Created … by user:priya", and **Last downloader** `user:priya`; the malware and the signature pages name the
+same reference "priya" (`principalName`). The pages that list people name a person by the display name with the `@username` under it,
+from answers that carry both; an item's answer carries the reference alone (`Stamp.by`), and so do the releases, a role binding's
+`grantedBy`, a tombstone's `deletedBy`, a block's `liftedBy`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Each answer that names a principal carries its name as well: a user's display name, an account's name, a CI project's path; the page shows it with the reference as its title | One resolver of the server, as the limits' `Names` | A person named as the member lists name people | Every reader of the object learns the display names of who wrote it, an anonymous reader of a public repository too: who may read a display name is the owner's decision |
+| (b) The page resolves the references through a lookup | A new operation | No answer changes | A call per name and a permission for a lookup of anyone |
+| (c) The username without the kind, "priya", as the malware and signature pages do, the reference as the title (chosen, for now) | `principalName` | No new decision; one form across the pages | The username, not the name |
+
+**Choice:** (c) on a file's page now; (a) is the recommendation and waits for the owner's word on who may read a display name.
+
+**Applied in the spec:** R-UI-010. Code: `person` of
+[repository-file.ts](../../web/src/app/features/repositories/content/repository-file.ts).
+
 ## What this does not cover
 
 

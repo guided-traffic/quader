@@ -8,6 +8,7 @@ import { asApiError, valueOf } from '../../../shared/paged-resource';
 import { Disclosure } from '../../../shared/ui/disclosure';
 import { TimeAgo } from '../../../shared/ui/time-ago';
 import { MalwareStatusView } from '../../../shared/malware/malware-status';
+import { principalName } from '../../../shared/malware/malware-words';
 import { formatSize } from '../../packages/format-size';
 import { nameOf } from './file-paths';
 import { systemClientSentence, upstreamKeyOf } from '../../../core/upstream-project';
@@ -69,14 +70,14 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
         <dd>
           <quader-time-ago [at]="it.created.at" />
           @if (it.created.by; as by) {
-            &ngsp;<span i18n="@@files.by">by</span>&ngsp;<span translate="no">{{ by }}</span>
+            &ngsp;<span i18n="@@files.by">by</span>&ngsp;<span translate="no" [attr.title]="by">{{ person(by) }}</span>
           }
         </dd>
         <dt i18n="@@files.fact.modified">Last changed</dt>
         <dd>
           <quader-time-ago [at]="it.modified.at" />
           @if (it.modified.by; as by) {
-            &ngsp;<span i18n="@@files.by">by</span>&ngsp;<span translate="no">{{ by }}</span>
+            &ngsp;<span i18n="@@files.by">by</span>&ngsp;<span translate="no" [attr.title]="by">{{ person(by) }}</span>
           }
         </dd>
         @if (it.contentStatus && it.contentStatus !== 'ok') {
@@ -194,7 +195,7 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
               }
             </dd>
             <dt i18n="@@files.stats.by">Last downloader</dt>
-            <dd translate="no">{{ s.lastDownloader ?? '–' }}</dd>
+            <dd translate="no" [attr.title]="s.lastDownloader">{{ s.lastDownloader ? person(s.lastDownloader) : '–' }}</dd>
           </dl>
           <p class="hint" i18n="@@files.stats.hint">Counts reach the database within a minute of a download.</p>
         } @else if (detailsOpen()) {
@@ -286,6 +287,11 @@ export class RepositoryFile {
     return e ? asApiError(e) : null;
   });
   protected readonly copyItem = $localize`:@@files.api.copy-json:Copy the description`;
+  /**
+   * Who created, changed or last downloaded the file, named as the other pages name a person (`priya`), never in a principal's syntax
+   * (`user:priya`); the reference is the title (Q-UI-1004).
+   */
+  protected readonly person = principalName;
   protected readonly curl = computed(() => `curl -H "Authorization: Bearer $QUADER_TOKEN" ${shellQuote(this.item().itemUrl)}`);
   /** The download with curl; none for a file of a system repository, which answers it 404 (Q-UI-898). */
   protected readonly downloadCurl = computed(() => {
