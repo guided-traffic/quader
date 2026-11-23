@@ -45,16 +45,26 @@ the client setup page of the admin UI ([web-ui.md](web-ui.md#package-screens-and
 4. `Service.List` asks the adapters for the versions that match `q` and `keyword` (`Find`) and for the withheld versions (`Withheld`), then runs
    `PackageViewList`: the CTE `vis` holds the versions that are live, not withheld, in the scope and inside the filters; `grouped` aggregates per format and
    name; the keyset condition and the order depend on the sort. Names are compared with collation `C`.
-5. For the packages of the page it reads their visible version rows (`PackageViewVersions`), takes the latest version by the adapter's order, and asks the
-   adapter for the description and keywords of that version.
+5. For the packages of the page it reads their visible versions without sizes and downloads (`PackageViewVersionNames`, one cheap row per version per
+   repository), takes the latest version by the adapter's order, and asks the adapter for the description and keywords of that version.
 
-The version list (`Service.Versions`) groups the visible rows per version in memory and sorts, filters and cuts them there; one statement reads the rows of
-the whole package. Each row carries the downloads and the `last_download_at` of the items that are a fetch of the version by its format's rule
+Every transaction of the service runs with the server's JIT compilation off (`Service.read`, Q-API-428).
+
+The version list (`Service.Versions`, [Q-API-417](../spec/api-and-ui.md#q-api-417--the-version-list-of-a-package-is-read-a-page-at-a-time-by-a-keyset-query-in-the-order-of-publication))
+first reads the packages of the name in the scope's repositories (`PackageViewHolders`). For a package that one repository holds, in the order of
+publication, `keysetPage` reads a page by keyset: `PackageViewVersionPageDesc`/`Asc` over `package_versions` (index `package_versions_listing`) and, for a
+remote repository, `PackageViewTagPageDesc`/`Asc` over its OCI tag entries (index `remote_cache_entries_tag_time`, Q-OCI-267); the two ordered lists of a
+batch are merged, the pre-release filter (the format's rule) is applied in the service and the next batch starts after the last version read until the
+page holds `limit + 1`. The cursor is `[publishedAt, version]`: the version's creation time and its name, compared bytewise, the statements' order. A
+package several repositories hold, and the order of the format's versions (`sort=version`), go through `sortedPage`: every visible version's name and
+creation time (`PackageViewVersionNames`), grouped, filtered and sorted in the service (H-1683). Either way `PackageViewVersions` then reads the rows of the
+page's versions alone, by the holders' package ids and the versions, with sizes and downloads. Each row carries the downloads and the `last_download_at` of the items that are a fetch of the version by its format's rule
 (`Descriptor.VersionFetch`: the lead file, any file of the version, or an image's manifest by tag and by digest), read from `item_download_stats` in a
 lateral subquery of `PackageViewVersions`; a version's `DownloadCount` sums its rows and its `LastDownloadedAt` is the latest of them (`versionGroup.lastDownload`,
 R-API-065, [Q-API-295](../spec/api-and-ui.md#q-api-295--a-versions-last-download-and-its-downloads-are-the-fetches-of-it-by-the-formats-rule-read-with-the-version-rows)).
-The details (`Service.Version`) read the visible rows of the package, take the oldest copy as the primary one, ask the adapter for summary and details with the
-visible set of versions, and read the files of the primary version. `ReadmeOf` asks for details and README. The repositories of a version are the physical
+The details (`Service.Version`) read the visible rows of the one version (`oneVersion`: the holders, then `PackageViewVersions` for that version), take the
+oldest copy as the primary one, ask the adapter for summary and details, and read the files of the primary version; the visible set of versions the adapter
+may ask about (npm's dist-tags) is read only when it asks. `ReadmeOf` asks for details and README. The repositories of a version are the physical
 repositories that hold it plus the virtual repositories that contain one of them and that the caller may read, local first.
 
 ## The suggestion read (R-API-061, R-API-064)

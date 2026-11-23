@@ -10,13 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/guided-traffic/quader/internal/qname"
-
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/qname"
 	"github.com/guided-traffic/quader/internal/repository"
 )
 
@@ -62,11 +61,17 @@ func New(o Options) (*Service, error) {
 	return s, nil
 }
 
+// read runs the statements of fn in one transaction with the server's JIT compilation off (Q-API-428): the view's statements read
+// package_version_listing, whose estimates the planner cannot know (a remote OCI repository's tags are cache entries behind a view), so
+// a statement that runs in milliseconds was costed above jit_above_cost and compiled for 0.3 to 0.5 s (measured on 2026-11-23, H-829).
 func (s *Service) read(ctx context.Context, fn func(*q.Queries) error) error {
 	return s.db.InTx(ctx, func(tx meta.Tx) error {
 		ptx, ok := postgres.Unwrap(tx)
 		if !ok {
 			return errors.New("view: the transaction is not one of internal/meta/postgres")
+		}
+		if _, err := ptx.Exec(ctx, "SELECT set_config('jit', 'off', true)"); err != nil {
+			return err
 		}
 		return fn(q.New(ptx))
 	})
@@ -467,14 +472,16 @@ func (s *Service) packages(ctx context.Context, sc Scope, p q.PackageViewListPar
 		}
 		keys[i] = r.Format + "\x1f" + r.Name
 	}
-	vrows, err := s.versionRows(ctx, sc, keys, false, withheld, hasRepos, repos)
+	vrows, err := s.versionNames(ctx, sc, keys, withheld, hasRepos, repos)
 	if err != nil {
 		return nil, err
 	}
 	byPkg := map[string][]q.PackageViewVersionsRow{}
 	for _, v := range vrows {
 		k := v.Format + "\x1f" + v.Name
-		byPkg[k] = append(byPkg[k], v)
+		byPkg[k] = append(byPkg[k], q.PackageViewVersionsRow{
+			VersionID: v.VersionID, Format: v.Format, Name: v.Name, Version: v.Version, CreatedAt: v.CreatedAt, RepoID: v.RepoID,
+		})
 	}
 	// The latest version of each package, by the format's order, and the row to
 	// describe it by.
@@ -570,18 +577,50 @@ func (s *Service) fetchRules() (anyFile, document []string) {
 	return anyFile, document
 }
 
-// versionRows reads the rows of the given packages ("<format>\x1f<name>").
-func (s *Service) versionRows(ctx context.Context, sc Scope, pkgs []string, withSize bool, withheld []int64, hasRepos bool, repos []int64) ([]q.PackageViewVersionsRow, error) {
+// versionRows reads the visible rows of the given versions of the packages with the given ids, with the per-row size and downloads:
+// the rows of one page of a version list, or of one version (Q-API-417). versions empty reads every version of the packages.
+func (s *Service) versionRows(ctx context.Context, sc Scope, pkgIDs []int64, versions []string, withSize bool, withheld []int64) ([]q.PackageViewVersionsRow, error) {
 	var rows []q.PackageViewVersionsRow
 	anyFile, document := s.fetchRules()
 	err := s.read(ctx, func(qs *q.Queries) (err error) {
 		rows, err = qs.PackageViewVersions(ctx, q.PackageViewVersionsParams{
-			WithSize: withSize, Withheld: ids(withheld), Packages: pkgs, HasRepos: hasRepos, Repos: ids(repos),
+			WithSize: withSize, PackageIds: ids(pkgIDs), Versions: keys(versions), Withheld: ids(withheld),
 			Whole: ids(sc.whole), Rows: keys(sc.rows), AnyFile: anyFile, Document: document,
 		})
 		return err
 	})
 	return rows, err
+}
+
+// versionNames reads the visible versions of the given packages ("<format>\x1f<name>") without the per-row size and downloads, one
+// cheap row per version per repository, oldest first.
+func (s *Service) versionNames(ctx context.Context, sc Scope, pkgs []string, withheld []int64, hasRepos bool, repos []int64) ([]q.PackageViewVersionNamesRow, error) {
+	var rows []q.PackageViewVersionNamesRow
+	err := s.read(ctx, func(qs *q.Queries) (err error) {
+		rows, err = qs.PackageViewVersionNames(ctx, q.PackageViewVersionNamesParams{
+			Withheld: ids(withheld), Packages: pkgs, HasRepos: hasRepos, Repos: ids(repos), Whole: ids(sc.whole), Rows: keys(sc.rows),
+		})
+		return err
+	})
+	return rows, err
+}
+
+// holdersOf reads the packages of a format and a name in the repositories of the scope, one per repository.
+func (s *Service) holdersOf(ctx context.Context, sc Scope, format, name string) ([]q.PackageViewHoldersRow, error) {
+	var out []q.PackageViewHoldersRow
+	err := s.read(ctx, func(qs *q.Queries) (err error) {
+		out, err = qs.PackageViewHolders(ctx, q.PackageViewHoldersParams{Format: format, Name: name, Repos: ids(sc.Repos())})
+		return err
+	})
+	return out, err
+}
+
+func packageIDs(hs []q.PackageViewHoldersRow) []int64 {
+	out := make([]int64, len(hs))
+	for i, h := range hs {
+		out[i] = h.PackageID
+	}
+	return out
 }
 
 // A VersionSet is the visible rows of one package, grouped per version.
@@ -620,24 +659,12 @@ func (g versionGroup) repoIDs() []int64 {
 	return out
 }
 
-// groups reads and groups the visible versions of one package; found is false when
-// the scope holds none.
-func (s *Service) groups(ctx context.Context, sc Scope, format, name string, withSize bool) ([]versionGroup, Adapter, error) {
-	a, ok := s.adapters.For(format)
-	if !ok {
-		return nil, nil, nil
-	}
-	withheld, err := s.withheld(ctx, sc, []string{format}, sc.Repos())
-	if err != nil {
-		return nil, nil, err
-	}
-	rows, err := s.versionRows(ctx, sc, []string{format + "\x1f" + name}, withSize, withheld, false, nil)
-	if err != nil {
-		return nil, nil, err
-	}
+// groupRows groups the rows of one package per version, in the order of the rows (by creation, so the first row of a group is its
+// oldest).
+func groupRows(rows []q.PackageViewVersionsRow) []versionGroup {
 	idx := map[string]int{}
 	var out []versionGroup
-	for _, r := range rows { // ordered by creation, so the first row of a group is its oldest
+	for _, r := range rows {
 		i, ok := idx[r.Version]
 		if !ok {
 			i = len(out)
@@ -646,7 +673,7 @@ func (s *Service) groups(ctx context.Context, sc Scope, format, name string, wit
 		}
 		out[i].rows = append(out[i].rows, r)
 	}
-	return out, a, nil
+	return out
 }
 
 // VersionFilter narrows the versions of a package.
@@ -675,70 +702,75 @@ func (o VersionOrder) VersionKey(v VersionSummary) []string {
 	return []string{v.PublishedAt.UTC().Format(time.RFC3339Nano), v.Version}
 }
 
-// Versions returns at most limit+1 versions after the cursor values, found false
-// when the scope holds no version of the package.
+// pageKey is a version of a page of the version list, with the time it is ordered by: its oldest visible row's.
+type pageKey struct {
+	version   string
+	published time.Time
+}
+
+// keysetBatch is the least number of versions one statement of a keyset page asks for: a filter the statement cannot apply (the
+// format's pre-release rule) drops versions, and the page asks again from the last one read.
+const keysetBatch = 64
+
+// Versions returns at most limit+1 versions after the cursor values, found false when the scope holds no version of the package
+// (R-API-029, R-API-010). A package that one repository of the scope holds, listed in the order of publication, is read a page at a time
+// by a keyset query (keysetPage, Q-API-417); a package several repositories hold, whose version is one entry over their rows, and the
+// order of the format's versions, which no statement can sort, read the versions' names and sort them here (sortedPage). Either way only
+// the rows of the page's versions are read with their sizes and downloads.
 func (s *Service) Versions(ctx context.Context, sc Scope, format, name string, f VersionFilter, o VersionOrder, after []string, limit int) ([]VersionSummary, bool, error) {
-	gs, a, err := s.groups(ctx, sc, format, name, true)
-	if err != nil || len(gs) == 0 {
+	a, ok := s.adapters.For(format)
+	if !ok {
+		return nil, false, nil
+	}
+	withheld, err := s.withheld(ctx, sc, []string{format}, sc.Repos())
+	if err != nil {
+		return nil, false, err
+	}
+	hs, err := s.holdersOf(ctx, sc, format, name)
+	if err != nil || len(hs) == 0 {
 		return nil, false, err
 	}
 	var only []int64
 	if f.HasRepositories {
 		only = sc.topo.Expand(sc.topo.IDs(f.Repositories))
 	}
-	out := make([]VersionSummary, 0, len(gs))
-	groupOf := make(map[string]versionGroup, len(gs))
-	for _, g := range gs {
+	var page []pageKey
+	var found bool
+	if len(hs) == 1 && o.Sort != "version" {
+		page, found, err = s.keysetPage(ctx, sc, a, hs[0], name, withheld, f, only, o, after, limit)
+	} else {
+		page, found, err = s.sortedPage(ctx, sc, a, format, name, withheld, f, only, o, after, limit)
+	}
+	if err != nil || !found {
+		return nil, found, err
+	}
+	if len(page) == 0 {
+		return []VersionSummary{}, true, nil
+	}
+	versions := make([]string, len(page))
+	for i, k := range page {
+		versions[i] = k.version
+	}
+	rows, err := s.versionRows(ctx, sc, packageIDs(hs), versions, true, withheld)
+	if err != nil {
+		return nil, true, err
+	}
+	groupOf := map[string]versionGroup{}
+	for _, g := range groupRows(rows) {
 		groupOf[g.version] = g
-		pre := a.Prerelease(g.version)
-		if f.Prerelease != nil && *f.Prerelease != pre {
-			continue
-		}
-		if f.HasRepositories && !slices.ContainsFunc(g.rows, func(r q.PackageViewVersionsRow) bool { return slices.Contains(only, r.RepoID) }) {
-			continue
+	}
+	out := make([]VersionSummary, 0, len(page))
+	for _, k := range page {
+		g, ok := groupOf[k.version]
+		if !ok {
+			continue // removed between the two reads; the next request is right
 		}
 		files := g.primary().SizeBytes
 		out = append(out, VersionSummary{
-			Version: g.version, Prerelease: pre, PublishedAt: g.published,
+			Version: k.version, Prerelease: a.Prerelease(k.version), PublishedAt: k.published,
 			SizeBytes: &files, Repositories: sc.topo.Names(sc.holders(g.repoIDs())), DownloadCount: g.downloads(),
 			LastDownloadedAt: g.lastDownload(),
 		})
-	}
-	cmp := func(x, y VersionSummary) int {
-		var c int
-		if o.Sort == "version" {
-			c = a.Compare(x.Version, y.Version)
-		} else {
-			c = x.PublishedAt.Compare(y.PublishedAt)
-		}
-		if c == 0 {
-			c = strings.Compare(x.Version, y.Version)
-		}
-		if o.Desc {
-			return -c
-		}
-		return c
-	}
-	slices.SortFunc(out, cmp)
-	if after != nil {
-		var pos VersionSummary
-		switch {
-		case o.Sort == "version" && len(after) == 1:
-			pos.Version = after[0]
-		case o.Sort != "version" && len(after) == 2:
-			t, err := time.Parse(time.RFC3339Nano, after[0])
-			if err != nil {
-				return nil, true, errBadCursor
-			}
-			pos.PublishedAt, pos.Version = t, after[1]
-		default:
-			return nil, true, errBadCursor
-		}
-		i := sort.Search(len(out), func(i int) bool { return cmp(out[i], pos) > 0 })
-		out = out[i:]
-	}
-	if len(out) > limit+1 {
-		out = out[:limit+1]
 	}
 	if err := s.adapterSizes(ctx, sc, a, format, groupOf, out); err != nil {
 		return nil, true, err
@@ -747,6 +779,242 @@ func (s *Service) Versions(ctx context.Context, sc Scope, format, name string, f
 		if err := s.fillFromMetadata(ctx, sc, a, format, groupOf, out, f); err != nil {
 			return nil, true, err
 		}
+	}
+	return out, true, nil
+}
+
+// keyCursor reads the cursor values of the order of publication: the time and the version.
+func keyCursor(after []string) (pageKey, error) {
+	if len(after) != 2 {
+		return pageKey{}, errBadCursor
+	}
+	t, err := time.Parse(time.RFC3339Nano, after[0])
+	if err != nil {
+		return pageKey{}, errBadCursor
+	}
+	return pageKey{version: after[1], published: t}, nil
+}
+
+// startOf is the cursor's time of a first page: every version is below 'infinity' and above '-infinity'.
+func startOf(o VersionOrder) string {
+	if o.Desc {
+		return "infinity"
+	}
+	return "-infinity"
+}
+
+// keysetPage reads a page of the versions of the one package that holds them, in the order of publication, by keyset statements of at
+// least keysetBatch versions each until limit+1 versions passed the pre-release filter or none is left. The cursor is the version's
+// creation time and its name: the statement's order, with the name compared bytewise, so a version keeps its place while others come and
+// go. found is false when the first page of the package without its filters is empty.
+func (s *Service) keysetPage(ctx context.Context, sc Scope, a Adapter, h q.PackageViewHoldersRow, name string, withheld []int64, f VersionFilter,
+	only []int64, o VersionOrder, after []string, limit int,
+) ([]pageKey, bool, error) {
+	at := startOf(o)
+	var cur string
+	if after != nil {
+		k, err := keyCursor(after)
+		if err != nil {
+			return nil, true, err
+		}
+		at, cur = stamp(&k.published), k.version
+	}
+	whole := slices.Contains(sc.whole, h.RepoID)
+	var allowed []string
+	if !whole {
+		prefix := strconv.FormatInt(h.RepoID, 10) + "\x1f" + name + "\x1f"
+		for _, r := range sc.rows {
+			if v, ok := strings.CutPrefix(r, prefix); ok {
+				allowed = append(allowed, v)
+			}
+		}
+	}
+	batch := max(limit+1, keysetBatch)
+	// A local repository's versions are its rows of package_versions, a remote OCI repository's tags its cache entries (R-OCI-036);
+	// a repository of another class has neither, and the two ordered lists of one batch are merged (keysetBatchOf).
+	class, _ := sc.topo.Class(h.RepoID)
+	k := keysetQuery{
+		holder: h, name: name, desc: o.Desc, remote: class == repository.Remote, withheld: ids(withheld), whole: whole,
+		allowed: keys(allowed),
+	}
+	fetch := func(at, cur string, n int) ([]pageKey, error) { return s.keysetBatchOf(ctx, k, at, cur, n) }
+	var page []pageKey
+	if !f.HasRepositories || slices.Contains(only, h.RepoID) {
+		for len(page) < limit+1 {
+			got, err := fetch(at, cur, batch)
+			if err != nil {
+				return nil, true, err
+			}
+			for _, k := range got {
+				if f.Prerelease == nil || *f.Prerelease == a.Prerelease(k.version) {
+					page = append(page, k)
+				}
+			}
+			if len(got) < batch {
+				break
+			}
+			last := got[len(got)-1]
+			at, cur = stamp(&last.published), last.version
+		}
+	}
+	if len(page) > limit+1 {
+		page = page[:limit+1]
+	}
+	if len(page) > 0 || after != nil || (f.Prerelease == nil && !f.HasRepositories) {
+		return page, len(page) > 0 || after != nil, nil
+	}
+	// An empty first page under a filter: the package is found when it has a version at all.
+	any, err := fetch(startOf(o), "", 1)
+	return page, len(any) > 0, err
+}
+
+// keysetQuery is what every batch of a keyset page asks of the statements.
+type keysetQuery struct {
+	holder       q.PackageViewHoldersRow
+	name         string
+	desc, remote bool
+	withheld     []int64
+	whole        bool
+	allowed      []string
+}
+
+// keysetBatchOf reads at most n versions after the cursor (at, cur) in the order of the query: the package's rows and, for a remote
+// repository, its tags, merged in that order.
+func (s *Service) keysetBatchOf(ctx context.Context, k keysetQuery, at, cur string, n int) ([]pageKey, error) {
+	var out []pageKey
+	err := s.read(ctx, func(qs *q.Queries) error {
+		out = out[:0]
+		var err error
+		if out, err = keysetRows(ctx, qs, k, at, cur, n, out); err != nil || !k.remote {
+			return err
+		}
+		out, err = keysetTags(ctx, qs, k, at, cur, n, out)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	slices.SortFunc(out, func(x, y pageKey) int {
+		c := x.published.Compare(y.published)
+		if c == 0 {
+			c = strings.Compare(x.version, y.version)
+		}
+		if k.desc {
+			return -c
+		}
+		return c
+	})
+	if len(out) > n {
+		out = out[:n]
+	}
+	return out, nil
+}
+
+// keysetRows appends a batch of the package's version rows to out.
+func keysetRows(ctx context.Context, qs *q.Queries, k keysetQuery, at, cur string, n int, out []pageKey) ([]pageKey, error) {
+	if k.desc {
+		rs, err := qs.PackageViewVersionPageDesc(ctx, q.PackageViewVersionPageDescParams{
+			PackageID: k.holder.PackageID, AfterAt: at, AfterVersion: cur, Withheld: k.withheld, Whole: k.whole, Allowed: k.allowed, MaxRows: rows32(n),
+		})
+		for _, r := range rs {
+			out = append(out, pageKey{version: r.Version, published: r.CreatedAt.Time})
+		}
+		return out, err
+	}
+	rs, err := qs.PackageViewVersionPageAsc(ctx, q.PackageViewVersionPageAscParams{
+		PackageID: k.holder.PackageID, AfterAt: at, AfterVersion: cur, Withheld: k.withheld, Whole: k.whole, Allowed: k.allowed, MaxRows: rows32(n),
+	})
+	for _, r := range rs {
+		out = append(out, pageKey{version: r.Version, published: r.CreatedAt.Time})
+	}
+	return out, err
+}
+
+// keysetTags appends a batch of a remote OCI repository's tags of the name to out.
+func keysetTags(ctx context.Context, qs *q.Queries, k keysetQuery, at, cur string, n int, out []pageKey) ([]pageKey, error) {
+	if k.desc {
+		rs, err := qs.PackageViewTagPageDesc(ctx, q.PackageViewTagPageDescParams{
+			RepoID: k.holder.RepoID, Name: k.name, AfterAt: at, AfterVersion: cur, Withheld: k.withheld, Whole: k.whole, Allowed: k.allowed, MaxRows: rows32(n),
+		})
+		for _, r := range rs {
+			out = append(out, pageKey{version: r.Version, published: r.CreatedAt.Time})
+		}
+		return out, err
+	}
+	rs, err := qs.PackageViewTagPageAsc(ctx, q.PackageViewTagPageAscParams{
+		RepoID: k.holder.RepoID, Name: k.name, AfterAt: at, AfterVersion: cur, Withheld: k.withheld, Whole: k.whole, Allowed: k.allowed, MaxRows: rows32(n),
+	})
+	for _, r := range rs {
+		out = append(out, pageKey{version: r.Version, published: r.CreatedAt.Time})
+	}
+	return out, err
+}
+
+// sortedPage reads the names of every visible version of the package, one cheap row per version per repository, groups them, filters
+// and sorts them in the format's order or by publication and cuts the page after the cursor. It is the way for a package that several
+// repositories of the scope hold and for the order of the format's versions (H-1683).
+func (s *Service) sortedPage(ctx context.Context, sc Scope, a Adapter, format, name string, withheld []int64, f VersionFilter,
+	only []int64, o VersionOrder, after []string, limit int,
+) ([]pageKey, bool, error) {
+	rows, err := s.versionNames(ctx, sc, []string{format + "\x1f" + name}, withheld, false, nil)
+	if err != nil || len(rows) == 0 {
+		return nil, false, err
+	}
+	idx := map[string]int{}
+	var all []pageKey
+	inOnly := map[string]bool{}
+	for _, r := range rows { // oldest first: a version's first row is its publication
+		if _, ok := idx[r.Version]; !ok {
+			idx[r.Version] = len(all)
+			all = append(all, pageKey{version: r.Version, published: r.CreatedAt.Time})
+		}
+		if slices.Contains(only, r.RepoID) {
+			inOnly[r.Version] = true
+		}
+	}
+	out := all[:0:0]
+	for _, k := range all {
+		if f.Prerelease != nil && *f.Prerelease != a.Prerelease(k.version) {
+			continue
+		}
+		if f.HasRepositories && !inOnly[k.version] {
+			continue
+		}
+		out = append(out, k)
+	}
+	cmp := func(x, y pageKey) int {
+		var c int
+		if o.Sort == "version" {
+			c = a.Compare(x.version, y.version)
+		} else {
+			c = x.published.Compare(y.published)
+		}
+		if c == 0 {
+			c = strings.Compare(x.version, y.version)
+		}
+		if o.Desc {
+			return -c
+		}
+		return c
+	}
+	slices.SortFunc(out, cmp)
+	if after != nil {
+		var pos pageKey
+		switch {
+		case o.Sort == "version" && len(after) == 1:
+			pos.version = after[0]
+		case o.Sort != "version":
+			if pos, err = keyCursor(after); err != nil {
+				return nil, true, err
+			}
+		default:
+			return nil, true, errBadCursor
+		}
+		i := sort.Search(len(out), func(i int) bool { return cmp(out[i], pos) > 0 })
+		out = out[i:]
+	}
+	if len(out) > limit+1 {
+		out = out[:limit+1]
 	}
 	return out, true, nil
 }
@@ -852,14 +1120,24 @@ func (s *Service) Version(ctx context.Context, sc Scope, format, name, version s
 		}
 		d.Repositories = append(d.Repositories, RepositoryEntry{Repo: sc.topo.Name(id), Class: string(class), PublishedAt: at})
 	}
-	visible := map[string]bool{}
-	if all, _, err := s.groups(ctx, sc, format, name, false); err == nil {
-		for _, g := range all {
-			visible[g.version] = true
+	// The visible versions are read when the format asks about one (npm's dist-tags): a format that does not ask reads none of them, so
+	// the detail of one tag of an image with many costs no read of every tag (Q-OCI-267).
+	var visible map[string]bool
+	isVisible := func(v string) bool {
+		if visible == nil {
+			visible = map[string]bool{}
+			if withheld, err := s.withheld(ctx, sc, []string{format}, sc.Repos()); err == nil {
+				if all, err := s.versionNames(ctx, sc, []string{format + "\x1f" + name}, withheld, false, nil); err == nil {
+					for _, r := range all {
+						visible[r.Version] = true
+					}
+				}
+			}
 		}
+		return visible[v]
 	}
 	got, err := a.Describe(ctx, []Version{{ID: pri.VersionID, Format: format, Repo: sc.topo.Name(pri.RepoID).String(), Package: pri.Name, Version: version}},
-		FieldSummary|FieldDetails, func(v string) bool { return visible[v] })
+		FieldSummary|FieldDetails, isVisible)
 	if err != nil {
 		return VersionDetail{}, false, err
 	}
@@ -935,11 +1213,23 @@ func (s *Service) ReadmeOf(ctx context.Context, sc Scope, format, name, version 
 }
 
 func (s *Service) oneVersion(ctx context.Context, sc Scope, format, name, version string, withSize bool) (versionGroup, Adapter, bool, error) {
-	gs, a, err := s.groups(ctx, sc, format, name, withSize)
+	a, ok := s.adapters.For(format)
+	if !ok {
+		return versionGroup{}, nil, false, nil
+	}
+	withheld, err := s.withheld(ctx, sc, []string{format}, sc.Repos())
 	if err != nil {
 		return versionGroup{}, nil, false, err
 	}
-	for _, g := range gs {
+	hs, err := s.holdersOf(ctx, sc, format, name)
+	if err != nil || len(hs) == 0 {
+		return versionGroup{}, nil, false, err
+	}
+	rows, err := s.versionRows(ctx, sc, packageIDs(hs), []string{version}, withSize, withheld)
+	if err != nil {
+		return versionGroup{}, nil, false, err
+	}
+	for _, g := range groupRows(rows) {
 		if g.version == version {
 			return g, a, true, nil
 		}

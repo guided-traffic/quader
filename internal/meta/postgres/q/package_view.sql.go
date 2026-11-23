@@ -102,6 +102,46 @@ func (q *Queries) PackageViewFiles(ctx context.Context, versionID int64) ([]Pack
 	return items, nil
 }
 
+const packageViewHolders = `-- name: PackageViewHolders :many
+SELECT p.id AS package_id, p.repo_id
+  FROM packages p
+  JOIN repositories r ON r.id = p.repo_id
+ WHERE r.format = $1::text AND p.name = $2::text AND p.repo_id = ANY($3::bigint[])
+ ORDER BY p.repo_id
+`
+
+type PackageViewHoldersParams struct {
+	Format string
+	Name   string
+	Repos  []int64
+}
+
+type PackageViewHoldersRow struct {
+	PackageID int64
+	RepoID    int64
+}
+
+// The packages of one format and name in the given repositories, one per repository: the holders of a version list (R-API-029).
+func (q *Queries) PackageViewHolders(ctx context.Context, arg PackageViewHoldersParams) ([]PackageViewHoldersRow, error) {
+	rows, err := q.db.Query(ctx, packageViewHolders, arg.Format, arg.Name, arg.Repos)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PackageViewHoldersRow{}
+	for rows.Next() {
+		var i PackageViewHoldersRow
+		if err := rows.Scan(&i.PackageID, &i.RepoID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const packageViewList = `-- name: PackageViewList :many
 
 WITH vis AS (
@@ -291,6 +331,324 @@ func (q *Queries) PackageViewList(ctx context.Context, arg PackageViewListParams
 	return items, nil
 }
 
+const packageViewTagPageAsc = `-- name: PackageViewTagPageAsc :many
+SELECT e.tag::text AS version, e.fetched_at AS created_at
+  FROM remote_cache_entries e
+ WHERE e.repo_id = $1::bigint AND e.tag_name = $2::text
+   AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+   AND (e.fetched_at, e.tag) > ($3::text::timestamptz, ($4::text COLLATE "C"))
+   AND NOT (-e.id = ANY($5::bigint[]))
+   AND ($6::boolean OR e.tag = ANY($7::text[]))
+   AND EXISTS (SELECT 1 FROM repositories r WHERE r.id = e.repo_id AND r.class = 'remote' AND r.format = 'oci' OFFSET 0)
+   AND EXISTS (SELECT 1 FROM oci_manifests om WHERE om.repo_id = e.repo_id AND om.name = e.tag_name AND om.digest = e.blob_sha256 OFFSET 0)
+   AND (EXISTS (SELECT 1 FROM mirror_state ms WHERE ms.repo_id = e.repo_id OFFSET 0)
+        OR e.background_sha256 = e.blob_sha256
+        OR EXISTS (SELECT 1 FROM items i JOIN item_download_stats s ON s.item_id = i.id
+                    WHERE i.repo_id = e.repo_id AND i.path = e.tag_name || '/_manifests/sha256:' || encode(e.blob_sha256, 'hex')
+                      AND i.trashed_at IS NULL AND s.downloads > 0 OFFSET 0))
+ ORDER BY e.fetched_at, e.tag
+ LIMIT $8::int
+`
+
+type PackageViewTagPageAscParams struct {
+	RepoID       int64
+	Name         string
+	AfterAt      string
+	AfterVersion string
+	Withheld     []int64
+	Whole        bool
+	Allowed      []string
+	MaxRows      int32
+}
+
+type PackageViewTagPageAscRow struct {
+	Version   string
+	CreatedAt pgtype.Timestamptz
+}
+
+// PackageViewTagPageDesc oldest first.
+func (q *Queries) PackageViewTagPageAsc(ctx context.Context, arg PackageViewTagPageAscParams) ([]PackageViewTagPageAscRow, error) {
+	rows, err := q.db.Query(ctx, packageViewTagPageAsc,
+		arg.RepoID,
+		arg.Name,
+		arg.AfterAt,
+		arg.AfterVersion,
+		arg.Withheld,
+		arg.Whole,
+		arg.Allowed,
+		arg.MaxRows,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PackageViewTagPageAscRow{}
+	for rows.Next() {
+		var i PackageViewTagPageAscRow
+		if err := rows.Scan(&i.Version, &i.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const packageViewTagPageDesc = `-- name: PackageViewTagPageDesc :many
+SELECT e.tag::text AS version, e.fetched_at AS created_at
+  FROM remote_cache_entries e
+ WHERE e.repo_id = $1::bigint AND e.tag_name = $2::text
+   AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+   AND (e.fetched_at, e.tag) < ($3::text::timestamptz, ($4::text COLLATE "C"))
+   AND NOT (-e.id = ANY($5::bigint[]))
+   AND ($6::boolean OR e.tag = ANY($7::text[]))
+   AND EXISTS (SELECT 1 FROM repositories r WHERE r.id = e.repo_id AND r.class = 'remote' AND r.format = 'oci' OFFSET 0)
+   AND EXISTS (SELECT 1 FROM oci_manifests om WHERE om.repo_id = e.repo_id AND om.name = e.tag_name AND om.digest = e.blob_sha256 OFFSET 0)
+   AND (EXISTS (SELECT 1 FROM mirror_state ms WHERE ms.repo_id = e.repo_id OFFSET 0)
+        OR e.background_sha256 = e.blob_sha256
+        OR EXISTS (SELECT 1 FROM items i JOIN item_download_stats s ON s.item_id = i.id
+                    WHERE i.repo_id = e.repo_id AND i.path = e.tag_name || '/_manifests/sha256:' || encode(e.blob_sha256, 'hex')
+                      AND i.trashed_at IS NULL AND s.downloads > 0 OFFSET 0))
+ ORDER BY e.fetched_at DESC, e.tag DESC
+ LIMIT $8::int
+`
+
+type PackageViewTagPageDescParams struct {
+	RepoID       int64
+	Name         string
+	AfterAt      string
+	AfterVersion string
+	Withheld     []int64
+	Whole        bool
+	Allowed      []string
+	MaxRows      int32
+}
+
+type PackageViewTagPageDescRow struct {
+	Version   string
+	CreatedAt pgtype.Timestamptz
+}
+
+// PackageViewVersionPageDesc for the tags of a name in a remote OCI repository (R-OCI-036), which are its cache entries and no version
+// rows: in the order of the index remote_cache_entries_tag_time, each entry kept by the rules of the view oci_remote_tags (00113),
+// written here as checks per entry, each one index lookup. Read through the view, or with the checks as joins, the planner starts from
+// the manifest's side and reads every tag entry of the name before it sorts (measured, Q-OCI-267); OFFSET 0 keeps each check a check per
+// entry. A change of the view's rules changes them here too; the listing tests of R-OCI-036 read both.
+func (q *Queries) PackageViewTagPageDesc(ctx context.Context, arg PackageViewTagPageDescParams) ([]PackageViewTagPageDescRow, error) {
+	rows, err := q.db.Query(ctx, packageViewTagPageDesc,
+		arg.RepoID,
+		arg.Name,
+		arg.AfterAt,
+		arg.AfterVersion,
+		arg.Withheld,
+		arg.Whole,
+		arg.Allowed,
+		arg.MaxRows,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PackageViewTagPageDescRow{}
+	for rows.Next() {
+		var i PackageViewTagPageDescRow
+		if err := rows.Scan(&i.Version, &i.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const packageViewVersionNames = `-- name: PackageViewVersionNames :many
+SELECT pv.id AS version_id, r.format, p.name, pv.version, pv.created_at, r.id AS repo_id
+  FROM package_version_listing pv
+  JOIN packages p ON p.id = pv.package_id
+  JOIN repositories r ON r.id = p.repo_id
+ WHERE pv.trashed_at IS NULL
+   AND NOT (pv.id = ANY($1::bigint[]))
+   AND concat_ws(chr(31), r.format, p.name) = ANY($2::text[])
+   AND (NOT $3::boolean OR p.repo_id = ANY($4::bigint[]))
+   AND (p.repo_id = ANY($5::bigint[])
+        OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY($6::text[]))
+ ORDER BY pv.created_at, pv.id
+`
+
+type PackageViewVersionNamesParams struct {
+	Withheld []int64
+	Packages []string
+	HasRepos bool
+	Repos    []int64
+	Whole    []int64
+	Rows     []string
+}
+
+type PackageViewVersionNamesRow struct {
+	VersionID int64
+	Format    string
+	Name      string
+	Version   string
+	CreatedAt pgtype.Timestamptz
+	RepoID    int64
+}
+
+// The visible versions of the given packages ("<format>\x1f<name>"), one row per version per repository, without the size and the
+// downloads: what the latest version of a listed package, the repositories that hold it and the visible versions a format's details
+// refer to are decided on. It reads every row of the packages, a cheap one each (no subplan per row).
+func (q *Queries) PackageViewVersionNames(ctx context.Context, arg PackageViewVersionNamesParams) ([]PackageViewVersionNamesRow, error) {
+	rows, err := q.db.Query(ctx, packageViewVersionNames,
+		arg.Withheld,
+		arg.Packages,
+		arg.HasRepos,
+		arg.Repos,
+		arg.Whole,
+		arg.Rows,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PackageViewVersionNamesRow{}
+	for rows.Next() {
+		var i PackageViewVersionNamesRow
+		if err := rows.Scan(
+			&i.VersionID,
+			&i.Format,
+			&i.Name,
+			&i.Version,
+			&i.CreatedAt,
+			&i.RepoID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const packageViewVersionPageAsc = `-- name: PackageViewVersionPageAsc :many
+SELECT pv.version::text AS version, pv.created_at
+  FROM package_versions pv
+ WHERE pv.package_id = $1::bigint AND pv.trashed_at IS NULL
+   AND (pv.created_at, (pv.version COLLATE "C")) > ($2::text::timestamptz, ($3::text COLLATE "C"))
+   AND NOT (pv.id = ANY($4::bigint[]))
+   AND ($5::boolean OR pv.version = ANY($6::text[]))
+ ORDER BY pv.created_at, (pv.version COLLATE "C")
+ LIMIT $7::int
+`
+
+type PackageViewVersionPageAscParams struct {
+	PackageID    int64
+	AfterAt      string
+	AfterVersion string
+	Withheld     []int64
+	Whole        bool
+	Allowed      []string
+	MaxRows      int32
+}
+
+type PackageViewVersionPageAscRow struct {
+	Version   string
+	CreatedAt pgtype.Timestamptz
+}
+
+// PackageViewVersionPageDesc oldest first: the keyset above the cursor's; the first page passes '-infinity' and an empty version.
+func (q *Queries) PackageViewVersionPageAsc(ctx context.Context, arg PackageViewVersionPageAscParams) ([]PackageViewVersionPageAscRow, error) {
+	rows, err := q.db.Query(ctx, packageViewVersionPageAsc,
+		arg.PackageID,
+		arg.AfterAt,
+		arg.AfterVersion,
+		arg.Withheld,
+		arg.Whole,
+		arg.Allowed,
+		arg.MaxRows,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PackageViewVersionPageAscRow{}
+	for rows.Next() {
+		var i PackageViewVersionPageAscRow
+		if err := rows.Scan(&i.Version, &i.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const packageViewVersionPageDesc = `-- name: PackageViewVersionPageDesc :many
+SELECT pv.version::text AS version, pv.created_at
+  FROM package_versions pv
+ WHERE pv.package_id = $1::bigint AND pv.trashed_at IS NULL
+   AND (pv.created_at, (pv.version COLLATE "C")) < ($2::text::timestamptz, ($3::text COLLATE "C"))
+   AND NOT (pv.id = ANY($4::bigint[]))
+   AND ($5::boolean OR pv.version = ANY($6::text[]))
+ ORDER BY pv.created_at DESC, (pv.version COLLATE "C") DESC
+ LIMIT $7::int
+`
+
+type PackageViewVersionPageDescParams struct {
+	PackageID    int64
+	AfterAt      string
+	AfterVersion string
+	Withheld     []int64
+	Whole        bool
+	Allowed      []string
+	MaxRows      int32
+}
+
+type PackageViewVersionPageDescRow struct {
+	Version   string
+	CreatedAt pgtype.Timestamptz
+}
+
+// One page of the visible versions of one package of one repository, newest first (R-API-010, Q-API-417): the keyset (created_at,
+// version) below the cursor's, in the order of the index package_versions_listing, so the page reads the rows it returns and those the
+// scope or the withheld list drops on the way, and none past its limit. The first page passes the time 'infinity' and an empty
+// version. The time travels as text (RFC 3339 with nanoseconds, 'infinity', '-infinity'), so the service imports no driver
+// type (R-ARCH-002). A version is one row of a package: the caller uses it for a package that one repository of the scope holds. Versions compare
+// bytewise (collation C), as the cursor's do.
+func (q *Queries) PackageViewVersionPageDesc(ctx context.Context, arg PackageViewVersionPageDescParams) ([]PackageViewVersionPageDescRow, error) {
+	rows, err := q.db.Query(ctx, packageViewVersionPageDesc,
+		arg.PackageID,
+		arg.AfterAt,
+		arg.AfterVersion,
+		arg.Withheld,
+		arg.Whole,
+		arg.Allowed,
+		arg.MaxRows,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PackageViewVersionPageDescRow{}
+	for rows.Next() {
+		var i PackageViewVersionPageDescRow
+		if err := rows.Scan(&i.Version, &i.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const packageViewVersions = `-- name: PackageViewVersions :many
 SELECT pv.id AS version_id, r.format, p.name, p.display_name, pv.version, pv.created_at,
        r.id AS repo_id, r.class AS repo_class,
@@ -318,24 +676,23 @@ SELECT pv.id AS version_id, r.format, p.name, p.display_name, pv.version, pv.cre
                  AND starts_with(i.path, p.name || '/') AND (i.version_id IS NULL OR i.version_id = pv.id))
   ) st ON true
  WHERE pv.trashed_at IS NULL
-   AND NOT (pv.id = ANY($4::bigint[]))
-   AND concat_ws(chr(31), r.format, p.name) = ANY($5::text[])
-   AND (NOT $6::boolean OR p.repo_id = ANY($7::bigint[]))
-   AND (p.repo_id = ANY($8::bigint[])
-        OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY($9::text[]))
+   AND pv.package_id = ANY($4::bigint[])
+   AND (cardinality($5::text[]) = 0 OR pv.version = ANY($5::text[]))
+   AND NOT (pv.id = ANY($6::bigint[]))
+   AND (p.repo_id = ANY($7::bigint[])
+        OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY($8::text[]))
  ORDER BY pv.created_at, pv.id
 `
 
 type PackageViewVersionsParams struct {
-	WithSize bool
-	AnyFile  []string
-	Document []string
-	Withheld []int64
-	Packages []string
-	HasRepos bool
-	Repos    []int64
-	Whole    []int64
-	Rows     []string
+	WithSize   bool
+	AnyFile    []string
+	Document   []string
+	PackageIds []int64
+	Versions   []string
+	Withheld   []int64
+	Whole      []int64
+	Rows       []string
 }
 
 type PackageViewVersionsRow struct {
@@ -352,18 +709,18 @@ type PackageViewVersionsRow struct {
 	LastDownloadAt pgtype.Timestamptz
 }
 
-// The visible rows of the given packages (format and normalized name), one per version per repository, with the repository, the size of the
+// The visible rows of the given packages (by id) and versions, one per version per repository, with the repository, the size of the
 // version's files (when asked), the downloads that are fetches of the version by its format's rule and when the latest of them was
-// (R-API-029, R-API-079). packages holds "<format>\x1f<name>" entries. The caller groups the rows per version.
+// (R-API-029, R-API-079). The caller names the versions of one page or one version, so the per-row subplans run for those rows alone
+// (Q-API-417); versions empty names every version, which no caller asks. The caller groups the rows per version.
 func (q *Queries) PackageViewVersions(ctx context.Context, arg PackageViewVersionsParams) ([]PackageViewVersionsRow, error) {
 	rows, err := q.db.Query(ctx, packageViewVersions,
 		arg.WithSize,
 		arg.AnyFile,
 		arg.Document,
+		arg.PackageIds,
+		arg.Versions,
 		arg.Withheld,
-		arg.Packages,
-		arg.HasRepos,
-		arg.Repos,
 		arg.Whole,
 		arg.Rows,
 	)

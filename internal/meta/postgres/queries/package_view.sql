@@ -91,9 +91,10 @@ SELECT g.format, g.name, g.display_name, g.created_at, g.updated_at, g.version_c
  LIMIT sqlc.arg(max_rows)::int;
 
 -- name: PackageViewVersions :many
--- The visible rows of the given packages (format and normalized name), one per version per repository, with the repository, the size of the
+-- The visible rows of the given packages (by id) and versions, one per version per repository, with the repository, the size of the
 -- version's files (when asked), the downloads that are fetches of the version by its format's rule and when the latest of them was
--- (R-API-029, R-API-079). packages holds "<format>\x1f<name>" entries. The caller groups the rows per version.
+-- (R-API-029, R-API-079). The caller names the versions of one page or one version, so the per-row subplans run for those rows alone
+-- (Q-API-417); versions empty names every version, which no caller asks. The caller groups the rows per version.
 SELECT pv.id AS version_id, r.format, p.name, p.display_name, pv.version, pv.created_at,
        r.id AS repo_id, r.class AS repo_class,
        CASE WHEN sqlc.arg(with_size)::boolean
@@ -120,12 +121,105 @@ SELECT pv.id AS version_id, r.format, p.name, p.display_name, pv.version, pv.cre
                  AND starts_with(i.path, p.name || '/') AND (i.version_id IS NULL OR i.version_id = pv.id))
   ) st ON true
  WHERE pv.trashed_at IS NULL
+   AND pv.package_id = ANY(sqlc.arg(package_ids)::bigint[])
+   AND (cardinality(sqlc.arg(versions)::text[]) = 0 OR pv.version = ANY(sqlc.arg(versions)::text[]))
+   AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
+   AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])
+        OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY(sqlc.arg(rows)::text[]))
+ ORDER BY pv.created_at, pv.id;
+
+-- name: PackageViewVersionNames :many
+-- The visible versions of the given packages ("<format>\x1f<name>"), one row per version per repository, without the size and the
+-- downloads: what the latest version of a listed package, the repositories that hold it and the visible versions a format's details
+-- refer to are decided on. It reads every row of the packages, a cheap one each (no subplan per row).
+SELECT pv.id AS version_id, r.format, p.name, pv.version, pv.created_at, r.id AS repo_id
+  FROM package_version_listing pv
+  JOIN packages p ON p.id = pv.package_id
+  JOIN repositories r ON r.id = p.repo_id
+ WHERE pv.trashed_at IS NULL
    AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
    AND concat_ws(chr(31), r.format, p.name) = ANY(sqlc.arg(packages)::text[])
    AND (NOT sqlc.arg(has_repos)::boolean OR p.repo_id = ANY(sqlc.arg(repos)::bigint[]))
    AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])
         OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY(sqlc.arg(rows)::text[]))
  ORDER BY pv.created_at, pv.id;
+
+-- name: PackageViewHolders :many
+-- The packages of one format and name in the given repositories, one per repository: the holders of a version list (R-API-029).
+SELECT p.id AS package_id, p.repo_id
+  FROM packages p
+  JOIN repositories r ON r.id = p.repo_id
+ WHERE r.format = sqlc.arg(format)::text AND p.name = sqlc.arg(name)::text AND p.repo_id = ANY(sqlc.arg(repos)::bigint[])
+ ORDER BY p.repo_id;
+
+-- name: PackageViewVersionPageDesc :many
+-- One page of the visible versions of one package of one repository, newest first (R-API-010, Q-API-417): the keyset (created_at,
+-- version) below the cursor's, in the order of the index package_versions_listing, so the page reads the rows it returns and those the
+-- scope or the withheld list drops on the way, and none past its limit. The first page passes the time 'infinity' and an empty
+-- version. The time travels as text (RFC 3339 with nanoseconds, 'infinity', '-infinity'), so the service imports no driver
+-- type (R-ARCH-002). A version is one row of a package: the caller uses it for a package that one repository of the scope holds. Versions compare
+-- bytewise (collation C), as the cursor's do.
+SELECT pv.version::text AS version, pv.created_at
+  FROM package_versions pv
+ WHERE pv.package_id = sqlc.arg(package_id)::bigint AND pv.trashed_at IS NULL
+   AND (pv.created_at, (pv.version COLLATE "C")) < (sqlc.arg(after_at)::text::timestamptz, (sqlc.arg(after_version)::text COLLATE "C"))
+   AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
+   AND (sqlc.arg(whole)::boolean OR pv.version = ANY(sqlc.arg(allowed)::text[]))
+ ORDER BY pv.created_at DESC, (pv.version COLLATE "C") DESC
+ LIMIT sqlc.arg(max_rows)::int;
+
+-- name: PackageViewVersionPageAsc :many
+-- PackageViewVersionPageDesc oldest first: the keyset above the cursor's; the first page passes '-infinity' and an empty version.
+SELECT pv.version::text AS version, pv.created_at
+  FROM package_versions pv
+ WHERE pv.package_id = sqlc.arg(package_id)::bigint AND pv.trashed_at IS NULL
+   AND (pv.created_at, (pv.version COLLATE "C")) > (sqlc.arg(after_at)::text::timestamptz, (sqlc.arg(after_version)::text COLLATE "C"))
+   AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
+   AND (sqlc.arg(whole)::boolean OR pv.version = ANY(sqlc.arg(allowed)::text[]))
+ ORDER BY pv.created_at, (pv.version COLLATE "C")
+ LIMIT sqlc.arg(max_rows)::int;
+
+-- name: PackageViewTagPageDesc :many
+-- PackageViewVersionPageDesc for the tags of a name in a remote OCI repository (R-OCI-036), which are its cache entries and no version
+-- rows: in the order of the index remote_cache_entries_tag_time, each entry kept by the rules of the view oci_remote_tags (00113),
+-- written here as checks per entry, each one index lookup. Read through the view, or with the checks as joins, the planner starts from
+-- the manifest's side and reads every tag entry of the name before it sorts (measured, Q-OCI-267); OFFSET 0 keeps each check a check per
+-- entry. A change of the view's rules changes them here too; the listing tests of R-OCI-036 read both.
+SELECT e.tag::text AS version, e.fetched_at AS created_at
+  FROM remote_cache_entries e
+ WHERE e.repo_id = sqlc.arg(repo_id)::bigint AND e.tag_name = sqlc.arg(name)::text
+   AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+   AND (e.fetched_at, e.tag) < (sqlc.arg(after_at)::text::timestamptz, (sqlc.arg(after_version)::text COLLATE "C"))
+   AND NOT (-e.id = ANY(sqlc.arg(withheld)::bigint[]))
+   AND (sqlc.arg(whole)::boolean OR e.tag = ANY(sqlc.arg(allowed)::text[]))
+   AND EXISTS (SELECT 1 FROM repositories r WHERE r.id = e.repo_id AND r.class = 'remote' AND r.format = 'oci' OFFSET 0)
+   AND EXISTS (SELECT 1 FROM oci_manifests om WHERE om.repo_id = e.repo_id AND om.name = e.tag_name AND om.digest = e.blob_sha256 OFFSET 0)
+   AND (EXISTS (SELECT 1 FROM mirror_state ms WHERE ms.repo_id = e.repo_id OFFSET 0)
+        OR e.background_sha256 = e.blob_sha256
+        OR EXISTS (SELECT 1 FROM items i JOIN item_download_stats s ON s.item_id = i.id
+                    WHERE i.repo_id = e.repo_id AND i.path = e.tag_name || '/_manifests/sha256:' || encode(e.blob_sha256, 'hex')
+                      AND i.trashed_at IS NULL AND s.downloads > 0 OFFSET 0))
+ ORDER BY e.fetched_at DESC, e.tag DESC
+ LIMIT sqlc.arg(max_rows)::int;
+
+-- name: PackageViewTagPageAsc :many
+-- PackageViewTagPageDesc oldest first.
+SELECT e.tag::text AS version, e.fetched_at AS created_at
+  FROM remote_cache_entries e
+ WHERE e.repo_id = sqlc.arg(repo_id)::bigint AND e.tag_name = sqlc.arg(name)::text
+   AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+   AND (e.fetched_at, e.tag) > (sqlc.arg(after_at)::text::timestamptz, (sqlc.arg(after_version)::text COLLATE "C"))
+   AND NOT (-e.id = ANY(sqlc.arg(withheld)::bigint[]))
+   AND (sqlc.arg(whole)::boolean OR e.tag = ANY(sqlc.arg(allowed)::text[]))
+   AND EXISTS (SELECT 1 FROM repositories r WHERE r.id = e.repo_id AND r.class = 'remote' AND r.format = 'oci' OFFSET 0)
+   AND EXISTS (SELECT 1 FROM oci_manifests om WHERE om.repo_id = e.repo_id AND om.name = e.tag_name AND om.digest = e.blob_sha256 OFFSET 0)
+   AND (EXISTS (SELECT 1 FROM mirror_state ms WHERE ms.repo_id = e.repo_id OFFSET 0)
+        OR e.background_sha256 = e.blob_sha256
+        OR EXISTS (SELECT 1 FROM items i JOIN item_download_stats s ON s.item_id = i.id
+                    WHERE i.repo_id = e.repo_id AND i.path = e.tag_name || '/_manifests/sha256:' || encode(e.blob_sha256, 'hex')
+                      AND i.trashed_at IS NULL AND s.downloads > 0 OFFSET 0))
+ ORDER BY e.fetched_at, e.tag
+ LIMIT sqlc.arg(max_rows)::int;
 
 -- name: PackageViewFiles :many
 -- The files of a version: the live file items linked to it.

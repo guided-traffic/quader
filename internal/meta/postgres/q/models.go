@@ -1218,6 +1218,8 @@ type RemoteCacheEntry struct {
 	LastUsedAt           pgtype.Timestamptz
 	MediaType            pgtype.Text
 	BackgroundSha256     []byte
+	TagName              pgtype.Text
+	Tag                  pgtype.Text
 }
 
 type RemoteCacheInvalidation struct {

@@ -1659,7 +1659,13 @@ remain as their owners define them.)
   rule refuses is a `404`. A sort or a filter the document does not list answers `400`; a cursor of another sort
   or filter answers `400 invalid_cursor` (R-API-010). Package names order bytewise, so the order and the keyset of
   a cursor do not depend on the locale of the database. The order and the cursor use the normalized name, the key
-  the statement compares, never the display name of a format that keeps the case of a name (Q-API-170). Remote repositories contribute their cached versions only,
+  the statement compares, never the display name of a format that keeps the case of a name (Q-API-170). The version list of a package
+  that one repository of the caller's scope holds, in the order of publication (`sort` `-publishedAt` or `publishedAt`), is read a page at
+  a time by one keyset query on the version's creation time and its name compared bytewise, which reads no version past the page's limit
+  ([Q-API-417](#q-api-417--the-version-list-of-a-package-is-read-a-page-at-a-time-by-a-keyset-query-in-the-order-of-publication)); the
+  order of the format's versions, and a package several repositories hold, read every visible version's name and sort them in the
+  service ([H-1683](#h-1683--the-version-list-in-the-order-of-the-formats-versions-and-of-a-package-several-repositories-hold-reads-every-version)).
+  Remote repositories contribute their cached versions only,
   and a version the format withholds (npm: a tombstoned one, R-NPM-047) is not counted anywhere.
 - What the generic rows do not hold - description, keywords, licenses, the README and the `metadata` - comes from
   the format's view adapter over its data port (Q-API-166); the order of versions and the pre-release rule are the
@@ -22732,7 +22738,62 @@ configuration hashes of instance 1 equal those of the former file.
 [Makefile](../../Makefile). Elsewhere: [web-ui.md](../developer/web-ui.md#instances-one-per-builder),
 [build-and-test.md](../developer/build-and-test.md#instances-and-their-ports).
 
+### Q-API-417 · The version list of a package is read a page at a time by a keyset query in the order of publication
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That the version
+list's statement gets a keyset and a limit, for every format, was set by the coordinator of the findings run of 2026-11-23 after the
+measurement of H-829 ([formats/oci.md](formats/oci.md#h-829--the-package-list-of-a-remote-reads-every-tag-entry-of-an-image-to-count-it)).
+
+Context: `PackageViewVersions` read every visible row of a package, with the size and the downloads of each, for every page; the service
+grouped, sorted and paged them in memory. With 100,000 tags of one image a page of 50 took 16.6 s, the first page and one in the middle
+alike. R-API-010 asks one keyset query per page. A version of the list is one entry over the rows of every repository of the scope that
+holds it (its `publishedAt` is its oldest row's); the order of publication is a pair of a time and a name, the order of the format's
+versions is the format's `Compare`, which no statement can sort: npm's SemVer, NuGet's precedence, Debian's dpkg order, Ansible Galaxy's
+SemVer, OCI's tag order (R-OCI-031), generic files without versions.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A package that one repository of the scope holds, in the order of publication: one keyset statement on (creation time, version compared bytewise) with a limit, in the order of an index (`package_versions_listing`; a remote OCI repository's tags by `remote_cache_entries_tag_time`, Q-OCI-267); the rows with sizes and downloads are read for the page's versions alone. A package several repositories hold, and the order of the format's versions, read every visible version's name, one cheap row each, and sort in the service (chosen) | The common page (one repository, the default order) reads its page; the others read names, no size and no downloads per row | The cursor is the statement's order: the time a version was created and its name, both stored, so a version keeps its place while others come and go, in every format; the format's `Compare` stays the format's; a pre-release filter, which is the format's rule, asks again from the last version read until the page is full | A package of several repositories and the order of versions still read every name (H-1683) |
+| (b) A sort key of the format's order stored with every version | `package_versions.sort_key` written by every format at a commit and a fill | The order of versions by keyset too | A column every format must fill and keep, a migration of every stored version; OCI's tags are no version rows |
+| (c) Keep reading every row, cache the grouped list per package revision | A replica's cache | Repeated pages are cheap | The first page of every revision reads every row; a remote's tags change with every fill |
+
+**Choice:** (a). The cursor of the order of publication is `[publishedAt, version]`, of the order of versions `[version]`; both are the
+service's, unchanged for a client. **Applied in the spec:** R-API-029. Code: `Versions`, `keysetPage`, `sortedPage` in
+[service.go](../../internal/packages/view/service.go); `PackageViewVersionPage*`, `PackageViewTagPage*`, `PackageViewHolders`,
+`PackageViewVersionNames`, `PackageViewVersions` (by package ids and versions) in [package_view.sql](../../internal/meta/postgres/queries/package_view.sql);
+migration [00113](../../internal/meta/postgres/migrations/00113_version_list_keyset.sql). Tests:
+`TestR_API_010_APageOfVersionsReadsNoVersionPastItsLimit` ([packages](../../test/integration/packages/versions_keyset_test.go)),
+`TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit` ([ociremote](../../test/integration/ociremote/listing_keyset_test.go)),
+`TestR_API_029_VersionList`.
+
+### Q-API-428 · The package view's statements run without the server's JIT compilation
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the plans of the measurement of H-829 (2026-11-23) showed PostgreSQL's JIT compiling statements of the package view for 0.3 to
+0.5 s each: the planner costs `package_version_listing` and the tags of a remote OCI repository far above `jit_above_cost` (an estimate of
+1 row or of millions where 100,001 were read, or none), and `PackageViewCandidates` ran in 0.03 ms and took 0.26 s.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `set_config('jit', 'off', true)` as the first statement of every transaction of the view's service (chosen) | The view's reads only | No compile of 0.3 to 0.5 s on a statement that runs in milliseconds; works through a transaction-mode pooler | One statement more per transaction of the view |
+| (b) `jit = off` for every session of the installation | A startup parameter, and a role default behind a pooler, checked by preflight (R-HA-058) | Every statement | A requirement on every installation's roles for a problem measured in one service |
+| (c) Better estimates | Statistics, a rewritten view | The planner's other choices improve too | The view's shape (a union and a derived name) keeps estimates that are guesses |
+
+**Choice:** (a). **Applied in the spec:** R-API-029 (above). Code: `Service.read` in [service.go](../../internal/packages/view/service.go).
+
 ## What this does not cover
+
+### H-1683 · The version list in the order of the format's versions, and of a package several repositories hold, reads every version
+
+The version list reads a page by a keyset query only for a package that one repository of the caller's scope holds, in the order of
+publication (Q-API-417). In the order of the format's versions (`sort=version`, `-version`), and for a package that several repositories
+hold (a name in a local repository and in a remote's cache, a virtual repository's members), it reads the name and the creation time of
+every visible version, one cheap row each with no size and no downloads, and sorts them in the service; the rows with sizes and downloads
+are read for the page's versions alone. The package list reads every version of a listed package to count them and to find the latest
+by the format's order (H-829 of [formats/oci.md](formats/oci.md)). Live today; real for a package with tens of thousands of versions:
+measured for 100,000 tags, the package list took 0.99 s (load average 19). A sort key of the format's order stored with each version, and counts kept by the
+commit and the fill, are the remedies; neither is built.
 
 
 ### H-43 · General API rate limits are per replica

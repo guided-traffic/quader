@@ -39,6 +39,9 @@ UPDATE oci_manifests m
  WHERE m.repo_id = sqlc.arg(repo_id)::bigint AND m.name = sqlc.arg(name)::text AND m.digest = sqlc.arg(digest)::bytea;
 
 -- name: OCITagSizes :many
+-- A remote's tag is read by its cache entry's id, the negated version id the listing gave (R-OCI-036): the listing decided that it is
+-- listed, so the entry and its package are read by the primary key alone, which the view, read from the manifest's side, would not
+-- (Q-OCI-267). The same in OCITagViews and OCIChildPlatforms.
 -- What the size of the image each of the tags with the given version ids points at is made of (R-OCI-031, Q-OCI-221): the content
 -- size of its manifest (the config and the layers an image manifest names) and, for an index, how many children it names, how many of
 -- them this repository holds and their summed content size, counted once over every child and once over the children that are images
@@ -50,7 +53,10 @@ WITH tags AS (
     FROM package_versions pv JOIN items i ON i.id = pv.lead_item_id
    WHERE pv.id = ANY(sqlc.arg(version_ids)::bigint[]) AND pv.trashed_at IS NULL AND i.trashed_at IS NULL
   UNION ALL
-  SELECT t.id, t.package_id, t.manifest_sha256 FROM oci_remote_tags t WHERE t.id = ANY(sqlc.arg(version_ids)::bigint[])
+  SELECT -e.id, p.id, e.blob_sha256
+    FROM remote_cache_entries e
+    JOIN packages p ON p.repo_id = e.repo_id AND p.name = e.tag_name
+   WHERE e.id = ANY(SELECT -x FROM unnest(sqlc.arg(version_ids)::bigint[]) AS x)
 )
 SELECT t.id AS version_id, m.content_size,
        count(r.target)::bigint AS children,
@@ -105,7 +111,10 @@ WITH tags AS (
     FROM package_versions pv JOIN items i ON i.id = pv.lead_item_id
    WHERE pv.id = ANY(sqlc.arg(version_ids)::bigint[]) AND pv.trashed_at IS NULL AND i.trashed_at IS NULL
   UNION ALL
-  SELECT t.id, t.package_id, t.version, t.manifest_sha256 FROM oci_remote_tags t WHERE t.id = ANY(sqlc.arg(version_ids)::bigint[])
+  SELECT -e.id, p.id, e.tag, e.blob_sha256
+    FROM remote_cache_entries e
+    JOIN packages p ON p.repo_id = e.repo_id AND p.name = e.tag_name
+   WHERE e.id = ANY(SELECT -x FROM unnest(sqlc.arg(version_ids)::bigint[]) AS x)
 )
 SELECT t.id AS version_id, t.version::text AS tag, m.digest, m.media_type, COALESCE(m.artifact_type, '')::text AS artifact_type,
        m.size, m.content_size
@@ -123,7 +132,10 @@ WITH tags AS (
     FROM package_versions pv JOIN items i ON i.id = pv.lead_item_id
    WHERE pv.id = ANY(sqlc.arg(version_ids)::bigint[]) AND pv.trashed_at IS NULL AND i.trashed_at IS NULL
   UNION ALL
-  SELECT t.id, t.package_id, t.manifest_sha256 FROM oci_remote_tags t WHERE t.id = ANY(sqlc.arg(version_ids)::bigint[])
+  SELECT -e.id, p.id, e.blob_sha256
+    FROM remote_cache_entries e
+    JOIN packages p ON p.repo_id = e.repo_id AND p.name = e.tag_name
+   WHERE e.id = ANY(SELECT -x FROM unnest(sqlc.arg(version_ids)::bigint[]) AS x)
 )
 SELECT t.id AS version_id, COALESCE(r.platform, '')::text AS platform, r.target AS digest, (c.digest IS NOT NULL)::boolean AS stored,
        COALESCE(c.media_type, '')::text AS media_type, COALESCE(c.size, 0)::bigint AS size,

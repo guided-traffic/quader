@@ -8961,10 +8961,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-API
 
-152 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
+154 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
 
 <details>
-<summary>Q-API: 152 questions</summary>
+<summary>Q-API: 154 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9120,6 +9120,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-API-400](spec/api-and-ui.md#q-api-400--the-signed-links-have-operations-of-their-own-under-apiv1download-links) | The signed links have operations of their own under /api/v1/download-links | Decided by the planner in the owner's absence | (a) `GET`/`PATCH /api/v1/download-links/settings`, `POST /api/v1/download-links/test`, `GET /api/v1/download-links/switch` for every signed-in caller | [ADR-242](#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing) |
 | [Q-API-405](spec/api-and-ui.md#q-api-405--the-connection-shows-its-storage-keys-by-identifier-and-no-operation-changes-them) | The connection shows its storage keys by identifier, and no operation changes them | Decided by the planner in the owner's absence | (a) `GET /api/v1/system/storage-connections` shows `keyedNames` and `storageKeys[]` (`id`, `generation`, `state`, `createdAt`, `destroyedAt`, `copies`); generations, export and import are commands of the binary | [ADR-244](#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring) |
 | [Q-API-406](spec/api-and-ui.md#q-api-406--a-connection-of-the-list-carries-the-answering-replicas-settings-and-its-states-are-an-open-string) | A connection of the list carries the answering replica's settings, and its states are an open string | Decided by the development agent while building package F | (a) `settings` (region, path style, the three checksum modes, batch delete, storage class, server-side encryption, scrub bytes per second), `drainedAt` and `retiredAt` join the member list; what describes the answering replica's element is `null` for a connection it does not configure; `state` and a storage key's `state` are strings whose values the description lists | — |
+| [Q-API-417](spec/api-and-ui.md#q-api-417--the-version-list-of-a-package-is-read-a-page-at-a-time-by-a-keyset-query-in-the-order-of-publication) | The version list of a package is read a page at a time by a keyset query in the order of publication | Decided by the development agent | (a) A package that one repository of the scope holds, in the order of publication: one keyset statement on (creation time, version compared bytewise) with a limit, in the order of an index (`package_versions_listing`; a remote OCI repository's tags by `remote_cache_entries_tag_time`, Q-OCI-267); the rows with sizes and downloads are read for the page's versions alone. A package several repositories hold, and the order of the format's versions, read every visible version's name, one cheap row each, and sort in the service | — |
+| [Q-API-428](spec/api-and-ui.md#q-api-428--the-package-views-statements-run-without-the-servers-jit-compilation) | The package view's statements run without the server's JIT compilation | Decided by the development agent | (a) `set_config('jit', 'off', true)` as the first statement of every transaction of the view's service | — |
 
 </details>
 
@@ -11036,10 +11038,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-OCI
 
-118 questions on [spec/formats/oci.md](spec/formats/oci.md).
+119 questions on [spec/formats/oci.md](spec/formats/oci.md).
 
 <details>
-<summary>Q-OCI: 118 questions</summary>
+<summary>Q-OCI: 119 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11161,6 +11163,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-OCI-240](spec/formats/oci.md#q-oci-240--a-block-of-a-member-ends-the-walk) | A block of a member ends the walk | Decided by the development agent | (a) A `Forbidden` with a code of a block, and the malware gate's pending `503`, end the walk; other `Forbidden` answers (no read, `populate_not_permitted`) stay misses | [ADR-220](#adr-220--every-downloaded-artifact-is-scanned-for-malware-and-one-switch-lets-only-checked-artifacts-through) |
 | [Q-OCI-245](spec/formats/oci.md#q-oci-245--the-walk-goes-on-only-at-a-miss-or-a-failure-it-names) | The walk goes on only at a miss or a failure it names | Decided by the development agent | (a) One rule names the misses and failures for every format; every other answer ends the walk | — |
 | [Q-OCI-256](spec/formats/oci.md#q-oci-256--the-measurement-of-h-829-builds-no-index-the-cost-is-the-version-lists-statement-that-reads-every-row) | The measurement of H-829 builds no index: the cost is the version list's statement that reads every row | Decided by the development agent | (a) No index; H-829 stays open with the numbers and the order of the remedies | — |
+| [Q-OCI-267](spec/formats/oci.md#q-oci-267--a-remotes-tag-entries-store-their-name-and-tag-and-a-page-of-its-tags-is-a-keyset-query-on-them) | A remote's tag entries store their name and tag, and a page of its tags is a keyset query on them | Decided by the development agent | (a) The entry stores `tag_name` and `tag` as columns generated from its path, with the indexes `(repo_id, tag_name, fetched_at, tag)` and `(repo_id, tag_name, tag)`; the view reads them; a page of a name's tags is a keyset statement on the entries with the view's rules as checks per entry; a page's tags are read by the entry's primary key, the negated id | — |
 
 </details>
 

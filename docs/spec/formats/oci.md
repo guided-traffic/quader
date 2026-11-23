@@ -4039,7 +4039,34 @@ statements of a page.
 | (b) An expression index on the tag of `oci_remote_tags` | `(repo_id, (regexp_match(path, …))[1])` over the tag entries | Finds a package's tag rows without the blob index | `PackageViewVersions` still returns all 100,001 rows for every page and sorts them; the plans show the read of the rows found, not the finding, as the cost |
 | (c) An index on the negated id for `OCITagSizes` and `SignatureVersionBlobs` | `ON remote_cache_entries ((-id))` | About 2 s of a page's statements | 14 s of 16.6 s remain; a second index on the fill's table for a statement that can negate its ids instead |
 
-**Choice:** (a). **Applied in the spec:** H-829.
+**Choice:** (a). **Applied in the spec:** H-829. **Revised the same day** by
+[Q-OCI-267](#q-oci-267--a-remotes-tag-entries-store-their-name-and-tag-and-a-page-of-its-tags-is-a-keyset-query-on-them): the version
+list got its keyset statement (option (a)'s first remedy), and the tags their stored name and tag with an index, which a keyset query
+needs and which option (b)'s expression index on its own was not.
+
+### Q-OCI-267 · A remote's tag entries store their name and tag, and a page of its tags is a keyset query on them
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That the version
+list gets a keyset query was set by the coordinator of the findings run of 2026-11-23 ([api-and-ui.md](../api-and-ui.md) Q-API-417).
+
+Context: a remote OCI repository's tags are its cache entries `<name>/_tags/<tag>`, no version rows (R-OCI-036), listed by the view
+`oci_remote_tags`, which derived the name and the tag from the path with `regexp_match`. Measured on 2026-11-23 with 100,000 tags of one
+image: an index on those expressions served no ordered read, since the planner had no statistics of them and estimated 500 rows where a
+name had 100,001; read through the view, the planner started from the manifest's side and sorted every tag of the name for each page; and
+the lookups of a page's tags by the view's id (the negated entry id) read every tag entry of the name (`OCITagSizes` 1.3 s,
+`SignatureVersionBlobs` 1.5 s).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The entry stores `tag_name` and `tag` as columns generated from its path, with the indexes `(repo_id, tag_name, fetched_at, tag)` and `(repo_id, tag_name, tag)`; the view reads them; a page of a name's tags is a keyset statement on the entries with the view's rules as checks per entry; a page's tags are read by the entry's primary key, the negated id (chosen) | Migration 00113; `PackageViewTagPage*` and the remote parts of `OCITagSizes`, `OCITagViews`, `OCIChildPlatforms` | The planner knows a name's tags, an index orders them, a page reads its tags and the checks of those; no write path changes: the database fills the columns at every insert | The view's rules are written twice, in the view and in the page's statement, which the listing tests of R-OCI-036 read both; two partial indexes on the cache entries' tags |
+| (b) Expression indexes on `regexp_match` alone | No new columns | Nothing stored twice | Measured: no statistics, no ordered read, the page sorted every tag |
+| (c) A derived table of the tags kept by the fill | `oci_remote_tag` rows | Plain rows | A write path of its own in the fill, which must follow every eviction and gone mark, which reach no format hook (Q-OCI-215) |
+
+**Choice:** (a). The view's checks are held as checks per entry by `OFFSET 0` in each `EXISTS`, which the planner otherwise turns into a
+join read from the manifest's side. **Applied in the spec:** H-829. Code: migration
+[00113](../../../internal/meta/postgres/migrations/00113_version_list_keyset.sql), [package_view.sql](../../../internal/meta/postgres/queries/package_view.sql),
+[oci_manifests.sql](../../../internal/meta/postgres/queries/oci_manifests.sql). Test: `TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit` in
+[test/integration/ociremote](../../../test/integration/ociremote/listing_keyset_test.go), and the listing tests of R-OCI-036.
 
 ## What this does not cover
 
@@ -4152,23 +4179,19 @@ a tag that vanished upstream is listed until a request revalidates it and the up
 the registry. Live today; real for a user who reads the page as an inventory of the upstream, or who sets an unused-retention period and expects
 the page to keep naming the images. Listing what the upstream has would need its tags list (R-OCI-024) on a read, which Q-OCI-216 option (b) refuses.
 
-### H-829 · The listing of a remote reads every tag entry of the repositories in scope
+### H-829 · The package list of a remote reads every tag entry of an image to count it
 
-`oci_remote_tags` matches the path of each metadata entry of the remote OCI repositories a statement reads, because a tag is told from the
-tags list and from other documents by `/_tags/` in its path; no index serves that match. **Measured once on 2026-11-23**
-([oci.md, the measurement](../../developer/oci.md#the-listing-of-a-remote-with-very-many-tags-h-829-measured)), with 100,000 tag entries of
-one image written by SQL into a remote's cache on the integration stack: a page of the repository's package list takes 11 s, a page of 50
-tags of the image 16.6 s, the first page and one in the middle of the list alike, against R-API-010's budget of one keyset query per page,
-which no page meets. The plans show where it goes: `PackageViewVersions` has no keyset and no limit and returns every one of the 100,001
-rows for every page (sorted on disk, 2.3 to 2.8 s), the service groups and pages them in memory, and `OCITagSizes` and
-`SignatureVersionBlobs` look the page's 50 tags up by the view's id, the negated entry id, which no index serves (0.8 to 1.2 s each).
-`PackageViewList` reads every tag row to count them (2.3 s). No index was built
-([Q-OCI-256](#q-oci-256--the-measurement-of-h-829-builds-no-index-the-cost-is-the-version-lists-statement-that-reads-every-row)): an
-expression index on the tag changes how the rows are found, not that every page reads all of them. The same statement reads every
-version row of a local package, of any format, for every page of its version list. Live today; real for a mirror of a registry with many
-tags, and for any package with thousands of versions. The remedy is a keyset statement for the version list (the page's rows by the sort
-key, a count apart), then the id lookup of the view (an index on the negated id, or a statement that negates the ids), and only then a
-derived table of a remote's tags kept by the fill.
+Measured on 2026-11-23 on the integration stack with 100,000 tag entries of one image written by SQL into a remote's cache
+([oci.md, the measurement](../../developer/oci.md#the-listing-of-a-remote-with-very-many-tags-h-829-measured)). Before the remedies of
+[Q-OCI-267](#q-oci-267--a-remotes-tag-entries-store-their-name-and-tag-and-a-page-of-its-tags-is-a-keyset-query-on-them) and
+[api-and-ui.md](../api-and-ui.md) Q-API-417 and Q-API-428 a page of the image's 50 tags took 16.6 s, the first and a middle one alike, and
+a page of the repository's package list 11 s (load average 49 to 23 on 20 cores); after them a page of 50 tags takes 43 ms and a page in
+the middle 40 ms, and a page of 500 tags 35 ms (load average 19): one keyset query that reads no tag entry past its
+limit, which `TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit` holds, within R-API-010's budget. **What is left:** the package
+list still reads every tag entry of an image, to count its versions (`version_count`) and to find its latest tag by the format's order:
+0.99 s for the page of the repository's package list (`PackageViewList` 0.74 s, `PackageViewVersionNames` 0.42 s, both with
+`auto_explain` measuring). Live today; real for a mirror of a registry with many tags. The remedy is a count and a latest tag kept by the
+commit and the fill, for every format ([api-and-ui.md](../api-and-ui.md) H-1683); it is not built.
 
 ### Q-OCI-100 · Everything below `/v2/` is one handler and one match, on the patterns `/v2` and `/v2/{rest...}`
 

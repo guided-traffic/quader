@@ -441,37 +441,42 @@ the repository validation. The stub runs in the test process on TLS; `Running.Di
 
 ### The listing of a remote with very many tags (H-829), measured
 
-Measured once on 2026-11-23, a measurement and not a test (it is not in the repository): the integration stack (instance 1, PostgreSQL of
+Measured on 2026-11-23, a measurement and not a test (it is not in the repository): the integration stack (instance 1, PostgreSQL of
 test/integration/compose.yaml), one replica, the remote `oci-anon` of [test/integration/ociremote](../../test/integration/ociremote) after one pull
 of `library/alpine:3.19`, and 100,000 more tag entries of that image written by one `INSERT … SELECT … generate_series` into
 `remote_cache_entries` (paths `library/alpine/_tags/m000001` …, the pulled tag's manifest digest, `background_sha256` set so that each is listed,
-insert 4.3 s), then `ANALYZE`. The rows were deleted after the measurement, and the test's database dropped. The machine has 20 cores; its load
-average stood at 49 to 23 during the timings (four builders and their stacks beside it), so the times are high by an unknown factor and are to
-be read against each other and against the budget, not as a target.
+insert 3 to 4 s), then `ANALYZE`. The rows were deleted after each run, and the test's database dropped. The machine has 20 cores and runs other
+builders beside it; the load average stands beside each set. The plans come from a second replica of the same run with `auto_explain`
+(`log_analyze`, `log_buffers`) on the test's database, whose instrumentation makes each statement slower than in the timings.
 
-| Request (as the reader, `GET`) | Runs | Median | Rows the page shows |
-|---|---|---|---|
-| `/api/v1/packages?limit=50&repository=it/oci-anon` (the package list) | 3 | 11.0 s (11.0 to 14.1) | 1 package, 100,001 tags counted |
-| `/api/v1/packages/{id}/versions?limit=50&…` (the first page of the tags) | 3 | 16.6 s (16.4 to 18.7) | 50 |
-| the same with the cursor of the 50,000th tag (a page in the middle) | 3 | 16.7 s (16.5 to 17.1) | 50 |
-| the first page with `limit=500` | 1 | 17.5 s | 500 |
+| Request (as the reader, `GET`) | Before, median of 3 (12:05 to 12:07, load 49 to 23) | After Q-API-417, Q-API-428, Q-OCI-267, median of 3 (14:59, load 19) |
+|---|---|---|
+| `/api/v1/packages?limit=50&repository=it/oci-anon` (the package list) | 11.0 s | 0.99 s |
+| `/api/v1/packages/{id}/versions?limit=50&…` (the first page of the tags) | 16.6 s | 43 ms (30 to 59) |
+| the same with the cursor of the 50,000th tag (a page in the middle) | 16.7 s | 40 ms |
+| the first page with `limit=500` | 17.5 s (one run) | 35 ms |
+| `/api/v1/packages/{id}/versions/m050000` (one tag's detail) | not measured | 36 ms |
 
-The statements and their plans, from a run with `auto_explain` (`log_analyze`, `log_buffers`) on the test's database, whose instrumentation
-makes each statement slower than in the timings above:
+The steps between, each measured with the same set-up: the keyset statement through the view and the service's paging gone, 1.7 s a page
+(load 18), the planner still sorting every tag of the name; the stored `tag_name` and `tag` with their index, 0.33 s (load 13), of which
+0.26 s was the JIT compilation of `PackageViewCandidates`; the view's statements without JIT, 26 ms.
+
+The statements before, from the plans of the first run (11:51 to 11:52, load average about 19 to 25):
 
 | Statement | Request | Time | What the plan does |
 |---|---|---|---|
-| `PackageViewVersions` | both | 2.3 to 2.8 s | No keyset, no limit: all 100,001 rows of the image (`Index Scan using remote_cache_entries_blob`, the tag filter `path ~~ '%/\_tags/%' AND regexp_match(…) IS NOT NULL` on each), two subplans per row (size, downloads), `Sort Method: external merge Disk: 11168kB`; estimated 1 row, so nested loops and a JIT compile of 0.5 s |
-| `PackageViewList` | package list | 2.3 s | the same rows to count the versions, `GroupAggregate` after an external sort (13 MB) |
-| `OCITagSizes`, `SignatureVersionBlobs` | tags | 1.3 s, 1.5 s | the page's 50 tags by `t.id = ANY(…)`, the view's id being `-e.id`: no index serves it, so all 100,001 entries are read through the blob index and filtered |
-| `PackageViewCandidates` | both | 0.25 to 0.33 s | the triples of the repository |
+| `PackageViewVersions` | both | 2.3 to 2.8 s | No keyset, no limit: all 100,001 rows of the image (`Index Scan using remote_cache_entries_blob`, the tag filter `path ~~ '%/\_tags/%' AND regexp_match(…) IS NOT NULL` on each), two subplans per row (size, downloads), `Sort Method: external merge Disk: 11168kB`; the top node estimated at 1 row where 100,001 came, and a JIT compile of 0.51 s |
+| `PackageViewList` | package list | 2.3 s | the same rows to count the versions, `GroupAggregate` after an external sort (13 MB); its top node also estimated at 1 row, and also a JIT compile of 0.51 s |
+| `OCITagSizes`, `SignatureVersionBlobs` | tags | 1.3 s, 1.5 s | the page's 50 tags by `t.id = ANY(…)`, the view's id being `-e.id`: no index serves it, so all 100,001 entries are read through the blob index and filtered; that scan alone takes 0.8 to 1.2 s of each statement |
+| `PackageViewCandidates` | both | 0.25 to 0.33 s | the triples of the repository with patterns; almost all of it JIT |
 
-R-API-010's budget of a page is one keyset query, served by an index on the sort key; no page meets it, and the first and the middle page cost
-the same because the statement reads every row whatever the cursor. The service ([view/service.go](../../internal/packages/view/service.go)
-`Versions`) groups, sorts and pages the rows in memory. No index was built ([Q-OCI-256](../spec/formats/oci.md#q-oci-256--the-measurement-of-h-829-builds-no-index-the-cost-is-the-version-lists-statement-that-reads-every-row)):
-an expression index on the tag changes how the rows are found, not that every page returns all of them. [H-829](../spec/formats/oci.md#h-829--the-listing-of-a-remote-reads-every-tag-entry-of-the-repositories-in-scope)
-holds the numbers and the order of the remedies. Not measured: tags that point at 100,000 different manifests (here every tag names one
-manifest, the case the blob index serves best), and a local package with as many versions.
+The statements after (plans of the last run, 14:59, load average 19): a page of tags is `PackageViewTagPageDesc`, `Index Scan Backward
+using remote_cache_entries_tag_time` with `Index Cond: ((repo_id = …) AND (tag_name = …) AND (ROW(fetched_at, tag) < …))`, 64 rows read for
+a page of 64, 1.1 ms; `PackageViewVersions` for the page's versions 4.6 ms; `OCITagSizes` 2.6 ms; no statement of a tag page above 5 ms.
+The package list's `PackageViewList` (0.74 s) and `PackageViewVersionNames` (0.42 s) still read every tag row of the image
+([H-829](../spec/formats/oci.md#h-829--the-package-list-of-a-remote-reads-every-tag-entry-of-an-image-to-count-it), [api-and-ui.md](../spec/api-and-ui.md)
+H-1683). Not measured: tags that point at 100,000 different manifests (here every tag names one manifest), and a local package with as many
+versions, whose page `TestR_API_010_APageOfVersionsReadsNoVersionPastItsLimit` holds to its limit with 2,000 versions.
 
 ## The mirror (R-OCI-026)
 
