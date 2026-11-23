@@ -417,8 +417,32 @@ resumable: commit and push the finished, green work packages, keep the phase and
 Defects and gaps found outside a phase, waiting for a run (step 2, item 5). Each entry names where it
 is, what was seen and how far it is confirmed: **confirmed** means checked in the code by the
 development agent, **read** means found by reading the code and not reproduced. Add new findings
-here; remove a finding in the commit that fixes it. What the owner has to decide is in the list
+here; a finding that is closed moves to the list **Closed** at the end of this section with what closed
+it and what holds it, and is never deleted. What the owner has to decide is in the list
 [With the owner](#with-the-owner) of section 11; what is untested or to refactor is in [section 12](#12--to-test-and-to-refactor).
+
+**The work packages of the findings (the reading of 2026-11-23; run record of that day).** By the owner's
+word every entry of this section and of section 12 is closed before anything new is built. The reading
+cut everything it found open into these packages, by files, so that four can be built side by side; the
+order is what a user or an operator meets first. The state is kept here.
+
+| Package | What it closes | State |
+|---|---|---|
+| Signatures with the real clients | the check of the repairs of 2026-11-21 with the real clients, and what it finds | in work since 08:15 |
+| Screens, first round | fourteen findings of screens (the entries of repository, version, vulnerability and audit pages, the npm form, the malware settings, the signatures' lists) | in work since 08:16 |
+| W1 · Authorization answers the same in every format | the administrator flag shown to `tokens:read` alone (H-836); the global read policy and the default-scope token; the refusals that end a virtual read | in work since 08:49 |
+| W3 · The download limits count what they promise | refused requests that still count (the upstream budget, an endpoint's rate class); seven paths without a test; the fixed waits of three seconds in the clients' cases; the help text of waiting downloads | waits for a place |
+| W2 · Scanning keeps its promises to an operator | a scan attempt lost when a repository is enabled again; the scanner's spool that `QuaderSpoolNearlyFull` does not see; layer writes without a flush; a removed scanner pod shown ready; two measurements | waits for a place |
+| W6 · The pipeline loses nothing and scans every image it runs | a push that cancels the run before it; the analyser's and ClamAV's images never scanned; the evidence record and the badge that stand still; a `unit` target with the emptied AWS environment; the lint's limit and serial runs; fuzz names; the pins of the e2e legs; a partial dispatch; the disk watcher | waits for a place |
+| W5a · NuGet and OCI | NuGet's README route that answers 501; the challenge of an upstream token; what the two formats' pages count and the code does not | waits for a place |
+| W5b · Debian and Ansible Galaxy | `member_expired` and a member's recorded `Date` without an integration case; the wiki's cases; the requirements no test names; the check against the public Galaxy | waits for a place |
+| W4 · Go tests wait for what they stand for | fixed sleeps and paced setups in integration and unit tests; four convention checks that sit in a format's area; tests that depend on the machine | waits for a place |
+| W8 · Web and end-to-end tests wait for what they stand for | the fixed 320 ms of choosing a person; paced setups of the e2e environments; a code push during a nightly | after the screens' first round |
+| W7 · The development profiles run the image they are given | the image tag `:dev`; one image tag per checkout; instances of the UI profile, one per builder; `nuget-ha` cut to what NuGet's client adds | after W6 (it owns the Makefile) |
+| W9 · Screens show every state, second round | the system page; a technical token's description and removal; states the renders never show (an open row menu, the shared error notice) | after the screens' first round |
+| W10a · Documents and the decisions' index | 1,050 of 3,425 decided questions without a row in the index (generated with a check from now); stale sentences in spec, developer pages, README and manual | waits for a place |
+| W10b · Translations and test names | the extraction check; names of tests that carry a decision's number | last |
+| W11 · Readings and statements (the development agent) | the stall family of the runs before 2026-11-18; pipeline artifacts to read before they expire (from 2026-12-02); entries that close by a reasoned statement | open |
 
 ### Tests and tools
 
@@ -432,14 +456,17 @@ records the recorder that tells such a stall apart).
 - **The setup of an end-to-end set can run into the write class's rate limit** (2026-11-20, `make e2e SET=vuln` on an idle
   20-core host: `create service account e2e-nuget: 429 rate_limited`, burst 50, then 10 a second). The setup of `vuln`
   now waits out a 429 by its `Retry-After`; the other sets' setups were not looked at, and a fast runner can hit the same.
-- **The job `Malware Scan (source code)` takes ClamAV unpinned from the runner's package manager** and the signatures
-  from the distribution network on every run (`.github/workflows/release.yml`). Once the product pins a ClamAV image for
-  the malware scan of artifacts, that is two versions of one tool: the job then runs the pinned one.
 - **Two component tests of the person search wait a fixed 320 ms** (`policy-editor.spec.ts`, "no match "@sam" under
   Principal"; `project-screens.spec.ts`, "Service account of web"): both failed one `make web-test` on 2026-11-20 at a
   host load of 53 and passed when their files ran alone. A fixed wait measures the host; the tests should wait for the
   lookup's answer.
-- **F-165 · One instance of the request pooler had no server for 33.7 s after a PostgreSQL switchover** (the full nightly on
+- **Partly closed; open: why the one connect of 2026-11-20 hung, and the bound of 5 s, which no hung connect
+  has met yet.** Closed: (1) the test's counting of idle time, by b14bc69cd (2026-11-21): `test/e2e/poolerlog`
+  ends an instance's window at its last failed attempt plus its `server_login_retry`, held by the unit tests
+  of `poolerlog_test.go`; (2) a hung connect that held an instance for 15 s, by the same commit: both poolers
+  of the development profile set `server_connect_timeout` to 5 (`deploy/dev/pooler.yaml`, Q-HA-371).
+  As it stood:
+  **F-165 · One instance of the request pooler had no server for 33.7 s after a PostgreSQL switchover** (the full nightly on
   a quiet `main`, 44653040868, `e2e (ha-pooler)`, 2026-11-20 05:15 UTC; `TestHAPooler_Switchover`, R-HA-058, Q-HA-302: the
   bound is `health.database_outage_grace`, 20 s). `quader-db-pooler-rw-…-82mgv` refused 1,248 clients with
   `server_login_retry` from 05:15:07 to 05:15:41; its sibling of the same pool was back after 8.1 s, the two instances of
@@ -473,23 +500,6 @@ records the recorder that tells such a stall apart).
   green): the operator took the parameter, all four instances carry `server_connect_timeout 5`, the windows were 7.6
   to 10.5 s. No connect hung in that run, so the 5 s themselves were not exercised. What remains by design: an idle instance turns its next client away once,
   however late, and Quader retries that answer.
-- **F-160 · `drain-load-e` failed its latency condition once, with every functional condition held** (nightly 44595121737 of
-  2026-11-19, the code of `ad01d57e`, the last nightly before the download limits). R-HA-059: the k6 p99 from the first
-  eviction until two minutes after the drain was 1.48 s over 35,826 requests against a warm-up of 532 ms, the limit being twice
-  the warm-up (npm alone 551 ms to 1.698 s, NuGet alone 326 to 737 ms). Held: 449 `npm ci`, 43 publishes, 330 restores and 45
-  pushes all exit 0, no SIGKILL, `gc-full` handed over; one upload probe got a 502 once and passed on its second attempt (the
-  pattern of H-795). Not reproduced in the two runs after it (warm-up 345 ms, drain 483 ms on 2026-11-20). **Cause
-  found on 2026-11-21 from the run's kept artifacts: neighbours on the runner.** No kill of the database (the primary
-  peaked at 938 MiB), but 40 s of slow tarballs from 21:12:20 on, spread over the three replicas, while other pods on
-  the runner node went from about 2 to 10 to 16 cores at that second, the host ran at 31 of 32 cores (CPU pressure
-  about 70 %) and the leg's own pod fell from 23 to 14 to 17 cores. That was before the change of the runners'
-  cgroups (F-133). **The nightly of 2026-11-20 (run 44828435420) failed `drain-load-e` for another reason:** the
-  development profile's PostgreSQL primary was killed at its 1 GiB, 5 s into the drain (one stall of about 6 s on
-  every replica, one 503, p99 4.8 s), the cause of that night's drain per role, which the profile's 3 GiB address.
-- **F-153 · `Set up Go` ran into its bound of five minutes in a gating job** (2026-11-19, Test and Release 44453761606 of
-  6cd1cb09, job `Cyclomatic Complexity`; a full nightly ran beside it on purpose). The step takes 10 to 20 s; what held it for
-  five minutes is not read. Open: whether five minutes are too few for a download on a loaded pool; one occurrence is not a
-  measurement.
 - **F-144 · Two legs did not get their cluster: the database was not ready after ten minutes** (2026-11-18, `e2e (npm)` and
   `e2e (push)` of Test and Release 44358371450, the run of bdbe37c5): `deploy/dev/up.sh` installed the dependencies in
   parallel, HAProxy, the PKI, the secrets and the Valkey operator were ready after 1m 43s, and at 10 minutes "postgres
@@ -503,11 +513,11 @@ records the recorder that tells such a stall apart).
   shows again (compare F-127).
 - **F-136, closed by Q-ARCH-503, leaves one point open:** the job worker's heartbeat of running jobs still cancels on stop (no
   job runs by then).
-- F-128 · `Semantic Release` failed once in Test and Release 43316531262 (40d37ac2, 2026-11-12): GitHub answered the push of the tag
-  v0.55.2 with `! [remote rejected] v0.55.2 -> v0.55.2 (Internal Server Error)`; no tag and no release were made, and the next push
-  released the same commits. Read, not reproduced: an error on GitHub's side, nothing in the workflow changed. Done when it does not
-  recur; at a recurrence, re-run the job once before anything else.
-- **F-127 · `e2e (push)` failed with a certificate the job's own CA did not verify** (Test and Release 43022311289, 9220e777, green
+- **Partly closed; open: whether the CI legs had the same cause. That run predates the evidence recorder
+  (d209c2802), so it kept no log of the operator.** Closed: the local cause, the secrets operator OOM-killed
+  at its limit of 128 MiB, by f98e80b4a (2026-11-12): the profile gives it 512 MiB (`deploy/dev/up.sh`) and
+  helm keeps two revisions per release (`HELM_MAX_HISTORY` in `deploy/dev/lib.sh`). As it stood:
+  **F-127 · `e2e (push)` failed with a certificate the job's own CA did not verify** (Test and Release 43022311289, 9220e777, green
   on its first re-run): about four minutes after `up.sh`'s ping check, `x509: ECDSA verification failure` against the job's own
   `quader dev CA` on every request through the edge and `password authentication failed for user "quader"` in the migration Job of
   `TestE04MigrationFailure`; both are secrets the in-cluster generator writes. **Cause found locally on 2026-11-12:** the
@@ -589,13 +599,8 @@ records the recorder that tells such a stall apart).
   now prints the body of a non-403 answer and every request the main double saw; next step: read those in a recurrence.
 - **F-95 · One Angular unit test failed once in 1,080, its name not recorded** (seen once, on a loaded host). Done when the
   failing test is identified and its cause fixed; until then a recurrence is reported with the test's name and output.
-- **F-96 · The registry's anonymous test failed once after 85 s, its message not captured** (seen once, on a loaded host; 10 of 10
-  later runs passed). The test now logs the settings wait and fails with the replica's last answer
-  (`setAnonymous` in `test/integration/registry/anonymous_test.go`); the next step is the recurrence with that message.
 - `alerts`, `MaintenanceStaysQuiet` in nightly 42793416589: `valkey-failover.sh` reported "the primary did not move within 60 s" right
   after drain variant B; not found, possibly the Sentinel that variant B restarted had not rebuilt its view (9.6 s locally).
-- `bastion`, `TestBastion_R_BAS_049_RoutingByPath`: 0 hits on both replicas, once in twelve runs; again on the long-lived kind
-  cluster with T-18 (72 revalidations answered 304, 0 cache hits, no journal trigger in the 15 s window).
 - `TestE14Drain` (a packages pod unready for 5 s at the end, Valkey `circuit_open`), R-ARCH-034 (26 held against 24, once),
   `TestR_DEB_010_DelayBound` (503 `database_unavailable`, once in nightly 42677190569; the suspicion on the retry budget of Q-HA-259
   is unverified).
@@ -607,8 +612,6 @@ records the recorder that tells such a stall apart).
   stage ended with "Cannot find native binding" (npm's optional-dependency issue); the push changed neither package.json nor the
   lockfile, and re-run 1 was green. The cause is not verified: a failed download of a platform package of an optional dependency is
   the suspect.
-- The journey `16-backups` was red on the long-lived kind cluster with T-18: it shows `?state=failed` with both filters on Any and
-  no runs.
 - `messages.xlf` has drifted from `npm run extract-i18n`: 687 location notes and the unit order differ. No gate checks it.
 - Many existing web specs carry decision IDs in their test names (`app.projects.spec.ts`, `app.routes.spec.ts`, `app.spec.ts`), where
   the convention is requirement IDs.
@@ -618,42 +621,36 @@ records the recorder that tells such a stall apart).
   each checkout, so a second checkout writes a new key into the same database. [web-ui.md](../developer/web-ui.md) describes the
   workaround.
 - A disk watcher in the jobs, so that a lost runner can be read, was proposed and not built.
-- The 429s of the renders came from the `read` class (`make ui-renders` opens three pages of one user at once); the UI development
+- **Partly closed; open: whether a browser that restores many tabs at once reaches the default read limit (not
+  measured).** Closed: the renders' 429s, by 8bcfe103a (2026-11-12): the UI development profile raises the
+  read, write and anonymous budgets, each with its reason beside it (`api.rate_limits` in
+  `deploy/ui-dev/config.sh`). As it stood:
+  The 429s of the renders came from the `read` class (`make ui-renders` opens three pages of one user at once); the UI development
   profile admits more. Not verified: restoring many tabs at once may reach the limit.
-- **The query budget's harness failed once under load in the pipeline (2026-11-22, the run of the gate's
-  trace, integration shard b):** the case of a `.nupkg` of the remote member of a virtual NuGet repository
-  ended with "no statement ran per request; the log is not read", although the window held `GetLiveItem`
-  sixty times for thirty requests, which is its budget of two. `testenv.PerRequest` counts a statement only
-  when its runs spread over at least half of the time the thirty requests took; one slow request in the
-  window (the read from the object store, by the log's last lines; read, not shown) makes the time long and
-  the spread short. The same area passed on the same commit in the landing's gates and in the run before.
-  Not caused by the trace, which adds no statement. For the batch: measure the spread against the span of
-  the requests' starts. Not run again by itself: the push of the Bastion's specification, whose code is the
-  same but for a count test, runs the shard again. **That run ended at 23:03 with every job green,** the
-  shard among them; seen once so far.
-- **Seen by the builder of the links' second package on 2026-11-22 and 23 and left for the batch:** the
+- **Partly closed; open: the profile's image tag `:dev`, the fixed tags of the driver's and the stubs' images,
+  and the overload area's burst beside empty caches (its cause not read).** Closed: the query budget's second
+  failure, by 7c6e0acb1 (2026-11-23), the repair of the entry above; the 71 s and 141 s in which npm and pnpm
+  refuse an altered tarball cost no suite, since signed links go to OCI and Ansible Galaxy only (3ccf4deee)
+  and no end-to-end case waits for an integrity refusal of npm. As it stood:
+  **Seen by the builder of the links' second package on 2026-11-22 and 23 and left for the batch:** the
   development profile's script loads the image it is given while the chart keeps the tag `:dev`, so the
   pods cannot pull; the end-to-end driver's and the stub's images carry fixed tags, so two worktrees that
   run a leg at once overwrite each other's images; the overload area's burst beside empty caches sheds
   requests at a host load of about 41 and passes at 7; **the query budget's harness failed a second time,**
   on the Debian case in a builder's run, and passed on the next run (the entry above); npm and pnpm take 71 s
   and 141 s to refuse an altered tarball, by their retries.
-- **A test that passed by the machine's own configuration made `main` red (2026-11-23, 07:33).** The offline
+- **Partly closed; open: the landing's unit gate and a builder's full unit run are a plain `go test`, and no
+  file holds the emptied AWS environment for them.** Closed: the test, by 7dd5646b3 (2026-11-23): the elements
+  its tests write name their region, and the packages `cmd/quader` and `internal/blob/offline` empty the AWS
+  environment in `TestMain` (`blobtest.EmptyAWSEnvironment`); `make test` has emptied it since 59419a1fe
+  (`UNIT_ENV` of the `Makefile`). As it stood:
+  **A test that passed by the machine's own configuration made `main` red (2026-11-23, 07:33).** The offline
   tool's test of a connection element named no region; the AWS configuration in the home directory of
   this machine supplied one, a runner has none. Every local gate was green. The cause is repaired in the
   test; the measure beside it: the landing's unit gate and a builder's full unit run are run with the
   AWS environment emptied (the two region variables unset, the configuration and credentials files
   pointed at nothing, the metadata service off), so that a local run sees what a runner sees. A release
   was held for about half an hour by it.
-- **Seen on the Bastions screen's renders on 2026-11-23, with the builder of the handover's surface:** the
-  contacts of a card stack by their content and not by the width, so two cards of one page differ; the
-  tokens' table and the contacts' table wrap a date onto two lines at 1024 and 1440. The screen had
-  never been rendered with a registration.
-- **Closed on 2026-11-23 by the seventh package's joins: the offline tool has read a real backup's
-  pool.** As it stood: the encryption's fourth and sixth
-  packages were built apart; the tool's reading of a pool object is tested with names its own test
-  writes. One case in the area `backup` after an encrypted backup (list the pool with the export and the
-  key ring) would join them, a second or two. For the batch.
 - **Seen by the builder of the kit move's first package on 2026-11-23 and left for the batch:** the rule
   that a removal is refused whole when one of its files may not be deleted has no unit test (two integration
   tests of npm and NuGet hold it); the headers of the first answer of a cache miss have no test at the
@@ -662,7 +659,11 @@ records the recorder that tells such a stall apart).
   refusal of an upper-case path pattern is tested only through NuGet's integration test; the committed
   evidence record holds no requirement of Ansible Galaxy at all although the checklist knows them (not
   looked into); the query budget's environment still creates a virtual NuGet repository no case asks.
-- **The remote engine's test of the fetch slots failed once under load (2026-11-23, in a builder's run at a
+- **Partly closed; open: the lint's limit of ten minutes (`.golangci.yml`; `make lint` states none).** Closed:
+  `TestFetchSlots`, by 7c6e0acb1 (2026-11-23): it holds the slow upstream answers behind a gate it opens and
+  gives its replicas and the upstream timeouts longer than its waits
+  (`test/integration/proxy/limits_test.go`). As it stood:
+  **The remote engine's test of the fetch slots failed once under load (2026-11-23, in a builder's run at a
   load of 35 to 76):** `TestFetchSlots` in the area `proxy` met a migration's timeout and a window of 2 s; alone
   at a load of 5 it passes in 10 s. **The lint's limit of ten minutes is tight with a cold cache beside
   another worktree's lint** (two builders met it on 2026-11-23); the pinned binary with a longer limit is
@@ -673,14 +674,6 @@ records the recorder that tells such a stall apart).
   tag `:dev`, so an image given by another tag is loaded and never used (the same as the links' builder
   saw); the end-to-end script of the OCI set fails without a local image of the clients when told not to
   build it.
-- **A unit test of the operator's key commands is flaky** (seen by package F's builder on 2026-11-23): the
-  case of a changed sealed value in `cmd/quader` flips the low bit of a random character of the encoded
-  value, which sometimes gives a character outside the encoding and another error than the one it expects.
-  For the batch: flip between two letters. The German translation file still holds a unit of a removed
-  hint of the signatures' settings.
-- **A timing check of the Bastion's engine failed once under load (2026-11-22, about 23:35, in a
-  specification writer's full unit run at a load of about 37):** `TestR_BAS_054_LargeArtifacts` in
-  `internal/bastion/engine`; it passed in the next full run. Seen once; for the batch.
 - **Documents out of step, seen by the builder of the gate's trace on 2026-11-22 and left for the batch:**
   `docs/decisions.md` has no rows for Q-SIG-145 to Q-SIG-239; `docs/spec/operations-and-observability.md` lists
   `signature.download_refused` twice, once as specified and not built beside its built row; the README's naming
@@ -689,47 +682,14 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
-- **The several connections between their first package and the ones that follow** (found on 2026-11-22 by the
-  builder of package A while it corrected the documentation against the code; none of them touches an
-  installation with one connection whose identifier is `default`, which is what the owner's is; the manual's
-  page of the limitations says each): (1) **four alerts of the chart read series nobody exports yet** (the
-  backlog, a damaged copy, the scrub behind, a detached connection), and the alert of a damaged copy points
-  to an API that does not exist yet; silent until the reconciliation, the scrub and the surface are built,
-  each of which takes its lines out of the chart tests' list. **Points (2), (3) and (4) are closed since
-  2026-11-22, 23:08, by the landing of the reconciliation, the scrub and the rest of package E; point (1)
-  stays for the surface's package, in work.** (2) **The journal is shipped to the first
-  connection that is not draining, while the restore, the step after a restore and the backup read the first
-  element even when it drains;** with `drain: true` on the first element the two differ, so a backup can lack
-  new blobs and a restore can miss the journal. Repaired by the rest of package E (the backup reading one copy
-  per blob, the journal per connection). (3) **The restore's stand-in records the restored copies on the
-  connection `default`,** so a restore into a configuration whose first element has another identifier leaves
-  the blobs on a detached connection, unreadable. The rest of package E. (4) **The tasks `scrub` and
-  `storage-reconcile` are in the default maintenance plan without a job kind,** so nothing runs: between
-  package A and the scrub's package no job reads the stored content for damage (the old deep check went with
-  A). The reconciliation (in work) and the scrub's package.
-- **Comments and two test names still say `storage.s3`** after the several connections' first package (found by
-  its builder on 2026-11-22 and left, because the files belong to packages that are being built: the journal,
-  the backup, the operator's verify and restore of versions, a subtest of the TLS area, one npm test and one
-  end-to-end test). No message a user sees. Each package corrects its own files; what is left goes into the
-  batch.
-- **Two commits of 2026-11-22 added a line each to the evidence record by hand** (`docs/coverage/implemented.txt`: the
-  kit's check for the Bastion and the declaration for signed links), against the developer page of the evidence,
-  which says the pipeline writes that record from the test reports and nobody else does; found by the builder of
-  the Bastion's package C, who left the file alone. Both lines are true (their tests exist and pass), so the
-  pipeline's own check holds. The cause is the development agent's wording in the builders' briefs ("the evidence
-  follows the code"); the briefs since 12:05 say that the record is not edited by hand, and the builders at work
-  were told. Nothing to repair in the tree.
-- **The Bastion, read on 2026-11-22 by the planner of "a Bastion serves every format"** (in the code, nothing run):
-  (1) the specification said a Bastion serves no Debian, and the code forwards every path below `/api/<format>/`,
-  so Debian, Ansible Galaxy and the ClamAV definitions reach clients through a Bastion today, while the feed has
-  no entry for their withdrawals: a deleted Debian package or a removed collection version stays servable from a
-  Bastion's cache until its revalidation, up to ten minutes by default (a malware finding has its entry and is
-  not affected); (2) the client setup offers a Bastion as the target of an OCI repository, and its snippets get
-  a 404 there. **Both are repaired on 2026-11-22** (the feed's entries by package B at 12:31, the registry's
-  paths by B and C at 13:35); package D checks the client setup's snippet. A third finding of that day, that a
-  hit from a Bastion's cache carried none of the content headers every other answer has (H-1250), was closed
-  by package C with a test.
-- **The object store, read on 2026-11-22 for the owner's storage topic** (by a research, in the code; the first point
+- **Partly closed; open: (3) no test names R-STOR-032, the store's own encryption, and the evidence does not
+  list it; (5) the gap H-591, the finalize's check by size, which stays on its security page.** Closed: (1) by
+  d89e83052, the scrub (`TestR_STOR_027_TheScrubAgainstTheDatabase`), and 392a7c823, the orphan sweep
+  (`TestR_STOR_026_OrphanSweep`), both 2026-11-22; (2) by 3ccf4deee, which refuses
+  `storage.presignedDownloads` as no member of a repository's storage, and 071c4297c, with which the
+  configuration's `presign` keys went; (4) by 9a9b33d6a: the journal is shipped through each connection's
+  guarded client (`internal/app/wire_journal.go`). As it stood:
+  **The object store, read on 2026-11-22 for the owner's storage topic** (by a research, in the code; the first point
   checked by the development agent): (1) **the scrub of stored content and the orphan sweep of the content addresses are
   not built** (R-STOR-027, R-STOR-026; no job kind, no list of damaged blobs; the developer page of the blob store says
   so), while the evidence lists R-STOR-027 as implemented, through the claims of its part about a lost object in the
@@ -741,7 +701,17 @@ records the recorder that tells such a stall apart).
   (4) the journal's shipper uses the plain client and not the guarded one, so it passes the circuit breaker and the
   metrics by; (5) the finalize of an upload session checks its server-side copy by size alone (the gap H-591, known).
   None is repaired; (1) and (2) belong to what the storage topic decides, (3) and (4) wait for a batch.
-- **The signatures, measured with real clients on 2026-11-21** (confirmed by reproduction; commands and outputs in
+- **Partly closed; open: the check of each repair with the real client (in work since 08:15 on 2026-11-23).**
+  Closed: (1), (3) and (4) by 48a4cd763 on 2026-11-21: `nugetcms` reads a signer named by its key
+  (`TestR_SIG_029_TheSignatureDotnetNugetSignWritesIsValid` on the real tools' signatures), a batch replaces
+  the attachments of its own sources only (`TestR_SIG_004_ADetectorsBatchSpeaksForTheDetectorsSourcesOnly`), a
+  remote's version reads the document it holds the version as (`TestR_SIG_034_VersionSignatures`); (2), (6)
+  and (7) by 3550b3d69 on 2026-11-21: a writer reads through the gate where the signing tools read
+  (`TestOCIGate_R_SIG_064_ThePusherSignsWithCosignAndAReaderPullsOnlyThen`), the texts name the publisher's or
+  the build's signature and the artifact as the client does (Q-SIG-212, Q-SIG-213);
+  `docs/developer/signatures.md` marks each of the six "Repaired". (5) stands as decided: NuGet's client gets
+  no text in a header for now (Q-SIG-214). As it stood:
+  **The signatures, measured with real clients on 2026-11-21** (confirmed by reproduction; commands and outputs in
   [developer/signatures.md](../developer/signatures.md#defects-found)): (1) no real NuGet signature is readable, neither of `dotnet nuget sign`
   nor of nuget.org, because both name the signer by `subjectKeyIdentifier` and the parser of `nugetcms` takes only issuer and serial; every
   NuGet signature reads **Scheme not supported** and a gated repository refuses every signed package; (2) in a gated OCI repository
@@ -822,9 +792,7 @@ records the recorder that tells such a stall apart).
   publish is held to the system upload limit before `ansible.max_archive_bytes` sees the decoded bytes (Q-ANS-53), not tested.
 - H-836: a holder of `tokens:read` alone sees which token owners are administrators; only a custom role is affected, because the
   three system roles with `tokens:read` also hold `identities:read`.
-- Image scanning: the thresholds of `QuaderSpoolNearlyFull` were not checked against the larger worker spool of 8 GiB.
 - `api-and-ui.md` has Q-API-260 to 263 after its first `## What this does not cover` and a second such heading after them.
-- R-UI-002 and `_shell.scss` cite UI-A-48, an item of the T-21 audit that no longer exists.
 - The coverage badge and the evidence record stand still until the first stable release (Q-ARCH-457).
 - An opened audit event at 390 px breaks its **Time** over two lines (the layout check's "a time in 2 lines", seen on
   2026-11-20 with a probe; not fixed). **No render opens an audit event**, so its facts never pass the layout check:
@@ -845,7 +813,11 @@ records the recorder that tells such a stall apart).
   "broken"; seen with an intercepted answer, no render case has that state), and at 390 px the Installation card
   breaks "3rdpartylicenses.txt" and "Answered by" inside the word (the check does not look at links in a `dd`).
   Seen on 2026-11-20, not fixed.
-- The development profile's chart values pin the image tag `dev`, so `QUADER_IMAGE` alone does not change what the
+- **Partly closed; open: `QUADER_IMAGE` alone does not change what the pods of `make dev-up` run (the values
+  keep `guidedtraffic/quader:dev`).** Closed: the reliance of `TestE12Valkey` on NetworkPolicy is stated at
+  the case (`test/e2e/e12_valkey_test.go`), and `TestE07NetworkPolicy` fails on a cluster whose CNI does not
+  enforce the policies. As it stood:
+  The development profile's chart values pin the image tag `dev`, so `QUADER_IMAGE` alone does not change what the
   pods of `make dev-up` run; a builder with a cluster of its own has to tag its image `dev` inside its kind nodes
   (seen on 2026-11-20). The case of `TestE12Valkey` with every Sentinel unreachable relies since that day on the
   cluster's CNI enforcing NetworkPolicy, as the cases of the policies do.
@@ -856,7 +828,11 @@ records the recorder that tells such a stall apart).
   same leg had passed an hour before on the same product code. Cause not known: which replica answered it and with
   which code of a 503 (the listener's admission, the collapse's wait, the upstream stub) is the first thing to read
   at a recurrence.
-- **A PostgreSQL connection of a serving pod costs the primary 6 to 8 MiB** (measured in the nightly of 2026-11-20:
+- **Partly closed; open: the chart's README and the manual give no memory figure for sizing the database from
+  the connection budget, and the preflight says nothing about memory.** Closed: the development profile, by
+  42be19244 (2026-11-21): its primary may use 3 GiB, sized from this measurement (`deploy/dev/postgres.yaml`,
+  `docs/developer/local-profile.md`). As it stood:
+  **A PostgreSQL connection of a serving pod costs the primary 6 to 8 MiB** (measured in the nightly of 2026-11-20:
   a `packages` pod with a pool of 20 gave back 120 to 155 MiB at its end). The preflight of R-HA-016 checks the
   connection budget against `max_connections` and says nothing about memory; the chart's README and the manual
   give no figure for sizing the database's memory from the budget, and a rollout runs one pod more per role.
@@ -876,17 +852,6 @@ records the recorder that tells such a stall apart).
   archive is admitted where the case expects a 429 (read on 2026-11-21, not seen).
 - `TestR_BAS_006` (unit, `internal/bastion/mainclient`) failed once in a full unit run beside an integration build
   and passed alone (2026-11-21); cause not looked at.
-- **The area `coordination` fails beside any other run on the stack** (2026-11-21, twice): its tests count the
-  granted advisory locks of a key in `pg_locks` without naming the database, so a lease held in another run's
-  database counts (`TestLeases`: two holders at once; `TestScheduler`: never exactly one). With the lock that
-  does not hold (next entry) that happens whenever two builders work. A builder fixes both since 03:35.
-- **The lock of the shared integration stack did not keep two runs apart** (2026-11-21, 02:03): the development
-  agent's run of every area took the lock at 01:49 while a builder's three areas ran under the same lock file from
-  01:47 to 02:01, each started with `lockf`. Likely cause, not verified: `lockf` without `-k` removes the lock file
-  when its command ends, so a process that waited on the old file and one that creates the file anew both hold
-  "the" lock. No developer page says which command takes the lock; the builders took it from each other's
-  briefs. What two runs on one stack do to each other was not looked at; areas that fail a primary or stop
-  Valkey are the ones to suspect when an area fails only beside another run.
 - **Twelve files of the integration tests start a quader process with the whole environment of the caller**
   (`append(os.Environ(), …)`; found on 2026-11-21 by the builder who mended the lock script, which had tripped
   over exactly that). The product refuses a variable with the prefix `QUADER_` that is no setting and reads one
@@ -895,7 +860,13 @@ records the recorder that tells such a stall apart).
   `QUADER_PERF_GATE`, `QUADER_IT_NO_DOCKER` and `QUADER_DEB_PROOF_DIR`. Dormant: nothing in the repository exports
   one around those tests today, and CI sets none. The tests should start their processes with the variables they
   name; not fixed.
-- **The task `malware-sync-db` fails every 30 minutes where the scanning is on and nothing fetches a database**
+- **Partly closed; open: what Settings › Malware scanning shows on the UI stack, where the scanning is on and
+  no updater is configured (not looked at).** Closed: the task's error, by 4a22f8fd4 (2026-11-21, Q-MAL-98):
+  with no updater configured a run imports and records nothing, and before a first set a missing source is
+  waiting, logged at most once an hour, with no failure and no event (`internal/malware/database/task.go`; the
+  case "Q-MAL-98 before a first set an incomplete set is no failure" of
+  `test/integration/malware/database_test.go`). As it stood:
+  **The task `malware-sync-db` fails every 30 minutes where the scanning is on and nothing fetches a database**
   (seen on 2026-11-21 at the start of the UI development backend: "job failed … database_missing: no [main daily]
   container: the set needs main and daily", at the level of an error). A start without a scanner keeps the scan
   job idle and says so in a check that does not gate (Q-MAL-60); the database's task has no such state, so the
@@ -907,13 +878,6 @@ records the recorder that tells such a stall apart).
   Not fixed: either the task is idle while its directory was never filled and no scanner is
   named, or the UI profile switches the scanning's database task off as it does for the image database
   (Q-VULN-195).
-- **`freshclam` logs an error at every update: "NotifyClamd: Can't find or parse configuration file no"** (read on
-  the owner's installation on 2026-11-21). The chart's configuration says `NotifyClamd no`
-  (`deploy/helm/quader/templates/_malware.tpl`, named so in R-HA-069), and the option takes the path of `clamd`'s
-  configuration, not a switch: `no` is read as a file name. The update itself succeeds. The line has to go from the
-  rendered configuration and from the requirement's list; not fixed. **Taken up by the ClamAV change** (the
-  specification of 2026-11-21 renders no such line; its chart package is in work), as is the finding above of the
-  task that fails where nothing fetches a database (the task is idle there and waits for a first set).
 - **A disabled repository's file page offers Download, which answers 404** through the content route (found on
   2026-11-21 by the builder who removed the same for system repositories; the same kind of defect, not fixed).
 - **A version page's header shows the format's key (`oci`) instead of its name** (OCI (Docker)), on every version
@@ -927,23 +891,272 @@ records the recorder that tells such a stall apart).
   (Q-UI-898, whose other option is the server's answer carrying the repository's kind). Read, not fixed.
 - The shared error notice's **Retry** sits 5.5 px off its line in the error state of every list (seen in the renders of the
   page **Upstream registries** on 2026-11-20; the notice is shared code, not that page's).
-- **A virtual OCI repository goes on to the next member when one refuses** (found on 2026-11-20 by reading, not
-  tested): `isMemberMiss` in `internal/formats/oci/virtual_read.go` counts every `Forbidden` as "this member does not
-  have it", so a block of the vulnerability scanning in one member yields the next member's content or a 404, where
-  R-VULN-015 says a block ends the resolution. The generic engine ends it.
 - **A repository enabled again can lose one of five scan attempts** (the scanner role, not on `main` yet): for about a
   second a replica's grant index still shows it disabled, the scanner's pull is refused and the scan ends
   `layer_missing`; retried after a minute, never read as clean. Written into R-VULN-034 by its builder. A fix is named
   and not built: the scan listener answers a system subject on a disabled repository with a code of its own, and the
   scanner puts that off without an attempt.
 
-- **F-151 · The container scan's finding in the image scanning's analyser** (`usr/local/bin/trivy (gobinary)`, `stdlib`
+- **Partly closed; open: nothing in the pipeline scans the analyser's image `TRIVY_IMAGE` or `CLAMAV_IMAGE`,
+  so a finding in them is not reported (H-1003).** Closed: the accepted entry, by 8d80b6166 (2026-11-21): the
+  release image no longer carries the analyser, each scanner pod copies Trivy from its own pinned image, and
+  `.trivyignore.yaml` holds no entry, so nothing is left for H-1003 to attribute to the owner. As it stood:
+  **F-151 · The container scan's finding in the image scanning's analyser** (`usr/local/bin/trivy (gobinary)`, `stdlib`
   CVE-2026-97054) is accepted at that one path until 2026-12-19 in `.trivyignore.yaml` (H-1003). Decided by the development agent in
   the owner's absence and confirmed by the owner on 2026-11-19 ("Option A"); H-1003 does not name him. Open: the entry goes with the
   next raise of the analyser's pin.
 - **F-154 · The runners' own image** (owner, 2026-11-19, "Option A, ich glaube das ist schon lange überfällig"): it is built in
   `guided-traffic/container-images`; and the tag rule ("Option A"): the runners name the tag that does not move,
   `<runner version>-<build time>`. [releasing.md](../developer/releasing.md) describes both without the owner.
+
+### Closed
+
+Findings of this section that are closed, each with what closed it and what holds it; nothing is deleted from
+the plan.
+
+**Of tests and tools:**
+
+- **Closed on 2026-11-21 by the product's pinned ClamAV: the job runs the ClamAV image the chart runs, with
+  only the day's differences of the signatures fetched.** Since 100cccbbb the job runs `make malware-scan-db`
+  and `make malware-scan`, which run `CLAMAV_IMAGE` of `tools/versions.env`, the pin a chart test holds the
+  chart's image to; the database comes from a cache of the day, and ClamAV's own network stays its source by
+  Q-ARCH-526. Found closed by the reading of 2026-11-23. As it stood:
+  **The job `Malware Scan (source code)` takes ClamAV unpinned from the runner's package manager** and the signatures
+  from the distribution network on every run (`.github/workflows/release.yml`). Once the product pins a ClamAV image for
+  the malware scan of artifacts, that is two versions of one tool: the job then runs the pinned one.
+- **Closed on 2026-11-21 by the reading of its cause and the profile's 3 GiB: both red runs of `drain-load-e`
+  have a known cause, and neither is left in the profile.** The run of 2026-11-19 was neighbours on the
+  runner, before the runners' cgroups changed (F-133, outside this repository); the primary killed at 1 GiB on
+  2026-11-20 is gone with 42be19244, which lets the profile's PostgreSQL use 3 GiB
+  (`deploy/dev/postgres.yaml`). The latency condition of R-HA-059 stays in `test/e2e/drain_load_test.go`; the
+  one upload probe's 502 is part of the 502 bursts of H-795, which stay open. Found closed by the reading of
+  2026-11-23. As it stood:
+  **F-160 · `drain-load-e` failed its latency condition once, with every functional condition held** (nightly 44595121737 of
+  2026-11-19, the code of `ad01d57e`, the last nightly before the download limits). R-HA-059: the k6 p99 from the first
+  eviction until two minutes after the drain was 1.48 s over 35,826 requests against a warm-up of 532 ms, the limit being twice
+  the warm-up (npm alone 551 ms to 1.698 s, NuGet alone 326 to 737 ms). Held: 449 `npm ci`, 43 publishes, 330 restores and 45
+  pushes all exit 0, no SIGKILL, `gc-full` handed over; one upload probe got a 502 once and passed on its second attempt (the
+  pattern of H-795). Not reproduced in the two runs after it (warm-up 345 ms, drain 483 ms on 2026-11-20). **Cause
+  found on 2026-11-21 from the run's kept artifacts: neighbours on the runner.** No kill of the database (the primary
+  peaked at 938 MiB), but 40 s of slow tarballs from 21:12:20 on, spread over the three replicas, while other pods on
+  the runner node went from about 2 to 10 to 16 cores at that second, the host ran at 31 of 32 cores (CPU pressure
+  about 70 %) and the leg's own pod fell from 23 to 14 to 17 cores. That was before the change of the runners'
+  cgroups (F-133). **The nightly of 2026-11-20 (run 44828435420) failed `drain-load-e` for another reason:** the
+  development profile's PostgreSQL primary was killed at its 1 GiB, 5 s into the drain (one stall of about 6 s on
+  every replica, one 503, p99 4.8 s), the cause of that night's drain per role, which the profile's 3 GiB address.
+- **Closed on 2026-11-19 by Q-ARCH-526: the Go toolchain stays fetched, with the step's bound of five
+  minutes.** ad01d57e8 recorded the decision, which names F-153 (`docs/spec/architecture.md`, and the
+  inventory of fetches in `docs/developer/releasing.md`): the bound stays, and a run that fails on that host
+  is the occasion to look again. What held the step that once was not read. Found closed by the reading of
+  2026-11-23. As it stood:
+  **F-153 · `Set up Go` ran into its bound of five minutes in a gating job** (2026-11-19, Test and Release 44453761606 of
+  6cd1cb09, job `Cyclomatic Complexity`; a full nightly ran beside it on purpose). The step takes 10 to 20 s; what held it for
+  five minutes is not read. Open: whether five minutes are too few for a download on a loaded pool; one occurrence is not a
+  measurement.
+- **Closed on 2026-11-23 by the releases after it: the refused tag push did not recur.** 90 tags were made
+  since 2026-11-12, the newest on 2026-11-23, and no later refused tag push is recorded; re-running the failed
+  jobs of a run is the first step `docs/developer/releasing.md` gives. Found closed by the reading of
+  2026-11-23; the runs themselves were not read. As it stood:
+  F-128 · `Semantic Release` failed once in Test and Release 43316531262 (40d37ac2, 2026-11-12): GitHub answered the push of the tag
+  v0.55.2 with `! [remote rejected] v0.55.2 -> v0.55.2 (Internal Server Error)`; no tag and no release were made, and the next push
+  released the same commits. Read, not reproduced: an error on GitHub's side, nothing in the workflow changed. Done when it does not
+  recur; at a recurrence, re-run the job once before anything else.
+- **Closed on 2026-11-12 by 6578029e2: the settings wait that timed out is gone.** The integration areas read
+  the visibility levels instead of the anonymous switch:
+  `TestR_OCI_004_AnonymousPullThroughV2AndPushWithoutLoginFails` sets the repository's visibility in the
+  database at its setup (`test/integration/registry/anonymous_test.go`), and `setAnonymous` no longer exists.
+  Found closed by the reading of 2026-11-23. As it stood:
+  **F-96 · The registry's anonymous test failed once after 85 s, its message not captured** (seen once, on a loaded host; 10 of 10
+  later runs passed). The test now logs the settings wait and fails with the replica's last answer
+  (`setAnonymous` in `test/integration/registry/anonymous_test.go`); the next step is the recurrence with that message.
+- **Closed on 2026-11-17 by aab3b2522 and f453d14ac: a Bastion applies a feed entry once, and routing by path
+  sends both HTTP versions of a request to one replica.** aab3b2522 (Q-BAS-152) stops a replica from applying
+  again the entries a quiet feed keeps re-sending, which made every validation of the 15 s before unusable
+  (the revalidations answered 304 without a hit); f453d14ac (Q-BAS-154) hashes the path alone, so an HTTP/1.1
+  and an HTTP/2 request for one artifact meet on one replica. The test asserts that its warm-up misses nothing
+  and names the feed entries each replica applied (`test/e2e/bastion_scenarios_test.go`). Found closed by the
+  reading of 2026-11-23; the case on the long-lived cluster is matched to the cause by the commit's message,
+  not reproduced. As it stood:
+  `bastion`, `TestBastion_R_BAS_049_RoutingByPath`: 0 hits on both replicas, once in twelve runs; again on the long-lived kind
+  cluster with T-18 (72 revalidations answered 304, 0 cache hits, no journal trigger in the 15 s window).
+- **Closed on 2026-11-17 by 3d205c329: the journey changes the state filter again only after the page has
+  taken over the first one.** The page's take-over set the field back 10 ms after the selection;
+  `web/e2e/tests/16-backups.spec.ts` now waits for the filtered request before it changes the filter again.
+  Found closed by the reading of 2026-11-23; a green run of the journey on a kind cluster since was not read.
+  As it stood:
+  The journey `16-backups` was red on the long-lived kind cluster with T-18: it shows `?state=failed` with both filters on Any and
+  no runs.
+- **Closed on 2026-11-23 by 7c6e0acb1: a statement's spread is measured against the span of the requests'
+  starts.** `testenv.PerRequest` (`requestSpan` in `test/integration/testenv/statements.go`) no longer loses a
+  statement when one request is slow, held by `TestR_ARCH_027_OneSlowRequestDoesNotHideTheRequestsStatement`;
+  the second failure, on the Debian case, has the same repair. Found closed by the reading of 2026-11-23.
+  As it stood:
+  **The query budget's harness failed once under load in the pipeline (2026-11-22, the run of the gate's
+  trace, integration shard b):** the case of a `.nupkg` of the remote member of a virtual NuGet repository
+  ended with "no statement ran per request; the log is not read", although the window held `GetLiveItem`
+  sixty times for thirty requests, which is its budget of two. `testenv.PerRequest` counts a statement only
+  when its runs spread over at least half of the time the thirty requests took; one slow request in the
+  window (the read from the object store, by the log's last lines; read, not shown) makes the time long and
+  the spread short. The same area passed on the same commit in the landing's gates and in the run before.
+  Not caused by the trace, which adds no statement. For the batch: measure the spread against the span of
+  the requests' starts. Not run again by itself: the push of the Bastion's specification, whose code is the
+  same but for a count test, runs the shard again. **That run ended at 23:03 with every job green,** the
+  shard among them; seen once so far.
+- **Closed on 2026-11-23 by the second commit of the handover's surface: a Bastion's card keeps one form
+  at a width.** The contacts' and the tokens' tables keep their table form at the wide and the middle
+  width whatever a row holds, what most rows share stands under the row's name, and a time is a relative
+  one that does not break (Q-UI-959); the renders have scenes with registrations
+  (`web/e2e/renders/bastions.ts`), looked at in both schemes at 1440, 1024 and 390 before it landed. As it
+  stood: the
+  contacts of a card stack by their content and not by the width, so two cards of one page differ; the
+  tokens' table and the contacts' table wrap a date onto two lines at 1024 and 1440. The screen had
+  never been rendered with a registration.
+- **Closed on 2026-11-23 by the seventh package's joins: the offline tool has read a real backup's
+  pool.** As it stood: the encryption's fourth and sixth
+  packages were built apart; the tool's reading of a pool object is tested with names its own test
+  writes. One case in the area `backup` after an encrypted backup (list the pool with the export and the
+  key ring) would join them, a second or two. For the batch.
+- **Closed on 2026-11-23 by 7c6e0acb1 and 133a65fc0: the case changes a byte of the payload, and the stale
+  German unit is gone.** `changedSealed` (`cmd/quader/admin_storage_keys_test.go`) changes a byte of the
+  decoded payload and encodes it again, so the value is always well formed (7c6e0acb1); the unit
+  `repo.signatures.hint` of the removed hint left `web/src/locale/messages.de.xlf` with 133a65fc0. Found
+  closed by the reading of 2026-11-23. As it stood:
+  **A unit test of the operator's key commands is flaky** (seen by package F's builder on 2026-11-23): the
+  case of a changed sealed value in `cmd/quader` flips the low bit of a random character of the encoded
+  value, which sometimes gives a character outside the encoding and another error than the one it expects.
+  For the batch: flip between two letters. The German translation file still holds a unit of a removed
+  hint of the signatures' settings.
+- **Closed on 2026-11-23 by 7c6e0acb1: `TestR_BAS_054_LargeArtifacts` waits for the states the fill reaches.**
+  Its waits end at the state, under a bound of 30 s that only ends a hung test (`largeBound` in
+  `internal/bastion/engine/large_test.go`). Found closed by the reading of 2026-11-23. As it stood:
+  **A timing check of the Bastion's engine failed once under load (2026-11-22, about 23:35, in a
+  specification writer's full unit run at a load of about 37):** `TestR_BAS_054_LargeArtifacts` in
+  `internal/bastion/engine`; it passed in the next full run. Seen once; for the batch.
+
+**Of the product:**
+
+- **Closed on 2026-11-23 by the storage topic's first stage and its surface: every point is repaired.** Point
+  (1) by 0b917b2da: the four alerts' series are exported (`internal/blob/reconcile/metrics.go`,
+  `internal/blob/summary/gauges.go`, `internal/blob/scrub/metrics.go`), and the alert of a damaged copy names
+  the tab Storage and `GET /api/v1/storage/damaged-blobs?scope=copies`, which exists; points (2) and (3) by
+  9a9b33d6a: the journal goes to every connection without `drain: true` (`internal/app/wire_journal.go`) and a
+  restore writes to its sink, held by `TestR_BAK_021_Blobs` beside a draining connection; point (4) by
+  eaeca3f4a and d89e83052: the kinds `storage-reconcile` and `scrub` exist with their handlers. Found closed
+  by the reading of 2026-11-23. As it stood:
+  **The several connections between their first package and the ones that follow** (found on 2026-11-22 by the
+  builder of package A while it corrected the documentation against the code; none of them touches an
+  installation with one connection whose identifier is `default`, which is what the owner's is; the manual's
+  page of the limitations says each): (1) **four alerts of the chart read series nobody exports yet** (the
+  backlog, a damaged copy, the scrub behind, a detached connection), and the alert of a damaged copy points
+  to an API that does not exist yet; silent until the reconciliation, the scrub and the surface are built,
+  each of which takes its lines out of the chart tests' list. **Points (2), (3) and (4) are closed since
+  2026-11-22, 23:08, by the landing of the reconciliation, the scrub and the rest of package E; point (1)
+  stays for the surface's package, in work.** (2) **The journal is shipped to the first
+  connection that is not draining, while the restore, the step after a restore and the backup read the first
+  element even when it drains;** with `drain: true` on the first element the two differ, so a backup can lack
+  new blobs and a restore can miss the journal. Repaired by the rest of package E (the backup reading one copy
+  per blob, the journal per connection). (3) **The restore's stand-in records the restored copies on the
+  connection `default`,** so a restore into a configuration whose first element has another identifier leaves
+  the blobs on a detached connection, unreadable. The rest of package E. (4) **The tasks `scrub` and
+  `storage-reconcile` are in the default maintenance plan without a job kind,** so nothing runs: between
+  package A and the scrub's package no job reads the stored content for damage (the old deep check went with
+  A). The reconciliation (in work) and the scrub's package.
+- **Closed on 2026-11-23 by the packages of the several connections: no comment or test name of the code takes
+  `storage.s3` for the key in use.** Corrected in 071c4297c, c5f056760, 14973cc7d, d89e83052, 9a9b33d6a and
+  0b917b2da; what still names it in code, chart and tests asserts that the key is gone (the chart's refusal in
+  `_storage.tpl`, `test/chart/storage_test.go`, two tests of `internal/blob/s3`) or is an Ansible module's
+  name. Found closed by the reading of 2026-11-23, which saw one line of the specification that still names
+  `storage.s3.circuit_breaker.open_duration` (the outage row of the HA tests' table in
+  `docs/spec/ha-and-helm.md`); that is a document, not this entry's code. As it stood:
+  **Comments and two test names still say `storage.s3`** after the several connections' first package (found by
+  its builder on 2026-11-22 and left, because the files belong to packages that are being built: the journal,
+  the backup, the operator's verify and restore of versions, a subtest of the TLS area, one npm test and one
+  end-to-end test). No message a user sees. Each package corrects its own files; what is left goes into the
+  batch.
+- **Closed on 2026-11-22 by the builders' briefs: nobody edits the evidence record by hand.** Both lines are
+  true and the pipeline's check holds them; the briefs since 12:05 of 2026-11-22 say that the record is not
+  edited by hand, and no later commit touched `docs/coverage/implemented.txt` (its last two changes are
+  3d7557daf and 2dfdc970f). Nothing to repair in the tree. Found closed by the reading of 2026-11-23.
+  As it stood:
+  **Two commits of 2026-11-22 added a line each to the evidence record by hand** (`docs/coverage/implemented.txt`: the
+  kit's check for the Bastion and the declaration for signed links), against the developer page of the evidence,
+  which says the pipeline writes that record from the test reports and nobody else does; found by the builder of
+  the Bastion's package C, who left the file alone. Both lines are true (their tests exist and pass), so the
+  pipeline's own check holds. The cause is the development agent's wording in the builders' briefs ("the evidence
+  follows the code"); the briefs since 12:05 say that the record is not edited by hand, and the builders at work
+  were told. Nothing to repair in the tree.
+- **Closed on 2026-11-22 by the packages of a Bastion that serves every format: the feed withdraws what Debian
+  and Ansible Galaxy delete, and the client setup's snippets work through a Bastion.** Point (1) by 0a94a840d:
+  the feed carries the four `deb.*` withdrawals and `ansible.version.deleted`
+  (`TestR_BAS_015_TheMappingTableOfTheFeed`); point (2) by fcef48d70, a Bastion that serves `/v2/`, and
+  fbd6198d7, whose `test/e2e/oci_bastion_test.go` pulls with Docker, Podman and the kubelet through the
+  snippets the client setup renders for the Bastion; H-1250 by fcef48d70
+  (`TestR_BAS_022_AHitCarriesTheContentHeadersOfRARCH007`). Found closed by the reading of 2026-11-23.
+  As it stood:
+  **The Bastion, read on 2026-11-22 by the planner of "a Bastion serves every format"** (in the code, nothing run):
+  (1) the specification said a Bastion serves no Debian, and the code forwards every path below `/api/<format>/`,
+  so Debian, Ansible Galaxy and the ClamAV definitions reach clients through a Bastion today, while the feed has
+  no entry for their withdrawals: a deleted Debian package or a removed collection version stays servable from a
+  Bastion's cache until its revalidation, up to ten minutes by default (a malware finding has its entry and is
+  not affected); (2) the client setup offers a Bastion as the target of an OCI repository, and its snippets get
+  a 404 there. **Both are repaired on 2026-11-22** (the feed's entries by package B at 12:31, the registry's
+  paths by B and C at 13:35); package D checks the client setup's snippet. A third finding of that day, that a
+  hit from a Bastion's cache carried none of the content headers every other answer has (H-1250), was closed
+  by package C with a test.
+- **Closed on 2026-11-23 by a check: the alert has no threshold that depends on the spool's size.**
+  `QuaderSpoolNearlyFull` fires when used over used plus free passes 0.9
+  (`deploy/helm/quader/templates/_rules.tpl`), a ratio, and the worker's spool is 5Gi since the analyses moved
+  to the scanner's own spool of 6Gi (`values.yaml`). Found closed by the reading of 2026-11-23, which also saw
+  that the scanner opens its spool without the spool's metrics (`internal/app/wire_scanner.go`), so the alert
+  never sees a `vuln-scanner-trivy` pod; that is a finding of its own (W2 of the table above). As it stood:
+  Image scanning: the thresholds of `QuaderSpoolNearlyFull` were not checked against the larger worker spool of 8 GiB.
+- **Closed on 2026-11-12 by 87271ac0b: neither cites UI-A-48 any more.** The search field in the top bar took
+  the comment out of `_shell.scss`, and R-UI-002 names no item of the audit; the one mention left is an option
+  of the decision record Q-UI-403, which describes that day. Found closed by the reading of 2026-11-23.
+  As it stood:
+  R-UI-002 and `_shell.scss` cite UI-A-48, an item of the T-21 audit that no longer exists.
+- **Closed on 2026-11-21 by 0e99fea44: the area counts only its own database's locks.** Every count of
+  `pg_locks` in `test/integration/coordination` names the database (`scheduler_test.go`, `leases_test.go`,
+  `lease_frozen_test.go`), and the same commit made the stack's lock keep two runs apart (the next entry).
+  Found closed by the reading of 2026-11-23. As it stood:
+  **The area `coordination` fails beside any other run on the stack** (2026-11-21, twice): its tests count the
+  granted advisory locks of a key in `pg_locks` without naming the database, so a lease held in another run's
+  database counts (`TestLeases`: two holders at once; `TestScheduler`: never exactly one). With the lock that
+  does not hold (next entry) that happens whenever two builders work. A builder fixes both since 03:35.
+- **Closed on 2026-11-23 by 0e99fea44 and 2e379c84d: the lock keeps two runs apart, and the developer page
+  says which command takes it and why.** Since 0e99fea44 (2026-11-21) `test/integration/locked.sh` takes an
+  `flock(2)` lock on a file that is never removed; since 2e379c84d each instance of the stack has a lock of
+  its own, `run.sh` (`make integration-run`) takes a free one, and `docs/developer/build-and-test.md` lists,
+  area by area, what acts on the whole stack ("Why one stack takes one run at a time"). Found closed by the
+  reading of 2026-11-23. As it stood:
+  **The lock of the shared integration stack did not keep two runs apart** (2026-11-21, 02:03): the development
+  agent's run of every area took the lock at 01:49 while a builder's three areas ran under the same lock file from
+  01:47 to 02:01, each started with `lockf`. Likely cause, not verified: `lockf` without `-k` removes the lock file
+  when its command ends, so a process that waited on the old file and one that creates the file anew both hold
+  "the" lock. No developer page says which command takes the lock; the builders took it from each other's
+  briefs. What two runs on one stack do to each other was not looked at; areas that fail a primary or stop
+  Valkey are the ones to suspect when an area fails only beside another run.
+- **Closed on 2026-11-21 by b542d1498: the rendered `freshclam.conf` has no `NotifyClamd`.** freshclam runs in
+  a Deployment of its own, `malware-updater-freshclam`; `deploy/helm/quader/templates/_malware.tpl` renders no
+  such line and says why, the chart test bans it (`test/chart/malware_test.go`), and R-HA-069 with Q-HA-377
+  says "No `NotifyClamd`". Found closed by the reading of 2026-11-23. As it stood:
+  **`freshclam` logs an error at every update: "NotifyClamd: Can't find or parse configuration file no"** (read on
+  the owner's installation on 2026-11-21). The chart's configuration says `NotifyClamd no`
+  (`deploy/helm/quader/templates/_malware.tpl`, named so in R-HA-069), and the option takes the path of `clamd`'s
+  configuration, not a switch: `no` is read as a file name. The update itself succeeds. The line has to go from the
+  rendered configuration and from the requirement's list; not fixed. **Taken up by the ClamAV change** (the
+  specification of 2026-11-21 renders no such line; its chart package is in work), as is the finding above of the
+  task that fails where nothing fetches a database (the task is idle there and waits for a first set).
+- **Closed on 2026-11-20 by b7d0cea05: a block of a member ends the walk of a virtual OCI repository.**
+  `isMemberMiss` (`internal/formats/oci/virtual_read.go`) counts no block as a miss (`isBlock`: the
+  vulnerability block, the malware gate's and the signature gate's codes), held by
+  `TestR_OCI_027_ABlockOfAMemberEndsTheWalk`; the other formats count only named codes as a miss and never had
+  the cause. Found closed by the reading of 2026-11-23; OCI's rule stays a list of the codes that are no miss,
+  which W1 of the table above turns round. As it stood:
+  **A virtual OCI repository goes on to the next member when one refuses** (found on 2026-11-20 by reading, not
+  tested): `isMemberMiss` in `internal/formats/oci/virtual_read.go` counts every `Forbidden` as "this member does not
+  have it", so a block of the vulnerability scanning in one member yields the next member's content or a 404, where
+  R-VULN-015 says a block ends the resolution. The generic engine ends it.
 
 ## 10 · Owner tasks of 2026-11-07: the next registries
 
@@ -4979,6 +5192,25 @@ runs are in `git log`; this section holds the current state.
 
 Everything that waits for the owner, one line each, with where the detail is. Put to him one at a time (standing rules).
 
+**Of the open findings, what only the owner can close (the reading of 2026-11-23)**
+
+Each needs something that is his alone; none blocks a package. Named to him on 2026-11-23.
+
+- The runner controller's listener that loses its assignment, so that a queued job holds the nightly's group: its
+  cause is in the logs of his runners' cluster.
+- The figures of the upload limits (Q-LIM-27, two entries): he put them after the first step; until he moves them,
+  `package_write` is a stand-in that would not hold a push of two platforms with more than about 65 layers each.
+- Whether a CI issuer of his installation is public and whether a mapping admits pipelines of forks (H-1052): rows
+  of his installation's database and facts of his hosting service.
+- An image scan has not been seen on his installation: it needs an image pushed there, which takes a credential
+  of his; the look at the scan's state afterwards is the development agent's.
+- A push through the whole application under a drain or the loss of a worker node in a real cluster: a drain
+  changes his cluster.
+- The exchange with the hub's own sign-on (H-842) is tested against a stand-in only: the real one needs an account
+  with the vendor of Ansible.
+- `zstd` in the runner image, so that a cache entry is not stored twice: that repository takes no commit without
+  his word.
+
 **The open questions of 2026-11-22: four answered by him that evening, the rest decided by the development agent
 at his word**
 
@@ -5813,11 +6045,104 @@ encoded value is a string the process cannot erase); H-1340 and H-1341 are live 
 and an encrypted connection is read. Its builder named what it makes false, and that is why it does not
 land as it is: the card's line that an encrypted connection's files come through the main installation
 (Q-BAS-296), three units of the storage settings, the manual's sentences in `bastion.md`,
-`download-links.md` and `configuration.md`. Since 08:38 it joins on the stack above: those places say
+`download-links.md` and `configuration.md`. Since 08:37 it joins on the stack above: those places say
 what runs, rendered and looked at in both languages; a unit case of a destroyed storage key (the forward
 streams with reason `key`, no trace); the translation source extracted; its case run on the cloned
 template. Not verified by it: a format's route with a key to a real Bastion (its case reads below
 `/files/`), any provider's store, the ingress's header limit with the larger value.
+**08:45, landed in one push: the tests' cheap installation, the handover's surface and the key
+destruction** (nine commits, the head a `feat:`). The stack's gates, 08:27 to 08:44, each exit 0: build,
+both vets, the unit run under an emptied AWS environment, generate, the coverage tool's four steps, cyclo,
+the chart's lint and tests, the API client and the translation source unchanged by their generators, the
+web's lint and tests, the end-to-end tree's vet and types, the pinned lint, and the areas `blob` 215 s,
+`api` 92 s, `audit` 47 s, `storageverify` 6 s, `restoreversions` 19 s, `ci` 178 s, `bastion` 124 s (it was
+184 s on the data keys' tree without the cloned template), `backup` 380 s, `postgres` 116 s, `testenv`
+12 s, `authz` 74 s, `uploads` 27 s, two streams beside three builders. The run before it had ended at
+08:37 with every job green, the layout checks among them, so the push cut nothing off. The stack changes
+no file of the chart, so the owner's values stay as they are; the upgrade runs the migration step of the
+destroyed keys. The owner's development backend runs on the landed tree since 08:46 (ready). The
+worktrees of the three landed builders and the second landing worktree are removed. **To read from this
+push's run, as predictions and not as results:** the least time of a data-port test in a shard falls
+from about 1.9 s to about 0.7 s, and a shard takes 23 to 26 minutes instead of 30 to 35.
+**08:47, the reading of all findings is back** (a planner and five readers, read-only, 30 minutes; its
+rows with file and line lie in the scratchpad, not in the repository). **292 separate points in the 153
+entries** (about 25 repeat another): 139 open and verified in the code, 64 closed by later work and never
+marked, 16 partly closed, 50 that reading cannot decide (a run, a measurement or a pipeline artifact is
+needed), 1 not checked, 22 in work. By kind: 62 tests that are flaky or depend on the machine, 57 tests
+missing or weak, 49 of tools and pipeline, 35 defects of the product, 29 wrong sentences in documents, 22
+of screens, 17 measurements never made, 12 decisions never taken, 9 only the owner can close. **Its first
+finding was about the run itself:** six of the seven signature defects the builder of 08:15 was sent to
+repair had been repaired on 2026-11-21 (`3550b3d69`, `48a4cd763`) and the entry never updated; the builder
+was told at 08:49 to check each repair with the real client instead and to name what it changes beyond.
+The development agent's own cause: the entry was taken from this section as it stood. The measure: an
+entry is checked against the code before a builder is sent, which the reading has now done for all.
+**The packages** are the table at the head of section 8: twelve for builders, about 75 builder hours by
+the planner's guess (65 to 90), and the readings and statements that are the development agent's own.
+**Left out by the owner's word of 08:09** (their only use is room for more formats): the move of shared
+behaviour from integration cases into the kit, three measurements of the cost model with 25 formats, the
+fixed cost of a kind leg, the kit move's later packages, the render set's growth per format, the client
+images per format leg; their entries stay open and say so.
+**The decisions the reading asked for, taken by the development agent at once** (each is built in its
+package and gets its block on the page of its topic there; two differ from the planner's recommendation
+and say why):
+(1) the job worker's heartbeat that is cut at a stop: no code, a statement at Q-ARCH-503, since no job
+runs after `Stop` and a cut beat extends nothing. (2) The stalls of whole runs before 2026-11-18: one
+statement closes them (the runs cannot be read any more, the family's cause is repaired, the recorder
+and the warm-up check exist), and one entry stays that opens when a leg starves without a neighbour.
+(3) The slow requests of the vulnerability read path on a runner: measured once, by one dispatch in a
+pipeline window with no push beside it. (4) Requests held against the bound of R-ARCH-034: counted by
+the limiter's own metric, not by the clock. (5) Renders of a builder: instances of the UI profile, one
+per builder, each with a database of its own; the owner's stack is the main checkout's and no builder's
+instance. (6) The disk watcher of the kind legs is built (the free room every 30 s in the leg's log, the
+one reading that survives an evicted runner). (7) A Makefile target for the unit run with the emptied
+AWS environment, named by briefs and landings. (8) **The evidence record and the coverage badge move
+again:** the release takes the newest green record and badge of `main` without the gate needing their
+jobs, and a missing one never holds a release. The planner advised to leave both standing as the price
+of the minimal gate; the owner's decision is about what gates a release, not that the record stands
+still, the record misses a whole format (Ansible Galaxy) and the README shows a number of 2026-11-09.
+If the tool's local run and the pipeline's record turn out to write the same file differently, the
+builder stops and says so. (9) Layer writes of the image scan flush every 32 MiB, as the loader does.
+(10) The index of decided questions is generated from the spec pages' headings and a check fails on a
+heading without a row. (11) An in-cluster ClamAV client: one sentence that says which host to use.
+(12) **NuGet's README route is built** (R-NUGET-024; it answers 501 today and the version page already
+reads the README from the package). The planner advised to leave it, since no client is told of the
+route; a format with a stub in it is not finished, which is what the owner asked for. (13) Two gaps of
+virtual repositories stay as written (a digest conflict counted per built merge; a role lookup answered
+by the first member). (14) `ownerIsAdmin` and `isAdmin` only for a caller with `identities:read`.
+(15) **A push to `main` no longer cancels the run before it** (pull requests keep cancelling): no
+started leg is lost, at most one run waits, the runners never carry two runs of `main`. It costs: a
+release can wait for the run before it; a run known to be red may be cancelled by hand. Until it is
+built the rule stands that a push waits for the shards. (16) The database's memory for the migration:
+the documents say it, the preflight guesses nothing. (17) Fifty downloads at once on one token are what
+the limit is for: the load test spreads over more tokens, the limit stays. (18) Q-UI-898 stays. (19) An
+OCI virtual read goes on only at a named miss. (20) The analyser's and ClamAV's images are scanned by a
+step that gates nothing. (21) `nuget-ha` runs what NuGet's client adds, the scenarios once under npm.
+(22) No code push while the nightly's load legs run, and a latency miss carries the recorder's reading;
+no test is relabelled. (23) A request refused does not count, for the upstream budget and an endpoint's
+rate class as for the request windows (the owner's decision 19 of the download limits). (24) A technical
+token's description is edited and the token removed from its row's menu. (25) The usage list keeps its
+offset cursor, with the reason written. (26) The tag list's query of a large repository (H-829) is
+measured before anything is built. (27) No nightly set `deb-long` and (28) no browser journey through
+the OCI screens: what they would show is held at cheaper tiers, said in a statement each.
+**What only the owner can close** is in the list With the owner (seven lines). **Started:** 08:49, the
+builder of W1; 08:52, a writer that prepares the marking of the entries found closed (read-only; closed
+entries move to a list Closed at the end of their section). Builders with a test load: the data keys'
+join, the signatures, the screens' first round, W1.
+**08:58, the release of the push of 08:45 is out; 09:05, it runs on the owner's installation** (both
+charts on the new release and ready, the migration job completed, no restart, one pod of the old
+release still draining; the Bastion's registry answers 401 with a valid certificate). No job of the run
+has failed so far; its shards are read against the two predictions when they end.
+**09:04, the entries found closed are marked** (the writer's script, checked on a copy and applied; it
+verified every closing again on today's `main`: the commit is on `main`, the file and the test say what
+the row claims). **30 entries moved to the lists Closed** (22 of section 8, 8 of section 12), each with
+what closed it and its old text; **19 entries are marked partly closed** with what is left open. Open
+now: **88 entries in section 8 and 35 in section 12**, counted by the lists' bullets. The writer left
+twelve entries as they stand against the reading's verdict (what the reading called closed was already
+in the entry, or does not end the defect: `make lint` still passes no time limit; the decisions' index
+reaches further and still misses hundreds of rows) and corrected six of the reading's rows. Two things
+it saw on the way, both with a package: `docs/spec/ha-and-helm.md` still names the key
+`storage.s3.circuit_breaker.open_duration` (W10a), and the scanner's spool exports no spool metrics
+(W2).
 **In work since 05:38: package 7 of the encryption, the destruction of a retired connection's keys**
 (R-STOR-097 to R-STOR-103 and the journal's replay; the development agent's answer of 2026-11-22 to the
 question of what stays readable at a provider). It stands on the handover's second package as it lands;
@@ -7213,20 +7538,19 @@ three released and on his installation, the last one tests and manual (run recor
 
 What is known to be untested, unverified or wrongly shaped, in one place (owner, 2026-11-20: "Es wäre schön wenn du alles was
 wir mal testen und ggf. refactoren sollten mal in die docs/projektplan/promt.md aufnimmst"). An entry says what is missing, why
-it matters and where the details are; it is removed in the commit that closes it. Nothing here is started by being listed. The
+it matters and where the details are; a closed entry moves to the list **Closed** at the end of this section with what
+closed it and what holds it, and is never deleted. Nothing here is started by being listed. The
 rule every entry is built by is "Tests stay runnable" of [CLAUDE.md](../../CLAUDE.md): once, at the cheapest tier that can show
 it; a format adds a constant; no more data than the assertion needs. **Collected on 2026-11-20 from this plan** (the findings,
 the walk items and the run record); what the code holds beyond the plan has not been searched.
 
 ### A · The shape of the test suite (refactor)
 
-- **The integration stack's one lock is the builders' bottleneck** (seen on 2026-11-21 with four to six agents): a
-  builder that changed several formats' serve paths held it for over 45 minutes with a proper list of areas, three others
-  waited 31 to 43 minutes, among them the repair of a red job that needed 100 seconds of it. To look at: a second stack
-  for builders, or a lock per area where two areas share no state; until then a brief says to run the longest areas
-  last and one at a time, so that a short run can pass between them.
-
-- **What a format costs, measured on 2026-11-20** ([test-cost.md](../developer/test-cost.md); two pushes and one full nightly,
+- **Partly closed; open: a push that touches one format, the unit tests per format and a second nightly are
+  not measured, and `docs/developer/test-cost.md` still says the path filter would not skip NuGet's leg.**
+  Closed: the nearest limit, shard b at 40.9 of its 45 minutes, by d32107f9a (2026-11-21), which cut a fourth
+  shard. As it stood:
+  **What a format costs, measured on 2026-11-20** ([test-cost.md](../developer/test-cost.md); two pushes and one full nightly,
   read from the runs' reports, nothing run for it). A push costs 396.0 runner minutes (Test and Release 44693590111), a full
   nightly 682.9 (44625277245). One format with a client costs 21.2 to 38.0 runner minutes per push, 28.6 on average: 12.6
   set-up, 8.7 behaviour that is the same for every format, 7.2 what its own client does. Per nightly npm costs 99.1, NuGet
@@ -7234,7 +7558,10 @@ the walk items and the run record); what the code holds beyond the plan has not 
   per push and about 1,244 per nightly (computed from the mean of the five, not measured). **The nearest limit:** integration
   shard b runs 40.9 of its 45 minutes, and an average format adds 6.0. Not measured: a push that touches one format only (both
   pushes touched shared code), the unit tests per format, a second nightly.
-- **Where the minutes are, ranked** (the measured minutes of what would move; what a cheaper tier saves is not measured, and
+- **Partly closed; open: items (1) to (7), each a measured cost with nothing designed.** Closed: (8), by
+  08d6f014b (2026-11-20): `e2e (bastion)` is skipped and takes no runner unless the change touches the Bastion
+  (the job's condition on `e2e-scope` in `.github/workflows/release.yml`). As it stood:
+  **Where the minutes are, ranked** (the measured minutes of what would move; what a cheaper tier saves is not measured, and
   nothing is designed): (1) the fixed cost of every kind leg, 95.1 of the 172.6 e2e minutes of a push and 240.6 of 658.1 of a
   nightly, `make dev-up` alone 154 to 186 s per leg; (2) drain, switchover, failover and pod crash under a client's load,
   repeated across 12 nightly legs, 331.2 minutes: the four drain-load legs 87.6, `npm-ha` with `nuget-ha` 78.6 (`nuget-ha` runs
@@ -7258,7 +7585,11 @@ the walk items and the run record); what the code holds beyond the plan has not 
   made it six to nine times slower). The latency conditions of the load legs are only as good as the runner is quiet; either
   the nightly holds the runners, or its latency conditions compare against a measurement of the same run.
 - **A partial dispatch of the nightly takes a large pod for every leg of a lane it does not run** (2026-11-18); in a full pool one leg waited 40 minutes.
-- **The render guard's blind spots** (W-23, the builder's list): a control beside a framed box, absolutely placed elements and
+- **Partly closed; open: the blind spots themselves (a control beside a framed box, absolutely placed elements
+  and text drawn by CSS, the states the set does not render, an offset of 1 px or less).** Closed: the two
+  newest checks and `joined` each have cases that fail without them (`web/e2e/renders/layout-checks.spec.ts`),
+  and the full set runs on every push in the job `UI layout checks`. As it stood:
+  **The render guard's blind spots** (W-23, the builder's list): a control beside a framed box, absolutely placed elements and
   text drawn by CSS, states the set does not render (open menus, hover, most dialogs, error states), an offset of 1 px or
   less. **The two newest checks** (`stacked-offset`, `label-apart`) were each wrong once on older screens before they were
   right; `joined` has run in one full set.
@@ -7266,21 +7597,6 @@ the walk items and the run record); what the code holds beyond the plan has not 
   ("3 findings · / 0 fixable" at 1,024 px is one), text cut at the start of a wrapped line, a stacked label off its control,
   two words for one thing across screens.
 
-- **The integration shards are close to their limit of 45 minutes** (read from three runs of 2026-11-21 between 16:20 and
-  18:31): shard a 37.0 to 39.3, shard b 39.5 to 41.0, shard c 37.8 to 42.2 minutes, and the packages in work add about a
-  minute more. This is the lever the owner has before him in "With the owner" (a fourth shard, or the formats' repeated
-  integration tests into the kit). Until he decides: when a shard is stopped by its limit or passes 43.5 minutes, the
-  development agent cuts a fourth shard by the Makefile's rule, because a higher limit would hide the growth and a
-  stopped shard is a red job without a finding; it is told to him with the minutes it costs. The run of 20:58 to 21:42
-  with the signing identity: 37.8, 41.0 and 42.2 minutes (the new area `signing` adds 11.5 s to shard b). The run of
-  21:47 to 22:34 with the gate: 38.2, 43.4 and 42.1 minutes. Shard b is the bucket of every package the Makefile's rule
-  names in neither of the others, so every new area of the day fell into it; with npm's signatures (about 5 s), the
-  attestations and the gate's releases it passes the mark. **The fourth shard is cut since 2026-11-21, 23:44** (run
-  record, Q-ARCH-565): about 31 to 33 minutes each by the model, about 3.5 runner minutes more per push. **Its first
-  run** (00:02 to 00:44 of 2026-11-22): 33.1, 32.7, 30.0 and 32.8 minutes (a, b, c, d), so each shard has about twelve
-  minutes of room again. The run of 00:57 to 01:42 with the gate's screens: 33.0, 31.8, 31.2 and 32.9 minutes; the
-  layout job, with the 186 pictures of those screens, 43.3 of its 75 minutes, the push's longest job. The run of 02:54
-  to 03:40 with the whole of the signatures: 34.1, 32.4, 33.5 and 34.2 minutes, the layout job 44.0.
 - **Checks of a list or a convention that sit in an integration area** (found on 2026-11-21, four red jobs in one
   day): the purge test's two lists of tables (area `upstream`), the formats' clients (area `packages`), the registry of
   revision columns (area `postgres`), the count of sealed columns the re-encryption task walks (area `repository`).
@@ -7296,7 +7612,146 @@ the walk items and the run record); what the code holds beyond the plan has not 
   replica gracefully, which releases them.
 - **End to end, not verified:** the `RateLimit` policies of the parallel, upstream and refused figures; the charging of a host
   bound to a repository (no test); the daily fold's sums with rows older than 30 days (only that the query runs).
-- **`TestR_LIM_001` and `TestR_LIM_027_AWellKnownMember…`, red in the pipeline on 2026-11-22: found and repaired, a product
+- **The new client cases have run on `linux/arm64` only** when this was written; the first pipeline on the runners shows
+  them on `linux/amd64`.
+- **W-25 through a virtual repository** has integration tests of its own for OCI and npm; NuGet, Ansible and Debian have unit
+  tests only; OCI through a virtual address has no unit test. The background path's own refusal by include and exclude
+  patterns is exercised through one case.
+- **Left by the limits' package of 2026-11-20** (its builder's list): the upstream-request figure of a remote's budget check
+  (`MayFetch`) still counts a request it refuses, the decision named the request windows only; an endpoint's own rate class
+  runs before the request check, so a request it admits and the check refuses still counts there; the profile editor's help
+  text on waiting downloads was not touched; the client cases of Debian, npm and Ansible Galaxy were not run again; every run
+  on the kind cluster was on `linux/arm64`. `package_write` (burst 400) would not hold a push of two platforms with more than
+  about 65 distinct layers each (Q-LIM-56).
+- **Refactor, named by the builders:** the class `package_write` is a stand-in until upload figures exist (Q-LIM-27); a
+  screen cannot change a technical token's description or delete one (API only); the usage list's cursor is an offset
+  (Q-LIM-45).
+
+### C · The walk (W-12 to W-24) and what landed on 2026-11-20
+
+- **The colour scale of the severities:** rendered in Chromium only, not in Firefox or Safari; the seed holds one day of
+  findings, so the trend was judged on fed data; no finding rated None is in the seed, so its badge was not rendered.
+- **The first readiness and Valkey:** no real Sentinel failover during a start was run; the 30 s are computed from the
+  Sentinel settings and the measured failovers. The nightly shows the cases its builder read (the drain variant that holds a
+  primary lost, the outage with a replaced pod, the clone without Sentinels).
+- **Partly closed; open: the German page and the Bastion target of Set up client were not rendered.** Closed:
+  the journeys `08-packages` and `09-guides` run in `e2e (access-long)` (the browser suite of `TestE1_11`),
+  green in the run that ended at 21:58 on 2026-11-20, after 8bb320f44; the renders of the job `UI layout
+  checks` show Set up client against the real backend on every push (`web/e2e/renders/screens.ts`).
+  As it stood:
+  **Set up client (W-27):** the journeys `08-packages` and `09-guides` have new selectors and were not run on a cluster; the
+  German page and the Bastion target were not rendered; the renders ran against answers rewritten in the builder's dev
+  server, not against the changed backend (its side is unit-tested).
+- **`upgrade-release`** (upgrade and rollback from the published release) has not run on a cluster since it was changed: a
+  dispatch of the nightly that names `e2e-upgrade` shows it.
+- **The render run of the walk** (2026-11-18): `start-recent` as `plain` and `power` ran into the five minutes of the test
+  inside `settle`; cause not read. One screen stopped with "Timeout … exceeded" and no more; the report carries more lines
+  since, the cause was not seen again.
+- **No render walk switches a remote to mirror mode**: the OCI and Debian mirror settings are covered by unit tests only, and a
+  row of a remote's list that a mirror pass filled is not in the render set (W-24).
+- **Journey 23 (search)** failed once on a long-lived kind cluster and is green on CI's fresh one; not read.
+
+### D · Open findings whose cause is not known (each needs a recurrence read, not a new test)
+
+- **F-165** one instance of a pooler without a server after a switchover (33.7 s on 2026-11-20, 69.4 s on 2026-11-21): cause known and fixed on 2026-11-21, `ha-pooler` green once with the fix; why the one connect hung is not known (section 8).
+- **`TestR_DEB_025_AReleaseNoCurrentKeyVerifiesIsNotMerged`** red once by timing (Test and Release 44632375471,
+  `integration (shard c)`: "the build after the change left the suite current", while the log shows the build failing with
+  `member_unverified` in the second the replica shut down; no limit in it, first record of it). **Again** in Test and
+  Release 44715970992 of b74d0e98 (2026-11-20, `integration (shard c)`, 14.58 s; nothing of that push touches the Debian
+  virtual repository): two occurrences in a day, to be read at its cause next, not re-run.
+- **F-126** `TestConcurrentWritersOnOnePath` refused one writer once; **F-127** `e2e (push)` with a certificate the job's own
+  CA did not verify, the secrets operator suspected and its kept log not read; **F-124** tarballs of 1 to 5 MB stalling at the
+  edge for about 40 s; **the 502 bursts at the edge (H-795)**, seen again as one upload probe per drain leg on 2026-11-19
+  and 20; the stall of the whole cluster in the set `push`; V-7b of the vulnerability scanning performance once above its
+  bound, the runner's load not measured.
+
+### E · Never run where it matters
+
+- **Partly closed; open: whether a CI issuer of his installation is public or a mapping admits fork pipelines
+  (H-1052), and whether his issuer signs the usage client auth.** Closed in the chart: since af1a16ee3
+  (2026-11-20) every kind of pod that presents itself on a link, the scanner among them, gets a certificate
+  with the usage client auth (`deploy/helm/quader/templates/certificates.yaml`). As it stood:
+  **On the owner's installation, before it takes the releases of 2026-11-20:** whether a CI issuer is public or a mapping
+  admits fork pipelines to read (each of them now reads everything `internal`, H-1052); whether the chart's certificate
+  allows client authentication, which the role `scanner` will need (Q-VULN-163).
+- **Partly closed; open: an image scan there, a push through the whole app with the real binary, and a drain
+  or a worker's loss in his cluster.** Closed: a release reaches his installation, and the release image and
+  chart run in a cluster: his installation runs the release of 05:13 on 2026-11-23 since 05:22, every pod on
+  the new image without a restart and the migration's job succeeded (the run record of that day, read at
+  05:38). As it stood:
+  **On the owner's installation:** the newest release (not reachable from the development machine); an image scan (none seen
+  there yet; not run: a push through the whole app with the real binary, a drain or worker loss in a cluster, the release
+  image and chart in a cluster).
+- **H-829:** the listing of a remote OCI repository matches a regular expression on every tag entry without an index and was
+  never measured on a cache with very many tags. W-25 adds rows to that view.
+- **Ansible Galaxy:** one name with versions in a local and a remote member is not run with the real clients (H-868); the hub
+  exchange is tested against the stub realm only (H-842).
+- **The CI caches:** a clients image loaded from the cache instead of built has not been read in a log since they landed
+  (Q-ARCH-520 to Q-ARCH-526); every cache entry exists twice without `zstd` on the runners.
+
+### F · Tests a plan named and nobody wrote
+
+- **Partly closed; open: no integration case of a denying wiki gate in `ansiblelocal` or `ansiblevirtual`, no
+  test that names R-ANS-040, R-ANS-043, R-ANS-044 or R-ANS-045, the directory R-ANS-046 names does not exist,
+  and the collection of 6,000 files is unit-tested only.** Closed at the cheaper tier: that a caller who may
+  not read the wiki sees no tab is held by the component test of
+  `web/src/app/features/packages/ansible-docs.spec.ts` (no Documentation and no Contents tab, no request), and
+  `test/e2e/ansible_wiki_test.go` holds the API's refusal. As it stood:
+  **The documentation of Ansible collections (T-19):** `ansiblelocal` has no integration case for a denying wiki gate or for a
+  collection of 6,000 files (both are unit-tested only); no test carries R-ANS-040 (a mirror pass that queues), R-ANS-043,
+  R-ANS-044 or R-ANS-045 in its name; `ansiblevirtual` has no member whose wiki the denying fake closes, so a wiki-denied member
+  of a virtual repository has no proof; the e2e row **wiki** checks the install and `docs-blob/`, not in a browser that the
+  user sees no tab; R-ANS-046 names `test/e2e/testdata/ansible_docs/`, which does not exist (the collection's source is inlined
+  in `test/e2e/ansible_docs_test.go`).
+- **Ansible Galaxy (F0):** the read-only check against the public Galaxy (`https://galaxy.ansible.com/api/`) in the closing run,
+  an exit criterion of F0's plan, has no test and no record.
+- **APT (T-17):** the nightly set `deb-long` and the Debian rows of the e2e sets `mirror` and `mirror-long` are not built;
+  `member_expired` and the dropping of a member's recorded `Date` are unit rules, not integration cases
+  ([deb.md](../developer/deb.md#what-is-built-and-what-is-not)).
+- **OCI (T-16):** no browser journey walks the OCI package screens ([web-ui.md](../developer/web-ui.md) names the selectors
+  for it and says it has not been written).
+
+### Closed
+
+Entries of this section that are closed, each with what closed it and what holds it; nothing is deleted from
+the plan.
+
+- **A · Closed on 2026-11-23 by 2e379c84d: several integration stacks run side by side, each under its own
+  lock.** `test/integration/instance.sh` gives an instance n its own project, state and lock and moves its
+  ports by 100 for each step, `locked.sh` takes that instance's lock, and `run.sh` (`make integration-run`)
+  takes the first that is free; it builds on 0e99fea44 (2026-11-21), the lock that keeps two runs apart. Found
+  closed by the reading of 2026-11-23. As it stood:
+  **The integration stack's one lock is the builders' bottleneck** (seen on 2026-11-21 with four to six agents): a
+  builder that changed several formats' serve paths held it for over 45 minutes with a proper list of areas, three others
+  waited 31 to 43 minutes, among them the repair of a red job that needed 100 seconds of it. To look at: a second stack
+  for builders, or a lock per area where two areas share no state; until then a brief says to run the longest areas
+  last and one at a time, so that a short run can pass between them.
+- **A · Closed on 2026-11-21 by d32107f9a: the integration tests run in four shards, each with room again.**
+  The workflow's matrix is `shard: [a, b, c, d]` (`.github/workflows/release.yml`), and the `Makefile` places
+  each area by the rule of Q-ARCH-565; the first run on four shards took 30.0 to 33.1 minutes. Found closed by
+  the reading of 2026-11-23. As it stood:
+  **The integration shards are close to their limit of 45 minutes** (read from three runs of 2026-11-21 between 16:20 and
+  18:31): shard a 37.0 to 39.3, shard b 39.5 to 41.0, shard c 37.8 to 42.2 minutes, and the packages in work add about a
+  minute more. This is the lever the owner has before him in "With the owner" (a fourth shard, or the formats' repeated
+  integration tests into the kit). Until he decides: when a shard is stopped by its limit or passes 43.5 minutes, the
+  development agent cuts a fourth shard by the Makefile's rule, because a higher limit would hide the growth and a
+  stopped shard is a red job without a finding; it is told to him with the minutes it costs. The run of 20:58 to 21:42
+  with the signing identity: 37.8, 41.0 and 42.2 minutes (the new area `signing` adds 11.5 s to shard b). The run of
+  21:47 to 22:34 with the gate: 38.2, 43.4 and 42.1 minutes. Shard b is the bucket of every package the Makefile's rule
+  names in neither of the others, so every new area of the day fell into it; with npm's signatures (about 5 s), the
+  attestations and the gate's releases it passes the mark. **The fourth shard is cut since 2026-11-21, 23:44** (run
+  record, Q-ARCH-565): about 31 to 33 minutes each by the model, about 3.5 runner minutes more per push. **Its first
+  run** (00:02 to 00:44 of 2026-11-22): 33.1, 32.7, 30.0 and 32.8 minutes (a, b, c, d), so each shard has about twelve
+  minutes of room again. The run of 00:57 to 01:42 with the gate's screens: 33.0, 31.8, 31.2 and 32.9 minutes; the
+  layout job, with the 186 pictures of those screens, 43.3 of its 75 minutes, the push's longest job. The run of 02:54
+  to 03:40 with the whole of the signatures: 34.1, 32.4, 33.5 and 34.2 minutes, the layout job 44.0.
+- **B · Closed on 2026-11-22 by a49563534: the usage overview counts each request once, under the caller it
+  was charged to and the repository that served it.** A request's count and the limits it met reach the usage
+  store at the flush after it ended, and `Retarget` moves the request's own charge; unit tests that put a
+  flush between the steps (`internal/limits/charge_via_test.go`, `engine_test.go`) fail on the code before.
+  The width of the windows on the runners no longer decides anything, since the count waits for the request's
+  end. Found closed by the reading of 2026-11-23. As it stood:
+  **`TestR_LIM_001` and `TestR_LIM_027_AWellKnownMember…`, red in the pipeline on 2026-11-22: found and repaired, a product
   defect.** Run 44958303829 (`integration (shard b)`): `TestR_LIM_001` found `127.0.0.1 instance repo=- requests=1
   refused=0`; run 44967924325: the via test's row (`requests >= 1 AND uncached_bytes > 0` at `upstream/npmjs` with
   `npm-all`) never came, though its fetch was answered 200 with 6169 cached and 10555 uncached bytes. **One cause:** the
@@ -7320,87 +7775,31 @@ the walk items and the run record); what the code holds beyond the plan has not 
   token, and the via test prints the reader's rows when it fails. Not known: the windows' width on the runners, and so
   whether two hits in four runs of one night is more than chance; nothing in the area's timings says the runners got
   slower.
-- **A multi-platform push** against the write class was not measured (single-platform, 40 layers: Q-LIM-56).
-- **The new client cases have run on `linux/arm64` only** when this was written; the first pipeline on the runners shows
-  them on `linux/amd64`.
-- **W-25 through a virtual repository** has integration tests of its own for OCI and npm; NuGet, Ansible and Debian have unit
-  tests only; OCI through a virtual address has no unit test. The background path's own refusal by include and exclude
-  patterns is exercised through one case.
-- **Left by the limits' package of 2026-11-20** (its builder's list): the upstream-request figure of a remote's budget check
-  (`MayFetch`) still counts a request it refuses, the decision named the request windows only; an endpoint's own rate class
-  runs before the request check, so a request it admits and the check refuses still counts there; the profile editor's help
-  text on waiting downloads was not touched; the client cases of Debian, npm and Ansible Galaxy were not run again; every run
-  on the kind cluster was on `linux/arm64`. `package_write` (burst 400) would not hold a push of two platforms with more than
-  about 65 distinct layers each (Q-LIM-56).
-- **Refactor, named by the builders:** the class `package_write` is a stand-in until upload figures exist (Q-LIM-27); a
-  screen cannot change a technical token's description or delete one (API only); the usage list's cursor is an offset
-  (Q-LIM-45).
-
-### C · The walk (W-12 to W-24) and what landed on 2026-11-20
-
-- **The colour scale of the severities:** rendered in Chromium only, not in Firefox or Safari; the seed holds one day of
-  findings, so the trend was judged on fed data; no finding rated None is in the seed, so its badge was not rendered.
-- **The level `internal`:** the e2e case of the Bastion (it now expects 200) and the integration areas other than `ci` were
+- **B · Closed on 2026-11-20 by 623d7960c: a push of two platforms was measured.** `docker buildx build
+  --push` of two platforms of 40 layers charged 146 requests, 95 of them unsafe, in the measurement of real
+  clients that set the built-in profiles' figures (`docs/spec/usage-and-limits.md`, Q-LIM-59, and Q-LIM-56's
+  check); what a push of more layers would meet stays in the entry "Left by the limits' package of
+  2026-11-20". Found closed by the reading of 2026-11-23. As it stood:
+  **A multi-platform push** against the write class was not measured (single-platform, 40 layers: Q-LIM-56).
+- **C · Closed on 2026-11-20 by the pipeline after the landing: the Bastion's end-to-end case and the
+  integration areas ran.** In the run that ended at 21:58 on 2026-11-20, after 730ef6177, `e2e (bastion)` and
+  the integration shards a and c were green and shard b was red for a cause of its own (`TestEndpoints`; the
+  run record of that day), and the run of 2026-11-22 that ended at 23:03 was green in every job. Found closed
+  by the reading of 2026-11-23, from the run record; no pipeline log was read. As it stood:
+  **The level `internal`:** the e2e case of the Bastion (it now expects 200) and the integration areas other than `ci` were
   not run by the builder; the first pipeline after the landing shows them.
-- **The first readiness and Valkey:** no real Sentinel failover during a start was run; the 30 s are computed from the
-  Sentinel settings and the measured failovers. The nightly shows the cases its builder read (the drain variant that holds a
-  primary lost, the outage with a replaced pod, the clone without Sentinels).
-- **Set up client (W-27):** the journeys `08-packages` and `09-guides` have new selectors and were not run on a cluster; the
-  German page and the Bastion target were not rendered; the renders ran against answers rewritten in the builder's dev
-  server, not against the changed backend (its side is unit-tested).
-- **The kind test `e1_01_login_test.go`**, changed for the ended session at load (W-21), has not been run on a cluster.
-- **`upgrade-release`** (upgrade and rollback from the published release) has not run on a cluster since it was changed: a
-  dispatch of the nightly that names `e2e-upgrade` shows it.
-- **The render run of the walk** (2026-11-18): `start-recent` as `plain` and `power` ran into the five minutes of the test
-  inside `settle`; cause not read. One screen stopped with "Timeout … exceeded" and no more; the report carries more lines
-  since, the cause was not seen again.
-- **No render walk switches a remote to mirror mode**: the OCI and Debian mirror settings are covered by unit tests only, and a
-  row of a remote's list that a mirror pass filled is not in the render set (W-24).
-- **Journey 23 (search)** failed once on a long-lived kind cluster and is green on CI's fresh one; not read.
-
-### D · Open findings whose cause is not known (each needs a recurrence read, not a new test)
-
-- **F-165** one instance of a pooler without a server after a switchover (33.7 s on 2026-11-20, 69.4 s on 2026-11-21): cause known and fixed on 2026-11-21, `ha-pooler` green once with the fix; why the one connect hung is not known (section 8).
-- **`TestR_DEB_025_AReleaseNoCurrentKeyVerifiesIsNotMerged`** red once by timing (Test and Release 44632375471,
-  `integration (shard c)`: "the build after the change left the suite current", while the log shows the build failing with
-  `member_unverified` in the second the replica shut down; no limit in it, first record of it). **Again** in Test and
-  Release 44715970992 of b74d0e98 (2026-11-20, `integration (shard c)`, 14.58 s; nothing of that push touches the Debian
-  virtual repository): two occurrences in a day, to be read at its cause next, not re-run.
-- **F-160** `drain-load-e` on latency alone; not reproduced in two later runs.
-- **F-126** `TestConcurrentWritersOnOnePath` refused one writer once; **F-127** `e2e (push)` with a certificate the job's own
-  CA did not verify, the secrets operator suspected and its kept log not read; **F-124** tarballs of 1 to 5 MB stalling at the
-  edge for about 40 s; **the 502 bursts at the edge (H-795)**, seen again as one upload probe per drain leg on 2026-11-19
-  and 20; the stall of the whole cluster in the set `push`; V-7b of the vulnerability scanning performance once above its
-  bound, the runner's load not measured.
-- **The internal secrets operator of the local kind cluster crash-loops** (hundreds of restarts on 2026-11-10 and 11).
-
-### E · Never run where it matters
-
-- **On the owner's installation, before it takes the releases of 2026-11-20:** whether a CI issuer is public or a mapping
-  admits fork pipelines to read (each of them now reads everything `internal`, H-1052); whether the chart's certificate
-  allows client authentication, which the role `scanner` will need (Q-VULN-163).
-- **On the owner's installation:** the newest release (not reachable from the development machine); an image scan (none seen
-  there yet; not run: a push through the whole app with the real binary, a drain or worker loss in a cluster, the release
-  image and chart in a cluster).
-- **H-829:** the listing of a remote OCI repository matches a regular expression on every tag entry without an index and was
-  never measured on a cache with very many tags. W-25 adds rows to that view.
-- **Ansible Galaxy:** one name with versions in a local and a remote member is not run with the real clients (H-868); the hub
-  exchange is tested against the stub realm only (H-842).
-- **The CI caches:** a clients image loaded from the cache instead of built has not been read in a log since they landed
-  (Q-ARCH-520 to Q-ARCH-526); every cache entry exists twice without `zstd` on the runners.
-
-### F · Tests a plan named and nobody wrote
-
-- **The documentation of Ansible collections (T-19):** `ansiblelocal` has no integration case for a denying wiki gate or for a
-  collection of 6,000 files (both are unit-tested only); no test carries R-ANS-040 (a mirror pass that queues), R-ANS-043,
-  R-ANS-044 or R-ANS-045 in its name; `ansiblevirtual` has no member whose wiki the denying fake closes, so a wiki-denied member
-  of a virtual repository has no proof; the e2e row **wiki** checks the install and `docs-blob/`, not in a browser that the
-  user sees no tab; R-ANS-046 names `test/e2e/testdata/ansible_docs/`, which does not exist (the collection's source is inlined
-  in `test/e2e/ansible_docs_test.go`).
-- **Ansible Galaxy (F0):** the read-only check against the public Galaxy (`https://galaxy.ansible.com/api/`) in the closing run,
-  an exit criterion of F0's plan, has no test and no record.
-- **APT (T-17):** the nightly set `deb-long` and the Debian rows of the e2e sets `mirror` and `mirror-long` are not built;
-  `member_expired` and the dropping of a member's recorded `Date` are unit rules, not integration cases
-  ([deb.md](../developer/deb.md#what-is-built-and-what-is-not)).
-- **OCI (T-16):** no browser journey walks the OCI package screens ([web-ui.md](../developer/web-ui.md) names the selectors
-  for it and says it has not been written).
+- **C · Closed on 2026-11-20 by the pipeline: `TestE1_01` ran on a cluster and passed.** It runs in the set
+  `access-long` (`deploy/dev/e2e.sh`), and `e2e (access-long)` was green in the run that ended at 21:58 on
+  2026-11-20, after the test's last change (52ab4305d, 2026-11-19; the run record of that day). Found closed
+  by the reading of 2026-11-23, from the run record; no pipeline log was read. As it stood:
+  **The kind test `e1_01_login_test.go`**, changed for the ended session at load (W-21), has not been run on a cluster.
+- **D · Closed on 2026-11-21 by the reading of its cause: neighbours on the runner, before the runners'
+  cgroups changed.** The cause was read from the run's kept artifacts on 2026-11-21 (F-160 in section 8,
+  closed with the profile's 3 GiB of 42be19244); a recurrence of the pattern is read with the CPU time per
+  cgroup (Q-HA-305). Found closed by the reading of 2026-11-23. As it stood:
+  **F-160** `drain-load-e` on latency alone; not reproduced in two later runs.
+- **D · Closed on 2026-11-12 by f98e80b4a: the profile gives the operator the memory to cache the cluster's
+  Secrets.** Its cause was the limit of 128 MiB with 78 release Secrets of helm in its cache (F-127):
+  `deploy/dev/up.sh` sets 512 MiB and `deploy/dev/lib.sh` keeps two revisions of helm per release
+  (`HELM_MAX_HISTORY`). Found closed by the reading of 2026-11-23. As it stood:
+  **The internal secrets operator of the local kind cluster crash-loops** (hundreds of restarts on 2026-11-10 and 11).
