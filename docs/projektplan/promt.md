@@ -5791,6 +5791,17 @@ by files so that four can run side by side, ordered by what a user or an operato
 that need a decision, with a recommendation, and the rows only the owner can close. It does not count
 against the four. Builders with a test load: the handover's data keys, the two of this list, and the
 landing's gates.
+**08:26, the cheap installation passed its landing gates on every area:** the basics, the pinned lint and
+all 71 integration areas in two streams, each exit 0 (07:38 to 08:26 with three builders beside it). The
+planner of the findings split its reading across five readers (four groups of section 8 and section 12,
+started 08:19 to 08:21, read-only). **08:27, one stack for one push:** the five commits of the cheap
+installation rebased onto `main`, on them the handover's surface (two commits) and the key destruction
+(two commits), no conflict; its gates run since 08:28 in the landing worktree: the basics with the unit
+run under an emptied AWS environment, the chart, the web gates, the pinned lint and the areas `backup`,
+`postgres`, `testenv`, `authz`, `uploads`, `blob`, `api`, `audit`, `storageverify`, `restoreversions`,
+`ci`, `bastion`, since the key destruction had not been gated on a landing stack and now stands on the
+template database with a migration step of its own. The push waits for these and for the layout checks
+of the run before it, which two pushes of this night cut off.
 **In work since 05:38: package 7 of the encryption, the destruction of a retired connection's keys**
 (R-STOR-097 to R-STOR-103 and the journal's replay; the development agent's answer of 2026-11-22 to the
 question of what stays readable at a provider). It stands on the handover's second package as it lands;
