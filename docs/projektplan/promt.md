@@ -241,9 +241,12 @@ did not do", F-126, the mirror's back-off bound, the process environment and the
 Q-ARCH-1040; its release shows the rest); `drain-roles` ran alone at 22:24, green, and closed its entry.
 **T-25 landed at 22:58** (one commit; Q-UI-1040 to Q-UI-1043; the renders looked at by the development agent;
 the browser journeys it rewrote run first in the pipeline's e2e legs). Started at 22:53 in the freed place: **T-24 · R4** (downloads ahead and the queue; R3 waits for R2's landing,
-since it wires R2's decider). **The rest of the Go tests landed at 23:12** (three commits; F-126 not reproduced, open). Started at 23:00 in T-25's place: **W8** (web and end-to-end tests wait for what they stand for, with the
+since it wires R2's decider). R4 landed at 00:30 (one commit; section 10). **The rest of the Go tests landed at 23:12** (three commits; F-126 not reproduced, open). Started at 23:00 in T-25's place: **W8** (web and end-to-end tests wait for what they stand for, with the
 layout fixtures in three browsers and an instance of the UI profile that is claimed, not chosen: two builders
-took instance 6 a minute apart that evening). W8 landed at 00:05 (eleven commits). Started at 23:20 in that place: **W10b with the documents' second
+took instance 6 a minute apart that evening). W8 landed at 00:05 (eleven commits). **v0.115.0** was released at 23:30 by the run of
+the rest of the Go tests (the evidence record's repair, T-25, the Bastion's fix of 18:39 and the Go tests);
+it runs on the owner's installation (chart 0.115.0, every Deployment ready, read at 00:08), and the branch
+`coverage` exists with its four files. Started at 23:20 in that place: **W10b with the documents' second
 round** (the extraction check, the stale location notes, test names that carry a decision's number, "du",
 and every item the writer left). **Landed at 23:52** (three commits: the documents, the extraction check, 28 renames and the rule that a test
 name carries a requirement's number, never a decision's). Its first builder was of a type without a shell (the development agent's
@@ -251,7 +254,10 @@ choice, a mistake already known from 2026-11-03): it wrote the check and the doc
 and commit nothing; a second builder with a shell finishes the same worktree from 23:35. Found by it: about
 1,000 test names still carry a decision's number (some 440 in about 120 web spec files, at least 600 in Go),
 a package of its own. Started at 23:51 in its place: **the screens' render findings** (the stacked rows' places, "–" for no
-role, one gender of "Token" in German, the signature column at 1,024 px). Waiting for a place: the renames of
+role, one gender of "Token" in German, the signature column at 1,024 px). Started at 00:12 in W8's place: **W13**, what W8 and
+W2 left of bounds and traces (H-1662's cancel through poolers that are not peers, the Bastion's answers by
+kind, R-ARCH-034's count by the limiter's metric, the limits' flush waits, `TestE1_14Exposure`'s burst, the
+waits of `search-field.spec.ts`, a render seed without a public registry). Waiting for a place: the renames of
 those test names, T-24 R3, and the two nightly sets `upgrade-release` and `vuln-perf` (to be
 dispatched in a window with no code push beside them).
 
@@ -299,9 +305,8 @@ starts from it and from his word how the work goes on, not from the order of the
 - **A second round of the documents' writer**: landed at 23:52 with W10b.
 - **The layout checks' fixtures in three browsers** (section 8, "The layout checks' fixtures in Firefox and
   WebKit were taken back"): reverted today, to come back with markings that hold on the runner.
-- **The repair of the evidence record's publish**: built by 22:45 and landed as the commit "the coverage badge and the record … are published again" (Q-ARCH-1040); the
-  next release's log shows whether the branch `coverage` is made (section 8, "The first publish of the
-  evidence record was refused", with the lines to read).
+- **The repair of the evidence record's publish**: landed at 22:51 (Q-ARCH-1040); the release v0.115.0 made
+  the branch `coverage` with its four files and the badge shows 82.1% (closed in section 8).
 - **Two single sets of the nightly workflow, each dispatched alone in a pipeline window with no code
   push beside it:** `upgrade-release` and the vulnerability performance set (`drain-roles` ran alone at
   22:24 and closed its entry); the two
@@ -723,35 +728,6 @@ records the recorder that tells such a stall apart).
   the newest report by the artifact's creation time, which can be an older commit's (with the evidence
   record's step); (3) `TestR_MAL_014_APendingDownloadIsServedWhenItsVerdictArrives` failed once at a load
   of about 100 (5.01 s against the gate's wait of 5 s; alone it passed) (W4).
-- **The first publish of the evidence record was refused, so the branch `coverage` does not exist and the
-  README's badge is invalid (2026-11-23; Test and Release 45212749706, the job Semantic Release, read at
-  17:29).** The release itself went out through the changed job (17:23) and the image and chart after it
-  (17:27); the two new steps ran after the release and ended `success`; the script chose the record of run
-  45195009156 (commit e81e0f7c3, sixteen commits before the released one) and the badge of run 45202783240.
-  Then GitHub refused the push three times: "refusing to allow a GitHub App to create or update workflow
-  `.github/workflows/…` without `workflows` permission". The commit the script pushes carries the whole tree
-  of the record's commit, workflow files among them, and the App's token has `contents: write` only. The
-  script read each refusal as a race ("the branch coverage moved three times while this job decided"),
-  which it was not. Until it is repaired `main` holds no record (the step removed it) and the badge shows
-  nothing: less than before the step. **Not repaired today:** the step's builder had ended and cannot be
-  taken up again, and by the owner's word of 17:15 nothing new is started; he is told, and a word of his
-  starts it. To do, as decided by the development agent: the tree of a commit on `coverage` holds only the
-  record's and the badge's files, its only parent is the branch's head, the record's and the badge's
-  commits stay in the trailers (the token gets no `workflows` permission); whatever assumed the full tree
-  is read again (the evidence job's comparison with the branch's record, the links inside the published
-  pages, the README's badge address, whether a path under `.github/` that is no workflow is accepted); a
-  refusal that is not a non-fast-forward is not retried and is reported in the remote's words; the
-  publish's test gets a remote that refuses a tree with a workflow file, as GitHub did. Then the next
-  release's log must say `published to coverage:` and the branch must exist. **Repaired by the commit "the coverage badge and the record … are published again"
-  (2026-11-23, 22:50, Q-ARCH-1040):** a commit on `coverage` holds `docs/coverage/{implemented.txt,checklist.md,README.md}`
-  and `badges/coverage.json` (moved out of `.github/`, the README's address with it) and nothing else, its only
-  parent the branch's head; links to files the branch does not hold point at the record's commit (`-links-at`);
-  a refusal is retried only when the branch moved and is otherwise reported in the remote's words; held by
-  `TestPublishCoverageRecordRetriesARaceAndNothingElse` (unit, about 10 s) against a remote whose hook refuses a
-  workflow file, as GitHub did. Closes when the next release's step logs `published to coverage:` with no
-  `::warning::`, `git ls-tree -r --name-only origin/coverage` lists the four files, and the badge shows a number;
-  the first publish may carry a record of a run before that commit whose `../spec/` links lead nowhere, which a
-  later publish replaces (`git show origin/coverage:docs/coverage/checklist.md | grep -c '](\.\./'` prints 0).
 - **The layout job of the revert's push failed in the walk's seed, before a screen was rendered (2026-11-23;
   Test and Release 45226379787, the push of 18:19, read at 18:29).** The fixtures passed (50 in Chromium);
   then the seed's publish of the Ansible collection `acme.platform` 1.0.0 was answered `503
@@ -861,21 +837,6 @@ records the recorder that tells such a stall apart).
   (a statement held by a lock, the server's activity read after the 503); if it holds, make the
   profile's poolers peers and say in the chart's page what an operator's own pooler needs; the
   owner's installation uses his database operator's pooler, which is read the same way.
-- **The evidence record lists npm's search as implemented and the route answers that it is not (found on
-  2026-11-23 by the inventory of T-24).** `docs/coverage/implemented.txt` holds R-NPM-037; `-/v1/search` is
-  one of the deferred paths of R-NPM-043 in `internal/formats/npm/routes.go`. Not read: which test makes
-  the record say so. The specification of T-24 keeps the protocol route as it is (Q-CUR-28: searching
-  the upstream is the catalogue's surface, not `-/v1/search`), so no package of T-24 builds it. To do
-  (W6b, the evidence record's step, which reads how the record comes to be): find what makes the record
-  say "implemented" and correct the record through it; the route itself stays a deferred requirement
-  of the format. The same holds, by a writer's reading of 2026-11-23, for R-UI-039, webhooks, whose
-  only naming test is the exposure rule's journey, and for R-NPM-018 and R-NPM-021, whose tests hold
-  the refusals; and the record has no row of R-ANS or R-SIG at all: given to W6b at 15:49 as the
-  general question of a test that holds a refusal. W6b is built and answers it (run record, 16:10); the
-  entry closes when its first published record shows the rows gone. Read on 2026-11-23, 22:50: the artifact `coverage-evidence`
-  of run 45212749706 (commit a0563bf86) holds none of R-NPM-018, R-NPM-020, R-NPM-021, R-NPM-037 and R-UI-039,
-  and 46 rows of R-ANS and 70 of R-SIG; it closes when `git show origin/coverage:docs/coverage/implemented.txt |
-  grep -cE '^R-(NPM-0(18|20|21|37)|UI-039)$'` prints 0.
 - **Partly closed; open: a render state of it, looked at: the walk's state `none` of `malwareSettings`
   (`web/e2e/renders/screens.ts`) takes the database's version away but keeps the scanners' answer of the
   render seed, which holds a ready updater (`web/e2e/renders/scanners.ts`), so the page's sentence for a
@@ -890,6 +851,52 @@ records the recorder that tells such a stall apart).
   stack).** By the code the page shows the badge "None yet" with a sentence and no error banner. To do
   (W9): a render state of it, looked at.
 ### Closed
+
+- **Closed on 2026-11-24, 00:10: the evidence record listed npm's search as implemented.** The first published record holds none of R-NPM-018, R-NPM-020, R-NPM-021, R-NPM-037 and R-UI-039 (`grep -cE` prints 0). As it stood: **The evidence record lists npm's search as implemented and the route answers that it is not (found on
+  2026-11-23 by the inventory of T-24).** `docs/coverage/implemented.txt` holds R-NPM-037; `-/v1/search` is
+  one of the deferred paths of R-NPM-043 in `internal/formats/npm/routes.go`. Not read: which test makes
+  the record say so. The specification of T-24 keeps the protocol route as it is (Q-CUR-28: searching
+  the upstream is the catalogue's surface, not `-/v1/search`), so no package of T-24 builds it. To do
+  (W6b, the evidence record's step, which reads how the record comes to be): find what makes the record
+  say "implemented" and correct the record through it; the route itself stays a deferred requirement
+  of the format. The same holds, by a writer's reading of 2026-11-23, for R-UI-039, webhooks, whose
+  only naming test is the exposure rule's journey, and for R-NPM-018 and R-NPM-021, whose tests hold
+  the refusals; and the record has no row of R-ANS or R-SIG at all: given to W6b at 15:49 as the
+  general question of a test that holds a refusal. W6b is built and answers it (run record, 16:10); the
+  entry closes when its first published record shows the rows gone. Read on 2026-11-23, 22:50: the artifact `coverage-evidence`
+  of run 45212749706 (commit a0563bf86) holds none of R-NPM-018, R-NPM-020, R-NPM-021, R-NPM-037 and R-UI-039,
+  and 46 rows of R-ANS and 70 of R-SIG; it closes when `git show origin/coverage:docs/coverage/implemented.txt |
+  grep -cE '^R-(NPM-0(18|20|21|37)|UI-039)$'` prints 0.
+
+- **Closed on 2026-11-24, 00:10: the first publish of the evidence record was refused.** The release v0.115.0 (Test and Release 45277825413) made the branch `coverage`: `git ls-tree -r --name-only origin/coverage` lists `badges/coverage.json` and the three files of `docs/coverage/` and nothing else, the record and the badge are those of run 45229955480 (commit 0c158f5a4), no page of the record holds a `../` link, and the README's badge shows `coverage: 82.1%`. As it stood: **The first publish of the evidence record was refused, so the branch `coverage` does not exist and the
+  README's badge is invalid (2026-11-23; Test and Release 45212749706, the job Semantic Release, read at
+  17:29).** The release itself went out through the changed job (17:23) and the image and chart after it
+  (17:27); the two new steps ran after the release and ended `success`; the script chose the record of run
+  45195009156 (commit e81e0f7c3, sixteen commits before the released one) and the badge of run 45202783240.
+  Then GitHub refused the push three times: "refusing to allow a GitHub App to create or update workflow
+  `.github/workflows/…` without `workflows` permission". The commit the script pushes carries the whole tree
+  of the record's commit, workflow files among them, and the App's token has `contents: write` only. The
+  script read each refusal as a race ("the branch coverage moved three times while this job decided"),
+  which it was not. Until it is repaired `main` holds no record (the step removed it) and the badge shows
+  nothing: less than before the step. **Not repaired today:** the step's builder had ended and cannot be
+  taken up again, and by the owner's word of 17:15 nothing new is started; he is told, and a word of his
+  starts it. To do, as decided by the development agent: the tree of a commit on `coverage` holds only the
+  record's and the badge's files, its only parent is the branch's head, the record's and the badge's
+  commits stay in the trailers (the token gets no `workflows` permission); whatever assumed the full tree
+  is read again (the evidence job's comparison with the branch's record, the links inside the published
+  pages, the README's badge address, whether a path under `.github/` that is no workflow is accepted); a
+  refusal that is not a non-fast-forward is not retried and is reported in the remote's words; the
+  publish's test gets a remote that refuses a tree with a workflow file, as GitHub did. Then the next
+  release's log must say `published to coverage:` and the branch must exist. **Repaired by the commit "the coverage badge and the record … are published again"
+  (2026-11-23, 22:50, Q-ARCH-1040):** a commit on `coverage` holds `docs/coverage/{implemented.txt,checklist.md,README.md}`
+  and `badges/coverage.json` (moved out of `.github/`, the README's address with it) and nothing else, its only
+  parent the branch's head; links to files the branch does not hold point at the record's commit (`-links-at`);
+  a refusal is retried only when the branch moved and is otherwise reported in the remote's words; held by
+  `TestPublishCoverageRecordRetriesARaceAndNothingElse` (unit, about 10 s) against a remote whose hook refuses a
+  workflow file, as GitHub did. Closes when the next release's step logs `published to coverage:` with no
+  `::warning::`, `git ls-tree -r --name-only origin/coverage` lists the four files, and the badge shows a number;
+  the first publish may carry a record of a run before that commit whose `../spec/` links lead nowhere, which a
+  later publish replaces (`git show origin/coverage:docs/coverage/checklist.md | grep -c '](\.\./'` prints 0).
 
 - **Closed on 2026-11-24, 00:05, by W8:** measured once on the UI profile: 8 to 15 API reads per main screen (15 for the security dashboard as an administrator), so about 13 tabs of the heaviest screen restore at once within the read class's burst of 200, written into `web-ui.md` (`UI_RENDERS_COUNT=1` repeats it); a real browser's restore not measured. As it stood: **Partly closed; open: whether a browser that restores many tabs at once reaches the default read limit (not
   measured).** Closed: the renders' 429s, by 8bcfe103a (2026-11-12): the UI development profile raises the
@@ -3050,7 +3057,7 @@ The work queue of T-24 (the planner's cut; the contracts and files of each packa
 | T-24 · C · Contracts | the migration, the domain package, the catalogue's interface, the canonical form of a version, contract version 11 with every format's declaration, the codes, events, configuration keys and the queue `downloads` | R1 | built (two commits, migration 00114; the second, back at 17:16, says what the purge of a retired repository does with its tables: the queue's rows, its bulks and the examinations go, rules and requests stay with the tombstone, Q-CUR-111); landed at 17:59 |
 | T-24 · R2 · Delivery rules | the model and its API; the refusal before a fill, at the serve point and in the documents of the five formats (kit check 22); the virtual walk; the journal and the Bastion's feed; the marks in the listings; the mirror's scope | C | built and not landed (two commits on the branch `t24-r2-delivery-rules`, reported at 19:52; "The delivery rules are built and wait", below the table); R3 and R4 are not begun (the owner's word of 17:15) |
 | T-24 · R3 · The upstream catalogue | the engine (stores nothing; budget, cache, bounds, second hosts); the five formats (kit check 21); Debian's descriptions; the API with the verdicts of versions that are not stored | C | after C; beside R2 and R4 |
-| T-24 · R4 · Downloads and the queue | the queue's store, dispatch, run and retries; failures in precise words; the probe as a row; bulks with their preview and bounds; the charge; the rows of clients' failed fetches | C | after C; beside R2 and R3 |
+| T-24 · R4 · Downloads and the queue | the queue's store, dispatch, run and retries; failures in precise words; the probe as a row; bulks with their preview and bounds; the charge; the rows of clients' failed fetches | C | landed at 00:30 on 2026-11-24 (one commit, Q-CUR-80 to Q-CUR-85, gaps H-1840 and H-1841, H-1725 and H-1728 now live): the job kind `remote-download`, the task `remote-downloads-dispatch`, failures as class, step, code, address, status and excerpt, a probe as a row, clients' failed fetches as rows, one version charged to the person, the queue's API; left for R3: a section's bulk (`400 catalogue_not_offered`) and a package preview's counts; left for R2's landing: its decider in `RemoteDownloadsServices.Decider` (the stub delivers everything); not covered: the cancel of a running row and the 30-minute bound by an integration test |
 | T-24 · R2b · Requests and examination | requests; the examination a request starts; allow and decline; discard; the retention task; the journal | R2, R4 | after them; beside R5a |
 | T-24 · R5a · The tab strip and the tab Downloads | the three addresses; the queue's states, failures and retry | R4 | beside R2b |
 | T-24 · R5b · The tab Upstream and the settings | search, levels, versions, rules, requests, the bulk's preview, the settings' section, the glossary's rows; renders in both schemes, wide and narrow | R2, R3, R2b, R5a | after them |
