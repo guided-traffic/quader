@@ -38,8 +38,9 @@ func TestR_NUGET_015_ClassifyIsTheRequestDescriptorOfACanonicalPath(t *testing.T
 		{"acme.widgets/1.2.3/notes.txt", meta("acme.widgets", "")},
 		{"acme.widgets/1.2.3.0/acme.widgets.1.2.3.nupkg", meta("acme.widgets", "")},
 		{"acme.widgets/1.2.3/.symbols/acme.widgets.pdb", content("acme.widgets", "1.2.3")},
-		{"acme.widgets/1.2.3/.embedded/icon", content("acme.widgets", "1.2.3")},
-		// The README is wiki content, served by a Metadata route (R-NUGET-024, R-AUTHZ-034).
+		// The embedded files are read out of the package and served by Metadata routes (R-NUGET-024, Q-NUGET-136).
+		{"acme.widgets/1.2.3/.embedded/icon", formats.PathInfo{Kind: formats.PathMetadata, Package: "acme.widgets", Version: "1.2.3"}},
+		{"acme.widgets/1.2.3/.embedded/license", formats.PathInfo{Kind: formats.PathMetadata, Package: "acme.widgets", Version: "1.2.3"}},
 		{"acme.widgets/1.2.3/.embedded/readme", formats.PathInfo{Kind: formats.PathMetadata, Package: "acme.widgets", Version: "1.2.3"}},
 		{"acme.widgets/1.2.3/.embedded/other", meta("acme.widgets", "")},
 		{"acme.widgets/.registration/index.json", meta("acme.widgets", "")},

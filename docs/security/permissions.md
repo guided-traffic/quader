@@ -633,7 +633,8 @@ Stage: the writes that cannot do what the caller asked without changing a versio
   whole removal with that file's audited refusal (403, or the 404 of a missing resource when the caller may not read the file),
   where the same removal of a folder without such a file goes through. Dormant: no local route stores a file under a version's
   folder besides those the route decides itself (NuGet's `.nupkg`, `.nuspec` and `.snupkg`; NuGet and npm refuse a raw upload),
-  so the folder holds nothing else; live once a format stores more there, as R-NUGET-024's embedded files or symbol files would.
+  so the folder holds nothing else; live once a format stores more there, as R-NUGET-021's symbol files would (R-NUGET-024's embedded files are read out of the
+  package and stored nowhere, Q-NUGET-135).
 
 What the caller learns is that the number, the tag or the file exists, never what the hidden version holds. What makes it real: version
 numbers or tag names that are themselves confidential (a security release prepared under a number before its announcement).

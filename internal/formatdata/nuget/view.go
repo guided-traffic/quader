@@ -9,7 +9,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/guided-traffic/quader/internal/errs"
-	"github.com/guided-traffic/quader/internal/formats/nuget/nupkg"
 	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
@@ -110,31 +109,15 @@ func readmePath(metadata []byte) string {
 	return strings.TrimSpace(m.Readme)
 }
 
-// readme reads one file of a stored package. A package that cannot be opened, a file the
-// package does not hold, one larger than maxReadme and one that is not UTF-8 text are a
-// version without a README (""); an object store that fails is an error, so that the
-// failure is not cached as an absent README.
+// readme reads the README file of a stored package through EmbeddedFile, the reader the
+// route of the embedded files uses as well (R-NUGET-024). A file the package does not hold,
+// one larger than maxReadme and one that is not UTF-8 text are a version without a README
+// (""); an object store that fails is an error, so that the failure is not cached as an
+// absent README.
 func (s *Store) readme(ctx context.Context, sha256 []byte, size int64, path string) (string, error) {
-	a, err := nupkg.Open(ctx, s.o.Blobs.ReaderAt(ctx, sha256, size), size, nupkg.Limits{})
-	if err != nil {
-		if nupkg.IsRefusal(err) {
-			return "", nil
-		}
+	b, err := s.EmbeddedFile(ctx, sha256, size, path, maxReadme)
+	if err != nil || !utf8.Valid(b) {
 		return "", err
-	}
-	e, ok := a.Lookup(path)
-	if !ok || e.Dir || e.Size > maxReadme {
-		return "", nil
-	}
-	b, err := a.Read(ctx, e, maxReadme)
-	if err != nil {
-		if nupkg.IsRefusal(err) {
-			return "", nil
-		}
-		return "", err
-	}
-	if !utf8.Valid(b) {
-		return "", nil
 	}
 	return string(b), nil
 }

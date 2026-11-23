@@ -1,6 +1,7 @@
 package nuget
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/guided-traffic/quader/internal/formats"
@@ -226,13 +227,10 @@ func classifyVersionFile(info formats.PathInfo, ver string, rest []string) forma
 	case len(rest) >= 2 && rest[0] == canonSymbols:
 		info.Kind, info.Version = formats.Content, ver
 	case len(rest) == 2 && rest[0] == canonEmbedded:
-		for _, name := range embeddedFiles() {
-			if rest[1] == name {
-				info.Kind, info.Version = formats.Content, ver
-				if name == "readme" {
-					info.Kind = formats.PathMetadata // the README is wiki content, served by a Metadata route (R-NUGET-024)
-				}
-			}
+		// The embedded files are read out of the stored package and served by Metadata routes: the icon and the license are artifacts
+		// metadata, the README wiki content (R-NUGET-024, Q-NUGET-136).
+		if slices.Contains(embeddedFiles(), rest[1]) {
+			info.Kind, info.Version = formats.PathMetadata, ver
 		}
 	}
 	return info

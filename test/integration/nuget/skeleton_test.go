@@ -134,7 +134,7 @@ func TestR_NUGET_001_ARepositoryCanBeCreatedAndItsServiceIndexAnswers(t *testing
 		if err := json.Unmarshal(first.Body, &doc); err != nil {
 			t.Fatal(err)
 		}
-		if doc.Version != "3.0.0" || len(doc.Resources) != 12 {
+		if doc.Version != "3.0.0" || len(doc.Resources) != 13 {
 			t.Errorf("version %q with %d resources", doc.Version, len(doc.Resources))
 		}
 		types := map[string]bool{}
@@ -144,7 +144,7 @@ func TestR_NUGET_001_ARepositoryCanBeCreatedAndItsServiceIndexAnswers(t *testing
 				t.Errorf("@id %q is not below the repository's own feed", r.ID)
 			}
 		}
-		for _, want := range []string{"PackageBaseAddress/3.0.0", "PackagePublish/2.0.0", "SymbolPackagePublish/4.9.0", "RegistrationsBaseUrl/3.6.0", "SearchQueryService/3.5.0"} {
+		for _, want := range []string{"PackageBaseAddress/3.0.0", "PackagePublish/2.0.0", "SymbolPackagePublish/4.9.0", "RegistrationsBaseUrl/3.6.0", "SearchQueryService/3.5.0", "ReadmeUriTemplate/6.13.0"} {
 			if !types[want] {
 				t.Errorf("the service index lacks %s", want)
 			}
@@ -255,7 +255,7 @@ func TestR_NUGET_001_OperationsThatAreNotBuiltAnswer501(t *testing.T) {
 	e := newEnv(t)
 	a := e.replica("web-a")
 	for _, path := range []string{
-		"v3/flatcontainer/acme.widgets/1.2.3/readme",
+		"v3/autocomplete",
 	} {
 		t.Run("R-NUGET-001 "+path, func(t *testing.T) {
 			ans := e.get(a, "nuget-local", path, e.tokReader)

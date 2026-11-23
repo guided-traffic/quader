@@ -191,6 +191,9 @@ type formatHostArea struct {
 // offers it (Q-NUGET-74); the PostgreSQL store must, or the scan pages by offset again.
 var _ nugetformat.Scanner = (*nugetdata.Store)(nil)
 
+// The PostgreSQL store reads the embedded files of a version (R-NUGET-024); the route of the embedded files fails without it.
+var _ nugetformat.EmbeddedReader = (*nugetdata.Store)(nil)
+
 // The PostgreSQL store implements the Debian data port the format declares (D-1): the format cannot be checked against the store from
 // either package, because neither imports the other.
 var _ debformat.Store = (*debdata.Store)(nil)

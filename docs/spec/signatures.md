@@ -5622,6 +5622,9 @@ Context: R-SIG-063's table names the artifacts of NuGet, npm and Ansible Galaxy 
 | (b) Every item not named an artifact is judged | | Nothing passes unnamed | npm's attestations a client needs to verify would be refused |
 
 **Choice:** (a). Most of them are generated items, which the gate never asks about. **Applied in the spec:** R-SIG-063.
+**Revised for NuGet's embedded files** by [formats/nuget.md](formats/nuget.md#q-nuget-136--an-embedded-file-is-content-of-its-package-the-checks-of-its-download-decide-and-its-routes-are-metadata-routes)
+Q-NUGET-136: they are read out of the `.nupkg` when a client asks for them and are no items, so each read decides the checks of a
+download of that `.nupkg`, the signature gate among them.
 
 ### Q-SIG-144 · The block's epoch is named anchor_epoch
 

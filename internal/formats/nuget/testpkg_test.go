@@ -25,6 +25,8 @@ type pkgSpec struct {
 	deps                     [][2]string // id, range
 	entries                  map[string][]byte
 	noNuspec                 bool
+	// metadata is further XML inside the .nuspec's metadata element.
+	metadata string
 }
 
 type pkgOpt func(*pkgSpec)
@@ -44,6 +46,9 @@ func withEntry(name string, body []byte) pkgOpt {
 	}
 }
 func withoutNuspec() pkgOpt { return func(s *pkgSpec) { s.noNuspec = true } }
+
+// withMetadata adds XML to the .nuspec's metadata element: an icon, a readme or a license element.
+func withMetadata(xml string) pkgOpt { return func(s *pkgSpec) { s.metadata += xml } }
 
 // nuspecOf renders the .nuspec of a spec.
 func (s pkgSpec) nuspec() []byte {
@@ -65,6 +70,7 @@ func (s pkgSpec) nuspec() []byte {
 		}
 		b.WriteString("</group></dependencies>")
 	}
+	b.WriteString(s.metadata)
 	b.WriteString("</metadata></package>")
 	return []byte(b.String())
 }

@@ -207,8 +207,9 @@ func TestR_AUTHZ_005_ANuGetWriteIsDecidedOnEveryFileItWritesOrRemoves(t *testing
 	})
 
 	t.Run("R-NUGET-013 a delete decides every file the version's folder holds, one the format does not name included", func(t *testing.T) {
-		// An embedded file below the version's folder, as R-NUGET-024 will store one (no route stores it yet, so the row is
-		// written here, as a copy of the .nuspec's item). The delete names the folder; the host decides its files.
+		// A file below the version's folder that no route of the format names (R-NUGET-024 reads the embedded files out of the
+		// package and stores none, so the row is written here, as a copy of the .nuspec's item). The delete names the folder; the
+		// host decides its files.
 		e.mustPush(e.r, "nuget-ver", e.setup, nupkg(t, pkgSpec{id: "Acme.Fold", version: "1.0.0"}))
 		e.st.Exec(`INSERT INTO items (repo_id, path, parent_path, kind, blob_sha256, size, media_type)
 			SELECT i.repo_id, 'acme.fold/1.0.0/.embedded/icon', 'acme.fold/1.0.0/.embedded', 'file', i.blob_sha256, i.size, i.media_type

@@ -6,8 +6,9 @@ its upstream unless a name of the query is protected, and a virtual repository m
 vulnerability documents are built on every class and come from Quader's advisory data, not from the upstream
 ([vuln_documents.go](../../internal/formats/nuget/vuln_documents.go), [vulnerability-scanning.md](vulnerability-scanning.md)); not built are the pass-through
 of the upstream's vulnerability information (`nuget.vulnerabilityInfo: upstream`, R-NUGET-023, P1, which the settings schema refuses), the symbol files
-(R-NUGET-021, R-NUGET-022) and the embedded files (R-NUGET-024), whose routes answer as not implemented
-([handlers_stub.go](../../internal/formats/nuget/handlers_stub.go)).
+(R-NUGET-021, R-NUGET-022), whose route answers as not implemented ([handlers_stub.go](../../internal/formats/nuget/handlers_stub.go)). The embedded
+files (R-NUGET-024) are read out of the `.nupkg` the cache holds, after the checks of that package's download, and never fetched from the upstream
+(Q-NUGET-137).
 
 This page describes what an upstream NuGet feed can make Quader do and show, and what limits that. The upstream is a party Quader does not trust: its documents
 decide which addresses Quader contacts, which bytes it stores and what its clients are told. The outbound rules it relies on (addresses, TLS, credentials,

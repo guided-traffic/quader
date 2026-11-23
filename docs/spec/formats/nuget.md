@@ -576,7 +576,7 @@ the bytes live once in the blob store under their content address (INV-4).
 | `{lower_id}/{lower_version}/{lower_id}.nuspec` | generated: the `.nuspec` bytes from inside the package | ingestion |
 | `{lower_id}/{lower_version}/{lower_id}.{lower_version}.snupkg` | the symbol package | R-NUGET-020 |
 | `{lower_id}/{lower_version}/.symbols/<entry path>` | generated: PDB files from the symbol package (P1) | R-NUGET-021 |
-| `{lower_id}/{lower_version}/.embedded/icon`, `…/license`, `…/readme` | generated: embedded files (P1) | R-NUGET-024 |
+| `{lower_id}/{lower_version}/.embedded/icon`, `…/license`, `…/readme` | no item: the canonical path the read of an embedded file is decided on; the bytes are read out of the `.nupkg` (Q-NUGET-135) | — |
 
 Include and exclude patterns, claims and pin rules are name patterns matched against `lower_id`
 (R-REPO-005, R-REPO-023), so `Acme.*` covers a package's files and metadata alike. Every
@@ -921,7 +921,7 @@ Documents per hive `<hive>`:
 | `licenseExpression` | `license` value when its type is `expression` |
 | `dependencyGroups` | per group `targetFramework` (verbatim, omitted when absent) and `dependencies` with `id`, `range` (verbatim; omitted when the `.nuspec` gave none) and `registration` (the dependency's index URL in the same hive of the same repository; omitted, as the protocol allows, when the dependency ID is outside the ASCII local rule of R-NUGET-003) |
 | `deprecation`, `vulnerabilities` | omitted for local packages; passed through for remote ones (R-NUGET-015) |
-| `readmeUrl` | omitted; README access is R-NUGET-024 |
+| `readmeUrl` | omitted; a client finds the README through the service index's `ReadmeUriTemplate/6.13.0` (R-NUGET-024) |
 
 - Bytes. A document is written with its members in a fixed order: the order of the sketch below
   (a catalog entry: `@id`, `id`, `version`, then the members taken from `metadata` in alphabetical
@@ -1366,7 +1366,7 @@ time (R-REPO-043) apply. The NuGet plug-in classifies requests into descriptors 
 | index, page and leaf `@id`, `parent`, `registration`, dependency `registration` | the serving repository's hive URLs |
 | `packageContent`, `catalogEntry.packageContent` | the serving repository's flat container URL |
 | `catalogEntry.@id` | the serving repository's leaf URL |
-| `iconUrl` pointing into the upstream package content base | the serving repository's flat container `icon` URL (P1, R-NUGET-024); unchanged before that |
+| `iconUrl` pointing into the upstream package content base | unchanged: a remote serves the embedded files of the packages its cache holds only, so the upstream's address is the one that answers for every version (Q-NUGET-137) |
 | `projectUrl`, `licenseUrl`, other `iconUrl` values | unchanged (web links shown to people) |
 | `advisoryUrl` of an entry of `vulnerabilities` | unchanged when it is an absolute `http` or `https` address without user info (a web link shown to people), dropped otherwise (Q-NUGET-85) |
 | `@id` and `@type` inside `deprecation`, `vulnerabilities` and `alternatePackage` | dropped (Q-NUGET-85) |
@@ -1995,23 +1995,38 @@ Priority: **P1** · Covers: PKG-NUGET-055
 Packages may embed an icon, a license file and a README
 ([implementation guide](https://learn.microsoft.com/en-us/nuget/api/implementation-guide)).
 
-- At ingestion (and by the reindex of R-NUGET-025 for older packages), the plug-in extracts the
-  files the `.nuspec` names in `icon`, `license` (type `file`) and `readme` into generated items
-  (storage layout of R-NUGET-005). Limits: icon at most 1 MiB and JPEG or PNG by content; license
-  and README at most 1 MiB of UTF-8 text. Files outside the limits are not extracted and their URL
-  is not emitted; the package is still accepted.
-- Endpoints, permission `read` on the ID: `<feed>/flatcontainer/{lower_id}/{lower_version}/icon`
+- The files the `.nuspec` names in `icon`, `license` (type `file`) and `readme` are read out of the stored `.nupkg` when a client
+  asks for one, through the one reader of a stored package (`nupkg.Open`, the reader the package view's README uses), with ranged
+  reads: the end record, the central directory and the entry. No file is extracted at ingestion and none is stored as an item
+  ([Q-NUGET-135](#q-nuget-135--an-embedded-file-is-read-out-of-the-stored-package-when-a-client-asks-for-it)). Limits: icon at most
+  1 MiB and JPEG or PNG by content; license and README at most 1 MiB of UTF-8 text. A file outside the limits, and one the package
+  does not hold, is answered as one the package does not embed (404); the package is still accepted.
+- Endpoints, permission `read` on the ID, `GET` and `HEAD`: `<feed>/flatcontainer/{lower_id}/{lower_version}/icon`
   (`image/png` or `image/jpeg`), `…/license` (`text/plain; charset=utf-8`), `…/readme`
-  (`text/markdown; charset=utf-8`); 404 when the package embeds none. The `readme` route is wiki content
+  (`text/markdown; charset=utf-8`); 404 when the package embeds none. Each answer carries a strong `ETag` of the package's
+  SHA-256 and the file's name, and an `If-None-Match` that names it is a `304` without a read of the object store. The three are
+  `Metadata` routes, documents and no downloads of the package
+  ([Q-NUGET-136](#q-nuget-136--an-embedded-file-is-content-of-its-package-the-checks-of-its-download-decide-and-its-routes-are-metadata-routes)).
+  The `readme` route is wiki content
   ([authorization.md](../authorization.md) R-AUTHZ-034): it is declared with `Wiki: true`, so a caller who may read the package
   but not the repository's wiki gets the 404 of a package without README, and a request without a credential the 401 with the
   challenge. The icon and the license are artifacts metadata.
+- The checks of a download: an embedded file is content of the package it is read from. Each read decides the checks of a download
+  of that `.nupkg` (`ItemStore.Check`: the malware gate of [malware-scanning.md](../malware-scanning.md) R-MAL-013, the vulnerability
+  block of [vulnerability-scanning.md](../vulnerability-scanning.md) R-VULN-015 and the signature gate of
+  [signatures.md](../signatures.md) R-SIG-064) and serves nothing they hold back, with their answer, before a byte of the package is
+  read (Q-NUGET-136).
 - Emitted URLs: `iconUrl` and `licenseUrl` in registration and search point at these endpoints when
-  the package embeds the file; the service index lists `ReadmeUriTemplate/6.13.0` with the
-  `readme` template. Clients probe that template for every package they show, so the 404 path MUST
-  be answered from PostgreSQL without touching object storage.
-- Remote repositories proxy `icon` from the upstream package content base and rewrite `iconUrl`
-  values that point there (R-NUGET-015). Virtual repositories resolve these files like `.nuspec`.
+  the `.nuspec` names the file (an `icon`, a `license` of type `file`), in place of the legacy addresses the `.nuspec` may carry; the
+  service index of every class lists `ReadmeUriTemplate/6.13.0` with the `readme` template. Clients probe that template for every
+  package they show, so the 404 path MUST be answered from PostgreSQL without touching object storage: what the `.nuspec` names is
+  read from `nuget_version.metadata` in one statement (`NuGetEmbeddedNames`), and a version that names none of the asked file is a 404
+  before the object store is asked.
+- Remote repositories serve the embedded files of the packages their cache holds, read out of the cached `.nupkg` like a local one's;
+  a version the cache does not hold is a 404, no fetch is started for an embedded file, and `iconUrl` values of the upstream's
+  documents stay as they are. Virtual repositories ask their members in resolution order for the version's `.nupkg` and answer with the
+  first member that holds it, a remote member from its cache
+  ([Q-NUGET-137](#q-nuget-137--a-remote-serves-the-embedded-files-of-the-packages-its-cache-holds-and-a-virtual-repository-those-of-its-first-member-that-holds-the-package)).
 - Package-derived content carries the headers of the [Security notes](#security-notes).
 
 Acceptance criteria:
@@ -2019,7 +2034,14 @@ Acceptance criteria:
 - A package packed with `<PackageIcon>icon.png</PackageIcon>` and
   `<PackageReadmeFile>README.md</PackageReadmeFile>` shows its icon and README in the Visual
   Studio 2022 package manager when installed from `nuget-local` (manual check, recorded per
-  release).
+  release; not recorded yet, H-1682).
+- Unit and kit (`internal/formats/nuget`, milliseconds, bytes): the icon, the license and the README of a pushed package with their
+  media types and headers, `HEAD`, a `304`; a 404 for a version that embeds none without a read of the object store; a file outside
+  the limits; the refusal of a check of the `.nupkg`; the links in registration, search and service index; a remote's cached and
+  uncached version; the walk of a virtual repository (`TestR_NUGET_024_*`, `TestQ_NUGET_136_*`, `TestQ_NUGET_137_*` in
+  [embedded_test.go](../../../internal/formats/nuget/embedded_test.go)); the kit's content cases `embedded icon`, `embedded license`
+  and `embedded readme`. Integration (`nuget`, about a second): the three files through the PostgreSQL store and the object store,
+  local and through a virtual repository (`TestR_NUGET_024_TheEmbeddedFilesThroughTheDataPort`).
 - `curl -I <feed>/flatcontainer/acme.widgets/1.5.0/readme` returns `text/markdown` with
   `Content-Security-Policy: sandbox; default-src 'none'` and
   `Cross-Origin-Resource-Policy: same-site`; for a package without README it returns 404.
@@ -2041,7 +2063,6 @@ NuGet repositories the plug-in:
   directory, `.nuspec`, embedded files) and never spools a whole package, so the worker's spool
   bounds no package size;
 - creates missing NuGet rows for `.nupkg` items that have none (for example after an import);
-- extracts missing embedded files (R-NUGET-024);
 - enqueues the `nuget-symbol-index` job (R-NUGET-021) of every symbol package without
   `indexed_at`, and of every one with `index_error` after clearing it. It does not index symbols
   itself, so a reindex and symbol indexing never wait for each other;
@@ -2400,8 +2421,8 @@ run against the versions pinned in R-NUGET-027.
 Quader's side:
 - **Post-body work is bounded.** After the body of a push has arrived, the NuGet plug-in reads the
   central directory, every local header name, the `.nuspec` (at most `max_nuspec_bytes`) and, for a
-  symbol package, the first bytes of each `.pdb`; from P1 it extracts at most three embedded files
-  of 1 MiB each (R-NUGET-024). None of it grows with the archive's uncompressed size, so a push
+  symbol package, the first bytes of each `.pdb`; it extracts no embedded file, which is read out of the
+  stored package when a client asks for it (R-NUGET-024, Q-NUGET-135). None of it grows with the archive's uncompressed size, so a push
   stays within the bound P-11 that R-ARCH-024 step 5 relies on. Symbol indexing is a job
   (R-NUGET-021).
 - **Spool.** A chunked push reserves spool budget in increments while it streams
@@ -5585,7 +5606,96 @@ Q-REPO-367, H-1019): `virtualRegistration` and `virtualFile` in [handlers_virtua
 Tests: `TestR_REPO_065_WhatAProbeOfNuGetIs`, `TestQ_REPO_367_WhatAProbeOfNuGetIsThroughAVirtualRepository` in
 [probe_test.go](../../../internal/formats/nuget/probe_test.go).
 
+### Q-NUGET-135 · An embedded file is read out of the stored package when a client asks for it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-NUGET-024 extracted the icon, the license file and the README into generated items at ingestion, with a reindex for older
+packages, and its route answered 501. The package view already reads the README out of the stored `.nupkg` at request time with
+ranged reads (Q-NUGET-48). Clients probe the README of every package they show, so a version without one must cost no read of the
+object store.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Read the file out of the stored `.nupkg` per request through the one reader of a stored package (`nupkg.Open` in the data port), what the `.nuspec` names from `nuget_version.metadata`; no item (chosen) | One statement names the file or answers the 404; the end record, the central directory and the entry are three ranged reads | One reader for the view and the route; nothing to extract at a push, a cache fill, a copy or a restore, no reindex step, no item rows to keep in step with the package; a remote's cached package and a local one are read alike | Up to three ranged reads of the object store per served file (a `304` and a 404 cost none); a file outside the limits is known only when it is read, so its URL is emitted and answers 404 (H-1681) |
+| (b) Generated items written at ingestion and by the reindex, as R-NUGET-024 said | The route serves an item | Served like a `.nuspec`, with the item's validators | A second writer of package-derived bytes in the push and the fill transactions; a reindex for every package stored before; the items must follow every removal, trash and restore of the package |
+| (c) A cache of extracted files per replica | (a) with the bytes kept in memory | Fewer object reads for a hot icon | A memory budget for package content beside the rendition cache, for files a client caches itself under the `ETag` |
+
+**Choice:** (a). **Applied in the spec:** R-NUGET-024, R-NUGET-005's storage layout, R-NUGET-025 (no extraction), the push bound of the
+security notes. Code: [handlers_embedded.go](../../../internal/formats/nuget/handlers_embedded.go),
+[embedded.go](../../../internal/formatdata/nuget/embedded.go) (`EmbeddedNames`, `EmbeddedFile`, which the view's `readme` reads through),
+[nuget_embedded.sql](../../../internal/meta/postgres/queries/nuget_embedded.sql). Tests: `TestR_NUGET_024_*` in
+[embedded_test.go](../../../internal/formats/nuget/embedded_test.go), `TestR_NUGET_024_TheEmbeddedFilesThroughTheDataPort` in
+[test/integration/nuget](../../../test/integration/nuget/embedded_test.go).
+
+### Q-NUGET-136 · An embedded file is content of its package: the checks of its download decide, and its routes are Metadata routes
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-NUGET-024 does not say whether the malware gate, the vulnerability block and the signature gate apply to an embedded file.
+[signatures.md](../signatures.md) Q-SIG-143 named NuGet's embedded files `GateNone`, as files Quader extracted into items of their own,
+whose source package is gated. With Q-NUGET-135 there are no such items: the bytes served are the `.nupkg`'s. The icon and license route
+was a `Download` route, which kit checks 16 and 17 hold to `Host.Serve`, a serve of a stored item, which an embedded file is not.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Each read decides the checks of a download of the `.nupkg` (`ItemStore.Check`), and the three routes are `Metadata` routes (chosen) | A package the malware gate, the vulnerability block or the signature gate holds back shows none of its files, with the check's answer; the icon and the license are documents (usage-and-limits.md: Document), headers of a document | Nothing of a package a check holds back reaches a client; one call decides the three checks as for the package; R-NUGET-024 calls the icon and the license metadata | A package that waits for its malware verdict where only checked artifacts are served shows no icon until it is checked; Q-SIG-143's `GateNone` for embedded files no longer holds |
+| (b) The files are `GateNone`, as Q-SIG-143 said | Served whatever the package's checks say | An icon of a package waiting for its verdict shows | Bytes of a package found infected or blocked are served under a route of the repository |
+| (c) Keep the `Download` route and serve through `Host.Serve` | An item per file | Admission and pacing of the download limits | Needs the items Q-NUGET-135 does not write; an icon would count as a download of the package |
+
+**Choice:** (a). The malware gate's own rule asks the gate on a `Download` route alone (R-MAL-013); `ItemStore.Check` asks it here as at
+Ansible Galaxy's version document (Q-SIG-241), a read of the package's bytes at a document. **Applied in the spec:** R-NUGET-024;
+[signatures.md](../signatures.md) Q-SIG-143 (revised for NuGet's embedded files); [usage-and-limits.md](../usage-and-limits.md) the NuGet
+table. Code: `embeddedIn` in [handlers_embedded.go](../../../internal/formats/nuget/handlers_embedded.go), the route kind in
+[routes.go](../../../internal/formats/nuget/routes.go), `classifyVersionFile` in [paths.go](../../../internal/formats/nuget/paths.go).
+Test: `TestQ_NUGET_136_AnEmbeddedFileOfAPackageACheckHoldsBackIsNotServed`.
+
+### Q-NUGET-137 · A remote serves the embedded files of the packages its cache holds, and a virtual repository those of its first member that holds the package
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-NUGET-024 had a remote proxy `icon` from the upstream's package content base and rewrite the upstream's `iconUrl` values to
+the serving repository's flat container, and a virtual repository resolve the files like a `.nuspec`. nuget.org serves `icon` and `readme`
+below its flat container; other feeds need not. A client probes the README of every package it shows, cached or not.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A remote reads the files out of the `.nupkg` its cache holds, a version it has not cached is a 404 and starts no fetch, the upstream's `iconUrl` stays; a virtual repository asks its members for the `.nupkg` in resolution order and answers with the first that holds it (chosen) | One read path for every class; a member's miss goes on, a check's refusal ends the walk (R-REPO-019) | No new upstream path, no cache entries of a new kind; the upstream's icon address answers for every version, cached or not | A remote shows no README of a package it has not cached (H-1680); a client reads icons of a remote from the upstream directly, which a client without a way to the upstream cannot |
+| (b) Proxy `icon` (and `readme`) from the upstream's flat container and rewrite `iconUrl` | A new kind of remote path with its fill, its media types and its checks | Icons and READMEs of uncached packages | A fill of a new kind for what the package holds anyway; an upstream that serves no such path answers 404 for an address Quader wrote into the document; the checks of a file that is no artifact of its own |
+| (c) Fetch the whole `.nupkg` on a miss | The file of every version | Complete | A package download per icon a client shows in a search result |
+
+**Choice:** (a). The service index of every class lists the README template, so a remote's cached packages and a virtual repository's
+show their README. **Applied in the spec:** R-NUGET-024, R-NUGET-015's rewriting table. Code: `virtualEmbedded` and `embeddedIn` in
+[handlers_embedded.go](../../../internal/formats/nuget/handlers_embedded.go). Tests: `TestQ_NUGET_137_*` in
+[embedded_test.go](../../../internal/formats/nuget/embedded_test.go).
+
 ## What this does not cover
+
+### H-1680 · A remote shows no README and no license of a package it has not cached
+
+A remote repository reads the embedded files out of the `.nupkg` its cache holds (Q-NUGET-137): the README template and the license link
+of a version nobody downloaded through it answer 404, and the Visual Studio package manager shows no README for it. The icon is unaffected
+while the client reaches the upstream: the upstream's `iconUrl` stays in the documents. Live today, for every remote and every virtual
+repository whose member holding the version is a remote that has not cached it; real for a user browsing an upstream's packages through
+Quader before installing one.
+
+### H-1681 · A link to an embedded file outside its limits answers 404
+
+The registration and the search link an icon and a license file when the `.nuspec` names one (R-NUGET-024); whether the file is within
+its limits (1 MiB, PNG or JPEG by content, UTF-8 text) is known only when it is read (Q-NUGET-135), so a package whose icon is a GIF or
+larger than 1 MiB gets a link that answers 404, where R-NUGET-024 said the URL is not emitted. Live today; a client shows its default
+icon, as for a missing one.
+
+### H-1682 · No client that asks for the embedded files was run against them
+
+The routes are held by unit tests, the kit and one integration case (R-NUGET-024's acceptance criteria). The clients that ask for them,
+the Visual Studio package manager (the icon of a search result and the README of a version, `ReadmeUriTemplate/6.13.0` from NuGet 6.13)
+and a browser following a license link, were not run: Visual Studio runs on Windows only and is not in the end-to-end images.
+`dotnet restore`, `dotnet add package` and `nuget.exe restore` read the package itself and never ask for these routes, by the client's
+documented resources; that was not checked against a request log. The manual check of R-NUGET-024's first criterion is not recorded.
+The end-to-end set of NuGet asks the README route for a package `dotnet pack` built with its README file and expects 200 (its status
+only, `TestNuGetVisibility_R_AUTHZ_034` in [nuget_visibility_test.go](../../../test/e2e/nuget_visibility_test.go)); that leg was not run
+for this change on the development machine.
 
 ### H-35 · Cached NuGet packages are not checked against an upstream digest
 

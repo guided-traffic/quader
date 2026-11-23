@@ -2,8 +2,9 @@
 
 Status: the package screens, the setup snippets and the guide of the format are written (phase 4, WP3.1h; see "The package view, the setup snippets and the guide" below). The format is registered with its skeleton (phase 4, WP3.1c): the route table of the whole NuGet v3 protocol, the matching
 and the classification of paths, the service index, the error shape, the settings and the configuration section, and the data port interface.
-The push, the unlist, the relist and the delete are built ([the write side](#the-write-side)). The symbol push is built ([symbol packages](#symbol-packages)). The operations behind the other routes - package content, registrations, search, the symbol server - are written by
-the work packages that own them and answer 501 `nuget_not_implemented` until then ([handlers_stub.go](../../internal/formats/nuget/handlers_stub.go)).
+The push, the unlist, the relist and the delete are built ([the write side](#the-write-side)). The symbol push is built ([symbol packages](#symbol-packages)). The embedded files of a version are built
+([the embedded files](#the-embedded-files)). Two routes answer 501 `nuget_not_implemented` ([handlers_stub.go](../../internal/formats/nuget/handlers_stub.go)): autocomplete (R-NUGET-011, a query over the search's
+rows) and the symbol server (R-NUGET-021, which needs the PDB index the `nuget-symbol-index` job does not build yet).
 The requirements are in [spec/formats/nuget.md](../spec/formats/nuget.md); the contract the format implements is in [formats.md](formats.md).
 
 ## The format
@@ -28,7 +29,8 @@ imports the format contract and the leaf packages below, and reaches its tables 
 | [guide.go](../../internal/formats/nuget/guide.go), [guide/](../../internal/formats/nuget/guide) | `Guide` and its Markdown templates, one file per section (Q-NUGET-50) |
 | [exposure.go](../../internal/formats/nuget/exposure.go) | The exposure adapter: packages and versions, no tags; NuGet's range grammar. `hiddenVersion` and `onRulesEndpoint` are the questions the handlers ask (R-NUGET-034, [NuGet on a customer endpoint](#nuget-on-a-customer-endpoint)) |
 | [remote.go](../../internal/formats/nuget/remote.go), [remote_fill.go](../../internal/formats/nuget/remote_fill.go), [handlers_remote.go](../../internal/formats/nuget/handlers_remote.go) | The remote class ([below](#the-remote-class)) |
-| [handlers_stub.go](../../internal/formats/nuget/handlers_stub.go) | One method per route that is not built; the package that builds it moves the method into a file of its own |
+| [handlers_stub.go](../../internal/formats/nuget/handlers_stub.go) | One method per route that is not built (autocomplete, the symbol server); the package that builds it moves the method into a file of its own |
+| [handlers_embedded.go](../../internal/formats/nuget/handlers_embedded.go) | The icon, the license and the README of a version, read out of the stored `.nupkg` ([the embedded files](#the-embedded-files)) |
 | [nugettest](../../internal/formats/nuget/nugettest/store.go), [view.go](../../internal/formats/nuget/nugettest/view.go) | The in-memory twin of the port, for the conformance kit and unit tests; it records the versions `InsertVersion` is handed and answers the view reads over them |
 
 ### Two kinds of path
@@ -48,7 +50,7 @@ Names are the handler names of R-NUGET-028; paths are relative to `/api/nuget/<p
 | `nuget.flatcontainer.index` | GET `v3/flatcontainer/{id}/index.json` | metadata, read |
 | `nuget.flatcontainer.nupkg` | GET `v3/flatcontainer/{id}/{version}/{id}.{version}.nupkg` | download, read |
 | `nuget.flatcontainer.nuspec` | GET `v3/flatcontainer/{id}/{version}/{id}.nuspec` | download, read |
-| `nuget.flatcontainer.embedded` | GET `v3/flatcontainer/{id}/{version}/{icon,license,readme}` (P1) | download, read |
+| `nuget.flatcontainer.embedded`, `nuget.flatcontainer.readme` | GET `v3/flatcontainer/{id}/{version}/{icon,license}`, `…/readme` (the README route declared `Wiki`) | metadata, read |
 | `nuget.registration.index`, `.page`, `.leaf` | GET `v3/{registration,registration-gz,registration-semver2}/{id}/index.json`, `…/page/{lower}/{upper}.json`, `…/{version}.json` | metadata, read |
 | `nuget.search`, `nuget.autocomplete` (P1) | GET `v3/search`, `v3/autocomplete` | volatile, read |
 | `nuget.push` | PUT `v3/package`, `v3/package/` | upload, deploy, API key |
@@ -108,9 +110,29 @@ when the code exists). To add a section: a file in `guide/`, a line in `guideSec
 ### Tests
 
 `go test ./internal/formats/nuget/` runs the conformance kit (all thirteen checks run and none is skipped; check 13 holds every handler's target to the canonical path of what it serves or writes, Q-NUGET-113; `TestR_ARCH_010_NoCheckIsSkipped`; check 6 runs the crafted
-packages through the remote adapter's fill hook as well, and crafted service indexes (`discoveryFixture`) through `ParseDiscovery`, and the three P1 routes that answer 501, embedded files, autocomplete and the symbol server, are the
+packages through the remote adapter's fill hook as well, and crafted service indexes (`discoveryFixture`) through `ParseDiscovery`, the embedded files are content cases seeded with a real package (`seedEmbedded`), and the two P1 routes that answer 501, autocomplete and the symbol server, are the
 fixture's `NoContent` entries, Q-ARCH-281), the route and matching tables, the classification, the error shape and the service index. [test/integration/nuget](../../test/integration/nuget) creates repositories through the management
 API, reads the service index over HTTP with every credential form, and asserts the 404, 405, 409 and 501 answers; [view_store_test.go](../../test/integration/nuget/view_store_test.go) runs the view reads against PostgreSQL and [view_api_test.go](../../test/integration/nuget/view_api_test.go) the package screens of the management API over NuGet rows.
+
+### The embedded files
+
+R-NUGET-024, Q-NUGET-135 to Q-NUGET-137. `GET` and `HEAD` of `v3/flatcontainer/{id}/{version}/icon`, `…/license` and `…/readme` are served by
+`handleEmbedded` ([handlers_embedded.go](../../internal/formats/nuget/handlers_embedded.go)). Nothing is extracted at a push or a fill: the file is read out
+of the stored `.nupkg` when a client asks for it.
+
+| Step | Where |
+|---|---|
+| The read decided on the file's canonical path `{id}/{version}/.embedded/{file}` (`EmbeddedPath`), the endpoint's exposure (`hiddenVersion`), the caller's versions (`CallerVersions`, Q-NUGET-120) | `handleEmbedded`, `embeddedIn` |
+| What the `.nuspec` names, from `nuget_version.metadata` in one statement; a file it does not name is the 404 before any object read | `EmbeddedReader.EmbeddedNames`, [embedded.go](../../internal/formatdata/nuget/embedded.go) over [nuget_embedded.sql](../../internal/meta/postgres/queries/nuget_embedded.sql) |
+| The `.nupkg` item, the serve-time check (a tombstone) and the checks of its download (`ItemStore.Check`: malware, vulnerability block, signature gate) | `embeddedIn` |
+| `If-None-Match` against the `ETag` `"<sha256 of the .nupkg>.<file>"`: a `304` without an object read | `embeddedIn` |
+| The bytes, with ranged reads through `nupkg.Open` (at most 1 MiB), then the media type: PNG or JPEG by content for the icon, UTF-8 for the others | `EmbeddedReader.EmbeddedFile` (the view's `readme` reads through it too), `embeddedMediaType` |
+| A virtual repository: the members of the `.nupkg`'s plan in resolution order; a miss or a failure goes on, a check's refusal ends the walk | `virtualEmbedded` |
+| The links: `iconUrl` and `licenseUrl` of the registration and the search when the `.nuspec` names the file (`rows.EmbeddedOf`, `rows.EmbeddedURL`), the service index's `ReadmeUriTemplate/6.13.0` in every class | [registration.go](../../internal/formats/nuget/registration/registration.go) `entry`, [search/document.go](../../internal/formats/nuget/search/document.go) `Render`, [index.go](../../internal/formats/nuget/index.go) |
+
+The twin (`nugettest`) answers `EmbeddedNames` from the metadata it recorded and `EmbeddedFile` from the packages a test put with `PutPackage`;
+`PackageReads` counts the reads, so a test shows that a 404 or a `304` read nothing. The routes are `Metadata` routes: an embedded file is no download
+of the package (no admission of the download limits, no download count). A remote answers from its cache only and starts no fetch.
 
 ## Leaf packages
 
@@ -351,7 +373,7 @@ Rules for a handler that serves a list or a version, in the order they matter:
 1. Ask the view with `lower_id` and the URL form of the version (Q-NUGET-62); never with the original spelling. The decision point compares version names letter by letter with what the format passes (Q-EP-69, H-380).
 2. A package the view does not expose answers the 404 of a missing package before any lookup (`serveDocument` does this for every document).
 3. The rendition key and the validator include `rq.Endpoint.Name` and `rq.Endpoint.ExposureFingerprint`; `serveDocument` and `indexETag` do. A new document that bypasses `serveDocument` must add both, or a rule change leaves the old document valid. Its validator must not follow an input that moves with hidden versions (a revision, a merge fingerprint, an upstream digest): `serveFiltered`, `serveRemoteFiltered` and `serveVirtualFiltered` hash the filtered rendering instead (Q-NUGET-87).
-4. Embedded files, the symbol server and autocomplete, when built, call `hiddenVersion` for a version they serve; the symbol server answers 404 on `onRulesEndpoint(rq)` until its filter is specified (R-NUGET-034).
+4. The embedded files call `hiddenVersion` for the version they serve; the symbol server and autocomplete, when built, do too; the symbol server answers 404 on `onRulesEndpoint(rq)` until its filter is specified (R-NUGET-034).
 5. A remote or virtual handler that merges versions filters the rows, not the merged bytes (Q-NUGET-63, H-295).
 
 Tests. Adapter, documents, paging, the service index and search over the real adapter's semantics:

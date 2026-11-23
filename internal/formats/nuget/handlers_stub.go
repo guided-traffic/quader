@@ -22,10 +22,6 @@ func stub(what string) formats.HandlerFunc {
 	return func(context.Context, *formats.Request, http.ResponseWriter) error { return notImplemented(what) }
 }
 
-func (f *Format) handleEmbedded(ctx context.Context, rq *formats.Request, w http.ResponseWriter) error {
-	return stub("the embedded files (P1, R-NUGET-024)")(ctx, rq, w)
-}
-
 func (f *Format) handleAutocomplete(ctx context.Context, rq *formats.Request, w http.ResponseWriter) error {
 	return stub("autocomplete (P1, R-NUGET-011)")(ctx, rq, w)
 }

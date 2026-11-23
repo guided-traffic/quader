@@ -166,7 +166,8 @@ Visual Studio adds packages through Manage NuGet Packages, with the source chose
 - **Remote repositories** take no writes (`405`). They serve and cache what their upstream serves; the version lists and registrations are refreshed after the metadata period, five minutes unless the repository sets another.
 - **Virtual repositories** send push, unlist, relist and delete to their deployment target; without one they answer `405` `no_deploy_target`.
 - **IDs.** The first push of an ID to a local repository records its owners and, by default, claims it: virtual repositories that contain the local repository then never take a public package of that ID from their remote members. The first push of an ID that a remote member already serves needs the manage permission (`403` `shadows_remote_package` otherwise).
-- **Not available in this version:** NuGet v2 addresses, and the symbol server.
+- **Icon, license and README.** Visual Studio shows the icon, the license and the README a package embeds (`<PackageIcon>`, `<PackageLicenseFile>`, `<PackageReadmeFile>`), read out of the stored package. A remote repository shows them for the packages it has cached; for the others the icon comes from the upstream and the README is missing until someone installs the version.
+- **Not available in this version:** NuGet v2 addresses, autocomplete, and the symbol server.
 
 A failed `dotnet nuget push` or `nuget push` prints the status and the reason phrase only; the code of the answer is in the body that `curl` shows, and the guide's troubleshooting table lists each code with its status. The guide of your client and repository names the exact limits and client messages (`NU1301`, `NU1101`, `NU1102`).
 

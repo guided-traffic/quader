@@ -150,6 +150,14 @@ func Render(feed string, semVer2 bool, total int, hits []rows.SearchHit) ([]byte
 			PackageTypes: md.typeNames(h.Latest.PackageTypes),
 			Versions:     make([]versionRef, 0, len(h.Listed)),
 		}
+		// A file the latest version embeds is linked at the feed's own flat container (R-NUGET-024).
+		emb := rows.EmbeddedOf(h.Latest.Metadata)
+		if emb.Icon != "" {
+			r.IconURL = rows.EmbeddedURL(feed, h.LowerID, h.Latest.LowerVersion, "icon")
+		}
+		if emb.License != "" {
+			r.LicenseURL = rows.EmbeddedURL(feed, h.LowerID, h.Latest.LowerVersion, "license")
+		}
 		for _, v := range h.Listed {
 			r.Versions = append(r.Versions, versionRef{ID: hive + h.LowerID + "/" + v.LowerVersion + ".json", Version: v.FullVersion, Downloads: v.Downloads})
 			r.TotalDownloads += v.Downloads

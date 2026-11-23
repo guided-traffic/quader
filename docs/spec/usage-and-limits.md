@@ -420,6 +420,7 @@ is a route of the kind `Upload`, `Delete` or `Admin`, which counts as a request 
 | `GET …/flatcontainer/<id>/index.json` | Document | the fetch or revalidation |
 | `GET …/flatcontainer/<id>/<version>/<id>.<version>.nupkg` | Download | the package's fetch |
 | `GET …/<id>.nuspec` | Download | the fetch |
+| `GET …/<version>/icon`, `…/license`, `…/readme` | Document (read out of the stored `.nupkg`) | — (a remote answers from its cache, Q-NUGET-137) |
 | Search and autocomplete | Document (`Volatile`) | the forwarded query on a remote |
 | `PUT` push, symbol push, `DELETE`, relist | Write | — |
 

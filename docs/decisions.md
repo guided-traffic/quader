@@ -10824,10 +10824,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-NUGET
 
-116 questions on [spec/formats/nuget.md](spec/formats/nuget.md).
+119 questions on [spec/formats/nuget.md](spec/formats/nuget.md).
 
 <details>
-<summary>Q-NUGET: 116 questions</summary>
+<summary>Q-NUGET: 119 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10947,6 +10947,9 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-NUGET-122](spec/formats/nuget.md#q-nuget-122--a-repository-that-is-not-public-challenges-and-the-readme-route-is-a-wiki-route) | A repository that is not public challenges, and the README route is a wiki route | Decided by the development agent | (a) The level decides the challenge; `…/readme` is declared `Wiki: true` | [ADR-192](#adr-192--visibility-levels-replace-the-anonymous-switch-and-the-principal-authenticated) |
 | [Q-NUGET-123](spec/formats/nuget.md#q-nuget-123--the-readme-has-a-route-of-its-own-a-metadata-route-declared-wiki) | The README has a route of its own, a Metadata route declared `Wiki` | Decided by the development agent | (a) `nuget.flatcontainer.readme` is its own route; `icon` and `license` stay with `nuget.flatcontainer.embedded` | — |
 | [Q-NUGET-124](spec/formats/nuget.md#q-nuget-124--the-registration-leaf-the-nuspec-and-a-head-of-the-package-are-probes) | The registration leaf, the .nuspec and a HEAD of the package are probes | Decided by the development agent | (a) The registration leaf (`GET` and `HEAD`), the `.nuspec` (`GET` and `HEAD`) and a `HEAD` of the `.nupkg`; the content is the `.nupkg` | [ADR-207](#adr-207--a-probe-starts-the-download-of-its-version-in-the-background-the-format-contract-is-at-version-7) |
+| [Q-NUGET-135](spec/formats/nuget.md#q-nuget-135--an-embedded-file-is-read-out-of-the-stored-package-when-a-client-asks-for-it) | An embedded file is read out of the stored package when a client asks for it | Decided by the development agent | (a) Read the file out of the stored `.nupkg` per request through the one reader of a stored package (`nupkg.Open` in the data port), what the `.nuspec` names from `nuget_version.metadata`; no item | — |
+| [Q-NUGET-136](spec/formats/nuget.md#q-nuget-136--an-embedded-file-is-content-of-its-package-the-checks-of-its-download-decide-and-its-routes-are-metadata-routes) | An embedded file is content of its package: the checks of its download decide, and its routes are Metadata routes | Decided by the development agent | (a) Each read decides the checks of a download of the `.nupkg` (`ItemStore.Check`), and the three routes are `Metadata` routes | — |
+| [Q-NUGET-137](spec/formats/nuget.md#q-nuget-137--a-remote-serves-the-embedded-files-of-the-packages-its-cache-holds-and-a-virtual-repository-those-of-its-first-member-that-holds-the-package) | A remote serves the embedded files of the packages its cache holds, and a virtual repository those of its first member that holds the package | Decided by the development agent | (a) A remote reads the files out of the `.nupkg` its cache holds, a version it has not cached is a 404 and starts no fetch, the upstream's `iconUrl` stays; a virtual repository asks its members for the `.nupkg` in resolution order and answers with the first that holds it | — |
 
 </details>
 

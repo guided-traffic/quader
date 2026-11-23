@@ -172,8 +172,8 @@ func conformance(f *Format) formattest.Fixture {
 	const notBuilt = http.StatusNotImplemented
 	feed := func(p string) string { return "v3/" + p }
 	return formattest.Fixture{
-		// The README is the text of a file inside the stored nupkg that the view's port reads; the kit's cases seed no nupkg, so this is
-		// the text such a README would carry. What the format owes check 15 is the route of the README declared Wiki (routes.go).
+		// The README is the text of a file inside the stored nupkg, which the view's port and the README route read (seedEmbedded).
+		// What the format owes check 15 is the route of the README declared Wiki (routes.go).
 		WikiSamples: []string{"# Acme.Widgets readme"},
 		Signatures:  signatureCases(),
 		GateCases:   gateCases(),
@@ -214,8 +214,9 @@ func conformance(f *Format) formattest.Fixture {
 			{Name: "version list", Path: feed("flatcontainer/acme.widgets/index.json"), Seed: seedWidgets},
 			{Name: "package", Path: feed("flatcontainer/acme.widgets/1.2.3/acme.widgets.1.2.3.nupkg"), Seed: seedWidgets},
 			{Name: "nuspec", Path: feed("flatcontainer/acme.widgets/1.2.3/acme.widgets.nuspec"), Seed: seedWidgets},
-			{Name: "embedded icon", Path: feed("flatcontainer/acme.widgets/1.2.3/icon"), Status: notBuilt},
-			{Name: "embedded readme", Path: feed("flatcontainer/acme.widgets/1.2.3/readme"), Status: notBuilt},
+			{Name: "embedded icon", Path: feed("flatcontainer/acme.widgets/1.2.3/icon"), Seed: seedEmbedded},
+			{Name: "embedded license", Path: feed("flatcontainer/acme.widgets/1.2.3/license"), Seed: seedEmbedded},
+			{Name: "embedded readme", Path: feed("flatcontainer/acme.widgets/1.2.3/readme"), Seed: seedEmbedded},
 			{Name: "registration index", Path: feed("registration-semver2/acme.widgets/index.json"), Seed: seedWidgets},
 			{Name: "registration page", Path: feed("registration-gz/acme.widgets/page/1.0.0/2.0.0.json"), Seed: seedWidgets},
 			{Name: "registration leaf", Path: feed("registration/acme.widgets/1.2.3.json"), Seed: seedWidgets},
@@ -232,10 +233,8 @@ func conformance(f *Format) formattest.Fixture {
 		// built (M6); check 7 checks the headers of what a route serves, and refuses an entry once a
 		// case serves the route.
 		NoContent: map[string]string{
-			"nuget.flatcontainer.embedded": "the embedded icon and license are P1 (R-NUGET-024) and answer 501 until built",
-			"nuget.flatcontainer.readme":   "the embedded readme is P1 (R-NUGET-024) and answers 501 until built; its route is declared Wiki",
-			"nuget.autocomplete":           "autocomplete is P1 (R-NUGET-011) and answers 501 until built",
-			"nuget.symbols":                "the symbol server is P1 (R-NUGET-021) and answers 501 until built; the symbol push is served (R-NUGET-020)",
+			"nuget.autocomplete": "autocomplete is P1 (R-NUGET-011) and answers 501 until built",
+			"nuget.symbols":      "the symbol server is P1 (R-NUGET-021) and answers 501 until built; the symbol push is served (R-NUGET-020)",
 		},
 		Changes: nugetChanges(f),
 		// The package beside every content case's own, for check 21 (R-BAS-086): no case reads it.
@@ -365,6 +364,27 @@ func seedWidgets(h *formattest.Host) error {
 		return err
 	}
 	putFiles(h)
+	return nil
+}
+
+// seedEmbedded stores version 1.2.3 of acme.widgets as a package that embeds an icon, a license file and a README (R-NUGET-024): the
+// version row with the metadata the .nuspec gives, the .nupkg as the item and, in the twin, its bytes, where the database store reads
+// the object store.
+func seedEmbedded(h *formattest.Host) error {
+	st := h.FormatData(ID).(*docStore)
+	st.bind(h)
+	pkg, err := makeNupkg("Acme.Widgets", "1.2.3",
+		withEntry("icon.png", []byte("\x89PNG\r\n\x1a\n-kit")), withEntry("LICENSE.txt", []byte("MIT")),
+		withEntry("README.md", []byte("# Acme.Widgets readme")))
+	if err != nil {
+		return err
+	}
+	meta := `{"description":"Widget primitives.","icon":"icon.png","readme":"README.md","license":{"type":"file","value":"LICENSE.txt"}}`
+	if err := st.commit(h, "acme.widgets", registrationVersion("Acme.Widgets", "1.2.3", true, meta)); err != nil {
+		return err
+	}
+	h.PutItem(NupkgPath("acme.widgets", "1.2.3"), "application/zip", pkg)
+	st.PutPackage(pkg)
 	return nil
 }
 

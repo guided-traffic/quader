@@ -67,10 +67,10 @@ func TestNuGetVisibility_R_AUTHZ_034(t *testing.T) {
 			t.Errorf("the anonymous README refusal has no Basic challenge: %v", r.Header)
 		}
 		tok := userToken(t, "bob")
-		// The README handler of NuGet is the P1 stub of R-NUGET-024 (embedded files): a caller who may read the wiki gets 501
-		// nuget_not_implemented, and only the gate of R-AUTHZ-034 works (401 or 404 for a denied caller). 501 for the internal user, and
-		// not 401, 403 or 404, is the proof of the visibility decision; the README bytes are asserted with the handler (R-NUGET-024).
-		awaitStatusOnEveryReplica(t, "the internal user's README read passes the wiki gate on every replica", func() *api { return newAPI(t).withToken(tok) }, readme(pub, pubID), http.StatusNotImplemented)
+		// The README is read out of the package dotnet pack built with its README file (R-NUGET-024): 200 for the internal user, and not
+		// 401, 403 or 404, is the proof of the visibility decision; the bytes and the media type are the unit tests' and the integration
+		// area's (TestR_NUGET_024_*).
+		awaitStatusOnEveryReplica(t, "the internal user's README read passes the wiki gate on every replica", func() *api { return newAPI(t).withToken(tok) }, readme(pub, pubID), http.StatusOK)
 	})
 
 	t.Run("R-AUTHZ-033 an internal feed challenges the restore without credentials, and the credentials of nuget.config restore", func(t *testing.T) {

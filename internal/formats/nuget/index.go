@@ -19,7 +19,7 @@ import (
 // RenderVersion is the version of the rendering of the documents of this format. It is part
 // of every ETag, so a release that must make clients drop the documents they cached raises
 // it (R-NUGET-002, Q-NUGET-9).
-const RenderVersion = 1
+const RenderVersion = 2
 
 // serviceIndexVersion is the "version" member of the service index (R-NUGET-002).
 const serviceIndexVersion = "3.0.0"
@@ -45,8 +45,8 @@ type serviceIndex struct {
 // values it knows, every resource is listed under every alias of the table of R-NUGET-002.
 // The publish resources are listed when the repository takes pushes: a local repository,
 // and a virtual one with a deployment target (R-NUGET-019). The resources of the P1
-// requirements (autocomplete, vulnerability information, the README template) are listed
-// when they are served.
+// requirements (autocomplete, vulnerability information) are listed when they are served; the
+// README template is listed in every class (R-NUGET-024).
 func ServiceIndex(feed string, publish bool) []byte { return serviceIndexOf(feed, publish, false) }
 
 // serviceIndexOf renders the service index; vulnerabilities says that VulnerabilityInfo/6.7.0 is listed, which it is while
@@ -67,6 +67,8 @@ func serviceIndexOf(feed string, publish, vulnerabilities bool) []byte {
 	add(resRegistrationGz+"/", "RegistrationsBaseUrl/3.4.0")
 	add(resRegistrationSV2+"/", "RegistrationsBaseUrl/3.6.0")
 	add(resSearch, "SearchQueryService", "SearchQueryService/3.0.0-beta", "SearchQueryService/3.0.0-rc", "SearchQueryService/3.5.0")
+	// The README of a version (R-NUGET-024): a template the client fills with the ID and the version of a package it shows.
+	add(resFlatContainer+"/{lower_id}/{lower_version}/readme", "ReadmeUriTemplate/6.13.0")
 	if vulnerabilities {
 		add(resVulnerabilities+"/"+indexFile, "VulnerabilityInfo/6.7.0")
 	}

@@ -57,6 +57,9 @@ type Store struct {
 	symbols  map[int64]int64
 	revs     map[string]int64
 	view     viewState
+	// packages are the bytes of the packages a test put, by hex SHA-256, and packageReads the reads of one (embedded.go).
+	packages     map[string][]byte
+	packageReads int
 
 	// Revisions answers packages.rev_seq and packages.display_name of a package for the
 	// documents the twin returns, which the database reads in the same statement. A test

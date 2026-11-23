@@ -374,6 +374,15 @@ func (d Doc) entry(v rows.RegistrationVersion) (entry, error) {
 	if l := m.License; l != nil && (l.Type == "" || l.Type == "expression") {
 		e.LicenseExpression = l.Value
 	}
+	// A file the package embeds is linked at the feed's own flat container (R-NUGET-024): the .nuspec's iconUrl and licenseUrl are
+	// legacy addresses, which a pack writes beside an embedded file (licenseUrl as a link to a deprecation notice), and give way.
+	emb := rows.EmbeddedOf(v.Metadata)
+	if emb.Icon != "" {
+		e.IconURL = rows.EmbeddedURL(string(d.Feed), d.LowerID, v.LowerVersion, "icon")
+	}
+	if emb.License != "" {
+		e.LicenseURL = rows.EmbeddedURL(string(d.Feed), d.LowerID, v.LowerVersion, "license")
+	}
 	for _, g := range m.DependencyGroups {
 		dg := dependencyGroup{TargetFramework: g.TargetFramework}
 		for _, dep := range g.Dependencies {

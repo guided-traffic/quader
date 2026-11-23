@@ -25,6 +25,7 @@ type wenv struct {
 
 	tokAdmin, tokDev, tokPeer, tokReader, tokNobody string
 	devID                                           string
+	reader                                          testenv.Person
 }
 
 func newWriteEnv(t *testing.T) *wenv {
@@ -33,7 +34,7 @@ func newWriteEnv(t *testing.T) *wenv {
 	e := &wenv{t: t, st: st}
 	rita, dev, peer, reader, nobody := st.User("rita"), st.User("dev"), st.User("peer"), st.User("reader"), st.User("nobody")
 	st.Bind("admin", rita)
-	e.devID = dev.ID
+	e.devID, e.reader = dev.ID, reader
 	e.tokAdmin = st.Token(rita, scope.Scope{Inherit: true, Admin: true})
 	e.tokDev = st.Token(dev, scope.Default())
 	e.tokPeer = st.Token(peer, scope.Default())
@@ -62,6 +63,9 @@ type pkgSpec struct {
 	// depRange, when set, is the range of the one dependency of the package instead of the
 	// one deps writes.
 	depRange string
+	// metadata is further XML of the .nuspec's metadata element, entries further files of the archive.
+	metadata string
+	entries  map[string]string
 }
 
 // nupkg builds a package archive. The description makes two builds of one version differ.
@@ -74,7 +78,7 @@ func nupkg(t testing.TB, s pkgSpec) []byte {
 	if s.symbols {
 		types = `<packageTypes><packageType name="SymbolsPackage"/></packageTypes>`
 	}
-	extra := types
+	extra := types + s.metadata
 	if s.title != "" {
 		extra += "<title>" + s.title + "</title>"
 	}
@@ -92,7 +96,11 @@ func nupkg(t testing.TB, s pkgSpec) []byte {
 		s.id, s.version, s.description, extra)
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)
-	for name, body := range map[string]string{s.id + ".nuspec": nuspec, "lib/net8.0/" + s.id + ".dll": "MZ" + s.version + s.description} {
+	files := map[string]string{s.id + ".nuspec": nuspec, "lib/net8.0/" + s.id + ".dll": "MZ" + s.version + s.description}
+	for name, body := range s.entries {
+		files[name] = body
+	}
+	for name, body := range files {
 		w, err := zw.Create(name)
 		if err != nil {
 			t.Fatal(err)

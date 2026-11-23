@@ -87,7 +87,9 @@ func (f *Format) buildRoutes() []formats.Route {
 			flatFile(hasSuffixFold(nupkgSuffix)), []string{leaf + pkg + "." + ver + ".nupkg", "v3/flatcontainer/ACME.Widgets/1.2.3.0/acme.widgets.1.2.3.nupkg"}, f.handleNupkg),
 		route(routeNuspec, http.MethodGet, "/v3/flatcontainer/{id}/{version}/{id}.nuspec", formats.Download, read,
 			flatFile(hasSuffixFold(nuspecSuffix)), []string{leaf + pkg + ".nuspec"}, f.handleNuspec),
-		route(routeEmbedded, http.MethodGet, "/v3/flatcontainer/{id}/{version}/{icon|license}", formats.Download, read,
+		// The icon and the license are artifacts metadata, read out of the stored package (R-NUGET-024, Q-NUGET-136): a Metadata route,
+		// no download of the package.
+		route(routeEmbedded, http.MethodGet, "/v3/flatcontainer/{id}/{version}/{icon|license}", formats.Metadata, read,
 			flatFile(isEmbeddedArtifact), []string{leaf + "icon", leaf + "license"}, f.handleEmbedded),
 		// The README is wiki content (R-NUGET-024, R-AUTHZ-034): a caller who may read the package and not the wiki of the repository
 		// is refused before the handler runs.

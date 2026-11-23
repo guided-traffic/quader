@@ -89,6 +89,7 @@ func TestR_NUGET_002_TheServiceIndexListsEveryResourceUnderEveryAlias(t *testing
 		"SearchQueryService/3.0.0-beta":   "search",
 		"SearchQueryService/3.0.0-rc":     "search",
 		"SearchQueryService/3.5.0":        "search",
+		"ReadmeUriTemplate/6.13.0":        "flatcontainer/{lower_id}/{lower_version}/readme",
 	}
 	got := map[string]string{}
 	for _, r := range doc.Resources {
@@ -212,7 +213,8 @@ func TestR_NUGET_002_TheETagFollowsItsInputs(t *testing.T) {
 func TestR_NUGET_001_AnOperationThatIsNotBuiltAnswers501(t *testing.T) {
 	h := newHost(t, formattest.HostOptions{})
 	for _, c := range []struct{ method, path string }{
-		{http.MethodGet, "v3/flatcontainer/acme.widgets/1.2.3/readme"},
+		{http.MethodGet, "v3/autocomplete"},
+		{http.MethodGet, "v3/symbols/acme.widgets.pdb/0123456789abcdef0123456789abcdefFFFFFFFF/acme.widgets.pdb"},
 	} {
 		t.Run(c.method+" "+c.path, func(t *testing.T) {
 			r := get(t, h, c.method, c.path)

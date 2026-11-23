@@ -66,7 +66,7 @@ func TestR_LIM_036_EveryRouteOfEveryFormatCountsByItsKind(t *testing.T) {
 		"nuget": {
 			"nuget.autocomplete":           formats.Volatile,
 			"nuget.delete":                 formats.Delete,
-			"nuget.flatcontainer.embedded": formats.Download,
+			"nuget.flatcontainer.embedded": formats.Metadata,
 			"nuget.flatcontainer.index":    formats.Metadata,
 			"nuget.flatcontainer.nupkg":    formats.Download,
 			"nuget.flatcontainer.nuspec":   formats.Download,
