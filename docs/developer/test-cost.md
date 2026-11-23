@@ -1204,9 +1204,27 @@ template migrations; cut to two, the area took 9.0 s and the test 2.4 s at a loa
 test `TestQ_NUGET_48_TheDataPortReadsTheViewFromPostgreSQL`, which builds an installation without a replica, took 1.36 s locally from a
 worktree before the change (the kit move's first builder's run, 2026-11-23) and 0.27 s on the final tree [V].
 
-**Prediction to check in the first pipeline run after the change** (a prediction, not a result): the fastest data-port test, which builds an
+**The prediction made before the change landed:** the fastest data-port test, which builds an
 installation without a replica (`oci`'s data port, NuGet's `TestQ_NUGET_48`), falls from about 1.9 s to about 0.7 s. If it falls much less,
 the runner split of the validator (1.25 s, computed from minima and not separated from the object store's cleanup) was wrong.
 
-Not measured: the same on a runner (the first pipeline run shows it); the clone under a runner's load; a run from the main checkout with the
+**What the first pipeline run after the change showed** (Test and Release 45133371730 of 2026-11-23 beside 45126854432, the run before it;
+read from the four shards' `go test -json` records, top-level tests only) [V]: the fastest test of `oci`'s data port fell from 1.89 s
+(`TestExistingItemsAreTheLiveFilesOfTheRepository`) to 0.10 s (`TestAManifestWithoutAnnotationsOrSubjectStoresNull`; the first of the two
+took 0.11 s), and NuGet's `TestQ_NUGET_48` from 2.28 s to 0.26 s. It fell further than predicted: what stays of an installation on a runner
+(start, stop, seed, a small body) is about 0.1 to 0.3 s, not the 0.55 to 0.7 s of the split above [I]. Of the run's 1,721 tests, 472 took
+less than 0.7 s; of the 1,716 of the run before, 96 did. No test failed in either. The shard jobs, with their test step in brackets, in
+minutes and seconds [V], beside the minutes computed above [I]:
+
+| Shard | Before | After | Computed before the change |
+|---|---|---|---|
+| a | 35:04 (31:43) | 22:27 (19:06) | 26.4 |
+| b | 31:43 (28:21) | 22:55 (19:51) | 24.6 |
+| c | 32:11 (28:52) | 24:48 (20:58) | 26.0 |
+| d | 35:08 (31:56) | 20:31 (17:40) | 23.4 |
+
+Each shard now keeps 20 to 24 minutes below its limit of 45; before the change it kept 10 to 13. One run each, on runners whose
+neighbours differ between runs.
+
+Not measured: the clone under a runner's load apart from the shards' times above; a run from the main checkout with the
 built UI after the change (it pays neither the UI's 1.7 s nor the drain, by construction); any other area before and after.
