@@ -2307,6 +2307,31 @@ runs are in `git log`; this section holds the current state.
   two parts, one integration case with a plain connection and the query budget's case; migration 00110. An
   encrypted copy is not handed over by it. Builders with a test load: the encryption's package 3, the kit
   move's package 1, the repair of the four tests, the handover's package 2, and the landing's gates.
+- **The repair of the four tests reported at 03:55** (one commit of the type `test`; its builder worked from
+  03:16; every gate exit 0, the two integration areas among them). None of the four causes was the
+  product's, and each repaired test fails when the product's behaviour is taken away. (1) The key
+  commands' case flipped a bit of a random character of the encoded value; six of the sixty-four
+  characters leave the alphabet by it, about nine draws in a hundred, and the import then refuses the form
+  and not the authentication; the case now changes a byte of the decoded value and encodes it again. (2)
+  **The query budget's harness measured a statement's spread against the loop's whole time,** which holds
+  the last request's duration, so one slow request hid the requests' own statement; it now takes each
+  request's start and measures against the span of the starts, which a statement of the first and the last
+  request always covers; a background burst stays out, shown with four cases of a slow request. A task
+  whose own rhythm runs through the whole window cannot be told apart by the log's instants, so the wait
+  for the orphan sweep's first run stays. (3) The remote engine's test of the fetch slots rested on five
+  guesses about speed; it now holds requests at the fake upstream until the wanted number is in it at once
+  and asserts the peak exactly. (4) The Bastion engine's test asserted what a ranged caller held at an
+  instant its own pace decided; it waits for that amount first. **Seen by it and not changed:** seven more
+  places that wait on a guess about the machine's speed (two in the Bastion's engine, four windows in the
+  remote engine's collapse and freshness tests, the flush of PostgreSQL's log in the budget's windows). It
+  lands with the handover's first package.
+- **In work since 03:56: several integration stacks side by side with a lock each, and one command that
+  takes whichever is free** (section 12 A's first entry; five runs stood at the one lock for most of an hour
+  this night at a load of 7). An instance of the stack by a number, the first exactly today's so the
+  pipeline does not change; every place that reaches the stack other than by its env file found and
+  changed; the proof with two areas at once on two instances, one of them an area that acts on the stack as
+  a whole. Builders with a test load: the encryption's package 3, the kit move's package 1, the handover's
+  package 2, this one, and the landing's gates.
 - **The timer's check at 19:44:** none of the three builders has reported; the run of the landing has no
   failed job (the four integration shards, the layout checks and five end-to-end legs run); the load is
   about 20 on 20 cores with the three builders, so no fourth is started while the owner works on the
