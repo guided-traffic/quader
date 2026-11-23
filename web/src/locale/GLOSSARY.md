@@ -3,6 +3,9 @@
 Product terms keep one German rendering across all translation files (R-UI-045). Add a row
 before using a new term in a German text.
 
+Every German text addresses the reader formally, as "Sie" ("Geben Sie … ein", "Ihre Rolle"), never as "du";
+[formal-german.spec.ts](../app/shared/formal-german.spec.ts) refuses an informal pronoun or imperative in a target.
+
 | English | German |
 |---|---|
 | permission policy | Berechtigungsrichtlinie |

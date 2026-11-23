@@ -343,7 +343,7 @@
       </notes>
       <segment>
         <source>This registration has no token. Issue one to connect a Bastion.</source>
-        <target>Diese Registrierung hat kein Token. Stelle eines aus, um eine Bastion anzubinden.</target>
+        <target>Diese Registrierung hat kein Token. Stellen Sie eines aus, um eine Bastion anzubinden.</target>
       </segment>
     </unit>
     <unit id="upload.folder">
@@ -1605,7 +1605,7 @@
       </notes>
       <segment>
         <source>The address you are using now.</source>
-        <target>Die Adresse, die du gerade nutzt.</target>
+        <target>Die Adresse, die Sie gerade nutzen.</target>
       </segment>
     </unit>
     <unit id="ci.editor.policies-add">
@@ -1986,7 +1986,7 @@
       </notes>
       <segment>
         <source>The last time the token authenticated a request. When you renew, revoke the old token once the new one shows a recent time.</source>
-        <target>Der Zeitpunkt, zu dem das Token zuletzt eine Anfrage authentifiziert hat. Wenn du erneuerst, widerrufe das alte Token erst, wenn das neue eine aktuelle Zeit zeigt.</target>
+        <target>Der Zeitpunkt, zu dem das Token zuletzt eine Anfrage authentifiziert hat. Wenn Sie erneuern, widerrufen Sie das alte Token erst, wenn das neue eine aktuelle Zeit zeigt.</target>
       </segment>
     </unit>
     <unit id="virtual.effective-hint">
@@ -2394,7 +2394,7 @@
       </notes>
       <segment>
         <source>Enter a number of days greater than zero.</source>
-        <target>Gib eine Anzahl Tage größer als null ein.</target>
+        <target>Geben Sie eine Anzahl Tage größer als null ein.</target>
       </segment>
     </unit>
     <unit id="audit.action.serviceaccount.updated">
@@ -2996,7 +2996,7 @@
       </notes>
       <segment>
         <source>This Bastion has not reported a base URL yet, or the one it reported is not an entry of server.additional_base_urls. Add it to that setting on the main installation, and the instructions appear.</source>
-        <target>Diese Bastion hat noch keine Basis-URL gemeldet, oder die gemeldete ist kein Eintrag von server.additional_base_urls. Trage sie dort auf der Hauptinstallation ein, dann erscheinen die Anleitungen.</target>
+        <target>Diese Bastion hat noch keine Basis-URL gemeldet, oder die gemeldete ist kein Eintrag von server.additional_base_urls. Tragen Sie sie dort auf der Hauptinstallation ein, dann erscheinen die Anleitungen.</target>
       </segment>
     </unit>
     <unit id="help.title">
@@ -5297,7 +5297,7 @@
       </notes>
       <segment>
         <source> A read-only cache for clients outside the network. You can install through it; you cannot publish. </source>
-        <target>Ein schreibgeschützter Cache für Clients außerhalb des Netzwerks. Du kannst darüber installieren, aber nicht veröffentlichen.</target>
+        <target>Ein schreibgeschützter Cache für Clients außerhalb des Netzwerks. Sie können darüber installieren, aber nicht veröffentlichen.</target>
       </segment>
     </unit>
     <unit id="problem.endpoint_not_configured">
@@ -8581,7 +8581,7 @@
       </notes>
       <segment>
         <source>Who owns the project, your role in it and what it holds.</source>
-        <target>Wer das Projekt besitzt, deine Rolle darin und was es enthält.</target>
+        <target>Wer das Projekt besitzt, Ihre Rolle darin und was es enthält.</target>
       </segment>
     </unit>
     <unit id="general.banner.preview">
@@ -9324,7 +9324,7 @@
       </notes>
       <segment>
         <source> The token goes into the Secret of the Bastion&apos;s chart. It is shown once, when you create it. </source>
-        <target>Das Token kommt in das Secret des Charts der Bastion. Es wird einmal angezeigt, wenn du es erstellst.</target>
+        <target>Das Token kommt in das Secret des Charts der Bastion. Es wird einmal angezeigt, wenn Sie es erstellen.</target>
       </segment>
     </unit>
     <unit id="dashboard.valkey.degraded">
@@ -10230,7 +10230,7 @@
       </notes>
       <segment>
         <source>Bastion created. Issue a token for it next.</source>
-        <target>Bastion angelegt. Stelle als Nächstes ein Token für sie aus.</target>
+        <target>Bastion angelegt. Stellen Sie als Nächstes ein Token für sie aus.</target>
       </segment>
     </unit>
     <unit id="audit.action.ci.issuer.created">
@@ -12530,7 +12530,7 @@
       </notes>
       <segment>
         <source>“<ph id="0" equiv="description" disp="t.description"/>” stops working at once on every replica. A replica that still uses it treats the main installation as unreachable. When you renew, revoke the old token only after the new one shows a recent time in Last used. This cannot be undone.</source>
-        <target>„<ph id="0" equiv="description" disp="t.description"/>“ funktioniert sofort nicht mehr, auf jedem Replikat. Ein Replikat, das es noch benutzt, behandelt die Hauptinstallation als nicht erreichbar. Wenn du erneuerst, widerrufe das alte Token erst, nachdem das neue unter Zuletzt benutzt eine aktuelle Zeit zeigt. Das lässt sich nicht rückgängig machen.</target>
+        <target>„<ph id="0" equiv="description" disp="t.description"/>“ funktioniert sofort nicht mehr, auf jedem Replikat. Ein Replikat, das es noch benutzt, behandelt die Hauptinstallation als nicht erreichbar. Wenn Sie erneuern, widerrufen Sie das alte Token erst, nachdem das neue unter Zuletzt benutzt eine aktuelle Zeit zeigt. Das lässt sich nicht rückgängig machen.</target>
       </segment>
     </unit>
     <unit id="problem.backup.journal-unavailable">
@@ -13884,7 +13884,7 @@
       </notes>
       <segment>
         <source>It&apos;s you</source>
-        <target>Das bist du</target>
+        <target>Das sind Sie</target>
       </segment>
     </unit>
     <unit id="projects-home.mine">
@@ -23978,7 +23978,7 @@
       </notes>
       <segment>
         <source>The tokens of <ph id="0" equiv="name" disp="this.bastion().name"/> are refused until you enable it again. Its replicas treat the main installation as unreachable and serve from their cache within the grace period.</source>
-        <target>Die Token von <ph id="0" equiv="name" disp="this.bastion().name"/> werden abgewiesen, bis du sie wieder aktivierst. Ihre Replikate behandeln die Hauptinstallation als nicht erreichbar und liefern innerhalb der Karenzzeit aus ihrem Cache.</target>
+        <target>Die Token von <ph id="0" equiv="name" disp="this.bastion().name"/> werden abgewiesen, bis Sie sie wieder aktivieren. Ihre Replikate behandeln die Hauptinstallation als nicht erreichbar und liefern innerhalb der Karenzzeit aus ihrem Cache.</target>
       </segment>
     </unit>
     <unit id="files.trail.between">
@@ -25067,7 +25067,7 @@
       </notes>
       <segment>
         <source> A Bastion is a read-only cache of this installation for clients outside your network. Register it here, issue the token its chart reads, and check that every replica has made contact. </source>
-        <target>Eine Bastion ist ein schreibgeschützter Cache dieser Installation für Clients außerhalb deines Netzwerks. Registriere sie hier, stelle das Token aus, das ihr Chart liest, und prüfe, dass jedes Replikat Kontakt hatte.</target>
+        <target>Eine Bastion ist ein schreibgeschützter Cache dieser Installation für Clients außerhalb Ihres Netzwerks. Registrieren Sie sie hier, stellen Sie das Token aus, das ihr Chart liest, und prüfen Sie, dass jedes Replikat Kontakt hatte.</target>
       </segment>
     </unit>
     <unit id="docs.source.upstream">
