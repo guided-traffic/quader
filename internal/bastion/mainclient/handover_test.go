@@ -129,3 +129,99 @@ func TestR_BAS_073_TheClientAndTheFakeSpeakVersion6(t *testing.T) {
 		}
 	}
 }
+
+// TestR_BAS_073_TheClientTakesAHandoverOnlyWhenTheForwardOffered: the engine's offer reaches the main installation as the
+// one value of the header, after the caller's own was dropped; an answer of the class handover to a forward that offered
+// is a Response with the value, the marking and the file's headers and without any Quader-Bastion- header; a value the
+// interface refuses, or another status, arrives as HandoverErr for the engine to fall back; a value on an answer of
+// another class stays a bad answer, offered or not. The Bastion's own continuation sends its Range and If-Range, never
+// the caller's.
+func TestR_BAS_073_TheClientTakesAHandoverOnlyWhenTheForwardOffered(t *testing.T) {
+	r := newRig(t, nil)
+	ctx := context.Background()
+	r.main.SetHandover(true)
+	h := handoverOf()
+	mk := iface.Marking{Class: iface.ClassArtifact, Repository: "web/generic", Read: iface.ReadFull, Subject: iface.Subject{Kind: iface.SubjectAnonymous}}
+	r.main.SetForward(func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("ETag", `"`+h.SHA256+`"`)
+		w.Header().Set("Content-Type", "application/octet-stream")
+		if !r.main.HandOver(w, req, mk, h) {
+			r.main.Mark(w, mk)
+			_, _ = w.Write([]byte("bytes"))
+		}
+	})
+	offered := func(hdr ...string) mainclient.Forward {
+		f := forward(http.MethodGet, "/files/web/generic/blob", hdr...)
+		f.Offer = iface.HandoverOffer{MaxSize: 1 << 20}
+		return f
+	}
+	resp, err := r.c.Do(ctx, offered(iface.HeaderHandover, "accept; max-size=1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if body := closeBody(t, resp); body != "" || resp.Status != http.StatusOK || resp.Marking.Class != iface.ClassHandover || !resp.Marking.Counted ||
+		resp.Handover == nil || resp.HandoverErr != nil || resp.Handover.Link != h.Link || resp.Handover.Size != h.Size ||
+		resp.Header.Get("Etag") != `"`+h.SHA256+`"` || resp.Header.Get("Content-Type") != "application/octet-stream" {
+		t.Fatalf("the handover answer: %+v %q", resp, body)
+	}
+	for k := range resp.Header {
+		if strings.HasPrefix(k, iface.HeaderPrefix) {
+			t.Errorf("the engine sees %s", k)
+		}
+	}
+	fw := r.main.Forwards()
+	if got := fw[len(fw)-1].Header.Values(iface.HeaderHandover); len(got) != 1 || got[0] != "accept; max-size=1048576" {
+		t.Fatalf("the offer the main installation received: %q", got)
+	}
+
+	// A value the interface refuses, or an answer that is not a 200, is for the engine to replace.
+	for name, write := range map[string]func(w http.ResponseWriter){
+		"a malformed value": func(w http.ResponseWriter) { w.Header().Set(iface.HeaderHandover, "not-base64url!") },
+		"no value":          func(http.ResponseWriter) {},
+		"a 203": func(w http.ResponseWriter) {
+			v, _ := iface.EncodeHandover(handoverOf())
+			w.Header().Set(iface.HeaderHandover, v)
+			w.WriteHeader(http.StatusNonAuthoritativeInfo)
+		},
+	} {
+		r.main.SetForward(func(w http.ResponseWriter, _ *http.Request) {
+			r.main.Mark(w, iface.Marking{Class: iface.ClassHandover, Subject: iface.Subject{Kind: iface.SubjectAnonymous}, Counted: true})
+			w.Header().Set("Content-Length", "0")
+			write(w)
+		})
+		resp, err := r.c.Do(ctx, offered())
+		if err != nil || resp.Handover != nil || resp.HandoverErr == nil || strings.Contains(resp.HandoverErr.Error(), "objects.example.com") {
+			t.Errorf("%s: %+v %v", name, resp, err)
+			continue
+		}
+		_ = closeBody(t, resp)
+	}
+	// A value on an answer of another class is a defect of the main installation, offered or not.
+	value, _ := iface.EncodeHandover(handoverOf())
+	r.main.SetForward(func(w http.ResponseWriter, _ *http.Request) {
+		r.main.Mark(w, mk)
+		w.Header().Set(iface.HeaderHandover, value)
+		_, _ = w.Write([]byte("bytes"))
+	})
+	if resp, err := r.c.Do(ctx, offered()); !errors.Is(err, mainclient.ErrBadAnswer) {
+		t.Errorf("a value on an artifact to a forward that offered: %+v %v", resp, err)
+	}
+
+	// The continuation: the Bastion's own Range and If-Range, without the offer, and not the caller's.
+	r.main.SetForward(func(w http.ResponseWriter, _ *http.Request) {
+		r.main.Mark(w, mk)
+		w.WriteHeader(http.StatusPartialContent)
+	})
+	f := forward(http.MethodGet, "/files/web/generic/blob", "Range", "bytes=0-1", "If-Range", `"caller"`)
+	f.RangeFrom, f.IfRange = 131072, `"`+h.SHA256+`"`
+	resp, err = r.c.Do(ctx, f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = closeBody(t, resp)
+	fw = r.main.Forwards()
+	last := fw[len(fw)-1].Header
+	if last.Values("Range")[0] != "bytes=131072-" || len(last.Values("Range")) != 1 || last.Get("If-Range") != `"`+h.SHA256+`"` || last.Get(iface.HeaderHandover) != "" {
+		t.Fatalf("the continuation's headers: %v", last)
+	}
+}

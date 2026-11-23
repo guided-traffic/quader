@@ -135,6 +135,9 @@ type State struct {
 	// BoundRepository is the repository the main installation binds the Bastion's host to (R-BAS-057, Q-BAS-178),
 	// empty when it binds none.
 	BoundRepository string
+	// Handover is the handshake's member handover, the registration's switch at the main installation (R-BAS-071): the
+	// engine offers to take a handover only while it is true (R-BAS-072). False before the first handshake.
+	Handover bool
 }
 
 // Link is the standing connection of one replica.
@@ -341,6 +344,7 @@ func (l *Link) handshake(ctx context.Context) {
 	l.st.Registration, l.st.TokenID, l.st.TokenExpiresAt = hs.Bastion.Name, hs.Bastion.TokenID, hs.Bastion.TokenExpiresAt
 	l.st.Installation = hs.Installation
 	l.st.Formats, l.st.BoundRepository = hs.Formats, hs.BoundRepository
+	l.st.Handover = hs.Handover
 	l.st.InterfaceMismatch = false
 	l.nextHandshake = now.Add(l.cfg.HandshakeInterval)
 	mismatch := !sameOrigin(hs.ResponseBaseURL, l.cfg.BaseURL)
@@ -352,6 +356,11 @@ func (l *Link) handshake(ctx context.Context) {
 	m := l.o.Metrics
 	m.InterfaceMismatch.Set(0)
 	m.InterfaceVersion.WithLabelValues(metrics.SideMain).Set(float64(hs.InterfaceVersion))
+	if hs.Handover {
+		m.HandoverEnabled.Set(1)
+	} else {
+		m.HandoverEnabled.Set(0)
+	}
 	if mismatch {
 		m.BaseURLMismatch.Set(1)
 		l.logEvery("base_url", slog.LevelError, "bastion base URL not honoured by the main installation",

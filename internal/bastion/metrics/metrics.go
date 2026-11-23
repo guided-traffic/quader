@@ -49,6 +49,10 @@ const (
 	AuditEventsTotal         = "quader_bastion_audit_events_total"
 	AuditBufferEvents        = "quader_bastion_audit_buffer_events"
 	AuditEventsDroppedTotal  = "quader_bastion_audit_events_dropped_total"
+	HandoversTotal           = "quader_bastion_handovers_total"
+	FillBytesTotal           = "quader_bastion_fill_bytes_total"
+	HandoverEnabled          = "quader_bastion_handover_enabled"
+	HandoverCooldown         = "quader_bastion_handover_cooldown"
 )
 
 // Label values. The sets are closed: a value outside them is a defect, never a new series.
@@ -68,9 +72,16 @@ const (
 	ResultRefused = "refused"
 	ResultError   = "error"
 
-	// source of quader_bastion_bytes_served_total.
+	// source of quader_bastion_bytes_served_total; main and store are the sources of quader_bastion_fill_bytes_total.
 	SourceCache = "cache"
 	SourceMain  = "main"
+	SourceStore = "store"
+
+	// outcome of quader_bastion_handovers_total (R-BAS-075, Q-BAS-290): one per handover, by the path it took.
+	HandoverRead      = "read"
+	HandoverFallback  = "fallback"
+	HandoverContinued = "continued"
+	HandoverRefused   = "refused"
 
 	// kind of quader_bastion_main_requests_total and of the main request duration.
 	KindForward     = "forward"
@@ -215,6 +226,13 @@ type Metrics struct {
 	AuditEvents  *prometheus.CounterVec
 	AuditBuffer  prometheus.Gauge
 	AuditDropped prometheus.Counter
+	// Handovers counts the handovers by outcome (read, fallback, continued, refused); FillBytes counts the bytes written into
+	// fills by their source (main, store); HandoverEnabled is the handshake's member handover and HandoverCooldown 1 while the
+	// replica sends no offer after a failure of the store's path (R-BAS-075).
+	Handovers        *prometheus.CounterVec
+	FillBytes        *prometheus.CounterVec
+	HandoverEnabled  prometheus.Gauge
+	HandoverCooldown prometheus.Gauge
 }
 
 // New creates the collectors and registers them on reg; a nil reg creates them unregistered. The series with
@@ -264,6 +282,10 @@ func New(reg prometheus.Registerer) (*Metrics, error) {
 		AuditEvents:          counter(AuditEventsTotal, "Download events by outcome (sent, spooled, dropped) (R-BAS-039).", "outcome"),
 		AuditBuffer:          prometheus.NewGauge(prometheus.GaugeOpts{Name: AuditBufferEvents, Help: "Download events buffered in memory."}),
 		AuditDropped:         prometheus.NewCounter(prometheus.CounterOpts{Name: AuditEventsDroppedTotal, Help: "Download events lost to a full buffer."}),
+		Handovers:            counter(HandoversTotal, "Handovers by outcome (read, fallback, continued, refused) (R-BAS-075).", "outcome"),
+		FillBytes:            counter(FillBytesTotal, "Bytes written into fills by source (main, store) (R-BAS-075).", "source"),
+		HandoverEnabled:      prometheus.NewGauge(prometheus.GaugeOpts{Name: HandoverEnabled, Help: "1 while the last handshake said the registration's handover is on (R-BAS-071)."}),
+		HandoverCooldown:     prometheus.NewGauge(prometheus.GaugeOpts{Name: HandoverCooldown, Help: "1 while this replica sends no offer after a failure of the object store's path (R-BAS-075)."}),
 	}
 	m.seed()
 	if reg == nil {
@@ -334,6 +356,12 @@ func (m *Metrics) seed() {
 	for _, o := range []string{AuditSent, AuditSpooled, AuditDropped} {
 		m.AuditEvents.WithLabelValues(o)
 	}
+	for _, o := range []string{HandoverRead, HandoverFallback, HandoverContinued, HandoverRefused} {
+		m.Handovers.WithLabelValues(o)
+	}
+	for _, s := range []string{SourceMain, SourceStore} {
+		m.FillBytes.WithLabelValues(s)
+	}
 }
 
 func (m *Metrics) collectors() []prometheus.Collector {
@@ -344,6 +372,7 @@ func (m *Metrics) collectors() []prometheus.Collector {
 		m.TokenRemaining, m.TokenWarnBefore, m.MainTokenRefused, m.TokenReloads,
 		m.CacheBytes, m.CacheCapacity, m.CacheEvictions, m.CacheCorrupt, m.CacheErrors,
 		m.Refused, m.Blocks, m.Blocked, m.AuditEvents, m.AuditBuffer, m.AuditDropped,
+		m.Handovers, m.FillBytes, m.HandoverEnabled, m.HandoverCooldown,
 	}
 }
 
@@ -356,5 +385,6 @@ func Names() []string {
 		FeedEntriesAppliedTotal, FeedResetsTotal, TokenRemainingSeconds, TokenWarnBeforeSeconds, MainTokenRefused,
 		TokenReloadsTotal, CacheBytes, CacheCapacityBytes, CacheEvictionsTotal, CacheCorruptTotal, CacheErrorsTotal,
 		RefusedTotal, BlocksTotal, BlockedAddresses, AuditEventsTotal, AuditBufferEvents, AuditEventsDroppedTotal,
+		HandoversTotal, FillBytesTotal, HandoverEnabled, HandoverCooldown,
 	}
 }

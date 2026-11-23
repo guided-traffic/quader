@@ -159,8 +159,10 @@ func layerTable() []layerRule {
 		{"internal/cluster", layerInfra},
 		{"internal/outbound", layerInfra},
 		{"internal/secrets", layerInfra},
-		// The Bastion's clients and stores: the main installation's client, the cache backends, the shared state.
+		// The Bastion's clients and stores: the main installation's client, the link client of a handover, the cache
+		// backends, the shared state.
 		{"internal/bastion/mainclient", layerInfra},
+		{"internal/bastion/handover", layerInfra},
 		{"internal/bastion/cache", layerInfra},
 		{"internal/bastion/shared", layerInfra},
 		// The in-process main installation of the Bastion's tests (and the spool double of the download buffer's).

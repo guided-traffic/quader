@@ -960,7 +960,7 @@ func TestR_BAS_041_PrometheusRuleAlerts(t *testing.T) {
 		"QuaderBastionInterfaceMismatch", "QuaderBastionMainUnreachable", "QuaderBastionMainUnreachableSingleReplica",
 		"QuaderBastionGraceExhausted", "QuaderBastionBaseURLMismatch", "QuaderBastionTokenExpiresSoon", "QuaderBastionTokenRefused",
 		"QuaderBastionFeedStale", "QuaderBastionMainBudgetSaturated", "QuaderBastionAuditEventsDropped", "QuaderBastionCacheCorrupt",
-		"QuaderBastionValkeyUnavailable", "QuaderBastionReplicasNotReady",
+		"QuaderBastionHandoverFailing", "QuaderBastionValkeyUnavailable", "QuaderBastionReplicasNotReady",
 	}
 	t.Run("every alert is rendered with Valkey", func(t *testing.T) {
 		got := ruleNames(t, []string{bastionSet("bucket-valkey")})

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -22,6 +23,7 @@ import (
 	"github.com/guided-traffic/quader/internal/bastion/answers"
 	"github.com/guided-traffic/quader/internal/bastion/cache"
 	"github.com/guided-traffic/quader/internal/bastion/guard"
+	"github.com/guided-traffic/quader/internal/bastion/handover"
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastion/link"
 	"github.com/guided-traffic/quader/internal/bastion/mainclient"
@@ -86,6 +88,11 @@ type recorded struct {
 	Body   []byte
 	Addr   string
 	Check  *iface.CheckRequest
+	// Offer, RangeFrom and IfRange are the handover's offer and the Bastion's own continuation of a fill (R-BAS-072,
+	// R-BAS-075).
+	Offer     iface.HandoverOffer
+	RangeFrom int64
+	IfRange   string
 }
 
 // fakeMain is the small double of mainclient.Client the tests use: handlers answer, every request is recorded.
@@ -219,7 +226,10 @@ func (m *fakeMain) Do(ctx context.Context, f mainclient.Forward) (*mainclient.Re
 		return nil, err
 	}
 	defer done()
-	r := recorded{Kind: f.Kind, Class: f.Class, Method: f.Request.Method, Target: f.Request.URL.RequestURI(), Header: f.Request.Header.Clone(), INM: f.IfNoneMatch, Probe: f.Probe, Addr: f.ClientAddress}
+	r := recorded{
+		Kind: f.Kind, Class: f.Class, Method: f.Request.Method, Target: f.Request.URL.RequestURI(), Header: f.Request.Header.Clone(), INM: f.IfNoneMatch, Probe: f.Probe, Addr: f.ClientAddress,
+		Offer: f.Offer, RangeFrom: f.RangeFrom, IfRange: f.IfRange,
+	}
 	if f.Body != nil {
 		r.Body, _ = io.ReadAll(f.Body)
 	}
@@ -501,6 +511,9 @@ type options struct {
 	noFeed bool
 	// wrapMain wraps the client the engine is given (below the link's guard), for a test that counts bodies.
 	wrapMain func(mainclient.Client) mainclient.Client
+	// handover is the link client of the handover per blob; nil offers none (R-BAS-074). log is the engine's logger.
+	handover *handover.Client
+	log      *slog.Logger
 }
 
 func newHarness(t *testing.T, o options) *harness {
@@ -556,7 +569,7 @@ func newHarness(t *testing.T, o options) *harness {
 	}
 	d := Deps{
 		Config: cfg, Metrics: h.m, Replica: "bastion-0", Release: "test", Now: h.clock.now, Main: h.link.Guard(client),
-		Cache: h.cache.Cache, Shared: h.state, Guard: h.guard, Downloads: h.dl, Link: h.link,
+		Cache: h.cache.Cache, Shared: h.state, Guard: h.guard, Downloads: h.dl, Link: h.link, Handover: o.handover, Log: o.log,
 	}
 	e, err := newFlow(d)
 	if err != nil {

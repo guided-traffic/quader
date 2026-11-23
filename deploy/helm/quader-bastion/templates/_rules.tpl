@@ -106,6 +106,14 @@ spec page used min() for "every replica", which fires on one replica.
   annotations:
     summary: Cached content failed its integrity check.
     description: The object and its entries were deleted and fetched again (R-BAS-032). Check the cache volume or bucket.
+- alert: QuaderBastionHandoverFailing
+  expr: (sum(increase(quader_bastion_handovers_total{ {{ $s }},outcome=~"fallback|continued|refused" }[15m])) > 0) and (sum(increase(quader_bastion_handovers_total{ {{ $s }},outcome="read" }[15m])) == 0)
+  for: 15m
+  labels:
+    severity: warning
+  annotations:
+    summary: Handovers fail and the Bastion reads none from the object store.
+    description: The bytes come through the main installation instead (R-BAS-075). Check that the Bastion's network reaches each connection's public address and that trustedCA vouches for it, or switch the registration's handover off.
 {{- if include "quader-bastion.valkeyOn" . }}
 - alert: QuaderBastionValkeyUnavailable
   expr: max(quader_valkey_available{ {{ $s }} }) == 0
@@ -128,5 +136,5 @@ spec page used min() for "every replica", which fires on one replica.
 
 {{/* The names of every alert the chart can render, for the check of disabledAlerts. */}}
 {{- define "quader-bastion.rules.names" -}}
-{{- toJson (list "QuaderBastionInterfaceMismatch" "QuaderBastionMainUnreachable" "QuaderBastionMainUnreachableSingleReplica" "QuaderBastionGraceExhausted" "QuaderBastionBaseURLMismatch" "QuaderBastionTokenExpiresSoon" "QuaderBastionTokenRefused" "QuaderBastionFeedStale" "QuaderBastionMainBudgetSaturated" "QuaderBastionAuditEventsDropped" "QuaderBastionCacheCorrupt" "QuaderBastionValkeyUnavailable" "QuaderBastionReplicasNotReady") -}}
+{{- toJson (list "QuaderBastionInterfaceMismatch" "QuaderBastionMainUnreachable" "QuaderBastionMainUnreachableSingleReplica" "QuaderBastionGraceExhausted" "QuaderBastionBaseURLMismatch" "QuaderBastionTokenExpiresSoon" "QuaderBastionTokenRefused" "QuaderBastionFeedStale" "QuaderBastionMainBudgetSaturated" "QuaderBastionAuditEventsDropped" "QuaderBastionCacheCorrupt" "QuaderBastionHandoverFailing" "QuaderBastionValkeyUnavailable" "QuaderBastionReplicasNotReady") -}}
 {{- end -}}

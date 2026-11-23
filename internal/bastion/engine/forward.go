@@ -40,13 +40,21 @@ func (e *engine) forward(q *rq, kind mainclient.Kind, validator string, bl *base
 		e.refuseVerdict(q, v)
 		return
 	}
+	e.send(q, kind, validator, bl)
+}
+
+// send is the forward after the guard admitted the miss: the request with the caller's credential, the Bastion's own
+// conditional and, where R-BAS-072 allows it, the offer to take a handover; then the answer by its marking.
+func (e *engine) send(q *rq, kind mainclient.Kind, validator string, bl *baseline) {
 	sent := e.now()
 	// The request to the main installation does not end with the client: an artifact fill reads on at the
 	// main installation's speed when the client is slow or gone (Q-BAS-123). Everything else ends with the client.
 	hold := newHold(q.ctx())
 	q.hold = hold
+	q.offer = e.offerFor(q, kind, bl)
 	resp, err := e.d.Main.Do(hold.ctx, mainclient.Forward{
 		Request: e.forwardRequest(q), Class: e.budgetClass(q), Kind: kind, ClientAddress: q.clientText, IfNoneMatch: validator,
+		Offer: q.offer,
 	})
 	if err != nil {
 		hold.release()
@@ -145,11 +153,11 @@ func (e *engine) process(q *rq, resp *mainclient.Response, sent time.Time, bl *b
 	}
 	m := resp.Marking
 	e.recordAnswers(q, resp, sent)
-	if q.passOnly {
+	if q.passOnly && m.Class != iface.ClassHandover {
 		e.onPassOnly(q, resp)
 		return
 	}
-	if m.Class == iface.ClassArtifact || m.Class == iface.ClassShared {
+	if m.Class == iface.ClassArtifact || m.Class == iface.ClassShared || m.Class == iface.ClassHandover {
 		// The Vary of the response decides the cache key everything below is kept under.
 		e.learnVary(q, resp.Header)
 	}
@@ -158,6 +166,10 @@ func (e *engine) process(q *rq, resp *mainclient.Response, sent time.Time, bl *b
 		e.priv.remove(privKey(q.cred.key, q.cacheKey))
 	}
 	switch m.Class {
+	case iface.ClassHandover:
+		// Never passed to a caller: the answer is consumed, and a value the engine cannot use ends in the forward
+		// without the offer (R-BAS-073, R-BAS-075).
+		e.onHandover(q, resp, sent)
 	case iface.ClassArtifact:
 		e.onArtifact(q, resp, sent, bl)
 	case iface.ClassShared:

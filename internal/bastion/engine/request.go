@@ -68,6 +68,12 @@ type rq struct {
 	// passOnly is set for a core route of the registry root: its answer is passed on and nothing of it is kept or
 	// collapsed (R-BAS-051).
 	passOnly bool
+	// offer is the handover offer the request's last forward carried (R-BAS-072); noOffer keeps every further forward of
+	// the request without one (the forward that replaces a failed handover). handoverOutcome gives the request log's
+	// bastion_handover once the request received a handover (R-BAS-075).
+	offer           iface.HandoverOffer
+	noOffer         bool
+	handoverOutcome func() string
 }
 
 // countingWriter counts the body bytes served by their source (quader_bastion_bytes_served_total).
@@ -200,6 +206,9 @@ func (q *rq) end() {
 		}
 		if q.mainRequestID != "" {
 			ri.SetField("main_request_id", q.mainRequestID)
+		}
+		if q.handoverOutcome != nil {
+			ri.SetField("bastion_handover", q.handoverOutcome())
 		}
 	}
 	q.span.SetAttributes(attribute.String("quader.bastion.class", q.class), attribute.String("quader.bastion.result", q.result))

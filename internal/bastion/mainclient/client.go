@@ -455,7 +455,7 @@ func (c *HTTPClient) Do(ctx context.Context, f Forward) (*Response, error) {
 		release()
 		return nil, err
 	}
-	out, err := c.accept(resp, release)
+	out, err := c.accept(resp, release, !f.Probe && f.Offer.MaxSize >= 1)
 	if err != nil {
 		_ = resp.Body.Close()
 		release()
@@ -465,8 +465,9 @@ func (c *HTTPClient) Do(ctx context.Context, f Forward) (*Response, error) {
 }
 
 // accept turns the main installation's answer to a forward into a [Response], or into the error it stands for.
-// On an error the caller closes the body and releases the slot.
-func (c *HTTPClient) accept(resp *http.Response, release func()) (*Response, error) {
+// On an error the caller closes the body and releases the slot. offered says whether the forward carried the offer of
+// R-BAS-072.
+func (c *HTTPClient) accept(resp *http.Response, release func(), offered bool) (*Response, error) {
 	if err := checkVersion(resp.Header); err != nil {
 		return nil, err
 	}
@@ -474,11 +475,9 @@ func (c *HTTPClient) accept(resp *http.Response, release func()) (*Response, err
 	if merr != nil {
 		return nil, &AnswerError{Status: resp.StatusCode, Err: merr}
 	}
-	// The client offers no handover yet (R-BAS-072 is the engine's, not built), so an answer of the class handover, or one
-	// that carries a handover's value, answers a forward that offered none: a bad answer, never an empty 200 for a caller
-	// (R-BAS-073).
-	if m.Class == iface.ClassHandover || len(resp.Header.Values(iface.HeaderHandover)) > 0 {
-		return nil, &AnswerError{Status: resp.StatusCode, Err: errors.New("a handover answers a forward that offered none")}
+	h, herr, err := takeHandover(resp, m, offered)
+	if err != nil {
+		return nil, err
 	}
 	body := resp.Body
 	if (resp.StatusCode == http.StatusBadRequest || resp.StatusCode == http.StatusUnauthorized) &&
@@ -497,7 +496,39 @@ func (c *HTTPClient) accept(resp *http.Response, release func()) (*Response, err
 	}
 	route := resp.Header.Get(iface.HeaderRoute)
 	iface.StripMarking(resp.Header)
-	return &Response{Status: resp.StatusCode, Header: resp.Header, Body: &slotBody{ReadCloser: body, release: release}, Marking: m, Marked: marked, Route: route}, nil
+	return &Response{
+		Status: resp.StatusCode, Header: resp.Header, Body: &slotBody{ReadCloser: body, release: release}, Marking: m, Marked: marked, Route: route,
+		Handover: h, HandoverErr: herr,
+	}, nil
+}
+
+// takeHandover reads the handover of an answer before its marking is stripped (R-BAS-073). Only a forward that offered
+// takes one: an answer of the class handover, or one that carries a handover's value, to a forward that offered none is a
+// bad answer, never an empty 200 for a caller, and so is a value on an answer of another class. An answer of the class
+// handover to a forward that offered returns its value, or in herr why it has none the engine may use: a missing value, a
+// value the interface refuses, more than one, another status than 200. Such an answer is replaced by the forward without
+// the offer (R-BAS-075); a refused value's key was destroyed by the decoding.
+func takeHandover(resp *http.Response, m iface.Marking, offered bool) (h *iface.Handover, herr, err error) {
+	carries := len(resp.Header.Values(iface.HeaderHandover)) > 0
+	switch {
+	case m.Class != iface.ClassHandover && !carries:
+		return nil, nil, nil
+	case !offered:
+		return nil, nil, &AnswerError{Status: resp.StatusCode, Err: errors.New("a handover answers a forward that offered none")}
+	case m.Class != iface.ClassHandover:
+		return nil, nil, &AnswerError{Status: resp.StatusCode, Err: fmt.Errorf("a handover's value on an answer of the class %q", m.Class)}
+	}
+	v, ok, derr := iface.HandoverFrom(resp.Header)
+	switch {
+	case derr != nil:
+		return nil, derr, nil
+	case !ok:
+		return nil, errors.New("bastion handover: an answer of the class handover carries no value"), nil
+	case resp.StatusCode != http.StatusOK:
+		v.DataKey.Destroy()
+		return nil, fmt.Errorf("bastion handover: an answer of the class handover with status %d", resp.StatusCode), nil
+	}
+	return &v, nil, nil
 }
 
 type prefixed struct {
@@ -575,6 +606,16 @@ func (c *HTTPClient) forwardRequest(ctx context.Context, f Forward) (*http.Reque
 	req.Header.Set(iface.HeaderAuthorization, iface.BearerScheme+" "+tok.Value)
 	if f.IfNoneMatch != "" {
 		req.Header.Set("If-None-Match", f.IfNoneMatch)
+	}
+	if !f.Probe {
+		// The Bastion's own headers, after the copy of the caller's, which dropped every Quader-*, Range and If-* header.
+		f.Offer.Set(req.Header)
+		if f.RangeFrom > 0 {
+			req.Header.Set("Range", "bytes="+strconv.FormatInt(f.RangeFrom, 10)+"-")
+			if f.IfRange != "" {
+				req.Header.Set("If-Range", f.IfRange)
+			}
+		}
 	}
 	if f.Probe {
 		req.Header.Del("Authorization")

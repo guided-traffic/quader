@@ -14,7 +14,7 @@ R-BAS-057), the main installation's side, the Bastion's side, and the client cas
 supersedes in place what R-BAS-003, R-BAS-015, R-BAS-018, R-BAS-019, R-BAS-021, R-BAS-022, R-BAS-029, R-BAS-039 and the deferred table
 said about the formats a Bastion leaves out. The owner's decision 12 (b) of the same day, the handover of a link and of the data key per
 released blob, is specified in [The handover per blob](#the-handover-per-blob) (R-BAS-070 to R-BAS-079, Q-BAS-230 to Q-BAS-239, and the
-gaps H-1340 to H-1345 on [security/bastion-handover.md](../security/bastion-handover.md)), not built; it lifts Q-BAS-10 for that and for
+gaps H-1340 to H-1345 on [security/bastion-handover.md](../security/bastion-handover.md)), built for plain copies; it lifts Q-BAS-10 for that and for
 nothing else. The development agent's decision of 2026-11-22 on Q-BAS-167, option (b), a read shape per package for a registry token and
 for every reader narrowed by package, is specified in [Read shapes per package](#read-shapes-per-package) (R-BAS-080 to R-BAS-088,
 Q-BAS-240 to Q-BAS-254, Q-BAS-260 and Q-BAS-261, H-1380 to H-1384 and H-1390); its decision point and its format contract (R-BAS-080,
@@ -1916,6 +1916,9 @@ carries an address, a token, a path or a repository's name):
 | `quader_bastion_audit_events_total` | counter | `outcome` (`sent`, `spooled`, `dropped`) |
 | `quader_bastion_audit_buffer_events` | gauge | — |
 | `quader_bastion_audit_events_dropped_total` | counter | — |
+| `quader_bastion_handovers_total` | counter | `outcome` (`read`, `fallback`, `continued`, `refused`) |
+| `quader_bastion_fill_bytes_total` | counter | `source` (`main`, `store`) |
+| `quader_bastion_handover_enabled`, `quader_bastion_handover_cooldown` | gauge | — |
 
 - `quader_bastion_refused_total` counts requests the Bastion refused itself. `reason="read_only"` counts a write refused with `403
   bastion_read_only` (R-BAS-014), whether the probe answered it or the kept answer replayed it, and a body above
@@ -1927,6 +1930,10 @@ carries an address, a token, a path or a repository's name):
 - `quader_valkey_available` and `quader_ratelimit_fallback{limiter}` are the shared ones.
 - The value `package` of `kind` of `quader_bastion_answers` and `quader_bastion_answers_total` (R-BAS-084, built on 2026-11-23,
   `metrics.AnswerPackage`) is the one addition of the read shapes per package; no label carries a package's name.
+- The last four rows are the handover per blob's (R-BAS-075, built on 2026-11-23): one outcome per handover by the path it took
+  ([Q-BAS-290](#q-bas-290--a-handover-counts-one-outcome-by-the-path-it-took)), the bytes written into fills by their source, the
+  handshake's member and the cooldown. `quader_bastion_bytes_served_total` keeps its two sources: the caller of a fill whose source is
+  the direct read is counted `main`, as every fill's caller is; where the bytes came from is `quader_bastion_fill_bytes_total`.
 
 Acceptance criteria:
 
@@ -1952,6 +1959,7 @@ The chart's PrometheusRule (`metrics.prometheusRule.enabled`) holds these alerts
 | `QuaderBastionMainBudgetSaturated` | `sum(rate(quader_bastion_main_budget_exhausted_total[5m])) > 0` | 10m | warning |
 | `QuaderBastionAuditEventsDropped` | `increase(quader_bastion_audit_events_dropped_total[15m]) > 0` | 0m | warning |
 | `QuaderBastionCacheCorrupt` | `increase(quader_bastion_cache_corrupt_total[1h]) > 0` | 0m | warning |
+| `QuaderBastionHandoverFailing` | `sum(increase(quader_bastion_handovers_total{outcome=~"fallback\|continued\|refused"}[15m])) > 0 and sum(increase(quader_bastion_handovers_total{outcome="read"}[15m])) == 0` (R-BAS-075) | 15m | warning |
 | `QuaderBastionValkeyUnavailable` | `max(quader_valkey_available) == 0` (rendered only with Valkey configured) | 5m | warning |
 | `QuaderBastionReplicasNotReady` | `min(kube_deployment_status_replicas_available{deployment=~"<fullname>"}) < 2` (or the StatefulSet's) | 5m | warning |
 
@@ -2326,7 +2334,7 @@ secrets:
     key: ca.crt
 
 trustedCA:
-  existingSecret: ""                    # example: corp-ca-bundle; trust for the main installation, Valkey and the bucket
+  existingSecret: ""                    # example: corp-ca-bundle; trust for the main installation, its object store, Valkey and the bucket
   existingConfigMap: ""                 # example: corp-ca-bundle (trust-manager target)
   keys: [ca-bundle.crt]                 # exactly one key: the bundle is one file (bastion.main.ca_file)
 
@@ -3204,8 +3212,12 @@ Status: specified on 2026-11-22 by the planner; the wire is built (package 1, 20
 checks, [Q-BAS-280](#q-bas-280--the-wire-checks-storedsize-against-ssize-itself) and
 [Q-BAS-281](#q-bas-281--the-wires-checks-are-narrower-than-the-list-of-r-bas-073)); the main installation's side for plain copies is
 built (package 2, 2026-11-23: the registration's switch, the serve point's decision of R-STOR-095 steps 1 to 7, 9 and 11, the marking,
-[Q-BAS-285](#q-bas-285--only-the-journaled-switch-off-is-listed-as-yielding-no-feed-entry)), and no Bastion offers or reads yet
-(package 3), so nothing is handed over until it does; an encrypted copy is never handed over before package 4. It builds on specifications whose code is not on `main`: the serve point and
+[Q-BAS-285](#q-bas-285--only-the-journaled-switch-off-is-listed-as-yielding-no-feed-entry)); the Bastion's side is built (package 3,
+2026-11-23: the offer, the direct read of a plain and of an encrypted copy, its failures, the metrics, the alert,
+[Q-BAS-290](#q-bas-290--a-handover-counts-one-outcome-by-the-path-it-took) to
+[Q-BAS-292](#q-bas-292--the-forward-that-replaces-a-handover-counts-no-second-miss-and-a-core-route-carries-no-offer)). A plain copy is
+handed over once an administrator has switched a registration's handover on; the integration case that joins the two sides is not built
+yet, and an encrypted copy is never handed over before package 4. It builds on specifications whose code is not on `main`: the serve point and
 the domain package of the signed links ([storage.md](storage.md) R-STOR-070 to R-STOR-074, package 2 of
 [developer/download-links.md](../developer/download-links.md)), the copies a read would try now (`blob.Store.Servable`, R-STOR-062, stage
 1's package A), and for an encrypted connection the storage keys and `blob.Store.CopyDataKey` (R-STOR-083, packages 2 and 3 of
@@ -3369,6 +3381,15 @@ Acceptance criteria:
   conditional request of a follower, a continuation, a forward that replaces a failed handover, a request while the handshake says
   `handover: false` and one while the replica cools down send none (`TestR_BAS_072_TheBastionOffersToTakeAHandover`).
 
+*As built on 2026-11-23, the Bastion's side (package 3 of [the build plan](../developer/bastion-handover.md)):* `offerFor` in
+[engine/handover.go](../../internal/bastion/engine/handover.go) decides the offer of every forward the read flow sends (`send` in
+[forward.go](../../internal/bastion/engine/forward.go)); the size is `min(max_object_bytes, Cache.SpoolRoom())`, the spool's room being
+`spool_max_bytes` less what the fills in progress hold. `mainclient.Forward.Offer` carries it, set after the copy of the caller's headers, which
+drops a caller's own `Quader-Bastion-Handover`. No offer also on a core route of the registry root and on a key marked after a digest that failed
+(R-BAS-075; [Q-BAS-292](#q-bas-292--the-forward-that-replaces-a-handover-counts-no-second-miss-and-a-core-route-carries-no-offer)). The
+handshake's member reaches the engine as `link.State.Handover` and `quader_bastion_handover_enabled`. The test covers the continuation and the
+replacing forward in `TestR_BAS_075_ADirectReadThatFails`.
+
 ### R-BAS-073 · The handover answer and the interface version 6
 Priority: **P1** · Covers: quader-only
 
@@ -3450,8 +3471,9 @@ bare, by its start, the base64url of `{"link":"` (`TestR_BAS_073_TheHandoverHead
 the forward offered and the blob is within the offer, and `Forwarded.Offer` reads what a forward offered. The Bastion's client offers nothing
 yet and refuses an answer of the class `handover`, or one that carries the header, as a bad answer, so a defect of the main installation never
 reaches the engine as an empty `200` (`TestR_BAS_073_TheClientAndTheFakeSpeakVersion6`, which also shows that a caller's own
-`Quader-Bastion-Handover` never reaches the main installation). Nobody offers and nobody hands over: the marking stage (package 2) and the
-engine's offer and read (package 3) are not built, nor is `TestR_BAS_073_OnlyARecognizedForwardThatOfferedGetsAHandover`.
+`Quader-Bastion-Handover` never reaches the main installation). With package 1 alone nobody offered and nobody handed over: the marking
+stage and `TestR_BAS_073_OnlyARecognizedForwardThatOfferedGetsAHandover` came with package 2 and the engine's offer and read with package 3,
+both below.
 
 *As built on 2026-11-23, the main installation's side (package 2):* the recognition stage reads the offer of a forwarded `GET` into the
 `Recognition` (`Offer`, `Offered`; a refused value or two values is no offer) and takes `Quader-Bastion-Handover` out of every request,
@@ -3465,6 +3487,14 @@ package and its shape of R-BAS-082), and counts `quader_bastion_forwarded_reques
 ([mark.go](../../internal/api/bastionmark/mark.go)). A value on another status is no handover. Tests:
 `TestR_BAS_073_OnlyARecognizedForwardThatOfferedGetsAHandover` (`internal/api/bastionmark`), `TestR_BAS_072_TheRecognitionReadsTheOffer`
 and `TestR_BAS_073_NoteHandoverOnlyOnAMarkedForwardThatOffered` (`internal/bastionmain`).
+
+*As built on 2026-11-23, the Bastion's side (package 3):* the client's blanket refusal is replaced by "only when the forward offered"
+(`takeHandover` in [mainclient/client.go](../../internal/bastion/mainclient/client.go)): an answer of the class `handover` to a forward that
+offered arrives as `Response.Handover`, read before the marking is stripped, or as `Response.HandoverErr` when its value is missing, refused, or
+on another status than `200`, which the engine replaces by the forward without the offer; the same answer to a forward that did not offer, and a
+value on an answer of another class, stay bad answers (`TestR_BAS_073_TheClientTakesAHandoverOnlyWhenTheForwardOffered`,
+`TestR_BAS_073_TheClientAndTheFakeSpeakVersion6`). The engine calls `Handover.Check` with its clock, the offer it sent, the answer's `ETag` and
+the hosts of `server.base_url`, `bastion.main.url` and `bastion.main.packages_url` before it opens anything. The marking stage is package 2's.
 
 ### R-BAS-074 · The direct read and its verification
 Priority: **P1** · Covers: quader-only
@@ -3512,6 +3542,27 @@ Acceptance criteria:
   read ends; the link client sends no `Authorization` and no `Quader-` header, follows no redirect, and refuses an `http` link and a link on
   the Bastion's own host (`TestR_BAS_074_TheDirectReadAndItsVerification`).
 
+*As built on 2026-11-23, the Bastion's side (package 3):* the link client is `handover.Client` in
+[handover/client.go](../../internal/bastion/handover/client.go), a client of the outbound factory of its own (purpose `bastion_handover`) with
+the system roots and `bastion.main.ca_file` re-read, the two timeouts, no redirect followed (a `3xx` is a failure before the first byte), no
+cookie jar, no tracer, no upstream log and no outbound metrics (the client of the main installation registers those once per process); its
+request is built from the link alone, with `User-Agent: quader-bastion/<release>`, and it refuses a link that is not `https`, carries user
+information or names a refused host on any port, again after the engine's check. `Open` returns once the status is `200`, `Content-Length` is
+`storedSize`, and the first 64 KiB of plaintext are verified: on an encrypted copy the first segment authenticated, and a blob of one segment,
+plain or encrypted, read and checked whole ([Q-BAS-291](#q-bas-291--a-blob-of-one-segment-is-verified-whole-before-its-first-byte)). The
+plain reader hashes as it reads and ends in `handover.ErrDigest` instead of the end when the digest differs; the encrypted reader is
+`blobcrypt.NewReader` with the digest checked, over a data key built with `blobcrypt.KeyFromBytes` from the handed one (whose copy and
+`HandoverKey` are destroyed at once) after `blobcrypt.StoredSize(size)` was compared with `storedSize`. The engine's `onHandover` closes the
+handover answer's body before anything else, prepares the fill (`newFillRun`, shared with a fill from the main installation, so the entry carries
+the marking's package, counting and repository), checks the spool's room, opens the read with the fill's detached context and hands it to
+`runFill`, which the waiters of the flight follow as any fill. The cache keeps the plaintext through `cache.Fill`, sealed under its own key where it
+has one. Tests: `TestR_BAS_074_TheLinkClientSendsNothingOfQuaders`, `TestR_BAS_074_TheLinkClientsRefusals`,
+`TestR_BAS_074_ThePlainAndTheEncryptedRead`, `TestR_BAS_074_TheTrustIsReadAgain` (`internal/bastion/handover`, against the TLS store of
+`maintest.Store`); `TestR_BAS_074_TheDirectReadAndItsVerification` (`internal/bastion/engine`, plain and encrypted blobs of 192 KiB, a follower, the
+handover answer's body closed while the read runs, the entry's package, a cache with a key); the Bastion's half of R-BAS-070's integration case,
+`TestR_BAS_074_ABastionReadsAHandedFileFromTheObjectStore` (area `bastion`: the role against `maintest` and the stack's object store, the stack's
+CA and `maintest`'s certificate in one bundle of `bastion.main.ca_file`). `TestR_BAS_070_ALargeFileIsReadFromTheObjectStore` joins with package 2.
+
 ### R-BAS-075 · A direct read that fails
 Priority: **P1** · Covers: quader-only
 
@@ -3555,6 +3606,23 @@ Acceptance criteria:
 - Chart: `QuaderBastionHandoverFailing` fires on a series of fallbacks without a read and stays silent on reads (`promtool test rules`,
   `TestR_BAS_041_PromtoolRules`).
 
+*As built on 2026-11-23, the Bastion's side (package 3):* `fallback` in [engine/handover.go](../../internal/bastion/engine/handover.go) sends
+the forward without the offer for every failure before the first verified bytes (a value the engine or the interface refuses, a fill the cache
+cannot start, a spool without room, and every `handover.Error` of `Open`); the cooldown starts only for a `handover.Error` whose cause is the
+network or the store (`Cooldown()`: connect, name, TLS, a timeout, a body that broke off before its first byte, `403`, `5xx`, another length) and
+is the engine's field `handoverCooldown`. After the first byte `fillRun.run` asks `turnToMain`: the plain digest and the encrypted plaintext's
+digest (`handover.ErrDigest`) fail the fill and mark the key; any other break (a cut, the stall bound, which ends only the direct read, a later
+segment or the final segment that does not open) closes the read and continues the spool from the main installation with `Range` and `If-Range`
+(`mainclient.Forward.RangeFrom`, `IfRange`), and `continues` accepts only a `206` of the rest with the fill's `ETag`. A commit whose SHA-256
+fails after a direct read marks the key too. The four outcomes count once per handover by the path it took, and the request log's
+`bastion_handover` names it, or `reading` for a caller that left while the read ran
+([Q-BAS-290](#q-bas-290--a-handover-counts-one-outcome-by-the-path-it-took)). The replacing forward counts no second miss
+([Q-BAS-292](#q-bas-292--the-forward-that-replaces-a-handover-counts-no-second-miss-and-a-core-route-carries-no-offer)). The alert's expression
+is `(sum(increase(…{outcome=~"fallback|continued|refused"}[15m])) > 0) and (sum(increase(…{outcome="read"}[15m])) == 0)`, scoped to the
+release. Besides the criteria above, `TestR_BAS_075_ADirectReadThatFails` shows that an expired link, a blob above the offer, a digest that is
+not the `ETag`'s and a link on a host of the Bastion or of the main installation fall back without a read and without the cooldown, and that a
+continuation answered `200`, or `206` with another `ETag`, fails the fill.
+
 ### R-BAS-076 · The data key at the Bastion: held for one read, written nowhere
 Priority: **P1** · Covers: quader-only
 
@@ -3577,6 +3645,15 @@ Acceptance criteria:
   record of the captured log and no metric of the test's registry holds the key's bytes in hexadecimal or base64url
   (`TestR_BAS_076_TheDataKeyIsWrittenNowhere`).
 
+*As built on 2026-11-23, the Bastion's side (package 3):* the handed `HandoverKey` is destroyed when `handover.Client.Open` returns, whatever
+happens, and by `onHandover` on every path that does not reach `Open`; the format's key lives in the read and is destroyed by `Read.Close`, which
+the fill calls at the end of the read, at a break before the continuation and at every failure (`Open` destroys it itself when it fails). A
+caller who leaves does not end the read: the fill outlives its caller (Q-BAS-123), so its key lives until the fill ends. `Client.KeysHeld` and
+the option `OnKeyDestroyed` let the tests count. Tests: `TestR_BAS_076_TheKeyIsDestroyedAtEveryEnd` (`internal/bastion/handover`: a whole read,
+a failure before and after the first byte, a cancelled read, no key in an error text) and `TestR_BAS_076_TheDataKeyIsWrittenNowhere`
+(`internal/bastion/engine`: the same ends and a caller that leaves, then no file of the cache and its spool, no log record and no metric holds a
+key in hexadecimal, base64url or base64).
+
 ### R-BAS-077 · A blob withdrawn while its link lives
 Priority: **P1** · Covers: quader-only
 
@@ -3598,6 +3675,9 @@ Acceptance criteria:
 - Unit (`internal/bastion/engine`): a `content` entry for the repository that arrives while a direct read runs leaves the fill's callers
   served and the entry committed, and the next caller's request for the key is a conditional request whose refusal is replayed
   (`TestR_BAS_077_AWithdrawalDuringADirectRead`).
+
+*As built on 2026-11-23, the Bastion's side (package 3):* nothing of its own: a fill whose source is the direct read is the same `fillRun`, its
+entry's `validatedAt` the time the forward left, and `withdrawn` judges it as every entry (`TestR_BAS_077_AWithdrawalDuringADirectRead`).
 
 ### R-BAS-078 · The operator's side: the charts, the admin area, the manual and the egress
 Priority: **P1** · Covers: quader-only
@@ -3626,6 +3706,11 @@ Acceptance criteria:
 
 - Chart render tests: the PrometheusRule holds `QuaderBastionHandoverFailing` scoped to the release; no value of either chart is added
   (`TestR_BAS_041_PrometheusRuleAlerts`, `TestR_BAS_046_ValuesReferenceIsTheSpecBlock`).
+
+*As built on 2026-11-23, the Bastion's chart (package 3):* the alert in [_rules.tpl](../../deploy/helm/quader-bastion/templates/_rules.tpl)
+with its two promtool cases in [rules_test.yaml](../../deploy/helm/quader-bastion/tests/rules_test.yaml) and its name in the list of
+`disabledAlerts`, and the comment of `trustedCA.existingSecret` (`trust for the main installation, its object store, Valkey and the bucket`). No
+value was added. The admin area and the manual are package 5's.
 
 ### R-BAS-079 · Tests of the handover and what they cost
 Priority: **P1** · Covers: quader-only
@@ -8772,6 +8857,65 @@ journaled (R-BAS-071: switching on widens).
 **Choice:** (a). **Rationale:** what the sentence wants, that the feed is classified for both events, holds for the switch-on by
 construction. **Applied in the spec:** R-BAS-071's as-built note; code: `noFeedEntry` in [feed.go](../../internal/bastionmain/feed.go).
 
+### Q-BAS-290 · A handover counts one outcome, by the path it took
+
+Status: **Decided by the development agent** during the build of R-BAS-075 (package 3 of the handover) — selected from the options below; the
+owner sees it when it is built.
+
+Context: R-BAS-075 names four values of `quader_bastion_handovers_total{outcome}` (`read` "read from the store and committed", `fallback`
+"failed before the first byte", `continued` "finished through the main installation", `refused` "the bytes failed verification") and the
+request log's `bastion_handover`, without saying what a handover that meets two of them counts: a later segment of an encrypted copy that does not
+open is a failed verification and a continuation; a continuation whose commit then fails is both; a small plain body whose digest fails before
+anything was spooled is a refusal and a fallback (Q-BAS-291). The fill outlives its caller (Q-BAS-123), so a caller's request can end before
+the read does.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One outcome per handover, by the path the bytes took: `fallback` when the forward without the offer replaced it, whatever the reason; `continued` when the fill turned to the main installation after its first byte, counted when the continuation is sent, whatever it answers; `refused` when the read delivered its bytes and they are not the blob (the plain digest, the encrypted plaintext's digest) or the commit refused a fill read wholly from the store; `read` when that commit passed. The log names the outcome, and `reading` while the read runs after its caller left (chosen) | Each handover is one event | The counters add up to the handovers; the alert's sum counts each failing handover once; the log of each request says what happened to its bytes | A refusal before the first byte counts `fallback`; a continuation that the commit then refuses counts `continued`, and the key is marked all the same |
+| (b) Every value that applies | Several counts per handover | Each fact is counted | The counters no longer add up to the handovers; the alert counts one failure several times |
+
+**Choice:** (a). Every commit that fails after a direct read, continued or not, marks the key for `artifact_revalidate_after`, so that the
+main installation's verifying read meets the copy. **Rationale:** the operator's question is where the bytes came from; one count per handover
+answers it, and the mark does not depend on the count. **Applied in the spec:** R-BAS-040 (the note under the table), R-BAS-075 (as built);
+code: `directFill.finish`, `turnToMain`, `committed` in [engine/handover.go](../../internal/bastion/engine/handover.go).
+
+### Q-BAS-291 · A blob of one segment is verified whole before its first byte
+
+Status: **Decided by the development agent** during the build of R-BAS-074 (package 3 of the handover) — selected from the options below; the
+owner sees it when it is built.
+
+Context: R-BAS-075 decides by the first byte: before it the forward without the offer replaces the read, after it the fill continues or fails.
+On an encrypted copy the format's reader releases the plaintext of the last segment only after the final segment and the digest, so for a blob of
+one segment the first byte is the whole verified blob. On a plain copy the bytes arrive as the transport delivers them, so whether a plain body of
+a few kilobytes whose digest fails is "before" or "after" its first byte would depend on how the network cuts it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `Open` reads the first 64 KiB of plaintext, or the whole body and its digest when it is not longer, before it returns; a digest that fails there is a failure before the first byte: the forward without the offer replaces it, and the key is marked (chosen) | The first byte of a direct read is the first verified segment, for both kinds of copy | One rule for both; a small damaged plain object costs the caller nothing but a delay, and the main installation's read meets the copy at once | 64 KiB held in memory per open read |
+| (b) The first bytes as the transport delivers them | | No buffer | A small damaged plain object cuts its caller or falls back depending on the network |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-074, R-BAS-075 (as built); code: `Read.first` in
+[handover/read.go](../../internal/bastion/handover/read.go).
+
+### Q-BAS-292 · The forward that replaces a handover counts no second miss, and a core route carries no offer
+
+Status: **Decided by the development agent** during the build of R-BAS-072 and R-BAS-075 (package 3 of the handover) — selected from the
+options below; the owner sees it when it is built.
+
+Context: every forward of the read flow first asks the guard's miss limit of the caller's address (R-BAS-035). R-BAS-075 says the forward that
+replaces a failed handover "goes on as for a miss today". R-BAS-072 puts the offer on every `GET` the Bastion forwards; the core routes of the
+registry root (`GET /v2/_token`, the catalog, the version check with a credential) are forwarded as well, and their answers are passed on and never
+kept (R-BAS-051).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The replacing forward is sent without asking the guard again, as a plain forward (no validator, no offer) even when the first was the Bastion's own conditional request; a core route of the registry root carries no offer (chosen) | One miss per caller's miss; no offer where no handover can be used | A failure of the store's path never costs the caller a second miss of its limit; a `200` answers a conditional request whose validator failed anyway; the main installation never hands over on those routes (they are no `Download` route, R-STOR-095 step 2), and the engine could not keep such an answer | The engine has a second way to send a forward (`send` behind `forward`) |
+| (b) The replacing forward through the guard, the offer on every `GET` | The text as written | | A Bastion whose network does not reach the store spends two misses of every caller's limit per cold miss until the cooldown |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-072, R-BAS-075 (as built); code: `send` in
+[engine/forward.go](../../internal/bastion/engine/forward.go), `offerFor` and `fallback` in
+[engine/handover.go](../../internal/bastion/engine/handover.go).
+
 ## What this does not cover
 
 ### H-382 · A volumetric attack on bandwidth is not absorbed by the Bastion
@@ -9601,3 +9745,17 @@ challenge itself. What makes it real: many pulls behind one address against an i
 it: a `401` to a request without a credential marked with the anonymous subject and the shape `none` on the repository, which the Bastion
 keeps for `answers.period` and answers the challenge from (H-442's own closing); or a check for the anonymous caller instead of the
 forward, which keeps the same answer.
+
+### H-1445 · The store's answers to a Bastion's direct reads are counted only as outcomes
+
+Stage: the link client of R-BAS-074 and the metrics of R-BAS-075. Subject: an operator's view of why handovers fail, not a confidentiality or
+integrity property.
+
+Dormant until a main installation hands over (package 2 of [the build plan](../developer/bastion-handover.md)) and a registration's handover
+is on. The link client counts no request in the shared outbound metrics (`quader_outbound_requests_total` by purpose and code), because the
+outbound factory registers them once per process and the client of the main installation does so first; a second factory on the same registry
+would collide. So a store that refuses the links with `403`, one that answers `5xx`, a wrong length and a network that does not reach the store
+all show as `quader_bastion_handovers_total{outcome="fallback"}` and the cooldown's gauge; the cause is in the Bastion's log line "a handover is
+replaced by the forward without the offer" (level info, field `reason`, never the link). What makes it real: an operator who reads the metrics
+and not the logs when `QuaderBastionHandoverFailing` fires. What would close it: one outbound factory shared by the two clients of the Bastion,
+so that both count by their purpose.

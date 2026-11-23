@@ -104,6 +104,9 @@ type fillRun struct {
 	// repo and pkg are the repository and the package of the leader's marking (R-BAS-084): a follower whose package answer
 	// on pkg is full follows the fill like a full reader (R-BAS-085, Q-BAS-200).
 	repo, pkg string
+	// direct is the direct read of a handover that is the fill's source (R-BAS-074), nil for a fill from the main
+	// installation. Everything else of the fill is the same for both sources.
+	direct *directFill
 
 	mu      sync.Mutex
 	written int64
@@ -163,16 +166,18 @@ func (r *fillRun) release() {
 }
 
 // run reads the body to its end, verifies and commits. It runs once, in a goroutine of the engine (in the
-// request's own while the engine drains). end cancels the request to the main installation; flightDone ends the
-// flight of the collapsed fetch.
+// request's own while the engine drains). end cancels the request to the main installation (and the direct read of a
+// handover); flightDone ends the flight of the collapsed fetch. A direct read that breaks off after its first byte is
+// continued from the main installation into the same spool (R-BAS-075); the commit's check of the SHA-256 decides for
+// every source.
 func (r *fillRun) run(body io.ReadCloser, end, flightDone func()) {
 	e := r.e
 	defer r.release()
 	defer flightDone()
 	defer end()
-	stall := time.AfterFunc(e.fillStall, end)
+	stall := time.AfterFunc(e.fillStall, func() { r.stall(end) })
 	defer stall.Stop()
-	defer body.Close()
+	defer func() { _ = body.Close() }() // whichever body is current; a direct read's Close destroys its key
 
 	buf := make([]byte, 64<<10)
 	var total int64
@@ -182,7 +187,7 @@ func (r *fillRun) run(body io.ReadCloser, end, flightDone func()) {
 			stall.Reset(e.fillStall)
 			total += int64(n)
 			if total > r.size {
-				e.log.Warn("the main installation sent more bytes than it announced", "sha256", r.sha, "want", r.size)
+				e.log.Warn("the source of a fill sent more bytes than it announced", "sha256", r.sha, "want", r.size)
 				r.finishWith(fillFailed)
 				return
 			}
@@ -193,26 +198,33 @@ func (r *fillRun) run(body io.ReadCloser, end, flightDone func()) {
 				r.finishWith(fillFailed)
 				return
 			}
+			e.d.Metrics.FillBytes.WithLabelValues(r.fillSourceLabel()).Add(float64(n))
 			r.advance(total)
 		}
 		if rerr == io.EOF {
 			break
 		}
 		if rerr != nil {
-			r.finishWith(fillFailed)
-			return
+			next, ok := r.turnToMain(rerr, total)
+			if !ok {
+				r.finishWith(fillFailed)
+				return
+			}
+			body = next
+			stall.Reset(e.fillStall)
 		}
 	}
-	_ = body.Close() // the response is complete: the budget slot is free while the commit and the clients go on
+	_ = body.Close() // the response is complete: the budget slot is free (a direct read's key destroyed) while the commit and the clients go on
 	if total != r.size {
-		e.log.Warn("the main installation sent another number of bytes than it announced", "sha256", r.sha, "got", total, "want", r.size)
+		e.log.Warn("the source of a fill sent another number of bytes than it announced", "sha256", r.sha, "got", total, "want", r.size)
 		r.finishWith(fillFailed)
 		return
 	}
 	ctx := context.Background()
 	err := r.fill.Commit(ctx, r.sha)
+	r.committed(!errors.Is(err, cache.ErrMismatch))
 	if errors.Is(err, cache.ErrMismatch) {
-		e.log.Warn("the main installation sent bytes that do not match their content address", "sha256", r.sha)
+		e.log.Warn("the bytes of a fill do not match their content address", "sha256", r.sha)
 		r.finishWith(fillFailed)
 		return
 	}
@@ -245,6 +257,24 @@ func (e *engine) fillSpool(q *rq, resp *mainclient.Response, pre []byte, sha str
 		e.passThroughRest(q, resp, pre, resp.Body, class)
 		return
 	}
+	r := e.newFillRun(q, resp, fill, sha, size, sent, kind)
+	// The fill takes over the response, the request to the main installation and the flight.
+	body := resp.Body
+	if len(pre) > 0 {
+		body = readCloser{Reader: io.MultiReader(bytes.NewReader(pre), resp.Body), Closer: resp.Body}
+	}
+	resp.Body = http.NoBody
+	end := func() {}
+	if q.hold != nil {
+		end, _ = q.hold.take()
+	}
+	e.runFill(q, r, body, end)
+}
+
+// newFillRun prepares the fill of an answer: the headers a caller served from the spool receives, its validator and date,
+// the marking's counting, repository and package, and the entry written after the commit, for a fill from the main
+// installation and for one from a direct read alike (R-BAS-074).
+func (e *engine) newFillRun(q *rq, resp *mainclient.Response, fill *cache.Fill, sha string, size int64, sent time.Time, kind cache.EntryKind) *fillRun {
 	fill.Keep() // the committed bytes still answer the clients, and a refused commit does not fail the request
 	hdr := replayHeader(resp.Header)
 	hdr.Del("Content-Length")
@@ -256,15 +286,15 @@ func (e *engine) fillSpool(q *rq, resp *mainclient.Response, pre []byte, sha str
 	if key, keep := e.learnVary(q, resp.Header); keep {
 		r.key, r.ent = key, e.spoolEntry(q, resp, sha, size, sent, kind)
 	}
-	// The fill takes over the response, the request to the main installation and the flight.
-	body := resp.Body
-	if len(pre) > 0 {
-		body = readCloser{Reader: io.MultiReader(bytes.NewReader(pre), resp.Body), Closer: resp.Body}
-	}
-	resp.Body = http.NoBody
-	end := func() {}
-	if q.hold != nil {
-		end, _ = q.hold.take()
+	return r
+}
+
+// runFill starts the fill's reading, which takes over the flight and ends the request to its source with end, hands the
+// fill to the waiters of the flight (R-BAS-054), and serves the request's caller from the spool.
+func (e *engine) runFill(q *rq, r *fillRun, body io.ReadCloser, end func()) {
+	class := metrics.ClassArtifact
+	if r.kind == cache.EntryDocument {
+		class = metrics.ClassShared
 	}
 	flightDone := q.flight.take()
 	if q.call != nil && r.key == q.cacheKey {

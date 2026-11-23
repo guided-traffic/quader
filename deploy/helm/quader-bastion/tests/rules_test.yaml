@@ -29,6 +29,8 @@ tests:
       - {series: 'quader_bastion_cache_corrupt_total{namespace="default",service="quader-bastion-ops",pod="p1"}', values: '0x200'}
       - {series: 'quader_valkey_available{namespace="default",service="quader-bastion-ops",pod="p1"}', values: '1x200'}
       - {series: 'kube_deployment_status_replicas_available{namespace="default",deployment="quader-bastion"}', values: '2x200'}
+      - {series: 'quader_bastion_handovers_total{namespace="default",service="quader-bastion-ops",pod="p1",outcome="read"}', values: '0+2x200'}
+      - {series: 'quader_bastion_handovers_total{namespace="default",service="quader-bastion-ops",pod="p1",outcome="fallback"}', values: '0x200'}
     alert_rule_test:
       - {eval_time: 3h, alertname: QuaderBastionInterfaceMismatch, exp_alerts: []}
       - {eval_time: 3h, alertname: QuaderBastionMainUnreachable, exp_alerts: []}
@@ -41,6 +43,7 @@ tests:
       - {eval_time: 3h, alertname: QuaderBastionMainBudgetSaturated, exp_alerts: []}
       - {eval_time: 3h, alertname: QuaderBastionAuditEventsDropped, exp_alerts: []}
       - {eval_time: 3h, alertname: QuaderBastionCacheCorrupt, exp_alerts: []}
+      - {eval_time: 3h, alertname: QuaderBastionHandoverFailing, exp_alerts: []}
       - {eval_time: 3h, alertname: QuaderBastionValkeyUnavailable, exp_alerts: []}
       - {eval_time: 3h, alertname: QuaderBastionReplicasNotReady, exp_alerts: []}
 
@@ -235,6 +238,33 @@ tests:
             exp_annotations:
               summary: Cached content failed its integrity check.
               description: The object and its entries were deleted and fetched again (R-BAS-032). Check the cache volume or bucket.
+
+  # --- QuaderBastionHandoverFailing (R-BAS-075) -----------------------------------------------------------
+  - name: QuaderBastionHandoverFailing fires on fallbacks without a read
+    interval: 1m
+    input_series:
+      - {series: 'quader_bastion_handovers_total{namespace="default",service="quader-bastion-ops",pod="p1",outcome="fallback"}', values: '0+1x60'}
+      - {series: 'quader_bastion_handovers_total{namespace="default",service="quader-bastion-ops",pod="p1",outcome="read"}', values: '0x60'}
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: QuaderBastionHandoverFailing
+        exp_alerts: []
+      - eval_time: 30m
+        alertname: QuaderBastionHandoverFailing
+        exp_alerts:
+          - exp_labels: {severity: warning}
+            exp_annotations:
+              summary: Handovers fail and the Bastion reads none from the object store.
+              description: The bytes come through the main installation instead (R-BAS-075). Check that the Bastion's network reaches each connection's public address and that trustedCA vouches for it, or switch the registration's handover off.
+  - name: QuaderBastionHandoverFailing stays silent while handovers are read
+    interval: 1m
+    input_series:
+      - {series: 'quader_bastion_handovers_total{namespace="default",service="quader-bastion-ops",pod="p1",outcome="continued"}', values: '0+1x60'}
+      - {series: 'quader_bastion_handovers_total{namespace="default",service="quader-bastion-ops",pod="p1",outcome="read"}', values: '0+3x60'}
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: QuaderBastionHandoverFailing
+        exp_alerts: []
 
   # --- QuaderBastionValkeyUnavailable (rendered while Valkey is configured) -----------------------------
   - name: QuaderBastionValkeyUnavailable fires when no replica reaches Valkey

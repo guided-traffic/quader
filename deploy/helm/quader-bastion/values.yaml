@@ -203,7 +203,7 @@ secrets:
     key: ca.crt
 
 trustedCA:
-  existingSecret: ""                    # example: corp-ca-bundle; trust for the main installation, Valkey and the bucket
+  existingSecret: ""                    # example: corp-ca-bundle; trust for the main installation, its object store, Valkey and the bucket
   existingConfigMap: ""                 # example: corp-ca-bundle (trust-manager target)
   keys: [ca-bundle.crt]                 # exactly one key: the bundle is one file (bastion.main.ca_file)
 

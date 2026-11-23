@@ -1,6 +1,9 @@
 package cache
 
-import "sync"
+import (
+	"math"
+	"sync"
+)
 
 // spoolBudget bounds the bytes that the fills in progress of a replica hold in temporary storage together
 // (bastion.cache.spool_max_bytes, Q-BAS-131). A fill reserves the bytes before it writes them and gives them
@@ -38,6 +41,22 @@ func (b *spoolBudget) release(n int64) {
 	b.held = max(b.held-n, 0)
 	b.mu.Unlock()
 }
+
+// room is the bytes a fill may still take: the limit less what the fills in progress hold, or the largest int64 without a
+// limit.
+func (b *spoolBudget) room() int64 {
+	if b == nil || b.limit <= 0 {
+		return math.MaxInt64
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return max(b.limit-b.held, 0)
+}
+
+// SpoolRoom is the bytes the spool of fills can take at this moment: bastion.cache.spool_max_bytes less what the fills in
+// progress hold (Q-BAS-131). The engine offers to take a handover of at most the smaller of it and max_object_bytes
+// (R-BAS-072, Q-BAS-233).
+func (c *Cache) SpoolRoom() int64 { return c.spool.room() }
 
 // Held is the bytes the fills in progress hold now.
 func (b *spoolBudget) Held() int64 {

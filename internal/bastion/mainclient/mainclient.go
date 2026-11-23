@@ -170,6 +170,15 @@ type Forward struct {
 	Probe bool
 	// Body is the body of a forwarded read route that takes one, at most bastion.main.max_forwarded_body.
 	Body io.Reader
+	// Offer is the Bastion's offer to take a handover (R-BAS-072); a MaxSize below 1 offers nothing. It is set after the
+	// caller's headers were copied, so a caller's own Quader-Bastion-Handover never reaches the main installation, and only
+	// a forward that offered accepts an answer of the class handover (R-BAS-073).
+	Offer iface.HandoverOffer
+	// RangeFrom and IfRange are the Bastion's own continuation of a fill whose direct read broke off (R-BAS-075): Range
+	// "bytes=<RangeFrom>-" when RangeFrom is above 0, and If-Range with the fill's validator. The caller's own Range and
+	// If-* headers are never forwarded.
+	RangeFrom int64
+	IfRange   string
 }
 
 // Response is the main installation's answer to a [Forward]. The body streams; the caller closes it, which
@@ -186,6 +195,12 @@ type Response struct {
 	// Route is the value of Quader-Bastion-Route, read before the marking headers are removed: the answer of a
 	// probe to a read route that takes a body is a 204 with iface.RouteReadWithBody (R-BAS-014).
 	Route string
+	// Handover is the value of an answer of the class handover to a forward that offered (R-BAS-073), read before the
+	// marking headers were removed; nil for every other answer. HandoverErr is set in its place when such an answer carries
+	// no value, a value the interface refuses, or another status than 200: the engine replaces it by the forward without the
+	// offer (R-BAS-075). The engine owns Handover's data key and destroys it at every end.
+	Handover    *iface.Handover
+	HandoverErr error
 }
 
 // Client is the Bastion's view of the main installation. Every method takes the budget slot its kind needs

@@ -36,6 +36,7 @@ import (
 	"github.com/guided-traffic/quader/internal/bastion/cache"
 	"github.com/guided-traffic/quader/internal/bastion/downloads"
 	"github.com/guided-traffic/quader/internal/bastion/engine"
+	"github.com/guided-traffic/quader/internal/bastion/handover"
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastion/link"
 	"github.com/guided-traffic/quader/internal/bastion/mainclient"
@@ -243,9 +244,19 @@ func (s *Server) buildDeps() (engine.Deps, error) {
 	if err != nil {
 		return engine.Deps{}, fmt.Errorf("bastion.main: %w", err)
 	}
+	// The link client of a handover: a client of its own with the trust and the timeouts of the connection to the main
+	// installation, which refuses every host of the Bastion and of the main installation (R-BAS-074, Q-BAS-237).
+	links, err := handover.New(handover.Options{
+		Release: buildinfo.Get().Version, CAFile: b.Main.CAFile, ConnectTimeout: b.Main.ConnectTimeout,
+		ResponseHeaderTimeout: b.Main.ResponseHeaderTimeout,
+		RefusedHosts:          []string{s.cfg.Server.BaseURL, b.Main.URL, b.Main.PackagesURL},
+	})
+	if err != nil {
+		return engine.Deps{}, fmt.Errorf("bastion.main: %w", err)
+	}
 	d := engine.Deps{
 		Config: s.cfg, Log: s.log.With("component", "engine"), Metrics: s.bm, Replica: s.instance, Release: buildinfo.Get().Version,
-		Main: client, Cache: c, Shared: st, Guard: g,
+		Main: client, Cache: c, Shared: st, Guard: g, Handover: links,
 	}
 	if s.o.Deps != nil {
 		s.o.Deps(&d)

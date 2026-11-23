@@ -1,6 +1,6 @@
 # The handover per blob to a Bastion
 
-Status: specified on 2026-11-22; the wire and the main installation's side for plain copies built on 2026-11-23
+Status: specified on 2026-11-22; the wire, the main installation's side for plain copies and the Bastion's side built on 2026-11-23
 ([bastion.md](../spec/bastion.md#the-handover-per-blob) R-BAS-070 to R-BAS-079;
 [storage.md](../spec/storage.md) R-STOR-095, R-STOR-096;
 [ADR-250](../decisions.md#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward)).
@@ -8,9 +8,14 @@ The wire (interface version 6, [handover.go](../../internal/bastion/iface/handov
 renders `[REDACTED]` in every form, and the redaction of `Quader-Bastion-Handover` in logs, spans and support bundles. The main installation
 answers a recognized forward that offered with a link of a **plain** copy while the registration's switch is on and every condition of
 R-STOR-095 holds ([downloadlinks/handover.go](../../internal/downloadlinks/handover.go)); it hands out no data key: an encrypted copy is never
-named, and `blob.Store.CopyDataKey` still has no caller (package 4). No Bastion offers yet (package 3), and its client refuses a handover
-answer, so no link leaves today. The gaps of a data key (H-1340, H-1341) stay dormant until package 4; the others are dormant until a
-Bastion offers and an administrator switches the handover on for its registration.
+named, and `blob.Store.CopyDataKey` still has no caller (package 4). The Bastion's side: the offer, the link client of
+[internal/bastion/handover](../../internal/bastion/handover) with the refusals and checks below, the key's destruction at every end of a read,
+the fallback, the continuation, the cooldown and the alert; a Bastion offers only while its handshake says the registration's handover is on,
+and its client of the main installation refuses a handover answer to a forward that did not offer. So a link of a plain copy leaves the main
+installation only after an administrator has switched the handover on for a Bastion's registration; the switch is off for every registration
+until then. The gaps of a data key (H-1340, H-1341) stay dormant until package 4; the others are dormant until an administrator switches the
+handover on for a registration. The two sides were built apart, each against a double of the other; the integration case that joins them is
+not built yet.
 
 The perspective of this page is what changes in the trust between the main installation, a Bastion in the DMZ and the object store when a
 Bastion reads a blob from the store by a link the main installation hands it: what leaves the main installation and how long it is worth

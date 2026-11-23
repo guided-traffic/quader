@@ -44,6 +44,18 @@ func TestBastionImportAllowlist(t *testing.T) {
 		wantEdge(t, vs, "R-BAS-001", "internal/bastion/engine", "internal/blob/s3")
 		wantEdge(t, vs, "R-BAS-001", "internal/bastion/guard", "internal/blob/s3")
 	})
+	t.Run("R-BAS-074 the stored format is allowed for the cache and the link client of a handover only", func(t *testing.T) {
+		wantClean(t, CheckBastionImports(mod, []Package{
+			pkg("internal/bastion/cache", "internal/blob/blobcrypt"),
+			pkg("internal/bastion/handover", "internal/blob/blobcrypt"),
+		}))
+		vs := CheckBastionImports(mod, []Package{
+			pkg("internal/bastion/engine", "internal/blob/blobcrypt"),
+			pkg("internal/bastion/mainclient", "internal/blob/blobcrypt"),
+		})
+		wantEdge(t, vs, "R-BAS-001", "internal/bastion/engine", "internal/blob/blobcrypt")
+		wantEdge(t, vs, "R-BAS-001", "internal/bastion/mainclient", "internal/blob/blobcrypt")
+	})
 	t.Run("R-BAS-001 a platform package that pulls a subsystem in names the chain from the Bastion's package", func(t *testing.T) {
 		vs := CheckBastionImports(mod, []Package{
 			pkg("internal/bastion/server", "internal/httpserver"),

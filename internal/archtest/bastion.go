@@ -23,8 +23,10 @@ const bastionRoot = "internal/bastion"
 //   - internal/blob/s3: the S3 client for the bucket backend of the cache (R-BAS-030), for internal/bastion/cache
 //     and below (scoped);
 //   - internal/blob/blobcrypt: the stored format of encrypted content, which seals the cache once its chart gives it
-//     a key (R-BAS-061), for internal/bastion/cache and below (scoped). It is a leaf of the standard library (its own
-//     test holds that), so it brings nothing of the main installation into the role.
+//     a key (R-BAS-061), for internal/bastion/cache and below, and which opens an encrypted copy the main installation
+//     handed over with its data key (R-BAS-074, Q-BAS-234), for internal/bastion/handover and below (scoped). It is a
+//     leaf of the standard library (its own test holds that), so it brings nothing of the main installation into the
+//     role.
 //
 // The match is the exact package, so a package that did not exist when the rule was written is refused by
 // default. A new entry names the requirement that justifies it.
@@ -45,7 +47,7 @@ func bastionScoped() map[string][]string {
 	return map[string][]string{
 		"internal/cluster":        {"internal/bastion/shared"},
 		"internal/blob/s3":        {"internal/bastion/cache"},
-		"internal/blob/blobcrypt": {"internal/bastion/cache"},
+		"internal/blob/blobcrypt": {"internal/bastion/cache", "internal/bastion/handover"},
 	}
 }
 

@@ -172,13 +172,14 @@ internal/bastion/
 ├── metrics/          every metric of R-BAS-040, defined once; a leaf
 ├── mainclient/       the client of the main installation: HTTPClient, SlotBudget, Reloader, TokenSource, errors; token file and holder
 ├── link/             the replica's standing connection: handshake, feed poll, reachable or not, mismatch, token lifetime; Guard wraps the client
+├── handover/         the link client of a handover per blob and the readers of a plain and an encrypted copy (R-BAS-074); imports blobcrypt
 ├── cache/            Backend, Entry, the HMAC Signer; the volume and bucket backends, Cache, Fill, the sweep, Fault (a test's switch)
 ├── shared/           the shared state (limiters, block list, timeouts, flight lock, sweep lease, answer records): the local form and the Valkey form
 ├── guard/            Guard (R-BAS-035 to R-BAS-037): Instance, the verdicts, and the address key (an IPv6 address counts as its /64)
 ├── downloads/        Buffer of download events and its Reporter (R-BAS-039)
 ├── engine/           Deps, Engine: the request flow of R-BAS-018 to R-BAS-029
 ├── server/           the process of the role: telemetry, token, TLS, listeners, health, the wiring of every component, drain
-├── maintest/         an in-process main installation (httptest TLS) and doubles for the tests of the Bastion; a test helper
+├── maintest/         an in-process main installation (httptest TLS), an object store for the handover, doubles for the tests of the Bastion; a test helper
 └── roletest/         the end-to-end scenario of the whole role in one process (R-BAS-048); a test helper
 internal/bastionmain/ the main installation's seams (a domain package)
 ```
@@ -230,7 +231,9 @@ internal/bastionmain/ the main installation's seams (a domain package)
 | [engine/answerstore.go](../../internal/bastion/engine/answerstore.go) | answers in memory and in the shared store (a copy in memory that fails a rule is dropped and the shared record is read, Q-BAS-153), negative entries, private copies, the `AnswerSink` the link calls |
 | [engine/readflow.go](../../internal/bastion/engine/readflow.go) | the decision between hit, check and miss, the check, the collapsing of misses |
 | [engine/forward.go](../../internal/bastion/engine/forward.go) | the forwarded request, the handling of a marked response by its class, documents and refusals |
-| [engine/fill.go](../../internal/bastion/engine/fill.go) | `fillRun`, the artifact fill that reads the main installation's body into `cache.Fill` without the client, and `follow`, which serves the client from the spool with the withheld tail |
+| [engine/fill.go](../../internal/bastion/engine/fill.go) | `fillRun`, the artifact fill that reads its source (the main installation's body, or a handover's direct read) into `cache.Fill` without the client, `newFillRun` and `runFill`, which both sources share, and `follow`, which serves the client from the spool with the withheld tail |
+| [engine/handover.go](../../internal/bastion/engine/handover.go) | the handover per blob at the Bastion: `offerFor`, `onHandover`, `checkHandover`, `fallback`, the continuation (`continuation`, `continues`, `turnToMain`), `directFill` and its one outcome, the mark and the cooldown |
+| [handover/client.go](../../internal/bastion/handover/client.go), [handover/read.go](../../internal/bastion/handover/read.go) | the link client of R-BAS-074 (`Client`, `Open`, `Error` with its `Cause`, `ErrDigest`) and the readers of a plain and of an encrypted body (`Read`) |
 | [engine/serve.go](../../internal/bastion/engine/serve.go) | serving a representation with RFC 9110 semantics, the stream with the withheld tail, the download event |
 | [engine/entries.go](../../internal/bastion/engine/entries.go) | the cache key and Vary, the entry through `cache.Cache`, freshness |
 | [engine/probe.go](../../internal/bastion/engine/probe.go) | the write probe and the real request of a read route that takes a body |
@@ -240,7 +243,7 @@ internal/bastionmain/ the main installation's seams (a domain package)
 | [engine/quiet.go](../../internal/bastion/engine/quiet.go) | `WithQuietSlot`, `Quiet`: how a quiet verdict reaches the server's request log |
 | [engine/lru.go](../../internal/bastion/engine/lru.go), [engine/flight.go](../../internal/bastion/engine/flight.go) | the bounded LRU, the single-flight and the `handle` of a flight that a fill takes over |
 | [server/server.go](../../internal/bastion/server/server.go) | `Run`, `New`, `Start`, `Shutdown`; `buildDeps` and `wireLink` build and connect the components, `runLink` runs their loops |
-| [maintest/maintest.go](../../internal/bastion/maintest/maintest.go) | `Main`, the in-process main installation; `Faulty`, `MemSpool` |
+| [maintest/maintest.go](../../internal/bastion/maintest/maintest.go), [maintest/store.go](../../internal/bastion/maintest/store.go) | `Main`, the in-process main installation; `Faulty`, `MemSpool`; `Store`, the TLS object store of the handover's tests |
 | [roletest/roletest.go](../../internal/bastion/roletest/roletest.go) | `Run`: the scenario of the whole role for one cache backend |
 | [bastionmain/recognition.go](../../internal/bastionmain/recognition.go) | `Recognition`, `WithRecognition`, `RecognitionFrom` |
 | [bastionmain/auth.go](../../internal/bastionmain/auth.go) | `TokenAuthenticator`, `BastionToken`, `ErrTokenInvalid` |
@@ -426,6 +429,7 @@ backend's first `Check`; it never depends on the main installation (Q-BAS-44).
 | `Main` | the `mainclient.Client`, wrapped by `Link.Guard` | `Handshake` and `Feed` are the link's; the engine calls `Check`, `Do` and nothing else. Every call but those two takes a budget slot inside the client |
 | `Link` | the `*link.Link` | reads the state (below), `Feed()` for the log, sets the sink once |
 | `Downloads` | the `downloads.Buffer` | `Add` for every artifact served from the cache (a hit, or a check answered `304`); `SetEnabled` is the server's |
+| `Handover` | the `*handover.Client`, the link client of the handover per blob, built by the server with `bastion.main.ca_file`, the two timeouts and the hosts it refuses | `Open` for an answer of the class `handover` ([below](#the-handover-per-blob-at-the-bastion)); nil offers no handover |
 
 **The client's contract.**
 
@@ -433,7 +437,11 @@ backend's first `Check`; it never depends on the main installation (Q-BAS-44).
   headers), removes `Cookie`, `Forwarded`, `X-Forwarded-*`, `Quader-*`, `Range`, `If-*`, trace headers and the hop-by-hop headers,
   and adds the interface headers, the Bastion token in `Quader-Bastion-Authorization` and exactly one client address from
   `Forward.ClientAddress` in both families. `IfNoneMatch` is the Bastion's own condition. `Probe` sends the method without a body
-  and without the caller's credential. A redirect is returned, not followed.
+  and without the caller's credential. A redirect is returned, not followed. `Offer` is the engine's offer to take a handover
+  (R-BAS-072) and `RangeFrom` with `IfRange` its continuation of a fill (R-BAS-075), all three set after the copy of the caller's headers.
+- An answer of the class `handover` is taken only from a forward that offered: `Response.Handover` holds its value (read before the strip),
+  or `Response.HandoverErr` says why it holds none the engine may use; to a forward that did not offer, or as a value on another class, it is
+  `ErrBadAnswer` (`takeHandover`, R-BAS-073).
 - The `Response` has its `Quader-Bastion-*` headers removed and parsed into `Marking` (`Marked` false for an unmarked answer). `Response.Route` is the value of `Quader-Bastion-Route`, read before the strip (the engine's probe decides on it, [Q-BAS-108](../spec/bastion.md#q-bas-108--the-route-of-a-probe-answer-is-read-before-the-marking-is-stripped)). The
   slot of the budget is held until the body ends or `Close` is called, so **the engine closes every body on every path**
   (`TestR_BAS_025_EveryPathClosesTheResponseBodyAndSoReleasesItsSlot` serves every kind of answer over a budget of one slot and counts the slots after each).
@@ -449,8 +457,9 @@ backend's first `Check`; it never depends on the main installation (Q-BAS-44).
 **The link's contract.**
 
 - `Link.State()` returns a snapshot: `Reachable`, `UnreachableSince` (zero while reachable), `Handshaken`, `AnonymousAccess`,
-  `RecordDownloads`, `HistoryStart`, the registration, token ID and expiry, the main installation's base URL and release, and the
-  two mismatch flags. `Link.Reachable()` is the shortcut.
+  `RecordDownloads`, `HistoryStart`, the registration, token ID and expiry, the main installation's base URL and release, the
+  two mismatch flags and `Handover`, the handshake's member (R-BAS-071; the link also sets `quader_bastion_handover_enabled`).
+  `Link.Reachable()` is the shortcut.
 - `Link.AnswerState(now)` returns the `answers.State` of R-BAS-020: period, grace period, `Unreachable`, `HistoryStart`, the log.
   The engine judges every answer with it and decides nothing about validity itself.
 - `Link.Watch(f)` calls `f` after each change of the state, on the link's goroutine; it must not block. The server uses it to follow `recordDownloads`.
@@ -486,7 +495,12 @@ tokens (`NewToken`, `NewTokenExpiring`, `Revoke`), adds feed entries (`AddEntry`
 `Mark(w, iface.Marking{…, Package, PackageRead})`, and the check refuses the pairs the main installation refuses
 (`CheckRequest.PackagesProblem` with `CheckMaxRepositories`, 16, answered `422`) before the check function sees them. `Faulty` wraps the client's transport through
 `mainclient.Options.WrapTransport` to cut the link without the fake. `MemSpool` is the audit spool of a test; `Value(metric)` reads a
-counter or gauge. [roletest](../../internal/bastion/roletest/roletest.go) builds the whole-role scenario on it.
+counter or gauge. [roletest](../../internal/bastion/roletest/roletest.go) builds the whole-role scenario on it. `SetHandover` is the
+registration's switch of the handover, `HandOver(w, r, marking, handover)` answers a forward that offered with a handover, and `Store`
+([store.go](../../internal/bastion/maintest/store.go)) is the TLS object store the links of a test point at: `Put`, `Link`, `CAFile` and
+`PEM`, the knobs `SetStatus`, `SetLength`, `Redirect`, `CutAfter`, `HoldAfter`, and `Requests`. It knows no stored format: a test seals an
+encrypted object with `blobcrypt.NewSection` and puts its bytes, because `maintest` is a package of the Bastion's tree and may not import the
+stored format.
 
 ## The engine (package 4b)
 
@@ -569,6 +583,34 @@ runs in the engine: the link, the token reload, the download buffer and the cach
 repository, the token ID, the refusal reason, the limiter) and the attributes `quader.bastion.class`, `quader.bastion.result` and
 `quader.bastion.refusal` on the span the server's chain started; the forwarded request carries the request's context, which `mainclient` propagates. A
 refusal whose `guard.Verdict` is `Quiet` marks the request through `engine.WithQuietSlot` (below).
+
+## The handover per blob at the Bastion
+
+Package 3 of [the handover's build plan](bastion-handover.md) (R-BAS-072 to R-BAS-077, built on 2026-11-23). The main installation may answer a
+forward with a link of its object store instead of the bytes; the Bastion then reads the blob from the store itself. Everything after the
+source of the bytes is the fill of [fill.go](../../internal/bastion/engine/fill.go): the spool, the withheld tail, the followers, the commit's
+SHA-256, the entry with the marking's package and counting.
+
+| Step | Where | What it does |
+|---|---|---|
+| Offer | `offerFor`, called by `send` in [forward.go](../../internal/bastion/engine/forward.go) | `Quader-Bastion-Handover: accept; max-size=<n>` on a `GET` forwarded on a miss or as the Bastion's own conditional request, while `link.State().Handover`, not cooling down and the key not marked; `n = min(max_object_bytes, Cache.SpoolRoom())`. Never on a `HEAD`, a probe, a core route of `/v2/`, a follower's conditional request (`bl.run`), a continuation, or the forward that replaces a failed handover (`rq.noOffer`) |
+| Answer | `process` → `onHandover` | the class `handover` is never passed on: its empty body is closed at once (the budget slot is free), the value checked (`checkHandover`: `iface.Handover.Check` with the engine's clock, the offer, the `ETag`, `refusedHosts`, and a `Vary` the Bastion can key on), the fill prepared and the spool's room checked |
+| Direct read | `handover.Client.Open` with the hold's detached context, then `runFill` | the link client's one `GET`, checked up to the first 64 KiB of verified plaintext (Q-BAS-291); the fill reads the rest at the store's speed, `quader_bastion_fill_bytes_total{source="store"}` |
+| Before the first byte | `fallback` | the forward without the offer through `send` (no second miss of the guard, Q-BAS-292); the cooldown (`handoverCooldown`, 60 s) only for a failure of the network or the store (`handover.Error.Cooldown`) |
+| After the first byte | `fillRun.run` → `turnToMain` | a digest that differs (`handover.ErrDigest`) fails the fill and marks the key (`markNoOffer`, for `artifact_revalidate_after`); any other break closes the read and continues the spool with `mainclient.Forward{RangeFrom, IfRange}`; `continues` accepts only the `206` of the rest with the fill's `ETag`. The stall bound ends the direct read first (`fillRun.stall`), the request to the main installation after the turn |
+| Outcome | `directFill.finish`, `fillRun.committed` | one count of `quader_bastion_handovers_total` per handover by the path it took, and the request log's `bastion_handover` (`read`, `fallback`, `continued`, `refused`, or `reading` for a caller that left while the read ran), Q-BAS-290 |
+
+**The data key.** `Open` destroys the handed `HandoverKey` before it returns and holds the format's key in the read; `Read.Close`, which the
+fill calls at every end of the read, destroys it. `onHandover` destroys the handed key on every path that does not reach `Open`. A caller who
+leaves does not end the read: the fill outlives its caller, and its key lives until the fill ends. No log record, error text, metric or cache
+entry holds the key or the link: the errors of `iface` and `handover` name neither, the link client has no upstream log and no tracer, and the
+cache keeps the plaintext (sealed under its own key where it has one).
+
+**Tests.** `internal/bastion/handover` against `maintest.Store` (the link client's headers and refusals, the two readers, the trust re-read, the
+key at every end); `internal/bastion/engine` `handover_test.go` over the site double, whose main installation hands over the paths a test names
+(`hoRig`); the mainclient's `TestR_BAS_073_TheClientTakesAHandoverOnlyWhenTheForwardOffered`; the promtool cases of
+`QuaderBastionHandoverFailing`; the Bastion's half of the integration case in
+[handover_bastion_test.go](../../test/integration/bastion/handover_bastion_test.go).
 
 ## The engine's side of every format
 

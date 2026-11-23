@@ -24,6 +24,7 @@ import (
 	"github.com/guided-traffic/quader/internal/bastion/cache"
 	"github.com/guided-traffic/quader/internal/bastion/downloads"
 	"github.com/guided-traffic/quader/internal/bastion/guard"
+	"github.com/guided-traffic/quader/internal/bastion/handover"
 	"github.com/guided-traffic/quader/internal/bastion/link"
 	"github.com/guided-traffic/quader/internal/bastion/mainclient"
 	"github.com/guided-traffic/quader/internal/bastion/metrics"
@@ -68,6 +69,9 @@ type Deps struct {
 	// Downloads is the download event buffer (internal/bastion/downloads); the server runs and drains it and
 	// follows recordDownloads of the handshake.
 	Downloads downloads.Buffer
+	// Handover is the link client of the handover per blob (internal/bastion/handover, R-BAS-074); nil offers no
+	// handover. The server builds it with the trust and the timeouts of the connection to the main installation.
+	Handover *handover.Client
 }
 
 // Engine is the Bastion's request flow.
@@ -138,6 +142,14 @@ type engine struct {
 	docMemory   int64
 	fillWaitMax time.Duration
 
+	// The handover per blob (R-BAS-072 to R-BAS-075): the hosts a link must not name, the cooldown and its end, and the
+	// cache keys whose handed bytes failed their digest. handoverCooldown is a field a test shortens (Q-BAS-236).
+	refusedHosts     []string
+	handoverCooldown time.Duration
+	coolMu           sync.Mutex
+	coolUntil        time.Time
+	noOffer          *lruCache[time.Time]
+
 	mu       sync.Mutex
 	cancel   context.CancelFunc
 	wg       sync.WaitGroup
@@ -182,7 +194,9 @@ func newFlow(d Deps) (*engine, error) {
 		checks:    newGroup(), probeFlights: newGroup(), fetches: newGroup(),
 		collapseWait: collapseWaitMax, fillStall: fillStallMax, paceGrace: paceGraceMax, paceMinRate: paceMinRate, paceChunk: paceChunkMax,
 		docMemory: maxDocumentBytes, fillWaitMax: d.Config.Bastion.Cache.FillWaitMax,
+		handoverCooldown: handoverCooldownMax, noOffer: newLRU[time.Time](volatileEntries, 0, nil),
 	}
+	e.refusedHosts = mainHosts(e.baseHost, d.Config.Bastion.Main.URL, d.Config.Bastion.Main.PackagesURL)
 	if e.fillWaitMax <= 0 {
 		e.fillWaitMax = remoteWaitMax
 	}
