@@ -292,7 +292,10 @@ test.describe('a table\'s row (R-UI-176)', () => {
     expect(ok, describe(ok)).toEqual([]);
   });
 
-  test("Q-UI-763 a stacked row: a value under its column's name is found", async ({ page }) => {
+  test("Q-UI-763 a stacked row: a value under its column's name is found", async ({ page, browserName }) => {
+    // G5-53: Firefox lays a value out beside its name where Chromium and WebKit put it under; the check finds none there. Recorded as
+    // a difference of the engines that the screens' renders, which run in Chromium only, do not meet; the test fails loud if it ends.
+    test.fail(browserName === 'firefox', 'label-apart finds no value under its name in Firefox (G5-53)');
     const meter = '<div style="display:flex;flex-direction:column"><span><span style="display:inline-block;inline-size:64px;block-size:6px;background:#888"></span> 22%</span><span class="badge">Close to the limit</span></div>';
     const apart = await check(page, ...facts('baseline', meter));
     expect(only(apart, 'label-apart'), describe(apart)).toHaveLength(1);
@@ -591,7 +594,8 @@ test.describe("the shared patterns with the app's stylesheet (R-UI-176)", () => 
     expect(found, describe(found)).toEqual([]);
   });
 
-  test("Q-UI-762 the guard can fail: the stacked row's facts centred, and the meter as a box after its name", async ({ page }) => {
+  test("Q-UI-762 the guard can fail: the stacked row's facts centred, and the meter as a box after its name", async ({ page, browserName }) => {
+    test.fail(browserName === 'firefox', 'label-apart finds no value under its name in Firefox (G5-53)');
     const before = `.quader-data-table.stacked table.data tbody tr { align-items: center; }
       .quader-data-table.stacked table.data td.meter-cell:not([data-empty]) { display: block; flex-basis: auto; }`;
     const found = await check(page, stackedFacts, before, true);

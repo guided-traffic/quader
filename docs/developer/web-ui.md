@@ -60,7 +60,7 @@ Run in `web/` after `nvm use` (or any Node matching `.nvmrc`).
 | `npm run extract-i18n` | Rewrites `src/locale/messages.xlf`; then add the `<target>` units to `messages.de.xlf` |
 | `npm run generate:api` | `openapi-typescript ../api/openapi.yaml` into `src/app/api/generated/schema.d.ts`, committed. Rerun it whenever `api/openapi.yaml` changes |
 | `npm run build` | Localized production build into `web/dist/web/browser/<locale>/` |
-| `npx playwright install --with-deps chromium` | The browser build of the locked Playwright version, outside the repository (needed for the journeys, not for `npm test`) |
+| `npx playwright install --with-deps chromium firefox webkit` | The browser builds of the locked Playwright version, outside the repository (Chromium for the journeys and the renders, all three for `make ui-layout-test`; not needed for `npm test`) |
 | `npm run build:embed` | `build`, the compressed-size budget check, the check of the hashed names ([hashed.mjs](../../web/scripts/hashed.mjs)), then copy each locale to `internal/webui/dist/<locale>/` with its `3rdpartylicenses.txt` (Q-UI-144). `QUADER_UI_BUNDLE_MARK=1` builds the second bundle of the upgrade test (`--extract-licenses=false`: the same code under other hashed names, Q-HA-124) |
 
 `make web` runs `make web-ci` (`npm ci`) and `make web-embed` (`npm run build:embed`); lint and the unit tests are
@@ -348,7 +348,10 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    The checks are tested on fixture pages of their own (`make ui-layout-test`,
    [layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts), [playwright.layout.config.ts](../../web/e2e/playwright.layout.config.ts),
    [Q-UI-723](../spec/api-and-ui.md#q-ui-723--the-checks-are-tested-on-fixture-pages-in-the-playwright-chromium-not-in-the-angular-test-runner)):
-   Chromium sets a page's content with the app's fonts and runs `layoutFindings`; the owner's row of 2026-11-19 must fail with the
+   Chromium, Firefox and WebKit each set a page's content with the app's fonts and run `layoutFindings` (the screens themselves are
+   rendered in Chromium only; [Q-UI-1008](../spec/api-and-ui.md#q-ui-1008--the-layout-checks-fixtures-run-in-chromium-firefox-and-webkit-the-screens-in-chromium),
+   G5-53: two fixtures of `label-apart` fail in Firefox, which lays a value beside its name where the others put it under it, and are
+   marked so: they fail the run when Firefox starts to find them); the owner's row of 2026-11-19 must fail with the
    8 px he saw, each exception must pass, an offset of 1.5 px must fail and one of 0.5 px must not, and the shared patterns of the
    style guide, built from the global classes and rendered with `web/src/styles` compiled, must have no finding (the guard of the
    line rule without a stack, [Q-UI-725](../spec/api-and-ui.md#q-ui-725--the-guard-without-a-stack-renders-the-shared-patterns-with-the-global-stylesheet-and-a-lint-rule-refuses-the-off-line-declarations)).
