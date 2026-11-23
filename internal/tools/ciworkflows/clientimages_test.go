@@ -208,6 +208,85 @@ func TestClientImagesTheKeyChangesWithTheInputsOnly(t *testing.T) {
 	differs("a new file of the build context", key(t, root))
 }
 
+// The key does not depend on the commit or on where the checkout lies (Q-ARCH-595). Four pushes in a row of 2026-11-23 missed the
+// cache, and the legs of one nightly missed each other's entries: go build stamped the commit, its time and the main module's
+// pseudo-version into the forwarder, whose hash is an input of the key. Here the script runs with the real go, not the stub, in a
+// git repository of its own holding the real forwarder: the key is the same after a commit that changes nothing of the images,
+// and in a copy of the tree at another path. A key input that follows the commit fails this test.
+func TestClientImagesTheKeyDoesNotDependOnTheCommit(t *testing.T) {
+	t.Parallel()
+	goBin, err := exec.LookPath("go")
+	if err != nil {
+		t.Skip("go is not on PATH")
+	}
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not on PATH")
+	}
+	goEnv := func(name string) string {
+		out, err := exec.Command(goBin, "env", name).Output()
+		if err != nil {
+			t.Fatalf("go env %s: %v", name, err)
+		}
+		return strings.TrimSpace(string(out))
+	}
+	// The real go with the developer's caches, so the build costs seconds; the stub directory then holds only docker.
+	env := []string{
+		"GOCACHE=" + goEnv("GOCACHE"), "GOMODCACHE=" + goEnv("GOMODCACHE"), "GOPATH=" + goEnv("GOPATH"),
+		"GOTOOLCHAIN=local", "GOFLAGS=", "GOPROXY=off",
+	}
+	realKey := func(root string) string {
+		t.Helper()
+		stubDir := t.TempDir()
+		if err := os.WriteFile(filepath.Join(stubDir, "docker"), []byte(clientImageStubs["docker"]), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		state := t.TempDir()
+		cmd := exec.Command("bash", filepath.Join(root, ".github", "scripts", "client-images.sh"), "key", "npm")
+		cmd.Env = append([]string{
+			"PATH=" + stubDir + string(os.PathListSeparator) + filepath.Dir(goBin) + string(os.PathListSeparator) + os.Getenv("PATH"),
+			"HOME=" + state, "TMPDIR=" + state, "STUB_LOG=" + filepath.Join(state, "calls.log"),
+		}, env...)
+		var stderr strings.Builder
+		cmd.Stderr = &stderr
+		out, err := cmd.Output()
+		if err != nil {
+			t.Fatalf("key in %s: %v\n%s", root, err, stderr.String())
+		}
+		return strings.TrimSpace(string(out))
+	}
+
+	root := clientTree(t)
+	goMod := readRepoFile(t, "go.mod")
+	goLine := ""
+	for _, l := range strings.Split(goMod, "\n") {
+		if strings.HasPrefix(l, "go ") {
+			goLine = l
+		}
+	}
+	write(t, filepath.Join(root, "go.mod"), "module github.com/guided-traffic/quader\n\n"+goLine+"\n")
+	write(t, filepath.Join(root, "test", "e2e", "clients", "fwd", "main.go"), readRepoFile(t, filepath.Join("test", "e2e", "clients", "fwd", "main.go")))
+	repo := legsRepo{dir: root, home: t.TempDir()}
+	repo.git(t, "init", "-q", "-b", "main")
+	repo.git(t, "add", "-A")
+	repo.git(t, "commit", "-q", "-m", "first")
+	first := realKey(root)
+
+	write(t, filepath.Join(root, "README.md"), "a change outside every input\n")
+	repo.git(t, "add", "-A")
+	repo.git(t, "commit", "-q", "-m", "second")
+	if second := realKey(root); second != first {
+		t.Errorf("a commit that changes no input of the images changed the key: %s, then %s", first, second)
+	}
+
+	moved := filepath.Join(t.TempDir(), "elsewhere")
+	if err := os.CopyFS(moved, os.DirFS(root)); err != nil {
+		t.Fatal(err)
+	}
+	if elsewhere := realKey(moved); elsewhere != first {
+		t.Errorf("the same tree at another path gave another key: %s, then %s", first, elsewhere)
+	}
+}
+
 // A tar from the cache is loaded and nothing is built or saved: the hosts the build installs from are not contacted.
 func TestClientImagesALoadableTarIsLoadedAndNothingIsBuilt(t *testing.T) {
 	t.Parallel()

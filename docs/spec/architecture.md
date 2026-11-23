@@ -11380,6 +11380,37 @@ a comment in its Dockerfile, or delete the entry (`gh cache delete <key>`).
 `TestClientImagesTheKeyChangesWithTheInputsOnly` ([clientimages_test.go](../../internal/tools/ciworkflows/clientimages_test.go)) holds
 which changes move the key.
 
+### Q-ARCH-595 · The forwarder of a clients image's key is built without the VCS stamp
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Amends
+[Q-ARCH-521](#q-arch-521--the-key-of-a-clients-image-the-build-context-the-pins-the-build-reads-the-forwarder-binary-the-script-and-the-architecture).
+
+Context: four pushes to `main` in a row on 2026-11-23 missed the cache of the clients images, and the legs of one nightly missed each
+other's entries. In the logs of `e2e (npm)` of Test and Release 45126854432 and 45133371730 the input line `script` was the same and
+the line `forwarder` was not (`6a654d6f…`, then `9fea72dd…`), and both legs logged `Cache not found` and built the image.
+In a git checkout `go build` stamps the commit (`vcs.revision`), its time, whether the tree is modified and the main module's
+pseudo-version (`v0.107.1-0.20261123094045-<commit>`) into the binary (`go version -m` of the forwarder built as the script built it),
+so the hash of Q-ARCH-521 (a) followed every commit. Built with `-buildvcs=false` the module reads `(devel)` and no `vcs` line is
+left; the binary built at 66ecdd123 in a tree without git and at bd579086f in the worktree, at two paths, had the same SHA-256
+(`a4842e29…`) and the same build id (`go tool buildid`), for linux/amd64 with Go 1.27.4.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The script builds the forwarder for the key with `-buildvcs=false` (chosen) | The hash covers the source, the modules and the toolchain, not the checkout | One flag; the key holds again what Q-ARCH-521 says | The images keep the forwarder `build.sh` builds, stamped with the commit that built the cached entry, which is metadata |
+| (b) Hash the forwarder's source and `go.mod` | No binary for the key | No build | Q-ARCH-521 (c): a change of the toolchain would not rebuild |
+| (c) (a), and `-buildvcs=false` in every set's `build.sh` too | The images' forwarder carries no stamp either | The image's binary equals the hashed one | Changes five format paths, which starts five format legs once and rebuilds every set; nothing reads the stamp |
+
+**Choice:** (a). **Rationale:** it removes the one input that followed the commit and changes nothing in the images.
+`TestClientImagesTheKeyDoesNotDependOnTheCommit` runs the script with the real Go in a repository of its own, commits a change that
+touches no input and copies the tree to another path, and fails when the key moves (it failed without the flag). The key is computed
+from: the set, the architecture, the SHA-256 of `client-images.sh`, the name and value of each pin the set reads, the path and SHA-256 of
+every file of the set's directory (without `node_modules`) and the SHA-256 of the forwarder built for `linux/<arch>` with `-trimpath
+-buildvcs=false` and no cgo. Not verified on GitHub: two pushes in a row hit the entry the first one saved (the step `client-images`
+of a leg logs the restored key).
+
+**Applied in the spec:** none (CI wiring). Code: [client-images.sh](../../.github/scripts/client-images.sh); test
+[clientimages_test.go](../../internal/tools/ciworkflows/clientimages_test.go). Elsewhere: [releasing.md](../developer/releasing.md#the-caches).
+
 **Applied:** [client-images.sh](../../.github/scripts/client-images.sh).
 
 ### Q-ARCH-522 · The kind legs load the Quader image the job `image` of their run built, and need that job

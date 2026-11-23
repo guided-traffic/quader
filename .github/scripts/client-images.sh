@@ -20,7 +20,8 @@
 #   - the pins of tools/versions.env the build reads (name and value);
 #   - the forwarder test/e2e/clients/fwd that every set copies in (all images but Podman's), as the SHA-256 of the binary itself, built
 #     here for linux/<arch>: its source, its dependencies and the Go toolchain all end up in that hash (the build is
-#     reproducible: -trimpath, no cgo);
+#     reproducible: -trimpath, no cgo, and -buildvcs=false, because Go otherwise stamps the commit, its time and the main
+#     module's pseudo-version into the binary, which changed the key with every commit; Q-ARCH-595);
 #   - this script, so that a change of what it writes or loads rebuilds;
 #   - the architecture.
 # What it leaves out on purpose: the base images are named by digest in the pins, so the pins cover them; the apt, pip and
@@ -97,8 +98,9 @@ inputs() {
   done < <(cd "$repo_root" && find "$dir" -type f ! -path '*/node_modules/*' | LC_ALL=C sort)
   local tmp
   tmp="$(mktemp -d)"
-  # The binary build.sh copies into the image, built the same way: its hash covers the source, the modules and the toolchain.
-  (cd "$repo_root" && CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -trimpath -o "$tmp/fwd" ./test/e2e/clients/fwd)
+  # The binary build.sh copies into the image, built as build.sh builds it but without the VCS stamp, which is metadata and not
+  # code: its hash covers the source, the modules and the toolchain, and nothing of the checkout (no path, no commit).
+  (cd "$repo_root" && CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -trimpath -buildvcs=false -o "$tmp/fwd" ./test/e2e/clients/fwd)
   echo "forwarder $(sha < "$tmp/fwd")"
   rm -rf "$tmp"
 }
