@@ -2,7 +2,7 @@
 # R-VULN-029): a stub of osv.dev's bucket (<ecosystem>/all.zip, modified_id.csv, <id>.json, ecosystems.txt) and of
 # the known-exploited catalog behind one Service on port 443, HTTPS only, with a certificate of the dev CA (pki.yaml).
 # It is applied by deploy/dev/e2e.sh when QUADER_E2E_OSVSTUB=1, never by up.sh.
-# The image is built by `make osv-stub-image` and loaded into kind by e2e.sh (tag quader-e2e-osvstub:dev), so the pull
+# The image is built by `make osv-stub-image` and loaded into kind by e2e.sh (tag quader-e2e-osvstub:<DEV_TAG>, deploy/dev/dev-tag.sh), so the pull
 # policy is IfNotPresent.
 #
 # quader reaches it as https://osvstub.${NS}.svc/ (vulnerabilities.sources.osv.base_url) and
@@ -92,7 +92,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: osvstub
-          image: quader-e2e-osvstub:dev
+          image: quader-e2e-osvstub:${DEV_TAG}
           imagePullPolicy: IfNotPresent
           args:
             - -listen=:8443

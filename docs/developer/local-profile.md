@@ -79,13 +79,27 @@ is measured by [the end-to-end suite](e2e.md), which runs them under load.
 | Variable | Default | Effect |
 |---|---|---|
 | `QUADER_SKIP_RELEASE=1` | unset | `up.sh` installs the dependency stack only, not the Quader release. Use it while the image does not serve yet, or to work on the dependencies |
-| `QUADER_IMAGE` | `guidedtraffic/quader:dev` | the image `up.sh` loads into the cluster with `kind load docker-image`; build it with `make image` (its default `IMAGE`) first. `VERSION` defaults to `dev` (or the number of a `v0.*` tag on `HEAD`), the one non-release version the binary accepts ([e2e.md](e2e.md#findings-of-the-suite)) |
+| `QUADER_IMAGE` | `guidedtraffic/quader:<DEV_TAG>`: `dev` in the main checkout, `dev-<worktree>` in a git worktree ([below](#one-image-tag-per-checkout)) | the image `up.sh` loads into the cluster with `kind load docker-image` and the chart runs (`image.registry`, `image.repository`, `image.tag` are set from it; before 2026-11-23 the chart ran the tag `dev` of values-dev.yaml whatever was loaded); build it with `make image` (its default `IMAGE`, the same tag) first. `VERSION` defaults to `dev` (or the number of a `v0.*` tag on `HEAD`), the one non-release version the binary accepts ([e2e.md](e2e.md#findings-of-the-suite)) |
 | `QUADER_DEV_HTTP_PORT` | `8080` | host port of the edge (HTTPS). Set it when 8080 is taken (`up.sh` checks and says so); `config.server.base_url` and `endpoints.customers.baseUrl` follow. Fixed when the cluster is created |
 | `QUADER_PROFILE=scatter`, `bastion`, `edge` or `alerts` | `default` | the e2e profiles, see below. `edge` installs Envoy Gateway and `alerts` a Prometheus; both stay in the cluster after a later run with another profile |
 | `QUADER_PITR=1` | unset | also installs the Barman Cloud plugin of CloudNativePG (`DEV_BARMAN_PLUGIN_*` in [versions.env](../../tools/versions.env)) and the `ObjectStore` [pitr.yaml](../../deploy/dev/pitr.yaml), and adds the plugin to the Cluster `quader-db`: WAL archive and base backups to the bucket `quader-pg-archive` over TLS (R-HA-023, Q-HA-210). Sticky for a cluster that exists; the PostgreSQL pods roll once. Run by the set `backup-pitr` ([e2e.md](e2e.md#the-point-in-time-restore-drill)) |
 | `QUADER_POOLER=1` | unset | also installs the two transaction-mode poolers ([pooler.yaml](../../deploy/dev/pooler.yaml)) and layers [values-pooler.yaml](../../deploy/dev/values-pooler.yaml). The profile carries what the drain of a pooler instance needs (R-HA-059 rule 5, Q-HA-173): two instances per pooler spread over the nodes, a PodDisruptionBudget each, a `preStop` sleep of 90 s and a grace period of 120 s (CloudNativePG's pooler manager turns `SIGTERM` into `SIGINT` and exits within a second, so the sleep, with the pod out of its Service, is what lets Quader's connections move), `server_login_retry: "1"` on both poolers (a PostgreSQL switchover fails PgBouncer's server login twice, and the default of 15 s per failure took every replica out of its Service, Q-HA-302) and `server_connect_timeout: "5"` (a connect without an answer held a pool for the default 15 s, Q-HA-371), a pooled connection lifetime of 60 s + 15 s and `pool.health_check_period: 5s` (the last connection is gone from a draining instance after 80 s), `server_connections: 48` (2 x 20 + 2 x 4), and the pooler Services in the cluster's `certificates.serverAltDNSNames` ([postgres.yaml](../../deploy/dev/postgres.yaml)). `up.sh` sets the role defaults that preflight reads on a pooled connection (`ALTER ROLE quader IN DATABASE quader SET statement_timeout = '30s'`, `lock_timeout = '5s'`, `idle_in_transaction_session_timeout = '60s'`, `search_path = quader`). Run by the set `vuln-pooler` (about 6 minutes) |
 | `QUADER_HELM_EXTRA` | unset | extra arguments for the `helm upgrade` of the Quader release |
 | `QUADER_DEV_CLUSTER`, `QUADER_DEV_NAMESPACE` | `quader`, `quader` | cluster and namespace names. The certificates name the namespace (`quader.<namespace>.svc`, ...), and the Valkey names in values-dev.yaml are written for `quader`, so change both only with a fresh cluster and matching values |
+
+### One image tag per checkout
+
+Every image a checkout builds for the profiles and every image they run carries the checkout's tag, `DEV_TAG` of
+[dev-tag.sh](../../deploy/dev/dev-tag.sh): `dev` in a repository's main checkout (and on every runner), `dev-<directory>` in a git
+worktree (`dev-agent-ad1e31c7c074a10f7`), or `QUADER_DEV_TAG` when it is set ([Q-HA-489](../spec/ha-and-helm.md#q-ha-489--every-image-of-the-development-profiles-carries-the-checkouts-tag-and-the-charts-run-the-image-they-were-given)).
+It names the Quader image (`make image`, `make image-marked` with `-marked`, `up.sh`, `bastion.sh`, `restore-ns.sh`,
+`release-values.sh`), the e2e driver and every test upstream (`make *-stub-image`, `e2e.sh`, the stubs' manifests through
+`render`), every clients image (`test/e2e/*/build.sh`, `make *-clients-image`, `e2e.sh`, `client-images.sh`) and the analyser's and
+ClamAV's images of the `vuln` profile. The images live in the one Docker daemon of the machine, and before the tag a builder's
+worktree and the main checkout that built at the same time tagged over each other, and each profile ran whichever was tagged last
+(F-059). The main checkout keeps `dev`, so the pipeline's names and the owner's are unchanged. What the tag does not separate: the
+kind cluster (`QUADER_DEV_CLUSTER`, default `quader`) and its edge port; two checkouts that run a profile at once still give each a
+cluster name and a port of its own.
 
 ### The `scatter` profile
 
@@ -152,8 +166,10 @@ NetworkPolicy admits the scrape from the namespace `monitoring`. Its interface i
    every node to be Ready. (Pods scheduled while a worker is still NotReady would all land on the
    nodes that are up, and the host spreading of the dependencies would be decided by luck.)
 3. Creates the namespace with the restricted labels.
-4. In parallel, with logs in `.dev/logs/<name>.log`: `haproxy` (HAProxy Ingress); `pki` (cert-manager, then
-   [pki.yaml](../../deploy/dev/pki.yaml), then waits for every Certificate to be Ready); `secrets` (the
+4. In parallel, with logs in `.dev/logs/<name>.log`: `haproxy` (HAProxy Ingress); `pki` (cert-manager, then the root of
+   [pki.yaml](../../deploy/dev/pki.yaml), the objects labelled `quader-dev/pki=root`, waits until the root and the CA Issuer are
+   Ready, then the whole file and waits for the leaves; applied at once the root was issued twice at a start and leaves were signed
+   with the replaced key, [Q-HA-490](../spec/ha-and-helm.md#q-ha-490--the-development-profiles-root-ca-is-ready-before-a-leaf-is-requested)); `secrets` (the
    internal-secrets-operator, then [secrets.yaml](../../deploy/dev/secrets.yaml), then waits until the fields are
    filled); `vko` (the Valkey operator); `postgres` (the CloudNativePG operator, `postgres.yaml`, two ready
    instances); `valkey` (waits for `pki`, `secrets` and `vko`, applies the `Valkey` resource and waits for the pods);

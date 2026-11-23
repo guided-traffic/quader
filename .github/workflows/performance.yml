@@ -10,7 +10,7 @@
 # npm load); job e2e-upgrade runs the sets upgrade (the commit's second UI bundle rolled to the commit's image under the npm and NuGet loads,
 # with a browser journey) and upgrade-release (the newest published release upgraded to the commit's image and rolled back under the same
 # loads; run only by a dispatch that names it until the first stable release, Q-ARCH-340, Q-HA-314); job npm-ha-soak runs the 20-minute pod crash of R-HA-052 under the npm load, the npm load scripts of R-ARCH-027
-# (Q-HA-67) and the mirror's clients-first measurement of R-REPO-055 with its install-time ratio enforced; job e2e-nuget runs nuget-ha (TestNuGetHA: the drain and failover under the NuGet load and the npm load, on the large class,
+# (Q-HA-67) and the mirror's clients-first measurement of R-REPO-055 with its install-time ratio enforced; job e2e-nuget runs nuget-ha (TestNuGetHA: the drain under the NuGet load and the npm load, on the large class,
 # Q-HA-102), drain-load-b, -c and -e (TestDrainLoad: drain variants B, C and E of R-HA-059 under that load, one cluster each, E5.9, Q-HA-242)
 # and cold-crash (TestColdCrash, E5.2: a replica force-deleted during a cold npm ci and dotnet restore, then quader admin storage verify,
 # Q-HA-220; the legs run one at a time); job e2e-drain-pooler runs drain-load-pooler (TestDrainLoadPooler: variant D in the pooler profile);
@@ -1282,11 +1282,11 @@ jobs:
         if: always() && steps.leg.outputs.run == 'true'
         run: make dev-down
 
-  # The NuGet leg of the drain and failover tests under the NuGet load (nuget-ha, Q-ARCH-277): every TestNuGetHA..., on a kind
+  # The NuGet leg of the drain under the NuGet load (nuget-ha, Q-ARCH-277, Q-HA-488): every TestNuGetHA..., on a kind
   # cluster with the scatter profile and the counting NuGet test upstream. It left Test and Release with the npm-ha legs (owner,
   # 2026-11-01); its steps are those of the e2e-nuget job there. The set also starts the npm client pods and the npm test upstream
-  # (the drain of R-HA-059 runs npm and NuGet load together), so the job builds both clients images in its own steps, as e2e-ci does,
-  # and the set loads them without building them again (Q-ARCH-327). TestNuGetHA needs about 16 cores under its load (Q-HA-102), far more
+  # (the drain of R-HA-059 runs npm and NuGet load together), so the job loads both clients images in its own steps, as e2e-ci does,
+  # from the job client-images (Q-ARCH-638), and the set loads them without building them again (Q-ARCH-327). TestNuGetHA needs about 16 cores under its load (Q-HA-102), far more
   # than a GitHub-hosted runner's 4, so the job runs on the large class; the set loads the 2.3 GB clients images into the control-plane
   # node only (the node of the client pods), which keeps them inside a large pod's Docker storage. Edge port 8090 is the first free port of
   # both workflows. The legs drain-load-b, -c and -e (TestDrainLoad, E5.9, edge ports 8113 to 8115) run the variants B, C and E of R-HA-059 under the same load,

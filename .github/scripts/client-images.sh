@@ -49,6 +49,9 @@ command="$1" set_name="$2"
 script="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 fetch="$repo_root/.github/scripts/fetch.sh"
+# The tag of the images is the checkout's (deploy/dev/dev-tag.sh: `dev` in a main checkout, as on every runner), the tag
+# deploy/dev/e2e.sh loads; `dev` where the script runs outside a repository with that file.
+tag="$("$repo_root/deploy/dev/dev-tag.sh" 2>/dev/null || echo dev)"
 
 case "$(uname -m)" in
   x86_64|amd64) arch=amd64 ;;
@@ -60,32 +63,32 @@ esac
 case "$set_name" in
   npm)
     dir=test/e2e/clients
-    images=(quader-e2e-clients:dev)
+    images=("quader-e2e-clients:$tag")
     pins=(E2E_CLIENTS_NODE_IMAGE E2E_CLIENTS_CURL_VERSION E2E_CLIENTS_JQ_VERSION)
     scripts=(.github/scripts/apt-install.sh .github/scripts/fetch.sh)
     build() { "$repo_root/test/e2e/clients/build.sh" "${images[0]}"; } ;;
   nuget)
     dir=test/e2e/nugetclients
-    images=(quader-e2e-nugetclients:dev)
+    images=("quader-e2e-nugetclients:$tag")
     pins=(E2E_NUGETCLIENTS_SDK_IMAGE E2E_NUGETCLIENTS_SDK8_IMAGE E2E_NUGETCLIENTS_SDK9_IMAGE E2E_NUGETCLIENTS_MONO_VERSION
       E2E_NUGETCLIENTS_JQ_VERSION E2E_NUGETCLIENTS_NUGET_EXE_VERSION E2E_NUGETCLIENTS_NUGET_EXE_SHA256)
     scripts=(.github/scripts/apt-install.sh .github/scripts/fetch.sh)
     build() { "$repo_root/test/e2e/nugetclients/build.sh" "${images[0]}"; } ;;
   oci)
     dir=test/e2e/ociclients
-    images=(quader-e2e-ociclients-docker:dev quader-e2e-ociclients-podman:dev quader-e2e-ociclients-cosign:dev)
+    images=("quader-e2e-ociclients-docker:$tag" "quader-e2e-ociclients-podman:$tag" "quader-e2e-ociclients-cosign:$tag")
     pins=(E2E_OCICLIENTS_DOCKER_IMAGE E2E_OCICLIENTS_PODMAN_IMAGE E2E_OCICLIENTS_COSIGN_IMAGE)
     scripts=()
     build() { "$repo_root/test/e2e/ociclients/build.sh" "${images[0]}" "${images[1]}" "${images[2]}"; } ;;
   apt)
     dir=test/e2e/aptclients
-    images=(quader-e2e-aptclients-debian13:dev quader-e2e-aptclients-debian12:dev quader-e2e-aptclients-ubuntu2404:dev quader-e2e-aptclients-ubuntu2204:dev)
+    images=("quader-e2e-aptclients-debian13:$tag" "quader-e2e-aptclients-debian12:$tag" "quader-e2e-aptclients-ubuntu2404:$tag" "quader-e2e-aptclients-ubuntu2204:$tag")
     pins=(E2E_APTCLIENTS_DEBIAN13_IMAGE E2E_APTCLIENTS_DEBIAN12_IMAGE E2E_APTCLIENTS_UBUNTU2404_IMAGE E2E_APTCLIENTS_UBUNTU2204_IMAGE)
     scripts=(.github/scripts/apt-install.sh)
     build() { "$repo_root/test/e2e/aptclients/build.sh" quader-e2e-aptclients-; } ;;
   ansible)
     dir=test/e2e/ansibleclients
-    images=(quader-e2e-ansibleclients-core217:dev quader-e2e-ansibleclients-core221:dev)
+    images=("quader-e2e-ansibleclients-core217:$tag" "quader-e2e-ansibleclients-core221:$tag")
     pins=(E2E_ANSIBLECLIENTS_CORE217_IMAGE E2E_ANSIBLECLIENTS_CORE217_VERSION E2E_ANSIBLECLIENTS_CORE221_IMAGE E2E_ANSIBLECLIENTS_CORE221_VERSION)
     scripts=(.github/scripts/apt-install.sh .github/scripts/fetch.sh)
     build() { "$repo_root/test/e2e/ansibleclients/build.sh" quader-e2e-ansibleclients-; } ;;

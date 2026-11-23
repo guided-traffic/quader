@@ -206,7 +206,8 @@ func upReleaseValuesOf(t testing.TB, valuesDir, image string) []string {
 	return strings.Split(strings.TrimSpace(out.String()), "\n")
 }
 
-// upImage is the image under test, the one `make image` builds and up.sh loads.
+// upImage is the image under test, the one `make image` builds and up.sh loads; deploy/dev/e2e.sh sets QUADER_IMAGE to the
+// checkout's tag (deploy/dev/dev-tag.sh), and the default is the main checkout's.
 func upImage() string {
 	if v := os.Getenv("QUADER_IMAGE"); v != "" {
 		return v

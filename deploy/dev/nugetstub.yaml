@@ -3,7 +3,7 @@
 # select the same pod; the service index names nugetstub as the API host (index, registrations) and
 # nugetstub-content as the content host (flat container, search), which is how nuget.org spreads its resources.
 # It is applied by deploy/dev/e2e.sh when QUADER_E2E_NUGETSTUB=1, never by up.sh (the wiring is a later step).
-# The image is built by `make nuget-stub-image` and loaded into kind by e2e.sh (tag quader-e2e-nugetstub:dev), so
+# The image is built by `make nuget-stub-image` and loaded into kind by e2e.sh (tag quader-e2e-nugetstub:<DEV_TAG>, deploy/dev/dev-tag.sh), so
 # the pull policy is IfNotPresent.
 #
 # quader reaches it as https://nugetstub.${NS}.svc and trusts the dev CA through proxy.outbound.tls.ca_files
@@ -112,7 +112,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: nugetstub
-          image: quader-e2e-nugetstub:dev
+          image: quader-e2e-nugetstub:${DEV_TAG}
           imagePullPolicy: IfNotPresent
           args:
             - -listen=:8443

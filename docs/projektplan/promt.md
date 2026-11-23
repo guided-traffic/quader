@@ -539,8 +539,6 @@ records the recorder that tells such a stall apart).
   ([H-491](../security/vulnerability-scanning.md#h-491--the-performance-run-is-not-the-reference-environment)).
 - **F-95 · One Angular unit test failed once in 1,080, its name not recorded** (seen once, on a loaded host). Done when the
   failing test is identified and its cause fixed; until then a recurrence is reported with the test's name and output.
-- `alerts`, `MaintenanceStaysQuiet` in nightly 42793416589: `valkey-failover.sh` reported "the primary did not move within 60 s" right
-  after drain variant B; not found, possibly the Sentinel that variant B restarted had not rebuilt its view (9.6 s locally).
 - **Partly closed; open: R-ARCH-034's count of held requests by the clock (decision 4 of the reading of
   2026-11-23: counted by the limiter's metric; package W8), and the cause of the 503 of
   `TestR_DEB_010_DelayBound`, which its next recurrence names.** Closed: `TestE14Drain`'s unready pod with
@@ -586,9 +584,10 @@ records the recorder that tells such a stall apart).
   `web/e2e/renders/render.spec.ts`) but records no count, so the GETs of a cold load of each main screen are
   still to be counted once on the UI stack and set against the default `read` budget (50 per second, burst
   200).
-- **Partly closed; open: the profile's image tag `:dev`, the fixed tags of the driver's and the stubs' images,
-  and the overload area's burst beside empty caches (its cause not read).** Closed: the query budget's second
-  failure, by 7c6e0acb1 (2026-11-23), the repair of the entry above; the 71 s and 141 s in which npm and pnpm
+- **Partly closed; open: the overload area's burst beside empty caches (its cause not read).** Closed: the
+  profile's image tag `:dev` and the fixed tags of the driver's and the stubs' images, by package W7 (2026-11-23,
+  Q-HA-489: every image of the profiles carries the checkout's tag, `dev` in the main checkout, and the charts run the
+  image they are given); the query budget's second failure, by 7c6e0acb1 (2026-11-23), the repair of the entry above; the 71 s and 141 s in which npm and pnpm
   refuse an altered tarball cost no suite, since signed links go to OCI and Ansible Galaxy only (3ccf4deee)
   and no end-to-end case waits for an integrity refusal of npm. As it stood:
   **Seen by the builder of the links' second package on 2026-11-22 and 23 and left for the batch:** the
@@ -621,7 +620,11 @@ records the recorder that tells such a stall apart).
   unit test of an upper-case path pattern wait for the owner's go for new formats (his words of 2026-11-23 in
   section 0), since their only use is room for more formats: each moves a behaviour that is tested once
   already to a cheaper tier, which pays only when the kit move deletes the integration cases.
-- **Seen by the builder of the Bastion's P4 on 2026-11-23 and left for the batch:** the gauge of the Bastion's
+- **Partly closed; open: the gauge of the Bastion's answers of the kind `shape` (the trace below decides).** Closed by
+  package W7 (2026-11-23): the Bastion chart's tag `:dev` (bastion.sh sets the image it is given, Q-HA-489) and the OCI set
+  without a local clients image (`e2e.sh` checks every clients image when its build is switched off and names the image and the
+  switch, F-078). As it stood:
+  **Seen by the builder of the Bastion's P4 on 2026-11-23 and left for the batch:** the gauge of the Bastion's
   answers of the kind `shape` read 0 on a cluster of the development profile while lookups hit (not traced;
   the profile's answers end after 30 s); the development profile's Bastion chart and values name the image
   tag `:dev`, so an image given by another tag is loaded and never used (the same as the links' builder
@@ -656,7 +659,9 @@ records the recorder that tells such a stall apart).
   `signatures` on 2026-11-21; the evaluation itself allows, which a unit test now holds. A test that
   expects a refusal can pass for this reason alone. To do (W4): the helper fails when a selector resolves
   to no row, then every area is run once and each test that relied on it is repaired.
-- **Seen by the builder of W6 on 2026-11-23, outside its package:** (1) the Makefile lists the integration
+- **Seen by the builder of W6 on 2026-11-23, outside its package** ((1) closed by package W7 the same day: the list is
+  read once, when a recipe needs it, and `TestMakeListsTheIntegrationPackagesOnlyWhenARecipeNeedsThem` holds that `make -n
+  cyclo` runs no `go list`): (1) the Makefile lists the integration
   packages with `go list` on every call of `make`, which downloads the modules in jobs without the module
   cache, the gating jobs `image`, `container-scan`, `malware-scan` and `release-tooling` among them (W7,
   which takes the Makefile next); (2) with runs of `main` side by side, `tools/fetch-e2e-reports.sh` takes
@@ -739,15 +744,6 @@ records the recorder that tells such a stall apart).
   (4) the journal's shipper uses the plain client and not the guarded one, so it passes the circuit breaker and the
   metrics by; (5) the finalize of an upload session checks its server-side copy by size alone (the gap H-591, known).
   None is repaired; (1) and (2) belong to what the storage topic decides, (3) and (4) wait for a batch.
-- **Partly closed; open: the restore drill's values (`deploy/dev/values-restore.yaml`) still leave malware
-  scanning on by the chart's default, against Q-MAL-90.** Closed: the leg of the two pins, by 14a890d00
-  (2026-11-23, Q-ARCH-542): `e2e-legs.sh` gives `TRIVY_IMAGE` and `CLAMAV_IMAGE` to the leg `vuln`, which
-  loads both images, held by two cases of `internal/tools/ciworkflows/e2elegs_test.go`. As it stood:
-  The script that picks the end-to-end legs of a change (`e2e-legs.sh`) starts the npm leg for a change of the analyser's or
-  ClamAV's image pin, which loads neither image, and not the leg `vuln`, which loads both. The restore drill's values
-  (`deploy/dev/values-restore.yaml`) leave malware scanning on by the chart's default, so the drills run ClamAV and its
-  updater, which reaches ClamAV's network, against Q-MAL-90. (Both found on 2026-11-21 by the builder of package 3 of the
-  analyser's move, left.)
 - The UI's tests that choose a person wait a fixed 320 ms for the search's debounce (`choosePrincipal` of the test
   helpers) and fail on a loaded machine; they passed alone each time (seen by three builders on 2026-11-21 at host loads
   of 60 to 120, left). A comment of the UI development profile still says the role `all` calls its own image scanner.
@@ -761,14 +757,6 @@ records the recorder that tells such a stall apart).
   "broken"; seen with an intercepted answer, no render case has that state), and at 390 px the Installation card
   breaks "3rdpartylicenses.txt" and "Answered by" inside the word (the check does not look at links in a `dd`).
   Seen on 2026-11-20, not fixed.
-- **Partly closed; open: `QUADER_IMAGE` alone does not change what the pods of `make dev-up` run (the values
-  keep `guidedtraffic/quader:dev`).** Closed: the reliance of `TestE12Valkey` on NetworkPolicy is stated at
-  the case (`test/e2e/e12_valkey_test.go`), and `TestE07NetworkPolicy` fails on a cluster whose CNI does not
-  enforce the policies. As it stood:
-  The development profile's chart values pin the image tag `dev`, so `QUADER_IMAGE` alone does not change what the
-  pods of `make dev-up` run; a builder with a cluster of its own has to tag its image `dev` inside its kind nodes
-  (seen on 2026-11-20). The case of `TestE12Valkey` with every Sentinel unreachable relies since that day on the
-  cluster's CNI enforcing NetworkPolicy, as the cases of the policies do.
 - Under the nightly's npm load any hold of the database longer than about 3.3 s puts one of the load's tokens over
   the 50 parallel downloads of the built-in profile of a technical token, and its requests get 429 after the
   limit's wait of 10 s (seen in the drain leg on 2026-11-20). A switchover of PostgreSQL holds longer than that;
@@ -950,6 +938,40 @@ Findings of this section that are closed, each with what closed it and what hold
 the plan.
 
 **Of tests and tools:**
+
+- **Closed on 2026-11-23 by package W7: `valkey-failover.sh` asks a Sentinel that knows a healthy replica and reads its answer
+  (F-040).** Before the failover it waits, at most 60 s, until a Sentinel lists a replica that is neither down nor disconnected,
+  asks that one, takes `OK` and otherwise prints the answer and asks the next; without an `OK` it fails with every answer instead
+  of waiting 60 s for a primary that cannot move (no test holds the script; the nightly's `MaintenanceStaysQuiet` and the
+  Valkey failovers run it). Not verified: the cause of the night's 60 s (a Sentinel that
+  variant B restarted is the reading; the new message names it on a recurrence). As it stood:
+  `alerts`, `MaintenanceStaysQuiet` in nightly 42793416589: `valkey-failover.sh` reported "the primary did not move within 60 s" right
+  after drain variant B; not found, possibly the Sentinel that variant B restarted had not rebuilt its view (9.6 s locally).
+- **Closed on 2026-11-23 by package W7: the restore drill runs no malware scanning (F-110).** `deploy/dev/values-restore.yaml`
+  sets `config.malware.enabled: false`, as `values-dev.yaml` does; the drill's `vuln` layer leaves it off. Not verified on a
+  cluster (the next drill shows no ClamAV pod). As it stood:
+  **Partly closed; open: the restore drill's values (`deploy/dev/values-restore.yaml`) still leave malware
+  scanning on by the chart's default, against Q-MAL-90.** Closed: the leg of the two pins, by 14a890d00
+  (2026-11-23, Q-ARCH-542): `e2e-legs.sh` gives `TRIVY_IMAGE` and `CLAMAV_IMAGE` to the leg `vuln`, which
+  loads both images, held by two cases of `internal/tools/ciworkflows/e2elegs_test.go`. As it stood:
+  The script that picks the end-to-end legs of a change (`e2e-legs.sh`) starts the npm leg for a change of the analyser's or
+  ClamAV's image pin, which loads neither image, and not the leg `vuln`, which loads both. The restore drill's values
+  (`deploy/dev/values-restore.yaml`) leave malware scanning on by the chart's default, so the drills run ClamAV and its
+  updater, which reaches ClamAV's network, against Q-MAL-90. (Both found on 2026-11-21 by the builder of package 3 of the
+  analyser's move, left.)
+- **Closed on 2026-11-23 by package W7: the charts of the development profile run the image they are given (F-058, F-077,
+  F-160; Q-HA-489).** `release_values` (up.sh, release-values.sh), `bastion.sh` and `restore-ns.sh` set `image.registry`,
+  `image.repository` and `image.tag` from `QUADER_IMAGE`, whose default is the checkout's tag. Verified on a cluster of a worktree
+  (`quader-w7`): the migration Job ran `docker.io/guidedtraffic/quader:dev-agent-ad1e31c7c074a10f7` (an older build retagged for
+  the check; the release itself did not start on it). As it stood:
+  **Partly closed; open: `QUADER_IMAGE` alone does not change what the pods of `make dev-up` run (the values
+  keep `guidedtraffic/quader:dev`).** Closed: the reliance of `TestE12Valkey` on NetworkPolicy is stated at
+  the case (`test/e2e/e12_valkey_test.go`), and `TestE07NetworkPolicy` fails on a cluster whose CNI does not
+  enforce the policies. As it stood:
+  The development profile's chart values pin the image tag `dev`, so `QUADER_IMAGE` alone does not change what the
+  pods of `make dev-up` run; a builder with a cluster of its own has to tag its image `dev` inside its kind nodes
+  (seen on 2026-11-20). The case of `TestE12Valkey` with every Sentinel unreachable relies since that day on the
+  cluster's CNI enforcing NetworkPolicy, as the cases of the policies do.
 
 - **Closed on 2026-11-23 by package W7 (item 1): every fetch of an image build has a bound and a retry of its own, a run
   builds each set of clients images once, and a leg without its images fails with a sentence.** The clients images' Dockerfiles
@@ -1313,8 +1335,10 @@ the plan.
 - **Closed on 2026-11-23 by the pipeline's package (fe19237c5): `make image` labels what it builds and prunes
   the untagged images with that label after each build, and no other image.** Held by
   `TestTheImageTargetRemovesTheUntaggedImagesItLeft` (`internal/tools/ciworkflows/makefile_test.go`); a failed
-  prune is reported and fails no build. Left to package W7, which takes `deploy/dev`: the images that
-  `deploy/dev/e2e.sh` builds. As it stood:
+  prune is reported and fails no build. The images that `deploy/dev/e2e.sh` builds, left to package W7: closed by
+  it on 2026-11-23, the e2e driver, the seven test upstreams and the five sets of clients images carry the label
+  `quader.build=e2e-image` and each build prunes the untagged images with it, held by
+  `TestTheE2EImageBuildsRemoveTheUntaggedImagesTheyLeft`. As it stood:
   The `make image` builds of a run leave dangling images behind in the development machine's Docker VM; nothing cleans them (the VM
   was full on 2026-11-12).
 - **Closed on 2026-11-23 by the pipeline's package (fddadab2a): `make unit` is the unit run before a push,
@@ -9315,10 +9339,13 @@ the walk items and the run record); what the code holds beyond the plan has not 
   a large cost: the three integration stacks (3.0 minutes per push). **Cut first, by the owner's decision of 2026-11-20:** a
   format's leg runs on a push only when its own code changed (built; a push of shared code alone is about 308 runner
   minutes instead of 396, about 508 instead of 939 with 25 formats, computed). The rest is not decided.
-- **A builder in a worktree cannot run `make ui-renders`** without replacing the running containers of the UI development
+- **Closed on 2026-11-23 by package W7 (Q-UI-1031): the UI development profile runs in instances, `UI_INSTANCE=2..8` beside the
+  main checkout's instance 1, which a worktree may not start; instance 2 was rendered from a worktree while instance 1 stayed
+  untouched (web-ui.md, "Instances, one per builder").** As it stood: **A builder in a worktree cannot run `make ui-renders`** without replacing the running containers of the UI development
   profile ([web-ui.md](../developer/web-ui.md), found on 2026-11-20): two builders rendered by hand with a dev server of
   their own. Nothing automates it.
-- **A builder cannot render on a new UI database**, which CI always has: three landings in one night passed on a filled
+- **Closed on 2026-11-23 by package W7 (Q-UI-1031): a new instance of the UI profile is a new database, and `make ui-dev-down
+  UI_INSTANCE=<n> PURGE=1` gives a builder another.** As it stood: **A builder cannot render on a new UI database**, which CI always has: three landings in one night passed on a filled
   database and stopped on a new one (2026-11-19/20: a migration's checksum, the write budget, a lookup right after a pull;
   a builder may not purge the database, and the development agent's full render set on a new one before the landing found
   each of them). Either builders get a database of their own, or the
@@ -9374,9 +9401,8 @@ the walk items and the run record); what the code holds beyond the plan has not 
 - **The colour scale of the severities:** rendered in Chromium only, not in Firefox or Safari; the seed holds one day of
   findings, so the trend was judged on fed data; no finding rated None is in the seed, so its badge was not rendered.
 - **Partly closed; open: no real Sentinel failover during a start was run (the 30 s are computed); and the
-  Valkey outage with a replaced packages pod (`TestNPMHAClosing`) has not run: only the set `npm-ha-closing`
-  selects it (`deploy/dev/e2e.sh`), which runs in a dispatch of Test and Release with `closing`, and no such
-  job ran since 2026-11-18.** Closed: the drain variant that holds a primary lost, `TestDrainLoad` variant B,
+  Valkey outage with a replaced packages pod has not run since 2026-11-18; since package W7 (2026-11-23, Q-HA-487) it is a
+  case of `TestNPMHA`, the nightly's `npm-ha`, so the next night runs it.** Closed: the drain variant that holds a primary lost, `TestDrainLoad` variant B,
   passed in the nightlies 44828435420 and 45008950010 (642.6 and 643.9 s); the clone without Sentinels, the
   case of `TestE12Valkey` whose replica reaches no Sentinel, passed in each of 47 runs of `e2e (push)` from
   the evening of 2026-11-20 to 2026-11-23 (22.3 s in 45133371730). As it stood:

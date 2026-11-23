@@ -6,8 +6,9 @@ package e2e
 // PostgreSQL-switchover and Valkey-failover scenarios of R-HA-052, each under the npm part of R-HA-059's load
 // (npm_load_test.go), in the scatter profile with three api, three packages and four worker replicas. The pod crash is TestNPMHACrash, a set
 // of its own: three force-deletes when run by hand, the full ten with QUADER_E2E_NPM_CRASH_SOAK=1 (nightly and closing run).
-// The Valkey outage of R-HA-052 belongs to the full suite and runs in the closing run (TestNPMHAClosing). Q-HA-65 and
-// Q-HA-67 to Q-HA-69 record the choices.
+// The Valkey outage of R-HA-052 with a replaced packages pod runs in TestNPMHA, the nightly's npm-ha; it ran only in the
+// closing run before (TestNPMHAClosing), which nothing had run since 2026-11-18. Q-HA-65 and Q-HA-67 to Q-HA-69 record the
+// choices.
 
 import (
 	"encoding/json"
@@ -60,46 +61,10 @@ func TestNPMHA(t *testing.T) {
 		t.Logf("%s before %v, after %v", changes, before, after)
 		r.res.installPublished(t, h)
 	})
-}
 
-// TestNPMHACrash is R-HA-052's pod crash under the npm load: three force-deletes on every change, ten (20 minutes) with
-// QUADER_E2E_NPM_CRASH_SOAK=1, which the nightly Performance workflow and the closing run set (Q-HA-67).
-func TestNPMHACrash(t *testing.T) {
-	h := npmHAFx(t)
-
-	t.Run("R-HA-052 R-NPM-046 pod crash: a random api, packages or worker replica force-deleted every 2 min under the npm ci and publish loops, 3 times per change and 10 times over 20 min in the soak: no failed iteration, quader admin storage verify finds every object", func(t *testing.T) {
-		kills, every := 3, 2*time.Minute
-		if os.Getenv("QUADER_E2E_NPM_CRASH_SOAK") == "1" {
-			kills = 10
-		}
-		seed := uint64(time.Now().UnixNano())
-		rng := rand.New(rand.NewPCG(seed, seed>>1))
-		var victims []string
-		r := runNPMFault(t, h, "pod-crash", npmLoadOpts{ciLoops: haCILoops, publish: true}, time.Minute, time.Minute, func() {
-			for i := 0; i < kills; i++ {
-				ps := livePods(t, selQuader)
-				v := ps[rng.IntN(len(ps))]
-				t.Logf("kill %d of %d: %s on %s", i+1, kills, v.Name, v.Node)
-				forceDelete(t, v)
-				victims = append(victims, v.Name)
-				time.Sleep(every)
-			}
-		})
-		t.Logf("seed %d, force-deleted %v", seed, victims)
-		r.steady(t, victims...)
-		r.res.allExitZero(t)
-		r.res.loopsSpan(t, r.faultAt, r.faultEnd)
-		requireStorageVerified(t)
-		r.res.installPublished(t, h)
-		quaderSettled(t, 3, 3, 4)
-	})
-}
-
-// TestNPMHAClosing is the part of the scenarios that R-HA-052 runs in the full suite, the closing run only (Q-HA-67).
-func TestNPMHAClosing(t *testing.T) {
-	requireClosingRun(t)
-	h := npmHAFx(t)
-
+	// The outage with a replaced pod was a case of the closing run (TestNPMHAClosing) that nothing had run since 2026-11-18;
+	// a set that nothing runs holds nothing, so it runs here, in the nightly's npm-ha (W7, the development agent's decision of
+	// 2026-11-23). About seven minutes more of lane 1.
 	t.Run("R-HA-052 R-HA-057 R-NPM-046 Valkey outage of 5 minutes with a packages pod deleted meanwhile, under the npm load: no failed iteration, k6 only 2xx and 304, the replacement becomes ready degraded, degraded clears within open_duration + health_check_interval + 5 s", func(t *testing.T) {
 		var info struct {
 			OpenMS   int64 `json:"valkey_open_duration_ms"`
@@ -175,6 +140,39 @@ func TestNPMHAClosing(t *testing.T) {
 		}
 		t.Logf("degraded cleared %s after the return (bound %s)", back.Round(100*time.Millisecond), bound)
 		r.res.installPublished(t, h)
+	})
+}
+
+// TestNPMHACrash is R-HA-052's pod crash under the npm load: three force-deletes on every change, ten (20 minutes) with
+// QUADER_E2E_NPM_CRASH_SOAK=1, which the nightly Performance workflow and the closing run set (Q-HA-67).
+func TestNPMHACrash(t *testing.T) {
+	h := npmHAFx(t)
+
+	t.Run("R-HA-052 R-NPM-046 pod crash: a random api, packages or worker replica force-deleted every 2 min under the npm ci and publish loops, 3 times per change and 10 times over 20 min in the soak: no failed iteration, quader admin storage verify finds every object", func(t *testing.T) {
+		kills, every := 3, 2*time.Minute
+		if os.Getenv("QUADER_E2E_NPM_CRASH_SOAK") == "1" {
+			kills = 10
+		}
+		seed := uint64(time.Now().UnixNano())
+		rng := rand.New(rand.NewPCG(seed, seed>>1))
+		var victims []string
+		r := runNPMFault(t, h, "pod-crash", npmLoadOpts{ciLoops: haCILoops, publish: true}, time.Minute, time.Minute, func() {
+			for i := 0; i < kills; i++ {
+				ps := livePods(t, selQuader)
+				v := ps[rng.IntN(len(ps))]
+				t.Logf("kill %d of %d: %s on %s", i+1, kills, v.Name, v.Node)
+				forceDelete(t, v)
+				victims = append(victims, v.Name)
+				time.Sleep(every)
+			}
+		})
+		t.Logf("seed %d, force-deleted %v", seed, victims)
+		r.steady(t, victims...)
+		r.res.allExitZero(t)
+		r.res.loopsSpan(t, r.faultAt, r.faultEnd)
+		requireStorageVerified(t)
+		r.res.installPublished(t, h)
+		quaderSettled(t, 3, 3, 4)
 	})
 }
 

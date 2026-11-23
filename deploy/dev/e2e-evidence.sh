@@ -22,6 +22,10 @@
 #   pods.csv          per pod of each kind node, every QUADER_E2E_EVIDENCE_POD_INTERVAL seconds: CPU time, memory by kind (anon,
 #                     file, socket buffers, kernel) and the OOM kills of its cgroup; pod-names.tsv maps the uids to names
 #   containers.tsv    the containers of the job's own Docker daemon (kind nodes, k6, helpers), every 10 s: which `cgd:` rows are the leg's
+#   db-connections.csv  the connections of the database's primary by client and state (pg_stat_activity: application_name, state,
+#                     count), every QUADER_E2E_EVIDENCE_POD_INTERVAL seconds, one `kubectl exec ... psql` per sample: whether a pool
+#                     ran out (each pool's size is the replicas' metric quader_db_pool_max_connections) or a pooler held its
+#                     connections across a drain (F-169); the pod that answered is in each row, so a switchover shows as a new name
 #   secrets.tsv       the Secrets of every namespace at the start and at the end: namespace, name, resourceVersion, creation time, uid,
 #                     the managers that wrote them (managedFields). Names and metadata only, never a value.
 #   secrets-watch.log every change of a Secret during the run, one line each, with the time the watch saw it
@@ -350,6 +354,24 @@ secrets_snapshot() {
   kubectl --context "$CTX" get secrets -A -o json 2>/dev/null | jq -r --arg l "$1" '.items[] | [$l, .metadata.namespace, .metadata.name, .metadata.resourceVersion, .metadata.creationTimestamp, .metadata.uid, ([.metadata.managedFields[]?.manager] | unique | join("+"))] | @tsv'
 }
 
+# db_sampler: the connections of the primary of quader-db by client and state, every POD_INTERVAL seconds, until the stop file; the
+# primary is looked up for every sample, so a switchover is followed. A sample that cannot run (no primary, an exec that fails) is
+# skipped without a row.
+db_sampler() {
+  local pod t
+  while [ ! -e "$dir/.stop" ]; do
+    pod="$(kubectl --context "$CTX" -n "$NS" get pods -l cnpg.io/cluster=quader-db,cnpg.io/instanceRole=primary -o name 2>/dev/null | head -n 1)"
+    pod="${pod#pod/}"
+    if [ -n "$pod" ]; then
+      t="$(date +%s)000"
+      kubectl --context "$CTX" -n "$NS" exec "$pod" -c postgres -- psql -d postgres -AtF, -c \
+        "SELECT coalesce(nullif(application_name, ''), '-'), coalesce(state, '-'), count(*) FROM pg_stat_activity WHERE backend_type = 'client backend' GROUP BY 1, 2" \
+        2>/dev/null | while IFS= read -r line; do printf '%s,%s,%s\n' "$t" "$pod" "$line"; done >>"$dir/.db-connections.csv"
+    fi
+    sleep "$POD_INTERVAL"
+  done
+}
+
 # one edge stream per edge pod, started by a supervisor that looks for new pods every ten seconds
 edge_supervisor() {
   local pod
@@ -439,6 +461,8 @@ $CGSAMPLER >>$CG_SAMPLES" _ "$SAMPLE_INTERVAL" "$CG_STOP" "$MAX_SECONDS" "$pod_e
   echo $! >"$dir/.events.pid"
   edge_supervisor &
   echo $! >"$dir/.supervisor.pid"
+  db_sampler &
+  echo $! >"$dir/.db.pid"
   log "evidence: recording the pressure and CPU time of the host, of the machine's cgroups and of ${node_list//$'\n'/ } and their pods, the edge's connections, the Secrets and the events into $dir"
   ;;
 stop)
@@ -446,7 +470,7 @@ stop)
   touch "$dir/.stop"
   node_list="$(nodes)"
   # the watchers and the supervisor first, then the loops that stop themselves
-  for f in .supervisor.pid .secrets-watch.pid .events.pid .host.pid; do
+  for f in .supervisor.pid .secrets-watch.pid .events.pid .host.pid .db.pid; do
     [ -f "$dir/$f" ] && kill "$(cat "$dir/$f")" 2>/dev/null
   done
   for n in $node_list; do docker exec "$n" touch "$NODE_STOP" >/dev/null 2>&1; done
@@ -556,6 +580,7 @@ pod-memory.csv     where the daemon's parent lies inside a pod: the pod's memory
 pods.csv           per pod of each kind node: CPU time, memory.current, anon, file, socket buffers, kernel memory and the OOM kills of its cgroup, every 5 s
 pod-names.tsv      the namespace and name of each pod uid in pods.csv
 containers.tsv     the containers of the job's own Docker daemon (the kind nodes, k6, helpers) by their 12-character id: every other cgd: row is a neighbour's
+db-connections.csv the connections of the database's primary by client and state (pg_stat_activity), every 5 s: unix_ms,pod,application_name,state,count
 secrets.tsv        the Secrets of every namespace at the start and at the end (resourceVersion, creation time, uid, writers); names and metadata only, no value
 secrets-watch.log  every change of a Secret during the run, with the time the watch saw it
 events.tsv         the Kubernetes events of every namespace, by time
@@ -563,6 +588,8 @@ pods-final.txt     kubectl get pods -A -o wide at the end
 kept-pod-logs/     logs of pods deleted or evicted during the run, and of the secrets operator and cert-manager, one file per container instance
 README
   } >"$dir/README.txt"
+  { echo "unix_ms,pod,application_name,state,count"; cat "$dir/.db-connections.csv" 2>/dev/null; } >"$dir/db-connections.csv"
+  rm -f "$dir"/.db-connections.csv
   rm -f "$dir"/.secrets-watch.fifo "$dir"/.stop "$dir"/.started "$dir"/.hostmode "$dir"/.*.pid "$dir"/.host.csv "$dir"/.events.jsonl "$dir"/.secrets-*.tsv "$dir"/.containers.tsv \
     "$dir"/.cgparent "$dir"/.podmem.csv
   rm -rf "$dir/.edge"

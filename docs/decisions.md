@@ -10356,10 +10356,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-HA
 
-254 questions on [spec/ha-and-helm.md](spec/ha-and-helm.md).
+258 questions on [spec/ha-and-helm.md](spec/ha-and-helm.md).
 
 <details>
-<summary>Q-HA: 254 questions</summary>
+<summary>Q-HA: 258 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10617,6 +10617,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-HA-417](spec/ha-and-helm.md#q-ha-417--the-replay-destroys-the-keys-only-of-a-connection-the-restoring-configuration-does-not-name) | The replay destroys the keys only of a connection the restoring configuration does not name | Decided by the development agent | (a) Skip an entry whose connection the restoring configuration names: outcome `skipped` with its reason as a warning, the restore goes on | [ADR-255](#adr-255--the-storage-keys-of-a-retired-connection-can-be-destroyed-so-that-what-stays-at-a-provider-becomes-unreadable) |
 | [Q-HA-425](spec/ha-and-helm.md#q-ha-425--the-replay-of-a-destruction-that-knows-no-configured-connection-destroys-nothing) | The replay of a destruction that knows no configured connection destroys nothing | Decided by the development agent | (a) `journal.Env.StorageConnections`, filled by both callers from `storage.connections`; an empty list skips every destruction with a note | [ADR-255](#adr-255--the-storage-keys-of-a-retired-connection-can-be-destroyed-so-that-what-stays-at-a-provider-becomes-unreadable) |
 | [Q-HA-446](spec/ha-and-helm.md#q-ha-446--the-databases-memory-per-connection-is-a-figure-of-the-documents-not-a-check-of-the-preflight) | The database's memory per connection is a figure of the documents, not a check of the preflight | Decided by the development agent | (a) The README's sizing section and the manual's scaling section give the figure and size the primary from the budget; the preflight checks connections only | — |
+| [Q-HA-487](spec/ha-and-helm.md#q-ha-487--the-valkey-outage-with-a-replaced-packages-pod-runs-in-the-nightlys-npm-ha-not-only-in-the-closing-run) | The Valkey outage with a replaced packages pod runs in the nightly's npm-ha, not only in the closing run | Decided by the development agent on 2026-11-23 | (a) The case moves into `TestNPMHA`, the nightly's `npm-ha` | — |
+| [Q-HA-488](spec/ha-and-helm.md#q-ha-488--nuget-ha-keeps-the-drain-under-the-nuget-load-and-leaves-the-switchover-and-the-valkey-failover-to-npm-ha) | nuget-ha keeps the drain under the NuGet load and leaves the switchover and the Valkey failover to npm-ha | Decided by the development agent on 2026-11-23 | (a) `nuget-ha` runs the drain alone | — |
+| [Q-HA-489](spec/ha-and-helm.md#q-ha-489--every-image-of-the-development-profiles-carries-the-checkouts-tag-and-the-charts-run-the-image-they-were-given) | Every image of the development profiles carries the checkout's tag, and the charts run the image they were given | Decided by the development agent on 2026-11-23 | (a) A tag per checkout, `DEV_TAG` (`dev` in a main checkout, `dev-<worktree directory>` in a git worktree, `QUADER_DEV_TAG` overrides), on every image the profiles build and run, and the charts' `image.registry`, `image.repository` and `image.tag` set from the image the script was given | — |
+| [Q-HA-490](spec/ha-and-helm.md#q-ha-490--the-development-profiles-root-ca-is-ready-before-a-leaf-is-requested) | The development profile's root CA is Ready before a leaf is requested | Decided by the development agent on 2026-11-23 | (a) The root first: apply the objects labelled `quader-dev/pki=root`, wait until the root's Certificate and the CA Issuer are Ready, then apply the file | — |
 
 </details>
 
@@ -11992,10 +11996,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-506 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+507 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 506 questions</summary>
+<summary>Q-UI: 507 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12505,15 +12509,16 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1003](spec/api-and-ui.md#q-ui-1003--without-an-updater-the-page-names-the-updater-and-its-setting-and-says-why-no-database-arrives) | Without an updater the page names the updater and its setting, and says why no database arrives | Decided by the development agent on 2026-11-23, closing the open finding "what Settings › Malware scanning shows on the UI stack, where the scanning is on and no updater is configured" | (a) The updater's line names it an updater and its setting, `malware.updater.url`; with the source `updater`, no set, no error and no updater, the section says "No updater is configured (`malware.updater.url` is empty), so no database arrives until one is. The database task waits for it and records no failure." | — |
 | [Q-UI-1004](spec/api-and-ui.md#q-ui-1004--a-page-names-a-person-without-a-principals-syntax) | A page names a person without a principal's syntax | Decided by the development agent on 2026-11-23 for point 11 of the open finding "Seen by the builder of the screens' first round on its renders", as far as nothing new is decided | (c) on a file's page now; (a) is the recommendation and waits for the owner's word on who may read a display name. | — |
 | [Q-UI-1005](spec/api-and-ui.md#q-ui-1005--malware-and-signatures-are-entries-of-their-own-under-security-audit) | Malware and Signatures are entries of their own under Security audit | Decided by the owner on 2026-11-23 | (a) The side bar's **Security audit** has three entries, **Security dashboard**, **Malware** and **Signatures**; each page has its own heading, title and trail ("Security audit / Malware"); the dashboard holds the vulnerability findings without a strip of one link; the pages keep their addresses, which were each view's own already, so no address goes and none redirects (chosen by the owner) | — |
+| [Q-UI-1031](spec/api-and-ui.md#q-ui-1031--the-ui-development-profile-runs-in-instances-one-per-builder-and-instance-1-is-the-main-checkouts) | The UI development profile runs in instances, one per builder, and instance 1 is the main checkout's | Decided by the development agent on 2026-11-23 | (a) Instances `UI_INSTANCE=1..8`: project `quader-ui-dev<n>`, state `.dev/ui-dev-<n>`, every port plus `(n - 1) * 100`; instance 1 exactly the former names and ports, and refused in a git worktree | — |
 
 </details>
 
 ### Q-VULN
 
-182 questions on [spec/vulnerability-scanning.md](spec/vulnerability-scanning.md).
+183 questions on [spec/vulnerability-scanning.md](spec/vulnerability-scanning.md).
 
 <details>
-<summary>Q-VULN: 182 questions</summary>
+<summary>Q-VULN: 183 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12699,6 +12704,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-VULN-214](spec/vulnerability-scanning.md#q-vuln-214--the-upgrade-removes-the-stored-analyses-and-every-image-is-analysed-afresh-by-the-scanner) | The upgrade removes the stored analyses, and every image is analysed afresh by the scanner | Decided by the development agent | (a) The migration deletes every row of `vuln_image_sbom` | [ADR-229](#adr-229--the-scanner-unit-detects-as-well-and-the-analyser-comes-from-its-own-image) |
 | [Q-VULN-225](spec/vulnerability-scanning.md#q-vuln-225--every-large-write-of-the-scanning-units-is-flushed-every-32-mib-by-the-loaders-mechanism) | Every large write of the scanning units is flushed every 32 MiB, by the loader's mechanism | Decided by the development agent | (a) One copy that flushes every 32 MiB, the loader's, moved into a leaf package (`internal/syncwrite`) and used by all five writes | — |
 | [Q-VULN-226](spec/vulnerability-scanning.md#q-vuln-226--a-pull-refused-for-a-repository-the-listener-holds-for-disabled-is-put-off-without-an-attempt) | A pull refused for a repository the listener holds for disabled is put off without an attempt | Decided by the development agent | (a) The refusal names `repository_disabled` in `Quader-Error-Code` on the registry's `404`; the scanner answers `409` `repository_disabled`; the worker puts the scan off a minute without an attempt | — |
+| [Q-VULN-267](spec/vulnerability-scanning.md#q-vuln-267--the-probe-of-variant-d-stays-in-its-own-set-no-pooler-leg-under-load-runs-the-profile-vuln) | The probe of variant D stays in its own set: no pooler leg under load runs the profile vuln | Decided by the development agent on 2026-11-23 | (a) Keep `vuln-pooler` as its own set | — |
 
 </details>
 <!-- coverage-gen:end decisions -->

@@ -12,7 +12,7 @@
 # not know them. Nothing applies it but the e2e sets that use the clients.
 #
 #   ${POD}         pod name: quader-e2e-apt-<debian13|debian12|ubuntu2404|ubuntu2204>
-#   ${IMAGE}       the image built by test/e2e/aptclients/build.sh (quader-e2e-aptclients-<name>:dev)
+#   ${IMAGE}       the image built by test/e2e/aptclients/build.sh (quader-e2e-aptclients-<name>:<DEV_TAG>)
 #   ${EDGE_PORT}   the port of the edge (QUADER_DEV_HTTP_PORT), the forwarder's listener and the port of the repository URL
 #   ${TARGET}      host:port the forwarder relays to (the in-cluster HAProxy Ingress)
 apiVersion: v1

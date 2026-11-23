@@ -72,7 +72,7 @@ func buildIfaceImage(t testing.TB) {
 	}
 	run([]string{"CGO_ENABLED=0", "GOOS=linux", "GOARCH=" + runtime.GOARCH}, "go", "build", "-overlay", filepath.Join(tmp, "overlay.json"),
 		"-trimpath", "-buildvcs=false", "-o", filepath.Join(ctx, "quader"), "./cmd/quader")
-	if err := os.WriteFile(filepath.Join(ctx, "Dockerfile"), []byte("FROM guidedtraffic/quader:dev\nCOPY quader /usr/local/bin/quader\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(ctx, "Dockerfile"), []byte("FROM "+upImage()+"\nCOPY quader /usr/local/bin/quader\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	run(nil, "docker", "build", "-t", "guidedtraffic/quader:"+basIfaceTag, ctx)

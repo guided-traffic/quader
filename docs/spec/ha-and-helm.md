@@ -13033,6 +13033,110 @@ has. The figure is one measurement on the development profile; it is replaced wh
 ([H-803](#h-803--the-sizing-profiles-are-not-measured)). **Applied in the spec:** R-HA-016; the [README](../../README.md)'s sizing
 profiles and the manual's [operations](../manual/admin/operations.md#scaling-api-packages-and-worker).
 
+### Q-HA-487 · The Valkey outage with a replaced packages pod runs in the nightly's npm-ha, not only in the closing run
+
+Status: **Decided by the development agent on 2026-11-23** — selected from the options below; the owner reviews it at the
+walkthrough. Amends [Q-HA-67](#q-ha-67--where-and-how-often-the-scenarios-under-npm-load-run) for this one scenario.
+
+Context: under Q-HA-67 the 5-minute Valkey outage of R-HA-052, with a `packages` pod deleted meanwhile under the npm load, ran in
+`TestNPMHAClosing`, which only the set `npm-ha-closing` selects, and that set runs only in a closing dispatch of Test and
+Release. No such dispatch ran from 2026-11-18 to the reading of 2026-11-23, so the scenario (the replacement becomes ready with
+Valkey degraded, R-HA-008; degraded clears within `open_duration + health_check_interval + 5 s`, R-HA-057) held nothing in that
+time.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The case moves into `TestNPMHA`, the nightly's `npm-ha` (chosen) | Every night, after the drain, the switchover and the Valkey failover, under the same npm load | A scenario of R-HA-052 runs at least daily; no new set, cluster or leg | About seven minutes more of lane 1 of the nightly, the longest lane (Q-ARCH-431), so the night grows by that |
+| (b) A closing dispatch on a schedule | | No change of the tests | A closing dispatch runs the fuzz legs and every closing set, hours of runners, for one scenario |
+| (c) As before | | Nothing | A test that nothing runs holds nothing |
+
+**Choice:** (a). `TestNPMHAClosing` is gone; the set `npm-ha-closing` runs `TestNPMHA`, `TestNPMHACrash` and `TestNPMPerf`, and
+with them the outage. **Cost:** one subtest of about seven minutes (one minute of load before the stop, five minutes of outage,
+the return and one minute after) in the nightly leg `npm-ha`, nothing in Test and Release. Not verified: a run of the case since
+2026-11-18; the next night shows it.
+
+**Applied in the spec:** none (test placement). Code: [npm_ha_test.go](../../test/e2e/npm_ha_test.go),
+[e2e.sh](../../deploy/dev/e2e.sh). Elsewhere: [e2e.md](../developer/e2e.md#drain-and-failover-under-npm-load).
+
+### Q-HA-488 · nuget-ha keeps the drain under the NuGet load and leaves the switchover and the Valkey failover to npm-ha
+
+Status: **Decided by the development agent on 2026-11-23** — selected from the options below; the owner reviews it at the
+walkthrough. Amends [Q-HA-100](#q-ha-100--the-nuget-part-of-r-ha-059s-load-and-how-it-runs-beside-npms).
+
+Context: `TestNuGetHA` ran drain variant A, the PostgreSQL switchover and the Valkey failover of R-HA-052, each under the npm and
+the NuGet load together, the same three scenarios `TestNPMHA` runs under the npm load in the same night (G5-08 of the triage of
+2026-11-23). A switchover and a failover test the server: whether a replica answers without an error while the database or Valkey
+moves. What NuGet's client adds is how `dotnet restore` and `dotnet nuget push` behave across connections that are cut, which the
+drain does (it evicts the `packages` pods that hold them), and the drain under both loads is R-ARCH-024's first acceptance criterion.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `nuget-ha` runs the drain alone (chosen) | `TestNuGetHA` keeps drain variant A under both loads; the switchover and the failover stay in `TestNPMHA` | About ten minutes less of the heaviest leg of lane 1 every night; nothing NuGet's client does goes untested | The server's answers during a switchover are judged under the npm load only |
+| (b) Keep the three | | Nothing changes | A repeat of npm-ha's server tests on a leg twice as heavy |
+| (c) Merge `drain-load-b`, `-c`, `-e` into one cluster run as well | | One cluster instead of three | The variants drain different nodes and leave the cluster in different states; a failure of one would hide the others |
+
+**Choice:** (a). The test `TestNuGetHA_R_REPO_058_MirrorStatusFromEveryReplica` of the same set stays. **Cost:** the leg
+`nuget-ha` loses two subtests of about five minutes each. Not verified: a run of the shortened set; the next night shows it.
+
+**Applied in the spec:** none (test placement). Code: [nuget_ha_test.go](../../test/e2e/nuget_ha_test.go). Elsewhere:
+[e2e.md](../developer/e2e.md#drain-and-failover-under-nuget-load).
+
+### Q-HA-489 · Every image of the development profiles carries the checkout's tag, and the charts run the image they were given
+
+Status: **Decided by the development agent on 2026-11-23** — selected from the options below; the owner reviews it at the
+walkthrough.
+
+Context: two defects of the development profiles, found by the reading of 2026-11-23 (F-058, F-077, F-160, F-059). (1) `up.sh`,
+`bastion.sh` and `restore-ns.sh` load `QUADER_IMAGE` into the kind nodes, but the values pinned `repository: guidedtraffic/quader`,
+`tag: dev` and the helm calls set neither, so with `QUADER_IMAGE=foo:bar` the pods ran `guidedtraffic/quader:dev`; another image was
+loaded and never used. (2) Every image of the profiles had a fixed tag (`guidedtraffic/quader:dev`, `quader-e2e-driver:dev`, the
+seven stubs', the clients'), in the one Docker daemon of the machine, so a builder's worktree and the main checkout that built at the
+same time tagged over each other and each ran whichever was tagged last.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A tag per checkout, `DEV_TAG` (`dev` in a main checkout, `dev-<worktree directory>` in a git worktree, `QUADER_DEV_TAG` overrides), on every image the profiles build and run, and the charts' `image.registry`, `image.repository` and `image.tag` set from the image the script was given (chosen) | One script, [dev-tag.sh](../../deploy/dev/dev-tag.sh), read by `lib.sh`, the Makefile (once, when a recipe needs it) and `client-images.sh` | Two checkouts never run each other's image; the main checkout and every runner keep `dev`, so nothing of the pipeline or the owner's commands changes; `QUADER_IMAGE` alone is enough, as `up.sh` promised | Every script and manifest that named `:dev` names the variable |
+| (b) Refuse a `QUADER_IMAGE` whose tag is not `dev` | | One check | Leaves (2); a worktree still overwrites the main checkout's image |
+| (c) `docker tag "$IMAGE" guidedtraffic/quader:dev` before the load | | The values stay | Retags the shared name, which is (2) itself |
+
+**Choice:** (a). The tag also names the analyser's and ClamAV's images of the `vuln` profile (`trivy.image`, `clamav.image`) and the
+marked image of the upgrade set (`<tag>-marked`); `e2e.sh` hands `QUADER_IMAGE` and `QUADER_IMAGE_MARKED` to the tests. With the build
+switched off (`QUADER_E2E_<SET>_CLIENTS_IMAGE_BUILD=0`), `e2e.sh` checks that the clients images are in the local Docker and names
+the missing one and the switch (F-078). What it does not separate: the kind cluster and its edge port (`QUADER_DEV_CLUSTER`,
+`QUADER_DEV_HTTP_PORT`), which a second checkout still sets itself. Verified on the development machine on 2026-11-23: a profile
+started from a worktree (`quader-w7`) without `QUADER_IMAGE` loaded `guidedtraffic/quader:dev-agent-…`, and its migration Job ran
+`docker.io/guidedtraffic/quader:dev-agent-…` (a two-day-old build retagged for the check, older than the tree's configuration, so
+the release itself did not start); `TestMakeListsTheIntegrationPackagesOnlyWhenARecipeNeedsThem` holds that a make of another
+target runs no git for the tag, `TestTheE2EImageBuildsRemoveTheUntaggedImagesTheyLeft` the label and the prune of the e2e images.
+
+**Applied in the spec:** none (development tooling). Code: [dev-tag.sh](../../deploy/dev/dev-tag.sh), `image_values` and
+`release_values` of [lib.sh](../../deploy/dev/lib.sh), [up.sh](../../deploy/dev/up.sh), [bastion.sh](../../deploy/dev/bastion.sh),
+[restore-ns.sh](../../deploy/dev/restore-ns.sh), [e2e.sh](../../deploy/dev/e2e.sh), the stubs' manifests, the build scripts of the
+clients images, the [Makefile](../../Makefile). Elsewhere: [local-profile.md](../developer/local-profile.md#one-image-tag-per-checkout).
+
+### Q-HA-490 · The development profile's root CA is Ready before a leaf is requested
+
+Status: **Decided by the development agent on 2026-11-23** — the repair the reading of 2026-11-23 named; the owner reviews it at the
+walkthrough.
+
+Context: the certificate operator's log of a red `e2e (ci)` showed the profile's root `quader-dev-ca` issued at 16:28:35.29 and again
+at .60, and five leaves signed with the first key in between, the edge's among them; no client of the second root trusts those. The
+same double root was in the red `e2e (push)` of F-127. `up.sh` applied [pki.yaml](../../deploy/dev/pki.yaml), the self-signed Issuer,
+the root, the CA Issuer and every leaf, in one `kubectl apply`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The root first: apply the objects labelled `quader-dev/pki=root`, wait until the root's Certificate and the CA Issuer are Ready, then apply the file (chosen) | One file, one label, one wait | No leaf is requested while the root can still change; the leaves are signed by the root that stays | A few seconds more at a start |
+| (b) Two files | | The order is the files' | Every reference to `pki.yaml` changes |
+| (c) Wait for the leaves and reissue those signed by a replaced root | | Repairs after the fact | Needs to detect the mismatch; a client may have read the wrong chain already |
+
+**Choice:** (a). Not verified: that the double issuance does not recur in the pipeline (it was seen in single runs; the next runs'
+certificate operator logs, kept in `kept-pod-logs/` of the evidence, show it). Verified on the development machine: a start of the
+profile issues the root once (one CertificateRequest `quader-dev-ca-1`) and every leaf after it.
+
+**Applied in the spec:** none (development tooling). Code: [pki.yaml](../../deploy/dev/pki.yaml), `task_pki` of
+[up.sh](../../deploy/dev/up.sh). Elsewhere: [local-profile.md](../developer/local-profile.md#how-upsh-works).
+
 ## What this does not cover
 
 ### H-37 · A database restore revives revoked credentials and removed grants

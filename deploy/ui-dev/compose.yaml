@@ -7,13 +7,15 @@
 # (quader-it) and the kind cluster (quader) without touching either. Unlike the integration stack the data is
 # kept in named volumes, so repositories and packages created while working on the UI survive a restart;
 # deploy/ui-dev/down.sh --purge removes them. Started by deploy/ui-dev/up.sh, which sets the variables below
-# from tools/versions.env.
-name: quader-ui-dev
+# from tools/versions.env and from the instance (deploy/ui-dev/instance.sh): instance 1 resolves to the names and ports this file
+# had before instances existed, so its containers keep their configuration and are not recreated; instance n is
+# quader-ui-dev<n> with every port plus (n - 1) * 100.
+name: ${UI_PROJECT:-quader-ui-dev}
 
 services:
   postgres:
     image: ${POSTGRES_IMAGE:?set by deploy/ui-dev/up.sh}
-    container_name: quader-ui-dev-postgres
+    container_name: ${UI_PROJECT:-quader-ui-dev}-postgres
     environment:
       POSTGRES_USER: quader
       POSTGRES_PASSWORD: quader-ui-dev
@@ -43,7 +45,7 @@ services:
       # The PostgreSQL 18 image keeps its data under /var/lib/postgresql/18/docker.
       - postgres:/var/lib/postgresql
     ports:
-      - "127.0.0.1:25432:5432"
+      - "127.0.0.1:${UI_PG_PORT:-25432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U quader -d quader -h /var/run/postgresql"]
       interval: 2s
@@ -52,7 +54,7 @@ services:
 
   valkey:
     image: ${VALKEY_IMAGE:?set by deploy/ui-dev/up.sh}
-    container_name: quader-ui-dev-valkey
+    container_name: ${UI_PROJECT:-quader-ui-dev}-valkey
     command:
       - valkey-server
       - --port
@@ -77,7 +79,7 @@ services:
       - ${CERT_DIR}:/certs:ro
       - valkey:/data
     ports:
-      - "127.0.0.1:26390:6379"
+      - "127.0.0.1:${UI_VALKEY_PORT:-26390}:6379"
     healthcheck:
       test: ["CMD-SHELL", "valkey-cli --tls --cacert /certs/ca.crt -h 127.0.0.1 -p 6379 -a quader-ui-dev-valkey --no-auth-warning ping | grep -q PONG"]
       interval: 2s
@@ -86,7 +88,7 @@ services:
 
   seaweedfs:
     image: ${SEAWEEDFS_IMAGE:?set by deploy/ui-dev/up.sh}
-    container_name: quader-ui-dev-seaweedfs
+    container_name: ${UI_PROJECT:-quader-ui-dev}-seaweedfs
     command:
       - server
       - -dir=/data
@@ -105,7 +107,7 @@ services:
       - ../../test/integration/conf/s3.json:/etc/seaweedfs/s3.json:ro
       - seaweedfs:/data
     ports:
-      - "127.0.0.1:28333:8333"
+      - "127.0.0.1:${UI_S3_PORT:-28333}:8333"
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://127.0.0.1:9333/cluster/status >/dev/null && curl -s -o /dev/null --cacert /certs/ca.crt https://127.0.0.1:8333/"]
       interval: 3s

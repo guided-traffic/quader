@@ -3,7 +3,7 @@
 # (test/e2e/clients/fwd, the one of the npm clients) for linux/<arch>, then the Dockerfile for each pinned ansible-core release on its
 # pinned Python image. `make ansible-clients-image` and deploy/dev/e2e.sh both call it.
 #
-#   build.sh [tag-prefix]    default quader-e2e-ansibleclients-: the images are <prefix>core217:dev and <prefix>core221:dev
+#   build.sh [tag-prefix]    default quader-e2e-ansibleclients-: the images are <prefix>core217:<DEV_TAG> and <prefix>core221:<DEV_TAG> (DEV_TAG of deploy/dev/dev-tag.sh: dev in the main checkout)
 #
 # Environment: QUADER_E2E_CLIENTS_ARCH (amd64|arm64, default the host's).
 set -euo pipefail
@@ -25,9 +25,11 @@ image_ci_context "$build/ci"
 dir="$REPO_ROOT/test/e2e/ansibleclients"
 build_one() {
   local name="$1" series="$2" base="$3" version="$4"
-  log "building ${prefix}${name}:dev: ansible-core $version on $base"
-  docker buildx build --load --platform "linux/$arch" --build-arg BASE_IMAGE="$base" --build-arg ANSIBLE_CORE_VERSION="$version" \
-    --build-arg ANSIBLE_SERIES="$series" --build-context "fwd=$build" --build-context "ci=$build/ci" -f "$dir/Dockerfile" -t "${prefix}${name}:dev" "$dir"
+  log "building ${prefix}${name}:$DEV_TAG: ansible-core $version on $base"
+  docker buildx build --load --label quader.build=e2e-image --platform "linux/$arch" --build-arg BASE_IMAGE="$base" --build-arg ANSIBLE_CORE_VERSION="$version" \
+    --build-arg ANSIBLE_SERIES="$series" --build-context "fwd=$build" --build-context "ci=$build/ci" -f "$dir/Dockerfile" -t "${prefix}${name}:$DEV_TAG" "$dir"
 }
 build_one core217 2.17 "$E2E_ANSIBLECLIENTS_CORE217_IMAGE" "$E2E_ANSIBLECLIENTS_CORE217_VERSION"
 build_one core221 2.21 "$E2E_ANSIBLECLIENTS_CORE221_IMAGE" "$E2E_ANSIBLECLIENTS_CORE221_VERSION"
+# The images the tags named before are untagged now; the label (the Makefile's E2E_IMAGE_BUILD_LABEL) keeps the prune to them.
+docker image prune --force --filter dangling=true --filter label=quader.build=e2e-image >/dev/null 2>&1 || log "the prune of the untagged e2e images failed; it fails nothing"

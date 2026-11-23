@@ -51,7 +51,7 @@
 #   e2e.sh nuget        the NuGet acceptance tests (every TestNuGet... except TestNuGetClosing... and TestNuGetHA...), the counting
 #                       NuGet test upstream and three client pods; CI: job e2e-nuget
 #   e2e.sh nuget-closing  TestNuGetClosing...: the additions of the run that closes the phase (CI: job e2e-nuget, closing=true)
-#   e2e.sh nuget-ha     TestNuGetHA...: drain variant A and the failovers of R-HA-052 under the npm and NuGet load together, and the status of a NuGet mirror from every replica (R-REPO-058)
+#   e2e.sh nuget-ha     TestNuGetHA...: drain variant A under the npm and NuGet load together, and the status of a NuGet mirror from every replica (R-REPO-058)
 #   e2e.sh drain-load-b, drain-load-c, drain-load-e  one variant of TestDrainLoad each (CI)
 #   e2e.sh drain-load   TestDrainLoad: drain variants B, C and E of R-HA-059 under that load, the long-transfer probes and R-STOR-046's gc-full (E5.9)
 #   e2e.sh drain-load-pooler  TestDrainLoadPooler: drain variant D (an instance of the request pooler) under the same load, in the pooler profile
@@ -140,6 +140,9 @@
 set -euo pipefail
 # shellcheck source=deploy/dev/lib.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
+# The tests read the images under test from these (test/e2e/upgrade_env_test.go, upgrade_bundles_test.go): the checkout's tag,
+# as `make image` and `make image-marked` build them (deploy/dev/dev-tag.sh).
+export QUADER_IMAGE="${QUADER_IMAGE:-$DEV_IMAGE}" QUADER_IMAGE_MARKED="${QUADER_IMAGE_MARKED:-guidedtraffic/quader:$DEV_TAG-marked}"
 for tool in docker jq go helm kubectl; do command -v "$tool" >/dev/null 2>&1 || die "$tool is required"; done
 
 set_name="${1:-default}"
@@ -201,7 +204,7 @@ case "$set_name" in
   npm-ha) run='^TestNPMHA($|_)'; NPM_CLIENTS=1; NPM_CLIENTS_DEFAULT_PODS=3; export QUADER_E2E_NPMSTUB=1 ;;
   npm-ha-crash) run='^TestNPMHACrash$'; NPM_CLIENTS=1; NPM_CLIENTS_DEFAULT_PODS=3; export QUADER_E2E_NPMSTUB=1 ;;
   npm-ha-soak) run='^TestNPM(HACrash|Perf|Mirror_R_REPO_055_ClientsFirst)$'; NPM_CLIENTS=1; NPM_CLIENTS_DEFAULT_PODS=3; export QUADER_E2E_NPMSTUB=1 QUADER_E2E_NPM_CRASH_SOAK=1 ;;
-  npm-ha-closing) run='^TestNPM(HA|HACrash|HAClosing|Perf)$'; NPM_CLIENTS=1; NPM_CLIENTS_DEFAULT_PODS=3; export QUADER_E2E_NPMSTUB=1 QUADER_E2E_NPM_CLOSING=1 QUADER_E2E_NPM_CRASH_SOAK=1 ;;
+  npm-ha-closing) run='^TestNPM(HA|HACrash|Perf)$'; NPM_CLIENTS=1; NPM_CLIENTS_DEFAULT_PODS=3; export QUADER_E2E_NPMSTUB=1 QUADER_E2E_NPM_CLOSING=1 QUADER_E2E_NPM_CRASH_SOAK=1 ;;
   # The failure suite under npm load (test/e2e/ha_suite_test.go, docs/developer/e2e.md#the-failure-suite-under-npm-load): the
   # scenarios of R-HA-052 that npm-ha and npm-ha-crash leave out, with the same load (eight npm ci loops, a publish loop, k6).
   # A long set (about 50 minutes): nightly, on dispatch and locally, like the closing run's Valkey outage.
@@ -359,13 +362,22 @@ tag="${K6_IMAGE#*:}"; tag="${tag%%@*}"
 # failure named (2026-11-23: a mirror that trickles held builds until their step's limit). The driver's and the test upstreams'
 # builds fetch only their base image ($RUNTIME_BASE_IMAGE, about 2 MB), so the bound of the whole build is the bound of that pull.
 FETCH="$REPO_ROOT/.github/scripts/fetch.sh"
+# require_images SWITCH IMAGE...: with the build switched off (QUADER_E2E_<SET>_CLIENTS_IMAGE_BUILD=0, the pipeline's legs and a
+# local rerun), every image must be in the local Docker already; a missing one fails here with its name and the switch, not later in
+# a `docker create` or `kind load` that names neither (F-078).
+require_images() {
+  local switch="$1" image missing=()
+  shift
+  for image in "$@"; do docker image inspect "$image" >/dev/null 2>&1 || missing+=("$image"); done
+  [ "${#missing[@]}" -eq 0 ] || die "$switch=0 says the images are built, but ${missing[*]} is not in the local Docker; build it (unset $switch) or load it"
+}
 docker image inspect "$K6_IMAGE" >/dev/null 2>&1 || { log "pulling $K6_IMAGE"; "$FETCH" "the pull of $K6_IMAGE" 180 3 docker pull --quiet "$K6_IMAGE" >/dev/null || die "$K6_IMAGE could not be pulled"; }
 # the helper container of the clients-first readings (test/e2e/mirror_readings_test.go) reads the cgroup of the kind nodes
 docker image inspect "$INTEGRATION_TOOLS_IMAGE" >/dev/null 2>&1 || { log "pulling $INTEGRATION_TOOLS_IMAGE"; "$FETCH" "the pull of $INTEGRATION_TOOLS_IMAGE" 180 3 docker pull --quiet "$INTEGRATION_TOOLS_IMAGE" >/dev/null || log "$INTEGRATION_TOOLS_IMAGE not pulled: the readings record the nodes' cgroup as absent"; }
 
 # ── the driver ───────────────────────────────────────────────────────────────
 ARCH="$(arch)"
-DRIVER_IMAGE="quader-e2e-driver:dev"
+DRIVER_IMAGE="quader-e2e-driver:$DEV_TAG"
 BUILD="$REPO_ROOT/.out/e2e-driver"
 rm -rf "$BUILD"; mkdir -p "$BUILD"
 if [ -n "${QUADER_E2E_DRIVER_BIN:-}" ]; then
@@ -376,7 +388,9 @@ else
   (cd "$REPO_ROOT" && CGO_ENABLED=0 GOOS=linux GOARCH="$ARCH" go build -trimpath -o "$BUILD/driver-linux-$ARCH" ./test/e2e/cmd/driver)
 fi
 "$FETCH" "the build of $DRIVER_IMAGE on $RUNTIME_BASE_IMAGE" 120 3 docker buildx build --load --platform "linux/$ARCH" --build-arg RUNTIME_BASE_IMAGE="$RUNTIME_BASE_IMAGE" \
-  -f "$REPO_ROOT/test/e2e/Dockerfile" -t "$DRIVER_IMAGE" "$BUILD" >"$OUT/driver-image.log" 2>&1 || { tail -20 "$OUT/driver-image.log" >&2; die "driver image build failed"; }
+  --label quader.build=e2e-image -f "$REPO_ROOT/test/e2e/Dockerfile" -t "$DRIVER_IMAGE" "$BUILD" >"$OUT/driver-image.log" 2>&1 || { tail -20 "$OUT/driver-image.log" >&2; die "driver image build failed"; }
+# the image this tag named before is untagged now; the label is the Makefile's E2E_IMAGE_BUILD_LABEL, so nothing else is pruned
+docker image prune --force --filter dangling=true --filter label=quader.build=e2e-image >/dev/null 2>&1 || log "the prune of the untagged e2e images failed; it fails nothing"
 kind load docker-image "$DRIVER_IMAGE" --name "$CLUSTER" >"$OUT/driver-load.log" 2>&1 || { tail -20 "$OUT/driver-load.log" >&2; die "kind load failed"; }
 
 # The pod is the worker pod's template with another command: the same ConfigMap and Secrets, the same
@@ -407,7 +421,7 @@ kn wait --for=condition=Ready pod/quader-e2e-driver --timeout=120s >/dev/null ||
 if [ "${QUADER_E2E_NPMSTUB:-0}" = "1" ]; then
   log "building the npm test upstream image for linux/$ARCH"
   (cd "$REPO_ROOT" && make --no-print-directory npm-stub-image IMAGE_ARCH="$ARCH") >"$OUT/npmstub-image.log" 2>&1 || { tail -20 "$OUT/npmstub-image.log" >&2; die "npm test upstream image build failed"; }
-  kind load docker-image quader-e2e-npmstub:dev --name "$CLUSTER" >"$OUT/npmstub-load.log" 2>&1 || { tail -20 "$OUT/npmstub-load.log" >&2; die "kind load of the npm test upstream failed"; }
+  kind load docker-image "quader-e2e-npmstub:$DEV_TAG" --name "$CLUSTER" >"$OUT/npmstub-load.log" 2>&1 || { tail -20 "$OUT/npmstub-load.log" >&2; die "kind load of the npm test upstream failed"; }
   log "starting the npm test upstream"
   render "$DEV_DIR/npmstub.yaml" | kn apply -f - >/dev/null
   kn wait --for=condition=Ready certificate/quader-npmstub-tls --timeout=3m >/dev/null
@@ -429,7 +443,7 @@ fi
 if [ "${QUADER_E2E_NUGETSTUB:-0}" = "1" ]; then
   log "building the NuGet test upstream image for linux/$ARCH"
   (cd "$REPO_ROOT" && make --no-print-directory nuget-stub-image IMAGE_ARCH="$ARCH") >"$OUT/nugetstub-image.log" 2>&1 || { tail -20 "$OUT/nugetstub-image.log" >&2; die "NuGet test upstream image build failed"; }
-  kind load docker-image quader-e2e-nugetstub:dev --name "$CLUSTER" >"$OUT/nugetstub-load.log" 2>&1 || { tail -20 "$OUT/nugetstub-load.log" >&2; die "kind load of the NuGet test upstream failed"; }
+  kind load docker-image "quader-e2e-nugetstub:$DEV_TAG" --name "$CLUSTER" >"$OUT/nugetstub-load.log" 2>&1 || { tail -20 "$OUT/nugetstub-load.log" >&2; die "kind load of the NuGet test upstream failed"; }
   log "starting the NuGet test upstream"
   render "$DEV_DIR/nugetstub.yaml" | kn apply -f - >/dev/null
   kn wait --for=condition=Ready certificate/quader-nugetstub-tls --timeout=3m >/dev/null
@@ -450,7 +464,7 @@ fi
 if [ "${QUADER_E2E_OCISTUB:-0}" = "1" ]; then
   log "building the OCI test upstream image for linux/$ARCH"
   (cd "$REPO_ROOT" && make --no-print-directory oci-stub-image IMAGE_ARCH="$ARCH") >"$OUT/ocistub-image.log" 2>&1 || { tail -20 "$OUT/ocistub-image.log" >&2; die "OCI test upstream image build failed"; }
-  kind load docker-image quader-e2e-ocistub:dev --name "$CLUSTER" >"$OUT/ocistub-load.log" 2>&1 || { tail -20 "$OUT/ocistub-load.log" >&2; die "kind load of the OCI test upstream failed"; }
+  kind load docker-image "quader-e2e-ocistub:$DEV_TAG" --name "$CLUSTER" >"$OUT/ocistub-load.log" 2>&1 || { tail -20 "$OUT/ocistub-load.log" >&2; die "kind load of the OCI test upstream failed"; }
   log "starting the OCI test upstream"
   render "$DEV_DIR/ocistub.yaml" | kn apply -f - >/dev/null
   kn wait --for=condition=Ready certificate/quader-ocistub-tls --timeout=3m >/dev/null
@@ -470,7 +484,7 @@ fi
 if [ "${QUADER_E2E_DEBSTUB:-0}" = "1" ]; then
   log "building the Debian archive test upstream image for linux/$ARCH"
   (cd "$REPO_ROOT" && make --no-print-directory deb-stub-image IMAGE_ARCH="$ARCH") >"$OUT/debstub-image.log" 2>&1 || { tail -20 "$OUT/debstub-image.log" >&2; die "Debian archive test upstream image build failed"; }
-  kind load docker-image quader-e2e-debstub:dev --name "$CLUSTER" >"$OUT/debstub-load.log" 2>&1 || { tail -20 "$OUT/debstub-load.log" >&2; die "kind load of the Debian archive test upstream failed"; }
+  kind load docker-image "quader-e2e-debstub:$DEV_TAG" --name "$CLUSTER" >"$OUT/debstub-load.log" 2>&1 || { tail -20 "$OUT/debstub-load.log" >&2; die "kind load of the Debian archive test upstream failed"; }
   log "starting the Debian archive test upstream"
   render "$DEV_DIR/debstub.yaml" | kn apply -f - >/dev/null
   kn wait --for=condition=Ready certificate/quader-debstub-tls --timeout=3m >/dev/null
@@ -492,7 +506,7 @@ fi
 if [ "${QUADER_E2E_OIDCSTUB:-0}" = "1" ]; then
   log "building the OIDC issuer double image for linux/$ARCH"
   (cd "$REPO_ROOT" && make --no-print-directory oidc-stub-image IMAGE_ARCH="$ARCH") >"$OUT/oidcstub-image.log" 2>&1 || { tail -20 "$OUT/oidcstub-image.log" >&2; die "OIDC issuer double image build failed"; }
-  kind load docker-image quader-e2e-oidcstub:dev --name "$CLUSTER" >"$OUT/oidcstub-load.log" 2>&1 || { tail -20 "$OUT/oidcstub-load.log" >&2; die "kind load of the OIDC issuer double failed"; }
+  kind load docker-image "quader-e2e-oidcstub:$DEV_TAG" --name "$CLUSTER" >"$OUT/oidcstub-load.log" 2>&1 || { tail -20 "$OUT/oidcstub-load.log" >&2; die "kind load of the OIDC issuer double failed"; }
   stubs="oidcstub"
   [ "${QUADER_E2E_OIDCSTUB_SINGLE:-0}" != "1" ] || stubs="oidcstub oidcstub-single"
   for stub in $stubs; do
@@ -519,7 +533,7 @@ fi
 if [ "${QUADER_E2E_OSVSTUB:-0}" = "1" ]; then
   log "building the test advisory source image for linux/$ARCH"
   (cd "$REPO_ROOT" && make --no-print-directory osv-stub-image IMAGE_ARCH="$ARCH") >"$OUT/osvstub-image.log" 2>&1 || { tail -20 "$OUT/osvstub-image.log" >&2; die "test advisory source image build failed"; }
-  kind load docker-image quader-e2e-osvstub:dev --name "$CLUSTER" >"$OUT/osvstub-load.log" 2>&1 || { tail -20 "$OUT/osvstub-load.log" >&2; die "kind load of the test advisory source failed"; }
+  kind load docker-image "quader-e2e-osvstub:$DEV_TAG" --name "$CLUSTER" >"$OUT/osvstub-load.log" 2>&1 || { tail -20 "$OUT/osvstub-load.log" >&2; die "kind load of the test advisory source failed"; }
   log "starting the test advisory source"
   render "$DEV_DIR/osvstub.yaml" | kn apply -f - >/dev/null
   kn wait --for=condition=Ready certificate/quader-osvstub-tls --timeout=3m >/dev/null
@@ -565,7 +579,7 @@ export QUADER_E2E_REPO="$REPO_ROOT" QUADER_E2E_CONTEXT="$CTX" QUADER_E2E_NAMESPA
 # the in-cluster edge, so the base URL of the setup snippets (https://localhost:<port>) works unchanged and the
 # certificate is verified for `localhost`. The dev CA is mounted from a ConfigMap, never baked into the image.
 # The clients run through `kubectl exec <pod> -- <row> ...` (npm10 ... yarn1, see test/e2e/clients/bin).
-NPM_CLIENTS_IMAGE="quader-e2e-clients:dev"
+NPM_CLIENTS_IMAGE="quader-e2e-clients:$DEV_TAG"
 NPM_CLIENTS_LABEL="app.kubernetes.io/component=e2e-npm-client"
 NPM_CLIENTS_PREFIX="quader-e2e-npm-"
 NPM_CLIENTS_COUNT="${QUADER_E2E_NPM_CLIENTS_PODS:-${NPM_CLIENTS_DEFAULT_PODS:-1}}"
@@ -592,6 +606,8 @@ npm_clients_up() {
   [ -n "${CA_FILE:-}" ] && [ -s "$CA_FILE" ] || die "the client pods verify the edge against the dev CA, which is missing (QUADER_DEV_CA_FILE, QUADER_DEV_SCHEME=https; run make dev-up)"
   if [ "${QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD:-1}" != 0 ]; then
     "$REPO_ROOT/test/e2e/clients/build.sh" "$NPM_CLIENTS_IMAGE" >"$OUT/npm-clients-image.log" 2>&1 || { tail -20 "$OUT/npm-clients-image.log" >&2; die "clients image build failed"; }
+  else
+    require_images QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD "$NPM_CLIENTS_IMAGE"
   fi
   # the pods run on the control-plane node only (nodeSelector below): one copy of the image, not one per node
   kind load docker-image "$NPM_CLIENTS_IMAGE" --name "$CLUSTER" --nodes "${CLUSTER}-control-plane" >"$OUT/npm-clients-load.log" 2>&1 || { tail -20 "$OUT/npm-clients-load.log" >&2; die "kind load failed"; }
@@ -642,7 +658,7 @@ fi
 # ones: fwd is PID 1 behind entrypoint.sh, which first builds the trust of .NET and Mono from the mounted dev CA (the
 # bundle at SSL_CERT_FILE, the Mono store below HOME) and then marks the pod ready. The clients run through
 # `kubectl exec <pod> -- dotnet|nuget ...`; every test sets NUGET_PACKAGES and NUGET_HTTP_CACHE_PATH below /work.
-NUGET_CLIENTS_IMAGE="quader-e2e-nugetclients:dev"
+NUGET_CLIENTS_IMAGE="quader-e2e-nugetclients:$DEV_TAG"
 NUGET_CLIENTS_LABEL="app.kubernetes.io/component=e2e-nuget-client"
 NUGET_CLIENTS_PREFIX="quader-e2e-nuget-"
 NUGET_CLIENTS_COUNT="${QUADER_E2E_NUGET_CLIENTS_PODS:-${NUGET_CLIENTS_DEFAULT_PODS:-1}}"
@@ -661,6 +677,8 @@ nuget_clients_up() {
   [ -n "${CA_FILE:-}" ] && [ -s "$CA_FILE" ] || die "the client pods verify the edge against the dev CA, which is missing (QUADER_DEV_CA_FILE, QUADER_DEV_SCHEME=https; run make dev-up)"
   if [ "${QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD:-1}" != 0 ]; then
     "$REPO_ROOT/test/e2e/nugetclients/build.sh" "$NUGET_CLIENTS_IMAGE" >"$OUT/nuget-clients-image.log" 2>&1 || { tail -20 "$OUT/nuget-clients-image.log" >&2; die "NuGet clients image build failed"; }
+  else
+    require_images QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD "$NUGET_CLIENTS_IMAGE"
   fi
   # the pods run on the control-plane node only (nodeSelector below): one copy of the 2.3 GB image, not one per node
   kind load docker-image "$NUGET_CLIENTS_IMAGE" --name "$CLUSTER" --nodes "${CLUSTER}-control-plane" >"$OUT/nuget-clients-load.log" 2>&1 || { tail -20 "$OUT/nuget-clients-load.log" >&2; die "kind load failed"; }
@@ -730,9 +748,9 @@ OCI_CLIENTS_PREFIX="quader-e2e-oci-"
 OCI_CLIENTS_COUNT="${QUADER_E2E_OCI_CLIENTS_PODS:-${OCI_CLIENTS_DEFAULT_PODS:-1}}"
 # QUADER_E2E_OCI_DOCKER_IMAGE, QUADER_E2E_OCI_PODMAN_IMAGE and QUADER_E2E_OCI_COSIGN_IMAGE name the three images otherwise, for a second
 # checkout that builds its own.
-OCI_DOCKER_IMAGE="${QUADER_E2E_OCI_DOCKER_IMAGE:-quader-e2e-ociclients-docker:dev}"
-OCI_PODMAN_IMAGE="${QUADER_E2E_OCI_PODMAN_IMAGE:-quader-e2e-ociclients-podman:dev}"
-OCI_COSIGN_IMAGE="${QUADER_E2E_OCI_COSIGN_IMAGE:-quader-e2e-ociclients-cosign:dev}"
+OCI_DOCKER_IMAGE="${QUADER_E2E_OCI_DOCKER_IMAGE:-quader-e2e-ociclients-docker:$DEV_TAG}"
+OCI_PODMAN_IMAGE="${QUADER_E2E_OCI_PODMAN_IMAGE:-quader-e2e-ociclients-podman:$DEV_TAG}"
+OCI_COSIGN_IMAGE="${QUADER_E2E_OCI_COSIGN_IMAGE:-quader-e2e-ociclients-cosign:$DEV_TAG}"
 
 oci_kc() { kubectl --context "$CTX" -n "$OCI_CLIENTS_NS" "$@"; }
 
@@ -794,6 +812,8 @@ oci_clients_up() {
   [ -n "${CA_FILE:-}" ] && [ -s "$CA_FILE" ] || die "the client pods verify the edge against the dev CA, which is missing (QUADER_DEV_CA_FILE, QUADER_DEV_SCHEME=https; run make dev-up)"
   if [ "${QUADER_E2E_OCI_CLIENTS_IMAGE_BUILD:-1}" != 0 ]; then
     "$REPO_ROOT/test/e2e/ociclients/build.sh" "$OCI_DOCKER_IMAGE" "$OCI_PODMAN_IMAGE" "$OCI_COSIGN_IMAGE" >"$OUT/oci-clients-image.log" 2>&1 || { tail -20 "$OUT/oci-clients-image.log" >&2; die "OCI clients image build failed"; }
+  else
+    require_images QUADER_E2E_OCI_CLIENTS_IMAGE_BUILD "$OCI_DOCKER_IMAGE" "$OCI_PODMAN_IMAGE" "$OCI_COSIGN_IMAGE"
   fi
   if [ "${OCI_COSIGN:-0}" = 1 ]; then oci_cosign_node; fi
   # the pods run on the control-plane node only (nodeSelector in the manifest): one copy of the images, not one per node
@@ -843,7 +863,7 @@ apt_clients_down() {
 
 # apt_render_pod <name> prints the manifest of one client pod with the variables of deploy/dev/apt-clients.yaml replaced.
 apt_render_pod() {
-  sed -e "s|\${POD}|${APT_CLIENTS_PREFIX}$1|g" -e "s|\${IMAGE}|${APT_CLIENTS_IMAGE_PREFIX}$1:dev|g" -e "s|\${EDGE_PORT}|$EDGE_PORT|g" \
+  sed -e "s|\${POD}|${APT_CLIENTS_PREFIX}$1|g" -e "s|\${IMAGE}|${APT_CLIENTS_IMAGE_PREFIX}$1:$DEV_TAG|g" -e "s|\${EDGE_PORT}|$EDGE_PORT|g" \
     -e "s|\${TARGET}|$APT_TARGET|g" "$DEV_DIR/apt-clients.yaml"
 }
 
@@ -857,10 +877,13 @@ apt_clients_up() {
   [ -n "${CA_FILE:-}" ] && [ -s "$CA_FILE" ] || die "the client pods verify the edge against the dev CA, which is missing (QUADER_DEV_CA_FILE, QUADER_DEV_SCHEME=https; run make dev-up)"
   if [ "${QUADER_E2E_APT_CLIENTS_IMAGE_BUILD:-1}" != 0 ]; then
     "$REPO_ROOT/test/e2e/aptclients/build.sh" "$APT_CLIENTS_IMAGE_PREFIX" >"$OUT/apt-clients-image.log" 2>&1 || { tail -20 "$OUT/apt-clients-image.log" >&2; die "APT clients image build failed"; }
+  else
+    # shellcheck disable=SC2046 # one word per image
+    require_images QUADER_E2E_APT_CLIENTS_IMAGE_BUILD $(for name in $APT_CLIENTS_NAMES; do printf '%s ' "${APT_CLIENTS_IMAGE_PREFIX}${name}:$DEV_TAG"; done)
   fi
   # the pods run on the control-plane node only (nodeSelector in the manifest): one copy of each image, not one per node
   for name in $APT_CLIENTS_NAMES; do
-    kind load docker-image "${APT_CLIENTS_IMAGE_PREFIX}${name}:dev" --name "$CLUSTER" --nodes "${CLUSTER}-control-plane" >>"$OUT/apt-clients-load.log" 2>&1 || { tail -20 "$OUT/apt-clients-load.log" >&2; die "kind load of the $name client image failed"; }
+    kind load docker-image "${APT_CLIENTS_IMAGE_PREFIX}${name}:$DEV_TAG" --name "$CLUSTER" --nodes "${CLUSTER}-control-plane" >>"$OUT/apt-clients-load.log" 2>&1 || { tail -20 "$OUT/apt-clients-load.log" >&2; die "kind load of the $name client image failed"; }
   done
   apt_clients_down
   # the first apply of the file creates the namespace (with the pod, which waits for the ConfigMap); the ConfigMap follows at once
@@ -890,7 +913,7 @@ fi
 if [ "${QUADER_E2E_ANSIBLESTUB:-0}" = "1" ]; then
   log "building the Galaxy test upstream image for linux/$ARCH"
   (cd "$REPO_ROOT" && make --no-print-directory ansible-stub-image IMAGE_ARCH="$ARCH") >"$OUT/ansiblestub-image.log" 2>&1 || { tail -20 "$OUT/ansiblestub-image.log" >&2; die "Galaxy test upstream image build failed"; }
-  kind load docker-image quader-e2e-ansiblestub:dev --name "$CLUSTER" >"$OUT/ansiblestub-load.log" 2>&1 || { tail -20 "$OUT/ansiblestub-load.log" >&2; die "kind load of the Galaxy test upstream failed"; }
+  kind load docker-image "quader-e2e-ansiblestub:$DEV_TAG" --name "$CLUSTER" >"$OUT/ansiblestub-load.log" 2>&1 || { tail -20 "$OUT/ansiblestub-load.log" >&2; die "kind load of the Galaxy test upstream failed"; }
   log "starting the Galaxy test upstream"
   render "$DEV_DIR/ansiblestub.yaml" | kn apply -f - >/dev/null
   kn wait --for=condition=Ready certificate/quader-ansiblestub-tls --timeout=3m >/dev/null
@@ -921,7 +944,7 @@ ansible_clients_down() {
 
 # ansible_render_pod <name> prints the manifest of one client pod with the variables of deploy/dev/ansible-clients.yaml replaced.
 ansible_render_pod() {
-  sed -e "s|\${POD}|${ANSIBLE_CLIENTS_PREFIX}$1|g" -e "s|\${IMAGE}|${ANSIBLE_CLIENTS_IMAGE_PREFIX}$1:dev|g" -e "s|\${EDGE_PORT}|$EDGE_PORT|g" \
+  sed -e "s|\${POD}|${ANSIBLE_CLIENTS_PREFIX}$1|g" -e "s|\${IMAGE}|${ANSIBLE_CLIENTS_IMAGE_PREFIX}$1:$DEV_TAG|g" -e "s|\${EDGE_PORT}|$EDGE_PORT|g" \
     -e "s|\${TARGET}|$ANSIBLE_TARGET|g" "$DEV_DIR/ansible-clients.yaml"
 }
 
@@ -935,10 +958,13 @@ ansible_clients_up() {
   [ -n "${CA_FILE:-}" ] && [ -s "$CA_FILE" ] || die "the client pods verify the edge against the dev CA, which is missing (QUADER_DEV_CA_FILE, QUADER_DEV_SCHEME=https; run make dev-up)"
   if [ "${QUADER_E2E_ANSIBLE_CLIENTS_IMAGE_BUILD:-1}" != 0 ]; then
     "$REPO_ROOT/test/e2e/ansibleclients/build.sh" "$ANSIBLE_CLIENTS_IMAGE_PREFIX" >"$OUT/ansible-clients-image.log" 2>&1 || { tail -20 "$OUT/ansible-clients-image.log" >&2; die "Ansible clients image build failed"; }
+  else
+    # shellcheck disable=SC2046 # one word per image
+    require_images QUADER_E2E_ANSIBLE_CLIENTS_IMAGE_BUILD $(for name in $ANSIBLE_CLIENTS_NAMES; do printf '%s ' "${ANSIBLE_CLIENTS_IMAGE_PREFIX}${name}:$DEV_TAG"; done)
   fi
   # the pods run on the control-plane node only (nodeSelector in the manifest): one copy of each image, not one per node
   for name in $ANSIBLE_CLIENTS_NAMES; do
-    kind load docker-image "${ANSIBLE_CLIENTS_IMAGE_PREFIX}${name}:dev" --name "$CLUSTER" --nodes "${CLUSTER}-control-plane" >>"$OUT/ansible-clients-load.log" 2>&1 || { tail -20 "$OUT/ansible-clients-load.log" >&2; die "kind load of the $name client image failed"; }
+    kind load docker-image "${ANSIBLE_CLIENTS_IMAGE_PREFIX}${name}:$DEV_TAG" --name "$CLUSTER" --nodes "${CLUSTER}-control-plane" >>"$OUT/ansible-clients-load.log" 2>&1 || { tail -20 "$OUT/ansible-clients-load.log" >&2; die "kind load of the $name client image failed"; }
   done
   ansible_clients_down
   # the first apply of the file creates the namespace (with the pod, which waits for the ConfigMap); the ConfigMap follows at once

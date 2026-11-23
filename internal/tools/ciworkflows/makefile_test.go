@@ -157,3 +157,89 @@ func TestTheImageTargetRemovesTheUntaggedImagesItLeft(t *testing.T) {
 		t.Error("the prune of make image can fail the build; it is a recipe line with a leading '-'")
 	}
 }
+
+// A make of a target that needs neither runs no `go list` of the integration packages and no git for the checkout's image tag
+// (W7; seen by the builder of W6 on 2026-11-23: every `make` listed the integration packages, which in a job without the module
+// cache downloaded the whole module graph). A go and a git on PATH record every call; `make -n cyclo` must not call `go list`
+// or `git`, and a target that needs the shards, `make -n test-integration SHARD=a`, still lists them once.
+func TestMakeListsTheIntegrationPackagesOnlyWhenARecipeNeedsThem(t *testing.T) {
+	t.Parallel()
+	if _, err := exec.LookPath("make"); err != nil {
+		t.Skip("make is not on PATH")
+	}
+	stubs := t.TempDir()
+	log := stubs + "/calls.log"
+	for _, tool := range []string{"go", "git"} {
+		real, err := exec.LookPath(tool)
+		if err != nil {
+			t.Skipf("%s is not on PATH", tool)
+		}
+		body := "#!/usr/bin/env bash\necho \"" + tool + " $*\" >> \"" + log + "\"\nexec " + real + " \"$@\"\n"
+		if err := os.WriteFile(stubs+"/"+tool, []byte(body), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	run := func(args ...string) []string {
+		t.Helper()
+		_ = os.Remove(log)
+		cmd := exec.Command("make", append([]string{"-n", "-f", "Makefile"}, args...)...)
+		cmd.Dir = repoRoot
+		for _, kv := range os.Environ() {
+			name, _, _ := strings.Cut(kv, "=")
+			if name != "MAKEFLAGS" && name != "MFLAGS" && name != "MAKELEVEL" && name != "PATH" && name != "QUADER_DEV_TAG" {
+				cmd.Env = append(cmd.Env, kv)
+			}
+		}
+		cmd.Env = append(cmd.Env, "PATH="+stubs+string(os.PathListSeparator)+os.Getenv("PATH"))
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("make -n %s: %v\n%s", strings.Join(args, " "), err, out)
+		}
+		raw, _ := os.ReadFile(log)
+		return strings.Split(strings.TrimSpace(string(raw)), "\n")
+	}
+	count := func(calls []string, prefix string) int {
+		n := 0
+		for _, c := range calls {
+			if strings.HasPrefix(c, prefix) {
+				n++
+			}
+		}
+		return n
+	}
+	calls := run("cyclo")
+	if n := count(calls, "go list -tags integration"); n != 0 {
+		t.Errorf("make -n cyclo listed the integration packages %d times: %q", n, calls)
+	}
+	if n := count(calls, "git rev-parse --absolute-git-dir"); n != 0 {
+		t.Errorf("make -n cyclo read the checkout's image tag: %q", calls)
+	}
+	if n := count(run("test-integration", "SHARD=a"), "go list -tags integration"); n != 1 {
+		t.Errorf("make -n test-integration SHARD=a listed the integration packages %d times, want once", n)
+	}
+}
+
+// Every e2e image this repository builds carries the label quader.build=e2e-image and is followed by a prune of the untagged images
+// with that label and no other (W7; the images deploy/dev/e2e.sh and the stub targets build were left to W7 by the pipeline's package
+// on 2026-11-23): the seven stub targets of the Makefile, the driver of e2e.sh and the five clients images' build.sh.
+func TestTheE2EImageBuildsRemoveTheUntaggedImagesTheyLeft(t *testing.T) {
+	t.Parallel()
+	const label = "quader.build=e2e-image"
+	prune := "docker image prune --force --filter dangling=true --filter label=" + label
+	for _, target := range []string{"npm-stub-image", "nuget-stub-image", "oci-stub-image", "deb-stub-image", "ansible-stub-image", "oidc-stub-image", "osv-stub-image"} {
+		out := makeDryRun(t, target, "IMAGE_ARCH=amd64", "QUADER_DEV_TAG=probe")
+		if !strings.Contains(out, "--label "+label) || !strings.Contains(out, prune) {
+			t.Errorf("make %s does not label its image %s and prune after it:\n%s", target, label, out)
+		}
+	}
+	for _, f := range []string{
+		"deploy/dev/e2e.sh", "test/e2e/clients/build.sh", "test/e2e/nugetclients/build.sh", "test/e2e/ociclients/build.sh",
+		"test/e2e/aptclients/build.sh", "test/e2e/ansibleclients/build.sh",
+	} {
+		text := readRepoFile(t, f)
+		builds := strings.Count(text, "docker buildx build --load")
+		labelled := strings.Count(text, "--label "+label)
+		if builds == 0 || builds != labelled || !strings.Contains(text, prune) {
+			t.Errorf("%s: %d builds, %d labelled %s, prune present %v", f, builds, labelled, label, strings.Contains(text, prune))
+		}
+	}
+}

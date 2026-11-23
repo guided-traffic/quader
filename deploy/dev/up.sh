@@ -51,7 +51,8 @@
 #                          (docs/developer/e2e.md#the-point-in-time-restore-drill). It is off by default: the plugin adds a Deployment and a
 #                          sidecar container to both PostgreSQL pods. The setting is sticky for a cluster that exists: the plugin entry
 #                          stays in the Cluster when a later run leaves the variable out, and down.sh removes it with the cluster.
-#   QUADER_IMAGE=<ref>     the quader image to load into the cluster (default guidedtraffic/quader:dev,
+#   QUADER_IMAGE=<ref>     the quader image to load into the cluster and run (default guidedtraffic/quader:<DEV_TAG>, `dev` in the
+#                          main checkout and dev-<worktree> in a worktree, deploy/dev/dev-tag.sh;
 #                          built by `make image`). It must be present in the local Docker.
 #   QUADER_DEV_HTTP_PORT=n the host port of the edge, default 8080 (https://localhost:8080). Set it when
 #                          8080 is taken; the chart's base_url follows. Fixed when the cluster is created.
@@ -65,7 +66,7 @@ POOLER="${QUADER_POOLER:-0}"
 PITR="${QUADER_PITR:-0}"
 PROFILE="${QUADER_PROFILE:-default}"
 case "$PROFILE" in default|scatter|bastion|oci|vuln|backup|edge|alerts|drain) ;; *) die "QUADER_PROFILE must be default, scatter, bastion, oci, vuln, backup, edge, alerts or drain, not '$PROFILE'" ;; esac
-IMAGE="${QUADER_IMAGE:-guidedtraffic/quader:dev}"
+IMAGE="${QUADER_IMAGE:-$DEV_IMAGE}"
 LOGS="$STATE_DIR/logs"
 START="$(date +%s)"
 
@@ -142,6 +143,10 @@ task_pki() {
     --set cainjector.image.digest="$(digest_of "$DEV_CERT_MANAGER_CAINJECTOR_IMAGE")" \
     --set startupapicheck.image.digest="$(digest_of "$DEV_CERT_MANAGER_STARTUPAPICHECK_IMAGE")" \
     --wait --timeout 5m
+  # The root and its Issuer first and Ready, then the leaves: applied at once the root was issued twice and leaves were signed with
+  # the key that was replaced (pki.yaml's header).
+  render "$DEV_DIR/pki.yaml" | kn apply -l quader-dev/pki=root -f -
+  kn wait --for=condition=Ready certificate/quader-dev-ca issuer/quader-dev-ca --timeout=3m
   render "$DEV_DIR/pki.yaml" | kn apply -f -
   kn wait --for=condition=Ready certificate/quader-dev-ca certificate/quader-edge-tls certificate/quader-s3-tls --timeout=3m
 }
@@ -366,10 +371,10 @@ else
       case $tool in clamav) pin="$CLAMAV_IMAGE" ;; trivy) pin="$TRIVY_IMAGE" ;; esac
       docker image inspect "$pin" >/dev/null 2>&1 || docker pull -q "$pin" > "$LOGS/$tool-pull.log" 2>&1 \
         || { tail -20 "$LOGS/$tool-pull.log" >&2; die "the pull of $pin failed"; }
-      docker tag "$pin" "quader-e2e-$tool:dev"
-      log "loading $pin into the kind cluster as quader-e2e-$tool:dev"
-      kind load docker-image "quader-e2e-$tool:dev" --name "$CLUSTER" > "$LOGS/$tool-load.log" 2>&1 \
-        || { tail -20 "$LOGS/$tool-load.log" >&2; die "kind load of quader-e2e-$tool:dev failed"; }
+      docker tag "$pin" "quader-e2e-$tool:$DEV_TAG"
+      log "loading $pin into the kind cluster as quader-e2e-$tool:$DEV_TAG"
+      kind load docker-image "quader-e2e-$tool:$DEV_TAG" --name "$CLUSTER" > "$LOGS/$tool-load.log" 2>&1 \
+        || { tail -20 "$LOGS/$tool-load.log" >&2; die "kind load of quader-e2e-$tool:$DEV_TAG failed"; }
     done
   fi
   chart="$REPO_ROOT/deploy/helm/quader"

@@ -45,16 +45,25 @@ TRIVY_DIGEST   := $(patsubst sha256:%,%,$(word 2,$(subst @, ,$(TRIVY_IMAGE))))
 TRIVY_DIR      := .bin/trivy-$(TRIVY_TAG)-$(shell printf '%.12s' '$(TRIVY_DIGEST)')
 TRIVY_BIN      := $(TRIVY_DIR)/trivy
 
-IMAGE       ?= guidedtraffic/quader:dev
+# The tag of every image this checkout builds for the profiles: `dev` in the main checkout, `dev-<worktree>` in a git worktree
+# (deploy/dev/dev-tag.sh, QUADER_DEV_TAG overrides), so two checkouts never run each other's image (F-059). Read once, when a
+# recipe or a default needs it: a plain `make` of another target runs no git.
+DEV_TAG = $(eval DEV_TAG := $(shell deploy/dev/dev-tag.sh))$(DEV_TAG)
+IMAGE       ?= guidedtraffic/quader:$(DEV_TAG)
 # The image of the working tree with the second UI bundle (make image-marked): the upgrade test across two bundles
 # installs it and upgrades to IMAGE (R-HA-020, Q-HA-124).
-IMAGE_MARKED ?= guidedtraffic/quader:dev-marked
+IMAGE_MARKED ?= guidedtraffic/quader:$(DEV_TAG)-marked
 UI_BUNDLE_MARK ?=
 IMAGE_ARCH  ?= $(shell go env GOARCH)
 # Runs one fetch with a wall-clock bound per attempt and three attempts, and names it when the last fails
 # (.github/scripts/fetch.sh). The test upstreams' images build on RUNTIME_BASE_IMAGE alone, so a bound of their whole build is a
 # bound of that pull: one stalled registry costs minutes, not a leg's limit (2026-11-23).
 FETCH := .github/scripts/fetch.sh
+# Every image of the end-to-end sets that this repository builds (the e2e driver, the test upstreams, the clients images) carries this
+# label, as make image's carry theirs: a build that takes the tag of an earlier one leaves that one untagged, and the prune after
+# each build removes the untagged images with the label and nothing else (the Docker VM of the development machine was full on
+# 2026-11-12). deploy/dev/e2e.sh and test/e2e/*/build.sh use the same label.
+E2E_IMAGE_BUILD_LABEL := quader.build=e2e-image
 
 # The integration stack belongs to the checkout that started it; a worktree uses the main checkout's (the parent of git's common
 # directory), as test/integration/locked.sh does. INSTANCE picks one of the instances that run side by side (1 to 9,
@@ -109,7 +118,8 @@ web-embed: ## Build the Angular workspace and embed it into internal/webui/dist 
 web: web-ci web-embed ## web-ci, then web-embed (what a local build of the UI needs)
 
 # UI development profile (docs/developer/web-ui.md#local-ui-development): its own containers, volumes and
-# ports, so it runs next to the integration stack and the kind cluster without touching either.
+# ports, so it runs next to the integration stack and the kind cluster without touching either. UI_INSTANCE=2..8 picks another
+# instance beside instance 1, one per builder (deploy/ui-dev/instance.sh); a worktree has to name one.
 .PHONY: ui-dev-up
 ui-dev-up: ## PostgreSQL, Valkey and SeaweedFS (TLS) for UI work; writes .dev/ui-dev (deploy/ui-dev/up.sh)
 	deploy/ui-dev/up.sh
@@ -119,8 +129,8 @@ ui-dev-backend: ## Write .dev/ui-dev/quader.yaml again, build quader, migrate, r
 	deploy/ui-dev/serve.sh
 
 .PHONY: ui-dev-web
-ui-dev-web: ## Angular dev server with hot reload on https://localhost:4200/ui/, everything else proxied to ui-dev-backend (after web-ci)
-	cd web && npm run start:local
+ui-dev-web: ## Angular dev server with hot reload on https://localhost:4200/ui/, everything else proxied to ui-dev-backend (after web-ci; deploy/ui-dev/web.sh)
+	deploy/ui-dev/web.sh
 
 .PHONY: ui-dev-down
 ui-dev-down: ## Stop the UI development services; PURGE=1 also removes their data and .dev/ui-dev (deploy/ui-dev/down.sh)
@@ -396,16 +406,20 @@ integration-run: ## go test -count=1 -p 1 -tags integration -timeout 30m ARGS on
 # minutes of their 45 (a, b, c, d; c runs the OCI conformance suite as well); with three shards they took 38, 43 and 42 (a, b, c),
 # and b, which every new area joined, stood six seconds under the 43.5 minutes at which a shard is cut. internal/tools/ciworkflows
 # checks that every package runs in exactly one shard of the workflow's matrix. Unset runs all.
-INTEGRATION_ALL := $(shell go list -tags integration ./test/integration/...)
+# The list is read when a recipe needs it, once (the eval replaces the variable by its value): a `make` of any other target runs
+# no `go list`, which in a job without the module cache downloaded every module of the graph (the gating jobs image,
+# container-scan, malware-scan and release-tooling did, seen by the builder of W6 on 2026-11-23). The shards are recursive for the
+# same reason.
+INTEGRATION_ALL = $(eval INTEGRATION_ALL := $(shell go list -tags integration ./test/integration/...))$(INTEGRATION_ALL)
 INTEGRATION_DIR := $(MODULE)/test/integration/
-INTEGRATION_PLATFORM := $(filter-out $(addprefix $(INTEGRATION_DIR),%local %remote %virtual),$(INTEGRATION_ALL))
-INTEGRATION_SHARD_A := $(filter $(INTEGRATION_DIR)%local,$(INTEGRATION_ALL)) \
+INTEGRATION_PLATFORM = $(filter-out $(addprefix $(INTEGRATION_DIR),%local %remote %virtual),$(INTEGRATION_ALL))
+INTEGRATION_SHARD_A = $(filter $(INTEGRATION_DIR)%local,$(INTEGRATION_ALL)) \
   $(filter $(addprefix $(INTEGRATION_DIR),coordination mirror npm nuget proxy),$(INTEGRATION_PLATFORM))
-INTEGRATION_SHARD_C := $(filter $(INTEGRATION_DIR)%remote,$(INTEGRATION_ALL)) \
+INTEGRATION_SHARD_C = $(filter $(INTEGRATION_DIR)%remote,$(INTEGRATION_ALL)) \
   $(filter-out $(INTEGRATION_SHARD_A),$(filter $(addprefix $(INTEGRATION_DIR),api backup% restore% storage% postgres blob valkey bastion%),$(INTEGRATION_PLATFORM)))
-INTEGRATION_SHARD_D := $(filter $(INTEGRATION_DIR)%virtual,$(INTEGRATION_ALL)) \
+INTEGRATION_SHARD_D = $(filter $(INTEGRATION_DIR)%virtual,$(INTEGRATION_ALL)) \
   $(filter-out $(INTEGRATION_SHARD_A) $(INTEGRATION_SHARD_C),$(filter $(addprefix $(INTEGRATION_DIR),ci vuln% malware% sign%),$(INTEGRATION_PLATFORM)))
-INTEGRATION_SHARD_B := $(filter-out $(INTEGRATION_SHARD_A) $(INTEGRATION_SHARD_C) $(INTEGRATION_SHARD_D),$(INTEGRATION_ALL))
+INTEGRATION_SHARD_B = $(filter-out $(INTEGRATION_SHARD_A) $(INTEGRATION_SHARD_C) $(INTEGRATION_SHARD_D),$(INTEGRATION_ALL))
 # The time one integration package may take. The default of 10 minutes is the sum of the area `backup` alone: about 235 tests that run one
 # after the other in one process (8 minutes on an idle host, none of them longer than 45 s and none waiting on a fixed sleep a load could
 # stretch), and coverage instrumentation and a loaded host add to it. A package that hangs is still ended, by this bound.
@@ -602,20 +616,20 @@ e2e: ## End-to-end tests on the dev cluster (deploy/dev/e2e.sh); SET=push|failov
 
 # >>> M2 npm-clients
 .PHONY: npm-clients-image
-npm-clients-image: ## Build the image of the npm client matrix (R-NPM-045: npm 10-12, pnpm 10-12, Yarn 4, Yarn 1) into the local Docker; NPM_CLIENTS_IMAGE, default quader-e2e-clients:dev
-	test/e2e/clients/build.sh $(or $(NPM_CLIENTS_IMAGE),quader-e2e-clients:dev)
+npm-clients-image: ## Build the image of the npm client matrix (R-NPM-045: npm 10-12, pnpm 10-12, Yarn 4, Yarn 1) into the local Docker; NPM_CLIENTS_IMAGE, default quader-e2e-clients:<DEV_TAG>
+	test/e2e/clients/build.sh $(or $(NPM_CLIENTS_IMAGE),quader-e2e-clients:$(DEV_TAG))
 # <<< M2 npm-clients
 
 # >>> M3 nuget-clients
 # The NuGet clients image (R-NUGET-027: the .NET 10 SDK and nuget.exe on Mono, test/e2e/nugetclients, docs/developer/e2e.md#the-nuget-clients)
 # and its smoke test. Edit only between the markers.
 .PHONY: nuget-clients-image
-nuget-clients-image: ## Build the NuGet clients image (dotnet of the pinned SDK, nuget.exe on Mono) into the local Docker; NUGET_CLIENTS_IMAGE, default quader-e2e-nugetclients:dev
-	test/e2e/nugetclients/build.sh $(or $(NUGET_CLIENTS_IMAGE),quader-e2e-nugetclients:dev)
+nuget-clients-image: ## Build the NuGet clients image (dotnet of the pinned SDK, nuget.exe on Mono) into the local Docker; NUGET_CLIENTS_IMAGE, default quader-e2e-nugetclients:<DEV_TAG>
+	test/e2e/nugetclients/build.sh $(or $(NUGET_CLIENTS_IMAGE),quader-e2e-nugetclients:$(DEV_TAG))
 
 .PHONY: nuget-clients-smoke
 nuget-clients-smoke: nuget-clients-image nuget-stub-image ## Run the NuGet clients image like a pod against the counting NuGet test upstream: both runtimes, the CA bundle, TLS verified and refused (no cluster)
-	test/e2e/nugetclients/smoke.sh $(or $(NUGET_CLIENTS_IMAGE),quader-e2e-nugetclients:dev)
+	test/e2e/nugetclients/smoke.sh $(or $(NUGET_CLIENTS_IMAGE),quader-e2e-nugetclients:$(DEV_TAG))
 # <<< M3 nuget-clients
 
 # >>> M2 npm-fuzz
@@ -638,14 +652,15 @@ fuzz-npm: ## Fuzz one npm target (FUZZ, default FuzzKitMatch) for FUZZTIME (defa
 # >>> M2 npm-stub
 # The counting test upstream of the npm tests (test/npmstub, docs/developer/e2e.md) and the reference
 # lockfile resolved against it (perf/npm, perf/README.md). Edit only between the markers.
-NPM_STUB_IMAGE ?= quader-e2e-npmstub:dev
+NPM_STUB_IMAGE ?= quader-e2e-npmstub:$(DEV_TAG)
 
 .PHONY: npm-stub-image
 npm-stub-image: ## Build the counting npm test upstream image (NPM_STUB_IMAGE, IMAGE_ARCH) on the release base image
 	@mkdir -p .out/npmstub
 	CGO_ENABLED=0 GOOS=linux GOARCH=$(IMAGE_ARCH) go build -trimpath -ldflags '-s -w' -o .out/npmstub/npmstub-linux-$(IMAGE_ARCH) ./test/npmstub/cmd/npmstub
-	$(FETCH) "the build of $(NPM_STUB_IMAGE) on $(RUNTIME_BASE_IMAGE)" 120 3 docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) \
+	$(FETCH) "the build of $(NPM_STUB_IMAGE) on $(RUNTIME_BASE_IMAGE)" 120 3 docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) --label $(E2E_IMAGE_BUILD_LABEL) \
 	  -f test/npmstub/Containerfile -t $(NPM_STUB_IMAGE) .out/npmstub
+	-docker image prune --force --filter dangling=true --filter label=$(E2E_IMAGE_BUILD_LABEL) >/dev/null
 
 .PHONY: npm-reference
 npm-reference: npm-stub-image ## Regenerate perf/npm/reference (package.json, package-lock.json) with the pinned Node image's npm against the stub
@@ -659,14 +674,15 @@ npm-reference-check: npm-stub-image ## Fail when perf/npm/reference differs from
 # >>> M4 oidc-stub
 # The GitLab-shaped OIDC issuer double of the CI tests (test/oidcstub, docs/developer/e2e.md). Edit only between
 # the markers.
-OIDC_STUB_IMAGE ?= quader-e2e-oidcstub:dev
+OIDC_STUB_IMAGE ?= quader-e2e-oidcstub:$(DEV_TAG)
 
 .PHONY: oidc-stub-image
 oidc-stub-image: ## Build the GitLab-shaped OIDC issuer double image (OIDC_STUB_IMAGE, IMAGE_ARCH) on the release base image
 	@mkdir -p .out/oidcstub
 	CGO_ENABLED=0 GOOS=linux GOARCH=$(IMAGE_ARCH) go build -trimpath -ldflags '-s -w' -o .out/oidcstub/oidcstub-linux-$(IMAGE_ARCH) ./test/oidcstub/cmd/oidcstub
-	$(FETCH) "the build of $(OIDC_STUB_IMAGE) on $(RUNTIME_BASE_IMAGE)" 120 3 docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) \
+	$(FETCH) "the build of $(OIDC_STUB_IMAGE) on $(RUNTIME_BASE_IMAGE)" 120 3 docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) --label $(E2E_IMAGE_BUILD_LABEL) \
 	  -f test/oidcstub/Containerfile -t $(OIDC_STUB_IMAGE) .out/oidcstub
+	-docker image prune --force --filter dangling=true --filter label=$(E2E_IMAGE_BUILD_LABEL) >/dev/null
 
 # Re-records test/oidcstub/testdata from a real GitLab (Q-CI-25, docs/developer/e2e.md "Validating the double against a
 # real GitLab"). Never part of CI. QUADER_GITLAB_URL and QUADER_GITLAB_TOKEN (an administrator's token, scope api) come
@@ -687,7 +703,7 @@ NUGET_FUZZ_TARGETS ?= formats/nuget/nupkg:FuzzInspect formats/nuget/nuspec:FuzzN
   formats/nuget/version:FuzzNormalize formats/nuget/version:FuzzCompare formats/nuget/version:FuzzRange formats/nuget/id:FuzzID \
   signatures/scheme/nugetcms:FuzzSignatureP7s signatures/scheme/rawkey/pki:FuzzDefinite
 NUGET_FUZZTIME ?= 5m
-NUGET_STUB_IMAGE ?= quader-e2e-nugetstub:dev
+NUGET_STUB_IMAGE ?= quader-e2e-nugetstub:$(DEV_TAG)
 NUGET_VECTORS := internal/formats/nuget/version/testdata/vectors.json
 
 .PHONY: fuzz-nuget
@@ -711,8 +727,9 @@ nuget-vectors-check: ## Fail when the committed golden vectors differ from a reg
 nuget-stub-image: ## Build the counting NuGet test upstream image (NUGET_STUB_IMAGE, IMAGE_ARCH) on the release base image
 	@mkdir -p .out/nugetstub
 	CGO_ENABLED=0 GOOS=linux GOARCH=$(IMAGE_ARCH) go build -trimpath -ldflags '-s -w' -o .out/nugetstub/nugetstub-linux-$(IMAGE_ARCH) ./test/nugetstub/cmd/nugetstub
-	$(FETCH) "the build of $(NUGET_STUB_IMAGE) on $(RUNTIME_BASE_IMAGE)" 120 3 docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) \
+	$(FETCH) "the build of $(NUGET_STUB_IMAGE) on $(RUNTIME_BASE_IMAGE)" 120 3 docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) --label $(E2E_IMAGE_BUILD_LABEL) \
 	  -f test/nugetstub/Containerfile -t $(NUGET_STUB_IMAGE) .out/nugetstub
+	-docker image prune --force --filter dangling=true --filter label=$(E2E_IMAGE_BUILD_LABEL) >/dev/null
 
 # The reference solution of the NuGet tests (perf/nuget/reference) is generated from the counting upstream's package set,
 # so a change of the set changes the files. CI runs this in the generate job (releasing.md#ci, Q-ARCH-279).
@@ -724,14 +741,15 @@ nuget-reference-check: ## Fail when perf/nuget/reference differs from a regenera
 # >>> M4b osv-stub
 # The test advisory source of the vulnerability-scanning tests (test/osvstub, R-VULN-029, docs/developer/e2e.md) and the
 # refresh of the real records frozen for it. Edit only between the markers.
-OSV_STUB_IMAGE ?= quader-e2e-osvstub:dev
+OSV_STUB_IMAGE ?= quader-e2e-osvstub:$(DEV_TAG)
 
 .PHONY: osv-stub-image
 osv-stub-image: ## Build the test advisory source image (OSV_STUB_IMAGE, IMAGE_ARCH) on the release base image
 	@mkdir -p .out/osvstub
 	CGO_ENABLED=0 GOOS=linux GOARCH=$(IMAGE_ARCH) go build -trimpath -ldflags '-s -w' -o .out/osvstub/osvstub-linux-$(IMAGE_ARCH) ./test/osvstub/cmd/osvstub
-	$(FETCH) "the build of $(OSV_STUB_IMAGE) on $(RUNTIME_BASE_IMAGE)" 120 3 docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) \
+	$(FETCH) "the build of $(OSV_STUB_IMAGE) on $(RUNTIME_BASE_IMAGE)" 120 3 docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) --label $(E2E_IMAGE_BUILD_LABEL) \
 	  -f test/osvstub/Containerfile -t $(OSV_STUB_IMAGE) .out/osvstub
+	-docker image prune --force --filter dangling=true --filter label=$(E2E_IMAGE_BUILD_LABEL) >/dev/null
 
 $(OSV_SCANNER_BIN):
 	@mkdir -p .bin
@@ -754,40 +772,43 @@ osv-reference-refresh: ## Record the public npm bulk answer for perf/npm/referen
 # >>> T16 oci-stub
 # The counting OCI test upstream (test/ocistub, R-OCI-035, docs/developer/oci.md): a registry, a token realm and a blob CDN
 # with a generated image set. Edit only between the markers.
-OCI_STUB_IMAGE ?= quader-e2e-ocistub:dev
+OCI_STUB_IMAGE ?= quader-e2e-ocistub:$(DEV_TAG)
 
 .PHONY: oci-stub-image
 oci-stub-image: ## Build the counting OCI test upstream image (OCI_STUB_IMAGE, IMAGE_ARCH) on the release base image
 	@mkdir -p .out/ocistub
 	CGO_ENABLED=0 GOOS=linux GOARCH=$(IMAGE_ARCH) go build -trimpath -ldflags '-s -w' -o .out/ocistub/ocistub-linux-$(IMAGE_ARCH) ./test/ocistub/cmd/ocistub
-	$(FETCH) "the build of $(OCI_STUB_IMAGE) on $(RUNTIME_BASE_IMAGE)" 120 3 docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) \
+	$(FETCH) "the build of $(OCI_STUB_IMAGE) on $(RUNTIME_BASE_IMAGE)" 120 3 docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) --label $(E2E_IMAGE_BUILD_LABEL) \
 	  -f test/ocistub/Containerfile -t $(OCI_STUB_IMAGE) .out/ocistub
+	-docker image prune --force --filter dangling=true --filter label=$(E2E_IMAGE_BUILD_LABEL) >/dev/null
 # <<< T16 oci-stub
 
 # >>> T17 deb-stub
 # The counting Debian archive test upstream (test/debstub, R-DEB-035, docs/developer/deb.md): suites, components, architectures,
 # a Sources index, by-hash, pdiffs, flat repositories and a large index, signed by test keys. Edit only between the markers.
-DEB_STUB_IMAGE ?= quader-e2e-debstub:dev
+DEB_STUB_IMAGE ?= quader-e2e-debstub:$(DEV_TAG)
 
 .PHONY: deb-stub-image
 deb-stub-image: ## Build the counting Debian archive test upstream image (DEB_STUB_IMAGE, IMAGE_ARCH) on the release base image
 	@mkdir -p .out/debstub
 	CGO_ENABLED=0 GOOS=linux GOARCH=$(IMAGE_ARCH) go build -trimpath -ldflags '-s -w' -o .out/debstub/debstub-linux-$(IMAGE_ARCH) ./test/debstub/cmd/debstub
-	$(FETCH) "the build of $(DEB_STUB_IMAGE) on $(RUNTIME_BASE_IMAGE)" 120 3 docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) \
+	$(FETCH) "the build of $(DEB_STUB_IMAGE) on $(RUNTIME_BASE_IMAGE)" 120 3 docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) --label $(E2E_IMAGE_BUILD_LABEL) \
 	  -f test/debstub/Containerfile -t $(DEB_STUB_IMAGE) .out/debstub
+	-docker image prune --force --filter dangling=true --filter label=$(E2E_IMAGE_BUILD_LABEL) >/dev/null
 # <<< T17 deb-stub
 
 # >>> B2 ansible-stub
 # The counting Ansible Galaxy test upstream (test/ansiblestub, R-ANS-032, docs/developer/ansible-remote.md): the Galaxy v3 and v1
 # APIs, the GitHub stand-in for role archives and the single-sign-on realm of the hub, on five host names. Edit only between the markers.
-ANSIBLE_STUB_IMAGE ?= quader-e2e-ansiblestub:dev
+ANSIBLE_STUB_IMAGE ?= quader-e2e-ansiblestub:$(DEV_TAG)
 
 .PHONY: ansible-stub-image
 ansible-stub-image: ## Build the counting Ansible Galaxy test upstream image (ANSIBLE_STUB_IMAGE, IMAGE_ARCH) on the release base image
 	@mkdir -p .out/ansiblestub
 	CGO_ENABLED=0 GOOS=linux GOARCH=$(IMAGE_ARCH) go build -trimpath -ldflags '-s -w' -o .out/ansiblestub/ansiblestub-linux-$(IMAGE_ARCH) ./test/ansiblestub/cmd/ansiblestub
-	$(FETCH) "the build of $(ANSIBLE_STUB_IMAGE) on $(RUNTIME_BASE_IMAGE)" 120 3 docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) \
+	$(FETCH) "the build of $(ANSIBLE_STUB_IMAGE) on $(RUNTIME_BASE_IMAGE)" 120 3 docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) --label $(E2E_IMAGE_BUILD_LABEL) \
 	  -f test/ansiblestub/Containerfile -t $(ANSIBLE_STUB_IMAGE) .out/ansiblestub
+	-docker image prune --force --filter dangling=true --filter label=$(E2E_IMAGE_BUILD_LABEL) >/dev/null
 # <<< B2 ansible-stub
 
 # >>> T16 oci-conformance
@@ -825,8 +846,8 @@ oci-conformance: oci-conformance-build ## OCI conformance suite (pull, push, con
 # The OCI clients images (R-OCI-035, Q-OCI-21: dockerd with Buildx and Podman in a privileged pod, test/e2e/ociclients,
 # docs/developer/e2e.md#the-oci-clients). Edit only between the markers.
 .PHONY: oci-clients-image
-oci-clients-image: ## Build the OCI clients images (the pinned dind image with the forwarder, the pinned Podman image, the pinned cosign binary) into the local Docker; OCI_CLIENTS_DOCKER_IMAGE, OCI_CLIENTS_PODMAN_IMAGE and OCI_CLIENTS_COSIGN_IMAGE, default quader-e2e-ociclients-{docker,podman,cosign}:dev
-	test/e2e/ociclients/build.sh $(or $(OCI_CLIENTS_DOCKER_IMAGE),quader-e2e-ociclients-docker:dev) $(or $(OCI_CLIENTS_PODMAN_IMAGE),quader-e2e-ociclients-podman:dev) $(or $(OCI_CLIENTS_COSIGN_IMAGE),quader-e2e-ociclients-cosign:dev)
+oci-clients-image: ## Build the OCI clients images (the pinned dind image with the forwarder, the pinned Podman image, the pinned cosign binary) into the local Docker; OCI_CLIENTS_DOCKER_IMAGE, OCI_CLIENTS_PODMAN_IMAGE and OCI_CLIENTS_COSIGN_IMAGE, default quader-e2e-ociclients-{docker,podman,cosign}:<DEV_TAG>
+	test/e2e/ociclients/build.sh $(or $(OCI_CLIENTS_DOCKER_IMAGE),quader-e2e-ociclients-docker:$(DEV_TAG)) $(or $(OCI_CLIENTS_PODMAN_IMAGE),quader-e2e-ociclients-podman:$(DEV_TAG)) $(or $(OCI_CLIENTS_COSIGN_IMAGE),quader-e2e-ociclients-cosign:$(DEV_TAG))
 # <<< T16 oci-clients
 
 # >>> T17 apt-clients

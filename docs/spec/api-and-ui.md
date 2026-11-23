@@ -22694,6 +22694,36 @@ settings of the malware scanning and of the signatures lead to them by their nam
 R-SIG-038. Code: `security-audit` of [navigation.ts](../../web/src/app/core/navigation.ts),
 [security.routes.ts](../../web/src/app/features/vulnerabilities/security.routes.ts), `currentRoute` of [app.ts](../../web/src/app/app.ts).
 
+### Q-UI-1031 · The UI development profile runs in instances, one per builder, and instance 1 is the main checkout's
+
+Status: **Decided by the development agent on 2026-11-23** — selected from the options below (D5 of the triage of 2026-11-23); the
+owner reviews it at the walkthrough. Amends [Q-UI-686](#q-ui-686--the-ui-development-profile-gives-an-anonymous-address-the-budget-of-a-signed-in-reader)'s
+profile only in where it runs.
+
+Context: the profile was one compose project per machine (`quader-ui-dev`, fixed ports) whose state belonged to the checkout. A
+builder's worktree that ran `make ui-renders` (which always runs `up.sh`) recreated the running containers with its own certificates
+under whoever was looking at the stack (2026-11-20), and the dev server on 4200 served the other checkout's UI. A builder whose change
+needed its own backend copied the compose file by hand (web-ui.md, "Nothing automates this"); nothing gave a builder a new database
+(F-053, F-207, F-208).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Instances `UI_INSTANCE=1..8`: project `quader-ui-dev<n>`, state `.dev/ui-dev-<n>`, every port plus `(n - 1) * 100`; instance 1 exactly the former names and ports, and refused in a git worktree (chosen) | [instance.sh](../../deploy/ui-dev/instance.sh), read by every script of the profile; the integration stack's shape | A builder renders against a stack of its own, a new database the default of a new instance; instance 1's configuration hash is unchanged, so a running stack is not recreated | A builder names its instance; eight at most (instance 9's dev server would be on 5000, macOS's AirPlay receiver) |
+| (b) One state directory per machine (the main checkout's, through `git rev-parse --git-common-dir`) | Every worktree uses the one stack | No new names | A worktree still restarts the stack and serves its UI on the owner's port |
+| (c) Make the render seed independent of what the database holds | | No second stack | Unbounded: every migration and seed row is a new way to differ |
+
+**Choice:** (a). `renders.sh` points the render configuration at the instance (`UI_RENDERS_EDGE`, `UI_RENDERS_STATE`,
+`UI_RENDERS_POSTGRES`); [web.sh](../../deploy/ui-dev/web.sh) starts the dev server on the instance's port with its certificate and
+its quader (`make ui-dev-web`). The variables carry no `QUADER_` prefix: a quader process refuses every `QUADER_` variable that is not
+a setting. Verified on the development machine on 2026-11-23: instance 1 refused from a worktree before anything ran; instance 2 from
+a worktree up, seeded and rendered (`login` and `projects`, four pictures, 0 failed) and removed with `PURGE`, while instance 1's
+three containers (same ids, up three days) and its processes on 4200, 19080, 19081 and 19090 (same pids) did not change; the compose
+configuration hashes of instance 1 equal those of the former file.
+
+**Applied in the spec:** none (development tooling). Code: [deploy/ui-dev/](../../deploy/ui-dev/), the `ui-*` targets of the
+[Makefile](../../Makefile). Elsewhere: [web-ui.md](../developer/web-ui.md#instances-one-per-builder),
+[build-and-test.md](../developer/build-and-test.md#instances-and-their-ports).
+
 ## What this does not cover
 
 

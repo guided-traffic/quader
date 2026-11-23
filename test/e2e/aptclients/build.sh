@@ -3,7 +3,7 @@
 # (test/e2e/clients/fwd, the one of the npm clients) for linux/<arch>, then the Dockerfile on each pinned base image.
 # `make apt-clients-image` and deploy/dev/e2e.sh both call it.
 #
-#   build.sh [tag-prefix]    default quader-e2e-aptclients-: the images are <prefix>debian13:dev, debian12, ubuntu2404 and ubuntu2204
+#   build.sh [tag-prefix]    default quader-e2e-aptclients-: the images are <prefix>debian13:<DEV_TAG> (deploy/dev/dev-tag.sh: dev in the main checkout), debian12, ubuntu2404 and ubuntu2204
 #
 # Environment: QUADER_E2E_CLIENTS_ARCH (amd64|arm64, default the host's).
 set -euo pipefail
@@ -25,11 +25,13 @@ image_ci_context "$build/ci"
 dir="$REPO_ROOT/test/e2e/aptclients"
 build_one() {
   local name="$1" base="$2"
-  log "building ${prefix}${name}:dev on $base"
-  docker buildx build --load --platform "linux/$arch" --build-arg BASE_IMAGE="$base" \
-    --build-context "fwd=$build" --build-context "ci=$build/ci" -f "$dir/Dockerfile" -t "${prefix}${name}:dev" "$dir"
+  log "building ${prefix}${name}:$DEV_TAG on $base"
+  docker buildx build --load --label quader.build=e2e-image --platform "linux/$arch" --build-arg BASE_IMAGE="$base" \
+    --build-context "fwd=$build" --build-context "ci=$build/ci" -f "$dir/Dockerfile" -t "${prefix}${name}:$DEV_TAG" "$dir"
 }
 build_one debian13 "$E2E_APTCLIENTS_DEBIAN13_IMAGE"
 build_one debian12 "$E2E_APTCLIENTS_DEBIAN12_IMAGE"
 build_one ubuntu2404 "$E2E_APTCLIENTS_UBUNTU2404_IMAGE"
 build_one ubuntu2204 "$E2E_APTCLIENTS_UBUNTU2204_IMAGE"
+# The images the tags named before are untagged now; the label (the Makefile's E2E_IMAGE_BUILD_LABEL) keeps the prune to them.
+docker image prune --force --filter dangling=true --filter label=quader.build=e2e-image >/dev/null 2>&1 || log "the prune of the untagged e2e images failed; it fails nothing"

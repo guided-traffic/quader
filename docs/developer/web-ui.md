@@ -115,7 +115,7 @@ through the dev server works only against a Quader whose base URL is `https://lo
 
 | Piece | Where | Set by |
 |---|---|---|
-| PostgreSQL, Valkey (standalone), SeaweedFS | containers `quader-ui-dev-*`, volumes `quader-ui-dev_*`; images `INTEGRATION_POSTGRES_IMAGE`, `VALKEY_91_IMAGE`, `SEAWEEDFS_IMAGE` of [tools/versions.env](../../tools/versions.env) | [compose.yaml](../../deploy/ui-dev/compose.yaml), [up.sh](../../deploy/ui-dev/up.sh) |
+| PostgreSQL, Valkey (standalone), SeaweedFS | containers `quader-ui-dev-*`, volumes `quader-ui-dev_*` (instance n: `quader-ui-dev<n>-*`, [Instances](#instances-one-per-builder)); images `INTEGRATION_POSTGRES_IMAGE`, `VALKEY_91_IMAGE`, `SEAWEEDFS_IMAGE` of [tools/versions.env](../../tools/versions.env) | [compose.yaml](../../deploy/ui-dev/compose.yaml), [up.sh](../../deploy/ui-dev/up.sh) |
 | Certificates: a CA of its own, one certificate per service with the SANs `localhost` and `127.0.0.1` | `.dev/ui-dev/certs` | [test/integration/certs.sh](../../test/integration/certs.sh), called by `up.sh` |
 | Secret files, the key ring (`dev`), the break-glass password | `.dev/ui-dev/secrets`, written once | `up.sh` |
 | Quader's configuration | `.dev/ui-dev/quader.yaml`, rewritten from the paths of the state directory by every `up.sh` and every `serve.sh`, so a change of the profile's configuration reaches an existing `.dev/ui-dev` at the next `make ui-dev-backend`; it creates no certificate, secret or container, and fails naming the file when one `up.sh` writes is missing | [config.sh](../../deploy/ui-dev/config.sh), run by `up.sh` and `serve.sh` |
@@ -156,29 +156,39 @@ through the dev server works only against a Quader whose base URL is `https://lo
   of CI, it passed the default with the rules of the download limits and got 429.
 - A new installation is empty: repositories and packages are created through the UI or the API, or by the seed of
   `make ui-renders`.
-- The volumes belong to the compose project `quader-ui-dev`, one per machine, while `.dev/ui-dev` (with the key ring) belongs
-  to the checkout. A second checkout or worktree runs `up.sh` against the same volumes with a new key ring; copy
-  `.dev/ui-dev/certs` and `.dev/ui-dev/secrets` from the first checkout before `make ui-dev-up`, or start with
-  `make ui-dev-down PURGE=1`. A database that applied a migration which has changed since is refused by `migrate up`
-  ("a changed migration needs a new database"): `make ui-dev-down PURGE=1` and `make ui-dev-up`.
-- **`make ui-renders` and `make ui-dev-up` from a second checkout or worktree recreate the running containers.** The three
-  services mount the checkout's own `.dev/ui-dev/certs` (`CERT_DIR` in [compose.yaml](../../deploy/ui-dev/compose.yaml)), so
-  the compose configuration of another checkout differs from the containers that run, and `up.sh`, which
-  [renders.sh](../../deploy/ui-dev/renders.sh) always calls, replaces them under whoever is looking at the stack. The dev
-  server on port 4200 also serves the first checkout's UI, not the worktree's. To render a worktree beside a running stack:
-  copy `.dev/ui-dev/certs` and `.dev/ui-dev/secrets` from the first checkout, start the worktree's dev server on another
-  port against the running backend, and run the render configuration (`web/e2e/renders`) by hand with the browser mapping
-  `localhost:4200` to that port; stop the dev server and remove the copied secrets afterwards. Nothing automates this
-  (found on 2026-11-20; two builders rendered this way). A change that needs its own backend (a migration, a new operation) renders
-  against a stack of its own instead: a copy of [compose.yaml](../../deploy/ui-dev/compose.yaml) with another project name, other
-  container names and other ports, the state in the worktree's own `.dev/ui-dev` (`config.sh <state>`, then its ports and its base URL
-  replaced in `quader.yaml`), the worktree's `quader` and `devidp` on ports of their own, its dev server with `--port` and
-  `QUADER_UI_DEV_BACKEND`, and the renders with `UI_RENDERS_EDGE` set to that dev server, `UI_RENDERS_POSTGRES` to the copy's
-  PostgreSQL container and `UI_RENDERS_STATE` to the copy's state directory (where the seed reads the break-glass password and the
-  database password; the state may then lie outside `.dev/ui-dev`, and the dev server takes its certificate with `--ssl-cert` and
-  `--ssl-key`), so that the seed's SQL writes the worktree's database and not the running profile's (the scanner replicas of
-  2026-11-21 rendered this way), and the screens of the ClamAV definitions the same day, whose
-  backend needed the migration of the format).
+- A database that applied a migration which has changed since is refused by `migrate up` ("a changed migration needs a new
+  database"): `make ui-dev-down PURGE=1` and `make ui-dev-up`, with the instance's `UI_INSTANCE`.
+
+### Instances, one per builder
+
+`UI_INSTANCE=<n>` (2 to 8) starts another instance of the profile beside instance 1, with its own containers, volumes, ports and
+state, so that a builder renders the screens of its worktree without touching the stack someone is looking at (F-207, F-208; the
+shape of the integration stack's instances, [build-and-test.md](build-and-test.md#instances-and-their-ports)).
+[instance.sh](../../deploy/ui-dev/instance.sh) derives every name from the number, and every script of the profile (`up.sh`,
+`config.sh`, `serve.sh`, [web.sh](../../deploy/ui-dev/web.sh), `renders.sh`, `down.sh`) and every `make ui-*` target reads it:
+
+| | Instance 1 | Instance n (2 to 8) |
+|---|---|---|
+| Compose project, container prefix | `quader-ui-dev` (`quader-ui-dev-postgres`, ...) | `quader-ui-dev<n>` (`quader-ui-dev2-postgres`, ...) |
+| Volumes | `quader-ui-dev_<service>` | `quader-ui-dev<n>_<service>` |
+| State (certificates, secrets, key ring, `quader.yaml`, binaries) | `<checkout>/.dev/ui-dev/` | `<checkout>/.dev/ui-dev-<n>/` |
+| Dev server, quader, ops, sign-in provider | 4200, 19080, 19081, 19090 | each plus `(n - 1) * 100` (instance 2: 4300, 19180, 19181, 19190) |
+| PostgreSQL, Valkey, S3 | 25432, 26390, 28333 | each plus `(n - 1) * 100` |
+
+```shell
+make ui-dev-up UI_INSTANCE=3            # the containers and .dev/ui-dev-3 of the worktree
+make ui-renders UI_INSTANCE=3 GREP=...  # starts the instance's quader, provider and dev server, seeds its database, renders
+make ui-dev-down UI_INSTANCE=3 PURGE=1  # removes the instance's containers, volumes and state, nothing of another
+```
+
+Instance 1 is the profile as it was before instances existed: its compose configuration resolves to the same values (the same
+configuration hash), so a running stack is not recreated, and the pipeline's job `ui-layout` runs it unchanged. **Instance 1 is
+refused in a git worktree**: its names and ports belong to the main checkout's stack, and before instances existed a worktree's
+`make ui-renders` recreated that stack's containers with the worktree's certificates under whoever was looking at it (2026-11-20).
+A worktree names its instance; a new instance is a new database, so `make ui-renders` seeds it from scratch. The number stops at 8:
+instance 9 would put the dev server on port 5000, which macOS's AirPlay receiver holds. `renders.sh` sets `UI_RENDERS_EDGE`,
+`UI_RENDERS_STATE` and `UI_RENDERS_POSTGRES` of the render configuration to the instance's dev server, state directory and
+PostgreSQL container, so the seed's SQL writes the instance's database.
 
 The browser warns about the dev server's certificate until the CA is trusted. Trusting it system-wide is your choice,
 not something the scripts do (macOS: `sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain .dev/ui-dev/certs/ca.crt`).

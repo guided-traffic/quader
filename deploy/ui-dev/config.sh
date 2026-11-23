@@ -8,7 +8,11 @@
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-state="$(cd "${1:-$root/.dev/ui-dev}" 2>/dev/null && pwd)" || { echo "${1:-$root/.dev/ui-dev} is missing: run 'make ui-dev-up' first" >&2; exit 1; }
+# The ports of the instance (deploy/ui-dev/instance.sh, UI_INSTANCE); its state directory is the default.
+# shellcheck source=deploy/ui-dev/instance.sh
+. "$root/deploy/ui-dev/instance.sh"
+ui_instance "$root"
+state="$(cd "${1:-$UI_STATE}" 2>/dev/null && pwd)" || { echo "${1:-$UI_STATE} is missing: run 'make ui-dev-up UI_INSTANCE=$UI_INSTANCE' first" >&2; exit 1; }
 certs="$state/certs"
 secrets="$state/secrets"
 
@@ -23,9 +27,9 @@ cat > "$state/quader.yaml.tmp" <<YAML
 server:
   # The Angular dev server (make ui-dev-web) is the edge: the browser sees https://localhost:4200 only,
   # and the dev server's proxy sends everything outside /ui/ here.
-  listen: 127.0.0.1:19080
-  ops_listen: 127.0.0.1:19081
-  base_url: https://localhost:4200
+  listen: 127.0.0.1:$UI_BACKEND_PORT
+  ops_listen: 127.0.0.1:$UI_OPS_PORT
+  base_url: https://localhost:$UI_WEB_PORT
   trusted_proxies: ["127.0.0.1/32", "::1/128"]
   tls:
     certificates:
@@ -38,7 +42,7 @@ server:
     ca_file: "$certs/ca.crt"
 database:
   host: 127.0.0.1
-  port: 25432
+  port: $UI_PG_PORT
   name: quader
   username_file: "$secrets/db-user"
   password_file: "$secrets/db-pass"
@@ -48,14 +52,14 @@ database:
     allow_superuser: true
 valkey:
   mode: standalone
-  address: 127.0.0.1:26390
+  address: 127.0.0.1:$UI_VALKEY_PORT
   password_file: "$secrets/valkey-pass"
   tls:
     ca_file: "$certs/ca.crt"
 storage:
   connections:
     - bucket: quader-blobs
-      endpoint: https://127.0.0.1:28333
+      endpoint: https://127.0.0.1:$UI_S3_PORT
       region: us-east-1
       force_path_style: true
       ca_file: "$certs/ca.crt"
@@ -68,13 +72,13 @@ secrets:
   encryption_key_files: ["$secrets/keys/dev.key"]
   active_key_id: dev
 auth:
-  # The profile's sign-in provider (test/devidp, https://localhost:19090, started by serve.sh): it signs in sam, priya,
+  # The profile's sign-in provider (test/devidp, https://localhost:<UI_IDP_PORT>, 19090 in instance 1, started by serve.sh): it signs in sam, priya,
   # ada or noor without a password, the kinds of user of the renders (docs/developer/web-ui.md#renders-of-every-screen).
   oidc:
     providers:
       ui-dev:
         display_name: UI development users
-        issuer: https://localhost:19090
+        issuer: https://localhost:$UI_IDP_PORT
         client_id: quader-ui-dev
         client_secret_file: "$secrets/idp-client-secret"
   # The sign-in screen offers the provider and the break-glass form instead of leaving for the provider at once.

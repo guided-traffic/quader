@@ -9,16 +9,16 @@
 #      and `nuget install` fetch a package from the counting NuGet test upstream (test/nugetstub),
 #   5. without the CA both refuse the certificate (so 4 proves the trust logic and not a lax client).
 #
-#   smoke.sh [image]    default image quader-e2e-nugetclients:dev (build it first: make nuget-clients-image)
+#   smoke.sh [image]    default image quader-e2e-nugetclients:<DEV_TAG> (build it first: make nuget-clients-image)
 #
-# Needs Docker and the stub image (make nuget-stub-image IMAGE_ARCH=<arch>, tag quader-e2e-nugetstub:dev; STUB_IMAGE
+# Needs Docker and the stub image (make nuget-stub-image IMAGE_ARCH=<arch>, tag quader-e2e-nugetstub:<DEV_TAG>; STUB_IMAGE
 # overrides). `make nuget-clients-smoke` builds both and runs this.
 set -euo pipefail
 # shellcheck source=deploy/dev/lib.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../deploy/dev" && pwd)/lib.sh"
 
-image="${1:-quader-e2e-nugetclients:dev}"
-stub_image="${STUB_IMAGE:-quader-e2e-nugetstub:dev}"
+image="${1:-quader-e2e-nugetclients:$DEV_TAG}"
+stub_image="${STUB_IMAGE:-quader-e2e-nugetstub:$DEV_TAG}"
 port=8443
 id=Contoso.Util
 version=2.1.0

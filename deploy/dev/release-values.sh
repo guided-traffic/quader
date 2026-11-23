@@ -13,7 +13,7 @@ require_cluster
 PROFILE="${1:?usage: release-values.sh <profile> [<values dir>]}"
 case "$PROFILE" in default|scatter|bastion|oci|vuln|mirror|backup|edge|alerts|drain) ;; *) die "the profile must be default, scatter, bastion, oci, vuln, mirror, backup, edge, alerts or drain, not '$PROFILE'" ;; esac
 POOLER="${QUADER_POOLER:-0}"
-IMAGE="${QUADER_IMAGE:-guidedtraffic/quader:dev}"
+IMAGE="${QUADER_IMAGE:-$DEV_IMAGE}"
 EDGE_PORT="$(docker port "${CLUSTER}-control-plane" 30443/tcp 2>/dev/null | head -1 | sed 's/.*://' || true)"
 EDGE_PORT="${EDGE_PORT:-$DEV_HTTP_PORT}"
 

@@ -11,8 +11,8 @@
 # does not know them. Nothing applies it but the e2e sets that use the clients.
 #
 #   ${POD}              pod name: quader-e2e-oci-<i>
-#   ${DOCKER_IMAGE}     the Docker image built by test/e2e/ociclients/build.sh (quader-e2e-ociclients-docker:dev)
-#   ${PODMAN_IMAGE}     the Podman image built by the same script (quader-e2e-ociclients-podman:dev)
+#   ${DOCKER_IMAGE}     the Docker image built by test/e2e/ociclients/build.sh (quader-e2e-ociclients-docker:<DEV_TAG>)
+#   ${PODMAN_IMAGE}     the Podman image built by the same script (quader-e2e-ociclients-podman:<DEV_TAG>)
 # The third image of that script, the cosign binary, is not a container here: the set `oci` copies the binary onto the node (the volume
 # cosign below).
 #   ${EDGE_PORT}        the port of the edge (QUADER_DEV_HTTP_PORT), the forwarder's listener and the port of every registry host

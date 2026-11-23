@@ -2,7 +2,7 @@
 # Service on port 443, HTTPS only, with a certificate of the dev CA (pki.yaml). It serves the suites stable and testing, the large
 # index (suite bulk), a flat repository (/flat/binary/) and a flat root (/flatroot/), all signed by the stub's test keys.
 # It is applied by a wiring step of the e2e harness (deploy/dev/e2e.sh, marker T17 deb-stub, QUADER_E2E_DEBSTUB=1, set deb), never by up.sh.
-# The image is built by `make deb-stub-image` and must be loaded into kind (tag quader-e2e-debstub:dev), so the pull policy is
+# The image is built by `make deb-stub-image` and must be loaded into kind (tag quader-e2e-debstub:<DEV_TAG>, deploy/dev/dev-tag.sh), so the pull policy is
 # IfNotPresent.
 #
 # quader reaches it as https://debstub.${NS}.svc and trusts the dev CA through proxy.outbound.tls.ca_files (values-dev.yaml). The
@@ -93,7 +93,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: debstub
-          image: quader-e2e-debstub:dev
+          image: quader-e2e-debstub:${DEV_TAG}
           imagePullPolicy: IfNotPresent
           args:
             - -listen=:8443

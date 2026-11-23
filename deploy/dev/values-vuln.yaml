@@ -55,12 +55,12 @@ worker:
       queues: [vuln]
       replicaCount: 2
       terminationGracePeriodSeconds: 30
-# The analyser's image of the pin TRIVY_IMAGE, tagged quader-e2e-trivy:dev and loaded into the nodes by up.sh as ClamAV's is (the nodes
+# The analyser's image of the pin TRIVY_IMAGE, tagged quader-e2e-trivy:<DEV_TAG> (lib.sh sets the value) and loaded into the nodes by up.sh as ClamAV's is (the nodes
 # pull nothing from Docker Hub for it): the init container trivy of every scanner pod copies its binary (R-HA-070).
 trivy:
   image: quader-e2e-trivy:dev
   pullPolicy: IfNotPresent
-# ClamAV of the pin CLAMAV_IMAGE, tagged quader-e2e-clamav:dev and loaded into the nodes by up.sh (the nodes pull nothing from Docker
+# ClamAV of the pin CLAMAV_IMAGE, tagged quader-e2e-clamav:<DEV_TAG> (lib.sh sets the value) and loaded into the nodes by up.sh (the nodes pull nothing from Docker
 # Hub for it). clamd holds a database of a few signatures here: its request is the measured one of that database (Q-HA-361); the limit
 # stays the chart's floor.
 clamav:

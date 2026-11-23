@@ -2,13 +2,15 @@
 
 package e2e
 
-// Drain and failover under the NuGet load (Q-NUGET-73, Q-HA-100): variant A of R-HA-059's drain test and the PostgreSQL-switchover
-// and Valkey-failover scenarios of R-HA-052, each under the whole load of R-HA-059's table: the npm part of npm_load_test.go
-// and the NuGet part of nuget_load_test.go together, in the scatter profile with three api, three packages and four worker
-// replicas. The drain scenario is also R-ARCH-024's first acceptance criterion (a drain during 100 npm ci, 20 npm publish,
-// 100 dotnet restore and 20 dotnet nuget push). The scenarios are those of TestNPMHA, and so are their pass conditions; the
-// shared harness (drainVariantA, runLoadFault) is in npm_ha_test.go; the drain flow of every variant is drainUnderLoad (drain_load_test.go), which this test runs with the long-transfer probes and
-// the storage job of R-STOR-046 (E5.9). Variants B to E under the same load: TestDrainLoad, TestDrainLoadPooler.
+// Drain under the NuGet load (Q-NUGET-73, Q-HA-100, Q-HA-488): variant A of R-HA-059's drain test under the whole load of
+// R-HA-059's table, the npm part of npm_load_test.go and the NuGet part of nuget_load_test.go together, in the scatter profile with
+// three api, three packages and four worker replicas. It is R-ARCH-024's first acceptance criterion (a drain during 100 npm ci,
+// 20 npm publish, 100 dotnet restore and 20 dotnet nuget push), and it is what NuGet's client adds to npm-ha: dotnet restore and
+// push, with their own retries, across the connections a drain cuts. The PostgreSQL switchover and the Valkey failover ran here
+// too until 2026-11-23; they are the server's behaviour, which TestNPMHA holds under the npm load in the same night, and they cost
+// this leg about ten minutes (Q-HA-488). The shared harness (drainVariantA) is in npm_ha_test.go; the drain flow of every variant
+// is drainUnderLoad (drain_load_test.go), which this test runs with the long-transfer probes and the storage job of R-STOR-046
+// (E5.9). Variants B to E under the same load: TestDrainLoad, TestDrainLoadPooler.
 
 import (
 	"testing"
@@ -29,39 +31,6 @@ func TestNuGetHA(t *testing.T) {
 
 	t.Run("R-HA-059 R-HA-052 R-STOR-046 R-ARCH-024 R-NUGET-030 Q-NUGET-73 E5.9 drain variant A under the npm and NuGet load: every npm and dotnet command exits 0, k6 only 2xx and 304, p99 at most twice the warm-up's, every acknowledged publish and push installs, a long transfer is cut at most once per evicted packages pod and completes by resume, jobs resume with their attempt, gc-full finishes on the other worker, no SIGKILL, nothing Pending for 60 s, and the run reaches 100 npm ci, 20 npm publish, 100 dotnet restore and 20 dotnet nuget push", func(t *testing.T) {
 		drainVariantA(t, "nuget", func() drainLoad { return startFullLoad(t, h, nh, "drain") }, drainExtras()...)
-	})
-
-	t.Run("R-HA-051 R-HA-052 R-HA-015 R-NUGET-030 dev-failover (PostgreSQL switchover) during the npm ci and dotnet restore loops: no failed iteration, k6 only 2xx and 304", func(t *testing.T) {
-		r := runFullFault(t, h, nh, "pg-switchover", time.Minute, time.Minute, func() { script(t, "failover.sh") })
-		r.steady(t)
-		r.res.allExitZero(t)
-		r.res.loopsSpan(t, r.faultAt, r.faultEnd)
-		r.res.k6Holds(t)
-		r.res.installPublished(t)
-	})
-
-	t.Run("R-HA-051 R-HA-052 R-HA-057 R-NUGET-030 dev-valkey-failover during the npm ci and dotnet restore loops: no failed iteration, k6 only 2xx and 304, /readyz 200 throughout, every replica follows the new primary once", func(t *testing.T) {
-		const changes = "quader_valkey_primary_changes_total"
-		var before map[string]float64
-		r := runFullFault(t, h, nh, "valkey-failover", time.Minute, time.Minute, func() {
-			before = replicaMetric(t, changes)
-			script(t, "valkey-failover.sh")
-		})
-		r.steady(t)
-		r.res.allExitZero(t)
-		r.res.loopsSpan(t, r.faultAt, r.faultEnd)
-		r.res.k6Holds(t)
-		if len(r.mon.ready) != 0 {
-			t.Errorf("/readyz answered non-200 during the Valkey failover: %v", r.mon.ready)
-		}
-		after := replicaMetric(t, changes)
-		for p, v := range after {
-			if d := v - before[p]; d != 1 {
-				t.Errorf("R-HA-057: %s on %s rose by %v, want 1", changes, p, d)
-			}
-		}
-		t.Logf("%s before %v, after %v", changes, before, after)
-		r.res.installPublished(t)
 	})
 }
 
@@ -185,13 +154,4 @@ func (r fullHAResult) note() map[string]any {
 		"npm_ci": r.npm.count("ci"), "npm_publish": r.npm.count("publish"), "dotnet_restore": r.nuget.count("restore"), "dotnet_push": r.nuget.count("push"),
 		"npm_published": len(r.npm.Published), "nuget_published": len(r.nuget.Published),
 	}
-}
-
-// runFullFault is runLoadFault under the whole load.
-func runFullFault(t *testing.T, h *npmHAFixture, nh *nugetHAFixture, name string, before, after time.Duration, fault func()) loadFaultRun[fullHAResult] {
-	t.Helper()
-	return runLoadFault(t, "nuget-ha-"+name, name, before, after, func() (func(*testing.T) fullHAResult, func() error) {
-		l := startFullLoad(t, h, nh, name)
-		return l.stopBoth, l.npm.warmUpFailures
-	}, fault, fullHAResult.note)
 }

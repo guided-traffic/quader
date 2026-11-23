@@ -1,7 +1,7 @@
 # The GitLab-shaped OIDC issuer double of the CI e2e tests (test/oidcstub, docs/developer/e2e.md): discovery
 # document and key set behind Service oidcstub on port 443, HTTPS only, with a certificate of the dev CA
 # (pki.yaml). It is applied by deploy/dev/e2e.sh when QUADER_E2E_OIDCSTUB=1, never by up.sh. The image is built by
-# `make oidc-stub-image` and loaded into kind by e2e.sh (tag quader-e2e-oidcstub:dev), so the pull policy is
+# `make oidc-stub-image` and loaded into kind by e2e.sh (tag quader-e2e-oidcstub:<DEV_TAG>, deploy/dev/dev-tag.sh), so the pull policy is
 # IfNotPresent.
 #
 # quader reaches it as https://oidcstub.${NS}.svc (that is the issuer it announces, -public-url) and trusts the dev CA
@@ -105,7 +105,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: oidcstub
-          image: quader-e2e-oidcstub:dev
+          image: quader-e2e-oidcstub:${DEV_TAG}
           imagePullPolicy: IfNotPresent
           args:
             - -listen=:8443

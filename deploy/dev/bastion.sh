@@ -28,7 +28,7 @@ set -euo pipefail
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 
 BNS="${QUADER_E2E_BASTION_NAMESPACE:-quader-bastion}"
-IMAGE="${QUADER_IMAGE:-guidedtraffic/quader:dev}"
+IMAGE="${QUADER_IMAGE:-$DEV_IMAGE}"
 EDGE_PORT="$(docker port "${CLUSTER}-control-plane" 30443/tcp 2>/dev/null | head -1 | sed 's/.*://' || true)"
 EDGE_PORT="${EDGE_PORT:-$DEV_HTTP_PORT}"
 bn() { kubectl --context "$CTX" -n "$BNS" "$@"; }
@@ -115,13 +115,16 @@ install() {
   probe="$probe]"
   # The image keeps its tag while the image behind it changes (kind load): the ID as a pod annotation rolls the pods exactly then.
   local image_id; image_id="$(docker image inspect -f '{{.Id}}' "$IMAGE")"
+  # The chart runs $IMAGE, the checkout's tag, not the tag of bastion-chart-common.yaml (F-077); the interface-mismatch scenario's
+  # QUADER_BASTION_HELM_EXTRA comes after and sets its own.
+  RELEASE_VALUES=(); image_values image "$IMAGE"
   log "helm upgrade --install bastion-$variant ($BNS)"
   # shellcheck disable=SC2086
   helm --kube-context "$CTX" upgrade --install "bastion-$variant" "$REPO_ROOT/deploy/helm/quader-bastion" -n "$BNS" \
     -f "$DEV_DIR/bastion-chart-common.yaml" -f "$values" \
     --set "config.server.base_url=https://bastion-$variant.quader.localhost:$EDGE_PORT" \
     --set-json "networkPolicy.ingress.probeCIDRs=$probe" \
-    --set-string "podAnnotations.quader-dev/image-id=$image_id" \
+    --set-string "podAnnotations.quader-dev/image-id=$image_id" "${RELEASE_VALUES[@]}" \
     --force-conflicts --wait --timeout 5m ${QUADER_BASTION_HELM_EXTRA:-}
   bn get pods -l "app.kubernetes.io/instance=bastion-$variant" -o wide
 }

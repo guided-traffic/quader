@@ -25,7 +25,7 @@ set -euo pipefail
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 
 RNS="${QUADER_E2E_RESTORE_NAMESPACE:-quader-restore}"
-IMAGE="${QUADER_IMAGE:-guidedtraffic/quader:dev}"
+IMAGE="${QUADER_IMAGE:-$DEV_IMAGE}"
 case "${QUADER_RESTORE_PROFILE:-}" in "" | vuln) ;; *) die "QUADER_RESTORE_PROFILE must be empty or vuln, not '${QUADER_RESTORE_PROFILE}'" ;; esac
 rn() { kubectl --context "$CTX" -n "$RNS" "$@"; }
 
@@ -84,6 +84,9 @@ helm_args() {
     --set-string "api.podAnnotations.quader-dev/image-id=$image_id" --set-string "packages.podAnnotations.quader-dev/image-id=$image_id" \
     --set-string "worker.podAnnotations.quader-dev/image-id=$image_id" \
     --set-string "backup.podAnnotations.quader-dev/image-id=$image_id" --set-string "restore.podAnnotations.quader-dev/image-id=$image_id"
+  # The chart runs $IMAGE, the checkout's tag, not the tag of values-restore.yaml (F-160).
+  RELEASE_VALUES=(); image_values image "$IMAGE"
+  printf '%s\n' "${RELEASE_VALUES[@]}"
 }
 
 down() {

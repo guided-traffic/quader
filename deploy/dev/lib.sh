@@ -21,6 +21,30 @@ set -a
 . "$REPO_ROOT/tools/versions.env"
 set +a
 
+# The tag of every image this checkout builds and runs in the profiles: `dev` in the main checkout, `dev-<worktree>` in a git
+# worktree (deploy/dev/dev-tag.sh, QUADER_DEV_TAG overrides), so two checkouts never run each other's image (F-059).
+DEV_TAG="$("$DEV_DIR/dev-tag.sh")"
+export DEV_TAG
+DEV_IMAGE="guidedtraffic/quader:$DEV_TAG"
+export DEV_IMAGE
+
+# image_values PREFIX REF appends to RELEASE_VALUES the chart values that make a chart run the image REF (repository:tag): the
+# registry, the repository and the tag under PREFIX (image, or a sub-chart's). Without them the chart ran its values' tag `dev`
+# whatever image up.sh had loaded (F-058, F-077, F-160). A repository without a host is Docker Hub's, one without a slash
+# Docker Hub's library, as docker names them on the kind nodes.
+image_values() {
+  local prefix="$1" ref="$2" registry repo tag
+  case "$ref" in *@*) die "the image $ref is named by digest; the profiles load an image by repository:tag" ;; esac
+  tag="${ref##*:}"; repo="${ref%:*}"
+  [ "$tag" != "$ref" ] && [ "${tag#*/}" = "$tag" ] || die "the image $ref has no tag"
+  registry=docker.io
+  case "${repo%%/*}" in
+    *.*|*:*|localhost) if [ "${repo#*/}" != "$repo" ]; then registry="${repo%%/*}"; repo="${repo#*/}"; fi ;;
+  esac
+  [ "$registry" != docker.io ] || [ "${repo#*/}" != "$repo" ] || repo="library/$repo"
+  RELEASE_VALUES+=(--set "$prefix.registry=$registry" --set "$prefix.repository=$repo" --set-string "$prefix.tag=$tag" --set "$prefix.digest=")
+}
+
 # Every helm upgrade of the profile keeps two revisions of its release, not helm's ten: each revision is a Secret of up to a
 # megabyte, and the internal-secrets-operator caches every Secret of the cluster (after a few dozen runs of dev-up, 78 release
 # Secrets of 23 MB in all OOM-killed it at its start, F-127).
@@ -275,11 +299,13 @@ release_values() {
     RELEASE_VALUES+=(--set "endpoints.ocimirror.baseUrl=https://oci-mirror.quader.localhost:$EDGE_PORT")
   fi
   if [ "$annotate" = 1 ]; then
-    # The tag stays guidedtraffic/quader:dev while the image behind it changes, and kind load replaces the image on the nodes
+    # The tag stays the checkout's (guidedtraffic/quader:dev in the main checkout) while the image behind it changes, and kind load replaces the image on the nodes
     # without touching the pod spec, so helm would find nothing to roll. The image ID in a pod annotation of every role
     # changes the spec exactly when the loaded image changed; a second run with the same image changes nothing (the profile
     # switches of the e2e suite run this script again and must not roll the pods).
     image_id="$(docker image inspect -f '{{.Id}}' "$IMAGE")"
+    # The chart runs $IMAGE itself, not the tag of values-dev.yaml.
+    image_values image "$IMAGE"
     RELEASE_VALUES+=(--set-string "api.podAnnotations.quader-dev/image-id=$image_id" --set-string "packages.podAnnotations.quader-dev/image-id=$image_id" --set-string "worker.podAnnotations.quader-dev/image-id=$image_id")
     # The image scanning's scanner runs the same image (R-HA-065); annotate is set only for the working tree's own chart, which has the
     # key (Q-HA-372).
@@ -289,7 +315,9 @@ release_values() {
   fi
   [ "$POOLER" = "1" ] && RELEASE_VALUES+=(-f "$dir/values-pooler.yaml")
   [ "$profile" = "scatter" ] && RELEASE_VALUES+=(-f "$dir/values-scatter.yaml")
-  [ "$profile" = "vuln" ] && RELEASE_VALUES+=(-f "$dir/values-scatter.yaml" -f "$dir/values-vuln.yaml")
+  # values-vuln.yaml names the analyser's and ClamAV's images as up.sh loads them, under the checkout's tag.
+  [ "$profile" = "vuln" ] && RELEASE_VALUES+=(-f "$dir/values-scatter.yaml" -f "$dir/values-vuln.yaml" \
+    --set "trivy.image=quader-e2e-trivy:$DEV_TAG" --set "clamav.image=quader-e2e-clamav:$DEV_TAG")
   [ "$profile" = "backup" ] && RELEASE_VALUES+=(-f "$dir/values-backup.yaml")
   # The profiles edge (Envoy Gateway beside the Ingress, the transfers of R-HA-039) and alerts (ServiceMonitor and PrometheusRule): older release
   # copies have neither file, and the upgrade tests never ask for these profiles.
@@ -323,6 +351,7 @@ render() {
     -e "s|\${DEV_KEYCLOAK_IMAGE}|${DEV_KEYCLOAK_IMAGE}|g" \
     -e "s|\${DEV_ENVOY_PROXY_IMAGE}|${DEV_ENVOY_PROXY_IMAGE}|g" \
     -e "s|\${NS}|${NS}|g" \
+    -e "s|\${DEV_TAG}|${DEV_TAG}|g" \
     -e "s|\${EDGE_PORT}|${EDGE_PORT:-$DEV_HTTP_PORT}|g" \
     "$1"
 }

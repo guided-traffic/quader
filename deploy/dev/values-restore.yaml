@@ -83,6 +83,11 @@ config:
   maintenance:
     tasks:
       vuln-sync-trivy-db: {enabled: false, schedule: "23 */6 * * *"}
+  # The malware scanning off, as in values-dev.yaml: the binary's default is on (internal/config/malware.go), and this file is the
+  # restore drill's only values, so without the key the drill ran ClamAV and its updater, which fetches ClamAV's real database from
+  # ClamAV's network (R-MAL-030, Q-MAL-90; F-110). The drill's `vuln` variant (values-restore-vuln.yaml) is unchanged.
+  malware:
+    enabled: false
   system:
     bootstrap_anonymous_read: true
   health:

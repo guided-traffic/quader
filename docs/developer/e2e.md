@@ -98,8 +98,8 @@ test/e2e/                   the Go tests, build tag `e2e`, package e2e
   npm_closing_test.go       the closing run: the matrix and the cold install with Valkey stopped, the public-registry subset
   npm_load_test.go          E2.11's load: the fixture (tokens, the lockfile of 475 packages, the 1 to 5 MiB tarballs), the npm ci
                             and publish loops detached in the client pods, the k6 npm requests and their conditions
-  npm_ha_test.go            E2.11: drain variant A, PostgreSQL switchover, Valkey failover, pod crash (TestNPMHA); the Valkey
-                            outage of the closing run (TestNPMHAClosing)
+  npm_ha_test.go            E2.11: drain variant A, PostgreSQL switchover, Valkey failover, the Valkey outage with a replaced
+                            packages pod (TestNPMHA, the nightly's npm-ha); pod crash (TestNPMHACrash)
   ha_suite_test.go          R-HA-052 under the npm load, the rest of it: the object-store outage, node loss, PostgreSQL and Valkey primary loss,
                             the audit forward cut by a pod deletion (TestHASuite_..., set ha-suite)
   ha_faults_test.go         E5.10 under the npm load: the database at 0 instances, Sentinel quorum loss, FLUSHALL, a slow Valkey, a Valkey credential
@@ -110,7 +110,7 @@ test/e2e/                   the Go tests, build tag `e2e`, package e2e
   k6/npm.js                 the k6 npm requests of R-HA-059: documents and 1 to 5 MiB tarballs of npm-all, 120 requests/s
   nuget_load_test.go        the NuGet load of R-HA-059: the fixture (nuget-ha-local, -remote, -all, 61 packages per restore), the dotnet restore and
                             push loops detached in the client pods, the k6 NuGet requests and their conditions
-  nuget_ha_test.go          drain variant A, PostgreSQL switchover and Valkey failover under the npm and NuGet load; R-ARCH-024's drain (TestNuGetHA)
+  nuget_ha_test.go          drain variant A under the npm and NuGet load, R-ARCH-024's drain (TestNuGetHA)
   k6/nuget.js               the k6 NuGet requests of R-HA-059: registrations, version lists and packages of nuget-all, 30 requests/s
   oci_clients_test.go       the OCI client pods (R-OCI-035): the pod helpers, pinning to a replica, the smoke test (TestOCIClients)
   oci_env_test.go           the OCI harness: fixture (oci-e2e, oci-e2e-open, publisher), ociClient (docker or podman in a pod), the control API of the OCI test upstream, upstreamRepos
@@ -173,7 +173,7 @@ perf/k6/npm.js              the npm load scripts of R-ARCH-027 (P-1, P-3, P-5, P
 ## Running it
 
 ```shell
-make image VERSION=dev          # IMAGE defaults to guidedtraffic/quader:dev
+make image VERSION=dev          # IMAGE defaults to guidedtraffic/quader:dev (dev-<worktree> in a worktree, local-profile.md)
 make dev-up                  # QUADER_DEV_HTTP_PORT=28080 make dev-up when 8080 is taken
 make e2e SET=push            # E0.3, E0.4, E0.6, E0.7, E0.12, E0.14, E0.15, E0.16, E1.14, then E0.11 (CI, every change)
 make e2e SET=failover        # the E0.13 failovers and the E1.8 limits (CI: nightly and on dispatch, since 2026-11-01)
@@ -200,7 +200,7 @@ make e2e SET=nuget-clients   # build the NuGet clients image, start the client p
 make e2e SET=nuget-clients-down  # remove the NuGet client pods
 make e2e SET=nuget           # every TestNuGet... but TestNuGetClosing... and TestNuGetHA...: local, remote and virtual repositories, a project's partner (TestNuGetProjectPartner), E3.2, E3.6 and E3.7 with the real clients; the test upstream and three client pods (Q-NUGET-34, Q-NUGET-70); CI job e2e-nuget when the push changes NuGet's own paths, nightly job format-nuget
 make e2e SET=nuget-closing   # the additions of the closing run (TestNuGetClosing: R-NUGET-030 and R-NUGET-031 with Valkey stopped; TestNuGetClosingPublic: the read-only subset against nuget.org; exports QUADER_E2E_NUGET_CLOSING=1); CI leg of a closing dispatch
-make e2e SET=nuget-ha        # TestNuGetHA: drain variant A, the PostgreSQL switchover and the Valkey failover under the npm and NuGet load together (R-HA-059, R-ARCH-024), and the status of a NuGet mirror from every replica (R-REPO-058); CI job e2e-nuget in the nightly workflow; starts both client pods and both test upstreams
+make e2e SET=nuget-ha        # TestNuGetHA: drain variant A under the npm and NuGet load together (R-HA-059, R-ARCH-024), and the status of a NuGet mirror from every replica (R-REPO-058); CI job e2e-nuget in the nightly workflow; starts both client pods and both test upstreams
 make e2e SET=drain-load      # E5.9: TestDrainLoad, drain variants B, C and E under the full load, the long-transfer probes and R-STOR-046's gc-full; both client pods; profile `drain`; all three variants in one cluster, for local runs; CI runs the legs drain-load-b, -c and -e (one variant each; needs about 12 cores and 10 GiB)
 make e2e SET=drain-load-pooler  # E5.9: TestDrainLoadPooler, drain variant D (an instance of the request pooler) under the same load, in the pooler profile (QUADER_POOLER=1, set by the set); CI job e2e-drain-pooler, nightly
 make nuget-clients-image     # only build the NuGet clients image into the local Docker
@@ -411,6 +411,7 @@ sampler run in the unit tests against fabricated cgroup trees of both classes ([
 | `pods.csv` | One row per pod of each kind node every 5 s: `node`, `pod_uid`, `cpu_usage_us`, `mem_current`, `mem_anon` (the heap and stacks of the process), `mem_file` (page cache), `mem_sock` (the kernel's socket buffers, charged to the pod), `mem_kernel`, `oom_kill` (the OOM kills of the pod's cgroup so far). `pod-names.tsv` gives the namespace and name of each uid |
 | `pod-memory.csv` | Only where the daemon's cgroup parent lies inside a pod (`large`): every 5 s and once at the end, the pod's `mem_current`, `mem_peak` (`memory.peak`, the highest since the pod started), `mem_max` (its limit), `oom` and `oom_kill` (`memory.events`: every OOM event and kill below the pod, so a kind pod killed at its own limit counts here too), `oom_local` (the `oom` count of `memory.events.local`: the pod's own limit was hit), `docker_mem_current` (the daemon's parent: the leg's containers alone), then from the pod's `memory.stat`: `mem_anon` (anonymous memory: heaps and stacks), `mem_file` (page cache, `shmem` included), `mem_kernel` (all kernel memory: slab, stacks, page tables, percpu, vmalloc), `mem_shmem` (tmpfs and shared memory, part of `mem_file` but not reclaimable without swap), `mem_slab_reclaimable` (the part of `mem_kernel` the kernel can free: dentries, inodes), `mem_sock` (socket buffers, not part of `mem_kernel`). A field the kernel does not have stays empty (`kernel` is the youngest of the six; an older kernel lists only its parts). The last row heads `README.txt`, with the peak over all rows of `mem_anon` and of what cannot be given back, `mem_anon + mem_shmem + mem_sock + mem_kernel - mem_slab_reclaimable` |
 | `containers.tsv` | The containers of the job's own Docker daemon (the kind nodes, k6, the helpers) by their 12-character id, as seen every 10 s: every other `cgd:` row is a neighbour's |
+| `db-connections.csv` | The connections of the primary of `quader-db` by client and state, every `QUADER_E2E_EVIDENCE_POD_INTERVAL` seconds (5): `unix_ms,pod,application_name,state,count` from `pg_stat_activity` (client backends only), read with one `kubectl exec ... psql` per sample and the primary looked up each time, so a switchover shows as another pod. Whether a pool ran out (the size of each pool is the replicas' metric `quader_db_pool_max_connections`) or a pooler held its connections across a drain (F-169) |
 | `secrets.tsv` | Every Secret of every namespace at the start (`start`) and at the end (`end`): `resourceVersion`, creation time, `uid` and the managers that wrote it. Names and metadata only; no value is read |
 | `secrets-watch.log` | The watch of the Secrets: first the list at the start, then one line per change with the time it was seen |
 | `events.tsv` | The Kubernetes events of every namespace (time, namespace, object, type, reason, count, message), from the watch, so events older than the cluster's hour of retention are in it |
@@ -1497,7 +1498,7 @@ fault is therefore never a failed client command, and a loop that dies leaves no
 | `TestNPMHA` switchover | `failover.sh` (`dev-failover`) after 1 minute; 1 minute after | all three | every `npm` command exits `0`, every `npm ci` loop ran a command during the switchover; k6 as above; every acknowledged publish installs; `/healthz` 200 on every pod, no restart |
 | `TestNPMHA` Valkey failover | `valkey-failover.sh` (`dev-valkey-failover`) after 1 minute; 1 minute after | all three | as the switchover, and `/readyz` 200 on every pod throughout, and `quader_valkey_primary_changes_total` rises by exactly one on every `api`, `packages` and `worker` replica (R-HA-057) |
 | `TestNPMHACrash` | `kubectl delete pod --grace-period=0 --force` of a random `api`, `packages` or `worker` pod (the seed is logged), every 2 minutes: three times, ten with `QUADER_E2E_NPM_CRASH_SOAK=1` (`npm-ha-soak`, `npm-ha-closing`) | `npm ci` and publish loops (R-HA-052 adds k6 only to the drain and Valkey rows) | every `npm` command exits `0`; `quader admin storage verify`, run in the worker pod, exits `0` and reports no blob without its object (`requireStorageVerified`, [Q-HA-69](../spec/ha-and-helm.md#q-ha-69--the-storage-check-of-the-pod-crash-before-quader-admin-storage-verify-exists) revisited); every acknowledged publish installs; `/healthz` 200 on every pod that was not deleted; three `api`, three `packages` and four `worker` pods ready at the end |
-| `TestNPMHAClosing` (closing run) | `valkey-stop.sh` after 1 minute; 2 minutes in, one `packages` pod deleted with its grace period; `valkey-start.sh` 5 minutes after the stop | all three | every `npm` command exits `0`; k6 as above; the replacement pod becomes ready with `valkey` degraded; `/readyz` 200 throughout on every pod but the deleted one and its replacement; after the return, `degraded` clears on every replica within `open_duration` plus `health_check_interval` plus 5 s (15 s in the dev profile, read through `driver info`), counted from the first moment a Sentinel names a primary again (`valkeyClearWatch` polls while `valkey-start.sh` still waits for the StatefulSets and the operator) |
+| `TestNPMHA` Valkey outage (the nightly's `npm-ha`; until 2026-11-23 the closing run's `TestNPMHAClosing`, which nothing had run since 2026-11-18) | `valkey-stop.sh` after 1 minute; 2 minutes in, one `packages` pod deleted with its grace period; `valkey-start.sh` 5 minutes after the stop | all three | every `npm` command exits `0`; k6 as above; the replacement pod becomes ready with `valkey` degraded; `/readyz` 200 throughout on every pod but the deleted one and its replacement; after the return, `degraded` clears on every replica within `open_duration` plus `health_check_interval` plus 5 s (15 s in the dev profile, read through `driver info`), counted from the first moment a Sentinel names a primary again (`valkeyClearWatch` polls while `valkey-start.sh` still waits for the StatefulSets and the operator) |
 | `TestNPMPerf` | none | [perf/k6/npm.js](../../perf/k6/npm.js) | every request answered `200` or shed with the replica's `503 server_busy`; no restart of the target pod; the numbers are reported, not gated (below) |
 
 The drain picks its node with `drainNodeVariantA`: a worker node with an `api`, a `packages` and a `worker` pod and neither the PostgreSQL primary nor
@@ -1875,11 +1876,13 @@ The first run of the forced stop of the request pooler found a product defect: `
 ## Drain and failover under NuGet load
 
 `make e2e SET=nuget-ha` (CI leg `e2e-nuget (nuget-ha)` of the nightly workflow, on dispatch and locally) runs `TestNuGetHA`: variant A of
-[R-HA-059](../spec/ha-and-helm.md#r-ha-059--node-drain-without-outage)'s drain test and the PostgreSQL-switchover and Valkey-failover
-scenarios of [R-HA-052](../spec/ha-and-helm.md#r-ha-052--failure-injection-test-suite), each under the whole load of R-HA-059's table that the two
+[R-HA-059](../spec/ha-and-helm.md#r-ha-059--node-drain-without-outage)'s drain test under the whole load of R-HA-059's table that the two
 clients make: the [npm part](#drain-and-failover-under-npm-load) and the NuGet part together. It is the phase-7 item "Node drain under npm and NuGet
 load with zero failed requests" ([Q-NUGET-73](../spec/formats/nuget.md#q-nuget-73--the-nuget-part-of-the-drain-test-moves-to-phase-7-with-the-other-long-legs)),
-and its drain scenario is the first acceptance criterion of R-ARCH-024. Decisions:
+and its drain scenario is the first acceptance criterion of R-ARCH-024. The PostgreSQL switchover and the Valkey failover of
+[R-HA-052](../spec/ha-and-helm.md#r-ha-052--failure-injection-test-suite) ran here too until 2026-11-23; they test the server, which
+`TestNPMHA` holds under the npm load in the same night, so the set keeps what NuGet's client adds, its restore and push across the
+connections a drain cuts ([Q-HA-488](../spec/ha-and-helm.md#q-ha-488--nuget-ha-keeps-the-drain-under-the-nuget-load-and-leaves-the-switchover-and-the-valkey-failover-to-npm-ha)). Decisions:
 [Q-HA-100](../spec/ha-and-helm.md#q-ha-100--the-nuget-part-of-r-ha-059s-load-and-how-it-runs-beside-npms),
 [Q-HA-101](../spec/ha-and-helm.md#q-ha-101--how-r-arch-024s-drain-criterion-is-counted),
 [Q-HA-102](../spec/ha-and-helm.md#q-ha-102--the-cpu-of-the-nuget-drain-and-where-its-leg-runs),
@@ -1922,19 +1925,17 @@ acknowledged push, through `nuget-ha-all`; the `.nupkg.sha512` the client writes
 
 ### The scenarios
 
-`TestNuGetHA` has three subtests, with the injections and the pass conditions of `TestNPMHA`'s drain, switchover and Valkey failover
-([above](#the-scenarios)), each for both clients:
+`TestNuGetHA` has one subtest, with the injection and the pass conditions of `TestNPMHA`'s drain ([above](#the-scenarios)), for both
+clients:
 
 | Subtest | Injection | Load | Pass conditions |
 |---|---|---|---|
 | drain variant A (R-HA-059, R-ARCH-024) | `drain.sh <node>`, 2 minutes after the load started; 3 more minutes after it returns; six `system.probe` jobs of 330 steps | npm and NuGet | every `npm` and `dotnet` command exits `0`; every restore loop and `npm ci` loop ran a command during the drain; k6 (both scripts) only `2xx` and `304`, no connection error, no wrong tarball or package, no dropped iteration and 95 % of each rate; the p99 of all k6 requests from the first eviction until 2 minutes after the drain at most twice the warm-up's (the NuGet requests' own p99 is logged next to it); every acknowledged `npm publish` and `dotnet nuget push` installs; every probe job `succeeded` with `attempt` 1, at least one moved and resumed; no SIGKILL; no Quader pod `Pending` for more than 60 s; `drain.sh` within 10 minutes and the node uncordoned; **R-ARCH-024**: the run reached 100 `npm ci`, 20 `npm publish`, 100 `dotnet restore` and 20 `dotnet nuget push` |
-| PostgreSQL switchover | `failover.sh` after 1 minute; 1 minute after | npm and NuGet | every command exits `0`, every `npm ci` and restore loop ran a command during the switchover; k6 as above; every acknowledged publish and push installs; `/healthz` 200 on every pod, no restart |
-| Valkey failover | `valkey-failover.sh` after 1 minute; 1 minute after | npm and NuGet | as the switchover, and `/readyz` 200 on every pod throughout, and `quader_valkey_primary_changes_total` rises by exactly one on every `api`, `packages` and `worker` replica (R-HA-057) |
 
 ### Artifacts
 
 Those of the npm tests, for both clients: `.out/e2e/nuget-load-<scenario>.json` (every command with its times and exit status, the output of
-a failed one), `nuget-ha-drain.json`, `nuget-ha-pg-switchover.json` and `nuget-ha-valkey-failover.json` (the conditions' numbers, both
+a failed one), `nuget-ha-drain.json` (the conditions' numbers, both
 clients), `k6-nuget-<scenario>/` (one line per request: `G <unix ms> <status> <replica> <ms> <registration|flat|nupkg> <ok|bad> <path>`, and k6's summary),
 next to the npm load's `npm-load-<scenario>.json` and `k6-npm-<scenario>/`; `drain-pod-watch.jsonl`, `drain-events.json`,
 `nuget-drain-<pod>.log` (the drained pods' logs). The loops' own files stay in the client pods below `/work/ha-<scenario>-restore<i>-<run>` and `/work/ha-<scenario>-push-<run>`.
