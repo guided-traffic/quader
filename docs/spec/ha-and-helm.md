@@ -10369,7 +10369,8 @@ criteria), R-HA-057 (rule 4, the outage criterion), Q-HA-13 (option (d), the cho
 R-OPS-001; [architecture.md](architecture.md) R-ARCH-024 step 7 and 10, R-ARCH-031. Code: [wire_valkey.go](../../internal/app/wire_valkey.go)
 (`awaitValkeyAnswer`), [app.go](../../internal/app/app.go) (step 10, `startupCheck`), [valkey_answer.go](../../internal/cluster/valkey_answer.go)
 (`Answered`, the access check), [config/valkey.go](../../internal/config/valkey.go). Tests: [valkey_answer_test.go](../../internal/app/valkey_answer_test.go),
-[valkey_answer_test.go](../../internal/cluster/valkey_answer_test.go), [startup_test.go](../../test/integration/valkey/startup_test.go),
+[valkey_answer_test.go](../../internal/cluster/valkey_answer_test.go), [valkey_failover_start_test.go](../../internal/cluster/valkey_failover_start_test.go)
+(a start during a Sentinel failover, F-249), [startup_test.go](../../test/integration/valkey/startup_test.go),
 [e12_valkey_test.go](../../test/e2e/e12_valkey_test.go).
 
 ### Q-HA-204 · The SPDX file of the release is written by the pinned syft image from the registry tag
