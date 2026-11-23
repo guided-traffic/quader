@@ -358,7 +358,7 @@ func (e *engine) stepCredentials(q *rq) bool {
 		e.refuse(q, e.errInvalidToken(q), metrics.RefusedInvalid)
 		return false
 	}
-	if c.registry && !c.anonymous && e.registryTokenExpired(c.key) {
+	if c.registry && !c.anonymous && e.registryTokenExpired(c) {
 		// The end of a registry token's life, which a client answers with a new token request: no request, and no
 		// failed authentication (R-BAS-052).
 		e.refuse(q, e.errInvalidToken(q), metrics.RefusedInvalid)

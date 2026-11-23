@@ -46,15 +46,17 @@ func (e *engine) refreshShape(q *rq, shape *answerVal) {
 		if err != nil {
 			return
 		}
-		e.recordCheck(ctx, cred, repo, addr, checkResult{answer: ans, sentAt: sent})
+		// The refresh asks no package: package answers renew by use (Q-BAS-248).
+		e.recordCheck(ctx, cred, repo, "", addr, checkResult{answer: ans, sentAt: sent})
 	}) {
 		e.checks.finish(key, c, nil, nil)
 	}
 }
 
-// recordCheck keeps what a check answered for a credential and a repository: the credential answer, the shape
-// answer, or the invalid statement. It returns the shape and the subject kind.
-func (e *engine) recordCheck(ctx context.Context, cred credential, repo, addr string, r checkResult) *answerVal {
+// recordCheck keeps what a check answered for a credential and a repository: the credential answer, the shape answer,
+// or the invalid statement, and, for the package pkg the check asked about, the package answer while the shape is partial
+// (R-BAS-084). It returns the shape and the package answer.
+func (e *engine) recordCheck(ctx context.Context, cred credential, repo, pkg, addr string, r checkResult) (shape, pkgAns *answerVal) {
 	sub := r.answer.Subject
 	switch sub.Kind {
 	case iface.SubjectInvalid:
@@ -63,21 +65,29 @@ func (e *engine) recordCheck(ctx context.Context, cred credential, repo, addr st
 			e.answers.put(ctx, answers.Credential, cred.key, &answerVal{Answer: answerBase(answers.Credential, r.sentAt, inv, ""), Subject: inv})
 			e.d.Guard.FailedAuth(ctx, addr)
 		}
-		return nil
+		return nil, nil
 	case iface.SubjectToken, iface.SubjectAnonymous:
 	default:
-		return nil
+		return nil, nil
 	}
 	if !cred.anonymous {
 		e.answers.put(ctx, answers.Credential, cred.key, &answerVal{Answer: answerBase(answers.Credential, r.sentAt, sub, ""), Subject: sub})
-		e.noteRegistryToken(cred, sub)
 	}
 	rr := r.answer.Repositories[repo]
 	if !rr.Read.Valid() {
 		rr = iface.RepositoryRead{Read: iface.ReadNone, Status: 404}
 	}
 	rr.Read = capRead(cred, rr.Read)
-	shape := &answerVal{Answer: answerBase(answers.Shape, r.sentAt, sub, repo), Read: rr.Read, Status: rr.Status}
+	shape = &answerVal{Answer: answerBase(answers.Shape, r.sentAt, sub, repo), Read: rr.Read, Status: rr.Status}
 	e.answers.put(ctx, answers.Shape, shapeKey(cred.key, repo), shape)
-	return shape
+	if rr.Read == iface.ReadPartial && pkg != "" {
+		if p, ok := checkPackage(r.answer, repo, pkg); ok {
+			at := r.sentAt
+			if !r.packageAt.IsZero() {
+				at = r.packageAt
+			}
+			pkgAns = e.putPackage(ctx, cred, repo, pkg, p.Read, at, sub)
+		}
+	}
+	return shape, pkgAns
 }

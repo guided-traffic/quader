@@ -183,11 +183,25 @@ func conditionals(f *front, mark int) []rec {
 	return out
 }
 
+// besidesTheToken returns what a pull cost the main installation after a mark besides its token step (the token request and the probe of
+// a POST to the token service): the forwarded reads and the checks. The Bastion's own polling (the feed, the handshake, the downloads) is
+// no cost of a pull.
+func besidesTheToken(f *front, mark int) []rec {
+	var out []rec
+	for _, r := range f.Since(mark) {
+		if (r.Kind == "forward" || r.Kind == "check") && r.Path != "/v2/_token" {
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
 // TestR_BAS_051_R_BAS_053_ADockerAndAContainerdPullThroughABastion: docker's and containerd's pulls succeed through a Bastion cold and
-// warm. The cold pull fills the manifest by digest and both blobs; a warm pull with a new registry token sends one conditional
-// request per artifact and transfers no artifact bytes. A HEAD of the tag answered from the cache for a Quader token presented directly
-// carries Docker-Content-Digest, and a tags list of three tags with n=2 served from the cache carries its Link. A write below /v2/ is
-// refused in the distribution's shape with the main installation's image prefix. About 4 s, an image of two blobs of 1 KiB.
+// warm. The cold pull fills the manifest by digest and both blobs; a warm pull with a new registry token costs the main installation one
+// check besides its token step and no conditional request: the token's package answer on the image, which the check gives, serves the
+// tag's document, the manifest and both blobs from the cache (R-BAS-085). A HEAD of the tag answered from the cache for a Quader token
+// presented directly carries Docker-Content-Digest, and a tags list of three tags with n=2 served from the cache carries its Link. A write
+// below /v2/ is refused in the distribution's shape with the main installation's image prefix. About 4 s, an image of two blobs of 1 KiB.
 func TestR_BAS_051_R_BAS_053_ADockerAndAContainerdPullThroughABastion(t *testing.T) {
 	w := ociWorld(t, worldOptions{})
 	img := newOCIImage("one")
@@ -215,8 +229,11 @@ func TestR_BAS_051_R_BAS_053_ADockerAndAContainerdPullThroughABastion(t *testing
 		if got := w.front.Artifacts(m); len(got) != 0 {
 			t.Errorf("a warm %s pull transferred %d artifacts: %+v", kind, len(got), got)
 		}
-		if got := len(conditionals(w.front, m)); got != 3 {
-			t.Errorf("a warm %s pull sent %d conditional requests, want one per artifact (3)", kind, got)
+		if got := len(conditionals(w.front, m)); got != 0 {
+			t.Errorf("a warm %s pull sent %d conditional requests, want none", kind, got)
+		}
+		if got := besidesTheToken(w.front, m); len(got) != 1 || got[0].Kind != "check" {
+			t.Errorf("a warm %s pull cost the main installation %d requests besides the token step, want one check: %+v", kind, len(got), got)
 		}
 	}
 

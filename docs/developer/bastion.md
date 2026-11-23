@@ -493,11 +493,19 @@ flow is `engine.ServeHTTP` ([request.go](../../internal/bastion/engine/request.g
 
 **Read flow** (`attempt`, up to two rounds when a request waited for a collapsed fetch): kept `invalid` credential → `401`; shape answer `none` → the
 stored status; kept URL refusal → replayed; cache entry → `fromEntry`; negative entry → `fromNegative`; the caller's private copy → conditional
-request; else `miss`. `fromEntry` serves without a request when the caller is allowed (shape `full`, or a URL answer `allowed`) and the entry is fresh
+request; else `miss`. `fromEntry` (steps 2 to 6 of R-BAS-085) serves without a request when the caller is allowed (shape `full`, a package answer `full` on the
+entry's package, or a URL answer `allowed`) and the entry is fresh
 (`fresh`: the period of the kind and the feed log, no `content` or `grants` entry that names the repository after `validatedAt − 15 s`) or the main installation is
-unreachable, and in both cases only if no `content` entry for the repository was received after `validatedAt − 15 s` (`withdrawn`, Q-BAS-122); asks `checkShape` when the caller has neither answer; and otherwise sends the conditional request. Every request to the main
+unreachable, and in both cases only if no `content` entry for the repository was received after `validatedAt − 15 s` (`withdrawn`, Q-BAS-122); asks
+`checkShape` when the caller has no shape answer and no URL answer that allows, with the entry's repository and package, so the check carries the pair
+(`checkPackages`) and collapses per credential, repository and package; and otherwise sends the conditional request, also for a caller whose shape is
+known and `partial` and who holds no answer on the entry's package (step 5: no check, so a cached and an uncached path cost one round trip each).
+`packageAnswer` ([packages.go](../../internal/bastion/engine/packages.go)) asks a package answer only for an entry of the request's repository with a
+package, and only while the shape is not `full`. Every request to the main
 installation first asks `guard.Miss`, and `mainclient` takes the budget slot. [forward.go](../../internal/bastion/engine/forward.go) `process`
-records the credential and shape answers of a marked response and then acts by its class: `artifact` and `shared` 200 are kept (artifact: the fill of
+records the credential, shape and package answers of a marked response (`recordAnswers`; a package answer only from a marking of the request's
+repository while the capped shape is `partial`, through `putPackage` and `capPackage`) and then acts by its class: `artifact` and `shared` 200 are kept, with
+the marking's package as the entry's `Package` (`entryPackage`, replaced at every renewal and cleared by a marking without one) (artifact: the fill of
 [fill.go](../../internal/bastion/engine/fill.go), a document: held whole and written through a `cache.Fill` with its entry), a `304` closes its body, serves
 and renews the entry, `private` is kept in memory as the caller's copy, `absent` fills the negative cache, everything else is passed through (a `403` is also kept as the caller's URL answer; a `404` that is not `absent` never is, Q-BAS-124). An unmarked `5xx`, a connect error and a timeout answer `502 main_failed` or
 `504 main_timeout`.
@@ -529,8 +537,10 @@ body was delivered from the cache, `200` or `206`; a `HEAD` and a `304` are no d
 **Answers** ([answerstore.go](../../internal/bastion/engine/answerstore.go)): an LRU in memory (`answers.max_entries`) and, when `Shared.Shared()` is
 true, records in `shared.AnswerStore`, which signs and verifies them itself (Q-BAS-93): the engine hands over plain JSON. `answerStore.get` judges every
 answer with `answers.State.Check` (the four rules, through `Link.AnswerState`) at every use, counts `quader_bastion_answers_total`, and drops what fails.
-Private copies are never written anywhere but memory. The entries of a feed page reach the store through `Drop` (the link's `AnswerSink`, R-BAS-026): an `entryMatcher` built
-from the page's tokens, principals and repositories selects the answers in one pass, and they are deleted from memory and, in the background and best effort, from the shared store.
+Four kinds share the LRU: credential, shape, URL and package (R-BAS-084; `answerStore.pkg`, key `packageKey`). A package answer's record carries its
+times, identity, repository and read; the package is only in its hashed key. Private copies are never written anywhere but memory. The entries of a feed page reach the store through `Drop` (the link's `AnswerSink`, R-BAS-026): an `entryMatcher` built
+from the page's tokens, principals and repositories selects the answers in one pass (a `grants` entry every shape, package and URL answer; a `content`
+entry the URL answers of its repositories, not their package answers), and they are deleted from memory and, in the background and best effort, from the shared store.
 
 **Collapsing**: `group` is a single-flight per replica (checks are shared with their result, misses with a wait and a second decision); with the
 bucket backend and Valkey `shared.FlightLock` makes the other replicas wait (`waitRemote`, at most 30 s); a lock that cannot be asked
@@ -539,7 +549,8 @@ A key whose last fetch left nothing shareable is marked for a minute and not col
 (`markVolatileFor`, keyed by credential and cache key), a mark that does not (a search, a document too large to keep) is the key's (`markVolatile`, Q-BAS-125).
 
 **Background**: `Start` runs the janitor (every minute: answers past period and grace, the feed entries no answer can depend on, the registries' expired
-items); a shape answer used in the last fifth of its period is refreshed by one collapsed check in a task `Drain` waits for (`background`). A request reads its answers before it reaches a collapse, so a check that ended in between has already stored its result: `refreshShape` and the leader of `checkShape` read the answers again before they send a check (`storedCheck`), and a late caller costs no second one. Nothing else
+items); a shape answer used in the last fifth of its period is refreshed by one collapsed check in a task `Drain` waits for (`background`), which asks no
+package: package answers renew by use, through the conditional request or, when the shape answer ended with them, the check of step 4 (Q-BAS-270). A request reads its answers before it reaches a collapse, so a check that ended in between has already stored its result: `refreshShape` and the leader of `checkShape` read the answers again before they send a check (`storedCheck`, which also rebuilds the package answer with its own time, `checkResult.packageAt`), and a late caller costs no second one. Nothing else
 runs in the engine: the link, the token reload, the download buffer and the cache sweep are the server's.
 
 **Logs and trace** (R-BAS-042): `rq.end` sets the fields of the request log (`bastion_class`, `bastion_result`, `token_hint`, `main_request_id`, the
@@ -557,12 +568,12 @@ is the handshake's table (`link.State().Formats`, kept until the next handshake)
 | Families | `classify`, `classifyRegistry` in [family.go](../../internal/bastion/engine/family.go) | `familyAPI`, `familyFiles`, `familyRegistry` (the registry root: `/v2`, `/v2/`, `/v2/_token`, `/v2/_catalog` and `/v2/<projectKey>/<repoKey>/…`; on a bound host every other path below `/v2/`), `familyBound` (a bound-host prefix outside `/v2/`, which no format declares today). The format of `/v2/` is the table's `RegistryRoot()` entry; a table that names none serves nothing below `/v2/`, and before the first handshake a path is classified by its form. `rq.facts` is the format's entry, `Lookup`'s defaults for `/files/` and a format the table does not name |
 | Core routes | `versionChallenge`, `passCore`, `onPassOnly` in [registry.go](../../internal/bastion/engine/registry.go) | the version check without a credential is the Bastion's own `401` with `registryChallenge` (realm and service of `server.base_url`, no scope, Q-BAS-196); with a credential, `GET /v2/_token` and the catalog are forwarded with `q.passOnly`: whatever the marking, the answer is passed on, nothing is kept, collapsed or put into an answer but the caller's credential answer. `POST /v2/_token` goes through the write probe (`204 read-with-body`) and the real request carries the form read by `stepTokenForm` |
 | The scheme Token | `authorization`, `parseCredential` in [credential.go](../../internal/bastion/engine/credential.go) | `Authorization: Token <Quader token>` of the Galaxy clients is read on `/api/<format>/…` only, checked like any token, forwarded unchanged; its answers are keyed by the SHA-256 of `Token <token>`, apart from the same token's under Bearer or Basic (Q-BAS-203) |
-| Registry tokens | `parseCredential` in [credential.go](../../internal/bastion/engine/credential.go), `capRead`, `insufficientScope`, `noteRegistryToken`, `registryTokenExpired` in [registry.go](../../internal/bastion/engine/registry.go) | a Bearer `qdr_rgt_` below `/v2/` only: `iface.RegistryTokenWellFormed` or `401` and a count; `iface.RegistryTokenAnonymous` makes it the anonymous caller (`credential.dropped`: the forward has no `Authorization`, the anonymous limits and slots); its shape is recorded at most `partial` and a `401 insufficient_scope` keeps no `invalid` answer (Q-BAS-198); the expiry the marking or the check reported is kept in `engine.expiries`, and a token past it is refused without a request or a count (Q-BAS-202, H-1295) |
+| Registry tokens | `parseCredential` in [credential.go](../../internal/bastion/engine/credential.go), `capRead`, `capPackage`, `insufficientScope`, `registryTokenExpired` in [registry.go](../../internal/bastion/engine/registry.go) | a Bearer `qdr_rgt_` below `/v2/` only: `iface.RegistryTokenWellFormed` or `401` and a count; `iface.RegistryTokenAnonymous` makes it the anonymous caller (`credential.dropped`: the forward has no `Authorization`, the anonymous limits and slots); its shape is recorded at most `partial` and a `401 insufficient_scope` keeps no `invalid` answer (Q-BAS-198); a package answer `full` only where `iface.RegistryTokenGrant` pulls the pair (Q-BAS-246); a token past the `exp` of its claims (`iface.RegistryTokenExpiry`) is refused without a request or a count on every replica (Q-BAS-252) |
 | Shapes of the Bastion's own answers | `engine.problem`, `writeRegistryError` in [family.go](../../internal/bastion/engine/family.go) | below `/v2/` the distribution's body with the code of R-OCI-008 and the Quader code in `detail`, `Docker-Distribution-Api-Version`; everywhere else the problem details of R-BAS-029. `refuseVerdict` gives the guard's refusals the format's `RateLimitedStatus` (503 for the ClamAV definitions; `factsOf` classifies the path for the block list's refusal, which comes before step 3) |
 | Replay | `keepHeader` in [respond.go](../../internal/bastion/engine/respond.go) | `representationHeaders` (the catalog's thirteen, the content headers of R-ARCH-007 among them) and `rq.facts.ReplayHeaders`; never a per-request header, a cookie, a hop-by-hop or a `Quader-` header, whatever the table says |
 | Content address | `contentAddress` in [forward.go](../../internal/bastion/engine/forward.go) | `"<hex>"` and `"sha256:<hex>"`; the conditional request sends the entry's `ETag` as stored |
 | Conditionals | `planFor`, `notModifiedSince` in [serve.go](../../internal/bastion/engine/serve.go) | `If-None-Match`, or without it `If-Modified-Since` against the entry's `Last-Modified`, before `Range` with `If-Range`, for an entry, a document held in memory and a running fill alike |
-| Fills | `fillSpool`, `serveFill`, `streamFill`, `followFill` in [fill.go](../../internal/bastion/engine/fill.go) | one spool for an artifact and for a shared document above `docMemory` (64 MiB; a test lowers it) with a content-address `ETag` within `max_object_bytes` and `documents_max_bytes` (`spoolable`). Every caller is answered from the answer's validator, date and length at once (304, 416, 200 or 206) and served `[start, end]` from the spool as it grows, the last 64 KiB of its range held back until the commit (Q-BAS-197). The leader hands the fill to its flight (`call.startFill`); a waiter of the same cache key follows it after its own permission (`followFill`: a usable `full` or URL answer, a check, or for an artifact a conditional request with the fill's `ETag`, answered `304` and served through `baseline.run`; a document only on `full`, Q-BAS-200). A follower holds a reference of the spool (`fillRun.acquire`) |
+| Fills | `fillSpool`, `serveFill`, `streamFill`, `followFill` in [fill.go](../../internal/bastion/engine/fill.go) | one spool for an artifact and for a shared document above `docMemory` (64 MiB; a test lowers it) with a content-address `ETag` within `max_object_bytes` and `documents_max_bytes` (`spoolable`). Every caller is answered from the answer's validator, date and length at once (304, 416, 200 or 206) and served `[start, end]` from the spool as it grows, the last 64 KiB of its range held back until the commit (Q-BAS-197). The leader hands the fill to its flight (`call.startFill`); a waiter of the same cache key follows it after its own permission (`followFill`: a usable `full` answer, a package answer `full` on the package of the leader's marking (`fillRun.pkg`, R-BAS-085), a URL answer, a check, or for an artifact a conditional request with the fill's `ETag`, answered `304` and served through `baseline.run`; a document only on `full` or a `full` package answer, Q-BAS-200). A follower holds a reference of the spool (`fillRun.acquire`) |
 | Across replicas | `waitRemote` in [readflow.go](../../internal/bastion/engine/readflow.go) | waits while another replica holds the fetch lock (the cluster's hold extends it while the fill runs) up to `engine.fillWaitMax`, `bastion.cache.fill_wait_max`, then decides again: a hit once the other fill committed, or its own fetch |
 | Downloads | `serveEntry` in [readflow.go](../../internal/bastion/engine/readflow.go), `serveFill` | an entry the main installation's marking counted (`cache.Entry.Counted`, renewed by a `304`) is reported at every serve from the cache, a document included; an uncounted artifact is not; a follower of a counted fill is reported, the leader's serve is the main installation's |
 
@@ -596,6 +607,35 @@ what the main installation was asked (the Bastion's `quader_bastion_main_request
 
 The containers came from ClamAV's network once, by freshclam 1.5.5 itself, into a generic repository the main installation imported
 from (`malware.database.source: repository`); `daily.cvd` was read once through the Bastion before the first run.
+
+**Warm pulls of an image of ten layers, before and after the answers per package** (R-BAS-088, measured once on 2026-11-23, not a test).
+On a kind cluster of its own (Docker Desktop on the same arm64 workstation), the dev profile `oci` with the main installation of the image of
+the read shapes' package 4, and the set's Bastion `bastion-oci` (one replica, the volume backend, no Valkey, `answers.period` 30 s, both
+revalidation periods 90 s): "after" ran the Bastion of the same image, "before" the Bastion of the commit before it (`713a4e846`: interface 5,
+the main installation marks packages, the Bastion ignores them), switched with `kubectl set image`, its cache refilled by a cold pull. The
+image `e2e/oci-e2e/e2e-baspkg4-ten:1` is one manifest, a config and ten layers of 1 to 2 KB (`FROM scratch`, ten `COPY`, built with
+`--provenance=false`), private; the credential a service account's token that reads the repository, so every client takes a registry token
+per pull. The clients: Docker Engine 29.9.3 and Podman 5.8.9 in the set's client pods with the client setup's snippets for the Bastion, and
+crictl 1.36.0 with containerd 2.3.4 on the cluster's control-plane node (`crictl pull --creds`). Each pull ran after `system prune` or
+`crictl rmi`, a second after the one before (a new registry token each), and the cache was filled by a cold Docker pull 20 s after the
+set-up's last feed entry (a younger entry makes every cached entry stale, R-BAS-020). Counted: the Bastion's
+`quader_bastion_main_requests_total` by `kind` before and after each pull, the feed, the handshake and the downloads left out.
+
+| Client, warm pull | Before | After | What is left after |
+|---|---|---|---|
+| Docker Engine 29.9.3 | **16**: probe and `POST /v2/_token`, its first `HEAD` of the tag without a credential (`401`), the `HEAD` of the tag with the token, 12 conditional requests answered `304` (the manifest, the config, ten layers); the same again | **4**: the probe and the token, the anonymous `HEAD` ([H-1420](../spec/bastion.md#h-1420--while-the-main-installation-admits-anonymous-reads-a-clients-first-head-of-a-tag-without-a-credential-is-forwarded-on-every-pull)), the `HEAD` of the tag (Docker never `GET`s the tag, so it has no entry and is forwarded; its marking gives the package answer); the same again | no conditional request, no check |
+| Podman 5.8.9 | **13**: the token, the tag (forwarded, it had no entry), 11 conditional requests; then **14**: the token, one check, 12 conditional requests | **2**: the token and the tag (forwarded, now kept `shared` with the image's package); then **2**: the token and one check | the token step and the first read of each new token |
+| crictl 1.36.0, containerd 2.3.4 | **19**: two probes and two tokens (containerd takes one for the resolution and one for the fetch), two checks, 13 conditional requests (the tag's document, the manifest, the config, ten layers); then **18** (one check) | **6**: the two probes, the two tokens and their two checks; then **5** (one check) | the token step and one check per new token |
+| Docker, cold (for reference) | 16: 15 forwards (the token, the two `HEAD`s, the manifest, the config, ten layers), one probe | 16, the same | — |
+
+What the two questions of the plan came to: Docker 29.9.3 asks its token by `POST` with the probe on every pull, and the third forward of
+the warm pull measured on 2026-11-22 was no version check sent with the token: it is Docker's `HEAD` of the tag without a credential,
+which it sends first because it resolves through its containerd image store and which the Bastion forwards while the main installation
+admits anonymous reads (H-1420). The planner's derivation (Docker 3, Podman 2, the kubelet 3 after) assumed the Bastion answered that
+challenge itself and served the tag's `HEAD` from the cache; with the cluster's public repository and a client that only `HEAD`s the tag,
+a Docker pull costs one forward of each more. The first run of the set's Bastion case with the tightened assertion also showed why the case
+waits for the feed: the pushes and policies of the set-up are feed entries, and within the skew margin of one every entry is revalidated
+(Q-BAS-271).
 
 What the two questions the planner left open came to:
 

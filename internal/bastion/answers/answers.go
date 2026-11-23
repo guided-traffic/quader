@@ -42,6 +42,10 @@ const (
 	Shape Kind = "shape"
 	// URL: whether a credential may read a cache key, or the stored refusal.
 	URL Kind = "url"
+	// Package: a credential's read shape on one package of a repository, full or partial (R-BAS-084). Rule 3 treats it as a
+	// shape answer: token, principal and grants entries match it; a content entry does not, it makes the cache entry stale
+	// instead (Q-BAS-249).
+	Package Kind = "package"
 )
 
 // Answer is the part of an answer the validity rules read. The payloads (the subject, the shape, the stored
@@ -57,7 +61,7 @@ type Answer struct {
 	// TokenExpiresAt is the token's expiry; nil when the token does not expire or the answer is not about a
 	// valid token.
 	TokenExpiresAt *time.Time
-	// Repository is the qualified repository name "<projectKey>/<repoKey>" of a Shape or URL answer.
+	// Repository is the qualified repository name "<projectKey>/<repoKey>" of a Shape, URL or Package answer.
 	Repository string
 }
 
@@ -251,7 +255,7 @@ func (l *FeedLog) matches(a Answer) bool {
 			return true
 		}
 	}
-	if a.Kind == Shape || a.Kind == URL {
+	if a.Kind == Shape || a.Kind == URL || a.Kind == Package {
 		if l.grants.After(after) {
 			return true
 		}

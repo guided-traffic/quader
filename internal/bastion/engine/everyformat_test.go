@@ -268,6 +268,21 @@ func TestR_BAS_051_TheRegistryRootIsAPathFamilyOfTheBastion(t *testing.T) {
 // encoder and a key the Bastion does not have (Q-BAS-185).
 func registryTokens(t *testing.T) (user, anonymous string) {
 	t.Helper()
+	signer := registrySigner(t)
+	grant := []registrytoken.Entry{{Repo: qname.Repo{Project: "web", Key: "docker"}, Name: "app", Actions: registrytoken.Pull}}
+	user = issueRegistryToken(t, signer, "0192f0c4-0000-7000-8000-000000000001", epoch, grant...)
+	anonymous, err := signer.Issue(registrytoken.Claims{Anonymous: true, Endpoint: "default", IssuedAt: epoch, ExpiresAt: epoch.Add(5 * time.Minute), Grant: registrytoken.Grant{Entries: grant}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return user, anonymous
+}
+
+// registrySigner is the main installation's registry token signer with a key ring of the test (lifetime 5 minutes): the
+// tokens of the engine's tests come from the real encoder, so the claims the Bastion reads without verifying them are the
+// token service's (R-BAS-052, Q-BAS-246).
+func registrySigner(t *testing.T) *registrytoken.Signer {
+	t.Helper()
 	raw := make([]byte, 32)
 	for i := range raw {
 		raw[i] = byte(i + 7)
@@ -284,27 +299,30 @@ func registryTokens(t *testing.T) (user, anonymous string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	now := time.Now().Truncate(time.Second)
-	grant := registrytoken.Grant{Entries: []registrytoken.Entry{{Repo: qname.Repo{Project: "web", Key: "docker"}, Name: "app", Actions: registrytoken.Pull}}}
-	user, err = signer.Issue(registrytoken.Claims{
+	return signer
+}
+
+// issueRegistryToken issues a user's registry token for the Quader token tokenID, issued at the test clock's time and valid
+// for 5 minutes, with the grant's entries. Two tokens of one Quader token issued in the same second differ by nothing, as
+// at the main installation; a test that needs two takes two seconds or two token IDs.
+func issueRegistryToken(t *testing.T, signer *registrytoken.Signer, tokenID string, issued time.Time, grant ...registrytoken.Entry) string {
+	t.Helper()
+	tok, err := signer.Issue(registrytoken.Claims{
 		PrincipalKind: "user", PrincipalID: "0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a10",
-		Binding:  registrytoken.Binding{TokenID: "0192f0c4-0000-7000-8000-000000000001", TokenType: "pat", SecretSHA256: sha256.Sum256([]byte("qdr_pat_x"))},
-		Endpoint: "default", IssuedAt: now, ExpiresAt: now.Add(5 * time.Minute), Grant: grant,
+		Binding:  registrytoken.Binding{TokenID: tokenID, TokenType: "pat", SecretSHA256: sha256.Sum256([]byte("qdr_pat_x"))},
+		Endpoint: "default", IssuedAt: issued.Truncate(time.Second), ExpiresAt: issued.Truncate(time.Second).Add(5 * time.Minute),
+		Grant: registrytoken.Grant{Entries: grant},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	anonymous, err = signer.Issue(registrytoken.Claims{Anonymous: true, Endpoint: "default", IssuedAt: now, ExpiresAt: now.Add(5 * time.Minute), Grant: grant})
-	if err != nil {
-		t.Fatal(err)
-	}
-	return user, anonymous
+	return tok
 }
 
 // TestR_BAS_052_RegistryTokensAtTheBastion: below /v2/ a registry token is a credential checked by its form, forwarded
 // unchanged, its shape capped at partial; elsewhere its prefix is unknown. A malformed one is refused and counted, an
-// anonymous one is the anonymous caller, one past the expiry the main installation reported is refused without a count,
-// and insufficient_scope is no statement about the credential.
+// anonymous one is the anonymous caller, one past the expiry its claims name is refused without a request and without a
+// count, also by a replica that never saw it (Q-BAS-252), and insufficient_scope is no statement about the credential.
 func TestR_BAS_052_RegistryTokensAtTheBastion(t *testing.T) {
 	user, anon := registryTokens(t)
 	s := newSiteHarness(t, options{})
@@ -397,15 +415,19 @@ func TestR_BAS_052_RegistryTokensAtTheBastion(t *testing.T) {
 			t.Fatalf("the credential answer after insufficient_scope: %+v", a)
 		}
 	})
-	t.Run("a token past its reported expiry is refused without a request and without a count", func(t *testing.T) {
+	t.Run("a token past the expiry its claims name is refused without a request and without a count", func(t *testing.T) {
 		s.clock.advance(6 * time.Minute)
-		before, failed := s.main.count(), s.guard.failedCount()
-		w := s.get(manifest, "Authorization", bearer(user))
-		if w.Code != http.StatusUnauthorized || !strings.Contains(w.Header().Get("Www-Authenticate"), `error="invalid_token"`) {
-			t.Fatalf("%d %v", w.Code, w.Header())
-		}
-		if s.main.count() != before || s.guard.failedCount() != failed {
-			t.Fatalf("%d requests, %d failures", s.main.count()-before, s.guard.failedCount()-failed)
+		// The replica that saw the token, and one that never did (H-1295, closed by Q-BAS-252): the expiry is the claims'.
+		other := newSiteHarness(t, options{clock: s.clock})
+		for name, h := range map[string]*siteHarness{"the replica that saw it": s, "a replica that never saw it": other} {
+			before, failed := h.main.count(), h.guard.failedCount()
+			w := h.get(manifest, "Authorization", bearer(user))
+			if w.Code != http.StatusUnauthorized || !strings.Contains(w.Header().Get("Www-Authenticate"), `error="invalid_token"`) {
+				t.Fatalf("%s: %d %v", name, w.Code, w.Header())
+			}
+			if h.main.count() != before || h.guard.failedCount() != failed {
+				t.Fatalf("%s: %d requests, %d failures", name, h.main.count()-before, h.guard.failedCount()-failed)
+			}
 		}
 	})
 }

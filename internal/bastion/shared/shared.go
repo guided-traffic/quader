@@ -95,7 +95,9 @@ const (
 	AnswerCredential AnswerKind = "credential"
 	AnswerShape      AnswerKind = "shape"
 	AnswerURL        AnswerKind = "url"
-	AnswerNegative   AnswerKind = "negative"
+	// AnswerPackage is a credential's shape on one package of a repository (R-BAS-084): ans:v1:package:<sha256 of the key>.
+	AnswerPackage  AnswerKind = "package"
+	AnswerNegative AnswerKind = "negative"
 )
 
 // AnswerStore keeps answer records (R-BAS-020, R-BAS-024, R-BAS-032): with Valkey, shared by the replicas;

@@ -437,7 +437,7 @@ func TestR_BAS_022_ACallerReachingTheCheckAfterAnEarlierCheckEndedSendsNoSecond(
 	}
 	before := s.main.count()
 	q := &rq{e: s.e, r: httptest.NewRequest(http.MethodGet, tgz, nil), cred: credential{token: tok, key: credentialKey(tok)}, repo: "web/npm-all", addr: "203.0.113.7", clientText: "203.0.113.7"}
-	shape, done := s.e.checkShape(q)
+	shape, _, done := s.e.checkShape(q, "", "")
 	if done || shape == nil || shape.Read != iface.ReadFull {
 		t.Fatalf("the stored answers did not answer the late caller: done=%v shape=%+v", done, shape)
 	}

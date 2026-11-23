@@ -33,7 +33,9 @@ type answerVal struct {
 	answers.Answer
 	// Subject is the payload of a credential answer.
 	Subject iface.Subject `json:"subject,omitempty"`
-	// Read and Status are the payload of a shape answer; Status is set with the shape none.
+	// Read and Status are the payload of a shape answer; Status is set with the shape none. Read is also the payload of a
+	// package answer, full or partial (R-BAS-084); the package itself is in the answer's key only, so a record of it stays
+	// within the bound of a Valkey value whatever the name's length.
 	Read   iface.Read `json:"read,omitempty"`
 	Status int        `json:"status,omitempty"`
 	// Allowed and Refusal are the payload of a URL answer: the main installation allowed the read, or this is
@@ -52,7 +54,7 @@ type answerStore struct {
 
 func newAnswerStore(e *engine) *answerStore {
 	s := &answerStore{e: e, counts: map[answers.Kind]*atomic.Int64{
-		answers.Credential: {}, answers.Shape: {}, answers.URL: {},
+		answers.Credential: {}, answers.Shape: {}, answers.URL: {}, answers.Package: {},
 	}}
 	s.mem = newLRU(e.cfg.Answers.MaxEntries, 0, func(_ string, v *answerVal) { s.count(v.Kind, -1) })
 	return s
@@ -71,6 +73,8 @@ func sharedKind(k answers.Kind) shared.AnswerKind {
 		return shared.AnswerCredential
 	case answers.Shape:
 		return shared.AnswerShape
+	case answers.Package:
+		return shared.AnswerPackage
 	}
 	return shared.AnswerURL
 }
@@ -188,6 +192,14 @@ func (s *answerStore) url(ctx context.Context, credKey, cacheKey string) *answer
 	return s.get(ctx, answers.URL, urlKey(credKey, cacheKey))
 }
 
+// packageKey is the key of a package answer (R-BAS-084): <credential key>|<projectKey>/<repoKey>|<package>. A
+// repository's name holds no "|", so the key splits one way only, whatever the package's name holds.
+func packageKey(credKey, repo, pkg string) string { return credKey + "|" + repo + "|" + pkg }
+
+func (s *answerStore) pkg(ctx context.Context, credKey, repo, pkg string) *answerVal {
+	return s.get(ctx, answers.Package, packageKey(credKey, repo, pkg))
+}
+
 // identity returns the facts of a subject that tie an answer to the feed's entries and to the token's expiry.
 func identity(sub iface.Subject) (tokenID, principalID string, exp *time.Time) {
 	if sub.Kind != iface.SubjectToken {
@@ -215,8 +227,9 @@ func (s *answerStore) Drop(entries []iface.FeedEntry) {
 }
 
 // entryMatcher is what a set of feed entries makes unusable (R-BAS-015, rule 3 of R-BAS-020): the token or
-// principal of an answer is named; a grants entry stales every shape and URL answer; a content entry stales the
-// URL answers of the repositories it names. A settings entry invalidates no answer.
+// principal of an answer is named; a grants entry stales every shape, package and URL answer; a content entry stales
+// the URL answers of the repositories it names, not their package answers, which only ever serve fresh entries
+// (Q-BAS-249). A settings entry invalidates no answer.
 type entryMatcher struct {
 	tokens, principals, repos map[string]struct{}
 	grants                    bool
@@ -256,7 +269,7 @@ func (m entryMatcher) matches(a answers.Answer) bool {
 	if _, ok := m.principals[a.PrincipalID]; ok && a.PrincipalID != "" {
 		return true
 	}
-	if m.grants && (a.Kind == answers.Shape || a.Kind == answers.URL) {
+	if m.grants && (a.Kind == answers.Shape || a.Kind == answers.URL || a.Kind == answers.Package) {
 		return true
 	}
 	if a.Kind == answers.URL {

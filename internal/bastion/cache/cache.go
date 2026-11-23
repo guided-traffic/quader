@@ -79,6 +79,10 @@ type Entry struct {
 	// Counted is true when the main installation's marking said that serving the response counted a download
 	// (Quader-Bastion-Counted, R-BAS-059): every serve of the entry from the cache is then reported (R-BAS-039).
 	Counted bool `json:"counted,omitempty"`
+	// Package is the package the entry belongs to (Quader-Bastion-Package, R-BAS-084): set from the marking of the 200 that
+	// filled the entry, replaced by every later 200 or 304 for the key and cleared by a marking without one. A caller whose
+	// package answer on it is full is served the entry like a full reader of the repository (R-BAS-085).
+	Package string `json:"package,omitempty"`
 }
 
 // ObjectInfo describes stored bytes.

@@ -140,3 +140,35 @@ func TestR_BAS_026_AnEntryIsAppliedOnceAndPruned(t *testing.T) {
 		t.Fatalf("after a reset the log is empty: %q", got)
 	}
 }
+
+// TestR_BAS_084_PackageAnswers: a package answer follows the feed of a shape answer (Q-BAS-249): a token entry naming its
+// token, a principal entry naming its principal and a grants entry make it unusable; a content entry of its repository
+// does not, it makes the cache entry stale instead (R-BAS-022); and it ends at the token's expiry, also in the grace period.
+func TestR_BAS_084_PackageAnswers(t *testing.T) {
+	exp := t0.Add(5 * time.Minute)
+	a := Answer{Kind: Package, ObtainedAt: t0, TokenID: "t1", PrincipalID: "u1", TokenExpiresAt: &exp, Repository: "web/docker"}
+	at := t0.Add(time.Second)
+	cases := []struct {
+		name  string
+		entry iface.FeedEntry
+		want  Reason
+	}{
+		{"a content entry of its repository", iface.FeedEntry{ID: "c", Kind: iface.FeedContent, Repositories: []string{"web/docker"}}, Usable},
+		{"a token entry naming its token", iface.FeedEntry{ID: "t", Kind: iface.FeedToken, Tokens: []string{"t1"}}, Revoked},
+		{"a principal entry naming its principal", iface.FeedEntry{ID: "p", Kind: iface.FeedPrincipal, Principals: []string{"u1"}}, Revoked},
+		{"a grants entry", iface.FeedEntry{ID: "g", Kind: iface.FeedGrants}, Revoked},
+		{"a token entry naming another token", iface.FeedEntry{ID: "o", Kind: iface.FeedToken, Tokens: []string{"t2"}}, Usable},
+	}
+	for _, c := range cases {
+		log := NewFeedLog()
+		log.Record(c.entry, at)
+		if got := state(t0.Add(2*time.Second), log).Check(a); got != c.want {
+			t.Errorf("%s: %q, want %q", c.name, got, c.want)
+		}
+	}
+	s := state(exp, NewFeedLog())
+	s.Unreachable = true
+	if got := s.Check(a); got != TokenExpired {
+		t.Fatalf("at the token's expiry in the grace period: %q, want %q", got, TokenExpired)
+	}
+}

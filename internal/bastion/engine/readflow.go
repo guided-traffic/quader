@@ -65,11 +65,22 @@ func (e *engine) refuseNone(q *rq, shape *answerVal) {
 // isFull reports whether the shape answer lets the caller read every cached item of the repository.
 func isFull(shape *answerVal) bool { return shape != nil && shape.Read == iface.ReadFull }
 
-// fromEntry decides for a request whose cache key has an entry (R-BAS-022, R-BAS-023): serve it, ask the
-// check, or send the conditional request. It reports false when the entry turned out to be unusable.
+// fromEntry decides for a request whose cache key has an entry (R-BAS-022, R-BAS-023, and the steps of R-BAS-085): serve
+// it, ask the check, or send the conditional request. It reports false when the entry turned out to be unusable.
+//
+//   - Step 2, allowed: the caller's shape on the repository is full, or the entry names a package and the caller's package
+//     answer on it is full, or the caller's URL answer allows the key.
+//   - Step 3: allowed, not withdrawn and fresh (or the main installation unreachable): served.
+//   - Step 4: no usable shape answer (and no URL answer that allows): one check for the repository and the entry's package,
+//     collapsed per credential, repository and package; then steps 2 and 3, or the conditional request.
+//   - Steps 5 and 6: everything else is the conditional request. A caller whose shape is known and partial and who has no
+//     package answer for the entry's package is not asked a check: its conditional request costs one round trip as the
+//     forward of an uncached path does, so no timing tells it a cached package from an uncached one, and the marking of the
+//     answer supplies the package answer.
 func (e *engine) fromEntry(q *rq, ent cache.Entry, shape, url *answerVal) bool {
 	unreachable := !e.d.Link.Reachable()
-	allowed := isFull(shape) || (url != nil && url.Allowed)
+	pkg := e.packageAnswer(q.ctx(), q, ent.Repository, ent.Package, shape)
+	allowed := isFull(shape) || isFull(pkg) || (url != nil && url.Allowed)
 	// The grace period of R-BAS-027 extends the validity of an answer, never past a withdrawal: a content entry
 	// of the feed received after validatedAt - 15 s makes the entry unservable while unreachable as well
 	// (Q-BAS-122).
@@ -91,14 +102,14 @@ func (e *engine) fromEntry(q *rq, ent cache.Entry, shape, url *answerVal) bool {
 	}
 	if shape == nil && (url == nil || !url.Allowed) {
 		var done bool
-		if shape, done = e.checkShape(q); done {
+		if shape, pkg, done = e.checkShape(q, ent.Repository, ent.Package); done {
 			return true
 		}
 		if shape.Read == iface.ReadNone {
 			e.refuseNone(q, shape)
 			return true
 		}
-		if isFull(shape) && e.fresh(ent) {
+		if (isFull(shape) || isFull(pkg)) && e.fresh(ent) {
 			return e.serveEntry(q, ent, metrics.ResultChecked)
 		}
 	}
@@ -114,7 +125,7 @@ func (e *engine) fromNegative(q *rq, shape *answerVal) bool {
 	}
 	if shape == nil {
 		var done bool
-		if shape, done = e.checkShape(q); done {
+		if shape, _, done = e.checkShape(q, "", ""); done {
 			return true
 		}
 		if shape.Read == iface.ReadNone {
@@ -182,13 +193,18 @@ func (e *engine) servePrivate(q *rq, d *privDoc, result string) bool {
 type checkResult struct {
 	answer iface.CheckAnswer
 	sentAt time.Time
+	// packageAt is when the package answer in answer was obtained, when it is older than sentAt: a result storedCheck
+	// rebuilt carries a package answer with its own time, which recording it again must not extend (Q-BAS-248). Zero means
+	// sentAt.
+	packageAt time.Time
 }
 
 // storedCheck rebuilds the result of a check from the answers a check that ended meanwhile stored, so the caller
-// that reached the collapse after that check left it uses them and sends none of its own (R-BAS-022). It reports
-// false when the store holds no usable shape answer and, for a token, no usable credential answer of a valid
-// token.
-func (e *engine) storedCheck(ctx context.Context, q *rq) (checkResult, bool) {
+// that reached the collapse after that check left it uses them and sends none of its own (R-BAS-022). The package answer
+// on pkg is rebuilt as well when the shape is partial (R-BAS-084); without one the result holds no package, and the caller
+// sends the conditional request of step 5, as any caller whose shape is known. It reports false when the store holds no
+// usable shape answer and, for a token, no usable credential answer of a valid token.
+func (e *engine) storedCheck(ctx context.Context, q *rq, pkg string) (checkResult, bool) {
 	shape := e.answers.shape(ctx, q.cred.key, q.repo)
 	if shape == nil {
 		return checkResult{}, false
@@ -202,30 +218,47 @@ func (e *engine) storedCheck(ctx context.Context, q *rq) (checkResult, bool) {
 		sub = cred.Subject
 	}
 	rr := iface.RepositoryRead{Read: shape.Read, Status: shape.Status}
-	return checkResult{
+	r := checkResult{
 		answer: iface.CheckAnswer{Subject: sub, Repositories: map[string]iface.RepositoryRead{q.repo: rr}},
 		sentAt: shape.ObtainedAt,
-	}, true
+	}
+	if pkg != "" && shape.Read == iface.ReadPartial {
+		if p := e.answers.pkg(ctx, q.cred.key, q.repo, pkg); p != nil {
+			r.answer.Packages = iface.PackageReads{{Repository: q.repo, Package: pkg, Read: p.Read}}
+			r.packageAt = p.ObtainedAt
+		}
+	}
+	return r, true
 }
 
-// checkShape asks the check of R-BAS-011 for the caller's credential and the addressed repository, one request
-// per credential and repository, collapsed (R-BAS-022). done is true when it answered the request itself.
-func (e *engine) checkShape(q *rq) (shape *answerVal, done bool) {
+// checkShape asks the check of R-BAS-011 for the caller's credential and the addressed repository and, for an entry of
+// that repository that names a package, for the pair (repository, package) (R-BAS-085 step 4): one request per
+// credential, repository and package, collapsed (R-BAS-022). It returns the shape answer and the package answer the check
+// gave; done is true when it answered the request itself.
+func (e *engine) checkShape(q *rq, entryRepo, entryPkg string) (shape, pkg *answerVal, done bool) {
 	if !e.d.Link.Reachable() {
 		e.unreachable(q)
-		return nil, true
+		return nil, nil, true
 	}
 	if v := e.d.Guard.Miss(q.ctx(), q.addr, guard.Credentialed(!q.cred.anonymous)); !v.Allowed {
 		e.refuseVerdict(q, v)
-		return nil, true
+		return nil, nil, true
 	}
-	res, err := e.checks.do(q.ctx(), "check|"+q.cred.key+"|"+q.repo, func(ctx context.Context) (any, error) {
+	name := ""
+	if entryRepo == q.repo && len(checkPackages(q.repo, entryPkg)) == 1 {
+		name = entryPkg
+	}
+	key := "check|" + q.cred.key + "|" + q.repo
+	if name != "" {
+		key += "|" + name
+	}
+	res, err := e.checks.do(q.ctx(), key, func(ctx context.Context) (any, error) {
 		// This caller read its answers before the check of an earlier leader stored its own, and led only
 		// after that check left the collapse: what the earlier check stored answers it.
-		if r, ok := e.storedCheck(ctx, q); ok {
+		if r, ok := e.storedCheck(ctx, q, name); ok {
 			return r, nil
 		}
-		req := iface.CheckRequest{ClientAddress: q.clientText, Repositories: []string{q.repo}}
+		req := iface.CheckRequest{ClientAddress: q.clientText, Repositories: []string{q.repo}, Packages: checkPackages(q.repo, name)}
 		if !q.cred.anonymous {
 			t := q.cred.token
 			req.Credential = &t
@@ -236,10 +269,10 @@ func (e *engine) checkShape(q *rq) (shape *answerVal, done bool) {
 	})
 	if err != nil {
 		e.mainError(q, err)
-		return nil, true
+		return nil, nil, true
 	}
 	r := res.(checkResult)
-	return e.applyCheck(q, r)
+	return e.applyCheck(q, name, r)
 }
 
 func (e *engine) budgetClass(q *rq) mainclient.Class {
@@ -249,33 +282,33 @@ func (e *engine) budgetClass(q *rq) mainclient.Class {
 	return mainclient.Authenticated
 }
 
-// applyCheck keeps the credential and shape answers of a check and turns the subjects the Bastion does not
+// applyCheck keeps the credential, shape and package answers of a check and turns the subjects the Bastion does not
 // serve into their answers (R-BAS-011, R-BAS-029).
-func (e *engine) applyCheck(q *rq, r checkResult) (*answerVal, bool) {
+func (e *engine) applyCheck(q *rq, pkgName string, r checkResult) (shape, pkg *answerVal, done bool) {
 	sub := r.answer.Subject
-	shape := e.recordCheck(q.ctx(), q.cred, q.repo, q.addr, r)
+	shape, pkg = e.recordCheck(q.ctx(), q.cred, q.repo, pkgName, q.addr, r)
 	switch sub.Kind {
 	case iface.SubjectInvalid:
 		e.refuse(q, e.errInvalidToken(q), metrics.RefusedInvalid)
-		return nil, true
+		return nil, nil, true
 	case iface.SubjectAnonymousRefused:
 		e.refuse(q, e.errCredentialsRequired(q), metrics.RefusedInvalid)
-		return nil, true
+		return nil, nil, true
 	case iface.SubjectThrottled:
 		after := time.Second
 		if sub.RetryAfterSeconds != nil {
 			after = time.Duration(*sub.RetryAfterSeconds) * time.Second
 		}
 		e.refuseVerdict(q, guard.Verdict{Code: iface.CodeRateLimited, RetryAfter: after, Reason: metrics.RefusedRateLimited})
-		return nil, true
+		return nil, nil, true
 	}
 	if shape == nil {
 		// A subject kind this Bastion does not know: the interface versions would differ.
 		e.fail(q, mainclient.ErrUnreachable)
-		return nil, true
+		return nil, nil, true
 	}
 	q.subject = sub
-	return shape, false
+	return shape, pkg, false
 }
 
 // keepInvalid keeps the main installation's statement that a credential is invalid, like an allowance, and

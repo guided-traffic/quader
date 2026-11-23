@@ -99,9 +99,11 @@ func TestR_BAS_021_R_BAS_023_R_BAS_024_EveryCallerIsAnsweredAsTheMainInstallatio
 	}
 }
 
-// TestR_BAS_022_R_BAS_024_NegativeCacheOnlyForFullReaders (and R-BAS-082 at a Bastion without answers per package): a name that does not exist for anyone is answered 404
-// from the negative cache after the first request, for a full reader; the same 404 for a partial reader (who
-// may not read a name that exists) is never stored, so it never stands for a hidden package.
+// TestR_BAS_022_R_BAS_024_NegativeCacheOnlyForFullReaders (and R-BAS-082, R-BAS-085 for npm): a name that does not exist for anyone is
+// answered 404 from the negative cache after the first request, for a full reader; the same 404 for a partial reader (who may not read a
+// name that exists) is never stored, so it never stands for a hidden package. A package document a narrowed reader reads in full is
+// shared with full readers, and its package answer serves that reader's second `npm ci` through the local repository without a request;
+// through the virtual repository it stays a partial reader of the package.
 func TestR_BAS_022_R_BAS_024_NegativeCacheOnlyForFullReaders(t *testing.T) {
 	w := newWorld(t, worldOptions{})
 	w.content()
@@ -161,12 +163,35 @@ func TestR_BAS_022_R_BAS_024_NegativeCacheOnlyForFullReaders(t *testing.T) {
 	if want := w.atBastionHost(doc, full.token); !bytes.Equal(fullDoc.Body, want.Body) {
 		t.Fatalf("the shared entry $PART filled differs from $FULL's document")
 	}
+	// $PART reads @acme/sdk in full through npm-local, so the markings give it a package answer (R-BAS-084): a second replayed `npm ci`
+	// within the period is served from the cache, the document included, and sends nothing (R-BAS-085).
+	if s := npmRun(t, r, npmLocal, part, "@acme/sdk"); !s.ok() || s.artifacts != 1 {
+		t.Fatalf("$PART's first npm ci through npm-local: %+v", s)
+	}
+	m := w.front.Mark()
+	if s := npmRun(t, r, npmLocal, part, "@acme/sdk"); !s.ok() || w.front.Cost(m) != 0 {
+		t.Fatalf("$PART's second npm ci through npm-local within the period: %+v, %d requests to the main installation, want none: %+v", s, w.front.Cost(m), w.front.Since(m))
+	}
+	// Through npm-all, whose remote member $PART has no grant on, its shape on @acme/sdk stays partial (R-BAS-080): a tarball $FULL filled
+	// costs $PART one conditional request answered 304 and no bytes (R-BAS-022's criterion, kept as a regression test).
+	for _, v := range []string{"1.0.0", "2.0.0"} {
+		p := tarballPath(npmAll, "@acme/sdk", v)
+		if got := r.do(t, "GET", p, full); got.Status != http.StatusOK {
+			t.Fatalf("$FULL's tarball %s through npm-all: %d", v, got.Status)
+		}
+		m := w.front.Mark()
+		got := r.do(t, "GET", p, part)
+		fw := w.front.Forwards(m, "/api/")
+		if got.Status != http.StatusOK || len(fw) != 1 || fw[0].Header.Get("If-None-Match") == "" || fw[0].Status != http.StatusNotModified {
+			t.Fatalf("$PART's tarball %s through npm-all: %d, forwards %+v, want one conditional request answered 304", v, got.Status, fw)
+		}
+	}
 	// An expired negative entry asks again.
 	b2 := w.newBastion(t, bastionOptions{Cache: "    negative_period: 1s\n"}).wait()
 	missing2 := "/api/npm/" + npmLocal + "/another-missing"
 	b2.reps[0].do(t, "GET", missing2, full)
 	time.Sleep(1300 * time.Millisecond)
-	m := w.front.Mark()
+	m = w.front.Mark()
 	b2.reps[0].do(t, "GET", missing2, full)
 	if n := len(w.front.Forwards(m, "/api/")); n != 1 {
 		t.Fatalf("after negative_period the request sent %d requests, want 1", n)

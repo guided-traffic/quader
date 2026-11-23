@@ -67,19 +67,30 @@ func (e *engine) onPassOnly(q *rq, resp *mainclient.Response) {
 	e.passThrough(q, resp, nil, metrics.ClassPass, metrics.ResultMiss)
 }
 
-// registryTokenExpired reports whether the main installation reported an expiry for the registry token of the key and
-// it has passed (R-BAS-052).
-func (e *engine) registryTokenExpired(key string) bool {
-	exp, ok := e.expiries.get(key)
+// registryTokenExpired reports whether the expiry a registry token's claims name, read without verifying them, has passed
+// (R-BAS-052, Q-BAS-252): every replica knows it without having seen the token, and trusting it can only refuse, because a
+// token whose claims were changed fails the main installation's MAC anyway. It is the expiry the main installation reports
+// for the token (the authentication stage takes the credential's expiry from the same claims).
+func (e *engine) registryTokenExpired(c credential) bool {
+	exp, ok := iface.RegistryTokenExpiry(c.token)
 	return ok && !e.now().Before(exp)
 }
 
-// noteRegistryToken keeps the expiry the main installation reported for a registry token (R-BAS-052): the token's own,
-// which the subject of the marking and the check carries.
-func (e *engine) noteRegistryToken(c credential, sub iface.Subject) {
-	if c.registry && !c.anonymous && sub.Kind == iface.SubjectToken && sub.ExpiresAt != nil {
-		e.expiries.put(c.key, *sub.ExpiresAt, 0)
+// capPackage limits a package answer of a registry token to its grant (R-BAS-084, Q-BAS-246): full only when the token's
+// grant, read without verifying it, names the repository and the package with pull; partial otherwise, whatever the main
+// installation marked, so a defect there cannot open another image to the token. The comparison is made when the answer
+// is recorded, and nothing of the grant is kept. Every other read than full is partial: a package answer has two values
+// (Q-BAS-243).
+func capPackage(c credential, repo, pkg string, read iface.Read) iface.Read {
+	if read != iface.ReadFull {
+		return iface.ReadPartial
 	}
+	if c.registry && !c.anonymous {
+		if g, ok := iface.RegistryTokenGrant(c.token); !ok || !g.Pulls(repo, pkg) {
+			return iface.ReadPartial
+		}
+	}
+	return iface.ReadFull
 }
 
 // capRead caps the read shape of a registry token at partial (R-BAS-052, Q-BAS-167): a grant names image names and never a

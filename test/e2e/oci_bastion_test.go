@@ -169,7 +169,7 @@ func (w *ociBastionWindow) done() []mainReq {
 }
 
 // noArtifactBytes fails when the main installation sent the Bastion an artifact's bytes in the window: a warm pull is served from the
-// Bastion's cache, after one conditional request per artifact for a registry token, whose read shape is at most partial (R-BAS-052, H-1242).
+// Bastion's cache (R-BAS-053). It logs the conditional requests answered 304, which a registry token's package answer spares (R-BAS-085).
 func noArtifactBytes(t testing.TB, what string, reqs []mainReq) {
 	t.Helper()
 	conditional := 0
@@ -190,6 +190,32 @@ func noArtifactBytes(t testing.TB, what string, reqs []mainReq) {
 	t.Logf("%s: %d requests of the Bastion at the main installation, %d of them conditional requests for an artifact answered 304", what, len(reqs), conditional)
 }
 
+// noArtifactRequest fails when a warm pull asked the main installation anything about an artifact, a manifest by digest or a blob: the
+// registry token's package answer on the image, which the marking of its first forwarded read or one check gives, serves every artifact of
+// the image from the Bastion's cache (R-BAS-085, Q-BAS-271); before, each was a conditional request answered 304. What a client still
+// sends is logged: the token step, the tag's HEAD of a client that never GETs the tag (a HEAD miss keeps no entry, R-BAS-021), its first
+// HEAD without a credential while the main installation admits anonymous reads (H-1420), the referrers list (Volatile, R-BAS-053) and a
+// version check sent with the token.
+func noArtifactRequest(t testing.TB, what string, reqs []mainReq) {
+	t.Helper()
+	var artifacts []mainReq
+	for _, r := range reqs {
+		if ociArtifact(r) {
+			artifacts = append(artifacts, r)
+		}
+	}
+	if len(artifacts) > 0 {
+		t.Errorf("%s asked the main installation %d times about an artifact, want never:\n%s", what, len(artifacts), describeReqs(artifacts))
+	}
+}
+
+// ociFeedQuiet is how long after the Bastion received the set-up's last feed entry (a push's claim is a content entry, a policy a grants
+// entry) the cold pull starts: an entry received less than the skew margin of R-BAS-020 (15 s) before a cached entry was validated makes it
+// stale, and the warm pulls would revalidate what they read whatever answers they hold. A replica that starts reads the feed's lookback at
+// once, so the set-up's entries are received when the replica is ready, not when they were written; the second beyond the margin is for
+// that first read after the replica's contact.
+const ociFeedQuiet = 16 * time.Second
+
 // ociBastionCacheBytes is the Bastion's quader_bastion_bytes_served_total{source="cache"} over its ready replicas.
 func ociBastionCacheBytes(t testing.TB, s *basSite) float64 {
 	t.Helper()
@@ -198,8 +224,9 @@ func ociBastionCacheBytes(t testing.TB, s *basSite) float64 {
 
 // TestOCI_R_BAS_051_ThroughABastion: an image of two layers of a few KiB, pushed to the main installation, is pulled through the Bastion with
 // the snippets of the client setup for the Bastion: Docker signs in and pulls it cold, the main installation sending each artifact once, and
-// warm, the main installation sending no artifact's bytes; Podman and a Kubernetes pod with the image pull secret of the snippet pull it warm
-// the same way (R-BAS-050 to R-BAS-053, R-BAS-060).
+// warm, the main installation sending no artifact's bytes and being asked nothing about an artifact, since the registry token's package
+// answer serves them; Podman and a Kubernetes pod with the image pull secret of the snippet pull it warm the same way (R-BAS-050 to
+// R-BAS-053, R-BAS-060, R-BAS-085, Q-BAS-271).
 func TestOCI_R_BAS_051_ThroughABastion(t *testing.T) {
 	fx := ociFx(t)
 	start := time.Now()
@@ -252,6 +279,13 @@ func TestOCI_R_BAS_051_ThroughABastion(t *testing.T) {
 	prune := func(t *testing.T) { ociClientExec(t, 1, ociDocker, "docker", "system", "prune", "--all", "--force") }
 	steps := map[string]time.Duration{}
 	c := fx.client(t, 1, ociDocker, "bastion")
+	// The push was the set-up's last feed entry (the registration's came before it), and the replica received it at the latest when it
+	// was ready: the cold pull fills the cache once that receipt is older than the skew margin, so that what the warm pulls ask is decided
+	// by their answers alone.
+	if quiet := time.Until(start.Add(max(pushed, installTook)).Add(ociFeedQuiet)); quiet > 0 {
+		time.Sleep(quiet)
+		steps["quiet"] = quiet
+	}
 
 	var fills map[string]int64 // the artifacts the main installation sent at the cold pull, with their bytes
 	t.Run("R-BAS-060 R-BAS-052 docker login and a cold docker pull through the Bastion: the main installation sends each artifact once", func(t *testing.T) {
@@ -292,7 +326,9 @@ func TestOCI_R_BAS_051_ThroughABastion(t *testing.T) {
 		if !c.holds(bref, digest) {
 			t.Fatalf("docker holds %q after the warm pull through the Bastion, want the digest %s", c.digests(bref), digest)
 		}
-		noArtifactBytes(t, "the warm docker pull", w.done())
+		reqs := w.done()
+		noArtifactBytes(t, "the warm docker pull", reqs)
+		noArtifactRequest(t, "the warm docker pull", reqs)
 		var blobs int64
 		for p, n := range fills {
 			if strings.Contains(p, "/blobs/") {
@@ -315,7 +351,9 @@ func TestOCI_R_BAS_051_ThroughABastion(t *testing.T) {
 		if !p.holds(bref, digest) {
 			t.Fatalf("podman holds %q after the pull through the Bastion, want the digest %s", p.digests(bref), digest)
 		}
-		noArtifactBytes(t, "the podman pull", w.done())
+		reqs := w.done()
+		noArtifactBytes(t, "the podman pull", reqs)
+		noArtifactRequest(t, "the podman pull", reqs)
 		steps["podman"] = time.Since(began)
 	})
 
@@ -364,12 +402,14 @@ func TestOCI_R_BAS_051_ThroughABastion(t *testing.T) {
 		if err != nil || !strings.Contains(string(out), strings.TrimPrefix(digest, "sha256:")) {
 			t.Fatalf("the node's containerd holds %q for %s (%v), want the digest %s", out, bref, err, digest)
 		}
-		noArtifactBytes(t, "the kubelet's pull", w.done())
+		reqs := w.done()
+		noArtifactBytes(t, "the kubelet's pull", reqs)
+		noArtifactRequest(t, "the kubelet's pull", reqs)
 		steps["kubelet"] = time.Since(began)
 	})
 
-	t.Logf("the case took %s after the set's fixture: the Bastion's release ready after %s (the image built and pushed beside it after %s), cold pull %s, warm pull %s, podman %s, kubelet %s",
+	t.Logf("the case took %s after the set's fixture: the Bastion's release ready after %s (the image built and pushed beside it after %s), the wait for the feed %s, cold pull %s, warm pull %s, podman %s, kubelet %s",
 		time.Since(start).Round(100*time.Millisecond), installTook.Round(100*time.Millisecond), pushed.Round(100*time.Millisecond),
-		steps["cold"].Round(100*time.Millisecond), steps["warm"].Round(100*time.Millisecond), steps["podman"].Round(100*time.Millisecond),
-		steps["kubelet"].Round(100*time.Millisecond))
+		steps["quiet"].Round(100*time.Millisecond), steps["cold"].Round(100*time.Millisecond), steps["warm"].Round(100*time.Millisecond),
+		steps["podman"].Round(100*time.Millisecond), steps["kubelet"].Round(100*time.Millisecond))
 }

@@ -171,8 +171,10 @@ func (e *engine) process(q *rq, resp *mainclient.Response, sent time.Time, bl *b
 	}
 }
 
-// recordAnswers keeps the credential and shape answers a marked response carries (R-BAS-020) and counts the
-// failed authentication of a credential the main installation called invalid (R-BAS-036).
+// recordAnswers keeps the credential, shape and package answers a marked response carries (R-BAS-020, R-BAS-084) and
+// counts the failed authentication of a credential the main installation called invalid (R-BAS-036). A package answer is
+// recorded only from a marking of the request's own repository and only while the caller's shape on it is partial: a full
+// shape covers every package.
 func (e *engine) recordAnswers(q *rq, resp *mainclient.Response, sent time.Time) {
 	m, ctx := resp.Marking, q.ctx()
 	sub := m.Subject
@@ -181,7 +183,6 @@ func (e *engine) recordAnswers(q *rq, resp *mainclient.Response, sent time.Time)
 		q.subject = sub
 		if !q.cred.anonymous {
 			e.answers.put(ctx, answers.Credential, q.cred.key, &answerVal{Answer: answerBase(answers.Credential, sent, sub, ""), Subject: sub})
-			e.noteRegistryToken(q.cred, sub)
 		}
 	case iface.SubjectInvalid:
 		if insufficientScope(resp.Status, resp.Header) {
@@ -198,7 +199,19 @@ func (e *engine) recordAnswers(q *rq, resp *mainclient.Response, sent time.Time)
 			status = resp.Status
 		}
 		e.answers.put(ctx, answers.Shape, shapeKey(q.cred.key, q.repo), &answerVal{Answer: answerBase(answers.Shape, sent, sub, q.repo), Read: read, Status: status})
+		if read == iface.ReadPartial && m.Package != "" {
+			e.putPackage(ctx, q.cred, q.repo, m.Package, m.PackageRead, sent, sub)
+		}
 	}
+}
+
+// entryPackage is the package of the entry a 200 or a 304 writes or renews (R-BAS-084): the marking's, when the marking is
+// of the request's repository, and none otherwise, so a marking without a package clears it.
+func entryPackage(q *rq, m iface.Marking) string {
+	if m.Repository != q.repo {
+		return ""
+	}
+	return m.Package
 }
 
 // putURL keeps the URL answer of this credential and cache key: allowed, or the refusal.
@@ -385,6 +398,7 @@ func (e *engine) onShared(q *rq, resp *mainclient.Response, sent time.Time, bl *
 		ent := *bl.ent
 		ent.ValidatedAt = sent
 		ent.Counted = ent.Counted || resp.Marking.Counted
+		ent.Package = entryPackage(q, resp.Marking)
 		_ = e.saveEntry(q.ctx(), q.cacheKey, ent)
 		if !e.serveEntry(q, ent, metrics.ResultChecked) {
 			e.forward(q, mainclient.KindForward, "", nil)
@@ -453,7 +467,7 @@ func (e *engine) storeDocument(q *rq, key string, resp *mainclient.Response, bod
 	h := keepHeader(resp.Header, q.facts.ReplayHeaders)
 	_ = e.saveEntry(ctx, key, cache.Entry{
 		Kind: cache.EntryDocument, SHA256: sha, Size: int64(len(body)), Header: h, Repository: resp.Marking.Repository,
-		Status: resp.Status, ValidatedAt: sent, Counted: resp.Marking.Counted,
+		Status: resp.Status, ValidatedAt: sent, Counted: resp.Marking.Counted, Package: entryPackage(q, resp.Marking),
 	})
 }
 

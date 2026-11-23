@@ -122,9 +122,6 @@ type engine struct {
 	vary     *lruCache[[]string]
 	volatile *lruCache[time.Time]
 	probes   *lruCache[*probeRec]
-	// expiries holds the expiry the main installation reported for a registry token, by credential key: a request with
-	// the token past it is refused without a request and without a count (R-BAS-052).
-	expiries *lruCache[time.Time]
 
 	checks, probeFlights, fetches *group
 
@@ -166,7 +163,6 @@ const (
 	volatileEntries = 10000
 	varyEntries     = 20000
 	probeEntries    = 20000
-	expiryEntries   = 100000
 )
 
 func newFlow(d Deps) (*engine, error) {
@@ -211,7 +207,6 @@ func newFlow(d Deps) (*engine, error) {
 	e.vary = newLRU[[]string](varyEntries, 0, nil)
 	e.volatile = newLRU[time.Time](volatileEntries, 0, nil)
 	e.probes = newLRU[*probeRec](probeEntries, 0, nil)
-	e.expiries = newLRU[time.Time](expiryEntries, 0, nil)
 	return e, nil
 }
 
@@ -297,5 +292,4 @@ func (e *engine) janitor() {
 	e.d.Link.Feed().Prune(answers.PruneCutoff(now, e.cfg.Answers.Period, e.cfg.Answers.GracePeriod))
 	e.volatile.retain(func(_ string, t time.Time) bool { return now.Before(t) })
 	e.probes.retain(func(_ string, p *probeRec) bool { return now.Before(p.until) })
-	e.expiries.retain(func(_ string, t time.Time) bool { return now.Before(t.Add(time.Hour)) })
 }

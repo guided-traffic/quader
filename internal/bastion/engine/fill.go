@@ -33,6 +33,7 @@ func (e *engine) onArtifact(q *rq, resp *mainclient.Response, sent time.Time, bl
 			ent := *bl.ent
 			ent.ValidatedAt = sent
 			ent.Counted = ent.Counted || resp.Marking.Counted
+			ent.Package = entryPackage(q, resp.Marking) // replaced by every 304, cleared by one without a package (R-BAS-084)
 			_ = e.saveEntry(q.ctx(), q.cacheKey, ent)
 			if e.serveEntry(q, ent, metrics.ResultChecked) {
 				return
@@ -100,6 +101,9 @@ type fillRun struct {
 	etag         string
 	lastModified string
 	counted      bool
+	// repo and pkg are the repository and the package of the leader's marking (R-BAS-084): a follower whose package answer
+	// on pkg is full follows the fill like a full reader (R-BAS-085, Q-BAS-200).
+	repo, pkg string
 
 	mu      sync.Mutex
 	written int64
@@ -247,6 +251,7 @@ func (e *engine) fillSpool(q *rq, resp *mainclient.Response, pre []byte, sha str
 	r := &fillRun{
 		e: e, fill: fill, kind: kind, sha: sha, size: size, notify: make(chan struct{}), refs: 2,
 		hdr: hdr, etag: resp.Header.Get("Etag"), lastModified: resp.Header.Get("Last-Modified"), counted: resp.Marking.Counted,
+		repo: q.repo, pkg: entryPackage(q, resp.Marking),
 	}
 	if key, keep := e.learnVary(q, resp.Header); keep {
 		r.key, r.ent = key, e.spoolEntry(q, resp, sha, size, sent, kind)
@@ -286,7 +291,7 @@ func (e *engine) spoolEntry(q *rq, resp *mainclient.Response, sha string, size i
 	}
 	return cache.Entry{
 		Kind: kind, SHA256: sha, Size: size, Header: h, Repository: repo, Status: http.StatusOK, ValidatedAt: sent,
-		Counted: resp.Marking.Counted,
+		Counted: resp.Marking.Counted, Package: entryPackage(q, resp.Marking),
 	}
 }
 
@@ -369,10 +374,11 @@ func (e *engine) streamFill(q *rq, r *fillRun, start, end int64) bool {
 }
 
 // followFill serves a caller of a cache key whose fill runs on this replica from its spool (R-BAS-054, Q-BAS-172),
-// after it has its own permission: a usable full answer or URL answer, a check that says full, or for an artifact a
-// conditional request with the caller's credential naming the fill's validator, answered 304; a refusal is replayed.
-// It reports true when the fill is gone or the caller may not follow it (a document for a reader without a full
-// shape), and the request is decided again once the flight ended.
+// after it has its own permission: a usable full answer, a package answer full on the fill's package (the leader's
+// marking named it, R-BAS-085), a URL answer, a check that says either, or for an artifact a conditional request with the
+// caller's credential naming the fill's validator, answered 304; a refusal is replayed. It reports true when the fill is
+// gone or the caller may not follow it (a document for a reader without a full shape or package answer), and the request
+// is decided again once the flight ended.
 func (e *engine) followFill(q *rq, r *fillRun) (again bool) {
 	if !r.acquire() {
 		return true
@@ -390,18 +396,19 @@ func (e *engine) followFill(q *rq, r *fillRun) (again bool) {
 		e.writeRefusal(q, url.Refusal, metrics.SourceCache)
 		return false
 	}
-	allowed := isFull(shape) || (url != nil && url.Allowed && r.kind == cache.EntryArtifact)
+	pkg := e.packageAnswer(ctx, q, r.repo, r.pkg, shape)
+	allowed := isFull(shape) || isFull(pkg) || (url != nil && url.Allowed && r.kind == cache.EntryArtifact)
 	result := metrics.ResultHit
 	if !allowed && shape == nil && e.d.Link.Reachable() {
 		var done bool
-		if shape, done = e.checkShape(q); done {
+		if shape, pkg, done = e.checkShape(q, r.repo, r.pkg); done {
 			return false
 		}
 		if shape.Read == iface.ReadNone {
 			e.refuseNone(q, shape)
 			return false
 		}
-		allowed, result = isFull(shape), metrics.ResultChecked
+		allowed, result = isFull(shape) || isFull(pkg), metrics.ResultChecked
 	}
 	class := metrics.ClassArtifact
 	if r.kind == cache.EntryDocument {

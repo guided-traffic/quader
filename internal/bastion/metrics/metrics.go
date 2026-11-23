@@ -102,6 +102,8 @@ const (
 	AnswerCredential = "credential"
 	AnswerShape      = "shape"
 	AnswerURL        = "url"
+	// AnswerPackage is a credential's shape on one package (R-BAS-084); no label carries the package's name.
+	AnswerPackage = "package"
 
 	// result of quader_bastion_answers_total.
 	AnswerHit          = "hit"
@@ -242,7 +244,7 @@ func New(reg prometheus.Registerer) (*Metrics, error) {
 		InterfaceVersion:     gauge(InterfaceVersion, "The interface version by side (bastion, main).", "side"),
 		GracePeriod:          prometheus.NewGauge(prometheus.GaugeOpts{Name: GracePeriodSeconds, Help: "bastion.answers.grace_period in seconds."}),
 		AnswerPeriod:         prometheus.NewGauge(prometheus.GaugeOpts{Name: AnswerPeriodSeconds, Help: "bastion.answers.period in seconds."}),
-		Answers:              gauge(Answers, "Answers of the main installation held by this replica, by kind (credential, shape, url).", "kind"),
+		Answers:              gauge(Answers, "Answers of the main installation held by this replica, by kind (credential, shape, url, package).", "kind"),
 		AnswersTotal:         counter(AnswersTotal, "Answer lookups by kind and result (hit, miss, expired, dropped, bad_signature).", "kind", "result"),
 		FeedLag:              prometheus.NewGauge(prometheus.GaugeOpts{Name: FeedLagSeconds, Help: "Age of the last successful feed poll in seconds (R-BAS-026)."}),
 		FeedApplied:          counter(FeedEntriesAppliedTotal, "Feed entries applied by kind (token, principal, grants, settings, content).", "kind"),
@@ -303,7 +305,7 @@ func (m *Metrics) seed() {
 	for _, s := range []string{SideBastion, SideMain} {
 		m.InterfaceVersion.WithLabelValues(s)
 	}
-	for _, k := range []string{AnswerCredential, AnswerShape, AnswerURL} {
+	for _, k := range []string{AnswerCredential, AnswerShape, AnswerURL, AnswerPackage} {
 		m.Answers.WithLabelValues(k)
 		for _, r := range []string{AnswerHit, AnswerMiss, AnswerExpired, AnswerDropped, AnswerBadSignature} {
 			m.AnswersTotal.WithLabelValues(k, r)
