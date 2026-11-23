@@ -387,6 +387,44 @@ const (
 
 // <<< signatures
 //
+// >>> remote curation
+
+// Codes of the curation of a remote repository (remote-curation.md R-CUR-004 to R-CUR-016). not_allowed_in_repository is the answer of
+// a delivery rule on every download route, rendered by each format in its client's shape (R-CUR-004); the others are answers of the
+// management API.
+const (
+	// CodeNotAllowedInRepository: the repository's delivery rules do not deliver the package or version (403, R-CUR-004).
+	CodeNotAllowedInRepository = "not_allowed_in_repository"
+	// CodeTooManyRules: a rule beyond proxy.delivery.max_rules, or a 101st section rule, of a repository (422, R-CUR-006).
+	CodeTooManyRules = "too_many_rules"
+	// CodeInvalidVersion: a version the repository's format cannot read (422, R-CUR-006).
+	CodeInvalidVersion = "invalid_version"
+	// CodeCatalogueNotOffered: a catalogue call the upstream of the repository does not answer, such as a search where it has none
+	// (400, R-CUR-009).
+	CodeCatalogueNotOffered = "catalogue_not_offered"
+	// CodeCatalogueNotFound: the upstream does not have the package looked up (404, R-CUR-009).
+	CodeCatalogueNotFound = "catalogue_not_found"
+	// CodeCatalogueBudgetExhausted: the catalogue's budget of the repository or of the person is used up, or the upstream rate limits
+	// Quader (429, R-CUR-008).
+	CodeCatalogueBudgetExhausted = "catalogue_budget_exhausted"
+	// CodeCatalogueAnswerTooLarge: an upstream answer exceeds a bound of the catalogue; the detail names the bound (502, R-CUR-008).
+	CodeCatalogueAnswerTooLarge = "catalogue_answer_too_large"
+	// CodeDownloadQueueFull: the repository's queue holds proxy.downloads.max_waiting_per_repository waiting rows (429, R-CUR-011).
+	CodeDownloadQueueFull = "download_queue_full"
+	// CodeAlreadyQueued: a download of the version is waiting or running; the answer names its row (409, R-CUR-010).
+	CodeAlreadyQueued = "already_queued"
+	// CodeNotRetryable: a retry of a row that is neither failed nor cancelled (409, R-CUR-012).
+	CodeNotRetryable = "not_retryable"
+	// CodeAlreadyDelivered: a request for a subject the rules deliver (409, R-CUR-015).
+	CodeAlreadyDelivered = "already_delivered"
+	// CodeTooManyRequests: a person holds proxy.delivery.open_requests_per_person open requests in the repository (429, R-CUR-015).
+	CodeTooManyRequests = "too_many_requests"
+	// CodeDelivered: a discard of a version the rules deliver (409, R-CUR-016).
+	CodeDelivered = "delivered"
+)
+
+// <<< remote curation
+//
 // >>> M6b mirror
 
 // Codes of the mirror mode of remote repositories (repositories-and-proxy.md R-REPO-050 to R-REPO-052): the validation of
@@ -983,6 +1021,22 @@ var registry = []CodeInfo{
 	{CodeSignatureCheckPending, Unavailable, "Signature check pending", "The repository serves only artifacts with a verified signature, and the artifact's signatures are being checked or fetched; retry after the Retry-After period. The response is never cached."},
 	{CodeSignatureWeakeningRefused, Forbidden, "Signature setting cannot be weakened", "The write would switch the repository's setting signatures.onlyVerified off or accept more trust anchors. That needs the capability repositories:write-config or vulnerabilities:triage; a project Owner's manageRepositories does not carry it."},
 	// <<< signatures
+	//
+	// >>> remote curation
+	{CodeNotAllowedInRepository, Forbidden, "Not allowed in this repository", "The delivery rules of the remote repository do not deliver this package or version: a rule blocks it, or the repository delivers only what is allowed. The answer's text says where to ask for it; a person who may set the repository's rules can allow it."},
+	{CodeTooManyRules, Unprocessable, "Too many rules", "The repository holds the most delivery rules it may (proxy.delivery.max_rules), or 100 section rules. Remove rules, or allow a section instead of many packages."},
+	{CodeInvalidVersion, Unprocessable, "Invalid version", "The version is not one the repository's format can read. Write it as the format's clients name it; a range is not a version."},
+	{CodeCatalogueNotOffered, Invalid, "Not offered by the upstream", "The upstream of this remote repository does not answer this call of the catalogue, for example a search where it has none. Look the package up by its exact name."},
+	{CodeCatalogueNotFound, NotFound, "Not found upstream", "The upstream of this remote repository does not have a package of this name. Check the name's spelling as the format writes it."},
+	{CodeCatalogueBudgetExhausted, RateLimited, "Catalogue budget used up", "The upstream catalogue's requests of this repository or of this person within the last minute reached their bound, or the upstream rate limits Quader. Try again after the Retry-After period; an answer from the catalogue's cache costs nothing."},
+	{CodeCatalogueAnswerTooLarge, UpstreamFailed, "Upstream answer too large", "An answer of the upstream exceeds a bound of the catalogue (the document's size, the time of a call, the entries of a page); the detail names the bound. Quader does not read it for browsing."},
+	{CodeDownloadQueueFull, RateLimited, "Download queue full", "The repository's download queue holds as many waiting downloads as it may (proxy.downloads.max_waiting_per_repository). Wait until rows finish, or cancel some."},
+	{CodeAlreadyQueued, Conflict, "Already queued", "A download of this version is waiting or running in the repository's queue; the answer names its row."},
+	{CodeNotRetryable, Conflict, "Not retryable", "Only a failed or cancelled row of the download queue can be retried; this row is waiting, running or done."},
+	{CodeAlreadyDelivered, Conflict, "Already delivered", "The repository's delivery rules deliver this package or version; there is nothing to ask for."},
+	{CodeTooManyRequests, RateLimited, "Too many open requests", "You hold the most open requests you may in this repository (proxy.delivery.open_requests_per_person). Withdraw one, or wait for a decision."},
+	{CodeDelivered, Conflict, "Delivered", "The repository's delivery rules deliver the version, so it is not held for examination and is not discarded. Remove it as any cached item, or block it first."},
+	// <<< remote curation
 	//
 	// >>> M6b mirror
 	{CodeMirrorUnbounded, Invalid, "Mirror unbounded", "A mirror of the format's well-known upstream needs a bound: include patterns that each have a literal prefix, or remote.mirror.maxBytes."},

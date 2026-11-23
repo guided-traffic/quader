@@ -107,7 +107,15 @@ func (f *Format) Descriptor() formats.Descriptor {
 		VersionFetch: formats.FetchDocument,
 		// The manifest of a tag, a HEAD by digest and a HEAD of a blob name one image or file without fetching it (R-REPO-065,
 		// Q-OCI-224); probe.go.
-		Probes:           probes(),
+		Probes: probes(),
+		// The upstream catalogue (remote-curation.md R-CUR-007, formats/oci.md R-OCI-038): the lookup by exact name is the floor; the
+		// searches and levels of the presets wait for the catalogue's package of T-24.
+		Catalogue: formats.CatalogueDeclaration{
+			Lookup:   true,
+			NoSearch: "The search of a registry's operator (R-OCI-038) is specified and not built yet; look an image up by its full name.",
+			NoLevels: "The listing of a registry's namespaces and of its catalog (R-OCI-038) is specified and not built yet; look an image up by its full name.",
+		},
+		VersionCanon:     versionCanon{},
 		Names:            names{},
 		PropertyPrefix:   "oci.",
 		Clients:          clients(),
@@ -119,6 +127,12 @@ func (f *Format) Descriptor() formats.Descriptor {
 		DataPort: reflect.TypeFor[Store](),
 	}
 }
+
+// versionCanon is the canonical form of an OCI version (R-CUR-006, Q-CUR-10): the version is the tag, taken as given; a digest is
+// no version.
+type versionCanon struct{}
+
+func (versionCanon) Canonical(v string) (string, bool) { return v, ValidTag(v) }
 
 // Routes returns the endpoint map of R-OCI-009 to R-OCI-018.
 func (f *Format) Routes() []formats.Route { return f.routes }

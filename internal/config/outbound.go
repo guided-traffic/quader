@@ -35,6 +35,11 @@ type Proxy struct {
 	Claims                   ProxyClaims `yaml:"claims"`
 
 	// <<< M2 proxy
+
+	// The curation of a remote repository (remote-curation.md R-CUR-020), remote_curation.go.
+	Delivery  ProxyDelivery  `yaml:"delivery"`
+	Catalogue ProxyCatalogue `yaml:"catalogue"`
+	Downloads ProxyDownloads `yaml:"downloads"`
 }
 
 // ProxyClaims holds the system-wide switch of the namespace-claim rule for remote

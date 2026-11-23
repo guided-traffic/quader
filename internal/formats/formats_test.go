@@ -207,7 +207,7 @@ func TestR_ARCH_010_RegisterChecksTheProbeChallengeFact(t *testing.T) {
 	d := valid("probe-chal")
 	d.ProbeChallengeReachable = true
 	t.Run("without the class", func(t *testing.T) { mustPanic(t, fake{d: d}, "ProbeChallengeReachable") })
-	d.Classes = []Class{Local, Remote}
+	d.Classes, d.Catalogue, d.VersionCanon = []Class{Local, Remote}, testCatalogue, anyCanon{}
 	t.Run("without a probe path", func(t *testing.T) {
 		mustPanic(t, fake{d: d, remote: stubRemote{}}, "ProbeChallengeReachable")
 	})
@@ -228,7 +228,7 @@ func TestR_ARCH_010_RegisterChecksTheProbeChallengeFact(t *testing.T) {
 func TestR_REPO_062_RegisterRefusesAPresetURLThatIsNotNormalized(t *testing.T) {
 	withPresets := func(id string, presets ...catalog.UpstreamPreset) fake {
 		d := valid(id)
-		d.Classes = []Class{Local, Remote}
+		d.Classes, d.Catalogue, d.VersionCanon = []Class{Local, Remote}, testCatalogue, anyCanon{}
 		d.UpstreamPresets = presets
 		return fake{d: d, remote: stubRemote{}}
 	}
@@ -271,7 +271,7 @@ func (handshakeRemote) ReadToken(context.Context, RemoteContext, int, []byte) (s
 func TestR_ARCH_010_RegisterChecksTheClassMatrix(t *testing.T) {
 	t.Run("Remote listed and Remote() nil", func(t *testing.T) {
 		d := valid("probe-rem")
-		d.Classes = []Class{Local, Remote}
+		d.Classes, d.Catalogue, d.VersionCanon = []Class{Local, Remote}, testCatalogue, anyCanon{}
 		mustPanic(t, fake{d: d}, "Remote() returns nil")
 	})
 	t.Run("Virtual listed and Virtual() nil", func(t *testing.T) {
@@ -284,7 +284,7 @@ func TestR_ARCH_010_RegisterChecksTheClassMatrix(t *testing.T) {
 	})
 	t.Run("both present registers", func(t *testing.T) {
 		d := valid("probe-both")
-		d.Classes = []Class{Local, Remote, Virtual}
+		d.Classes, d.Catalogue, d.VersionCanon = []Class{Local, Remote, Virtual}, testCatalogue, anyCanon{}
 		Register(fake{d: d, remote: stubRemote{}, virt: stubVirtual{}})
 		e, ok := catalog.Default().Lookup("probe-both")
 		if !ok || !e.Supports(Remote) || !e.Supports(Virtual) {
@@ -689,17 +689,17 @@ func (stoodAuthRemote) StoodMissing(Path, http.Header) bool { return true }
 // Register (Q-OCI-127), and an adapter that has it without an Authenticator is refused.
 func TestR_ARCH_008_RegisterReadsTheStoodChallengeAndRefusesItWithoutAHandshake(t *testing.T) {
 	d := valid("probe-stood")
-	d.Classes = []Class{Local, Remote}
+	d.Classes, d.Catalogue, d.VersionCanon = []Class{Local, Remote}, testCatalogue, anyCanon{}
 	mustPanic(t, fake{d: d, remote: stoodRemote{}}, "without an Authenticator")
 	d2 := valid("probe-stood2")
-	d2.Classes = []Class{Local, Remote}
+	d2.Classes, d2.Catalogue, d2.VersionCanon = []Class{Local, Remote}, testCatalogue, anyCanon{}
 	Register(fake{d: d2, remote: stoodAuthRemote{}})
 	got := RemoteCapabilities("probe-stood2")
 	if got.Stood == nil || got.Auth == nil || !got.Stood.StoodMissing(Path{}, nil) {
 		t.Fatalf("capabilities = %+v, want both", got)
 	}
 	d3 := valid("probe-nostood")
-	d3.Classes = []Class{Local, Remote}
+	d3.Classes, d3.Catalogue, d3.VersionCanon = []Class{Local, Remote}, testCatalogue, anyCanon{}
 	Register(fake{d: d3, remote: authRemote{}})
 	if c := RemoteCapabilities("probe-nostood"); c.Stood != nil {
 		t.Errorf("capabilities = %+v, want no stood reader", c)
@@ -710,10 +710,10 @@ func TestR_ARCH_008_RegisterReadsTheStoodChallengeAndRefusesItWithoutAHandshake(
 // adapter, found once at Register (ADR-161); an adapter without them has none.
 func TestR_ARCH_008_RegisterReadsTheHandshakeAndTheRevalidation(t *testing.T) {
 	d := valid("probe-auth")
-	d.Classes = []Class{Local, Remote}
+	d.Classes, d.Catalogue, d.VersionCanon = []Class{Local, Remote}, testCatalogue, anyCanon{}
 	Register(fake{d: d, remote: authRemote{}})
 	d2 := valid("probe-noauth")
-	d2.Classes = []Class{Local, Remote}
+	d2.Classes, d2.Catalogue, d2.VersionCanon = []Class{Local, Remote}, testCatalogue, anyCanon{}
 	Register(fake{d: d2, remote: stubRemote{}})
 	got := RemoteCapabilities("probe-auth")
 	if got.Auth == nil || got.Revalidate == nil {

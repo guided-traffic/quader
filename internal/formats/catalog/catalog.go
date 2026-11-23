@@ -197,6 +197,10 @@ type UpstreamPreset struct {
 	// repository. A create from the preset's URL that omits those members stores them, as it stores the preset's hosts, and
 	// the well-known repository holds them as part of the product's address (R-REPO-062, R-REPO-069).
 	Settings json.RawMessage
+	// CatalogueHosts are the hosts besides the upstream's that the upstream catalogue of a repository of this upstream reaches for a
+	// search or a listing (remote-curation.md R-CUR-008, Q-CUR-15: Docker Hub's hub.docker.com, GitLab's gitlab.com API), with whether
+	// each receives the repository's credential. A person never types such a host; a repository whose URL is no preset's has none.
+	CatalogueHosts []PresetHost
 }
 
 // PresetHost is one entry of a preset's ExtraHosts: a host pattern of R-REPO-024 and whether the repository's credential
@@ -260,6 +264,15 @@ type Names interface {
 	Normalize(name string) (norm string, ok bool)
 }
 
+// VersionCanon is the canonical form of a version of a format (remote-curation.md R-CUR-006): the form a delivery rule stores and the
+// form the rules' decision folds what it is asked into, so that two spellings of one version meet (NuGet's 1.0 and 1.0.0). Every format
+// with the class remote declares one beside its [Names].
+type VersionCanon interface {
+	// Canonical returns the canonical form of version; ok is false for a string that is no version of the format (422
+	// invalid_version). It is idempotent.
+	Canonical(version string) (canonical string, ok bool)
+}
+
 // Versioning is the part of a format's exposure adapter that the decision point
 // compiles rules with (R-EP-012, R-EP-018): the format's range syntax and its
 // notion of a pre-release.
@@ -292,6 +305,8 @@ type Entry struct {
 	Facts
 	// Names is nil exactly when the format has no package names.
 	Names Names
+	// VersionCanon is the format's canonical form of a version (R-CUR-006); nil for a format without the class remote.
+	VersionCanon VersionCanon
 	// DocumentPath returns the canonical path of the package document of a normalized name, the format's
 	// PackageDocumentPath (R-REPO-029); ok is false for a string the format takes for no name. formats.Register
 	// derives it for a format with package names. The decision point decides a question about a package as a whole
@@ -448,6 +463,7 @@ func clonePresets(in []UpstreamPreset) []UpstreamPreset {
 	out := make([]UpstreamPreset, len(in))
 	for i, p := range in {
 		p.ExtraHosts = slices.Clone(p.ExtraHosts)
+		p.CatalogueHosts = slices.Clone(p.CatalogueHosts)
 		p.Settings = slices.Clone(p.Settings)
 		out[i] = p
 	}
@@ -527,12 +543,14 @@ func checkPresets(f Facts) error {
 		if p.Default {
 			defaults++
 		}
-		patterns := map[string]bool{}
-		for _, h := range p.ExtraHosts {
-			if h.Pattern == "" || patterns[h.Pattern] {
-				return fmt.Errorf("%q: the upstream preset %q names the host pattern %q twice or empty", f.ID, p.ID, h.Pattern)
+		for _, hosts := range [][]PresetHost{p.ExtraHosts, p.CatalogueHosts} {
+			patterns := map[string]bool{}
+			for _, h := range hosts {
+				if h.Pattern == "" || patterns[h.Pattern] {
+					return fmt.Errorf("%q: the upstream preset %q names the host pattern %q twice or empty", f.ID, p.ID, h.Pattern)
+				}
+				patterns[h.Pattern] = true
 			}
-			patterns[h.Pattern] = true
 		}
 	}
 	if defaults != 1 {
@@ -579,4 +597,14 @@ func (r *Registry) NormalizeName(format, name string) (string, bool) {
 		return name, true
 	}
 	return e.Names.Normalize(name)
+}
+
+// CanonicalVersion returns the canonical form of a version by the format's [VersionCanon] (R-CUR-006); ok is false for a string that
+// is no version of the format and for a format without a canon, which has no delivery rules to compare it with.
+func (r *Registry) CanonicalVersion(format, version string) (string, bool) {
+	e, ok := r.Lookup(format)
+	if !ok || e.VersionCanon == nil {
+		return "", false
+	}
+	return e.VersionCanon.Canonical(version)
 }

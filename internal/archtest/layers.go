@@ -13,7 +13,7 @@ type layer int
 const (
 	layerLeaf   layer = iota // config, errs, buildinfo, qname, observability, cache, meta, backup/tables, backup/target, tlsfiles, formats/catalog, wellknown, formats/untrusted, servefacts, formats/nuget/{id,version,nupkg,nuspec}, formats/deb/{control,debfile,version,index,archivekeys}, formats/<id>/rows, auth/scope, ci/{reason,claims,subject}, auth/jws, vuln/{advisory,match,osv,metrics}, mirror/discover, docs/manual: usable from every layer
 	layerInfra               // meta/postgres, blob, cluster, outbound, secrets
-	layerDomain              // repository, proxy, virtual, formatdata, authz, project, auth, jobs, audit, backup, manual, mirror
+	layerDomain              // repository, proxy, virtual, formatdata, authz, project, auth, jobs, audit, backup, manual, mirror, remotecuration
 	layerEdge                // httpserver, api/v1, webui, formats
 	layerApp                 // the composition root
 	layerCmd                 // the binaries
@@ -190,6 +190,9 @@ func layerTable() []layerRule {
 		{"internal/vuln", layerDomain},
 		// The mirror engine of remote repositories (R-REPO-053 to R-REPO-058): dispatch, passes, throttling, status.
 		{"internal/mirror", layerDomain},
+		// The curation of a remote repository (remote-curation.md R-CUR-001 to R-CUR-023): the vocabulary and the ports at the root,
+		// the rules, the catalogue's engine, the queue, the requests and the retention below it.
+		{"internal/remotecuration", layerDomain},
 		// The import tooling (R-IMP-001 to R-IMP-010): a client of a source registry and of a quader repository's publish protocol.
 		{"internal/importer", layerDomain},
 		{"internal/auth", layerDomain},

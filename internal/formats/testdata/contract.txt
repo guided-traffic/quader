@@ -1,4 +1,4 @@
-contract version 10
+contract version 11
 formats.Action: alias authz.Action
 formats.AttestationItem: field Blob [32]byte
 formats.AttestationItem: field Path string
@@ -46,6 +46,13 @@ formats.Capabilities: field SourceSpeller SourceSpeller
 formats.Capabilities: field VersionPath VersionPather
 formats.Capabilities: field ViewSizer ViewSizer
 formats.Capabilities: field Vulnerability VulnerabilityAdapter
+formats.Catalogue: embedded discover.Catalogue
+formats.Catalogue: method VersionProbe(context.Context, discover.Upstream, string, string) (Probe, bool, error)
+formats.CatalogueDeclaration: field Levels []string
+formats.CatalogueDeclaration: field Lookup bool
+formats.CatalogueDeclaration: field NoLevels string
+formats.CatalogueDeclaration: field NoSearch string
+formats.CatalogueDeclaration: field Search bool
 formats.Class: alias catalog.Class
 formats.Client: field DisplayName string
 formats.Client: field ID string
@@ -95,6 +102,7 @@ formats.CredentialExchanger: method ReadExchange(context.Context, RemoteContext,
 formats.Currency: type uint8
 formats.DataPorts: method FormatData(ID) any
 formats.Descriptor: embedded catalog.Facts
+formats.Descriptor: field Catalogue CatalogueDeclaration
 formats.Descriptor: field Clients []Client
 formats.Descriptor: field ContractVersion int
 formats.Descriptor: field DataPort reflect.Type
@@ -106,6 +114,7 @@ formats.Descriptor: field NotifyAreas []string
 formats.Descriptor: field Probes []ProbeRoute
 formats.Descriptor: field PropertyPrefix string
 formats.Descriptor: field VerifyAnnouncedDigests bool
+formats.Descriptor: field VersionCanon catalog.VersionCanon
 formats.Descriptor: field VersionFetch VersionFetch
 formats.Digests: field MD5 []byte
 formats.Digests: field SHA1 []byte
@@ -375,6 +384,7 @@ formats.RemoteBase: method BeforeArtifact(context.Context, Host, *Request, Path)
 formats.RemoteBase: method ExpectsType(Path, string) bool
 formats.RemoteBase: method UpstreamQuery(context.Context, RemoteContext, Query) (*http.Request, error)
 formats.RemoteCaps: field Auth Authenticator
+formats.RemoteCaps: field Catalogue Catalogue
 formats.RemoteCaps: field Discovery Discoverer
 formats.RemoteCaps: field Exchange CredentialExchanger
 formats.RemoteCaps: field Fill FillInspector
@@ -704,7 +714,7 @@ formats.ActionRead: value = authz.Read
 formats.Admin: value = (repeated, place 5 of its group)
 formats.Computed: value = (repeated, place 2 of its group)
 formats.Content: value PathKind = iota + 1 (place 0 of its group)
-formats.ContractVersion: value = 10
+formats.ContractVersion: value = 11
 formats.Current: value Currency = iota + 1 (place 0 of its group)
 formats.Delete: value = (repeated, place 4 of its group)
 formats.Download: value RouteKind = iota + 1 (place 0 of its group)
@@ -819,6 +829,7 @@ catalog.Entry: field Exposure Exposure
 catalog.Entry: field ImageEcosystem string
 catalog.Entry: field Mirror bool
 catalog.Entry: field Names Names
+catalog.Entry: field VersionCanon VersionCanon
 catalog.Entry: field VersionPath func(string, string) (string, bool)
 catalog.Entry: method HasSettings() bool
 catalog.Entry: method ValidateSettings(Class, json.RawMessage) []SettingViolation
@@ -860,6 +871,7 @@ catalog.Names: method Normalize(string) (string, bool)
 catalog.PatternSubject: type string
 catalog.PresetHost: field Pattern string
 catalog.PresetHost: field SendCredentials bool
+catalog.Registry: method CanonicalVersion(string, string) (string, bool)
 catalog.Registry: method Freeze()
 catalog.Registry: method List() []Entry
 catalog.Registry: method Lookup(string) (Entry, bool)
@@ -869,12 +881,14 @@ catalog.RequestKind: type string
 catalog.SettingViolation: field Code string
 catalog.SettingViolation: field Detail string
 catalog.SettingViolation: field Pointer string
+catalog.UpstreamPreset: field CatalogueHosts []PresetHost
 catalog.UpstreamPreset: field Default bool
 catalog.UpstreamPreset: field DisplayName string
 catalog.UpstreamPreset: field ExtraHosts []PresetHost
 catalog.UpstreamPreset: field ID string
 catalog.UpstreamPreset: field Settings json.RawMessage
 catalog.UpstreamPreset: field URL string
+catalog.VersionCanon: method Canonical(string) (string, bool)
 catalog.Versioning: method InRange(string, string) bool
 catalog.Versioning: method Prerelease(string) (bool, bool)
 catalog.Versioning: method ValidateRange(string) error
@@ -985,19 +999,53 @@ match.Result: field Affected bool
 match.Result: field FixAvailable bool
 match.Result: field Unevaluable int
 discover.Bounded: method VersionBounds() (int, bool)
+discover.Catalogue: method CatalogueCaps(context.Context, Upstream) (CatalogueCaps, error)
+discover.Catalogue: method Children(context.Context, Upstream, LevelRequest) (LevelPage, error)
+discover.Catalogue: method Package(context.Context, Upstream, string, VersionsRequest) (PackageInfo, error)
+discover.Catalogue: method Search(context.Context, Upstream, SearchQuery) (SearchPage, error)
+discover.CatalogueCaps: field Hosts []string
+discover.CatalogueCaps: field Levels []string
+discover.CatalogueCaps: field LevelsReason string
+discover.CatalogueCaps: field Search SearchKind
+discover.CatalogueCaps: field SearchNote string
+discover.CatalogueCaps: field SearchReason string
+discover.CatalogueCaps: field SearchWindow int
+discover.CatalogueCaps: field Sizes string
 discover.Cursor: alias json.RawMessage
 discover.Header: method Head(context.Context, *url.URL, string) (*Response, error)
+discover.Hit: field Description string
+discover.Hit: field Flags []string
+discover.Hit: field Latest string
+discover.Hit: field Name string
+discover.Hit: field Updated time.Time
 discover.Item: field Path string
 discover.Item: field Pinned bool
 discover.Item: field Prerelease bool
 discover.Item: field Size int64
 discover.Item: field Version string
+discover.LevelPage: field Cursor Cursor
+discover.LevelPage: field Done bool
+discover.LevelPage: field Levels []string
+discover.LevelPage: field Packages []Hit
+discover.LevelPage: field Total int
+discover.LevelRef: field Path []string
+discover.LevelRequest: field Cursor Cursor
+discover.LevelRequest: field Level LevelRef
+discover.LevelRequest: field Limit int
 discover.Lister: method MirrorHosts(*url.URL) []string
 discover.Lister: method MirrorMethods(context.Context, Upstream) ([]Method, error)
 discover.Lister: method MirrorNames(context.Context, Upstream, PageRequest) (Page, error)
 discover.Lister: method MirrorPlan(context.Context, Upstream, string) (Plan, error)
 discover.Method: method Valid() bool
 discover.Method: type string
+discover.PackageInfo: field Cursor Cursor
+discover.PackageInfo: field Description string
+discover.PackageInfo: field Done bool
+discover.PackageInfo: field Found bool
+discover.PackageInfo: field Name string
+discover.PackageInfo: field Tags map[string]string
+discover.PackageInfo: field Total int
+discover.PackageInfo: field Versions []VersionFacts
 discover.Page: field Cursor Cursor
 discover.Page: field Done bool
 discover.Page: field Names []string
@@ -1022,15 +1070,40 @@ discover.Response: field Status int
 discover.Scope: field Admits func(string) bool
 discover.Scope: field Exclude []string
 discover.Scope: field Include []string
+discover.SearchKind: type string
+discover.SearchPage: field Cursor Cursor
+discover.SearchPage: field Done bool
+discover.SearchPage: field Hits []Hit
+discover.SearchPage: field Note string
+discover.SearchPage: field Total int
+discover.SearchPage: field Truncated bool
+discover.SearchQuery: field Cursor Cursor
+discover.SearchQuery: field Level LevelRef
+discover.SearchQuery: field Limit int
+discover.SearchQuery: field NamesOnly bool
+discover.SearchQuery: field Text string
 discover.Upstream: method Artifact(context.Context, string, int64) ([]byte, bool, error)
 discover.Upstream: method Base() *url.URL
 discover.Upstream: method Document(context.Context, string, string) ([]byte, bool, error)
 discover.Upstream: method Get(context.Context, *url.URL, string, int64) (*Response, error)
 discover.Upstream: method Settings() json.RawMessage
+discover.VersionFacts: field Digest string
+discover.VersionFacts: field Flags []string
+discover.VersionFacts: field Platforms []string
+discover.VersionFacts: field Published time.Time
+discover.VersionFacts: field Size int64
+discover.VersionFacts: field Version string
+discover.VersionsRequest: field Cursor Cursor
+discover.VersionsRequest: field Filter string
+discover.VersionsRequest: field Limit int
 discover.ErrMethodUnavailable: value = errors.New("discover: the upstream does not offer the discovery method")
+discover.ErrNotOffered: value = errors.New("discover: the upstream does not offer this catalogue call")
 discover.MaxCursorBytes: value = 4096
 discover.MethodFeed: value Method = "feed"
 discover.MethodListing: value Method = "listing"
 discover.MethodNames: value Method = "names"
 discover.PassFull: value PassKind = "full"
 discover.PassIncremental: value PassKind = "incremental"
+discover.SearchIndex: value SearchKind = "index"
+discover.SearchNone: value SearchKind = "none"
+discover.SearchUpstream: value SearchKind = "upstream"

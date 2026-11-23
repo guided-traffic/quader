@@ -77,6 +77,21 @@ func TestLayers(t *testing.T) {
 			pkg("internal/formatdata/npm", "internal/meta", "internal/meta/postgres/q"),
 		}))
 	})
+	t.Run("R-CUR-007 internal/remotecuration is a domain package beside internal/mirror", func(t *testing.T) {
+		for _, p := range []string{"internal/remotecuration", "internal/remotecuration/rules", "internal/remotecuration/queue"} {
+			if l, ok := layerOf(p); !ok || l != layerDomain {
+				t.Errorf("%s: layer %v (found %v), want domain", p, l, ok)
+			}
+		}
+		// The format host and the API ask its ports; it never imports the format contract, whose catalogue it calls through ports
+		// the composition root binds.
+		wantEdge(t, CheckLayers(mod, []Package{pkg("internal/remotecuration/catalogue", "internal/formats")}), "R-ARCH-002", "internal/remotecuration/catalogue", "internal/formats")
+		wantClean(t, CheckLayers(mod, []Package{
+			pkg("internal/formathost", "internal/remotecuration"),
+			pkg("internal/proxy", "internal/remotecuration"),
+			pkg("internal/remotecuration/queue", "internal/remotecuration", "internal/repository", "internal/jobs", "internal/meta"),
+		}))
+	})
 	t.Run("R-ARCH-002 the domain layer importing the format contract names the edge, the catalog and the scope leaf pass", func(t *testing.T) {
 		vs := CheckLayers(mod, []Package{pkg("internal/repository", "internal/formats")})
 		wantEdge(t, vs, "R-ARCH-002", "internal/repository", "internal/formats")

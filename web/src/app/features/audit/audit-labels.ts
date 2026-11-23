@@ -267,6 +267,30 @@ export function auditActionLabel(action: string): string {
       return $localize`:@@audit.action.proxy.upstream_digest_changed:Upstream changed a cached file's digest`;
     case 'proxy.upstream_gone':
       return $localize`:@@audit.action.proxy.upstream_gone:Upstream no longer has a file`;
+    case 'remote.delivery.refused':
+      return $localize`:@@audit.action.remote.delivery.refused:Download refused by a rule of a remote repository`;
+    case 'remote.download.cancelled':
+      return $localize`:@@audit.action.remote.download.cancelled:Download into the cache cancelled`;
+    case 'remote.download.retried':
+      return $localize`:@@audit.action.remote.download.retried:Download into the cache started again`;
+    case 'remote.download.started':
+      return $localize`:@@audit.action.remote.download.started:Download into the cache started`;
+    case 'remote.examination.discarded':
+      return $localize`:@@audit.action.remote.examination.discarded:Version fetched for examination discarded`;
+    case 'remote.request.allowed':
+      return $localize`:@@audit.action.remote.request.allowed:Request for a package allowed`;
+    case 'remote.request.created':
+      return $localize`:@@audit.action.remote.request.created:Package requested in a remote repository`;
+    case 'remote.request.declined':
+      return $localize`:@@audit.action.remote.request.declined:Request for a package declined`;
+    case 'remote.request.withdrawn':
+      return $localize`:@@audit.action.remote.request.withdrawn:Request for a package withdrawn`;
+    case 'remote.rule.created':
+      return $localize`:@@audit.action.remote.rule.created:Delivery rule of a remote repository added`;
+    case 'remote.rule.deleted':
+      return $localize`:@@audit.action.remote.rule.deleted:Delivery rule of a remote repository removed`;
+    case 'remote.rule.updated':
+      return $localize`:@@audit.action.remote.rule.updated:Delivery rule of a remote repository changed`;
     case 'repository.cache_invalidated':
       return $localize`:@@audit.action.repository.cache_invalidated:Repository cache invalidated`;
     case 'repository.claims_changed':

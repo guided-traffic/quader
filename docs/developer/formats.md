@@ -33,7 +33,7 @@ only writer is `Member` (Q-ARCH-252, [Q-AUTHZ-165](../spec/authorization.md)).
   check before a handler sees the request; `Host.Ingest().Commit` runs the hook in the item's transaction.
 - **A format with no routes has no prefix.** generic's protocol is `/files/` ([Q-GENERIC-7](../spec/formats/generic.md)); `/files/` is the
   raw view of every repository and is served by the generic layer, not by the dispatcher.
-- **The contract is frozen** since the end of M3 (version 1; version 2 since the project model, ADR-156; version 8 since the signatures, ADR-228; version 9 since the gate per repository, ADR-231; version 10 since the receipt attestations, ADR-230 and Q-SIG-180) ([ADR-141](../decisions.md#adr-141--the-format-contract-is-frozen-at-version-1)):
+- **The contract is frozen** since the end of M3 (version 1; version 2 since the project model, ADR-156; version 8 since the signatures, ADR-228; version 9 since the gate per repository, ADR-231; version 10 since the receipt attestations, ADR-230 and Q-SIG-180; version 11 since the declaration of the upstream catalogue and the version canon, ADR-277 and [remote-curation.md](remote-curation.md#c--contracts)) ([ADR-141](../decisions.md#adr-141--the-format-contract-is-frozen-at-version-1)):
   every change of its exported surface, an addition included, is an ADR, and
   [testdata/contract.txt](../../internal/formats/testdata/contract.txt) is regenerated in the same change (see [Changing the contract](#changing-the-contract)).
 - **Unbound seams fail closed.** `Claim` and `AutoClaim` refuse until the composition root binds the ownership rule and the namespace auto
@@ -109,6 +109,9 @@ for `Lookup` and `List`. It panics on:
 - the class `remote` without `Descriptor.Probes` (the requests that name exactly one version or file without fetching it, whose handlers call
   `Host.Remote().Probed`, R-REPO-065, ADR-207) or a `NoProbe` reason, and a probe on a route the format does not have, that serves neither
   the class `remote` nor the class `virtual`, whose method is not GET or HEAD or that says nothing of what it names;
+- the class `remote` without `Descriptor.Catalogue` (the lookup by exact name, and for search and levels each the call or a one-sentence
+  reason, never both) or without `Descriptor.VersionCanon` (the canonical form of a version, `catalog.VersionCanon`), and either of them on
+  a format without the class ([remote-curation.md](../spec/remote-curation.md) R-CUR-006, R-CUR-007, [checkCatalogue](../../internal/formats/catalogue.go));
 - a `DataPort` that is no interface type;
 - a format whose `Signatures()` is nil, or whose declaration says neither its kinds nor why it has none, says both, or leaves a field of
   a kind empty or outside the roles and schemes of [signatures.md](../spec/signatures.md) R-SIG-001 (R-SIG-022, Q-SIG-43); a format
@@ -643,6 +646,10 @@ the item store, [oci.md](oci.md#upload-sessions-r-stor-011); the in-memory host 
    With the class `virtual` too, its virtual handlers call `Probed` on the same requests with the virtual request (or a member's, when they
    answered from a member's own handler); `ProbedOnSeen` says which, and `TestQ_REPO_367_AProbeIsAProbeThroughAVirtualRepositoryToo` holds
    that every probe route serves the class `virtual` (Q-REPO-367).
+   A format with the class `remote` also declares its upstream catalogue (`Descriptor.Catalogue`) and its version canon
+   (`Descriptor.VersionCanon`) and adds its rows to `TestR_CUR_007_EveryRemoteFormatDeclaresItsCatalogue` and
+   `TestR_CUR_006_EveryRemoteFormatHasItsVersionCanon` in [catalogue_test.go](../../internal/formats/all/catalogue_test.go)
+   ([remote-curation.md](../spec/remote-curation.md) R-CUR-023).
    Give every route at least one example; a name that two routes could both match needs a `Route.Match` that tells them apart.
    A `Download` route whose clients all check a digest declares it in `Route.ClientDigest`, with its evidence, and gets its row in
    `TestR_STOR_071_EveryFormatDeclaresWhetherItsClientsCheck` ([What a signed link needs of a format](#what-a-signed-link-needs-of-a-format));

@@ -27,6 +27,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/catalog"
 	"github.com/guided-traffic/quader/internal/formats/nuget/nupkg"
+	nugetversion "github.com/guided-traffic/quader/internal/formats/nuget/version"
 	"github.com/guided-traffic/quader/internal/formats/untrusted"
 )
 
@@ -114,6 +115,14 @@ func (f *Format) Descriptor() formats.Descriptor {
 			{Route: routeNuspec, Method: http.MethodHead, What: "a HEAD of the .nuspec"},
 			{Route: routeNupkg, Method: http.MethodHead, What: "a HEAD of the .nupkg"},
 		},
+		// The upstream catalogue (remote-curation.md R-CUR-007, formats/nuget.md R-NUGET-035): the lookup by exact name is the floor;
+		// the search waits for the catalogue's package of T-24, and IDs have no levels.
+		Catalogue: formats.CatalogueDeclaration{
+			Lookup:   true,
+			NoSearch: "The search of NuGet's upstream (R-NUGET-035) is specified and not built yet; look a package up by its exact ID.",
+			NoLevels: "NuGet IDs have no levels; search for a prefix with id:.",
+		},
+		VersionCanon:     versionCanon{},
 		Names:            names{},
 		Clients:          clients(),
 		PropertyPrefix:   "nuget.",
@@ -128,6 +137,18 @@ func (f *Format) Descriptor() formats.Descriptor {
 		// change of a package is signalled by the writer (Q-ARCH-259).
 		NotifyAreas: []string{catalog.MetadataChangedArea},
 	}
+}
+
+// versionCanon is the canonical form of a NuGet version (R-CUR-006, R-NUGET-035): the identity of R-NUGET-003, the URL form (the
+// normalized version lowercased without build metadata), so that 1.0, 1.0.0.0 and 1.0.0, and 1.0.0-Beta and 1.0.0-beta, are one.
+type versionCanon struct{}
+
+func (versionCanon) Canonical(v string) (string, bool) {
+	parsed, err := nugetversion.Parse(v)
+	if err != nil {
+		return "", false
+	}
+	return parsed.URLForm(), true
 }
 
 // Routes returns the endpoint map of R-NUGET-001.

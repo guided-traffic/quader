@@ -1800,9 +1800,12 @@ answers what `apt search` answers.
 | Version canon | the version as the index row has it (`[epoch:]upstream[-revision]`) |
 | One version's download | the `.deb` of that version for each architecture the person chooses, by default those of `deb.mirror.architectures`, else every architecture the indexes list for it |
 
-- **The parse** of R-DEB-023 also keeps the `Provides` and the short description of each row, and, for every `Translation-en` the remote
-  holds, its long descriptions in `deb_remote_descriptions (repo_id, dir, md5, text)` (a text at most 8 KiB, the rows going with their
-  index), so the search reads rows and no file.
+- **The parse** of R-DEB-023 also keeps the `Provides`, the short description (cut at 1,000 characters) and the `Description-md5` of each
+  row (`deb_remote_entries.provides`, `description`, `description_md5`), and, for every `i18n/Translation-en` the remote holds, parsed as an
+  index of its own, its long descriptions in `deb_remote_descriptions (repo_id, dir, index_path, md5, text)` (a text at most 8 KiB, the rows
+  going with their index by the foreign key to `deb_remote_indexes`), so the search reads rows and no file: a row's long description is
+  the description of its `(repo_id, dir, description_md5)` (Q-CUR-16; the migration is
+  [00114_remote_curation.sql](../../../internal/meta/postgres/migrations/00114_remote_curation.sql), the parse is not built).
 - **The rules** see a binary package's name (`Package`) and its version; a source package's name is no subject of a rule.
 - **Documents** (Q-CUR-9): a Debian remote passes its upstream's `InRelease`, `Release` and indexes through byte for byte (R-DEB-019), so
   a client that uses it directly lists every package and is refused the files the rules refuse, with the status line `403 Forbidden`

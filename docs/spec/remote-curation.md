@@ -1,6 +1,6 @@
 # Curating a remote repository
 
-Status: specified on 2026-11-23, not built. The owner asked for it on 2026-11-23 (task T-24 of the
+Status: specified on 2026-11-23; its contracts (the tables, the types, the codes, the events, the keys) are built, its behaviour is not. The owner asked for it on 2026-11-23 (task T-24 of the
 [project plan](../projektplan/promt.md)), at 12:38:
 
 > In Repositories, die Remote sind, fehlt mir dafür ein Reiter um das Remote zu durchsuchen. Manche Varianten von
@@ -314,14 +314,20 @@ CREATE TABLE remote_delivery_rules (
 CREATE UNIQUE INDEX remote_delivery_rules_subject
   ON remote_delivery_rules (repo_id, kind, coalesce(pattern, ''), coalesce(name, ''), coalesce(version, ''));
 CREATE INDEX remote_delivery_rules_name ON remote_delivery_rules (repo_id, name) WHERE name IS NOT NULL;
--- The revision of a repository's rule set: raised by every write in the writing transaction.
+-- The revision of a repository's rule set: raised by every write in the writing transaction, and by a restore (a client-held
+-- revision, R-BAK-022, R-CUR-021).
 ALTER TABLE repositories ADD COLUMN delivery_rules_revision bigint NOT NULL DEFAULT 0;
 ```
+
+The migration of every table of this page is
+[00114_remote_curation.sql](../../internal/meta/postgres/migrations/00114_remote_curation.sql) (built); beside the statements of this page
+it bounds every counter at zero from below and every bulk's bounds at one.
 
 - **One rule per subject.** A write of a subject that has a rule replaces its effect and note; the subject is the identity.
 - **Canonical forms.** A name is stored by the format's name rule (`catalog.Names.Normalize`); a pattern folded by it; a version by the
   format's canonical form, which the format declares as `catalog.VersionCanon` (new, beside its `catalog.Names`; R-CUR-007): npm and
-  Ansible Galaxy the SemVer text as given, NuGet its normalized version (R-NUGET-003), Debian the version as the index row has it, OCI the tag as given. A
+  Ansible Galaxy the SemVer text as given, NuGet the identity of its versions, the URL form of R-NUGET-003 (normalized, lowercased,
+  without build metadata, so `1.0.0-Beta` and `1.0.0-beta` are one, Q-CUR-3), Debian the version as the index row has it, OCI the tag as given. A
   name the rule refuses answers `422 invalid_name`, a version the format cannot read `422 invalid_version`; the decision folds what it is
   asked with the same functions, so `NuGet 1.0` and a rule on `1.0.0` meet (the gap of H-380 does not arise).
 - **Limits:** at most `proxy.delivery.max_rules` (10,000 by default) rules per repository, of which at most 100 sections (the bound of a
@@ -360,9 +366,11 @@ Priority: **P1** · Covers: ART-044
 
 - **The declaration.** Every format with the class remote declares its catalogue in its descriptor, as it declares its probes
   (R-REPO-065): `formats.Descriptor.Catalogue`, the calls its remote adapter answers and, for each it does not, one sentence why
-  (`NoSearch`, `NoLevels`). `formats.Register` refuses a format with the class remote that declares neither the lookup by exact name nor a
-  reason; the contract version rises to 8 and every format moves in the same change (R-ARCH-010, Q-CUR-12).
-- **The capabilities** (`formats.CatalogueCaps`, read per repository because one format's upstreams differ: npm's public registry has a
+  (`NoSearch`, `NoLevels`). `formats.Register` refuses a format with the class remote that does not declare the lookup by exact name (the
+  floor), that declares a call and a reason for it or neither, or that has no version canon; and, from the catalogue's package on, one
+  whose remote adapter does not implement `formats.Catalogue` (Q-CUR-109). The contract version rises to 11 and every format moves in the
+  same change (R-ARCH-010, Q-CUR-12).
+- **The capabilities** (`discover.CatalogueCaps`, read per repository because one format's upstreams differ: npm's public registry has a
   replication host, NuGet a search resource or none, OCI a registry with or without its operator's API):
 
   | Capability | Meaning |
@@ -374,26 +382,47 @@ Priority: **P1** · Covers: ART-044
   | `lookup` | a package by its exact name; every format has it (the floor) |
   | `versions` | the versions of a package with what the upstream tells of each without a download: `published`, `size` (`sizes: known \| perVersion \| unknown`), flags (`deprecated`, `yanked`, `unlisted`, `prerelease`), platforms, a digest |
 
-- **The interface** (`internal/formats/catalogue.go`; the remote adapter implements it, `formats.CapabilitiesOf` finds it as
-  `RemoteCaps.Catalogue`; the types of an upstream exchange are the leaf's, `internal/mirror/discover`, which the mirror's lister speaks,
-  so a request of the catalogue goes through the same lent `discover.Upstream` with the egress rules, the credential policy and the bounded
-  reader):
+- **The interface** (`formats.Catalogue` in `internal/formats/catalogue.go`; the remote adapter implements it, `formats.CapabilitiesOf`
+  finds it as `RemoteCaps.Catalogue`). Its browsing calls and every type below are the leaf's, `internal/mirror/discover`
+  ([catalogue.go](../../internal/mirror/discover/catalogue.go)), which the mirror's lister speaks, for the reason the lister is there
+  (ADR-152, Q-CUR-109): the catalogue's engine and a bulk's expansion are domain packages and call a format's catalogue without importing
+  the contract. A request of the catalogue goes through the same lent `discover.Upstream` with the egress rules, the credential policy and
+  the bounded reader:
 
   ```go
-  // Catalogue is a remote adapter's view of its upstream for a person (R-CUR-007). Every call reads through u, which stores nothing in
-  // the repository's cache (R-CUR-008); a call may use a stored document of the repository that u hands it.
+  // package discover. Catalogue is the part of a format's upstream catalogue that browses (R-CUR-007). Every call reads through u,
+  // which stores nothing in the repository's cache (R-CUR-008); a call may use a stored document of the repository that u hands it.
   type Catalogue interface {
-      CatalogueCaps(ctx context.Context, u discover.Upstream) (CatalogueCaps, error)
-      // Search answers one page of a text query; a format whose caps say search: none answers ErrNotOffered.
-      Search(ctx context.Context, u discover.Upstream, q SearchQuery) (SearchPage, error)
+      CatalogueCaps(ctx context.Context, u Upstream) (CatalogueCaps, error)
+      // Search answers one page of a text query; a repository whose caps say search: none answers ErrNotOffered.
+      Search(ctx context.Context, u Upstream, q SearchQuery) (SearchPage, error)
       // Children lists one page of a level: the levels below it and the packages directly in it.
-      Children(ctx context.Context, u discover.Upstream, rq LevelRequest) (LevelPage, error)
+      Children(ctx context.Context, u Upstream, rq LevelRequest) (LevelPage, error)
       // Package looks a package up by its exact name and answers one page of its versions, newest first by the format's order.
-      Package(ctx context.Context, u discover.Upstream, name string, rq VersionsRequest) (PackageInfo, error)
+      Package(ctx context.Context, u Upstream, name string, rq VersionsRequest) (PackageInfo, error)
+  }
+
+  // package formats. The contract adds the call that names a format's probe, a type of the contract.
+  type Catalogue interface {
+      discover.Catalogue
       // VersionProbe names what a download of one version starts from: the probe the queue's run hands to ProbeContent (R-CUR-011).
       // It may read and store the version's documents through u, which in a run is the worker's (R-CUR-011), never the catalogue's.
       VersionProbe(ctx context.Context, u discover.Upstream, name, version string) (Probe, bool, error)
   }
+
+  // package formats. What a format with the class remote declares (Descriptor.Catalogue): the lookup is the floor; search and levels
+  // each the call or a one-sentence reason, never both.
+  type CatalogueDeclaration struct {
+      Lookup   bool
+      Search   bool
+      NoSearch string
+      Levels   []string // the kinds of the levels above a package, outermost first
+      NoLevels string
+  }
+
+  // package discover, the types the calls speak.
+  type SearchKind string // SearchUpstream "upstream", SearchIndex "index", SearchNone "none"
+  var ErrNotOffered error // a call the repository's upstream does not answer; the API answers 400 catalogue_not_offered
 
   type CatalogueCaps struct {
       Search       SearchKind // "upstream", "index", "none"
@@ -410,7 +439,7 @@ Priority: **P1** · Covers: ART-044
       Text      string     // 1 to 128 characters after trimming
       NamesOnly bool       // Debian: apt-cache --names-only
       Level     LevelRef   // restrict to a level where the upstream can
-      Cursor    discover.Cursor
+      Cursor    Cursor
       Limit     int        // at most 50
   }
   type Hit struct {
@@ -421,7 +450,7 @@ Priority: **P1** · Covers: ART-044
   type SearchPage struct {
       Hits      []Hit
       Total     int  // -1 when the upstream does not say
-      Cursor    discover.Cursor
+      Cursor    Cursor
       Done      bool
       Truncated bool   // the upstream's window ends before its total
       Note      string // why, one sentence
@@ -429,18 +458,18 @@ Priority: **P1** · Covers: ART-044
   type LevelRef struct{ Path []string } // e.g. ["trixie", "main", "amd64"]; empty: the root
   type LevelRequest struct {
       Level  LevelRef
-      Cursor discover.Cursor
+      Cursor Cursor
       Limit  int // at most 200
   }
   type LevelPage struct {
       Levels   []string // names of the levels below
       Packages []Hit
       Total    int
-      Cursor   discover.Cursor
+      Cursor   Cursor
       Done     bool
   }
   type VersionsRequest struct {
-      Cursor discover.Cursor
+      Cursor Cursor
       Limit  int    // at most 100
       Filter string // a substring of the version, applied by Quader
   }
@@ -458,7 +487,7 @@ Priority: **P1** · Covers: ART-044
       Tags                    map[string]string // npm dist-tags, OCI none
       Versions                []VersionFacts
       Total                   int
-      Cursor                  discover.Cursor
+      Cursor                  Cursor
       Done                    bool
   }
   ```
@@ -512,11 +541,11 @@ Priority: **P1** · Covers: ART-044
   with `Retry-After`; a call answered from the catalogue's cache costs nothing. The upstream's own rate-limit answer turns into the same
   `429` with its `Retry-After` and is not retried within the call.
 - **Short caching.** Answers are kept per replica in an in-process cache of `proxy.catalogue.cache_bytes` (32 MiB) for
-  `proxy.catalogue.cache_seconds` (300; npm's search answers `max-age=300`), keyed by repository, upstream URL, call and arguments. What
+  `proxy.catalogue.cache_ttl` (300 s; npm's search answers `max-age=300`), keyed by repository, upstream URL, call and arguments. What
   is kept is the parsed page (names, facts), never a document's bytes. Quader's own state of a row (R-CUR-009) is added at answer time
   and never cached.
 - **Bounds on untrusted answers.** A document the catalogue reads is at most `proxy.catalogue.max_document_bytes` (64 MiB) and is
-  parsed as a stream; a call takes at most `proxy.catalogue.timeout_seconds` (20); a page holds at most 50 hits, 200 entries of a level or
+  parsed as a stream; a call takes at most `proxy.catalogue.timeout` (20 s); a page holds at most 50 hits, 200 entries of a level or
   100 versions; a text from the upstream (a description) is cut at 1,000 characters and shown as text, never as markup. Above a bound the
   call answers `502 catalogue_answer_too_large` with the bound in the detail, and the screen says it (R-CUR-018).
 - **What a search tells the upstream:** the query, from Quader's address, with the repository's credential where the upstream receives
@@ -638,6 +667,7 @@ Priority: **P1** · Covers: RMT-027
     created_at          timestamptz NOT NULL DEFAULT now(),
     finished_at         timestamptz NULL
   );
+  CREATE INDEX remote_download_bulks_repo ON remote_download_bulks (repo_id, created_at DESC, id);
 
   CREATE TABLE remote_download (
     id              uuid        PRIMARY KEY,                          -- UUIDv7
@@ -873,6 +903,8 @@ CREATE TABLE remote_delivery_request_askers (
   withdrawn   boolean     NOT NULL DEFAULT false,
   PRIMARY KEY (request_id, principal)
 );
+-- A person's own entries (mine=true) and the bound of open entries per person: the key leads with the request.
+CREATE INDEX remote_delivery_request_askers_principal ON remote_delivery_request_askers (principal, request_id);
 ```
 
 - **One entry per subject.** The same package (or package and version) asked by several people is one open entry with every asker
@@ -1176,39 +1208,42 @@ remote:
     include: ["@acme/*"]            # example; default (proposed) []: everything the rules deliver
 ```
 
-The installation's keys (`internal/config`, `docs/developer/configuration.md`):
+The installation's keys ([remote_curation.go](../../internal/config/remote_curation.go), [jobs.go](../../internal/config/jobs.go),
+[maintenance.go](../../internal/config/maintenance.go), `docs/developer/configuration.md`; built, nothing reads them yet). A duration is a
+duration and not an integer with a unit in its name ([../developer/configuration.md](../developer/configuration.md#adding-a-key)), so the
+catalogue's cache period and call time are `cache_ttl` and `timeout`:
 
 ```yaml
 proxy:
   delivery:
-    max_rules: 10000                          # default (proposed): rules per repository
-    open_requests_per_person: 20              # default (proposed): per repository
-    examine_versions_per_request: 1           # default (proposed)
-    request_retention: 720h                   # default (proposed)
-    max_client_entries: 10000                 # default (proposed): entries without an asker per repository
+    max_rules: 10000                          # default; 100 to 1000000, rules per repository
+    open_requests_per_person: 20              # default; 1 to 1000, per repository
+    examine_versions_per_request: 1           # default; 1 to 100
+    request_retention: 720h                   # default; at least 1h
+    max_client_entries: 10000                 # default; 1 to 1000000, entries without an asker per repository
   catalogue:
-    requests_per_minute: 120                  # default (proposed): per repository, across replicas
-    requests_per_minute_per_person: 30        # default (proposed)
-    cache_bytes: 32MiB                        # default (proposed): per replica
-    cache_seconds: 300                        # default (proposed)
-    max_document_bytes: 64MiB                 # default (proposed)
-    timeout_seconds: 20                       # default (proposed)
+    requests_per_minute: 120                  # default; 1 to 100000, per repository, across replicas
+    requests_per_minute_per_person: 30        # default; 1 to 100000
+    cache_bytes: 32MiB                        # default; per replica, 0 turns the cache off
+    cache_ttl: 300s                           # default; 0s to 1h, 0s keeps nothing
+    max_document_bytes: 64MiB                 # default; at least 1KiB
+    timeout: 20s                              # default; 1s to 5m
   downloads:
-    per_repository: 4                         # default (proposed): running rows per repository
-    max_waiting_per_repository: 10000         # default (proposed)
-    max_versions_per_bulk: 10000              # default (proposed)
-    max_bytes_per_bulk: 100GiB                # default (proposed)
-    max_attempts: 5                           # default (proposed)
-    done_retention: 168h                      # default (proposed)
-    failed_retention: 720h                    # default (proposed)
-    client_failures_per_repository: 1000      # default (proposed)
+    per_repository: 4                         # default; 1 to 64, running rows per repository
+    max_waiting_per_repository: 10000         # default; 1 to 1000000
+    max_versions_per_bulk: 10000              # default; 1 to 1000000
+    max_bytes_per_bulk: 100GiB                # default; at least 1MiB
+    max_attempts: 5                           # default; 1 to 20
+    done_retention: 168h                      # default; at least 1h
+    failed_retention: 720h                    # default; at least 1h
+    client_failures_per_repository: 1000      # default; 1 to 100000
 jobs:
   workers:
-    downloads: 4                              # default (proposed): the queue downloads
+    downloads: 4                              # default; the queue downloads
 maintenance:
   tasks:
-    remote-downloads-dispatch: {enabled: true, schedule: "* * * * *"}        # default (proposed)
-    remote-examination-cleanup: {enabled: true, schedule: "0 4 * * *"}       # default (proposed)
+    remote-downloads-dispatch: {enabled: true, schedule: "* * * * *"}        # default
+    remote-examination-cleanup: {enabled: true, schedule: "0 4 * * *"}       # default
 ```
 
 - What the defaults cost: the catalogue's cache 32 MiB per `api` replica; the rule sets about 150 bytes per rule per replica; four
@@ -1224,6 +1259,9 @@ Priority: **P1** · Covers: quader-only
   `running` with a job that ended and sets `waiting` without counting the attempt (as the job framework does not count a release).
 - **Backups and restores.** The rules, requests, askers, the queue and its bulks are export class `data`. A restore to a point *t*
   replays the journal's narrowings after *t* (R-CUR-006, R-REPO-061) and the discards (R-CUR-016); it sets every `running` row `waiting`.
+  `repositories.delivery_rules_revision` is a client-held revision and is raised as R-BAK-022 raises every one, so no filtered document
+  rendered under rules after *t* is answered `304` under the restored ones. A Debian remote's `deb_remote_descriptions` are its cache rows,
+  purged with its parsed indexes (R-BAK-008).
 - **A Bastion** holds no rule; it learns of a narrowing by the `content` entry of `repository.narrowed` (R-BAS-015).
 
 ### R-CUR-022 · Tests and what they cost
@@ -1272,7 +1310,7 @@ Made in the same change as this page, each named in a decision block below or on
   row and the tab; `queue_full`; the metric), R-REPO-069 and R-REPO-070 (a well-known repository's rules are the administrator's; the
   system repository `scanner-trivy` is declared with a product rule instead of an include pattern), and notes in Q-REPO-193, Q-REPO-361,
   Q-REPO-363 and Q-REPO-365.
-- [architecture.md](architecture.md): R-ARCH-010 (the contract version 8, the refusal of a remote format without a catalogue, kit checks
+- [architecture.md](architecture.md): R-ARCH-010 (the contract version 11, the refusal of a remote format without a catalogue, kit checks
   21 and 22).
 - [authorization.md](authorization.md): R-AUTHZ-006 (`manage` on a remote also sets delivery rules, decides requests and starts
   downloads ahead), R-AUTHZ-008 (a download ahead is an explicit act and populates as the system for the person).
@@ -1374,6 +1412,11 @@ the patterns use (Q-STOR-9); what is not taken from the exposure rules is their 
 development agent would offer ranges for npm and NuGet if allow lists grow to hundreds of versions per package in practice.
 
 **Applied in the spec:** R-CUR-001, R-CUR-006.
+
+**Corrected with the contracts package (2026-11-23).** R-CUR-006 named NuGet's canon "its normalized version". R-NUGET-003's normalized
+form keeps the pre-release label's case, while two NuGet versions are one when their URL forms are equal (`1.0.0-Beta` and `1.0.0-beta`);
+a rule compared on the normalized form would miss a request in the other case. The canon is the URL form, the identity of a NuGet version
+([formats/nuget.md](formats/nuget.md) R-NUGET-035 changed with it).
 
 ### Q-CUR-4 · A remote's patterns become rules, and lose their hiding
 
@@ -1518,19 +1561,23 @@ right (R-AUTHZ-012) and sets no rule.
 
 **Applied in the spec:** R-CUR-005; [authorization.md](authorization.md) R-AUTHZ-006.
 
-### Q-CUR-12 · The catalogue is a declared part of the format contract; the contract version rises to 8
+### Q-CUR-12 · The catalogue is a declared part of the format contract; the contract version rises to 11
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Every remote format declares its catalogue or a reason per call, as it declares its probes; version 8 (chosen) | R-CUR-007 | A future format cannot land without saying what its upstream can be browsed by; the screens read the declaration | Every format moves in one change |
+| (a) Every remote format declares its catalogue or a reason per call, as it declares its probes; version 11 (chosen) | R-CUR-007 | A future format cannot land without saying what its upstream can be browsed by; the screens read the declaration | Every format moves in one change |
 | (b) An optional interface found by type assertion | No version | Smaller | A format without it shows nothing and says nothing (Q-ARCH-254's reason to make adapters' methods contract methods) |
 
 **Choice:** (a). **Rationale:** the floor, a lookup by exact name, exists for every format, so the declaration is never empty. The
 development agent would revisit it never before a format without names arrives.
 
 **Applied in the spec:** R-CUR-007; [architecture.md](architecture.md) R-ARCH-010 (the contract version).
+
+**Corrected with the contracts package (2026-11-23).** The version named here was 8, which the signatures took (ADR-228); the contract
+stood at 10 (the receipt attestations) when the catalogue's declaration was built, so the catalogue's version is 11. Where the interface
+lives and when `Register` checks the adapter is [Q-CUR-109](#q-cur-109--the-catalogues-browsing-calls-live-in-the-leaf-discover-and-registers-adapter-check-lands-with-the-adapters).
 
 ### Q-CUR-13 · The catalogue stores nothing in the cache
 
@@ -1587,6 +1634,12 @@ Status: **Decided by the development agent** — selected from the options below
 **Choice:** (a). **Rationale:** the development agent would revisit (b) with a bounded regular-expression engine if users ask for it.
 
 **Applied in the spec:** [formats/debian.md](formats/debian.md) R-DEB-036.
+
+**Corrected with the contracts package (2026-11-23).** R-DEB-036 named the table `deb_remote_descriptions (repo_id, dir, md5, text)` and
+the columns `provides` and `description` of `deb_remote_entries`, which could not find a row's long description: a `Packages` record names
+it by its `Description-md5`, and the rows "going with their index" need the index they came from. The entries keep `description_md5`, and
+a description row names its `index_path`, whose foreign key to `deb_remote_indexes` removes it with its index; the search joins on
+`(repo_id, dir, md5)`, which an index of its own serves.
 
 ### Q-CUR-17 · One version is charged to the person; a bulk is bounded system work by a project's decider
 
@@ -1785,6 +1838,53 @@ as it filtered by the patterns; R-API-081 lists a stored version the rules refus
 
 **Applied in the spec:** [formats/npm.md](formats/npm.md) R-NPM-037, [formats/oci.md](formats/oci.md) R-OCI-017,
 [formats/ansible.md](formats/ansible.md) R-ANS-017, [formats/nuget.md](formats/nuget.md) R-NUGET-016, [api-and-ui.md](api-and-ui.md) R-API-081.
+
+### Q-CUR-109 · The catalogue's browsing calls live in the leaf discover, and Register's adapter check lands with the adapters
+
+Status: **Decided by the development agent** — selected from the options below while building the contracts package; the owner reviews it
+at the walkthrough.
+
+Context: R-CUR-007 put the interface `Catalogue` and its types in `internal/formats/catalogue.go`. The catalogue's engine
+(`internal/remotecuration/catalogue`) and the expansion of a bulk (`internal/remotecuration/queue`) call it, and both are domain packages,
+which may not import the format contract, an edge package (R-ARCH-002). The mirror met the same wall and solved it with the leaf
+`internal/mirror/discover` (ADR-152). Second, `Register` was to refuse a format whose adapter does not answer a declared call, while every
+format declares the lookup and the five formats' catalogues are the catalogue's package (R3), not the contracts package.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The browsing calls (`CatalogueCaps`, `Search`, `Children`, `Package`) and their types in `discover`; `formats.Catalogue` embeds them and adds `VersionProbe`, whose `Probe` is a type of the contract; `Register` refuses a missing adapter from the change that brings the five catalogues (chosen) | ADR-152's shape | The domain packages call the catalogue as the mirror engine calls the lister; `VersionProbe` is called only by the queue's run in `internal/formathost`, an edge package; no format claims a call it does not answer | Two packages to read for one interface; the contracts package leaves one check of R-ARCH-010 to the catalogue's package |
+| (b) Everything in `formats`, the engine in `internal/formathost` | No leaf | One place | The engine and the expansion leave the domain package the work packages give them, and the queue's expansion moves with them |
+| (c) A port per call in the domain package, bound by the composition root | No leaf | Narrow ports | Every type twice, one copy per side (Q-ARCH-284's reason against it) |
+| (d) Stubs of the five catalogues in the contracts package that answer `ErrNotOffered`, so the check holds at once | Full check now | R-ARCH-010 whole from the start | Five adapters that say they answer the lookup and answer nothing: the declaration would lie until R3 |
+
+**Choice:** (a). **Rationale:** the leaf is the project's answer to a contract that a domain package calls; `VersionProbe` stays in the
+contract because its result is the contract's `Probe`, and its only caller is an edge package. The development agent would revisit the
+split if a domain package needs `VersionProbe`.
+
+**Applied in the spec:** R-CUR-007 (the interface block); [architecture.md](architecture.md) R-ARCH-008 (the contract block) and R-ARCH-010
+(the check of the adapter from the catalogue's package on); [../developer/remote-curation.md](../developer/remote-curation.md) (the files of
+C and R3).
+
+### Q-CUR-110 · The ports of the domain package speak in a repository's ID, and the decider reads no database
+
+Status: **Decided by the development agent** — selected from the options below while building the contracts package; the owner reviews it
+at the walkthrough.
+
+Context: the developer page named the ports `rules.Decider` (`Decide(repo, name, version)`, `Package(repo, name)`), `queue.Lookup` and
+`requests.Lookup` without saying what `repo` is. The repository model will hold the compiled rule set in its snapshot (R-CUR-006) and so
+imports the domain package; a port that took the repository's type would make that import a cycle.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Ports at the root of `internal/remotecuration` in plain values: `Decider.Decide(ctx, repoID, name, version) Decision` and `Package(ctx, repoID, name)`, no error; `Queue.Active` and `Requests.Open` by repository ID, package and versions; stubs `DeliverAll`, `NoQueue`, `NoRequests` (chosen) | The rule of `internal/vuln` | No cycle whatever the repository model imports; the decision is the fourth check of the serve point and in every document, so it answers from the snapshot without a statement or an error (R-ARCH-027) | The decider looks the repository's rule set up by ID once more where the caller holds the snapshot |
+| (b) Ports that take `*repository.Repository` | The snapshot in hand | No second lookup | The repository model cannot import the package that holds the compiled rule set |
+| (c) Ports in the sub-packages (`rules.Decider`) | As the page named them | Each next to its builder | A consumer that needs the three imports three packages; the stubs need a home before their packages exist |
+
+**Choice:** (a). **Rationale:** the domain package is the vocabulary every package of the topic shares (modes, kinds, effects, reasons,
+the queue's states, origins, outcomes, failure classes and steps, the job, queue and task names), so its ports belong with it. The
+development agent would revisit the second lookup if it shows at the serve point.
+
+**Applied in the spec:** [../developer/remote-curation.md](../developer/remote-curation.md) (the contracts the packages build on).
 
 ## What this does not cover
 

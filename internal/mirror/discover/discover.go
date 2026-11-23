@@ -18,6 +18,9 @@
 //     window and calls again with the same request (R-REPO-054).
 //   - A [Cursor] is the format's own JSON, at most [MaxCursorBytes]; the engine stores it and hands it back, never reads it.
 //   - Calls are idempotent: after a drain or a crash the engine repeats the last call with the cursor it had stored.
+//
+// The upstream catalogue's browsing calls ([Catalogue], catalogue.go, remote-curation.md R-CUR-007) live here for the same reason: a
+// person's view of an upstream and a mirror's discovery are one notion, which a format implements in the same remote adapter.
 package discover
 
 import (

@@ -53,8 +53,17 @@ func (queryFormat) Descriptor() formats.Descriptor {
 		},
 		ContractVersion: formats.ContractVersion, MaxDocumentBytes: 1 << 20,
 		NoProbe: "a format of the query tests, which has no routes",
+		Catalogue: formats.CatalogueDeclaration{
+			Lookup: true, NoSearch: "a format of the query tests", NoLevels: "a format of the query tests",
+		},
+		VersionCanon: anyVersion{},
 	}
 }
+
+// anyVersion takes every non-empty version as given (R-CUR-006): the query tests compare no version.
+type anyVersion struct{}
+
+func (anyVersion) Canonical(v string) (string, bool) { return v, v != "" }
 
 func (queryFormat) Remote() formats.RemoteAdapter { return queryAdapter{} }
 func (queryFormat) Routes() []formats.Route       { return nil }

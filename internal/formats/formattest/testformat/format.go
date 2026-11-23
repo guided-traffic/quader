@@ -363,6 +363,13 @@ func (n names) Normalize(name string) (string, bool) {
 	return name, nameRule.MatchString(strings.ToLower(name))
 }
 
+// versionCanon takes a version of the test format as given: one to 64 characters of the name rule's alphabet.
+type versionCanon struct{}
+
+var versionRule = regexp.MustCompile(`^[0-9A-Za-z][0-9A-Za-z._+-]{0,63}$`)
+
+func (versionCanon) Canonical(v string) (string, bool) { return v, versionRule.MatchString(v) }
+
 // Descriptor implements formats.Format.
 func (f Format) Descriptor() formats.Descriptor {
 	ttl := 300
@@ -377,8 +384,15 @@ func (f Format) Descriptor() formats.Descriptor {
 			DefaultMetadataTTLSeconds: &ttl, OwnershipDefault: catalog.OwnershipEnforce, Wiki: f.has(string(WithWiki)),
 			Bastion: bastion,
 		},
-		ContractVersion:  formats.ContractVersion,
-		NoProbe:          "the kit's test format answers no request of its remote class without fetching it; the formats hold their probes in their own tests",
+		ContractVersion: formats.ContractVersion,
+		NoProbe:         "the kit's test format answers no request of its remote class without fetching it; the formats hold their probes in their own tests",
+		// The kit's test format declares the floor of the upstream catalogue (R-CUR-007); its remote adapter browses nothing.
+		Catalogue: formats.CatalogueDeclaration{
+			Lookup:   true,
+			NoSearch: "the kit's test format has no upstream to search",
+			NoLevels: "the kit's test format has no levels",
+		},
+		VersionCanon:     versionCanon{},
 		Names:            names{caseSensitive: f.has(string(NamesCaseSensitive))},
 		Clients:          []formats.Client{{ID: "tf", DisplayName: "tf", Versions: []string{"1"}}},
 		PropertyPrefix:   "tf.",

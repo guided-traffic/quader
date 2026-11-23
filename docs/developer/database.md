@@ -814,6 +814,22 @@ backup's `secrets.keyIds` and the walk of `secrets-reencrypt` skip it (the walk'
 follows package 4's 00111 (`backup_blob_pin.pool`), which another worktree builds: the runner refuses a gap, so 00112 lands after 00111, or
 is renamed when it lands first.
 
+## The curation of a remote repository (00114)
+
+[00114_remote_curation](../../internal/meta/postgres/migrations/00114_remote_curation.sql) is the expand step of the contracts package of
+T-24 ([remote-curation.md](remote-curation.md#c--contracts), [spec](../spec/remote-curation.md) R-CUR-006, R-CUR-011, R-CUR-015,
+R-CUR-016, R-DEB-036). New tables, keys and indexes inline: `remote_delivery_requests` (one open entry per repository and subject, a
+partial unique index) with `remote_delivery_request_askers` (an index by person for a person's own entries),
+`remote_delivery_rules` (the subject is the identity: a unique index over the kind and the coalesced pattern, name and version),
+`remote_download_bulks` and `remote_download` (the list index, the partial index of due waiting rows, the partial unique index of the one
+waiting or running row of a version, the bulk's rows, the finished rows for the retention), `remote_examinations` (by age), and
+`deb_remote_descriptions` (the long descriptions of a parsed `i18n/Translation-en`, removed with their index by a foreign key to
+`deb_remote_indexes`, joined on `(repo_id, dir, md5)`). Columns with constant defaults: `repositories.delivery_rules_revision` (a registered
+revision column, raised by a restore), and `deb_remote_entries.provides`, `description` and `description_md5`. Every table is export class
+`data` ([tables_remote_curation.go](../../internal/meta/postgres/tables_remote_curation.go); the Debian one in
+[tables_deb.go](../../internal/formatdata/deb/tables_deb.go)). No query reads the tables yet; `TestR_CUR_011_TheVocabularyIsTheMigrations`
+in `internal/remotecuration` holds the CHECK lists to the domain package's constants.
+
 ## The storage summary (00109)
 
 [00109_storage_summary](../../internal/meta/postgres/migrations/00109_storage_summary.sql) is an expand step of package F of the several

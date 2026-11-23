@@ -46,8 +46,17 @@ func (relayFormat) Descriptor() formats.Descriptor {
 		},
 		ContractVersion: formats.ContractVersion, Names: foldedNames{}, PropertyPrefix: "relay.", MaxDocumentBytes: 1 << 20,
 		NoProbe: "a format of the endpoint tests, whose routes fetch what they name",
+		Catalogue: formats.CatalogueDeclaration{
+			Lookup: true, NoSearch: "a format of the endpoint tests", NoLevels: "a format of the endpoint tests",
+		},
+		VersionCanon: anyVersion{},
 	}
 }
+
+// anyVersion takes every non-empty version as given (R-CUR-006): the endpoint tests compare no version.
+type anyVersion struct{}
+
+func (anyVersion) Canonical(v string) (string, bool) { return v, v != "" }
 
 func (f relayFormat) Routes() []formats.Route {
 	return []formats.Route{{

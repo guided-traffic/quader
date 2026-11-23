@@ -257,6 +257,49 @@ empty caches 1,114 slots for 1 GiB, 278 for 256 MiB and 2,228 for 2 GiB; with th
 container and 1,191 for 2 GiB, which is the floor the chart checks. The 80 % and 70 % of the heap gate are constants
 ([Q-ARCH-240](../spec/architecture.md#q-arch-240--a-replica-admits-what-its-memory-holds-memory-slots-and-a-heap-gate-in-step-4)).
 
+## Remote curation keys
+
+The installation's keys of the curation of a remote repository ([remote_curation.go](../../internal/config/remote_curation.go),
+fields `Delivery`, `Catalogue` and `Downloads` of `Proxy`; [remote-curation.md](../spec/remote-curation.md) R-CUR-020), the queue
+`downloads` (`jobs.workers.downloads`, [jobs.go](../../internal/config/jobs.go)) and the two tasks' schedules (the default map of
+[maintenance.go](../../internal/config/maintenance.go)). They are read by the packages of [remote-curation.md](remote-curation.md); the
+contracts package only declares them. A repository's own switches (`remote.delivery.mode`, `examineOnRequest`,
+`examinedRetentionDays`) are members of its document, not keys of this file. The unit tests are in
+[remote_curation_test.go](../../internal/config/remote_curation_test.go).
+
+```yaml
+proxy:
+  delivery:
+    max_rules: 10000                       # default; 100 to 1000000, rules per repository, at most 100 of them sections (R-CUR-006)
+    open_requests_per_person: 20           # default; 1 to 1000, per repository (R-CUR-015)
+    examine_versions_per_request: 1        # default; 1 to 100 (R-CUR-015)
+    request_retention: 720h                # default; at least 1h (R-CUR-015)
+    max_client_entries: 10000              # default; 1 to 1000000, entries without an asker per repository (R-CUR-015)
+  catalogue:
+    requests_per_minute: 120               # default; 1 to 100000, per repository across replicas (R-CUR-008)
+    requests_per_minute_per_person: 30     # default; 1 to 100000
+    cache_bytes: 32MiB                     # default; per replica, 0 turns the cache off
+    cache_ttl: 300s                        # default; 0s to 1h
+    max_document_bytes: 64MiB              # default; at least 1KiB
+    timeout: 20s                           # default; 1s to 5m
+  downloads:
+    per_repository: 4                      # default; 1 to 64, running rows per repository (R-CUR-011)
+    max_waiting_per_repository: 10000      # default; 1 to 1000000
+    max_versions_per_bulk: 10000           # default; 1 to 1000000 (R-CUR-010)
+    max_bytes_per_bulk: 100GiB             # default; at least 1MiB
+    max_attempts: 5                        # default; 1 to 20
+    done_retention: 168h                   # default; at least 1h
+    failed_retention: 720h                 # default; at least 1h
+    client_failures_per_repository: 1000   # default; 1 to 100000 (Q-CUR-19)
+jobs:
+  workers:
+    downloads: 4                           # default; the job remote-download (R-CUR-011)
+maintenance:
+  tasks:
+    remote-downloads-dispatch: {enabled: true, schedule: "* * * * *"}   # default (R-CUR-011)
+    remote-examination-cleanup: {enabled: true, schedule: "0 4 * * *"}  # default (R-CUR-016)
+```
+
 ## M2 keys
 
 The keys of the remote engine (`proxy.*` beside `proxy.outbound`), the virtual engine, the npm format and, from M3, the NuGet format

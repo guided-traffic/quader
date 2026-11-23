@@ -31,6 +31,7 @@ type JobsWorkers struct {
 	Malware     int `yaml:"malware" default:"1" validate:"min=0" doc:"The malware scanning's job and its database task (malware-scanning.md R-MAL-004, R-MAL-010): one job at a time in the installation keeps malware.concurrency calls in flight, so one slot is enough."`
 	Signatures  int `yaml:"signatures" default:"1" validate:"min=0" doc:"The jobs of the signatures on artifacts, signature-verify and signature-trust, and the task signature-trust-root (signatures.md R-SIG-011, R-SIG-012, R-SIG-017): a queue of its own, so neither the malware scanning nor the advisory sync waits behind a backlog of signatures; one job keeps signatures.concurrency checks in flight, so one slot is enough."`
 	Signing     int `yaml:"signing" default:"1" validate:"min=0" doc:"The job signing and its task (signatures.md R-SIG-049): a queue of its own, so that a signature of a publish never waits behind the verification of signatures; one job keeps signing.concurrency operations in flight, so one slot is enough."`
+	Downloads   int `yaml:"downloads" default:"4" validate:"min=0" doc:"The runs of the download queues of remote repositories, the job remote-download (remote-curation.md R-CUR-011): a queue of its own, so that downloads ahead of a client never wait behind the default queue's work; each run takes one of its repository's background slots (R-REPO-055)."`
 }
 
 // JobsBackgroundMigrations paces data migrations that run as jobs (R-ARCH-026).
@@ -95,7 +96,7 @@ func (j *Jobs) Claims(queue string) bool { return slices.Contains(j.ClaimedQueue
 // order. A kind registered in another queue is a programming error that the
 // jobs package reports at start-up.
 func (w JobsWorkers) Queues() []string {
-	return []string{"default", "maintenance", "index", "delivery", "mirror", "vuln", "malware", "signatures", "signing"}
+	return []string{"default", "maintenance", "index", "delivery", "mirror", "vuln", "malware", "signatures", "signing", "downloads"}
 }
 
 // Count returns the concurrent jobs of a queue and whether the queue exists.
@@ -119,6 +120,8 @@ func (w JobsWorkers) Count(queue string) (int, bool) {
 		return w.Signatures, true
 	case "signing":
 		return w.Signing, true
+	case "downloads":
+		return w.Downloads, true
 	}
 	return 0, false
 }

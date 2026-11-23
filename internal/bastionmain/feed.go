@@ -95,6 +95,9 @@ func noFeedEntry() map[string]string {
 		audit.EventBastionHandoverDisabled: "switches how the main installation answers a Bastion's forward, never what the caller may read: the main installation decides each forward from its snapshot, and a Bastion learns the member at its next handshake (R-BAS-071)",
 		// The destruction of a retired connection's keys (storage.md R-STOR-097 to R-STOR-099).
 		audit.EventStorageKeysDestroyed: "destroys the keys of a retired connection, which holds no copy and no replica configures: no download is served from it, so no grant and no byte a Bastion keeps changes (R-STOR-098)",
+		// The curation of a remote repository (remote-curation.md R-CUR-016, R-CUR-019): a narrowing of its rules reaches a Bastion as the
+		// content entry of repository.narrowed, which the feed reads.
+		audit.EventRemoteExaminationDiscarded: "removes what a download ahead stored while the rules did not deliver it: it was never delivered, so a Bastion holds none of it (R-CUR-016)",
 	}
 }
 

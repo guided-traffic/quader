@@ -770,7 +770,8 @@ quader/
 │   │   ├── job/                 # the job signing, the watcher of the files, the key holder; worker and all only (R-SIG-046, R-SIG-049)
 │   │   └── signingtest/         # the company CA of the tests
 │   ├── mirror/                  # the mirror mode of remote repositories: dispatch, passes, throttling, status (R-REPO-050 to R-REPO-059)
-│   │   └── discover/            # the discovery contract a format's remote adapter implements (leaf layer, ADR-152)
+│   │   └── discover/            # the discovery contract a format's remote adapter implements, the catalogue's browsing calls among it (leaf layer, ADR-152, Q-CUR-109)
+│   ├── remotecuration/          # the curation of a remote repository: the vocabulary and the ports, the rules, the catalogue's engine, the queue, the requests, the retention (remote-curation.md)
 │   ├── formatdata/              # store ports of the formats, implemented over the generated queries (Q-ARCH-193)
 │   │   └── npm/
 │   ├── blob/                    # BlobStore interface, spool, digests
@@ -1415,9 +1416,11 @@ package formats
 // (ADR-231, signatures.md R-SIG-063): SignatureAdapter.Gate names what the signature gate judges of each stored item, and
 // SignatureVerdicts.Refuse judges a stored document a format serves without the item store. Version 10 is the receipt attestations'
 // (ADR-230, signatures.md R-SIG-044, Q-SIG-67, Q-SIG-180): SignatureAdapter.AttestationSubjects names the stored items Quader attests, the
-// declaration says what it attests or why nothing (Attests, AttestsNone), and NoSignatures takes both reasons. A format declares the
+// declaration says what it attests or why nothing (Attests, AttestsNone), and NoSignatures takes both reasons. Version 11 is the upstream
+// catalogue's (ADR-277, remote-curation.md R-CUR-006, R-CUR-007, Q-CUR-12): a format with the class remote declares its catalogue
+// (Descriptor.Catalogue, the lookup by exact name at least) and its version canon (Descriptor.VersionCanon). A format declares the
 // literal it was written against.
-const ContractVersion = 10
+const ContractVersion = 11
 
 // The types of other packages under the names a format spells them: one type each, no mirrors
 // (Q-ARCH-188, Q-ARCH-189). A format imports this package and nothing else of the core.
@@ -1516,6 +1519,11 @@ type Descriptor struct {
 	// not GET or HEAD.
 	Probes  []ProbeRoute
 	NoProbe string
+	// Catalogue declares what the remote adapter answers of the upstream catalogue and why it answers no more (remote-curation.md
+	// R-CUR-007); VersionCanon is the canonical form of a version that a delivery rule stores and the decision folds into (R-CUR-006).
+	// Both are required of a format with the class remote and refused of any other.
+	Catalogue    CatalogueDeclaration
+	VersionCanon catalog.VersionCanon
 }
 
 // ProbeRoute names one probe (R-REPO-065): a route of Routes() that serves the class remote, the method of the request (GET or
@@ -1816,9 +1824,30 @@ type RemoteCaps struct {
 	Revalidate Revalidator   // the format's own revalidation request; nil for the engine's conditional GET
 	Names      NameServer    // the shadowing check from the rows of the remote's indexes, for a format without a package document; nil otherwise
 	Signatures SignatureFetcher // the background fetch of a remote's signatures (signatures.md R-SIG-026); nil for a format whose signatures come with what a client fetches anyway
+	Catalogue  Catalogue        // the view of the upstream for a person (remote-curation.md R-CUR-007); nil until the format's catalogue is built
 }
 
 func RemoteCapabilities(id ID) RemoteCaps
+
+// Catalogue is a remote adapter's view of its upstream for a person (remote-curation.md R-CUR-007, Q-CUR-109): the browsing calls of
+// the leaf internal/mirror/discover (CatalogueCaps, Search, Children, Package, with their types CatalogueCaps, SearchQuery, SearchPage,
+// LevelRequest, LevelPage, VersionsRequest, PackageInfo and the sentinel ErrNotOffered), which the catalogue's engine and a bulk's
+// expansion, domain packages, call without importing the contract (ADR-152's rule), and the call that names what a download of one
+// version starts from.
+type Catalogue interface {
+	discover.Catalogue
+	VersionProbe(ctx context.Context, u discover.Upstream, name, version string) (p Probe, ok bool, err error)
+}
+
+// CatalogueDeclaration is what a format with the class remote declares of its upstream catalogue: the lookup by exact name (Package
+// and VersionProbe) as the floor, and search and levels each answered or given a one-sentence reason, never both.
+type CatalogueDeclaration struct {
+	Lookup   bool
+	Search   bool
+	NoSearch string
+	Levels   []string // the kinds of the levels above a package, outermost first
+	NoLevels string
+}
 
 type VirtualAdapter interface {
 	Strategy(p Path) Strategy
@@ -2764,13 +2793,16 @@ Priority: **MVP** · Covers: FMT-001, FMT-002, FMT-003
   - an external process would add a network hop to every package request.
 - At start-up, `Register` panics, and the process exits, on any of these:
   - a duplicate or reserved ID;
-  - a `ContractVersion` mismatch (the contract is frozen since the end of M3, E3.3 and ADR-141, at 7 since the probes, ADR-207, and at 8 with the declaration of the upstream catalogue, [remote-curation.md](remote-curation.md)
-    R-CUR-007, specified on 2026-11-23 and not built,
-    after 6 of the download limits, ADR-206, 5 of the fetch of a version, ADR-205, 4 of the upstream presets, ADR-198, 3 of the upload sessions, ADR-178, and 2 of the project model, ADR-156; a change that raises it moves every
+  - a `ContractVersion` mismatch (the contract is frozen since the end of M3, E3.3 and ADR-141, at 11 since the declaration of the
+    upstream catalogue and the version canon, ADR-277 and [remote-curation.md](remote-curation.md) R-CUR-007, after 10 of the receipt
+    attestations, ADR-230, 9 of the signature gate per repository, ADR-231, 8 of the signatures, ADR-228, 7 of the probes, ADR-207,
+    6 of the download limits, ADR-206, 5 of the fetch of a version, ADR-205, 4 of the upstream presets, ADR-198, 3 of the upload sessions, ADR-178, and 2 of the project model, ADR-156; a change that raises it moves every
     format in the same change, R-ARCH-025);
-  - a format with the class `remote` that declares no upstream catalogue (`Descriptor.Catalogue`: the calls its remote adapter
-    answers, at least the lookup by exact name, and a reason for each it does not), or whose adapter does not answer a declared call
-    ([remote-curation.md](remote-curation.md) R-CUR-007, specified, not built);
+  - a format with the class `remote` that declares no upstream catalogue (`Descriptor.Catalogue`: the lookup by exact name, and for
+    search and levels each the call or a reason, never both) or no version canon (`Descriptor.VersionCanon`), and a format without the
+    class that declares either ([remote-curation.md](remote-curation.md) R-CUR-006, R-CUR-007; built). From the catalogue's package of
+    T-24 on, also a format whose remote adapter does not implement `Catalogue` while its declaration names the lookup: the five formats'
+    catalogues and that check land in one change ([Q-CUR-109](remote-curation.md#q-cur-109--the-catalogues-browsing-calls-live-in-the-leaf-discover-and-registers-adapter-check-lands-with-the-adapters));
   - a format with the class `remote` that declares neither `Probes` nor a `NoProbe` reason, or a probe on a route it does not have,
     that does not serve the class `remote`, whose method is not GET or HEAD, or that says nothing of what it names (R-REPO-065);
   - a route set that fails the kit's ambiguity check, which `Register` runs itself: every route has

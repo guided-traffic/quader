@@ -38,8 +38,11 @@ import (
 // it serves (Gate), and [SignatureVerdicts] judges a stored document a format serves without the item store (Refuse). Version 10 is the
 // receipt attestations' (signatures.md R-SIG-044, Q-SIG-67, Q-SIG-180): a format's [SignatureAdapter] names the stored items Quader
 // attests (AttestationSubjects), its declaration says what it attests or why nothing (Attests, AttestsNone), and NoSignatures takes both
-// reasons. A format declares the literal it was written against in [Descriptor.ContractVersion], and Register panics on a mismatch.
-const ContractVersion = 10
+// reasons. Version 11 is the upstream catalogue's (remote-curation.md R-CUR-006, R-CUR-007, Q-CUR-12, ADR-277): a format with the class
+// remote declares its catalogue ([Descriptor.Catalogue], the lookup by exact name at least) and its version canon
+// ([Descriptor.VersionCanon]). A format declares the literal it was written against in [Descriptor.ContractVersion], and Register
+// panics on a mismatch.
+const ContractVersion = 11
 
 // The types of other packages under the names a format spells them: one type
 // each, no mirrors (Q-ARCH-188, Q-ARCH-189). A format imports this package and
@@ -220,6 +223,12 @@ type Descriptor struct {
 	Probes []ProbeRoute
 	// NoProbe is the reason a format with the class remote has no probe; empty for a format that declares Probes.
 	NoProbe string
+	// Catalogue declares what the format's remote adapter answers of the upstream catalogue and why it answers no more
+	// (remote-curation.md R-CUR-007); required of a format with the class remote, whose floor is the lookup by exact name.
+	Catalogue CatalogueDeclaration
+	// VersionCanon is the format's canonical form of a version (R-CUR-006): a delivery rule stores it and the decision folds what it is
+	// asked with it. Required of a format with the class remote.
+	VersionCanon catalog.VersionCanon
 }
 
 // ProbeRoute names one probe of a format (R-REPO-065): a route of [Format.Routes] that serves the class remote and the method of
@@ -349,6 +358,7 @@ func CapabilitiesOf(f Format) Capabilities {
 		c.Remote.Revalidate, _ = ra.(Revalidator)
 		c.Remote.Names, _ = ra.(NameServer)
 		c.Remote.Signatures, _ = ra.(SignatureFetcher)
+		c.Remote.Catalogue, _ = ra.(Catalogue)
 	}
 	return c
 }
@@ -398,7 +408,7 @@ func CapabilitiesFor(id ID) Capabilities {
 // facts of its adapter.
 func CatalogEntry(f Format) catalog.Entry {
 	d := f.Descriptor()
-	e := catalog.Entry{Facts: d.Facts, Names: d.Names}
+	e := catalog.Entry{Facts: d.Facts, Names: d.Names, VersionCanon: d.VersionCanon}
 	if d.PackageNames {
 		e.DocumentPath = func(name string) (string, bool) {
 			p, ok := f.PackageDocumentPath(name)
@@ -485,17 +495,10 @@ func Validate(f Format) error {
 			return fmt.Errorf("%q narrows exposure by package, version or tag and has no package names", id)
 		}
 	}
-	if err := checkSystemOnly(f, d); err != nil {
-		return err
-	}
-	if err := checkView(f, d); err != nil {
-		return err
-	}
-	if err := checkProbes(f, d); err != nil {
-		return err
-	}
-	if err := checkSignatures(f, d); err != nil {
-		return err
+	for _, check := range []func(Format, Descriptor) error{checkSystemOnly, checkView, checkProbes, checkCatalogue, checkSignatures} {
+		if err := check(f, d); err != nil {
+			return err
+		}
 	}
 	switch {
 	case repository.IsReservedMember(string(id)):

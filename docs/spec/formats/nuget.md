@@ -2713,7 +2713,7 @@ the protocol research of 2026-11-23:
 | Levels | none: IDs are flat ("NuGet IDs have no levels; search for a prefix with `id:`."). Dotted prefixes and nuget.org's reserved prefixes are a naming rule, not a listing |
 | Lookup and versions | the registration index and its pages (`listed`, `published`, `deprecation`, `vulnerabilities`) with the flat container's version list, which names unlisted versions too (`unlisted` flag); the stored documents when the remote holds them |
 | Sizes | `unknown`: nuget.org's registrations carry no `packageSize`; only a catalog leaf does, one request per version, which the catalogue does not send |
-| Version canon | the normalized version of R-NUGET-003 (`1.0` and `1.0.0.0` are `1.0.0`), so a rule on `1.0.0` meets a request for `1.0` |
+| Version canon | the URL form of R-NUGET-003, the identity of a version (`1.0` and `1.0.0.0` are `1.0.0`, `1.0.0-Beta` is `1.0.0-beta`), so a rule on `1.0.0` meets a request for `1.0` ([Q-CUR-3](../remote-curation.md#q-cur-3--one-rule-model-the-narrowest-decides-a-block-wins-at-equal-width-exact-versions-only)) |
 | One version's download | the `.nupkg` |
 
 - **Documents** follow the rules as R-NUGET-034 follows an endpoint's exposure: the flat container's version list and the registration

@@ -32284,6 +32284,114 @@
         <target>Upstream hat eine Datei nicht mehr</target>
       </segment>
     </unit>
+    <unit id="audit.action.remote.delivery.refused">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:271</note>
+      </notes>
+      <segment>
+        <source>Download refused by a rule of a remote repository</source>
+        <target>Download durch eine Regel eines Remote-Repositorys verweigert</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.remote.download.cancelled">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:273</note>
+      </notes>
+      <segment>
+        <source>Download into the cache cancelled</source>
+        <target>Laden in den Cache abgebrochen</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.remote.download.retried">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:275</note>
+      </notes>
+      <segment>
+        <source>Download into the cache started again</source>
+        <target>Laden in den Cache erneut gestartet</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.remote.download.started">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:277</note>
+      </notes>
+      <segment>
+        <source>Download into the cache started</source>
+        <target>Laden in den Cache gestartet</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.remote.examination.discarded">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:279</note>
+      </notes>
+      <segment>
+        <source>Version fetched for examination discarded</source>
+        <target>Zur Prüfung geladene Version verworfen</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.remote.request.allowed">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:281</note>
+      </notes>
+      <segment>
+        <source>Request for a package allowed</source>
+        <target>Antrag auf ein Paket erlaubt</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.remote.request.created">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:283</note>
+      </notes>
+      <segment>
+        <source>Package requested in a remote repository</source>
+        <target>Paket in einem Remote-Repository beantragt</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.remote.request.declined">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:285</note>
+      </notes>
+      <segment>
+        <source>Request for a package declined</source>
+        <target>Antrag auf ein Paket abgelehnt</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.remote.request.withdrawn">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:287</note>
+      </notes>
+      <segment>
+        <source>Request for a package withdrawn</source>
+        <target>Antrag auf ein Paket zurückgezogen</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.remote.rule.created">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:289</note>
+      </notes>
+      <segment>
+        <source>Delivery rule of a remote repository added</source>
+        <target>Auslieferungsregel eines Remote-Repositorys angelegt</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.remote.rule.deleted">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:291</note>
+      </notes>
+      <segment>
+        <source>Delivery rule of a remote repository removed</source>
+        <target>Auslieferungsregel eines Remote-Repositorys entfernt</target>
+      </segment>
+    </unit>
+    <unit id="audit.action.remote.rule.updated">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:293</note>
+      </notes>
+      <segment>
+        <source>Delivery rule of a remote repository changed</source>
+        <target>Auslieferungsregel eines Remote-Repositorys geändert</target>
+      </segment>
+    </unit>
     <unit id="repo.content.files-address">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-content.ts:147</note>

@@ -340,6 +340,9 @@ type RemoteCaps struct {
 	// Signatures fetches a remote's signatures in the background (signatures.md R-SIG-026); nil for a format whose signatures come with
 	// what a client fetches anyway.
 	Signatures SignatureFetcher
+	// Catalogue is the adapter's view of its upstream for a person (remote-curation.md R-CUR-007); nil until the format's catalogue is
+	// built, which its Descriptor.Catalogue declares.
+	Catalogue Catalogue
 }
 
 // RemoteCapabilities returns the capabilities Register recorded for a format; the zero value for an ID that

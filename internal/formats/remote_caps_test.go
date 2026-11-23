@@ -31,7 +31,7 @@ func (discoveringRemote) InspectFill(context.Context, RemoteContext, Path, Spool
 func TestR_ARCH_008_RegisterReadsTheOptionalInterfacesOfARemoteAdapter(t *testing.T) {
 	remote := func(id string) Descriptor {
 		d := valid(id)
-		d.Classes = []Class{Local, Remote}
+		d.Classes, d.Catalogue, d.VersionCanon = []Class{Local, Remote}, testCatalogue, anyCanon{}
 		return d
 	}
 	Register(fake{d: remote("probe-caps"), remote: discoveringRemote{}})
@@ -80,7 +80,7 @@ func (listingRemote) MirrorHosts(*url.URL) []string { return nil }
 func TestRegisterRecordsTheMirrorLister(t *testing.T) {
 	remote := func(id string) Descriptor {
 		d := valid(id)
-		d.Classes = []Class{Local, Remote}
+		d.Classes, d.Catalogue, d.VersionCanon = []Class{Local, Remote}, testCatalogue, anyCanon{}
 		return d
 	}
 	with := fake{d: remote("probe-mirror"), remote: listingRemote{}}

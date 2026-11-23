@@ -2566,7 +2566,7 @@ admitted or hid whole packages; no surface showed its upstream or a failed downl
   answer in each format; a miss of a virtual member (R-CUR-003, R-CUR-004).
 - The holders of `manage` and the administrator set rules and decide requests; the mode is configuration; a gate's release stays triage
   (R-CUR-005).
-- The upstream catalogue is a declared port of the format contract (contract version 8) that stores nothing, with a budget, a cache and
+- The upstream catalogue is a declared port of the format contract (contract version 11) that stores nothing, with a budget, a cache and
   bounds of its own (R-CUR-007 to R-CUR-009).
 - Downloads ahead at three levels with a preview and bounds; a repository's download queue as rows run by jobs, failures in the failure's
   own words, retries; the probe's background download a row of it (R-CUR-010 to R-CUR-013).
@@ -10117,10 +10117,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-CUR
 
-28 questions on [spec/remote-curation.md](spec/remote-curation.md).
+30 questions on [spec/remote-curation.md](spec/remote-curation.md).
 
 <details>
-<summary>Q-CUR: 28 questions</summary>
+<summary>Q-CUR: 30 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10135,7 +10135,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-CUR-9](spec/remote-curation.md#q-cur-9--debian-the-upstreams-signed-indexes-pass-unchanged-the-filtered-view-is-a-virtual-repository) | Debian: the upstream's signed indexes pass unchanged; the filtered view is a virtual repository | Decided by the development agent | (a) Addressed directly, the remote serves the upstream's indexes and refuses the files the rules refuse; through a virtual repository, its merge drops the rows the member's rules refuse | — |
 | [Q-CUR-10](spec/remote-curation.md#q-cur-10--oci-a-tag-is-the-version-content-by-digest-follows-the-image-and-the-stored-tags) | OCI: a tag is the version; content by digest follows the image and the stored tags | Decided by the development agent | (a) A rule's version is a tag; a manifest by digest is delivered when the image is delivered without version rules, or a delivered tag's stored document names it directly or through a stored index; a blob by digest is delivered when some version of the image is | — |
 | [Q-CUR-11](spec/remote-curation.md#q-cur-11--who-the-holders-of-manage-and-the-administrator-allow-the-mode-is-configuration-triage-stays-separate) | Who: the holders of `manage` and the administrator allow; the mode is configuration; triage stays separate | Decided by the development agent | (a) Rules and requests: `manage` or `admin`; the mode: configuration (write-config, Owner); gates' releases stay triage | — |
-| [Q-CUR-12](spec/remote-curation.md#q-cur-12--the-catalogue-is-a-declared-part-of-the-format-contract-the-contract-version-rises-to-8) | The catalogue is a declared part of the format contract; the contract version rises to 8 | Decided by the development agent | (a) Every remote format declares its catalogue or a reason per call, as it declares its probes; version 8 | — |
+| [Q-CUR-12](spec/remote-curation.md#q-cur-12--the-catalogue-is-a-declared-part-of-the-format-contract-the-contract-version-rises-to-11) | The catalogue is a declared part of the format contract; the contract version rises to 11 | Decided by the development agent | (a) Every remote format declares its catalogue or a reason per call, as it declares its probes; version 11 | [ADR-228](#adr-228--the-format-contract-declares-every-formats-signatures-and-a-signature-is-never-a-version) |
 | [Q-CUR-13](spec/remote-curation.md#q-cur-13--the-catalogue-stores-nothing-in-the-cache) | The catalogue stores nothing in the cache | Decided by the development agent | (a) The catalogue reads stored documents and fetches the rest without storing; its own short cache keeps parsed pages | — |
 | [Q-CUR-14](spec/remote-curation.md#q-cur-14--who-browses-what-signed-in-readers-in-mode-onlyallowed-a-reader-sees-what-is-delivered-and-looks-up-by-name) | Who browses what: signed-in readers; in mode `onlyAllowed` a reader sees what is delivered and looks up by name | Decided by the development agent | (a) Signed-in readers; in `onlyAllowed` search and levels show readers the delivered hits with the count of the others, a lookup by exact name shows any package | — |
 | [Q-CUR-15](spec/remote-curation.md#q-cur-15--second-hosts-come-from-the-preset-and-docker-hubs-undocumented-search-is-used-with-a-fallback) | Second hosts come from the preset, and Docker Hub's undocumented search is used with a fallback | Decided by the development agent | (a) `catalogueHosts` of a preset; an undocumented endpoint only where no documented one answers the need, and its failure turns the capability off for the period | — |
@@ -10152,6 +10152,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-CUR-26](spec/remote-curation.md#q-cur-26--a-stored-version-the-rules-do-not-deliver-is-listed-marked-with-no-install-command) | A stored version the rules do not deliver is listed, marked, with no install command | Decided by the development agent | (a) Listed with `available: false` and the reason, no install command | — |
 | [Q-CUR-27](spec/remote-curation.md#q-cur-27--a-download-ahead-is-an-explicit-act-of-the-management-api-outside-the-session-cookies-refusal) | A download ahead is an explicit act of the management API, outside the session cookie's refusal | Decided by the development agent | (a) A `POST` of the management API, which needs the session's CSRF token or a token, run by a worker as the system for the person, who is asked for their own actions; the data path keeps the cookie's refusal | — |
 | [Q-CUR-28](spec/remote-curation.md#q-cur-28--the-upstream-is-another-surface-the-protocol-routes-keep-what-they-serve) | The upstream is another surface: the protocol routes keep what they serve | Decided by the development agent | (a) The catalogue is a management API surface for a person; every protocol route and the package list keep their answers, filtered by the rules | [ADR-277](#adr-277--a-remote-repository-can-be-curated-delivery-rules-in-two-modes-an-upstream-catalogue-downloads-ahead-and-their-queue-requests-with-examination) |
+| [Q-CUR-109](spec/remote-curation.md#q-cur-109--the-catalogues-browsing-calls-live-in-the-leaf-discover-and-registers-adapter-check-lands-with-the-adapters) | The catalogue's browsing calls live in the leaf discover, and Register's adapter check lands with the adapters | Decided by the development agent | (a) The browsing calls (`CatalogueCaps`, `Search`, `Children`, `Package`) and their types in `discover`; `formats.Catalogue` embeds them and adds `VersionProbe`, whose `Probe` is a type of the contract; `Register` refuses a missing adapter from the change that brings the five catalogues | [ADR-152](#adr-152--the-format-contract-gains-the-optional-mirror-lister) |
+| [Q-CUR-110](spec/remote-curation.md#q-cur-110--the-ports-of-the-domain-package-speak-in-a-repositorys-id-and-the-decider-reads-no-database) | The ports of the domain package speak in a repository's ID, and the decider reads no database | Decided by the development agent | (a) Ports at the root of `internal/remotecuration` in plain values: `Decider.Decide(ctx, repoID, name, version) Decision` and `Package(ctx, repoID, name)`, no error; `Queue.Active` and `Requests.Open` by repository ID, package and versions; stubs `DeliverAll`, `NoQueue`, `NoRequests` | — |
 
 </details>
 

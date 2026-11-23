@@ -1,6 +1,6 @@
 # Curating a remote repository: the work packages
 
-Status: specified on 2026-11-23, not built. The specification is [spec/remote-curation.md](../spec/remote-curation.md) with the format
+Status: specified on 2026-11-23; the contracts package (C) built on 2026-11-23, the rest not. The specification is [spec/remote-curation.md](../spec/remote-curation.md) with the format
 pages' requirements (R-NPM-049, R-NUGET-035, R-OCI-038, R-DEB-036, R-ANS-047) and the changed sentences its section "Changes to other
 pages" lists; the security view is [security/remote-curation.md](../security/remote-curation.md). This page cuts the work into packages
 for builders, in the order they can land, each a whole feature that leaves `main` working, with the files and directories each owns so
@@ -20,17 +20,22 @@ that several builders work at once, the contracts between them, and the tests ea
   row instead of a job, and [background_download.go](../../internal/formathost/background_download.go)'s run is the run of every row.
 - **Every scan starts at the item store's commit** ([wire_formats.go](../../internal/app/wire_formats.go)), so an examination needs no new
   trigger; it only stores.
-- **The contract version rises to 8** with the catalogue's declaration and the version canon (R-CUR-007, R-ARCH-010); the written
-  contract of R-ARCH-008 is held equal to the code by `TestR_ARCH_008_TheWrittenContractEqualsTheCode`, so the package that adds the
-  interface adds it there in the same change.
+- **The contract version is 11** with the catalogue's declaration and the version canon (R-CUR-007, R-ARCH-010; built by C); the
+  written contract of R-ARCH-008 is held equal to the code by `TestR_ARCH_008_TheWrittenContractEqualsTheCode`, and its surface by
+  `testdata/contract.txt` (`go test ./internal/formats -run TestR_ARCH_025 -update-contract`), so a package that changes the contract
+  changes both in the same change.
+- **The catalogue's browsing calls are the leaf's** (`discover.Catalogue` in
+  [catalogue.go](../../internal/mirror/discover/catalogue.go)): the engine and a bulk's expansion are domain packages and call them without
+  importing the contract; `formats.Catalogue` embeds them and adds `VersionProbe`, which only the queue's run in `internal/formathost`
+  calls (Q-CUR-109).
 
 ## The packages
 
 | Package | Delivers | Depends on | Builder-days (estimate) |
 |---|---|---|---|
-| **C · Contracts** | the migration of every table, the domain package's skeleton and its layer row, the catalogue's interface and types, the version canon, the descriptor's declaration and contract version 8 with every format's declaration (the floor: lookup), the error codes, the audit events' registrations, the configuration keys, the job queue `downloads` | — | 0.5 |
+| **C · Contracts** (built) | the migration of every table, the domain package's skeleton and its layer row, the catalogue's interface and types, the version canon, the descriptor's declaration and contract version 11 with every format's declaration (the floor: lookup), the error codes, the audit events' registrations, the configuration keys, the job queue `downloads` | — | 0.5 |
 | **R2 · Delivery rules** | R-CUR-001 to R-CUR-006, R-CUR-017 (the mirror's scope), the rules' API; the refusal before a fill, at the serve point and in the five formats' documents (kit check 22); the virtual walk; the journal and the Bastion's feed; the listing marks; a remote without patterns | C | 2.5 |
-| **R3 · Upstream catalogue** | R-CUR-007 to R-CUR-009: the catalogue engine (lent upstream that stores nothing, budget, cache, bounds, second hosts), the five formats' catalogues (kit check 21), the Debian parse's descriptions, the API with the vulnerability verdicts of unstored versions | C | 2 |
+| **R3 · Upstream catalogue** | R-CUR-007 to R-CUR-009: the catalogue engine (lent upstream that stores nothing, budget, cache, bounds, second hosts), the five formats' catalogues (kit check 21) and the check of `Register` that a remote adapter implements `formats.Catalogue` (Q-CUR-109), the Debian parse's descriptions, the API with the vulnerability verdicts of unstored versions | C | 2 |
 | **R4 · Downloads ahead and the queue** | R-CUR-010 to R-CUR-013: the queue's store, dispatch, run, retries and failures in words; the probe's row; bulks and their expansion; the API; the client failure rows; the charge; a fill without a client is no refused download (Q-CUR-22) | C (the expansion calls the catalogue's interface; its integration case of a bulk lands with whichever of R3 and R4 lands second) | 2 |
 | **R2b · Requests, examination, retention** | R-CUR-014 to R-CUR-016: requests and askers, the examination a request starts, allow and decline, the list with client refusals, discard and the retention task, their events, journal and replay | R2, R4 | 1.5 |
 | **R5a · The tab strip and the tab Downloads** | R-CUR-018: the strip on a remote's page with the three addresses, the tab Downloads with its states, filters, failure detail, retry and cancel | R4 | 1 |
@@ -42,24 +47,31 @@ that several builders work at once, the contracts between them, and the tests ea
 
 ## C · Contracts
 
-Owns (and nobody else writes them while C is open):
+Built on 2026-11-23. What it holds, and what the next packages build on:
 
 | File or directory | What |
 |---|---|
-| `internal/meta/postgres/migrations/<next>_remote_curation.sql` | `remote_delivery_rules`, `repositories.delivery_rules_revision`, `remote_delivery_requests`, `remote_delivery_request_askers`, `remote_download_bulks`, `remote_download`, `remote_examinations`, `deb_remote_descriptions` and the two columns `provides` and `description` of `deb_remote_entries`, with the indexes of the spec; export class `data` in the table registry (R-BAK-004) |
-| `internal/remotecuration/doc.go`, `contracts.go` | the domain package and its ports: `rules.Decider` (`Decide(repo, name, version)`, `Package(repo, name)`), `queue.Lookup`, `requests.Lookup`, each with a stub that answers "delivered", "none queued" and "no request", so R3 and R4 can show states before R2 and R2b land |
-| `internal/archtest` (the layer rows) | `internal/remotecuration/...` as a domain package beside `internal/mirror` |
-| `internal/formats/catalogue.go` | the interface `Catalogue` and its types (R-CUR-007), `ErrNotOffered`; `RemoteCaps.Catalogue` found by `CapabilitiesOf` |
-| `internal/formats/catalog/` | `VersionCanon` beside `Names`; `UpstreamPreset.CatalogueHosts` |
-| `internal/formats/format.go`, `register.go` | `Descriptor.Catalogue` (the calls declared and the reasons), the checks of `Register`, `ContractVersion = 8` |
-| every format's `format.go` with the class remote | its declaration (lookup, and reasons for the rest until R3), its version canon; `TestR_CUR_007_EveryRemoteFormatDeclaresItsCatalogue` in `internal/formats/all` |
-| `docs/spec/architecture.md` R-ARCH-008's written contract | the interface and the descriptor member, as the test holds them |
-| `internal/errs/codes.go` | `not_allowed_in_repository`, `too_many_rules`, `invalid_version`, `catalogue_not_offered`, `catalogue_not_found`, `catalogue_budget_exhausted`, `catalogue_answer_too_large`, `download_queue_full`, `already_queued`, `not_retryable`, `already_delivered`, `too_many_requests`, `delivered` |
-| `internal/audit/events_remote_curation.go` | the events of R-CUR-019 with their schemas, modes and journal flags; `remote.examination.discarded` classified `none` in `internal/bastionmain/feed.go` and given its row in the table of R-HA-054 in `docs/spec/ha-and-helm.md` in the same change (`TestR_HA_054_EveryListedEventIsFlaggedAndEntryRequired` holds a listed event to its registration, so the row cannot precede the code) |
-| `internal/config/remote_curation.go`, `jobs.go`, `maintenance.go` | the keys of R-CUR-020 with their defaults, the queue `downloads` and its workers, the two tasks' schedules |
+| [00114_remote_curation.sql](../../internal/meta/postgres/migrations/00114_remote_curation.sql) | `remote_delivery_requests`, `remote_delivery_request_askers`, `remote_delivery_rules`, `repositories.delivery_rules_revision`, `remote_download_bulks`, `remote_download`, `remote_examinations`, the columns `provides`, `description` and `description_md5` of `deb_remote_entries`, and `deb_remote_descriptions`, with the indexes of the spec (and the two it gained, Q-CUR-16 and the SQL blocks of R-CUR-011 and R-CUR-015); export class `data` in [tables_remote_curation.go](../../internal/meta/postgres/tables_remote_curation.go) and, for the Debian table, [tables_deb.go](../../internal/formatdata/deb/tables_deb.go); `delivery_rules_revision` a registered revision column (R-BAK-022) |
+| [internal/remotecuration](../../internal/remotecuration/contracts.go) (`doc.go`, `contracts.go`) | the vocabulary (`Mode`, `RuleKind`, `Effect`, `Reason`, `DecidedBy`, `Decision`; the queue's `State`, `Origin`, `Outcome`, `FailureClass` with `Retryable`, `FailureStep`, `Failure`; `RequestState`), the names `KindDownload` (`remote-download`), `QueueDownloads` (`downloads`), `TaskDispatch` and `TaskExaminationCleanup`, and the ports in plain values (Q-CUR-110): `Decider` (`Decide(ctx, repoID, name, version) Decision`, `Package(ctx, repoID, name) Decision`), `Queue` (`Active(ctx, repoID, name, versions)`), `Requests` (`Open(ctx, repoID, name, versions)`), with the stubs `DeliverAll`, `NoQueue` and `NoRequests` |
+| [layers.go](../../internal/archtest/layers.go) | `internal/remotecuration/...` as a domain package beside `internal/mirror` |
+| [discover/catalogue.go](../../internal/mirror/discover/catalogue.go) | the browsing calls `discover.Catalogue` (`CatalogueCaps`, `Search`, `Children`, `Package`), their types and `ErrNotOffered` (Q-CUR-109) |
+| [formats/catalogue.go](../../internal/formats/catalogue.go) | `formats.Catalogue` (the leaf's calls and `VersionProbe`), `CatalogueDeclaration` and its check in `Register`; `RemoteCaps.Catalogue` found by `CapabilitiesOf` ([remote.go](../../internal/formats/remote.go)) |
+| [catalog.go](../../internal/formats/catalog/catalog.go) | `VersionCanon` beside `Names`, `Entry.VersionCanon`, `Registry.CanonicalVersion(format, version)`; `UpstreamPreset.CatalogueHosts` (checked like `ExtraHosts`, declared by no preset yet) |
+| [formats.go](../../internal/formats/formats.go) | `Descriptor.Catalogue`, `Descriptor.VersionCanon`, `ContractVersion = 11`; [testdata/contract.txt](../../internal/formats/testdata/contract.txt) |
+| every format's `format.go` with the class remote (npm, NuGet, OCI, Debian, Ansible Galaxy) | its declaration (the lookup, and for search and levels a reason until R3; NuGet's "no levels" is final) and its version canon; pinned by `TestR_CUR_007_EveryRemoteFormatDeclaresItsCatalogue` and `TestR_CUR_006_EveryRemoteFormatHasItsVersionCanon` in [internal/formats/all](../../internal/formats/all/catalogue_test.go) |
+| `docs/spec/architecture.md` R-ARCH-008 and R-ARCH-010 | the interface, the declaration and the descriptor members as `TestR_ARCH_008_TheWrittenContractEqualsTheCode` holds them; the version and the checks of `Register` |
+| [codes.go](../../internal/errs/codes.go) (`>>> remote curation`) | `not_allowed_in_repository` (403), `too_many_rules` (422), `invalid_version` (422), `catalogue_not_offered` (400), `catalogue_not_found` (404), `catalogue_budget_exhausted` (429), `catalogue_answer_too_large` (502), `download_queue_full` (429), `already_queued` (409), `not_retryable` (409), `already_delivered` (409), `too_many_requests` (429), `delivered` (409) |
+| [events_remote_curation.go](../../internal/audit/events_remote_curation.go) | the twelve events of R-CUR-019 with their schemas, modes, webhook and journal flags; `remote.examination.discarded` classified as yielding no entry in [feed.go](../../internal/bastionmain/feed.go), its row in the table of R-HA-054, its replay handler pending in `cmd/quader/journal_handlers_test.go` until R2b; the audit log's names of the twelve in `web/src/app/features/audit/audit-labels.ts` with their German texts |
+| [remote_curation.go](../../internal/config/remote_curation.go), [jobs.go](../../internal/config/jobs.go), [maintenance.go](../../internal/config/maintenance.go) | `proxy.delivery.*`, `proxy.catalogue.*` (with `cache_ttl` and `timeout` as durations), `proxy.downloads.*`, `jobs.workers.downloads` and the queue `downloads`, the tasks' schedules |
 
-Tests: unit only (`internal/formats`, `internal/formats/all`, `internal/audit`, `internal/config`, `internal/archtest`), milliseconds; the
-migration is applied by every integration area's database, so the shards gain no test and about one second of migration.
+Not in C, and so the next package's: the registration of the kind `remote-download` and of the two tasks with the job framework (R4,
+R2b: until then the queue has workers and the tasks have schedules, and nothing runs on them), the check of `Register` that a remote
+adapter implements `formats.Catalogue` (R3, with the five catalogues, Q-CUR-109), the repository members `remote.delivery.*` (R2).
+
+Tests (unit, about 0.1 s together): `internal/formats` (the declaration's checks), `internal/formats/all` (the pins and the canons),
+`internal/audit` (the events), `internal/config` (the defaults and bounds), `internal/archtest` (the layer row), `internal/remotecuration`
+(the vocabulary held to the migration's CHECK lists, the retry classes, the stubs). The migration is applied by every integration area's
+database, so the shards gain no test and about one second of migration.
 
 ## R2 · Delivery rules
 
@@ -77,7 +89,7 @@ migration is applied by every integration area's database, so the shards gain no
 | Journal and feed | `internal/journal/` (replay of the parts), `internal/bastionmain/feed.go` |
 | The record of a refusal | the upsert into `remote_delivery_requests` (`refusals`) with the event's throttle, a writer in `internal/remotecuration/rules` |
 
-Contracts to the others: `rules.Decider` (C's port, implemented here); the refusal's code and text; the listing's `delivery` state for R3
+Contracts to the others: `remotecuration.Decider` (C's port, implemented here); the refusal's code and text; the listing's `delivery` state for R3
 and the screens.
 
 Tests (R-CUR-022): unit, the decision table and the comparator (about 1 s); kit check 22 for five formats (milliseconds each); integration,
@@ -92,7 +104,7 @@ unit job about 1 s, the integration shards about 20 s.
 |---|---|
 | The engine | `internal/remotecuration/catalogue/` (the lent upstream that stores nothing, the budget on the cluster limiter, the cache, the bounds, the shape fallback) |
 | The lent upstream | `internal/proxy/catalogue_upstream.go` (a `discover.Upstream` over the remote's client that answers `Document` from the store or the network without storing and refuses `Artifact`) |
-| The formats | `internal/formats/{npm,nuget,oci,deb,ansible}/catalogue.go`; the presets' `CatalogueHosts` in `oci/format.go` and `npm/format.go`; the Debian parse in `internal/formatdata/deb/remote_store.go` (provides, short and long descriptions) |
+| The formats | `internal/formats/{npm,nuget,oci,deb,ansible}/catalogue.go`; the presets' `CatalogueHosts` in `oci/format.go` and `npm/format.go`; the Debian parse in `internal/formatdata/deb/remote_store.go` (provides, short descriptions, `Description-md5`, and the long descriptions of `i18n/Translation-en` as an index of their own, Q-CUR-16) |
 | The verdicts of unstored versions | a port over `Evaluator.EvaluateMiss` in `internal/vuln/` |
 | The API | `internal/api/v1/upstream_catalogue_api.go`, `api/openapi.yaml` (`# >>> T-24 catalogue`) |
 | The kit | check 21 in `internal/formats/formattest` with each format's fixture of canned answers |
@@ -149,12 +161,12 @@ screens (about 60 s).
 - One end-to-end case per format in its own leg (`e2e (npm)`, `e2e (nuget)`, `e2e (oci)`, `e2e (deb)`, `e2e (ansible)`), each what only
   its client shows (R-CUR-022): about 10 s per leg; no leg loads another format's client.
 - The manual: a page on curating a remote (the tabs, the rules, requests, the queue), linked from the repository's help.
-- The developer pages: [formats.md](formats.md) (contract version 8, the catalogue, the version canon), [proxy.md](proxy.md) (step 5a, the
+- The developer pages: [formats.md](formats.md) (contract version 11, the catalogue, the version canon), [proxy.md](proxy.md) (step 5a, the
   failure's step), [mirror.md](mirror.md) (the scope), [coordination.md](coordination.md) (the queue `downloads`, the two tasks).
 
 ## What was not verified
 
-- No migration number is fixed: the next free one when C lands (00112 is the last on 2026-11-23).
+- The migration is 00114 (00113 is the version list keyset of another package, which lands first); a package that adds a migration takes the next free one when it lands.
 - The kit check numbers 21 and 22 hold only if no other check lands first (R-ARCH-010 says so).
 - Docker Hub's search, Quay's and GitLab's APIs and npm's replication host were read live once on 2026-11-23; their answers' fields are
   observed, not specified by their operators (R-OCI-038, upstream research).

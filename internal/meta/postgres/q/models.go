@@ -554,16 +554,27 @@ type DebGeneration struct {
 	SignedBy     []string
 }
 
+type DebRemoteDescription struct {
+	RepoID    int64
+	Dir       string
+	IndexPath string
+	Md5       string
+	Text      string
+}
+
 type DebRemoteEntry struct {
-	RepoID       int64
-	Dir          string
-	IndexPath    string
-	Package      string
-	Version      string
-	Architecture string
-	Path         string
-	Sha256       []byte
-	Size         int64
+	RepoID         int64
+	Dir            string
+	IndexPath      string
+	Package        string
+	Version        string
+	Architecture   string
+	Path           string
+	Sha256         []byte
+	Size           int64
+	Provides       string
+	Description    string
+	DescriptionMd5 pgtype.Text
 }
 
 type DebRemoteFile struct {
@@ -1232,6 +1243,99 @@ type RemoteCacheInvalidation struct {
 	FoldedAt  pgtype.Timestamptz
 }
 
+type RemoteDeliveryRequest struct {
+	ID            pgtype.UUID
+	RepoID        int64
+	Name          string
+	Version       pgtype.Text
+	State         string
+	Askers        int32
+	Refusals      int64
+	FirstAt       pgtype.Timestamptz
+	LastAt        pgtype.Timestamptz
+	DecidedBy     pgtype.UUID
+	DecidedAt     pgtype.Timestamptz
+	DeclineReason pgtype.Text
+}
+
+type RemoteDeliveryRequestAsker struct {
+	RequestID pgtype.UUID
+	Principal pgtype.UUID
+	Note      string
+	AskedAt   pgtype.Timestamptz
+	Withdrawn bool
+}
+
+type RemoteDeliveryRule struct {
+	ID        pgtype.UUID
+	RepoID    int64
+	Kind      string
+	Pattern   pgtype.Text
+	Name      pgtype.Text
+	Version   pgtype.Text
+	Effect    string
+	Note      string
+	RequestID pgtype.UUID
+	CreatedBy pgtype.UUID
+	CreatedAt pgtype.Timestamptz
+}
+
+type RemoteDownload struct {
+	ID          pgtype.UUID
+	RepoID      int64
+	Name        string
+	Version     string
+	Probe       json.RawMessage
+	Origin      string
+	BulkID      pgtype.UUID
+	RequestID   pgtype.UUID
+	StartedBy   pgtype.UUID
+	Ticket      json.RawMessage
+	State       string
+	Attempts    int32
+	MaxAttempts int32
+	NotBefore   pgtype.Timestamptz
+	JobID       pgtype.UUID
+	Occurrences int32
+	Files       int32
+	Stored      int32
+	Present     int32
+	Refused     int32
+	Bytes       int64
+	Outcome     pgtype.Text
+	Failure     json.RawMessage
+	CreatedAt   pgtype.Timestamptz
+	StartedAt   pgtype.Timestamptz
+	UpdatedAt   pgtype.Timestamptz
+	FinishedAt  pgtype.Timestamptz
+}
+
+type RemoteDownloadBulk struct {
+	ID                 pgtype.UUID
+	RepoID             int64
+	Level              string
+	Subject            string
+	MaxVersions        int32
+	MaxBytes           int64
+	IncludePrereleases bool
+	State              string
+	VersionsFound      int32
+	VersionsQueued     int32
+	Cursor             json.RawMessage
+	Failure            json.RawMessage
+	StartedBy          pgtype.UUID
+	CreatedAt          pgtype.Timestamptz
+	FinishedAt         pgtype.Timestamptz
+}
+
+type RemoteExamination struct {
+	RepoID    int64
+	Name      string
+	Version   string
+	FetchedAt pgtype.Timestamptz
+	RequestID pgtype.UUID
+}
+
 type RemoteUpstreamState struct {
 	RepoID              int64
 	ConsecutiveFailures int32
@@ -1269,22 +1373,23 @@ type Replica struct {
 }
 
 type Repository struct {
-	ID                  int64
-	Key                 string
-	Format              string
-	Class               string
-	Config              json.RawMessage
-	CreatedAt           pgtype.Timestamptz
-	UpdatedAt           pgtype.Timestamptz
-	Lifecycle           string
-	ConfigVersion       int64
-	CreatedBy           pgtype.UUID
-	UpdatedBy           pgtype.UUID
-	LastActivityAt      pgtype.Timestamptz
-	ClaimsVersion       int64
-	ProjectID           pgtype.UUID
-	VisibilityArtifacts string
-	VisibilityWiki      string
+	ID                    int64
+	Key                   string
+	Format                string
+	Class                 string
+	Config                json.RawMessage
+	CreatedAt             pgtype.Timestamptz
+	UpdatedAt             pgtype.Timestamptz
+	Lifecycle             string
+	ConfigVersion         int64
+	CreatedBy             pgtype.UUID
+	UpdatedBy             pgtype.UUID
+	LastActivityAt        pgtype.Timestamptz
+	ClaimsVersion         int64
+	ProjectID             pgtype.UUID
+	VisibilityArtifacts   string
+	VisibilityWiki        string
+	DeliveryRulesRevision int64
 }
 
 type RepositorySecret struct {

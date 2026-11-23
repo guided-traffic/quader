@@ -96,6 +96,14 @@ func (f *Format) Descriptor() formats.Descriptor {
 			{Route: "npm.version.get", Method: http.MethodHead, What: "a HEAD of the version document"},
 			{Route: "npm.tarball.get", Method: http.MethodHead, What: "a HEAD of the tarball"},
 		},
+		// The upstream catalogue (remote-curation.md R-CUR-007, formats/npm.md R-NPM-049): the lookup by exact name is the floor;
+		// the search and the scope level are specified and wait for the catalogue's package of T-24.
+		Catalogue: formats.CatalogueDeclaration{
+			Lookup:   true,
+			NoSearch: "The search of npm's upstream (R-NPM-049) is specified and not built yet; look a package up by its exact name.",
+			NoLevels: "The listing of a scope of the public registry (R-NPM-049) is specified and not built yet; look a package up by its exact name.",
+		},
+		VersionCanon:     versionCanon{},
 		Names:            names{},
 		Clients:          clients(),
 		PropertyPrefix:   "npm.",
@@ -126,6 +134,17 @@ func (names) Normalize(s string) (string, bool) {
 		return "", false
 	}
 	return n.String(), true
+}
+
+// versionCanon is the canonical form of an npm version (R-CUR-006, R-NPM-049): the SemVer text as the package document writes it,
+// which semver.Parse accepts; a range, a dist-tag or a "v" prefix is no version.
+type versionCanon struct{}
+
+func (versionCanon) Canonical(v string) (string, bool) {
+	if _, err := semver.Parse(v); err != nil {
+		return "", false
+	}
+	return v, true
 }
 
 // Routes returns the endpoint map of R-NPM-001.

@@ -2272,6 +2272,13 @@
               "type": "integer",
               "x-quader-env": "QUADER_JOBS_WORKERS_DELIVERY"
             },
+            "downloads": {
+              "default": 4,
+              "description": "The runs of the download queues of remote repositories, the job remote-download (remote-curation.md R-CUR-011): a queue of its own, so that downloads ahead of a client never wait behind the default queue's work; each run takes one of its repository's background slots (R-REPO-055).",
+              "minimum": 0,
+              "type": "integer",
+              "x-quader-env": "QUADER_JOBS_WORKERS_DOWNLOADS"
+            },
             "index": {
               "default": 2,
               "minimum": 0,
@@ -2542,6 +2549,14 @@
             "remote-cache-cleanup": {
               "Enabled": true,
               "Schedule": "0 3 * * *"
+            },
+            "remote-downloads-dispatch": {
+              "Enabled": true,
+              "Schedule": "* * * * *"
+            },
+            "remote-examination-cleanup": {
+              "Enabled": true,
+              "Schedule": "0 4 * * *"
             },
             "scrub": {
               "Enabled": true,
@@ -3229,6 +3244,64 @@
           "type": "array",
           "x-quader-env": "QUADER_PROXY_BLOCKED_CONTENT_TYPES"
         },
+        "catalogue": {
+          "additionalProperties": false,
+          "properties": {
+            "cache_bytes": {
+              "default": "32MiB",
+              "description": "Per replica: the parsed pages of the catalogue's answers (names and facts, never a document's bytes); 0 turns the cache off (R-CUR-008).",
+              "type": [
+                "string",
+                "integer"
+              ],
+              "x-quader-env": "QUADER_PROXY_CATALOGUE_CACHE_BYTES",
+              "x-quader-type": "bytes"
+            },
+            "cache_ttl": {
+              "default": "5m",
+              "description": "How long a parsed answer of the catalogue is kept; 0s keeps none (R-CUR-008).",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_PROXY_CATALOGUE_CACHE_TTL",
+              "x-quader-type": "duration"
+            },
+            "max_document_bytes": {
+              "default": "64MiB",
+              "description": "The largest upstream document the catalogue reads; a larger one answers 502 catalogue_answer_too_large (R-CUR-008).",
+              "type": [
+                "string",
+                "integer"
+              ],
+              "x-quader-env": "QUADER_PROXY_CATALOGUE_MAX_DOCUMENT_BYTES",
+              "x-quader-type": "bytes"
+            },
+            "requests_per_minute": {
+              "default": 120,
+              "description": "Upstream requests of the catalogue per repository and minute across replicas, on the cluster limiter; one more answers 429 catalogue_budget_exhausted (R-CUR-008).",
+              "maximum": 100000,
+              "minimum": 1,
+              "type": "integer",
+              "x-quader-env": "QUADER_PROXY_CATALOGUE_REQUESTS_PER_MINUTE"
+            },
+            "requests_per_minute_per_person": {
+              "default": 30,
+              "description": "Upstream requests of the catalogue per person and minute across repositories and replicas (R-CUR-008).",
+              "maximum": 100000,
+              "minimum": 1,
+              "type": "integer",
+              "x-quader-env": "QUADER_PROXY_CATALOGUE_REQUESTS_PER_MINUTE_PER_PERSON"
+            },
+            "timeout": {
+              "default": "20s",
+              "description": "How long one catalogue call may take before it answers 502 catalogue_answer_too_large (R-CUR-008).",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_PROXY_CATALOGUE_TIMEOUT",
+              "x-quader-type": "duration"
+            }
+          },
+          "type": "object"
+        },
         "claims": {
           "additionalProperties": false,
           "properties": {
@@ -3237,6 +3310,124 @@
               "description": "A remote repository refuses a name that a global claim covers, also when addressed directly.",
               "type": "boolean",
               "x-quader-env": "QUADER_PROXY_CLAIMS_REMOTE_REFUSAL"
+            }
+          },
+          "type": "object"
+        },
+        "delivery": {
+          "additionalProperties": false,
+          "properties": {
+            "examine_versions_per_request": {
+              "default": 1,
+              "description": "Versions a new request for a package downloads for examination: the newest that are no prereleases (R-CUR-015).",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer",
+              "x-quader-env": "QUADER_PROXY_DELIVERY_EXAMINE_VERSIONS_PER_REQUEST"
+            },
+            "max_client_entries": {
+              "default": 10000,
+              "description": "Request entries without an asker per repository; beyond it the entry with the oldest last refusal goes first (R-CUR-015).",
+              "maximum": 1000000,
+              "minimum": 1,
+              "type": "integer",
+              "x-quader-env": "QUADER_PROXY_DELIVERY_MAX_CLIENT_ENTRIES"
+            },
+            "max_rules": {
+              "default": 10000,
+              "description": "Delivery rules per remote repository, of which at most 100 are sections; one more answers 422 too_many_rules (R-CUR-006). About 150 bytes per rule in each replica's snapshot.",
+              "maximum": 1000000,
+              "minimum": 100,
+              "type": "integer",
+              "x-quader-env": "QUADER_PROXY_DELIVERY_MAX_RULES"
+            },
+            "open_requests_per_person": {
+              "default": 20,
+              "description": "Open requests for an allow one person may hold in one repository; one more answers 429 too_many_requests (R-CUR-015).",
+              "maximum": 1000,
+              "minimum": 1,
+              "type": "integer",
+              "x-quader-env": "QUADER_PROXY_DELIVERY_OPEN_REQUESTS_PER_PERSON"
+            },
+            "request_retention": {
+              "default": "720h",
+              "description": "How long an entry with no asker and no client refusal stays before the retention task removes it (R-CUR-015).",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_PROXY_DELIVERY_REQUEST_RETENTION",
+              "x-quader-type": "duration"
+            }
+          },
+          "type": "object"
+        },
+        "downloads": {
+          "additionalProperties": false,
+          "properties": {
+            "client_failures_per_repository": {
+              "default": 1000,
+              "description": "Rows of clients' failed fetches per repository; beyond it the oldest is removed (R-CUR-011, Q-CUR-19).",
+              "maximum": 100000,
+              "minimum": 1,
+              "type": "integer",
+              "x-quader-env": "QUADER_PROXY_DOWNLOADS_CLIENT_FAILURES_PER_REPOSITORY"
+            },
+            "done_retention": {
+              "default": "168h",
+              "description": "How long a done or cancelled row stays after it finished (R-CUR-011).",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_PROXY_DOWNLOADS_DONE_RETENTION",
+              "x-quader-type": "duration"
+            },
+            "failed_retention": {
+              "default": "720h",
+              "description": "How long a failed row stays after it finished (R-CUR-011).",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_PROXY_DOWNLOADS_FAILED_RETENTION",
+              "x-quader-type": "duration"
+            },
+            "max_attempts": {
+              "default": 5,
+              "description": "Attempts of a row whose failure a later attempt can overcome (R-CUR-011).",
+              "maximum": 20,
+              "minimum": 1,
+              "type": "integer",
+              "x-quader-env": "QUADER_PROXY_DOWNLOADS_MAX_ATTEMPTS"
+            },
+            "max_bytes_per_bulk": {
+              "default": "100GiB",
+              "description": "The default and the highest value of a bulk's maxBytes, which the person may lower (R-CUR-010).",
+              "type": [
+                "string",
+                "integer"
+              ],
+              "x-quader-env": "QUADER_PROXY_DOWNLOADS_MAX_BYTES_PER_BULK",
+              "x-quader-type": "bytes"
+            },
+            "max_versions_per_bulk": {
+              "default": 10000,
+              "description": "The default and the highest value of a bulk's maxVersions, which the person may lower (R-CUR-010).",
+              "maximum": 1000000,
+              "minimum": 1,
+              "type": "integer",
+              "x-quader-env": "QUADER_PROXY_DOWNLOADS_MAX_VERSIONS_PER_BULK"
+            },
+            "max_waiting_per_repository": {
+              "default": 10000,
+              "description": "Waiting rows of one repository; a person's download beyond it answers 429 download_queue_full, a bulk's expansion pauses (R-CUR-011).",
+              "maximum": 1000000,
+              "minimum": 1,
+              "type": "integer",
+              "x-quader-env": "QUADER_PROXY_DOWNLOADS_MAX_WAITING_PER_REPOSITORY"
+            },
+            "per_repository": {
+              "default": 4,
+              "description": "Rows of one repository's queue that run at once; the rest wait (R-CUR-011). Each running row takes one of the repository's background slots (R-REPO-055).",
+              "maximum": 64,
+              "minimum": 1,
+              "type": "integer",
+              "x-quader-env": "QUADER_PROXY_DOWNLOADS_PER_REPOSITORY"
             }
           },
           "type": "object"
