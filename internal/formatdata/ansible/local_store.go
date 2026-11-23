@@ -150,12 +150,7 @@ func (s localStore) PutVersion(ctx context.Context, tx meta.Tx, v rows.VersionRo
 		"package": v.Name, "version": v.Version,
 		"files": []map[string]any{{"path": "collections/" + ns + "/" + name + "/" + collection.FileName(ns, name, v.Version), "sha256": hex.EncodeToString(v.SHA256[:]), "size": v.Size}},
 	}
-	if p.Claim != "" {
-		details["claim"] = p.Claim
-	}
-	if p.ShadowUndetermined {
-		details["shadowCheck"] = "undetermined"
-	}
+	audit.PublishGuards(details, p.Claim, p.ShadowUndetermined)
 	raw, err := json.Marshal(details)
 	if err != nil {
 		return err

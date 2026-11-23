@@ -194,12 +194,7 @@ func (s *Store) InsertVersion(ctx context.Context, tx meta.Tx, in rows.VersionIn
 		files[i] = map[string]any{"path": f.Path, "sha256": f.SHA256, "size": f.Size}
 	}
 	details := map[string]any{"package": in.LowerID, "version": in.LowerVersion, "files": files}
-	if in.Claim != "" {
-		details["claim"] = in.Claim
-	}
-	if in.Shadowing.Undetermined {
-		details["shadowCheck"] = "undetermined"
-	}
+	audit.PublishGuards(details, in.Claim, in.Shadowing.Undetermined)
 	journal, err := journalEntry(in.RepoID, in.LowerID, in.LowerVersion, in.SHA512)
 	if err != nil {
 		return err

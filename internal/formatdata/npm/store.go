@@ -200,12 +200,7 @@ func (s *Store) Publish(ctx context.Context, tx meta.Tx, in rows.PublishInput) e
 	if in.TagHeld {
 		details["tag_held"] = true
 	}
-	if in.Claim != "" {
-		details["claim"] = in.Claim
-	}
-	if in.Shadowing.Undetermined {
-		details["shadowCheck"] = "undetermined"
-	}
+	audit.PublishGuards(details, in.Claim, in.Shadowing.Undetermined)
 	if err := s.record(ctx, tx, audit.EventNPMPublish, in.Audit, in.Name, details, "", nil); err != nil {
 		return err
 	}
