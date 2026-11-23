@@ -6137,12 +6137,18 @@ verified every closing again on today's `main`: the commit is on `main`, the fil
 the row claims). **30 entries moved to the lists Closed** (22 of section 8, 8 of section 12), each with
 what closed it and its old text; **19 entries are marked partly closed** with what is left open. Open
 now: **88 entries in section 8 and 35 in section 12**, counted by the lists' bullets. The writer left
-twelve entries as they stand against the reading's verdict (what the reading called closed was already
+thirteen entries as they stand against the reading's verdict (what the reading called closed was already
 in the entry, or does not end the defect: `make lint` still passes no time limit; the decisions' index
 reaches further and still misses hundreds of rows) and corrected six of the reading's rows. Two things
 it saw on the way, both with a package: `docs/spec/ha-and-helm.md` still names the key
 `storage.s3.circuit_breaker.open_duration` (W10a), and the scanner's spool exports no spool metrics
 (W2).
+**09:09, W11 is two writers** (they build nothing and run no test, so they do not count against the
+four): one writes the reasoned statements where each reason belongs (the stall family as one statement
+and one standing entry, sixteen single points, the decisions that close an entry without a build) as
+page changes in a worktree and a script for the plan; one reads the logs and artifacts of the fourteen
+points only a run can decide, before they expire, each to a verdict, and reads this morning's push
+against the harness's two predictions when its shards have ended.
 **In work since 05:38: package 7 of the encryption, the destruction of a retired connection's keys**
 (R-STOR-097 to R-STOR-103 and the journal's replay; the development agent's answer of 2026-11-22 to the
 question of what stays readable at a provider). It stands on the handover's second package as it lands;
