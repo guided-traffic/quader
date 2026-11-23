@@ -772,6 +772,24 @@ limit at the same step. When a drain leg shows a stall on every replica at the s
 says whether a PostgreSQL pod was `OOMKilled`, and `evidence/pods.csv` holds its memory every 5 s. The limit is now 3Gi
 ([local-profile.md](local-profile.md), [postgres.yaml](../../deploy/dev/postgres.yaml)).
 
+**Why a switchover does not meet the parallel downloads' limit** (read in the code on 2026-11-23). The reading that any hold of the
+database longer than about 3.3 s puts a k6 token over its 50 parallel downloads (50 at 15 tarballs a second per token) assumes that a
+held request holds a place; it does not. The place is a lease taken at the admission just before the status line
+(`Engine.Admit` in [engine.go](../../internal/limits/engine.go), called by `edge.ServeItem` in
+[content.go](../../internal/api/edge/content.go)), after every read of the database the download needs (the token, when its cache entry
+expired; the item; the format's check and the checks of R-SIG-069, `itemStore.Serve` in
+[ingest.go](../../internal/formathost/ingest.go)); after it the download reads the object store only, and its statistics and audit
+event are buffered. A hold of the database therefore piles requests up in front of the admission, holding no place, while the downloads
+already admitted finish. At the release the pile reaches the admission together: 50 per token are admitted, and the rest wait for a
+place, asking once a second, up to `limits.parallel.wait` (10 s, `Engine.parallel`), before they answer `429`. So what refuses is not the
+length of the hold but whether the pile streams within those 10 s: the hold times the load's 45 tarballs a second of 1 to 5 MiB, against
+what the cluster streams. A switchover held the requests 6 to 9 s (270 to 405 tarballs, about 0.8 to 1.2 GiB over the three tokens),
+which the cluster streams in 6 to 9 s at the rate it sustains under the load (45 tarballs of 3 MiB on average a second, about
+135 MiB/s): inside the wait, the longest barely. The OOM kill above held them 16 s (720 tarballs, about 2.1 GiB, 16 s at that rate) on a
+primary that was still recovering: beyond the wait, and the refusals came 10 to 26 s after the requests arrived, the hold plus the wait.
+A longer switchover, or one under a load with larger tarballs, would be refused the same way. Not measured: how fast the cluster streamed in either window; the evidence of
+those runs was not read. The limit behaves as R-LIM-024 specifies; nothing was changed.
+
 The measured values further down this page were taken on the profile before the cut (one `web` Deployment) and are not re-measured; a
 line that says `web` there names that profile.
 
