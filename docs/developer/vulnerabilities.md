@@ -553,6 +553,15 @@ median and the tail and fail a miss only with `QUADER_PERF_GATE`; the V-7b test 
 page runs exactly the two statements of Q-VULN-81 (`VulnScopePackages`, `VulnFindingsList`), so a regression of the path shows before a runner's load does. To compare a change, run both versions in one process and alternate
 request by request; the stack is shared and a load average above 20 moves absolute numbers by a factor of two or more.
 
+**Reading a slow V-7 on a runner** (F-121; added 2026-11-23). The notes of V-7a and V-7b in `perf-vuln.json` name the five slowest
+requests of each list: the time, the start in UTC, the `X-Request-Id`, the CPU stall of the job's cgroup while the request ran
+(`/sys/fs/cgroup/cpu.pressure`, else `/proc/pressure/cpu`, `some total` in microseconds; `-1` where the kernel reports none) and the
+garbage-collection cycles of the process that completed meanwhile (the replicas run in the test's process). The note of V-7a also holds
+`pg_stat_user_tables` of `vuln_finding` before and after the lists: `n_mod_since_analyze`, `n_dead_tup` and the counts and times of the
+last autovacuum and autoanalyze. A slow request with a stall of about its own time was a neighbour; one with a GC cycle and no stall, the
+collection; one inside the window of an autoanalyze that the two snapshots bracket, the autovacuum of the 100,000 inserted rows. The same
+lines are in the `go test -json` stream (`test-vuln-perf.json`); both files are in the artifact `vuln-perf`.
+
 | [queries/vuln_audits.sql](../../internal/meta/postgres/queries/vuln_audits.sql) | `AuditAdvisoriesForNames` (one query for a body of names, over `vuln_affected_name`) and `AuditAllAdvisories`; one row per affected entry, times as epoch microseconds, so that no driver type leaves the store |
 | [vuln/store/audits.go](../../internal/vuln/store/audits.go) | `Audits` implements `vuln.Advisories`: `ForNames` (per name, the advisories with that name's entries), `All`, `InternalNames` over an `InternalNameRule` |
 | [vuln/store/audits_pages.go](../../internal/vuln/store/audits_pages.go) | `Pages`, the cache `vuln_nuget_page`: `Key(ecosystem)` (the data epoch and the applied epochs of `claims` and `repo_config`), `Page(ctx, key, render)` over `cache.Cache.Load` (the fill rule of R-ARCH-018); areas `vuln_data`, `claims`, `repo_config`; four entries, safety TTL 15 minutes |

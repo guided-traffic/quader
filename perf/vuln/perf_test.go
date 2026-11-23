@@ -3,10 +3,12 @@
 package vulnperf
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime/metrics"
 	"slices"
 	"strconv"
 	"strings"
@@ -452,20 +454,37 @@ func TestR_VULN_028_PerformanceRun(t *testing.T) {
 	// V-7 and V-8 need the findings of a completed installation at their size, and the NuGet cache.
 	rep.scenario(t, "V-7 first page of the findings list with 100,000 findings", []string{"V-7a", "V-7b"}, evaluated, func(t *testing.T) {
 		in.fillFindings()
-		list := func(tok string) []time.Duration {
+		// What tells the causes of a slow request apart afterwards (F-121): each request's start, time and X-Request-Id, the CPU
+		// stall of the job's cgroup while it ran (a neighbour on the runner) and the garbage collections of the process that
+		// completed meanwhile (the replica runs in it); the autovacuum of vuln_finding before and after the lists. Reading them
+		// costs microseconds per request.
+		vacuum := func() string {
+			return in.st.Text(`SELECT format('n_mod_since_analyze %s, n_dead_tup %s, autovacuum %s (last %s), autoanalyze %s (last %s)', n_mod_since_analyze,
+				n_dead_tup, autovacuum_count, COALESCE(last_autovacuum::text, '-'), autoanalyze_count, COALESCE(last_autoanalyze::text, '-'))
+				FROM pg_stat_user_tables WHERE relname = 'vuln_finding'`)
+		}
+		before := vacuum()
+		list := func(tok string) ([]time.Duration, string) {
 			var samples []time.Duration
+			var all []listSample
 			for range listRepeats {
-				start := time.Now()
+				s := listSample{at: time.Now(), stall: cpuStallMicros(), gc: gcCycles()}
 				a := in.st.Do(web, "GET", "/api/v1/vulnerabilities/findings?limit=50", tok, nil)
 				if a.Status != 200 {
 					t.Fatalf("list findings: %d %s", a.Status, a.Body)
 				}
-				samples = append(samples, time.Since(start))
+				s.took, s.id = time.Since(s.at), a.Header.Get(httpserver.HeaderRequestID)
+				s.stall, s.gc = since(s.stall, cpuStallMicros()), gcCycles()-s.gc
+				samples, all = append(samples, s.took), append(all, s)
 			}
-			return samples
+			return samples, slowest(all, 5)
 		}
-		rep.record("V-7a", ms(percentile(list(in.tokAdmin), 0.99)), fmt.Sprintf("%d findings", in.st.Number(`SELECT count(*) FROM vuln_finding`)))
-		rep.record("V-7b", ms(percentile(list(in.tokGrantee), 0.99)), "")
+		a, slowA := list(in.tokAdmin)
+		b, slowB := list(in.tokGrantee)
+		after := vacuum()
+		rep.record("V-7a", ms(percentile(a, 0.99)), fmt.Sprintf("%d findings; the slowest: %s; vuln_finding before the lists: %s; after: %s",
+			in.st.Number(`SELECT count(*) FROM vuln_finding`), slowA, before, after))
+		rep.record("V-7b", ms(percentile(b, 0.99)), "the slowest: "+slowB)
 	})
 
 	rep.scenario(t, "V-8 NuGet vulnerability page from the replica's cache", []string{"V-8"}, evaluated, func(t *testing.T) {
@@ -508,6 +527,62 @@ func (in *installation) downloadCosts(t *testing.T, replica string, window time.
 		c.all = append(c.all, download{replica: replica, id: id, ran: in.requests.Of(id)})
 	}
 	return c
+}
+
+// listSample is one request of a list of V-7: its start, its time, its request ID, the CPU stall of the job's cgroup while it ran in
+// microseconds (-1 where the kernel reports none) and the garbage collections of the process that completed meanwhile.
+type listSample struct {
+	at    time.Time
+	took  time.Duration
+	id    string
+	stall int64
+	gc    uint64
+}
+
+// slowest renders the n slowest samples, slowest first.
+func slowest(all []listSample, n int) string {
+	s := slices.Clone(all)
+	slices.SortFunc(s, func(a, b listSample) int { return cmp.Compare(b.took, a.took) })
+	var out []string
+	for _, x := range s[:min(n, len(s))] {
+		out = append(out, fmt.Sprintf("%.1f ms at %s request %s, CPU stall %d µs, GC cycles %d", ms(x.took), x.at.UTC().Format(time.RFC3339Nano), x.id, x.stall, x.gc))
+	}
+	return strings.Join(out, "; ")
+}
+
+// cpuStallMicros is the total time some task of the job's cgroup waited for a CPU (Linux pressure stall information): the pod's
+// cgroup holds the runner's job and the integration stack's containers. -1 where neither file exists.
+func cpuStallMicros() int64 {
+	for _, p := range []string{"/sys/fs/cgroup/cpu.pressure", "/proc/pressure/cpu"} {
+		raw, err := os.ReadFile(p)
+		if err != nil {
+			continue
+		}
+		some, _, _ := strings.Cut(string(raw), "\n")
+		for _, f := range strings.Fields(some) {
+			if v, ok := strings.CutPrefix(f, "total="); ok {
+				if n, err := strconv.ParseInt(v, 10, 64); err == nil {
+					return n
+				}
+			}
+		}
+	}
+	return -1
+}
+
+// since is the stall between two readings, -1 when either is unknown.
+func since(from, to int64) int64 {
+	if from < 0 || to < 0 {
+		return -1
+	}
+	return to - from
+}
+
+// gcCycles is the count of completed garbage-collection cycles of the process.
+func gcCycles() uint64 {
+	s := []metrics.Sample{{Name: "/gc/cycles/total:gc-cycles"}}
+	metrics.Read(s)
+	return s[0].Value.Uint64()
 }
 
 // fillFindings brings the findings to 100,000, one per stored version, by SQL: the findings the evaluation made are kept,
