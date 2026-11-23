@@ -533,6 +533,7 @@ func TestConcurrentWritersOnOnePath(t *testing.T) {
 		var wg sync.WaitGroup
 		var fail atomic.Int64
 		var firstFail atomic.Value // the first refused request, so that a failure names its status
+		var firstID atomic.Value   // its X-Request-Id, whose lines of the replicas' request log name the cause of a 5xx
 		for w := range 6 {
 			wg.Add(1)
 			go func() {
@@ -547,11 +548,15 @@ func TestConcurrentWritersOnOnePath(t *testing.T) {
 					p := fmt.Sprintf("/files/it/generic-local/orph/d%d/f%d.bin", w%3, i%4)
 					if a := r.put("maint", p, fmt.Sprint(w, i)); a.status != 201 && a.status != 200 {
 						fail.Add(1)
-						firstFail.CompareAndSwap(nil, fmt.Sprintf("PUT %s: %d %s", p, a.status, a.body))
+						if firstFail.CompareAndSwap(nil, fmt.Sprintf("PUT %s: %d %s", p, a.status, a.body)) {
+							firstID.Store(a.header.Get("X-Request-Id"))
+						}
 					}
 					if a := r.do("maint", "DELETE", p, nil); a.status != 204 && a.status != 404 {
 						fail.Add(1)
-						firstFail.CompareAndSwap(nil, fmt.Sprintf("DELETE %s: %d %s", p, a.status, a.body))
+						if firstFail.CompareAndSwap(nil, fmt.Sprintf("DELETE %s: %d %s", p, a.status, a.body)) {
+							firstID.Store(a.header.Get("X-Request-Id"))
+						}
 					}
 				}
 			}()
@@ -560,7 +565,16 @@ func TestConcurrentWritersOnOnePath(t *testing.T) {
 		close(stop)
 		wg.Wait()
 		if fail.Load() != 0 {
-			t.Errorf("%d requests failed, the first: %v; the replicas' request log:\n%s", fail.Load(), firstFail.Load(), testenv.Tail(requests.String(), 40))
+			// The lines of the first refused request by its ID: the tail of a four-second loop of six writers need not hold them (F-126).
+			id, _ := firstID.Load().(string)
+			var lines []string
+			for _, l := range strings.Split(requests.String(), "\n") {
+				if id != "" && strings.Contains(l, id) {
+					lines = append(lines, l)
+				}
+			}
+			t.Errorf("%d requests failed, the first: %v (request %q); its lines of the replicas' request log:\n%s", fail.Load(),
+				firstFail.Load(), id, strings.Join(lines, "\n"))
 		}
 		orphans := te.number(`SELECT count(*) FROM items i WHERE i.parent_path <> ''
 			AND NOT EXISTS (SELECT 1 FROM items p WHERE p.repo_id = i.repo_id AND p.path = i.parent_path AND p.kind = 'folder')`)

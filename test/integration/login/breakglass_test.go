@@ -296,7 +296,7 @@ func runQuaderStdin(t *testing.T, bin string, env []string, stdin string, args .
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, bin, args...)
-	cmd.Env = append(os.Environ(), env...)
+	cmd.Env = testenv.ChildEnv(env...)
 	cmd.Stdin = strings.NewReader(stdin)
 	var o, e bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &o, &e

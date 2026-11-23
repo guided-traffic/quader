@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -682,12 +681,7 @@ func (r *replica) filesOn(blobs items.Blobs, repos repository.Reader) *files.Ser
 // serve builds the router and the chain and starts the listener.
 func (r *replica) serve(o replicaOpts) {
 	t := r.t
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	r.baseURL = "http://" + ln.Addr().String()
-	_ = ln.Close()
+	r.baseURL = "http://" + testenv.FreeAddr(t) // an address no other listener of the process was handed (F-047)
 
 	doc, err := v1.LoadDocument(v1.EmbeddedYAML())
 	if err != nil {

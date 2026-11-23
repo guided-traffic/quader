@@ -49,7 +49,7 @@ func TestR_AUTH_015_TheTokenCommandNamesAProjectAccount(t *testing.T) {
 		runCtx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(runCtx, bin, append([]string{"admin", "token", "create", "--service-account", account, "--name", name}, more...)...)
-		cmd.Env = append(os.Environ(), cfgEnv...)
+		cmd.Env = testenv.ChildEnv(cfgEnv...)
 		var o, er bytes.Buffer
 		cmd.Stdout, cmd.Stderr = &o, &er
 		code := 0

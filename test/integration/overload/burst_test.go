@@ -5,6 +5,7 @@ package overload
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -60,6 +61,19 @@ func TestBurstBesideEmptyCaches(t *testing.T) {
 		}
 		if shed := r.metrics(t, shedSeries)[shedSeries]; shed != 0 {
 			t.Errorf("%.0f requests were shed for the memory", shed)
+		}
+		if t.Failed() {
+			// Which admission shed (F-060: seen once at a host load of about 41, its cause not read): every series of the shed
+			// counter and of the memory slots, read now.
+			if code, body := get("http://"+r.ops+"/metrics", ""); code == http.StatusOK {
+				var lines []string
+				for _, l := range strings.Split(body, "\n") {
+					if strings.HasPrefix(l, "quader_http_requests_shed_total") || strings.HasPrefix(l, "quader_http_memory_slots") {
+						lines = append(lines, l)
+					}
+				}
+				t.Logf("the replica's shed and memory series:\n%s", strings.Join(lines, "\n"))
+			}
 		}
 		if !r.alive() {
 			t.Fatal("the replica exited")

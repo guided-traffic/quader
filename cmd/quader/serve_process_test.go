@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -31,14 +32,33 @@ func buildFixture(t *testing.T) string {
 	return bin
 }
 
+// handedOut are the addresses freeAddr returned in this process: the client and the ops listener of one process take two in a row,
+// and port 0 alone can hand out the same one twice (F-047). A copy of testenv.FreeAddr, which this package, a unit tier, cannot
+// import.
+var handedOut = struct {
+	sync.Mutex
+	addrs map[string]bool
+}{addrs: map[string]bool{}}
+
+// freeAddr returns a loopback address nothing listens on and that no earlier call of this process returned.
 func freeAddr(t *testing.T) string {
 	t.Helper()
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
+	handedOut.Lock()
+	defer handedOut.Unlock()
+	for range 100 {
+		l, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatal(err)
+		}
+		addr := l.Addr().String()
+		_ = l.Close()
+		if !handedOut.addrs[addr] {
+			handedOut.addrs[addr] = true
+			return addr
+		}
 	}
-	defer l.Close()
-	return l.Addr().String()
+	t.Fatal("no free address that was not handed out before")
+	return ""
 }
 
 type proc struct {

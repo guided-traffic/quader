@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -17,6 +16,7 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formatdata/npm"
 	"github.com/guided-traffic/quader/internal/journal"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // tagsOf reads the stored dist-tags of a package.
@@ -295,7 +295,7 @@ func TestR_NPM_047_AdminNPMReinstateCommand(t *testing.T) {
 	}
 	run := func(args ...string) (string, error) {
 		cmd := exec.Command(bin, append([]string{"admin", "npm", "reinstate"}, args...)...)
-		cmd.Env = append(append(os.Environ(), e.st.Environ()...), "QUADER_POD_NAME=admin-cli-test")
+		cmd.Env = testenv.ChildEnv(append(e.st.Environ(), "QUADER_POD_NAME=admin-cli-test")...)
 		out, err := cmd.CombinedOutput()
 		return string(out), err
 	}

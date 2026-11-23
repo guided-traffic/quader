@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"net"
 	"net/http"
 	"strings"
 	"testing"
@@ -20,6 +19,7 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // claimsAccess is the decision point of this test, small enough to read: the
@@ -66,12 +66,7 @@ type claimsServer struct {
 
 func (e *env) serveClaims(rep *replica) *claimsServer {
 	t := e.t
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	url := "http://" + ln.Addr().String()
-	_ = ln.Close()
+	url := "http://" + testenv.FreeAddr(t) // an address no other listener of the process was handed (F-047)
 	doc, err := v1.LoadDocument(v1.EmbeddedYAML())
 	if err != nil {
 		t.Fatal(err)

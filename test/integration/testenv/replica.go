@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -253,17 +252,6 @@ func MetricValue(text, series string) float64 {
 		}
 	}
 	return -1
-}
-
-// FreeAddr returns a loopback address nothing listens on at the moment.
-func FreeAddr(tb testing.TB) string {
-	tb.Helper()
-	l, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", "127.0.0.1:0")
-	if err != nil {
-		tb.Fatal(err)
-	}
-	defer l.Close()
-	return l.Addr().String()
 }
 
 // Tail returns the last n lines of s.

@@ -52,7 +52,7 @@ func run(t *testing.T, s *testenv.Stack, args ...string) (int, string, string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, binary, append([]string{"admin"}, args...)...)
-	cmd.Env = append(os.Environ(), s.Environ()...)
+	cmd.Env = testenv.ChildEnv(s.Environ()...)
 	cmd.Env = append(cmd.Env, "QUADER_LOG_LEVEL=warn")
 	var o, e bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &o, &e

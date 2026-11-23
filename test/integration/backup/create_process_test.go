@@ -8,7 +8,6 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"errors"
-	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -28,7 +27,7 @@ import (
 func (in *install) processEnv(t *testing.T, r *rig, extra ...string) []string {
 	t.Helper()
 	d, s, b := in.dbCfg, in.s3cfg, r.cfg.Target
-	env := append(os.Environ(),
+	env := testenv.ChildEnv(
 		"QUADER_DATABASE_HOST="+d.Host, "QUADER_DATABASE_PORT="+strconv.Itoa(d.Port), "QUADER_DATABASE_NAME="+d.Name,
 		"QUADER_DATABASE_USERNAME_FILE="+d.UsernameFile, "QUADER_DATABASE_PASSWORD_FILE="+d.PasswordFile,
 		"QUADER_DATABASE_SSL_ROOT_CERT_FILE="+d.SSLRootCertFile, "QUADER_DATABASE_PREFLIGHT_ALLOW_SUPERUSER=true",

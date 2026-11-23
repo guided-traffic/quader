@@ -46,7 +46,7 @@ func runQuader(t *testing.T, bin string, env []string, args ...string) (code int
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, bin, args...)
-	cmd.Env = append(os.Environ(), env...)
+	cmd.Env = testenv.ChildEnv(env...)
 	var o, e bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &o, &e
 	err := cmd.Run()

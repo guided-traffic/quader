@@ -11,7 +11,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -56,15 +55,9 @@ func copyCA(t testing.TB, dir, name string) string {
 	return write(t, dir, name, string(b))
 }
 
-func freeAddr(t testing.TB) string {
-	t.Helper()
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer l.Close()
-	return l.Addr().String()
-}
+// freeAddr returns a loopback address that no earlier call of this process returned (testenv.FreeAddr): the client and the ops
+// listener of one replica take two in a row, which port 0 alone can hand out twice (F-047).
+func freeAddr(t testing.TB) string { return testenv.FreeAddr(t) }
 
 // newDatabase creates a database of its own for the test and drops it at the end.
 func newDatabase(t *testing.T) string {
@@ -155,7 +148,7 @@ func (in *install) run(t *testing.T, args ...string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, binary, args...)
-	cmd.Env = append(os.Environ(), in.env...)
+	cmd.Env = testenv.ChildEnv(in.env...)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("quader %v: %v\n%s", args, err, out)
 	}
