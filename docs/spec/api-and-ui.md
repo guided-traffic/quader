@@ -22524,6 +22524,26 @@ link. The development agent would revisit (b) if the page gains filter links for
 **Applied in the spec:** R-UI-037; [manual](../manual/admin/bastion.md) "Which keys a Bastion received". Code:
 [audit-log.ts](../../web/src/app/features/audit/audit-log.ts), [audit-api.ts](../../web/src/app/api/audit-api.ts).
 
+### Q-UI-999 · A finding's status stands under its severity and its repository under its package, so the findings keep one form
+
+Status: **Decided by the development agent** on 2026-11-23, closing point 4 of the open finding "Seen by the builder of the screens' first
+round on its renders" for the findings by the rule of Q-UI-969; the owner reviews it at the walkthrough.
+
+Context: the report's findings needed 1,005 px at their least widths against 697 at 1,024 px: **Severity**, **Status**, **Identifier**,
+**Package**, **Repository**, **Fixed in** (left out below 64 rem) and **Detected** stood as blocks there.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Severity** with the status under it, **Identifier** (9 rem, the summary under it), **Package** with its version and the repository under it (the repository breaks only after its slash), **Fixed in**, **Detected**: 664 px (chosen) | Q-UI-969's rule | A table at 1,440 and 1,024 px on the project's report and the dashboard; the state of a finding is read in one cell | The status is no column to sort by: its filter in the drawer stays |
+| (b) The status a column, the package under the identifier | — | Sort by status | Sort by package is lost, and the package is what a reader decides on |
+| (c) Stack as before | R-UI-174 | Every fact a column | Blocks at 1,024 px |
+
+**Choice:** (a). **Rationale:** severity and status are the finding's state and are read together; the status filters in the drawer.
+The development agent would revisit a sort by status if triagers ask for it.
+
+**Applied in the spec:** [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022. Code:
+[vulnerability-report.html](../../web/src/app/features/vulnerabilities/vulnerability-report.html).
+
 ## What this does not cover
 
 

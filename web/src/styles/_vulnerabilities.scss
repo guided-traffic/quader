@@ -35,8 +35,23 @@
 // A qualified repository name `<project>/<key>` is one line, a fixed version and "None yet" are whole, and so is the time of
 // detection: a cell that broke made every row three lines high (Q-UI-428). A list of fixed versions breaks between them.
 .quader-data-table td.qualified-name,
-.quader-data-table td.vuln-fix .nobr {
+.quader-data-table td.vuln-fix .nobr,
+.quader-data-table td.vuln-package .nobr {
   white-space: nowrap;
+}
+
+// A repository's name under a finding's package (Q-UI-999): its project with the slash and its key, each whole on its line while it
+// fits, a break between them; a part longer than the column breaks inside itself rather than widen the list.
+.quader-data-table td.vuln-package .repository-name .piece {
+  display: inline-block;
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
+}
+
+// A finding's status on the line under its severity (Q-UI-999): both are its state, and the list keeps one form at 1,024 px.
+.quader-data-table td.vuln-severity .vuln-status {
+  display: block;
+  margin-block-start: var(--quader-space-1);
 }
 
 // The image database's repository on the sources screen (Q-UI-890): each part of the name whole, a break only after its slash.

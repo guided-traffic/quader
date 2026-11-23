@@ -22,15 +22,13 @@ Select **Vulnerabilities** in the side bar of a project. The report shows the fi
 
 | Column | Meaning |
 |---|---|
-| **Severity** | The level as a word with an icon, and the score when the advisory has one. The icon has the severity's colour from the bar; the colour only reinforces the word |
-| **Status** | **Needs triage**, **Confirmed**, **Blocked**, **Dismissed** or **Resolved**. A version whose download is refused shows as **Blocked**, with the reason: **malicious package** or **blocked in triage** |
+| **Severity** | The level as a word with an icon, and the score when the advisory has one. The icon has the severity's colour from the bar; the colour only reinforces the word. Under it the status: **Needs triage**, **Confirmed**, **Blocked**, **Dismissed** or **Resolved**; a version whose download is refused shows as **Blocked**, with the reason: **malicious package** or **blocked in triage** |
 | **Identifier** | The advisory identifier, which opens the finding. **Malicious** marks a package reported as malicious; **Known exploited** marks an advisory on the CISA list of exploited vulnerabilities |
-| **Package** | The package, with the version under it; opens the page of that version on its **Vulnerabilities** tab |
-| **Repository** | The repository that holds the version |
+| **Package** | The package, with the version and the repository that holds it under it; opens the page of that version on its **Vulnerabilities** tab |
 | **Fixed in** | The versions that fix the advisory |
 | **Detected** | When Quader found it |
 
-On a narrower window the list leaves out **Fixed in**, which the finding shows. Select a heading to sort by severity, status, identifier, package or detection time. The list opens sorted by severity, worst first. **Load more** adds the next page.
+On a narrower window the list leaves out **Fixed in**, which the finding shows; on a phone each finding is a block. Select a heading to sort by severity, identifier, package or detection time; the status is a filter. The list opens sorted by severity, worst first. **Load more** adds the next page.
 
 **Filters.** **Filter findings** above the list searches the package name, the identifier and the summary. **Filters** opens a panel from the right with severity, status, kind, repository, format, package name and version, advisory (an identifier or an alias such as a CVE number), known exploited, fix available, blocks downloads, block reason and detection dates; **Apply filters** applies them and closes the panel. Each filter that is set appears as a chip beside **Filters**; the cross on a chip removes one filter, and **+N more** opens the panel where the chips do not fit. Filters, sort and the trend period are part of the address, so a link or a reload keeps them. To see one repository, filter by it, or use **Vulnerabilities** in the repository list.
 

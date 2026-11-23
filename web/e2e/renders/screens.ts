@@ -2444,17 +2444,17 @@ export const screens: readonly Screen[] = [
   { id: 'package-version-signature-gate-oci', path: `${ver(P, ociPackage, signedImage.tag)}?tab=signatures`, kinds: ['plain'], walk: gateImage },
   { id: 'files-signature-refused', path: `${P}/repositories/${signedFile.repo}/files/${signedFile.folder}/${signedFile.name}`, kinds: ['plain', 'admin'], walk: refusedFileWalk },
   { id: 'files-signatures', path: `${P}/repositories/${signedFile.repo}/files/${signedFile.folder}/${signedFile.name}`, kinds: ['plain'], walk: signatureFile },
-  { id: 'vulnerabilities', path: `${P}/vulnerabilities`, kinds: all, walk: filtersOpen(findingChips) },
+  { id: 'vulnerabilities', path: `${P}/vulnerabilities`, kinds: all, walk: filtersOpen(findingChips), tables: 'quader-vulnerability-report > quader-data-table' },
   // Stale and missing advisory data: the administrator's banners, the reader's closed section (Q-UI-966).
   { id: 'vulnerabilities-stale', path: `${P}/vulnerabilities`, kinds: ['plain', 'admin'], walk: staleAdvisories },
   // A filter is a chip beside Filters; the list sorts by Detected at every width, at 390 px from the sort row above its stacked rows (Q-UI-391).
-  { id: 'vulnerabilities-filtered', path: `${P}/vulnerabilities?severity=high`, kinds: admins, walk: sortByDetection },
+  { id: 'vulnerabilities-filtered', path: `${P}/vulnerabilities?severity=high`, kinds: admins, walk: sortByDetection, tables: 'quader-vulnerability-report > quader-data-table' },
   { id: 'members', path: `${P}/members`, kinds: all },
   // The security dashboard under Security audit (R-UI-158, R-UI-159): its title, the line of the scope, the counts, the trend, then
   // the list with its one search; the drawer with the projects; the chips; a text in the search; a finding opened from it.
-  { id: 'security', path: '/ui/security', kinds: auditors, walk: filtersOpen(securityChips) },
+  { id: 'security', path: '/ui/security', kinds: auditors, walk: filtersOpen(securityChips), tables: 'quader-vulnerability-report > quader-data-table' },
   { id: 'security-search', path: '/ui/security', kinds: ['auditor'], walk: searched('DEMO-2026-00001') },
-  { id: 'security-project', path: `/ui/security?project=${mainProject}`, kinds: ['auditor'] },
+  { id: 'security-project', path: `/ui/security?project=${mainProject}`, kinds: ['auditor'], tables: 'quader-vulnerability-report > quader-data-table' },
   // The dashboard's malware view (R-MAL-025): what the auditor assesses and releases; an administrator sees the same.
   { id: 'security-malware', path: '/ui/security/malware', kinds: ['auditor'], walk: malwareFinds },
   // The dashboard's signatures view (R-SIG-038): invalid signatures and blocked signers; an administrator sees the same.

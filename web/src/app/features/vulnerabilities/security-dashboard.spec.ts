@@ -75,8 +75,8 @@ describe('The security dashboard (Q-UI-130, R-VULN-022, R-UI-158, R-UI-159)', ()
     expect(headers).not.toContain('Project');
     // Q-UI-380: the project is the first part of the qualified name, a link that narrows the list to it.
     const cell = rows(r)
-      .map((tr) => tr.querySelector('td.qualified-name'))
-      .find((td) => text(td!).startsWith('shop/'))!;
+      .map((tr) => tr.querySelector('td.vuln-package .repository-name'))
+      .find((span) => text(span!).startsWith('shop/'))!;
     expect(cell.querySelector('a')?.getAttribute('href')).toContain('project=shop');
     const all = rows(r).map((tr) => text(tr));
     expect(all.some((t) => t.includes('shop') && t.includes('minimist'))).toBe(true);
