@@ -97,8 +97,10 @@ const maxElement = 64 << 10
 // OpenElement reads the connection element of storage.md R-STOR-050 in the file path (one element: id, bucket, prefix, endpoint,
 // region, credentials, ca_file, encrypted, keyed_names, …), checks it as the binary checks storage.connections, reads its *_file
 // keys, and returns the client of its bucket with the element's facts. Nothing of the installation's configuration, its database or
-// its environment is read; the shared client settings (storage.object_store) and the outbound settings (proxy.outbound: the system's
-// trust store, no proxy) take their defaults, and the element's ca_file is trusted beside them.
+// Quader's own environment variables is read; the shared client settings (storage.object_store) and the outbound settings
+// (proxy.outbound: the system's trust store, no proxy) take their defaults, and the element's ca_file is trusted beside them. The
+// client is built as the binary builds it, so with the default credential source the AWS SDK's own chain supplies the credentials and,
+// where the element names none, the region.
 func OpenElement(ctx context.Context, path string) (blob.ObjectStore, Info, error) {
 	el, cfg, err := loadElement(path)
 	if err != nil {

@@ -5229,8 +5229,12 @@ quader admin storage offline pull   --connection-file <element.yaml> --to <dir> 
 - It writes nothing to a bucket. It reads a plain connection too (no record: printed as `plain`, verified against the digest its name carries).
 - **As built.** The element file is read through the configuration's own loader as the only element of `storage.connections`, so its rules
   and defaults are the binary's (a `keyed_names` without `encrypted`, an unknown key, an endpoint without TLS refused with their sentences);
-  the shared client settings and the outbound settings take their defaults, and nothing of an installation's configuration or environment is
-  read. Every sealed key of the export is opened before anything is read, and a ring that lacks a root key the export is sealed with is
+  the shared client settings and the outbound settings take their defaults, and nothing of an installation's configuration, its database or
+  Quader's own environment variables is read. The object store's client is built as the binary builds it: with `credentials_source: default` its
+  credentials, and its region where the element names none, come from the AWS SDK's own chain (the `AWS_*` variables, the files under
+  `~/.aws`, the metadata service); with `static` or `webIdentity` the element must name its region and that chain is not consulted; an
+  element without a region that finds none is refused with the binary's sentence.
+  Every sealed key of the export is opened before anything is read, and a ring that lacks a root key the export is sealed with is
   refused naming each such root key (Q-STOR-452). A line of `list` and `verify` is `<status> <object name> stored=<n> size=<n> sha256=<hex>
   key=<id>[: <detail>]`, then a line of totals; `--json` streams one document `{source, objects[], totals, error}`. The statuses are `ok`,
   `plain`, `name_mismatch` (also a name that is not of the layout), `unknown_key`, `destroyed_key`, the reasons of R-STOR-077 (`format`,
