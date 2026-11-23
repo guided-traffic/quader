@@ -20,10 +20,25 @@ import (
 // The seeds of the BER bounds' fuzz target (R-SIG-013, Q-SIG-216): the signatures of the real tools nugetcms keeps as fixtures, a
 // timestamp token of the tests' authority, and short structures of what BER allows and DER does not.
 
-// realP7s are the .signature.p7s of `dotnet nuget sign` (out of its package) and of nuget.org.
+// realP7s are the .signature.p7s of `dotnet nuget sign` (out of its two packages: the signer named by its key and by issuer and serial
+// number) and of nuget.org.
 func realP7s(tb testing.TB) [][]byte {
 	tb.Helper()
-	pkg, err := os.ReadFile("../../nugetcms/testdata/dotnet-sign-author.nupkg")
+	var out [][]byte
+	for _, name := range []string{"dotnet-sign-by-key.nupkg", "dotnet-sign-by-issuer.nupkg"} {
+		out = append(out, p7sOf(tb, "../../nugetcms/testdata/"+name))
+	}
+	nugetorg, err := os.ReadFile("../../nugetcms/testdata/nugetorg-microsoft.extensions.primitives-8.0.0.p7s")
+	if err != nil {
+		tb.Fatal(err)
+	}
+	return append(out, nugetorg)
+}
+
+// p7sOf reads the .signature.p7s of a package file.
+func p7sOf(tb testing.TB, file string) []byte {
+	tb.Helper()
+	pkg, err := os.ReadFile(file)
 	if err != nil {
 		tb.Fatal(err)
 	}
@@ -36,15 +51,11 @@ func realP7s(tb testing.TB) [][]byte {
 		tb.Fatal(err)
 	}
 	defer func() { _ = f.Close() }()
-	dotnet, err := io.ReadAll(f)
+	p7s, err := io.ReadAll(f)
 	if err != nil {
 		tb.Fatal(err)
 	}
-	nugetorg, err := os.ReadFile("../../nugetcms/testdata/nugetorg-microsoft.extensions.primitives-8.0.0.p7s")
-	if err != nil {
-		tb.Fatal(err)
-	}
-	return [][]byte{dotnet, nugetorg}
+	return p7s
 }
 
 // berSeeds are structures BER allows: indefinite lengths, a long-form length where a short one does, a constructed OCTET STRING, a high

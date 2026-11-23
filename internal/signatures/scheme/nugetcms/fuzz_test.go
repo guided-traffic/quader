@@ -15,14 +15,16 @@ import (
 // refusal or stays within the bounds the code enforces: an object at most signatures.max_object_size, nesting at most ASN1Depth levels,
 // at most 2*max_chain certificates of at most max_certificate_size bytes in the signature and max_chain in a timestamp, one primary
 // signer, at most maxCountersignatures countersignatures, at most maxTimestamps timestamps a signer, a chain of at most max_chain, and
-// content no longer than the object (R-SIG-013, Q-SIG-216). Seeded with the real tools' two signatures and the tests' own in both forms
-// of a signer, in DER and in BER.
+// content no longer than the object (R-SIG-013, Q-SIG-216). Seeded with the real tools' three signatures (dotnet's with the signer named
+// by its key and by issuer and serial number, nuget.org's) and the tests' own in both forms of a signer, in DER and in BER.
 func FuzzSignatureP7s(f *testing.F) {
-	dotnet, err := signatureBytes(context.Background(), packageInput(fixture(f, "dotnet-sign-author.nupkg"), 0))
-	if err != nil {
-		f.Fatal(err)
+	for _, name := range []string{"dotnet-sign-by-key.nupkg", "dotnet-sign-by-issuer.nupkg"} {
+		dotnet, err := signatureBytes(context.Background(), packageInput(fixture(f, name), 0))
+		if err != nil {
+			f.Fatal(err)
+		}
+		f.Add(dotnet)
 	}
-	f.Add(dotnet)
 	f.Add(fixture(f, "nugetorg-microsoft.extensions.primitives-8.0.0.p7s"))
 	unsigned := unsignedPackage(f)
 	author, repo := newSigner(f, "Example GmbH"), newSigner(f, "Example Repository GmbH")

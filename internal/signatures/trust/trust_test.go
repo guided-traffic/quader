@@ -165,38 +165,45 @@ func TestR_SIG_008_ACAAnchorKnowsCodeSigningLeavesOfItsChainAndItsSubject(t *tes
 	wantVerdict(t, Judge(sig, pinned, nil), StatePublic, 3)
 }
 
-// TestR_SIG_029_TheSignatureDotnetNugetSignWritesIsInternalUnderItsCA: the package `dotnet nuget sign` of the .NET SDK 10.0.403 signed
-// with a leaf of a throwaway CA (the measurement's, nugetcms's fixture, Q-SIG-216) is internal under that CA's root as an anchor, judged
-// within the leaf's ten days of validity. Unit, milliseconds, 7.5 KiB.
-func TestR_SIG_029_TheSignatureDotnetNugetSignWritesIsInternalUnderItsCA(t *testing.T) {
-	pkg, err := os.ReadFile("../scheme/nugetcms/testdata/dotnet-sign-author.nupkg")
-	if err != nil {
-		t.Fatal(err)
+// TestR_SIG_029_TheSignaturesDotnetNugetSignWritesAreInternalUnderTheirCA: the two packages `dotnet nuget sign` of the .NET SDK 10.0.403
+// signed with leaves of a throwaway root (nugetcms's fixtures, Q-SIG-216), one naming its signer by key and one by issuer and serial
+// number, are internal under that root as an anchor of the installation, untrusted without it, and untrusted under a root of another CA
+// of the same name, judged an hour after the leaves were issued. Unit, milliseconds, 11.3 KiB.
+func TestR_SIG_029_TheSignaturesDotnetNugetSignWritesAreInternalUnderTheirCA(t *testing.T) {
+	for _, file := range []string{"dotnet-sign-by-key.nupkg", "dotnet-sign-by-issuer.nupkg"} {
+		t.Run(file, func(t *testing.T) {
+			pkg, err := os.ReadFile("../scheme/nugetcms/testdata/" + file)
+			if err != nil {
+				t.Fatal(err)
+			}
+			blobs := pkitest.NewBlobs()
+			d := blobs.Put(pkg)
+			out, err := nugetcms.Check(context.Background(), scheme.Input{
+				Scheme: signatures.SchemeNuGetCMS, Role: signatures.RolePublisher, ItemBlob: d, Locator: "entry:.signature.p7s", Subject: d,
+				ContentBlob: d, ContentLocator: "unsigned", Blobs: blobs, Limits: scheme.DefaultLimits(),
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if out.Evidence == nil || len(out.Evidence.Chain) != 2 {
+				t.Fatalf("the verifier answered %s (%s): %s", out.Result.State, out.Result.Reason, out.Result.Signer)
+			}
+			leaf, err := x509.ParseCertificate(out.Evidence.Chain[0])
+			if err != nil {
+				t.Fatal(err)
+			}
+			root, err := x509.ParseCertificate(out.Evidence.Chain[1])
+			if err != nil {
+				t.Fatal(err)
+			}
+			sig := signature(t, out, leaf.NotBefore.Add(time.Hour))
+			company := caAnchor(1, anchors.ScopeInstallation, anchors.UseCodeSigning, map[string]string{"O": "Example GmbH"}, root)
+			wantVerdict(t, Judge(sig, &Scope{Anchors: []anchors.Anchor{company}}, nil), StateInternal, 1)
+			wantVerdict(t, Judge(sig, &Scope{}, nil), StateUntrusted)
+			other := caAnchor(2, anchors.ScopeInstallation, anchors.UseCodeSigning, nil, pkitest.NewCA(t, "Example GmbH").Root)
+			wantVerdict(t, Judge(sig, &Scope{Anchors: []anchors.Anchor{other}}, nil), StateUntrusted)
+		})
 	}
-	blobs := pkitest.NewBlobs()
-	d := blobs.Put(pkg)
-	out, err := nugetcms.Check(context.Background(), scheme.Input{
-		Scheme: signatures.SchemeNuGetCMS, Role: signatures.RolePublisher, ItemBlob: d, Locator: "entry:.signature.p7s", Subject: d,
-		ContentBlob: d, ContentLocator: "unsigned", Blobs: blobs, Limits: scheme.DefaultLimits(),
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if out.Evidence == nil || len(out.Evidence.Chain) != 3 {
-		t.Fatalf("the verifier answered %s (%s): %s", out.Result.State, out.Result.Reason, out.Result.Signer)
-	}
-	leaf, err := x509.ParseCertificate(out.Evidence.Chain[0])
-	if err != nil {
-		t.Fatal(err)
-	}
-	root, err := x509.ParseCertificate(out.Evidence.Chain[2])
-	if err != nil {
-		t.Fatal(err)
-	}
-	sig := signature(t, out, leaf.NotBefore.Add(time.Hour))
-	company := caAnchor(1, anchors.ScopeInstallation, anchors.UseCodeSigning, map[string]string{"O": "Example GmbH"}, root)
-	wantVerdict(t, Judge(sig, &Scope{Anchors: []anchors.Anchor{company}}, nil), StateInternal, 1)
-	wantVerdict(t, Judge(sig, &Scope{}, nil), StateUntrusted)
 }
 
 func TestR_SIG_007_ATimestampUnderATimestampingAnchorProvesTheTimeAfterTheCertificateExpired(t *testing.T) {
