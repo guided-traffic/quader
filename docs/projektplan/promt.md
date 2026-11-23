@@ -243,7 +243,7 @@ run starts from it and from his word how the work goes on, not from the order of
 | T-24 · R2 · Delivery rules | in work; told to end at a whole point and to list what of R-CUR-001 to 006 and 017 is built and what is not |
 | W9 · the rest of the screens' second round | landed at 17:53 (eighteen commits); one of them reverted at 18:19 (the fixtures in three browsers, which made the layout job red on the runner); the layout checks of that push's run show whether the audit log's table holds |
 | W4 · the rest of the Go tests' package | built and rebased onto the contracts and the leftovers' package (six commits, back at 18:18); lands behind the leftovers' package after gates on the combined tree. What it did not do is listed below |
-| W12 · the leftovers no package took | built, all six items; its builder rebases onto the contracts (one conflict in code), then the landing's gates |
+| W12 · the leftovers no package took | landed at 18:26 (six commits, all six items) |
 | The evidence record's step W6b | landed at 17:06; the release goes out through the changed job, **the publish is refused** (section 8, "The first publish of the evidence record was refused"): open, not started, the owner is told |
 
 **Not begun, each waiting for the owner's word:**
@@ -531,7 +531,7 @@ order is what a user or an operator meets first. The state is kept here.
 | W9 · Screens show every state, second round | the system page; a technical token's description and removal; states the renders never show (an open row menu, the shared error notice); a failed test link's reason as a sentence of the page; the audit log's filter by a resource; the eleven points seen on the first round's renders; the malware settings before the first signature set | the first group (what a person meets on a page first: the lists that keep their table, the stored document, the test link's reason, the audit log's filter by a resource, the malware settings) and the owner's menu entries T-23 landed at 14:34 (fifteen commits); the other groups landed at 17:53 (eighteen commits): the system page, a technical token's description and removal, the states the renders never showed (the open row menus, the shared error notice), a person named the same way on every page, the server's messages that name the new pages, the German pages' formal address, the audit log's table beside an opened event. Left open by its builder: a remote's row filled by a mirror pass on no screen, "Token" with two genders in German, the signature column at 1,024 px (run record) |
 | W10a · Documents and the decisions' index | 1,050 of 3,425 decided questions without a row in the index (generated with a check from now); stale sentences in spec, developer pages, README and manual | landed at 12:45 (two commits): the index is generated and held by the documentation check, 3,480 rows, one per decided question; what its builder saw and left was built by a writer and landed at 13:18 |
 | W10b · Translations and test names | the extraction check; names of tests that carry a decision's number; the German texts that say "du" | last |
-| W12 · The product does what its pages say: the leftovers no package took | five places where the specification and the code disagree (two of them tables to hold to the code by a check); a refusal's text and its `Retry-After` from one source; the count of a writer's reads through the signature gate; a test for the store's own encryption (R-STOR-032); why the switchover legs were green under the parallel limit (a reading); each pool's size in the evidence of a kind leg | built (six commits, back at 17:39; every item done, none left unbegun); its first commit meets the contracts' default of the maintenance tasks in code, so its builder rebases onto them before it lands |
+| W12 · The product does what its pages say: the leftovers no package took | five places where the specification and the code disagree (two of them tables to hold to the code by a check); a refusal's text and its `Retry-After` from one source; the count of a writer's reads through the signature gate; a test for the store's own encryption (R-STOR-032); why the switchover legs were green under the parallel limit (a reading); each pool's size in the evidence of a kind leg | landed at 18:26 (six commits; every item done, none left unbegun) |
 | W11 · Readings and statements (the development agent) | the stall family of the runs before 2026-11-18; pipeline artifacts to read before they expire (from 2026-12-02); entries that close by a reasoned statement | the statements landed at 09:39, the readings of runs are back and both are marked in the lists; left: two single sets to dispatch in the pipeline window, a count of a cold load's requests, a trace of the Bastion's answers by kind |
 
 ### Tests and tools
@@ -8981,6 +8981,23 @@ packages, the areas `conventions` 1.2 s and `upstream` 14.2 s, each exit 0): the
 into `conventions` carry the contracts' five tables, and its own test of R-STOR-032 is out, since the
 leftovers' test holds all of it and more. It lands behind the leftovers' package, whose gates run
 since 17:59 (the web's checks and the lint done, the integration areas running).
+**18:16, the release of the pushes of 17:53 and 17:59 is cut by the run of 17:59** (the screens' rest,
+the contracts); image and chart at 18:23, the owner's installation on it at 18:25 (both releases
+upgraded).
+**18:26, the leftovers' package W12 lands** (six commits on the `main` of 18:19; its builder had rebased
+them onto the contracts: the default of the maintenance tasks keeps the remote curation's two tasks
+and drops `remote-cache-cleanup`, the schema is regenerated, and the task table's test compares the
+two rows too). The landing's gates ran from 18:00 to 18:25, every line exit 0: build, the three vets,
+the unit set, generate, the documentation tool's four steps, cyclo, `make cores`, the chart's lint
+and tests, the workflow files' check, the API client, the extraction, the web's lint and tests (the
+routes' table against the router among them), the journeys' type check, the lint with 0 issues, then
+`limits` 108 s, `signatures` 28 s, `signing` 26 s, `coordination` 225 s, `server` 70 s, `postgres` 129 s,
+`malware` 56 s, `vulnsync` 123 s, `api` 103 s, `endpoints` 74 s. It is a code push and this plan's
+commit lies under it. **From this commit a replica refuses at its start a key of `maintenance.tasks`
+that names a task nobody registers**; neither the charts nor the development profiles nor the values
+of the owner's installation name a maintenance task (read before the push), so nothing of ours stops
+at it.
+The rest of W4 is at the landing's gates on top of it since 18:21.
 **13:10, the third research of T-24 is back** (what the scans do with content that is stored and not
 served). Every scan starts from the store's commit hook, the same for a client's fill, a mirror pass
 and a background download, so a fetch for examination needs no new trigger. npm and NuGet are matched
