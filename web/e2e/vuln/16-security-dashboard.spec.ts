@@ -105,9 +105,10 @@ test('R-UI-159 the dashboard searches every project by alias and text in its one
       const rows = page.locator('quader-data-table tbody tr').filter({ hasText: 'quader-test-alias' });
       await expect(rows.filter({ hasText: shop })).toHaveCount(1);
       await expect(rows.filter({ hasText: e2eProject })).not.toHaveCount(0);
-      // Q-UI-380: the project is the link of each qualified repository name, not a column of its own.
+      // Q-UI-380: the project is the link of each qualified repository name, not a column of its own; the repository stands under
+      // the package, on its secondary line (Q-UI-999).
       await expect(page.getByRole('columnheader', { name: 'Project' })).toHaveCount(0);
-      await expect(rows.filter({ hasText: shop }).locator('td.qualified-name').getByRole('link', { name: shop })).toBeVisible();
+      await expect(rows.filter({ hasText: shop }).locator('td.vuln-package .repository-name').getByRole('link', { name: shop })).toBeVisible();
       for (const scheme of ['light', 'dark'] as const) {
         await page.emulateMedia({ colorScheme: scheme });
         await expectAccessible(page, `the security dashboard (${scheme})`);

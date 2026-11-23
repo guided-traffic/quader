@@ -1,4 +1,4 @@
-import { e2eProject, expect, expectAccessible, qualified, repositories, repositoryApi, signInLocal, signOut, test, unique } from '../support';
+import { e2eProject, expect, expectAccessible, formatName, qualified, repositories, repositoryApi, signInLocal, signOut, test, unique } from '../support';
 
 // R-UI-047 journey "exposure rule" on the endpoint screens (R-UI-039, R-EP-017, R-EP-015, E1.11): an exposure rule is
 // created on the endpoint `customers` with the preview, and the rule shows up in the endpoint's table.
@@ -20,7 +20,7 @@ test.afterAll(async ({ admin }) => {
   await admin.delete(repositoryApi(repoKey));
 });
 
-test('R-UI-039 R-EP-017 an exposure rule with its preview', async ({ page, replicas }) => {
+test('R-UI-039 R-EP-017 an exposure rule with its preview', async ({ page, replicas, admin }) => {
   await signInLocal(page);
 
   await page.goto('/ui/en/admin/endpoints');
@@ -36,7 +36,9 @@ test('R-UI-039 R-EP-017 an exposure rule with its preview', async ({ page, repli
   await expect(page.getByRole('heading', { name: 'New exposure rule', level: 1 })).toBeVisible();
   await expectAccessible(page, 'exposure rule editor, empty');
   await page.getByLabel('Name', { exact: true }).fill(ruleName);
-  await page.getByLabel('Repository', { exact: true }).selectOption({ label: `${qualified(repoKey)} (generic)` });
+  // The repository by its qualified name and its format by its name, as the page reads it (R-UI-006): "(Generic)", not the key.
+  const generic = await formatName(admin, 'generic');
+  await page.getByLabel('Repository', { exact: true }).selectOption({ label: `${qualified(repoKey)} (${generic})` });
   await page.getByLabel('Include (one per line)').first().fill('docs/**');
 
   // The preview is the dry run of the endpoint with the rule as typed, before anything is saved.

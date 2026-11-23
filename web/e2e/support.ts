@@ -40,6 +40,18 @@ export function qualified(key: string, project = e2eProject): string {
   return `${project}/${key}`;
 }
 
+/**
+ * A format's name as every screen shows it (R-UI-006): the `displayName` of `GET /api/v1/formats`, the source the page reads, so that a
+ * journey follows a rename of the name (the key `generic` is no label; the exposure rule's select offered "(generic)" until the screens
+ * named formats by their name).
+ */
+export async function formatName(api: APIRequestContext, key: string): Promise<string> {
+  const answer = await api.get('/api/v1/formats');
+  expect(answer.ok(), `GET /api/v1/formats: ${answer.status()}`).toBeTruthy();
+  const formats = ((await answer.json()) as { formats?: { name: string; displayName: string }[] }).formats ?? [];
+  return formats.find((f) => f.name === key)?.displayName ?? key;
+}
+
 /** A name that no earlier run used, so a rerun needs no cleanup to start. */
 export function unique(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}`;
