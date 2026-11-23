@@ -1,4 +1,5 @@
 import { DecimalPipe } from '@angular/common';
+import { Disclosure } from '../../shared/ui/disclosure';
 import { Component, computed, inject, input, resource } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { OPEN_STATUSES, VulnerabilitiesApi, VulnerabilitySourceState, VulnerabilitySummary } from '../../api/vulnerabilities-api';
@@ -30,26 +31,29 @@ export interface DataNotice {
  * The header of the report (R-VULN-022): the open findings by severity as the severity bar whose segments are filter links
  * (R-UI-092, Q-UI-376), the counts of malicious findings, of findings to triage and of blocked versions as filter links, a banner when an ecosystem's
  * advisory data is stale, was never imported completely or its sync fails, and the coverage line. The counts are the
- * API's, narrowed to what the caller may read; the failing state needs the sources, which need `settings:read`, so a
- * caller without it sees stale and pending only.
+ * API's, narrowed to what the caller may read; the failing state needs the sources, which need `settings:read`.
+ *
+ * The banner is for whoever can act on it (Q-UI-966): a holder of `settings:read`, who reaches the advisory sources from it. Every
+ * other reader finds the same lines in the closed section **About these counts** at the end of the summary, whose note says
+ * that the data is not current; the coverage line stands there for everyone (R-UI-067: details behind one disclosure).
  */
 @Component({
   selector: 'quader-vuln-summary',
-  imports: [DecimalPipe, RouterLink, ErrorNotice, SeverityBar],
+  imports: [DecimalPipe, Disclosure, RouterLink, ErrorNotice, SeverityBar],
   template: `
     @if (failure(); as f) {
       <quader-error-notice [error]="f" (retry)="summary.reload()" />
     }
-    @for (n of notices(); track n.key) {
-      <p class="banner-warning" role="note">
-        <span class="material-icons inline warn" aria-hidden="true">warning</span>
-        <span
-          >{{ n.text }}
-          @if (canSources()) {
+    @if (canSources()) {
+      @for (n of notices(); track n.key) {
+        <p class="banner-warning" role="note">
+          <span class="material-icons inline warn" aria-hidden="true">warning</span>
+          <span
+            >{{ n.text }}
             <a routerLink="/admin/advisory-sources" i18n="@@vuln.banner.sources">Open the advisory sources</a>
-          }
-        </span>
-      </p>
+          </span>
+        </p>
+      }
     }
     @if (summary.hasValue() && bySeverity(); as severities) {
       <quader-severity-bar class="vuln-bar" [counts]="severities" [queries]="barQueries()" />
@@ -70,8 +74,28 @@ export interface DataNotice {
         }
       </ul>
     }
+    <!-- What the counts rest on, on demand (Q-UI-966): the state of the advisory data for a reader who cannot act on it, and the
+         coverage for everyone. -->
     @if (summary.hasValue() && coverageText(); as line) {
-      <p class="vuln-coverage">{{ line }}</p>
+      <quader-disclosure
+        class="vuln-about"
+        remember="vulnerabilities.about"
+        i18n-heading="@@vuln.about.heading"
+        heading="About these counts"
+        i18n-hint="@@vuln.about.hint"
+        hint="How current the advisory data is, and which repositories are scanned."
+        [note]="aboutNote()"
+      >
+        @if (!canSources()) {
+          @for (n of notices(); track n.key) {
+            <p class="vuln-data-note" role="note">
+              <span class="material-icons inline warn" aria-hidden="true">warning</span>
+              <span>{{ n.text }}</span>
+            </p>
+          }
+        }
+        <p class="vuln-coverage">{{ line }}</p>
+      </quader-disclosure>
     }
   `,
 })
@@ -162,6 +186,11 @@ export class ReportSummary {
     if (!s) return [];
     return dataNotices(s, valueOf(this.sources) ?? []);
   });
+
+  /** The closed section's note for a reader who sees no banner: the data the counts rest on is not current. */
+  protected readonly aboutNote = computed(() =>
+    !this.canSources() && this.notices().length > 0 ? $localize`:@@vuln.about.note:Advisory data not current` : '',
+  );
 
   protected readonly coverageText = computed(() => {
     const c = valueOf(this.summary)?.coverage;

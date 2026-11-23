@@ -2183,6 +2183,30 @@ const unavailable = [{ match: /^GET \/api\/v1\/repositories\?.* answered 503$/, 
 const unavailableNotice = [{ match: /Retry/, why: 'the error state of the list, which the walk renders' }];
 
 /**
+ * The report of a project whose advisory data is stale for one ecosystem and not imported for another (R-VULN-022, Q-UI-966): an
+ * administrator reads the banners with their link to the advisory sources; a reader who cannot act on them finds the same facts in
+ * the report's closed section **About these counts**, with the coverage line.
+ */
+async function* staleAdvisories(page: Page): AsyncGenerator<string> {
+  const summary = '**/api/v1/vulnerabilities/summary?**';
+  await answerWith(page, summary, (b) => ({
+    ...b,
+    data: [
+      { ecosystem: 'npm', state: 'complete', stale: true, syncedAt: new Date(Date.now() - 9 * 86_400_000).toISOString() },
+      { ecosystem: 'NuGet', state: 'empty', stale: false, syncedAt: null },
+    ],
+  }));
+  yield '';
+  const about = page.locator('main quader-disclosure.vuln-about button[aria-expanded="false"]');
+  if ((await about.count()) > 0) {
+    await about.click();
+    await expect(page.locator('main quader-disclosure.vuln-about button[aria-expanded="true"]')).toBeVisible();
+    yield 'about';
+  }
+  await page.unroute(summary);
+}
+
+/**
  * The repository page's **Details** opened, then the page loaded again: the section is open as the reader left it (R-UI-067,
  * Q-UI-319, Q-UI-967), kept in the browser per user and screen.
  */
@@ -2341,6 +2365,8 @@ export const screens: readonly Screen[] = [
   { id: 'files-signature-refused', path: `${P}/repositories/${signedFile.repo}/files/${signedFile.folder}/${signedFile.name}`, kinds: ['plain', 'admin'], walk: refusedFileWalk },
   { id: 'files-signatures', path: `${P}/repositories/${signedFile.repo}/files/${signedFile.folder}/${signedFile.name}`, kinds: ['plain'], walk: signatureFile },
   { id: 'vulnerabilities', path: `${P}/vulnerabilities`, kinds: all, walk: filtersOpen(findingChips) },
+  // Stale and missing advisory data: the administrator's banners, the reader's closed section (Q-UI-966).
+  { id: 'vulnerabilities-stale', path: `${P}/vulnerabilities`, kinds: ['plain', 'admin'], walk: staleAdvisories },
   // A filter is a chip beside Filters; the list sorts by Detected at every width, at 390 px from the sort row above its stacked rows (Q-UI-391).
   { id: 'vulnerabilities-filtered', path: `${P}/vulnerabilities?severity=high`, kinds: admins, walk: sortByDetection },
   { id: 'members', path: `${P}/members`, kinds: all },

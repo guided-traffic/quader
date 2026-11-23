@@ -50055,5 +50055,23 @@
         <target>Das Repository ist deaktiviert: Niemand kann diese Datei herunterladen, bis es wieder aktiviert ist.</target>
       </segment>
     </unit>
+    <unit id="vuln.about.heading">
+      <segment>
+        <source>About these counts</source>
+        <target>Zu diesen Zahlen</target>
+      </segment>
+    </unit>
+    <unit id="vuln.about.hint">
+      <segment>
+        <source>How current the advisory data is, and which repositories are scanned.</source>
+        <target>Wie aktuell die Advisory-Daten sind und welche Repositories geprüft werden.</target>
+      </segment>
+    </unit>
+    <unit id="vuln.about.note">
+      <segment>
+        <source>Advisory data not current</source>
+        <target>Advisory-Daten nicht aktuell</target>
+      </segment>
+    </unit>
   </file>
 </xliff>

@@ -22161,6 +22161,29 @@ callers (an administrator's `content:bypass`, Q-AUTHZ-162, applies to deletes on
 [repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts), `ConsumerView` of
 [document.go](../../internal/repository/document.go). The package pages are not covered: H-1560.
 
+### Q-UI-966 · The state of the advisory data and the coverage are details; a banner only for who can act
+
+Status: **Decided by the development agent** on 2026-11-23, closing the open finding of UI-A-16 (the T-21 audit); the owner reviews it
+at the walkthrough.
+
+Context: a plain user of a project's **Vulnerabilities** read two warnings about the advisory imports (an administrator's task, whose
+link to the sources only a holder of `settings:read` was shown) and the coverage line "internal names only, … waiting for advisory
+data, … not covered" (R-UI-067: the plain user's main view names no internal terms and offers nothing it cannot act on).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The banners for a holder of `settings:read`, who reaches the advisory sources from them; every other reader finds the same lines in a closed section **About these counts** under the counts, whose heading carries the note *Advisory data not current* while one applies; the coverage line stands in that section for everyone (chosen) | R-VULN-022, R-UI-067 | Who can act is warned; who cannot still learns, one click away, that the counts may miss findings, and sees it from the note without opening; one section for one kind of fact on every screen of the report | An administrator opens the section for the coverage |
+| (b) Nothing for a reader without `settings:read` | — | Plainest | A reader takes the counts of stale data at face value |
+| (c) The banners for everyone, as before | — | Everyone warned alike | A warning nobody reading it can act on, and the plain user's main view grows by two boxes (UI-A-16) |
+
+**Choice:** (a). The section remembers whether the viewer opened it (Q-UI-967).
+
+**Rationale:** a warning belongs to whoever can do something about it; for everyone else it is a fact about the counts, a detail on
+demand. The development agent would revisit it if readers misread the counts because the note is too quiet.
+
+**Applied in the spec:** [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022, R-UI-067. Code:
+[report-summary.ts](../../web/src/app/features/vulnerabilities/report-summary.ts).
+
 ### Q-UI-967 · A Details section is remembered per user, screen and section in the browser's local storage
 
 Status: **Decided by the development agent** on 2026-11-23, building what Q-UI-319 decided and R-UI-067 asks ("remembers per user

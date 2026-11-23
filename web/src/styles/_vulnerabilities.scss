@@ -163,10 +163,20 @@
   }
 }
 
+// What the counts rest on (Q-UI-966): a closed section under the counts, the coverage and, for a reader who sees no banner, the
+// state of the advisory data in it.
+.vuln-about {
+  margin-block: var(--quader-space-2) var(--quader-space-4);
+}
+
 .vuln-coverage {
-  margin: 0 0 var(--quader-space-4);
+  margin: 0;
   color: var(--quader-text-muted);
   font-size: var(--quader-text-muted-size);
+}
+
+.vuln-data-note {
+  margin: 0 0 var(--quader-space-2);
 }
 
 // ---- Trend -------------------------------------------------------------------------------
