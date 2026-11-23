@@ -1,6 +1,14 @@
 # API and UI
 
-Status: specification — not implemented
+Status: built, except R-API-017 (response compression, the 30 s bound of a synchronous handler), R-API-023 (batch operations and
+quick setup; their keys are reserved), R-API-024 (the reindex of npm and NuGet), R-API-026 (deploy by checksum, item properties),
+R-API-027 (copy, move, trash can), R-API-028 (artifact search), R-API-029 (the README cache table), R-API-034 (effective permissions
+and explanation), R-API-036 (format helper operations), R-API-041 (webhooks), R-API-042 (build information), R-API-043 (retention
+policies), R-API-044 (configuration as code), R-API-045 (diagnostics), R-API-046 (SCIM), R-API-048 (the owners on the package page;
+the operations are built), R-UI-002 (the session expiry warning), R-UI-008 (images embedded in a README), R-UI-011 (the control that
+invalidates a cache), R-UI-013 (copy and move dialog), R-UI-014 (trash can), R-UI-015 (file search), R-UI-023 (quick setup),
+R-UI-028 (explainer), R-UI-032 (the page `/admin/settings/sign-in`), R-UI-034 (trash can and offline mode in the storage settings),
+R-UI-039 (webhooks) and R-UI-040 (builds); the decision blocks record the state at the time of their decision.
 
 This page specifies Quader's management HTTP API and the Angular UI built on it. Part A fixes the
 conventions every management endpoint follows: base path and versioning, the OpenAPI 3.1 contract,
@@ -1727,8 +1735,8 @@ naming the clients the format serves, Q-UI-77),
 them), `scope` (an npm scope; adds the scoped registry variant). The answer holds `repository`, `format`,
 `client`, `credentials`, `registryUrl`, `endpointPath`, `username`, `publishTarget`, `tokenTtlSeconds` and
 `snippets` of `{id, tab, fileName, language, content, marks}`, `tab` being `configure`, `install` or `publish`
-(Q-API-160), or `verify`, the checks of Quader's own signatures while the installation has a signing identity (specified, not built:
-[signatures.md](signatures.md) R-SIG-055, [Q-SIG-71](signatures.md#q-sig-71--the-client-setup-gains-a-tab-verify-while-an-identity-is-current)), `language` the syntax of the content (`ini`, `yaml`, `json`, `xml`, `text` for a file; `shell`, `powershell` or
+(Q-API-160), or `verify`, the checks of Quader's own signatures while the installation has a signing identity
+([signatures.md](signatures.md) R-SIG-055, [Q-SIG-71](signatures.md#q-sig-71--the-client-setup-gains-a-tab-verify-while-an-identity-is-current)), `language` the syntax of the content (`ini`, `yaml`, `json`, `xml`, `text` for a file; `shell`, `powershell` or
 `cmd` for the command line a command is written for, [Q-UI-801](#q-ui-801--a-snippets-window-is-an-editor-for-a-file-and-a-terminal-for-a-command-coloured-by-its-language)). This page owns the endpoint; the format registry of R-ARCH-010 in
 [architecture.md](architecture.md) feeds it, and the format pages contribute the templates. Rules the UI relies
 on:
@@ -2929,7 +2937,7 @@ Owned by [operations-and-observability.md](operations-and-observability.md) and
 | GET | `/api/v1/system/tasks`, POST `/api/v1/system/tasks/{name}/run` | Scheduled tasks and manual runs (R-OPS-019) | `system.read`; `admin` to run |
 | GET | `/api/v1/system/migrations` | Schema state, the answering replica's binary, pending and applied schema steps, background data migrations with their states; owned by [ha-and-helm.md](ha-and-helm.md) R-HA-018 (the upgrade verification of R-HA-020, step 4 of R-HA-021) | `system.read` |
 
-**M0 stand-in until authentication ships (M1).** No principal holds `system.read` yet. The configuration
+**M0 stand-in, still in place after authentication shipped (M1).** Before it, no principal held `system.read`. The configuration
 key `system.bootstrap_anonymous_read` (default `false`; `true` in the development profile) lets anonymous
 callers read `/api/v1/system/info` and `/api/v1/system/replicas`. A request that presents an
 `Authorization` header gets `401`. Startup refuses the key when `server.base_url` is an `https` origin other
@@ -3567,7 +3575,7 @@ Priority: **MVP** · Covers: UI-001, UI-004
   (repositories, upstream registries (R-UI-187), endpoints) come first and related screens are grouped under folding headings: identity (users, groups,
   service accounts, tokens, CI identity), access (permission policies, system roles), system (system status, audit
   log, advisory sources) and, last, settings (General, then Authentication, then Malware scanning while the malware scanning is on, then
-  Signatures, the trust anchors and Quader's signing identity, specified in [signatures.md](signatures.md) R-SIG-036 and R-SIG-056 and not built;
+  Signatures, the trust anchors and Quader's signing identity ([signatures.md](signatures.md) R-SIG-036 and R-SIG-056), then Storage (R-UI-200);
   Q-UI-326, [Q-UI-870](#q-ui-870--malware-scanning-is-the-third-page-of-the-settings-group), read once per page load,
   [Q-UI-874](#q-ui-874--the-screens-outside-the-settings-page-read-the-switch-once-per-page-load)). Every entry has an icon, which is decoration: the label is the accessible name.
   Entries the caller may not use are hidden (R-UI-005); a group without a visible entry disappears.
@@ -3683,7 +3691,7 @@ selected tab live in query parameters; a version of a package is an object with 
 | `/admin/endpoints`, `/admin/endpoints/{endpoint}`, `/admin/endpoints/{endpoint}/rules/new`, `/admin/endpoints/{endpoint}/rules/{name}` | Endpoints and exposure rules | [endpoints.md](endpoints.md) R-EP-017 |
 | `/admin/system`, `/admin/system/jobs`, `/admin/system/backups` | System status, jobs, backups | R-UI-038, R-UI-048 |
 | `/admin/settings` (leads to `general`), `/admin/settings/general`, `/admin/settings/auth`, `/admin/settings/sign-in` (P1), `/admin/settings/storage` (P1) | The group Settings: General, Authentication (Q-UI-326); Storage, built first with its section **Download links** (built on 2026-11-23: R-UI-200, Q-UI-950) | R-UI-031 to R-UI-034, R-UI-200 |
-| `/admin/settings/malware` (specified, not built) | The group Settings: Malware scanning, the switch **Only checked artifacts can be downloaded**, the backlog, the scanners and the signature database ([malware-scanning.md](malware-scanning.md) R-MAL-023) | R-MAL-023 |
+| `/admin/settings/malware` | The group Settings: Malware scanning, the switch **Only checked artifacts can be downloaded**, the backlog, the scanners and the signature database ([malware-scanning.md](malware-scanning.md) R-MAL-023) | R-MAL-023 |
 | `/admin/projects` | Every project, to create and edit them | R-UI-041 |
 | `/login` (`?auto_sign_in=false`), `/logged-out` | Sign-in, signed out | R-UI-004 |
 | `/cli-login/{publicId}` | Command-line login approval of `npm login` (P1; R-AUTH-034) | R-UI-004 |
@@ -4134,7 +4142,7 @@ Priority: **MVP** · Covers: UI-012, UI-016
 | Client setup | Repository | the header (R-UI-052) | `read` | MVP |
 | Copy, move | File, folder | the file's page, the folder's toolbar (R-UI-013) | R-API-027 | P1 (not built: R-STOR-019 is not built) |
 | Edit properties | File, folder | the file's Details | `annotate` | P1 (not built) |
-| Reindex | Repository | its settings (R-UI-087) | `manage` | P1 (not built) |
+| Reindex | Repository | its settings (R-UI-087) | `manage` | P1 (built for Debian, **Rebuild all indexes**; the API also rebuilds Ansible, the other formats answer `405`) |
 | Invalidate cache (scope metadata, negative or all, R-API-024) | Remote or virtual repository | its settings | `manage` | MVP (no control yet) |
 
 - What the caller may do is one batched check at the page's path (R-UI-005: `deploy`, `overwrite`, `delete`), cached by the session.
@@ -6503,8 +6511,8 @@ The settings page follows the style guide's settings pages: one column of at mos
 4. **Members** (virtual), open: the editor of R-UI-022 with its own save.
 5. Closed: **Mirror** (status above the settings, R-UI-021, and the format's `mirror` member), **<Display name> settings**, **Access
    details** (include and exclude patterns, Hide existence), **Administrator notes**, **Signatures** (the background fetch of a remote and
-   the gate **Only artifacts with a verified signature can be downloaded from this repository**, specified in [signatures.md](signatures.md)
-   R-SIG-040 and R-SIG-074 and not built), **Download links** (every repository but a system repository: the repository's opt-out of
+   the gate **Only artifacts with a verified signature can be downloaded from this repository**, [signatures.md](signatures.md)
+   R-SIG-040 and R-SIG-074), **Download links** (every repository but a system repository: the repository's opt-out of
    signed links, disabled with its reason where it cannot act, R-UI-201, Q-UI-956), **Signing keys** and **Indexes** (Debian local and virtual), **Import tasks** and **Tombstones**
    (Ansible), **Details** (class, format, layout, project,
    client address, created, last changed, last activity), **API** (the stored document; each section's unsaved change as a request),
@@ -21476,7 +21484,7 @@ status names the formats; Q-LIM-99 asked for one sentence about speed limits bes
 ### Q-UI-958 · An encrypted connection has its address and its test link for a Bastion, and says what it serves today
 
 Status: **Decided by the development agent** during the build of the handover's surface (package 5 of
-[developer/bastion-handover.md](../developer/bastion-handover.md)) — selected from the options below; the owner sees it when it is built.
+[developer/bastion-handover.md](../developer/bastion-handover.md)) — selected from the options below; the owner reviews it.
 
 Its entry in the decision log: [ADR-250](../decisions.md#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward).
 
@@ -21504,7 +21512,7 @@ when package 4 landed: the field says how a Bastion reads such a connection, and
 ### Q-UI-959 · A Bastion card's tables keep one form at the wide and the middle width; what most rows share stands under the row's name
 
 Status: **Decided by the development agent** after the coordinator's look at the renders of the handover's surface (2026-11-23) —
-selected from the options below; the owner sees it when it is built.
+selected from the options below; the owner reviews it.
 
 Context: a card of the Bastions screen ([bastion.md](bastion.md) R-BAS-007) had a table of the last contact with six columns (replica,
 time, client address, release, interface version, reported base URL) and one of the tokens with five, none with a declared least width, and
@@ -21529,7 +21537,7 @@ spec:** [bastion.md](bastion.md) R-BAS-007 (amended); code: `contactColumns`, `t
 ### Q-UI-960 · Who may only read a card's switch reads it as the settings pages say a switch to an auditor
 
 Status: **Decided by the development agent** after the coordinator's look at the renders of the handover's surface (2026-11-23) —
-selected from the options below; the owner sees it when it is built.
+selected from the options below; the owner reviews it.
 
 Context: the style guide gives a reader without the right to change a switch "the word alone"; under the card's heading **Direct reads
 from the object store** that was a bare **On**. The settings pages of the admin area give an auditor a switch's state as a sentence:
@@ -21550,7 +21558,7 @@ table's cell under its column **State** (the upstream registries, the trust anch
 
 Status: **Decided by the builder** in the join of the handover's data keys (package 4 of
 [developer/bastion-handover.md](../developer/bastion-handover.md)) with its surface (package 5) — selected from the options below; the owner
-sees it when it is built. It amends [Q-UI-958](#q-ui-958--an-encrypted-connection-has-its-address-and-its-test-link-for-a-bastion-and-says-what-it-serves-today),
+reviews it. It amends [Q-UI-958](#q-ui-958--an-encrypted-connection-has-its-address-and-its-test-link-for-a-bastion-and-says-what-it-serves-today),
 whose field said that "for now" a Bastion gets such files through the main installation and showed only the sentence `encrypted` under it.
 
 Its entry in the decision log: [ADR-250](../decisions.md#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward).

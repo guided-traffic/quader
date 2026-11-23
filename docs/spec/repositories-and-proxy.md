@@ -1,6 +1,9 @@
 # Repositories and pull-through proxy
 
-Status: specification — not implemented
+Status: built, except R-REPO-007 (repository caps), R-REPO-014 (batch operations), R-REPO-015 (quick setup), R-REPO-018 (nested virtual
+repositories), R-REPO-034 (client certificates for upstreams), R-REPO-044 (pass-through mode), R-REPO-046 (the cleanup of unused cache
+content), the rebuild of npm's and NuGet's derived rows of R-REPO-016, the runtime switch of R-REPO-031, the custom headers of
+R-REPO-036 and the named proxies of R-REPO-037, all P1.
 
 This page specifies Quader's repository model and the management API around it: the configuration
 document of a repository, keys and addresses, validation, create, read, update, list and delete. It
@@ -879,7 +882,7 @@ R-REPO-004) and the entry is reported `suspended`.
 
 | Audit event, flagged `journal: revocation` | Recorded | Entry carries |
 |---|---|---|
-| `repository.narrowed` | By an update (R-REPO-011) whose change narrows one of the parts below, beside its `repository.updated`, in the same transaction; an update that narrows nothing records none ([Q-REPO-245](#q-repo-245--a-narrowing-update-records-repositorynarrowed-beside-repositoryupdated-with-only-the-parts-that-narrowed)) | `repositoryId` (decimal text, as `repository.disabled` carries it), `key` (the qualified name, for display), and each part that narrowed, only when it did: `include`, `excludeAdded`, `autoClaim`, `membersRemoved`, `pinsAdded`, `pinMembersRemoved`, `vulnerabilities`, and (specified, not built) `signatures` |
+| `repository.narrowed` | By an update (R-REPO-011) whose change narrows one of the parts below, beside its `repository.updated`, in the same transaction; an update that narrows nothing records none ([Q-REPO-245](#q-repo-245--a-narrowing-update-records-repositorynarrowed-beside-repositoryupdated-with-only-the-parts-that-narrowed)) | `repositoryId` (decimal text, as `repository.disabled` carries it), `key` (the qualified name, for display), and each part that narrowed, only when it did: `include`, `excludeAdded`, `autoClaim`, `membersRemoved`, `pinsAdded`, `pinMembersRemoved`, `vulnerabilities`, `malware`, `debUpstreamKeysRemoved`, `clientsOff`, `signatures` and `downloadLinks` |
 | `remote.examination.discarded` | By a discard of what a remote stores and its delivery rules do not deliver, and by the task that removes it after its days ([remote-curation.md](remote-curation.md) R-CUR-016) | `repositoryId`, `key`, `name`, `version` (absent for a package); replay evicts what the restored repository stores of the subject and still does not deliver, and nothing else |
 | `repository.claims_changed` | By every change of a repository's claims (R-REPO-023): a claims write of the API and the auto claim of a first publish; every event carries its entry ([Q-REPO-250](#q-repo-250--every-claims-change-carries-a-journal-entry-and-a-replayed-manual-claim-that-overlaps-another-repositorys-claim-disables-its-repository)) | `repositoryId`, `key`, `source` (`manual`, `auto`) and `added`: the claims created and those widened from `members` to `global`, each `{pattern, scope}`; a removal and a narrowing to `members` widen and are not part of it. The `added` list of the event's details keeps listing every claim whose scope changed, a narrowing included, as R-OPS-016 has it |
 

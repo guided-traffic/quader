@@ -1,11 +1,16 @@
 # High availability and Helm deployment
 
-Status: specification — not implemented
+Status: built, except R-HA-053 (the Gateway the chart creates), R-HA-055 (the content host at the edge), R-HA-044's dual-stack values
+of the Services (`service.ipFamilyPolicy`, `service.ipFamilies`), R-HA-046's `initContainers`, `sidecars` and `lifecycle`, R-HA-030's
+`bootstrap.existingConfigMap`, R-HA-022's table `background_migration` with its pause, resume and shared runner, R-HA-013's CI matrix over
+the supported PostgreSQL versions, R-HA-014's start checks of the audit objects' and the backup role's grants and R-HA-026's drill
+with two clusters; the values of R-HA-031's block that the chart does not carry yet are those of `unbuiltPrefixes` in
+[values_reference_test.go](../../test/chart/values_reference_test.go).
 
 This page specifies how Quader stays available, scales out and is deployed. It covers:
 
 - The replica model: identical, interchangeable replicas per role, with `api`, `packages` and `worker` as
-  separate Deployments (the task areas of ADR-153 and ADR-155, specified for phase 6a; built today: `web` and `worker`),
+  separate Deployments (the task areas of ADR-153 and ADR-155, built in phase 6a),
   `scanner` as the role of the scanning tools' Deployments without secrets, `vuln-scanner-trivy` and `malware-scanner-clamav`
   (ADR-212, ADR-221, Q-HA-372),
   pools of a role by path prefix or queue, `backup` as a CronJob (INV-2), and how replicas
@@ -2050,9 +2055,9 @@ GRANT EXECUTE ON FUNCTION audit_maintain_partitions() TO quader_app;
     pause and later keys of its own. A superuser and the owner of the tables are skipped, and so is a database that has
     not reached migration 5 yet.
   - Implemented in M0: the server version, the encoding, the superuser refusal, the bookkeeping check of the item above and,
-    behind a transaction-mode pooler, the session settings that the role's defaults must carry. Not implemented in M0: the
-    audit-object and backup-role checks, because the tables they name do not exist yet
-    ([security/privilege-footprint.md](../security/privilege-footprint.md), H-75).
+    behind a transaction-mode pooler, the session settings that the role's defaults must carry. Not implemented: the
+    audit-object and backup-role checks of the preflight; the tables exist, no start reads their grants, and a backup role without its
+    grants is found by `quader backup create` ([security/privilege-footprint.md](../security/privilege-footprint.md), H-75).
 - Managed services: on Amazon RDS the administrator account is not a true superuser, and the SQL
   above runs as that account unchanged. With CloudNativePG, `bootstrap.initdb.owner` creates the
   owner; the two runtime roles are added through the cluster's managed roles or with the SQL above.

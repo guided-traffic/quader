@@ -1,6 +1,7 @@
 # Architecture
 
-Status: specification — not implemented
+Status: built, except R-ARCH-029 (the optional separate content origin, P1: the key `server.content_base_url` exists, and nothing is
+served from it).
 
 This page fixes the skeleton of Quader. It covers:
 - the components inside the single binary, the process roles and what each role runs;
@@ -598,8 +599,8 @@ nothing worth taking.
   ([malware-scanning.md](malware-scanning.md) R-MAL-005 to R-MAL-007). A malware scanner builds the same area with
   its malware parts instead of the analyser ([wire_malware_scanner.go](../../internal/app/wire_malware_scanner.go)): the handler of
   `POST /scan/v1/malware`, the reader of the scan listener's blob route, the unpacking of `ar` and zstd, the client of `clamd` on the Unix
-  socket of its pod, and the loader of its database from the scan listener's database routes (`scanner.Database`, the database work's;
-  until it is built a malware scanner has none); it reads `malware` instead of `vulnerabilities.images`, and its readiness, the check
+  socket of its pod, and the loader of its database from the scan listener's database routes (`scanner.Database`, the database work's);
+  it reads `malware` instead of `vulnerabilities.images`, and its readiness, the check
   `malwareScannerClamav` ([operations-and-observability.md](operations-and-observability.md#q-ops-221--a-scanner-units-readiness-check-is-its-name-in-camel-case-the-same-in-the-process-that-calls-it) Q-OPS-221), waits for its first database ("no database loaded yet") and for `clamd` (R-MAL-007). The role `all` builds no malware scanner. It holds what an image scanner holds, a call's blob
   token instead of a scan token, and the loaded database. The chart renders it as a Deployment of its own with a container `clamd`
   beside it ([ha-and-helm.md](ha-and-helm.md) R-HA-068).

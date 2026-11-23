@@ -1,6 +1,10 @@
 # Storage
 
-Status: specification — not implemented
+Status: built, except R-STOR-009 (properties at deploy time), R-STOR-010 (the client checksum policy and digest sidecars), R-STOR-019
+(copy and move), R-STOR-020 and R-STOR-021 (item properties and property sets), R-STOR-022 and R-STOR-023 (the trash can), R-STOR-029
+(quotas and capacity thresholds, and with them the member `quota` of the storage summary, Q-STOR-370), R-STOR-037 to R-STOR-045
+(retention and cleanup policies, repository caps, the unused remote-cache expiry) and R-STOR-034's `proxy_credentials_file`, which a
+replica refuses at start; the format hooks `RemoveVersion` and `VersionGroup` are not in the contract (below).
 
 This page specifies how Quader keeps package content and the metadata that describes it: the
 content-addressed blob store on one or several S3-compatible object-store connections (INV-4,
@@ -1707,9 +1711,8 @@ Acceptance criteria:
 Priority: **P1** · Covers: STOR-032
 
 Several connections are stage 1 of the owner's topic, specified in parallel: a connection has the property `encrypted` and a state, and a
-blob has a copy per connection. This block is written against those terms. Until stage 1 is built there is the one connection of today,
-which is not encrypted ([R-STOR-048](#r-stor-048--client-side-encryption-of-stored-content) is not built) and which the answers name
-`default`.
+blob has a copy per connection. This block is written against those terms. Stage 1 is built (**As built** below), and so is the
+encryption of [R-STOR-048](#r-stor-048--client-side-encryption-of-stored-content).
 
 - **Which connection** ([Q-STOR-291](#q-stor-291--any-connection-that-is-not-encrypted-and-holds-a-sound-copy-serves-the-link)): the first
   connection in the read order of stage 1 that is not encrypted, holds a copy of the blob that is not marked damaged, is not failing (its
@@ -1983,7 +1986,7 @@ specification with test vectors, fuzzing and an offline tool that reads a blob w
 2026-11-06, which imported that proxy's storage format and Go module; nothing of it was built, and its eleven open points are answered by the
 section [Encryption of stored content](#encryption-of-stored-content) (R-STOR-075 to R-STOR-091). Stage 2 of the owner's topic, on the seams
 of stage 1 (R-STOR-062); its format (`internal/blob/blobcrypt`, R-STOR-076 to R-STOR-079) and its keys (`internal/blob/keys`, R-STOR-083 to
-R-STOR-085) are built, no object is written or read in the format yet, and the rest is specified, not built. Raised from P2 to P1 with the topic, as stages 1 and 3 were.
+R-STOR-085) are built, and so is the rest (R-STOR-075 to R-STOR-091, R-STOR-097 to R-STOR-103). Raised from P2 to P1 with the topic, as stages 1 and 3 were.
 
 Why: a provider, its operators and whoever can read or copy a connection's bucket see ciphertext only, under names that do not tell which
 file is stored, while the key stays with Quader; and a changed object fails authentication on every read, ranged reads included, which
@@ -3347,7 +3350,7 @@ Priority: **P1** · Covers: STOR-022
   (reads, multipart completion, presigned downloads).
 - SSE with customer-provided keys is not supported: it would make Quader hold the data key and break
   presigned redirects. Client-side encryption is
-  [R-STOR-048](#r-stor-048--client-side-encryption-of-stored-content) (specified, not built), per connection and
+  [R-STOR-048](#r-stor-048--client-side-encryption-of-stored-content), per connection and
   in a format of Quader's own (R-STOR-075, R-STOR-076); this mode stays possible beneath it.
 - Changing the mode affects new objects only; existing objects keep their encryption.
 
@@ -3585,7 +3588,7 @@ summarized by [R-STOR-048](#r-stor-048--client-side-encryption-of-stored-content
 | 10 The scrub | A worker job reads every copy once within a period (proposed: 30 days), throttled, checks it whole, marks damage and replaces a damaged copy from another connection | R-STOR-027 |
 | 14 Stages | Several connections, reconciliation and scrub first; encryption second; signed links beside stage 1 | this section, R-STOR-062 |
 
-**Status.** Partly built, in the packages of [docs/developer/blob-store.md](../developer/blob-store.md#several-connections-the-build-plan).
+**Status.** Built, in the packages of [docs/developer/blob-store.md](../developer/blob-store.md#several-connections-the-build-plan).
 Built (package A): the configuration and its validation (R-STOR-050); the records, the fixed properties, the marker and `forget-connection`
 (R-STOR-051); the copies and the derived content state (R-STOR-052); the commit over the connections with its copy and queue rows
 (R-STOR-053); the reads over the copies (R-STOR-055); the start check and the conformance check per connection with the capabilities
@@ -11008,7 +11011,7 @@ plain connection.
 A signed link (R-STOR-014, R-STOR-072) grants the object to anyone holding it until it expires (`linkLifeSeconds`, 60 s unless the
 administrator sets up to an hour) or the credential that signed it expires or is revoked. It cannot be revoked alone, is not bound to
 the client, can be fetched several times and passed on, and may be logged by proxies, browsers or CI logs. Revoking the requester's
-token does not invalidate links already issued. Dormant: not built, and off by default once built; live on an installation whose
+token does not invalidate links already issued. Dormant: off by default; live on an installation whose
 administrator switched it on, for every download R-STOR-070 hands to a link, whoever the caller (an anonymous caller of a public
 repository included). What makes it real is a link that leaves the client: a CI log that prints redirects, a proxy that logs query
 strings. The lever that ends every outstanding link at once is the revocation of the connection's credential, which stops Quader's own

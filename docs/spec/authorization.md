@@ -1,6 +1,7 @@
 # Authorization
 
-Status: specification — not implemented
+Status: built, except R-AUTHZ-024 (effective permissions and the decision explanation), R-AUTHZ-025 (delegated policy management) and
+R-AUTHZ-027 (build resources), all P1.
 
 This page specifies how Quader decides whether a request may go ahead once the caller is known.
 It covers the principals, the resources a grant can name, the package-name and path patterns that
@@ -196,11 +197,11 @@ Principal kinds and their reference syntax in this page's API:
 
   | Name | What it is | Its fixed rule | Recorded as |
   |---|---|---|---|
-  | `system:vuln-scanner-trivy` | the subject of a scan token: the scanner's pull of one image on the scan listener of `packages` ([formats/oci.md](formats/oci.md) R-OCI-037, [architecture.md](architecture.md) R-ARCH-037); specified, also the principal of the image scanner's certificate on the database routes `/scan/v1/trivy-database…` ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-049) | `read` of the one repository its token names, while that repository exists, is of the format `oci`, is local or remote and is not disabled; never `populate`, a write or a capability (R-AUTHZ-015); on the database routes no decision of this page: the route serves the layer of the database in use and nothing else | the principal of the scan listener's request log, with the scan ID; it writes no event, because it never fills or writes |
+  | `system:vuln-scanner-trivy` | the subject of a scan token: the scanner's pull of one image on the scan listener of `packages` ([formats/oci.md](formats/oci.md) R-OCI-037, [architecture.md](architecture.md) R-ARCH-037); also the principal of the image scanner's certificate on the database routes `/scan/v1/trivy-database…` ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-049) | `read` of the one repository its token names, while that repository exists, is of the format `oci`, is local or remote and is not disabled; never `populate`, a write or a capability (R-AUTHZ-015); on the database routes no decision of this page: the route serves the layer of the database in use and nothing else | the principal of the scan listener's request log, with the scan ID; it writes no event, because it never fills or writes |
   | `system:image-database` | the image scanning's task that makes the database's repository hold the database's layer ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-044) | none per request: system work in process through the remote engine, as a mirror pass fills, within the repository's include and exclude patterns | the actor of the populate event of each fill, `reason: image-database` (R-AUTHZ-008) |
   | `system:malware-scanner-clamav` | the subject of a blob token: the malware scanner's read of one blob on the scan listener of `packages` ([malware-scanning.md](malware-scanning.md) R-MAL-006, [Q-AUTHZ-340](#q-authz-340--the-malware-scanner-reads-one-blob-of-one-repository-that-holds-it)) | `read` of the one blob its token names, through the one repository its token names, while that repository holds an item over it, is local or remote and is not disabled, whatever its level and whatever blocks the blob; never `populate`, a write or a capability; decided by the route, not by the decision point's grants | the principal of the scan listener's request log, with the scan ID; no audit event, no download |
-  | `system:malware-database` (specified, not built) | the malware scanning's task that stores each database version in `upstream/scanner-clamav` ([malware-scanning.md](malware-scanning.md) R-MAL-010) | none per request: system work in process through the item store | the actor of the items' audit events and of `malware.database.imported` |
-  | `system:malware-scan` (specified, not built) | the malware scanning's job that writes verdicts ([malware-scanning.md](malware-scanning.md) R-MAL-004) | none per request | the actor of `malware.found` and `malware.cleared` |
+  | `system:malware-database` | the malware scanning's task that stores each database version in `upstream/clamav` ([malware-scanning.md](malware-scanning.md) R-MAL-010) | none per request: system work in process through the item store | the actor of the items' audit events and of `malware.database.imported` |
+  | `system:malware-scan` | the malware scanning's job that writes verdicts ([malware-scanning.md](malware-scanning.md) R-MAL-004) | none per request | the actor of `malware.found` and `malware.cleared` |
 
   **Why the scanner needs a rule and a token of its own**, although `internal` admits every signed-in subject but an external user,
   technical ones included (R-AUTHZ-030): the scanner must read `private` repositories, which no level opens to anybody; it must read
@@ -1041,10 +1042,10 @@ the action:
 | Dist-tag add and remove, deprecate | applies; deprecate is not built: the metadata update answers 404 with every action (R-NPM-043), and the test pins that answer so that it fails the day deprecation is built | not applicable: NuGet has neither dist-tags nor deprecation |
 | Search | not built: `-/v1/search` answers 404 (R-NPM-043); pinned the same way | applies |
 | Autocomplete | not applicable | not built (P1, R-NUGET-011): answers 501 `nuget_not_implemented` with every action; pinned the same way |
-| Metadata recalculation | not built: the endpoint (R-REPO-016, R-API-024) is not in the API document before M7 | no row in the NuGet table; the NuGet reindex (R-NUGET-025) is covered by R-REPO-016 |
+| Metadata recalculation | not built: the endpoint (R-REPO-016, R-API-024) answers `405 not_applicable` for npm, whose rebuild of the derived rows is not built | no row in the NuGet table; the NuGet reindex (R-NUGET-025) is covered by R-REPO-016 |
 | `npm whoami` (and `npm ping`) | applies: an authenticated subject who may read the repository (Q-AUTHZ-167) | not applicable |
 | Unlist, relist, symbol package push | not applicable | applies; the delete row is tested in a repository of each `deleteMode` |
-| Push of an existing, deleted or moved-away version | applies: 409 `npm_version_exists` | applies: 409 `nuget_version_exists`, `nuget_version_deleted`; the `reserved` tombstone of a restore and a moved-away version arrive with P1 operations and have no test here |
+| Push of an existing, deleted or moved-away version | applies: 409 `npm_version_exists` | applies: 409 `nuget_version_exists`, `nuget_version_deleted`; the `reserved` tombstone of a restore answers 409 `nuget_version_reserved` and has no test here; a moved-away version arrives with P1 operations |
 
 **First version of a name.** A write that gives a local repository the first version of a name
 passes the shadowing check of [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-048 in

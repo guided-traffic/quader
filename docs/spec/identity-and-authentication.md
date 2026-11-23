@@ -1,6 +1,7 @@
 # Identity and authentication
 
-Status: specification — not implemented
+Status: built, except R-AUTH-034 (npm web login), R-AUTH-035 (npm legacy login and logout), R-AUTH-036 (the browser login handoff for
+other command-line tools) and R-AUTH-039 (SCIM 2.0 provisioning), all P1.
 
 This page specifies how Quader establishes who is calling. It covers the browser login of humans
 through OpenID Connect, the server-side UI session, the break-glass administrator, and the

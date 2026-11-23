@@ -1798,7 +1798,8 @@ Acceptance criteria:
   added).
 - A restore into an installation with two connections writes every blob into the first, records a `present` copy row for each there and a
   `storage_connections` row for both, and no queue row (integration, `TestR_BAK_021_RestoreEndToEnd`, whose destination has a second
-  connection, no run added); after one reconciliation run every blob is present on the second (with package C, not yet run).
+  connection, no run added); after one reconciliation run every blob is present on the second (the reconciliation, package C, is built; the
+  test does not run it).
 - A restore whose second connection holds a foreign object exits `6` naming check 5 and that connection (unit, `TestR_BAK_020_Checks`).
 
 ### R-BAK-031 · Backup and restore of encrypted connections

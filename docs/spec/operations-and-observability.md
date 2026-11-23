@@ -1,6 +1,11 @@
 # Operations and observability
 
-Status: specification — not implemented
+Status: built, except R-OPS-022 (metadata reindex: the endpoint of [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-016
+rebuilds only a job-built index; npm's and NuGet's rebuild, `mode` and the dry run are not built), the member `quota` of R-OPS-023,
+R-OPS-026 (lock diagnostics), R-OPS-027 (support bundle), R-OPS-029 to R-OPS-032 (configuration as code), R-OPS-033 (outgoing mail),
+R-OPS-034 (the table of content types; the headers of a raw download are built), R-OPS-035 to R-OPS-044 (the event outbox and
+webhooks) and R-OPS-047 (installation-wide cache flush), all P1. Of the maintenance tasks of R-OPS-019, `user-dormancy`,
+`remote-cache-cleanup`, `webhook-retention` and `support-bundle-expiry` are not built.
 
 This page specifies how Quader is run, watched and automated from outside. It covers:
 
@@ -2395,37 +2400,37 @@ shared key is offered again on the next scheduler tick, so it is postponed, neve
 
 | Task | Semantics owned by | Default schedule |
 |---|---|---|
-| `gc` | [storage.md](storage.md) R-STOR-024 and R-STOR-025: incremental collection (R-OPS-020 is the trigger); dedup key `gc` | `*/30 * * * *` (proposed, storage.md) |
-| `gc-full` | [storage.md](storage.md) R-STOR-025: full sweep (R-OPS-020 is the trigger); shares the dedup key `gc` | `0 2 * * 0` (proposed, storage.md) |
-| `orphan-sweep` | [storage.md](storage.md) R-STOR-026 | `0 5 * * 6` (proposed, storage.md) |
+| `gc` | [storage.md](storage.md) R-STOR-024 and R-STOR-025: incremental collection (R-OPS-020 is the trigger); dedup key `gc` | `*/30 * * * *` (storage.md) |
+| `gc-full` | [storage.md](storage.md) R-STOR-025: full sweep (R-OPS-020 is the trigger); shares the dedup key `gc` | `0 2 * * 0` (storage.md) |
+| `orphan-sweep` | [storage.md](storage.md) R-STOR-026 | `0 5 * * 6` (storage.md) |
 | `scrub` | [storage.md](storage.md) R-STOR-027: reads every copy whole once per connection's period | `7 * * * *` (hourly, storage.md) |
 | `storage-reconcile` | [storage.md](storage.md) R-STOR-056: copies to the connections that lack a blob, fills, drains | `* * * * *` (every minute, storage.md) |
-| `storage-summary` | R-OPS-023 | `17 * * * *` (proposed) |
-| `audit-retention` | R-OPS-015 and R-OPS-017: calls `audit_maintain_partitions()`, which creates partitions ahead and drops expired ones | `30 3 * * *` (proposed) |
+| `storage-summary` | R-OPS-023 | `17 * * * *` |
+| `audit-retention` | R-OPS-015 and R-OPS-017: calls `audit_maintain_partitions()`, which creates partitions ahead and drops expired ones | `30 3 * * *` |
 | `webhook-retention` | R-OPS-044 and the outbox of R-OPS-035 | `*/15 * * * *` (proposed) |
 | `support-bundle-expiry` | R-OPS-027 | `0 4 * * *` (proposed) |
-| `replica-registry-prune` | R-OPS-003 | `*/10 * * * *` (proposed) |
-| `oci-sweep` | [formats/oci.md](formats/oci.md) R-OCI-019: removes the blob items of an image name that no manifest of the name references after `oci.unreferenced_blob_grace`; queue `maintenance`, exclusive | `0 * * * *` (proposed, formats/oci.md) |
+| `replica-registry-prune` | R-OPS-003 | `*/10 * * * *` |
+| `oci-sweep` | [formats/oci.md](formats/oci.md) R-OCI-019: removes the blob items of an image name that no manifest of the name references after `oci.unreferenced_blob_grace`; queue `maintenance`, exclusive | `0 * * * *` (formats/oci.md) |
 | `ansible-import-task-sweep` | [formats/ansible.md](formats/ansible.md) R-ANS-009: deletes the import tasks of publishes older than `ansible.import_task_keep` and keeps the versions; queue `maintenance`, exclusive; the job kind `ansible-reindex` (queue `index`, coalesce) is enqueued by the reindex endpoint | `17 3 * * *` (formats/ansible.md) |
 | `remote-cache-cleanup` | [storage.md](storage.md) R-STOR-045; the per-repository expiry setting belongs to [repositories-and-proxy.md](repositories-and-proxy.md) (RET-036, RMT-021) | `0 3 * * *` (proposed, storage.md) |
-| `token-cleanup`, `session-cleanup` | [identity-and-authentication.md](identity-and-authentication.md) R-AUTH-043 (R-AUTH-023; R-AUTH-005, R-AUTH-010, R-AUTH-034) | `40 3 * * *` and `*/10 * * * *` (proposed, identity-and-authentication.md) |
-| `token-expiry-notice` | [identity-and-authentication.md](identity-and-authentication.md) R-AUTH-043, R-AUTH-032: writes `token.expiring` for tokens entering the notice period | `0 6 * * *` (proposed, identity-and-authentication.md) |
+| `token-cleanup`, `session-cleanup` | [identity-and-authentication.md](identity-and-authentication.md) R-AUTH-043 (R-AUTH-023; R-AUTH-005, R-AUTH-010, R-AUTH-034) | `40 3 * * *` and `*/10 * * * *` (identity-and-authentication.md) |
+| `token-expiry-notice` | [identity-and-authentication.md](identity-and-authentication.md) R-AUTH-043, R-AUTH-032: writes `token.expiring` for tokens entering the notice period | `0 6 * * *` (identity-and-authentication.md) |
 | `user-dormancy` (P1) | [identity-and-authentication.md](identity-and-authentication.md) R-AUTH-043, R-AUTH-021: disables dormant users and emits the dormancy warnings | `30 4 * * *` (proposed, identity-and-authentication.md) |
-| `idempotency-cleanup` | [api-and-ui.md](api-and-ui.md) R-API-014: deletes the expired rows of `api_idempotency_keys` | `13 * * * *` (proposed) |
-| `ci-keys-refresh` | [gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-030, R-CI-003 | `*/5 * * * *` (proposed, gitlab-ci-oidc.md) |
-| `ci-replay-cleanup` | [gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-030, R-CI-018 | `7 * * * *` (proposed, gitlab-ci-oidc.md) |
-| `ci-issuance-retention` | [gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-030, R-CI-020 | `40 3 * * *` (proposed, gitlab-ci-oidc.md) |
+| `idempotency-cleanup` | [api-and-ui.md](api-and-ui.md) R-API-014: deletes the expired rows of `api_idempotency_keys` | `13 * * * *` |
+| `ci-keys-refresh` | [gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-030, R-CI-003 | `*/5 * * * *` (gitlab-ci-oidc.md) |
+| `ci-replay-cleanup` | [gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-030, R-CI-018 | `7 * * * *` (gitlab-ci-oidc.md) |
+| `ci-issuance-retention` | [gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-030, R-CI-020 | `40 3 * * *` (gitlab-ci-oidc.md) |
 | `secrets-reencrypt` | [architecture.md](architecture.md) R-ARCH-021: re-seals every stored secret with the active key; its job kind has the same name ([api-and-ui.md](api-and-ui.md) R-API-049) | manual only; precondition: the key rings of all live replicas are compatible (R-OPS-003), else `409` `key_ring_incompatible` |
-| `cluster-change-prune` | [architecture.md](architecture.md) R-ARCH-016 and R-ARCH-018: deletes change-log rows older than `cluster.change_retention` | `*/10 * * * *` (proposed, architecture.md) |
-| `proxy-invalidation-fold` | [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-045: folds the cache invalidations into the metadata entries and deletes the rows that no reader needs any more (Q-OPS-153); one run at a time | `*/5 * * * *` (proposed) |
-| `backup-check` | [ha-and-helm.md](ha-and-helm.md) R-HA-023: the checks of `quader admin backup check`, exported as `quader_backup_check_ok{check,connection}`; the task name is proposed here | `40 5 * * *` (proposed) |
-| `vuln-sync-osv` | From M4b, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-004, R-VULN-005: incremental advisory sync per ecosystem, full when the state requires it; dedup key `vuln-sync-osv`; task parameter `{"acceptShrink": true}` for a manual run | `*/15 * * * *` (proposed, vulnerability-scanning.md) |
-| `vuln-sync-osv-full` | From M4b, R-VULN-004: full advisory sync, which also removes records the source no longer has; shares the dedup key `vuln-sync-osv` | `17 3 * * 0` (proposed, vulnerability-scanning.md) |
-| `vuln-sync-kev` | From M4b, R-VULN-008: the known-exploited catalog | `41 */6 * * *` (proposed, vulnerability-scanning.md) |
-| `limits-cleanup` | [usage-and-limits.md](usage-and-limits.md) R-LIM-028: folds hourly usage rows older than 30 days into the daily sums, deletes expired usage rows, sums and blocks, and the rules and usage of deleted users, groups and technical tokens | `25 3 * * *` (proposed, usage-and-limits.md) |
-| `vuln-findings-retention` | From M4b, R-VULN-014: deletes findings resolved longer than `vulnerabilities.findings.resolved_retention` ago | `50 3 * * *` (proposed, vulnerability-scanning.md) |
-| `malware-scan` | [malware-scanning.md](malware-scanning.md) R-MAL-004 (specified, not built): discovery of blobs without a verdict, orphans, the cycle's marks; enqueues the job of the same name on the queue `malware` | `*/5 * * * *` (proposed, malware-scanning.md) |
-| `malware-sync-db` | [malware-scanning.md](malware-scanning.md) R-MAL-010 (specified, not built): stores a new version of ClamAV's database from `freshclam`'s directory, or reads it from the repository an installation names | `*/30 * * * *` (proposed, malware-scanning.md) |
+| `cluster-change-prune` | [architecture.md](architecture.md) R-ARCH-016 and R-ARCH-018: deletes change-log rows older than `cluster.change_retention` | `*/10 * * * *` (architecture.md) |
+| `proxy-invalidation-fold` | [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-045: folds the cache invalidations into the metadata entries and deletes the rows that no reader needs any more (Q-OPS-153); one run at a time | `*/5 * * * *` |
+| `backup-check` | [ha-and-helm.md](ha-and-helm.md) R-HA-023: the checks of `quader admin backup check`, exported as `quader_backup_check_ok{check,connection}` | `40 5 * * *` |
+| `vuln-sync-osv` | From M4b, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-004, R-VULN-005: incremental advisory sync per ecosystem, full when the state requires it; dedup key `vuln-sync-osv`; task parameter `{"acceptShrink": true}` for a manual run | `*/15 * * * *` (vulnerability-scanning.md) |
+| `vuln-sync-osv-full` | From M4b, R-VULN-004: full advisory sync, which also removes records the source no longer has; shares the dedup key `vuln-sync-osv` | `17 3 * * 0` (vulnerability-scanning.md) |
+| `vuln-sync-kev` | From M4b, R-VULN-008: the known-exploited catalog | `41 */6 * * *` (vulnerability-scanning.md) |
+| `limits-cleanup` | [usage-and-limits.md](usage-and-limits.md) R-LIM-028: folds hourly usage rows older than 30 days into the daily sums, deletes expired usage rows, sums and blocks, and the rules and usage of deleted users, groups and technical tokens | `25 3 * * *` (usage-and-limits.md) |
+| `vuln-findings-retention` | From M4b, R-VULN-014: deletes findings resolved longer than `vulnerabilities.findings.resolved_retention` ago | `50 3 * * *` (vulnerability-scanning.md) |
+| `malware-scan` | [malware-scanning.md](malware-scanning.md) R-MAL-004: discovery of blobs without a verdict, orphans, the cycle's marks; enqueues the job of the same name on the queue `malware` | `*/5 * * * *` (malware-scanning.md) |
+| `malware-sync-db` | [malware-scanning.md](malware-scanning.md) R-MAL-010: asks the updater `malware-updater-freshclam` for a new set of ClamAV's database and stores it in `upstream/clamav`, or reads it from the repository an installation names | `*/30 * * * *` (malware-scanning.md) |
 
 Retention policies ([storage.md](storage.md)) carry their own schedules and appear in the job list,
 not in the task list.
