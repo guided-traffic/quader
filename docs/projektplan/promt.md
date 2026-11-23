@@ -223,11 +223,23 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
   planner, research or package is started and no new item is given to a running builder; what was running is
   brought to its end and landed after its gates, and every task that remains stands in
   [section 1](#1--find-the-next-phase), "State at the stop of 2026-11-23", with where its entry or its
-  cut is. The rule stands until he says how the work goes on; the timer's text says the same.
+  cut is. The rule stands until he says how the work goes on; the timer's text says the same. **It ended at
+  22:21 the same day** (owner, whole: "Bitte führe den Plan fort: docs/projektplan/promt.md. Bitte verwende
+  Subagents von typ Opus 5.5 high"): the run goes on from the list of section 1, with at most four builders,
+  each on the model he named at effort high.
 
 ## 1 · Find the next phase
 
 ### State at the stop of 2026-11-23
+
+**Resumed at 22:21 by the owner's word (section 0).** Started at 22:25, each in a worktree of its own, findings
+and T-24 by turns: **T-24 · R2 landable** (the three conditions below and the four tests its report left
+unbuilt, on the branch's two commits rebased onto `main`); **the evidence record's publish** (the entry of
+section 8, with the npm search's mislisting and the two "only a run shows" entries of the record); **T-25**
+(Projects and Repositories leave the admin menu); **the rest of the Go tests** (the seven items of "What W4
+did not do", F-126, the mirror's back-off bound, the process environment and the free port). Waiting for a
+place: W8, W10b, the layout fixtures in three browsers, the documents' second round, T-24 R3 and R4, and the
+three nightly sets (to be dispatched in a window with no code push beside them).
 
 Read this first. By the owner's words of 17:15 (section 0) nothing new was begun; this list is what was
 in work then and what remains, as it stood when the evening ended at 19:55: every builder had reported,
