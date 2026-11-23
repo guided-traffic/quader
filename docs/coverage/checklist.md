@@ -3373,7 +3373,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-SIG-035 | The badge and the details at a version, a file and an image | P1 | [signatures.md](../spec/signatures.md) |
 | R-SIG-036 | Admin area › Settings › Signatures | P1 | [signatures.md](../spec/signatures.md) |
 | R-SIG-037 | Trust anchors in a project | P1 | [signatures.md](../spec/signatures.md) |
-| R-SIG-038 | The security dashboard's view of signatures | P1 | [signatures.md](../spec/signatures.md) |
+| R-SIG-038 | The page Signatures under Security audit | P1 | [signatures.md](../spec/signatures.md) |
 | R-SIG-039 | Audit events, metrics and alerts | P1 | [signatures.md](../spec/signatures.md) |
 | R-SIG-040 | Configuration, defaults and what it costs | P1 | [signatures.md](../spec/signatures.md) |
 | R-SIG-041 | Backups, restores and replicas | P1 | [signatures.md](../spec/signatures.md) |
