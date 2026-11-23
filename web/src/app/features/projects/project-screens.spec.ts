@@ -16,7 +16,7 @@ import { helpFor } from '../../core/help-topics';
 import { Navigation } from '../../core/navigation';
 import { SessionStore } from '../../core/session-store';
 import { seriousViolations } from '../../testing/axe';
-import { button, buttonByText, choosePrincipal, renderScreen, settle, sleep, text, type, typeInto } from '../../testing/screen';
+import { button, buttonByText, choosePrincipal, principalSearchAnswered, renderScreen, settle, sleep, text, type, typeInto, waitUntil } from '../../testing/screen';
 import { PREVIEW_DEBOUNCE_MS, PolicyEditor } from '../permissions/policy-editor';
 import { RepositoryCreate } from '../repositories/repository-create';
 import { ServiceAccountDetail } from '../service-accounts/service-account-detail';
@@ -58,7 +58,7 @@ describe('The project policy editor (R-UI-041, R-AUTHZ-026)', () => {
     buttonByText(root, 'Add principal').click();
     await settle(fixture);
     typeInto(root, 'Principal', 'deploy');
-    await sleep(fixture, 320);
+    await waitUntil(fixture, principalSearchAnswered, 'the project lookup\'s answer for "deploy"');
     expect(text(document.querySelector('quader-principal-field [role="listbox"]')!)).toContain('Service account of web');
     await choosePrincipal(fixture, root, 'Principal', 'leads', 'web-leads');
     expect(text(root.querySelector('fieldset.entry .chips')!)).toContain('web-leads');

@@ -171,7 +171,8 @@ let nextId = 1;
           <!-- The pointer keeps the focus in the input (mousedown), so a click reaches its row. A row is never focused (the focus
                stays in the input, aria-activedescendant names the row); tabindex -1 and Enter keep it operable should a tool focus it. -->
           <div class="popup" (mousedown)="$event.preventDefault()">
-            <div role="listbox" class="list" [id]="listId" [attr.aria-label]="listLabel()">
+            <!-- aria-busy while the text's search runs: assistive technology waits for the answer, and so do the tests (choosePrincipal) -->
+            <div role="listbox" class="list" [id]="listId" [attr.aria-label]="listLabel()" [attr.aria-busy]="phase() === 'searching' ? 'true' : null">
               @for (m of matches(); track m.ref; let i = $index) {
                 <div
                   role="option"
@@ -439,7 +440,7 @@ export class PrincipalField {
   protected readonly open = signal(false);
   private readonly found = signal<readonly PrincipalChoice[]>([]);
   private readonly more = signal(false);
-  private readonly phase = signal<'idle' | 'searching' | 'done' | 'failed'>('idle');
+  protected readonly phase = signal<'idle' | 'searching' | 'done' | 'failed'>('idle');
   /** What the field learned of a reference it chose or found, so a chip shows the name and the avatar. */
   private readonly known = signal<ReadonlyMap<string, PrincipalChoice>>(new Map());
   private generation = 0;

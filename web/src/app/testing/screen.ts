@@ -60,6 +60,33 @@ export async function sleep(fixture: ComponentFixture<unknown>, ms = 60): Promis
   await settle(fixture);
 }
 
+/**
+ * Waits until `ready` holds, settling the fixture between looks: a test waits for the state it stands for, not for a time that
+ * measures the host (a fixed 320 ms for the person search failed at a host load of 53, 2026-11-20). `within` only bounds a state
+ * that never comes, and the error names `what`.
+ */
+export async function waitUntil(
+  fixture: ComponentFixture<unknown>,
+  ready: () => boolean,
+  what: string,
+  within = 10_000,
+): Promise<void> {
+  const end = Date.now() + within;
+  for (;;) {
+    await settle(fixture, 2);
+    if (ready()) return;
+    if (Date.now() > end) throw new Error(`waited ${within} ms for ${what}`);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+}
+
+/**
+ * Whether every shared principal field has the answer of its text's search (R-UI-150): none of their lists is busy
+ * (`aria-busy`, set from the debounce until the lookup answers).
+ */
+export const principalSearchAnswered = (): boolean =>
+  document.querySelector('quader-principal-field [role="listbox"][aria-busy="true"]') === null;
+
 /** Renders one screen against the in-memory fakes (R-UI-047 component tier). */
 export async function renderScreen<T>(
   component: Type<T>,
@@ -196,8 +223,8 @@ export function buttonByText(root: ParentNode, label: string): HTMLButtonElement
 
 /**
  * Names a principal in the shared principal field labelled `label` (R-UI-150), as a person does: types `search`, waits for the
- * debounce and the answer, and clicks the match whose row contains `match` (the first match without it). Nobody types a
- * reference; the field takes the chosen match.
+ * answer of the lookup (`principalSearchAnswered`, not a time), and clicks the match whose row contains `match` (the first match
+ * without it). Nobody types a reference; the field takes the chosen match.
  */
 export async function choosePrincipal(
   fixture: ComponentFixture<unknown>,
@@ -207,7 +234,7 @@ export async function choosePrincipal(
   match?: string,
 ): Promise<void> {
   typeInto(root, label, search);
-  await sleep(fixture, 320);
+  await waitUntil(fixture, principalSearchAnswered, `the person search's answer for "${search}" under "${label}"`);
   const options = [...document.querySelectorAll<HTMLElement>('quader-principal-field [role="option"]')];
   const option = options.find((o) => match === undefined || text(o).includes(match));
   if (!option) throw new Error(`no match "${match ?? search}" under "${label}": ${options.map((o) => text(o)).join(' | ')}`);

@@ -6,7 +6,7 @@ import { SearchApi } from '../../api/search-api';
 import { provideFakeApis } from '../../api/testing/fakes';
 import { FakeProjectsApi } from '../../api/testing/fakes-projects';
 import { FakeSearchApi } from '../../api/testing/fakes-search';
-import { expectAccessible, settle, sleep, text, typeInto } from '../../testing/screen';
+import { expectAccessible, principalSearchAnswered, settle, sleep, text, typeInto, waitUntil } from '../../testing/screen';
 import { PrincipalChoice, PrincipalField, PrincipalKind, choiceFromRef } from './principal-field';
 
 @Component({
@@ -62,12 +62,16 @@ describe('The principal field (R-UI-150)', () => {
   it('R-UI-150 searches from the second character after a pause and lists each match with its avatar, its name and its username', async () => {
     const { fixture, root, input, options, search } = await render();
     typeInto(root, 'Bind to', 's');
-    await sleep(fixture, 320);
+    await sleep(fixture, 320); // longer than the pause: nothing is searched below the second character
     expect(search.requests).toHaveLength(0);
     expect(input().getAttribute('aria-expanded')).toBe('false');
 
     typeInto(root, 'Bind to', 'sa');
-    await sleep(fixture, 320);
+    await settle(fixture);
+    // until the answer the list says it is busy (aria-busy), which is what a test waits for instead of a time
+    expect(root.querySelector('[role="listbox"]')!.getAttribute('aria-busy')).toBe('true');
+    await waitUntil(fixture, principalSearchAnswered, 'the answer for "sa"');
+    expect(root.querySelector('[role="listbox"]')!.getAttribute('aria-busy')).toBeNull();
     expect(search.requests).toHaveLength(1);
     expect(search.requests[0]).toMatchObject({ q: 'sa', kinds: ['user', 'group'], limit: 10 });
     expect(input().getAttribute('aria-expanded')).toBe('true');
@@ -85,7 +89,7 @@ describe('The principal field (R-UI-150)', () => {
       { id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a20', username: 'web-gone', displayName: null, disabled: true, avatarUrl: null },
     ];
     typeInto(root, 'Bind to', 'web');
-    await sleep(fixture, 320);
+    await waitUntil(fixture, principalSearchAnswered, 'the answer of the search');
     expect(options()).toHaveLength(1);
     expect(options()[0]!.querySelector('.material-icons')?.textContent).toBe('groups');
     expect(text(options()[0]!)).toContain('web-leads');
@@ -96,7 +100,7 @@ describe('The principal field (R-UI-150)', () => {
     const { fixture, root, host, input, options, key } = await render();
     typeInto(root, 'Bind to', 'a');
     typeInto(root, 'Bind to', 'ada');
-    await sleep(fixture, 320);
+    await waitUntil(fixture, principalSearchAnswered, 'the answer of the search');
     expect(options()).toHaveLength(1);
     await key('ArrowDown');
     expect(input().getAttribute('aria-activedescendant')).toBe(options()[0]!.id);
@@ -114,7 +118,7 @@ describe('The principal field (R-UI-150)', () => {
     expect(host.value()).toEqual([]);
 
     typeInto(root, 'Bind to', 'sam');
-    await sleep(fixture, 320);
+    await waitUntil(fixture, principalSearchAnswered, 'the answer of the search');
     await key('Escape');
     expect(input().getAttribute('aria-expanded')).toBe('false');
     expect(input().value).toBe('sam');
@@ -129,12 +133,12 @@ describe('The principal field (R-UI-150)', () => {
     });
     expect(text(root.querySelector('.chips')!)).toContain('web-leads');
     typeInto(root, 'Bind to', 'sa');
-    await sleep(fixture, 320);
+    await waitUntil(fixture, principalSearchAnswered, 'the answer of the search');
     options()[0]!.click();
     await settle(fixture);
     expect(host.value()).toEqual(['group:web-leads', 'user:sam']);
     typeInto(root, 'Bind to', 'we');
-    await sleep(fixture, 320);
+    await waitUntil(fixture, principalSearchAnswered, 'the answer of the search');
     expect(options()).toHaveLength(0);
     expect(text(root)).toContain('Nobody matches “we”');
     typeInto(root, 'Bind to', '');
@@ -146,7 +150,7 @@ describe('The principal field (R-UI-150)', () => {
   it('R-UI-150 says when nothing matches, and that a person is found after the first sign-in', async () => {
     const { fixture, root } = await render();
     typeInto(root, 'Bind to', 'zz');
-    await sleep(fixture, 320);
+    await waitUntil(fixture, principalSearchAnswered, 'the answer of the search');
     expect(text(root)).toContain('Nobody matches “zz”. A person can be found after their first sign-in.');
   });
 
@@ -154,7 +158,7 @@ describe('The principal field (R-UI-150)', () => {
     const { fixture, root, options, search } = await render();
     search.failure = new ApiError(403, { status: 403, code: 'forbidden' }, null);
     typeInto(root, 'Bind to', 'sam');
-    await sleep(fixture, 320);
+    await waitUntil(fixture, principalSearchAnswered, 'the answer of the search');
     expect(options()).toHaveLength(0);
     expect(text(root)).toContain('The search failed.');
   });
@@ -165,7 +169,7 @@ describe('The principal field (R-UI-150)', () => {
       h.kinds.set(['user', 'service_account']);
     });
     typeInto(root, 'Bind to', 'de');
-    await sleep(fixture, 320);
+    await waitUntil(fixture, principalSearchAnswered, 'the answer of the search');
     expect(search.requests).toHaveLength(0);
     expect(projects.lookups.at(-1)).toEqual({ key: 'web', q: 'de', kinds: ['user', 'service_account'] });
     expect(options()).toHaveLength(1);
@@ -176,10 +180,10 @@ describe('The principal field (R-UI-150)', () => {
   it('R-UI-150 the admin area offers the instance-wide service accounts, and every account where a filter asks for all', async () => {
     const instance = await render((h) => h.kinds.set(['service_account']));
     typeInto(instance.root, 'Bind to', 'bot');
-    await sleep(instance.fixture, 320);
+    await waitUntil(instance.fixture, principalSearchAnswered, 'the answer of the search');
     expect(instance.options().map((o) => text(o))).toEqual([expect.stringContaining('ci-bot')]);
     typeInto(instance.root, 'Bind to', 'deploy');
-    await sleep(instance.fixture, 320);
+    await waitUntil(instance.fixture, principalSearchAnswered, 'the answer of the search');
     expect(instance.options()).toHaveLength(0);
 
     const all = await render((h) => {
@@ -187,14 +191,14 @@ describe('The principal field (R-UI-150)', () => {
       h.accounts.set('all');
     });
     typeInto(all.root, 'Bind to', 'deploy');
-    await sleep(all.fixture, 320);
+    await waitUntil(all.fixture, principalSearchAnswered, 'the answer of the search');
     expect(all.options()).toHaveLength(1);
   });
 
   it('R-UI-150 a member that is taken already is not offered (exclude)', async () => {
     const { fixture, root, options } = await render((h) => h.exclude.set(['user:sam']));
     typeInto(root, 'Bind to', 'sa');
-    await sleep(fixture, 320);
+    await waitUntil(fixture, principalSearchAnswered, 'the answer of the search');
     expect(options()).toHaveLength(0);
   });
 
@@ -210,7 +214,7 @@ describe('The principal field (R-UI-150)', () => {
       const r = await render();
       r.search.users = PEOPLE;
       typeInto(r.root, 'Bind to', 'sa');
-      await sleep(r.fixture, 320);
+      await waitUntil(r.fixture, principalSearchAnswered, 'the answer for "sa"');
       expect(r.options().map((o) => text(o))).toEqual([
         expect.stringContaining('@sam'),
         expect.stringContaining('@sara'),
@@ -218,7 +222,8 @@ describe('The principal field (R-UI-150)', () => {
       ]);
       r.search.hold = true;
       typeInto(r.root, 'Bind to', 'sas');
-      await sleep(r.fixture, 320);
+      // the answer is held: what the test waits for is that its request went out
+      await waitUntil(r.fixture, () => r.search.requests.at(-1)?.q === 'sas', 'the request for "sas"');
       const answer = async (): Promise<void> => {
         r.search.hold = false;
         r.search.release();

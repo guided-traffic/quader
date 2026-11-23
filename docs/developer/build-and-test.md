@@ -150,6 +150,7 @@ it, each green alone. What each waited for, and what it waits for now
 | `TestConcurrentWritersOnOnePath`, R-STOR-003 (`files`) | six writers for four seconds: the number of rounds was the host's | 80 rounds per writer (4.0 s to 3.7 s on the development machine) |
 | `TestR_REPO_054_SlowDownWithoutAHintBacksOffExponentially` (`mirror`) | the sleep compared with the wait's floor; the engine sleeps what is left of the wait, 1.9986 s of 2 s | the wait's end against its floor, measured from the refused request, and the sleep against its ceiling |
 | `TestR_VULN_015_*` (`vulnblock`) | statements counted from a window of the database's log (140 s for the two tests) | by request ID, as `querybudget` (28 s) |
+| Every component test that chooses a person (`choosePrincipal` of [testing/screen.ts](../../web/src/app/testing/screen.ts): `policy-editor.spec.ts`, `project-screens.spec.ts`, `ci-editor-screens.spec.ts` and nine more) and the field's own spec (web, unit) | a fixed 320 ms for the search's pause of 250 ms and the answer; at a load of 53 to 120 the answer came later and the test found no match | the field's list is `aria-busy` from the pause until the lookup answers, and the test waits until no list is busy (`waitUntil`, `principalSearchAnswered`); the specs passed under `taskpolicy -c background` |
 
 How a repair was shown to hold: the one test run with `GOMAXPROCS=1` under `taskpolicy -c background` (the lowest CPU class of macOS)
 while the other builders' gates ran, never by starving the machine for everyone and never by a `-count` loop.
