@@ -431,8 +431,8 @@ order is what a user or an operator meets first. The state is kept here.
 | Signatures with the real clients | the check of the repairs of 2026-11-21 with the real clients, and what it finds | landed at 09:39 |
 | Screens, first round | fourteen findings of screens (the entries of repository, version, vulnerability and audit pages, the npm form, the malware settings, the signatures' lists) | built (seventeen commits); looked at and sent back at 10:33 with three points and for the rebase onto the stack at the gates |
 | W1 · Authorization answers the same in every format | the administrator flag shown to `tokens:read` alone (H-836); the global read policy and the default-scope token; the refusals that end a virtual read | landed at 10:49 |
-| W3 · The download limits count what they promise | refused requests that still count (the upstream budget, an endpoint's rate class); seven paths without a test; three statements; the help text of waiting downloads | built (two commits); at the landing's gates next, with the Debian repair |
-| W2 · Scanning keeps its promises to an operator | a scan attempt lost when a repository is enabled again; the scanner's spool that `QuaderSpoolNearlyFull` does not see; layer writes without a flush; a removed scanner pod shown ready; two measurements | waits for a place |
+| W3 · The download limits count what they promise | refused requests that still count (the upstream budget, an endpoint's rate class); seven paths without a test; three statements; the help text of waiting downloads | built (two commits); at the landing's gates since 10:50, with the Debian repair |
+| W2 · Scanning keeps its promises to an operator | a scan attempt lost when a repository is enabled again; the scanner's spool that `QuaderSpoolNearlyFull` does not see; layer writes without a flush; a removed scanner pod shown ready; two measurements | in work since 10:51 |
 | W6 · The pipeline loses nothing and scans every image it runs | a push that cancels the run before it; the analyser's and ClamAV's images never scanned; the evidence record and the badge that stand still; a `unit` target with the emptied AWS environment; the lint's limit and serial runs; fuzz names; the pins of the e2e legs; a partial dispatch; the disk watcher; the key of the clients' image cache, which changes with every commit, so a push never hits it | in work since 10:30 |
 | W5a · NuGet and OCI | NuGet's README route that answers 501; the challenge of an upstream token; what the two formats' pages count and the code does not | waits for a place |
 | W5b · Debian and Ansible Galaxy | `member_expired` and a member's recorded `Date` without an integration case; the wiki's cases; the requirements no test names; the check against the public Galaxy; first the Debian test that made `main` red for the third time | in work since 10:08 |
@@ -6613,6 +6613,18 @@ commits, the areas `bastioniface`, `bastionreg`, `audit`, `querybudget`, `ci`, `
 its first two. The run before had ended at 10:26, so the push cut nothing off. With it the storage
 topic's last package is on `main`: a Bastion reads the files of an encrypted connection from the store
 with each file's key, and every key it receives is in the audit log.
+The owner's development backend runs on the landed tree since 10:50 (ready). The worktrees of the data
+keys' and of W1's builder are removed. **10:50, the next stack is at its gates:** the Debian repair (two
+commits, ahead of the rest of W5b, whose builder goes on) and W3 (two commits), stacked on `main` without
+a conflict: the basics, the pinned lint, then `debvirtual`, `debremote`, `deblocal`, `debkeys`,
+`endpoints` and `limits`, `valkey`, `ociremote`, `ci`, `npm`, `oci`. It is pushed when the shards of the
+run of 10:49 are done. **10:51, the builder of W2 started** (the scanning's promises to an operator: a scan
+attempt lost when a repository is enabled again; the scanner's spool that the alert does not see, and
+the same check for every unit with a spool; the layer writes' flush; a removed pod shown ready; two
+measurements on the stack; and what the pipeline's one measurement of the read path must record, which
+the development agent dispatches in the window). Builders with a test load: the screens' first round,
+W5b, W6, W2, the landing's gates.
+**11:03, the release of the push of 10:49 is out** (a `feat:`; its image and chart at 11:08).
 **In work since 05:38: package 7 of the encryption, the destruction of a retired connection's keys**
 (R-STOR-097 to R-STOR-103 and the journal's replay; the development agent's answer of 2026-11-22 to the
 question of what stays readable at a provider). It stands on the handover's second package as it lands;
