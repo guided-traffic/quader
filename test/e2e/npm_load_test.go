@@ -50,13 +50,13 @@ const (
 // npmHAFixture is what every scenario's load uses: the tokens, the lockfile project and the input of k6/npm.js.
 type npmHAFixture struct {
 	fx *npmFixture
-	// tokens: two per ci loop, then haK6Tokens of k6's, then the publisher's. Each technical token is a subject of the
-	// download limits with a budget of its own (R-LIM-001; the class package_read of R-API-016 that first met it, 200
-	// requests/s per token with a burst of 1,000 in 5 s, is removed by Q-LIM-4); one loop asks for 475 tarballs every 2.5 s, so on
-	// one token it met that budget in four of ten commands (429, then npm's 10 s retry). A loop alternates its two
-	// tokens; k6 spreads its 120 requests/s over its tokens, because the edge queues them while a PostgreSQL
-	// switchover holds the replicas and hands them on at once, a burst of 2,280 on one token (Actions run 41249697928).
-	tokens  []string
+	// tokens: two per ci loop, then the publisher's. Each technical token is a subject of the download limits with a budget of
+	// its own (R-LIM-001; the class package_read of R-API-016 that first met it, 200 requests/s per token with a burst of 1,000 in
+	// 5 s, is removed by Q-LIM-4); one loop asks for 475 tarballs every 2.5 s, so on one token it met that budget in four of ten
+	// commands (429, then npm's 10 s retry). A loop alternates its two tokens.
+	tokens []string
+	// k6 is k6's tokens, of an account of their own (haK6SA): k6 spreads its 120 requests/s over them (haK6Tokens).
+	k6      []string
 	pkgJSON string
 	lock    string
 	locked  int
@@ -72,12 +72,20 @@ type npmHAFixture struct {
 	remoteRoots          []string
 }
 
-// haK6Tokens are k6's tokens: 40 requests/s each, so 19 s of queued load stays below one token's burst.
-const haK6Tokens = 3
+// haK6Tokens are k6's tokens, every one an account may hold (auth.tokens.max_active_per_principal), of the account haK6SA. k6
+// does not slow down when answers stop: while the database holds every request (an OOM kill of the primary held 16 s on
+// 2026-11-20, a switchover holds 6 to 9 s) its downloads pile up in flight, and a token holds at most the 50 parallel downloads of
+// the built-in profile of a technical token (R-LIM-024), which refused 168 of them when the load ran on three tokens at about 15
+// tarballs a second each. The limit stays and the load spreads (decision 17 of the reading of 2026-11-23): on 20 tokens the same
+// 45 tarballs a second leave a token 45 in flight after a hold of 20 s.
+const (
+	haK6Tokens = 20
+	haK6SA     = haSA + "-k6"
+)
 
-func (h *npmHAFixture) k6Tokens() []string     { return h.tokens[2*haCILoops : 2*haCILoops+haK6Tokens] }
-func (h *npmHAFixture) k6Token() string        { return h.k6Tokens()[0] }
-func (h *npmHAFixture) publisherToken() string { return h.tokens[2*haCILoops+haK6Tokens] }
+func (h *npmHAFixture) k6Tokens() []string     { return h.k6 }
+func (h *npmHAFixture) k6Token() string        { return h.k6[0] }
+func (h *npmHAFixture) publisherToken() string { return h.tokens[2*haCILoops] }
 
 var (
 	haFxOnce sync.Once
@@ -117,13 +125,18 @@ func buildNPMHAFixture(t *testing.T, fx *npmFixture) *npmHAFixture {
 	ensureSA(t, adm, haSA)
 	ensurePolicy(t, adm, haSA, []string{npmLocalKey}, [2]any{"sa:" + haSA, []string{"read", "deploy", "delete"}})
 	ensurePolicy(t, adm, haSA+"-read", []string{npmRemoteKey, npmAllKey}, [2]any{"sa:" + haSA, []string{"read"}})
-	h.tokens = pacedSATokens(t, adm, haSA, 2*haCILoops+haK6Tokens+1, 6*3600) // 20 of the 20 an account may hold (auth.tokens.max_active_per_principal)
+	h.tokens = pacedSATokens(t, adm, haSA, 2*haCILoops+1, 6*3600)
+	ensureSA(t, adm, haK6SA)
+	ensurePolicy(t, adm, haK6SA+"-read", []string{npmLocalKey, npmRemoteKey, npmAllKey}, [2]any{"sa:" + haK6SA, []string{"read"}})
+	h.k6 = pacedSATokens(t, adm, haK6SA, haK6Tokens, 6*3600)
 	// the policies are in force on every replica within R-AUTHZ-028's bound; the scatter edge spreads the probes
-	waitFor(t, "the load's token to read npm-local and npm-all on every replica", 30*time.Second, 500*time.Millisecond, func() bool {
+	waitFor(t, "the load's and k6's tokens to read npm-local and npm-all on every replica", 30*time.Second, 500*time.Millisecond, func() bool {
 		for i := 0; i < 6; i++ {
 			for _, key := range []string{npmLocalKey, npmAllKey} {
-				if r := adm.withToken(h.tokens[0]).get(npmAddr(key) + "/-/whoami"); r.Status != 200 {
-					return false
+				for _, tok := range []string{h.tokens[0], h.k6[0]} {
+					if r := adm.withToken(tok).get(npmAddr(key) + "/-/whoami"); r.Status != 200 {
+						return false
+					}
 				}
 			}
 		}
@@ -244,8 +257,8 @@ func buildNPMHAFixture(t *testing.T, fx *npmFixture) *npmHAFixture {
 	}
 	h.allDocuments = len(all)
 	h.k6InputAll, _ = json.Marshal(map[string]any{"documents": all, "tarballs": tarballs})
-	t.Logf("npm HA fixture: %d locked packages (%d local, %d names), %d k6 documents (%d with every locked package's), tarballs of %d to %d bytes, %d tokens, built in %s",
-		h.locked, locals, len(lockedNames), len(docs), h.allDocuments, tarballs[0].Size, tarballs[8].Size, len(h.tokens), time.Since(start).Round(time.Second))
+	t.Logf("npm HA fixture: %d locked packages (%d local, %d names), %d k6 documents (%d with every locked package's), tarballs of %d to %d bytes, %d tokens and %d of k6, built in %s",
+		h.locked, locals, len(lockedNames), len(docs), h.allDocuments, tarballs[0].Size, tarballs[8].Size, len(h.tokens), len(h.k6), time.Since(start).Round(time.Second))
 	return h
 }
 

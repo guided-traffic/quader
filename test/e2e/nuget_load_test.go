@@ -57,10 +57,11 @@ const (
 // nugetHAFixture is what every scenario's NuGet load uses: the tokens, the restore project and the input of k6/nuget.js.
 type nugetHAFixture struct {
 	fx *nugetFixture
-	// tokens: two per restore loop, then nugetHAK6Tokens of k6's, then the publisher's. As for npm (npmHAFixture) a loop
-	// alternates its two tokens and k6 spreads its requests over its own, so the budget of one token's subject is not the
-	// thing the load measures.
+	// tokens: two per restore loop, then the publisher's. As for npm (npmHAFixture) a loop alternates its two tokens and k6
+	// spreads its requests over its own (k6, of the account nugetHAK6SA), so the budget of one token's subject is not the thing
+	// the load measures.
 	tokens   []string
+	k6       []string
 	csproj   []byte
 	locals   []string // the IDs of the three local packages of this run, version 1.0.0
 	packages int      // what one restore extracts
@@ -68,13 +69,17 @@ type nugetHAFixture struct {
 	k6Input  []byte
 }
 
-const nugetHAK6Tokens = 3
+// nugetHAK6Tokens are k6's tokens, of an account of their own, for the reason of haK6Tokens: k6's 30 requests/s pile up in
+// flight while the database holds every request, and a token holds at most 50 parallel downloads (R-LIM-024); 20 tokens leave a
+// token 30 in flight after a hold of 20 s.
+const (
+	nugetHAK6Tokens = 20
+	nugetHAK6SA     = nugetHASA + "-k6"
+)
 
-func (h *nugetHAFixture) k6Tokens() []string {
-	return h.tokens[2*haRestoreLoops : 2*haRestoreLoops+nugetHAK6Tokens]
-}
+func (h *nugetHAFixture) k6Tokens() []string { return h.k6 }
 
-func (h *nugetHAFixture) publisherToken() string { return h.tokens[2*haRestoreLoops+nugetHAK6Tokens] }
+func (h *nugetHAFixture) publisherToken() string { return h.tokens[2*haRestoreLoops] }
 
 func (h *nugetHAFixture) feed(t testing.TB, key string) string { return nugetFeed(t, "localhost", key) }
 
@@ -144,8 +149,12 @@ func buildNuGetHAFixture(t *testing.T, fx *nugetFixture) *nugetHAFixture {
 	ensureSA(t, adm, nugetHASA)
 	ensurePolicy(t, adm, nugetHASA, []string{nugetHALocal}, [2]any{"sa:" + nugetHASA, []string{"read", "deploy", "delete"}})
 	ensurePolicy(t, adm, nugetHASA+"-read", []string{nugetHARemote, nugetHAAll}, [2]any{"sa:" + nugetHASA, []string{"read"}})
-	h.tokens = pacedSATokens(t, adm, nugetHASA, 2*haRestoreLoops+nugetHAK6Tokens+1, 6*3600)
+	h.tokens = pacedSATokens(t, adm, nugetHASA, 2*haRestoreLoops+1, 6*3600)
+	ensureSA(t, adm, nugetHAK6SA)
+	ensurePolicy(t, adm, nugetHAK6SA+"-read", []string{nugetHALocal, nugetHARemote, nugetHAAll}, [2]any{"sa:" + nugetHAK6SA, []string{"read"}})
+	h.k6 = pacedSATokens(t, adm, nugetHAK6SA, nugetHAK6Tokens, 6*3600)
 	nugetReadableOnEveryReplica(t, h.tokens[0], nugetHALocal, nugetHARemote, nugetHAAll)
+	nugetReadableOnEveryReplica(t, h.k6[0], nugetHALocal, nugetHARemote, nugetHAAll)
 
 	// the three local packages of the project
 	pub := fx.client(t, 0, "ha-setup")

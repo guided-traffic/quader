@@ -3,12 +3,14 @@
 package e2e
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -20,15 +22,47 @@ import (
 // its client reacts to a refusal, in Enforce, with payloads of bytes. The helpers here are what those cases share.
 
 // limitRule puts a rule at a repository of the suite's project: the profile Unlimited with the figures given, for every caller of a
-// kind (R-LIM-011, R-LIM-032), and waits until every replica's index has it. A repository of the case's own carries it, so nothing
-// else of the suite meets the figure.
+// kind (R-LIM-011, R-LIM-032), and waits until every replica's index has it (awaitLimitsIndex). A repository of the case's own
+// carries it, so nothing else of the suite meets the figure.
 func limitRule(t testing.TB, adm *api, key, callerKind string, figures map[string]any) {
 	t.Helper()
 	adm.do(http.MethodPost, repoAPI(key)+"/limits/assignments", map[string]any{
 		"who": map[string]any{"kind": "every", "callerKind": callerKind}, "profile": "unlimited", "overrides": figures,
 		"note": "end-to-end: what the client shows at a refusal",
 	}).want(t, "the rule "+callerKind+" at "+key, 201)
-	time.Sleep(3 * time.Second) // the change area of the limits reaches every replica (R-ARCH-018) and its index is rebuilt
+	awaitLimitsIndex(t)
+}
+
+// awaitLimitsIndex waits until every serving replica decides with every change of the download limits made so far: its gauge
+// quader_limits_index_epoch reaches the epoch of the change area limits in the database (Q-LIM-111). A fixed three seconds stood
+// here before, and a replica that took longer counted the first document against the instance's figures where the case expected
+// the rule's 429. The bound is a failure's, not a wait: the area's changes reach a replica within seconds (R-ARCH-018).
+func awaitLimitsIndex(t testing.TB) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	out, err := bakSQL(ctx, "SELECT epoch FROM cluster_epoch WHERE area = 'limits'")
+	if err != nil {
+		t.Fatalf("the epoch of the area limits: %v", err)
+	}
+	// psql prints the tag of the SET of bakSQL before the row
+	fields := strings.Fields(out)
+	epoch := ""
+	if len(fields) > 0 {
+		epoch = fields[len(fields)-1]
+	}
+	want, err := strconv.ParseFloat(epoch, 64)
+	if err != nil {
+		t.Fatalf("the epoch of the area limits: %q", out)
+	}
+	start := time.Now()
+	pods := readyServingPods(t)
+	for _, pod := range pods {
+		waitFor(t, pod+" to decide with the limits of epoch "+epoch, 30*time.Second, 100*time.Millisecond, func() bool {
+			return metricsOf(t, pod)["quader_limits_index_epoch"] >= want
+		})
+	}
+	t.Logf("limits: epoch %s on all %d serving replicas after %s", epoch, len(pods), time.Since(start).Round(time.Millisecond))
 }
 
 // awaitPathOnEveryReplica waits until every packages replica answers a read of the path with the token with 200: the repository and the

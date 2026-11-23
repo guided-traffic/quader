@@ -11,6 +11,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/guided-traffic/quader/internal/api/edge"
 	v1 "github.com/guided-traffic/quader/internal/api/v1"
 	"github.com/guided-traffic/quader/internal/auth/registrytoken"
@@ -47,7 +49,7 @@ type downloadLimitsArea struct {
 func (a *App) wireDownloadLimits(ctx context.Context, in infra) (downloadLimitsArea, error) {
 	log := a.log.With("component", "limits")
 	st := store.New(store.Options{Runner: in.db, Changes: in.changes, Audit: in.rec, Log: log})
-	idx := &limitsIndex{store: st, log: log}
+	idx := &limitsIndex{store: st, log: log, epoch: newLimitsIndexEpoch(a.tele.metrics.Registry())}
 	idx.register(in.caches)
 	if err := a.startComponent(ctx, idx); err != nil {
 		return downloadLimitsArea{}, err
@@ -203,6 +205,8 @@ type limitsIndex struct {
 	log       *slog.Logger
 	cur       atomic.Pointer[limits.Index]
 	onInstall func(*limits.Index)
+	// epoch is quader_limits_index_epoch: the epoch of the area limits the index in use holds every change up to (Q-LIM-111)
+	epoch prometheus.Gauge
 
 	cancel context.CancelFunc
 	wg     sync.WaitGroup
@@ -272,9 +276,25 @@ func (x *limitsIndex) load(ctx context.Context) {
 	}
 	idx := limits.NewIndex(snap)
 	x.cur.Store(idx)
+	if x.epoch != nil {
+		x.epoch.Set(float64(snap.Epoch))
+	}
 	if x.onInstall != nil {
 		x.onInstall(idx)
 	}
+}
+
+// newLimitsIndexEpoch registers quader_limits_index_epoch (Q-LIM-111): what a change of the limits waits for before it is
+// known to apply on a replica, instead of a fixed time. A registry that refuses it leaves a gauge nothing reads.
+func newLimitsIndexEpoch(reg prometheus.Registerer) prometheus.Gauge {
+	g := prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "quader_limits_index_epoch",
+		Help: "The epoch of the change area limits up to which the replica's index of the download limits holds every change (R-LIM-013); 0 until the first load.",
+	})
+	if reg != nil {
+		_ = reg.Register(g)
+	}
+	return g
 }
 
 // Stop ends the loop.

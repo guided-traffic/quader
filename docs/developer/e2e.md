@@ -325,7 +325,7 @@ What a new format adds, in its own set (`e2e (<format>)`):
 
 | Topic | The format's case | Not in the format's set |
 |---|---|---|
-| Download limits | `Test<Format>Limits_R_LIM_020_…`: its client against a repository of the case whose rule (`limitRule` in [limits_clients_env_test.go](../../test/e2e/limits_clients_env_test.go)) refuses the client's next request (`requestsPerSecond` 1, burst 1) and, where it downloads, its next download (`cachedBytesPerHour` 1 after a document); in Enforce; what it prints, whether it retries, its exit status (`noteRefusal`, the artifact `limits-clients.json`), which is a row of the manual's table | the figures, Audit, the subjects, the block, the ceiling: the integration set |
+| Download limits | `Test<Format>Limits_R_LIM_020_…`: its client against a repository of the case whose rule (`limitRule` in [limits_clients_env_test.go](../../test/e2e/limits_clients_env_test.go), which waits until every serving replica's `quader_limits_index_epoch` reaches the epoch of the area `limits` in the database, Q-LIM-111) refuses the client's next request (`requestsPerSecond` 1, burst 1) and, where it downloads, its next download (`cachedBytesPerHour` 1 after a document); in Enforce; what it prints, whether it retries, its exit status (`noteRefusal`, the artifact `limits-clients.json`), which is a row of the manual's table | the figures, Audit, the subjects, the block, the ceiling: the integration set |
 | A probe starts the download (W-25) | only if a command of its real client sends a probe without fetching the content itself; one case with the smallest artifact | the path through a virtual repository (once, in the OCI set), the charge, the switch, the budget |
 | A Bastion (R-BAS-060) | only if its client meets a Bastion differently from the integration replays (a token flow, a node's runtime, a bound host): one case in its own set with a Bastion release of its own, as OCI's ([The Bastion case of the set oci](#the-bastion-case-of-the-set-oci), about 17 s with the release) | the families, the marking, the cache and the format's facts: unit tests, kit check 19 and the integration replays of `test/integration/bastion` |
 
@@ -1493,9 +1493,12 @@ for the full suite ([Q-HA-67](../spec/ha-and-helm.md#q-ha-67--where-and-how-ofte
 
 The fixture ([npm_load_test.go](../../test/e2e/npm_load_test.go), `npmHAFx`, once per process, about 10 s):
 
-- the service account `e2e-npm-ha` with `read`, `deploy`, `delete` on `npm-local` and `read` on `npm-remote` and `npm-all`, and 20
-  tokens: two per `npm ci` loop, which alternates them per command, three for k6, which takes them in turn per request (a PostgreSQL
-  switchover queues 19 s of its load at the edge, which then arrives at once, over one token's burst), one for the publisher. The `package_read` class of
+- the service account `e2e-npm-ha` with `read`, `deploy`, `delete` on `npm-local` and `read` on `npm-remote` and `npm-all`, and 17
+  tokens: two per `npm ci` loop, which alternates them per command, and one for the publisher; the service account `e2e-npm-ha-k6`
+  with `read` on the three and 20 tokens for k6, which takes them in turn per request: k6 does not slow down when answers stop, so
+  while the database holds every request its downloads pile up in flight, and a token holds at most the 50 parallel downloads of a
+  technical token's built-in profile (R-LIM-024; on three tokens a hold of 16 s refused 168 tarballs, 2026-11-20); on 20 a hold of
+  20 s leaves a token about 45 (decision 17 of the reading of 2026-11-23: the load spreads, the limit stays). The `package_read` class of
   R-API-016 budgets 200 requests/s per token with a burst of 1,000 in 5 s, and one loop asks for 475 tarballs every 2.5 s (finding 1 below);
 - three packages `@e2e/ha-<run>-lib0..2` in `npm-local`, nine versions of `@e2e/ha-<run>-blob` with 1 MiB to 5 MiB of random bytes (k6's
   tarballs), one `@e2e/ha-<run>-small` of 50 KiB (P-8 below);
@@ -1925,8 +1928,9 @@ The fixture (`nugetHAFx`, once per process):
 
 - three repositories that stay on the cluster: `nuget-ha-local`, `nuget-ha-remote` over the counting NuGet test upstream and `nuget-ha-all`
   (both as members, `nuget-ha-local` the deployment target), and the service account `e2e-nuget-ha` with `read`, `deploy`, `delete` on the
-  local and `read` on the other two; 12 tokens: two per restore loop (alternated per command), three for k6, one for the publisher (the npm
-  account holds 20, the bound per principal);
+  local and `read` on the other two; 9 tokens: two per restore loop (alternated per command) and one for the publisher; the service
+  account `e2e-nuget-ha-k6` with `read` on the three and 20 tokens for k6, the bound per principal, for the reason of the npm
+  fixture's k6 account;
 - three packages `E2e.NugetHa<run>.Lib0..2` 1.0.0 in `nuget-ha-local`, pushed with `dotnet nuget push`;
 - the restore project: `Contoso.Text.Hosting` of the test upstream's corpus (a closure of 58 packages) and the three local packages, 61
   packages in all (R-HA-059 asks for 60). One restore through `nuget-ha-all` fills Quader's cache, so every loop runs with the cache warm

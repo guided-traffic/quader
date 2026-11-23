@@ -97,6 +97,27 @@ func (e *env) setMode(t *testing.T, mode string) {
 	}
 }
 
+// awaitIndex waits until every replica of the stack decides with every change of the limits made so far: its
+// quader_limits_index_epoch reaches the epoch of the area limits in the database (Q-LIM-111). The bound is the change area's, a
+// few seconds (R-ARCH-018); a replica that misses it fails the test with what it reports.
+func (e *env) awaitIndex(t *testing.T) {
+	t.Helper()
+	want := e.st.Number(`SELECT epoch FROM cluster_epoch WHERE area = 'limits'`)
+	for _, r := range e.st.Replicas() {
+		deadline := time.Now().Add(10 * time.Second)
+		for {
+			got := testenv.MetricValue(r.Metrics(t), "quader_limits_index_epoch")
+			if got >= float64(want) {
+				break
+			}
+			if time.Now().After(deadline) {
+				t.Fatalf("replica %s reports quader_limits_index_epoch %v after 10 s, want %d, the epoch of the area limits", r.Name, got, want)
+			}
+			time.Sleep(50 * time.Millisecond)
+		}
+	}
+}
+
 // limitsTrips is the round trips of the download limits' batches the replica sent so far.
 func (e *env) limitsTrips(t *testing.T) float64 {
 	return testenv.MetricValue(e.r.Metrics(t), `quader_valkey_command_duration_seconds_count{command="multi"}`)
@@ -133,7 +154,7 @@ func TestR_LIM_026_AuditRefusesNothingAndEnforceRefuses(t *testing.T) {
 	}
 	e.setMode(t, "audit")
 	e.setStandard(t, map[string]any{"requestsPerSecond": 2, "requestsBurst": 2, "cachedBytesPerHour": fileSize + 1})
-	time.Sleep(1500 * time.Millisecond) // the change area reaches the replica's index
+	e.awaitIndex(t)
 	for i := range 6 {
 		if a := e.st.Do(e.r, "GET", e.filePath, e.reader, nil); a.Status != 200 {
 			t.Fatalf("audit, request %d: %d %s", i, a.Status, a.Body)
@@ -153,7 +174,7 @@ func TestR_LIM_026_AuditRefusesNothingAndEnforceRefuses(t *testing.T) {
 		t.Fatal("audit recorded no would_limit event")
 	}
 	e.setMode(t, "enforce")
-	time.Sleep(1500 * time.Millisecond)
+	e.awaitIndex(t)
 	t.Run("Q-LIM-27 in enforce package_write refuses the writes beyond its burst", func(t *testing.T) {
 		var last testenv.Answer
 		for i := range 4 {

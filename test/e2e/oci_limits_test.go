@@ -100,7 +100,7 @@ func TestOCILimits_F161_SignInsAndPullsFromOneAddressMeetNoAnonymousBudget(t *te
 	}
 	r.JSON(t, &rule)
 	t.Cleanup(func() { fx.adm.do(http.MethodDelete, "/api/v1/limits/assignments/"+rule.ID, nil) })
-	time.Sleep(3 * time.Second)
+	awaitLimitsIndex(t)
 
 	ref := fx.image(t, key, "tiny", "1")
 	c := fx.client(t, 0, ociDocker, "limits-handshake")

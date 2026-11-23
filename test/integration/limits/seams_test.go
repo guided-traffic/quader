@@ -168,7 +168,7 @@ func TestR_LIM_019_WithValkeyStoppedTheReplicaDecidesOnItsShare(t *testing.T) {
 	e := newEnvWith(t, envOptions{valkey: false})
 	e.setStandard(t, map[string]any{"requestsPerHour": 4})
 	e.setMode(t, "enforce")
-	time.Sleep(1500 * time.Millisecond) // the change area reaches the replica's index
+	e.awaitIndex(t)
 	for i := range 4 {
 		if a := e.st.Do(e.r, "GET", e.filePath, e.reader, nil); a.Status != 200 {
 			t.Fatalf("request %d within the share: %d %s", i, a.Status, a.Body)

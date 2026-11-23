@@ -242,6 +242,9 @@ func DefaultSettings() Settings { return Settings{Mode: ModeEnforce, BlockSecond
 
 // Snapshot is what the index is compiled from: everything the store holds of the limits.
 type Snapshot struct {
+	// Epoch is the epoch of the change area limits read before everything else of the snapshot: the snapshot holds every change of
+	// the area up to it (R-ARCH-018), which a replica reports as quader_limits_index_epoch (Q-LIM-111).
+	Epoch    int64
 	Profiles []Profile
 	Rules    []Rule
 	Ceilings []Ceiling

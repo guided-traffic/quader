@@ -40,7 +40,7 @@ func (e *env) rule(t *testing.T, repo string, who, overrides map[string]any) {
 	if a.Status != 201 {
 		t.Fatalf("the rule %v %v at %q: %d %s", who, overrides, repo, a.Status, a.Body)
 	}
-	time.Sleep(1500 * time.Millisecond) // the change area reaches the replica's index
+	e.awaitIndex(t)
 }
 
 func every(kind string) map[string]any { return map[string]any{"kind": "every", "callerKind": kind} }
@@ -138,7 +138,7 @@ func TestR_LIM_024_AFurtherDownloadIsRefusedWhileTheOnlyPlaceIsTakenAndTheFirstI
 
 	t.Run("R-LIM-026 in audit neither is applied", func(t *testing.T) {
 		e.setMode(t, "audit")
-		time.Sleep(1500 * time.Millisecond)
+		e.awaitIndex(t)
 		var wg sync.WaitGroup
 		res := make([]testenv.Answer, 2)
 		start := time.Now()
@@ -280,7 +280,7 @@ func TestR_LIM_025_RefusedRequestsBlockTheBudgetKeyAndNothingElse(t *testing.T) 
 
 	t.Run("R-LIM-026 in audit no block is set and would_limit is recorded", func(t *testing.T) {
 		e.setMode(t, "audit")
-		time.Sleep(1500 * time.Millisecond)
+		e.awaitIndex(t)
 		for i := range 5 {
 			e.st.Do(e.r, "PUT", "/files/it/"+rFiles+"/q"+strconv.Itoa(i)+".bin", prober2, []byte("x"), "Content-Type", "application/octet-stream")
 		}

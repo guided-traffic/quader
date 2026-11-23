@@ -1374,6 +1374,8 @@ Priority: **MVP** · Covers: BEYOND-030
   - `quader_limits_upstream_requests_total{kind}`;
   - `quader_limits_blocks_started_total{kind}`;
   - `quader_limits_mode` (gauge, 1 in `enforce`, 0 in `audit`);
+  - `quader_limits_index_epoch` (gauge): the epoch of the change area `limits` up to which the replica's index holds every change,
+    0 before its first load ([Q-LIM-111](#q-lim-111--a-replica-reports-the-epoch-of-the-limits-it-decides-with));
   - `quader_limits_usage_buffer_keys` (gauge), `quader_limits_usage_flush_failures_total`, `quader_limits_usage_overflow_total`;
   - the limiter's fallback as `quader_ratelimit_fallback{limiter="limits"}`.
 
@@ -3082,6 +3084,29 @@ Tests: `TestR_LIM_022_ARefusedUpstreamRequestIsCountedNowhere` in [engine_test.g
 [limiter_test.go](../../internal/cluster/limiter_test.go), and the script against the stack's Valkey in
 `TestQ_LIM_110_AGiveBackTakesBackWhatATakeCountedAndAPeekAddsNothing` ([units_test.go](../../test/integration/valkey/units_test.go)).
 
+### Q-LIM-111 · A replica reports the epoch of the limits it decides with
+
+Status: **Decided by the development agent on 2026-11-23** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a change of the limits reaches every replica through the change area `limits` and a reload of the index (R-ARCH-018,
+R-LIM-013), and nothing told from outside when a replica decides with it. The clients' cases of the five formats and the OCI
+handshake's case waited a fixed three seconds after a rule, the integration area `limits` 1.5 s after every change; a replica that
+took longer counted the first document against the instance's figures where the case expected the rule's 429 (read on 2026-11-21,
+not seen), and on a fast host the seconds were waited for nothing.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The index's load reads the area's epoch first, in the transaction of its snapshot, and the replica reports it as the gauge `quader_limits_index_epoch`; a test waits until every replica's gauge reaches the epoch the database holds after its change (chosen) | One statement more per load (the primary key of `cluster_epoch`), one gauge | Exact: a change and its epoch commit together, so a snapshot read after the epoch holds the change; a test waits as long as the replica takes and no longer | A gauge an operator does not need, though it shows a replica whose index stands still |
+| (b) A probe request per replica with a token of the same kind, read from its `RateLimit-Policy` | No product change | — | Only request figures show in an admitted answer, the byte figures do not; an address rule cannot be probed without spending the address's budget |
+| (c) The explanation of `GET /api/v1/limits/explain` | Exists | — | It compiles its own index from the database, not the replica's |
+
+**Choice:** (a). **Rationale:** the change area already counts what a replica holds; only the index's load did not say which change
+it compiled. The development agent would revisit it if the index ever loads from something else than one snapshot of the database.
+
+**Applied in the spec:** R-LIM-030 (the metric). Code: `Store.Snapshot` in [store.go](../../internal/limits/store/store.go)
+(`Snapshot.Epoch`), `limitsIndex.load` and `newLimitsIndexEpoch` in [wire_limits.go](../../internal/app/wire_limits.go); the waits
+`awaitLimitsIndex` in [limits_clients_env_test.go](../../test/e2e/limits_clients_env_test.go) and `awaitIndex` in
+[limits_test.go](../../test/integration/limits/limits_test.go).
 ### Q-LIM-291 · A refusal names one wait, in the unit its text names it in
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Found by the

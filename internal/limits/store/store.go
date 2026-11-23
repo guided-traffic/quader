@@ -116,6 +116,15 @@ func overridesJSON(o limits.Overrides) string {
 func (s *Store) Snapshot(ctx context.Context) (limits.Snapshot, error) {
 	var snap limits.Snapshot
 	err := s.in(ctx, func(qs *q.Queries, _ meta.Tx) error {
+		// first, so that every statement after it sees every change of the area up to the epoch (a change and its epoch commit
+		// together, Notify above)
+		epochs, err := qs.ListClusterEpochs(ctx, []string{cluster.AreaLimits})
+		if err != nil {
+			return err
+		}
+		for _, e := range epochs {
+			snap.Epoch = e.Epoch
+		}
 		profiles, err := qs.LimitProfiles(ctx)
 		if err != nil {
 			return err
