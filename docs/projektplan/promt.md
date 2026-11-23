@@ -6143,7 +6143,7 @@ reaches further and still misses hundreds of rows) and corrected six of the read
 it saw on the way, both with a package: `docs/spec/ha-and-helm.md` still names the key
 `storage.s3.circuit_breaker.open_duration` (W10a), and the scanner's spool exports no spool metrics
 (W2).
-**09:09, W11 is two writers** (they build nothing and run no test, so they do not count against the
+**09:07, W11 is two writers** (they build nothing and run no test, so they do not count against the
 four): one writes the reasoned statements where each reason belongs (the stall family as one statement
 and one standing entry, sixteen single points, the decisions that close an entry without a build) as
 page changes in a worktree and a script for the plan; one reads the logs and artifacts of the fourteen
