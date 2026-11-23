@@ -239,10 +239,12 @@ section 8, with the npm search's mislisting and the two "only a run shows" entri
 (Projects and Repositories leave the admin menu); **the rest of the Go tests** (the seven items of "What W4
 did not do", F-126, the mirror's back-off bound, the process environment and the free port). The evidence record's publish landed at 22:51 (one commit,
 Q-ARCH-1040; its release shows the rest); `drain-roles` ran alone at 22:24, green, and closed its entry.
-**T-25 landed at 23:10** (one commit; Q-UI-1040 to Q-UI-1043; the renders looked at by the development agent;
+**T-25 landed at 22:58** (one commit; Q-UI-1040 to Q-UI-1043; the renders looked at by the development agent;
 the browser journeys it rewrote run first in the pipeline's e2e legs). Started at 22:53 in the freed place: **T-24 · R4** (downloads ahead and the queue; R3 waits for R2's landing,
-since it wires R2's decider). Waiting for a place: W8, W10b, the layout fixtures in three browsers, the
-documents' second round, T-24 R3, and the two nightly sets `upgrade-release` and `vuln-perf` (to be
+since it wires R2's decider). Started at 23:00 in T-25's place: **W8** (web and end-to-end tests wait for what they stand for, with the
+layout fixtures in three browsers and an instance of the UI profile that is claimed, not chosen: two builders
+took instance 6 a minute apart that evening). Waiting for a place: W10b, the documents' second round, the two
+findings of T-25's renders, T-24 R3, and the two nightly sets `upgrade-release` and `vuln-perf` (to be
 dispatched in a window with no code push beside them).
 
 Read this first. By the owner's words of 17:15 (section 0) nothing new was begun; this list is what was
@@ -277,7 +279,7 @@ starts from it and from his word how the work goes on, not from the order of the
   free number on the branch it stands on (the runner refuses a gap; 00114 is the contracts'); the
   packages that run side by side write only their own marked section of `api/openapi.yaml`, their own
   query file and wiring file; decision blocks of the series Q-CUR from 40 (R2), 60 (R3), 80 (R4).
-- **T-25 · Projects and Repositories leave the admin area's menu**: landed at 23:10 (section 10).
+- **T-25 · Projects and Repositories leave the admin area's menu**: landed at 22:58 (section 10).
 - **W8 · Web and end-to-end tests wait for what they stand for** (the packages' table of section 8), with
   what today added to it: a cluster name and ports per checkout so that a builder runs the journey or
   the end-to-end test it changed before it reports; the walk's widths on the development machine and on
@@ -556,6 +558,12 @@ order is what a user or an operator meets first. The state is kept here.
 | W11 · Readings and statements (the development agent) | the stall family of the runs before 2026-11-18; pipeline artifacts to read before they expire (from 2026-12-02); entries that close by a reasoned statement | the statements landed at 09:39, the readings of runs are back and both are marked in the lists; left: two single sets to dispatch in the pipeline window, a count of a cold load's requests, a trace of the Bastion's answers by kind |
 
 ### Tests and tools
+
+- **T-25's landing left one link of the specification to a removed file, and the job `coverage generator
+  (links and rules)` was red (2026-11-23; Test and Release 45274912230, read at 23:03).** Q-UI-577's code link
+  named `project-list.ts`, which T-25 removed; its builder ran `coverage -check` and not `-links`. Repaired at
+  23:06 (the link names `projects-home.ts`, where the list's columns are now); the builder's brief names
+  `go run ./internal/tools/coverage -links` from now on, as the pre-push list of the development agent does.
 
 Several entries below name **F-133**, closed on 2026-11-19: the stall family on the CI runners. Every kind cluster of a machine
 sat in one cgroup of weight 100, the runner pods in one of weight 1250, so beside the small jobs of a Test and Release run a
@@ -3043,7 +3051,7 @@ Admin menü nach diesen beiden. Willst du das verteidigen oder kommt das weg? We
 whole: "Ich stimme ebenso deinen Ausführungen zu, so vermerken"; the three points below and what goes are
 therefore his decision, not an open question for his walk). An administrator reads every project in the main area
 already (the list of projects with its filter "Your projects"), so the two entries are a second way to the same
-things, and they are the reason a path of the main area has a twin under `/admin`. **Landed at 23:10** (one commit of a builder, Q-UI-1040 to Q-UI-1043: the project list's columns Owners and
+things, and they are the reason a path of the main area has a twin under `/admin`. **Landed at 22:58** (one commit of a builder, Q-UI-1040 to Q-UI-1043: the project list's columns Owners and
 Storage behind one check box "Show Owners and storage" for a holder of `projects:read`; the list
 **Repositories** under "Your work" with the filters by project, format and class and no button to create;
 `/admin` opens the first entry a caller has when it lacks `settings:read`; the backend needed no change, since
