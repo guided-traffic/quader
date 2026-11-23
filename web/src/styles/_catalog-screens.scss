@@ -1,19 +1,6 @@
 // Shared layout classes of the repository, browse, endpoint, audit and system screens. Colours and
 // lengths come from the tokens only. Status colours always come with an icon and a text (R-UI-044).
 
-.page-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--quader-space-3);
-  margin-block-end: var(--quader-space-3);
-
-  h1 {
-    margin: 0;
-    margin-inline-end: auto;
-  }
-}
-
 .toolbar {
   display: flex;
   flex-wrap: wrap;

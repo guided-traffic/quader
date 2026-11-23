@@ -159,8 +159,9 @@ test('R-UI-159 the dashboard searches every project by alias and text in its one
       await expect(page).toHaveURL(new RegExp(`project=${shop}`));
       await page.getByRole('link', { name: 'GHSA-aaaa-bbbb-cccc' }).first().click();
       await expect(page).toHaveURL(/\/ui\/en\/security\/findings\//);
-      await expect(page.getByRole('heading', { name: 'Finding', level: 1 })).toBeVisible();
-      await expect(page.getByRole('link', { name: 'All findings' })).toHaveAttribute('href', /\/security$/);
+      // The advisory names the page; the way back is the breadcrumb (Q-UI-968).
+      await expect(page.getByRole('heading', { name: 'GHSA-aaaa-bbbb-cccc', level: 1 })).toBeVisible();
+      await expect(page.getByRole('navigation', { name: 'Breadcrumb' }).getByRole('link', { name: 'Security dashboard' })).toHaveAttribute('href', /\/security$/);
       await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).not.toContainText('Admin area');
       await expectAccessible(page, 'a finding opened from the dashboard');
     });

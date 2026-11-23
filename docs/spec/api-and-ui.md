@@ -22160,6 +22160,34 @@ callers (an administrator's `content:bypass`, Q-AUTHZ-162, applies to deletes on
 [repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts), `ConsumerView` of
 [document.go](../../internal/repository/document.go). The package pages are not covered: H-1560.
 
+### Q-UI-968 · The vulnerability pages take the shared page header, and the advisory names a finding's page
+
+Status: **Decided by the development agent** on 2026-11-23, closing UI-A-22 of the T-21 audit for the vulnerability pages; the owner
+reviews it at the walkthrough.
+
+Context: the report, a finding, an advisory, the advisory sources and the dashboard's views **Malware** and **Signatures** kept a
+hand-made header (`header.page-header`): a finding's and an advisory's heading named the type ("Finding", "Advisory") with the advisory
+in a second heading, and quiet links (**All findings**, **Advisory sources**) stood beside it; every other screen has the shared page
+header of Q-UI-307.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `<quader-page-header>` on each: the report's **Advisory sources** (for `settings:read`) and **Export CSV** its default buttons; a finding named by its advisory with the summary as its sentence; an advisory by its identifier; the sources' sentence under their heading; **All findings** goes, the breadcrumb leads back (chosen) | Q-UI-307, the anatomy of a page | One header on every screen; the object in the `h1` (UI-A-22); one way back to a list | The page titles keep "Finding" and "Advisory" |
+| (b) The shared header with **All findings** kept as a button | — | A visible way back | Two ways to the same list (the breadcrumb is one) |
+| (c) As it was | — | — | The audit's finding stays |
+
+**Choice:** (a).
+
+**Rationale:** the style guide's anatomy of a page names the way up to a list (the breadcrumb) and the object in the heading. The
+development agent sees no case for revisiting this.
+
+**Applied in the spec:** R-VULN-022. Code: [vulnerability-report.html](../../web/src/app/features/vulnerabilities/vulnerability-report.html),
+[vulnerability-finding.html](../../web/src/app/features/vulnerabilities/vulnerability-finding.html),
+[vulnerability-advisory.ts](../../web/src/app/features/vulnerabilities/vulnerability-advisory.ts),
+[vulnerability-sources.ts](../../web/src/app/features/vulnerabilities/vulnerability-sources.ts),
+[malware-finds.html](../../web/src/app/features/vulnerabilities/malware-finds.html),
+[signature-findings.ts](../../web/src/app/features/vulnerabilities/signature-findings.ts).
+
 ## What this does not cover
 
 

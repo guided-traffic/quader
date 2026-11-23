@@ -83,7 +83,8 @@ test('R-VULN-022 the Critical-style count filters the list, the sort and the fin
     await test.step('the finding opens and is dismissed with a reason', async () => {
       await page.getByRole('link', { name: finding!.advisory }).first().click();
       await expect(page).toHaveURL(/\/vulnerabilities\/findings\//);
-      await expect(page.getByRole('heading', { name: 'Finding', level: 1 })).toBeVisible();
+      // The finding's advisory names the page (Q-UI-968).
+      await expect(page.getByRole('heading', { name: finding!.advisory, level: 1 })).toBeVisible();
       await expect(page.getByText('GitHub Advisory Database').first()).toBeVisible();
       await expectAccessible(page, 'a finding');
       await page.getByRole('button', { name: 'Dismiss' }).click();
@@ -279,7 +280,7 @@ test('R-VULN-022 the sources screen shows the state of the test source, and the 
     await expectAccessible(page, 'the advisory sources');
 
     await page.goto(`/ui/en/projects/${e2eProject}/vulnerabilities/advisories/npm/${finding!.advisory}`);
-    await expect(page.getByRole('heading', { name: 'Advisory', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: finding!.advisory, level: 1 })).toBeVisible();
     await expect(page.getByRole('row', { name: new RegExp(repo) }).or(page.getByRole('row', { name: /quader-test-cvss/ })).first()).toBeVisible();
     await expectAccessible(page, 'an advisory');
   } finally {

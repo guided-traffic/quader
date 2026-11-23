@@ -35,8 +35,9 @@ const SCREENS: readonly (readonly [url: string, heading: string, h1?: string])[]
   ['/projects/web/ci', 'CI identity'],
   // >>> M4b vulnerabilities
   ['/projects/web/vulnerabilities', 'Vulnerabilities'],
-  ['/projects/web/vulnerabilities/findings/0193a000-0000-7000-8000-000000000001', 'Finding'],
-  ['/projects/web/vulnerabilities/advisories/npm/GHSA-aaaa-aaaa-0001', 'Advisory'],
+  // A finding and an advisory are named by the advisory (Q-UI-968).
+  ['/projects/web/vulnerabilities/findings/0193a000-0000-7000-8000-000000000001', 'Finding', 'GHSA-aaaa-aaaa-0001'],
+  ['/projects/web/vulnerabilities/advisories/npm/GHSA-aaaa-aaaa-0001', 'Advisory', 'GHSA-aaaa-aaaa-0001'],
   // <<< M4b vulnerabilities
   ['/projects/web/repositories/npm-local/setup', 'Set up client'],
   ['/guides', 'Guides'],
@@ -175,7 +176,7 @@ describe('route map', () => {
     expect(await seriousViolations(root)).toEqual([]);
 
     const finding = await open('/security/findings/0193a000-0000-7000-8000-000000000001', auditor);
-    expect(finding.querySelector('main h1')?.textContent?.trim()).toBe('Finding');
+    expect(finding.querySelector('main h1')?.textContent?.trim()).toBe('GHSA-aaaa-aaaa-0001');
     expect(TestBed.inject(Breadcrumbs).trail().map((c) => c.label)).toEqual(['Security audit', 'Security dashboard', '0193a000-0000-7000-8000-000000000001']);
   });
 

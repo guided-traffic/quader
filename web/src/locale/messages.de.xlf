@@ -1224,15 +1224,6 @@
         <target>Eine Gruppe mit automatischem Beitritt kann die Administratorrolle nicht tragen.</target>
       </segment>
     </unit>
-    <unit id="vuln.finding.back">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-finding.html:3,6</note>
-      </notes>
-      <segment>
-        <source>All findings</source>
-        <target>Alle Befunde</target>
-      </segment>
-    </unit>
     <unit id="policy.delete">
       <notes>
         <note category="location">src/app/features/permissions/policy-editor.html:236,237</note>
@@ -12651,15 +12642,6 @@
         <target>Der letzte Zeitpunkt, zu dem ein Client aus dem Repository gelesen oder in es geschrieben hat. Ein Strich bedeutet, dass noch nichts erfasst wurde.</target>
       </segment>
     </unit>
-    <unit id="vuln.advisory.back">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:26,29</note>
-      </notes>
-      <segment>
-        <source>All findings</source>
-        <target>Alle Befunde</target>
-      </segment>
-    </unit>
     <unit id="deb.keys.origin.imported">
       <notes>
         <note category="location">src/app/features/repositories/deb-signing-keys.ts:274</note>
@@ -13640,15 +13622,6 @@
       <segment>
         <source>Visibility level</source>
         <target>Sichtbarkeitsstufe</target>
-      </segment>
-    </unit>
-    <unit id="vuln.advisory.heading">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-advisory.ts:25,26</note>
-      </notes>
-      <segment>
-        <source>Advisory</source>
-        <target>Advisory</target>
       </segment>
     </unit>
     <unit id="users.disabled">

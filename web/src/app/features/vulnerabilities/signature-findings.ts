@@ -10,6 +10,7 @@ import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { FilterCategory, FilterPanel } from '../../shared/ui/filter-panel';
 import { ListChip, ListHead } from '../../shared/ui/list-head';
 import { TimeAgo } from '../../shared/ui/time-ago';
+import { PageHeader } from '../../shared/ui/page-header';
 import { SecurityViews } from './security-views';
 import { SignatureRefusals } from './signature-refusals';
 
@@ -39,11 +40,9 @@ export function findingKindWord(kind: SignatureFindingKind): string {
  */
 @Component({
   selector: 'quader-signature-findings',
-  imports: [DataTable, FilterCategory, FilterPanel, ListHead, RouterLink, SecurityViews, SignatureRefusals, TimeAgo],
+  imports: [DataTable, FilterCategory, FilterPanel, ListHead, PageHeader, RouterLink, SecurityViews, SignatureRefusals, TimeAgo],
   template: `
-    <header class="page-header">
-      <h1 tabindex="-1" i18n="@@security.heading">Security dashboard</h1>
-    </header>
+    <quader-page-header i18n-heading="@@security.heading" heading="Security dashboard" />
     <quader-security-views />
     <p class="hint" role="note" data-testid="signature-promise">{{ promise }}</p>
 
