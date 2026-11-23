@@ -231,9 +231,9 @@
     <!-- A section of the form like Advanced settings, with the app's one disclosure (Q-UI-552). -->
     <quader-disclosure class="api-request" i18n-heading="@@repo.review.api" heading="Show as API request">
       <h3 i18n="@@repo.review.api.json">Request body</h3>
-      <pre class="code-block" translate="no" tabindex="0">{{ requestJson() }}</pre>
+      <quader-document-block [document]="requestBody()" [copyLabel]="copyBody" />
       <h3 i18n="@@repo.review.api.curl">The same request with curl</h3>
-      <pre class="code-block" translate="no" tabindex="0">{{ curl() }}</pre>
+      <quader-document-block [document]="requestBody()" [text]="curl()" [copyLabel]="copyRequest" />
     </quader-disclosure>
 
     <div class="actions">

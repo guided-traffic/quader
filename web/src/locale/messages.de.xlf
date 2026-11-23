@@ -50043,5 +50043,53 @@
         <target>Die Repositories <ph id="0" equiv="repositories" disp="keys.join(&apos;, &apos;)"/> sind deaktiviert: Niemand kann diese Version installieren, bis eines davon wieder aktiviert ist.</target>
       </segment>
     </unit>
+    <unit id="document.copy">
+      <segment>
+        <source>Copy the whole text</source>
+        <target>Den ganzen Text kopieren</target>
+      </segment>
+    </unit>
+    <unit id="document.shortened">
+      <segment>
+        <source>(<ph id="0" equiv="count" disp="n"/> characters)</source>
+        <target>(<ph id="0" equiv="count" disp="n"/> Zeichen)</target>
+      </segment>
+    </unit>
+    <unit id="document.shortened-hint">
+      <segment>
+        <source>Long values are shortened here. The copy button copies them whole.</source>
+        <target>Lange Werte sind hier gekürzt. Die Kopierschaltfläche kopiert sie vollständig.</target>
+      </segment>
+    </unit>
+    <unit id="files.api.copy-json">
+      <segment>
+        <source>Copy the description</source>
+        <target>Beschreibung kopieren</target>
+      </segment>
+    </unit>
+    <unit id="repo.detail.api.copy-document">
+      <segment>
+        <source>Copy the stored document</source>
+        <target>Gespeichertes Dokument kopieren</target>
+      </segment>
+    </unit>
+    <unit id="repo.detail.api.copy-request">
+      <segment>
+        <source>Copy the request</source>
+        <target>Anfrage kopieren</target>
+      </segment>
+    </unit>
+    <unit id="repo.review.api.copy-body">
+      <segment>
+        <source>Copy the request body</source>
+        <target>Anfragetext kopieren</target>
+      </segment>
+    </unit>
+    <unit id="backups.copy-result">
+      <segment>
+        <source>Copy the result</source>
+        <target>Ergebnis kopieren</target>
+      </segment>
+    </unit>
   </file>
 </xliff>

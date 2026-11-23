@@ -1,3 +1,4 @@
+import { DocumentBlock } from '../../../shared/document-block';
 import { DatePipe } from '@angular/common';
 import { Component, DestroyRef, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -44,7 +45,7 @@ export const RUNS_PAGE_SIZE = 25;
  */
 @Component({
   selector: 'quader-backups-page',
-  imports: [DatePipe, RouterLink, EmptyState, ErrorNotice, FilterPanel, ListHead, NoValue, SelectField, BackupState, ManualRunPanel],
+  imports: [DocumentBlock, DatePipe, RouterLink, EmptyState, ErrorNotice, FilterPanel, ListHead, NoValue, SelectField, BackupState, ManualRunPanel],
   templateUrl: './backups-page.html',
   styleUrl: './backups-page.scss',
 })
@@ -211,9 +212,7 @@ export class BackupsPage {
   }
 
   /** The pretty-printed result of an open run. */
-  protected resultJson(run: BackupRun): string {
-    return JSON.stringify(run.result ?? {}, null, 2);
-  }
+  protected readonly copyResult = $localize`:@@backups.copy-result:Copy the result`;
 
   protected stateName(state: string): string {
     return stateView(state, false).text;

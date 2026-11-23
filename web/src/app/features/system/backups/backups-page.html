@@ -285,7 +285,7 @@
         }
         <h3 i18n="@@backups.detail.result">Result</h3>
         @if (run.result) {
-          <pre class="code-block" translate="no" tabindex="0">{{ resultJson(run) }}</pre>
+          <quader-document-block [document]="run.result" [copyLabel]="copyResult" />
         } @else {
           <p class="empty" i18n="@@backups.detail.no-result">The run has no result yet.</p>
         }

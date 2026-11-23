@@ -1,3 +1,4 @@
+import { DocumentBlock } from '../../shared/document-block';
 import { Component, DestroyRef, computed, effect, inject, input, linkedSignal, resource, signal, untracked, viewChild } from '@angular/core';
 import { ActivatedRoute, ActivatedRouteSnapshot, ResolveFn, Router, RouterLink } from '@angular/router';
 import { newIdempotencyKey } from '../../api/client';
@@ -109,6 +110,7 @@ interface CreateDraft {
   selector: 'quader-repository-create',
   imports: [
     RouterLink,
+    DocumentBlock,
     Disclosure,
     ErrorNotice,
     ErrorSummary,
@@ -467,14 +469,18 @@ export class RepositoryCreate implements HasUnsavedChanges {
     });
   });
   /** The request as shown: a typed password is never displayed (R-UI-043). */
-  protected readonly requestJson = computed(() => JSON.stringify(maskSecrets(this.body()), null, 2));
+  protected readonly requestBody = computed(() => maskSecrets(this.body()));
+  /**
+   * The request with curl around a body, so that the shown request shortens a long value (a preset's keyring) and the copied one
+   * carries it whole (Q-UI-995).
+   */
   protected readonly curl = computed(() => {
-    const doc = this.body();
     const path = `/api/v1/projects/${this.chosenProject() || '<project>'}/repositories`;
-    return doc
-      ? curlOf('POST', apiAddress(valueOf(this.baseUrl), path), maskSecrets(doc), ['Idempotency-Key: <a fresh UUID>'])
-      : '';
+    const url = apiAddress(valueOf(this.baseUrl), path);
+    return (body: unknown) => (body ? curlOf('POST', url, body, ['Idempotency-Key: <a fresh UUID>']) : '');
   });
+  protected readonly copyBody = $localize`:@@repo.review.api.copy-body:Copy the request body`;
+  protected readonly copyRequest = $localize`:@@repo.detail.api.copy-request:Copy the request`;
 
   constructor() {
     this.destroyed.onDestroy(() => clearTimeout(this.keyTimer));

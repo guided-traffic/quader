@@ -1,4 +1,5 @@
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
+import { DocumentBlock } from '../../shared/document-block';
 import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { newIdempotencyKey } from '../../api/client';
@@ -87,6 +88,7 @@ type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombs
   selector: 'quader-repository-detail',
   imports: [
     AnsibleImportTasks,
+    DocumentBlock,
     AnsibleTombstones,
     DatePipe,
     DebIndexStatePanel,
@@ -393,15 +395,22 @@ export class RepositoryDetail implements HasUnsavedChanges {
     return this.opened().has(section);
   }
 
-  protected readonly documentJson = computed(() => JSON.stringify(this.stored(), null, 2));
-  /** Each section's unsaved change as the request that saves it (R-UI-087). */
-  protected readonly requests = computed(() =>
-    [...this.patches()].map(([section, patch]) => ({
+  /**
+   * Each section's unsaved change as the request that saves it (R-UI-087): the masked patch and how it is written as a request with
+   * curl, so that the shown request shortens a long value (a keyring) and the copied one carries it whole (Q-UI-995).
+   */
+  protected readonly copyDocument = $localize`:@@repo.detail.api.copy-document:Copy the stored document`;
+  protected readonly copyRequest = $localize`:@@repo.detail.api.copy-request:Copy the request`;
+  protected readonly requests = computed(() => {
+    const url = apiAddress(valueOf(this.baseUrl), repositoryUrl(this.ref()));
+    const headers = [`If-Match: ${this.etag}`];
+    return [...this.patches()].map(([section, patch]) => ({
       section,
       label: this.sectionLabel(section),
-      curl: curlOf('PATCH', apiAddress(valueOf(this.baseUrl), repositoryUrl(this.ref())), maskSecrets(patch), [`If-Match: ${this.etag}`]),
-    })),
-  );
+      patch: maskSecrets(patch),
+      curl: (body: unknown) => curlOf('PATCH', url, body, headers),
+    }));
+  });
 
   constructor() {
     // Whether the section Malware scan is shown: an Owner holds no settings:read, so the side bar has not asked (Q-UI-874).

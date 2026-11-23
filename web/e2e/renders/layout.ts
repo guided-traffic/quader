@@ -667,6 +667,12 @@ export function emptyScroll(): { window: number; panel: number } {
 }
 
 /**
+ * How far a code block may scroll sideways and still be allowed (Q-UI-995): about three windows of 1,440 px, room for a long command
+ * or a URL with its query; a line longer than that is a value the page should have shortened.
+ */
+export const CODE_BLOCK_SCROLL = 4_000;
+
+/**
  * Findings that are right as they are, each with its reason. A finding matches when its check is the same and every pattern
  * given matches (`screen` the screen's id, `what` the element's path, `text` its text, `detail` what was measured). Keep this
  * list short and exact: an entry that allows a whole check, or a whole screen, hides the next defect of its kind.
@@ -677,6 +683,12 @@ export const allowed: readonly {
   readonly what?: RegExp;
   readonly text?: RegExp;
   readonly detail?: RegExp;
+  /**
+   * The most px the finding may measure (the first number of `detail`, "the region scrolls 2,400 px sideways") to be allowed: a
+   * code block that scrolls a long line is right, one wider than a few screens is not (a Debian remote's stored document carried a
+   * keyring of 77,000 characters on one line, a block of about 602,000 px, which the exemption hid for three days, Q-UI-995).
+   */
+  readonly atMost?: number;
   readonly why: string;
 }[] = [
   {
@@ -703,7 +715,8 @@ export const allowed: readonly {
   {
     check: 'sideways',
     what: /^pre\.code-block/,
-    why: 'a code block keeps its lines as they are copied (a request, a command, a configuration) and scrolls a long one in its own region',
+    atMost: CODE_BLOCK_SCROLL,
+    why: 'a code block keeps its lines as they are copied (a request, a command, a configuration) and scrolls a long one in its own region, up to a few screens',
   },
   {
     check: 'sideways',
@@ -711,6 +724,12 @@ export const allowed: readonly {
     why: "a document's table (the manual, a README) keeps its columns and scrolls in its own region where the page is narrower",
   },
 ];
+
+/** The first number of a finding's measurement, without its thousands' separators. */
+function measuredPx(detail: string): number {
+  const m = /(\d[\d,]*)/.exec(detail);
+  return m ? Number(m[1]!.replace(/,/g, '')) : 0;
+}
 
 /** Splits a picture's findings into the defects and the allowed ones. */
 export function judge(screen: string, findings: readonly LayoutFinding[]): { defects: LayoutFinding[]; allowed: (LayoutFinding & { why: string })[] } {
@@ -723,7 +742,8 @@ export function judge(screen: string, findings: readonly LayoutFinding[]): { def
         (!a.screen || a.screen.test(screen)) &&
         (!a.what || a.what.test(f.what)) &&
         (!a.text || a.text.test(f.text)) &&
-        (!a.detail || a.detail.test(f.detail)),
+        (!a.detail || a.detail.test(f.detail)) &&
+        (a.atMost === undefined || measuredPx(f.detail) <= a.atMost),
     );
     if (rule) kept.push({ ...f, why: rule.why });
     else defects.push(f);

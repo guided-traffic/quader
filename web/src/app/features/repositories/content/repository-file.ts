@@ -1,3 +1,4 @@
+import { DocumentBlock } from '../../../shared/document-block';
 import { Component, computed, inject, input, output, resource, signal } from '@angular/core';
 import { FilesApi, Item } from '../../../api/files-api';
 import { AddressField } from '../../../shared/address-field';
@@ -37,7 +38,7 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
  */
 @Component({
   selector: 'quader-repository-file',
-  imports: [AddressField, CopyButton, Disclosure, ErrorNotice, MalwareStatusView, RouterLink, SignatureBadge, SignatureGate, SignatureReport, TimeAgo],
+  imports: [DocumentBlock, AddressField, CopyButton, Disclosure, ErrorNotice, MalwareStatusView, RouterLink, SignatureBadge, SignatureGate, SignatureReport, TimeAgo],
   template: `
     @let it = item();
     <section class="file-view" aria-labelledby="file-name">
@@ -200,7 +201,7 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
           <p role="status" i18n="@@repo.loading">Loading.</p>
         }
         <h3 i18n="@@files.api.json">The file as the API describes it</h3>
-        <pre class="code-block" translate="no" tabindex="0">{{ itemJson() }}</pre>
+        <quader-document-block [document]="item()" [copyLabel]="copyItem" />
         <h3 i18n="@@files.api.curl">The same request with curl</h3>
         <pre class="code-block" translate="no" tabindex="0">{{ curl() }}</pre>
         @if (downloadCurl()) {
@@ -284,7 +285,7 @@ export class RepositoryFile {
     const e = this.stats.error();
     return e ? asApiError(e) : null;
   });
-  protected readonly itemJson = computed(() => JSON.stringify(this.item(), null, 2));
+  protected readonly copyItem = $localize`:@@files.api.copy-json:Copy the description`;
   protected readonly curl = computed(() => `curl -H "Authorization: Bearer $QUADER_TOKEN" ${shellQuote(this.item().itemUrl)}`);
   /** The download with curl; none for a file of a system repository, which answers it 404 (Q-UI-898). */
   protected readonly downloadCurl = computed(() => {

@@ -481,11 +481,11 @@
           hint="The stored document, and each unsaved change as the request that saves it."
         >
           <h3 i18n="@@repo.detail.api.document">Stored document</h3>
-          <pre class="code-block" translate="no" tabindex="0">{{ documentJson() }}</pre>
+          <quader-document-block [document]="stored()" [copyLabel]="copyDocument" />
           <h3 i18n="@@repo.detail.api.patch">Your change as a request</h3>
           @for (r of requests(); track r.section) {
             <h4>{{ r.label }}</h4>
-            <pre class="code-block" translate="no" tabindex="0">{{ r.curl }}</pre>
+            <quader-document-block [document]="r.patch" [text]="r.curl" [copyLabel]="copyRequest" />
           } @empty {
             <p class="hint" i18n="@@repo.detail.api.nochange">Change a setting to see the request that saves it.</p>
           }

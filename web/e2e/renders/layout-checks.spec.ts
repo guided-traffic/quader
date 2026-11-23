@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Page, expect, test } from '@playwright/test';
 import { compile } from 'sass';
-import { LayoutFinding, layoutFindings } from './layout';
+import { CODE_BLOCK_SCROLL, LayoutFinding, judge, layoutFindings } from './layout';
 import { root } from './paths';
 
 /**
@@ -577,5 +577,17 @@ test.describe("the shared patterns with the app's stylesheet (R-UI-176)", () => 
   test("R-UI-176 the guard can fail: the owner's row without the line rule is found with the app's stylesheet", async ({ page }) => {
     const html = patterns[0]!.html.replace('btn btn-tertiary btn-icon on-line', 'btn btn-tertiary btn-icon');
     expect(only(await check(page, html, '', true), 'off-line')).toHaveLength(1);
+  });
+});
+
+test.describe('the bound of an allowed finding (Q-UI-995)', () => {
+  const region = (px: string): LayoutFinding => ({ check: 'sideways', what: 'pre.code-block', text: '', detail: `the region scrolls ${px} px sideways`, count: 1 });
+
+  test('Q-UI-995 a code block that scrolls a long line is allowed, and one wider than a few screens fails its screen', () => {
+    expect(judge('repository-settings-npm-local', [region('1240')]).defects).toEqual([]);
+    expect(judge('repository-settings-npm-local', [region(String(CODE_BLOCK_SCROLL))]).defects).toEqual([]);
+    // The Debian remote's stored document of 2026-11-20 to 2026-11-23: a keyring of 77,000 characters on one line.
+    expect(judge('repository-settings-deb-remote', [region('602311')]).defects).toHaveLength(1);
+    expect(judge('repository-settings-deb-remote', [region('4,001')]).defects).toHaveLength(1);
   });
 });

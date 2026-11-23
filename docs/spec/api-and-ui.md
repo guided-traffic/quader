@@ -22440,6 +22440,35 @@ revisiting this.
 
 **Applied in the spec:** R-UI-037. Code: [audit-log.scss](../../web/src/app/features/audit/audit-log.scss).
 
+### Q-UI-995 · A document shortens a long string to its start and its length and copies whole; a code block scrolls a few screens at most
+
+Status: **Decided by the development agent** on 2026-11-23, building what the development agent decided for the open finding "The layout
+checks stopped once at the admin area's Storage page" (W9); the owner reviews it at the walkthrough.
+
+Context: a Debian remote's stored document carries the archive's keyring in its preset, one line of about 77,000 characters; the section
+**API** of its settings printed it in a code block about 602,000 px wide at 1,024 and 1,440 px. The renders' check allowed every code
+block to scroll sideways, so the block went unnoticed for three days (2026-11-20 to 2026-11-23). The same document stands in the creation
+form's **Show as API request**, a file's API description, an opened audit event's details and a backup run's result.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A string longer than 200 characters shows its first 64 and its length, "-----BEGIN PGP PUBLIC KEY BLOCK-----… (77,012 characters)"; a copy button beside the block copies the whole text, and a muted line says so where something was shortened; the check allows a code block to scroll up to 4,000 px and fails a wider one (chosen) | `<quader-document-block>`, `atMost` of the layout check | The document reads as a document; nothing is lost to whoever copies it; the next such value fails its screen | The shown text is no longer what a selection copies |
+| (b) The block wraps its lines | — | Every character visible | A keyring of 77,000 characters is a page of base64 between the settings |
+| (c) The keyring left out of the document | — | Short | The document is no longer the stored one |
+
+**Choice:** (a), on every page that prints a stored or an API document: a repository's stored document and the requests that save a
+change (settings), the request body and the curl command of the creation form, a file's description, an audit event's details (which
+also wrap, Q-UI-997) and a backup run's result. A command (curl) is built around the shortened body for the eye and around the whole one
+for the copy. A setting the form cannot edit (`format-settings`, "Set it through the API") keeps its value as it is: no format has a
+long one.
+
+**Rationale:** a reader of the document wants its shape and the values a person can read; a value of 77,000 characters is copied, not
+read. The bound of the check keeps the exemption for what it was made for, a long command or URL. The development agent would revisit
+the limit of 200 characters if a value a reader needs (a long URL with its query) is cut.
+
+**Applied in the spec:** R-UI-037, R-UI-087, R-UI-170. Code: [document-block.ts](../../web/src/app/shared/document-block.ts),
+`allowed` and `CODE_BLOCK_SCROLL` of [layout.ts](../../web/e2e/renders/layout.ts).
+
 ## What this does not cover
 
 
