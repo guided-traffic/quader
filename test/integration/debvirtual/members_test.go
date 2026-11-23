@@ -73,15 +73,17 @@ func TestR_DEB_027_TheGateAndTheMemberPaths(t *testing.T) {
 	if a.Status != 200 || a.Header.Get("Quader-Resolved-From") != rRemote {
 		t.Fatalf("the remote member's file: %d from %q %s", a.Status, a.Header.Get("Quader-Resolved-From"), a.Body)
 	}
-	if n := e.stub.Counts().Total(); n == 0 {
+	// Only the package files are counted: a build of a virtual repository revalidates its members' releases in the background at any
+	// time (a 304 of apt-bulk's InRelease fell between the two reads once), which is not a read of the file.
+	if n := e.stub.Counts().OfKind(debstub.ClassPool, ""); n == 0 {
 		t.Error("the first read of the remote member's file did not reach the upstream")
 	}
 	e.stub.Reset()
 	if a = e.get(rApt, hello.Value("Filename"), e.alice); a.Status != 200 {
 		t.Fatalf("the second read = %d", a.Status)
 	}
-	if n := e.stub.Counts().Total(); n != 0 {
-		t.Errorf("the second read reached the upstream %d times", n)
+	if n := e.stub.Counts().OfKind(debstub.ClassPool, ""); n != 0 {
+		t.Errorf("the second read reached the upstream %d times: %+v", n, e.stub.Counts().Entries)
 	}
 	// A member who is no member, and a path that is no member path.
 	if a = e.get(rApt, "members/other/pool/x/x/x_1_amd64.deb", e.alice); a.Status != 404 {
