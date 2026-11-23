@@ -429,7 +429,7 @@ order is what a user or an operator meets first. The state is kept here.
 | Package | What it closes | State |
 |---|---|---|
 | Signatures with the real clients | the check of the repairs of 2026-11-21 with the real clients, and what it finds | landed at 09:39 |
-| Screens, first round | fourteen findings of screens (the entries of repository, version, vulnerability and audit pages, the npm form, the malware settings, the signatures' lists) | built and reworked (twenty-two commits, the storage walk's race among them); looked at twice; at the landing's gates since 11:33 |
+| Screens, first round | fourteen findings of screens (the entries of repository, version, vulnerability and audit pages, the npm form, the malware settings, the signatures' lists) | landed at 11:51 (twenty-two commits, the storage walk's race among them) |
 | W1 · Authorization answers the same in every format | the administrator flag shown to `tokens:read` alone (H-836); the global read policy and the default-scope token; the refusals that end a virtual read | landed at 10:49 |
 | W3 · The download limits count what they promise | refused requests that still count (the upstream budget, an endpoint's rate class); seven paths without a test; three statements; the help text of waiting downloads | landed at 11:37 |
 | W2 · Scanning keeps its promises to an operator | a scan attempt lost when a repository is enabled again; the scanner's spool that `QuaderSpoolNearlyFull` does not see; layer writes without a flush; a removed scanner pod shown ready; two measurements | in work since 10:51 |
@@ -6745,6 +6745,22 @@ two warnings; the clients' image cache misses once (the script changed) and hits
 on; with the screens' push right after it the older run is not cancelled and its Semantic Release ends
 without releasing ("the local branch main is behind the remote one"), and the newer run releases.
 Each item is one commit and can be taken back alone.
+**11:51, the run of W6's push started with its 29 jobs** (the workflow parses; the scan of the upstream
+images is running), and the run of 11:37 beside it was not cancelled. **Seen with it: the scheduled
+nightly started at 11:43** (its schedule fires hours late; all legs, 22 jobs, on the commit of 11:37).
+**The development agent takes back the half of its decision 22 that held a push for the nightly:** the
+owner's standing rules say that a push is made at any time and that the run never waits for a
+nightly, and a scheduled nightly at noon beside a day of landings would hold them for five hours. What
+stays of the decision: a latency miss of a nightly's leg is read with the recorder's readings of its
+window (the standing entry "A stall without a neighbour"), a miss with a push's legs beside it is
+noted and opens nothing, and a single set the development agent dispatches itself to measure is
+dispatched with no push beside it. This nightly's results are read in the window from 17:00.
+**11:51, landed: the screens' first round** (twenty-two commits, the head a `fix:`), on top of W6, without
+waiting for W6's run: nothing is cancelled any more, and the older run's release step ends without
+releasing when `main` has moved. With it the walk that stopped the layout checks at 09:39 is repaired.
+Open with it for the second round: the German pictures of the signature findings after the last change
+were not taken again (identities are not translated); the vulnerability set's end-to-end specs, which
+changed with the shared page header, run in this push's legs for the first time.
 **In work since 05:38: package 7 of the encryption, the destruction of a retired connection's keys**
 (R-STOR-097 to R-STOR-103 and the journal's replay; the development agent's answer of 2026-11-22 to the
 question of what stays readable at a provider). It stands on the handover's second package as it lands;
