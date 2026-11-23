@@ -4771,6 +4771,21 @@ func (e UpstreamTestResultErrorCode) Valid() bool {
 	}
 }
 
+// Defines values for UsageCredentialCertificateKind.
+const (
+	UsageCredentialCertificateKindCertificate UsageCredentialCertificateKind = "certificate"
+)
+
+// Valid indicates whether the value is a known member of the UsageCredentialCertificateKind enum.
+func (e UsageCredentialCertificateKind) Valid() bool {
+	switch e {
+	case UsageCredentialCertificateKindCertificate:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for UsageCredentialSessionKind.
 const (
 	UsageCredentialSessionKindSession UsageCredentialSessionKind = "session"
@@ -12429,9 +12444,12 @@ type RepositoryConsumerView struct {
 	Addresses   []string                    `json:"addresses"`
 	Class       RepositoryConsumerViewClass `json:"class"`
 	Description string                      `json:"description"`
-	Format      string                      `json:"format"`
-	Key         string                      `json:"key"`
-	Layout      string                      `json:"layout"`
+
+	// Disabled The repository is disabled and answers no client; its screens offer no client setup, address or download of it.
+	Disabled bool   `json:"disabled"`
+	Format   string `json:"format"`
+	Key      string `json:"key"`
+	Layout   string `json:"layout"`
 
 	// Visibility The levels of a repository's two parts (R-AUTHZ-033, R-AUTHZ-034): `artifacts`, what package clients resolve, install and
 	// download, and `wiki`, the documentation of its packages that Quader serves or shows apart from the files. The artifacts
@@ -15088,6 +15106,17 @@ type UsageByRepository struct {
 	UpstreamRequests int64  `json:"upstreamRequests"`
 }
 
+// UsageCredentialCertificate defines model for UsageCredentialCertificate.
+type UsageCredentialCertificate struct {
+	Kind UsageCredentialCertificateKind `json:"kind"`
+
+	// Serial The certificate's serial in lowercase hexadecimal: a renewed certificate of the same subject is a credential of its own (Q-CLAMAV-12).
+	Serial string `json:"serial"`
+}
+
+// UsageCredentialCertificateKind defines model for UsageCredentialCertificate.Kind.
+type UsageCredentialCertificateKind string
+
 // UsageCredentialSession defines model for UsageCredentialSession.
 type UsageCredentialSession struct {
 	Kind UsageCredentialSessionKind `json:"kind"`
@@ -15113,7 +15142,7 @@ type UsageCredentialTokenKind string
 type UsageDetail struct {
 	Budgets []UsageBudget `json:"budgets"`
 
-	// Credentials A user's consumption per credential; empty for every other kind.
+	// Credentials A user's consumption per credential (the session, each personal token) and a certificate subject's per certificate; empty for every other kind.
 	Credentials  []UsageByCredential `json:"credentials"`
 	History      []UsagePoint        `json:"history"`
 	Mode         LimitMode           `json:"mode"`
@@ -19166,6 +19195,32 @@ func (t *UsageByCredential_Credential) FromUsageCredentialToken(v UsageCredentia
 
 // MergeUsageCredentialToken performs a merge with any union data inside the UsageByCredential_Credential, using the provided UsageCredentialToken
 func (t *UsageByCredential_Credential) MergeUsageCredentialToken(v UsageCredentialToken) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsUsageCredentialCertificate returns the union data inside the UsageByCredential_Credential as a UsageCredentialCertificate
+func (t UsageByCredential_Credential) AsUsageCredentialCertificate() (UsageCredentialCertificate, error) {
+	var body UsageCredentialCertificate
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromUsageCredentialCertificate overwrites any union data inside the UsageByCredential_Credential as the provided UsageCredentialCertificate
+func (t *UsageByCredential_Credential) FromUsageCredentialCertificate(v UsageCredentialCertificate) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeUsageCredentialCertificate performs a merge with any union data inside the UsageByCredential_Credential, using the provided UsageCredentialCertificate
+func (t *UsageByCredential_Credential) MergeUsageCredentialCertificate(v UsageCredentialCertificate) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err

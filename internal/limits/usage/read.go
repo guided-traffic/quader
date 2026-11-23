@@ -275,18 +275,20 @@ func (r Reader) Repositories(ctx context.Context, p Period, kind limits.SubjectK
 	return out, err
 }
 
-// CredentialUsage is a user's consumption through one credential.
+// CredentialUsage is a subject's consumption through one credential: a user's session or personal token, a certificate subject's
+// certificate by its serial.
 type CredentialUsage struct {
 	Credential                 string
 	Requests, Cached, Uncached int64
 }
 
-// Credentials reads a user's consumption per credential in a period.
-func (r Reader) Credentials(ctx context.Context, p Period, ref string, s Scope) ([]CredentialUsage, error) {
+// Credentials reads a subject's consumption per credential in a period; the kinds with credentials are the user and the
+// certificate subject (R-LIM-027).
+func (r Reader) Credentials(ctx context.Context, p Period, kind limits.SubjectKind, ref string, s Scope) ([]CredentialUsage, error) {
 	since, g := p.Window(r.now())
 	var out []CredentialUsage
 	err := r.in(ctx, func(qs *q.Queries) error {
-		rows, err := qs.UsageCredentials(ctx, q.UsageCredentialsParams{Granularity: g, Since: ts(since), SubjectRef: ref, Repos: s.repos()})
+		rows, err := qs.UsageCredentials(ctx, q.UsageCredentialsParams{Granularity: g, Since: ts(since), SubjectKind: string(kind), SubjectRef: ref, Repos: s.repos()})
 		for _, x := range rows {
 			out = append(out, CredentialUsage{Credential: x.CredentialRef, Requests: x.Requests, Cached: x.CachedBytes, Uncached: x.UncachedBytes})
 		}

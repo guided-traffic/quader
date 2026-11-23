@@ -10927,6 +10927,8 @@ export interface components {
             visibility: components["schemas"]["RepositoryVisibility"];
             /** @description The client addresses: absolute URLs, the public base URL followed by the repository's path. */
             addresses: string[];
+            /** @description The repository is disabled and answers no client; its screens offer no client setup, address or download of it. */
+            disabled: boolean;
         };
         /** @description The answer of a read, by the caller's view. */
         RepositoryRead: components["schemas"]["Repository"] | components["schemas"]["RepositoryConsumerView"];
@@ -15428,8 +15430,14 @@ export interface components {
             hint: string | null;
             description: string | null;
         };
+        UsageCredentialCertificate: {
+            /** @enum {string} */
+            kind: "certificate";
+            /** @description The certificate's serial in lowercase hexadecimal: a renewed certificate of the same subject is a credential of its own (Q-CLAMAV-12). */
+            serial: string;
+        };
         UsageByCredential: {
-            credential: components["schemas"]["UsageCredentialSession"] | components["schemas"]["UsageCredentialToken"];
+            credential: components["schemas"]["UsageCredentialSession"] | components["schemas"]["UsageCredentialToken"] | components["schemas"]["UsageCredentialCertificate"];
             /** Format: int64 */
             requests: number;
             /** Format: int64 */
@@ -15445,7 +15453,7 @@ export interface components {
             budgets: components["schemas"]["UsageBudget"][];
             history: components["schemas"]["UsagePoint"][];
             repositories: components["schemas"]["UsageByRepository"][];
-            /** @description A user's consumption per credential; empty for every other kind. */
+            /** @description A user's consumption per credential (the session, each personal token) and a certificate subject's per certificate; empty for every other kind. */
             credentials: components["schemas"]["UsageByCredential"][];
         };
         LimitProjectRow: {

@@ -7,6 +7,7 @@ package limits
 import (
 	"bytes"
 	"encoding/json"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -279,4 +280,32 @@ func TestR_LIM_034_TheUsageOverviewListsTheReader(t *testing.T) {
 		t.Fatalf("a reader reads the overview: %d", a.Status)
 	}
 	_ = strconv.Itoa
+}
+
+// R-LIM-027, Q-CLAMAV-12: a certificate subject's usage lists its certificates by serial, a renewed one beside the one it replaced.
+// The rows are the ones the usage store writes for a client certificate's requests: the subject, and the serial as the credential.
+func TestR_LIM_027_ACertificateSubjectsUsageListsItsCertificatesBySerial(t *testing.T) {
+	e := newEnv(t)
+	const subject = "CN=clamav-it.example.com,O=Example GmbH"
+	for i, serial := range []string{"5c2f9e0b71a4d3e8", "0a7d33c19f6e2b45"} {
+		e.st.Exec(`INSERT INTO usage_bucket (granularity, bucket_start, subject_kind, subject_ref, credential_ref, place, requests, cached_bytes)
+			VALUES ('5m', date_trunc('minute', now()) - make_interval(mins => 10 + 5 * $3::int), 'certificate', $1, $2, 'instance', 2 + $3::int, 1000)`,
+			subject, serial, i)
+	}
+	a := e.st.Do(e.r, "GET", "/api/v1/usage/subjects/certificate/"+url.PathEscape(subject), e.admin, nil)
+	if a.Status != 200 {
+		t.Fatalf("%d %s", a.Status, a.Body)
+	}
+	got := map[string]float64{}
+	for _, c := range a.JSON(t)["credentials"].([]any) {
+		row := c.(map[string]any)
+		cred := row["credential"].(map[string]any)
+		if cred["kind"] != "certificate" {
+			t.Fatalf("a credential of the kind %v: %s", cred["kind"], a.Body)
+		}
+		got[cred["serial"].(string)] = row["requests"].(float64)
+	}
+	if len(got) != 2 || got["5c2f9e0b71a4d3e8"] != 2 || got["0a7d33c19f6e2b45"] != 3 {
+		t.Fatalf("credentials %v, want both serials with 2 and 3 requests", got)
+	}
 }

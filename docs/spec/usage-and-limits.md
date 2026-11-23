@@ -2966,8 +2966,8 @@ Context: the certificate subject of [formats/clamav.md](formats/clamav.md) R-CLA
 that. The development agent would revisit (b) when an installation needs to limit one host apart from the others. **Applied in the
 spec:** R-LIM-001. Code: `everyOf` in [model.go](../../internal/limits/model.go); the usage store keeps the serial
 ([buffer.go](../../internal/limits/usage/buffer.go)); `UsageSubjectCertificate` in [openapi.yaml](../../api/openapi.yaml);
-[callers.ts](../../web/src/app/features/limits/callers.ts). The detail page of a caller lists the credentials of a user only; a certificate
-subject's serials are in the store and not on that page.
+[callers.ts](../../web/src/app/features/limits/callers.ts). The detail page of a caller lists the credentials of a user and, since
+2026-11-23, a certificate subject's certificates by serial (`UsageCredentialCertificate`, R-UI-184).
 
 ### Q-LIM-97 · A pace figure keeps a download in Quader, in both modes
 

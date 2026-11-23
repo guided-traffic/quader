@@ -106,6 +106,25 @@ func TestRepositoryPrecondition(t *testing.T) {
 	})
 }
 
+func TestRepositoryConsumerView(t *testing.T) {
+	t.Run("R-REPO-010 the consumer view says that a repository is disabled, so a reader's screens offer it no client", func(t *testing.T) {
+		for _, disabled := range []bool{false, true} {
+			st := repository.Stored{
+				Repository: repository.Repository{Name: qname.Repo{Project: "web", Key: "assets"}, Disabled: disabled},
+				Document:   repository.Document{Key: "assets", Class: repository.Local, Format: "generic"},
+			}
+			v := consumerRep("https://quader.example", st)
+			if v.Disabled != disabled {
+				t.Fatalf("disabled = %v, want %v", v.Disabled, disabled)
+			}
+			raw, _ := json.Marshal(v)
+			if !strings.Contains(string(raw), `"disabled":`) {
+				t.Fatalf("the view has no member disabled: %s", raw)
+			}
+		}
+	})
+}
+
 func TestRepositoryListFilters(t *testing.T) {
 	t.Run("R-REPO-012 class and format take repeated and comma-separated values", func(t *testing.T) {
 		got := splitValues([]string{"local,remote", "virtual", " ", "a, b"})

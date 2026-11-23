@@ -214,6 +214,7 @@ func toSummary(base string, st repository.Stored, showLifecycle bool) summaryRep
 func consumerRep(base string, st repository.Stored) repository.ConsumerView {
 	v := st.Document.ConsumerView(protocolBase(st.Document.Format), st.Repository.Name)
 	v.Addresses = addresses(base, st.Repository.Name, st.Document)
+	v.Disabled = st.Repository.Disabled
 	return v
 }
 

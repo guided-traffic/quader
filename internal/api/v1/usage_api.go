@@ -1031,9 +1031,10 @@ func (s *Server) detail(ctx context.Context, l LimitsServices, subj limits.Subje
 	if err != nil {
 		return nil, err
 	}
+	// A user's credentials are its session and its personal tokens, a certificate subject's its certificates by serial (R-LIM-027).
 	var cs []usage.CredentialUsage
-	if subj.Kind == limits.KindUser {
-		if cs, err = l.Usage.Credentials(ctx, period, subj.Ref, scope); err != nil {
+	if subj.Kind == limits.KindUser || subj.Kind == limits.KindCertificate {
+		if cs, err = l.Usage.Credentials(ctx, period, subj.Kind, subj.Ref, scope); err != nil {
 			return nil, err
 		}
 	}
@@ -1049,7 +1050,7 @@ func (s *Server) detail(ctx context.Context, l LimitsServices, subj limits.Subje
 		}
 	}
 	for _, c := range cs {
-		if c.Credential != limits.SessionCredential {
+		if subj.Kind == limits.KindUser && c.Credential != limits.SessionCredential {
 			refs.r.APITokens = append(refs.r.APITokens, c.Credential)
 		}
 	}
@@ -1078,7 +1079,9 @@ func (s *Server) detail(ctx context.Context, l LimitsServices, subj limits.Subje
 	creds := make([]map[string]any, 0, len(cs))
 	for _, c := range cs {
 		cred := map[string]any{"kind": "session"}
-		if c.Credential != limits.SessionCredential {
+		if subj.Kind == limits.KindCertificate {
+			cred = map[string]any{"kind": "certificate", "serial": c.Credential}
+		} else if c.Credential != limits.SessionCredential {
 			cred = map[string]any{"kind": "token", "id": c.Credential, "hint": nil, "description": nil}
 			if h, ok := n.APITokens[c.Credential]; ok {
 				cred["hint"], cred["description"] = h.Hint, h.Description

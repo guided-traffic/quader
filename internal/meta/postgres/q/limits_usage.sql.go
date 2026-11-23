@@ -343,10 +343,11 @@ const usageCredentials = `-- name: UsageCredentials :many
 SELECT b.credential_ref, sum(b.requests)::bigint AS requests, sum(b.cached_bytes)::bigint AS cached_bytes,
        sum(b.uncached_bytes)::bigint AS uncached_bytes
   FROM usage_bucket b
- WHERE b.granularity = $1 AND b.bucket_start >= $2::text::timestamptz AND b.subject_kind = 'user'
-   AND b.subject_ref = $3
-   AND (cardinality($4::bigint[]) = 0 OR b.repository_id = ANY($4::bigint[])
-        OR b.via_repository_id = ANY($4::bigint[]))
+ WHERE b.granularity = $1 AND b.bucket_start >= $2::text::timestamptz
+   AND b.subject_kind = $3
+   AND b.subject_ref = $4
+   AND (cardinality($5::bigint[]) = 0 OR b.repository_id = ANY($5::bigint[])
+        OR b.via_repository_id = ANY($5::bigint[]))
  GROUP BY b.credential_ref
  ORDER BY sum(b.requests) DESC
 `
@@ -354,6 +355,7 @@ SELECT b.credential_ref, sum(b.requests)::bigint AS requests, sum(b.cached_bytes
 type UsageCredentialsParams struct {
 	Granularity string
 	Since       string
+	SubjectKind string
 	SubjectRef  string
 	Repos       []int64
 }
@@ -365,11 +367,13 @@ type UsageCredentialsRow struct {
 	UncachedBytes int64
 }
 
-// A user's consumption per credential in a period: session or the personal token's ID (R-LIM-027).
+// A subject's consumption per credential in a period: a user's session or personal token's ID, a certificate subject's certificate
+// serial (R-LIM-027).
 func (q *Queries) UsageCredentials(ctx context.Context, arg UsageCredentialsParams) ([]UsageCredentialsRow, error) {
 	rows, err := q.db.Query(ctx, usageCredentials,
 		arg.Granularity,
 		arg.Since,
+		arg.SubjectKind,
 		arg.SubjectRef,
 		arg.Repos,
 	)

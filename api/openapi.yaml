@@ -24510,7 +24510,7 @@ components:
     RepositoryConsumerView:
       type: object
       description: What a caller sees who may read a repository but not its configuration (R-REPO-010).
-      required: [key, class, format, description, layout, addresses, visibility]
+      required: [key, class, format, description, layout, addresses, visibility, disabled]
       properties:
         key:
           type: string
@@ -24530,6 +24530,9 @@ components:
           description: "The client addresses: absolute URLs, the public base URL followed by the repository's path."
           items:
             type: string
+        disabled:
+          type: boolean
+          description: The repository is disabled and answers no client; its screens offer no client setup, address or download of it.
     RepositoryRead:
       description: The answer of a read, by the caller's view.
       anyOf:
@@ -31385,6 +31388,12 @@ components:
         id: {type: string}
         hint: {type: [string, "null"], description: "`null` for a token that was deleted."}
         description: {type: [string, "null"]}
+    UsageCredentialCertificate:
+      type: object
+      required: [kind, serial]
+      properties:
+        kind: {type: string, enum: [certificate]}
+        serial: {type: string, description: "The certificate's serial in lowercase hexadecimal: a renewed certificate of the same subject is a credential of its own (Q-CLAMAV-12)."}
     UsageByCredential:
       type: object
       required: [credential, requests, cachedBytes, uncachedBytes]
@@ -31393,6 +31402,7 @@ components:
           oneOf:
             - $ref: "#/components/schemas/UsageCredentialSession"
             - $ref: "#/components/schemas/UsageCredentialToken"
+            - $ref: "#/components/schemas/UsageCredentialCertificate"
         requests: {type: integer, format: int64}
         cachedBytes: {type: integer, format: int64}
         uncachedBytes: {type: integer, format: int64}
@@ -31415,7 +31425,7 @@ components:
           items: {$ref: "#/components/schemas/UsageByRepository"}
         credentials:
           type: array
-          description: A user's consumption per credential; empty for every other kind.
+          description: A user's consumption per credential (the session, each personal token) and a certificate subject's per certificate; empty for every other kind.
           items: {$ref: "#/components/schemas/UsageByCredential"}
     LimitProjectRow:
       type: object

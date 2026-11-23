@@ -182,6 +182,9 @@ type ConsumerView struct {
 	// Visibility is shown in the reduced view as well, so that every reader sees how open a repository is (R-API-057).
 	Visibility Visibility `json:"visibility"`
 	Addresses  []string   `json:"addresses"`
+	// Disabled is shown in the reduced view as well: a disabled repository answers no client, so no reader's screen offers a
+	// client setup, an address or a download of it (R-REPO-010).
+	Disabled bool `json:"disabled"`
 }
 
 // WithoutAdminNotes returns the document as a caller without

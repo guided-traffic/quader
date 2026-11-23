@@ -124,11 +124,13 @@ SELECT COALESCE(b.repository_id, 0)::bigint AS repository_id, COALESCE(p.key, ''
  ORDER BY sum(b.requests) DESC;
 
 -- name: UsageCredentials :many
--- A user's consumption per credential in a period: session or the personal token's ID (R-LIM-027).
+-- A subject's consumption per credential in a period: a user's session or personal token's ID, a certificate subject's certificate
+-- serial (R-LIM-027).
 SELECT b.credential_ref, sum(b.requests)::bigint AS requests, sum(b.cached_bytes)::bigint AS cached_bytes,
        sum(b.uncached_bytes)::bigint AS uncached_bytes
   FROM usage_bucket b
- WHERE b.granularity = sqlc.arg(granularity) AND b.bucket_start >= sqlc.arg(since)::text::timestamptz AND b.subject_kind = 'user'
+ WHERE b.granularity = sqlc.arg(granularity) AND b.bucket_start >= sqlc.arg(since)::text::timestamptz
+   AND b.subject_kind = sqlc.arg(subject_kind)
    AND b.subject_ref = sqlc.arg(subject_ref)
    AND (cardinality(sqlc.arg(repos)::bigint[]) = 0 OR b.repository_id = ANY(sqlc.arg(repos)::bigint[])
         OR b.via_repository_id = ANY(sqlc.arg(repos)::bigint[]))
