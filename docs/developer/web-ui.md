@@ -299,7 +299,8 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    walk that answers a failure in the browser to render an error state (`repositories-unavailable`: the shared error notice with
    **Retry**) names that notice in `notices`. Every load of a screen is a first visit: the **Details** a walk opened at the width before
    are not reopened from the browser's memory (Q-UI-967), unless the walk sets `KEEP_OPEN` for its next load
-   (`repository-details-remembered`).
+   (`repository-details-remembered`). A screen whose lists keep the form of a table from 1,024 px on whatever they hold names them in
+   `tables` (a selector inside `main`; the signatures' screens, Q-UI-969): one that stands as blocks there is the finding `stacked`.
 5. **The layout checks** ([renders/layout.ts](../../web/e2e/renders/layout.ts), R-UI-170 to R-UI-176,
    [Q-UI-682](../spec/api-and-ui.md#q-ui-682--the-render-run-measures-the-layout-in-the-page-and-a-finding-fails-the-screen)) measure each
    picture's page once (one `page.evaluate`, in the light scheme: the dark one has the same layout). A finding is a line

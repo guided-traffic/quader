@@ -272,6 +272,13 @@ async function shoot(page: Page, kind: Kind, screen: Screen, tab: string | null,
     if (width >= 1024) {
       for (const r of regions) findings.push({ check: 'sideways', what: r.what, text: '', detail: `the region scrolls ${r.overflowX} px sideways`, count: 1 });
     }
+    // The lists the screen holds to the form of a table at 1,024 px and wider (Q-UI-969).
+    if (width >= 1024 && screen.tables) {
+      const stacked = await page.locator(`main :is(${screen.tables}).stacked`).count();
+      if (stacked > 0) {
+        findings.push({ check: 'stacked', what: screen.tables, text: '', detail: `${stacked} list(s) stand as blocks at ${width} px`, count: stacked });
+      }
+    }
   }
   const judged = judge(screen.id, findings);
   const name = `${screen.id}${tab ? `-${slug(tab)}` : ''}-${scheme}-${width}.png`;

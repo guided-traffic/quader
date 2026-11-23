@@ -55,6 +55,11 @@ export interface Screen {
   /** Error notices that are the state the walk renders (it answered the failure in the browser), each with its reason. */
   readonly notices?: readonly { readonly match: RegExp; readonly why: string }[];
   /**
+   * The lists of the screen that keep the form of a table from 1,024 px on, whatever they hold (Q-UI-969): the host element of each
+   * as a selector inside `main`. One that stands as blocks there is a finding `stacked`.
+   */
+  readonly tables?: string;
+  /**
    * A flow through the screen: each value it yields names a state that is rendered, after the actions before it ran. Without a
    * walk the screen is rendered as it opens and with each of its tabs.
    */
@@ -2412,7 +2417,7 @@ export const screens: readonly Screen[] = [
   // The dashboard's malware view (R-MAL-025): what the auditor assesses and releases; an administrator sees the same.
   { id: 'security-malware', path: '/ui/security/malware', kinds: ['auditor'], walk: malwareFinds },
   // The dashboard's signatures view (R-SIG-038): invalid signatures and blocked signers; an administrator sees the same.
-  { id: 'security-signatures', path: '/ui/security/signatures', kinds: ['auditor'], walk: signatureFindings },
+  { id: 'security-signatures', path: '/ui/security/signatures', kinds: ['auditor'], walk: signatureFindings, tables: 'quader-signature-findings > quader-data-table' },
   // The refused downloads and the releases of the gates (R-SIG-074), with the release's dialog for both who triage.
   { id: 'security-signature-refusals', path: '/ui/security/signatures', kinds: auditors, walk: refusalsWalk },
   // Set up client of a repository (R-UI-120): every format and class of the seed, the long keys, and a public repository signed out.
@@ -2476,7 +2481,7 @@ export const screens: readonly Screen[] = [
   // The main project has no maximum: its read answers 200 with `maximum` null (Q-API-356).
   { id: 'project-settings-limits', path: `${P}/settings`, kinds: owners, walk: limitsSectionOpen },
   // The project's trust anchors (R-SIG-037): the Owner's form, a member's read, and the switch off.
-  { id: 'project-settings-anchors', path: `${P}/settings`, kinds: [...owners, 'plain'], walk: projectAnchors },
+  { id: 'project-settings-anchors', path: `${P}/settings`, kinds: [...owners, 'plain'], walk: projectAnchors, tables: 'quader-anchor-table > quader-data-table' },
   { id: 'repository-settings-limits', path: `${P}/repositories/npmjs/settings`, kinds: owners, walk: limitsSectionOpen },
   { id: 'project-usage', path: `${P}/usage`, kinds: owners, walk: usageWalk },
   { id: 'project-usage-repository', path: `${P}/usage?repository=npmjs`, kinds: owners, walk: limitsModes },
@@ -2615,7 +2620,7 @@ export const screens: readonly Screen[] = [
   // The malware scanning's page (R-MAL-023): every state of the administrator's, and the auditor's read-only page with the link to the finds.
   { id: 'admin-settings-malware', path: '/ui/admin/settings/malware', kinds: admins, walk: malwareSettings },
   { id: 'admin-settings-malware-read', path: '/ui/admin/settings/malware', kinds: ['auditor'] },
-  { id: 'admin-settings-signatures', path: '/ui/admin/settings/signatures', kinds: admins, walk: signatureSettings },
+  { id: 'admin-settings-signatures', path: '/ui/admin/settings/signatures', kinds: admins, walk: signatureSettings, tables: 'quader-data-table' },
   // >>> download-links
   { id: 'admin-settings-storage', path: '/ui/admin/settings/storage', kinds: admins, walk: storageSettings },
   { id: 'admin-settings-storage-read', path: '/ui/admin/settings/storage', kinds: ['auditor'] },
