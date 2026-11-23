@@ -442,8 +442,8 @@ order is what a user or an operator meets first. The state is kept here.
 | W1 · Authorization answers the same in every format | the administrator flag shown to `tokens:read` alone (H-836); the global read policy and the default-scope token; the refusals that end a virtual read | landed at 10:49 |
 | W3 · The download limits count what they promise | refused requests that still count (the upstream budget, an endpoint's rate class); seven paths without a test; three statements; the help text of waiting downloads | landed at 11:37 |
 | W2 · Scanning keeps its promises to an operator | a scan attempt lost when a repository is enabled again; the scanner's spool that `QuaderSpoolNearlyFull` does not see; layer writes without a flush; a removed scanner pod shown ready; two measurements | landed at 12:45 (six commits); the second step landed at 15:13 (seven commits): the request's statement bound without a round trip more for a single read, the spools' flushes, the scanner's full disk, the command `quader admin secrets status`, the malware rows of the audit events' table. Left open: a cancel through poolers that are not peers (H-1662, section 8) |
-| W6 · The pipeline loses nothing and scans every image it runs | a push that cancels the run before it; the analyser's and ClamAV's images never scanned; the evidence record and the badge that stand still; a `unit` target with the emptied AWS environment; the lint's limit and serial runs; fuzz names; the pins of the e2e legs; a partial dispatch; the disk watcher; the key of the clients' image cache, which changes with every commit, so a push never hits it | landed at 11:50 (fourteen commits; the disk watcher not built, see With the owner); its first runs are read against what each item must show; the evidence record with the release follows as a step of its own |
-| W5a · NuGet and OCI | NuGet's README route that answers 501; the challenge of an upstream token; what the two formats' pages count and the code does not; the tag listing's measurement with 100,000 tags | landed at 13:18 (five commits and the repair of a stale test): NuGet serves the icon, the license file and the README a package embeds; an upstream's token requests are counted; the kit holds every format's challenge; the tag listing measured with 100,000 tags. A second step is in work since 13:19: the version list that reads every row for every page, in every format; the shadowing check that OCI and Debian do not record |
+| W6 · The pipeline loses nothing and scans every image it runs | a push that cancels the run before it; the analyser's and ClamAV's images never scanned; the evidence record and the badge that stand still; a `unit` target with the emptied AWS environment; the lint's limit and serial runs; fuzz names; the pins of the e2e legs; a partial dispatch; the disk watcher; the key of the clients' image cache, which changes with every commit, so a push never hits it | landed at 11:50 (fourteen commits; the disk watcher not built, see With the owner); its first runs are read against what each item must show; the evidence record with the release is in work as W6b since 15:30 (the pipeline as the record's only source, a release that commits the newest green record and badge without waiting for them, the reports chosen by commit, the record's missing format and its false row of npm's search) |
+| W5a · NuGet and OCI | NuGet's README route that answers 501; the challenge of an upstream token; what the two formats' pages count and the code does not; the tag listing's measurement with 100,000 tags | landed at 13:18 (five commits and the repair of a stale test): NuGet serves the icon, the license file and the README a package embeds; an upstream's token requests are counted; the kit holds every format's challenge; the tag listing measured with 100,000 tags. The second step is built (two commits and a migration, back at 15:29) and goes to the landing's gates next: a page of versions reads its page and no version past it, in every format (an image with 100,000 tags lists a page in 43 ms instead of 16.6 s); OCI and Debian record a publish with the undetermined shadowing check. Left open with numbers: the package list of such an image (H-829), the order by version in memory (H-1683) |
 | W5b · Debian and Ansible Galaxy | `member_expired` and a member's recorded `Date` without an integration case; the wiki's cases; the requirements no test names; the check against the public Galaxy; first the Debian test that made `main` red for the third time | the Debian remote's repair landed at 11:37, the rest at 12:45 (two commits); the second step landed at 13:47 (three commits): collections with symbolic links, a stale `InRelease` after a key change, a requirement's numbers, the formats' log lines without the replica's fields |
 | W4 · Go tests wait for what they stand for | fixed sleeps and paced setups in integration and unit tests; four convention checks that sit in a format's area; tests that depend on the machine; the harness's policy helper that writes an empty policy without a word | in work since 14:31; the tests that depend on the machine first |
 | W8 · Web and end-to-end tests wait for what they stand for | the fixed 320 ms of choosing a person; paced setups of the e2e environments; the fixed waits of three seconds in the limits' client cases and the load test's tokens (from W3, since they need the kind cluster); a code push during a nightly | after the screens' first round |
@@ -673,6 +673,20 @@ records the recorder that tells such a stall apart).
 - **`TestR_NUGET_004_AWorkerRecomputesTheSemVer2Flag…` (area `nuget`) timed out once waiting for a job
   under load (2026-11-23, host load 42 to 46, at the gates of W5a's builder);** the area passed on the
   rerun. Not looked into. To do (W4): with the other waits that a starved host breaks.
+- **`e2e (vuln)` is red in the run of the push of 14:49 by a line the screens' second round wrote for
+  the owner's menu entries (2026-11-23; Test and Release 45187733127, job 137743015415).**
+  `web/e2e/vuln/16-security-dashboard.spec.ts` compares the text of the three links under Security
+  audit with their words, and a link's text carries its icon's ligature ("securitySecurity dashboard",
+  "bug_reportMalware", "verifiedSignatures"); the other five journeys of the file passed, the repair
+  of the repository under its package among them. The line was never run before its push: a builder
+  cannot run the legs of the kind cluster, and the landing's gates only type-check the journeys. In
+  repair landed alone at 15:30, ahead of the stack of W9 it came from: the journey names the three links
+  by their accessible names in their order, and the shell's component test holds that an entry's
+  accessible name is its word alone while its text is not (`web/src/app/app.spec.ts`, R-UI-168). The
+  builder searched the journeys of today's commits for another exact comparison of the text of an
+  element that holds an icon and found none. Not run: the leg itself; **open until the leg `e2e
+  (vuln)` of that push is green.** To do beside it (W8, with the cluster per checkout): a builder runs
+  the journey it changed before it reports.
 
 ### Product
 
@@ -741,28 +755,6 @@ records the recorder that tells such a stall apart).
   development agent on 2026-11-23 in `web/src/locale/messages.de.xlf`).** Among them the Bastions page's
   introduction and two of its dialogs, "Das bist du", a project's summary, a token's hint and the address
   in use. To do (W10b): each gets the formal address, and the translation check refuses the informal one.
-- **`quader admin secrets status` does not exist (found on 2026-11-23 by the builder of W10a behind a
-  sentence).** R-ARCH-021 requires the command, the evidence record lists the requirement as implemented,
-  and four pages send an operator to it (`docs/security/deb-signing.md`, `docs/spec/storage.md`,
-  `docs/developer/http-api.md`, `docs/spec/formats/debian.md`). To do: the second step of W2, which has
-  the secrets' and the scanners' wiring in its head: the command as the requirement says, with its test.
-- **Partly closed; open: the five malware rows of the operations requirement's table of audit events, which
-  still say "Specified, not built" (`docs/spec/operations-and-observability.md`; the second step of W2).**
-  Closed: the rest, by 80d68e8d5 (2026-11-23): the block Q-UI-349 has its status line, superseded by Q-UI-335
-  (`docs/spec/api-and-ui.md`); the 26 blocks that are tables of several decisions or state their choice in
-  prose have a choice line, so their rows of the index say what was chosen, and the six rows still without one
-  are superseded or reversed questions whose status names the successor (3,484 rows on 849f5cd4a;
-  `TestDecisionsIndexOfTheRealDocs`, unit, `internal/tools/coverage`, passes); the README and
-  `docs/developer/helm-chart.md` count the 55 alerts of `_rules.tpl`, 37 of them always, held by
-  `TestR_HA_045_TheDocumentsCountTheAlerts` (chart tier, `test/chart`, run by `make chart-test`,
-  milliseconds); the comment of the background fetch's counter in `internal/signatures/job/metrics.go` names
-  the two results the code reports, `ok` and `error`. As it stood:
-  **Seen by the builder of W10a on 2026-11-23 and left for its second step:** the five malware rows of the
-  operations requirement's table of audit events still say "Specified, not built" although the code
-  records all eight events; the block Q-UI-349 has no status line; 32 rows of the generated index show no
-  choice (superseded questions and blocks that are tables of several decisions); the README gives two
-  different counts of alerts (55 and 48); a comment in `internal/signatures/job/metrics.go` lists results
-  the code never reports.
 - **The version list of a package reads every version for every page, in every format (found on
   2026-11-23 by the measurement that H-829 had asked for).** With 100,000 tags of one image in a remote
   OCI repository a page of tags took 16.6 s, the first page, a middle page and a page of 500 alike (the
@@ -843,20 +835,13 @@ records the recorder that tells such a stall apart).
   one of the deferred paths of R-NPM-043 in `internal/formats/npm/routes.go`. Not read: which test makes
   the record say so. The specification of T-24 keeps the protocol route as it is (Q-CUR-28: searching
   the upstream is the catalogue's surface, not `-/v1/search`), so no package of T-24 builds it. To do
-  (W10b, with the names of tests): find what makes the record say "implemented" and correct the record
+  (W6b, the evidence record's step, which reads how the record comes to be): find what makes the record
+  say "implemented" and correct the record
   through it; the route itself stays a deferred requirement of the format.
 - **OCI and Debian record no undetermined shadowing check (seen on 2026-11-23 by the builder of W5a).**
   R-REPO-048 requires `shadowCheck: undetermined` on the publish event of every format; npm, NuGet and
   Ansible Galaxy record it through one function in W5a's commits, the publish events of the two others
   never do. To do: the second step of W5a.
-- **Seen by the builder of W2 on 2026-11-23, outside its items (read in the code, not reproduced):** (1)
-  **the statement timeout of five seconds that R-ARCH-019 gives a request has no caller** (`RequestTx`):
-  every request runs under the session's 30 s, so a slow statement holds a request and its connection six
-  times as long as the requirement says; (2) the upload spool's hashing copy (`internal/blob/spool.go`)
-  flushes nothing until its end, the same risk of a kill for dirty pages that the image scan's layers had,
-  on the packages and the worker pods with limits of 1 to 2 GiB; (3) the scanner's `writeAnalysis`
-  (`internal/vuln/scanner/detect.go`) reports a failed write or flush to its disk as `malformed_request`
-  ("not gzip"), which sends an operator to the wrong place. To do: the second step of W2.
 - **Partly closed; open: a render state of it, looked at: the walk's state `none` of `malwareSettings`
   (`web/e2e/renders/screens.ts`) takes the database's version away but keeps the scanners' answer of the
   render seed, which holds a ready updater (`web/e2e/renders/scanners.ts`), so the page's sentence for a
@@ -880,6 +865,13 @@ records the recorder that tells such a stall apart).
   writer's read through the gate and the audit event `signature.download_by_writer` says less than its name. To
   do: read which requests of a push take the writer's path and count only a read of content the gate
   holds back.
+- **Two rows of the maintenance tasks' table say "specified, not built" of tasks that are built (seen on
+  2026-11-23 by the writer who marked the landing of 15:13).** `docs/spec/operations-and-observability.md`
+  says so of `malware-scan` (R-MAL-004) and `malware-sync-db` (R-MAL-010); the code registers the second in
+  `internal/app/wire_malware_database.go`, the first was not read. The words "specified, not built" stand
+  72 times in the specification, the developer pages and the security pages, and nobody has read them
+  against the code as a whole. To do (a writer, since 15:19): each of the 72 against the code; a stale
+  one is corrected, a true one stays.
 
 ### Closed
 
@@ -1389,6 +1381,94 @@ the plan.
 
 **Of the product:**
 
+- **Closed on 2026-11-23 by a6d6486a8 (R-ARCH-021, R-API-049): `quader admin secrets status` exists and prints
+  the key ring of the stored secrets.** The command (`cmd/quader/admin_secrets.go`, with `--json` for one
+  document) prints the active key, per key ID whether it is active, whether the pod's ring holds it, the
+  sealed values under it over every registered column and its canary, the live replicas with their role,
+  active key and key IDs, and whether the rings are compatible; it changes nothing and prints key IDs and
+  counts only. The report is one implementation, `KeyRing.BuildReport` of `internal/secrets/report.go`, which
+  `GET /api/v1/system/encryption` renders too (`internal/api/v1/encryption_api.go`), so the command the four
+  pages name exists and says what the endpoint says; the README lists it with its flags. Held by
+  `TestR_ARCH_021_TheKeyRingReport` and `TestRingsCompatible` (unit, `internal/secrets`) and
+  `TestR_ARCH_021_TheSecretsStatusCommandPrintsTheKeyRingReport` (unit, `cmd/quader`), each under a second,
+  which pass, and by `TestR_ARCH_021_TheSecretsStatusCommandReportsWhatTheEndpointReports` (integration, area
+  `restoreversions`), which holds that the command and the endpoint give the same report; vetted with the tag
+  `integration` and not run here, it passed in the builder's gates (run record, 14:52), not in the landing's.
+  781861259 names the usage text so that the lint's credential check does not take it for a secret.
+  As it stood:
+  **`quader admin secrets status` does not exist (found on 2026-11-23 by the builder of W10a behind a
+  sentence).** R-ARCH-021 requires the command, the evidence record lists the requirement as implemented,
+  and four pages send an operator to it (`docs/security/deb-signing.md`, `docs/spec/storage.md`,
+  `docs/developer/http-api.md`, `docs/spec/formats/debian.md`). To do: the second step of W2, which has
+  the secrets' and the scanners' wiring in its head: the command as the requirement says, with its test.
+- **Closed on 2026-11-23 by dd9b5e0cb (R-OPS-016, R-MAL-026): the malware rows of the audit events' table say
+  how each event is recorded.** The table of `docs/spec/operations-and-observability.md` has one row per
+  malware event, eight where five rows stood, each with when it is written, by whom, with which journal entry
+  and which details, as the code records them, and none says "Specified, not built"; `malware.database.failed`
+  is also written when a scanner's `clamd` refuses the version in use. Where the code and R-MAL-026 differed,
+  the requirement decided: a release's reason code is recorded as `reason_code`, not `reasonCode`
+  (`internal/malware/store/store.go`, `internal/audit/events_malware.go`). Held by
+  `TestR_MAL_026_TheDetailsCarryTheKeysOfTheTable` and
+  `TestR_MAL_026_TheEventsAreRegisteredWithTheirJournalFlags` (unit, `internal/audit`, milliseconds), which
+  pass, and by the grant's details checked in `TestR_MAL_022_TheOperationsAnswerByRole` (integration, area
+  `malware`, vetted with the tag `integration` and not run here; the area passed in the landing's gates, run
+  record 15:13). No test reads the requirement's table itself: the tests hold the code against the keys
+  R-MAL-026 names. Open until now: the five malware rows of the operations requirement's table of audit
+  events, which still say "Specified, not built" (`docs/spec/operations-and-observability.md`; the second step
+  of W2). Closed before: the rest, by 80d68e8d5 (2026-11-23): the block Q-UI-349 has its status line,
+  superseded by Q-UI-335 (`docs/spec/api-and-ui.md`); the 26 blocks that are tables of several decisions or
+  state their choice in prose have a choice line, so their rows of the index say what was chosen, and the six
+  rows still without one are superseded or reversed questions whose status names the successor (3,484 rows on
+  849f5cd4a; `TestDecisionsIndexOfTheRealDocs`, unit, `internal/tools/coverage`, passes); the README and
+  `docs/developer/helm-chart.md` count the 55 alerts of `_rules.tpl`, 37 of them always, held by
+  `TestR_HA_045_TheDocumentsCountTheAlerts` (chart tier, `test/chart`, run by `make chart-test`,
+  milliseconds); the comment of the background fetch's counter in `internal/signatures/job/metrics.go` names
+  the two results the code reports, `ok` and `error`. As it stood:
+  **Seen by the builder of W10a on 2026-11-23 and left for its second step:** the five malware rows of the
+  operations requirement's table of audit events still say "Specified, not built" although the code
+  records all eight events; the block Q-UI-349 has no status line; 32 rows of the generated index show no
+  choice (superseded questions and blocks that are tables of several decisions); the README gives two
+  different counts of alerts (55 and 48); a comment in `internal/signatures/job/metrics.go` lists results
+  the code never reports.
+- **Closed on 2026-11-23 by 0a5925490 and 21906b01a (R-ARCH-019, Q-ARCH-650), 62613171f (Q-STOR-486) and
+  b99d3b193 (Q-VULN-237): each of the three points is repaired.** (1) The client listener's chain puts
+  `database.request_statement_timeout` (5 s by default, at most the session's `statement_timeout`) into every
+  request's context (`RequestContext` in `internal/app/wire_endpoints.go`, `meta.WithStatementTimeout` in
+  `internal/meta/timeout.go`); a transaction of such a context opens with `SET LOCAL statement_timeout` in the
+  same query as its `BEGIN`, and a single read outside a transaction gives each statement a deadline of the
+  bound, with which the driver cancels it at the server, so that it stays one round trip (`beginOptions`,
+  `Read` and `boundedConn` of `internal/meta/postgres/tx.go`); both answer 503 `database_timeout`, and jobs
+  and loops keep the session's 30 s. `RequestTx` is gone. Held by `TestBeginOptions` and
+  `TestStatementBoundIsNoOutage` (unit, `internal/meta/postgres`, milliseconds), which pass, and by
+  `TestR_ARCH_019_ARequestsStatementEndsAtTheRequestBound` (integration, area `api`: a read and a transaction,
+  each held by a lock, answer 503 at the bound) and the case R-ARCH-019 of `TestInTx` (area `postgres`),
+  vetted with the tag `integration` and not run here; both areas passed in the landing's gates (run record,
+  15:13), and the eighteen counts of the query budgets are those of `main` before it (run record, 14:52). Not
+  run: a cancel through the profile's poolers, which the entry of H-1662 in this group keeps open, a stall of
+  the network, and a request whose reads take nearly five seconds. (2) The spool writes an upload through
+  `syncwrite.Writer`, which flushes at every 32 MiB written whatever the size of the reads
+  (`internal/blob/spool.go`, `internal/syncwrite/syncwrite.go`), and so do the Bastion's fills, the spool of a
+  stored object, the offline tool's pull and get and the importer's download; held by
+  `TestQ_STOR_486_TheSpoolFlushesAnUploadWhileItArrives` (unit, `internal/blob`) and the case Q-STOR-486 of
+  `TestCopy` (unit, `internal/syncwrite`), which pass. As for the scanners' writes before it, no kill for
+  dirty pages was measured before or after, and no upload was run under a pod's memory limit. (3) A failed
+  write or flush of the scanner's own spool is 503 `scanner_disk_failed` with an error line of the scanner
+  that names its working directory, and the worker puts the scan off a minute, to be tried on another scanner,
+  without spending an attempt (`internal/vuln/scanner/detect.go`, `scanner.go`,
+  `internal/vuln/imagescan/detect.go`); a failure of the image's own bytes keeps its code. Held by
+  `TestQ_VULN_237_AFailedWriteOfTheScannersDiskIsTheScannersAndNotTheCallers` (unit, `internal/vuln/scanner`,
+  a write that fails with ENOSPC and a flush that fails with EIO) and the case Q-VULN-237 of
+  `TestR_VULN_041_EveryAnswerOfTheScannerMapsToItsCodeAttemptAndWait` (unit, `internal/vuln/imagescan`), which
+  pass. A full temporary volume of ClamAV still reads as `scan_failed`, the gap H-1661 of
+  `docs/spec/malware-scanning.md`. As it stood:
+  **Seen by the builder of W2 on 2026-11-23, outside its items (read in the code, not reproduced):** (1)
+  **the statement timeout of five seconds that R-ARCH-019 gives a request has no caller** (`RequestTx`):
+  every request runs under the session's 30 s, so a slow statement holds a request and its connection six
+  times as long as the requirement says; (2) the upload spool's hashing copy (`internal/blob/spool.go`)
+  flushes nothing until its end, the same risk of a kill for dirty pages that the image scan's layers had,
+  on the packages and the worker pods with limits of 1 to 2 GiB; (3) the scanner's `writeAnalysis`
+  (`internal/vuln/scanner/detect.go`) reports a failed write or flush to its disk as `malformed_request`
+  ("not gzip"), which sends an operator to the wrong place. To do: the second step of W2.
 - **Closed on 2026-11-23 by 8a473bf5a (Q-UI-1003): what the page says where the scanning is on, no updater is
   configured and no set has arrived is decided and held; the look at it is the open point of the entry "The
   malware settings before the first signature set are not rendered", which keeps it.** The updater's line
@@ -8052,6 +8132,57 @@ the tip** (the second round's first group of the screens, the two entries under 
 profiles' rest, the journeys' repair); its image and chart were published at 15:11. The run of the
 push of 14:34 still had `e2e (access-long)` red, as expected: the journey's repair came with the
 push of 14:49, whose run was not through when this was written.
+**15:19, the marking of what the landing of 15:13 closed is applied** (a writer's script; the twelve
+unit tests it names were run with six cores, the integration cases were vetted and not run): three
+entries of the product's list move to the list Closed (the command `quader admin secrets status`,
+the malware rows of the audit events' table, the three defects the builder of W2 had seen beside
+its items: the statement bound no request used, the spool's unflushed copy, a write failure reported
+as a malformed layer). **Open now: 48 entries in section 8 and 19 in section 12** (94 and 24 in the
+lists Closed), with one new entry (two task rows that say "specified, not built" of tasks that are
+built; a writer reads all 72 such statements of the documents against the code). The owner's
+installation runs the release of 15:05 (read at 15:13: both releases upgraded, twenty pods running,
+two old ones ending). The owner's UI backend runs the head of 15:13 (ready at 15:18). The briefs of
+the three packages of T-24 that follow the contracts (delivery rules, the upstream catalogue,
+downloads and the queue) and of the evidence record's step W6b are written, so each starts when its
+place frees; the entry of npm's search in the evidence record goes to W6b, which reads how the
+record comes to be.
+**15:24, the run of the push of 14:49 is read as far as it is through:** the four integration shards
+green; `e2e (vuln)` red again, by a new cause (section 8: the journey's new line for the owner's menu
+entries compares a link's text, which carries the icon's ligature; given to the builder of W9, whose
+stack lands next); `e2e (access-long)` and the layout checks still ran (the layout checks take
+about fifty minutes in each run of today). The contracts' package of T-24 and the rest of the
+screens' second round are at their own gates.
+**15:30, the repair of the red journey lands alone** (one `test:` commit, picked from the stack of W9,
+whose render run of 472 pictures was still going). Its gates in the landing worktree ended at 15:29,
+each exit 0: the web's lint, its unit run (2,000 tests in 166 files) and the lint of its tests, the type check of the
+journeys, the extraction of the texts without a change. The leg of the kind cluster cannot run
+locally, so the leg of this push is the first run of the new lines. **The release of the push of
+15:13 was cut at 15:28 by its own run, the run at the tip** (the second step of W2). This plan's
+commit lies under the repair.
+**15:29, the second step of W5a is back** (two commits on the `main` of 15:13, its gates exit 0 before
+the rebase: build, both vets, the unit set, generate, the documentation tool, cyclo, the lint with 0
+issues, the areas `packages` 218 s, `oci` 18 s, `ociremote` 89 s, `ocilocal` 30 s, `ocivirtual` 19 s,
+`upstream` 15 s, `nuget` 130 s, `deblocal` 157 s, `debvirtual` 238 s, `debremote` 55 s, `audit` 38 s;
+after the rebase build, vet, the check, the unit set and `packages`). (a) A page of a package's
+versions is one keyset query (Q-API-417, Q-API-428, Q-OCI-267): the cursor is the publication time
+and the version's name, for a remote's tags the fetch time and the tag on two generated columns
+with an index (migration 00113); the lookups of an OCI tag's sizes, views and platforms find a row
+by its key; JIT is off in a view's transaction, where it cost 0.26 to 0.5 s a statement. Measured
+with 100,000 tags on one image, a reader's request, the median of three: the first page of tags
+43 ms (16.6 s before), a page in the middle 40 ms, a page of 500 35 ms, the package list 0.99 s
+(11.0 s). The order by version stays a sort in memory, since each format compares versions its own
+way (gap H-1683); the package list and the version names still read every tag row of the image to
+count it (H-829 stays open, with these numbers). (b) OCI and Debian record a publish through the
+one function the three other formats use (R-REPO-048, Q-REPO-431). Tests: two integration cases of
+2,000 tiny rows (about 2 s each, areas `packages` and `ociremote`) and two unit tests. Not verified,
+by its report: NuGet's end-to-end leg, tags on 100,000 different manifests, a local package with
+100,000 versions, the webhooks of the two formats' publish. **It did not run `querybudget`, `api`
+and the areas of the three other formats: the landing's gates run them** (the rule of a changed
+answer). `TestR_VULN_041` of the image scan failed once at a host load of 117 and passed alone (W4's
+list). The contracts' package of T-24 had taken the same migration number and is told to take
+00114. **15:30, W6b starts in the place W5a left** (the turn of the findings): the evidence record
+and the badge with a release, as decided when W6 came back; it may come back with the recommendation to
+keep both on a branch of their own, if a commit of the pipeline on `main` would race the landings.
 **13:10, the third research of T-24 is back** (what the scans do with content that is stored and not
 served). Every scan starts from the store's commit hook, the same for a client's fill, a mirror pass
 and a background download, so a fetch for examination needs no new trigger. npm and NuGet are matched
