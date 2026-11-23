@@ -34,7 +34,10 @@
 # The packages are downloaded first (--download-only) and unpacked from the cache (--no-download), so the bound that can
 # cut a stalled download never cuts dpkg in the middle of a package.
 #
-# QUADER_APT_SOURCES names another file for the Ubuntu sources (the tests use it).
+# QUADER_APT_SOURCES names another file for the Ubuntu sources (the tests use it). QUADER_APT_OPTIONS adds apt options, one word
+# each: the builds of the clients images (test/e2e/*/Dockerfile) run this script for their packages and pass
+# `-o APT::Install-Recommends=false`, so an image gets what it names and nothing the base image's apt would recommend, without a
+# file in the image that would change the apt of the APT clients' tests.
 set -euo pipefail
 
 [ "$#" -gt 0 ] || { echo "usage: apt-install.sh <package>..." >&2; exit 2; }
@@ -44,6 +47,8 @@ download_seconds=90
 unpack_seconds=120
 kill_after=10
 apt_options=(-o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 -o Dpkg::Use-Pty=0)
+# shellcheck disable=SC2206 # one word per option, split on purpose
+[ -z "${QUADER_APT_OPTIONS:-}" ] || apt_options+=(${QUADER_APT_OPTIONS})
 update_retries=0
 download_retries=3
 

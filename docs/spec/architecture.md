@@ -11506,6 +11506,95 @@ test [trivyignore_test.go](../../internal/tools/ciworkflows/trivyignore_test.go)
 
 **Applied:** [client-images.sh](../../.github/scripts/client-images.sh).
 
+### Q-ARCH-638 · A run builds each set of clients images once, in a job of its own, and the legs only load it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Amends
+[Q-ARCH-520](#q-arch-520--the-client-images-of-the-acceptance-suites-come-from-the-github-actions-cache-as-the-tar-of-docker-save-keyed-by-their-inputs).
+
+Context: under Q-ARCH-520 every leg restored its sets of clients images and, on a miss, built them itself. A miss is what a changed
+input means, so on such a push every leg that needs the set builds it at the same time: three legs built the NuGet clients image side
+by side in Test and Release 45140417183 (186, 231 and 249 s) and two in 45150538768 (187 and 233 s), eight legs of the nightly
+45158700734 did (seven failed at the step's limit of 30 minutes, one ended after 1,685 s), and the runs of 2026-11-23 between 11:45
+and 12:30 lost four legs of two pushes that way (45157748657: `e2e (deb)` and `e2e (vuln)`, 1,813 s each; 45159763759:
+`e2e (nuget)` and `e2e (ci)`, 1,812 and 1,813 s) when the Ubuntu archive trickled: every leg read the same slow mirror. A hit
+costs a leg 31 to 58 s for NuGet and 8 to 27 s for npm (the same runs). Since Q-ARCH-595 a second push with unchanged inputs hits
+(45160021052 and 45168001439 loaded what the run before them had saved). The self-hosted runners compress the cache with gzip, the
+GitHub-hosted ones with zstd, so an entry is per runner kind; both self-hosted classes run the same runner image.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A job `client-images` with one row per set and runner kind that the run's legs need; it looks the key up and builds and saves on a miss; the legs need it and only restore and load (chosen) | Test and Release takes its rows from `e2e-scope` (npm and NuGet on `ubuntu-24.04` always, for `e2e (ci)`; npm, OCI, APT and Ansible on `self-hosted` when their legs run), the nightly has all seven | One build per set and kind and run; the archive is read once; the legs wait for that build without a runner (a need holds no runner), and the job runs beside `image`, which the legs need anyway, so a hit adds no wall time | A lookup of about a minute of a runner per row on every push (three rows on a push of shared code), which a hit did not cost before; a row on `self-hosted` builds for the large legs, which no longer build there |
+| (b) One leg per set builds, the others poll the cache until the entry appears | No new job | Nothing on a hit | A polling leg holds its runner for the whole build; the order of the legs is not fixed, so the builder is a convention |
+| (c) Hand the images over as an artifact of the run | Independent of the cache's compression | One entry for both kinds | An upload of up to 2.3 GB on every run, also on a hit, and a download in every leg |
+| (d) As before | | Nothing new | The builds of one run read the same mirror N times and fail together |
+
+**Choice:** (a). The composite [client-images](../../.github/actions/client-images/action.yml) has an input `build`: `'true'` in the
+job `client-images` (lookup-only restore; on a miss [client-images.sh](../../.github/scripts/client-images.sh) `build` and the save),
+`'false'` in a leg (restore and `load`). A leg builds nothing: without a loadable tar it fails at that step with one line that names
+the images and, from the artifact `client-images-<set>-<runner kind>-failure` the builder leaves on a failure, the fetch that failed
+and after how many attempts ([Q-ARCH-639](#q-arch-639--every-fetch-of-an-image-build-has-a-bound-and-a-retry-of-its-own-and-a-failure-names-it)).
+The legs start when a row failed (`!cancelled()` and the job `image` succeeded), so that each says what it lacks. The builder sets
+up Buildx with the docker driver, so the build takes the base images the script pulled into the daemon within their bounds. The
+nightly's job asks select-leg with no sets, as the job `image` does. A leg's step is bounded at 10 minutes (a restore and a load);
+the builder's at 20 (a healthy build took 21 to 250 s; the deletion of a hosted runner's SDKs about two minutes; the longest retry
+cycle of one stalled fetch is a base image's pull, 3 × 180 s). **Rationale:** a miss is when the mirrors are read, and (a) reads
+them once per run; (b) costs as much runner time as building; (c) costs on every hit.
+
+Cost by the logs' numbers: a push with a NuGet miss spent 666 runner seconds in three builds (45140417183) and spends one build
+(82 to 249 s alone), the hosted runner's SDK deletion (about 120 s) and three loads (31 to 58 s), about 7 to 8 runner minutes
+instead of 11. A push that hits spends the same loads as before plus one lookup per row, about a minute each (three rows on a push of
+shared code; an estimate, not measured: the first runs show it). A slow mirror costs one row its bound instead of every leg its limit:
+in the nightly 45158700734 seven legs spent 211 runner minutes waiting on it. `TestEveryLegThatUsesAClientsImageGetsItFromTheCache`
+fails when a leg builds, does not need `client-images` or has no row for its set on its runner kind;
+`TestOnlyTheJobClientImagesBuildsAClientsImage` and `TestALegsClientsImageStepIsBoundedForALoad`
+([caches_test.go](../../internal/tools/ciworkflows/caches_test.go)) hold the builder's form and the limits. Not verified: the first run
+on GitHub (the docker driver on the self-hosted runners' Docker-in-Docker, the lookup's time, a row's artifact reaching a leg).
+
+**Applied in the spec:** none (CI wiring). Code: [release.yml](../../.github/workflows/release.yml) and
+[performance.yml](../../.github/workflows/performance.yml) (`client-images`, the step `images` of `e2e-scope`, the legs' needs),
+[client-images](../../.github/actions/client-images/action.yml), [client-images.sh](../../.github/scripts/client-images.sh).
+Elsewhere: [releasing.md](../developer/releasing.md#what-the-jobs-fetch-and-what-is-cached), [e2e.md](../developer/e2e.md#the-images-of-a-ci-leg).
+
+### Q-ARCH-639 · Every fetch of an image build has a bound and a retry of its own, and a failure names it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the Dockerfiles of the clients images ran `apt-get update` and `apt-get install`, `npm ci`, `pip install` and `curl` with
+the tools' own timeouts only. Those end a connection that sends nothing; a mirror that sends a byte now and then holds them. On
+2026-11-23 `apt-get update` in the APT clients' build read `noble/universe` from 248 s to 1,759 s of the step (log of `e2e (deb)`,
+45157748657), and the NuGet clients' builds fetched the Mono packages until the step's limit; every such leg ended with "The action
+has timed out" and no word of what had hung. The jobs' own OS packages have gone through
+[apt-install.sh](../../.github/scripts/apt-install.sh) since 2026-11-18: a wall-clock bound per call (update 60 s, download 90 s,
+unpack 120 s), a second attempt, the download separated from the unpacking, and an error that names the hosts it waited on.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The builds run apt-install.sh for their OS packages and a small [fetch.sh](../../.github/scripts/fetch.sh) for every other fetch, both mounted from a named build context `ci`; the base images are pulled before the build through fetch.sh (chosen) | `RUN --mount=type=bind,from=ci,target=/ci`, so the scripts are in no layer; `fetch.sh <what> <seconds> <attempts> <command>`: TERM at the bound, KILL 10 s later, three attempts, a pause of 5 s times the attempt, then one `::error::` line with every attempt's end | One mechanism for the jobs and the builds; apt-install.sh already knows what an ended update loses; a build fails within minutes and says which fetch | The two scripts become inputs of the images' key (a change of them rebuilds the sets that run them) |
+| (b) `timeout` around the whole `docker buildx build` and a retry of it | | No change of the Dockerfiles | The bound is the sum of every fetch; a retry starts the build again; the message cannot name the fetch |
+| (c) The tools' own settings (apt's `Acquire::http::Timeout`, npm's `fetch-timeout`, pip's `--timeout`) | | No script | None of them ends a trickling transfer, which is what happened |
+
+**Choice:** (a). The bounds per attempt: the indexes 60 s, the download 90 s and the unpacking 120 s (apt-install.sh, two attempts for
+the first two), `npm ci` 180 s, `pip install` 180 s, nuget.exe 60 s, each pull of a base image 180 s, each build of the e2e driver
+and of a test upstream (their one fetch is the distroless base, about 2 MB) 120 s, three attempts each. Healthy, measured on the
+development machine on 2026-11-23 (linux/arm64, the docker driver, host load 12 to 24): the NuGet image's indexes 2.5 s, its 86.7 MB of
+packages 4 s, their unpacking 40 s, the whole build 63 s; npm 42 s, APT (four images) 123 s, Ansible 49 s; the package sets of the
+NuGet image before and after are identical (340 packages, same names). apt-install.sh takes `QUADER_APT_OPTIONS`, through which the
+builds pass `-o APT::Install-Recommends=false` instead of a file in the image (a file would change the apt of the APT clients' tests).
+`client-images.sh build` repeats the failure lines of the fetch scripts (found by `::error::` behind BuildKit's step prefix) in one
+line that names the images, and writes it to `<tar>.failure` for the legs (Q-ARCH-638). **Rationale:** only a wall-clock bound per
+fetch ends a trickling mirror, and only a bound per fetch can say which one. `TestEveryFetchOfAClientsImageBuildIsBounded`
+([fetch_test.go](../../internal/tools/ciworkflows/fetch_test.go)) fails when a RUN of a clients image's Dockerfile calls apt-get,
+curl, wget, `npm ci`, `pip install` or the like itself, or mounts `ci` without its build.sh passing it; the tests of fetch.sh run it
+with a command that hangs, fails and succeeds; `TestClientImagesAFailedBuildNamesTheFetch` and
+`TestClientImagesTheKeyFollowsTheFetchScriptsItsBuildRuns` ([clientimages_test.go](../../internal/tools/ciworkflows/clientimages_test.go))
+hold the message and the key. Not verified: a real stalled mirror (the bound and the message were run against a command that hangs).
+
+**Applied in the spec:** none (CI and test wiring). Code: [fetch.sh](../../.github/scripts/fetch.sh),
+[apt-install.sh](../../.github/scripts/apt-install.sh), the Dockerfiles and `build.sh` of `test/e2e/{clients,nugetclients,aptclients,ansibleclients}`,
+`image_ci_context` of [lib.sh](../../deploy/dev/lib.sh), [e2e.sh](../../deploy/dev/e2e.sh) (driver, k6, tools image),
+the `*-stub-image` targets of the [Makefile](../../Makefile). Elsewhere: [releasing.md](../developer/releasing.md#what-the-jobs-fetch-and-what-is-cached),
+[e2e.md](../developer/e2e.md#the-images-of-a-ci-leg).
+
 ### Q-ARCH-522 · The kind legs load the Quader image the job `image` of their run built, and need that job
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.

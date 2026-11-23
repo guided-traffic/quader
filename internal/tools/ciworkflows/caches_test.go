@@ -18,13 +18,15 @@ import (
 // goModulesExempt are the jobs that set up Go without building anything of go.sum, with the reason: they skip the module
 // cache, which would cost a restore of the whole download cache for nothing.
 var goModulesExempt = map[string]string{
-	"release.yml/image":           "make image builds in Docker; the job's Go runs only `go env` for the Makefile",
-	"release.yml/container-scan":  "make image builds in Docker; the job's Go runs only `go env` for the Makefile",
-	"release.yml/workflows":       "builds actionlint, a tool outside go.sum, through go-tool",
-	"release.yml/malware-scan":    "ClamAV over the tree; the job's Go runs only `go env` for the Makefile",
-	"release.yml/release-tooling": "npm and Node.js; the job's Go runs only `go env` for the Makefile",
-	"performance.yml/k8s-matrix":  "builds kind only, a tool outside go.sum, through go-tool",
-	"performance.yml/image":       "make image builds in Docker; the job's Go runs only `go env` for the Makefile",
+	"release.yml/image":             "make image builds in Docker; the job's Go runs only `go env` for the Makefile",
+	"release.yml/container-scan":    "make image builds in Docker; the job's Go runs only `go env` for the Makefile",
+	"release.yml/workflows":         "builds actionlint, a tool outside go.sum, through go-tool",
+	"release.yml/malware-scan":      "ClamAV over the tree; the job's Go runs only `go env` for the Makefile",
+	"release.yml/release-tooling":   "npm and Node.js; the job's Go runs only `go env` for the Makefile",
+	"performance.yml/k8s-matrix":    "builds kind only, a tool outside go.sum, through go-tool",
+	"performance.yml/image":         "make image builds in Docker; the job's Go runs only `go env` for the Makefile",
+	"release.yml/client-images":     "builds the forwarder for the key, which imports the standard library alone; the images build in Docker",
+	"performance.yml/client-images": "builds the forwarder for the key, which imports the standard library alone; the images build in Docker",
 }
 
 // stepIndex is the index of the first step of the job that match accepts, or -1.
@@ -210,14 +212,76 @@ func setsOfJob(j job) []string {
 	return out
 }
 
-// Every kind leg whose sets start client pods gets each clients image through .github/actions/client-images, before it runs
+// runnerKinds are the cache kinds of a job's runners: "ubuntu-24.04" for the GitHub-hosted runners (zstd), "self-hosted" for
+// both self-hosted classes (gzip, the same runner image). A runs-on that is a matrix value gives the kinds of every value.
+func runnerKinds(j job) []string {
+	labels := []string{j.RunsOn}
+	if m := regexp.MustCompile(`^\$\{\{ matrix\.([A-Za-z0-9_-]+) \}\}$`).FindStringSubmatch(j.RunsOn); m != nil {
+		labels = matrixValues(j.Strategy, m[1])
+	}
+	var out []string
+	for _, l := range labels {
+		kind := "self-hosted"
+		if strings.HasPrefix(l, "ubuntu-") {
+			kind = "ubuntu-24.04"
+		}
+		if !slices.Contains(out, kind) {
+			out = append(out, kind)
+		}
+	}
+	return out
+}
+
+// needsOf is the list of a job's needs.
+func needsOf(j job) []string {
+	var needs []string
+	if err := j.Needs.Decode(&needs); err != nil {
+		var one string
+		if err := j.Needs.Decode(&one); err == nil {
+			needs = []string{one}
+		}
+	}
+	return needs
+}
+
+// builderRows are the rows of a workflow's job client-images, as "set runner": the literal matrix of the nightly, or for Test
+// and Release the rows e2e-scope can emit (each row's JSON in the script of its step "The clients images the legs need").
+func builderRows(t *testing.T, w workflow) []string {
+	t.Helper()
+	b, ok := w.Jobs["client-images"]
+	if !ok {
+		return nil
+	}
+	var rows []string
+	sets, runners := matrixValues(b.Strategy, "images"), matrixValues(b.Strategy, "runner")
+	if len(sets) > 0 && len(sets) == len(runners) {
+		for i := range sets {
+			rows = append(rows, sets[i]+" "+runners[i])
+		}
+		return rows
+	}
+	scope := w.Jobs["e2e-scope"]
+	i := stepIndex(scope, func(s step) bool { return s.ID == "images" })
+	if i < 0 {
+		t.Fatal("the job client-images has no literal matrix and e2e-scope no step images")
+	}
+	for _, m := range regexp.MustCompile(`\{"images":"([a-z]+)","runner":"([a-z0-9.-]+)"\}`).FindAllStringSubmatch(scope.Steps[i].Run, -1) {
+		rows = append(rows, m[1]+" "+m[2])
+	}
+	return rows
+}
+
+// Every kind leg whose sets start client pods loads each clients image through .github/actions/client-images, before it runs
 // the set, and tells deploy/dev/e2e.sh not to build the image again (F-158: the build inside a leg installed packages from the
-// Ubuntu archive in every run and failed with it).
+// Ubuntu archive in every run and failed with it). It builds none itself (Q-ARCH-638): its steps leave the input build at its
+// default, it needs the job client-images of its workflow, and that job has a row for each of its sets on its runner kind, so
+// a run builds each set once per kind and the legs wait for that build instead of making their own beside it.
 func TestEveryLegThatUsesAClientsImageGetsItFromTheCache(t *testing.T) {
 	t.Parallel()
 	clients := clientsOfSets(t)
 	legs := 0
 	for file, w := range loadWorkflows(t) {
+		rows := builderRows(t, w)
 		for name, j := range w.Jobs {
 			run := stepIndex(j, func(s step) bool { return strings.Contains(s.Run, "make e2e SET=") })
 			if run < 0 {
@@ -231,6 +295,9 @@ func TestEveryLegThatUsesAClientsImageGetsItFromTheCache(t *testing.T) {
 					}
 				}
 			}
+			if len(need) > 0 && !slices.Contains(needsOf(j), "client-images") {
+				t.Errorf("%s job %s loads clients images but does not need the job client-images", file, name)
+			}
 			for _, c := range need {
 				legs++
 				where := file + " job " + name + " (" + c + " clients)"
@@ -239,16 +306,114 @@ func TestEveryLegThatUsesAClientsImageGetsItFromTheCache(t *testing.T) {
 					t.Errorf("%s: no .github/actions/client-images step with set %s", where, c)
 				} else if at > run {
 					t.Errorf("%s: the clients image step comes after the step that runs the set", where)
+				} else if b := j.Steps[at].With["build"]; b != "" && b != "false" {
+					t.Errorf("%s: the leg's step passes build %q; only the job client-images builds", where, b)
 				}
 				switchName := "QUADER_E2E_" + strings.ToUpper(c) + "_CLIENTS_IMAGE_BUILD"
 				if j.Env[switchName] != "0" {
 					t.Errorf("%s: env %s is %q; it must be \"0\" so that deploy/dev/e2e.sh does not build the image again", where, switchName, j.Env[switchName])
+				}
+				for _, kind := range runnerKinds(j) {
+					if !slices.Contains(rows, c+" "+kind) {
+						t.Errorf("%s: the job client-images has no row %s on %s (rows %v)", where, c, kind, rows)
+					}
 				}
 			}
 		}
 	}
 	if legs == 0 {
 		t.Fatal("no leg uses a clients image; the test reads the workflows wrongly")
+	}
+}
+
+// The job client-images is the one place that builds a clients image (Q-ARCH-638): its step passes build 'true', it runs on
+// the runner of its row, it sets up Buildx with the docker driver (the build then takes the base images client-images.sh pulled
+// within their bounds), and no other job passes build at all. Test and Release takes its rows from e2e-scope, with every row as
+// the fallback when that job gave none.
+func TestOnlyTheJobClientImagesBuildsAClientsImage(t *testing.T) {
+	t.Parallel()
+	builders := 0
+	for file, w := range loadWorkflows(t) {
+		for name, j := range w.Jobs {
+			for _, s := range j.Steps {
+				if !isClientImages(s) {
+					continue
+				}
+				if b := s.With["build"]; b != "" && b != "false" && name != "client-images" {
+					t.Errorf("%s job %s step %q builds clients images; only the job client-images does", file, name, s.Name)
+				}
+			}
+		}
+		b, ok := w.Jobs["client-images"]
+		if !ok {
+			continue
+		}
+		builders++
+		where := file + " job client-images"
+		at := stepIndex(b, func(s step) bool {
+			return isClientImages(s) && s.With["build"] == "true" && s.With["set"] == "${{ matrix.images }}"
+		})
+		if at < 0 {
+			t.Errorf("%s has no client-images step with build 'true' and the set of its row", where)
+		}
+		if b.RunsOn != "${{ matrix.runner }}" {
+			t.Errorf("%s runs on %q, not the runner of its row", where, b.RunsOn)
+		}
+		docker := stepIndex(b, func(s step) bool {
+			return strings.HasPrefix(s.Uses, "docker/setup-buildx-action@") && s.With["driver"] == "docker"
+		})
+		if docker < 0 || (at >= 0 && docker > at) {
+			t.Errorf("%s does not set up Buildx with the docker driver before it builds", where)
+		}
+		if m, ok := minutes(b.Steps[max(at, 0)].TimeoutMinutes); !ok || m > 20 {
+			t.Errorf("%s: the build step's limit is %d minutes; a healthy build and one stalled fetch's retries fit in 20", where, m)
+		}
+		rows := builderRows(t, w)
+		if len(rows) == 0 {
+			t.Errorf("%s has no rows", where)
+		}
+		if file == "release.yml" {
+			fallback := regexp.MustCompile(`\{"images":"([a-z]+)","runner":"([a-z0-9.-]+)"\}`).FindAllStringSubmatch(b.Strategy.Content[len(b.Strategy.Content)-1].Content[1].Value, -1)
+			var all []string
+			for _, m := range fallback {
+				all = append(all, m[1]+" "+m[2])
+			}
+			slices.Sort(all)
+			slices.Sort(rows)
+			if !slices.Equal(all, rows) {
+				t.Errorf("%s: the fallback rows %v differ from the rows e2e-scope can give %v", where, all, rows)
+			}
+			if !slices.Contains(needsOf(b), "e2e-scope") {
+				t.Errorf("%s does not need e2e-scope, whose rows it builds", where)
+			}
+		}
+	}
+	if builders != 2 {
+		t.Errorf("%d workflows have a job client-images, want Test and Release and the nightly", builders)
+	}
+}
+
+// A leg's step only restores and loads, so its limit is what a restore of the largest tar and a docker load take (the NuGet
+// tar, 70 to 200 s to restore on the self-hosted runners, about 30 s to load), not the 30 minutes of a build.
+func TestALegsClientsImageStepIsBoundedForALoad(t *testing.T) {
+	t.Parallel()
+	for file, w := range loadWorkflows(t) {
+		for name, j := range w.Jobs {
+			if name == "client-images" {
+				continue
+			}
+			for _, s := range j.Steps {
+				if !isClientImages(s) {
+					continue
+				}
+				if m, ok := minutes(s.TimeoutMinutes); !ok || m > 10 {
+					t.Errorf("%s job %s step %q: limit %v minutes; a load needs at most 10", file, name, s.Name, s.TimeoutMinutes.Value)
+				}
+				if strings.Contains(s.Name, "build") {
+					t.Errorf("%s job %s step %q: a leg builds nothing, its step's name says so", file, name, s.Name)
+				}
+			}
+		}
 	}
 }
 

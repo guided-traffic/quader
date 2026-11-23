@@ -355,9 +355,13 @@ fi
 [ "${K6_IMAGE#*:}" != "$K6_IMAGE" ] || die "K6_IMAGE is not set in tools/versions.env"
 tag="${K6_IMAGE#*:}"; tag="${tag%%@*}"
 [ "v$tag" = "$K6_VERSION" ] || die "K6_IMAGE tag $tag does not match K6_VERSION $K6_VERSION in tools/versions.env"
-docker image inspect "$K6_IMAGE" >/dev/null 2>&1 || { log "pulling $K6_IMAGE"; docker pull "$K6_IMAGE" >/dev/null; }
+# Every pull and image build of this script runs through .github/scripts/fetch.sh: each attempt bounded, three attempts, the
+# failure named (2026-11-23: a mirror that trickles held builds until their step's limit). The driver's and the test upstreams'
+# builds fetch only their base image ($RUNTIME_BASE_IMAGE, about 2 MB), so the bound of the whole build is the bound of that pull.
+FETCH="$REPO_ROOT/.github/scripts/fetch.sh"
+docker image inspect "$K6_IMAGE" >/dev/null 2>&1 || { log "pulling $K6_IMAGE"; "$FETCH" "the pull of $K6_IMAGE" 180 3 docker pull --quiet "$K6_IMAGE" >/dev/null || die "$K6_IMAGE could not be pulled"; }
 # the helper container of the clients-first readings (test/e2e/mirror_readings_test.go) reads the cgroup of the kind nodes
-docker image inspect "$INTEGRATION_TOOLS_IMAGE" >/dev/null 2>&1 || { log "pulling $INTEGRATION_TOOLS_IMAGE"; docker pull "$INTEGRATION_TOOLS_IMAGE" >/dev/null || log "$INTEGRATION_TOOLS_IMAGE not pulled: the readings record the nodes' cgroup as absent"; }
+docker image inspect "$INTEGRATION_TOOLS_IMAGE" >/dev/null 2>&1 || { log "pulling $INTEGRATION_TOOLS_IMAGE"; "$FETCH" "the pull of $INTEGRATION_TOOLS_IMAGE" 180 3 docker pull --quiet "$INTEGRATION_TOOLS_IMAGE" >/dev/null || log "$INTEGRATION_TOOLS_IMAGE not pulled: the readings record the nodes' cgroup as absent"; }
 
 # ── the driver ───────────────────────────────────────────────────────────────
 ARCH="$(arch)"
@@ -371,7 +375,7 @@ else
   log "building the driver for linux/$ARCH"
   (cd "$REPO_ROOT" && CGO_ENABLED=0 GOOS=linux GOARCH="$ARCH" go build -trimpath -o "$BUILD/driver-linux-$ARCH" ./test/e2e/cmd/driver)
 fi
-docker buildx build --load --platform "linux/$ARCH" --build-arg RUNTIME_BASE_IMAGE="$RUNTIME_BASE_IMAGE" \
+"$FETCH" "the build of $DRIVER_IMAGE on $RUNTIME_BASE_IMAGE" 120 3 docker buildx build --load --platform "linux/$ARCH" --build-arg RUNTIME_BASE_IMAGE="$RUNTIME_BASE_IMAGE" \
   -f "$REPO_ROOT/test/e2e/Dockerfile" -t "$DRIVER_IMAGE" "$BUILD" >"$OUT/driver-image.log" 2>&1 || { tail -20 "$OUT/driver-image.log" >&2; die "driver image build failed"; }
 kind load docker-image "$DRIVER_IMAGE" --name "$CLUSTER" >"$OUT/driver-load.log" 2>&1 || { tail -20 "$OUT/driver-load.log" >&2; die "kind load failed"; }
 

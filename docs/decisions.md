@@ -9125,10 +9125,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-ARCH
 
-267 questions on [spec/architecture.md](spec/architecture.md).
+269 questions on [spec/architecture.md](spec/architecture.md).
 
 <details>
-<summary>Q-ARCH: 267 questions</summary>
+<summary>Q-ARCH: 269 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9399,6 +9399,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ARCH-595](spec/architecture.md#q-arch-595--the-forwarder-of-a-clients-images-key-is-built-without-the-vcs-stamp) | The forwarder of a clients image's key is built without the VCS stamp | Decided by the development agent | (a) The script builds the forwarder for the key with `-buildvcs=false` | — |
 | [Q-ARCH-596](spec/architecture.md#q-arch-596--the-images-the-chart-runs-are-scanned-in-a-job-of-their-own-that-reports-and-gates-nothing) | The images the chart runs are scanned in a job of their own that reports and gates nothing | Decided by the development agent | (a) A job of Test and Release that reports and gates nothing | — |
 | [Q-ARCH-597](spec/architecture.md#q-arch-597--a-partial-dispatch-of-the-nightly-starts-only-the-jobs-whose-legs-it-names) | A partial dispatch of the nightly starts only the jobs whose legs it names | Decided by the development agent | (a) Every job with the step `Select the leg`, but `image`, has a job-level `if` that names its key and the sets of its legs | — |
+| [Q-ARCH-638](spec/architecture.md#q-arch-638--a-run-builds-each-set-of-clients-images-once-in-a-job-of-its-own-and-the-legs-only-load-it) | A run builds each set of clients images once, in a job of its own, and the legs only load it | Decided by the development agent | (a) A job `client-images` with one row per set and runner kind that the run's legs need; it looks the key up and builds and saves on a miss; the legs need it and only restore and load | — |
+| [Q-ARCH-639](spec/architecture.md#q-arch-639--every-fetch-of-an-image-build-has-a-bound-and-a-retry-of-its-own-and-a-failure-names-it) | Every fetch of an image build has a bound and a retry of its own, and a failure names it | Decided by the development agent | (a) The builds run apt-install.sh for their OS packages and a small [fetch.sh](../.github/scripts/fetch.sh) for every other fetch, both mounted from a named build context `ci`; the base images are pulled before the build through fetch.sh | — |
 
 </details>
 

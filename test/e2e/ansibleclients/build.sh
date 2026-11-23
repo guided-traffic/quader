@@ -21,12 +21,13 @@ build="$(mktemp -d)"
 trap 'rm -r "${build:?}"' EXIT
 log "building the forwarder for linux/$arch"
 (cd "$REPO_ROOT" && CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -trimpath -o "$build/fwd-linux-$arch" ./test/e2e/clients/fwd)
+image_ci_context "$build/ci"
 dir="$REPO_ROOT/test/e2e/ansibleclients"
 build_one() {
   local name="$1" series="$2" base="$3" version="$4"
   log "building ${prefix}${name}:dev: ansible-core $version on $base"
   docker buildx build --load --platform "linux/$arch" --build-arg BASE_IMAGE="$base" --build-arg ANSIBLE_CORE_VERSION="$version" \
-    --build-arg ANSIBLE_SERIES="$series" --build-context "fwd=$build" -f "$dir/Dockerfile" -t "${prefix}${name}:dev" "$dir"
+    --build-arg ANSIBLE_SERIES="$series" --build-context "fwd=$build" --build-context "ci=$build/ci" -f "$dir/Dockerfile" -t "${prefix}${name}:dev" "$dir"
 }
 build_one core217 2.17 "$E2E_ANSIBLECLIENTS_CORE217_IMAGE" "$E2E_ANSIBLECLIENTS_CORE217_VERSION"
 build_one core221 2.21 "$E2E_ANSIBLECLIENTS_CORE221_IMAGE" "$E2E_ANSIBLECLIENTS_CORE221_VERSION"

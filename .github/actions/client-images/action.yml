@@ -1,17 +1,30 @@
-# Puts the client images of one set of the acceptance suites into the job's Docker, built once per change of their inputs
-# (Q-ARCH-520): the key of .github/scripts/client-images.sh (a hash of the build context, the pins the build reads, the
-# forwarder binary and the script), the tar of `docker save` restored from the GitHub Actions cache under that key and loaded,
-# or, on a miss or a tar that does not load, the build of `make <set>-clients-image` as before, saved under the key at once (not
-# at the end of the job, so a red test still leaves the entry). The tar is deleted afterwards: the images are in Docker, and a
-# large leg has no disk to spare. A leg that uses this sets QUADER_E2E_<SET>_CLIENTS_IMAGE_BUILD=0, so deploy/dev/e2e.sh loads
-# the images into kind and does not build them again.
-# Run after actions/checkout and the Go setup (the key builds the forwarder).
+# The client images of one set of the acceptance suites, keyed by their inputs (Q-ARCH-520, Q-ARCH-521): the key of
+# .github/scripts/client-images.sh (a hash of the build context, the pins the build reads, the scripts its fetches run through, the
+# forwarder binary and the script), the tar of `docker save` in the GitHub Actions cache under that key. Two modes (Q-ARCH-638):
+#
+#   build: 'true'   the job `clients images` of a run, one row per set and runner kind: it only looks the key up; on a miss it builds
+#                   the set once (every fetch bounded and retried, F-158 and 2026-11-23) and saves the tar at once. A failed build
+#                   leaves its reason as the artifact client-images-<set>-<runner kind>-failure.
+#   build: 'false'  a leg: it restores the tar and loads it, and builds nothing. Without a tar it fails with one sentence that names
+#                   the images and, from the builder's artifact, the fetch that failed and after how many attempts.
+#
+# So a run builds each set at most once per runner kind (the self-hosted runners compress the cache with gzip, the GitHub-hosted
+# ones with zstd, and an entry of one kind is invisible to the other), and the legs that need it wait for that one build
+# instead of each building it beside the others. A leg that uses this sets QUADER_E2E_<SET>_CLIENTS_IMAGE_BUILD=0, so
+# deploy/dev/e2e.sh loads the images into kind and does not build them again. The tar is deleted afterwards: the images are in
+# Docker, and a large leg has no disk to spare.
+# Run after actions/checkout and the Go setup (the key builds the forwarder); in build mode after Buildx is set up with the
+# docker driver and Docker Hub is logged in.
 name: Client images of the acceptance suites
-description: Load the client images of one e2e set from the GitHub Actions cache, or build and cache them when their inputs changed
+description: Load the client images of one e2e set from the GitHub Actions cache, or in the run's builder job build and cache them when their inputs changed
 inputs:
   set:
     description: npm, nuget, oci, apt or ansible (the sets of .github/scripts/client-images.sh)
     required: true
+  build:
+    description: "'true' in the job that builds the run's clients images; 'false' (the default) in a leg, which only loads them"
+    required: false
+    default: "false"
 runs:
   using: composite
   steps:
@@ -24,28 +37,68 @@ runs:
         set -euo pipefail
         "$GITHUB_ACTION_PATH/../../scripts/client-images.sh" key "$SET" >/dev/null
         echo "tar=.out/client-images/${SET}.tar" >> "$GITHUB_OUTPUT"
+        case "$RUNNER_ENVIRONMENT" in github-hosted) kind=github-hosted ;; *) kind=self-hosted ;; esac
+        echo "failure=client-images-${SET}-${kind}-failure" >> "$GITHUB_OUTPUT"
 
-    - name: Restore the images from the cache
+    - name: Look the images up, or restore them
       id: restore
       uses: actions/cache/restore@v6
       with:
         path: ${{ steps.key.outputs.tar }}
         key: ${{ steps.key.outputs.key }}
+        lookup-only: ${{ inputs.build }}
 
-    - name: Load the images, or build them on a miss
+    # The builder on a miss. A GitHub-hosted runner's preinstalled SDKs take the disk the NuGet image's build needs (the three
+    # SDK images, the image and its tar, about 8 GB); the self-hosted runners have no such SDKs.
+    - name: Build the images (a miss)
       id: images
+      if: inputs.build == 'true' && steps.restore.outputs.cache-hit != 'true'
       shell: bash
       env:
         SET: ${{ inputs.set }}
         TAR: ${{ steps.key.outputs.tar }}
-      run: '"$GITHUB_ACTION_PATH/../../scripts/client-images.sh" load-or-build "$SET" "$TAR"'
+      run: |
+        set -euo pipefail
+        if [ "$RUNNER_ENVIRONMENT" = github-hosted ]; then
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          df -h /
+        fi
+        "$GITHUB_ACTION_PATH/../../scripts/client-images.sh" build "$SET" "$TAR"
 
     - name: Save the built images under their key
-      if: steps.images.outputs.built == 'true'
+      if: inputs.build == 'true' && steps.images.outputs.built == 'true'
       uses: actions/cache/save@v6
       with:
         path: ${{ steps.key.outputs.tar }}
         key: ${{ steps.key.outputs.key }}
+
+    - name: Leave the reason of a failed build for the legs
+      if: failure() && inputs.build == 'true'
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ steps.key.outputs.failure }}
+        path: ${{ steps.key.outputs.tar }}.failure
+        if-no-files-found: ignore
+        retention-days: 7
+
+    # A pattern, not a name: a builder that left no reason (it was skipped, or the entry was evicted) matches nothing, which is
+    # no error, and the load step then says so.
+    - name: Fetch the builder's reason (the images are not in the cache)
+      if: inputs.build != 'true' && steps.restore.outputs.cache-hit != 'true'
+      continue-on-error: true
+      uses: actions/download-artifact@v8
+      with:
+        pattern: ${{ steps.key.outputs.failure }}
+        merge-multiple: true
+        path: .out/client-images/builder
+
+    - name: Load the images
+      if: inputs.build != 'true'
+      shell: bash
+      env:
+        SET: ${{ inputs.set }}
+        TAR: ${{ steps.key.outputs.tar }}
+      run: '"$GITHUB_ACTION_PATH/../../scripts/client-images.sh" load "$SET" "$TAR" ".out/client-images/builder/${SET}.tar.failure"'
 
     - name: Remove the tar
       if: always()

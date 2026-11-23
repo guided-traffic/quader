@@ -22,10 +22,11 @@ build="$(mktemp -d)"
 trap 'rm -rf "$build"' EXIT
 log "building the forwarder for linux/$arch"
 (cd "$REPO_ROOT" && CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -trimpath -o "$build/fwd-linux-$arch" ./test/e2e/clients/fwd)
+image_ci_context "$build/ci"
 log "building $image on $E2E_NUGETCLIENTS_SDK_IMAGE"
 docker buildx build --load --platform "linux/$arch" \
   --build-arg SDK_IMAGE="$E2E_NUGETCLIENTS_SDK_IMAGE" --build-arg SDK8_IMAGE="$E2E_NUGETCLIENTS_SDK8_IMAGE" --build-arg SDK9_IMAGE="$E2E_NUGETCLIENTS_SDK9_IMAGE" \
   --build-arg MONO_VERSION="$E2E_NUGETCLIENTS_MONO_VERSION" --build-arg JQ_VERSION="$E2E_NUGETCLIENTS_JQ_VERSION" \
   --build-arg NUGET_EXE_VERSION="$E2E_NUGETCLIENTS_NUGET_EXE_VERSION" --build-arg NUGET_EXE_SHA256="$E2E_NUGETCLIENTS_NUGET_EXE_SHA256" \
-  --build-context "fwd=$build" \
+  --build-context "fwd=$build" --build-context "ci=$build/ci" \
   -f "$REPO_ROOT/test/e2e/nugetclients/Dockerfile" -t "$image" "$REPO_ROOT/test/e2e/nugetclients"

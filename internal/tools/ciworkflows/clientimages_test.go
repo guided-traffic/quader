@@ -9,9 +9,9 @@ import (
 	"testing"
 )
 
-// The stubs of the clients image script: go writes STUB_FWD as the forwarder binary, docker answers load, image inspect and
-// save with the exit codes the test sets (save writes STUB_SAVED into the tar first), and the set's build.sh in the copied tree
-// exits with STUB_BUILD. Every call goes to STUB_LOG.
+// The stubs of the clients image script: go writes STUB_FWD as the forwarder binary, docker answers pull, load, image inspect
+// and save with the exit codes the test sets (save writes STUB_SAVED into the tar first), and the set's build.sh in the copied
+// tree prints STUB_BUILD_OUTPUT and exits with STUB_BUILD. Every call goes to STUB_LOG.
 var clientImageStubs = map[string]string{
 	"go": `#!/usr/bin/env bash
 echo "go $*" >> "$STUB_LOG"
@@ -26,6 +26,7 @@ exit 0
 	"docker": `#!/usr/bin/env bash
 echo "docker $*" >> "$STUB_LOG"
 case "$1" in
+  pull) exit "${STUB_PULL:-0}" ;;
   load) exit "${STUB_LOAD:-0}" ;;
   image) exit "${STUB_INSPECT:-0}" ;;
   save)
@@ -37,7 +38,7 @@ exit 3
 `,
 }
 
-// clientTree copies the script and tools/versions.env into a new tree and gives every set a context directory with a
+// clientTree copies the script, the two fetch scripts and tools/versions.env into a new tree and gives every set a context directory with a
 // Dockerfile and a build.sh stub, so that the tests can change inputs without touching the repository.
 func clientTree(t *testing.T) string {
 	t.Helper()
@@ -55,8 +56,11 @@ func clientTree(t *testing.T) string {
 		}
 	}
 	copyFile(filepath.Join(repoRoot, ".github", "scripts", "client-images.sh"), filepath.Join(root, ".github", "scripts", "client-images.sh"), 0o755)
+	for _, f := range []string{"fetch.sh", "apt-install.sh"} {
+		copyFile(filepath.Join(repoRoot, ".github", "scripts", f), filepath.Join(root, ".github", "scripts", f), 0o755)
+	}
 	copyFile(filepath.Join(repoRoot, "tools", "versions.env"), filepath.Join(root, "tools", "versions.env"), 0o644)
-	build := "#!/usr/bin/env bash\necho \"build.sh $*\" >> \"$STUB_LOG\"\nexit \"${STUB_BUILD:-0}\"\n"
+	build := "#!/usr/bin/env bash\necho \"build.sh $*\" >> \"$STUB_LOG\"\nprintf '%s' \"${STUB_BUILD_OUTPUT:-}\"\nexit \"${STUB_BUILD:-0}\"\n"
 	for _, dir := range []string{"clients", "nugetclients", "ociclients", "aptclients", "ansibleclients"} {
 		d := filepath.Join(root, "test", "e2e", dir)
 		write(t, filepath.Join(d, "Dockerfile"), "FROM scratch\n")
@@ -109,6 +113,7 @@ func runClientImages(t *testing.T, root string, env []string, args ...string) cl
 		"STUB_LOG=" + log,
 		"STUB_FWD=forwarder-1",
 		"STUB_SAVED=images",
+		"QUADER_FETCH_PAUSE=0",
 		"GITHUB_OUTPUT=" + out,
 	}, env...)
 	var stdout, stderr strings.Builder
@@ -287,30 +292,124 @@ func TestClientImagesTheKeyDoesNotDependOnTheCommit(t *testing.T) {
 	}
 }
 
-// A tar from the cache is loaded and nothing is built or saved: the hosts the build installs from are not contacted.
+// needTimeout skips a test that runs fetch.sh when the machine has no timeout command (fetch.sh bounds each attempt with it).
+func needTimeout(t *testing.T) {
+	t.Helper()
+	if _, err := exec.LookPath("timeout"); err != nil {
+		t.Skip("timeout is not on PATH")
+	}
+}
+
+// The scripts a set's Dockerfiles run their fetches through (the build context `ci`) are inputs of its key, and of no other
+// set's: a changed apt-install.sh rebuilds the sets that install OS packages, a changed fetch.sh those whose builds fetch
+// anything else, and the OCI set, whose Dockerfiles fetch nothing, neither (Q-ARCH-639).
+func TestClientImagesTheKeyFollowsTheFetchScriptsItsBuildRuns(t *testing.T) {
+	t.Parallel()
+	dirs := map[string]string{"npm": "clients", "nuget": "nugetclients", "oci": "ociclients", "apt": "aptclients", "ansible": "ansibleclients"}
+	for set, dir := range dirs {
+		var text strings.Builder
+		files, _ := filepath.Glob(filepath.Join(repoRoot, "test", "e2e", dir, "Dockerfile*"))
+		for _, f := range files {
+			text.WriteString(readRepoFile(t, filepath.Join("test", "e2e", dir, filepath.Base(f))))
+		}
+		for _, script := range []string{"apt-install.sh", "fetch.sh"} {
+			t.Run(set+"/"+script, func(t *testing.T) {
+				t.Parallel()
+				root := clientTree(t)
+				setKey := func() string {
+					r := runClientImages(t, root, nil, "key", set)
+					if r.status != 0 {
+						t.Fatalf("key %s: status %d:\n%s", set, r.status, r.stderr)
+					}
+					return strings.TrimSpace(r.stdout)
+				}
+				before := setKey()
+				path := filepath.Join(root, ".github", "scripts", script)
+				raw, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				write(t, path, string(raw)+"\n# changed\n")
+				moved := setKey() != before
+				if runs := strings.Contains(text.String(), "/ci/"+script); moved != runs {
+					t.Errorf("set %s: its Dockerfiles run %s: %v; a change of it moves the key: %v", set, script, runs, moved)
+				}
+			})
+		}
+	}
+}
+
+// A tar from the cache is loaded and nothing is built, pulled or saved: the hosts the build installs from are not contacted.
 func TestClientImagesALoadableTarIsLoadedAndNothingIsBuilt(t *testing.T) {
 	t.Parallel()
 	root := clientTree(t)
 	tar := filepath.Join(t.TempDir(), "nuget.tar")
 	write(t, tar, "cached")
-	r := runClientImages(t, root, nil, "load-or-build", "nuget", tar)
+	r := runClientImages(t, root, nil, "load", "nuget", tar)
 	want := []string{"docker load -i " + tar, "docker image inspect quader-e2e-nugetclients:dev"}
 	if r.status != 0 || strings.Join(r.calls, "|") != strings.Join(want, "|") {
 		t.Fatalf("status %d, calls %q, want 0 and %q:\n%s%s", r.status, r.calls, want, r.stdout, r.stderr)
 	}
-	if r.output != "built=false\n" {
-		t.Errorf("GITHUB_OUTPUT %q, want built=false", r.output)
+}
+
+// A leg builds nothing (Q-ARCH-638): without a tar, or with one that does not load, `load` fails with one sentence that names
+// the images and, when the builder left one, the builder's reason (which fetch failed after how many attempts).
+func TestClientImagesALegWithoutLoadableImagesFailsWithASentence(t *testing.T) {
+	t.Parallel()
+	root := clientTree(t)
+	note := filepath.Join(t.TempDir(), "nuget.tar.failure")
+	write(t, note, "the nuget clients images (quader-e2e-nugetclients:dev) were not built: fetch: apt-get update failed in 2 attempts\n")
+	cases := []struct {
+		name, tar, note string
+		env             []string
+		want            string
+	}{
+		{"no tar, the builder's reason", filepath.Join(t.TempDir(), "absent.tar"), note, nil, "fetch: apt-get update failed in 2 attempts"},
+		{"no tar, no reason", filepath.Join(t.TempDir(), "absent.tar"), "", nil, "left no reason"},
+		{"a tar that does not load", "", "", []string{"STUB_LOAD=1"}, "does not load"},
+		{"a tar without the images", "", "", []string{"STUB_INSPECT=1"}, "does not load"},
+	}
+	for _, c := range cases {
+		tar := c.tar
+		if tar == "" {
+			tar = filepath.Join(t.TempDir(), "nuget.tar")
+			write(t, tar, "truncated")
+		}
+		args := []string{"load", "nuget", tar}
+		if c.note != "" {
+			args = append(args, c.note)
+		}
+		r := runClientImages(t, root, c.env, args...)
+		if r.status == 0 {
+			t.Errorf("%s: the step passed", c.name)
+			continue
+		}
+		line := "::error::client-images: the nuget clients images (quader-e2e-nugetclients:dev) are not there: "
+		if !strings.Contains(r.stdout, line) || !strings.Contains(r.stdout, c.want) {
+			t.Errorf("%s: want a line %q naming %q:\n%s", c.name, line, c.want, r.stdout)
+		}
+		for _, call := range r.calls {
+			if strings.HasPrefix(call, "build.sh") || strings.HasPrefix(call, "docker pull") || strings.HasPrefix(call, "docker save") {
+				t.Errorf("%s: a leg ran %q", c.name, call)
+			}
+		}
 	}
 }
 
-// Without a tar the set is built by its build.sh with the names deploy/dev/e2e.sh loads, and saved into the tar.
-func TestClientImagesWithoutATarTheSetIsBuiltAndSaved(t *testing.T) {
+// `build` pulls each base image of the set through fetch.sh, builds the set by its build.sh with the names deploy/dev/e2e.sh
+// loads, and saves them into the tar.
+func TestClientImagesBuildPullsTheBasesBuildsAndSaves(t *testing.T) {
 	t.Parallel()
+	needTimeout(t)
 	root := clientTree(t)
 	tar := filepath.Join(t.TempDir(), "sub", "apt.tar")
-	r := runClientImages(t, root, nil, "load-or-build", "apt", tar)
+	r := runClientImages(t, root, nil, "build", "apt", tar)
 	images := "quader-e2e-aptclients-debian13:dev quader-e2e-aptclients-debian12:dev quader-e2e-aptclients-ubuntu2404:dev quader-e2e-aptclients-ubuntu2204:dev"
-	want := []string{"build.sh quader-e2e-aptclients-", "docker save -o " + tar + ".part " + images}
+	var want []string
+	for _, pin := range []string{"E2E_APTCLIENTS_DEBIAN13_IMAGE", "E2E_APTCLIENTS_DEBIAN12_IMAGE", "E2E_APTCLIENTS_UBUNTU2404_IMAGE", "E2E_APTCLIENTS_UBUNTU2204_IMAGE"} {
+		want = append(want, "docker pull --quiet "+pinValue(t, pin))
+	}
+	want = append(want, "build.sh quader-e2e-aptclients-", "docker save -o "+tar+".part "+images)
 	if r.status != 0 || strings.Join(r.calls, "|") != strings.Join(want, "|") {
 		t.Fatalf("status %d, calls %q, want 0 and %q:\n%s%s", r.status, r.calls, want, r.stdout, r.stderr)
 	}
@@ -322,46 +421,54 @@ func TestClientImagesWithoutATarTheSetIsBuiltAndSaved(t *testing.T) {
 	}
 }
 
-// A tar that does not load (a partial or corrupt cache entry) does not fail the leg: it is deleted and the set is built.
-func TestClientImagesATarThatDoesNotLoadIsBuiltAgain(t *testing.T) {
+// A build that fails names the images and the fetch inside the build that failed, as the fetch scripts printed it behind
+// BuildKit's step prefix, and leaves the same sentence in <tar>.failure for the legs; a base image that cannot be pulled is
+// named with its attempts. Neither leaves a tar (Q-ARCH-639).
+func TestClientImagesAFailedBuildNamesTheFetch(t *testing.T) {
 	t.Parallel()
+	needTimeout(t)
 	root := clientTree(t)
-	for _, failing := range []string{"STUB_LOAD=1", "STUB_INSPECT=1"} {
-		tar := filepath.Join(t.TempDir(), "npm.tar")
-		write(t, tar, "truncated")
-		r := runClientImages(t, root, []string{failing}, "load-or-build", "npm", tar)
-		if r.status != 0 {
-			t.Fatalf("%s: status %d:\n%s%s", failing, r.status, r.stdout, r.stderr)
-		}
-		if !strings.Contains(r.stdout, "::warning::") || !strings.Contains(strings.Join(r.calls, "|"), "build.sh quader-e2e-clients:dev") {
-			t.Errorf("%s: no warning or no build: calls %q\n%s", failing, r.calls, r.stdout)
-		}
-		if raw, _ := os.ReadFile(tar); string(raw) != "images" {
-			t.Errorf("%s: the tar holds %q, want the newly saved images", failing, raw)
-		}
-		if r.output != "built=true\n" {
-			t.Errorf("%s: GITHUB_OUTPUT %q, want built=true", failing, r.output)
-		}
+	cases := []struct {
+		name string
+		env  []string
+		want string
+	}{
+		{
+			"a fetch in the build",
+			[]string{"STUB_BUILD=1", "STUB_BUILD_OUTPUT=#15 61.03 Get:1 http://archive.ubuntu.com\n#15 300.2 ::error::fetch: npm ci of the npm clients (registry.npmjs.org) failed in 3 attempts of at most 180 s each (1: no end within 180 s; 2: exit 1; 3: exit 1)\n"},
+			"fetch: npm ci of the npm clients (registry.npmjs.org) failed in 3 attempts of at most 180 s each (1: no end within 180 s; 2: exit 1; 3: exit 1)",
+		},
+		{"a build that names no fetch", []string{"STUB_BUILD=2"}, "the build failed with exit 2 and named no fetch; its output is above"},
+		{"a base image's pull", []string{"STUB_PULL=1"}, "fetch: the pull of the base image " + pinValue(t, "E2E_CLIENTS_NODE_IMAGE") + " failed in 3 attempts of at most 180 s each (1: exit 1; 2: exit 1; 3: exit 1)"},
+		{"the save", []string{"STUB_SAVE=1"}, ""},
 	}
-}
-
-// A failed build or save fails the step and leaves no tar, so the cache never receives a partial entry.
-func TestClientImagesAFailedBuildOrSaveLeavesNoTar(t *testing.T) {
-	t.Parallel()
-	root := clientTree(t)
-	for _, failing := range []string{"STUB_BUILD=1", "STUB_SAVE=1"} {
+	for _, c := range cases {
 		dir := t.TempDir()
-		tar := filepath.Join(dir, "oci.tar")
-		r := runClientImages(t, root, []string{failing}, "load-or-build", "oci", tar)
+		tar := filepath.Join(dir, "npm.tar")
+		r := runClientImages(t, root, c.env, "build", "npm", tar)
 		if r.status == 0 {
-			t.Errorf("%s: the step passed", failing)
+			t.Errorf("%s: the step passed", c.name)
+			continue
 		}
-		entries, _ := os.ReadDir(dir)
-		if len(entries) != 0 {
-			t.Errorf("%s: %d files left in the tar's directory", failing, len(entries))
+		if _, err := os.Stat(tar); err == nil {
+			t.Errorf("%s: a tar was left", c.name)
+		}
+		if _, err := os.Stat(tar + ".part"); err == nil {
+			t.Errorf("%s: a partial tar was left", c.name)
 		}
 		if strings.Contains(r.output, "built=") {
-			t.Errorf("%s: GITHUB_OUTPUT %q, want no built=", failing, r.output)
+			t.Errorf("%s: GITHUB_OUTPUT %q, want no built=", c.name, r.output)
+		}
+		if c.want == "" {
+			continue
+		}
+		line := "::error::client-images: the npm clients images (quader-e2e-clients:dev) were not built: " + c.want
+		if !strings.Contains(r.stdout, line+"\n") {
+			t.Errorf("%s: want the line %q:\n%s", c.name, line, r.stdout)
+		}
+		raw, err := os.ReadFile(tar + ".failure")
+		if err != nil || strings.TrimSpace(string(raw)) != strings.TrimPrefix(line, "::error::client-images: ") {
+			t.Errorf("%s: %s.failure holds %q (%v)", c.name, tar, raw, err)
 		}
 	}
 }
@@ -369,9 +476,21 @@ func TestClientImagesAFailedBuildOrSaveLeavesNoTar(t *testing.T) {
 func TestClientImagesAnUnknownSetIsAUsageError(t *testing.T) {
 	t.Parallel()
 	root := clientTree(t)
-	for _, args := range [][]string{{"key", "maven"}, {"load-or-build", "npm"}, {"build", "npm", "x.tar"}, {"key"}} {
+	for _, args := range [][]string{{"key", "maven"}, {"load-or-build", "npm", "x.tar"}, {"build", "npm"}, {"load", "npm"}, {"load", "maven", "x.tar"}, {"key"}} {
 		if r := runClientImages(t, root, nil, args...); r.status != 2 || len(r.calls) != 0 {
 			t.Errorf("%q: status %d, calls %q, want 2 and none", args, r.status, r.calls)
 		}
 	}
+}
+
+// pinValue is the value of a pin of tools/versions.env.
+func pinValue(t *testing.T, name string) string {
+	t.Helper()
+	for _, l := range strings.Split(readRepoFile(t, filepath.Join("tools", "versions.env")), "\n") {
+		if v, ok := strings.CutPrefix(l, name+"="); ok {
+			return v
+		}
+	}
+	t.Fatalf("tools/versions.env has no %s", name)
+	return ""
 }

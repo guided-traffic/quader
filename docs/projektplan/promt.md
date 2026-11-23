@@ -710,24 +710,6 @@ records the recorder that tells such a stall apart).
 - **`TestR_NUGET_004_AWorkerRecomputesTheSemVer2Flag…` (area `nuget`) timed out once waiting for a job
   under load (2026-11-23, host load 42 to 46, at the gates of W5a's builder);** the area passed on the
   rerun. Not looked into. To do (W4): with the other waits that a starved host breaks.
-- **The Debian end-to-end leg ran no test once (2026-11-23, Test and Release 45157748657, the push of the
-  Debian remote's repair):** the build of its client image hung for 25 minutes in `apt-get update` on one
-  index of the public Ubuntu archive and the step met its limit of 30 minutes. Not a defect of the
-  product; the leg is run again when its run has ended (the cache's repaired key makes later pushes load
-  the image instead of building it). What stays a weakness: a client image's build reads a public
-  archive with no bound of its own per fetch, so one stalled mirror costs the whole step's limit. To do
-  (W7): a timeout and a retry of the fetches in the images' builds. **The leg `e2e (vuln)` of the same
-  run ended the same way three minutes later** (the build of its NuGet clients image fetched the
-  packages of the Mono runtime from the same archive until the step's limit). Both legs were started
-  again at 12:30, the first of three re-runs; `e2e (vuln)` passed in it before 12:50. **The same build
-  cost two legs of the run of W6's push** (45159763759: `e2e (nuget)` and `e2e (ci)`, each in "Load or
-  build the NuGet clients image", 12:27 and 12:28; started again at 12:50, the first of three), **and
-  eight legs of the scheduled nightly failed in the same quarter of an hour** (45158700734, 12:20 to
-  12:24: `ci-ha`, `bastion-long`, `nuget`, `vuln-pooler`, `drain-roles`, `vuln`, `vuln-long`, `upgrade`;
-  their logs are not read yet). The archive answered slowly from about 11:45 to 12:30. One slow public
-  mirror cost at least four legs of two pushes: the bound and the retry of W7 come first in that
-  package, and with them the question why a leg builds an image that another leg of the same run builds
-  beside it.
 
 ### Product
 
@@ -950,6 +932,40 @@ Findings of this section that are closed, each with what closed it and what hold
 the plan.
 
 **Of tests and tools:**
+
+- **Closed on 2026-11-23 by package W7 (item 1): every fetch of an image build has a bound and a retry of its own, a run
+  builds each set of clients images once, and a leg without its images fails with a sentence.** The clients images' Dockerfiles
+  install their OS packages through `.github/scripts/apt-install.sh` and run every other fetch (`npm ci`, `pip install`,
+  nuget.exe) through the new `.github/scripts/fetch.sh` (a wall-clock bound per attempt, three attempts, one line naming the
+  fetch and every attempt's end), mounted from the build context `ci`; `client-images.sh build` pulls the base images through
+  `fetch.sh`; the builds of the e2e driver and the test upstreams and the pulls of k6 and the tools image go through it too
+  (Q-ARCH-639). The new job `client-images` of both workflows builds each set at most once per run and runner kind (gzip on the
+  self-hosted runners, zstd on the GitHub-hosted ones), and the legs need it and only load (Q-ARCH-638); a leg's step is bounded at
+  10 minutes, the builder's at 20. Held by `TestEveryFetchOfAClientsImageBuildIsBounded`, the tests of `fetch.sh`,
+  `TestClientImagesAFailedBuildNamesTheFetch`, `TestClientImagesALegWithoutLoadableImagesFailsWithASentence`,
+  `TestEveryLegThatUsesAClientsImageGetsItFromTheCache` and `TestOnlyTheJobClientImagesBuildsAClientsImage`. The nightly's eight,
+  read from the job steps: seven ended in "Load or build the NuGet clients image" at 1,812 or 1,813 s (`ci-ha`, `bastion-long`,
+  `nuget`, `vuln-pooler`, `vuln`, `vuln-long`, `upgrade`; `bastion` built it in 1,685 s), `drain-roles` failed in its set after
+  962 s, not in an image. Not verified: a run on GitHub (the docker driver on the self-hosted runners, the lookup's time) and a
+  real stalled mirror. As it stood:
+  **The Debian end-to-end leg ran no test once (2026-11-23, Test and Release 45157748657, the push of the
+  Debian remote's repair):** the build of its client image hung for 25 minutes in `apt-get update` on one
+  index of the public Ubuntu archive and the step met its limit of 30 minutes. Not a defect of the
+  product; the leg is run again when its run has ended (the cache's repaired key makes later pushes load
+  the image instead of building it). What stays a weakness: a client image's build reads a public
+  archive with no bound of its own per fetch, so one stalled mirror costs the whole step's limit. To do
+  (W7): a timeout and a retry of the fetches in the images' builds. **The leg `e2e (vuln)` of the same
+  run ended the same way three minutes later** (the build of its NuGet clients image fetched the
+  packages of the Mono runtime from the same archive until the step's limit). Both legs were started
+  again at 12:30, the first of three re-runs; `e2e (vuln)` passed in it before 12:50. **The same build
+  cost two legs of the run of W6's push** (45159763759: `e2e (nuget)` and `e2e (ci)`, each in "Load or
+  build the NuGet clients image", 12:27 and 12:28; started again at 12:50, the first of three), **and
+  eight legs of the scheduled nightly failed in the same quarter of an hour** (45158700734, 12:20 to
+  12:24: `ci-ha`, `bastion-long`, `nuget`, `vuln-pooler`, `drain-roles`, `vuln`, `vuln-long`, `upgrade`;
+  their logs are not read yet). The archive answered slowly from about 11:45 to 12:30. One slow public
+  mirror cost at least four legs of two pushes: the bound and the retry of W7 come first in that
+  package, and with them the question why a leg builds an image that another leg of the same run builds
+  beside it.
 
 - **Closed on 2026-11-23 by a repair of the Bastion's engine with a unit test that fails without it: a
   request that arrives just after a fill failed is a miss of its own.** The research (12:18 to 12:26, on

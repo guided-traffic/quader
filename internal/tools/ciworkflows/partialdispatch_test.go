@@ -14,7 +14,7 @@ func selectTerm(name string) string {
 
 // A partial dispatch of the nightly starts only the jobs it names (G5-18 of the triage of 2026-11-23; Q-ARCH-597). The decision of a
 // leg is a step (select-leg) after the checkout, so before it every job of the workflow took its runner, a large pod for a lane
-// job, only to skip its steps. Now every job with that step, but image, which every leg needs, carries a job-level if that runs it
+// job, only to skip its steps. Now every job with that step, but image and client-images, which the legs need, carries a job-level if that runs it
 // when the dispatch names no sets, names its job key or one of the sets its legs take, or holds a space (then every leg fails
 // with select-leg's error, as before). A job whose if leaves out one of its sets would never run on a dispatch of that set.
 func TestAPartialDispatchStartsOnlyTheJobsOfItsSets(t *testing.T) {
@@ -29,7 +29,7 @@ func TestAPartialDispatchStartsOnlyTheJobsOfItsSets(t *testing.T) {
 				sel = &j.Steps[i]
 			}
 		}
-		if sel == nil || id == "image" {
+		if sel == nil || id == "image" || id == "client-images" {
 			continue
 		}
 		checked++

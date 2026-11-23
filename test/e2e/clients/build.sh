@@ -21,8 +21,9 @@ build="$(mktemp -d)"
 trap 'rm -rf "$build"' EXIT
 log "building the forwarder for linux/$arch"
 (cd "$REPO_ROOT" && CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -trimpath -o "$build/fwd-linux-$arch" ./test/e2e/clients/fwd)
+image_ci_context "$build/ci"
 log "building $image on $E2E_CLIENTS_NODE_IMAGE"
 docker buildx build --load --platform "linux/$arch" \
   --build-arg NODE_IMAGE="$E2E_CLIENTS_NODE_IMAGE" \
-  --build-arg CURL_VERSION="$E2E_CLIENTS_CURL_VERSION" --build-arg JQ_VERSION="$E2E_CLIENTS_JQ_VERSION" --build-context "fwd=$build" \
+  --build-arg CURL_VERSION="$E2E_CLIENTS_CURL_VERSION" --build-arg JQ_VERSION="$E2E_CLIENTS_JQ_VERSION" --build-context "fwd=$build" --build-context "ci=$build/ci" \
   -f "$REPO_ROOT/test/e2e/clients/Dockerfile" -t "$image" "$REPO_ROOT/test/e2e/clients"

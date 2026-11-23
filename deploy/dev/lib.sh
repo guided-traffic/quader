@@ -29,6 +29,15 @@ export HELM_MAX_HISTORY="${HELM_MAX_HISTORY:-2}"
 log() { printf '%s %s\n' "$(date +%H:%M:%S)" "$*" >&2; }
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 
+# image_ci_context DIR copies the two scripts every fetch of a clients image's build runs through (.github/scripts/apt-install.sh
+# for apt-get, fetch.sh for the rest: each attempt bounded, the failure named) into DIR, which the set's build.sh passes as the
+# named build context `ci`. The Dockerfile mounts it for the RUN that fetches (RUN --mount=type=bind,from=ci,target=/ci), so the
+# scripts are in no layer. Both files are inputs of the sets' cache key (.github/scripts/client-images.sh).
+image_ci_context() {
+  mkdir -p "$1"
+  cp "$REPO_ROOT/.github/scripts/apt-install.sh" "$REPO_ROOT/.github/scripts/fetch.sh" "$1/"
+}
+
 # Every call names the context, so a kubeconfig that currently points at another cluster is
 # never touched by accident.
 k() { kubectl --context "$CTX" "$@"; }

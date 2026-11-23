@@ -51,6 +51,10 @@ IMAGE       ?= guidedtraffic/quader:dev
 IMAGE_MARKED ?= guidedtraffic/quader:dev-marked
 UI_BUNDLE_MARK ?=
 IMAGE_ARCH  ?= $(shell go env GOARCH)
+# Runs one fetch with a wall-clock bound per attempt and three attempts, and names it when the last fails
+# (.github/scripts/fetch.sh). The test upstreams' images build on RUNTIME_BASE_IMAGE alone, so a bound of their whole build is a
+# bound of that pull: one stalled registry costs minutes, not a leg's limit (2026-11-23).
+FETCH := .github/scripts/fetch.sh
 
 # The integration stack belongs to the checkout that started it; a worktree uses the main checkout's (the parent of git's common
 # directory), as test/integration/locked.sh does. INSTANCE picks one of the instances that run side by side (1 to 9,
@@ -640,7 +644,7 @@ NPM_STUB_IMAGE ?= quader-e2e-npmstub:dev
 npm-stub-image: ## Build the counting npm test upstream image (NPM_STUB_IMAGE, IMAGE_ARCH) on the release base image
 	@mkdir -p .out/npmstub
 	CGO_ENABLED=0 GOOS=linux GOARCH=$(IMAGE_ARCH) go build -trimpath -ldflags '-s -w' -o .out/npmstub/npmstub-linux-$(IMAGE_ARCH) ./test/npmstub/cmd/npmstub
-	docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) \
+	$(FETCH) "the build of $(NPM_STUB_IMAGE) on $(RUNTIME_BASE_IMAGE)" 120 3 docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) \
 	  -f test/npmstub/Containerfile -t $(NPM_STUB_IMAGE) .out/npmstub
 
 .PHONY: npm-reference
@@ -661,7 +665,7 @@ OIDC_STUB_IMAGE ?= quader-e2e-oidcstub:dev
 oidc-stub-image: ## Build the GitLab-shaped OIDC issuer double image (OIDC_STUB_IMAGE, IMAGE_ARCH) on the release base image
 	@mkdir -p .out/oidcstub
 	CGO_ENABLED=0 GOOS=linux GOARCH=$(IMAGE_ARCH) go build -trimpath -ldflags '-s -w' -o .out/oidcstub/oidcstub-linux-$(IMAGE_ARCH) ./test/oidcstub/cmd/oidcstub
-	docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) \
+	$(FETCH) "the build of $(OIDC_STUB_IMAGE) on $(RUNTIME_BASE_IMAGE)" 120 3 docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) \
 	  -f test/oidcstub/Containerfile -t $(OIDC_STUB_IMAGE) .out/oidcstub
 
 # Re-records test/oidcstub/testdata from a real GitLab (Q-CI-25, docs/developer/e2e.md "Validating the double against a
@@ -707,7 +711,7 @@ nuget-vectors-check: ## Fail when the committed golden vectors differ from a reg
 nuget-stub-image: ## Build the counting NuGet test upstream image (NUGET_STUB_IMAGE, IMAGE_ARCH) on the release base image
 	@mkdir -p .out/nugetstub
 	CGO_ENABLED=0 GOOS=linux GOARCH=$(IMAGE_ARCH) go build -trimpath -ldflags '-s -w' -o .out/nugetstub/nugetstub-linux-$(IMAGE_ARCH) ./test/nugetstub/cmd/nugetstub
-	docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) \
+	$(FETCH) "the build of $(NUGET_STUB_IMAGE) on $(RUNTIME_BASE_IMAGE)" 120 3 docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) \
 	  -f test/nugetstub/Containerfile -t $(NUGET_STUB_IMAGE) .out/nugetstub
 
 # The reference solution of the NuGet tests (perf/nuget/reference) is generated from the counting upstream's package set,
@@ -726,7 +730,7 @@ OSV_STUB_IMAGE ?= quader-e2e-osvstub:dev
 osv-stub-image: ## Build the test advisory source image (OSV_STUB_IMAGE, IMAGE_ARCH) on the release base image
 	@mkdir -p .out/osvstub
 	CGO_ENABLED=0 GOOS=linux GOARCH=$(IMAGE_ARCH) go build -trimpath -ldflags '-s -w' -o .out/osvstub/osvstub-linux-$(IMAGE_ARCH) ./test/osvstub/cmd/osvstub
-	docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) \
+	$(FETCH) "the build of $(OSV_STUB_IMAGE) on $(RUNTIME_BASE_IMAGE)" 120 3 docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) \
 	  -f test/osvstub/Containerfile -t $(OSV_STUB_IMAGE) .out/osvstub
 
 $(OSV_SCANNER_BIN):
@@ -756,7 +760,7 @@ OCI_STUB_IMAGE ?= quader-e2e-ocistub:dev
 oci-stub-image: ## Build the counting OCI test upstream image (OCI_STUB_IMAGE, IMAGE_ARCH) on the release base image
 	@mkdir -p .out/ocistub
 	CGO_ENABLED=0 GOOS=linux GOARCH=$(IMAGE_ARCH) go build -trimpath -ldflags '-s -w' -o .out/ocistub/ocistub-linux-$(IMAGE_ARCH) ./test/ocistub/cmd/ocistub
-	docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) \
+	$(FETCH) "the build of $(OCI_STUB_IMAGE) on $(RUNTIME_BASE_IMAGE)" 120 3 docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) \
 	  -f test/ocistub/Containerfile -t $(OCI_STUB_IMAGE) .out/ocistub
 # <<< T16 oci-stub
 
@@ -769,7 +773,7 @@ DEB_STUB_IMAGE ?= quader-e2e-debstub:dev
 deb-stub-image: ## Build the counting Debian archive test upstream image (DEB_STUB_IMAGE, IMAGE_ARCH) on the release base image
 	@mkdir -p .out/debstub
 	CGO_ENABLED=0 GOOS=linux GOARCH=$(IMAGE_ARCH) go build -trimpath -ldflags '-s -w' -o .out/debstub/debstub-linux-$(IMAGE_ARCH) ./test/debstub/cmd/debstub
-	docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) \
+	$(FETCH) "the build of $(DEB_STUB_IMAGE) on $(RUNTIME_BASE_IMAGE)" 120 3 docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) \
 	  -f test/debstub/Containerfile -t $(DEB_STUB_IMAGE) .out/debstub
 # <<< T17 deb-stub
 
@@ -782,7 +786,7 @@ ANSIBLE_STUB_IMAGE ?= quader-e2e-ansiblestub:dev
 ansible-stub-image: ## Build the counting Ansible Galaxy test upstream image (ANSIBLE_STUB_IMAGE, IMAGE_ARCH) on the release base image
 	@mkdir -p .out/ansiblestub
 	CGO_ENABLED=0 GOOS=linux GOARCH=$(IMAGE_ARCH) go build -trimpath -ldflags '-s -w' -o .out/ansiblestub/ansiblestub-linux-$(IMAGE_ARCH) ./test/ansiblestub/cmd/ansiblestub
-	docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) \
+	$(FETCH) "the build of $(ANSIBLE_STUB_IMAGE) on $(RUNTIME_BASE_IMAGE)" 120 3 docker buildx build --load --platform linux/$(IMAGE_ARCH) --build-arg RUNTIME_BASE_IMAGE=$(RUNTIME_BASE_IMAGE) \
 	  -f test/ansiblestub/Containerfile -t $(ANSIBLE_STUB_IMAGE) .out/ansiblestub
 # <<< B2 ansible-stub
 

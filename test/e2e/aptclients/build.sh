@@ -21,12 +21,13 @@ build="$(mktemp -d)"
 trap 'rm -r "${build:?}"' EXIT
 log "building the forwarder for linux/$arch"
 (cd "$REPO_ROOT" && CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -trimpath -o "$build/fwd-linux-$arch" ./test/e2e/clients/fwd)
+image_ci_context "$build/ci"
 dir="$REPO_ROOT/test/e2e/aptclients"
 build_one() {
   local name="$1" base="$2"
   log "building ${prefix}${name}:dev on $base"
   docker buildx build --load --platform "linux/$arch" --build-arg BASE_IMAGE="$base" \
-    --build-context "fwd=$build" -f "$dir/Dockerfile" -t "${prefix}${name}:dev" "$dir"
+    --build-context "fwd=$build" --build-context "ci=$build/ci" -f "$dir/Dockerfile" -t "${prefix}${name}:dev" "$dir"
 }
 build_one debian13 "$E2E_APTCLIENTS_DEBIAN13_IMAGE"
 build_one debian12 "$E2E_APTCLIENTS_DEBIAN12_IMAGE"

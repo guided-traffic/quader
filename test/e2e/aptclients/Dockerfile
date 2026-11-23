@@ -11,13 +11,15 @@
 #
 #   BASE_IMAGE   one of the four E2E_APTCLIENTS_*_IMAGE pins of tools/versions.env
 #   --build-context fwd=<dir>   a directory with the static forwarder fwd-linux-<arch> (build.sh builds it)
+#   --build-context ci=<dir>    .github/scripts/apt-install.sh and fetch.sh (build.sh copies them): every fetch of the build runs
+#                    through one of them, bounded per attempt and retried, so a stalled mirror fails the build within minutes and
+#                    names the fetch (docs/developer/e2e.md#the-images-of-a-ci-leg); mounted for the RUN alone, in no layer
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
 ARG TARGETARCH
-RUN set -eu; \
+RUN --mount=type=bind,from=ci,target=/ci set -eu; \
     for p in apt gpgv sqv; do if dpkg-query -W "$p" >/dev/null 2>&1; then apt-mark hold "$p"; fi; done; \
-    apt-get update; \
-    apt-get install --yes --no-install-recommends curl; \
+    QUADER_APT_OPTIONS="-o APT::Install-Recommends=false" bash /ci/apt-install.sh curl; \
     rm -rf /var/lib/apt/lists/*
 COPY --from=fwd fwd-linux-${TARGETARCH} /usr/local/bin/fwd
 COPY sudo.sh /usr/local/bin/sudo

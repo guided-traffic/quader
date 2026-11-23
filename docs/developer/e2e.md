@@ -272,22 +272,36 @@ Locally `make e2e` builds what a set needs. A CI leg builds none of the images t
   through [quader-image](../../.github/actions/quader-image/action.yml) ([Q-ARCH-522](../spec/architecture.md#q-arch-522--the-kind-legs-load-the-quader-image-the-job-image-of-their-run-built-and-need-that-job)).
   Only the set `upgrade` still builds its second image, `make image-marked`.
 - **The clients images** of every set that starts client pods (the sets with `NPM_CLIENTS=1`, `NUGET_CLIENTS=1`, `OCI_CLIENTS=1`,
-  `APT_CLIENTS=1` or `ANSIBLE_CLIENTS=1` in [deploy/dev/e2e.sh](../../deploy/dev/e2e.sh)) come from
-  [client-images](../../.github/actions/client-images/action.yml), one step per set of images, before the set runs: the tar of `docker
-  save` from the GitHub Actions cache under a key of the images' inputs, or a build of `make <set>-clients-image` when an input
-  changed ([Q-ARCH-520](../spec/architecture.md#q-arch-520--the-client-images-of-the-acceptance-suites-come-from-the-github-actions-cache-as-the-tar-of-docker-save-keyed-by-their-inputs)).
+  `APT_CLIENTS=1` or `ANSIBLE_CLIENTS=1` in [deploy/dev/e2e.sh](../../deploy/dev/e2e.sh)) are built at most once per run, by the job
+  `client-images` of the workflow (one row per set of images and runner kind), and loaded by every leg that needs them
+  ([Q-ARCH-638](../spec/architecture.md#q-arch-638--a-run-builds-each-set-of-clients-images-once-in-a-job-of-its-own-and-the-legs-only-load-it)):
+  that job looks up the tar of `docker save` in the GitHub Actions cache under a key of the images' inputs and, when an input
+  changed, builds the set once and saves it
+  ([Q-ARCH-520](../spec/architecture.md#q-arch-520--the-client-images-of-the-acceptance-suites-come-from-the-github-actions-cache-as-the-tar-of-docker-save-keyed-by-their-inputs));
+  the leg needs that job, restores the tar through [client-images](../../.github/actions/client-images/action.yml), one step per set of
+  images, before the set runs, and builds nothing. Without a tar the leg fails at that step with one sentence that names the images
+  and, from the builder's artifact `client-images-<set>-<runner kind>-failure`, the fetch that failed and after how many attempts.
   The leg sets `QUADER_E2E_<SET>_CLIENTS_IMAGE_BUILD=0`, so `e2e.sh` loads the images into kind and builds nothing.
-  `TestEveryLegThatUsesAClientsImageGetsItFromTheCache` reads the sets of each leg from `e2e.sh` and fails when a leg lacks a step or
-  the switch; a new set with client pods therefore needs both in its job.
+  `TestEveryLegThatUsesAClientsImageGetsItFromTheCache` reads the sets of each leg from `e2e.sh` and fails when a leg lacks a step,
+  the switch, the need of `client-images` or a row of that job for its set on its runner kind; a new set with client pods
+  therefore needs all of them.
+- **Every fetch of an image build is bounded and retried**
+  ([Q-ARCH-639](../spec/architecture.md#q-arch-639--every-fetch-of-an-image-build-has-a-bound-and-a-retry-of-its-own-and-a-failure-names-it)):
+  the clients images' Dockerfiles install OS packages through [apt-install.sh](../../.github/scripts/apt-install.sh) and run every
+  other fetch (`npm ci`, `pip install`, nuget.exe) through [fetch.sh](../../.github/scripts/fetch.sh), both mounted from the build
+  context `ci` that the set's `build.sh` fills; `client-images.sh build` pulls the base images through `fetch.sh` first. A
+  Dockerfile that runs such a tool itself fails `TestEveryFetchOfAClientsImageBuildIsBounded`.
 - **The stub upstreams, the driver and the issuer double** are built by `e2e.sh` in every leg, from the commit's Go code on the
-  distroless base.
+  distroless base; each build (whose one fetch is that base) runs through `fetch.sh`, 120 s per attempt, three attempts.
 - **The analyser's and ClamAV's images** are loaded only by the legs of the profile `vuln` (`up.sh` pulls `TRIVY_IMAGE` and `CLAMAV_IMAGE`
   with the host's Docker, logged in to Docker Hub, and loads them under the tags `quader-e2e-trivy:dev` and `quader-e2e-clamav:dev`). Every
   other profile switches both scannings off ([Q-HA-382](../spec/ha-and-helm.md#q-ha-382--the-image-scanning-is-on-in-the-charts-defaults-and-off-in-every-test-profile-but-vuln-and-the-platform-matrix)),
   so its leg starts no scanner pod and loads the Quader image alone, which carries no analyser (83 MB instead of 246 MB on arm64).
 
 The same path runs locally, without the GitHub cache: `.github/scripts/client-images.sh key npm` prints the key and its inputs,
-`.github/scripts/client-images.sh load-or-build npm .out/client-images/npm.tar` loads that tar or builds the image and writes it.
+`.github/scripts/client-images.sh build npm .out/client-images/npm.tar` builds the image (the base pulls bounded) and writes the tar,
+`.github/scripts/client-images.sh load npm .out/client-images/npm.tar` loads it. Both use the image names `e2e.sh` loads, so they
+replace another checkout's images of the same names in the machine's Docker.
 
 ## What a new format adds to the tests
 
@@ -2417,9 +2431,9 @@ test/e2e/nugetclients/
 - **CI.** The job `e2e-nuget` of [releasing.md](releasing.md#ci) runs the set `nuget` on a push or a pull request that changes NuGet's own
   paths and on every dispatch (edge port 8088, cluster `quader-nuget-<run id>`), the set `nuget-closing` on a closing dispatch (port
   8089); in [performance.yml](../../.github/workflows/performance.yml) the job `format-nuget` runs the set `nuget` nightly (port 8099) and
-  the job `e2e-nuget` the set `nuget-ha` (port 8090). The job takes the clients image from the cache or builds it when its
-  inputs changed ([The images of a CI leg](#the-images-of-a-ci-leg)) and sets `QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD=0`, so the set
-  loads it instead of building it again. The fuzz targets of the closing run
+  the job `e2e-nuget` the set `nuget-ha` (port 8090). The job loads the clients image the job `client-images` of its run built
+  or found in the cache ([The images of a CI leg](#the-images-of-a-ci-leg)) and sets `QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD=0`, so the
+  set loads it instead of building it again. The fuzz targets of the closing run
   are in [releasing.md](releasing.md#ci) too.
 - **Sets that name no test yet.** `nuget-closing` is declared `empty_ok` in [deploy/dev/e2e.sh](../../deploy/dev/e2e.sh) and names `TestNuGetClosing` since phase 4; `nuget-ha` was one too until `TestNuGetHA` landed ([Drain and failover under NuGet load](#drain-and-failover-under-nuget-load)).
   While no `func Test...` in `test/e2e/*_test.go` matches the expression of an `empty_ok` set, the script logs a notice and exits 0 before it looks for a cluster

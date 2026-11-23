@@ -12,6 +12,9 @@
 #                    (R-CI-028) runs next to the curl of the SDK image
 #   NUGET_EXE_VERSION, NUGET_EXE_SHA256   E2E_NUGETCLIENTS_NUGET_EXE_*: the nuget.exe on dist.nuget.org and its digest
 #   --build-context fwd=<dir>   a directory with the static forwarder fwd-linux-<arch> (build.sh builds it)
+#   --build-context ci=<dir>    .github/scripts/apt-install.sh and fetch.sh (build.sh copies them): every fetch of the build runs
+#                    through one of them, bounded per attempt and retried, so a stalled mirror fails the build within minutes and
+#                    names the fetch (docs/developer/e2e.md#the-images-of-a-ci-leg); mounted for the RUN alone, in no layer
 ARG SDK_IMAGE
 ARG SDK8_IMAGE
 ARG SDK9_IMAGE
@@ -22,7 +25,10 @@ FROM ${SDK9_IMAGE} AS sdk9
 FROM ${SDK_IMAGE} AS nugetexe
 ARG NUGET_EXE_VERSION
 ARG NUGET_EXE_SHA256
-RUN curl --fail --silent --show-error --location --output /nuget.exe \
+# About 8 MB; a healthy fetch takes a second or two, so 60 s per attempt leaves room for a slow day.
+RUN --mount=type=bind,from=ci,target=/ci \
+    bash /ci/fetch.sh "nuget.exe ${NUGET_EXE_VERSION} from dist.nuget.org" 60 3 \
+      curl --fail --silent --show-error --location --connect-timeout 10 --output /nuget.exe \
       "https://dist.nuget.org/win-x86-commandline/v${NUGET_EXE_VERSION}/nuget.exe" \
  && echo "${NUGET_EXE_SHA256}  /nuget.exe" | sha256sum --check --strict -
 
@@ -34,8 +40,10 @@ ARG JQ_VERSION
 # pinned to its version, so this one pin fixes all of Mono); ca-certificates-mono carries cert-sync, which fills the
 # Mono trust store from a PEM bundle (entrypoint.sh). Exactly the pinned version: a superseded package fails the
 # build instead of changing the client. jq is the second tool of the reference pipeline's exchange step (R-CI-028).
-RUN apt-get update \
- && apt-get install --yes --no-install-recommends "mono-complete=${MONO_VERSION}" "ca-certificates-mono=${MONO_VERSION}" "jq=${JQ_VERSION}" \
+# apt-install.sh reads the indexes, downloads and unpacks, each under its own bound and the first two retried (its header).
+RUN --mount=type=bind,from=ci,target=/ci \
+    QUADER_APT_OPTIONS="-o APT::Install-Recommends=false" \
+      bash /ci/apt-install.sh "mono-complete=${MONO_VERSION}" "ca-certificates-mono=${MONO_VERSION}" "jq=${JQ_VERSION}" \
  && rm -rf /var/lib/apt/lists/* \
  && mkdir /work && chown 1000:1000 /work
 COPY --from=nugetexe /nuget.exe /opt/nuget/nuget.exe

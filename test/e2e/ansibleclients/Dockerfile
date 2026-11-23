@@ -10,6 +10,9 @@
 #   ANSIBLE_CORE_VERSION  the E2E_ANSIBLECLIENTS_*_VERSION pin of the same client
 #   ANSIBLE_SERIES        the series of the release (2.17, 2.21): the constraints file of the image is constraints-<series>.txt
 #   --build-context fwd=<dir>   a directory with the static forwarder fwd-linux-<arch> (build.sh builds it)
+#   --build-context ci=<dir>    .github/scripts/apt-install.sh and fetch.sh (build.sh copies them): every fetch of the build runs
+#                         through one of them, bounded per attempt and retried, so a stalled mirror fails the build within minutes
+#                         and names the fetch (docs/developer/e2e.md#the-images-of-a-ci-leg); mounted for the RUN alone, in no layer
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
 ARG TARGETARCH
@@ -17,11 +20,12 @@ ARG ANSIBLE_CORE_VERSION
 ARG ANSIBLE_SERIES
 ENV PYTHONDONTWRITEBYTECODE=1 ANSIBLE_NOCOLOR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
 COPY constraints-${ANSIBLE_SERIES}.txt /tmp/constraints.txt
-RUN set -eu; \
-    pip install --no-cache-dir --constraint /tmp/constraints.txt "ansible-core==${ANSIBLE_CORE_VERSION}"; \
+# pip's --timeout ends a silent connection at 30 s, fetch.sh's bound an attempt that trickles.
+RUN --mount=type=bind,from=ci,target=/ci set -eu; \
+    bash /ci/fetch.sh "pip install of ansible-core ${ANSIBLE_CORE_VERSION} (pypi.org)" 180 3 \
+      pip install --no-cache-dir --timeout 30 --constraint /tmp/constraints.txt "ansible-core==${ANSIBLE_CORE_VERSION}"; \
     rm /tmp/constraints.txt; \
-    apt-get update; \
-    apt-get install --yes --no-install-recommends curl; \
+    QUADER_APT_OPTIONS="-o APT::Install-Recommends=false" bash /ci/apt-install.sh curl; \
     rm -rf /var/lib/apt/lists/*
 COPY --from=fwd fwd-linux-${TARGETARCH} /usr/local/bin/fwd
 COPY clean.sh /usr/local/bin/quader-clean

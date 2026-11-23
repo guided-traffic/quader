@@ -1345,6 +1345,7 @@ jobs:
       ansible: ${{ steps.decide.outputs.ansible }}
       bastion: ${{ steps.decide.outputs.bastion }}
       vuln: ${{ steps.decide.outputs.vuln }}
+      client-images: ${{ steps.images.outputs.rows }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -1359,6 +1360,94 @@ jobs:
           BEFORE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: .github/scripts/e2e-legs.sh
+
+      # The rows of the job client-images (Q-ARCH-638): each set of clients images on each runner kind whose legs run. npm and NuGet
+      # on the GitHub-hosted runners always, for e2e-ci, which runs on every push (and e2e-nuget, e2e-bastion and e2e-vuln there);
+      # npm on the self-hosted runners for e2e-npm; OCI, APT and Ansible there for their own legs. A leg runs unless its output says
+      # false, and so does its row; without a decision (a failed step) every row runs.
+      - name: The clients images the legs need
+        id: images
+        if: ${{ !cancelled() }}
+        env:
+          NPM: ${{ steps.decide.outputs.npm }}
+          OCI: ${{ steps.decide.outputs.oci }}
+          DEB: ${{ steps.decide.outputs.deb }}
+          ANSIBLE: ${{ steps.decide.outputs.ansible }}
+        run: |
+          set -euo pipefail
+          rows='{"images":"npm","runner":"ubuntu-24.04"},{"images":"nuget","runner":"ubuntu-24.04"}'
+          [ "$NPM" = false ] || rows="$rows"',{"images":"npm","runner":"self-hosted"}'
+          [ "$OCI" = false ] || rows="$rows"',{"images":"oci","runner":"self-hosted"}'
+          [ "$DEB" = false ] || rows="$rows"',{"images":"apt","runner":"self-hosted"}'
+          [ "$ANSIBLE" = false ] || rows="$rows"',{"images":"ansible","runner":"self-hosted"}'
+          echo "rows=[$rows]" >> "$GITHUB_OUTPUT"
+          echo "clients images of this run: [$rows]"
+
+  # The clients images of the legs that run (Q-ARCH-638): one row per set and runner kind, from the output client-images of
+  # e2e-scope, built here at most once per run and loaded by every leg that needs them, which builds none itself. On a hit a row
+  # only looks its key up (about a minute of a runner); on a miss it builds the set once, every fetch bounded and retried, and
+  # saves the tar, and the legs restore it. The reason (2026-11-23): when the inputs of the NuGet image had changed, the three legs
+  # of one push that need it (e2e-ci, e2e-nuget, e2e-vuln) built it side by side, each against the same slow Ubuntu archive, and
+  # each ran into its step's limit of 30 minutes without a test. Two runner kinds, because the self-hosted runners compress the
+  # Actions cache with gzip and the GitHub-hosted ones with zstd, and an entry of one kind is invisible to the other: `self-hosted`
+  # builds for the legs on `large` (the same runner image), `ubuntu-24.04` for the GitHub-hosted legs. A failed row leaves its
+  # reason as an artifact; the legs still start and fail at their load step with that sentence. Runs beside the job image,
+  # which the legs need as well, so a hit adds no wall time.
+  client-images:
+    name: clients images (${{ matrix.images }}, ${{ matrix.runner }})
+    needs: e2e-scope
+    if: ${{ !cancelled() }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.e2e-scope.outputs.client-images || '[{"images":"npm","runner":"self-hosted"},{"images":"npm","runner":"ubuntu-24.04"},{"images":"nuget","runner":"ubuntu-24.04"},{"images":"oci","runner":"self-hosted"},{"images":"apt","runner":"self-hosted"},{"images":"ansible","runner":"self-hosted"}]') }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Load the tool pins
+        uses: ./.github/actions/load-pins
+
+      - name: Set up Go
+        timeout-minutes: 5
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Install the pinned Docker Buildx
+        timeout-minutes: 16
+        uses: ./.github/actions/install-buildx
+        with:
+          version: ${{ env.BUILDX_VERSION }}
+
+      # The docker driver: the build takes the base images client-images.sh pulled, each pull bounded and retried, into the
+      # daemon; the docker-container driver would pull them again inside the build, unbounded.
+      - name: Set up Docker Buildx (docker driver)
+        uses: docker/setup-buildx-action@v4
+        with:
+          driver: docker
+          cache-binary: false
+
+      - name: Log in to Docker Hub (the base images)
+        uses: docker/login-action@v4
+        with:
+          username: guidedtraffic
+          password: ${{ secrets.DOCKERHUB_PAT }}
+
+      # A healthy build took 21 to 250 s in the logs of 2026-11-19 to 2026-11-23 (NuGet on GitHub-hosted runners, three at
+      # once), the deletion of the hosted runner's SDKs about two minutes more; the longest retry cycle of one stalled fetch is
+      # a base image's pull, 3 x 180 s and 15 s of pauses. 20 minutes hold both; a build that needs more is not a slow mirror.
+      - name: Look up, or build and save, the ${{ matrix.images }} clients images
+        timeout-minutes: 20
+        uses: ./.github/actions/client-images
+        with:
+          set: ${{ matrix.images }}
+          build: 'true'
 
   # The failure suite on a kind cluster, two legs: the push set (the M0 checks, the drain with a transfer loop and
   # the exposure of E1.14) and access-long (the E1.1 sign-in, the E1.11 replica scatter and the E1.13 500 MB transfers;
@@ -1590,7 +1679,7 @@ jobs:
   # The ports differ from the e2e job's (8080, 8086) so that the jobs can share a runner host.
   e2e-npm:
     name: e2e (${{ matrix.set }})
-    needs: [image, e2e-scope]
+    needs: [image, client-images, e2e-scope]
     if: ${{ !cancelled() && needs.image.result == 'success' && needs.e2e-scope.outputs.npm != 'false' }}
     runs-on: large
     timeout-minutes: ${{ startsWith(matrix.set, 'npm-ha') && 120 || 90 }}
@@ -1602,8 +1691,8 @@ jobs:
       QUADER_IMAGE: guidedtraffic/quader:dev
       QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
       QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
-      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
-      # deploy/dev/e2e.sh loads them into kind and does not build them again.
+      # The clients images come from the job client-images of this run, through .github/actions/client-images, which loads
+      # them from the cache and builds nothing (Q-ARCH-638); deploy/dev/e2e.sh loads them into kind and does not build them again.
       QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD: "0"
     steps:
       - name: Checkout
@@ -1680,8 +1769,8 @@ jobs:
             curl -fsSL --connect-timeout 20 --max-time 60 --retry 3 -o /dev/null "$u/index.yaml" || { echo "::error::chart repository $u is not reachable"; exit 1; }
           done
 
-      - name: Load or build the npm clients image
-        timeout-minutes: 30
+      - name: Load the npm clients image
+        timeout-minutes: 10
         uses: ./.github/actions/client-images
         with:
           set: npm
@@ -1761,7 +1850,7 @@ jobs:
   # The ports 8088 to 8090 are the first free ones of both workflows (Q-ARCH-277); the legs differ from the others in cluster name and port.
   e2e-nuget:
     name: e2e (${{ matrix.set }})
-    needs: [image, e2e-scope]
+    needs: [image, client-images, e2e-scope]
     if: ${{ !cancelled() && needs.image.result == 'success' && needs.e2e-scope.outputs.nuget != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -1773,8 +1862,8 @@ jobs:
       QUADER_IMAGE: guidedtraffic/quader:dev
       QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
       QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
-      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
-      # deploy/dev/e2e.sh loads them into kind and does not build them again.
+      # The clients images come from the job client-images of this run, through .github/actions/client-images, which loads
+      # them from the cache and builds nothing (Q-ARCH-638); deploy/dev/e2e.sh loads them into kind and does not build them again.
       QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD: "0"
     steps:
       - name: Checkout
@@ -1843,8 +1932,8 @@ jobs:
           username: guidedtraffic
           password: ${{ secrets.DOCKERHUB_PAT }}
 
-      - name: Load or build the NuGet clients image
-        timeout-minutes: 30
+      - name: Load the NuGet clients image
+        timeout-minutes: 10
         uses: ./.github/actions/client-images
         with:
           set: nuget
@@ -1937,7 +2026,7 @@ jobs:
   # class like the npm leg. The ports 8104 and 8105 are the first free ones of both workflows.
   e2e-oci:
     name: e2e (${{ matrix.set }})
-    needs: [image, e2e-scope]
+    needs: [image, client-images, e2e-scope]
     if: ${{ !cancelled() && needs.image.result == 'success' && needs.e2e-scope.outputs.oci != 'false' }}
     runs-on: large
     timeout-minutes: 90
@@ -1949,8 +2038,8 @@ jobs:
       QUADER_IMAGE: guidedtraffic/quader:dev
       QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
       QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
-      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
-      # deploy/dev/e2e.sh loads them into kind and does not build them again.
+      # The clients images come from the job client-images of this run, through .github/actions/client-images, which loads
+      # them from the cache and builds nothing (Q-ARCH-638); deploy/dev/e2e.sh loads them into kind and does not build them again.
       QUADER_E2E_OCI_CLIENTS_IMAGE_BUILD: "0"
     steps:
       - name: Checkout
@@ -2012,8 +2101,8 @@ jobs:
           username: guidedtraffic
           password: ${{ secrets.DOCKERHUB_PAT }}
 
-      - name: Load or build the OCI clients images
-        timeout-minutes: 30
+      - name: Load the OCI clients images
+        timeout-minutes: 10
         uses: ./.github/actions/client-images
         with:
           set: oci
@@ -2108,7 +2197,7 @@ jobs:
   # deb-closing (TestDebClosing...: Valkey stopped, the read-only check against deb.debian.org). The ports 8107 and 8108 are the first free ones of both workflows.
   e2e-deb:
     name: e2e (${{ matrix.set }})
-    needs: [image, e2e-scope]
+    needs: [image, client-images, e2e-scope]
     if: ${{ !cancelled() && needs.image.result == 'success' && needs.e2e-scope.outputs.deb != 'false' }}
     runs-on: large
     timeout-minutes: 90
@@ -2120,8 +2209,8 @@ jobs:
       QUADER_IMAGE: guidedtraffic/quader:dev
       QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
       QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
-      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
-      # deploy/dev/e2e.sh loads them into kind and does not build them again.
+      # The clients images come from the job client-images of this run, through .github/actions/client-images, which loads
+      # them from the cache and builds nothing (Q-ARCH-638); deploy/dev/e2e.sh loads them into kind and does not build them again.
       QUADER_E2E_APT_CLIENTS_IMAGE_BUILD: "0"
     steps:
       - name: Checkout
@@ -2183,8 +2272,8 @@ jobs:
           username: guidedtraffic
           password: ${{ secrets.DOCKERHUB_PAT }}
 
-      - name: Load or build the APT clients images
-        timeout-minutes: 30
+      - name: Load the APT clients images
+        timeout-minutes: 10
         uses: ./.github/actions/client-images
         with:
           set: apt
@@ -2279,7 +2368,7 @@ jobs:
   # Release back (CLAUDE.md, CI until the first stable release). The ports 8117 and 8118 are the first free ones of both workflows.
   e2e-ansible:
     name: e2e (${{ matrix.set }})
-    needs: [image, e2e-scope]
+    needs: [image, client-images, e2e-scope]
     if: ${{ !cancelled() && needs.image.result == 'success' && needs.e2e-scope.outputs.ansible != 'false' }}
     runs-on: large
     timeout-minutes: 90
@@ -2291,8 +2380,8 @@ jobs:
       QUADER_IMAGE: guidedtraffic/quader:dev
       QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
       QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
-      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
-      # deploy/dev/e2e.sh loads them into kind and does not build them again.
+      # The clients images come from the job client-images of this run, through .github/actions/client-images, which loads
+      # them from the cache and builds nothing (Q-ARCH-638); deploy/dev/e2e.sh loads them into kind and does not build them again.
       QUADER_E2E_ANSIBLE_CLIENTS_IMAGE_BUILD: "0"
     steps:
       - name: Checkout
@@ -2370,8 +2459,8 @@ jobs:
           npm ci
           ../.github/scripts/playwright-install.sh chromium
 
-      - name: Load or build the Ansible clients images
-        timeout-minutes: 30
+      - name: Load the Ansible clients images
+        timeout-minutes: 10
         uses: ./.github/actions/client-images
         with:
           set: ansible
@@ -2462,7 +2551,8 @@ jobs:
   # set ci-ha of job e2e-ci in performance.yml. Edge port 8091 is the first free one of both workflows.
   e2e-ci:
     name: e2e (${{ matrix.set }})
-    needs: image
+    needs: [image, client-images]
+    if: ${{ !cancelled() && needs.image.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     strategy:
@@ -2475,8 +2565,8 @@ jobs:
       QUADER_IMAGE: guidedtraffic/quader:dev
       QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
       QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
-      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
-      # deploy/dev/e2e.sh loads them into kind and does not build them again.
+      # The clients images come from the job client-images of this run, through .github/actions/client-images, which loads
+      # them from the cache and builds nothing (Q-ARCH-638); deploy/dev/e2e.sh loads them into kind and does not build them again.
       QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD: "0"
       QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD: "0"
     steps:
@@ -2546,14 +2636,14 @@ jobs:
           username: guidedtraffic
           password: ${{ secrets.DOCKERHUB_PAT }}
 
-      - name: Load or build the npm clients image
-        timeout-minutes: 30
+      - name: Load the npm clients image
+        timeout-minutes: 10
         uses: ./.github/actions/client-images
         with:
           set: npm
 
-      - name: Load or build the NuGet clients image
-        timeout-minutes: 30
+      - name: Load the NuGet clients image
+        timeout-minutes: 10
         uses: ./.github/actions/client-images
         with:
           set: nuget
@@ -2647,7 +2737,7 @@ jobs:
   # (owner, 2026-11-01). Edge port 8093 is the first free one of both workflows.
   e2e-bastion:
     name: e2e (${{ matrix.set }})
-    needs: [image, e2e-scope]
+    needs: [image, client-images, e2e-scope]
     if: ${{ !cancelled() && needs.image.result == 'success' && needs.e2e-scope.outputs.bastion != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -2661,8 +2751,8 @@ jobs:
       QUADER_IMAGE: guidedtraffic/quader:dev
       QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
       QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
-      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
-      # deploy/dev/e2e.sh loads them into kind and does not build them again.
+      # The clients images come from the job client-images of this run, through .github/actions/client-images, which loads
+      # them from the cache and builds nothing (Q-ARCH-638); deploy/dev/e2e.sh loads them into kind and does not build them again.
       QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD: "0"
       QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD: "0"
     steps:
@@ -2747,14 +2837,14 @@ jobs:
           username: guidedtraffic
           password: ${{ secrets.DOCKERHUB_PAT }}
 
-      - name: Load or build the npm clients image
-        timeout-minutes: 30
+      - name: Load the npm clients image
+        timeout-minutes: 10
         uses: ./.github/actions/client-images
         with:
           set: npm
 
-      - name: Load or build the NuGet clients image
-        timeout-minutes: 30
+      - name: Load the NuGet clients image
+        timeout-minutes: 10
         uses: ./.github/actions/client-images
         with:
           set: nuget
@@ -2856,7 +2946,7 @@ jobs:
   # (owner, 2026-11-01). Edge port 8095 is the first free one of both workflows.
   e2e-vuln:
     name: e2e (${{ matrix.set }})
-    needs: [image, e2e-scope]
+    needs: [image, client-images, e2e-scope]
     if: ${{ !cancelled() && needs.image.result == 'success' && needs.e2e-scope.outputs.vuln != 'false' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -2870,8 +2960,8 @@ jobs:
       QUADER_IMAGE: guidedtraffic/quader:dev
       QUADER_DEV_CLUSTER: quader-${{ matrix.set }}-${{ github.run_id }}
       QUADER_DEV_HTTP_PORT: ${{ matrix.port }}
-      # The clients images come from .github/actions/client-images (the cache, or a build when their inputs changed);
-      # deploy/dev/e2e.sh loads them into kind and does not build them again.
+      # The clients images come from the job client-images of this run, through .github/actions/client-images, which loads
+      # them from the cache and builds nothing (Q-ARCH-638); deploy/dev/e2e.sh loads them into kind and does not build them again.
       QUADER_E2E_NPM_CLIENTS_IMAGE_BUILD: "0"
       QUADER_E2E_NUGET_CLIENTS_IMAGE_BUILD: "0"
     steps:
@@ -2956,14 +3046,14 @@ jobs:
           username: guidedtraffic
           password: ${{ secrets.DOCKERHUB_PAT }}
 
-      - name: Load or build the npm clients image
-        timeout-minutes: 30
+      - name: Load the npm clients image
+        timeout-minutes: 10
         uses: ./.github/actions/client-images
         with:
           set: npm
 
-      - name: Load or build the NuGet clients image
-        timeout-minutes: 30
+      - name: Load the NuGet clients image
+        timeout-minutes: 10
         uses: ./.github/actions/client-images
         with:
           set: nuget
