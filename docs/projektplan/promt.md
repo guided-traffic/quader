@@ -243,8 +243,14 @@ Q-ARCH-1040; its release shows the rest); `drain-roles` ran alone at 22:24, gree
 the browser journeys it rewrote run first in the pipeline's e2e legs). Started at 22:53 in the freed place: **T-24 · R4** (downloads ahead and the queue; R3 waits for R2's landing,
 since it wires R2's decider). **The rest of the Go tests landed at 23:12** (three commits; F-126 not reproduced, open). Started at 23:00 in T-25's place: **W8** (web and end-to-end tests wait for what they stand for, with the
 layout fixtures in three browsers and an instance of the UI profile that is claimed, not chosen: two builders
-took instance 6 a minute apart that evening). Waiting for a place: W10b, the documents' second round, the two
-findings of T-25's renders, T-24 R3, and the two nightly sets `upgrade-release` and `vuln-perf` (to be
+took instance 6 a minute apart that evening). Started at 23:20 in that place: **W10b with the documents' second
+round** (the extraction check, the stale location notes, test names that carry a decision's number, "du",
+and every item the writer left). **Landed at 23:52** (three commits: the documents, the extraction check, 28 renames and the rule that a test
+name carries a requirement's number, never a decision's). Its first builder was of a type without a shell (the development agent's
+choice, a mistake already known from 2026-11-03): it wrote the check and the documents and could run, extract
+and commit nothing; a second builder with a shell finishes the same worktree from 23:35. Found by it: about
+1,000 test names still carry a decision's number (some 440 in about 120 web spec files, at least 600 in Go),
+a package of its own. Waiting for a place: the renames of those test names, the two findings of T-25's renders, T-24 R3, and the two nightly sets `upgrade-release` and `vuln-perf` (to be
 dispatched in a window with no code push beside them).
 
 Read this first. By the owner's words of 17:15 (section 0) nothing new was begun; this list is what was
@@ -285,10 +291,9 @@ starts from it and from his word how the work goes on, not from the order of the
   the end-to-end test it changed before it reports; the walk's widths on the development machine and on
   the runner; the journeys' texts from the source the pages take them from; the fixed waits of the
   limits' client cases; the count of a cold load's requests.
-- **W10b · Translations and test names** (the packages' table of section 8): the extraction check, the
-  names of tests that carry a decision's number, the translation file's stale location notes.
-- **A second round of the documents' writer** (section 8, "What the same writer saw in the documents and
-  left").
+- **W10b · Translations and test names**: landed at 23:52; left: about 1,000 test names that carry a
+  decision's number (a package of its own).
+- **A second round of the documents' writer**: landed at 23:52 with W10b.
 - **The layout checks' fixtures in three browsers** (section 8, "The layout checks' fixtures in Firefox and
   WebKit were taken back"): reverted today, to come back with markings that hold on the runner.
 - **The repair of the evidence record's publish**: built by 22:45 and landed as the commit "the coverage badge and the record … are published again" (Q-ARCH-1040); the
@@ -429,7 +434,8 @@ Rules while building:
   builder's,** because a builder that is resumed edits its worktree (on 2026-11-22 fourteen integration areas
   of such a run failed to build in the minute a resumed builder changed a signature, and three before them
   ran on a tree in the middle of an edit);
-  and **a reader of a third party's format is proven with a fixture the real tool made, before it lands**
+  **a builder is of a type that has a shell** (Bash): a type without one writes and cannot run a gate, extract
+  or commit (W10b, 2026-11-23, lost a builder's run to it); and **a reader of a third party's format is proven with a fixture the real tool made, before it lands**
   (the measurement of the signatures with real clients found three defects that every test made in process
   had passed).
 
@@ -702,21 +708,6 @@ records the recorder that tells such a stall apart).
   answers of kind `package` since 3a194e987 or an answer ended after the profile's 30 s, which a trace of
   `quader_bastion_answers_total{result="hit"}` by kind within 30 s of a lookup on the development profile
   decides.
-- **Partly closed; open: the stale location notes of the German translation file (package W10b, with the
-  extraction check).** Closed: the index's rows, by 240a446fb (2026-11-23): the rows of `docs/decisions.md`
-  are generated from every question block, Q-SIG-145 to Q-SIG-239 among them, and
-  `go run ./internal/tools/coverage -check` fails on a question block without a row, in the step "Rules and
-  the committed pages" of the job `coverage generator (links and rules)`, held by `TestDecisionsIndex`,
-  `TestDecisionsCheck` and `TestDecisionsIndexOfTheRealDocs` (unit, `internal/tools/coverage`, 9 s); the check
-  passes on eadaf0bc1. The double row and the README, by eadaf0bc1 (2026-11-23):
-  `docs/spec/operations-and-observability.md` keeps only the built row of `signature.download_refused`, and
-  the README's naming tables name every audit event and metric family of the signatures and of the signing
-  identity. As it stood:
-  **Documents out of step, seen by the builder of the gate's trace on 2026-11-22 and left for the batch:**
-  `docs/decisions.md` has no rows for Q-SIG-145 to Q-SIG-239; `docs/spec/operations-and-observability.md` lists
-  `signature.download_refused` twice, once as specified and not built beside its built row; the README's naming
-  tables held no event and no metric of the signatures before the gate's two were added; the location notes of
-  the German translation file are stale.
 - **Partly closed; open: whether the gating jobs without the module cache stopped downloading the module
   graph after d9e79a585 (read from the first run after it).** Closed on 2026-11-23, 22:50, by the reading of the
   builder of the evidence record's publish: (2)'s summary, the job `coverage evidence` of run 45212749706,
@@ -972,8 +963,20 @@ records the recorder that tells such a stall apart).
   definitions' setup; checked by reading on 2026-11-23 by the builder of W2, who may not start a UI
   stack).** By the code the page shows the badge "None yet" with a sentence and no error banner. To do
   (W9): a render state of it, looked at.
-- **What the same writer saw in the documents and left, since its task was the status words alone
-  (2026-11-23).** The README's key features name no Bastion, malware scanning, signatures, download
+### Closed
+
+- **Closed on 2026-11-23, 23:50, by the documents' second round (W10b): what the same writer saw in the
+  documents and left.** The README's key features name the Bastion, Ansible Galaxy, malware scanning, signatures,
+  download limits, encrypted connections and signed links, each default checked in the code; `limitations.md`
+  names Ansible Galaxy; H-601 (OCI, signed links) is closed in the form its pages use (a statement at R-OCI-010
+  and on `oci-manifests.md`); H-36 and H-839 and the note of Q-LIM-41 stay open and say that the gate is built
+  and off by default; `audit.md`, `identity.md`, `authorization.md`, `virtual.md`, `login.md`, `http-api.md` and
+  two security pages name the real fields and the real order of the wiring (no `a.m1.*`; `wireSessions` after
+  `wireIdentity`; `wireVirtual` a step of its own; `LocalLimiter` used by tests only), and so does Q-AUTH's
+  decision (b); `m1-contracts.md`, the configuration's description of `system.bootstrap_anonymous_read` and the
+  comment in `wire_identity.go` describe the bridge that exists; the passage of `e2e.md`, the head lines of the
+  npm, Ansible, generic, Debian and vulnerability pages, and `developer/README.md` are rewritten. Facts were
+  checked by sampling, not every sentence. As it stood: The README's key features name no Bastion, malware scanning, signatures, download
   limits or several connections with encryption (they stand in its status block only);
   `docs/manual/admin/limitations.md` leaves Ansible Galaxy out of the formats without an exposure
   adapter; four gap or decision blocks still call built things unbuilt in their text (H-601 of the
@@ -988,7 +991,27 @@ records the recorder that tells such a stall apart).
   first is on `main`; a gap block whose gap is closed is closed in the form its security page uses,
   not reworded.
 
-### Closed
+- **Closed on 2026-11-23, 23:50: the stale location notes of the German translation file (W10b).** `make
+  web-i18n` writes a fresh extraction and rewrites `messages.de.xlf` in its order with its notes, dropping
+  removed units and keeping every target; `make web-i18n-check` (`web/scripts/i18n-check.mjs`, a step of the job
+  `web` after its unit tests, 10 to 14 s on the development machine) fails on any byte of difference, a missing or
+  a removed unit, or a changed English source; held by two node tests (R-UI-047, milliseconds). 3,674 German
+  units got their notes once; two English sources differed by spelling alone and were corrected. From now on an
+  edit that moves lines of a file with translatable texts needs `make web-i18n` before its commit. Closed
+  before: the index's rows, by 240a446fb (2026-11-23): the rows of `docs/decisions.md`
+  are generated from every question block, Q-SIG-145 to Q-SIG-239 among them, and
+  `go run ./internal/tools/coverage -check` fails on a question block without a row, in the step "Rules and
+  the committed pages" of the job `coverage generator (links and rules)`, held by `TestDecisionsIndex`,
+  `TestDecisionsCheck` and `TestDecisionsIndexOfTheRealDocs` (unit, `internal/tools/coverage`, 9 s); the check
+  passes on eadaf0bc1. The double row and the README, by eadaf0bc1 (2026-11-23):
+  `docs/spec/operations-and-observability.md` keeps only the built row of `signature.download_refused`, and
+  the README's naming tables name every audit event and metric family of the signatures and of the signing
+  identity. As it stood:
+  **Documents out of step, seen by the builder of the gate's trace on 2026-11-22 and left for the batch:**
+  `docs/decisions.md` has no rows for Q-SIG-145 to Q-SIG-239; `docs/spec/operations-and-observability.md` lists
+  `signature.download_refused` twice, once as specified and not built beside its built row; the README's naming
+  tables held no event and no metric of the signatures before the gate's two were added; the location notes of
+  the German translation file are stale.
 
 - **Closed on 2026-11-23, 23:12: what W4 did not do, and the integration tests' environment and ports** (three
   commits of the rest of the Go tests): F-249 by `TestR_HA_008_StartDuringASentinelFailoverWaitsForTheNewPrimary`
