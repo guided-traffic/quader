@@ -34,6 +34,8 @@ export abstract class TechnicalTokensApi {
     request: NewTechnicalTokenSecret,
     idempotencyKey: string,
   ): Promise<TechnicalTokenCreated>;
+  /** One technical token with its `ETag`, which a change of its description takes in `If-Match`. */
+  abstract get(account: AccountAddress, tokenName: string): Promise<Versioned<TechnicalToken>>;
   abstract update(account: AccountAddress, tokenName: string, description: string, etag: string): Promise<Versioned<TechnicalToken>>;
   abstract remove(account: AccountAddress, tokenName: string): Promise<void>;
 }
@@ -61,6 +63,11 @@ export class HttpTechnicalTokensApi extends TechnicalTokensApi {
     idempotencyKey: string,
   ): Promise<TechnicalTokenCreated> {
     return (await this.client.post<TechnicalTokenCreated>(`${base(account)}/${seg(tokenName)}/secrets`, request, { idempotencyKey })).body;
+  }
+
+  override async get(account: AccountAddress, tokenName: string): Promise<Versioned<TechnicalToken>> {
+    const answer = await this.client.getJson<TechnicalToken>(`${base(account)}/${seg(tokenName)}`);
+    return { value: answer.body, etag: answer.etag ?? '' };
   }
 
   override async update(account: AccountAddress, tokenName: string, description: string, etag: string): Promise<Versioned<TechnicalToken>> {

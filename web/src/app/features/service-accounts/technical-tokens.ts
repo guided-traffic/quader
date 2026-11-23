@@ -1,3 +1,4 @@
+import { TechnicalTokenDescriptionData, TechnicalTokenDescriptionDialog } from './technical-token-description-dialog';
 import { Component, DestroyRef, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { newIdempotencyKey } from '../../api/client';
@@ -82,10 +83,13 @@ type FormFor = { readonly kind: 'token' } | { readonly kind: 'secret'; readonly 
         [emptyText]="tokens().length === 0 ? noToken : noActiveToken"
         [canRotate]="isAdmin()"
         [canRevoke]="canRevoke()"
+        [canManage]="canManage()"
         [limits]="limits()"
         (rotate)="rotate($event)"
         (revoke)="revoke($event)"
         (setLimit)="setLimit($event)"
+        (editDescription)="editDescription($event)"
+        (remove)="remove($event)"
       />
       @if (ended().length > 0) {
         <h3 class="ended" i18n="@@tt.ended-heading">Expired and revoked</h3>
@@ -94,7 +98,10 @@ type FormFor = { readonly kind: 'token' } | { readonly kind: 'secret'; readonly 
           [caption]="endedCaption"
           [ended]="true"
           [canIssue]="canIssue()"
+          [canManage]="canManage()"
           (renew)="openRenew($event)"
+          (editDescription)="editDescription($event)"
+          (remove)="remove($event)"
         />
       }
     } @else if (!loadError()) {
@@ -160,6 +167,8 @@ export class TechnicalTokens {
    */
   protected readonly offerAdmin = computed(() => this.isAdmin() && this.account().level === 'instance' && this.account().isAdmin === true);
   protected readonly canRevoke = computed(() => this.session.has('tokens:revoke') || this.owner());
+  /** Changes a token's description and deletes the token: `identities:write`, or an Owner of the account's project (R-AUTH-045). */
+  protected readonly canManage = computed(() => this.session.has('identities:write') || this.owner());
   /** Reads the limits: `limits:read`, or an Owner of the account's project (R-LIM-029, R-API-082). */
   private readonly canReadLimits = computed(() => this.session.has('limits:read') || this.owner());
   /** Sets a token's limit at its account's place: `limits:write`, or an Owner below its project (R-UI-181, R-LIM-016). */
@@ -288,6 +297,32 @@ export class TechnicalTokens {
     await this.act(async () => {
       for (const s of t.secrets) await this.tokensApi.revoke(s.id);
       this.notifier.status($localize`:@@tt.revoked:Technical token revoked.`);
+    });
+  }
+
+  /** **Edit description** of the row's menu (G5-51): the token's description, saved with the token's `ETag`. */
+  protected async editDescription(t: TechnicalToken): Promise<void> {
+    const ref = this.dialog.open<TechnicalTokenDescriptionDialog, TechnicalTokenDescriptionData, string>(TechnicalTokenDescriptionDialog, {
+      maxWidth: '32rem',
+      data: { account: this.address(), token: t },
+    });
+    if ((await firstValueFrom(ref.closed)) === undefined) return;
+    this.notifier.status($localize`:@@tt.description-saved:Description saved.`);
+    await this.reload();
+  }
+
+  /** **Delete** of the row's menu (G5-51): revokes the token's live secrets and deletes it, after the question every removal asks. */
+  protected async remove(t: TechnicalToken): Promise<void> {
+    const answer = await this.confirmer.ask({
+      title: $localize`:@@tt.delete-title:Delete this technical token?`,
+      lines: [$localize`:@@tt.delete-text:${t.name}:name: and its secrets are removed: it stops working at once on every replica. This cannot be undone.`],
+      confirmLabel: $localize`:@@tt.delete-confirm:Delete`,
+    });
+    if (answer === null) return;
+    await this.act(async () => {
+      await this.api.remove(this.address(), t.name);
+      this.notifier.status($localize`:@@tt.deleted:Technical token deleted.`);
+      this.changed.emit();
     });
   }
 

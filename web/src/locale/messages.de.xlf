@@ -50110,5 +50110,83 @@
         <target>CI-Job von <ph id="0" equiv="name" disp="name"/></target>
       </segment>
     </unit>
+    <unit id="tt-desc.cancel">
+      <segment>
+        <source>Cancel</source>
+        <target>Abbrechen</target>
+      </segment>
+    </unit>
+    <unit id="tt-desc.label">
+      <segment>
+        <source>Description (optional)</source>
+        <target>Beschreibung (optional)</target>
+      </segment>
+    </unit>
+    <unit id="tt-desc.of">
+      <segment>
+        <source>Of the technical token</source>
+        <target>Des technischen Tokens</target>
+      </segment>
+    </unit>
+    <unit id="tt-desc.save">
+      <segment>
+        <source>Save changes</source>
+        <target>Änderungen speichern</target>
+      </segment>
+    </unit>
+    <unit id="tt-desc.title">
+      <segment>
+        <source>Edit description</source>
+        <target>Beschreibung bearbeiten</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.actions-for">
+      <segment>
+        <source>Actions for <ph id="0" equiv="name" disp="t.name"/></source>
+        <target>Aktionen für <ph id="0" equiv="name" disp="t.name"/></target>
+      </segment>
+    </unit>
+    <unit id="tt-table.delete">
+      <segment>
+        <source>Delete</source>
+        <target>Löschen</target>
+      </segment>
+    </unit>
+    <unit id="tt-table.edit-description">
+      <segment>
+        <source> Edit description </source>
+        <target> Beschreibung bearbeiten </target>
+      </segment>
+    </unit>
+    <unit id="tt.delete-confirm">
+      <segment>
+        <source>Delete</source>
+        <target>Löschen</target>
+      </segment>
+    </unit>
+    <unit id="tt.delete-text">
+      <segment>
+        <source><ph id="0" equiv="name" disp="t.name"/> and its secrets are removed: it stops working at once on every replica. This cannot be undone.</source>
+        <target><ph id="0" equiv="name" disp="t.name"/> und seine Geheimnisse werden entfernt: Es funktioniert sofort auf keinem Replikat mehr. Das kann nicht rückgängig gemacht werden.</target>
+      </segment>
+    </unit>
+    <unit id="tt.delete-title">
+      <segment>
+        <source>Delete this technical token?</source>
+        <target>Dieses technische Token löschen?</target>
+      </segment>
+    </unit>
+    <unit id="tt.deleted">
+      <segment>
+        <source>Technical token deleted.</source>
+        <target>Technisches Token gelöscht.</target>
+      </segment>
+    </unit>
+    <unit id="tt.description-saved">
+      <segment>
+        <source>Description saved.</source>
+        <target>Beschreibung gespeichert.</target>
+      </segment>
+    </unit>
   </file>
 </xliff>

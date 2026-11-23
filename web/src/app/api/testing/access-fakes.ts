@@ -785,6 +785,14 @@ export class FakeTechnicalTokensApi extends TechnicalTokensApi {
     return this.created(next);
   }
 
+  override async get(account: AccountAddress, tokenName: string): Promise<Versioned<TechnicalToken>> {
+    this.fail();
+    this.calls.push(`get ${this.ref(account)} ${tokenName}`);
+    const found = (this.tokens[this.ref(account)] ?? []).find((t) => t.name === tokenName);
+    if (!found) throw problem(404, 'not_found');
+    return { value: found, etag: '"1"' };
+  }
+
   override async update(account: AccountAddress, tokenName: string, description: string): Promise<Versioned<TechnicalToken>> {
     this.fail();
     this.calls.push(`update ${this.ref(account)} ${tokenName}`);

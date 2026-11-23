@@ -720,11 +720,30 @@ async function* remoteSections(page: Page): AsyncGenerator<string> {
 
 /**
  * A service account's page (R-UI-181) as it opens, with its technical tokens (an active one, one with a long name, an expired and a
- * revoked one in the seed), then the create form of a technical token with its name first, where the caller may create one.
+ * revoked one in the seed), a token's description being edited and its removal being confirmed, then the create form of a technical
+ * token with its name first, where the caller may create one.
  */
 async function* technicalTokens(page: Page): AsyncGenerator<string> {
   await expect(page.locator('main quader-technical-token-table tbody tr').first()).toBeVisible();
   yield '';
+  // A token's own changes from its row's menu (G5-51), where the caller may make them: the dialog of its description, then the
+  // confirmation of its removal; each is cancelled, nothing is saved.
+  const menu = page.locator('main quader-technical-token-table').first().getByRole('button', { name: /^Actions for / });
+  if ((await menu.count()) > 0) {
+    await menu.first().click();
+    await page.getByRole('menuitem', { name: 'Edit description' }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByRole('textbox')).toBeVisible();
+    yield 'description';
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
+    await expect(dialog).toHaveCount(0);
+    await menu.first().click();
+    await page.getByRole('menuitem', { name: 'Delete' }).click();
+    await expect(dialog.getByRole('button', { name: 'Delete' })).toBeVisible();
+    yield 'delete';
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
+    await expect(dialog).toHaveCount(0);
+  }
   // The rule dialog of a token's limit, at the account's place (R-UI-181): its limit opens Set limit for a token without a rule.
   const setLimit = page.locator('main quader-technical-token-table').first().getByRole('button', { name: /Set limit/ });
   if ((await setLimit.count()) > 0) {

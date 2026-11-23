@@ -224,6 +224,46 @@ describe('Service accounts (R-UI-026, R-UI-181)', () => {
     expect((get(TokensApi) as FakeTokensApi).calls).toContain('revoke 00000000-0000-7000-8000-0000000000c2');
   });
 
+  it('G5-51 Q-UI-1007 the row menu edits a technical token\'s description with its ETag and deletes the token after the question', async () => {
+    const { fixture, root, get } = await renderScreen(ServiceAccountDetail, asRole(['admin'], ['identities:read', 'identities:write', 'tokens:revoke']));
+    const fake = get(TechnicalTokensApi) as FakeTechnicalTokensApi;
+    const name = sampleTechnicalToken().name;
+    const menu = technicalSection(root).querySelector<HTMLButtonElement>(`button[aria-label="Actions for ${name}"]`)!;
+    expect(menu).toBeTruthy();
+    // The secret's words stay words beside the menu (Q-UI-641).
+    expect(buttonByText(technicalSection(root), 'Revoke')).toBeTruthy();
+    menu.click();
+    await settle(fixture);
+    expect([...overlay().querySelectorAll('.menu-item')].map((b) => text(b as HTMLElement))).toEqual(['Edit description', 'Delete']);
+    buttonByText(overlay(), 'Edit description').click();
+    await sleep(fixture, 100);
+    const dialog = overlay().querySelector('quader-technical-token-description-dialog') as HTMLElement;
+    const field = dialog.querySelector<HTMLInputElement>('#tt-description')!;
+    field.value = 'Deploys the customer portal';
+    field.dispatchEvent(new Event('input'));
+    await settle(fixture);
+    buttonByText(dialog, 'Save changes').click();
+    await sleep(fixture, 300);
+    expect(fake.calls).toContain(`get sa:ci-bot ${name}`);
+    expect(fake.calls).toContain(`update sa:ci-bot ${name}`);
+    expect(text(technicalSection(root))).toContain('Deploys the customer portal');
+
+    technicalSection(root).querySelector<HTMLButtonElement>(`button[aria-label="Actions for ${name}"]`)!.click();
+    await settle(fixture);
+    buttonByText(overlay(), 'Delete').click();
+    await settle(fixture);
+    const confirm = overlay().querySelector('quader-confirm-dialog') as HTMLElement;
+    expect(text(confirm)).toContain('Delete this technical token?');
+    buttonByText(confirm, 'Delete').click();
+    await sleep(fixture, 300);
+    expect(fake.calls.some((c) => c.startsWith(`remove sa:ci-bot ${name}`))).toBe(true);
+  });
+
+  it('G5-51 a caller who may only read the account gets no menu of a technical token', async () => {
+    const { root } = await renderScreen(ServiceAccountDetail, asRole(['auditor'], ['identities:read']));
+    expect(technicalSection(root).querySelector('button[aria-label^="Actions for"]')).toBeNull();
+  });
+
   it('R-UI-181 Q-UI-333 the technical tokens are a quiet section, open while the account holds one', async () => {
     const closed = await renderScreen(ServiceAccountDetail, { inputs: { name: 'ci-bot' } });
     expect(technicalSection(closed.root).querySelector('.toggle')!.getAttribute('aria-expanded')).toBe('false');

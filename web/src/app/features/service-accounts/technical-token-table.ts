@@ -1,3 +1,4 @@
+import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { Component, computed, input, output } from '@angular/core';
 import { LimitProfile, UsageRow } from '../../api/limits-api';
 import { TechnicalToken } from '../../api/technical-tokens-api';
@@ -42,7 +43,7 @@ export interface TokenLimitsView {
  */
 @Component({
   selector: 'quader-technical-token-table',
-  imports: [DataTable, TimeAgo, TokenLastDayCell, TokenLimitCell, Tooltip],
+  imports: [CdkMenu, CdkMenuItem, CdkMenuTrigger, DataTable, TimeAgo, TokenLastDayCell, TokenLimitCell, Tooltip],
   template: `
     <quader-data-table [caption]="caption()" [columns]="columns()" [empty]="tokens().length === 0" [emptyText]="emptyText()">
       @for (t of tokens(); track t.id) {
@@ -131,10 +132,31 @@ export interface TokenLimitsView {
                 </button>
               }
             }
+            <!-- The token's own changes, which no row offered (G5-51): its description and its removal, in the row's menu beside the
+                 words of its secret, which a credential keeps as words (Q-UI-641, Q-UI-1007). -->
+            @if (canManage()) {
+              <button
+                class="btn btn-tertiary btn-icon on-line"
+                type="button"
+                [attr.aria-label]="menuLabel(t)"
+                [cdkMenuTriggerFor]="tokenMenu"
+                [cdkMenuTriggerData]="{ $implicit: t }"
+              >
+                <span class="material-icons" aria-hidden="true">more_vert</span>
+              </button>
+            }
           </td>
         </tr>
       }
     </quader-data-table>
+    <ng-template #tokenMenu let-t>
+      <div class="menu" cdkMenu>
+        <button class="menu-item" type="button" cdkMenuItem (cdkMenuItemTriggered)="editDescription.emit(t)" i18n="@@tt-table.edit-description">
+          Edit description
+        </button>
+        <button class="menu-item" type="button" cdkMenuItem (cdkMenuItemTriggered)="remove.emit(t)" i18n="@@tt-table.delete">Delete</button>
+      </div>
+    </ng-template>
   `,
   styleUrl: '../../shared/access/access.scss',
   styles: `
@@ -169,6 +191,13 @@ export class TechnicalTokenTable {
   readonly ended = input(false);
   readonly canRotate = input(false);
   readonly canRevoke = input(false);
+  /** The token's description and its removal (`identities:write`, or an Owner of the account's project). */
+  readonly canManage = input(false);
+  readonly editDescription = output<TechnicalToken>();
+  readonly remove = output<TechnicalToken>();
+  protected menuLabel(t: TechnicalToken): string {
+    return $localize`:@@tt-table.actions-for:Actions for ${t.name}:name:`;
+  }
   readonly canIssue = input(false);
   /** The download limits' columns and actions; null leaves them out (a caller who reads neither limits nor usage). */
   readonly limits = input<TokenLimitsView | null>(null);

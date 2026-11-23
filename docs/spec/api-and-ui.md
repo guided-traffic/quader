@@ -8281,7 +8281,10 @@ it is named for the system that uses it and has a budget of its own
   [Q-UI-761](#q-ui-761--a-technical-tokens-last-24-hours-is-the-second-line-of-its-limit)), **Last used**, and the actions
   **Rotate** and **Revoke**; the limit itself opens its rule dialog, **Set limit** or **Change limit** with **Remove limit**
   in it ([Q-UI-759](#q-ui-759--a-technical-tokens-limit-opens-its-rule-dialog-and-the-row-keeps-rotate-and-revoke)). A token without
-  a live secret is listed apart, without its limit, and shows **Expired** or **Revoked** and the action **Issue new secret**. At
+  a live secret is listed apart, without its limit, and shows **Expired** or **Revoked** and the action **Issue new secret**. Every
+  row has a menu **Actions for <token>** beside its words, with **Edit description** (a dialog of the one field, saved with the token's
+  `ETag`) and **Delete** (after the question every removal asks), for `identities:write` or an Owner of the account's project
+  ([Q-UI-1007](#q-ui-1007--a-technical-tokens-description-is-edited-and-the-token-deleted-from-its-rows-menu)). At
   1,024 px and wider both lists are tables.
 - **New technical token** (the section's head) opens the create dialog of R-UI-026 with **Name** first (required; help: "The system
   that uses this token, for example `nightly-mirror`. It cannot be changed."), then description, expiry, scope and endpoints as
@@ -22738,6 +22741,28 @@ a stamp's `by` and the like) without the helper.
 with and what a search for a person matches. The development agent would revisit (a) if the owner wants display names on these pages.
 
 **Applied in the spec:** R-UI-010. Code: [person-name.ts](../../web/src/app/shared/person-name.ts).
+
+### Q-UI-1007 · A technical token's description is edited and the token deleted from its row's menu
+
+Status: **Decided by the development agent** on 2026-11-23 as the coordinator of the screens' second round decided it (G5-51); the
+owner reviews it at the walkthrough.
+
+Context: the API changes a technical token's description and deletes the token (R-AUTH-045), the client had both operations, and no
+screen called them: an administrator had to use the API. A token's row has **Rotate** and **Revoke** as words, which a credential keeps
+([Q-UI-641](#q-ui-641--a-credentials-revoke-is-never-in-a-menu-a-token-row-keeps-its-two-words)).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A menu **Actions for <token>** at the row's end, beside the words, with **Edit description** (a dialog of the one field, read with the token's `ETag` as it opens and saved with it) and **Delete** (the confirmation every removal uses, "Delete this technical token?") (chosen) | R-UI-163's menu | Both reach the screen without a third word in the row; a change somebody made meanwhile is refused, not overwritten | The secret's actions and the token's own stand in two places of one row |
+| (b) The description edited in place in the row | — | No dialog | A field in every row of a list, against R-UI-163's one way per job |
+| (c) A page of its own per technical token | A route | Room for more | A page for one field |
+
+**Choice:** (a). The menu shows to whoever may change the token: `identities:write`, or the role Owner of the account's project; the
+server decides in any case. **Rationale:** the token's own changes are rare and belong to the row of the token, behind its menu;
+the frequent actions of its secret stay its words. The development agent sees no case for revisiting this.
+
+**Applied in the spec:** R-UI-181. Code: [technical-token-table.ts](../../web/src/app/features/service-accounts/technical-token-table.ts),
+[technical-token-description-dialog.ts](../../web/src/app/features/service-accounts/technical-token-description-dialog.ts).
 
 ### Q-UI-1031 · The UI development profile runs in instances, one per builder, and instance 1 is the main checkout's
 
