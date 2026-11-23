@@ -51,10 +51,14 @@ on:
         type: boolean
         default: false
 
+# A run of main is never cancelled or replaced (Q-ARCH-594): its group is the run's own, so a newer push to main runs beside it
+# and the older run keeps its integration shards, e2e legs and layout checks. A pull request, and a dispatch on another branch,
+# keep one group per ref and cancel their own earlier run. Two runs of main may reach Semantic Release; only the run of the commit
+# at the tip of main releases (semantic-release publishes nothing from a commit main has moved past), and it releases every
+# commit since the last tag. No job of this file has a concurrency group of its own: a group shared by runs of main would let
+# GitHub cancel a waiting job of one run for another's (internal/tools/ciworkflows TestARunOfMainIsNeverCancelledByAnother).
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  # A newer push supersedes a run, on main too: Semantic Release releases every commit since the last
-  # tag, so a cancelled run loses nothing.
+  group: ${{ github.workflow }}-${{ github.ref == 'refs/heads/main' && github.run_id || github.ref }}
   cancel-in-progress: true
 
 permissions:

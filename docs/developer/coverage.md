@@ -150,8 +150,9 @@ reports given, so a run that omits the e2e report drops the requirements only e2
 
 The kind legs are path-filtered per change and the long legs run in the nightly workflow, so a run holds only some of the end-to-end
 reports. [fetch-e2e-reports.sh](../../tools/fetch-e2e-reports.sh) fills the rest: it lists the last 40 completed runs of Test and Release and
-the last 14 of the nightly on `main` through the Actions API (the job holds `actions: read`), leaves out the cancelled ones (a push cancels
-the run before it, and a leg cut off mid-set uploads the report of the tests it reached), and for each artifact name that is not in this
+the last 14 of the nightly on `main` through the Actions API (the job holds `actions: read`), leaves out the cancelled ones (a push no
+longer cancels a run of `main`, [Q-ARCH-594](../spec/architecture.md#q-arch-594--a-run-of-main-is-never-cancelled-or-replaced-by-a-newer-push-only-the-run-at-the-tip-releases),
+but a person can, and a leg cut off mid-set uploads the report of the tests it reached), and for each artifact name that is not in this
 run takes the newest one, whichever workflow wrote it ([Q-ROAD-11](../coverage/roadmap.md#q-road-11--the-evidence-record-reads-the-reports-of-every-test-tier)).
 A leg without an unexpired report proves nothing until it runs again, and the job summary lists what was carried and from which run. A failing
 test in a carried report vetoes its requirement as in a report of this run; the requirement then leaves the record and is listed under

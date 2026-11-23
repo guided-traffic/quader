@@ -33,11 +33,13 @@ type job struct {
 	Strategy       yaml.Node         `yaml:"strategy"`
 	Permissions    map[string]string `yaml:"permissions"`
 	TimeoutMinutes yaml.Node         `yaml:"timeout-minutes"`
+	Concurrency    yaml.Node         `yaml:"concurrency"`
 	Steps          []step            `yaml:"steps"`
 }
 
 type workflow struct {
-	Jobs map[string]job `yaml:"jobs"`
+	Concurrency yaml.Node      `yaml:"concurrency"`
+	Jobs        map[string]job `yaml:"jobs"`
 }
 
 func loadWorkflows(t *testing.T) map[string]workflow {

@@ -11067,6 +11067,43 @@ Context: Semantic Release needed all 31 jobs of a run. One intermittent leg held
 
 **Applied:** `.github/workflows/release.yml`; [releasing.md](../developer/releasing.md).
 
+### Q-ARCH-594 · A run of `main` is never cancelled or replaced by a newer push; only the run at the tip releases
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: Test and Release had one concurrency group per ref with `cancel-in-progress: true`, on `main` too, on the reasoning that a
+cancelled run loses nothing because the next green run releases every commit since the last tag. That holds for the release and not
+for the legs that gate nothing: a code push cancelled the run before it, and the integration shards, e2e legs and layout checks it had
+not finished were lost when the next change started fewer legs (plan entry of 2026-11-20, 20:38: six e2e legs). What GitHub does with a
+group ([workflow syntax, `concurrency`](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions#concurrency),
+read on 2026-11-23): the group may use the `github`, `inputs` and `vars` contexts and `cancel-in-progress` may be an expression; by
+default a group holds one running and one pending run, and a newer one cancels the pending one and takes its place; `queue: max` keeps up
+to 100 pending in order, and is refused together with `cancel-in-progress: true`. What semantic-release 25.0.9 does (`index.js`): it
+first pushes the checked-out commit to `main` as a dry run, and when that fails because `main` has moved past the commit it logs "The local
+branch main is behind the remote one, therefore a new version won't be published" and ends without a release.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One group per ref, cancel on `main` (status quo) | A push cancels the running run of `main` | Fewest runner minutes | The legs of the cancelled run are lost |
+| (b) One group per ref, `cancel-in-progress` only off `main` | A run of `main` finishes; the next waits; of three quick pushes the middle one is replaced while it waits and never runs | No started leg is lost; the newest push releases every commit | A push can go without a run; its legs never run |
+| (c) On `main` the run's own group (`github.run_id`), elsewhere the ref with `cancel-in-progress` (chosen) | Every push to `main` runs to its end, side by side with the others; a pull request cancels its own earlier run | No push goes without its run and no leg is lost | Quick pushes run whole runs side by side: more runner minutes, and their kind legs share the six pods of `large` |
+| (d) As (c), and Semantic Release in a job group of its own | Two Semantic Release jobs never run at once | Exclusive by construction | A third job that queues cancels the waiting one, and the third can be an older commit's: the tip's release is then cancelled for one that publishes nothing; `queue: max` would keep both, and actionlint 1.7.12 (the pin, and its newest release) refuses the key |
+
+**Choice:** (c). **Rationale:** with (c) every push runs; the runs of older commits reach Semantic Release and publish nothing, because
+`main` has moved past their commit when they get there, and the run of the tip releases every commit since the last tag. Two Semantic
+Release jobs of two commits cannot both pass the dry-run push: the older one passes it only while its commit is the tip, that is before
+the newer commit is pushed, and the newer run's Semantic Release starts only after that run's gating jobs, minutes later. They overlap
+only if the older job stalls for those minutes between its dry run and its tag; then the second push of the same tag fails and one job is
+red, never two releases of one version, and a commit the first release does not hold goes with the next push. A job group (d) would trade that stall for a drop of the tip's release in a burst, which is
+the loss this decision removes. Cost: a burst of N pushes runs N whole runs instead of one whole run and the started parts of the others
+(a push of shared code runs about 308 runner minutes, [releasing.md](../developer/releasing.md#which-e2e-legs-a-change-runs)), and up to
+six large legs per run wait for the six pods of `large` when two runs overlap. Not verified on GitHub: the first two quick pushes after the
+landing show it. Revisit when actionlint knows `queue`, or when overlapping runs starve the large class.
+
+**Applied in the spec:** none (CI wiring). Code: [release.yml](../../.github/workflows/release.yml) (`concurrency`); test
+`TestARunOfMainIsNeverCancelledByAnother` ([concurrency_test.go](../../internal/tools/ciworkflows/concurrency_test.go)). Elsewhere:
+[releasing.md](../developer/releasing.md#when-no-release-comes), [coverage.md](../developer/coverage.md#how-ci-feeds-it).
+
 ### Q-ARCH-446 · A response to a request whose body is unread is sent first, then the body is read and discarded within a bound
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.

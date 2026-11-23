@@ -8,8 +8,8 @@
 # run none of them) and the long legs run in the nightly workflow, so for every leg whose report artifact is not among the
 # reports of this run, the newest report of that leg on main is taken, whichever workflow wrote it: the last completed runs of
 # release.yml and performance.yml are listed, and each artifact named like `e2e[-<group>]-report[-<set>]` is a candidate. A
-# cancelled run is not a source: a push cancels the run before it, and a leg cut off mid-set uploads the report of the tests
-# it reached, which would withdraw what the rest proves (Test and Release 43065872066 carried such a report of e2e (deb) and
+# cancelled run is not a source (a push no longer cancels a run of main, Q-ARCH-594, but a person can): a leg cut off mid-set
+# uploads the report of the tests it reached, which would withdraw what the rest proves (Test and Release 43065872066 carried such a report of e2e (deb) and
 # lost R-DEB-004). Of several candidates with one name the newest wins. Each report lands in <destination>/<artifact name>/.
 #
 # A leg that has no unexpired report (artifacts live 30 days) is simply not fetched: the requirements only that leg proves are then

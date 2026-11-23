@@ -33,8 +33,9 @@ every pull request to `main` and on demand. A push or pull request that changes 
 (owner, 2026-11-17): everything under `docs/` except `docs/manual/`, which is embedded in the binary, and the Markdown
 files at the root. The guides under `internal/formats/*/guide/` are embedded as well and start a run like any code. What
 this leaves out: the jobs that read the documentation (`coverage`, the links and rules of the coverage generator) see such a
-change only with the next run, and a red one then belongs to the earlier documentation commit. A newer push cancels the
-running run of its ref. Every
+change only with the next run, and a red one then belongs to the earlier documentation commit. A run of `main` is never
+cancelled or replaced: each runs in a concurrency group of its own, so the runs of quick pushes run side by side to their end; a
+newer push to a pull request cancels that pull request's earlier run ([Q-ARCH-594](../spec/architecture.md#q-arch-594--a-run-of-main-is-never-cancelled-or-replaced-by-a-newer-push-only-the-run-at-the-tip-releases)). Every
 check is a job of its own, with its own make target, so it runs the same locally. A job runs on one of the
 organisation's two self-hosted runner classes or, where it needs more disk than they have, on a GitHub-hosted runner
 (owner, 2026-11-05; the table below). Both self-hosted classes start one ephemeral pod per job and discard it
@@ -933,9 +934,14 @@ A release that commits the badge moves `main`: `git pull --rebase` before the ne
 
 ### When no release comes
 
-Semantic Release needs every job of the run: one failed or cancelled job skips it. A newer push cancels
-the running run (`cancel-in-progress`), which loses nothing: the next green run releases every commit
-since the last tag.
+Semantic Release needs every job of its gate: one failed or cancelled job skips it. A newer push to `main` does not cancel the
+running run; both run to their end ([Q-ARCH-594](../spec/architecture.md#q-arch-594--a-run-of-main-is-never-cancelled-or-replaced-by-a-newer-push-only-the-run-at-the-tip-releases)).
+The run of an older commit reaches Semantic Release, which logs "The local branch main is behind the remote one, therefore a new
+version won't be published" and ends green; the run of the commit at the tip releases every commit since the last tag. Of three
+quick pushes all three run, and the third releases. Two Semantic Release jobs at once cannot both publish: only the job of the tip
+passes semantic-release's dry-run push to `main`. If the older one stalled between that push and its tag for as long as the newer
+run's gating jobs take, the second push of the same tag fails and that job is red; a commit the first release does not hold is
+released by the next push.
 
 - **A job failed:** `gh run list --branch main --limit 3`, then for the newest commit's run
   `gh run view <id>` and `gh run rerun <id> --failed`. Nothing re-runs by itself.
