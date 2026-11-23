@@ -782,6 +782,16 @@ class `data` ([tables_storage_keys.go](../../internal/meta/postgres/tables_stora
 [storage_keys.sql](../../internal/meta/postgres/queries/storage_keys.sql). No column is a revision. The number 00107 follows
 00106_object_store_connections.
 
+## The storage summary (00109)
+
+[00109_storage_summary](../../internal/meta/postgres/migrations/00109_storage_summary.sql) is an expand step of package F of the several
+connections ([blob-store.md](blob-store.md#the-storage-summary-and-the-connections-list-r-stor-028-r-stor-061), [spec](../spec/operations-and-observability.md)
+R-OPS-023): `storage_summary`, one row (`id = 1`) with the latest result of the task `storage-summary` as `jsonb`, its time and its duration.
+Export class `transient` ([tables_storage_summary.go](../../internal/meta/postgres/tables_storage_summary.go)): a restored installation has
+none until the task runs. The statements, with those of the API's list of the connections, are
+[storage_summary.sql](../../internal/meta/postgres/queries/storage_summary.sql); the times travel as microseconds since the epoch or RFC 3339
+text, so no driver type enters `internal/blob/summary`. The number 00109 follows 00108_download_links.
+
 ## Debian tables (00060 to 00065)
 
 Five expand migrations of phase T-17 ([deb.md](deb.md)); the numbers are the next free ones, because the runner needs numbers without a gap.

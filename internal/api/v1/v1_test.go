@@ -207,7 +207,7 @@ func TestSystemInfo(t *testing.T) {
 	facts := Facts{
 		InstallationID: ptr("0b7c3f5e"), Incarnation: ptr("5d10e2a4"),
 		Valkey:      gen.ValkeyFacts{Mode: gen.Sentinel, PrimaryName: "quader", Sentinels: 3, Tls: "verify-full", KeyPrefix: "quader:", Keyspace: ptr("5f2a9c0b13de")},
-		ObjectStore: gen.ObjectStoreFacts{Endpoint: "https://s3.example.com", Bucket: "quader", Prefix: "blobs", CredentialSource: "static"},
+		ObjectStore: gen.ObjectStoreFacts{Connections: []gen.ObjectStoreConnectionFacts{{Id: "default", Endpoint: "https://s3.example.com", Bucket: "quader", Prefix: "blobs", CredentialSource: "static"}}},
 	}
 	reps := fakeReplicas{
 		replica("quader-web-1", "web", "n1", gen.Ready, false, "valkey"),

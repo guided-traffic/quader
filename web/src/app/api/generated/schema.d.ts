@@ -527,6 +527,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/storage/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The storage summary
+         * @description The latest result of the task `storage-summary` (operations-and-observability.md R-OPS-023, storage.md R-STOR-028): the live
+         *     blobs, the logical content of the repositories, the deduplication ratio, the trash, what awaits collection, the damaged blobs,
+         *     the figures of every connection that is not retired and of every repository. The task runs hourly; `POST
+         *     /api/v1/system/tasks/storage-summary/run` starts a run. A read never computes: before the first run the answer is `404`. Sizes
+         *     are bytes and ratios numbers from 0 to 1, never formatted strings. The quota of R-STOR-029 is not built and has no member
+         *     (storage.md Q-STOR-370). The permission called `storage.read` in operations-and-observability.md is the capability
+         *     `settings:read` (storage.md Q-STOR-267).
+         */
+        get: operations["getStorageSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/storage-connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The object-store connections
+         * @description Every object-store connection Quader has seen (storage.md R-STOR-061, Q-API-385): first those of the answering replica's
+         *     configuration in its order, then the others by id. Each with its state (R-STOR-051), the live replicas that configure it and
+         *     how many of them have its circuit open, the reconciliation's queue, the capabilities its start check found, its storage keys by
+         *     identifier (R-STOR-088), the non-secret settings of the answering replica's element and the figures of the latest storage
+         *     summary with their time. Read from PostgreSQL and the answering replica's configuration only: any replica answers alike but for
+         *     `position`, `endpoint`, `credentialSource`, `drain`, `scrubPeriodSeconds` and `settings`, which are its own. No secret, no
+         *     credential file path and no key appears. The admin area shows the list and changes nothing (the owner's decision 9).
+         */
+        get: operations["listStorageConnections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/storage-connections/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One object-store connection
+         * @description One connection of the list (storage.md R-STOR-061); `404` for an id Quader has never seen.
+         */
+        get: operations["getStorageConnection"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/system/encryption": {
         parameters: {
             query?: never;
@@ -7425,12 +7497,9 @@ export interface components {
             /** @description Live replicas whose Valkey check is degraded; `null` until the replica registry exists. */
             degradedReplicas: number | null;
         };
+        /** @description The object-store connections of the answering replica's configuration in its order (storage.md R-STOR-061); the state, fill and backlog of each are `GET /api/v1/system/storage-connections`. */
         ObjectStoreFacts: {
-            endpoint: string;
-            bucket: string;
-            prefix: string;
-            /** @description Open enum, for example `static` or `workload-identity`. */
-            credentialSource: string;
+            connections: components["schemas"]["ObjectStoreConnectionFacts"][];
         };
         SystemOverview: {
             /**
@@ -7951,6 +8020,256 @@ export interface components {
              */
             contentStatus: "ok" | "missing" | "corrupt";
             copies: components["schemas"]["DamagedBlobCopy"][];
+        };
+        /** @description The storage summary (storage.md R-STOR-028, operations-and-observability.md R-OPS-023). Sizes are bytes, ratios numbers from 0 to 1 rounded to four decimals. */
+        StorageSummary: {
+            /**
+             * Format: date-time
+             * @description When the task computed the figures.
+             */
+            computedAt: string;
+            /**
+             * Format: int64
+             * @description How long the computation took.
+             */
+            durationMs: number;
+            /** @description The live blob rows, the physical content, with what only the trash can references and what awaits collection. */
+            blobs: {
+                /** Format: int64 */
+                count: number;
+                /** Format: int64 */
+                bytes: number;
+            };
+            /** @description The untrashed files and folders of every listed repository; one blob in two repositories counts twice. */
+            logical: {
+                /** Format: int64 */
+                files: number;
+                /** Format: int64 */
+                folders: number;
+                /** Format: int64 */
+                bytes: number;
+            };
+            /**
+             * Format: double
+             * @description `blobs.bytes / logical.bytes`; `0` while `logical.bytes` is 0.
+             */
+            deduplicationRatio: number;
+            /** @description The trashed items and their logical bytes (R-STOR-022). */
+            trash: {
+                /** Format: int64 */
+                items: number;
+                /** Format: int64 */
+                bytes: number;
+            };
+            /** @description The digests of the collection's queue whose blob is live and the blob rows in state `deleting`, with their sizes. */
+            pendingCollection: {
+                /** Format: int64 */
+                blobs: number;
+                /** Format: int64 */
+                bytes: number;
+            };
+            /** @description The live blobs per content state other than `ok` (R-STOR-027); blobs, not copies. */
+            damaged: {
+                /** Format: int64 */
+                missing: number;
+                /** Format: int64 */
+                corrupt: number;
+            };
+            /** @description The figures of every connection that is not retired, by id. */
+            connections: components["schemas"]["StorageSummaryConnection"][];
+            /** @description Every local and remote repository and every virtual repository that holds generated items (Q-STOR-215), by project and key. */
+            repositories: components["schemas"]["StorageSummaryRepository"][];
+        };
+        /** @description The figures of one connection, counted over the copies of live blobs (storage.md R-STOR-028, R-STOR-061). */
+        StorageSummaryConnection: {
+            id: string;
+            /** Format: int64 */
+            presentCopies: number;
+            /**
+             * Format: int64
+             * @description The stored bytes of the present copies.
+             */
+            presentBytes: number;
+            /** Format: int64 */
+            missingCopies: number;
+            /** Format: int64 */
+            corruptCopies: number;
+            /**
+             * Format: int64
+             * @description Present copies read whole within the connection's `scrub_period` (R-STOR-027).
+             */
+            verifiedWithinPeriod: number;
+            /**
+             * Format: int64
+             * @description Present copies not read whole within the period and a day (Q-STOR-266).
+             */
+            scrubOverdue: number;
+            /**
+             * Format: int64
+             * @description Live blobs without a present copy on the connection.
+             */
+            backlogBlobs: number;
+            /** Format: int64 */
+            backlogBytes: number;
+            /**
+             * Format: double
+             * @description `presentCopies` over the live blobs, `1` when there is no blob.
+             */
+            fillRatio: number;
+            /**
+             * Format: int64
+             * @description Live blobs whose only present copy lies on this connection (Q-STOR-371).
+             */
+            soleCopies: number;
+        };
+        StorageSummaryRepository: {
+            project: string;
+            key: string;
+            /** @enum {string} */
+            class: "local" | "remote" | "virtual";
+            format: string;
+            /** Format: int64 */
+            files: number;
+            /** Format: int64 */
+            folders: number;
+            /**
+             * Format: int64
+             * @description The untrashed logical bytes.
+             */
+            bytes: number;
+            /** Format: int64 */
+            packages: number;
+            /**
+             * Format: int64
+             * @description Untrashed versions.
+             */
+            versions: number;
+            /**
+             * Format: double
+             * @description The repository's share of `logical.bytes`, never a share of capacity (STOR-039).
+             */
+            shareOfLogicalBytes: number;
+        };
+        StorageConnectionList: {
+            connections: components["schemas"]["StorageConnection"][];
+        };
+        /**
+         * @description One object-store connection (storage.md R-STOR-061). `position`, `endpoint`, `credentialSource`, `drain`, `scrubPeriodSeconds`
+         *     and `settings` describe the answering replica's element and are `null` for a connection it does not configure; everything
+         *     else is the installation's, from PostgreSQL. No secret, no credential file path and no key.
+         */
+        StorageConnection: {
+            id: string;
+            /** @description The place in the answering replica's configuration, from 1; `null` for a connection it does not configure. */
+            position: number | null;
+            /**
+             * @description The state of storage.md R-STOR-051, derived from the row and the live replicas of the registry: `filling`, `active`, `draining`, `drained`, `detached` or `retired`.
+             * @example active
+             */
+            state: string;
+            /** @description The endpoint of the answering replica's element; empty for the AWS endpoint of its region. */
+            endpoint: string | null;
+            bucket: string;
+            prefix: string;
+            /** @description `default`, `webIdentity` or `static` (R-STOR-031). */
+            credentialSource: string | null;
+            encrypted: boolean;
+            /** @description Whether an encrypted connection names its objects by a keyed name (R-STOR-086). */
+            keyedNames: boolean;
+            drain: boolean | null;
+            /** @description The live replicas of the registry. */
+            replicas: {
+                /** @description Live replicas that have the connection in their configuration. */
+                configured: number;
+                /** @description Live replicas that report their object-store connections. */
+                live: number;
+                /** @description Live replicas that configure the connection and have its circuit open. */
+                circuitOpen: number;
+            };
+            /** @description The reconciliation's gaps for the connection (R-STOR-056), now. */
+            queue: {
+                /** Format: int64 */
+                blobs: number;
+                /** Format: date-time */
+                oldestQueuedAt: string | null;
+            };
+            /** @description The figures of the latest storage summary with its time; `null` before the first or for a connection it did not count. */
+            summary: components["schemas"]["StorageConnectionFigures"] | null;
+            /** Format: int64 */
+            scrubPeriodSeconds: number | null;
+            /**
+             * Format: date-time
+             * @description The end of the first full pass without a gap (filling to active).
+             */
+            filledAt: string | null;
+            /** Format: date-time */
+            drainedAt: string | null;
+            /** Format: date-time */
+            retiredAt: string | null;
+            /** Format: date-time */
+            lastFullPassAt: string | null;
+            /** @description What the start check found (R-STOR-035); `null` before a check. */
+            capabilities: components["schemas"]["StorageConnectionCapabilities"] | null;
+            /** @description The non-secret settings of the answering replica's element (api-and-ui.md R-UI-196); `null` for a connection it does not configure. */
+            settings: components["schemas"]["StorageConnectionSettings"] | null;
+            /** @description The connection's storage keys by identifier (R-STOR-088, Q-API-405), never a key or its sealed value; empty for a plain connection. */
+            storageKeys: components["schemas"]["StorageConnectionKey"][];
+        };
+        StorageConnectionFigures: components["schemas"]["StorageSummaryConnection"] & {
+            /**
+             * Format: date-time
+             * @description When the summary that counted these figures was computed.
+             */
+            computedAt: string;
+        };
+        StorageConnectionCapabilities: {
+            payloadChecksumEnforced: boolean;
+            batchDelete: boolean;
+            /** @description An object's metadata survived a write. */
+            metadata: boolean;
+            copyReplacesMetadata: boolean;
+            /** @description Per other connection on the same endpoint, whether a server-side copy from it worked. */
+            serverSideCopyFrom: {
+                [key: string]: boolean;
+            };
+            /** Format: date-time */
+            checkedAt: string | null;
+        };
+        StorageConnectionSettings: {
+            region: string;
+            forcePathStyle: boolean;
+            payloadChecksum: string;
+            requestChecksumCalculation: string;
+            responseChecksumValidation: string;
+            batchDelete: boolean;
+            /** @description Empty for the bucket's default. */
+            storageClass: string;
+            sseMode: string;
+            /** Format: int64 */
+            scrubBytesPerSecond: number;
+        };
+        StorageConnectionKey: {
+            id: string;
+            generation: number;
+            /** @description `active` (wraps new copies) or `retired` (opens what it wrapped). */
+            state: string;
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * Format: int64
+             * @description The copies that name the key, from the latest storage summary; `null` before the first.
+             */
+            copies: number | null;
+        };
+        ObjectStoreConnectionFacts: {
+            id: string;
+            endpoint: string;
+            bucket: string;
+            prefix: string;
+            /** @description Open enum, for example `static` or `webIdentity`. */
+            credentialSource: string;
+            encrypted: boolean;
+            drain: boolean;
         };
         TaskLastRun: {
             /** Format: uuid */
@@ -16054,6 +16373,87 @@ export interface operations {
                      *     }
                      */
                     "application/json": components["schemas"]["DamagedBlobRecheck"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getStorageSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The latest summary. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageSummary"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listStorageConnections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The connections. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageConnectionList"];
+                };
+            };
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getStorageConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The id of a connection (storage.md R-STOR-050). */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The connection. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageConnection"];
                 };
             };
             400: components["responses"]["BadRequest"];

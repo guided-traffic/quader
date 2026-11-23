@@ -95,7 +95,7 @@ func TestResponsesMatchTheDocument(t *testing.T) {
 	}{{"anonymous", nil}, {"authenticated", authed}} {
 		facts := Facts{
 			Valkey:      gen.ValkeyFacts{Mode: gen.Sentinel, PrimaryName: "quader", Sentinels: 3, Tls: "verify-full", KeyPrefix: "quader:"},
-			ObjectStore: gen.ObjectStoreFacts{Endpoint: "https://s3.example.com", Bucket: "quader", Prefix: "blobs", CredentialSource: "static"},
+			ObjectStore: gen.ObjectStoreFacts{Connections: []gen.ObjectStoreConnectionFacts{{Id: "default", Endpoint: "https://s3.example.com", Bucket: "quader", Prefix: "blobs", CredentialSource: "static"}}},
 		}
 		s := newSetup(t, func(o *Options) { o.Facts = fakeFacts{facts} }, tc.authn)
 		h := val.Handler(t, s.handler)

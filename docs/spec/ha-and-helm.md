@@ -6105,9 +6105,9 @@ connection ([storage.md](storage.md) R-STOR-060, R-HA-072): `QuaderObjectStoreUn
 `QuaderBlobCorrupt` beside `QuaderBlobMissing`, each with a rule test that fires and one that stays silent. The ServiceMonitor is rendered
 ([servicemonitor.yaml](../../deploy/helm/quader/templates/servicemonitor.yaml), render test `TestServiceMonitor`). The rule scopes its selectors by
 `namespace`, which every scrape through the Prometheus operator carries. The binary exports every metric these rows read under the name of their
-expression (Q-HA-135), except the metrics of the alerts of several connections whose package of the build plan has not landed: the
-copies per state (F); until then such an alert reads no series and stays silent, and the chart test's list `metricsOfLaterPackages`
-names it with its package. The queue's age and the filling gauge of `QuaderStorageReplicationBacklog` and the gauge of
+expression (Q-HA-135): the copies per state of `QuaderStorageCopyDamaged` from the hourly storage summary (package F,
+[internal/blob/summary/gauges.go](../../internal/blob/summary/gauges.go), [storage.md](storage.md) R-STOR-028), so that alert fires at the
+earliest an hour after the summary that first counted the copy. The queue's age and the filling gauge of `QuaderStorageReplicationBacklog` and the gauge of
 `QuaderStorageConnectionDetached` are exported by the reconciliation (package C,
 [internal/blob/reconcile/metrics.go](../../internal/blob/reconcile/metrics.go)), from the query `ReconcileGauges`; the overdue copies of
 `QuaderStorageScrubBehind` by the scrub (package D, [internal/blob/scrub/metrics.go](../../internal/blob/scrub/metrics.go)), from the

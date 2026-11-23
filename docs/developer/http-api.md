@@ -108,6 +108,9 @@ an endpoint whose host check fails answers `421` `misdirected_request` before ro
 | `getSystemInfo` | `GET /api/v1/system/info` | `settings:read` |
 | `listReplicas` | `GET /api/v1/system/replicas` | `settings:read` |
 | `listScanners` | `GET /api/v1/system/scanners` | `settings:read` |
+| `listStorageConnections`, `getStorageConnection` | `GET /api/v1/system/storage-connections`, `…/{id}` | `settings:read`; every object-store connection with its state, the registry's replicas, the queue, the capabilities, the storage keys by identifier, the answering replica's settings and the latest summary's figures, `404` for an id never seen ([blob-store.md](blob-store.md#the-storage-summary-and-the-connections-list-r-stor-028-r-stor-061), R-STOR-061) |
+| `getStorageSummary` | `GET /api/v1/storage/summary` | `settings:read`; the latest snapshot of the task `storage-summary`, `404` before the first run; a read never computes (R-STOR-028, R-OPS-023) |
+| `listDamagedBlobs`, `recheckDamagedBlob` | `GET /api/v1/storage/damaged-blobs`, `POST …/{sha256}/recheck` | `settings:read`, `settings:write` ([blob-store.md](blob-store.md#the-scrub-r-stor-027), R-STOR-027) |
 | `getSystemOverview` | `GET /api/v1/system/overview` | `settings:read`; not opened by `system.bootstrap_anonymous_read` ([System overview](#system-overview-r-ops-004-q-ops-175)) |
 | `getOpenApiJson` / `getOpenApiYaml` | `GET /api/v1/openapi.json`, `.yaml` | public; `servers[0].url` is the public base URL |
 | `getProblemType` | `GET /api/v1/problems/{code}` | public; resolves the `type` URI of a problem |

@@ -185,6 +185,25 @@ p.state .material-icons {
   color: var(--quader-status-bad);
 }
 
+// A connection's line (R-UI-197): its id, its place muted under it, its state at the row's end on the id's line.
+.kv > div.connection-row {
+  align-items: flex-start;
+
+  dt {
+    min-inline-size: 0;
+  }
+
+  .location {
+    display: block;
+    overflow-wrap: anywhere;
+    font-size: var(--quader-text-muted-size);
+  }
+
+  dd {
+    flex: none;
+  }
+}
+
 .note {
   margin: var(--quader-space-2) var(--quader-space-4) var(--quader-space-3);
   color: var(--quader-text-muted);

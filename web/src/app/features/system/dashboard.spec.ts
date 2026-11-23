@@ -4,18 +4,25 @@ import { BackupsApi } from '../../api/backups-api';
 import { ApiError } from '../../api/problem';
 import { FakeBackupsApi, sampleSummary } from '../../api/testing/fakes-backups';
 import { FakeSystemApi, provideFakeApis, sampleInfo, sampleReplica, sampleRuntime } from '../../api/testing/fakes';
+import { FakeStorageApi, sampleConnection } from '../../api/testing/fakes-storage';
+import { StorageApi } from '../../api/storage-api';
 import { Replica, SystemApi } from '../../api/system-api';
 import { SessionStore } from '../../core/session-store';
 import { seriousViolations } from '../../testing/axe';
 import { Dashboard } from './dashboard';
 
-async function render(setup?: (system: FakeSystemApi) => void, backups?: (api: FakeBackupsApi) => void) {
+async function render(
+  setup?: (system: FakeSystemApi) => void,
+  backups?: (api: FakeBackupsApi) => void,
+  storage?: (api: FakeStorageApi) => void,
+) {
   await TestBed.configureTestingModule({
     imports: [Dashboard],
     providers: [provideRouter([]), ...provideFakeApis()],
   }).compileComponents();
   setup?.(TestBed.inject(SystemApi) as FakeSystemApi);
   backups?.(TestBed.inject(BackupsApi) as FakeBackupsApi);
+  storage?.(TestBed.inject(StorageApi) as FakeStorageApi);
   await TestBed.inject(SessionStore).load();
   const fixture = TestBed.createComponent(Dashboard);
   for (let i = 0; i < 4; i++) await fixture.whenStable();
@@ -189,6 +196,49 @@ describe('Admin dashboard (Q-OPS-175)', () => {
       expect(viewBackups(root)).toBeNull();
       expect(root.querySelectorAll('quader-error-notice').length).toBe(0);
       expect(text(root)).toContain('Jobs running');
+    });
+  });
+
+  describe('The object store, one line per connection (R-UI-197)', () => {
+    const twoStores = (s: FakeSystemApi) => {
+      installation(s);
+      s.infoResult = {
+        ...s.infoResult,
+        objectStore: {
+          connections: [
+            { id: 'default', endpoint: 'https://object.storage.eu01.example.net', bucket: 'quader-blobs', prefix: 'quader', credentialSource: 'static', encrypted: false, drain: false },
+            { id: 'secondary', endpoint: 'https://s3.eu-central-1.amazonaws.com', bucket: 'quader-copy', prefix: 'quader', credentialSource: 'webIdentity', encrypted: false, drain: false },
+          ],
+        },
+      };
+    };
+    const lines = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>('section[aria-labelledby="dash-s3"] .connection-row')];
+
+    it('R-UI-197 two connections render two lines with their place and their state, and the card links the tab Storage', async () => {
+      const { root } = await render(twoStores, undefined, (st) => (st.connectionsResult = [sampleConnection(), sampleConnection({ id: 'secondary', position: 2 })]));
+      expect(lines(root).map((l) => [text(l.querySelector('dt > span')!), text(l.querySelector('dt .location')!)])).toEqual([
+        ['default', 'object.storage.eu01.example.net · quader-blobs/quader'],
+        ['secondary', 's3.eu-central-1.amazonaws.com · quader-copy/quader'],
+      ]);
+      expect(lines(root).every((l) => text(l.querySelector('dd')!).includes('Connected'))).toBe(true);
+      expect(root.querySelector('section[aria-labelledby="dash-s3"] a[href="/admin/system/storage"]')?.textContent?.trim()).toBe('Storage');
+      expect(text(root.querySelector('.instance-bar')!)).toContain('All roles ready');
+      expect(await seriousViolations(root)).toEqual([]);
+    });
+
+    it('R-UI-197 one of them unreachable on every replica makes the overall state the warning, both the error', async () => {
+      const down = (id: string) => sampleConnection({ id, replicas: { configured: 3, live: 3, circuitOpen: 3 } });
+      const one = await render(twoStores, undefined, (st) => (st.connectionsResult = [sampleConnection(), down('secondary')]));
+      const bar = text(one.root.querySelector('.instance-bar')!);
+      expect(bar).toContain('A storage connection is unreachable');
+      expect(bar).not.toContain('All roles ready');
+      expect(one.root.querySelector('.instance-bar .state.warn')).toBeTruthy();
+      expect(text(lines(one.root)[1]!)).toContain('Unreachable on 3 of 3 replicas');
+      TestBed.resetTestingModule();
+
+      const both = await render(twoStores, undefined, (st) => (st.connectionsResult = [down('default'), down('secondary')]));
+      expect(text(both.root.querySelector('.instance-bar')!)).toContain('No storage connection is reachable');
+      expect(both.root.querySelector('.instance-bar .state.bad')).toBeTruthy();
     });
   });
 

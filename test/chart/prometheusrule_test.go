@@ -235,7 +235,7 @@ func TestR_HA_045_PrometheusRule(t *testing.T) {
 		}
 		for _, r := range renderedRules(t) {
 			for _, m := range metricNames(str(r, "expr")) {
-				if strings.HasPrefix(m, "kube_") || metricsOfLaterPackages[m] != "" {
+				if strings.HasPrefix(m, "kube_") {
 					continue
 				}
 				// A histogram's series carry the suffixes _bucket, _count and _sum of the family the code registers.
@@ -276,14 +276,6 @@ func TestR_HA_045_PrometheusRule(t *testing.T) {
 			t.Errorf("%d alerts, want %d", len(got), len(alertSeverities())-3)
 		}
 	})
-}
-
-// metricsOfLaterPackages are the metrics of the object-store alerts (R-HA-045, storage.md R-STOR-060) that a later package of the
-// several connections registers (docs/developer/blob-store.md, "Several connections: the build plan"), by the package. The chart
-// renders their alerts already; an alert on a series that does not exist stays silent. The package that registers a metric removes
-// its line here.
-var metricsOfLaterPackages = map[string]string{
-	"quader_storage_copies": "F, the storage summary per connection",
 }
 
 // metricNames returns the identifiers of an expression that look like a metric: they start with quader_ or kube_.

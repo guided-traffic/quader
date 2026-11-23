@@ -1,0 +1,540 @@
+<p class="intro">
+  <ng-container i18n="@@storage.intro"
+    >Where Quader keeps your artifacts. Connections are set in the deployment's configuration
+    (<code translate="no">config.storage.connections</code>); this page only shows them.</ng-container
+  >&ngsp;<a routerLink="/help/admin/operations" fragment="add-or-remove-a-connection" i18n="@@storage.how-to">How to add or remove a connection</a>
+</p>
+
+@if (failure(); as f) {
+  <quader-error-notice [error]="f" (retry)="refresh()" />
+}
+
+@if (connections(); as list) {
+  <!-- What needs an act first, worst first; else that every connection is healthy (R-UI-196). -->
+  <p class="summary" role="status">
+    @for (c of conditions(); track c.kind) {
+      <span class="condition" [class.note]="c.level === 'info'">
+        @switch (c.kind) {
+          @case ('unreachable') {
+            <span class="material-icons bad" aria-hidden="true">error</span>
+            <span i18n="@@storage.summary.unreachable"
+              >Unreachable from some replicas: <span translate="no">{{ c.ids.join(', ') }}</span></span
+            >
+          }
+          @case ('detached') {
+            <span class="material-icons warn" aria-hidden="true">warning</span>
+            <span i18n="@@storage.summary.detached"
+              >In no replica's configuration but holding copies: <span translate="no">{{ c.ids.join(', ') }}</span></span
+            >
+          }
+          @case ('damaged-blobs') {
+            <span class="material-icons warn" aria-hidden="true">warning</span>
+            @if (c.more) {
+              <span i18n="@@storage.summary.damaged-more">More than {{ c.count }} blobs are held whole by no connection</span>
+            } @else {
+              <span i18n="@@storage.summary.damaged"
+                >{c.count, plural, =1 {1 blob is held whole by no connection} other {{{ c.count }} blobs are held whole by no connection}}</span
+              >
+            }
+          }
+          @case ('backlog-behind') {
+            <span class="material-icons warn" aria-hidden="true">warning</span>
+            <span i18n="@@storage.summary.backlog"
+              >Copies wait for more than an hour: <span translate="no">{{ c.ids.join(', ') }}</span></span
+            >
+          }
+          @case ('scrub-behind') {
+            <span class="material-icons warn" aria-hidden="true">warning</span>
+            <span i18n="@@storage.summary.scrub"
+              >Copies not read whole within their period: <span translate="no">{{ c.ids.join(', ') }}</span></span
+            >
+          }
+          @case ('drained') {
+            <span class="material-icons" aria-hidden="true">info</span>
+            <span i18n="@@storage.summary.drained"
+              >Drained, can be removed from the configuration: <span translate="no">{{ c.ids.join(', ') }}</span></span
+            >
+          }
+        }
+      </span>
+    } @empty {
+      <span class="condition">
+        <span class="material-icons ok" aria-hidden="true">check_circle</span>
+        @if (single()) {
+          <span i18n="@@storage.summary.healthy-one">The connection is healthy</span>
+        } @else {
+          <span i18n="@@storage.summary.healthy">Every connection is healthy</span>
+        }
+      </span>
+    }
+  </p>
+
+  <quader-data-table [caption]="caption" [columns]="columns" [empty]="shown().length === 0" [emptyText]="noConnection">
+    @for (c of shown(); track c.id) {
+      <tr>
+        <th scope="row" class="wrap-name">
+          <div class="name-cell">
+            <button
+              type="button"
+              class="btn btn-tertiary btn-icon on-line"
+              [attr.aria-expanded]="isOpen(c)"
+              [attr.aria-controls]="'connection-' + c.id"
+              [attr.aria-label]="openLabel(c)"
+              (click)="toggle(c)"
+            >
+              <span class="material-icons expand-chevron" aria-hidden="true">expand_more</span>
+            </button>
+            <span class="name-text">
+              <span class="connection-name" translate="no">{{ c.id }}</span>
+              <!-- A host and a path break after a dot or a slash, not inside a part (Q-UI-563). -->
+              <span class="secondary location" translate="no"
+                >@for (part of locationParts(c); track $index) {{{ part }}<wbr />}</span
+              >
+            </span>
+          </div>
+        </th>
+        <td class="lines-cell">
+          <div class="states">
+            @let st = connectionState(c);
+            <!-- An open circuit first, the worst word of the row, then the state (R-UI-196). -->
+            @if (unreachable(c); as u) {
+              <div class="state-line">
+                <span class="bad"
+                  ><span class="material-icons" aria-hidden="true">error</span
+                  ><ng-container i18n="@@storage.state.unreachable">Unreachable</ng-container></span
+                >
+                <span class="state-words" i18n="@@storage.state.unreachable-on">on {{ u.open }} of {{ u.of }} replicas</span>
+              </div>
+            }
+            <!-- Information, not a state: a line with its icon, whose words wrap (a rolling update); before the badge, so that a
+                 text stands on the line of the row's name (R-UI-172). -->
+            @if (partlyConfigured(c); as p) {
+              <span class="icon-name partly"
+                ><span class="material-icons" aria-hidden="true">info</span
+                ><span class="icon-name-text" i18n="@@storage.state.partly">Configured on {{ p.configured }} of {{ p.live }} replicas</span></span
+              >
+            }
+            <div class="state-line">
+              @switch (st.kind) {
+                @case ('active') {
+                  <span class="badge"
+                    ><span class="material-icons" aria-hidden="true">cloud_done</span
+                    ><ng-container i18n="@@storage.state.active">Active</ng-container></span
+                  >
+                }
+                @case ('filling') {
+                  <span class="badge"
+                    ><span class="material-icons" aria-hidden="true">hourglass_empty</span
+                    ><ng-container i18n="@@storage.state.filling">Filling</ng-container></span
+                  >
+                  @if (st.percent !== null) {
+                    <span class="state-words" i18n="@@storage.state.filling-share">{{ st.percent }} % of the blobs</span>
+                  }
+                }
+                @case ('draining') {
+                  <span class="badge"
+                    ><span class="material-icons" aria-hidden="true">hourglass_empty</span
+                    ><ng-container i18n="@@storage.state.draining">Draining</ng-container></span
+                  >
+                  @if (st.copiesLeft !== null) {
+                    <span class="state-words" i18n="@@storage.state.draining-left"
+                      >{st.copiesLeft, plural, =1 {1 copy left} other {{{ st.copiesLeft | number }} copies left}}</span
+                    >
+                  }
+                }
+                @case ('drained') {
+                  <span class="badge"
+                    ><span class="material-icons" aria-hidden="true">done</span
+                    ><ng-container i18n="@@storage.state.drained">Drained</ng-container></span
+                  >
+                }
+                @case ('detached') {
+                  <span class="warn"
+                    ><span class="material-icons" aria-hidden="true">warning</span
+                    ><ng-container i18n="@@storage.state.detached">Detached</ng-container></span
+                  >
+                  @if (st.soleBlobs) {
+                    <span class="state-words" i18n="@@storage.state.detached-sole"
+                      >{st.soleBlobs, plural, =1 {1 blob only here} other {{{ st.soleBlobs | number }} blobs only here}}</span
+                    >
+                  }
+                }
+                @case ('retired') {
+                  <span class="badge"><ng-container i18n="@@storage.state.retired">Retired</ng-container></span>
+                }
+              }
+            </div>
+          </div>
+        </td>
+        <td class="figure" translate="no">
+          @if (fill(c); as f) {
+            {{ f.percent }} %, {{ formatSize(f.bytes) }}
+          } @else {
+            <quader-no-value />
+          }
+        </td>
+        <td class="lines-cell">
+          @if (backlogOf(c); as b) {
+            <div class="lines">
+              <span class="line"
+                ><span i18n="@@storage.backlog.blobs">{b.blobs, plural, =1 {1 blob} other {{{ b.blobs | number }} blobs}}</span>,&ngsp;@switch (b.age.unit) {
+                  @case ('day') {
+                    <span i18n="@@storage.backlog.oldest-days">{b.age.n, plural, =1 {oldest 1 day} other {oldest {{ b.age.n }} days}}</span>
+                  }
+                  @case ('hour') {
+                    <span i18n="@@storage.backlog.oldest-hours">{b.age.n, plural, =1 {oldest 1 hour} other {oldest {{ b.age.n }} hours}}</span>
+                  }
+                  @case ('minute') {
+                    <span i18n="@@storage.backlog.oldest-minutes">{b.age.n, plural, =1 {oldest 1 minute} other {oldest {{ b.age.n }} minutes}}</span>
+                  }
+                  @default {
+                    <span i18n="@@storage.backlog.oldest-seconds">oldest less than a minute</span>
+                  }
+                }</span
+              >
+              @if (b.behind) {
+                <span class="line warn-text" i18n="@@storage.backlog.behind">Behind for over an hour</span>
+              }
+            </div>
+          } @else {
+            <quader-no-value />
+          }
+        </td>
+        <td>
+          @if (damagedCopies(c); as d) {
+            <span class="warn-text">
+              @if (d.missing > 0 && d.corrupt > 0) {
+                <ng-container i18n="@@storage.damaged.both">{{ d.missing | number }} missing, {{ d.corrupt | number }} corrupt</ng-container>
+              } @else if (d.missing > 0) {
+                <ng-container i18n="@@storage.damaged.missing">{{ d.missing | number }} missing</ng-container>
+              } @else {
+                <ng-container i18n="@@storage.damaged.corrupt">{{ d.corrupt | number }} corrupt</ng-container>
+              }
+            </span>
+          } @else {
+            <quader-no-value />
+          }
+        </td>
+        <td class="lines-cell">
+          @if (scrub(c); as s) {
+            <div class="lines">
+              @if (s.days !== null) {
+                <span class="line" i18n="@@storage.scrub.read"
+                  >{s.days, plural, =1 {{{ s.percent }} % read within 1 day} other {{{ s.percent }} % read within {{ s.days }} days}}</span
+                >
+              } @else {
+                <span class="line" i18n="@@storage.scrub.read-period">{{ s.percent }} % read within its period</span>
+              }
+              @if (s.behind) {
+                <span class="line warn-text" i18n="@@storage.scrub.behind">Behind</span>
+              }
+            </div>
+          } @else {
+            <quader-no-value />
+          }
+        </td>
+        <td>
+          @if (c.encrypted) {
+            <ng-container i18n="@@storage.encrypted.yes">Yes</ng-container>
+          } @else {
+            <ng-container i18n="@@storage.encrypted.no">No</ng-container>
+          }
+        </td>
+      </tr>
+      <tr class="expansion">
+        <td [attr.colspan]="columns.length">
+          <div [id]="'connection-' + c.id" class="collapse-region" [class.open]="isOpen(c)">
+            <div>
+              @if (isOpen(c)) {
+                <div class="fold">
+                  <dl class="facts">
+                    <dt i18n="@@storage.fold.endpoint">Endpoint</dt>
+                    <dd translate="no">
+                      @if (c.endpoint) {
+                        {{ c.endpoint }}
+                      } @else if (c.settings) {
+                        <ng-container i18n="@@storage.fold.endpoint-aws">The AWS endpoint of the region</ng-container>
+                      } @else {
+                        <quader-no-value />
+                      }
+                    </dd>
+                    <dt i18n="@@storage.fold.bucket">Bucket and prefix</dt>
+                    <dd translate="no">{{ c.bucket }}/{{ c.prefix }}</dd>
+                    <dt i18n="@@storage.fold.position">Order</dt>
+                    <dd>
+                      @if (c.position !== null) {
+                        <ng-container i18n="@@storage.fold.position-value"
+                          >Number {{ c.position }} in the list: uploads go to the first connection that can take them, reads try the copies in this
+                          order</ng-container
+                        >
+                      } @else {
+                        <ng-container i18n="@@storage.fold.not-configured">Not in the configuration of the replica that answered</ng-container>
+                      }
+                    </dd>
+                    @if (c.settings; as s) {
+                      <dt i18n="@@storage.fold.region">Region</dt>
+                      <dd translate="no">
+                        @if (s.region) {
+                          {{ s.region }}
+                        } @else {
+                          <quader-no-value />
+                        }
+                      </dd>
+                      <dt i18n="@@storage.fold.credentials">Credentials</dt>
+                      <dd translate="no">{{ c.credentialSource }}</dd>
+                      <dt i18n="@@storage.fold.path-style">Path-style addressing</dt>
+                      <dd>
+                        @if (s.forcePathStyle) {
+                          <ng-container i18n="@@storage.yes">Yes</ng-container>
+                        } @else {
+                          <ng-container i18n="@@storage.no">No</ng-container>
+                        }
+                      </dd>
+                      <dt i18n="@@storage.fold.checksums">Checksums</dt>
+                      <dd>
+                        <ng-container i18n="@@storage.fold.checksums-value"
+                          >payload <code translate="no">{{ s.payloadChecksum }}</code>, requests <code translate="no">{{ s.requestChecksumCalculation }}</code>,
+                          responses <code translate="no">{{ s.responseChecksumValidation }}</code></ng-container
+                        >
+                      </dd>
+                      <dt i18n="@@storage.fold.batch-delete">Batch delete</dt>
+                      <dd>
+                        @if (s.batchDelete) {
+                          <ng-container i18n="@@storage.yes">Yes</ng-container>
+                        } @else {
+                          <ng-container i18n="@@storage.no">No</ng-container>
+                        }
+                      </dd>
+                      <dt i18n="@@storage.fold.storage-class">Storage class</dt>
+                      <dd>
+                        @if (s.storageClass) {
+                          <span translate="no">{{ s.storageClass }}</span>
+                        } @else {
+                          <ng-container i18n="@@storage.fold.storage-class-default">The bucket's default</ng-container>
+                        }
+                      </dd>
+                      <dt i18n="@@storage.fold.sse">Server-side encryption</dt>
+                      <dd translate="no">{{ s.sseMode }}</dd>
+                      <dt i18n="@@storage.fold.scrub">Scrub</dt>
+                      <dd>
+                        @if (periodDays(c); as days) {
+                          @let rate = formatSize(s.scrubBytesPerSecond);
+                          <ng-container i18n="@@storage.fold.scrub-value"
+                            >{days, plural, =1 {every copy read whole once a day, at most {{ rate }} per second} other {every copy read whole once in {{ days }} days, at most {{ rate }} per second}}</ng-container
+                          >
+                        }
+                      </dd>
+                    }
+                    <dt i18n="@@storage.fold.capabilities">Found by the start check</dt>
+                    <dd>
+                      @if (c.capabilities; as cap) {
+                        <ul class="plain">
+                          <li>
+                            @if (cap.payloadChecksumEnforced) {
+                              <ng-container i18n="@@storage.cap.checksum-yes">Payload checksums enforced</ng-container>
+                            } @else {
+                              <ng-container i18n="@@storage.cap.checksum-no">Payload checksums not enforced: new copies are verified by the scrub</ng-container>
+                            }
+                          </li>
+                          <li>
+                            @if (cap.metadata && cap.copyReplacesMetadata) {
+                              <ng-container i18n="@@storage.cap.metadata-yes">Copies keep and replace metadata</ng-container>
+                            } @else if (cap.metadata) {
+                              <ng-container i18n="@@storage.cap.metadata-keep">Copies keep metadata and do not replace it</ng-container>
+                            } @else {
+                              <ng-container i18n="@@storage.cap.metadata-no">Objects keep no metadata</ng-container>
+                            }
+                          </li>
+                          @for (p of serverSideCopies(c); track p.id) {
+                            <li>
+                              @if (p.ok) {
+                                <ng-container i18n="@@storage.cap.server-copy-yes">Server-side copy from <span translate="no">{{ p.id }}</span></ng-container>
+                              } @else {
+                                <ng-container i18n="@@storage.cap.server-copy-no"
+                                  >No server-side copy from <span translate="no">{{ p.id }}</span>: copies are streamed</ng-container
+                                >
+                              }
+                            </li>
+                          }
+                        </ul>
+                        @if (cap.checkedAt; as at) {
+                          <span class="secondary"><quader-time-ago [at]="at" /></span>
+                        }
+                      } @else {
+                        <ng-container i18n="@@storage.cap.none">No start check has recorded it yet</ng-container>
+                      }
+                    </dd>
+                    <dt i18n="@@storage.fold.filled">Filled</dt>
+                    <dd>
+                      @if (c.filledAt; as at) {
+                        <quader-time-ago [at]="at" />
+                      } @else {
+                        <quader-no-value />
+                      }
+                    </dd>
+                    <dt i18n="@@storage.fold.last-pass">Last full pass</dt>
+                    <dd>
+                      @if (c.lastFullPassAt; as at) {
+                        <quader-time-ago [at]="at" />
+                      } @else {
+                        <quader-no-value />
+                      }
+                    </dd>
+                    @if (c.storageKeys.length > 0) {
+                      <dt i18n="@@storage.fold.keys">Storage keys</dt>
+                      <dd>
+                        <ul class="plain">
+                          @for (k of c.storageKeys; track k.id) {
+                            <li>
+                              <code translate="no">{{ k.id }}</code
+                              >&ngsp;<span class="secondary" i18n="@@storage.fold.key"
+                                >generation {{ k.generation }}, {{ k.state }}, {{ k.copies ?? '–' }} copies</span
+                              >
+                            </li>
+                          }
+                        </ul>
+                      </dd>
+                    }
+                  </dl>
+                </div>
+              }
+            </div>
+          </div>
+        </td>
+      </tr>
+    }
+  </quader-data-table>
+  @if (summaryAt(); as at) {
+    <p class="note">
+      <ng-container i18n="@@storage.summary-note">Fill, damaged copies and scrub are counted by the hourly storage summary, last</ng-container
+      >&ngsp;<quader-time-ago [at]="at" />
+    </p>
+  } @else {
+    <p class="note" i18n="@@storage.summary-none">Fill, damaged copies and scrub appear once the storage summary has run; it runs every hour.</p>
+  }
+  @if (retired().length > 0) {
+    <p class="note">
+      <ng-container i18n="@@storage.retired">Retired, their ids are not used again:</ng-container>&ngsp;<span translate="no">{{ retiredIds() }}</span>
+    </p>
+  }
+
+  <!-- Details on demand (R-UI-067): the blobs no connection holds whole, and the last runs of the storage's tasks. -->
+  <quader-disclosure
+    [heading]="damagedCaption"
+    i18n-hint="@@storage.damaged.hint"
+    hint="A later upload of the same file, a remote repository's refetch or the object's return repairs them."
+    [count]="damaged()?.items?.length ?? null"
+  >
+    @if (damagedFailure(); as f) {
+      <quader-error-notice [error]="f" (retry)="damagedResource.reload()" />
+    } @else if (damaged(); as d) {
+      @if (d.items.length === 0) {
+        <p class="empty" i18n="@@storage.damaged.empty">No damaged blob.</p>
+      } @else {
+        <quader-data-table [caption]="damagedCaption" [columns]="damagedColumns()">
+          @for (b of d.items; track b.sha256) {
+            <tr>
+              <th scope="row" translate="no">
+                <code [attr.title]="b.sha256">{{ short(b.sha256) }}</code>
+                <span class="secondary">{{ formatSize(b.size) }}</span>
+              </th>
+              <td>
+                @if (b.contentStatus === 'corrupt') {
+                  <span class="bad"
+                    ><span class="material-icons" aria-hidden="true">error</span
+                    ><ng-container i18n="@@storage.blob.corrupt">Corrupt</ng-container></span
+                  >
+                } @else {
+                  <span class="bad"
+                    ><span class="material-icons" aria-hidden="true">error</span
+                    ><ng-container i18n="@@storage.blob.missing">Missing</ng-container></span
+                  >
+                }
+              </td>
+              <td class="lines-cell">
+                <div class="lines">
+                  @for (cp of copiesOf(b); track cp.connection) {
+                    <span class="line"><span translate="no">{{ cp.connection }}</span>: {{ copyStateText(cp.state) }}</span>
+                  } @empty {
+                    <span class="line" i18n="@@storage.damaged.no-copy">No copy</span>
+                  }
+                </div>
+              </td>
+              <td class="item-cell">
+                @if (b.items[0]; as i) {
+                  @if (i.trashed) {
+                    <span translate="no">{{ i.project }}/{{ i.repository }}: {{ i.path }}</span>&ngsp;<span
+                      class="secondary"
+                      i18n="@@storage.damaged.trashed"
+                      >(in the trash)</span
+                    >
+                  } @else {
+                    <a [routerLink]="itemLink(i)" translate="no">{{ i.project }}/{{ i.repository }}: {{ i.path }}</a>
+                  }
+                  @if (b.itemCount > 1) {
+                    &ngsp;<span class="secondary" i18n="@@storage.damaged.more-items"
+                      >{moreItems(b), plural, =1 {and 1 more} other {and {{ moreItems(b) }} more}}</span
+                    >
+                  }
+                } @else {
+                  <span class="secondary" i18n="@@storage.damaged.no-item">No item; a cache entry, a UI asset or an avatar</span>
+                }
+              </td>
+              @if (canRecheck()) {
+                <td class="actions">
+                  <button class="btn btn-tertiary" type="button" [disabled]="checking() === b.sha256" [attr.aria-label]="checkLabel(b)" (click)="recheck(b)">
+                    <ng-container i18n="@@storage.damaged.check">Check again</ng-container>
+                  </button>
+                </td>
+              }
+            </tr>
+          }
+        </quader-data-table>
+        @if (d.more) {
+          <p class="note">
+            <ng-container i18n="@@storage.damaged.more">The list shows the first {{ d.items.length }}.</ng-container>&ngsp;<code translate="no"
+              >quader admin storage verify</code
+            >&ngsp;<ng-container i18n="@@storage.damaged.verify">lists every one.</ng-container>
+          </p>
+        }
+      }
+    }
+  </quader-disclosure>
+
+  <quader-disclosure
+    [heading]="tasksCaption"
+    i18n-hint="@@storage.tasks.hint"
+    hint="The reconciliation copies the gaps, the scrub reads every copy, the orphan sweep removes what no row stands for."
+  >
+    @if (tasksFailure(); as f) {
+      <quader-error-notice [error]="f" (retry)="tasksResource.reload()" />
+    } @else if (tasks().length > 0) {
+      <quader-data-table [caption]="tasksCaption" [columns]="taskColumns">
+        @for (t of tasks(); track t.name) {
+          <tr>
+            <th scope="row"><a routerLink="/admin/system/jobs" [queryParams]="taskLink(t)" translate="no">{{ t.name }}</a></th>
+            <td>
+              @if (t.lastRun; as r) {
+                <span>{{ jobStateText(r.outcome) }}</span>
+                @if (r.finishedAt; as at) {
+                  &ngsp;<quader-time-ago [at]="at" absolute="title" />
+                }
+              } @else {
+                <quader-no-value />
+              }
+            </td>
+            <td>
+              @if (t.nextRunAt; as at) {
+                <quader-time-ago [at]="at" absolute="title" />
+              } @else {
+                <quader-no-value />
+              }
+            </td>
+          </tr>
+        }
+      </quader-data-table>
+    }
+  </quader-disclosure>
+} @else if (!failure()) {
+  <p role="status" i18n="@@system.loading">Loading.</p>
+}

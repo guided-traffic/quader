@@ -4333,6 +4333,27 @@ func (e SnippetMarkKind) Valid() bool {
 	}
 }
 
+// Defines values for StorageSummaryRepositoryClass.
+const (
+	StorageSummaryRepositoryClassLocal   StorageSummaryRepositoryClass = "local"
+	StorageSummaryRepositoryClassRemote  StorageSummaryRepositoryClass = "remote"
+	StorageSummaryRepositoryClassVirtual StorageSummaryRepositoryClass = "virtual"
+)
+
+// Valid indicates whether the value is a known member of the StorageSummaryRepositoryClass enum.
+func (e StorageSummaryRepositoryClass) Valid() bool {
+	switch e {
+	case StorageSummaryRepositoryClassLocal:
+		return true
+	case StorageSummaryRepositoryClassRemote:
+		return true
+	case StorageSummaryRepositoryClassVirtual:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SystemInfoAnsweredByRole.
 const (
 	SystemInfoAnsweredByRoleAll      SystemInfoAnsweredByRole = "all"
@@ -10826,14 +10847,22 @@ type NugetSettingsDeleteMode string
 // off, else `off`. The pass-through of the upstream's information, `upstream`, is refused until R-NUGET-023 is built.
 type NugetSettingsVulnerabilityInfo string
 
-// ObjectStoreFacts defines model for ObjectStoreFacts.
-type ObjectStoreFacts struct {
+// ObjectStoreConnectionFacts defines model for ObjectStoreConnectionFacts.
+type ObjectStoreConnectionFacts struct {
 	Bucket string `json:"bucket"`
 
-	// CredentialSource Open enum, for example `static` or `workload-identity`.
+	// CredentialSource Open enum, for example `static` or `webIdentity`.
 	CredentialSource string `json:"credentialSource"`
+	Drain            bool   `json:"drain"`
+	Encrypted        bool   `json:"encrypted"`
 	Endpoint         string `json:"endpoint"`
+	Id               string `json:"id"`
 	Prefix           string `json:"prefix"`
+}
+
+// ObjectStoreFacts The object-store connections of the answering replica's configuration in its order (storage.md R-STOR-061); the state, fill and backlog of each are `GET /api/v1/system/storage-connections`.
+type ObjectStoreFacts struct {
+	Connections []ObjectStoreConnectionFacts `json:"connections"`
 }
 
 // OciSettings The settings of the OCI format, the `oci` member of a repository document (R-REPO-004, R-OCI-026). The document of the
@@ -13877,6 +13906,241 @@ type Stamp struct {
 	By *string `json:"by"`
 }
 
+// StorageConnection One object-store connection (storage.md R-STOR-061). `position`, `endpoint`, `credentialSource`, `drain`, `scrubPeriodSeconds`
+// and `settings` describe the answering replica's element and are `null` for a connection it does not configure; everything
+// else is the installation's, from PostgreSQL. No secret, no credential file path and no key.
+type StorageConnection struct {
+	Bucket string `json:"bucket"`
+
+	// Capabilities What the start check found (R-STOR-035); `null` before a check.
+	Capabilities *StorageConnectionCapabilities `json:"capabilities"`
+
+	// CredentialSource `default`, `webIdentity` or `static` (R-STOR-031).
+	CredentialSource *string    `json:"credentialSource"`
+	Drain            *bool      `json:"drain"`
+	DrainedAt        *time.Time `json:"drainedAt"`
+	Encrypted        bool       `json:"encrypted"`
+
+	// Endpoint The endpoint of the answering replica's element; empty for the AWS endpoint of its region.
+	Endpoint *string `json:"endpoint"`
+
+	// FilledAt The end of the first full pass without a gap (filling to active).
+	FilledAt *time.Time `json:"filledAt"`
+	Id       string     `json:"id"`
+
+	// KeyedNames Whether an encrypted connection names its objects by a keyed name (R-STOR-086).
+	KeyedNames     bool       `json:"keyedNames"`
+	LastFullPassAt *time.Time `json:"lastFullPassAt"`
+
+	// Position The place in the answering replica's configuration, from 1; `null` for a connection it does not configure.
+	Position *int   `json:"position"`
+	Prefix   string `json:"prefix"`
+
+	// Queue The reconciliation's gaps for the connection (R-STOR-056), now.
+	Queue struct {
+		Blobs          int64      `json:"blobs"`
+		OldestQueuedAt *time.Time `json:"oldestQueuedAt"`
+	} `json:"queue"`
+
+	// Replicas The live replicas of the registry.
+	Replicas struct {
+		// CircuitOpen Live replicas that configure the connection and have its circuit open.
+		CircuitOpen int `json:"circuitOpen"`
+
+		// Configured Live replicas that have the connection in their configuration.
+		Configured int `json:"configured"`
+
+		// Live Live replicas that report their object-store connections.
+		Live int `json:"live"`
+	} `json:"replicas"`
+	RetiredAt          *time.Time `json:"retiredAt"`
+	ScrubPeriodSeconds *int64     `json:"scrubPeriodSeconds"`
+
+	// Settings The non-secret settings of the answering replica's element (api-and-ui.md R-UI-196); `null` for a connection it does not configure.
+	Settings *StorageConnectionSettings `json:"settings"`
+
+	// State The state of storage.md R-STOR-051, derived from the row and the live replicas of the registry: `filling`, `active`, `draining`, `drained`, `detached` or `retired`.
+	State string `json:"state"`
+
+	// StorageKeys The connection's storage keys by identifier (R-STOR-088, Q-API-405), never a key or its sealed value; empty for a plain connection.
+	StorageKeys []StorageConnectionKey `json:"storageKeys"`
+
+	// Summary The figures of the latest storage summary with its time; `null` before the first or for a connection it did not count.
+	Summary *StorageConnectionFigures `json:"summary"`
+}
+
+// StorageConnectionCapabilities defines model for StorageConnectionCapabilities.
+type StorageConnectionCapabilities struct {
+	BatchDelete          bool       `json:"batchDelete"`
+	CheckedAt            *time.Time `json:"checkedAt"`
+	CopyReplacesMetadata bool       `json:"copyReplacesMetadata"`
+
+	// Metadata An object's metadata survived a write.
+	Metadata                bool `json:"metadata"`
+	PayloadChecksumEnforced bool `json:"payloadChecksumEnforced"`
+
+	// ServerSideCopyFrom Per other connection on the same endpoint, whether a server-side copy from it worked.
+	ServerSideCopyFrom map[string]bool `json:"serverSideCopyFrom"`
+}
+
+// StorageConnectionFigures defines model for StorageConnectionFigures.
+type StorageConnectionFigures struct {
+	// BacklogBlobs Live blobs without a present copy on the connection.
+	BacklogBlobs int64 `json:"backlogBlobs"`
+	BacklogBytes int64 `json:"backlogBytes"`
+
+	// ComputedAt When the summary that counted these figures was computed.
+	ComputedAt    time.Time `json:"computedAt"`
+	CorruptCopies int64     `json:"corruptCopies"`
+
+	// FillRatio `presentCopies` over the live blobs, `1` when there is no blob.
+	FillRatio     float64 `json:"fillRatio"`
+	Id            string  `json:"id"`
+	MissingCopies int64   `json:"missingCopies"`
+
+	// PresentBytes The stored bytes of the present copies.
+	PresentBytes  int64 `json:"presentBytes"`
+	PresentCopies int64 `json:"presentCopies"`
+
+	// ScrubOverdue Present copies not read whole within the period and a day (Q-STOR-266).
+	ScrubOverdue int64 `json:"scrubOverdue"`
+
+	// SoleCopies Live blobs whose only present copy lies on this connection (Q-STOR-371).
+	SoleCopies int64 `json:"soleCopies"`
+
+	// VerifiedWithinPeriod Present copies read whole within the connection's `scrub_period` (R-STOR-027).
+	VerifiedWithinPeriod int64 `json:"verifiedWithinPeriod"`
+}
+
+// StorageConnectionKey defines model for StorageConnectionKey.
+type StorageConnectionKey struct {
+	// Copies The copies that name the key, from the latest storage summary; `null` before the first.
+	Copies     *int64    `json:"copies"`
+	CreatedAt  time.Time `json:"createdAt"`
+	Generation int       `json:"generation"`
+	Id         string    `json:"id"`
+
+	// State `active` (wraps new copies) or `retired` (opens what it wrapped).
+	State string `json:"state"`
+}
+
+// StorageConnectionList defines model for StorageConnectionList.
+type StorageConnectionList struct {
+	Connections []StorageConnection `json:"connections"`
+}
+
+// StorageConnectionSettings defines model for StorageConnectionSettings.
+type StorageConnectionSettings struct {
+	BatchDelete                bool   `json:"batchDelete"`
+	ForcePathStyle             bool   `json:"forcePathStyle"`
+	PayloadChecksum            string `json:"payloadChecksum"`
+	Region                     string `json:"region"`
+	RequestChecksumCalculation string `json:"requestChecksumCalculation"`
+	ResponseChecksumValidation string `json:"responseChecksumValidation"`
+	ScrubBytesPerSecond        int64  `json:"scrubBytesPerSecond"`
+	SseMode                    string `json:"sseMode"`
+
+	// StorageClass Empty for the bucket's default.
+	StorageClass string `json:"storageClass"`
+}
+
+// StorageSummary The storage summary (storage.md R-STOR-028, operations-and-observability.md R-OPS-023). Sizes are bytes, ratios numbers from 0 to 1 rounded to four decimals.
+type StorageSummary struct {
+	// Blobs The live blob rows, the physical content, with what only the trash can references and what awaits collection.
+	Blobs struct {
+		Bytes int64 `json:"bytes"`
+		Count int64 `json:"count"`
+	} `json:"blobs"`
+
+	// ComputedAt When the task computed the figures.
+	ComputedAt time.Time `json:"computedAt"`
+
+	// Connections The figures of every connection that is not retired, by id.
+	Connections []StorageSummaryConnection `json:"connections"`
+
+	// Damaged The live blobs per content state other than `ok` (R-STOR-027); blobs, not copies.
+	Damaged struct {
+		Corrupt int64 `json:"corrupt"`
+		Missing int64 `json:"missing"`
+	} `json:"damaged"`
+
+	// DeduplicationRatio `blobs.bytes / logical.bytes`; `0` while `logical.bytes` is 0.
+	DeduplicationRatio float64 `json:"deduplicationRatio"`
+
+	// DurationMs How long the computation took.
+	DurationMs int64 `json:"durationMs"`
+
+	// Logical The untrashed files and folders of every listed repository; one blob in two repositories counts twice.
+	Logical struct {
+		Bytes   int64 `json:"bytes"`
+		Files   int64 `json:"files"`
+		Folders int64 `json:"folders"`
+	} `json:"logical"`
+
+	// PendingCollection The digests of the collection's queue whose blob is live and the blob rows in state `deleting`, with their sizes.
+	PendingCollection struct {
+		Blobs int64 `json:"blobs"`
+		Bytes int64 `json:"bytes"`
+	} `json:"pendingCollection"`
+
+	// Repositories Every local and remote repository and every virtual repository that holds generated items (Q-STOR-215), by project and key.
+	Repositories []StorageSummaryRepository `json:"repositories"`
+
+	// Trash The trashed items and their logical bytes (R-STOR-022).
+	Trash struct {
+		Bytes int64 `json:"bytes"`
+		Items int64 `json:"items"`
+	} `json:"trash"`
+}
+
+// StorageSummaryConnection The figures of one connection, counted over the copies of live blobs (storage.md R-STOR-028, R-STOR-061).
+type StorageSummaryConnection struct {
+	// BacklogBlobs Live blobs without a present copy on the connection.
+	BacklogBlobs  int64 `json:"backlogBlobs"`
+	BacklogBytes  int64 `json:"backlogBytes"`
+	CorruptCopies int64 `json:"corruptCopies"`
+
+	// FillRatio `presentCopies` over the live blobs, `1` when there is no blob.
+	FillRatio     float64 `json:"fillRatio"`
+	Id            string  `json:"id"`
+	MissingCopies int64   `json:"missingCopies"`
+
+	// PresentBytes The stored bytes of the present copies.
+	PresentBytes  int64 `json:"presentBytes"`
+	PresentCopies int64 `json:"presentCopies"`
+
+	// ScrubOverdue Present copies not read whole within the period and a day (Q-STOR-266).
+	ScrubOverdue int64 `json:"scrubOverdue"`
+
+	// SoleCopies Live blobs whose only present copy lies on this connection (Q-STOR-371).
+	SoleCopies int64 `json:"soleCopies"`
+
+	// VerifiedWithinPeriod Present copies read whole within the connection's `scrub_period` (R-STOR-027).
+	VerifiedWithinPeriod int64 `json:"verifiedWithinPeriod"`
+}
+
+// StorageSummaryRepository defines model for StorageSummaryRepository.
+type StorageSummaryRepository struct {
+	// Bytes The untrashed logical bytes.
+	Bytes    int64                         `json:"bytes"`
+	Class    StorageSummaryRepositoryClass `json:"class"`
+	Files    int64                         `json:"files"`
+	Folders  int64                         `json:"folders"`
+	Format   string                        `json:"format"`
+	Key      string                        `json:"key"`
+	Packages int64                         `json:"packages"`
+	Project  string                        `json:"project"`
+
+	// ShareOfLogicalBytes The repository's share of `logical.bytes`, never a share of capacity (STOR-039).
+	ShareOfLogicalBytes float64 `json:"shareOfLogicalBytes"`
+
+	// Versions Untrashed versions.
+	Versions int64 `json:"versions"`
+}
+
+// StorageSummaryRepositoryClass defines model for StorageSummaryRepository.Class.
+type StorageSummaryRepositoryClass string
+
 // StoredBackup defines model for StoredBackup.
 type StoredBackup struct {
 	BackupId      string    `json:"backupId"`
@@ -13928,10 +14192,12 @@ type SystemInfo struct {
 	InstallationId *string `json:"installationId"`
 
 	// MaintenanceMode The read-only maintenance mode (R-OPS-024), `normal` or `read_only`; open enum. The system status screen shows a row only while it is not `normal` (Q-OPS-156).
-	MaintenanceMode string           `json:"maintenanceMode"`
-	ObjectStore     ObjectStoreFacts `json:"objectStore"`
-	Replicas        ReplicaSummary   `json:"replicas"`
-	Runtime         struct {
+	MaintenanceMode string `json:"maintenanceMode"`
+
+	// ObjectStore The object-store connections of the answering replica's configuration in its order (storage.md R-STOR-061); the state, fill and backlog of each are `GET /api/v1/system/storage-connections`.
+	ObjectStore ObjectStoreFacts `json:"objectStore"`
+	Replicas    ReplicaSummary   `json:"replicas"`
+	Runtime     struct {
 		Goarch           string `json:"goarch"`
 		Gomaxprocs       int    `json:"gomaxprocs"`
 		Goos             string `json:"goos"`
@@ -19741,6 +20007,9 @@ type ServerInterface interface {
 	// RecheckDamagedBlob Read every copy of a blob whole now
 	// (POST /api/v1/storage/damaged-blobs/{sha256}/recheck)
 	RecheckDamagedBlob(w http.ResponseWriter, r *http.Request, sha256 string)
+	// GetStorageSummary The storage summary
+	// (GET /api/v1/storage/summary)
+	GetStorageSummary(w http.ResponseWriter, r *http.Request)
 	// ListBackupRuns List backup runs
 	// (GET /api/v1/system/backups)
 	ListBackupRuns(w http.ResponseWriter, r *http.Request, params ListBackupRunsParams)
@@ -19792,6 +20061,12 @@ type ServerInterface interface {
 	// ListScanners The scanner replicas and the kinds of scanner
 	// (GET /api/v1/system/scanners)
 	ListScanners(w http.ResponseWriter, r *http.Request)
+	// ListStorageConnections The object-store connections
+	// (GET /api/v1/system/storage-connections)
+	ListStorageConnections(w http.ResponseWriter, r *http.Request)
+	// GetStorageConnection One object-store connection
+	// (GET /api/v1/system/storage-connections/{id})
+	GetStorageConnection(w http.ResponseWriter, r *http.Request, id string)
 	// ListTasks List the maintenance tasks
 	// (GET /api/v1/system/tasks)
 	ListTasks(w http.ResponseWriter, r *http.Request, params ListTasksParams)
@@ -33565,6 +33840,20 @@ func (siw *ServerInterfaceWrapper) RecheckDamagedBlob(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// GetStorageSummary operation middleware
+func (siw *ServerInterfaceWrapper) GetStorageSummary(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetStorageSummary(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListBackupRuns operation middleware
 func (siw *ServerInterfaceWrapper) ListBackupRuns(w http.ResponseWriter, r *http.Request) {
 
@@ -34011,6 +34300,46 @@ func (siw *ServerInterfaceWrapper) ListScanners(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListScanners(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListStorageConnections operation middleware
+func (siw *ServerInterfaceWrapper) ListStorageConnections(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListStorageConnections(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetStorageConnection operation middleware
+func (siw *ServerInterfaceWrapper) GetStorageConnection(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetStorageConnection(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -37054,6 +37383,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/system/tasks/{name}/run", wrapper.RunTask)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/storage/damaged-blobs", wrapper.ListDamagedBlobs)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/storage/damaged-blobs/{sha256}/recheck", wrapper.RecheckDamagedBlob)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/storage/summary", wrapper.GetStorageSummary)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/storage-connections", wrapper.ListStorageConnections)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/storage-connections/{id}", wrapper.GetStorageConnection)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/encryption", wrapper.GetEncryptionStatus)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/users", wrapper.ListUsers)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/users", wrapper.CreateUser)

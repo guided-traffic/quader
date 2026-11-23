@@ -86,7 +86,7 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
     severity: warning
   annotations:
     summary: The connection {{ "{{ $labels.connection }}" }} holds a missing or corrupt copy that has not been repaired for an hour.
-    description: A read or the scrub found a copy gone or with other bytes, and the reconciliation has not rewritten it from another connection (R-STOR-055, R-STOR-027). The blob is still served from its other copies. Check the reconciliation's failures for this connection and whether another connection holds the blob; GET /api/v1/system/storage-connections shows the counts.
+    description: A read or the scrub found a copy gone or with other bytes, and the reconciliation has not rewritten it from another connection (R-STOR-055, R-STOR-027). The blob is still served from its other copies. The counts come from the hourly storage summary. Check the reconciliation's failures for this connection and whether another connection holds the blob; the tab Storage of System status in the admin area shows the connection's damaged copies, and GET /api/v1/storage/damaged-blobs?scope=copies lists each copy with its blob's items.
 - alert: QuaderStorageScrubBehind
   expr: max by (connection) (quader_storage_scrub_overdue_copies{ {{ $ns }} }) > 0
   for: 6h

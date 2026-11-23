@@ -46,12 +46,13 @@ const button = (root: HTMLElement, label: string) => [...root.querySelectorAll<H
 describe('The page System status (R-UI-164, Q-UI-650)', () => {
   afterEach(() => vi.useRealTimers());
 
-  it('R-UI-164 has one header with the title System status and the tabs Status, Jobs and Backups, each with its own address', async () => {
+  it('R-UI-164 R-UI-196 has one header with the title System status and the tabs Status, Jobs, Backups and Storage, each with its own address', async () => {
     const h = await harness();
     for (const [url, tab, region] of [
       ['/admin/system', 'Status', 'Replicas by role'],
       ['/admin/system/jobs', 'Jobs', 'Jobs, newest first'],
       ['/admin/system/backups', 'Backups', 'Runs'],
+      ['/admin/system/storage', 'Storage', 'Where Quader keeps your artifacts'],
     ] as const) {
       const root = await open(h, url);
       expect([...root.querySelectorAll('h1')].map((e) => text(e))).toEqual(['System status']);
@@ -59,6 +60,7 @@ describe('The page System status (R-UI-164, Q-UI-650)', () => {
         ['Status', '/admin/system'],
         ['Jobs', '/admin/system/jobs'],
         ['Backups', '/admin/system/backups'],
+        ['Storage', '/admin/system/storage'],
       ]);
       expect(current(root)).toEqual([tab]);
       expect(text(root)).toContain(region);
@@ -137,7 +139,7 @@ describe('The page System status (R-UI-164, Q-UI-650)', () => {
     const jobs = TestBed.inject(JobsApi) as FakeJobsApi;
     expect(jobs.filterCalls.at(-1)).toEqual({ kind: ['gc'], state: ['failed'] });
     // The tabs link to their tab without the filters of another.
-    expect(tabs(root).map((a) => a.getAttribute('href'))).toEqual(['/admin/system', '/admin/system/jobs', '/admin/system/backups']);
+    expect(tabs(root).map((a) => a.getAttribute('href'))).toEqual(['/admin/system', '/admin/system/jobs', '/admin/system/backups', '/admin/system/storage']);
     tabs(root).find((a) => text(a) === 'Backups')!.click();
     root = await settled(h);
     expect(TestBed.inject(Router).url).toBe('/admin/system/backups');
@@ -148,10 +150,11 @@ describe('The page System status (R-UI-164, Q-UI-650)', () => {
     expect(jobs.filterCalls.at(-1)).toEqual({ kind: [], state: [] });
   });
 
-  it('Q-UI-652 a caller without settings:read who follows a link to the jobs sees them without a strip of one tab', async () => {
+  it('Q-UI-652 R-UI-196 a caller without settings:read who follows a link to the jobs sees them without a strip of one tab, and no tab Storage', async () => {
     const h = await harness([]);
     const root = await open(h, '/admin/system/jobs');
     expect(root.querySelector('nav.tab-nav')).toBeNull();
+    expect(root.querySelector('a[href="/admin/system/storage"]')).toBeNull();
     expect([...root.querySelectorAll('h1')].map((e) => text(e))).toEqual(['System status']);
     expect(text(root)).toContain('Jobs, newest first');
     expect(await seriousViolations(root)).toEqual([]);

@@ -50,12 +50,12 @@ func TestObjectStoreTLS(t *testing.T) {
 	}
 	const every = 200 * time.Millisecond
 	// The factory trusts the system roots only: the gateway verifies through
-	// storage.s3.ca_file or not at all.
+	// the ca_file of the connection or not at all.
 	f := outbound.New(config.Outbound{TLS: config.OutboundTLS{UseSystemRoots: true, MinVersion: "1.2"}},
 		outbound.WithTrustCheckEvery(every), outbound.WithTLSMetrics(m))
 	c, err := s3.NewFromFactory(context.Background(), cfg, f)
 	if err != nil {
-		t.Fatalf("object store client with storage.s3.ca_file: %v", err)
+		t.Fatalf("object store client with the connection's ca_file: %v", err)
 	}
 	key := cfg.Prefix + "/probe"
 	put := func() error {
@@ -68,7 +68,7 @@ func TestObjectStoreTLS(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Run("R-STOR-030 R-ARCH-035 the https endpoint verifies against storage.s3.ca_file", func(t *testing.T) {
+	t.Run("R-STOR-030 R-ARCH-035 the https endpoint verifies against the ca_file of the connection", func(t *testing.T) {
 		if !strings.HasPrefix(cfg.Endpoint, "https://") || cfg.AllowInsecureEndpoint {
 			t.Fatalf("endpoint %q, allow_insecure_endpoint %v", cfg.Endpoint, cfg.AllowInsecureEndpoint)
 		}

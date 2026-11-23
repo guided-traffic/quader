@@ -1594,6 +1594,13 @@ type StorageKey struct {
 	RetiredAt    pgtype.Timestamptz
 }
 
+type StorageSummary struct {
+	ID         int16
+	ComputedAt pgtype.Timestamptz
+	DurationMs int32
+	Summary    json.RawMessage
+}
+
 type StorageUsageDelta struct {
 	ID            int64
 	RepoID        pgtype.Int8

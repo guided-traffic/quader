@@ -106,5 +106,7 @@ func (a *App) storageAPI() v1.StorageServices {
 			}
 			return s.Recheck(ctx, d)
 		},
+		Connections: a.storageConnections,
+		Summary:     a.storageSummary,
 	}
 }

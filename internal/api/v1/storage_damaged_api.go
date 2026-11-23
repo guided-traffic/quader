@@ -10,6 +10,7 @@ import (
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
 	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/blob/scrub"
+	"github.com/guided-traffic/quader/internal/blob/summary"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/httpserver"
 )
@@ -24,6 +25,11 @@ type StorageServices struct {
 	// Recheck reads every copy of a blob whole now and returns the copies after the reads; scrub.ErrNoBlob when no live
 	// blob has the digest.
 	Recheck func(ctx context.Context, d blob.Digest) ([]scrub.CopyRow, error)
+	// Connections lists the object-store connections with what the answering replica configures of each and the figures of the
+	// latest storage summary (summary.List, R-STOR-061; storage_connections_api.go).
+	Connections func(ctx context.Context) ([]summary.View, error)
+	// Summary reads the latest storage summary; summary.ErrNone before the first (R-STOR-028).
+	Summary func(ctx context.Context) (summary.Summary, error)
 }
 
 // damagedConnectionPattern is the pattern of a connection's id (storage.md R-STOR-050).

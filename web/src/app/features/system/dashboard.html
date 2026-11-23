@@ -63,10 +63,22 @@
             >
           }
         }
-      } @else {
+      } @else if (!st.storage) {
         <span class="state ok"
           ><span class="material-icons" aria-hidden="true">check_circle</span
           ><ng-container i18n="@@dashboard.state.ready">All roles ready</ng-container></span
+        >
+      }
+      <!-- The alerts of R-STOR-060 in words (R-UI-197): a connection unreachable on every replica, or every one. -->
+      @if (st.storage === 'error') {
+        <span class="state bad"
+          ><span class="material-icons" aria-hidden="true">error</span
+          ><ng-container i18n="@@dashboard.state.storage-none">No storage connection is reachable</ng-container></span
+        >
+      } @else if (st.storage === 'warning') {
+        <span class="state warn"
+          ><span class="material-icons" aria-hidden="true">warning</span
+          ><ng-container i18n="@@dashboard.state.storage-one">A storage connection is unreachable</ng-container></span
         >
       }
       @if (st.replacing) {
@@ -262,10 +274,27 @@
         <ng-container *ngTemplateOutlet="check; context: { $implicit: checks().objectStore }" />
       </div>
       <dl class="kv">
-        <div>
-          <dt i18n="@@dashboard.bucket">Bucket</dt>
-          <dd translate="no">{{ i.objectStore.bucket }}</dd>
-        </div>
+        @for (c of connectionLines(); track c.id) {
+          <div class="connection-row">
+            <dt>
+              <span translate="no">{{ c.id }}</span>
+              <span class="muted location" translate="no">{{ c.location }}</span>
+            </dt>
+            <dd>
+              @if (c.unreachable; as u) {
+                <span class="state bad"
+                  ><span class="material-icons" aria-hidden="true">error</span
+                  ><ng-container i18n="@@dashboard.connection.unreachable">Unreachable on {{ u.open }} of {{ u.of }} replicas</ng-container></span
+                >
+              } @else if (c.known) {
+                <span class="state ok"
+                  ><span class="material-icons" aria-hidden="true">check_circle</span
+                  ><ng-container i18n="@@dashboard.check.ok">Connected</ng-container></span
+                >
+              }
+            </dd>
+          </div>
+        }
         @if (valueOf(overview); as o) {
           <div>
             <dt i18n="@@dashboard.stored">Stored content</dt>
@@ -281,6 +310,11 @@
           </div>
         }
       </dl>
+      @if (session.has('settings:read')) {
+        <div class="card-foot">
+          <a class="btn btn-default btn-sm" routerLink="/admin/system/storage" i18n="@@dashboard.storage.view">Storage</a>
+        </div>
+      }
     </section>
   }
 </div>

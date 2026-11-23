@@ -312,7 +312,7 @@ func TestR_HA_024_AMissingMarkHealsOnceTheObjectIsBack(t *testing.T) {
 			t.Fatalf("%d", want.Status)
 		}
 		d := r.itemBlob(rLocal, "moved-local/-/moved-local-1.0.0.tgz")
-		data := r.st.TakeObject(t, d) // a wrong storage.s3.prefix: the store answers 404 for an object that exists
+		data := r.st.TakeObject(t, d) // a wrong prefix of the connection: the store answers 404 for an object that exists
 		lostAnswer(t, "object away", r.tarball(reps[0], rLocal, pk.Name, pk.Version, r.tokA))
 		if got := r.contentStatus(d); got != "missing" {
 			t.Fatalf("content_status %s, want missing", got)

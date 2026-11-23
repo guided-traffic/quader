@@ -829,7 +829,7 @@ tests:
           - exp_labels: {severity: "warning", connection: "secondary"}
             exp_annotations:
               summary: "The connection secondary holds a missing or corrupt copy that has not been repaired for an hour."
-              description: "A read or the scrub found a copy gone or with other bytes, and the reconciliation has not rewritten it from another connection (R-STOR-055, R-STOR-027). The blob is still served from its other copies. Check the reconciliation's failures for this connection and whether another connection holds the blob; GET /api/v1/system/storage-connections shows the counts."
+              description: "A read or the scrub found a copy gone or with other bytes, and the reconciliation has not rewritten it from another connection (R-STOR-055, R-STOR-027). The blob is still served from its other copies. The counts come from the hourly storage summary. Check the reconciliation's failures for this connection and whether another connection holds the blob; the tab Storage of System status in the admin area shows the connection's damaged copies, and GET /api/v1/storage/damaged-blobs?scope=copies lists each copy with its blob's items."
 
   # The scrub behind its period (R-STOR-027): six hours of overdue copies fire; a shorter stretch does not.
   - name: "QuaderStorageScrubBehind fires when copies stay overdue for six hours, not for a shorter stretch"

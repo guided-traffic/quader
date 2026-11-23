@@ -56,7 +56,7 @@ func newPITRFile(path string) pitrFile {
 	return pitrFile{path: path, body: body, digest: hex.EncodeToString(sum[:])}
 }
 
-// key is the object key of the blob in the blob bucket (storage.s3.prefix "quader", the layout of the blob store).
+// key is the object key of the blob in the blob bucket (the prefix "quader" of the connection default, the layout of the blob store).
 func (f pitrFile) key() string {
 	return fmt.Sprintf("%s/sha256/%s/%s/%s", pitrBlobsRoot, f.digest[:2], f.digest[2:4], f.digest)
 }

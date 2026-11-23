@@ -785,7 +785,7 @@ replica registry (R-OPS-003) holds the per-replica view of every replica.
   "objectStore": {
     "connections": [
       {"id": "default", "endpoint": "https://s3.eu-central-1.amazonaws.com", "bucket": "quader-prod", "prefix": "blobs",
-       "credentialSource": "workload-identity", "encrypted": false, "drain": false}
+       "credentialSource": "webIdentity", "encrypted": false, "drain": false}
     ]
   },
   "backup": {
@@ -2662,6 +2662,11 @@ flat-container version lists.
 
 ### R-OPS-023 · Storage summary
 Priority: **P1** · Covers: API-031, API-032, STOR-039
+
+*Built* with package F of the several connections ([storage.md](storage.md) R-STOR-028): the task and kind `storage-summary` (queue
+`maintenance`, exclusive, not mutating, so that it also runs in read-only maintenance mode; [wire_storage_summary.go](../../internal/app/wire_storage_summary.go)),
+the table `storage_summary` of migration 00109 (export class transient), the read path and the gauges of
+[internal/blob/summary](../../internal/blob/summary/). The member `quota` is not built ([storage.md](storage.md) Q-STOR-370).
 
 The `storage-summary` task computes aggregates from PostgreSQL and stores the result. Readers
 always get the cached result, never a live computation. This requirement owns the task, its

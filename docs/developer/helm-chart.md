@@ -761,12 +761,11 @@ series, so a drain followed by a successful retry never fires `QuaderBackupFaile
 **Names.** The expressions are the specification's, and the binary exports every metric they read under that name (Q-HA-135): the
 spool gauges are `quader_spool_used_bytes` and `quader_spool_free_bytes`, the pool metrics are in
 [internal/meta/postgres/metrics.go](../../internal/meta/postgres/metrics.go) and
-[internal/app/wire_gauges.go](../../internal/app/wire_gauges.go), the queue ages in the `JobQueueGauges` query. `TestR_HA_045_PrometheusRule` fails
-for an expression that reads a `quader_*` name no code under `internal/` registers, except the metrics of the object-store alerts that a
-later package of the several connections registers (`metricsOfLaterPackages` in
-[prometheusrule_test.go](../../test/chart/prometheusrule_test.go), each with its package of the build plan in
-[blob-store.md](blob-store.md#several-connections-the-build-plan)); the package that registers one removes its line.
-Until then the alert reads a series that does not exist and stays silent.
+[internal/app/wire_gauges.go](../../internal/app/wire_gauges.go), the queue ages in the `JobQueueGauges` query, the storage summary's gauges
+(`quader_storage_copies` and the backlog and fill per connection) in [internal/blob/summary/gauges.go](../../internal/blob/summary/gauges.go).
+`TestR_HA_045_PrometheusRule` ([prometheusrule_test.go](../../test/chart/prometheusrule_test.go)) fails for an expression that reads a
+`quader_*` name no code under `internal/` registers; since package F of the several connections registered the last of the object-store
+alerts' series, it has no exception.
 
 - `QuaderReplicasNotReady` reads kube-state-metrics: `min by (deployment)` of `kube_deployment_status_replicas_available` for the Deployments
   `<fullname>-(api|packages|worker)(-.*)?`, the main Deployments and their pools (`<fullname>-<role>-<pool>`); a Deployment

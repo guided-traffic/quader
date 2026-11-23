@@ -60,6 +60,9 @@ import { HttpMalwareApi, MalwareApi } from './malware-api';
 import { HttpSignaturesApi, SignaturesApi } from './signatures-api';
 import { HttpSigningApi, SigningApi } from './signing-api';
 // <<< signatures
+// >>> storage connections
+import { HttpStorageApi, StorageApi } from './storage-api';
+// <<< storage connections
 
 /**
  * Binds every service interface of `api/` to its HTTP implementation. Specs and component tests
@@ -131,5 +134,8 @@ export function provideApiServices(): Provider[] {
     { provide: SignaturesApi, useClass: HttpSignaturesApi },
     { provide: SigningApi, useClass: HttpSigningApi },
     // <<< signatures
+    // >>> storage connections
+    { provide: StorageApi, useClass: HttpStorageApi },
+    // <<< storage connections
   ];
 }

@@ -78,7 +78,7 @@ func newBakEnv(t *testing.T, val *apitest.Validator, access Access, restored *ge
 		o.Facts = fakeFacts{Facts{
 			InstallationID: ptr("0b7c3f5e"), Incarnation: ptr("5d10e2a4"),
 			Valkey:      gen.ValkeyFacts{Mode: gen.Sentinel, PrimaryName: "quader", Sentinels: 3, Tls: "verify-full", KeyPrefix: "quader:"},
-			ObjectStore: gen.ObjectStoreFacts{Endpoint: "https://s3.example.com", Bucket: "quader", Prefix: "blobs", CredentialSource: "static"},
+			ObjectStore: gen.ObjectStoreFacts{Connections: []gen.ObjectStoreConnectionFacts{{Id: "default", Endpoint: "https://s3.example.com", Bucket: "quader", Prefix: "blobs", CredentialSource: "static"}}},
 		}}
 		o.Backup = BackupServices{
 			Runs: mem, ExpectedInterval: 24 * time.Hour, Namespace: "quader", CronJob: "quader-backup",

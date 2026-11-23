@@ -35,6 +35,7 @@ import { signingAnswer } from './signing';
 import { withVerify } from './verify';
 import { routeTooMany } from './suggestions';
 import { clamavDatabases, clamavRegistry, clamavRow, definitionsExpected, definitionsWith, switchState } from './clamav';
+import { damagedBlobs, noDamagedBlob, oneConnection, secondUnreachable, severalConnections, twoConnectionFacts } from './storage';
 
 /**
  * Every screen of the app (web/src/app/app.routes.ts and the route files of the feature areas), with the parameters of the
@@ -419,6 +420,49 @@ async function* systemScanners(page: Page): AsyncGenerator<string> {
   await expect(page.locator('main [data-testid="scanners-none-trivy"]')).toBeVisible();
   yield 'scanners-all';
   await page.unroute(url);
+}
+
+/**
+ * The tab **Storage** of System status (R-UI-196): as the render profile answers it (one connection, perhaps before the first storage
+ * summary), then answered in the browser (storage.ts): one connection with its summary and its fold open; several connections in every
+ * state with blobs no connection holds whole; the same with two rows' folds and both sections of details open.
+ */
+async function* systemStorage(page: Page): AsyncGenerator<string> {
+  const connections = '**/api/v1/system/storage-connections';
+  const damaged = '**/api/v1/storage/damaged-blobs**';
+  const tab = page.locator('main quader-storage-page');
+  await expect(tab.locator('table').first()).toBeVisible();
+  yield '';
+  await routeWith(page, damaged, noDamagedBlob());
+  await answerWith(page, connections, oneConnection());
+  await expect(tab.locator('quader-data-table').first().locator('tbody tr:not(.expansion)')).toHaveCount(1);
+  await tab.locator('th button[aria-expanded="false"]').first().click();
+  await expect(tab.locator('th button[aria-expanded="true"]')).toHaveCount(1);
+  yield 'one';
+  await routeWith(page, damaged, damagedBlobs());
+  await answerWith(page, connections, severalConnections());
+  await expect(tab.locator('quader-data-table').first().locator('tbody tr:not(.expansion)')).toHaveCount(6);
+  yield 'several';
+  for (const i of [1, 2]) await tab.locator('quader-data-table').first().locator('th button').nth(i).click();
+  const closed = tab.locator('quader-disclosure button[aria-expanded="false"]');
+  for (const fold of await closed.all()) await fold.click();
+  await expect(closed).toHaveCount(0);
+  yield 'several-details';
+  await page.unroute(connections);
+  await page.unroute(damaged);
+}
+
+/** The dashboard (R-UI-197): as it opens, then two connections of which the second is unreachable on every replica. */
+async function* dashboardStorage(page: Page): AsyncGenerator<string> {
+  yield '';
+  const info = '**/api/v1/system/info';
+  const connections = '**/api/v1/system/storage-connections';
+  await routeWith(page, info, twoConnectionFacts());
+  await answerWith(page, connections, secondUnreachable());
+  await expect(page.locator('main section[aria-labelledby="dash-s3"] .connection-row')).toHaveCount(2);
+  yield 'storage';
+  await page.unroute(info);
+  await page.unroute(connections);
 }
 
 /** Opens every folded section of the explanation; false where there is none. */
@@ -2232,7 +2276,7 @@ export const screens: readonly Screen[] = [
   { id: 'repository-settings-ansible-remote', path: `${O}/repositories/galaxy/settings`, kinds: admins, walk: remoteSections },
   { id: 'repository-settings-ansible-virtual', path: `${O}/repositories/ansible/settings`, kinds: admins, walk: allSections },
   { id: 'help-admin-page', path: '/ui/help/admin/repositories', kinds: admins },
-  { id: 'admin-dashboard', path: '/ui/admin/dashboard', kinds: admins },
+  { id: 'admin-dashboard', path: '/ui/admin/dashboard', kinds: admins, walk: dashboardStorage },
   { id: 'admin-projects', path: '/ui/admin/projects', kinds: admins, walk: searched('web') },
   { id: 'admin-repositories', path: '/ui/admin/repositories', kinds: admins, walk: filtersOpen(), widths: [1100, 1280] },
   // The rows of upstream: the system repositories with their badge and without the copy button (R-UI-193).
@@ -2312,6 +2356,7 @@ export const screens: readonly Screen[] = [
   { id: 'admin-system-read', path: '/ui/admin/system', kinds: ['auditor'] },
   { id: 'admin-system-jobs', path: '/ui/admin/system/jobs', kinds: admins },
   { id: 'admin-system-backups', path: '/ui/admin/system/backups', kinds: admins },
+  { id: 'admin-system-storage', path: '/ui/admin/system/storage', kinds: admins, walk: systemStorage },
   { id: 'admin-settings-auth', path: '/ui/admin/settings/auth', kinds: admins },
   { id: 'admin-settings-general', path: '/ui/admin/settings/general', kinds: admins, walk: restrictedLevels },
   // The malware scanning's page (R-MAL-023): every state of the administrator's, and the auditor's read-only page with the link to the finds.

@@ -38,6 +38,7 @@ func (a *App) jobRegistry() (*jobs.Registry, error) {
 	a.registerStorageSweep(r)
 	a.registerStorageReconcile(r)
 	a.registerStorageScrub(r)
+	a.registerStorageSummary(r)
 	a.registerRepositoryJobs(r)
 	a.registerIdentityJobs(r)
 	a.registerCIJobs(r)

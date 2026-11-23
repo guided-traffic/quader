@@ -1497,6 +1497,33 @@ the API through `LimitsApi` (R-UI-177 to R-UI-186). The files, the hand-written 
 account's page are on [usage-and-limits.md](usage-and-limits.md#the-screens). A download link that a limit may refuse carries
 `quaderDownload` ([download-link.ts](../../web/src/app/shared/download-link.ts)).
 
+## The tab Storage of System status
+
+The fourth tab of System status (R-UI-196, [Q-UI-930](../spec/api-and-ui.md#q-ui-930--the-connections-are-a-fourth-tab-storage-of-system-status))
+is [storage-page.ts](../../web/src/app/features/system/storage/storage-page.ts) with its template; the derivations are pure functions of
+[storage-model.ts](../../web/src/app/features/system/storage/storage-model.ts) (the state in words, a share rounded down, the backlog's age, what
+needs an act, the dashboard's word), the client is [storage-api.ts](../../web/src/app/api/storage-api.ts) and its fake
+[fakes-storage.ts](../../web/src/app/api/testing/fakes-storage.ts). The page reads `listStorageConnections`, the first 20 of the damaged
+blobs and the task list, and refreshes with the page's header like the other tabs; its one action is **Check again** of a damaged blob for
+a holder of `settings:write`.
+
+- **The plain view**: the line over the table names what needs an act, worst first, or that every connection is healthy; the table has a
+  row per connection that is not retired, retired ones are a line under it. A state is a badge, its one figure beside it, so that the row's
+  first words stand on the line of its name (R-UI-172); an open circuit and a partial configuration stand before the badge
+  ([Q-UI-933](../spec/api-and-ui.md#q-ui-933--what-a-connection-asks-for-stands-once-over-the-table-and-a-states-words-beside-its-badge)).
+  A cell of several lines is `td.lines-cell` with a grid that keeps the column's name beside the first line where the row stands as a block
+  (Q-UI-762). The columns' least widths are measured so that the table is a table at 1,440 px with six connections; a host and a path break
+  after a dot or a slash (`<wbr>`), not inside a part.
+- **Details**: a row's chevron opens its fold (the settings as the answering replica reads them, the capabilities, the storage keys); the
+  damaged blobs and the last runs of the storage's tasks are closed `<quader-disclosure>` sections (Q-UI-935).
+- **The dashboard** names each connection of `objectStore.connections[]` in a line of its object store's card with its circuits from the
+  same list, and its instance bar warns while one of several is unreachable on every replica and errs while every one is
+  ([Q-UI-934](../spec/api-and-ui.md#q-ui-934--a-connections-line-on-the-dashboard-reads-its-circuits-and-no-connection-reachable-is-said-so)).
+- **Renders**: the profile runs one connection, so the walk `systemStorage` of [screens.ts](../../web/e2e/renders/screens.ts) answers the
+  list in the browser with the fixtures of [storage.ts](../../web/e2e/renders/storage.ts): one connection with its fold open, then six in every
+  state with three damaged blobs, then the same with two folds and both sections open; `dashboardStorage` answers two connections of which
+  one is unreachable everywhere.
+
 ## How to add a feature area
 
 1. Create `web/src/app/features/<area>/` with a standalone component per screen (`Component` with

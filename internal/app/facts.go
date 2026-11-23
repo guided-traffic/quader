@@ -29,16 +29,9 @@ func (f configFacts) Facts(ctx context.Context) (v1.Facts, error) {
 		Mode: gen.ValkeyFactsMode(c.Valkey.Mode), PrimaryName: c.Valkey.Sentinel.PrimaryName,
 		Sentinels: len(c.Valkey.Sentinel.Addresses), Tls: c.Valkey.TLS.Mode, KeyPrefix: c.Valkey.KeyPrefix,
 	}
-	// the first connection until the facts list every connection (storage.md R-STOR-061)
-	first := config.StorageConnection{}.WithDefaults()
-	if len(c.Storage.Connections) > 0 {
-		first = c.Storage.Connections[0].WithDefaults()
-	}
 	out := v1.Facts{
-		Valkey: vf,
-		ObjectStore: gen.ObjectStoreFacts{
-			Endpoint: first.Endpoint, Bucket: first.Bucket, Prefix: first.KeyPrefix(), CredentialSource: first.CredentialsSource,
-		},
+		Valkey:      vf,
+		ObjectStore: f.objectStoreFacts(),
 		Tracing:     c.Tracing.Enabled,
 		Formats:     formatNames(),
 		MemoryLimit: int64(c.Runtime.MemoryLimitBytes),
@@ -63,6 +56,29 @@ func (f configFacts) Facts(ctx context.Context) (v1.Facts, error) {
 		out.VulnerabilityData = f.a.vulnerabilityFacts(ctx, time.Now())
 	}
 	return out, nil
+}
+
+// objectStoreFacts lists the answering replica's object-store connections in the order of its configuration (storage.md R-STOR-061):
+// the elements as the blob area resolved them (a provisioner's files read), or, before the blob area is wired, as the configuration
+// writes them. No credential and no file path.
+func (f configFacts) objectStoreFacts() gen.ObjectStoreFacts {
+	out := gen.ObjectStoreFacts{Connections: []gen.ObjectStoreConnectionFacts{}}
+	els := make([]config.StorageConnection, 0, len(f.cfg.Storage.Connections))
+	if conns, ok := f.a.objectStores.get(); ok {
+		for _, c := range conns.List() {
+			els = append(els, c.Config())
+		}
+	} else {
+		els = append(els, f.cfg.Storage.Connections...)
+	}
+	for _, el := range els {
+		el = el.WithDefaults()
+		out.Connections = append(out.Connections, gen.ObjectStoreConnectionFacts{
+			Id: el.ID, Endpoint: el.Endpoint, Bucket: el.Bucket, Prefix: el.KeyPrefix(), CredentialSource: el.CredentialsSource,
+			Encrypted: el.Encrypted, Drain: el.Drain,
+		})
+	}
+	return out
 }
 
 // formatNames lists the formats the format catalog holds, sorted by ID: the

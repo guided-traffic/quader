@@ -69,7 +69,6 @@ func schemaAllows(node map[string]any, path []string) bool {
 // like every other value.
 var unbuiltPrefixes = []string{
 	"config.", "bootstrap.", "contentOrigin.", "gateway.create.",
-	"secrets.s3.sessionTokenKey",
 	"service.externalTrafficPolicy", "service.ipFamilyPolicy", "service.ipFamilies", "service.loadBalancerSourceRanges",
 	"sidecars", "initContainers", "lifecycle",
 }

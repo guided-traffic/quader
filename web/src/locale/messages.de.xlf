@@ -13570,15 +13570,6 @@
         <target>Standard (das Projekt binden, wenn die Aktionen schreiben)</target>
       </segment>
     </unit>
-    <unit id="dashboard.bucket">
-      <notes>
-        <note category="location">src/app/features/system/dashboard.html:241,242</note>
-      </notes>
-      <segment>
-        <source>Bucket</source>
-        <target>Bucket</target>
-      </segment>
-    </unit>
     <unit id="ansible.tombstones.clear">
       <notes>
         <note category="location">src/app/features/repositories/ansible-tombstones.ts:50,51</note>
@@ -48362,6 +48353,1052 @@
       <segment>
         <source>by this installation&apos;s signing identity</source>
         <target>mit der Signaturidentität dieser Installation</target>
+      </segment>
+    </unit>
+    <unit id="dashboard.state.storage-none">
+      <notes>
+        <note category="location">src/app/features/system/dashboard.html:76,78</note>
+      </notes>
+      <segment>
+        <source>No storage connection is reachable</source>
+        <target>Keine Speicherverbindung ist erreichbar</target>
+      </segment>
+    </unit>
+    <unit id="dashboard.state.storage-one">
+      <notes>
+        <note category="location">src/app/features/system/dashboard.html:81,84</note>
+      </notes>
+      <segment>
+        <source>A storage connection is unreachable</source>
+        <target>Eine Speicherverbindung ist nicht erreichbar</target>
+      </segment>
+    </unit>
+    <unit id="dashboard.connection.unreachable">
+      <notes>
+        <note category="location">src/app/features/system/dashboard.html:287</note>
+      </notes>
+      <segment>
+        <source>Unreachable on <ph id="0" equiv="INTERPOLATION" disp="{{ u.open }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ u.of }}"/> replicas</source>
+        <target>Nicht erreichbar auf <ph id="0" equiv="INTERPOLATION" disp="{{ u.open }}"/> von <ph id="1" equiv="INTERPOLATION_1" disp="{{ u.of }}"/> Replikaten</target>
+      </segment>
+    </unit>
+    <unit id="dashboard.storage.view">
+      <notes>
+        <note category="location">src/app/features/system/dashboard.html:315,318</note>
+      </notes>
+      <segment>
+        <source>Storage</source>
+        <target>Speicher</target>
+      </segment>
+    </unit>
+    <unit id="storage.intro">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:3,5</note>
+      </notes>
+      <segment>
+        <source>Where Quader keeps your artifacts. Connections are set in the deployment&apos;s configuration (<pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">config.storage.connections</pc>); this page only shows them.</source>
+        <target>Wo Quader Ihre Artefakte aufbewahrt. Verbindungen werden in der Konfiguration des Deployments festgelegt (<pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">config.storage.connections</pc>); diese Seite zeigt sie nur an.</target>
+      </segment>
+    </unit>
+    <unit id="storage.how-to">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:5,8</note>
+      </notes>
+      <segment>
+        <source>How to add or remove a connection</source>
+        <target>Eine Verbindung hinzufügen oder entfernen</target>
+      </segment>
+    </unit>
+    <unit id="storage.summary.unreachable">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:21,22</note>
+      </notes>
+      <segment>
+        <source>Unreachable from some replicas: <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ c.ids.join(&apos;, &apos;) }}"/></pc></source>
+        <target>Von manchen Replikaten aus nicht erreichbar: <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ c.ids.join(&apos;, &apos;) }}"/></pc></target>
+      </segment>
+    </unit>
+    <unit id="storage.summary.detached">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:27,28</note>
+      </notes>
+      <segment>
+        <source>In no replica&apos;s configuration but holding copies: <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ c.ids.join(&apos;, &apos;) }}"/></pc></source>
+        <target>In keiner Replikat-Konfiguration, hält aber Kopien: <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ c.ids.join(&apos;, &apos;) }}"/></pc></target>
+      </segment>
+    </unit>
+    <unit id="storage.summary.damaged-more">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:33,34</note>
+      </notes>
+      <segment>
+        <source>More than <ph id="0" equiv="INTERPOLATION" disp="{{ c.count }}"/> blobs are held whole by no connection</source>
+        <target>Mehr als <ph id="0" equiv="INTERPOLATION" disp="{{ c.count }}"/> Blobs hält keine Verbindung vollständig</target>
+      </segment>
+    </unit>
+    <unit id="storage.summary.damaged">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:36,39</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 blob is held whole by no connection} other {<ph id="0" equiv="INTERPOLATION"/> blobs are held whole by no connection}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 Blob hält keine Verbindung vollständig} other {<ph id="0" equiv="INTERPOLATION"/> Blobs hält keine Verbindung vollständig}}</target>
+      </segment>
+    </unit>
+    <unit id="storage.summary.backlog">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:43,44</note>
+      </notes>
+      <segment>
+        <source>Copies wait for more than an hour: <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ c.ids.join(&apos;, &apos;) }}"/></pc></source>
+        <target>Kopien warten seit mehr als einer Stunde: <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ c.ids.join(&apos;, &apos;) }}"/></pc></target>
+      </segment>
+    </unit>
+    <unit id="storage.summary.scrub">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:49,50</note>
+      </notes>
+      <segment>
+        <source>Copies not read whole within their period: <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ c.ids.join(&apos;, &apos;) }}"/></pc></source>
+        <target>Kopien nicht innerhalb ihres Zeitraums vollständig gelesen: <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ c.ids.join(&apos;, &apos;) }}"/></pc></target>
+      </segment>
+    </unit>
+    <unit id="storage.summary.drained">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:55,56</note>
+      </notes>
+      <segment>
+        <source>Drained, can be removed from the configuration: <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ c.ids.join(&apos;, &apos;) }}"/></pc></source>
+        <target>Geleert, kann aus der Konfiguration entfernt werden: <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ c.ids.join(&apos;, &apos;) }}"/></pc></target>
+      </segment>
+    </unit>
+    <unit id="storage.summary.healthy-one">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:64,66</note>
+      </notes>
+      <segment>
+        <source>The connection is healthy</source>
+        <target>Die Verbindung ist in Ordnung</target>
+      </segment>
+    </unit>
+    <unit id="storage.summary.healthy">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:66,70</note>
+      </notes>
+      <segment>
+        <source>Every connection is healthy</source>
+        <target>Alle Verbindungen sind in Ordnung</target>
+      </segment>
+    </unit>
+    <unit id="storage.state.unreachable">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:104,106</note>
+      </notes>
+      <segment>
+        <source>Unreachable</source>
+        <target>Nicht erreichbar</target>
+      </segment>
+    </unit>
+    <unit id="storage.state.unreachable-on">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:106,107</note>
+      </notes>
+      <segment>
+        <source>on <ph id="0" equiv="INTERPOLATION" disp="{{ u.open }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ u.of }}"/> replicas</source>
+        <target>auf <ph id="0" equiv="INTERPOLATION" disp="{{ u.open }}"/> von <ph id="1" equiv="INTERPOLATION_1" disp="{{ u.of }}"/> Replikaten</target>
+      </segment>
+    </unit>
+    <unit id="storage.state.partly">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:114,115</note>
+      </notes>
+      <segment>
+        <source>Configured on <ph id="0" equiv="INTERPOLATION" disp="{{ p.configured }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ p.live }}"/> replicas</source>
+        <target>Konfiguriert auf <ph id="0" equiv="INTERPOLATION" disp="{{ p.configured }}"/> von <ph id="1" equiv="INTERPOLATION_1" disp="{{ p.live }}"/> Replikaten</target>
+      </segment>
+    </unit>
+    <unit id="storage.state.active">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:122,123</note>
+      </notes>
+      <segment>
+        <source>Active</source>
+        <target>Aktiv</target>
+      </segment>
+    </unit>
+    <unit id="storage.state.filling">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:128,129</note>
+      </notes>
+      <segment>
+        <source>Filling</source>
+        <target>Wird befüllt</target>
+      </segment>
+    </unit>
+    <unit id="storage.state.filling-share">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:131,132</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ st.percent }}"/> % of the blobs</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ st.percent }}"/> % der Blobs</target>
+      </segment>
+    </unit>
+    <unit id="storage.state.draining">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:137,138</note>
+      </notes>
+      <segment>
+        <source>Draining</source>
+        <target>Wird geleert</target>
+      </segment>
+    </unit>
+    <unit id="storage.state.draining-left">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:141,142</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 copy left} other {<ph id="0" equiv="INTERPOLATION"/> copies left}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 Kopie übrig} other {<ph id="0" equiv="INTERPOLATION"/> Kopien übrig}}</target>
+      </segment>
+    </unit>
+    <unit id="storage.state.drained">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:148,149</note>
+      </notes>
+      <segment>
+        <source>Drained</source>
+        <target>Geleert</target>
+      </segment>
+    </unit>
+    <unit id="storage.state.detached">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:154,155</note>
+      </notes>
+      <segment>
+        <source>Detached</source>
+        <target>Abgekoppelt</target>
+      </segment>
+    </unit>
+    <unit id="storage.state.detached-sole">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:158,159</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 blob only here} other {<ph id="0" equiv="INTERPOLATION"/> blobs only here}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 Blob nur hier} other {<ph id="0" equiv="INTERPOLATION"/> Blobs nur hier}}</target>
+      </segment>
+    </unit>
+    <unit id="storage.state.retired">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:163,164</note>
+      </notes>
+      <segment>
+        <source>Retired</source>
+        <target>Stillgelegt</target>
+      </segment>
+    </unit>
+    <unit id="storage.backlog.blobs">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:180</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {1 blob} other {<ph id="0" equiv="INTERPOLATION"/> blobs}}</source>
+        <target>{VAR_PLURAL, plural, =1 {1 Blob} other {<ph id="0" equiv="INTERPOLATION"/> Blobs}}</target>
+      </segment>
+    </unit>
+    <unit id="storage.backlog.oldest-days">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:182,184</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {oldest 1 day} other {oldest <ph id="0" equiv="INTERPOLATION"/> days}}</source>
+        <target>{VAR_PLURAL, plural, =1 {ältester 1 Tag} other {ältester <ph id="0" equiv="INTERPOLATION"/> Tage}}</target>
+      </segment>
+    </unit>
+    <unit id="storage.backlog.oldest-hours">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:185,187</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {oldest 1 hour} other {oldest <ph id="0" equiv="INTERPOLATION"/> hours}}</source>
+        <target>{VAR_PLURAL, plural, =1 {ältester 1 Stunde} other {ältester <ph id="0" equiv="INTERPOLATION"/> Stunden}}</target>
+      </segment>
+    </unit>
+    <unit id="storage.backlog.oldest-minutes">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:188,190</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {oldest 1 minute} other {oldest <ph id="0" equiv="INTERPOLATION"/> minutes}}</source>
+        <target>{VAR_PLURAL, plural, =1 {ältester 1 Minute} other {ältester <ph id="0" equiv="INTERPOLATION"/> Minuten}}</target>
+      </segment>
+    </unit>
+    <unit id="storage.backlog.oldest-seconds">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:191,193</note>
+      </notes>
+      <segment>
+        <source>oldest less than a minute</source>
+        <target>ältester unter einer Minute</target>
+      </segment>
+    </unit>
+    <unit id="storage.backlog.behind">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:196,198</note>
+      </notes>
+      <segment>
+        <source>Behind for over an hour</source>
+        <target>Seit über einer Stunde im Rückstand</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.both">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:207,208</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ d.missing | number }}"/> missing, <ph id="1" equiv="INTERPOLATION_1" disp="{{ d.corrupt | number }}"/> corrupt</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ d.missing | number }}"/> fehlend, <ph id="1" equiv="INTERPOLATION_1" disp="{{ d.corrupt | number }}"/> beschädigt</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.missing">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:209,210</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ d.missing | number }}"/> missing</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ d.missing | number }}"/> fehlend</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.corrupt">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:211,212</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ d.corrupt | number }}"/> corrupt</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ d.corrupt | number }}"/> beschädigt</target>
+      </segment>
+    </unit>
+    <unit id="storage.scrub.read">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:223,225</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {<ph id="0" equiv="INTERPOLATION"/> % read within 1 day} other {<ph id="1" equiv="INTERPOLATION"/> % read within <ph id="2" equiv="INTERPOLATION_1"/> days}}</source>
+        <target>{VAR_PLURAL, plural, =1 {<ph id="0" equiv="INTERPOLATION"/> % innerhalb von 1 Tag gelesen} other {<ph id="1" equiv="INTERPOLATION"/> % innerhalb von <ph id="2" equiv="INTERPOLATION_1"/> Tagen gelesen}}</target>
+      </segment>
+    </unit>
+    <unit id="storage.scrub.read-period">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:226,227</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ s.percent }}"/> % read within its period</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ s.percent }}"/> % innerhalb ihres Zeitraums gelesen</target>
+      </segment>
+    </unit>
+    <unit id="storage.scrub.behind">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:229,231</note>
+      </notes>
+      <segment>
+        <source>Behind</source>
+        <target>Im Rückstand</target>
+      </segment>
+    </unit>
+    <unit id="storage.encrypted.yes">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:238,240</note>
+      </notes>
+      <segment>
+        <source>Yes</source>
+        <target>Ja</target>
+      </segment>
+    </unit>
+    <unit id="storage.encrypted.no">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:240,242</note>
+      </notes>
+      <segment>
+        <source>No</source>
+        <target>Nein</target>
+      </segment>
+    </unit>
+    <unit id="storage.fold.endpoint">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:251,252</note>
+      </notes>
+      <segment>
+        <source>Endpoint</source>
+        <target>Endpunkt</target>
+      </segment>
+    </unit>
+    <unit id="storage.fold.endpoint-aws">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:256,257</note>
+      </notes>
+      <segment>
+        <source>The AWS endpoint of the region</source>
+        <target>Der AWS-Endpunkt der Region</target>
+      </segment>
+    </unit>
+    <unit id="storage.fold.bucket">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:261,262</note>
+      </notes>
+      <segment>
+        <source>Bucket and prefix</source>
+        <target>Bucket und Präfix</target>
+      </segment>
+    </unit>
+    <unit id="storage.fold.position">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:263,265</note>
+      </notes>
+      <segment>
+        <source>Order</source>
+        <target>Reihenfolge</target>
+      </segment>
+    </unit>
+    <unit id="storage.fold.position-value">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:267,268</note>
+      </notes>
+      <segment>
+        <source>Number <ph id="0" equiv="INTERPOLATION" disp="{{ c.position }}"/> in the list: uploads go to the first connection that can take them, reads try the copies in this order</source>
+        <target>Nummer <ph id="0" equiv="INTERPOLATION" disp="{{ c.position }}"/> der Liste: Uploads gehen an die erste Verbindung, die sie annehmen kann, Lesezugriffe versuchen die Kopien in dieser Reihenfolge</target>
+      </segment>
+    </unit>
+    <unit id="storage.fold.not-configured">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:271,273</note>
+      </notes>
+      <segment>
+        <source>Not in the configuration of the replica that answered</source>
+        <target>Nicht in der Konfiguration des antwortenden Replikats</target>
+      </segment>
+    </unit>
+    <unit id="storage.fold.region">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:275,276</note>
+      </notes>
+      <segment>
+        <source>Region</source>
+        <target>Region</target>
+      </segment>
+    </unit>
+    <unit id="storage.fold.credentials">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:283,284</note>
+      </notes>
+      <segment>
+        <source>Credentials</source>
+        <target>Zugangsdaten</target>
+      </segment>
+    </unit>
+    <unit id="storage.fold.path-style">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:285,287</note>
+      </notes>
+      <segment>
+        <source>Path-style addressing</source>
+        <target>Pfad-Adressierung</target>
+      </segment>
+    </unit>
+    <unit id="storage.yes">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:288,289</note>
+        <note category="location">src/app/features/system/storage/storage-page.html:303,304</note>
+      </notes>
+      <segment>
+        <source>Yes</source>
+        <target>Ja</target>
+      </segment>
+    </unit>
+    <unit id="storage.no">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:290,291</note>
+        <note category="location">src/app/features/system/storage/storage-page.html:305,306</note>
+      </notes>
+      <segment>
+        <source>No</source>
+        <target>Nein</target>
+      </segment>
+    </unit>
+    <unit id="storage.fold.checksums">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:293,295</note>
+      </notes>
+      <segment>
+        <source>Checksums</source>
+        <target>Prüfsummen</target>
+      </segment>
+    </unit>
+    <unit id="storage.fold.checksums-value">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:296,298</note>
+      </notes>
+      <segment>
+        <source>payload <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ s.payloadChecksum }}"/></pc>, requests <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ s.requestChecksumCalculation }}"/></pc>, responses <pc id="4" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="5" equiv="INTERPOLATION_2" disp="{{ s.responseChecksumValidation }}"/></pc></source>
+        <target>Nutzdaten <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ s.payloadChecksum }}"/></pc>, Anfragen <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ s.requestChecksumCalculation }}"/></pc>, Antworten <pc id="4" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="5" equiv="INTERPOLATION_2" disp="{{ s.responseChecksumValidation }}"/></pc></target>
+      </segment>
+    </unit>
+    <unit id="storage.fold.batch-delete">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:300,302</note>
+      </notes>
+      <segment>
+        <source>Batch delete</source>
+        <target>Löschen im Stapel</target>
+      </segment>
+    </unit>
+    <unit id="storage.fold.storage-class">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:308,310</note>
+      </notes>
+      <segment>
+        <source>Storage class</source>
+        <target>Speicherklasse</target>
+      </segment>
+    </unit>
+    <unit id="storage.fold.storage-class-default">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:313,315</note>
+      </notes>
+      <segment>
+        <source>The bucket&apos;s default</source>
+        <target>Die Vorgabe des Buckets</target>
+      </segment>
+    </unit>
+    <unit id="storage.fold.sse">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:316,317</note>
+      </notes>
+      <segment>
+        <source>Server-side encryption</source>
+        <target>Serverseitige Verschlüsselung</target>
+      </segment>
+    </unit>
+    <unit id="storage.fold.scrub">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:318,320</note>
+      </notes>
+      <segment>
+        <source>Scrub</source>
+        <target>Prüflauf</target>
+      </segment>
+    </unit>
+    <unit id="storage.fold.scrub-value">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:323,325</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {every copy read whole once a day, at most <ph id="0" equiv="INTERPOLATION"/> per second} other {every copy read whole once in <ph id="1" equiv="INTERPOLATION_1"/> days, at most <ph id="2" equiv="INTERPOLATION"/> per second}}</source>
+        <target>{VAR_PLURAL, plural, =1 {jede Kopie einmal am Tag vollständig gelesen, höchstens <ph id="0" equiv="INTERPOLATION"/> pro Sekunde} other {jede Kopie einmal in <ph id="1" equiv="INTERPOLATION_1"/> Tagen vollständig gelesen, höchstens <ph id="2" equiv="INTERPOLATION"/> pro Sekunde}}</target>
+      </segment>
+    </unit>
+    <unit id="storage.fold.capabilities">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:328,330</note>
+      </notes>
+      <segment>
+        <source>Found by the start check</source>
+        <target>Von der Startprüfung festgestellt</target>
+      </segment>
+    </unit>
+    <unit id="storage.cap.checksum-yes">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:334,335</note>
+      </notes>
+      <segment>
+        <source>Payload checksums enforced</source>
+        <target>Nutzdaten-Prüfsummen werden durchgesetzt</target>
+      </segment>
+    </unit>
+    <unit id="storage.cap.checksum-no">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:336,337</note>
+      </notes>
+      <segment>
+        <source>Payload checksums not enforced: new copies are verified by the scrub</source>
+        <target>Nutzdaten-Prüfsummen werden nicht durchgesetzt: neue Kopien prüft der Prüflauf</target>
+      </segment>
+    </unit>
+    <unit id="storage.cap.metadata-yes">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:341,342</note>
+      </notes>
+      <segment>
+        <source>Copies keep and replace metadata</source>
+        <target>Kopien behalten und ersetzen Metadaten</target>
+      </segment>
+    </unit>
+    <unit id="storage.cap.metadata-keep">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:343,344</note>
+      </notes>
+      <segment>
+        <source>Copies keep metadata and do not replace it</source>
+        <target>Kopien behalten Metadaten und ersetzen sie nicht</target>
+      </segment>
+    </unit>
+    <unit id="storage.cap.metadata-no">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:345,346</note>
+      </notes>
+      <segment>
+        <source>Objects keep no metadata</source>
+        <target>Objekte behalten keine Metadaten</target>
+      </segment>
+    </unit>
+    <unit id="storage.cap.server-copy-yes">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:351,352</note>
+      </notes>
+      <segment>
+        <source>Server-side copy from <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ p.id }}"/></pc></source>
+        <target>Serverseitige Kopie von <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ p.id }}"/></pc></target>
+      </segment>
+    </unit>
+    <unit id="storage.cap.server-copy-no">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:354,355</note>
+      </notes>
+      <segment>
+        <source>No server-side copy from <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ p.id }}"/></pc>: copies are streamed</source>
+        <target>Keine serverseitige Kopie von <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ p.id }}"/></pc>: Kopien werden durchgeleitet</target>
+      </segment>
+    </unit>
+    <unit id="storage.cap.none">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:364,365</note>
+      </notes>
+      <segment>
+        <source>No start check has recorded it yet</source>
+        <target>Noch von keiner Startprüfung erfasst</target>
+      </segment>
+    </unit>
+    <unit id="storage.fold.filled">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:367,369</note>
+      </notes>
+      <segment>
+        <source>Filled</source>
+        <target>Befüllt</target>
+      </segment>
+    </unit>
+    <unit id="storage.fold.last-pass">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:375,377</note>
+      </notes>
+      <segment>
+        <source>Last full pass</source>
+        <target>Letzter vollständiger Durchlauf</target>
+      </segment>
+    </unit>
+    <unit id="storage.fold.keys">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:384,385</note>
+      </notes>
+      <segment>
+        <source>Storage keys</source>
+        <target>Speicherschlüssel</target>
+      </segment>
+    </unit>
+    <unit id="storage.fold.key">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:391,392</note>
+      </notes>
+      <segment>
+        <source>generation <ph id="0" equiv="INTERPOLATION" disp="{{ k.generation }}"/>, <ph id="1" equiv="INTERPOLATION_1" disp="{{ k.state }}"/>, <ph id="2" equiv="INTERPOLATION_2" disp="{{ k.copies ?? &apos;–&apos; }}"/> copies</source>
+        <target>Generation <ph id="0" equiv="INTERPOLATION" disp="{{ k.generation }}"/>, <ph id="1" equiv="INTERPOLATION_1" disp="{{ k.state }}"/>, <ph id="2" equiv="INTERPOLATION_2" disp="{{ k.copies ?? &apos;–&apos; }}"/> Kopien</target>
+      </segment>
+    </unit>
+    <unit id="storage.summary-note">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:409,410</note>
+      </notes>
+      <segment>
+        <source>Fill, damaged copies and scrub are counted by the hourly storage summary, last</source>
+        <target>Füllstand, beschädigte Kopien und Prüflauf zählt die stündliche Speicherübersicht, zuletzt</target>
+      </segment>
+    </unit>
+    <unit id="storage.summary-none">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:413,415</note>
+      </notes>
+      <segment>
+        <source>Fill, damaged copies and scrub appear once the storage summary has run; it runs every hour.</source>
+        <target>Füllstand, beschädigte Kopien und Prüflauf erscheinen, sobald die Speicherübersicht gelaufen ist; sie läuft stündlich.</target>
+      </segment>
+    </unit>
+    <unit id="storage.retired">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:417</note>
+      </notes>
+      <segment>
+        <source>Retired, their ids are not used again:</source>
+        <target>Stillgelegt, ihre IDs werden nicht wieder vergeben:</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.hint">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:425,426</note>
+      </notes>
+      <segment>
+        <source>A later upload of the same file, a remote repository&apos;s refetch or the object&apos;s return repairs them.</source>
+        <target>Ein späterer Upload derselben Datei, ein erneuter Abruf eines Remote-Repositorys oder die Rückkehr des Objekts repariert sie.</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.empty">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:432,434</note>
+      </notes>
+      <segment>
+        <source>No damaged blob.</source>
+        <target>Kein beschädigter Blob.</target>
+      </segment>
+    </unit>
+    <unit id="storage.blob.corrupt">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:445,446</note>
+      </notes>
+      <segment>
+        <source>Corrupt</source>
+        <target>Beschädigt</target>
+      </segment>
+    </unit>
+    <unit id="storage.blob.missing">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:450,451</note>
+      </notes>
+      <segment>
+        <source>Missing</source>
+        <target>Fehlt</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.no-copy">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:459,461</note>
+      </notes>
+      <segment>
+        <source>No copy</source>
+        <target>Keine Kopie</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.trashed">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:469,471</note>
+      </notes>
+      <segment>
+        <source>(in the trash)</source>
+        <target>(im Papierkorb)</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.more-items">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:476,478</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {and 1 more} other {and <ph id="0" equiv="INTERPOLATION"/> more}}</source>
+        <target>{VAR_PLURAL, plural, =1 {und 1 weiteres} other {und <ph id="0" equiv="INTERPOLATION"/> weitere}}</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.no-item">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:480,482</note>
+      </notes>
+      <segment>
+        <source>No item; a cache entry, a UI asset or an avatar</source>
+        <target>Kein Eintrag; ein Cache-Eintrag, ein UI-Asset oder ein Avatar</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.check">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:486,487</note>
+      </notes>
+      <segment>
+        <source>Check again</source>
+        <target>Erneut prüfen</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.more">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:495</note>
+      </notes>
+      <segment>
+        <source>The list shows the first <ph id="0" equiv="INTERPOLATION" disp="{{ d.items.length }}"/>.</source>
+        <target>Die Liste zeigt die ersten <ph id="0" equiv="INTERPOLATION" disp="{{ d.items.length }}"/>.</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.verify">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:497,499</note>
+      </notes>
+      <segment>
+        <source>lists every one.</source>
+        <target>listet alle.</target>
+      </segment>
+    </unit>
+    <unit id="storage.tasks.hint">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.html:507,509</note>
+      </notes>
+      <segment>
+        <source>The reconciliation copies the gaps, the scrub reads every copy, the orphan sweep removes what no row stands for.</source>
+        <target>Der Abgleich kopiert die Lücken, der Prüflauf liest jede Kopie, die Verwaisten-Bereinigung entfernt, wofür keine Zeile steht.</target>
+      </segment>
+    </unit>
+    <unit id="storage.connections.caption">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:77</note>
+      </notes>
+      <segment>
+        <source>Object-store connections in the order of the configuration</source>
+        <target>Objektspeicher-Verbindungen in der Reihenfolge der Konfiguration</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.caption">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:78</note>
+      </notes>
+      <segment>
+        <source>Blobs no connection holds whole</source>
+        <target>Blobs, die keine Verbindung vollständig hält</target>
+      </segment>
+    </unit>
+    <unit id="storage.tasks.caption">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:79</note>
+      </notes>
+      <segment>
+        <source>The last runs of the storage tasks</source>
+        <target>Die letzten Läufe der Speicheraufgaben</target>
+      </segment>
+    </unit>
+    <unit id="storage.connections.empty">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:80</note>
+      </notes>
+      <segment>
+        <source>No replica has recorded a connection yet.</source>
+        <target>Noch hat kein Replikat eine Verbindung erfasst.</target>
+      </segment>
+    </unit>
+    <unit id="storage.col.connection">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:82</note>
+      </notes>
+      <segment>
+        <source>Connection</source>
+        <target>Verbindung</target>
+      </segment>
+    </unit>
+    <unit id="storage.col.state">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:83</note>
+      </notes>
+      <segment>
+        <source>State</source>
+        <target>Zustand</target>
+      </segment>
+    </unit>
+    <unit id="storage.col.fill">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:84</note>
+      </notes>
+      <segment>
+        <source>Fill</source>
+        <target>Füllstand</target>
+      </segment>
+    </unit>
+    <unit id="storage.col.backlog">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:85</note>
+      </notes>
+      <segment>
+        <source>Backlog</source>
+        <target>Rückstand</target>
+      </segment>
+    </unit>
+    <unit id="storage.col.damaged">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:86</note>
+      </notes>
+      <segment>
+        <source>Damaged copies</source>
+        <target>Beschädigte Kopien</target>
+      </segment>
+    </unit>
+    <unit id="storage.col.scrub">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:87</note>
+      </notes>
+      <segment>
+        <source>Scrub</source>
+        <target>Prüflauf</target>
+      </segment>
+    </unit>
+    <unit id="storage.col.encrypted">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:88</note>
+      </notes>
+      <segment>
+        <source>Encrypted</source>
+        <target>Verschlüsselt</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.col.blob">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:91</note>
+      </notes>
+      <segment>
+        <source>Blob</source>
+        <target>Blob</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.col.state">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:92</note>
+      </notes>
+      <segment>
+        <source>State</source>
+        <target>Zustand</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.col.copies">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:93</note>
+      </notes>
+      <segment>
+        <source>Copies</source>
+        <target>Kopien</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.col.item">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:94</note>
+      </notes>
+      <segment>
+        <source>Referenced by</source>
+        <target>Verwendet von</target>
+      </segment>
+    </unit>
+    <unit id="storage.tasks.col.task">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:98</note>
+      </notes>
+      <segment>
+        <source>Task</source>
+        <target>Aufgabe</target>
+      </segment>
+    </unit>
+    <unit id="storage.tasks.col.last">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:99</note>
+      </notes>
+      <segment>
+        <source>Last run</source>
+        <target>Letzter Lauf</target>
+      </segment>
+    </unit>
+    <unit id="storage.tasks.col.next">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:100</note>
+      </notes>
+      <segment>
+        <source>Next run</source>
+        <target>Nächster Lauf</target>
+      </segment>
+    </unit>
+    <unit id="storage.fold.label">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:161</note>
+      </notes>
+      <segment>
+        <source>Details of the connection <ph id="0" equiv="id" disp="c.id"/></source>
+        <target>Details der Verbindung <ph id="0" equiv="id" disp="c.id"/></target>
+      </segment>
+    </unit>
+    <unit id="storage.copy.present">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:205</note>
+      </notes>
+      <segment>
+        <source>present</source>
+        <target>vorhanden</target>
+      </segment>
+    </unit>
+    <unit id="storage.copy.missing">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:207</note>
+      </notes>
+      <segment>
+        <source>missing</source>
+        <target>fehlt</target>
+      </segment>
+    </unit>
+    <unit id="storage.copy.corrupt">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:209</note>
+      </notes>
+      <segment>
+        <source>corrupt</source>
+        <target>beschädigt</target>
+      </segment>
+    </unit>
+    <unit id="storage.copy.deleting">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:211</note>
+      </notes>
+      <segment>
+        <source>being deleted</source>
+        <target>wird gelöscht</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.check-label">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:221</note>
+      </notes>
+      <segment>
+        <source>Check the copies of <ph id="0" equiv="digest" disp="this.short(b.sha256)"/> again</source>
+        <target>Die Kopien von <ph id="0" equiv="digest" disp="this.short(b.sha256)"/> erneut prüfen</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.checked-ok">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:232</note>
+      </notes>
+      <segment>
+        <source>A connection holds <ph id="0" equiv="digest" disp="this.short(b.sha256)"/> whole again.</source>
+        <target>Eine Verbindung hält <ph id="0" equiv="digest" disp="this.short(b.sha256)"/> wieder vollständig.</target>
+      </segment>
+    </unit>
+    <unit id="storage.damaged.checked-still">
+      <notes>
+        <note category="location">src/app/features/system/storage/storage-page.ts:233</note>
+      </notes>
+      <segment>
+        <source>No connection holds <ph id="0" equiv="digest" disp="this.short(b.sha256)"/> whole yet.</source>
+        <target>Noch hält keine Verbindung <ph id="0" equiv="digest" disp="this.short(b.sha256)"/> vollständig.</target>
+      </segment>
+    </unit>
+    <unit id="system.tab.storage">
+      <notes>
+        <note category="location">src/app/features/system/system-page.ts:43,47</note>
+      </notes>
+      <segment>
+        <source>Storage</source>
+        <target>Speicher</target>
+      </segment>
+    </unit>
+    <unit id="route.system.storage.title">
+      <notes>
+        <note category="location">src/app/features/system/system.routes.ts:29</note>
+      </notes>
+      <segment>
+        <source>Storage</source>
+        <target>Speicher</target>
       </segment>
     </unit>
   </file>

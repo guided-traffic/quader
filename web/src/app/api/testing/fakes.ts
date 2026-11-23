@@ -66,6 +66,9 @@ import { provideMalwareFakes } from './fakes-malware';
 import { provideSignatureFakes } from './fakes-signatures';
 import { provideSigningFakes } from './fakes-signing';
 // <<< upstream
+// >>> storage connections
+import { provideStorageFakes } from './fakes-storage';
+// <<< storage connections
 // >>> W-26 limits
 import { provideLimitsFakes } from './fakes-limits';
 // <<< W-26 limits
@@ -350,7 +353,9 @@ export function sampleInfo(over: Partial<SystemInfo> = {}): SystemInfo {
       keyspace: null,
       degradedReplicas: 0,
     },
-    objectStore: { endpoint: 'https://s3.example.net', bucket: 'quader', prefix: '', credentialSource: 'static' },
+    objectStore: {
+      connections: [{ id: 'default', endpoint: 'https://s3.example.net', bucket: 'quader', prefix: '', credentialSource: 'static', encrypted: false, drain: false }],
+    },
     backup: null,
     features: { tracing: false, webhooks: false, configAsCode: false },
     formats: [],
@@ -539,5 +544,8 @@ export function provideFakeApis(): Provider[] {
     ...provideSignatureFakes(),
     ...provideSigningFakes(),
     // <<< signatures
+    // >>> storage connections
+    ...provideStorageFakes(),
+    // <<< storage connections
   ];
 }

@@ -122,3 +122,5 @@ before using a new term in a German text.
 | block a signer, blocked signer, transparency log, timestamp, keyless | Signierer sperren, gesperrter Signierer, Transparenzprotokoll, Zeitstempel, schlüssellos |
 | origin (of an upload), uploaded by, fetched from, badge (of a signature) | Herkunft, hochgeladen von, geholt von, Abzeichen |
 | signing identity (Quader's own), certificate request, announced (identity), previous (identity), retire (an identity), chain, trusted root (of Quader's signatures), npm key ID, receipt attestation | Signaturidentität, Zertifikatsanforderung, angekündigt, früher, außer Dienst stellen, Kette, Vertrauensbasis, npm-Schlüssel-ID, Empfangsattestierung |
+| object-store connection, fill, backlog, scrub, reconciliation, storage summary, storage key | Objektspeicher-Verbindung (kurz Verbindung), Füllstand, Rückstand, Prüflauf, Abgleich, Speicherübersicht, Speicherschlüssel |
+| filling, active, draining, drained, detached, retired (the states of a connection) | Wird befüllt, Aktiv, Wird geleert, Geleert, Abgekoppelt, Stillgelegt |

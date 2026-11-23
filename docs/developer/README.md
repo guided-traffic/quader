@@ -54,7 +54,7 @@ end-to-end wave's. The contracts of the backup lane exist (phase 7, [backup.md](
 | [configuration.md](configuration.md) | How `quader.yaml`, environment variables and flags combine, and how a key is added |
 | [coverage.md](coverage.md) | The requirement coverage generator, its rules and its evidence record |
 | [database.md](database.md) | PostgreSQL connections, pools, migrations, sqlc and the job and change tables |
-| [blob-store.md](blob-store.md) | The S3 blob layer: keys, spool, commit, download, garbage collection |
+| [blob-store.md](blob-store.md) | The S3 blob layer on one to eight object-store connections: keys, spool, commit, copies, download, garbage collection, the orphan sweep, the reconciliation, the scrub, the storage summary and the connections' list |
 | [backup.md](backup.md) | The backup lane: the on-target format, the run record and its lease, the ports, the restore fix-ups, the revocation journal, the command tree and how to add to them |
 | [coordination.md](coordination.md) | Change log, signals, leases, the job queue and the replica registry |
 | [valkey.md](valkey.md) | The Valkey client, Sentinel discovery, key families, degraded mode, the flight lock and the negative store |
@@ -129,7 +129,7 @@ One fact per line; each links to the page that explains it.
   the attempt with the worker and attempt as owner ([coordination.md](coordination.md)).
 - **Valkey:** keys come from registered families with a mandatory expiry; the client follows the primary that
   Sentinel reports ([valkey.md](valkey.md)).
-- **Blobs:** content-addressed keys under `<prefix>/sha256/…`; the S3 client sits behind an outbound factory
+- **Blobs:** content-addressed keys under `<prefix>/sha256/…` on every object-store connection, a row per copy; each connection's S3 client sits behind an outbound factory and a circuit breaker of its own
   ([blob-store.md](blob-store.md)).
 - **Health:** readiness checks, watched loops and the liveness watchdog ([observability.md](observability.md)).
 - **Login:** `GET /auth/oidc/{providerId}/start` writes a flow row and sets `__Host-qdr_oidc_binding`; the callback

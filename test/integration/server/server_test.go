@@ -93,7 +93,10 @@ func TestReplicas(t *testing.T) {
 				Mode     string
 				Keyspace *string
 			}
-			ObjectStore struct{ Bucket string }
+			// the answering replica's connections in order (storage.md R-STOR-061)
+			ObjectStore struct {
+				Connections []struct{ ID, Bucket string }
+			}
 		}
 		if err := json.Unmarshal([]byte(body), &info); err != nil {
 			t.Fatal(err)
@@ -107,7 +110,8 @@ func TestReplicas(t *testing.T) {
 		if info.Valkey.Keyspace == nil || !regexp.MustCompile(`^[0-9a-f]{12}$`).MatchString(*info.Valkey.Keyspace) || info.Valkey.Mode != "sentinel" {
 			t.Errorf("valkey block: %s", body)
 		}
-		if info.AnsweredBy.Replica != "quader-web-it" || info.AnsweredBy.Role != "web" || info.BaseURL != "http://quader.test" || info.ObjectStore.Bucket == "" {
+		if info.AnsweredBy.Replica != "quader-web-it" || info.AnsweredBy.Role != "web" || info.BaseURL != "http://quader.test" ||
+			len(info.ObjectStore.Connections) == 0 || info.ObjectStore.Connections[0].ID == "" || info.ObjectStore.Connections[0].Bucket == "" {
 			t.Errorf("info = %s", body)
 		}
 		if strings.Contains(strings.ToLower(body), "password") || strings.Contains(body, "26381") {
