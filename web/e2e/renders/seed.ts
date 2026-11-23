@@ -612,13 +612,27 @@ export async function syncAdvisories(admin: Api): Promise<void> {
     return report.repositories.some((r) => r.grade?.grade === grade && r.grade.fixable === fixable);
   };
   for (let i = 0; i < 180; i++) {
-    if ((await isGraded(graded, gradedPackage.version, 'E', 112)) && (await isGraded(many, want.version, 'E', want.fixable ?? 0))) return;
+    if ((await isGraded(graded, gradedPackage.version, 'E', 112)) && (await isGraded(many, want.version, 'E', want.fixable ?? 0))) {
+      spreadDetections();
+      return;
+    }
     if (i % 30 === 29) await expectStatus(await admin.post('/api/v1/system/tasks/vuln-sync-osv/run', {}), [202, 409], 'run the advisory sync again');
     await new Promise((r) => setTimeout(r, 1000));
   }
   throw new Error(
     `the advisory archive was not imported and evaluated within three minutes: ${gradedPackage.name} is not E with 112 fixable, or ${manyVersionsPackage.name}@${want.version} not E`,
   );
+}
+
+/**
+ * The trend over 30 days (G5-54): the seed's findings are all detected within its own minutes, so the chart showed one day. The
+ * findings of the many-version package are spread by SQL over the 30 days before, each on a day of its own from its id, so the bands
+ * rise over the month. None is resolved by SQL: a status is the triage's, and the grades of the versions table stay as the cycle made
+ * them. Only findings detected in the last day are moved, so a second seed moves nothing again.
+ */
+function spreadDetections(): void {
+  psql(`UPDATE vuln_finding SET detected_at = now() - make_interval(days => 1 + abs(hashtext(id::text)) % 30)
+         WHERE package_name = '${manyVersionsPackage.name}' AND detected_at > now() - interval '1 day';`);
 }
 
 async function idOf(admin: Api, name: string): Promise<string> {
