@@ -348,7 +348,8 @@ the text of a statement is never a label. A statement is timed from its start un
 long as it is read (the backup's referenced-blob stream is named `BackupReferencedBlobs` for that reason); `CopyFrom` and the raw `COPY`
 of the backup bypass the tracer and are not recorded. pgx's own `begin`, `commit` and `rollback` are labelled by their verb.
 The blob store exports `quader_spool_used_bytes`, `quader_spool_free_bytes` and `quader_gc_last_success_timestamp_seconds`
-([internal/blob/metrics.go](../../internal/blob/metrics.go)). Not exported: `quader_db_pool_resets_total` (no mechanism resets a pool
+([internal/blob/metrics.go](../../internal/blob/metrics.go)); the image scanner, which has no blob store, exports the two spool gauges of its
+own spool through `blob.NewSpoolMetrics` and `blob.WithSpoolRoom` ([wire_scanner.go](../../internal/app/wire_scanner.go), Q-OPS-237). Not exported: `quader_db_pool_resets_total` (no mechanism resets a pool
 yet), the inventory gauges and every `quader_backup_*` and `quader_revocation_journal_pending` (the backup and the revocation journal are
 phase 7). The PrometheusRule of the chart reads these names ([helm-chart.md](helm-chart.md#the-prometheusrule), Q-HA-135).
 

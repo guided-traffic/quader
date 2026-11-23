@@ -42,6 +42,7 @@ type Spool struct {
 	free         func(dir string) (uint64, error)
 	log          *slog.Logger
 	metrics      *Metrics
+	room         *SpoolMetrics
 
 	mu       sync.Mutex
 	reserved int64
@@ -54,8 +55,14 @@ type SpoolOption func(*Spool)
 // WithSpoolLogger sets the logger of the budget warning.
 func WithSpoolLogger(l *slog.Logger) SpoolOption { return func(s *Spool) { s.log = l } }
 
-// WithSpoolMetrics sets the metrics.
-func WithSpoolMetrics(m *Metrics) SpoolOption { return func(s *Spool) { s.metrics = m } }
+// WithSpoolMetrics sets the metrics: the upload rejections and the gauges of the spool's room.
+func WithSpoolMetrics(m *Metrics) SpoolOption {
+	return func(s *Spool) { s.metrics, s.room = m, m.spoolMetrics() }
+}
+
+// WithSpoolRoom sets the gauges of the spool's room alone: the spool of a process without a blob store, whose holds are no uploads
+// (the image scanner, Q-OPS-237).
+func WithSpoolRoom(m *SpoolMetrics) SpoolOption { return func(s *Spool) { s.room = m } }
 
 // WithFreeBytes replaces the free-space probe of the spool volume; tests use it
 // to simulate a full volume.
@@ -114,6 +121,10 @@ func NewSpool(cfg config.StorageSpool, opts ...SpoolOption) (*Spool, error) {
 			return nil, fmt.Errorf("clean spool directory: %w", err)
 		}
 	}
+	// The gauges have the volume's free space from the start, so a replica that has held nothing yet is not read as a full volume.
+	if free, err := s.free(s.dir); err == nil {
+		s.room.set(0, free)
+	}
 	return s, nil
 }
 
@@ -170,7 +181,7 @@ func (s *Spool) reserve(n int64) error {
 		}
 	}
 	s.reserved += n
-	s.metrics.setSpool(s.reserved, free)
+	s.room.set(s.reserved, free)
 	if s.max > 0 && s.reserved*100/s.max >= int64(s.warnPercent) && time.Since(s.warnedAt) > time.Minute {
 		s.warnedAt = time.Now()
 		s.log.Warn("spool budget is above its warning level", "reserved_bytes", s.reserved, "max_bytes", s.max, "warn_percent", s.warnPercent)
@@ -188,10 +199,10 @@ func (s *Spool) release(n int64) {
 	r := s.reserved
 	s.mu.Unlock()
 	if ferr != nil {
-		s.metrics.setSpoolUsed(r)
+		s.room.setUsed(r)
 		return
 	}
-	s.metrics.setSpool(r, free)
+	s.room.set(r, free)
 }
 
 // Hold is budget taken on the spool for files the spool does not write itself: the unpacked vulnerability database and the working files of
@@ -223,7 +234,7 @@ func (s *Spool) Adopt(n int64) *Hold {
 	s.reserved += n
 	r := s.reserved
 	s.mu.Unlock()
-	s.metrics.setSpool(r, free)
+	s.room.set(r, free)
 	return &Hold{spool: s, n: n}
 }
 

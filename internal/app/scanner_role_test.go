@@ -94,4 +94,21 @@ func TestR_ARCH_036_AScannerStartsWithoutTheInfrastructureAndServesItsOneRoute(t
 	if _, err := os.Stat(filepath.Join(dir, "missing")); err == nil {
 		t.Fatal("something created the directory of the secret files")
 	}
+	// Q-OPS-237: the scanner's spool exports the two gauges of every spool from its start, so QuaderSpoolNearlyFull sees a pod of
+	// vuln-scanner-trivy before its first image: nothing held, the free space of its volume.
+	_, _, metrics := get(t, "http://"+a.OpsAddr().String()+"/metrics")
+	used, free := metricValue(metrics, "quader_spool_used_bytes"), metricValue(metrics, "quader_spool_free_bytes")
+	if used != "0" || free == "" || free == "0" {
+		t.Fatalf("the scanner's spool exports used %q and free %q, want 0 and the volume's free bytes", used, free)
+	}
+}
+
+// metricValue is the value of the one unlabelled series of a family in an exposition, "" when it has none.
+func metricValue(exposition, family string) string {
+	for line := range strings.SplitSeq(exposition, "\n") {
+		if v, ok := strings.CutPrefix(line, family+" "); ok {
+			return v
+		}
+	}
+	return ""
 }

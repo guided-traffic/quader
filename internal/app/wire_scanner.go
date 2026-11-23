@@ -91,7 +91,9 @@ func (a *App) wireScanner(ctx context.Context, _ blobArea) (scannerArea, error) 
 	cfg := a.cfg
 	images := cfg.Vulnerabilities.Images
 	log := a.log.With("component", unitVulnScannerTrivy)
-	spool, err := blob.NewSpool(cfg.Storage.Spool, blob.WithSpoolLogger(log))
+	// The spool exports the two gauges every spool exports, on the scanner's registry (Q-OPS-237): QuaderSpoolNearlyFull reads them, and
+	// the scrape's label role names the unit, vuln-scanner-trivy.
+	spool, err := blob.NewSpool(cfg.Storage.Spool, blob.WithSpoolLogger(log), blob.WithSpoolRoom(blob.NewSpoolMetrics(a.tele.metrics)))
 	if err != nil {
 		return scannerArea{}, err
 	}

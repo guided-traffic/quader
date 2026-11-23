@@ -1143,7 +1143,7 @@ HTTP duration histograms use the buckets 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.
 | `quader_storage_connection_detached` | gauge | `connection` | 1 while the connection is `detached` (R-STOR-051) |
 | `quader_gc_copies_released_total` | counter | `connection` | Copies collection left to the orphan sweep of their connection (R-STOR-057) |
 | `quader_blobstore_dedup_hits_total` | counter | — | Uploads whose content address already existed (INV-4) |
-| `quader_spool_used_bytes`, `quader_spool_free_bytes` | gauge | — | Local temporary upload spool: the budget that running uploads hold (R-STOR-004), and the free space of the spool volume, read at every reservation and release ([ha-and-helm.md](ha-and-helm.md) R-HA-045 `QuaderSpoolNearlyFull`) |
+| `quader_spool_used_bytes`, `quader_spool_free_bytes` | gauge | — | Local temporary spool: the budget held on it (running uploads on `api`, `packages`, `worker` and the development roles, R-STOR-004; the images being scanned and the analyses of detections on `vuln-scanner-trivy`, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-036), and the free space of the spool volume, read at the start, at every reservation and at every release ([ha-and-helm.md](ha-and-helm.md) R-HA-045 `QuaderSpoolNearlyFull`, grouped by the scrape's label `role`, which names the unit, Q-OPS-237) |
 | `quader_storage_blobs`, `quader_storage_blob_bytes`, `quader_storage_logical_bytes` | gauge | — | From the storage summary (R-OPS-023); same value on every replica |
 | `quader_repository_files`, `quader_repository_bytes` | gauge | `repo`, `format`, `class` | From the storage summary |
 | `quader_repositories` | gauge | `format`, `class` | Number of repositories |
@@ -6644,6 +6644,47 @@ slot and a database from any kind but `clamav` (migration 00090).
 **Choice:** (a). **Rationale:** the build time is the one figure that tells whether the updater still reaches ClamAV's network, and the
 pod is the only one that knows it. The development agent would revisit this if a screen needs to tell "no slots" from "0 of 0".
 **Applied in the spec:** R-OPS-048; [malware-scanning.md](malware-scanning.md) R-MAL-032.
+
+### Q-OPS-237 · The image scanner's spool exports the two spool gauges, and `QuaderSpoolNearlyFull` fires per unit
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Found by the
+reading of the findings on 2026-11-23: the scanner opened its spool with a logger only, so a pod of `vuln-scanner-trivy`, whose spool holds
+every image it scans (R-VULN-036, 6Gi by default), exported neither `quader_spool_used_bytes` nor `quader_spool_free_bytes`, and
+`QuaderSpoolNearlyFull` never saw it. The alert's promise is that an operator is told before a spool is full, for every unit that has one;
+its description named uploads only.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The scanner's spool exports the same two gauges on the scanner's registry; the unit is the scrape's label `role`, which the chart's ServiceMonitor sets from the pod's component (`vuln-scanner-trivy`); the alert groups by it (chosen) | One alert, one pair of names for every spool; the alert's labels say which unit | The names the runbook and the dashboards already read; no label in the process, so R-OPS-007's rule that a series does not carry its role stays | A scrape without the chart's relabeling has no `role`: the alert then fires once for all units together, as it did before |
+| (b) A label `unit` set by the process on both gauges | The unit in the series itself | Independent of the scrape | A second label with the values of `role` on every role's series, which R-OPS-007 keeps off the series |
+| (c) A family of the scanner's own, `quader_scanner_spool_*`, and a second alert | A pair per kind | Nothing changes for the roles | Two names for one thing; every further unit with a spool would add a third |
+
+**Choice:** (a). The gauges hold the volume's free space from the spool's start, so a replica that has held nothing yet is not read as a
+full volume (before, `quader_spool_free_bytes` was 0 until the first reservation, on every role). **The other units, checked the same
+day:**
+
+- **`worker`**: its spool is the blob store's and exports the gauges (`role="worker"`); the alert covers it. Unchanged.
+- **`malware-scanner-clamav`**: the `quader` container mounts a spool volume and writes nothing to it (it reads each blob as a stream and
+  hands it to `clamd`, R-MAL-007), so there is nothing to fill. `clamd`'s temporary files lie in `clamd-tmp`, which the chart refuses to
+  render smaller than `slots × (max_file_size + max_scan_size)`, the most the scans in flight can write; the signature files in `clamd-db`
+  are at most the version loaded and the next one. No gauge is exported for either: `clamd` writes them, not Quader.
+- **`malware-updater-freshclam`**: `freshclam` writes its containers into `freshclam-db` (about 110 MiB a set beside its temporary copies,
+  1Gi by default); the `quader` container writes there only the seed of the set in use. No spool, no gauge.
+- **The Bastion** (its own chart): the fills in progress hold at most `bastion.cache.spool_max_bytes` (2GiB by default). Where they are
+  spooled into the pod's `tmp` volume (the bucket backend, or the volume backend with a cache key) the chart sizes that volume from the
+  budget plus a headroom; with the volume backend they lie on the cache volume, whose default `cacheVolume.size` (25Gi) lies above the
+  cache's `max_bytes` (20GiB) plus that budget (Q-BAS-131). With those sizes the volume cannot fill from the fills; a fill beyond the budget is passed
+  through unkept and counted in `quader_bastion_cache_errors_total{op="spool"}`. Unchanged.
+- **The loader of the image scanner's database** (`vuln-scanner-trivy`, container `database`) keeps its own budget, `dir_budget`, in the
+  volume `trivy-db` (R-VULN-049); a database that does not fit beside the newest replaces it, and a pod's older database shows on the System
+  page (Q-UI-915). Unchanged.
+
+**Applied in the spec:** R-STOR-004 (by the table of series above), [ha-and-helm.md](ha-and-helm.md) R-HA-045 (`QuaderSpoolNearlyFull`).
+Code: [wire_scanner.go](../../internal/app/wire_scanner.go), [metrics.go](../../internal/blob/metrics.go) (`SpoolMetrics`),
+[spool.go](../../internal/blob/spool.go) (`WithSpoolRoom`), [_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl). Tests: the
+scanner's start in `TestR_ARCH_036_AScannerStartsWithoutTheInfrastructureAndServesItsOneRoute` reads both gauges from its `/metrics`
+(unit, `internal/app`); `TestSpoolGauges` (unit, `internal/blob`); the promtool case of `QuaderSpoolNearlyFull` fires for a pod of
+`vuln-scanner-trivy` as an alert of its own ([rules_test.yaml](../../deploy/helm/quader/tests/rules_test.yaml)).
 
 ## What this does not cover
 

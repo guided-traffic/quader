@@ -152,13 +152,13 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
     summary: Replicas of more than one Quader version have been running for two hours.
     description: A rolling upgrade is stuck, or a Deployment was left on an old image. Compare the label version of quader_build_info by pod and the image of each Deployment.
 - alert: QuaderSpoolNearlyFull
-  expr: max(quader_spool_used_bytes{ {{ $ns }} } / (quader_spool_used_bytes{ {{ $ns }} } + quader_spool_free_bytes{ {{ $ns }} })) > 0.9
+  expr: max by (role) (quader_spool_used_bytes{ {{ $ns }} } / (quader_spool_used_bytes{ {{ $ns }} } + quader_spool_free_bytes{ {{ $ns }} })) > 0.9
   for: 10m
   labels:
     severity: warning
   annotations:
-    summary: The upload spool of a replica is more than 90 percent used.
-    description: Running uploads hold more than nine times what the spool volume has left (R-STOR-004). New uploads are refused with 503 once the budget or the minimum free space is exceeded. Raise spool.sizeLimit of the role, or lower config.storage.spool.max_bytes; look for uploads that do not end.
+    summary: The spool of a replica is more than 90 percent used.
+    description: What the spool holds is more than nine times what its volume has left; the label role names the unit (R-STOR-004, Q-OPS-237). On api, packages and worker the spool holds running uploads, and new uploads are refused with 503 once the budget or the minimum free space is exceeded; on vuln-scanner-trivy it holds the images being scanned, and a scan that does not fit is put off (scanner_busy, spool_too_small). Raise spool.sizeLimit of the role or of vulnScannerTrivy, or lower config.storage.spool.max_bytes; look for uploads or scans that do not end.
 - alert: QuaderVulnerabilityDataStale
   expr: time() - max by (source, ecosystem) (quader_vuln_source_last_success_timestamp_seconds{ {{ $ns }} }) > {{ $stale }}
   for: 15m

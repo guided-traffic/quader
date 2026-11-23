@@ -164,7 +164,7 @@ Every answer of Quader on a client listener carries `X-Request-Id`. A `503` with
 
 ## Disk or spool full
 
-**What you see.** `QuaderSpoolNearlyFull` (more than 90 % used for 10 minutes). Uploads answer `503 unavailable` with a sentence about the spool, and clients retry. `quader_spool_used_bytes` and `quader_spool_free_bytes` per replica. A pod that is `Evicted`: `kubectl describe pod` names the emptyDir that passed its limit. A mirror pass waits 5 seconds and repeats the item; an advisory sync that needs the space fails; an image scan waits and is then put off (below).
+**What you see.** `QuaderSpoolNearlyFull` (more than 90 % used for 10 minutes; its label `role` names the unit: `api`, `packages`, `worker` or `vuln-scanner-trivy`). Uploads answer `503 unavailable` with a sentence about the spool, and clients retry. `quader_spool_used_bytes` and `quader_spool_free_bytes` per replica. A pod that is `Evicted`: `kubectl describe pod` names the emptyDir that passed its limit. A mirror pass waits 5 seconds and repeats the item; an advisory sync that needs the space fails; an image scan waits and is then put off (below).
 
 **What it means.** Every pod has one spool volume (`spool.sizeLimit` 20 GiB by default; `worker.spool.sizeLimit` 5 GiB; `vulnScannerTrivy.spool.sizeLimit` 6 GiB). The usable budget is the size minus `spool.headroom` (2 GiB), and is held per replica. The worker's budget is shared by the cache fills of jobs, the artifacts of a mirror pass and one advisory archive while a sync runs; the image scanning writes nothing to it.
 
@@ -172,7 +172,7 @@ The image scanning works in the scanner pods. Their spool holds the analyses and
 
 **What to do.**
 
-1. Find the replica on `quader_spool_used_bytes`. Look for uploads that do not end (the request log, `quader_http_requests_in_flight`).
+1. Find the replica on `quader_spool_used_bytes` (the alert's `role` says which unit). For a scanner pod go to step 3. Look for uploads that do not end (the request log, `quader_http_requests_in_flight`).
 2. Raise the size of the role: `api.spool.sizeLimit`, `packages.spool.sizeLimit`, `worker.spool.sizeLimit`, or `spool.sizeLimit` for all of them, by `helm upgrade`. The chart refuses a size whose budget is below `storage.upload.max_size` and, for a pod that claims the queue `vuln`, below the advisory archive limit.
 3. If images are put off for lack of room, raise `vulnScannerTrivy.spool.sizeLimit` (the analyses and the detections), or lower `vulnerabilities.images.max_image_size` (a larger image then shows `scan_failed`); if the database no longer fits its volume, raise `vulnScannerTrivy.database.sizeLimit`. The chart refuses a size that cannot hold the scanning:
 

@@ -15,8 +15,7 @@ import (
 // (at most eight, R-OPS-007).
 type Metrics struct {
 	rejections *prometheus.CounterVec
-	spoolUsed  prometheus.Gauge
-	spoolFree  prometheus.Gauge
+	spool      *SpoolMetrics
 
 	s3Requests    *prometheus.CounterVec
 	s3Duration    *prometheus.HistogramVec
@@ -44,8 +43,7 @@ type Metrics struct {
 func NewMetrics(m *observability.Metrics) *Metrics {
 	return &Metrics{
 		rejections: m.NewCounterVec("quader_storage_upload_rejections_total", "Uploads refused before or while reading the body, by reason.", "reason"),
-		spoolUsed:  m.NewGaugeVec("quader_spool_used_bytes", "Spool budget held by running uploads: the bytes they have reserved on the spool volume.").WithLabelValues(),
-		spoolFree:  m.NewGaugeVec("quader_spool_free_bytes", "Free bytes of the spool volume, read at the last reservation or release.").WithLabelValues(),
+		spool:      NewSpoolMetrics(m),
 
 		s3Requests:    m.NewCounterVec("quader_storage_s3_requests_total", "Object-store requests by connection, operation and outcome.", "connection", "operation", "outcome"),
 		s3Duration:    m.NewHistogramVec("quader_storage_s3_request_duration_seconds", "Duration of object-store requests by connection and operation.", observability.HTTPBuckets(), "connection", "operation"),
@@ -94,11 +92,41 @@ func (m *Metrics) reject(reason string) {
 	}
 }
 
-func (m *Metrics) setSpool(used int64, free uint64) {
-	if m != nil {
-		m.spoolUsed.Set(float64(used))
-		m.spoolFree.Set(float64(free))
+// SpoolMetrics are the two gauges of a spool's room (R-STOR-004, operations-and-observability.md Q-OPS-237): the budget held on it and
+// the free space of its volume. [NewMetrics] builds them for the spool of the blob store; a process without a blob store builds them
+// alone for its spool (the image scanner, vuln-scanner-trivy), so QuaderSpoolNearlyFull reads every spool by the same two names. A nil
+// *SpoolMetrics records nothing.
+type SpoolMetrics struct {
+	used, free prometheus.Gauge
+}
+
+// NewSpoolMetrics registers quader_spool_used_bytes and quader_spool_free_bytes on m.
+func NewSpoolMetrics(m *observability.Metrics) *SpoolMetrics {
+	return &SpoolMetrics{
+		used: m.NewGaugeVec("quader_spool_used_bytes", "Spool budget held on the replica's spool: the bytes running uploads, or the image scans of a scanner, have reserved on the spool volume.").WithLabelValues(),
+		free: m.NewGaugeVec("quader_spool_free_bytes", "Free bytes of the spool volume, read at the start, at the last reservation and at the last release.").WithLabelValues(),
 	}
+}
+
+func (m *SpoolMetrics) set(used int64, free uint64) {
+	if m != nil {
+		m.used.Set(float64(used))
+		m.free.Set(float64(free))
+	}
+}
+
+func (m *SpoolMetrics) setUsed(used int64) {
+	if m != nil {
+		m.used.Set(float64(used))
+	}
+}
+
+// spoolMetrics is the gauges of the blob store's spool, nil for a nil *Metrics.
+func (m *Metrics) spoolMetrics() *SpoolMetrics {
+	if m == nil {
+		return nil
+	}
+	return m.spool
 }
 
 func (m *Metrics) request(conn, op, outcome string, seconds float64) {
@@ -162,12 +190,6 @@ func (m *Metrics) gc(deleted, kept, held int, reclaimed int64) {
 	m.gcKept.Add(float64(kept))
 	m.gcHeld.Add(float64(held))
 	m.gcReclaimed.Add(float64(reclaimed))
-}
-
-func (m *Metrics) setSpoolUsed(used int64) {
-	if m != nil {
-		m.spoolUsed.Set(float64(used))
-	}
 }
 
 // gcSucceeded records the end of a run that did its work (R-OPS-007).

@@ -564,7 +564,8 @@ storage:
 ```
 
 Metrics (names per [operations-and-observability.md](operations-and-observability.md)
-conventions): `quader_spool_used_bytes` (the budget that running uploads hold), `quader_spool_free_bytes` (free space of the spool volume),
+conventions): `quader_spool_used_bytes` (the budget that running uploads hold), `quader_spool_free_bytes` (free space of the spool volume,
+read at the start too; the image scanner's spool exports both, [operations-and-observability.md](operations-and-observability.md) Q-OPS-237),
 `quader_storage_upload_rejections_total{reason}`.
 
 Acceptance criteria:

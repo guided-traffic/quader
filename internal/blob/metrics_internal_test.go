@@ -33,17 +33,36 @@ func TestSpoolGauges(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if v := valueOf(t, m.spoolUsed); v != float64(len(body)) {
+		if v := valueOf(t, m.spool.used); v != float64(len(body)) {
 			t.Fatalf("used while the upload runs = %v, want %d", v, len(body))
 		}
-		if v := valueOf(t, m.spoolFree); v != float64(free) {
+		if v := valueOf(t, m.spool.free); v != float64(free) {
 			t.Fatalf("free = %v, want %d", v, free)
 		}
 		if err := got.Close(); err != nil {
 			t.Fatal(err)
 		}
-		if v := valueOf(t, m.spoolUsed); v != 0 {
+		if v := valueOf(t, m.spool.used); v != 0 {
 			t.Fatalf("used after the upload ended = %v, want 0", v)
+		}
+	})
+
+	t.Run("Q-OPS-237 a spool of its own room shows the free space from its start and a hold in the used bytes", func(t *testing.T) {
+		m := NewSpoolMetrics(observability.NewMetrics("scanner"))
+		sp := newSpool(t, nil, WithSpoolRoom(m), WithFreeBytes(func(string) (uint64, error) { return free, nil }))
+		if u, f := valueOf(t, m.used), valueOf(t, m.free); u != 0 || f != float64(free) {
+			t.Fatalf("at the start used %v free %v, want 0 and %d", u, f, free)
+		}
+		h, err := sp.Hold(5 << 20)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if v := valueOf(t, m.used); v != 5<<20 {
+			t.Fatalf("used while held = %v", v)
+		}
+		h.Release()
+		if v := valueOf(t, m.used); v != 0 {
+			t.Fatalf("used after the release = %v", v)
 		}
 	})
 
@@ -60,7 +79,7 @@ func TestSpoolGauges(t *testing.T) {
 		if err := got.Close(); err != nil {
 			t.Fatal(err)
 		}
-		if v := valueOf(t, m.spoolFree); v != float64(free/2) {
+		if v := valueOf(t, m.spool.free); v != float64(free/2) {
 			t.Fatalf("free after the release = %v, want %d", v, free/2)
 		}
 	})

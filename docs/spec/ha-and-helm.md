@@ -6199,7 +6199,7 @@ templates over metrics the MVP already exports, so the change adds no backend wo
 | `QuaderJobsStuck` | `max(quader_jobs_oldest_queued_age_seconds) > 900` | 5m | warning |
 | `QuaderLeaseLost` | `increase(quader_lease_lost_total[15m]) > 3` | 0m | warning |
 | `QuaderMixedVersions` | `count(count by (version) (quader_build_info)) > 1` | 2h | warning |
-| `QuaderSpoolNearlyFull` | `max(quader_spool_used_bytes / (quader_spool_used_bytes + quader_spool_free_bytes)) > 0.9` | 10m | warning |
+| `QuaderSpoolNearlyFull` | `max by (role) (quader_spool_used_bytes / (quader_spool_used_bytes + quader_spool_free_bytes)) > 0.9`: one alert per unit, the scanner's spool included ([operations-and-observability.md](operations-and-observability.md) Q-OPS-237) | 10m | warning |
 | `QuaderBlobMissing` | `increase(quader_storage_blobs_damaged_total{status="missing"}[1h]) > 0`: no connection holds the blob any more | 0m | critical |
 | `QuaderBlobCorrupt` | `increase(quader_storage_blobs_damaged_total{status="corrupt"}[1h]) > 0`: no connection holds the blob whole ([storage.md](storage.md) R-STOR-052) | 0m | critical |
 | `QuaderGCStale` | `time() - max(quader_gc_last_success_timestamp_seconds) > 172800` | 1h | warning |
@@ -6221,7 +6221,8 @@ templates over metrics the MVP already exports, so the change adds no backend wo
 Metric names come from [operations-and-observability.md](operations-and-observability.md) R-OPS-008
 and [storage.md](storage.md); `quader_storage_blobs_damaged_total{status}` is storage.md's
 (R-STOR-027), counted by every detection of a missing or corrupt blob. The spool gauges are `quader_spool_used_bytes` (the budget that
-running uploads hold, R-STOR-004) and `quader_spool_free_bytes` (the free space of the spool volume, read at every reservation and release);
+running uploads hold, R-STOR-004, or on a pod of `vuln-scanner-trivy` the images it scans, R-VULN-036) and `quader_spool_free_bytes` (the free
+space of the spool volume, read at the start, at every reservation and at every release; Q-OPS-237);
 `quader_gc_last_success_timestamp_seconds` has no series on a replica until a collection run there ended without error, neither paused nor
 a dry run, so a new installation does not report a time of 0 and `QuaderGCStale` stays silent until the first run. This page adds
 `quader_db_retries_total`, `quader_db_pool_resets_total`, `quader_db_commit_unknown_total`,
