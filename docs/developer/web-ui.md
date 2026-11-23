@@ -58,6 +58,8 @@ Run in `web/` after `nvm use` (or any Node matching `.nvmrc`).
 | `npm run test:lint` | The tests of the four R-UI-046 lint rules (`scripts/lint-rules.test.mjs`, `node --test`); `make web-test` runs it after `npm test`. `npm test` writes `.out/test-web.xml` and this writes `.out/test-web-lint.xml`, the JUnit reports of the coverage generator ([coverage.md](coverage.md#report-formats)) |
 | `npm run test:coverage` | The same with a V8 coverage report (`src/app/**`, generated code excluded) |
 | `npm run extract-i18n` | Rewrites `src/locale/messages.xlf`; then add the `<target>` units to `messages.de.xlf` |
+| `make web-i18n` | Extracts into `src/locale/messages.xlf` and rewrites `messages.de.xlf` in the extraction's order with its location notes, dropping the units the extraction no longer has and keeping every target ([i18n-check.mjs](../../web/scripts/i18n-check.mjs) `--write`); it still fails on a unit without a German text and on a unit whose English source changed, which a person writes. The last step of a UI change |
+| `make web-i18n-check` | The same without writing: fails when `messages.xlf` differs from a fresh extraction by a byte, or `messages.de.xlf` lacks a unit, holds a removed one, or holds one with other location notes or another English source (CI: the job `web`, after `make web-test`). The extraction builds the application once: 10 to 14 seconds on the development machine (four runs), which the job `web` gains; not measured on a runner yet |
 | `npm run generate:api` | `openapi-typescript ../api/openapi.yaml` into `src/app/api/generated/schema.d.ts`, committed. Rerun it whenever `api/openapi.yaml` changes |
 | `npm run build` | Localized production build into `web/dist/web/browser/<locale>/` |
 | `npx playwright install --with-deps chromium` | The browser build of the locked Playwright version, outside the repository (needed for the journeys, not for `npm test`) |
@@ -1587,7 +1589,8 @@ a holder of `settings:write`.
    and field errors from `ApiError.fieldErrors` (`ErrorSummary` and `problemsAt` of `shared/field-errors.ts`). Forms use signals and native controls (Q-UI-14);
    read a resource's value with `valueOf(resource)` wherever the error state is shown next to it, because `resource.value()` throws in that state.
 5. Add the navigation entry to `NAV_AREAS` in [core/navigation.ts](../../web/src/app/core/navigation.ts) with its icon and the capability that shows it, and `data: wrapper(<title>)` to the `loadChildren` route in `app.routes.ts` so that the breadcrumbs link the list from the detail screens.
-6. Mark every text with `i18n`/`$localize`, run `npm run extract-i18n`, add the German `<target>`s to `messages.de.xlf`, extend the glossary.
+6. Mark every text with `i18n`/`$localize`, run `make web-i18n`, add the German `<target>`s it names as missing to `messages.de.xlf`, extend the
+   glossary, and run `make web-i18n-check` until it passes.
 7. Write specs next to the code with the requirement ID in the test name, add the route to `SCREENS` in `app.routes.spec.ts` (heading, title and the axe check come with it),
    run `npm run lint` and `npm test`.
 8. Every new route is a row of the route table of R-UI-003 in the same change: [app.route-table.spec.ts](../../web/src/app/app.route-table.spec.ts)

@@ -125,6 +125,14 @@ web-lint: ## ESLint and the R-UI-046 rules in web/ (after web-ci)
 web-test: ## Angular unit tests and the R-UI-046 lint-rule tests in web/ (after web-ci); .out/test-web.xml and .out/test-web-lint.xml (JUnit) for the coverage generator
 	cd web && npm test && npm run test:lint
 
+.PHONY: web-i18n
+web-i18n: ## Extract the translation source into web/src/locale/messages.xlf and bring messages.de.xlf to its units and location notes (after web-ci; the last step of a UI change)
+	cd web && node scripts/i18n-check.mjs --write
+
+.PHONY: web-i18n-check
+web-i18n-check: ## Fail when the translation source differs from a fresh extraction or the German file has a missing, stale or moved unit (after web-ci; CI: web)
+	cd web && node scripts/i18n-check.mjs
+
 .PHONY: web-embed
 web-embed: ## Build the Angular workspace and embed it into internal/webui/dist (after web-ci)
 	cd web && npm run build:embed

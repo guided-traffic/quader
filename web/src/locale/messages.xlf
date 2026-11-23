@@ -224,7 +224,7 @@
     </unit>
     <unit id="route.login.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:24</note>
+        <note category="location">src/app/app.routes.ts:23</note>
       </notes>
       <segment>
         <source>Sign in</source>
@@ -232,7 +232,7 @@
     </unit>
     <unit id="route.logged-out.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:34</note>
+        <note category="location">src/app/app.routes.ts:33</note>
       </notes>
       <segment>
         <source>Signed out</source>
@@ -240,7 +240,7 @@
     </unit>
     <unit id="route.projects.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:48</note>
+        <note category="location">src/app/app.routes.ts:47</note>
         <note category="location">src/app/features/projects/project-context.routes.ts:20</note>
       </notes>
       <segment>
@@ -249,7 +249,7 @@
     </unit>
     <unit id="route.repositories.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:56</note>
+        <note category="location">src/app/app.routes.ts:55</note>
         <note category="location">src/app/features/projects/project-context.routes.ts:35</note>
         <note category="location">src/app/features/repositories/repositories.routes.ts:48</note>
         <note category="location">src/app/features/repositories/repositories.routes.ts:61</note>
@@ -260,8 +260,8 @@
     </unit>
     <unit id="search.results.heading">
       <notes>
+        <note category="location">src/app/app.routes.ts:62</note>
         <note category="location">src/app/app.routes.ts:63</note>
-        <note category="location">src/app/app.routes.ts:64</note>
         <note category="location">src/app/features/search/search-results.ts:214</note>
       </notes>
       <segment>
@@ -270,7 +270,7 @@
     </unit>
     <unit id="nav.guides">
       <notes>
-        <note category="location">src/app/app.routes.ts:70</note>
+        <note category="location">src/app/app.routes.ts:69</note>
         <note category="location">src/app/core/navigation.ts:88</note>
         <note category="location">src/app/features/search/search-model.ts:99</note>
       </notes>
@@ -280,7 +280,7 @@
     </unit>
     <unit id="route.help.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:77</note>
+        <note category="location">src/app/app.routes.ts:76</note>
         <note category="location">src/app/features/help/help.routes.ts:5</note>
       </notes>
       <segment>
@@ -289,7 +289,7 @@
     </unit>
     <unit id="route.profile.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:92</note>
+        <note category="location">src/app/app.routes.ts:91</note>
         <note category="location">src/app/features/profile/profile.routes.ts:7</note>
       </notes>
       <segment>
@@ -298,7 +298,7 @@
     </unit>
     <unit id="route.dashboard.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:103</note>
+        <note category="location">src/app/app.routes.ts:102</note>
       </notes>
       <segment>
         <source>Dashboard</source>
@@ -306,7 +306,7 @@
     </unit>
     <unit id="wellknown.heading">
       <notes>
-        <note category="location">src/app/app.routes.ts:109</note>
+        <note category="location">src/app/app.routes.ts:108</note>
         <note category="location">src/app/features/upstream/upstream-registries.ts:230</note>
         <note category="location">src/app/features/upstream/upstream.routes.ts:7</note>
       </notes>
@@ -316,7 +316,7 @@
     </unit>
     <unit id="route.users.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:114</note>
+        <note category="location">src/app/app.routes.ts:113</note>
         <note category="location">src/app/features/users/users.routes.ts:7</note>
       </notes>
       <segment>
@@ -325,7 +325,7 @@
     </unit>
     <unit id="route.groups.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:119</note>
+        <note category="location">src/app/app.routes.ts:118</note>
         <note category="location">src/app/features/groups/groups.routes.ts:7</note>
       </notes>
       <segment>
@@ -334,7 +334,7 @@
     </unit>
     <unit id="route.service-accounts.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:124</note>
+        <note category="location">src/app/app.routes.ts:123</note>
         <note category="location">src/app/features/projects/project-context.routes.ts:58</note>
         <note category="location">src/app/features/projects/project-list-pages.ts:41</note>
         <note category="location">src/app/features/service-accounts/service-accounts.routes.ts:7</note>
@@ -346,7 +346,7 @@
     </unit>
     <unit id="route.permissions.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:132</note>
+        <note category="location">src/app/app.routes.ts:131</note>
         <note category="location">src/app/features/permissions/permissions.routes.ts:7</note>
         <note category="location">src/app/features/permissions/permissions.routes.ts:29</note>
         <note category="location">src/app/features/projects/project-context.routes.ts:53</note>
@@ -358,7 +358,7 @@
     </unit>
     <unit id="route.roles.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:138</note>
+        <note category="location">src/app/app.routes.ts:137</note>
         <note category="location">src/app/features/roles/roles.routes.ts:7</note>
       </notes>
       <segment>
@@ -367,7 +367,7 @@
     </unit>
     <unit id="route.tokens.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:143</note>
+        <note category="location">src/app/app.routes.ts:142</note>
         <note category="location">src/app/features/tokens/tokens.routes.ts:7</note>
       </notes>
       <segment>
@@ -376,7 +376,7 @@
     </unit>
     <unit id="usage.heading">
       <notes>
-        <note category="location">src/app/app.routes.ts:151</note>
+        <note category="location">src/app/app.routes.ts:150</note>
         <note category="location">src/app/features/projects/project-context.routes.ts:65</note>
         <note category="location">src/app/features/usage/usage-overview.ts:133</note>
         <note category="location">src/app/features/usage/usage.routes.ts:43</note>
@@ -388,7 +388,7 @@
     </unit>
     <unit id="limits.heading">
       <notes>
-        <note category="location">src/app/app.routes.ts:157</note>
+        <note category="location">src/app/app.routes.ts:156</note>
         <note category="location">src/app/features/limits/limits-frame.ts:22,23</note>
         <note category="location">src/app/features/limits/limits.routes.ts:25</note>
       </notes>
@@ -398,7 +398,7 @@
     </unit>
     <unit id="route.ci.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:164</note>
+        <note category="location">src/app/app.routes.ts:163</note>
         <note category="location">src/app/features/ci/ci.routes.ts:13</note>
         <note category="location">src/app/features/projects/project-context.routes.ts:72</note>
       </notes>
@@ -408,7 +408,7 @@
     </unit>
     <unit id="route.bastions.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:171</note>
+        <note category="location">src/app/app.routes.ts:170</note>
         <note category="location">src/app/features/bastions/bastions.routes.ts:7</note>
       </notes>
       <segment>
@@ -417,7 +417,7 @@
     </unit>
     <unit id="route.endpoints.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:177</note>
+        <note category="location">src/app/app.routes.ts:176</note>
         <note category="location">src/app/features/endpoints/endpoints.routes.ts:8</note>
       </notes>
       <segment>
@@ -426,7 +426,7 @@
     </unit>
     <unit id="route.audit.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:183</note>
+        <note category="location">src/app/app.routes.ts:182</note>
         <note category="location">src/app/features/audit/audit.routes.ts:7</note>
       </notes>
       <segment>
@@ -435,7 +435,7 @@
     </unit>
     <unit id="route.vulnerabilities.sources.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:189</note>
+        <note category="location">src/app/app.routes.ts:188</note>
       </notes>
       <segment>
         <source>Advisory sources</source>
@@ -443,7 +443,7 @@
     </unit>
     <unit id="route.system.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:195</note>
+        <note category="location">src/app/app.routes.ts:194</note>
         <note category="location">src/app/features/system/system.routes.ts:14</note>
       </notes>
       <segment>
@@ -452,7 +452,7 @@
     </unit>
     <unit id="nav.settings">
       <notes>
-        <note category="location">src/app/app.routes.ts:200</note>
+        <note category="location">src/app/app.routes.ts:199</note>
       </notes>
       <segment>
         <source>Settings</source>
@@ -460,7 +460,7 @@
     </unit>
     <unit id="route.notfound.title">
       <notes>
-        <note category="location">src/app/app.routes.ts:210</note>
+        <note category="location">src/app/app.routes.ts:209</note>
       </notes>
       <segment>
         <source>Page not found</source>

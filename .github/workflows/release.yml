@@ -549,6 +549,11 @@ jobs:
       - name: make web-test
         run: make web-test
 
+      # The translation source and the German file against a fresh extraction (R-UI-047): a stale or missing unit and a moved
+      # location note fail here instead of drifting.
+      - name: make web-i18n-check (the translation files against a fresh extraction)
+        run: make web-i18n-check
+
       # The JUnit report of the Angular unit tests (angular.json), the evidence of the R-UI requirements the specs name.
       - name: Upload the Vitest JUnit report
         if: always()

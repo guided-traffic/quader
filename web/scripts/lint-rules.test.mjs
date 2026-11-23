@@ -9,6 +9,7 @@ import { linksToRemovedRoutes } from './removed-routes-rule.mjs';
 import { bareIconsInCells } from './status-rule.mjs';
 import { wordActionsSideBySide } from './row-actions-rule.mjs';
 import { offTheLine } from './line-rule.mjs';
+import { compare, rewrite } from './i18n-check.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const eslint = new ESLint({ cwd: root });
@@ -164,6 +165,68 @@ test('R-UI-163 two word actions in one row fail the check, one word, a menu with
   ];
   for (const t of good) assert.deepEqual(wordActionsSideBySide(t), [], t);
   assert.equal(wordActionsSideBySide('<table>\n<tr><td>\n<a class="btn">A</a>\n<a class="btn">B</a></td>')[0].line, 4);
+});
+
+function xliff(lang, units) {
+  const head = `<?xml version="1.0" encoding="UTF-8" ?>\n<xliff version="2.0" xmlns="urn:oasis:names:tc:xliff:document:2.0" srcLang="en"${lang ? ` trgLang="${lang}"` : ''}>\n  <file id="ngi18n" original="ng.template">\n    `;
+  const body = units
+    .map(
+      ([id, where, source, target]) =>
+        `<unit id="${id}">\n      <notes>\n        <note category="location">${where}</note>\n      </notes>\n      <segment>\n        <source>${source}</source>\n` +
+        (target === undefined ? '' : `        <target>${target}</target>\n`) +
+        '      </segment>\n    </unit>',
+    )
+    .join('\n    ');
+  return `${head}${body}\n  </file>\n</xliff>\n`;
+}
+
+test('R-UI-047 the German file is held to the extraction: a missing, a removed and a moved unit and a changed source are named', () => {
+  const extracted = xliff('', [
+    ['a', 'src/a.ts:10', 'Save'],
+    ['b', 'src/b.html:4,5', 'Delete'],
+    ['c', 'src/c.ts:7', 'New text'],
+    ['d', 'src/d.ts:1', 'Open'],
+  ]);
+  const german = xliff('de', [
+    ['b', 'src/b.html:2,3', 'Delete', 'Löschen'],
+    ['a', 'src/a.ts:10', 'Save', 'Speichern'],
+    ['d', 'src/d.ts:1', 'Opened', 'Geöffnet'],
+    ['gone', 'src/gone.ts:3', 'Old', 'Alt'],
+  ]);
+  assert.deepEqual(compare(extracted, german), { missing: ['c'], stale: ['gone'], notes: ['b'], source: ['d'] });
+  const de = xliff('de', [
+    ['a', 'src/a.ts:10', 'Save', 'Speichern'],
+    ['b', 'src/b.html:4,5', 'Delete', 'Löschen'],
+    ['c', 'src/c.ts:7', 'New text', 'Neuer Text'],
+    ['d', 'src/d.ts:1', 'Open', 'Öffnen'],
+  ]);
+  assert.deepEqual(compare(extracted, de), { missing: [], stale: [], notes: [], source: [] });
+});
+
+test('R-UI-047 the rewrite takes the extraction\'s order and notes and keeps every target and a changed source', () => {
+  const extracted = xliff('', [
+    ['a', 'src/a.ts:10', 'Save'],
+    ['b', 'src/b.html:4,5', 'Delete'],
+    ['c', 'src/c.ts:7', 'New text'],
+    ['d', 'src/d.ts:1', 'Open'],
+  ]);
+  const german = xliff('de', [
+    ['b', 'src/b.html:2,3', 'Delete', 'Löschen'],
+    ['a', 'src/a.ts:10', 'Save', 'Speichern'],
+    ['d', 'src/d.ts:1', 'Opened', 'Geöffnet'],
+    ['gone', 'src/gone.ts:3', 'Old', 'Alt'],
+  ]);
+  const out = rewrite(extracted, german);
+  assert.equal(
+    out,
+    xliff('de', [
+      ['a', 'src/a.ts:10', 'Save', 'Speichern'],
+      ['b', 'src/b.html:4,5', 'Delete', 'Löschen'],
+      ['d', 'src/d.ts:1', 'Opened', 'Geöffnet'],
+    ]),
+  );
+  assert.deepEqual(compare(extracted, out), { missing: ['c'], stale: [], notes: [], source: ['d'] });
+  assert.equal(rewrite(extracted, out), out, 'a second rewrite changes nothing');
 });
 
 test('R-UI-175 vertical-align: middle and align-items: last baseline fail the check, the line rule and a table cell\'s alignment pass', () => {
