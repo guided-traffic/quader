@@ -241,8 +241,8 @@ run starts from it and from his word how the work goes on, not from the order of
 |---|---|
 | T-24 · C · Contracts | landed at 17:59 (two commits, migration 00114): tables, the domain package with its ports and stubs, the catalogue's declaration in the format contract (version 11), codes, events, keys; nothing calls them yet |
 | T-24 · R2 · Delivery rules | in work; told to end at a whole point and to list what of R-CUR-001 to 006 and 017 is built and what is not |
-| W9 · the rest of the screens' second round | landed at 17:53 (eighteen commits); the layout checks of its push's run show whether the audit log's table holds on the runner |
-| W4 · the rest of the Go tests' package | built (six commits, the Bastion unit test's repair among them); its builder rebases onto the contracts (the purge's lists moved) and drops a test the leftovers' package holds too; then the landing's gates. What it did not do is listed below |
+| W9 · the rest of the screens' second round | landed at 17:53 (eighteen commits); one of them reverted at 18:19 (the fixtures in three browsers, which made the layout job red on the runner); the layout checks of that push's run show whether the audit log's table holds |
+| W4 · the rest of the Go tests' package | built and rebased onto the contracts and the leftovers' package (six commits, back at 18:18); lands behind the leftovers' package after gates on the combined tree. What it did not do is listed below |
 | W12 · the leftovers no package took | built, all six items; its builder rebases onto the contracts (one conflict in code), then the landing's gates |
 | The evidence record's step W6b | landed at 17:06; the release goes out through the changed job, **the publish is refused** (section 8, "The first publish of the evidence record was refused"): open, not started, the owner is told |
 
@@ -266,6 +266,8 @@ run starts from it and from his word how the work goes on, not from the order of
   names of tests that carry a decision's number, the translation file's stale location notes.
 - **A second round of the documents' writer** (section 8, "What the same writer saw in the documents and
   left").
+- **The layout checks' fixtures in three browsers** (section 8, "The layout checks' fixtures in Firefox and
+  WebKit were taken back"): reverted today, to come back with markings that hold on the runner.
 - **The repair of the evidence record's publish** (section 8, "The first publish of the evidence record was
   refused"): one commit of a builder; until then the README's badge is invalid and no record is
   published.
@@ -765,7 +767,11 @@ records the recorder that tells such a stall apart).
   component test; **the local render did not show the failure even before the repair**, so the
   pipeline's job is the proof, and a margin is all that covers the runner's wider text (to W8: the
   walk on the development machine and on the runner must measure the same widths, or the check keeps
-  a reserve). Its full render run with the layout checks is its gate from now. The layout checks take 42 to 50 minutes in a run, which
+  a reserve). Its full render run with the layout checks is its gate from now. **The repair landed at
+  17:53; the first run after it could not show it:** the job of the run of the push of 17:59 (Test and
+  Release 45222735716, job 137861079020) ended after 35 s at its fixture step, by another commit of the
+  same stack (the entry below), and rendered no screen. Open until a run renders the screens and the
+  audit log's table passes; the first such run is that of the push of 18:19. The layout checks take 42 to 50 minutes in a run, which
   is why three pushes went out before the first result was read (the job gates no release).
 - **The drain of the roles missed its latency criterion in the scheduled nightly of 2026-11-23 (HA and
   Performance 45158700734, job 137640102202; read on 2026-11-23 at 17:01).** Nothing failed in function:
@@ -814,6 +820,16 @@ records the recorder that tells such a stall apart).
   refusal that is not a non-fast-forward is not retried and is reported in the remote's words; the
   publish's test gets a remote that refuses a tree with a workflow file, as GitHub did. Then the next
   release's log must say `published to coverage:` and the branch must exist.
+- **The layout checks' fixtures in Firefox and WebKit were taken back the day they landed (2026-11-23;
+  Q-UI-1008, commit 5d5d29e11 of the screens' rest, reverted at 18:19).** Two fixtures of the check
+  `label-apart` were marked as expected to fail in Firefox; they fail in the development machine's Firefox
+  and pass in the runner's, so the job ended with "Expected to fail, but passed" (two of 150) before any
+  screen was rendered. The builder had run them on the development machine only, and its worktree was
+  gone when the run was read; by the owner's word of 17:15 no builder is started, so the development
+  agent reverted the one commit (the fixtures run in Chromium alone again, 50 tests; the decision block
+  went with it) instead of leaving the job red without a screen. To do (W8): the fixtures in three
+  browsers again, with markings that hold on both machines (by what the check measures, not by the
+  browser's name alone), run once in the pipeline before they are trusted.
 
 ### Product
 
@@ -8951,6 +8967,20 @@ lint with 0 issues, then `upstream` 21 s (the purge's test that had failed), `po
 plan's commit lies under it. **From this commit `main` carries the tables, ports, codes, events and
 keys of the remote curation and no behaviour of it**; the delivery rules stand on it in their
 builder's worktree, the packages behind it are not begun (section 1).
+**18:06, the layout job of the run of the push of 17:59 is red after 35 s, by the screens' rest**: two
+fixtures marked as failing in Firefox pass in the runner's Firefox (a new entry of section 8). The
+stack's builder was gone, and no builder is started: **the development agent reverts the one commit**
+(5d5d29e11, the fixtures in Firefox and WebKit; `git revert`, the decisions' index regenerated), checks
+it (build, the workflow files' check, the workflows' and the documentation tool's tests, the layout
+fixtures with 50 tests passing in Chromium, the journeys' type check, the web's lint) and pushes it at
+18:19, with this plan's commit under it. Its run is the first that can show the audit log's repair on
+the runner.
+**18:18, the rest of W4 is rebased by its builder** onto the contracts and the leftovers' package (six
+commits; build, both vets, the unit set 114 s, cyclo, the documentation tool, the lint, the moved unit
+packages, the areas `conventions` 1.2 s and `upstream` 14.2 s, each exit 0): the purge's lists it moved
+into `conventions` carry the contracts' five tables, and its own test of R-STOR-032 is out, since the
+leftovers' test holds all of it and more. It lands behind the leftovers' package, whose gates run
+since 17:59 (the web's checks and the lint done, the integration areas running).
 **13:10, the third research of T-24 is back** (what the scans do with content that is stored and not
 served). Every scan starts from the store's commit hook, the same for a client's fill, a mirror pass
 and a background download, so a fetch for examination needs no new trigger. npm and NuGet are matched
