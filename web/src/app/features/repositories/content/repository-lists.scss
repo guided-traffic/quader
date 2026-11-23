@@ -1,0 +1,127 @@
+// The list of a package format's items (repository-items.ts) and the list of a folder (repository-files.ts): their head, the
+// names of their rows and their figures.
+
+.content-note {
+  margin: var(--quader-space-3) 0 0;
+  color: var(--quader-text-muted);
+}
+
+// The note under a filter that has not seen every entry keeps its distance from the list (Q-UI-513).
+.filter-note {
+  margin: 0 0 var(--quader-space-3);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--quader-space-2);
+  align-items: center;
+  padding-block: var(--quader-space-3);
+}
+
+// A filter by name is as wide as a name field, not the page (the style guide's field widths); it shrinks on a narrow screen.
+.filter {
+  position: relative;
+  flex: 0 1 var(--quader-field-width-name);
+  min-inline-size: 12rem;
+
+  input {
+    inline-size: 100%;
+    box-sizing: border-box;
+    padding-inline-end: var(--quader-space-6);
+  }
+
+  .material-icons {
+    position: absolute;
+    inset-inline-end: var(--quader-space-2);
+    inset-block-start: 50%;
+    transform: translateY(-50%);
+    color: var(--quader-text-muted);
+    font-size: 1.125rem;
+    pointer-events: none;
+  }
+}
+
+// The operations of a folder stand at the end of its toolbar (Q-UI-512).
+.files-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--quader-space-2);
+  margin-inline-start: auto;
+
+  .btn .material-icons {
+    font-size: 1.125rem;
+    margin-inline-end: var(--quader-space-1);
+  }
+}
+
+// The name of an item of a package format: the chevron keeps its size and the name wraps beside it, so a long name never moves
+// the row's start (the defect of the long package name, W-3). The chevron stands on the name's first line (`on-line`, R-UI-175):
+// at the row's top it stood 8 px under the name and made the row 65 px high where its text needs 49 (owner, 2026-11-19).
+.name-cell {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--quader-space-1);
+
+  > .btn {
+    flex: none;
+  }
+
+  > span {
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+.item-name {
+  font-weight: 600;
+}
+
+.item-description {
+  display: block;
+  color: var(--quader-text-muted);
+  font-weight: 400;
+}
+
+// A folder or a file: the icon on the name's first line, a fixed gap, and a long name that wraps inside itself beside the icon,
+// never under it (W-3). In a table the selector names the table: the shell makes a link in a table an inline block
+// (`.content :is(table, dl) a` in _shell.scss), which would put the icon on the text's baseline without the gap.
+.entry,
+.quader-data-table th a.entry {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--quader-space-2);
+  max-inline-size: 100%;
+
+  .entry-icon {
+    flex: none;
+    color: var(--quader-text-muted);
+    font-size: 1.125rem;
+    // One line of the row's text: the icon sits on the name's first line.
+    line-height: inherit;
+    block-size: 1lh;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .entry-name {
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+}
+
+.num {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  text-align: end;
+  white-space: nowrap;
+}
+
+tr.expansion td {
+  padding: 0;
+  border-block-end: 0;
+}

@@ -18,7 +18,7 @@ import { PackageReadmeView } from '../packages/package-readme';
   selector: 'quader-help-page',
   imports: [RouterLink, RouterLinkActive, ErrorNotice, PackageReadmeView],
   templateUrl: './help-page.html',
-  styleUrl: './help.scss',
+  styleUrl: './help-page.scss',
 })
 export class HelpPage {
   private readonly api = inject(ManualApi);

@@ -58,7 +58,7 @@ import { asApiError, valueOf } from '../../shared/paged-resource';
       <p role="status" i18n="@@help.loading">Loading the manual…</p>
     }
   `,
-  styleUrl: './help.scss',
+  styleUrl: './help-overview.scss',
 })
 export class HelpOverview {
   private readonly api = inject(ManualApi);

@@ -206,7 +206,7 @@ const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")
       </quader-disclosure>
     </section>
   `,
-  styleUrl: './repository-content.scss',
+  styleUrl: './repository-file.scss',
   // "Refused here" and its reason on one row, centred on each other (R-SIG-074).
   styles: `
     .gate-fact {

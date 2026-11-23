@@ -10607,7 +10607,7 @@ block` element that never took the container's width.
 | (c) A larger fixed cap (for example 80 rem) | Only the number changes | One line of CSS | Still empty space on wide screens and still too narrow for a wide table; the number is a guess |
 
 **Choice:** (a). Rules (the layout is in [package-readme.scss](../../web/src/app/features/packages/package-readme.scss)
-and [help.scss](../../web/src/app/features/help/help.scss)):
+and [help-page.scss](../../web/src/app/features/help/help-page.scss)):
 
 - The article has no `max-inline-size`; the contents column keeps its 15 rem.
 - The help page marks its README `help-readme`; only then are the direct `p`, `ul`, `ol`, `dl`, `blockquote` and
@@ -17671,7 +17671,7 @@ list where folders and files stand together.
 inside itself beside the icon. The rule of the style guide: a field is as wide as its expected input.
 
 **Applied in the spec:** R-UI-010, R-UI-052. Code: `.name-cell`, `.entry` and `.filter` in
-[repository-content.scss](../../web/src/app/features/repositories/content/repository-content.scss).
+[repository-lists.scss](../../web/src/app/features/repositories/content/repository-lists.scss).
 
 ### Q-UI-521 · The path of a folder or a file stands once, and its middle folders collapse where it is narrow
 

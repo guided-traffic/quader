@@ -117,7 +117,7 @@ export const GRADE_SORT_MAX = 1000;
       </p>
     }
   `,
-  styleUrl: './repository-content.scss',
+  styleUrl: './repository-lists.scss',
 })
 export class RepositoryItems {
   private readonly api = inject(PackagesApi);

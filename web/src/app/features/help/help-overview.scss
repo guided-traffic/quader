@@ -1,0 +1,78 @@
+// The overview of the help area (R-UI-050): its cards by section. The page of the manual is help-page.scss; one sheet per
+// component, so that neither carries the other's rules. Colours and lengths come from the tokens only.
+
+:host {
+  display: block;
+}
+
+.help-lead {
+  max-inline-size: 48rem;
+  margin-block: 0 var(--quader-space-6);
+  color: var(--quader-text-muted);
+}
+
+.help-sections {
+  display: grid;
+  gap: var(--quader-space-6);
+}
+
+.help-section h2 {
+  margin-block: 0 var(--quader-space-3);
+  font: var(--quader-type-title-medium);
+  font-weight: 600;
+}
+
+.help-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: var(--quader-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.help-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quader-space-1);
+  block-size: 100%;
+  box-sizing: border-box;
+  padding: var(--quader-space-3) var(--quader-space-4);
+  border: 1px solid var(--quader-border);
+  border-radius: var(--quader-radius-s);
+  background: var(--quader-surface-raised);
+  box-shadow: var(--quader-elevation-1);
+  color: var(--quader-on-surface);
+  text-decoration: none;
+
+  &:hover {
+    border-color: var(--quader-accent);
+  }
+
+  &:focus-visible {
+    outline: var(--quader-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+.help-card-title {
+  color: var(--quader-link);
+  font-weight: 600;
+}
+
+// Four lines on the card; the whole summary opens the page.
+.help-card-summary {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  color: var(--quader-text-muted);
+  font-size: var(--quader-text-muted-size);
+}
+
+.help-more {
+  margin-block-start: var(--quader-space-6);
+}
+
+// ---- A page --------------------------------------------------------------------------------------

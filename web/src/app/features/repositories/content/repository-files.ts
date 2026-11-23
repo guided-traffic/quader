@@ -129,7 +129,7 @@ export const FILES_PAGE = 200;
       }
     </quader-data-table>
   `,
-  styleUrl: './repository-content.scss',
+  styleUrl: './repository-lists.scss',
 })
 export class RepositoryFiles {
   private readonly files = inject(FilesApi);

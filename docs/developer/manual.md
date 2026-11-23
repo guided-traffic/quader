@@ -27,7 +27,7 @@ GET /api/v1/manual, /api/v1/manual/{section}/{page} <─────────
 | [internal/api/v1/manual_api.go](../../internal/api/v1/manual_api.go) | `GetManualContents`, `GetManualPage`: the anonymous gate, `304` for the ETag, `404` |
 | [internal/app/app.go](../../internal/app/app.go) | `startClient` loads the manual once; a failing load stops start-up |
 | [web/src/app/api/manual-api.ts](../../web/src/app/api/manual-api.ts) | `ManualApi`, `HttpManualApi` (keeps every read for the tab: the route title and the screen share one request) |
-| [web/src/app/features/help/](../../web/src/app/features/help/) | `help.routes.ts` (the page title from the page), `help-overview.ts`, `help-page.ts` and `.html`, `help.scss`, `help.spec.ts` |
+| [web/src/app/features/help/](../../web/src/app/features/help/) | `help.routes.ts` (the page title from the page), `help-overview.ts` with `help-overview.scss`, `help-page.ts` and `.html` with `help-page.scss`, `help.spec.ts` |
 | [web/src/app/core/help-topics.ts](../../web/src/app/core/help-topics.ts) | `HELP_TOPICS` (route prefix to page) and `helpFor`, which the top bar's Documentation link uses |
 | [web/src/app/features/packages/package-readme.ts](../../web/src/app/features/packages/package-readme.ts) | The binding component; `pageLinks="help/"` keeps the manual's page links and routes them in the application |
 | [web/scripts/check-rules.mjs](../../web/scripts/check-rules.mjs) | Fails the lint when `HELP_TOPICS` names a page that is not a file of `docs/manual/` |
