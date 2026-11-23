@@ -25,14 +25,16 @@ func statePackages() []string {
 }
 
 // stateExempt reports whether the package at rel may hold such variables. Tooling
-// and tests are not part of a replica's request path and are exempt as trees.
+// and tests are not part of a replica's request path and are exempt as trees; so
+// is the test support internal/api/v1/apitest, which no production package imports
+// and whose parse of the API document is shared per test process (Q-ARCH-580).
 func stateExempt(r string) bool {
 	for _, p := range statePackages() {
 		if r == p {
 			return true
 		}
 	}
-	return underAny(r, []string{"internal/archtest", "internal/tools", "test", "tools", "perf", "web", "deploy"})
+	return underAny(r, []string{"internal/archtest", "internal/tools", "internal/api/v1/apitest", "test", "tools", "perf", "web", "deploy"})
 }
 
 // LoadTyped loads every package of the module in dir with syntax and type

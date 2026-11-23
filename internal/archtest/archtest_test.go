@@ -326,12 +326,12 @@ func TestModuleBans(t *testing.T) {
 
 func TestStateExemption(t *testing.T) {
 	t.Run("R-ARCH-032 the exemption is the exact package, not its subtree", func(t *testing.T) {
-		for _, ok := range []string{"internal/formats", "internal/formats/catalog", "internal/meta", "internal/backup/tables", "internal/jobs", "internal/errs", "internal/secrets", "internal/cache", "internal/cluster", "internal/observability", "test/integration/coordination", "internal/archtest"} {
+		for _, ok := range []string{"internal/formats", "internal/formats/catalog", "internal/meta", "internal/backup/tables", "internal/jobs", "internal/errs", "internal/secrets", "internal/cache", "internal/cluster", "internal/observability", "test/integration/coordination", "internal/archtest", "internal/api/v1/apitest"} {
 			if !stateExempt(ok) {
 				t.Errorf("%s must be exempt", ok)
 			}
 		}
-		for _, bad := range []string{"internal/formats/npm", "internal/meta/postgres", "internal/meta/postgres/q", "internal/meta/postgres/listq", "internal/backup", "internal/backup/tables/x", "internal/jobs/x", "internal/cluster/x", "internal/observability/health", "internal/cache/lru"} {
+		for _, bad := range []string{"internal/formats/npm", "internal/meta/postgres", "internal/meta/postgres/q", "internal/meta/postgres/listq", "internal/backup", "internal/backup/tables/x", "internal/jobs/x", "internal/cluster/x", "internal/observability/health", "internal/cache/lru", "internal/api/v1"} {
 			if stateExempt(bad) {
 				t.Errorf("%s must not be exempt", bad)
 			}

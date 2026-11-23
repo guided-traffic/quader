@@ -17,6 +17,7 @@ package apitest
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -95,17 +96,50 @@ type Validator struct {
 	seen map[string]map[int]bool // operationId -> statuses answered
 }
 
-// New builds a validator for spec (the bytes of api/openapi.yaml, for example
+// New returns a validator for spec (the bytes of api/openapi.yaml, for example
 // v1.EmbeddedYAML()); the test fails when the document is not a valid 3.1
-// document. A test binary that builds many validators of one document parses
-// it once with [Parse] and takes them from [Spec.Validator].
+// document. The document is parsed once per test process (see parsed): every New
+// of the same bytes gets a validator of its own over the one [Spec], so what it saw
+// ([Validator.Operations], [Validator.Uncovered]) is its own, and a document of
+// other bytes is parsed on its own.
 func New(t testing.TB, spec []byte) *Validator {
 	t.Helper()
-	s, err := Parse(spec)
+	s, err := parsedSpec(spec)
 	if err != nil {
 		t.Fatal(err)
 	}
 	return s.Validator()
+}
+
+// parsed holds the documents this test process has parsed, by the SHA-256 of their bytes (Q-ARCH-580). Parsing
+// api/openapi.yaml is the cost of a validator (0.6 s on a workstation, about 1.25 s on a runner), and an integration test
+// binary builds one for every installation (testenv.NewStack) and in many fixtures. A validator only reads the document, so
+// the parse is shared; a parse that failed fails every New of the same bytes with the same error. This package is test
+// support, which no replica imports, so the variable is exempt from the package-state check (R-ARCH-032).
+var (
+	parsedMu sync.Mutex
+	parsed   = map[[sha256.Size]byte]*parse{}
+)
+
+// parse is one document's parse, made once.
+type parse struct {
+	once sync.Once
+	spec *Spec
+	err  error
+}
+
+// parsedSpec returns the Spec of spec, parsing it on its first request in this process.
+func parsedSpec(spec []byte) (*Spec, error) {
+	key := sha256.Sum256(spec)
+	parsedMu.Lock()
+	p := parsed[key]
+	if p == nil {
+		p = &parse{}
+		parsed[key] = p
+	}
+	parsedMu.Unlock()
+	p.once.Do(func() { p.spec, p.err = Parse(spec) })
+	return p.spec, p.err
 }
 
 // Check validates one answer: req is the request that was sent (method and URL

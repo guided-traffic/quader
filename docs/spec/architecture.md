@@ -556,7 +556,9 @@ Acceptance criteria:
   `internal/backup/tables` (the table registry), `internal/backup/fixup` (the restore fix-ups, R-BAK-022), `internal/journal` (the replay handlers, R-HA-054) and `internal/audit` (the event registry, R-OPS-014).
   A package-level `*regexp.Regexp` is exempt; generated
   files, variables with a `//go:embed` directive and variables of interface type are not checked
-  (Q-ARCH-19).
+  (Q-ARCH-19). Code that no replica runs is not checked: the trees of tooling and tests (`internal/archtest`, `internal/tools`,
+  `test`, `tools`, `perf`, `web`, `deploy`) and the test support `internal/api/v1/apitest`, which shares its parse of the API
+  document per test process ([Q-ARCH-580](#q-arch-580--a-test-process-parses-the-api-document-for-its-response-validators-once)).
 
 ### R-ARCH-036 · The role `scanner`: what it serves, builds, reads and holds
 Priority: **P1** · Covers: HA-015
@@ -11933,6 +11935,33 @@ the same rule when one of the four is stopped by its limit or passes 43.5 minute
 (the matrix of the job `integration`, the reports the coverage evidence requires);
 [integrationshards_test.go](../../internal/tools/ciworkflows/integrationshards_test.go); [releasing.md](../developer/releasing.md#ci),
 [build-and-test.md](../developer/build-and-test.md), [test-cost.md](../developer/test-cost.md#8-integration-shards-on-2026-11-21-run-44948103795).
+
+### Q-ARCH-580 · A test process parses the API document for its response validators once
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: almost every integration test builds an installation of its own (`testenv.NewStack`), and each installation built a
+response validator with `apitest.New`, which loads, validates and routes the 1.2 MB `api/openapi.yaml` with kin-openapi: 0.60 s of the
+1.83 s an installation cost on the development workstation, about 1.25 s of 2.5 s on a runner, in about a thousand tests of every
+shard (measured on 2026-11-23 by the plan of the installation cost, [test-cost.md](../developer/test-cost.md)). Sixteen fixtures of
+other areas call `apitest.New` the same way. A validator only reads the document; what it saw is its own record. The unit tier of
+`internal/api/v1` already shares one parse per test binary (`sharedSpec`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `apitest.New` keeps one parse per test process, keyed by the SHA-256 of the document's bytes, and returns a validator of its own over it; `apitest` joins the trees the package-state check of R-ARCH-032 does not check, as test support (chosen) | One place, every caller | All 16 fixtures and `NewStack` gain without an edit; a different document is parsed on its own; nothing a test does changes another test's validator | A package-level map in a package under `internal/`, which the check would otherwise refuse |
+| (b) `NewStack` and the fixtures call `apitest.Parse` once through a `sync.OnceValues` of their own | No change in `apitest` | No exemption | 17 edits in files that other builders change; each new fixture has to know it |
+| (c) The map hidden in a struct, which the check does not look into | No exemption written down | No edit of the check | Passes the check by its letter and against its purpose; the next reader does not see the state |
+
+**Choice:** (a). `apitest` is imported by no production package (its package comment, R-API-002), so its variable is not state of a
+replica; the exemption is written next to the tooling trees in `stateExempt` and in R-ARCH-032, and the test of the exemption names
+the package and keeps its parent `internal/api/v1` checked. A parse that failed fails every `New` of the same bytes with the same error.
+**Rationale:** the parse is identical work in every test and the document is never changed after it is loaded; sharing it removes
+about 0.6 s (a runner: about 1.25 s) from every installation of the tier without touching a test.
+
+**Applied:** [apitest.go](../../internal/api/v1/apitest/apitest.go) (`New`, `parsedSpec`) and its test
+[shared_test.go](../../internal/api/v1/apitest/shared_test.go); [state.go](../../internal/archtest/state.go) and
+[archtest_test.go](../../internal/archtest/archtest_test.go); R-ARCH-032; [build-and-test.md](../developer/build-and-test.md#the-in-process-harness).
 
 ## What this does not cover
 
