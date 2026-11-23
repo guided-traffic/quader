@@ -614,6 +614,12 @@ records the recorder that tells such a stall apart).
   requests at a host load of about 41 and passes at 7; **the query budget's harness failed a second time,**
   on the Debian case in a builder's run, and passed on the next run (the entry above); npm and pnpm take 71 s
   and 141 s to refuse an altered tarball, by their retries.
+- **Seen by the builder of the Bastion's P4 on 2026-11-23 and left for the batch:** the gauge of the Bastion's
+  answers of the kind `shape` read 0 on a cluster of the development profile while lookups hit (not traced;
+  the profile's answers end after 30 s); the development profile's Bastion chart and values name the image
+  tag `:dev`, so an image given by another tag is loaded and never used (the same as the links' builder
+  saw); the end-to-end script of the OCI set fails without a local image of the clients when told not to
+  build it.
 - **A unit test of the operator's key commands is flaky** (seen by package F's builder on 2026-11-23): the
   case of a changed sealed value in `cmd/quader` flips the low bit of a random character of the encoded
   value, which sometimes gives a character outside the encoding and another error than the one it expects.
@@ -5042,6 +5048,30 @@ the expiry read from a registry token; the integration assertions, the tightened
 with one run of the OCI leg on a cluster of its own, the manual, and the measurement with real clients,
 once. Builders with a test load: the links, package F, the encryption's package 3, the Bastion's P4, and
 the landing's gates.
+**P4, the Bastion's side, reported at 02:03** (one commit of the type `feat` on P3; its builder worked from
+00:21; every gate exit 0, the full unit run and the lint among them, five integration areas, and the OCI leg
+of the end-to-end set once on a cluster of its own, which is removed). **The feature is built in all four
+packages with it. What a warm pull of an image with ten layers costs the main installation, measured once
+with real clients:** Docker 29: 16 requests before, 4 after; Podman 5: 13 to 14 before, 2 after; containerd
+2 through crictl: 18 to 19 before, 5 to 6 after. No conditional request is left in a warm pull. The design
+had read 14 and 3 for Docker from the code; what is left besides the token's request with its probe is
+Docker's `HEAD` of the tag without a credential, which the Bastion forwards while the main installation
+serves any public repository (gap H-1420), and the `HEAD` of the tag with the token, since a `HEAD` that
+misses keeps no entry. The kubelet was not measured by itself. Built: the fourth kind of answer, recorded
+from markings and from the check, `full` for a registry token only where its unverified grant pulls the
+image, ending at the earlier of the reported expiry and the token's own; the package on a cache entry; the
+read flow's new steps, the followers; a registry token's expiry read from its claims on every replica,
+which closes H-1295. Decisions Q-BAS-270 (a package answer ends with the shape answer it came with and is
+renewed by the check, which consults no limit, so a blocked subject keeps reading through renewed answers
+as full readers do already; the gap H-1381 says so) and Q-BAS-271 (the end-to-end assertion of a warm pull
+is "no request about an artifact", since real clients still send requests about the tag; the case waits
+until the set-up's feed entries are older than the staleness window, about 16 s more for the OCI set). Each
+of nine rules was taken out once and a named test caught it; the rule of the fifth step showed only with
+the other option of its decision put in its place. **Not verified:** the answers' path through Valkey; an
+older replica beside a newer one. **In work since 02:04: a planner** (it does not count against the four)
+for the move of the formats' repeated integration tests into the contract's kit, the development agent's
+answer 12: the inventory per area with times, the new checks, what shrinks, the shards afterwards, what a
+kit check cannot catch that an integration test caught before, and work packages.
 
 The blocks of the specification keep their status as decided by the development agent; the three he confirmed
 himself (Q-SIG-76, Q-SIG-79, Q-SIG-80) and the one he decided (Q-SIG-211) get his name in the commit of the trace.
