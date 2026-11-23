@@ -72,7 +72,7 @@ func TestR_OCI_037_TheScanSubjectReadsTheRepositoryItsTokenNamesAndNothingElse(t
 			sub Subject
 			c   Coordinate
 		}{
-			{scanSub("docker-local"), read("docker-off", "app", "")},                 // the switch, but not the token's repository
+			{scanSub("docker-local"), read("docker-off", "app", "")},                    // the switch, but not the token's repository
 			{scanSub("docker-off"), write("docker-off", "app", "app/_blobs/x", Deploy)}, // the switch, but a write
 			{scanSub("npm-local"), read("npm-local", "left-pad", "")},
 			{scanSub("docker-gone"), read("docker-gone", "app", "")},
