@@ -1935,6 +1935,11 @@ carries an address, a token, a path or a repository's name):
   `quader_bastion_bytes_served_total{source="cache"}`; requests to the main installation are
   `quader_bastion_main_requests_total` (the observability item of phase 5b).
 - `quader_valkey_available` and `quader_ratelimit_fallback{limiter}` are the shared ones.
+- `quader_bastion_answers` is per replica: the answers of a kind the replica holds in its memory, not the lookups. An answer leaves it
+  when a use finds it past its period (R-BAS-020) or when period and grace have passed without a use (the janitor, R-BAS-026), so a
+  replica that served no lookup for that long reads 0 while `quader_bastion_answers_total{result="hit"}` keeps its count; the other
+  replica of a release reads 0 for a credential it never served unless the shared store gave it the answer
+  (`TestR_BAS_020_TheCounterAndTheGaugeOfTheAnswersFollowTheLookups`).
 - The value `package` of `kind` of `quader_bastion_answers` and `quader_bastion_answers_total` (R-BAS-084, built on 2026-11-23,
   `metrics.AnswerPackage`) is the one addition of the read shapes per package; no label carries a package's name.
 - The last four rows are the handover per blob's (R-BAS-075, built on 2026-11-23): one outcome per handover by the path it took

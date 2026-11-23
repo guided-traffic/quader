@@ -387,4 +387,24 @@ func TestR_BAS_020_TheCounterAndTheGaugeOfTheAnswersFollowTheLookups(t *testing.
 	if readCounter(s.m.Answers.WithLabelValues("credential")) != 1 || readCounter(s.m.Answers.WithLabelValues("shape")) != 1 {
 		t.Fatal("the gauges do not hold the answers")
 	}
+	// The gauge counts the answers a replica holds, not the lookups: a second lookup within the period hits the shape answer it
+	// holds and adds none, and once period and grace have passed without a lookup the janitor drops it and the gauge of the kind
+	// shape reads 0 while the counter keeps the hits. That is the 0 read on the development profile (period 30 s, grace 90 s):
+	// a replica read two minutes after its lookups, or the other replica of the release, which served none of them.
+	hits := counterValue(t, s.harness, "answers", "shape", metrics.AnswerHit)
+	s.get(tgz, "Authorization", bearer(s.full))
+	if got := counterValue(t, s.harness, "answers", "shape", metrics.AnswerHit); got <= hits {
+		t.Fatalf("a second lookup within the period: %v shape hits, want more than %v", got, hits)
+	}
+	if got := readCounter(s.m.Answers.WithLabelValues("shape")); got != 1 {
+		t.Fatalf("after a hit the gauge of kind shape reads %v, want the one answer it holds", got)
+	}
+	s.clock.advance(s.cfg.Bastion.Answers.Period + s.cfg.Bastion.Answers.GracePeriod + time.Second)
+	s.e.janitor()
+	if got := readCounter(s.m.Answers.WithLabelValues("shape")); got != 0 {
+		t.Fatalf("after period and grace without a lookup the gauge of kind shape reads %v, want 0", got)
+	}
+	if got := counterValue(t, s.harness, "answers", "shape", metrics.AnswerHit); got <= hits {
+		t.Fatalf("the counter of shape hits fell to %v", got)
+	}
 }
