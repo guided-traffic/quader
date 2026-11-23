@@ -614,6 +614,11 @@ records the recorder that tells such a stall apart).
   requests at a host load of about 41 and passes at 7; **the query budget's harness failed a second time,**
   on the Debian case in a builder's run, and passed on the next run (the entry above); npm and pnpm take 71 s
   and 141 s to refuse an altered tarball, by their retries.
+- **A unit test of the operator's key commands is flaky** (seen by package F's builder on 2026-11-23): the
+  case of a changed sealed value in `cmd/quader` flips the low bit of a random character of the encoded
+  value, which sometimes gives a character outside the encoding and another error than the one it expects.
+  For the batch: flip between two letters. The German translation file still holds a unit of a removed
+  hint of the signatures' settings.
 - **A timing check of the Bastion's engine failed once under load (2026-11-22, about 23:35, in a
   specification writer's full unit run at a load of about 37):** `TestR_BAS_054_LargeArtifacts` in
   `internal/bastion/engine`; it passed in the next full run. Seen once; for the batch.
@@ -2185,6 +2190,28 @@ runs are in `git log`; this section holds the current state.
   since 00:48, on its commit: package 3 of the links,** the API, the settings page and the repository's
   section, rendered on a stack of its own, with the manual. Builders with a test load: package F, the
   encryption's package 3, the Bastion's P4, the links' package 3, and the landing's gates.
+- **Package F of the several connections, the surface and the manual, reported at 01:21** (two commits, a
+  `feat` and the documents; its builder worked from 23:09; every gate exit 0 after three repairs of its own
+  and one run that failed on a flaky test of another package, section 8). **The storage summary did not
+  exist on `main`, so it is built whole:** an hourly task counts the live blobs, the content per
+  repository, the trash, what waits for the collection and the damaged blobs, and per connection the
+  copies, the stored bytes, the backlog, the fill, the scrub's progress and the blobs only that connection
+  holds; one row, read by the API and by the gauges the alerts wait for, so point (1) of the open finding
+  is closed by it. The connections in the API with a state that every replica derives alike, and in the
+  system information. The tab **Storage** of the system status: a line that names what needs an act, a
+  table with each state as a word, a row's fold with settings, capabilities and keys, and closed sections
+  for the damaged blobs and the tasks' last runs; a line per connection on the dashboard. Decisions
+  Q-STOR-370 to 372, Q-UI-933 to 935, Q-API-406; no gap. Every document that describes a running
+  installation was read against the code and nine false statements corrected (the manual said the alert of
+  a damaged copy never fires, the README that the journal goes to the first connection, among them). Its
+  cost: the unit job about 0.2 s, the web's unit job about 0.4 s, the shard with `blob` about 0.8 s, the
+  layout job about 50 s for the new screen's states, which is the largest. **The renders, looked at by the
+  development agent (36, on a stack of the builder's own):** the page reads well wide and narrow, light and
+  dark; one thing is sent back, that short pairs share a line in the stacked rows of the narrow width while
+  longer ones take their own. **Its migration took the number the links hold,** so it moves onto the two
+  commits that land before it and becomes 00109; the skip mark comes off its documents' commit, which would
+  have skipped the run of the push. Its builder is at that since 01:26. **Not verified:** the summary's
+  statements on a large table; a localized production build.
 - **The timer's check at 19:44:** none of the three builders has reported; the run of the landing has no
   failed job (the four integration shards, the layout checks and five end-to-end legs run); the load is
   about 20 on 20 cores with the three builders, so no fourth is started while the owner works on the
