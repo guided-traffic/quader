@@ -447,7 +447,7 @@ order is what a user or an operator meets first. The state is kept here.
 | W5b · Debian and Ansible Galaxy | `member_expired` and a member's recorded `Date` without an integration case; the wiki's cases; the requirements no test names; the check against the public Galaxy; first the Debian test that made `main` red for the third time | the Debian remote's repair landed at 11:37, the rest at 12:45 (two commits); the second step landed at 13:47 (three commits): collections with symbolic links, a stale `InRelease` after a key change, a requirement's numbers, the formats' log lines without the replica's fields |
 | W4 · Go tests wait for what they stand for | fixed sleeps and paced setups in integration and unit tests; four convention checks that sit in a format's area; tests that depend on the machine; the harness's policy helper that writes an empty policy without a word | in work since 14:31; the tests that depend on the machine first |
 | W8 · Web and end-to-end tests wait for what they stand for | the fixed 320 ms of choosing a person; paced setups of the e2e environments; the fixed waits of three seconds in the limits' client cases and the load test's tokens (from W3, since they need the kind cluster); a code push during a nightly | after the screens' first round |
-| W7 · The development profiles run the image they are given | the image tag `:dev`; one image tag per checkout; instances of the UI profile, one per builder; `nuget-ha` cut to what NuGet's client adds; the drain variant that Q-VULN-128 said to fold into a pooler leg once one runs under npm's load, which two do now; the development profile's root CA that is issued twice at a start; the Valkey outage with a replaced pod, which only a set runs that nothing has run since 2026-11-18 | its first item (a bound and a retry per fetch of an image's build, one build of an image per run, a failure that names the fetch) landed at 13:56; the rest is built (one commit, back at 14:30) and lands after the screens' group; the drain variant is not folded (Q-VULN-267) |
+| W7 · The development profiles run the image they are given | the image tag `:dev`; one image tag per checkout; instances of the UI profile, one per builder; `nuget-ha` cut to what NuGet's client adds; the drain variant that Q-VULN-128 said to fold into a pooler leg once one runs under npm's load, which two do now; the development profile's root CA that is issued twice at a start; the Valkey outage with a replaced pod, which only a set runs that nothing has run since 2026-11-18 | landed: its first item (a bound and a retry per fetch of an image's build, one build of an image per run, a failure that names the fetch) at 13:56, the rest at 14:48 (the checkout's image tag, instances of the UI profile, the root CA issued once, `nuget-ha` cut, the Valkey outage case in `npm-ha`, the Makefile's lazy package list); the drain variant is not folded (Q-VULN-267); the two changed sets of the nightly have not run yet |
 | W9 · Screens show every state, second round | the system page; a technical token's description and removal; states the renders never show (an open row menu, the shared error notice); a failed test link's reason as a sentence of the page; the audit log's filter by a resource; the eleven points seen on the first round's renders; the malware settings before the first signature set | the first group (what a person meets on a page first: the lists that keep their table, the stored document, the test link's reason, the audit log's filter by a resource, the malware settings) and the owner's menu entries T-23 landed at 14:34 (fifteen commits); the other groups in work, with a person named the same way on every page, the server's messages that name the new pages, and two points of the malware finds' list |
 | W10a · Documents and the decisions' index | 1,050 of 3,425 decided questions without a row in the index (generated with a check from now); stale sentences in spec, developer pages, README and manual | landed at 12:45 (two commits): the index is generated and held by the documentation check, 3,480 rows, one per decided question; what its builder saw and left was built by a writer and landed at 13:18 |
 | W10b · Translations and test names | the extraction check; names of tests that carry a decision's number; the German texts that say "du" | last |
@@ -892,13 +892,17 @@ records the recorder that tells such a stall apart).
   field or code, and every area that names it is in the landing's gate. To do (W4, with the
   convention checks): whether a cheap check can name, for a changed API field, the areas that assert
   it.
-- **The journey of an exposure rule timed out once on the option of a repository (2026-11-23, 13:45; Test
-  and Release 45173103820, `e2e (access-long)`):** `05-exposure.spec.ts:39` waited 15 s in `selectOption`
-  for the repository's option of the rule editor. The leg passed in the run before, the push touched
-  nothing of that page, and three runs of `main` shared the runners. Re-run once (14:15). Not looked
-  into further. To do (W8, with the web's waits): what the select waits for (the list of repositories
-  is fetched after the page shows), and whether the journey should wait for that answer instead of a
-  bound of its own; if the newer runs fail at the same line, it is a defect and comes first.
+- **The journey of an exposure rule is red in every run since the screens' first round (2026-11-23, five
+  runs from 11:52 on; `e2e (access-long)`, `05-exposure.spec.ts:39`).** The first round made a format's
+  name what a page shows instead of its key (68253fbd9), the rule editor's option of a repository ends
+  in that name, and the journey still selects the option by "(generic)". The journeys had been
+  type-checked at that landing, not run, and no gate greps them. **Corrected on 14:37:** the entry said
+  at 14:14 that the leg had passed in the run before and read the failure as the runners' load; the
+  leg had failed there too. The repair is with the builder of W9, first and as a commit of its own,
+  with a search of every journey and end-to-end test for a text the two rounds changed. **Decided by
+  the development agent for every change of a visible text from now:** the journeys and the Go
+  end-to-end tests are searched for the old text in the same commit, and the builder's report says
+  so. To do (W8): whether the journeys' texts can come from the source the pages take them from.
 - **The check against the default logger covers the formats' tree only (2026-11-23, seen by the writer of
   the marking).** `TestR_OPS_009_NoFormatLogsThroughTheDefaultLogger` stops at `internal/formats`; outside
   it `slog.Default()` stands 68 times (`internal/repository`, `internal/cluster`, `internal/vuln`,
@@ -7780,7 +7784,7 @@ so shard b is green again with the repaired test): the journey of an exposure ru
 the option of a repository in the rule editor's select and did not get it; the same leg passed in
 the run of 12:45, and nothing of the push of 13:18 touches that page. Three runs of `main` stood side
 by side at that time. Started again at 14:15, the first of three; the two newer runs hold the same
-leg (section 8).
+leg (section 8). **This reading was wrong and is corrected at 14:37** (below).
 **14:28, the gates of the screens' group are green except two areas that failed by the machine's
 load** (107 at 14:20, four builders' gates and the landing's two streams): `repository` after 730 s
 (a fold of a million entries met the statement timeout; a migration met its bound of 60 s) and `blob`
@@ -7822,6 +7826,27 @@ before), `blob` 187 s (1,263 s before). **14:34, the screens' group and T-23 are
 (fifteen commits), with this plan commit under it. The owner's UI stack runs it after the backend's
 restart. What the landing closes in the lists is marked by a writer next; the builder goes on with
 the round's other groups and the three things given to it at 13:55.
+**14:36, the runs of the pushes of 13:48 and 13:56 have ended but for the layout checks:** all four
+integration shards green in both (the cases of the collections with links, of the Debian remote's
+`InRelease` and of NuGet's embedded files have had their first run), and every end-to-end leg green
+except one; in the run of 13:56 the legs loaded the images the new job had built (`deb`, `nuget`,
+`ci`, `vuln`, `push` green), which is what the first item of W7 still had to show. **`e2e
+(access-long)` is red in both, and has been in every run since 11:52:** the journey of an exposure
+rule selects a repository by an option's text that the screens' first round changed (section 8). The
+development agent had read it at 14:14 as a single failure by load; the leg's history says
+otherwise. The repair is with W9's builder, first.
+**14:41, the journey's repair is back** (one commit): the journey reads a format's name from the
+formats' endpoint, the source the page uses, so a later rename does not break it; a second break of
+the same kind was found by the search and repaired (the security dashboard's journey looked for a
+repository's own column, which the screens' group of 14:34 had put under the package). Searched: the
+journeys, their support code and the Go end-to-end tests, for formats' keys in brackets, the badge
+words, the dashboard's tabs, page titles, "by user:", old column headers and cell classes; nothing
+else needed a change. Type-checked and linted, not run: the legs of the push are its first run.
+**14:48, the gates of the rest of W7 are green** (with six cores: build, vet, actionlint, the scripts'
+syntax, the workflows' tests, the whole unit set, generate, the documentation tool, cyclo, the lint
+with 0 issues). **14:48, landed and pushed** with the journey's repair on top and this plan commit
+under it. The owner's installation was read at 14:44 on the release of 14:12 (both of its releases
+upgraded, twenty pods ready, no restart).
 **13:10, the third research of T-24 is back** (what the scans do with content that is stored and not
 served). Every scan starts from the store's commit hook, the same for a client's fill, a mirror pass
 and a background download, so a fetch for examination needs no new trigger. npm and NuGet are matched
