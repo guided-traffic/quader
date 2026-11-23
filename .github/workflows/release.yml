@@ -71,6 +71,9 @@ env:
   GOMAXPROCS: "8"
   NG_BUILD_MAX_WORKERS: "8"
   VITEST_MAX_WORKERS: "8"
+  # The cap of the cores of local gates (LOCAL_CORES of the Makefile and test/integration/run.sh) is lifted: a job keeps the
+  # settings above (docs/developer/build-and-test.md, "The cap of the cores").
+  LOCAL_CORES: ""
 
 jobs:
   # One version per tool (E0.2): the Makefile compares go, node, sqlc, oapi-codegen and every CI tool

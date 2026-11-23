@@ -39,6 +39,7 @@ It also runs [check-pins.sh](../../tools/sbom-generator/check-pins.sh), which ke
 | `malware-scan-db`, `malware-scan` | `freshclam` of `CLAMAV_IMAGE` into `.out/clamav-db` (the day's differences after the first run), then its `clamscan` over the source tree mounted read-only; needs Docker (R-MAL-031) |
 | `versions-check` (continued) | also compares the Node.js of `PATH` with `web/.nvmrc` and `docker buildx` with `BUILDX_VERSION`; and the analyser's one version (Q-HA-381): `TRIVY_IMAGE` carries a digest, no `TRIVY_VERSION` or `TRIVY_SHA256_*` line and no `trivy` stage or `TRIVY_*` build argument in the Containerfile remain, the binary of `make trivy` (on Linux) and a `trivy` on `PATH` say the tag of `TRIVY_IMAGE`; the chart's `trivy.image` is held to the pin by the chart test |
 | `fmt` | the formatters of `.golangci.yml` (gofumpt, goimports) over `./...`; this rewrites files, so run it on your own working tree |
+| `cores` | prints the cap of the cores every target runs with (`LOCAL_CORES`, default 6; `LOCAL_CORES=` lifts it, [The cap of the cores](#the-cap-of-the-cores)) |
 | `versions-check` | the E0.2 checks listed above |
 | `test` | `go test -race ./...` with a coverage profile of the unit tier (`.out/coverage/unit.out`) and a limit of `UNIT_TIMEOUT` per test binary (default 20 minutes, below the unit job's own 30; see [The unit run's time](#the-unit-runs-time)); the `go test -json` stream goes to `.out/test-unit.json`, which the coverage generator reads. It runs without the host's AWS configuration (`UNIT_ENV` in the Makefile: no `AWS_*` region, profile or keys, no `~/.aws` files), as on the CI runner; a bare `go test` reads them and can pass where CI fails |
 | `unit` | the packages of `test` with the same `UNIT_ENV` and `UNIT_TIMEOUT`, `go test -count=1`, without the race detector and the coverage profile and without the JSON stream: the unit run before a push, minutes where `test` takes about a quarter of an hour. A bare `go test ./internal/... ./cmd/...` reads the host's AWS configuration and leaves out the packages under `test/` and `tools/` that `PKGS` holds |
@@ -103,6 +104,20 @@ because a CI runner with a CPU limit and the race detector took tens of times as
 (poll it) and does not sleep for a fixed time and count what happened in it. A fake clock that a test advances is advanced inside the
 wait, because the code under test reads it at a moment the test does not see. The evidence: the start-up tests of `internal/app` failed in
 50 of 300 processes run at once on 20 CPUs before this rule and in none after it.
+
+### The cap of the cores
+
+A local gate runs on 6 cores: the Makefile's `LOCAL_CORES ?= 6` exports `GOMAXPROCS` and `-p=6` in `GOFLAGS` to every Go command
+of a target and passes `--concurrency 6` to the pinned lint, and [run.sh](../../test/integration/run.sh) does the same for an
+integration run called without `make`. On 2026-11-23 four builders' gates beside each other took the development machine to a load
+above 100, and tests failed by it; the cap keeps four gates inside the machine's 20 cores. A `GOMAXPROCS` or a `-p` the caller sets
+stays (`GOMAXPROCS=1 test/integration/run.sh …` to show that a test holds on a starved host). `make cores` prints what a gate gets.
+
+To lift it for a single run on an idle machine: `LOCAL_CORES= make unit`, `LOCAL_CORES= test/integration/run.sh ./test/integration/<area>/`.
+The pipeline's workflows set `LOCAL_CORES: ""`, so a job keeps its own `GOMAXPROCS` (8) and the lint its default;
+`TestEveryJobThatRunsACappedTargetLiftsTheCap` ([localcores_test.go](../../internal/tools/ciworkflows/localcores_test.go)) fails on a
+job that runs `make` or the integration runner without it, and `TestTheMakefileCapsTheCoresUnlessLifted` holds what `make cores`
+prints (milliseconds and about a second).
 
 ### Tests that hold on a loaded host
 

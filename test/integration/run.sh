@@ -17,6 +17,18 @@ if [ $# -eq 0 ]; then
   exit 2
 fi
 
+# LOCAL_CORES caps the cores of the run as the Makefile's local targets do (default 6; LOCAL_CORES= lifts it, and the pipeline's
+# workflows set it empty): GOMAXPROCS and go's -p, unless the caller set them already (docs/developer/build-and-test.md, "The cap of
+# the cores").
+cores="${LOCAL_CORES-6}"
+if [ -n "$cores" ]; then
+  export GOMAXPROCS="${GOMAXPROCS:-$cores}"
+  case " ${GOFLAGS:-} " in
+    *" -p="*) ;;
+    *) export GOFLAGS="${GOFLAGS:+$GOFLAGS }-p=$cores" ;;
+  esac
+fi
+
 timeout=yes
 for a in "$@"; do
   case "$a" in

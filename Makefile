@@ -26,6 +26,21 @@ LDFLAGS     := -s -w \
 	-X $(MODULE)/internal/buildinfo.commit=$(COMMIT) \
 	-X $(MODULE)/internal/buildinfo.date=$(DATE)
 
+# LOCAL_CORES caps the cores of a local gate: every Go command of a target runs with GOMAXPROCS and -p of that number, and the
+# pinned lint with --concurrency of it. Four builders' gates beside each other took the development machine to a load above 100 on
+# 2026-11-23, and tests failed by it. LOCAL_CORES= (empty) lifts the cap, for a single run on an idle machine; the pipeline's
+# workflows set it empty, so a job keeps its own settings (docs/developer/build-and-test.md, "The cap of the cores").
+# test/integration/run.sh honours the same variable. A GOMAXPROCS or a -p in GOFLAGS that the caller set stays.
+LOCAL_CORES ?= 6
+ifneq ($(strip $(LOCAL_CORES)),)
+GOMAXPROCS ?= $(LOCAL_CORES)
+export GOMAXPROCS
+ifeq ($(filter -p=%,$(GOFLAGS)),)
+export GOFLAGS := $(strip $(GOFLAGS) -p=$(LOCAL_CORES))
+endif
+LINT_CONCURRENCY := --concurrency $(LOCAL_CORES)
+endif
+
 # The tools' binary names carry their pin and the Go toolchain that built them, so a change
 # of either one rebuilds them and a stale binary is never reused.
 LINT_BIN       := .bin/golangci-lint-$(GOLANGCI_LINT_VERSION)-$(GOVERSION)
@@ -215,7 +230,7 @@ LINT_TIMEOUT ?= 20m
 # golangci-lint holds a lock in the system's temporary directory. Without --allow-serial-runners a second run on the machine (another
 # worktree, make gosec beside make lint) ended at once with "parallel golangci-lint is running"; with it, the second waits for the
 # first. --allow-parallel-runners would drop the lock, and the two would share the cache unguarded. LINT_WAIT says that it waits.
-LINT_FLAGS = --timeout $(LINT_TIMEOUT) --allow-serial-runners
+LINT_FLAGS = --timeout $(LINT_TIMEOUT) --allow-serial-runners $(LINT_CONCURRENCY)
 LINT_WAIT = if pgrep -f '[g]olangci-lint[^ ]* run( |$$)' >/dev/null 2>&1; then \
   echo "make: another golangci-lint runs on this machine; this one waits for the lock while that run holds it"; fi
 
@@ -224,6 +239,10 @@ lint: $(LINT_BIN) ## golangci-lint (pinned, rebuilt when the pin or the Go toolc
 	@$(LINT_WAIT)
 	$(LINT_BIN) run $(LINT_FLAGS) ./...
 	go vet $(PKGS)
+
+.PHONY: cores
+cores: ## Print the cap of the cores a local gate runs with (LOCAL_CORES; LOCAL_CORES= lifts it): GOMAXPROCS, GOFLAGS and the lint's concurrency
+	@echo "GOMAXPROCS=$${GOMAXPROCS:-} GOFLAGS=$${GOFLAGS:-} lint=$(strip $(LINT_CONCURRENCY))"
 
 .PHONY: fmt
 fmt: $(LINT_BIN) ## Format Go code with the formatters of .golangci.yml (gofumpt, goimports)
