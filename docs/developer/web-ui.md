@@ -306,8 +306,9 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    pictures it took so far), or when a layout check finds a defect (below); the pictures are taken first. Playwright lists the
    failures and exits non-zero; `failures.txt` has one line per failure, the contact sheet marks the rows and lists the layout
    findings at its top. A screen whose normal state includes such an answer lists it in `expected` of `screens.ts` with its reason; a
-   walk that answers a failure in the browser to render an error state (`repositories-unavailable`: the shared error notice with
-   **Retry**) names that notice in `notices`. Every load of a screen is a first visit: the **Details** a walk opened at the width before
+   walk that answers a failure in the browser to render an error state (`repositories-unavailable`: the shared error notice in each of
+   its states, with **Retry** for a 503, with the server's sentence, the request ID and **Copy** for a code the app does not know, and
+   the app's own sentence for a 403, G5-20) names that notice in `notices`. Every load of a screen is a first visit: the **Details** a walk opened at the width before
    are not reopened from the browser's memory (Q-UI-967), unless the walk sets `KEEP_OPEN` for its next load
    (`repository-details-remembered`). A screen whose lists keep the form of a table from 1,024 px on whatever they hold names them in
    `tables` (a selector inside `main`; the signatures' screens, Q-UI-969; the audit log, the findings, the malware finds, the rules of the download limits and a version's files, Q-UI-997 to Q-UI-1002): one that stands as blocks there is the finding `stacked`. An allowed finding may carry a bound (`atMost`, the most px its measurement may say): the exemption of a code block ends at 4,000 px, so a block of a value no page should print whole fails its screen (Q-UI-995).

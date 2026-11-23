@@ -56,6 +56,14 @@ import { describeProblem } from '../core/http/problem-messages';
     .hint {
       margin-block-start: var(--quader-space-1);
     }
+    /* A request ID is one token of 32 characters: at 390 px it pushed Copy 29 px past the panel (the walk of the notice's states, G5-20).
+       It breaks inside itself where the line ends; Copy follows it. */
+    .request code {
+      overflow-wrap: anywhere;
+    }
+    .body {
+      min-inline-size: 0;
+    }
   `,
 })
 export class ErrorNotice {

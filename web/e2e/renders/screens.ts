@@ -2247,29 +2247,51 @@ async function* disabledVersion(page: Page): AsyncGenerator<string> {
 }
 
 /**
- * A list whose read the server refuses for a moment (503): the shared error notice with **Retry**, which stands on the line of the
- * notice's text (R-UI-175). The answer is the browser's; the list's own state is the data table's.
+ * The shared error notice in each of its states (R-UI-042, G5-20), on a list whose read the walk answers in the browser: a refusal for a
+ * moment (503) with **Retry**, which stands on the line of the notice's text (R-UI-175); a problem whose code the app does not know, with
+ * the server's sentence, the request ID, its **Copy** and the hint to give it to an administrator; and a refusal the app words itself
+ * (403), without a button. The list's own state is the data table's.
  */
 async function* listUnavailable(page: Page): AsyncGenerator<string> {
   const list = (url: URL): boolean => url.pathname === '/api/v1/repositories';
-  await page.route(list, (route) =>
-    route.request().method() === 'GET'
-      ? route.fulfill({
-          status: 503,
-          contentType: 'application/problem+json',
-          body: JSON.stringify({ type: 'about:blank', title: 'Service Unavailable', status: 503, code: 'database_unavailable', detail: 'The database is not reachable.' }),
-        })
-      : route.fallback(),
-  );
-  await page.reload();
+  const answer = async (status: number, code: string, detail: string, title: string): Promise<void> => {
+    await page.unroute(list);
+    await page.route(list, (route) =>
+      route.request().method() === 'GET'
+        ? route.fulfill({
+            status,
+            headers: { 'X-Request-Id': '7f3c9a1e5b2d48c6a0e4f1b9d8c27a65' },
+            contentType: 'application/problem+json',
+            body: JSON.stringify({ type: 'about:blank', title, status, code, detail }),
+          })
+        : route.fallback(),
+    );
+    await page.reload();
+  };
+  await answer(503, 'database_unavailable', 'The database is not reachable.', 'Service Unavailable');
   await expect(page.locator('main quader-error-notice button', { hasText: 'Retry' })).toBeVisible();
   yield '';
+  await answer(
+    500,
+    'upstream_index_inconsistent',
+    'The repository index of web-frontend/npm-internal lists a version whose metadata the store does not hold; the next reconciliation pass repairs it.',
+    'Internal Server Error',
+  );
+  await expect(page.locator('main quader-error-notice .request')).toBeVisible();
+  yield 'unknown-code';
+  await answer(403, 'forbidden', 'missing repositories:read', 'Forbidden');
+  await expect(page.locator('main quader-error-notice', { hasText: 'You do not have the permission for this.' })).toBeVisible();
+  yield 'forbidden';
   await page.unroute(list);
 }
 
-/** The answer of the walk's 503 and its notice: the error state is what the screen renders. */
-const unavailable = [{ match: /^GET \/api\/v1\/repositories\?.* answered 503$/, why: 'the walk answers the list 503 to render its error state' }];
-const unavailableNotice = [{ match: /Retry/, why: 'the error state of the list, which the walk renders' }];
+/** The answers of the walk and its notices: the error states are what the screen renders. */
+const unavailable = [
+  { match: /^GET \/api\/v1\/repositories\?.* answered (503|500|403)$/, why: 'the walk answers the list 503, 500 and 403 to render the error notice\'s states' },
+];
+const unavailableNotice = [
+  { match: /Retry|Request ID|You do not have the permission for this\./, why: 'the error states of the list, which the walk renders' },
+];
 
 /**
  * The report of a project whose advisory data is stale for one ecosystem and not imported for another (R-VULN-022, Q-UI-966): an
@@ -2385,7 +2407,7 @@ export const screens: readonly Screen[] = [
   { id: 'search-results-none', path: '/ui/search?q=zzqx', kinds: ['plain'] },
   { id: 'search-results-kind-package', path: '/ui/search?q=acme&kind=package', kinds: all },
   { id: 'repositories', path: `${P}/repositories`, kinds: all, walk: filtersOpen(repositoryChips), widths: [1100] },
-  // A list's error state: the shared notice with Retry on its line (R-UI-175).
+  // A list's error states (G5-20): the shared notice with Retry on its line (R-UI-175), with a request ID and Copy, and a refusal.
   { id: 'repositories-unavailable', path: `${P}/repositories`, kinds: ['plain'], walk: listUnavailable, expected: unavailable, notices: unavailableNotice },
   { id: 'repositories-long-keys', path: `${O}/repositories`, kinds: all, walk: filtersOpen() },
   { id: 'repositories-empty-project', path: `/ui/projects/${emptyProject}/repositories`, kinds: admins },
