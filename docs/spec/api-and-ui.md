@@ -22268,10 +22268,19 @@ data is 390 px only.
 would revisit a list whose secondary line grows past three lines. The rule is Q-UI-959's; the renders hold a screen's lists to it
 where the screen names them in `tables` (the signatures' screens; the Bastion cards are measured by their own walk).
 
+How a cell of these lists breaks, after the renders at 1,024 px showed a signer's URL broken "…heads/le" / "gacy-build" and a
+finding's title "acme.logging.abstractions 2." / "0.0-preview.1": a name and its version break between the two first, and the version
+stays whole while it fits on a line; a name, a path or an identity that is a URL or a distinguished name breaks after `/`, `.`, `@` and
+`,`, and not inside a word, a hyphenated one ("legacy-build", "dmz-frankfurt") included. A piece breaks inside itself only where it
+is longer than the line. One helper cuts the pieces for the Bastion cards' addresses, the audit log's keys and the signatures' lists,
+and one component shows them each whole while it fits (`breakParts` and `PartsText` of
+[break-parts.ts](../../web/src/app/shared/break-parts.ts)).
+
 **Applied in the spec:** [signatures.md](signatures.md) R-SIG-036, R-SIG-037, R-SIG-038. Code:
 [anchor-table.ts](../../web/src/app/shared/signatures/anchor-table.ts),
 [signature-settings.html](../../web/src/app/features/settings/signature-settings.html),
-[signature-findings.ts](../../web/src/app/features/vulnerabilities/signature-findings.ts).
+[signature-findings.ts](../../web/src/app/features/vulnerabilities/signature-findings.ts),
+[break-parts.ts](../../web/src/app/shared/break-parts.ts), [bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts).
 
 ### Q-UI-970 · npm's forwarding is offered on remote and virtual repositories only, by the schema
 

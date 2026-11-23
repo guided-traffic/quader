@@ -17,6 +17,7 @@ import { TimeAgo } from '../../shared/ui/time-ago';
 import { DownloadLinkConnection } from '../../api/download-links-api';
 import { BastionTokenDialog, BastionTokenDialogData, BastionTokenDraft } from './bastion-dialogs';
 import { BastionHandover } from './bastion-handover';
+import { ADDRESS_MARKS, PartsText } from '../../shared/break-parts';
 
 /** A token that expires within this many days carries the warning mark (R-BAS-007). */
 export const BASTION_TOKEN_WARN_DAYS = 30;
@@ -40,7 +41,7 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
  */
 @Component({
   selector: 'quader-bastion-card',
-  imports: [BastionHandover, DatePipe, DataTable, ErrorNotice, NoValue, TimeAgo, TokenSecret],
+  imports: [BastionHandover, DatePipe, DataTable, ErrorNotice, NoValue, PartsText, TimeAgo, TokenSecret],
   template: `
     <section class="card" [attr.aria-labelledby]="headingId()">
       <h2 [id]="headingId()" translate="no">{{ bastion().name }}</h2>
@@ -110,7 +111,7 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
               <span translate="no">{{ c.replica }}</span>
               <span class="secondary"
                 ><span class="dot-separated" data-testid="bastion-contact-facts"
-                  >@if (c.clientAddress; as v) {<span translate="no">@for (part of breakParts(v); track $index) {<span>{{ part }}</span><wbr />}</span>}<span
+                  >@if (c.clientAddress; as v) {<span translate="no"><quader-parts-text [value]="v" [marks]="addressMarks" /></span>}<span
                     i18n="@@bastion.contact.release"
                     >Release <span translate="no">{{ c.release }}</span></span
                   ><span i18n="@@bastion.contact.interface">Interface version {{ c.interfaceVersion }}</span></span
@@ -121,7 +122,7 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
             <!-- The URL takes the room the other columns leave and breaks after a dot or a slash there. -->
             <td translate="no" class="wrap base-url">
               @if (c.baseUrl; as v) {
-                @for (part of breakParts(v); track $index) {<span>{{ part }}</span><wbr />}
+                <quader-parts-text [value]="v" [marks]="addressMarks" />
               } @else {
                 <quader-no-value />
               }
@@ -265,9 +266,8 @@ export class BastionCard {
    * A URL's or an address's parts, each ending after a dot, a slash or a colon, where a narrow column may break it (`<wbr>`: nothing
    * is added to a copy). Broken anywhere instead, an IPv6 address left its dot of the facts' line alone on a line above it.
    */
-  protected breakParts(value: string): string[] {
-    return value.match(/[^./:]*[./:]*/g)?.filter((p) => p !== '') ?? [value];
-  }
+  /** An address breaks after its dots, slashes and colons, each piece whole while it fits (`PartsText`). */
+  protected readonly addressMarks = ADDRESS_MARKS;
 
   private readonly now = computed(() => {
     this.bastion();

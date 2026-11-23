@@ -13,6 +13,7 @@ import { TimeAgo } from '../../shared/ui/time-ago';
 import { PageHeader } from '../../shared/ui/page-header';
 import { SecurityViews } from './security-views';
 import { SignatureRefusals } from './signature-refusals';
+import { IDENTITY_MARKS, PartsText } from '../../shared/break-parts';
 
 /** One chip of a filter that is set, with the query change that removes it. */
 interface Chip extends ListChip {
@@ -40,7 +41,7 @@ export function findingKindWord(kind: SignatureFindingKind): string {
  */
 @Component({
   selector: 'quader-signature-findings',
-  imports: [DataTable, FilterCategory, FilterPanel, ListHead, PageHeader, RouterLink, SecurityViews, SignatureRefusals, TimeAgo],
+  imports: [DataTable, FilterCategory, FilterPanel, ListHead, PageHeader, PartsText, RouterLink, SecurityViews, SignatureRefusals, TimeAgo],
   template: `
     <quader-page-header i18n-heading="@@security.heading" heading="Security dashboard" />
     <quader-security-views />
@@ -96,13 +97,19 @@ export function findingKindWord(kind: SignatureFindingKind): string {
                repositories that hold it; blocks only at 390 px. -->
           <th scope="row" class="wrap-name">
             <span class="icon-name-text">
-              <!-- The name breaks after its dots and slashes, never inside a word (Q-UI-567): its longest word, not the whole name, is
-                   the column's least width, so a long package name does not turn the list into blocks (Q-UI-969). -->
+              <!-- The name breaks after its dots, slashes and at signs, never inside a word, and before its version first; the version
+                   stays whole while it fits on a line (Q-UI-567, Q-UI-969). -->
               <span class="finding-name" translate="no"
-                >@for (part of nameParts(artifact(f)); track $index) {<ng-container>{{ part }}</ng-container><wbr />}</span
+                ><quader-parts-text [value]="artifactName(f)" [marks]="identityMarks" />@if (artifactVersion(f); as version) {&ngsp;<span
+                    class="finding-version"
+                    >{{ version }}</span
+                  >}</span
               >
               @if (artifactPath(f); as path) {
-                <span class="secondary finding-text" translate="no">{{ path }}</span>
+                <!-- The path keeps the version whole wherever it stands in it. -->
+                <span class="secondary finding-text" translate="no"
+                  ><quader-parts-text [value]="path" [marks]="identityMarks" [keep]="artifactVersion(f)"
+                /></span>
               }
               <span class="finding-reason finding-text">
                 @if (f.block; as b) {
@@ -125,10 +132,12 @@ export function findingKindWord(kind: SignatureFindingKind): string {
               ></span
             >&ngsp;<span class="secondary block">{{ kindOf(f) }}</span>
           </td>
+          <!-- The signer as it claims and its issuer: a URL or a distinguished name breaks after a slash, a dot, an at sign or a comma, and
+               inside a word only where one piece is longer than the line. -->
           <td class="finding-text">
-            <span translate="no">{{ f.signer ?? f.identity ?? f.keyId ?? '–' }}</span>
+            <span translate="no"><quader-parts-text [value]="f.signer ?? f.identity ?? f.keyId ?? '–'" [marks]="identityMarks" /></span>
             @if (f.issuer; as issuer) {
-              <span class="secondary block" translate="no">{{ issuer }}</span>
+              <span class="secondary block" translate="no"><quader-parts-text [value]="issuer" [marks]="identityMarks" /></span>
             }
           </td>
           <td><quader-time-ago [at]="f.foundAt" absolute="title" /></td>
@@ -139,6 +148,12 @@ export function findingKindWord(kind: SignatureFindingKind): string {
   styles: `
     .finding-name {
       font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+    /* A version stays whole while it fits on a line, and wraps inside itself only where it is longer than the line. */
+    .finding-version {
+      display: inline-block;
+      max-inline-size: 100%;
     }
     .finding-text {
       overflow-wrap: anywhere;
@@ -173,10 +188,8 @@ export class SignatureFindings {
   protected readonly staged = signal<Staged>({ kind: '', repository: '' });
   protected readonly kinds = SIGNATURE_FINDING_KINDS;
   protected readonly kindWord = findingKindWord;
-  /** A name in the pieces after which it may break: after a dot, a slash or an at sign. */
-  protected nameParts(name: string): string[] {
-    return name.split(/(?<=[./@])/);
-  }
+  /** A name, a path or an identity breaks after a slash, a dot, an at sign or a comma. */
+  protected readonly identityMarks = IDENTITY_MARKS;
   protected readonly reasonText = signatureReason;
   protected readonly promise = signaturePromise();
 
@@ -228,11 +241,18 @@ export class SignatureFindings {
   }
 
   /** The artifact a finding's signature covers: its package and version, else its file, else the npm subject's name. */
-  protected artifact(f: SignatureFinding): string {
+  /** What the finding covers by name: the package, else the file's name, else the subject. */
+  protected artifactName(f: SignatureFinding): string {
     const item = f.items[0];
-    if (item?.package) return item.version ? `${item.package} ${item.version}` : item.package;
+    if (item?.package) return item.package;
     if (item?.path) return item.path.split('/').pop() ?? item.path;
     return f.subjectName ?? `sha256:${f.subject.slice(0, 12)}…`;
+  }
+
+  /** The package's version after its name, or none. */
+  protected artifactVersion(f: SignatureFinding): string | null {
+    const item = f.items[0];
+    return item?.package && item.version ? item.version : null;
   }
 
   /** The path of the file under the name, where the name is the package's. */

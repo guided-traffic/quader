@@ -2230,7 +2230,7 @@ async function* auditEvent(page: Page): AsyncGenerator<string> {
     const [first, ...rest] = body.items;
     const long = first && {
       ...first,
-      action: 'bastion.data_key.handed',
+      action: 'storage.object_lock.retention_extended',
       repository: `${longProject}/signed-release-artifacts`,
       path: 'releases/2026/11/customer-portal-installer-with-a-long-name-for-the-windows-build-agents.exe',
       actor: { ...first.actor, type: 'user', authMethod: 'bearer' },
@@ -2240,7 +2240,7 @@ async function* auditEvent(page: Page): AsyncGenerator<string> {
   // The log anew, without the event of the address: the first row opens the long one.
   await page.goto('/ui/admin/audit');
   await page.locator('main table.data tbody th[scope="row"] button.link').first().click();
-  await expect(page.locator('main section.detail code.fact-key')).toContainText('bastion.data_key.handed');
+  await expect(page.locator('main section.detail code.fact-key')).toContainText('storage.object_lock.retention_extended');
   yield 'long-key';
   await page.unroute(list);
 }

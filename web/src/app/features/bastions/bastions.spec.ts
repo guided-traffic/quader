@@ -16,7 +16,8 @@ import { SessionStore } from '../../core/session-store';
 import { seriousViolations } from '../../testing/axe';
 import { DraftStore } from '../../shared/drafts';
 import { browserStorage, buttonByText, renderScreen, settle, sleep, storedText, text, type, typeAndLeave, typeInto } from '../../testing/screen';
-import { BASTION_TOKEN_WARN_DAYS, BastionCard, tokenExpiry } from './bastion-card';
+import { ADDRESS_MARKS, breakParts } from '../../shared/break-parts';
+import { BASTION_TOKEN_WARN_DAYS, tokenExpiry } from './bastion-card';
 import { handoverLines } from './bastion-handover';
 import { BastionList } from './bastion-list';
 
@@ -85,7 +86,8 @@ describe('Bastions screen (R-BAS-007)', () => {
   });
 
   it('Q-UI-959 a URL and an address break only after a dot, a slash or a colon, and every character stays', () => {
-    const card = Object.create(BastionCard.prototype) as { breakParts(value: string): string[] };
+    // The card's marks with the shared helper (break-parts.ts), which the card's PartsText shows piece by piece.
+    const card = { breakParts: (value: string) => breakParts(value, ADDRESS_MARKS) };
     expect(card.breakParts('https://packages.frankfurt.example.com:8443/bastion/')).toEqual([
       'https://',
       'packages.',

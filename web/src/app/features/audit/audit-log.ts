@@ -22,6 +22,7 @@ import { ProjectLink } from '../../shared/ui/project-mark';
 import { PagedResource, asApiError, valueOf } from '../../shared/paged-resource';
 import { actionSuggestions, auditActionLabel, categoryLabel, outcomeLabel } from './audit-labels';
 import { PageHeader } from '../../shared/ui/page-header';
+import { KEY_MARKS, breakParts } from '../../shared/break-parts';
 import { PrincipalField, choiceFromRef, refOf } from '../../shared/ui/principal-field';
 
 /** The page size of the table (the server default and a good fit for one screen). */
@@ -373,7 +374,7 @@ export class AuditLog {
    * `bastion.data_key.handed` broke as "bastion.data_key.hande" / "d" in a narrow event.
    */
   protected keyParts(action: string): string[] {
-    return action.split(/(?<=[._])/);
+    return breakParts(action, KEY_MARKS);
   }
 
   /** The name of an action in the row: its name, or its key in parts where the action has no name of its own. */

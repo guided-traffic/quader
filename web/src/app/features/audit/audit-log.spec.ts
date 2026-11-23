@@ -56,15 +56,15 @@ describe('Audit log', () => {
   });
 
   it('R-UI-037 Q-UI-972 an opened event sets the actor\'s kind apart under its name, and an action without a name shows its key once, breaking after a dot or an underscore', async () => {
-    const event = sampleEvent({ action: 'bastion.data_key.handed' });
+    const event = sampleEvent({ action: 'storage.object_lock.retention_extended' });
     // The event of the address is the one opened (the row's button navigates there).
     const { root } = await open({ event: event.id }, (audit) => (audit.eventList = [event]));
     const facts = [...root.querySelectorAll('section.detail dl.facts dt')];
     const value = (name: string) => facts.find((dt) => dt.textContent?.trim() === name)!.nextElementSibling as HTMLElement;
     const action = value('Action');
     // The key alone, where the action has no name of its own; in its parts, each with its dot or underscore.
-    expect(action.textContent?.trim()).toBe('bastion.data_key.handed');
-    expect([...action.querySelectorAll('code.fact-key wbr')]).toHaveLength(4);
+    expect(action.textContent?.trim()).toBe('storage.object_lock.retention_extended');
+    expect([...action.querySelectorAll('code.fact-key wbr')]).toHaveLength(5);
     const actor = value('Actor');
     const kind = actor.querySelector('.fact-secondary')!;
     expect(kind.textContent).toBe(`${event.actor.type}${event.actor.authMethod ? ', ' + event.actor.authMethod : ''}`);
