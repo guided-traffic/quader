@@ -454,9 +454,17 @@ async function* systemStorage(page: Page): AsyncGenerator<string> {
   await expect(tab.locator('quader-data-table').first().locator('tbody tr:not(.expansion)')).toHaveCount(6);
   yield 'several';
   for (const i of [1, 2]) await tab.locator('quader-data-table').first().locator('th button').nth(i).click();
-  const closed = tab.locator('quader-disclosure button[aria-expanded="false"]');
-  for (const fold of await closed.all()) await fold.click();
-  await expect(closed).toHaveCount(0);
+  // The page's two sections, Damaged blobs and the tasks' last runs, by what a click does not change: a list of the closed toggles
+  // shrank under the loop, and the second click waited 15 s for a match that the first click's answer had taken away.
+  const folds = tab.locator('quader-disclosure > .disclosure > .heading > button.toggle');
+  await expect(folds).toHaveCount(2);
+  for (const fold of await folds.all()) {
+    await expect(fold).toHaveAttribute('aria-expanded', 'false');
+    await fold.click();
+    await expect(fold).toHaveAttribute('aria-expanded', 'true');
+    // The section that opens moves the toggle under it while it grows; the next click waits until it stands still.
+    await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  }
   yield 'several-details';
   await page.unroute(connections);
   await page.unroute(damaged);
@@ -2225,10 +2233,12 @@ async function* staleAdvisories(page: Page): AsyncGenerator<string> {
     ],
   }));
   yield '';
-  const about = page.locator('main quader-disclosure.vuln-about button[aria-expanded="false"]');
+  // The section stands where the report has a coverage line; every width's load is a first visit, so it starts closed.
+  const about = page.locator('main quader-disclosure.vuln-about > .disclosure > .heading > button');
   if ((await about.count()) > 0) {
+    await expect(about).toHaveAttribute('aria-expanded', 'false');
     await about.click();
-    await expect(page.locator('main quader-disclosure.vuln-about button[aria-expanded="true"]')).toBeVisible();
+    await expect(about).toHaveAttribute('aria-expanded', 'true');
     yield 'about';
   }
   await page.unroute(summary);
@@ -2272,6 +2282,8 @@ async function* auditEvent(page: Page): AsyncGenerator<string> {
  */
 async function* detailsRemembered(page: Page): AsyncGenerator<string> {
   const toggle = page.locator('main quader-disclosure.details > .disclosure button.toggle');
+  // Every width's load is a first visit (render.spec.ts): the section starts closed, whatever the width before left open.
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await page.evaluate((keep) => sessionStorage.setItem(keep, '1'), KEEP_OPEN);
