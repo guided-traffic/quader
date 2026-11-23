@@ -237,9 +237,13 @@ and T-24 by turns: **T-24 · R2 landable** (the three conditions below and the f
 unbuilt, on the branch's two commits rebased onto `main`); **the evidence record's publish** (the entry of
 section 8, with the npm search's mislisting and the two "only a run shows" entries of the record); **T-25**
 (Projects and Repositories leave the admin menu); **the rest of the Go tests** (the seven items of "What W4
-did not do", F-126, the mirror's back-off bound, the process environment and the free port). Waiting for a
-place: W8, W10b, the layout fixtures in three browsers, the documents' second round, T-24 R3 and R4, and the
-three nightly sets (to be dispatched in a window with no code push beside them).
+did not do", F-126, the mirror's back-off bound, the process environment and the free port). The evidence record's publish landed at 22:51 (one commit,
+Q-ARCH-1040; its release shows the rest); `drain-roles` ran alone at 22:24, green, and closed its entry.
+**T-25 landed at 23:10** (one commit; Q-UI-1040 to Q-UI-1043; the renders looked at by the development agent;
+the browser journeys it rewrote run first in the pipeline's e2e legs). Started at 22:53 in the freed place: **T-24 · R4** (downloads ahead and the queue; R3 waits for R2's landing,
+since it wires R2's decider). Waiting for a place: W8, W10b, the layout fixtures in three browsers, the
+documents' second round, T-24 R3, and the two nightly sets `upgrade-release` and `vuln-perf` (to be
+dispatched in a window with no code push beside them).
 
 Read this first. By the owner's words of 17:15 (section 0) nothing new was begun; this list is what was
 in work then and what remains, as it stood when the evening ended at 19:55: every builder had reported,
@@ -273,9 +277,7 @@ starts from it and from his word how the work goes on, not from the order of the
   free number on the branch it stands on (the runner refuses a gap; 00114 is the contracts'); the
   packages that run side by side write only their own marked section of `api/openapi.yaml`, their own
   query file and wiring file; decision blocks of the series Q-CUR from 40 (R2), 60 (R3), 80 (R4).
-- **T-25 · Projects and Repositories leave the admin area's menu** (the owner's word of 19:30 and what has to
-  move with them, agreed by him at 19:34: section 10, under the owner's tasks of 2026-11-23): one package of
-  the screens, not begun.
+- **T-25 · Projects and Repositories leave the admin area's menu**: landed at 23:10 (section 10).
 - **W8 · Web and end-to-end tests wait for what they stand for** (the packages' table of section 8), with
   what today added to it: a cluster name and ports per checkout so that a builder runs the journey or
   the end-to-end test it changed before it reports; the walk's widths on the development machine and on
@@ -869,6 +871,15 @@ records the recorder that tells such a stall apart).
   whose refill it sets), or measures the rate it reached and asserts against that.
 
 ### Product
+
+- **A narrow list's stacked rows place their fields by the width that is left (seen by the development agent on
+  2026-11-23 at T-25's renders, `all-repositories-chips-light-390.png`).** In the stacked rows of the shared
+  table at 390 px, "Format" stands beside "Project" in one row and beside "Class" in the next, as the values'
+  widths fall, so the eye finds a field at another place in every row. Shared behaviour of the table, not of
+  T-25. To do: the stacked row keeps one place per field (a grid of label and value), held by a layout check.
+- **The column "Your role" of the projects list is empty where the caller has no role (seen the same evening,
+  `projects-details-details-dark-1440.png`, as `ada`).** Every other column of the same rows shows "–" for no
+  value. To do: the same "–", and the layout check's state of an administrator without membership.
 
 - **Partly closed; open: (5) the gap H-591, the finalize's check by size, which stays on its security page.**
   Closed: (1) by d89e83052, the scrub (`TestR_STOR_027_TheScrubAgainstTheDatabase`), and 392a7c823, the orphan
@@ -3032,8 +3043,13 @@ Admin menü nach diesen beiden. Willst du das verteidigen oder kommt das weg? We
 whole: "Ich stimme ebenso deinen Ausführungen zu, so vermerken"; the three points below and what goes are
 therefore his decision, not an open question for his walk). An administrator reads every project in the main area
 already (the list of projects with its filter "Your projects"), so the two entries are a second way to the same
-things, and they are the reason a path of the main area has a twin under `/admin`. **Not begun** (his word of
-17:15: nothing new today); written here as the task and as what has to move, since three things live only there
+things, and they are the reason a path of the main area has a twin under `/admin`. **Landed at 23:10** (one commit of a builder, Q-UI-1040 to Q-UI-1043: the project list's columns Owners and
+Storage behind one check box "Show Owners and storage" for a holder of `projects:read`; the list
+**Repositories** under "Your work" with the filters by project, format and class and no button to create;
+`/admin` opens the first entry a caller has when it lacks `settings:read`; the backend needed no change, since
+`GET /api/v1/repositories` already lists by the caller's visibility). Not run by its builder: the browser
+journeys it rewrote (01, 02, 07, 08, 11, 12, 14, 17, 21 and the upgrade's 16), which need the kind cluster; the
+pipeline's e2e legs run them first. Written before it was built, as the task and as what has to move, since three things live only there
 today and must not be lost with the entries:
 
 1. **Creating a project** (administrators, `projects:write`): the button "New project" stands on the main area's
