@@ -3976,6 +3976,24 @@ a caller who may not fill) and are unchanged. Tests: `TestR_AUTHZ_009_OnlyANamed
 ([virtual_named_miss_test.go](../../../internal/formats/oci/virtual_named_miss_test.go)), `TestR_OCI_027_ABlockOfAMemberEndsTheWalk`,
 `TestR_AUTHZ_009_AnUnnamedRefusalOfAMembersPageEndsTheMerge` of NuGet and of Ansible Galaxy.
 
+### Q-OCI-256 · The measurement of H-829 builds no index: the cost is the version list's statement that reads every row
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. That H-829 is
+measured before anything is built, and that an expression index comes before a derived table, was set by the coordinator of the findings run
+of 2026-11-23.
+
+Context: the measurement of 2026-11-23 (H-829, [oci.md](../../developer/oci.md#the-listing-of-a-remote-with-very-many-tags-h-829-measured)):
+100,000 tags of one image in a remote's cache, every page of its version list 16.6 s and of the package list 11 s; the plans of the four
+statements of a page.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No index; H-829 stays open with the numbers and the order of the remedies (chosen) | The keyset statement for the version list is the first remedy, for every format | Nothing is built that the plans show would not bring a page within the budget | The listing stays slow for a remote with very many tags |
+| (b) An expression index on the tag of `oci_remote_tags` | `(repo_id, (regexp_match(path, …))[1])` over the tag entries | Finds a package's tag rows without the blob index | `PackageViewVersions` still returns all 100,001 rows for every page and sorts them; the plans show the read of the rows found, not the finding, as the cost |
+| (c) An index on the negated id for `OCITagSizes` and `SignatureVersionBlobs` | `ON remote_cache_entries ((-id))` | About 2 s of a page's statements | 14 s of 16.6 s remain; a second index on the fill's table for a statement that can negate its ids instead |
+
+**Choice:** (a). **Applied in the spec:** H-829.
+
 ## What this does not cover
 
 ### H-579 · A holder of the stored-secret key ring can mint registry tokens
@@ -4090,11 +4108,20 @@ the page to keep naming the images. Listing what the upstream has would need its
 ### H-829 · The listing of a remote reads every tag entry of the repositories in scope
 
 `oci_remote_tags` matches the path of each metadata entry of the remote OCI repositories a statement reads, because a tag is told from the
-tags list and from other documents by `/_tags/` in its path; no index serves that match. A list of a repository with some hundred thousand
-tag entries reads them all for each page of the list and for the count, as a list of local versions reads all its version rows. Not measured: no
-target of R-ARCH-027 names the content page of a remote and the query budget tests (`querybudget`) hold no remote with a large cache. Live today;
-real for a mirror of a registry with many tags. A derived table kept by the fill, or an expression index on the tag, are the remedies; neither is
-built.
+tags list and from other documents by `/_tags/` in its path; no index serves that match. **Measured once on 2026-11-23**
+([oci.md, the measurement](../../developer/oci.md#the-listing-of-a-remote-with-very-many-tags-h-829-measured)), with 100,000 tag entries of
+one image written by SQL into a remote's cache on the integration stack: a page of the repository's package list takes 11 s, a page of 50
+tags of the image 16.6 s, the first page and one in the middle of the list alike, against R-API-010's budget of one keyset query per page,
+which no page meets. The plans show where it goes: `PackageViewVersions` has no keyset and no limit and returns every one of the 100,001
+rows for every page (sorted on disk, 2.3 to 2.8 s), the service groups and pages them in memory, and `OCITagSizes` and
+`SignatureVersionBlobs` look the page's 50 tags up by the view's id, the negated entry id, which no index serves (0.8 to 1.2 s each).
+`PackageViewList` reads every tag row to count them (2.3 s). No index was built
+([Q-OCI-256](#q-oci-256--the-measurement-of-h-829-builds-no-index-the-cost-is-the-version-lists-statement-that-reads-every-row)): an
+expression index on the tag changes how the rows are found, not that every page reads all of them. The same statement reads every
+version row of a local package, of any format, for every page of its version list. Live today; real for a mirror of a registry with many
+tags, and for any package with thousands of versions. The remedy is a keyset statement for the version list (the page's rows by the sort
+key, a count apart), then the id lookup of the view (an index on the negated id, or a statement that negates the ids), and only then a
+derived table of a remote's tags kept by the fill.
 
 ### Q-OCI-100 · Everything below `/v2/` is one handler and one match, on the patterns `/v2` and `/v2/{rest...}`
 

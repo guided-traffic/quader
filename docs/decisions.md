@@ -10952,10 +10952,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-OCI
 
-117 questions on [spec/formats/oci.md](spec/formats/oci.md).
+118 questions on [spec/formats/oci.md](spec/formats/oci.md).
 
 <details>
-<summary>Q-OCI: 117 questions</summary>
+<summary>Q-OCI: 118 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11076,6 +11076,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-OCI-230](spec/formats/oci.md#q-oci-230--a-scan-tokens-request-is-no-delivery-no-block-gate-no-download-no-probe) | A scan token's request is no delivery: no block gate, no download, no probe | Decided by the development agent | (a) The pull reads like the system it is | [ADR-213](#adr-213--a-scan-token-is-a-registry-token-a-worker-issues-for-one-manifest-used-only-on-the-scan-listener) |
 | [Q-OCI-240](spec/formats/oci.md#q-oci-240--a-block-of-a-member-ends-the-walk) | A block of a member ends the walk | Decided by the development agent | (a) A `Forbidden` with a code of a block, and the malware gate's pending `503`, end the walk; other `Forbidden` answers (no read, `populate_not_permitted`) stay misses | [ADR-220](#adr-220--every-downloaded-artifact-is-scanned-for-malware-and-one-switch-lets-only-checked-artifacts-through) |
 | [Q-OCI-245](spec/formats/oci.md#q-oci-245--the-walk-goes-on-only-at-a-miss-or-a-failure-it-names) | The walk goes on only at a miss or a failure it names | Decided by the development agent | (a) One rule names the misses and failures for every format; every other answer ends the walk | — |
+| [Q-OCI-256](spec/formats/oci.md#q-oci-256--the-measurement-of-h-829-builds-no-index-the-cost-is-the-version-lists-statement-that-reads-every-row) | The measurement of H-829 builds no index: the cost is the version list's statement that reads every row | Decided by the development agent | (a) No index; H-829 stays open with the numbers and the order of the remedies | — |
 
 </details>
 
