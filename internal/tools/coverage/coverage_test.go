@@ -483,26 +483,38 @@ func TestCommandWithTestReports(t *testing.T) {
 		return strings.Join(ids, ",")
 	}
 
-	t.Run("E0.8 go test -json stream marks exactly the passing requirement implemented", func(t *testing.T) {
+	// The pipeline's run: the record, and with -links-at (Q-ARCH-1040) the pages' links to the files the branch coverage does not
+	// hold pointed at the record's commit, their links to each other relative.
+	t.Run("E0.8 Q-ARCH-1040 go test -json stream marks exactly the passing requirement implemented, the links at the record's commit", func(t *testing.T) {
 		repo := setup(t)
 		report := write(t, t.TempDir(), stream)
+		const commit = "0123456789abcdef0123456789abcdef01234567"
+		spec := repoURL + "blob/" + commit + "/docs/spec/architecture.md"
 		var stdout, stderr bytes.Buffer
-		if code := run([]string{"-repo", repo, "-tests", report}, strings.NewReader(""), &stdout, &stderr); code != exitOK {
+		if code := run([]string{"-repo", repo, "-tests", report, "-links-at", commit}, strings.NewReader(""), &stdout, &stderr); code != exitOK {
 			t.Fatalf("exit %d:\n%s", code, stderr.String())
 		}
 		if got := recorded(t, repo); got != "R-ARCH-002" {
 			t.Fatalf("implemented.txt lists %v, want exactly R-ARCH-002", got)
 		}
 		checklist, _ := os.ReadFile(filepath.Join(repo, "docs", "coverage", "checklist.md"))
-		if !strings.Contains(string(checklist), "[R-ARCH-002](../spec/architecture.md) (implemented)") {
-			t.Errorf("checklist does not mark R-ARCH-002 as implemented")
+		if !strings.Contains(string(checklist), "[R-ARCH-002]("+spec+") (implemented)") {
+			t.Errorf("checklist does not mark R-ARCH-002 as implemented with its link at the record's commit")
 		}
-		if strings.Contains(string(checklist), "[R-ARCH-003](../spec/architecture.md) (implemented)") {
+		if strings.Contains(string(checklist), "[R-ARCH-003]("+spec+") (implemented)") {
 			t.Errorf("checklist marks the failing R-ARCH-003 as implemented")
 		}
 		readme, _ := os.ReadFile(filepath.Join(repo, "docs", "coverage", "README.md"))
 		if !strings.Contains(string(readme), "| Covered by an MVP requirement | Implemented |") {
 			t.Errorf("the README of the record has no column Implemented")
+		}
+		if !strings.Contains(string(readme), "](checklist.md") {
+			t.Error("the README's links to the checklist, which the branch holds, are not relative any more")
+		}
+		for name, page := range map[string][]byte{"checklist.md": checklist, "README.md": readme} {
+			if strings.Contains(string(page), "](../") {
+				t.Errorf("%s keeps a relative link out of docs/coverage, which leads nowhere on the branch", name)
+			}
 		}
 	})
 	t.Run("Q-ROAD-4 a test naming an unknown requirement fails the command", func(t *testing.T) {
@@ -586,6 +598,9 @@ func TestCommandWithTestReports(t *testing.T) {
 			{"-check", "-tests", "x.json"},
 			{"-tests", "x.json", "-links"},
 			{"-claims", "-tests", "x.json"},
+			{"-links-at", "0123456789abcdef"},
+			{"-tests", "x.json", "-links-at", "HEAD"},
+			{"-links", "-links-at", "0123456789abcdef"},
 		} {
 			if code := run(append([]string{"-repo", repo}, args...), strings.NewReader(""), io.Discard, io.Discard); code != exitUsage {
 				t.Errorf("%v: exit %d, want %d", args, code, exitUsage)
@@ -718,4 +733,29 @@ func TestLinks(t *testing.T) {
 			t.Fatalf("exit %d, want %d", code, exitData)
 		}
 	})
+}
+
+// Q-ARCH-1040: a link of a published page to a file the branch coverage does not hold points at the file on GitHub at the record's
+// commit; a link between the published files, an anchor of the page, a link with a scheme and a link in code stay as they are.
+func TestLinksAtTheRecordsCommit(t *testing.T) {
+	t.Parallel()
+	const c = "abc1234"
+	at := repoURL + "blob/" + c + "/"
+	for in, want := range map[string]string{
+		"[s](../spec/storage.md#r-stor-001--x)":        "[s](" + at + "docs/spec/storage.md#r-stor-001--x)",
+		"[r](roadmap.md)":                              "[r](" + at + "docs/coverage/roadmap.md)",
+		"[d](../spec/)":                                "[d](" + repoURL + "tree/" + c + "/docs/spec)",
+		"[root](/README.md)":                           "[root](" + at + "README.md)",
+		"[`code` text](../developer/coverage.md)":      "[`code` text](" + at + "docs/developer/coverage.md)",
+		"[c](checklist.md#widgets-wid) [r](README.md)": "[c](checklist.md#widgets-wid) [r](README.md)",
+		"[i](implemented.txt) [a](#same-page)":         "[i](implemented.txt) [a](#same-page)",
+		"[w](https://example.com/x.md)":                "[w](https://example.com/x.md)",
+		"`[x](../spec/a.md)` [y](../spec/b.md)":        "`[x](../spec/a.md)` [y](" + at + "docs/spec/b.md)",
+		"[ref]: ../features/README.md":                 "[ref]: " + at + "docs/features/README.md",
+		"```\n[f](../spec/a.md)\n```":                  "```\n[f](../spec/a.md)\n```",
+	} {
+		if got := linksAt(in, "docs/coverage", c); got != want {
+			t.Errorf("linksAt(%q)\n got %q\nwant %q", in, got, want)
+		}
+	}
 }

@@ -3436,11 +3436,12 @@ jobs:
           tools/fetch-e2e-reports.sh .out/reports-e2e .out/reports-carried | tee .out/carried.txt
 
       # The record is what the reports prove; it fails on a test name with an ID the specification does not define and on a cut
-      # report, never on what it adds or drops (main holds no record to compare, Q-ARCH-811).
+      # report, never on what it adds or drops (main holds no record to compare, Q-ARCH-811). The branch coverage holds the pages
+      # without the rest of the tree, so their links to the specification point at this commit on GitHub (-links-at, Q-ARCH-1040).
       - name: The evidence record written from the reports
         run: |
           set -euo pipefail
-          args=()
+          args=(-links-at "$GITHUB_SHA")
           for f in .out/reports/*/*.json .out/reports/*/*.xml; do args+=(-tests "$f"); done
           for f in .out/reports-e2e/*/*.json; do
             [ -e "$f" ] && args+=(-tests "$f")
@@ -3604,7 +3605,9 @@ jobs:
         with:
           client-id: ${{ secrets.APP_CLIENT_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          permission-contents: write  # tag, release, and the push of the branch coverage
+          # Tag, release, and the push of the branch coverage. No `workflows`: a commit on coverage holds the record and the badge
+          # alone, no file of .github/workflows (Q-ARCH-1040).
+          permission-contents: write
 
       - name: Checkout
         uses: actions/checkout@v7

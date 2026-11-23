@@ -26,12 +26,13 @@ const (
 
 // The evidence record and the coverage badge are written by the pipeline onto the branch recordBranch and never committed to
 // main (Q-ARCH-811). Without -tests the generator renders main's pages without an implementation status and refuses a tree that
-// holds either file.
+// holds either file. The branch holds these files and nothing else (Q-ARCH-1040); the badge is outside .github, where a push
+// with a token that lacks the permission `workflows` is refused for any file of .github/workflows.
 const (
 	recordBranch = "coverage"
 	recordPage   = "https://github.com/guided-traffic/quader/blob/" + recordBranch + "/docs/coverage/"
 	recordRel    = "docs/coverage/implemented.txt"
-	badgeRel     = ".github/badges/coverage.json"
+	badgeRel     = "badges/coverage.json"
 )
 
 type stringList []string
@@ -49,6 +50,9 @@ type options struct {
 	Carried []string
 	// Previous is the record the pipeline published last (on the branch coverage); the output lists what this record adds and drops.
 	Previous string
+	// LinksAt is the commit the record is made for: the pages' links to a file the branch coverage does not hold point at that
+	// file on GitHub at this commit (Q-ARCH-1040).
+	LinksAt string
 }
 
 func main() {
@@ -67,9 +71,11 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		"'-' reads stdin; repeatable, further file arguments count too; writes the evidence record from the reports (the pipeline's form)")
 	fs.Var(&carried, "carried", "like -tests, for a report of an earlier run of a leg that did not run in this one; repeatable, needs -tests")
 	fs.StringVar(&opts.Previous, "previous", "", "with -tests, the record published last: list the requirements this record adds and drops")
+	fs.StringVar(&opts.LinksAt, "links-at", "", "with -tests, the commit the record is made for: the pages' links to a file the branch "+
+		recordBranch+" does not hold point at that file on GitHub at this commit")
 	fs.Usage = func() {
 		fmt.Fprintf(stderr, "usage: coverage [-repo dir] [-check]\n"+
-			"       coverage [-repo dir] -tests report... [-carried report]... [-previous implemented.txt] [report...]\n"+
+			"       coverage [-repo dir] -tests report... [-carried report]... [-previous implemented.txt] [-links-at commit] [report...]\n"+
 			"       coverage [-repo dir] -links\n\n")
 		fs.PrintDefaults()
 	}
@@ -90,8 +96,8 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		opts.Repo = root
 	}
 	if opts.Links {
-		if len(opts.Tests) > 0 || len(opts.Carried) > 0 || opts.Previous != "" || opts.Check {
-			fmt.Fprintln(stderr, "coverage: -links does not combine with -check, -tests, -carried or -previous")
+		if len(opts.Tests) > 0 || len(opts.Carried) > 0 || opts.Previous != "" || opts.LinksAt != "" || opts.Check {
+			fmt.Fprintln(stderr, "coverage: -links does not combine with -check, -tests, -carried, -previous or -links-at")
 			return exitUsage
 		}
 		return runLinks(opts.Repo, stdout, stderr)
@@ -100,8 +106,12 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "coverage: -check does not combine with -tests: main holds no record to compare with (Q-ARCH-811)")
 		return exitUsage
 	}
-	if (len(opts.Carried) > 0 || opts.Previous != "") && len(opts.Tests) == 0 {
-		fmt.Fprintln(stderr, "coverage: -carried and -previous need -tests")
+	if (len(opts.Carried) > 0 || opts.Previous != "" || opts.LinksAt != "") && len(opts.Tests) == 0 {
+		fmt.Fprintln(stderr, "coverage: -carried, -previous and -links-at need -tests")
+		return exitUsage
+	}
+	if opts.LinksAt != "" && !commitHash.MatchString(opts.LinksAt) {
+		fmt.Fprintf(stderr, "coverage: -links-at %q is no commit hash\n", opts.LinksAt)
 		return exitUsage
 	}
 	return runGenerate(opts, stdin, stdout, stderr)
@@ -217,6 +227,10 @@ func runGenerate(opts options, stdin io.Reader, stdout, stderr io.Writer) int {
 	decisions, errs := renderDecisions(c.Questions, string(decisionsOld))
 	if len(errs) > 0 {
 		return fail(stderr, errs)
+	}
+	if opts.LinksAt != "" {
+		checklist = linksAt(checklist, "docs/coverage", opts.LinksAt)
+		readme = linksAt(readme, "docs/coverage", opts.LinksAt)
 	}
 	targets[filepath.Join(docs, "coverage", "checklist.md")] = checklist
 	targets[readmePath] = readme

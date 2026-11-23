@@ -11250,7 +11250,7 @@ past (Q-ARCH-594).
 |---|---|---|---|
 | (a) The release commits them to `main` again (`@semantic-release/git`, as before Q-ARCH-457) | `chore(release): <version> [skip ci]` on `main`, the tag on it | One place; the pages on `main` show the status | The plugin pushes before the tag: a landing pushed in between rejects that push and fails the release. Every release moves `main`, so a landing that fetched before it is rejected, about once per release; a landing that changed the specification conflicts in `checklist.md` and the README blocks |
 | (b) A step after the release commits them on top of the tip of `main`, retried | Never fails the release | No failed release | A `[skip ci]` commit on top of a push whose run is still going makes that run's semantic-release find `main` ahead and publish nothing; the rejections and conflicts of (a) stay; the pages must be rendered again on the tip's tree in the release job |
-| (c) A branch of their own, `coverage`, written by the release job (chosen) | Each publish is one commit whose tree is the record's commit with the four files and whose parents are the branch's head and that commit; `main` gets no commit from the pipeline | No landing is rejected and no release is lost by it; no conflict in the generated pages; the branch is browsable with every relative link; a hand edit on `main` is refused by the generator itself | The pages on `main` show the specification's coverage only and point to the branch; the badge's URL moves; the first publish creates the branch |
+| (c) A branch of their own, `coverage`, written by the release job (chosen) | Each publish is one commit on the branch's head that holds the four files ([Q-ARCH-1040](#q-arch-1040--a-commit-on-the-branch-coverage-holds-the-record-and-the-badge-alone): and nothing else); `main` gets no commit from the pipeline | No landing is rejected and no release is lost by it; no conflict in the generated pages; the branch is browsable, its pages linking the specification at the record's commit; a hand edit on `main` is refused by the generator itself | The pages on `main` show the specification's coverage only and point to the branch; the badge's URL moves; the first publish creates the branch |
 | (d) As (c), written by the evidence job at the end of every run | The freshest record | One run sooner | A credential that can push in a job that runs after every leg and on pull requests too; the release job holds one already |
 
 **From which run a record is whole**
@@ -11291,21 +11291,22 @@ what a test asserts, so it could not tell a refusal from the requirement either,
 **The commit on the branch.** Subject `chore(coverage): the evidence record of <commit> and the coverage badge of <commit> [skip ci]`
 (no workflow runs on a push to `coverage`; the marker keeps one from starting if a trigger is ever widened); trailers `Record-Commit`,
 `Record-Run`, `Badge-Commit`, `Badge-Run` and `Released-Commit`; files `docs/coverage/implemented.txt`, `docs/coverage/checklist.md` and
-`docs/coverage/README.md` from the artifact `coverage-evidence` and `.github/badges/coverage.json` from `coverage-badge`, on the tree of the
-record's commit. The job Semantic Release publishes after `npx semantic-release`, on every push run that reaches it: the record and the badge
-of the completed push run of release.yml whose commit is the released one or its nearest ancestor that has each (the release's own run is
-still going and has neither, so the record is usually one push behind the release). It publishes only what is newer than what the branch
-holds, by ancestry, so an older run's job never moves the branch back. The push is never forced; refused because another job pushed first,
-it is decided again on the new head, three times at most, then given up with a warning for the next release. A missing or older record, an
-unreadable artifact and an API that does not answer leave the branch as it is and say so in the log; the step cannot fail the job
-(`continue-on-error`).
+`docs/coverage/README.md` from the artifact `coverage-evidence` and `badges/coverage.json` from `coverage-badge`, and no other file; its
+only parent is the branch's head ([Q-ARCH-1040](#q-arch-1040--a-commit-on-the-branch-coverage-holds-the-record-and-the-badge-alone)). The job Semantic Release publishes after `npx semantic-release`, on every
+push run that reaches it: the record and the badge of the completed push run of release.yml whose commit is the released one or its nearest
+ancestor that has each (the release's own run is still going and has neither, so the record is usually one push behind the release). It
+publishes only what is newer than what the branch holds, by ancestry of the trailers' commits, so an older run's job never moves the branch
+back. The push is never forced; refused because another job pushed first (the branch moved since it was read), it is decided again on the
+new head, three times at most, then given up with a warning for the next release; refused while the branch did not move, it is not retried
+and the warning carries the remote's words. A missing or older record, an unreadable artifact and an API that does not answer leave the
+branch as it is and say so in the log; the step cannot fail the job (`continue-on-error`).
 
 **Token.** The push needs `contents: write` on the repository, which the App's token of the job already holds for the tag and the release
-(`permission-contents: write`, and no other permission); a token cannot be limited to one branch, so the branch adds no reach the job did
-not have. The job's own `GITHUB_TOKEN` gets `actions: read` beside `contents: read`, to list the runs and download the two artifacts. A
+(`permission-contents: write`, and no other permission: no `workflows`, so no commit of the branch may hold a workflow, Q-ARCH-1040); a
+token cannot be limited to one branch, so the branch adds no reach the job did not have. The job's own `GITHUB_TOKEN` gets `actions: read` beside `contents: read`, to list the runs and download the two artifacts. A
 pull request's run, a fork's and a run of a commit beside `main` are never a source.
 
-**A hand edit.** `main` holds neither `docs/coverage/implemented.txt` nor `.github/badges/coverage.json`, and the generator refuses a tree
+**A hand edit.** `main` holds neither `docs/coverage/implemented.txt` nor `badges/coverage.json`, and the generator refuses a tree
 that holds either (exit 1, in the plain run and in `-check`, so the gating job `coverage` fails); the pipeline's commits never reach
 `main`, so the check needs no author or subject to tell them from a builder's.
 
@@ -11322,6 +11323,52 @@ table, which then needs a release that commits before it tags.
 ([coveragerecord_test.go](../../internal/tools/ciworkflows/coveragerecord_test.go)), and the `Q-ARCH-811` cases of
 [coverage_test.go](../../internal/tools/coverage/coverage_test.go). Elsewhere: [coverage.md](../developer/coverage.md#the-record-on-the-branch-coverage),
 [releasing.md](../developer/releasing.md#release-flow), [the coverage page](../coverage/README.md#how-the-numbers-are-produced).
+
+### Q-ARCH-1040 · A commit on the branch `coverage` holds the record and the badge alone
+
+Status: **Decided by the development agent** (2026-11-23) — selected from the options below; the owner reviews it at the walkthrough.
+Refines [Q-ARCH-811](#q-arch-811--the-pipeline-writes-the-evidence-record-and-the-coverage-badge-onto-the-branch-coverage-main-holds-neither).
+
+Context: the first publish of the record (Test and Release 45212749706, release 0.112.2, 2026-11-23) built its commit on the tree of the
+record's commit, with the record's commit as a second parent, and GitHub refused the push three times: "refusing to allow a GitHub App to
+create or update workflow `.github/workflows/performance.yml` without `workflows` permission". The tree carried every workflow of `main`,
+and the App's token holds `contents: write` alone. The script read each refusal as another job's push, so the branch was never created and
+the README's badge showed nothing.
+
+**What the commit holds**
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The token gets the permission `workflows` | The old commit goes through | No change of the commit | The release job's token could then create and change workflows on any branch: a credential that rewrites the pipeline, to publish four files |
+| (b) The record's tree without `.github/workflows` | The commit keeps the rest of the repository | Relative links of the pages resolve on the branch | The branch carries a copy of the repository that is no commit of `main`; the next directory GitHub guards refuses it again; a parent on `main` is still needed to keep the objects small |
+| (c) The four files and nothing else; the branch's head as the only parent; the pages' links to the rest of the repository at the record's commit on GitHub (chosen) | A tree of four files; the record's and the badge's commits are named in the trailers only | Nothing a guarded path holds can be pushed; the branch is a history of records alone, a few kilobytes per commit; the links lead to the specification as it stood at the record's commit, which is what the relative links meant | The pages need a generator flag (`-links-at`), and a record made before the flag carries relative links that lead nowhere on the branch until a newer record replaces it |
+
+**Where the badge is**
+
+| Option | For | Against |
+|---|---|---|
+| (i) `.github/badges/coverage.json` as before | The README's address stays | Whether GitHub guards more of `.github` than `workflows` for an App's token could not be checked without a push |
+| (ii) `badges/coverage.json` (chosen) | Outside every guarded path; one file name, beside the record's directory | The README's badge address moves |
+
+**When a push is retried.** Only when the branch moved since the script read it: the branch's head on the remote is read again after a
+refusal, and a head that differs is another job's publish, decided again on that head (three times at most). A refusal while the head
+stands where it was read is a rule or a permission of the remote; it is not retried, and the warning carries the remote's words: the
+ref's status of `git push --porcelain` (`[remote rejected] (<reason>)`) and the lines the remote printed. The messages are not matched by
+their text, which differs between git and GitHub and between GitHub's rules.
+
+**Choice:** (c) and (ii). **Rationale:** (c) gives the release job's token nothing it did not have and cannot meet a guarded path whatever
+GitHub guards next; the trailers already decide what is newer, so the history of `main` is not needed on the branch. (ii) costs a changed
+address in the README, which pre-alpha allows, and removes the one uncertainty that only a push could have shown. The development agent
+revisits (c) if the branch's pages are to be read offline with their links. **Applied in the spec:** Q-ARCH-811 (the commit on the
+branch, the token, a hand edit). Code: [publish-coverage-record.sh](../../tools/publish-coverage-record.sh),
+[internal/tools/coverage](../../internal/tools/coverage/publish.go) (`-links-at`, the badge's path), [release.yml](../../.github/workflows/release.yml)
+(`coverage-evidence` passes `-links-at "$GITHUB_SHA"`), the README's badge. Tests: `TestPublishCoverageRecordFromTheNearestRun` and
+`TestPublishCoverageRecordRetriesARaceAndNothingElse` (a remote whose hook refuses a pushed tree with a workflow in GitHub's words, a race
+of another job, a refusal by a rule), `TestTheRecordIsPublishedAfterTheReleaseAndHoldsNothing`
+([coveragerecord_test.go](../../internal/tools/ciworkflows/coveragerecord_test.go)), `TestLinksAtTheRecordsCommit` and the `Q-ARCH-1040`
+case of [coverage_test.go](../../internal/tools/coverage/coverage_test.go). Elsewhere:
+[coverage.md](../developer/coverage.md#the-record-on-the-branch-coverage), [releasing.md](../developer/releasing.md#release-flow),
+[data-and-secret-flow.md](../security/data-and-secret-flow.md).
 
 ### Q-ARCH-446 · A response to a request whose body is unread is sent first, then the body is read and discarded within a bound
 

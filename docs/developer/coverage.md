@@ -13,9 +13,9 @@ for people who change or run it.
 
 | Command | What it does | Exit code |
 |---|---|---|
-| `go run ./internal/tools/coverage` | Regenerates [checklist.md](../coverage/checklist.md), the four marked blocks of [coverage/README.md](../coverage/README.md) and the index of decided questions in [decisions.md](../decisions.md#decisions-by-the-development-agent). It renders what the specification covers and no implementation status: `main` holds no evidence record, and the pages point to the record on the branch `coverage` ([below](#the-record-on-the-branch-coverage)). It refuses a tree that holds `docs/coverage/implemented.txt` or `.github/badges/coverage.json`. | 0, or 1 on a rule violation or a record or badge in the tree |
+| `go run ./internal/tools/coverage` | Regenerates [checklist.md](../coverage/checklist.md), the four marked blocks of [coverage/README.md](../coverage/README.md) and the index of decided questions in [decisions.md](../decisions.md#decisions-by-the-development-agent). It renders what the specification covers and no implementation status: `main` holds no evidence record, and the pages point to the record on the branch `coverage` ([below](#the-record-on-the-branch-coverage)). It refuses a tree that holds `docs/coverage/implemented.txt` or `badges/coverage.json`. | 0, or 1 on a rule violation or a record or badge in the tree |
 | `go run ./internal/tools/coverage -check` | Writes nothing. Fails when a generated file differs from what would be generated, and names each question whose row in the index is missing, has no block or no longer matches its block; refuses a record or a badge in the tree like the plain run. This is the `git diff --exit-code` of E0.8 without needing git. | 0, 1 rule violation, 2 stale file |
-| `go run ./internal/tools/coverage -tests <report> [-carried <report>] [-previous <implemented.txt>]` | The pipeline's form: writes `implemented.txt` from the reports and `checklist.md` and the README blocks rendered from it, with the implementation status. With `-previous` (the record on the branch `coverage`) it lists the requirements the record adds (`newly proven`) and the ones it drops (`no longer proven`), each with its reason; it fails on neither ([Q-ARCH-811](../spec/architecture.md#q-arch-811--the-pipeline-writes-the-evidence-record-and-the-coverage-badge-onto-the-branch-coverage-main-holds-neither)). Locally it shows what a set of reports proves; its output is never committed to `main`. | 0, 1 rule violation, unknown ID or cut report |
+| `go run ./internal/tools/coverage -tests <report> [-carried <report>] [-previous <implemented.txt>] [-links-at <commit>]` | The pipeline's form: writes `implemented.txt` from the reports and `checklist.md` and the README blocks rendered from it, with the implementation status. With `-links-at` (the pipeline passes the run's commit) every link of the two pages to a file the branch `coverage` does not hold points at that file on GitHub at the commit, `https://github.com/guided-traffic/quader/blob/<commit>/docs/spec/…`; a link between the published files stays relative ([Q-ARCH-1040](../spec/architecture.md#q-arch-1040--a-commit-on-the-branch-coverage-holds-the-record-and-the-badge-alone)). With `-previous` (the record on the branch `coverage`) it lists the requirements the record adds (`newly proven`) and the ones it drops (`no longer proven`), each with its reason; it fails on neither ([Q-ARCH-811](../spec/architecture.md#q-arch-811--the-pipeline-writes-the-evidence-record-and-the-coverage-badge-onto-the-branch-coverage-main-holds-neither)). Locally it shows what a set of reports proves; its output is never committed to `main`. | 0, 1 rule violation, unknown ID or cut report |
 | `go run ./internal/tools/coverage -links` | Checks every relative Markdown link and `#anchor` in the repository. Replaces the interim `check_links.py` and `check_anchors.py`. | 0, or 1 on a broken link |
 
 Flags:
@@ -53,7 +53,7 @@ The program exits with 1 and prints every problem (not only the first) for:
 - an unclosed code fence;
 - a test name that carries a requirement ID no spec page defines, plainly or with the marker `-unbuilt`;
 - a `go test -json` report in which a package started and did not end (cut: its job was stopped while the package ran);
-- without `-tests`, a `docs/coverage/implemented.txt` or `.github/badges/coverage.json` in the tree;
+- without `-tests`, a `docs/coverage/implemented.txt` or `badges/coverage.json` in the tree;
 - a missing marker pair, an audience page without entries;
 - a row of the index of decided questions (`| [Q-…](…) |`) in `docs/decisions.md` outside its marker pair.
 
@@ -213,21 +213,30 @@ Since [Q-ARCH-811](../spec/architecture.md#q-arch-811--the-pipeline-writes-the-e
   it. The release's own run is still going, so the published record is usually that of the push before. A run of a commit that is no
   ancestor is never a source, so the record never runs ahead of the commit it is published for.
 - **The branch gets one commit per newer record or badge**: subject `chore(coverage): the evidence record of <commit> and the coverage
-  badge of <commit> [skip ci]`, trailers `Record-Commit`, `Record-Run`, `Badge-Commit`, `Badge-Run` and `Released-Commit`; its tree is the
-  record's commit with `docs/coverage/implemented.txt`, `checklist.md`, `README.md` and `.github/badges/coverage.json`, so every relative
-  link of the pages resolves on the branch; its parents are the branch's head and the record's commit, so the push is a fast-forward. It is
-  never forced. Only what is newer than what the branch holds is published, by ancestry, so an older run's job never moves it back.
+  badge of <commit> [skip ci]`, trailers `Record-Commit`, `Record-Run`, `Badge-Commit`, `Badge-Run` and `Released-Commit`. Its tree holds
+  four files and nothing else: `docs/coverage/implemented.txt`, `checklist.md` and `README.md` and `badges/coverage.json`, each the newer
+  one or the one the branch held. Its only parent is the branch's head (none for the first commit), so the push is a fast-forward; the
+  record's and the badge's commits on `main` are in the trailers, not in the history. It is never forced. Only what is newer than what the
+  branch holds is published, by ancestry of the trailers' commits, so an older run's job never moves it back
+  ([Q-ARCH-1040](../spec/architecture.md#q-arch-1040--a-commit-on-the-branch-coverage-holds-the-record-and-the-badge-alone)).
+- **No workflow on the branch.** The App's token holds `contents: write` and no `workflows` permission, and GitHub refuses such a token a
+  pushed commit whose tree holds a file of `.github/workflows`: the first publish of 2026-11-23 carried the record's whole tree and was
+  refused three times. The badge is therefore outside `.github` too, and the pages' links to the specification, the catalog and these
+  developer pages, which the branch does not hold, point at the record's commit on GitHub (the generator's `-links-at`, given the run's
+  commit by the evidence job); their links to each other and to `implemented.txt` stay relative.
 - **Nothing holds or fails the release.** A missing, older or unreadable record and an API that does not answer leave the branch as it is
-  and say so in the job's log; a push refused because another job pushed first is decided again on the new head, three times at most,
-  then given up with a warning for the next release; the step has `continue-on-error`.
+  and say so in the job's log. A refused push is decided again on the branch's new head when the branch moved since it was read (another
+  job published first), three times at most, then given up with a warning for the next release; a refusal while the branch stands where it
+  was read (a rule or a permission of the remote) is not retried, and the warning carries the remote's own words. The step has
+  `continue-on-error`.
 - **Landings change nothing.** The pipeline never commits to `main`, so no landing is rejected by it and no rebase meets it. A builder does
-  not add or edit `docs/coverage/implemented.txt` or `.github/badges/coverage.json`: the generator refuses either in the tree, in the plain
+  not add or edit `docs/coverage/implemented.txt` or `badges/coverage.json`: the generator refuses either in the tree, in the plain
   run and in the gating `-check`. A change to the catalog or the spec reruns `go run ./internal/tools/coverage` (`make coverage`), which
   renders `main`'s pages without an implementation status. A test that is removed or renamed on purpose needs nothing more: its
   requirement leaves the record with the next run that does not prove it, and the job summary names it.
 - **Reading the record:** `https://github.com/guided-traffic/quader/blob/coverage/docs/coverage/README.md`, or in a checkout
   `git fetch origin coverage` and then `git show origin/coverage:docs/coverage/implemented.txt`. The README's badge reads
-  `.github/badges/coverage.json` of the branch.
+  `badges/coverage.json` of the branch.
 
 ### Why CI writes the record
 

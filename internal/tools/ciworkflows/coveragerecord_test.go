@@ -179,6 +179,8 @@ func newHistory(t *testing.T) *history {
 	h := &history{dir: t.TempDir(), sha: map[string]string{}}
 	gitIn(t, h.dir, "init", "-q", "-b", "main")
 	writeFile(t, filepath.Join(h.dir, "docs", "coverage", "README.md"), "# Coverage\n")
+	// A workflow, as main holds them: a commit on the branch coverage that carried main's tree would carry it too.
+	writeFile(t, filepath.Join(h.dir, ".github", "workflows", "release.yml"), "on: push\n")
 	gitIn(t, h.dir, "add", ".")
 	for _, c := range []string{"c1", "c2", "c3"} {
 		gitIn(t, h.dir, "commit", "-q", "--allow-empty", "-m", c)
@@ -319,9 +321,10 @@ func TestFetchE2EReportsChoosesByCommit(t *testing.T) {
 	}
 }
 
-// record is what the branch coverage holds after a run of the publish script: the record, the badge and the head's trailers.
+// record is what the branch coverage holds after a run of the publish script: the record, the badge, every file of the head's
+// tree, and the head's message and parents.
 type record struct {
-	implemented, badge, message, parents string
+	implemented, badge, message, parents, files string
 }
 
 func branchRecord(t *testing.T, bare string) record {
@@ -337,9 +340,10 @@ func branchRecord(t *testing.T, bare string) record {
 	}
 	return record{
 		implemented: read("docs/coverage/implemented.txt"),
-		badge:       read(".github/badges/coverage.json"),
+		badge:       read("badges/coverage.json"),
 		message:     gitIn(t, bare, "log", "-1", "--format=%B", "coverage"),
 		parents:     gitIn(t, bare, "log", "-1", "--format=%P", "coverage"),
+		files:       strings.ReplaceAll(gitIn(t, bare, "ls-tree", "-r", "--name-only", "coverage"), "\n", " "),
 	}
 }
 
@@ -347,10 +351,56 @@ func badgeOf(pct string) string {
 	return `{"schemaVersion":1,"label":"coverage","message":"` + pct + `","color":"green"}`
 }
 
+// The files of the branch coverage, and nothing else of the repository (Q-ARCH-1040).
+const branchFiles = "badges/coverage.json docs/coverage/README.md docs/coverage/checklist.md docs/coverage/implemented.txt"
+
+// refuseWorkflows is the pre-receive hook of the test's remote: it refuses a pushed commit whose tree holds a file under
+// .github/workflows in GitHub's words for a token without the permission `workflows` (Test and Release 45212749706, 2026-11-23).
+const refuseWorkflows = `#!/bin/sh
+z=0000000000000000000000000000000000000000
+while read -r old new ref; do
+  [ "$new" = "$z" ] && continue
+  for c in $(git rev-list "$new" --not --all); do
+    f=$(git ls-tree -r --name-only "$c" -- .github/workflows | head -n1)
+    if [ -n "$f" ]; then
+      printf 'refusing to allow a GitHub App to create or update workflow ` + "`%s` without `workflows`" + ` permission\n' "$f" >&2
+      exit 1
+    fi
+  done
+done
+`
+
+// raceGit stands in front of git on PATH: before each of the first RACE_TIMES pushes another job publishes first, a commit on top
+// of the branch's head with the same files and trailers, so the script's push is no fast-forward of the head it read.
+const raceGit = `#!/usr/bin/env bash
+if [ "${1:-}" = push ]; then
+  n=$(cat "$RACE_COUNT" 2>/dev/null || echo 0)
+  if [ "$n" -lt "$RACE_TIMES" ]; then
+    echo $((n+1)) > "$RACE_COUNT"
+    export GIT_AUTHOR_NAME=other GIT_AUTHOR_EMAIL=other@example.com GIT_COMMITTER_NAME=other GIT_COMMITTER_EMAIL=other@example.com
+    h=$("$REAL_GIT" -C "$RACE_BARE" rev-parse coverage)
+    c=$("$REAL_GIT" -C "$RACE_BARE" commit-tree "$h^{tree}" -p "$h" -m "$("$REAL_GIT" -C "$RACE_BARE" log -1 --format=%B "$h")")
+    "$REAL_GIT" -C "$RACE_BARE" update-ref refs/heads/coverage "$c" "$h"
+  fi
+fi
+exec "$REAL_GIT" "$@"
+`
+
+func installHook(t *testing.T, bare, script string) {
+	t.Helper()
+	hook := filepath.Join(bare, "hooks", "pre-receive")
+	writeFile(t, hook, script)
+	if err := os.Chmod(hook, 0o755); err != nil {
+		t.Fatal(err)
+	}
+}
+
 // The record and the badge are published onto the branch coverage from the nearest run of this commit or an ancestor that wrote
-// them, never from a newer commit's run; the push is a fast-forward, never forced; a second run with nothing newer writes
-// nothing; a badge alone moves the badge; an older record than the branch's is not published; a refused push is decided again;
-// a push refused three times and an API that does not answer end with a warning and exit 0; main is never written.
+// them, never from a newer commit's run (Q-ARCH-811). A commit on the branch holds the four files and nothing else, and its only
+// parent is the branch's head, so a remote that refuses a tree with a workflow, as GitHub refuses the App's token, accepts it
+// (Q-ARCH-1040); the record's and the badge's commits stay in the trailers. A second run with nothing newer writes nothing; a
+// badge alone moves the badge and keeps the record's files; an older record than the branch's is not published; an API that does
+// not answer ends with a warning and exit 0; main is never written.
 func TestPublishCoverageRecordFromTheNearestRun(t *testing.T) {
 	t.Parallel()
 	h := newHistory(t)
@@ -359,7 +409,19 @@ func TestPublishCoverageRecordFromTheNearestRun(t *testing.T) {
 	gitIn(t, bare, "config", "receive.denyNonFastForwards", "true")
 	gitIn(t, h.dir, "remote", "add", "origin", bare)
 	gitIn(t, h.dir, "push", "-q", "origin", "main")
+	installHook(t, bare, refuseWorkflows)
 	mainBefore := gitIn(t, bare, "rev-parse", "main")
+
+	t.Run("the remote refuses a tree with a workflow, as GitHub did", func(t *testing.T) {
+		// What the script pushed on 2026-11-23: a new commit with the tree of the record's commit, workflows and all.
+		full := gitIn(t, h.dir, "commit-tree", h.sha["c3"]+"^{tree}", "-p", h.sha["c3"], "-m", "chore(coverage): the whole tree")
+		cmd := exec.Command("git", "push", "origin", full+":refs/heads/coverage")
+		cmd.Dir = h.dir
+		out, err := cmd.CombinedOutput()
+		if err == nil || !strings.Contains(string(out), "refusing to allow a GitHub App to create or update workflow `.github/workflows/release.yml`") {
+			t.Fatalf("the push of a commit with a workflow file was not refused in GitHub's words (%v):\n%s", err, out)
+		}
+	})
 
 	f := newAPIFixture(t)
 	f.runs(t, "release.yml",
@@ -368,12 +430,15 @@ func TestPublishCoverageRecordFromTheNearestRun(t *testing.T) {
 		recordedRun{id: 3, sha: h.sha["x"], age: time.Minute, artifacts: map[string]string{"coverage-evidence": "R-X-001\n", "coverage-badge": badgeOf("99%")}},
 	)
 	status, out, _ := runScript(t, h, f, "publish-coverage-record.sh", nil)
-	if status != 0 {
-		t.Fatalf("exit %d:\n%s", status, out)
+	if status != 0 || !strings.Contains(out, "published to coverage: ") {
+		t.Fatalf("exit %d, or no line that it published:\n%s", status, out)
 	}
 	got := branchRecord(t, bare)
 	if got.implemented != "R-A-001\n" || !strings.Contains(got.badge, "80%") {
 		t.Fatalf("the branch holds %q and %q, want the record and the badge of run 1 (c3):\n%s", got.implemented, got.badge, out)
+	}
+	if got.files != branchFiles {
+		t.Errorf("the branch's tree holds %q, want %q and nothing else", got.files, branchFiles)
 	}
 	for _, want := range []string{
 		"chore(coverage): the evidence record of " + h.sha["c3"][:9], "[skip ci]",
@@ -383,8 +448,8 @@ func TestPublishCoverageRecordFromTheNearestRun(t *testing.T) {
 			t.Errorf("the commit message lacks %q:\n%s", want, got.message)
 		}
 	}
-	if got.parents != h.sha["c3"] {
-		t.Errorf("the first commit of the branch has the parents %q, want the record's commit", got.parents)
+	if got.parents != "" {
+		t.Errorf("the first commit of the branch has the parents %q, want none", got.parents)
 	}
 	if checklist := gitIn(t, bare, "show", "coverage:docs/coverage/checklist.md"); checklist != "# checklist of R-A-001" {
 		t.Errorf("checklist.md on the branch: %q", checklist)
@@ -405,12 +470,13 @@ func TestPublishCoverageRecordFromTheNearestRun(t *testing.T) {
 	)
 	status, out, _ = runScript(t, h, f, "publish-coverage-record.sh", nil)
 	got = branchRecord(t, bare)
-	if status != 0 || got.implemented != "R-A-001\n" || !strings.Contains(got.badge, "81%") || got.parents != first {
-		t.Fatalf("exit %d; the branch holds %q, %q with the parents %q; want the record of c3, the badge of c4 on top of %s:\n%s",
-			status, got.implemented, got.badge, got.parents, first, out)
+	if status != 0 || got.implemented != "R-A-001\n" || !strings.Contains(got.badge, "81%") || got.parents != first || got.files != branchFiles {
+		t.Fatalf("exit %d; the branch holds %q, %q in %q with the parents %q; want the record of c3, the badge of c4 on top of %s:\n%s",
+			status, got.implemented, got.badge, got.files, got.parents, first, out)
 	}
-	if !strings.Contains(got.message, "Record-Commit: "+h.sha["c3"]) || !strings.Contains(got.message, "Badge-Commit: "+h.sha["c4"]) {
-		t.Errorf("the trailers do not name the record of c3 and the badge of c4:\n%s", got.message)
+	if !strings.Contains(got.message, "Record-Commit: "+h.sha["c3"]) || !strings.Contains(got.message, "Record-Run: 1") ||
+		!strings.Contains(got.message, "Badge-Commit: "+h.sha["c4"]) {
+		t.Errorf("the trailers do not name the record of c3 (run 1) and the badge of c4:\n%s", got.message)
 	}
 	second := gitIn(t, bare, "rev-parse", "coverage")
 
@@ -429,44 +495,103 @@ func TestPublishCoverageRecordFromTheNearestRun(t *testing.T) {
 			t.Fatalf("exit %d:\n%s", status, out)
 		}
 	})
-
-	// A refused push: the hook refuses the first attempts, as a push of another job in between would.
-	hook := filepath.Join(bare, "hooks", "pre-receive")
-	count := filepath.Join(t.TempDir(), "count")
-	refuse := func(times int) {
-		writeFile(t, hook, fmt.Sprintf("#!/bin/sh\nn=$(cat %q 2>/dev/null || echo 0); echo $((n+1)) > %q; [ \"$n\" -ge %d ]\n", count, count, times))
-		if err := os.Chmod(hook, 0o755); err != nil {
-			t.Fatal(err)
-		}
-		_ = os.Remove(count)
-	}
-	f.runs(t, "release.yml",
-		recordedRun{id: 5, sha: h.sha["c4"], age: time.Minute, artifacts: map[string]string{"coverage-evidence": "R-A-004\n", "coverage-badge": badgeOf("82%")}})
-
-	refuse(3)
-	status, out, _ = runScript(t, h, f, "publish-coverage-record.sh", nil)
-	if status != 0 || !strings.Contains(out, "::warning::the record and the badge were not published") || gitIn(t, bare, "rev-parse", "coverage") != second {
-		t.Fatalf("three refused pushes: exit %d, or the branch moved:\n%s", status, out)
-	}
-
-	refuse(1)
-	status, out, _ = runScript(t, h, f, "publish-coverage-record.sh", nil)
-	got = branchRecord(t, bare)
-	if status != 0 || got.implemented != "R-A-004\n" || !strings.Contains(out, "refused (attempt 1)") || !strings.Contains(out, "published to coverage") {
-		t.Fatalf("one refused push: exit %d, the branch holds %q:\n%s", status, got.implemented, out)
-	}
-	if got.parents != second+" "+h.sha["c4"] {
-		t.Errorf("the parents are %q, want the branch's head and the record's commit", got.parents)
-	}
 	if after := gitIn(t, bare, "rev-parse", "main"); after != mainBefore {
 		t.Errorf("main moved from %s to %s", mainBefore, after)
 	}
 }
 
+// A push refused because another job published first is decided again on the branch's new head, up to three times; a push the
+// remote refuses while the branch stands where it was read is not retried, and the job's log carries the remote's own words
+// (Q-ARCH-1040). Every case ends with exit 0.
+func TestPublishCoverageRecordRetriesARaceAndNothingElse(t *testing.T) {
+	t.Parallel()
+	realGit, err := exec.LookPath("git")
+	if err != nil {
+		t.Skip("git is not on PATH")
+	}
+	h := newHistory(t)
+	bare := t.TempDir()
+	gitIn(t, bare, "init", "-q", "--bare")
+	gitIn(t, bare, "config", "receive.denyNonFastForwards", "true")
+	gitIn(t, h.dir, "remote", "add", "origin", bare)
+	gitIn(t, h.dir, "push", "-q", "origin", "main")
+	installHook(t, bare, refuseWorkflows)
+
+	f := newAPIFixture(t)
+	f.runs(t, "release.yml",
+		recordedRun{id: 1, sha: h.sha["c3"], artifacts: map[string]string{"coverage-evidence": "R-A-001\n", "coverage-badge": badgeOf("80%")}})
+	if status, out, _ := runScript(t, h, f, "publish-coverage-record.sh", nil); status != 0 || !strings.Contains(out, "published to coverage: ") {
+		t.Fatalf("the first publish: exit %d:\n%s", status, out)
+	}
+	f.runs(t, "release.yml",
+		recordedRun{id: 5, sha: h.sha["c4"], artifacts: map[string]string{"coverage-evidence": "R-A-004\n", "coverage-badge": badgeOf("82%")}})
+
+	wrapper := t.TempDir()
+	writeFile(t, filepath.Join(wrapper, "git"), raceGit)
+	if err := os.Chmod(filepath.Join(wrapper, "git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	race := func(times int) []string {
+		return []string{
+			"PATH=" + wrapper + string(os.PathListSeparator) + f.dir + string(os.PathListSeparator) + os.Getenv("PATH"),
+			"REAL_GIT=" + realGit, "RACE_BARE=" + bare, "RACE_COUNT=" + filepath.Join(t.TempDir(), "count"), fmt.Sprintf("RACE_TIMES=%d", times),
+		}
+	}
+
+	before := gitIn(t, bare, "rev-parse", "coverage")
+	status, out, _ := runScript(t, h, f, "publish-coverage-record.sh", race(3))
+	if status != 0 || !strings.Contains(out, "::warning::the record and the badge were not published: the branch coverage moved three times") ||
+		strings.Count(out, "while this job decided (attempt") != 3 {
+		t.Fatalf("three races: exit %d, or not three decisions and the warning:\n%s", status, out)
+	}
+	if got := branchRecord(t, bare); got.implemented != "R-A-001\n" {
+		t.Fatalf("three races: the branch holds %q, want the competitors' record of c3", got.implemented)
+	}
+	if n := gitIn(t, bare, "rev-list", "--count", before+"..coverage"); n != "3" {
+		t.Errorf("three races: %s commits on top of the head before, want the three of the other job", n)
+	}
+
+	status, out, _ = runScript(t, h, f, "publish-coverage-record.sh", race(1))
+	got := branchRecord(t, bare)
+	competitor := gitIn(t, bare, "rev-parse", "coverage^")
+	if status != 0 || got.implemented != "R-A-004\n" || !strings.Contains(out, "while this job decided (attempt 1") ||
+		!strings.Contains(out, "published to coverage: ") {
+		t.Fatalf("one race: exit %d, the branch holds %q:\n%s", status, got.implemented, out)
+	}
+	if got.parents != competitor || got.files != branchFiles {
+		t.Errorf("one race: the parents are %q and the files %q, want the other job's commit alone and the four files", got.parents, got.files)
+	}
+	if gitIn(t, bare, "log", "-1", "--format=%an", competitor) != "other" {
+		t.Errorf("one race: the parent %s is not the other job's commit", competitor)
+	}
+
+	// A rule of the remote: the push is refused, the branch does not move, and the script says so in the remote's words, once.
+	// The record of c4 is published, so a newer one is needed: a commit c5 on main and its run.
+	gitIn(t, h.dir, "commit", "-q", "--allow-empty", "-m", "c5")
+	c5 := gitIn(t, h.dir, "rev-parse", "HEAD")
+	f.runs(t, "release.yml", recordedRun{id: 8, sha: c5, artifacts: map[string]string{"coverage-evidence": "R-A-005\n"}})
+	attempts := filepath.Join(t.TempDir(), "attempts")
+	installHook(t, bare, fmt.Sprintf("#!/bin/sh\necho x >> %q\necho 'GH013: Repository rule violations found for refs/heads/coverage.' >&2\nexit 1\n", attempts))
+	held := gitIn(t, bare, "rev-parse", "coverage")
+	status, out, _ = runScript(t, h, f, "publish-coverage-record.sh", []string{"GITHUB_SHA=" + c5})
+	if status != 0 || !strings.Contains(out, "::warning::the push to coverage was refused and is not retried, since the branch did not move: ") ||
+		!strings.Contains(out, "GH013: Repository rule violations found for refs/heads/coverage.") ||
+		!strings.Contains(out, "pre-receive hook declined") {
+		t.Fatalf("a rule's refusal: exit %d, or not reported in the remote's words:\n%s", status, out)
+	}
+	if raw, _ := os.ReadFile(attempts); strings.Count(string(raw), "x") != 1 {
+		t.Errorf("a rule's refusal was pushed %d times, want once:\n%s", strings.Count(string(raw), "x"), out)
+	}
+	if gitIn(t, bare, "rev-parse", "coverage") != held {
+		t.Error("a rule's refusal moved the branch")
+	}
+}
+
 // The wiring of Q-ARCH-811: the evidence job writes the record from the reports with the whole history checked out and without
-// comparing a committed list; it requires the tiers that run on every push and no leg; Semantic Release needs neither coverage
-// job, publishes after the release in a step that cannot fail it, and holds contents: read and actions: read and no more (the
-// push uses the App's token); no release plugin commits files to main.
+// comparing a committed list, its pages' links pointed at the run's commit (Q-ARCH-1040); it requires the tiers that run on every
+// push and no leg; Semantic Release needs neither coverage job, publishes after the release in a step that cannot fail it, and
+// holds contents: read and actions: read and no more (the push uses the App's token, which holds contents: write and no other
+// permission, Q-ARCH-1040); no release plugin commits files to main.
 func TestTheRecordIsPublishedAfterTheReleaseAndHoldsNothing(t *testing.T) {
 	t.Parallel()
 	w := loadWorkflows(t)["release.yml"]
@@ -491,6 +616,9 @@ func TestTheRecordIsPublishedAfterTheReleaseAndHoldsNothing(t *testing.T) {
 	if strings.Contains(record, "-claims") || !strings.Contains(record, "-previous") {
 		t.Errorf("the record step compares a committed list or does not compare with the branch's record:\n%s", record)
 	}
+	if !strings.Contains(record, `-links-at "$GITHUB_SHA"`) {
+		t.Errorf("the record step does not point the pages' links at the run's commit (Q-ARCH-1040):\n%s", record)
+	}
 
 	release := w.Jobs["semantic-release"]
 	var needs []string
@@ -505,8 +633,19 @@ func TestTheRecordIsPublishedAfterTheReleaseAndHoldsNothing(t *testing.T) {
 	if len(release.Permissions) != 2 || release.Permissions["contents"] != "read" || release.Permissions["actions"] != "read" {
 		t.Errorf("semantic-release holds %v, want contents: read and actions: read", release.Permissions)
 	}
-	releaseAt, publishAt := -1, -1
+	releaseAt, publishAt, tokenAt := -1, -1, -1
 	for i, s := range release.Steps {
+		if strings.HasPrefix(s.Uses, "actions/create-github-app-token@") {
+			tokenAt = i
+			for k, v := range s.With {
+				if strings.HasPrefix(k, "permission-") && (k != "permission-contents" || v != "write") {
+					t.Errorf("the App's token of semantic-release asks for %s: %s; it holds contents: write and nothing else (Q-ARCH-1040)", k, v)
+				}
+			}
+			if s.With["permission-contents"] != "write" {
+				t.Errorf("the App's token of semantic-release has contents %q, want write", s.With["permission-contents"])
+			}
+		}
 		if strings.Contains(s.Run, "npx semantic-release") {
 			releaseAt = i
 		}
@@ -519,6 +658,9 @@ func TestTheRecordIsPublishedAfterTheReleaseAndHoldsNothing(t *testing.T) {
 				t.Errorf("the publish step calls the API with %q, want the job's own token", s.Env["GITHUB_TOKEN"])
 			}
 		}
+	}
+	if tokenAt < 0 {
+		t.Error("semantic-release has no step that creates the App's token")
 	}
 	if releaseAt < 0 || publishAt <= releaseAt {
 		t.Errorf("the publish step is at %d, the release at %d: the record is published after the release", publishAt, releaseAt)

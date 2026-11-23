@@ -1,7 +1,7 @@
 # Quader
 
 [![Build Status](https://github.com/guided-traffic/quader/actions/workflows/release.yml/badge.svg)](https://github.com/guided-traffic/quader/actions)
-[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/guided-traffic/quader/coverage/.github/badges/coverage.json)](https://github.com/guided-traffic/quader/blob/coverage/docs/coverage/README.md)
+[![Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/guided-traffic/quader/coverage/badges/coverage.json)](https://github.com/guided-traffic/quader/blob/coverage/docs/coverage/README.md)
 [![Go Report Card](https://goreportcard.com/badge/github.com/guided-traffic/quader)](https://goreportcard.com/report/github.com/guided-traffic/quader)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 

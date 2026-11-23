@@ -9127,10 +9127,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-ARCH
 
-275 questions on [spec/architecture.md](spec/architecture.md).
+276 questions on [spec/architecture.md](spec/architecture.md).
 
 <details>
-<summary>Q-ARCH: 275 questions</summary>
+<summary>Q-ARCH: 276 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9409,6 +9409,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ARCH-702](spec/architecture.md#q-arch-702--a-test-waits-for-the-state-it-stands-for-and-does-not-depend-on-the-hosts-speed) | A test waits for the state it stands for and does not depend on the host's speed | Decided by the development agent | (a) Per test, the cause removed: a stopped or advanced clock where the test's own clock decides; the product's default, or a generous value with its reason beside it, for a bound the test does not stand for; a wait for the event; a clone of the template for a component area's database | — |
 | [Q-ARCH-703](spec/architecture.md#q-arch-703--a-landing-names-the-areas-whose-tests-name-a-member-the-change-made-to-an-answer) | A landing names the areas whose tests name a member the change made to an answer | Decided by the development agent | (a), [apiareas](../internal/tools/apiareas/main.go), held by `TestTheChangedMembersAndTheAreasThatNameThem` and `TestTheRealDocumentHasMembers` (milliseconds); how a landing uses it is in [build-and-test.md](developer/build-and-test.md#which-areas-a-changed-answer-needs). | — |
 | [Q-ARCH-811](spec/architecture.md#q-arch-811--the-pipeline-writes-the-evidence-record-and-the-coverage-badge-onto-the-branch-coverage-main-holds-neither) | The pipeline writes the evidence record and the coverage badge onto the branch `coverage`; `main` holds neither | Decided by the development agent | (c), with the record whole as set out above, and (b) for a test that holds a refusal. | — |
+| [Q-ARCH-1040](spec/architecture.md#q-arch-1040--a-commit-on-the-branch-coverage-holds-the-record-and-the-badge-alone) | A commit on the branch `coverage` holds the record and the badge alone | Decided by the development agent | (c) The four files and nothing else; the branch's head as the only parent; the pages' links to the rest of the repository at the record's commit on GitHub; (ii) `badges/coverage.json` | — |
 
 </details>
 
