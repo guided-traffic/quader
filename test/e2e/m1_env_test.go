@@ -30,6 +30,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 	"testing"
 	"time"
@@ -1600,6 +1601,65 @@ func percentile(d []time.Duration, p float64) time.Duration {
 	sort.Slice(d, func(i, j int) bool { return d[i] < d[j] })
 	i := int(float64(len(d)-1) * p)
 	return d[i]
+}
+
+// burstUntilRefused sends requests with workers goroutines until one is answered 429, at most n of them and for at most within,
+// and returns the replies in completion order and the elapsed time. A fixed count measured the runner: 400 reads that a starved
+// runner spread over 7.5 s let a class of 50 a second and a burst of 200 refill as fast as they came, and none was refused. This
+// sends until the refusal comes, so the class is shown on any runner that sends faster than it refills (R-ARCH-034, R-API-016).
+func burstUntilRefused(a *api, n, workers int, within time.Duration, mk func(i int) (method, path string, body any, h []string)) ([]reply, time.Duration) {
+	jobs := make(chan int)
+	out := make([]reply, 0, n)
+	var mu sync.Mutex
+	var refused atomic.Bool
+	var wg sync.WaitGroup
+	start := time.Now()
+	for w := 0; w < workers; w++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := range jobs {
+				m, p, b, h := mk(i)
+				r, err := a.send(m, p, b, h...)
+				if err != nil {
+					r = reply{Status: 0, Header: http.Header{}, Body: []byte(err.Error())}
+				}
+				if r.Status == http.StatusTooManyRequests {
+					refused.Store(true)
+				}
+				mu.Lock()
+				out = append(out, r)
+				mu.Unlock()
+			}
+		}()
+	}
+	for i := 0; i < n && !refused.Load() && time.Since(start) < within; i++ {
+		jobs <- i
+	}
+	close(jobs)
+	wg.Wait()
+	return out, time.Since(start)
+}
+
+// classBurst asserts what a burst of burstUntilRefused shows of a class of rate and burst: at most the burst plus what the window
+// refilled were admitted, and a 429 came. Without a 429 it tells the class's failure (more were sent than the class admits) from
+// the runner's (it never sent faster than the class refills, so no refusal was owed).
+func classBurst(t testing.TB, what string, rs []reply, dur time.Duration, burst, rate int) map[int]int {
+	t.Helper()
+	st := countStatus(rs)
+	bound := admittedBound(burst, rate, dur)
+	t.Logf("%s: %d requests in %s (%.0f a second): %v", what, len(rs), dur.Round(time.Millisecond), float64(len(rs))/dur.Seconds(), st)
+	if st[200] > bound {
+		t.Fatalf("%s: %d admitted in %s, more than burst %d plus the decay (%d)", what, st[200], dur, burst, bound)
+	}
+	if st[429] == 0 {
+		if len(rs) > bound {
+			t.Fatalf("%s: %d sent in %s and no 429, the class admits at most %d", what, len(rs), dur, bound)
+		}
+		t.Fatalf("%s: %d sent in %s, %.0f a second: the runner never sent faster than the class refills (%d a second), so no 429 was owed",
+			what, len(rs), dur, float64(len(rs))/dur.Seconds(), rate)
+	}
+	return st
 }
 
 // blast sends n requests with workers goroutines and returns the replies in completion order and the elapsed time.

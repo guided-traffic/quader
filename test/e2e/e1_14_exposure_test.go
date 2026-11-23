@@ -389,12 +389,9 @@ func TestE1_14Exposure(t *testing.T) {
 		ensureRule(t, adm, boundSAT.Token)
 
 		a := customersAPI(t, both.Token)
-		rs, dur := blast(a, 400, 32, func(int) (string, string, any, []string) { return http.MethodGet, appZip1, nil, nil })
-		st := countStatus(rs)
-		t.Logf("400 reads on customers with one token in %s: %v", dur.Round(time.Millisecond), st)
-		if st[429] == 0 || st[200] > admittedBound(readBurst, readRate, dur) {
-			t.Fatalf("400 reads: %v, want a 429 after the burst of 200", st)
-		}
+		// until the class refuses, whatever the runner's speed: the class external is 50 a second with a burst of 200
+		rs, dur := burstUntilRefused(a, 2000, 64, time.Minute, func(int) (string, string, any, []string) { return http.MethodGet, appZip1, nil, nil })
+		classBurst(t, "reads on customers with one token", rs, dur, readBurst, readRate)
 		for _, r := range rs {
 			if r.Status == 429 {
 				if secs, err := strconv.Atoi(r.Header.Get("Retry-After")); err != nil || secs < 1 || r.Code() != "rate_limited" || !strings.Contains(r.Header.Get("RateLimit-Policy"), `"endpoint:external"`) {

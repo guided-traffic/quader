@@ -62,17 +62,10 @@ func TestE1_08RateLimits(t *testing.T) {
 
 	t.Run("R-API-016 E1.8 the read class answers 429 with Retry-After after the burst and a second token is not slowed", func(t *testing.T) {
 		a, b := newToken(t, adm, "e2e-rl"), newToken(t, adm, "e2e-rl")
-		rs, dur := blast(a, 400, 32, whoamiMk)
-		st := countStatus(rs)
-		t.Logf("400 reads with one token in %s over %v: %v", dur.Round(time.Millisecond), sortedKeys(replicaSet(rs, 200)), st)
-		if st[429] == 0 {
-			t.Fatalf("no 429 after %d reads in %s: %v", len(rs), dur, st)
-		}
+		rs, dur := burstUntilRefused(a, 2000, 64, time.Minute, whoamiMk)
+		st := classBurst(t, "reads with one token over "+strings.Join(sortedKeys(replicaSet(rs, 200)), ","), rs, dur, readBurst, readRate)
 		if st[200]+st[429] != len(rs) {
 			t.Errorf("answers other than 200 and 429: %v", st)
-		}
-		if st[200] > admittedBound(readBurst, readRate, dur) {
-			t.Errorf("%d admitted in %s, more than burst %d plus the decay", st[200], dur, readBurst)
 		}
 		for _, r := range rs {
 			if r.Status != 429 {
