@@ -7,7 +7,6 @@ import { Confirm } from '../../shared/confirm-dialog';
 import { asApiError } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { QuaderDialog } from '../../shared/ui/dialog';
-import { NoValue } from '../../shared/ui/no-value';
 import { Tooltip } from '../../shared/ui/tooltip';
 import { CallerCell } from './caller-cell';
 import { whoRank, whoSortName, whoView } from './callers';
@@ -28,7 +27,7 @@ export function orderRules(rules: readonly LimitRule[]): LimitRule[] {
 @Component({
   selector: 'quader-limit-rules',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CallerCell, DataTable, NoValue, Tooltip],
+  imports: [CallerCell, DataTable, Tooltip],
   template: `
     <quader-data-table
       [caption]="caption()"
@@ -49,6 +48,10 @@ export function orderRules(rules: readonly LimitRule[]): LimitRule[] {
                 <span class="badge" i18n="@@limits.rules.builtin">Built-in</span>
               }
             </quader-caller-cell>
+            <!-- The note under whom the rule applies to (Q-UI-1001): the list keeps its table in a settings column at 1,024 px. -->
+            @if (r.note) {
+              <span class="secondary rule-note">{{ r.note }}</span>
+            }
           </th>
           <td>
             <span class="profile">
@@ -62,13 +65,6 @@ export function orderRules(rules: readonly LimitRule[]): LimitRule[] {
             </span>
             @for (o of overrides(r); track o) {
               <span class="override">{{ o }}</span>
-            }
-          </td>
-          <td>
-            @if (r.note) {
-              {{ r.note }}
-            } @else {
-              <quader-no-value />
             }
           </td>
           @if (canWrite()) {
@@ -95,6 +91,10 @@ export function orderRules(rules: readonly LimitRule[]): LimitRule[] {
      */
     .profile > .badge {
       margin-inline-start: var(--quader-space-2);
+    }
+    .rule-note {
+      display: block;
+      font-weight: 400;
     }
     .override {
       display: block;
@@ -138,9 +138,9 @@ export class LimitRules {
   });
 
   protected readonly columns = computed<readonly TableColumn[]>(() => [
+    // One form at 1,440 and 1,024 px (Q-UI-1001, the rule of Q-UI-969): a rule's note stands under whom it applies to.
     { id: 'who', label: $localize`:@@limits.rules.col-who:Applies to`, width: '14rem' },
     { id: 'profile', label: $localize`:@@limits.rules.col-profile:Profile`, width: '10rem' },
-    { id: 'note', label: $localize`:@@limits.rules.col-note:Note`, width: '8rem' },
     ...(this.canWrite() ? [{ id: 'actions', label: $localize`:@@limits.rules.col-actions:Actions`, hideLabel: true }] : []),
   ]);
 

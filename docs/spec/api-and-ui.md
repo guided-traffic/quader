@@ -8185,7 +8185,8 @@ One component (`<quader-limit-rules>`) lists the rules of a place and is used at
   name; a technical token its key icon, its name and under it its account (`sa:web/partner`); a CI project the CI icon, the project
   path and under it the issuer; an address range in the monospace type; "Every signed-in user", "Every technical token", "Every CI
   job", "Every anonymous caller", "Every administrator"; a rule whose "who" was deleted "(deleted)" in the secondary type),
-  **Profile** (the name, and "+ uncached 20 GB/h" for each override, at most two, then "+ N more"), **Note**, and **Delete** as the
+  and the rule's note as a muted line under it, [Q-UI-1001](#q-ui-1001--a-download-rules-note-stands-under-whom-it-applies-to)),
+  **Profile** (the name, and "+ uncached 20 GB/h" for each override, at most two, then "+ N more"), and **Delete** as the
   row's one action; the name of the "who" opens the rule's dialog (**Change**) for a caller who may change it, and a built-in rule
   has no action ([Q-UI-758](#q-ui-758--a-rule-opens-by-its-name-and-delete-is-the-rows-one-action)). A capped rule whose figures are clamped now carries the warning badge **Above the maximum** with a tooltip
   that names the figures and what applies.
@@ -22559,6 +22560,21 @@ rem, **Found**, the action).
 
 **Choice:** (a). **Applied in the spec:** R-MAL-025 of [malware-scanning.md](malware-scanning.md). Code:
 [malware-finds.html](../../web/src/app/features/vulnerabilities/malware-finds.html).
+
+### Q-UI-1001 · A download rule's note stands under whom it applies to
+
+Status: **Decided by the development agent** on 2026-11-23, closing point 5 of the open finding "Seen by the builder of the screens' first
+round on its renders" by the rule of Q-UI-969; the owner reviews it at the walkthrough.
+
+Context: a project's settings hold their rules in the settings' column, 688 px at 1,024 px; **Applies to** (14 rem), **Profile** (10 rem),
+**Note** (8 rem) and **Delete** needed 708 px and stacked.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The note as a muted line under whom the rule applies to, in every list of rules (the instance, a project, a repository) (chosen) | Q-UI-969's rule | One form in a settings column and on the limits page | The note is no column |
+| (b) Narrower columns | — | The note a column | A caller's long name stacks the list again |
+
+**Choice:** (a). **Applied in the spec:** R-UI-179 of this page. Code: [limit-rules.ts](../../web/src/app/features/limits/limit-rules.ts).
 
 ## What this does not cover
 

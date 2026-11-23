@@ -38340,15 +38340,6 @@
         <target>Profil</target>
       </segment>
     </unit>
-    <unit id="limits.rules.col-note">
-      <notes>
-        <note category="location">src/app/features/limits/limit-rules.ts:157</note>
-      </notes>
-      <segment>
-        <source>Note</source>
-        <target>Notiz</target>
-      </segment>
-    </unit>
     <unit id="limits.rules.col-actions">
       <notes>
         <note category="location">src/app/features/limits/limit-rules.ts:158</note>

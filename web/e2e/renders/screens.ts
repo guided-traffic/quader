@@ -2520,10 +2520,10 @@ export const screens: readonly Screen[] = [
   { id: 'project-settings', path: `${P}/settings`, kinds: owners, walk: visibilityOpen },
   // The download limits of a project and of a remote repository, and the project's usage (R-UI-180, R-UI-183, R-UI-184).
   // The main project has no maximum: its read answers 200 with `maximum` null (Q-API-356).
-  { id: 'project-settings-limits', path: `${P}/settings`, kinds: owners, walk: limitsSectionOpen },
+  { id: 'project-settings-limits', path: `${P}/settings`, kinds: owners, walk: limitsSectionOpen, tables: 'quader-limit-rules quader-data-table' },
   // The project's trust anchors (R-SIG-037): the Owner's form, a member's read, and the switch off.
   { id: 'project-settings-anchors', path: `${P}/settings`, kinds: [...owners, 'plain'], walk: projectAnchors, tables: 'quader-anchor-table > quader-data-table' },
-  { id: 'repository-settings-limits', path: `${P}/repositories/npmjs/settings`, kinds: owners, walk: limitsSectionOpen },
+  { id: 'repository-settings-limits', path: `${P}/repositories/npmjs/settings`, kinds: owners, walk: limitsSectionOpen, tables: 'quader-limit-rules quader-data-table' },
   { id: 'project-usage', path: `${P}/usage`, kinds: owners, walk: usageWalk },
   { id: 'project-usage-repository', path: `${P}/usage?repository=npmjs`, kinds: owners, walk: limitsModes },
   { id: 'project-usage-caller', path: `${P}/usage/user/${kinds.power}`, kinds: owners, walk: usageDetailWalk },
@@ -2617,7 +2617,7 @@ export const screens: readonly Screen[] = [
   // A blocked anonymous address and a CI project as callers (R-UI-184): the block's notice, a subject without credentials.
   { id: 'admin-usage-caller-blocked', path: `/ui/admin/usage/anonymous/${blockedAddress}`, kinds: admins, walk: limitsModes },
   { id: 'admin-usage-caller-ci', path: `/ui/admin/usage/ci/${ciIssuer}:${ciProject.id}`, kinds: admins },
-  { id: 'admin-limits', path: '/ui/admin/limits', kinds: auditors, walk: limitRulesWalk },
+  { id: 'admin-limits', path: '/ui/admin/limits', kinds: auditors, walk: limitRulesWalk, tables: 'quader-limit-rules quader-data-table' },
   { id: 'admin-limits-profiles', path: '/ui/admin/limits/profiles', kinds: auditors },
   { id: 'admin-limits-profile', path: '/ui/admin/limits/profiles/standard', kinds: auditors },
   { id: 'admin-limits-profile-unlimited', path: '/ui/admin/limits/profiles/unlimited', kinds: admins },
