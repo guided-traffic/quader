@@ -1,6 +1,6 @@
 import { e2eProject, expect, expectAccessible, formatName, qualified, repositories, repositoryApi, signInLocal, signOut, test, unique } from '../support';
 
-// R-UI-047 journey "exposure rule" on the endpoint screens (R-UI-039, R-EP-017, R-EP-015, E1.11): an exposure rule is
+// R-UI-047 journey "exposure rule" on the endpoint screens (R-EP-017, R-EP-015, E1.11): an exposure rule is
 // created on the endpoint `customers` with the preview, and the rule shows up in the endpoint's table.
 
 const repoKey = unique('ui-exposed');
@@ -20,7 +20,7 @@ test.afterAll(async ({ admin }) => {
   await admin.delete(repositoryApi(repoKey));
 });
 
-test('R-UI-039 R-EP-017 an exposure rule with its preview', async ({ page, replicas, admin }) => {
+test('R-EP-017 an exposure rule with its preview', async ({ page, replicas, admin }) => {
   await signInLocal(page);
 
   await page.goto('/ui/en/admin/endpoints');

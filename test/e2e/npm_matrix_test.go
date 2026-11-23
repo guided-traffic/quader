@@ -211,7 +211,7 @@ func requireScatter(t testing.TB, fx *npmFixture) {
 
 type npmScenario struct {
 	id   string // the name of the subtest after the row
-	reqs string // requirement and exit-criterion IDs, in the test name
+	reqs string // requirement and exit-criterion IDs, in the test name; ID-unbuilt for a requirement whose refusal the scenario holds (Q-ARCH-811)
 	// na is the reason the row's client cannot run the scenario, "" when it can.
 	na  func(c *npmClient) string
 	run func(t *testing.T, c *npmClient)
@@ -237,9 +237,9 @@ var npmScenarios = []npmScenario{
 	{id: "install-local", reqs: "R-NPM-015 R-NPM-040 R-NPM-045", run: scenarioInstallLocal},
 	{id: "install-remote", reqs: "R-NPM-024 R-NPM-025 R-NPM-045", run: scenarioInstallRemote},
 	{id: "dist-tag", reqs: "R-NPM-016 R-NPM-042 R-NPM-045", run: scenarioDistTag},
-	{id: "deprecate", reqs: "R-NPM-018 R-NPM-045", na: naUnless("neither Yarn 1.22 nor Yarn 4 has a deprecate command", "npm", "pnpm"), run: scenarioDeprecate},
+	{id: "deprecate", reqs: "R-NPM-018-unbuilt R-NPM-043 R-NPM-045", na: naUnless("neither Yarn 1.22 nor Yarn 4 has a deprecate command", "npm", "pnpm"), run: scenarioDeprecate},
 	{id: "unpublish", reqs: "R-NPM-017 R-NPM-045", na: naUnless("neither Yarn 1.22 nor Yarn 4 has an unpublish command", "npm", "pnpm"), run: scenarioUnpublish},
-	{id: "login", reqs: "R-NPM-021 R-NPM-043 R-NPM-045", na: func(c *npmClient) string {
+	{id: "login", reqs: "R-NPM-020-unbuilt R-NPM-021-unbuilt R-NPM-043 R-NPM-045", na: func(c *npmClient) string {
 		if c.row == "yarn1" {
 			return "yarn login only stores the user name and e-mail address in the client's configuration and sends no request to the registry (verified: the command exits 0 and the registry logs nothing)"
 		}
@@ -254,7 +254,7 @@ var npmScenarios = []npmScenario{
 		}
 		return ""
 	}, run: scenarioAudit},
-	{id: "search", reqs: "R-NPM-037 R-NPM-043 R-NPM-045", na: naUnless("neither Yarn 1.22 nor Yarn 4 has a search command", "npm", "pnpm"), run: scenarioSearch},
+	{id: "search", reqs: "R-NPM-037-unbuilt R-NPM-043 R-NPM-045", na: naUnless("neither Yarn 1.22 nor Yarn 4 has a search command", "npm", "pnpm"), run: scenarioSearch},
 	{id: "deferred-endpoints", reqs: "R-NPM-043", na: naUnless("the commands of the criterion (token, profile, org, access) are npm's", "npm"), run: scenarioDeferred},
 	{id: "lockfile-reinstall", reqs: "R-NPM-040 R-NPM-045", run: scenarioLockfileReinstall},
 	{id: "yarn4-lockfile", reqs: "R-NPM-042", na: naUnless("the conventional-URL lockfile is Yarn 2+ behaviour", "yarn4"), run: scenarioYarn4Lockfile},
@@ -604,7 +604,8 @@ func scenarioAudit(t *testing.T, c *npmClient) {
 	}
 }
 
-// scenarioSearch: search is P1 (R-NPM-037); the endpoint answers 404 as R-NPM-043 prescribes for a GET.
+// scenarioSearch: search is P1 (R-NPM-037) and not built; the endpoint answers 404 as R-NPM-043 prescribes for a GET. The
+// scenario names R-NPM-037 with the marker -unbuilt, so it proves the refusal and never the search (Q-ARCH-811).
 func scenarioSearch(t *testing.T, c *npmClient) {
 	dir := c.project("search", nil)
 	c.configure(dir)
