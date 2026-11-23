@@ -13,6 +13,7 @@ import { Confirm } from '../../shared/confirm-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
+import { TimeAgo } from '../../shared/ui/time-ago';
 import { DownloadLinkConnection } from '../../api/download-links-api';
 import { BastionTokenDialog, BastionTokenDialogData, BastionTokenDraft } from './bastion-dialogs';
 import { BastionHandover } from './bastion-handover';
@@ -39,7 +40,7 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
  */
 @Component({
   selector: 'quader-bastion-card',
-  imports: [BastionHandover, DatePipe, DataTable, ErrorNotice, NoValue, TokenSecret],
+  imports: [BastionHandover, DatePipe, DataTable, ErrorNotice, NoValue, TimeAgo, TokenSecret],
   template: `
     <section class="card" [attr.aria-labelledby]="headingId()">
       <h2 [id]="headingId()" translate="no">{{ bastion().name }}</h2>
@@ -103,20 +104,24 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
       >
         @for (c of bastion().contacts; track c.replica) {
           <tr>
-            <th scope="row" translate="no">{{ c.replica }}</th>
-            <td>{{ c.contactAt | date: 'medium' }}</td>
-            <td translate="no" class="wrap">
-              @if (c.clientAddress; as v) {
-                {{ v }}
-              } @else {
-                <quader-no-value />
-              }
-            </td>
-            <td translate="no">{{ c.release }}</td>
-            <td translate="no">{{ c.interfaceVersion }}</td>
-            <td translate="no" class="wrap">
+            <!-- The replica's name, and under it what is the same for most rows (Q-UI-959): the address it connected from, its
+                 release and its interface version. A name of 63 characters breaks after its hyphens. -->
+            <th scope="row" class="wrap-name replica">
+              <span translate="no">{{ c.replica }}</span>
+              <span class="secondary"
+                ><span class="dot-separated" data-testid="bastion-contact-facts"
+                  >@if (c.clientAddress; as v) {<span translate="no">@for (part of breakParts(v); track $index) {<span>{{ part }}</span><wbr />}</span>}<span
+                    i18n="@@bastion.contact.release"
+                    >Release <span translate="no">{{ c.release }}</span></span
+                  ><span i18n="@@bastion.contact.interface">Interface version {{ c.interfaceVersion }}</span></span
+                ></span
+              >
+            </th>
+            <td><quader-time-ago [at]="c.contactAt" absolute="title" /></td>
+            <!-- The URL takes the room the other columns leave and breaks after a dot or a slash there. -->
+            <td translate="no" class="wrap base-url">
               @if (c.baseUrl; as v) {
-                {{ v }}
+                @for (part of breakParts(v); track $index) {<span>{{ part }}</span><wbr />}
               } @else {
                 <quader-no-value />
               }
@@ -135,25 +140,30 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
       >
         @for (t of bastion().tokens; track t.id) {
           <tr>
+            <!-- The description, and under it the hint and when the token was created (Q-UI-959). -->
             <th scope="row">
               {{ t.description }}
-              <code translate="no" class="secondary">{{ t.hint }}</code>
+              <span class="secondary"
+                ><span class="dot-separated"
+                  ><code translate="no">{{ t.hint }}</code
+                  ><span i18n="@@bastion.token.created">Created <quader-time-ago [at]="t.createdAt" absolute="title" /></span></span
+                ></span
+              >
             </th>
-            <td>{{ t.createdAt | date: 'medium' }}</td>
             <td>
-              {{ t.expiresAt | date: 'medium' }}
+              <quader-time-ago [at]="t.expiresAt" absolute="title" />
               @switch (expiry(t)) {
                 @case ('expired') {
-                  <br /><span class="badge bad"><span class="material-icons" aria-hidden="true">error</span><ng-container i18n="@@bastion.token.expired">Expired</ng-container></span>
+                  <span class="expiry-mark"><span class="badge bad"><span class="material-icons" aria-hidden="true">error</span><ng-container i18n="@@bastion.token.expired">Expired</ng-container></span></span>
                 }
                 @case ('soon') {
-                  <br /><span class="badge warn"><span class="material-icons" aria-hidden="true">schedule</span><ng-container i18n="@@bastion.token.soon">Expires in</ng-container>&ngsp;{{ remaining(t) }}</span>
+                  <span class="expiry-mark"><span class="badge warn"><span class="material-icons" aria-hidden="true">schedule</span><ng-container i18n="@@bastion.token.soon">Expires in</ng-container>&ngsp;{{ remaining(t) }}</span></span>
                 }
               }
             </td>
             <td>
-              @if (t.lastUsedAt) {
-                {{ t.lastUsedAt | date: 'medium' }}
+              @if (t.lastUsedAt; as at) {
+                <quader-time-ago [at]="at" absolute="title" />
               } @else {
                 <span class="muted" i18n="@@bastion.token.unused">Not used yet</span>
               }
@@ -173,14 +183,19 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
   `,
   styleUrl: '../../shared/access/access.scss',
   styles: `
-    /* A client address (IPv6 has up to 39 characters) and a reported base URL keep one line in the table, and break inside themselves
-       where the rows stack and the value is wider than the block: at 390 px a base URL of 38 characters pushed the page sideways. */
-    td.wrap {
-      white-space: nowrap;
-    }
-    .stacked td.wrap {
-      white-space: normal;
+    /* A replica's name (a pod name has up to 63 characters) breaks after its hyphens, an address (IPv6 has 39) and a reported base URL
+       after their colons, dots and slashes (breakParts), and anywhere where a part is still longer than its room, so that no value
+       widens its column: at 390 px a base URL of 38 characters pushed the page sideways, and at 1440 px it stacked one card's rows
+       while the next card kept its table. */
+    th.replica,
+    td.base-url {
       overflow-wrap: anywhere;
+    }
+    /* A token's mark stands on a line of its own under the expiry: after a line break the badge, 20 px on a line of 16, touched the
+       time above it. */
+    .expiry-mark {
+      display: block;
+      margin-block-start: var(--quader-space-1);
     }
   `,
 })
@@ -211,37 +226,48 @@ export class BastionCard {
   protected readonly contactsCaption = computed(() => $localize`:@@bastion.contacts-caption:Last contact of the replicas of ${this.bastion().name}:name:`);
   protected readonly tokensCaption = computed(() => $localize`:@@bastion.tokens-caption:Tokens of ${this.bastion().name}:name:`);
 
+  /*
+   * The tables have one form at every width but the narrow one (Q-UI-959): each column declares its least width and its values fit it
+   * or break inside it, so the rows stack by the card's width alone, never by a long value. What is the same for most rows stands
+   * under the row's name, as the reference's list of runners does: a replica's address, release and interface version, a token's
+   * hint and creation. The reported base URL and a token's description take the room the others leave. A time is relative, its date
+   * and time its title (Q-UI-431).
+   */
   protected readonly contactColumns: readonly TableColumn[] = [
-    { id: 'replica', label: $localize`:@@bastion.col.replica:Replica` },
-    { id: 'time', label: $localize`:@@bastion.col.time:Time` },
     {
-      id: 'address',
-      label: $localize`:@@bastion.col.address:Client address`,
-      help: $localize`:@@bastion.help.address:The address the main installation saw the replica connect from.`,
+      id: 'replica',
+      label: $localize`:@@bastion.col.replica:Replica`,
+      help: $localize`:@@bastion.help.replica:Under its name: the address the main installation saw the replica connect from, its release, and the version of the interface between the Bastion and this installation, on which both sides must agree.`,
+      width: '16rem',
     },
-    { id: 'release', label: $localize`:@@bastion.col.release:Release` },
-    {
-      id: 'interface',
-      label: $localize`:@@bastion.col.interface:Interface version`,
-      help: $localize`:@@bastion.help.interface:The version of the interface between the Bastion and this installation. Both sides must agree.`,
-    },
+    { id: 'time', label: $localize`:@@bastion.col.time:Time`, width: '7.5rem' },
     {
       id: 'base',
       label: $localize`:@@bastion.col.base:Reported base URL`,
       help: $localize`:@@bastion.help.base:The address the Bastion says clients reach it on. Client setup uses it when it is listed in server.additional_base_urls.`,
+      width: '10rem',
+      prefer: true,
     },
   ];
   protected readonly tokenColumns: readonly TableColumn[] = [
-    { id: 'description', label: $localize`:@@bastion.col.token:Token` },
-    { id: 'created', label: $localize`:@@bastion.col.token-created:Created` },
-    { id: 'expires', label: $localize`:@@bastion.col.expires:Expires` },
+    { id: 'description', label: $localize`:@@bastion.col.token:Token`, width: '9rem', prefer: true },
+    { id: 'expires', label: $localize`:@@bastion.col.expires:Expires`, width: '11rem' },
     {
       id: 'lastUsed',
       label: $localize`:@@bastion.col.last-used:Last used`,
       help: $localize`:@@bastion.help.last-used:The last time the token authenticated a request. When you renew, revoke the old token once the new one shows a recent time.`,
+      width: '7.5rem',
     },
     { id: 'actions', label: $localize`:@@bastion.col.actions:Actions`, hideLabel: true },
   ];
+
+  /**
+   * A URL's or an address's parts, each ending after a dot, a slash or a colon, where a narrow column may break it (`<wbr>`: nothing
+   * is added to a copy). Broken anywhere instead, an IPv6 address left its dot of the facts' line alone on a line above it.
+   */
+  protected breakParts(value: string): string[] {
+    return value.match(/[^./:]*[./:]*/g)?.filter((p) => p !== '') ?? [value];
+  }
 
   private readonly now = computed(() => {
     this.bastion();

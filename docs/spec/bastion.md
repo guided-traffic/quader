@@ -422,6 +422,11 @@ Priority: **MVP** · Covers: quader-only
   30 days, and the actions create, disable, delete, issue token (the secret shown once, as for every token) and revoke token.
   The screen uses only the operations of R-BAS-004 (INV-17). It is one page with a card per registration, which shows the
   registration's facts and actions, the last contact of every replica and its tokens ([Q-BAS-95](#q-bas-95--the-bastions-screen-is-one-page-with-a-card-per-registration)).
+  *Amended on 2026-11-23* ([api-and-ui.md](api-and-ui.md) [Q-UI-959](api-and-ui.md#q-ui-959--a-bastion-cards-tables-keep-one-form-at-the-wide-and-the-middle-width-what-most-rows-share-stands-under-the-rows-name)):
+  the last contact is a table of **Replica**, **Time** and **Reported base URL**, with the client address, the release and the interface
+  version under the replica's name; the tokens a table of **Token** (the hint and the creation under the description), **Expires**,
+  **Last used** and **Revoke**; every time relative with its date and time as its title. Both keep this form at every width of a card
+  but the narrow one, where their rows stack, whatever their values.
 - **Client setup.** `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/client-setup` ([api-and-ui.md](api-and-ui.md) R-API-030) accepts
   `bastion=<name>`: the snippets are rendered on the base URL the Bastion reported at its last handshake, provided it is an
   entry of `server.additional_base_urls` (else `409 bastion_base_url_unknown`, also while it has reported none; a name that is no
@@ -3390,9 +3395,11 @@ handshake, the snapshot and the registry and replay handler are unit tests (`Tes
 `bastionreg`'s (`TestR_BAS_071_TheSwitchIsPerRegistration`).
 
 *As built on 2026-11-23, the screen (package 5):* every card holds `<quader-bastion-handover>`
-([bastion-handover.ts](../../web/src/app/features/bastions/bastion-handover.ts)) between its actions and **Last contact**: the heading
-**Direct reads from the object store**, the switch (`quader-switch`, named "Direct reads from the object store for <name>") for a holder of
-`endpoints:write` and the word **On** or **Off** for who may only read, and the sentence "Large files go from the object store to this
+([bastion-handover.ts](../../web/src/app/features/bastions/bastion-handover.ts)) between its actions and **Last contact**: for a holder
+of `endpoints:write` the heading **Direct reads from the object store** and the switch (`quader-switch`, named "Direct reads from the
+object store for <name>"), for who may only read the settings pages' sentence "**Direct reads from the object store** are on." or "are
+off." in their place ([Q-UI-960](api-and-ui.md#q-ui-960--who-may-only-read-a-cards-switch-reads-it-as-the-settings-pages-say-a-switch-to-an-auditor)),
+and the sentence "Large files go from the object store to this
 Bastion by a link per file; the main installation decides and counts every download as before." (Q-BAS-296). A change reads the
 registration for its `ETag` (the list carries none) and sends `PATCH {"handover": true|false}` with it; a refusal, a `412` of a change
 made in between included, stands under the sentence, and the switch keeps the state the server has. While the switch is on, the page
@@ -3407,7 +3414,7 @@ cannot show, whether a Bastion's network reaches the store, is
 [H-1480](#h-1480--the-bastions-screen-shows-what-the-main-installation-can-sign-not-what-a-bastion-can-read). The Vitest
 criterion is `bastions.spec.ts`, "Direct reads from the object store on a Bastion card (R-BAS-071)": the switch off for a new
 registration, on with a connection's `not_https` and an encrypted connection's line and the link, every clause, the `412` and a refusal,
-the read-only word, no read without `settings:read`, and a read that fails.
+the reader's sentence, no read without `settings:read`, and a read that fails.
 
 ### R-BAS-072 · The Bastion offers to take a handover on a miss
 Priority: **P1** · Covers: quader-only

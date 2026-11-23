@@ -21391,6 +21391,51 @@ package 4 lands, the field's last sentence ("For now a Bastion gets the files of
 goes. **Applied in the spec:** R-UI-200 (changed); code: `connections` and `fieldReasons` of
 [storage-settings.ts](../../web/src/app/features/settings/storage-settings.ts), [storage-settings.html](../../web/src/app/features/settings/storage-settings.html).
 
+### Q-UI-959 · A Bastion card's tables keep one form at the wide and the middle width; what most rows share stands under the row's name
+
+Status: **Decided by the development agent** after the coordinator's look at the renders of the handover's surface (2026-11-23) —
+selected from the options below; the owner sees it when it is built.
+
+Context: a card of the Bastions screen ([bastion.md](bastion.md) R-BAS-007) had a table of the last contact with six columns (replica,
+time, client address, release, interface version, reported base URL) and one of the tokens with five, none with a declared least width, and
+absolute dates. The data table stacks its rows where its columns at their least widths do not fit (Q-UI-680), and a column without a
+declared width is as wide as its longest value: at 1440 px a card whose replicas report a base URL of 38 characters stacked its rows while
+the next card, with a shorter URL, kept its table and broke its dates onto two lines (a date and a time are never broken, Q-UI-428); at
+1024 px every date of the tokens broke. The owner's Bastion reports a base URL of 35 characters and pod names of 31. A card's list is
+1,094 px wide at a window of 1440 px, 678 px at 1024 px and 316 px at 390 px (measured on the renders' stack); the six columns need about
+1,030 px at the least widths their headers ask.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Last contact in three columns (**Replica**, **Time**, **Reported base URL**) and the tokens in four (**Token**, **Expires**, **Last used**, the action), each with a declared least width; under a replica's name its client address, release and interface version, under a token's description its hint and its creation, as the reference's list of runners shows a runner's version and address under its name; every time relative with its date and time as its title (Q-UI-431); the base URL and the description take the room the others leave; a name breaks after its hyphens, an address and a URL after their colons, dots and slashes (chosen) | The same form at 1440 and 1024 px for every card, stacked rows at 390 px only | The form follows the card's width alone: the tables need 632 and 642 px whatever they hold; no date breaks; a pod name of 63 characters and a base URL of 51 break inside their own columns; the **?** of **Replica** names what stands under the name | The address, the release and the interface version are no column to scan down |
+| (b) All six columns where the list is 64 rem wide or more, the address, the release and the interface version under the name below it (the data table's `narrow`) | A column each where room allows | Nothing moves at 1440 px | Two forms between 1440 and 1024 px; a list of 1,024 to 1,030 px would stack; the German header **Schnittstellenversion** needs more |
+| (c) The columns as they were, with declared least widths | | Least change | Six columns do not fit 678 px: every card stacks at 1024 px |
+
+**Choice:** (a). The least widths: **Replica** 16 rem (a pod name of 31 characters stays on one line), **Time** 7.5 rem, **Reported base
+URL** 10 rem; **Token** 9 rem, **Expires** 11 rem (its mark **Expires in 29 days** included), **Last used** 7.5 rem. **Applied in the
+spec:** [bastion.md](bastion.md) R-BAS-007 (amended); code: `contactColumns`, `tokenColumns` and `breakParts` of
+[bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts).
+
+### Q-UI-960 · Who may only read a card's switch reads it as the settings pages say a switch to an auditor
+
+Status: **Decided by the development agent** after the coordinator's look at the renders of the handover's surface (2026-11-23) —
+selected from the options below; the owner sees it when it is built.
+
+Context: the style guide gives a reader without the right to change a switch "the word alone"; under the card's heading **Direct reads
+from the object store** that was a bare **On**. The settings pages of the admin area give an auditor a switch's state as a sentence:
+"**Deliver large downloads by signed links of the object store** is on." (Storage), "**Only checked artifacts can be downloaded** is
+on." (Malware scanning), "**Project owners may add trust anchors for their project** is on." (Signatures). A word alone stays in a
+table's cell under its column **State** (the upstream registries, the trust anchors).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The sentence "**Direct reads from the object store** are on." in place of the heading and the switch (chosen) | The settings pages' form | The name and its state in one line, as on every settings page an auditor reads; no heading repeats the name | The reader's card has no heading for the block |
+| (b) The heading and the sentence under it | | The same headings for every reader | The name twice, one under the other |
+| (c) The heading and a neutral badge **On** or **Off**, as the card's **Status** | | A state that looks like one | A second form for the same thing beside the settings pages' |
+
+**Choice:** (a). **Applied in the spec:** [bastion.md](bastion.md) R-BAS-071 (as built); the style guide's switch
+([ui-style-guide.md](../developer/ui-style-guide.md#forms)); code: [bastion-handover.ts](../../web/src/app/features/bastions/bastion-handover.ts).
+
 ### Q-UI-871 · The security dashboard has two views, Vulnerabilities and Malware
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The owner: "Funde

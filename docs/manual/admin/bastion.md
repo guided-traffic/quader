@@ -186,7 +186,7 @@ The chart's `ingress` values carry annotations of HAProxy Ingress (a request lim
 
 ## Verify
 
-1. Open **Admin area › Bastions**. Within `bastion.main.handshake_interval` (default `1m`) of the start, every replica appears in the table **Last contact** with its time, the client address the main installation saw, its release, its interface version and the base URL it reported, which must equal the `server.base_url` you set. A replica that is missing has not completed a handshake: look at its log and at the metrics below. The token's **Last used** column shows the same moment.
+1. Open **Admin area › Bastions**. Within `bastion.main.handshake_interval` (default `1m`) of the start, every replica appears in the table **Last contact** with, under its name, the client address the main installation saw, its release and its interface version, then the time of its contact (hold the pointer on it for the date and time) and the base URL it reported, which must equal the `server.base_url` you set. A replica that is missing has not completed a handshake: look at its log and at the metrics below. The token's **Last used** column shows the same moment.
 2. On every replica the ops listener (port 8081) serves the metrics; the ServiceMonitor of the chart scrapes them. These series say that the handshake works:
 
 | Series | Healthy | Otherwise |

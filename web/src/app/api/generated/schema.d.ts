@@ -12181,7 +12181,7 @@ export interface components {
         BastionPatch: {
             description?: string;
             enabled?: boolean;
-            /** @description Switches the handover per blob on or off (R-BAS-071); `null` is refused. */
+            /** @description Switches the handover per blob on or off (R-BAS-071); a `null` reads as absent and switches nothing, as for `enabled`. */
             handover?: boolean;
         };
         /**

@@ -20,7 +20,12 @@ function token(id: string, description: string, hint: string, createdDays: numbe
   return { id, hint, description, createdAt: at(-createdDays), expiresAt: at(expiresDays), lastUsedAt: at(-0.002) };
 }
 
-/** `partners`, off, and `dmz-frankfurt-edge`, the longest name of the rule but two, on. */
+/**
+ * `partners`, off, with short values (a pod name of 31 characters, a base URL of 28, an IPv4 address), and `dmz-frankfurt-edge`, the
+ * longest name of the rule but two, on, with long ones: a pod name of 63 characters (the most Kubernetes allows), a base URL of 51, an
+ * IPv6 address of 39, a token that expires in 20 days beside one of a year. The tables keep one form at a width whatever they hold
+ * (Q-UI-959).
+ */
 function registrations(frankfurtOn: boolean): Json {
   return {
     items: [
@@ -31,10 +36,13 @@ function registrations(frankfurtOn: boolean): Json {
         enabled: true,
         handover: frankfurtOn,
         createdAt: at(-120),
-        tokens: [token('0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e42', 'frankfurt 2026', 'qdr_bst_9Hd2', 120, 245)],
+        tokens: [
+          token('0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e43', 'frankfurt 2027, rolled out with the release of the build agents in January', 'qdr_bst_Xw7p', 2, 365),
+          token('0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e42', 'frankfurt 2026', 'qdr_bst_9Hd2', 345, 20),
+        ],
         contacts: [
-          contact('quader-bastion-6f8b9c7d4-x2k4q', '198.51.100.20', 'https://packages.frankfurt.example.com', 1),
-          contact('quader-bastion-6f8b9c7d4-m8v2j', '198.51.100.21', 'https://packages.frankfurt.example.com', 2),
+          contact('quader-bastion-dmz-frankfurt-edge-partners-eu1-6f8b9c7d4f-x2k4q', '2001:0db8:85a3:0000:0000:8a2e:0370:7334', 'https://packages.dmz-frankfurt.partners.example.com', 1),
+          contact('quader-bastion-dmz-frankfurt-edge-partners-eu1-6f8b9c7d4f-m8v2j', '198.51.100.21', 'https://packages.dmz-frankfurt.partners.example.com', 2),
         ],
       },
       {

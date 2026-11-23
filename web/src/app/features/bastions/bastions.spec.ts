@@ -16,7 +16,7 @@ import { SessionStore } from '../../core/session-store';
 import { seriousViolations } from '../../testing/axe';
 import { DraftStore } from '../../shared/drafts';
 import { browserStorage, buttonByText, renderScreen, settle, sleep, storedText, text, type, typeAndLeave, typeInto } from '../../testing/screen';
-import { BASTION_TOKEN_WARN_DAYS, tokenExpiry } from './bastion-card';
+import { BASTION_TOKEN_WARN_DAYS, BastionCard, tokenExpiry } from './bastion-card';
 import { handoverLines } from './bastion-handover';
 import { BastionList } from './bastion-list';
 
@@ -37,8 +37,21 @@ describe('Bastions screen (R-BAS-007)', () => {
     for (const part of ['quader-bastion-7d9c-x2k4q', '198.51.100.20', '0.15.0', 'https://packages.example.com']) {
       expect(first).toContain(part);
     }
-    expect(text(partners.querySelectorAll('table')[0]!.querySelector('thead')!)).toContain('Interface version');
-    expect(text(rows[0]!.querySelectorAll('td')[3]!)).toBe('1');
+    // Q-UI-959: three columns; the address, the release and the interface version stand under the replica's name, the time is
+    // relative with its date and time as the title, and the URL keeps its text whole where it may break.
+    expect([...partners.querySelectorAll('table')[0]!.querySelectorAll('thead th')].map((th) => text(th).replace(/help_outline/g, '').trim())).toEqual([
+      'Replica',
+      'Time',
+      'Reported base URL',
+    ]);
+    const facts = rows[0]!.querySelector('th [data-testid="bastion-contact-facts"]')!;
+    expect([...facts.children].map((c) => text(c))).toEqual(['198.51.100.20', 'Release 0.15.0', 'Interface version 1']);
+    const time = rows[0]!.querySelector('td time')!;
+    expect(text(time)).toMatch(/minutes? ago|now/);
+    expect(time.getAttribute('title')).toMatch(/\d{4}/);
+    const url = rows[0]!.querySelectorAll('td')[1]!;
+    expect(text(url)).toBe('https://packages.example.com');
+    expect(url.querySelectorAll('wbr').length).toBeGreaterThan(1);
     expect(text(card(root, 'standby'))).toContain('Disabled');
     expect(text(card(root, 'standby'))).toContain('No replica has contacted');
     expect(await seriousViolations(root)).toEqual([]);
@@ -59,12 +72,31 @@ describe('Bastions screen (R-BAS-007)', () => {
       },
     });
     const rows = [...card(root, 'partners').querySelectorAll('table')[1]!.querySelectorAll('tbody tr')];
-    const byName = (n: string) => text(rows.find((r) => text(r).includes(n))!);
+    // A row by its token's description, the first text of its row header ("gone" is also in "5 months ago" + "next month").
+    const byName = (n: string) => text(rows.find((r) => text(r.querySelector('th')!).startsWith(n))!);
     expect(byName('twenty days')).toMatch(/Expires in\s+20 days/);
     expect(byName('far away')).not.toContain('Expires in');
     expect(byName('far away')).not.toContain('Expired');
     expect(byName('gone')).toContain('Expired');
     expect(root.querySelectorAll('.badge.warn')).toHaveLength(1);
+    // Q-UI-959: the hint and the creation under the description; the expiry relative, its date and time as the title.
+    expect(byName('far away')).toMatch(/qdr_bst_3kQ9\s*Created 5 months ago/);
+    expect(byName('far away')).toContain('next month');
+  });
+
+  it('Q-UI-959 a URL and an address break only after a dot, a slash or a colon, and every character stays', () => {
+    const card = Object.create(BastionCard.prototype) as { breakParts(value: string): string[] };
+    expect(card.breakParts('https://packages.frankfurt.example.com:8443/bastion/')).toEqual([
+      'https://',
+      'packages.',
+      'frankfurt.',
+      'example.',
+      'com:',
+      '8443/',
+      'bastion/',
+    ]);
+    expect(card.breakParts('2001:0db8:85a3::8a2e:0370:7334')).toEqual(['2001:', '0db8:', '85a3::', '8a2e:', '0370:', '7334']);
+    expect(card.breakParts('https://x').join('')).toBe('https://x');
   });
 
   it('R-BAS-007 the warning window is 30 days to the millisecond', () => {
@@ -490,7 +522,7 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
     expect(toggle(root, 'partners')!.getAttribute('aria-checked')).toBe('false');
   });
 
-  it('R-BAS-071 who may only read sees the state as a word and the reasons, and is offered no switch', async () => {
+  it('R-BAS-071 Q-UI-960 who may only read sees the state as the settings pages say it, and the reasons, and is offered no switch', async () => {
     const { root } = await renderScreen(BastionList, {
       capabilities: ['endpoints:read', 'settings:read'],
       setup: (g) => {
@@ -499,8 +531,9 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
       },
     });
     expect(toggle(root, 'partners')).toBeNull();
-    expect(text(card(root, 'partners').querySelector('[data-testid="bastion-handover-state"]')!)).toBe('On');
-    expect(text(card(root, 'standby').querySelector('[data-testid="bastion-handover-state"]')!)).toBe('Off');
+    expect(text(card(root, 'partners').querySelector('[data-testid="bastion-handover-state"]')!)).toBe('Direct reads from the object store are on.');
+    expect(card(root, 'partners').querySelector('[data-testid="bastion-handover-state"] strong')).toBeTruthy();
+    expect(text(card(root, 'standby').querySelector('[data-testid="bastion-handover-state"]')!)).toBe('Direct reads from the object store are off.');
     expect(lines(reasons(root, 'partners')!)).toHaveLength(2);
     expect(await seriousViolations(root)).toEqual([]);
   });

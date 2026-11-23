@@ -7814,7 +7814,7 @@ type BastionPatch struct {
 	Description *string `json:"description,omitempty"`
 	Enabled     *bool   `json:"enabled,omitempty"`
 
-	// Handover Switches the handover per blob on or off (R-BAS-071); `null` is refused.
+	// Handover Switches the handover per blob on or off (R-BAS-071); a `null` reads as absent and switches nothing, as for `enabled`.
 	Handover *bool `json:"handover,omitempty"`
 }
 

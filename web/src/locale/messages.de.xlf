@@ -2043,15 +2043,6 @@
         <target>Aktionen</target>
       </segment>
     </unit>
-    <unit id="bastion.help.address">
-      <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:189</note>
-      </notes>
-      <segment>
-        <source>The address the main installation saw the replica connect from.</source>
-        <target>Die Adresse, von der die Hauptinstallation das Replikat hat zugreifen sehen.</target>
-      </segment>
-    </unit>
     <unit id="deb.keys.next.heading">
       <notes>
         <note category="location">src/app/features/repositories/deb-signing-keys.ts:161,163</note>
@@ -2540,15 +2531,6 @@
       <segment>
         <source>TLS</source>
         <target>TLS</target>
-      </segment>
-    </unit>
-    <unit id="bastion.col.release">
-      <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:191</note>
-      </notes>
-      <segment>
-        <source>Release</source>
-        <target>Version</target>
       </segment>
     </unit>
     <unit id="upstream.presets">
@@ -4901,15 +4883,6 @@
         <target>Das Release eines Mitglieds ist älter als das bereits zusammengeführte: <ph id="0" equiv="member" disp="detail"/>. Nehmen Sie das Mitglied heraus und fügen Sie es wieder hinzu, um das ältere Release zu akzeptieren.</target>
       </segment>
     </unit>
-    <unit id="bastion.help.interface">
-      <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:195</note>
-      </notes>
-      <segment>
-        <source>The version of the interface between the Bastion and this installation. Both sides must agree.</source>
-        <target>Die Version der Schnittstelle zwischen der Bastion und dieser Installation. Beide Seiten müssen übereinstimmen.</target>
-      </segment>
-    </unit>
     <unit id="deb.key.state.withheld">
       <notes>
         <note category="location">src/app/features/repositories/deb-signing-keys.ts:27</note>
@@ -6263,15 +6236,6 @@
       <segment>
         <source>Users</source>
         <target>Benutzer</target>
-      </segment>
-    </unit>
-    <unit id="bastion.col.address">
-      <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:188</note>
-      </notes>
-      <segment>
-        <source>Client address</source>
-        <target>Client-Adresse</target>
       </segment>
     </unit>
     <unit id="user.last-login">
@@ -16998,15 +16962,6 @@
       <segment>
         <source>Sign-in failed</source>
         <target>Anmeldung fehlgeschlagen</target>
-      </segment>
-    </unit>
-    <unit id="bastion.col.token-created">
-      <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:205</note>
-      </notes>
-      <segment>
-        <source>Created</source>
-        <target>Erstellt</target>
       </segment>
     </unit>
     <unit id="tokens.create-submit">
@@ -29862,15 +29817,6 @@
         <target>Image-Manifest gelöscht</target>
       </segment>
     </unit>
-    <unit id="bastion.col.interface">
-      <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:194</note>
-      </notes>
-      <segment>
-        <source>Interface version</source>
-        <target>Schnittstellenversion</target>
-      </segment>
-    </unit>
     <unit id="audit.refresh">
       <notes>
         <note category="location">src/app/features/audit/audit-log.html:2,3</note>
@@ -34583,6 +34529,60 @@
       <segment>
         <source>Direct reads from the object store switched off.</source>
         <target>Direkte Lesezugriffe auf den Objektspeicher ausgeschaltet.</target>
+      </segment>
+    </unit>
+    <unit id="bastion.contact.interface">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-card.ts:116,117</note>
+      </notes>
+      <segment>
+        <source>Interface version <ph id="0" equiv="INTERPOLATION" disp="{{ c.interfaceVersion }}"/></source>
+        <target>Schnittstellenversion <ph id="0" equiv="INTERPOLATION" disp="{{ c.interfaceVersion }}"/></target>
+      </segment>
+    </unit>
+    <unit id="bastion.contact.release">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-card.ts:115,116</note>
+      </notes>
+      <segment>
+        <source>Release <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ c.release }}"/></pc></source>
+        <target>Version <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ c.release }}"/></pc></target>
+      </segment>
+    </unit>
+    <unit id="bastion.handover.state-on">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-handover.ts:83,84</note>
+      </notes>
+      <segment>
+        <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Direct reads from the object store</pc> are on.</source>
+        <target><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Direkte Lesezugriffe auf den Objektspeicher</pc> sind eingeschaltet.</target>
+      </segment>
+    </unit>
+    <unit id="bastion.handover.state-off">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-handover.ts:85,86</note>
+      </notes>
+      <segment>
+        <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Direct reads from the object store</pc> are off.</source>
+        <target><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Direkte Lesezugriffe auf den Objektspeicher</pc> sind ausgeschaltet.</target>
+      </segment>
+    </unit>
+    <unit id="bastion.help.replica">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-card.ts:234</note>
+      </notes>
+      <segment>
+        <source>Under its name: the address the main installation saw the replica connect from, its release, and the version of the interface between the Bastion and this installation, on which both sides must agree.</source>
+        <target>Unter dem Namen: die Adresse, von der die Hauptinstallation das Replikat hat zugreifen sehen, seine Version und die Version der Schnittstelle zwischen der Bastion und dieser Installation, bei der beide Seiten übereinstimmen müssen.</target>
+      </segment>
+    </unit>
+    <unit id="bastion.token.created">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-card.ts:149,150</note>
+      </notes>
+      <segment>
+        <source>Created <pc id="0" equivStart="START_TAG_QUADER_TIME_AGO" equivEnd="CLOSE_TAG_QUADER_TIME_AGO" type="other" dispStart="&lt;quader-time-ago [at]=&quot;t.createdAt&quot; absolute=&quot;title&quot; /&gt;" dispEnd="&lt;quader-time-ago [at]=&quot;t.createdAt&quot; absolute=&quot;title&quot; /&gt;"></pc></source>
+        <target>Erstellt <pc id="0" equivStart="START_TAG_QUADER_TIME_AGO" equivEnd="CLOSE_TAG_QUADER_TIME_AGO" type="other" dispStart="&lt;quader-time-ago [at]=&quot;t.createdAt&quot; absolute=&quot;title&quot; /&gt;" dispEnd="&lt;quader-time-ago [at]=&quot;t.createdAt&quot; absolute=&quot;title&quot; /&gt;"></pc></target>
       </segment>
     </unit>
     <unit id="audit.action.proxy.egress_denied">
@@ -44167,15 +44167,6 @@
       <segment>
         <source>Signatures</source>
         <target>Signaturen</target>
-      </segment>
-    </unit>
-    <unit id="repo.signatures.hint">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:22,23</note>
-      </notes>
-      <segment>
-        <source>Whether Quader fetches the upstream&apos;s signatures of what this repository stores.</source>
-        <target>Ob Quader die Signaturen des Upstreams zu dem holt, was dieses Repository speichert.</target>
       </segment>
     </unit>
     <unit id="repo.signatures.fetch">

@@ -61,7 +61,8 @@ export function handoverLines(connections: readonly DownloadLinkConnection[]): H
  * The switch **Direct reads from the object store** of a registration's card (R-BAS-071, the handover per blob): the plain path is the
  * switch and one sentence. Who may change a registration (`endpoints:write`) switches it, which reads the registration for its `ETag`
  * (the list carries none) and sends the merge patch `{"handover": …}` with it; a refusal, the `412` of a change made in between
- * included, stands under the sentence and the switch keeps the state the server has. Who may only read sees the state as a word.
+ * included, stands under the sentence and the switch keeps the state the server has. Who may only read gets the state as a sentence,
+ * "**Direct reads from the object store** are on.", as the settings pages give a switch to an auditor (Q-UI-960).
  * While it is on, and only where it helps, a line per connection whose files a Bastion gets through the main installation says why,
  * with one link to the storage settings where an address can change that (Q-BAS-295); `connections` is the answer of
  * `GET /api/v1/download-links/settings`, null where the viewer may not read it, so nothing is shown.
@@ -70,14 +71,21 @@ export function handoverLines(connections: readonly DownloadLinkConnection[]): H
   selector: 'quader-bastion-handover',
   imports: [ErrorNotice, RouterLink, Switch],
   template: `
-    <h3 i18n="@@bastion.handover.heading">Direct reads from the object store</h3>
-    <div class="state">
-      @if (canWrite()) {
+    @if (canWrite()) {
+      <h3 i18n="@@bastion.handover.heading">Direct reads from the object store</h3>
+      <div class="state">
         <quader-switch [checked]="on()" [label]="switchLabel()" [busy]="busy()" [describedBy]="noteId()" (checkedChange)="set($event)" />
-      } @else {
-        <span class="word" data-testid="bastion-handover-state">{{ word() }}</span>
-      }
-    </div>
+      </div>
+    } @else {
+      <!-- Who may only read gets the state as the settings pages give it to an auditor (Q-UI-960): the switch's name and its state. -->
+      <p class="state-text" data-testid="bastion-handover-state">
+        @if (on()) {
+          <ng-container i18n="@@bastion.handover.state-on"><strong>Direct reads from the object store</strong> are on.</ng-container>
+        } @else {
+          <ng-container i18n="@@bastion.handover.state-off"><strong>Direct reads from the object store</strong> are off.</ng-container>
+        }
+      </p>
+    }
     <p class="hint note" [id]="noteId()" i18n="@@bastion.handover.note">
       Large files go from the object store to this Bastion by a link per file; the main installation decides and counts every download as
       before.
@@ -111,6 +119,10 @@ export function handoverLines(connections: readonly DownloadLinkConnection[]): H
     .state {
       display: flex;
       align-items: flex-start;
+    }
+    /* Where the heading stands for who may change it: the card's sections keep their distance. */
+    .state-text {
+      margin-block: var(--quader-space-5) 0;
     }
     .note,
     .reason {
@@ -146,7 +158,6 @@ export class BastionHandover {
   protected readonly switchLabel = computed(
     () => $localize`:@@bastion.handover.switch-label:Direct reads from the object store for ${this.bastion().name}:name:`,
   );
-  protected readonly word = computed(() => (this.on() ? $localize`:@@switch.on:On` : $localize`:@@switch.off:Off`));
   protected readonly lines = computed(() => {
     const connections = this.connections();
     return this.on() && connections ? handoverLines(connections) : [];

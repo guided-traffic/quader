@@ -4789,7 +4789,7 @@
     </unit>
     <unit id="bastion.status">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:47,49</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:48,50</note>
       </notes>
       <segment>
         <source>Status</source>
@@ -4797,7 +4797,7 @@
     </unit>
     <unit id="bastion.enabled">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:50,51</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:51,52</note>
       </notes>
       <segment>
         <source>Enabled</source>
@@ -4805,7 +4805,7 @@
     </unit>
     <unit id="bastion.disabled">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:52,53</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:53,54</note>
       </notes>
       <segment>
         <source>Disabled</source>
@@ -4813,7 +4813,7 @@
     </unit>
     <unit id="bastion.description">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:56,57</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:57,58</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -4821,7 +4821,7 @@
     </unit>
     <unit id="bastion.created">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:59,60</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:60,61</note>
       </notes>
       <segment>
         <source>Created</source>
@@ -4829,7 +4829,7 @@
     </unit>
     <unit id="bastion.issue">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:66,67</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:67,68</note>
       </notes>
       <segment>
         <source>Issue token</source>
@@ -4837,7 +4837,7 @@
     </unit>
     <unit id="bastion.disable">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:71,72</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:72,73</note>
       </notes>
       <segment>
         <source>Disable</source>
@@ -4845,7 +4845,7 @@
     </unit>
     <unit id="bastion.enable">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:76,77</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:77,78</note>
       </notes>
       <segment>
         <source>Enable</source>
@@ -4853,7 +4853,7 @@
     </unit>
     <unit id="bastion.delete">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:81,82</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:82,83</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -4861,7 +4861,7 @@
     </unit>
     <unit id="bastion.contacts">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:96,98</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:97,99</note>
       </notes>
       <segment>
         <source>Last contact</source>
@@ -4869,15 +4869,31 @@
     </unit>
     <unit id="bastion.contacts-empty">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:102,104</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:103,105</note>
       </notes>
       <segment>
         <source>No replica has contacted the main installation with a token of this registration yet. Its replicas appear here after their first handshake.</source>
       </segment>
     </unit>
+    <unit id="bastion.contact.release">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-card.ts:115,116</note>
+      </notes>
+      <segment>
+        <source>Release <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ c.release }}"/></pc></source>
+      </segment>
+    </unit>
+    <unit id="bastion.contact.interface">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-card.ts:116,117</note>
+      </notes>
+      <segment>
+        <source>Interface version <ph id="0" equiv="INTERPOLATION" disp="{{ c.interfaceVersion }}"/></source>
+      </segment>
+    </unit>
     <unit id="bastion.tokens">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:128,129</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:133,134</note>
       </notes>
       <segment>
         <source>Tokens</source>
@@ -4885,15 +4901,23 @@
     </unit>
     <unit id="bastion.tokens-empty">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:134,136</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:139,141</note>
       </notes>
       <segment>
         <source>This registration has no token. Issue one to connect a Bastion.</source>
       </segment>
     </unit>
+    <unit id="bastion.token.created">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-card.ts:149,150</note>
+      </notes>
+      <segment>
+        <source>Created <pc id="0" equivStart="START_TAG_QUADER_TIME_AGO" equivEnd="CLOSE_TAG_QUADER_TIME_AGO" type="other" dispStart="&lt;quader-time-ago [at]=&quot;t.createdAt&quot; absolute=&quot;title&quot; /&gt;" dispEnd="&lt;quader-time-ago [at]=&quot;t.createdAt&quot; absolute=&quot;title&quot; /&gt;"></pc></source>
+      </segment>
+    </unit>
     <unit id="bastion.token.expired">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:147,148</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:157,158</note>
       </notes>
       <segment>
         <source>Expired</source>
@@ -4901,7 +4925,7 @@
     </unit>
     <unit id="bastion.token.soon">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:150</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:160</note>
       </notes>
       <segment>
         <source>Expires in</source>
@@ -4909,7 +4933,7 @@
     </unit>
     <unit id="bastion.token.unused">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:158,160</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:168,170</note>
       </notes>
       <segment>
         <source>Not used yet</source>
@@ -4917,7 +4941,7 @@
     </unit>
     <unit id="bastion.token.revoke">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:164,165</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:174,175</note>
       </notes>
       <segment>
         <source>Revoke</source>
@@ -4925,7 +4949,7 @@
     </unit>
     <unit id="bastion.contacts-caption">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:211</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:226</note>
       </notes>
       <segment>
         <source>Last contact of the replicas of <ph id="0" equiv="name" disp="this.bastion().name"/></source>
@@ -4933,7 +4957,7 @@
     </unit>
     <unit id="bastion.tokens-caption">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:212</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:227</note>
       </notes>
       <segment>
         <source>Tokens of <ph id="0" equiv="name" disp="this.bastion().name"/></source>
@@ -4941,63 +4965,31 @@
     </unit>
     <unit id="bastion.col.replica">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:215</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:239</note>
       </notes>
       <segment>
         <source>Replica</source>
       </segment>
     </unit>
+    <unit id="bastion.help.replica">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-card.ts:240</note>
+      </notes>
+      <segment>
+        <source>Under its name: the address the main installation saw the replica connect from, its release, and the version of the interface between the Bastion and this installation, on which both sides must agree.</source>
+      </segment>
+    </unit>
     <unit id="bastion.col.time">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:216</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:243</note>
       </notes>
       <segment>
         <source>Time</source>
       </segment>
     </unit>
-    <unit id="bastion.col.address">
-      <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:219</note>
-      </notes>
-      <segment>
-        <source>Client address</source>
-      </segment>
-    </unit>
-    <unit id="bastion.help.address">
-      <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:220</note>
-      </notes>
-      <segment>
-        <source>The address the main installation saw the replica connect from.</source>
-      </segment>
-    </unit>
-    <unit id="bastion.col.release">
-      <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:222</note>
-      </notes>
-      <segment>
-        <source>Release</source>
-      </segment>
-    </unit>
-    <unit id="bastion.col.interface">
-      <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:225</note>
-      </notes>
-      <segment>
-        <source>Interface version</source>
-      </segment>
-    </unit>
-    <unit id="bastion.help.interface">
-      <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:226</note>
-      </notes>
-      <segment>
-        <source>The version of the interface between the Bastion and this installation. Both sides must agree.</source>
-      </segment>
-    </unit>
     <unit id="bastion.col.base">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:230</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:246</note>
       </notes>
       <segment>
         <source>Reported base URL</source>
@@ -5005,7 +4997,7 @@
     </unit>
     <unit id="bastion.help.base">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:231</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:247</note>
       </notes>
       <segment>
         <source>The address the Bastion says clients reach it on. Client setup uses it when it is listed in server.additional_base_urls.</source>
@@ -5013,23 +5005,15 @@
     </unit>
     <unit id="bastion.col.token">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:235</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:253</note>
       </notes>
       <segment>
         <source>Token</source>
       </segment>
     </unit>
-    <unit id="bastion.col.token-created">
-      <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:236</note>
-      </notes>
-      <segment>
-        <source>Created</source>
-      </segment>
-    </unit>
     <unit id="bastion.col.expires">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:237</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:254</note>
       </notes>
       <segment>
         <source>Expires</source>
@@ -5037,7 +5021,7 @@
     </unit>
     <unit id="bastion.col.last-used">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:240</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:257</note>
       </notes>
       <segment>
         <source>Last used</source>
@@ -5045,7 +5029,7 @@
     </unit>
     <unit id="bastion.help.last-used">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:241</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:258</note>
       </notes>
       <segment>
         <source>The last time the token authenticated a request. When you renew, revoke the old token once the new one shows a recent time.</source>
@@ -5053,7 +5037,7 @@
     </unit>
     <unit id="bastion.col.actions">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:243</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:261</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -5061,7 +5045,7 @@
     </unit>
     <unit id="bastion.draft-restored">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:260</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:286</note>
       </notes>
       <segment>
         <source>Your entries were restored. Issue the token again.</source>
@@ -5069,7 +5053,7 @@
     </unit>
     <unit id="bastion.secret-note">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:277</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:303</note>
       </notes>
       <segment>
         <source>For <ph id="0" equiv="name" disp="this.bastion().name"/>: <ph id="1" equiv="description" disp="s.description"/></source>
@@ -5077,7 +5061,7 @@
     </unit>
     <unit id="bastion.disable-title">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:293</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:319</note>
       </notes>
       <segment>
         <source>Disable this Bastion?</source>
@@ -5085,7 +5069,7 @@
     </unit>
     <unit id="bastion.disable-text">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:295</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:321</note>
       </notes>
       <segment>
         <source>The tokens of <ph id="0" equiv="name" disp="this.bastion().name"/> are refused until you enable it again. Its replicas treat the main installation as unreachable and serve from their cache within the grace period.</source>
@@ -5093,7 +5077,7 @@
     </unit>
     <unit id="bastion.disable-confirm">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:297</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:323</note>
       </notes>
       <segment>
         <source>Disable</source>
@@ -5101,7 +5085,7 @@
     </unit>
     <unit id="bastion.disabled-done">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:300</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:326</note>
       </notes>
       <segment>
         <source>Bastion disabled.</source>
@@ -5109,7 +5093,7 @@
     </unit>
     <unit id="bastion.enabled-done">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:304</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:330</note>
       </notes>
       <segment>
         <source>Bastion enabled.</source>
@@ -5117,7 +5101,7 @@
     </unit>
     <unit id="bastion.delete-title">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:317</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:343</note>
       </notes>
       <segment>
         <source>Delete this Bastion?</source>
@@ -5125,7 +5109,7 @@
     </unit>
     <unit id="bastion.delete-text">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:318</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:344</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="name"/> and its tokens are removed; the tokens stop working at once. This cannot be undone.</source>
@@ -5133,7 +5117,7 @@
     </unit>
     <unit id="bastion.delete-confirm">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:319</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:345</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -5141,7 +5125,7 @@
     </unit>
     <unit id="bastion.deleted">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:323</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:349</note>
       </notes>
       <segment>
         <source>Bastion deleted.</source>
@@ -5149,7 +5133,7 @@
     </unit>
     <unit id="bastion.revoke-title">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:328</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:354</note>
       </notes>
       <segment>
         <source>Revoke this token?</source>
@@ -5157,7 +5141,7 @@
     </unit>
     <unit id="bastion.revoke-text">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:330</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:356</note>
       </notes>
       <segment>
         <source>“<ph id="0" equiv="description" disp="t.description"/>” stops working at once on every replica. A replica that still uses it treats the main installation as unreachable. When you renew, revoke the old token only after the new one shows a recent time in Last used. This cannot be undone.</source>
@@ -5165,7 +5149,7 @@
     </unit>
     <unit id="bastion.revoke-confirm">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:332</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:358</note>
       </notes>
       <segment>
         <source>Revoke</source>
@@ -5173,7 +5157,7 @@
     </unit>
     <unit id="bastion.revoked">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-card.ts:335</note>
+        <note category="location">src/app/features/bastions/bastion-card.ts:361</note>
       </notes>
       <segment>
         <source>Token revoked.</source>
@@ -5365,15 +5349,31 @@
     </unit>
     <unit id="bastion.handover.heading">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-handover.ts:73,75</note>
+        <note category="location">src/app/features/bastions/bastion-handover.ts:75,77</note>
       </notes>
       <segment>
         <source>Direct reads from the object store</source>
       </segment>
     </unit>
+    <unit id="bastion.handover.state-on">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-handover.ts:83,84</note>
+      </notes>
+      <segment>
+        <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Direct reads from the object store</pc> are on.</source>
+      </segment>
+    </unit>
+    <unit id="bastion.handover.state-off">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-handover.ts:85,86</note>
+      </notes>
+      <segment>
+        <source><pc id="0" equivStart="START_TAG_STRONG" equivEnd="CLOSE_TAG_STRONG" type="other" dispStart="&lt;strong&gt;" dispEnd="&lt;/strong&gt;">Direct reads from the object store</pc> are off.</source>
+      </segment>
+    </unit>
     <unit id="bastion.handover.note">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-handover.ts:82,85</note>
+        <note category="location">src/app/features/bastions/bastion-handover.ts:90,93</note>
       </notes>
       <segment>
         <source> Large files go from the object store to this Bastion by a link per file; the main installation decides and counts every download as before. </source>
@@ -5381,7 +5381,7 @@
     </unit>
     <unit id="bastion.handover.settings">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-handover.ts:101,104</note>
+        <note category="location">src/app/features/bastions/bastion-handover.ts:109,112</note>
       </notes>
       <segment>
         <source>Public addresses in the storage settings</source>
@@ -5389,39 +5389,15 @@
     </unit>
     <unit id="bastion.handover.switch-label">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-handover.ts:147</note>
+        <note category="location">src/app/features/bastions/bastion-handover.ts:159</note>
       </notes>
       <segment>
         <source>Direct reads from the object store for <ph id="0" equiv="name" disp="this.bastion().name"/></source>
       </segment>
     </unit>
-    <unit id="switch.on">
-      <notes>
-        <note category="location">src/app/features/bastions/bastion-handover.ts:149</note>
-        <note category="location">src/app/features/upstream/upstream-words.ts:51</note>
-        <note category="location">src/app/features/upstream/upstream-words.ts:142</note>
-        <note category="location">src/app/shared/signatures/anchor-table.ts:132</note>
-        <note category="location">src/app/shared/ui/switch.ts:127</note>
-      </notes>
-      <segment>
-        <source>On</source>
-      </segment>
-    </unit>
-    <unit id="switch.off">
-      <notes>
-        <note category="location">src/app/features/bastions/bastion-handover.ts:149</note>
-        <note category="location">src/app/features/upstream/upstream-words.ts:51</note>
-        <note category="location">src/app/features/upstream/upstream-words.ts:142</note>
-        <note category="location">src/app/shared/signatures/anchor-table.ts:133</note>
-        <note category="location">src/app/shared/ui/switch.ts:127</note>
-      </notes>
-      <segment>
-        <source>Off</source>
-      </segment>
-    </unit>
     <unit id="bastion.handover.on-done">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-handover.ts:167</note>
+        <note category="location">src/app/features/bastions/bastion-handover.ts:178</note>
       </notes>
       <segment>
         <source>Direct reads from the object store switched on.</source>
@@ -5429,7 +5405,7 @@
     </unit>
     <unit id="bastion.handover.off-done">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-handover.ts:168</note>
+        <note category="location">src/app/features/bastions/bastion-handover.ts:179</note>
       </notes>
       <segment>
         <source>Direct reads from the object store switched off.</source>
@@ -35095,6 +35071,28 @@
       </notes>
       <segment>
         <source>Only administrators and the principals a global policy names read it; teams&apos; virtual repositories skip it.</source>
+      </segment>
+    </unit>
+    <unit id="switch.on">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:51</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:142</note>
+        <note category="location">src/app/shared/signatures/anchor-table.ts:132</note>
+        <note category="location">src/app/shared/ui/switch.ts:127</note>
+      </notes>
+      <segment>
+        <source>On</source>
+      </segment>
+    </unit>
+    <unit id="switch.off">
+      <notes>
+        <note category="location">src/app/features/upstream/upstream-words.ts:51</note>
+        <note category="location">src/app/features/upstream/upstream-words.ts:142</note>
+        <note category="location">src/app/shared/signatures/anchor-table.ts:133</note>
+        <note category="location">src/app/shared/ui/switch.ts:127</note>
+      </notes>
+      <segment>
+        <source>Off</source>
       </segment>
     </unit>
     <unit id="wellknown.switch.label">
