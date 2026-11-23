@@ -6,6 +6,7 @@ import { collectAll } from '../../api/pagination';
 import { VulnerabilitiesApi, VulnerabilityGrade, VulnerabilityPackageReport } from '../../api/vulnerabilities-api';
 import { ErrorNotice } from '../../shared/error-notice';
 import { FormatIconView } from '../../shared/format-icon';
+import { formatName } from '../../core/format-names';
 import { asApiError, valueOf } from '../../shared/paged-resource';
 import { DataTable, TableColumn, TableSort } from '../../shared/ui/data-table';
 import { Disclosure } from '../../shared/ui/disclosure';
@@ -67,6 +68,8 @@ export class PackageDetail {
   /** Route parameters: the project of `/projects/:project/packages`, then the matcher's, bound by component input binding. */
   readonly project = input.required<string>();
   readonly format = input.required<string>();
+  /** The format's name in the header, never its key (R-UI-006): **OCI (Docker)**, not `oci`. */
+  protected readonly formatName = formatName(() => this.format());
   readonly name = input.required<string>();
   /** Query parameters: the text the versions are narrowed to and their sort. */
   readonly q = input<string | undefined>();

@@ -7,6 +7,7 @@ import { VulnerabilitiesApi, VulnerabilityVersionReport } from '../../api/vulner
 import { CopyButton } from '../../shared/copy-button';
 import { ErrorNotice } from '../../shared/error-notice';
 import { FormatIconView } from '../../shared/format-icon';
+import { formatName } from '../../core/format-names';
 import { asApiError, valueOf } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { PageHeader } from '../../shared/ui/page-header';
@@ -127,6 +128,8 @@ export class PackageVersionPage {
   /** Route parameters: the project, then the matcher's format, name and version. */
   readonly project = input.required<string>();
   readonly format = input.required<string>();
+  /** The format's name in the header, never its key (R-UI-006): **OCI (Docker)**, not `oci`. */
+  protected readonly formatName = formatName(() => this.format());
   readonly name = input.required<string>();
   readonly version = input.required<string>();
   /** Query parameters: the open tab, the open page of the Documentation tab and its search text (R-UI-060), the severity filter. */

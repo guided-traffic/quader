@@ -99,7 +99,7 @@
               </option>
               @for (r of repoOptions(); track refOf(r)) {
                 <option [value]="refOf(r)" [selected]="form().repository === refOf(r)" translate="no">
-                  {{ refOf(r) }} ({{ r.format }})
+                  {{ refOf(r) }} ({{ formatLabel(r.format) }})
                 </option>
               }
             }

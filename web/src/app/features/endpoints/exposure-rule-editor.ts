@@ -144,6 +144,10 @@ export class ExposureRuleEditor implements HasUnsavedChanges {
   });
   protected readonly formats = resource({ loader: () => this.repositories.formats() });
   protected readonly refOf = refOf;
+  /** A format by its name in the repository select, as every other place shows a format (R-UI-006). */
+  protected formatLabel(key: string): string {
+    return (valueOf(this.formats) ?? []).find((f) => f.name === key)?.displayName ?? key;
+  }
   protected readonly repos = resource({ loader: () => this.repositories.listAll() });
   /**
    * The repositories the select offers: every one the caller reads but a system repository of the project `upstream`, whose client

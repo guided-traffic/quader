@@ -168,6 +168,11 @@ export class RepositoryDetail implements HasUnsavedChanges {
     () => (valueOf(this.formats) ?? []).find((f) => f.name === this.stored()?.format) ?? null,
   );
   protected readonly formatLabel = computed(() => this.format()?.displayName ?? this.stored()?.format ?? '');
+  /** The format of the reader's view by its name, as every other place shows a format (R-UI-006). */
+  protected readonly consumerFormat = computed(() => {
+    const key = this.consumer()?.format ?? '';
+    return (valueOf(this.formats) ?? []).find((f) => f.name === key)?.displayName ?? key;
+  });
   /** The repository's view of the vulnerability report (R-VULN-022): a scanned format, not a virtual repository. */
   protected readonly vulnerabilitiesShown = computed(() => {
     const repo = this.stored();

@@ -7,6 +7,8 @@ import { FakeVulnerabilitiesApi, sampleGrade } from '../../api/testing/fakes-vul
 import { VulnerabilitiesApi } from '../../api/vulnerabilities-api';
 import { buttonByText, expectAccessible, inProject, renderScreen, settle, text } from '../../testing/screen';
 import { PackageDetail } from './package-detail';
+import { RepositoriesApi } from '../../api/repositories-api';
+import { FakeRepositoriesApi, GENERIC_FORMAT, OCI_FORMAT } from '../../api/testing/fakes-catalog';
 import { PackageMemory } from './package-memory';
 import { VERSION_PAGE } from './package-versions-model';
 
@@ -213,6 +215,20 @@ describe('The package page: its versions (R-UI-110)', () => {
     expect(r.get(PackageMemory).recent()[0]).toEqual({ format: 'npm', name: '@team-a/ui' });
   });
 
+  it('R-UI-006 R-UI-007 the header names the format by its name, OCI (Docker), not by its key', async () => {
+    const r = await renderScreen(
+      PackageDetail,
+      inProject({
+        inputs: { format: 'oci', name: 'team/app' },
+        setup: (get) => {
+          (get(RepositoriesApi) as FakeRepositoriesApi).formatsResult = [GENERIC_FORMAT, OCI_FORMAT];
+          ociFixture(get(PackagesApi) as FakePackagesApi);
+        },
+      }),
+    );
+    expect(text(r.root.querySelector('.type-badge')!)).toBe('OCI (Docker)');
+  });
+
   it('R-UI-007 an unknown package shows the not-found error', async () => {
     const r = await open({}, undefined, 'no-such-package');
     expect(text(r.root)).toContain('does not exist');
@@ -222,6 +238,8 @@ describe('The package page: its versions (R-UI-110)', () => {
   it('R-UI-110 every format has the page: an image lists its tags, the tag leading; NuGet, Debian and a collection their versions', async () => {
     const image = await open({ format: 'oci' }, (fake) => ociFixture(fake), 'team/app');
     expect(versions(image)).toEqual(['1.2.0', '1.1.0']);
+    // Until the formats are read, and for a format the installation does not know, the header shows the key.
+    expect(text(image.root.querySelector('.type-badge')!)).toBe('oci');
     expect(rows(image)[0]!.querySelector('th a')?.getAttribute('href')).toBe('/projects/web/packages/oci/team/app@1.2.0');
     const nuget = await open({ format: 'nuget' }, undefined, 'Contoso.Logging');
     expect(versions(nuget)).toEqual(['2.3.1', '2.2.0']);

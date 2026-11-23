@@ -11,6 +11,8 @@ import { spokenText } from '../../testing/axe';
 import { expectAccessible, inProject, renderScreen, settle, text } from '../../testing/screen';
 import { PackageMemory } from './package-memory';
 import { PackageVersionPage } from './package-version';
+import { RepositoriesApi } from '../../api/repositories-api';
+import { FakeRepositoriesApi, GENERIC_FORMAT, OCI_FORMAT } from '../../api/testing/fakes-catalog';
 
 type Opened = Awaited<ReturnType<typeof open>>;
 
@@ -222,16 +224,25 @@ describe('The page of a version (R-UI-111)', () => {
   });
 
   describe('OCI', () => {
-    const image = (inputs: Record<string, unknown> = {}, setup?: (fake: FakePackagesApi) => void) =>
-      open({ format: 'oci', version: '1.2.0', ...inputs }, (fake) => {
-        ociFixture(fake);
-        setup?.(fake);
-      }, 'team/app');
+    const image = async (inputs: Record<string, unknown> = {}, setup?: (fake: FakePackagesApi) => void) => {
+      const r = await renderScreen(
+        PackageVersionPage,
+        inProject({
+          inputs: { format: 'oci', name: 'team/app', version: '1.2.0', ...inputs },
+          setup: (get) => {
+            (get(RepositoriesApi) as FakeRepositoriesApi).formatsResult = [GENERIC_FORMAT, OCI_FORMAT];
+            ociFixture(get(PackagesApi) as FakePackagesApi);
+            setup?.(get(PackagesApi) as FakePackagesApi);
+          },
+        }),
+      );
+      return { ...r, fake: r.get(PackagesApi) as FakePackagesApi };
+    };
     const cells = (r: Opened) => [...r.root.querySelectorAll('.version-tabs table tbody tr')].map((tr) => [...tr.children].map((c) => text(c)));
     const copyButtons = (r: Opened) => [...r.root.querySelectorAll<HTMLButtonElement>('.version-tabs quader-copy-button button')];
     const nameOf = (b: HTMLElement) => b.getAttribute('aria-label') ?? text(b);
 
-    it('R-UI-111 R-OCI-031 Q-UI-225 the tag leads the title, the digest is a detail; the header shows the OCI logo beside the format', async () => {
+    it('R-UI-111 R-OCI-031 Q-UI-225 R-UI-006 the tag leads the title, the digest is a detail; the header shows the OCI logo beside the format by its name', async () => {
       const r = await image();
       expect(text(r.root.querySelector('h1')!)).toBe('team/app 1.2.0');
       expect(text(r.root.querySelector('.version-facts')!)).not.toContain('sha256:');
@@ -240,7 +251,8 @@ describe('The page of a version (R-UI-111)', () => {
         'formats/oci/oci-icon-color.svg',
         'formats/oci/oci-icon-white.svg',
       ]);
-      expect(spokenText(badge)).toBe('oci');
+      // The format's name, not its key (the renders of 2026-11-21 showed `oci` on every version page).
+      expect(spokenText(badge)).toBe('OCI (Docker)');
       await expectAccessible(r.root);
     });
 
