@@ -540,11 +540,12 @@ share one database and one Valkey.
   `system.task_triggered` event, and answers `409` with the existing job when the exclusive key (`gc` for both collection
   tasks) is held. A `web` replica only enqueues; the integration test `TestGarbageCollectionTrigger` shows the run on the
   `worker`.
-- **Key-ring status** ([encryption_api.go](../../internal/api/v1/encryption_api.go)): `secrets.KeyRing.StatusWithCounts` (shared with
-  `quader admin secrets status`) for the answering replica, the sealed counts from
-  [listq](../../internal/meta/postgres/listq/sealed.go) over the registered columns, the rings of the other replicas from
-  the replica registry, and the canary rows of `secret_key_canary`. `RingsCompatible` is the rule; the trigger of
-  `secrets-reencrypt` refuses with `409 key_ring_incompatible` while it is false.
+- **Key-ring status** ([encryption_api.go](../../internal/api/v1/encryption_api.go)): `secrets.KeyRing.BuildReport`
+  ([report.go](../../internal/secrets/report.go)), the one report that `quader admin secrets status`
+  ([admin_secrets.go](../../cmd/quader/admin_secrets.go)) prints too: the answering replica's ring, the sealed counts from
+  [listq](../../internal/meta/postgres/listq/sealed.go) over the registered columns, the canary rows of `secret_key_canary` and
+  the rings of the replica registry. `secrets.RingsCompatible` is the rule; the trigger of `secrets-reencrypt` refuses with
+  `409 key_ring_incompatible` while it is false.
   At start-up `verifyKeyRingCanaries` ([wire_api.go](../../internal/app/wire_api.go)) refuses a ring that lacks a key that sealed
   values reference, seeds the canary of every key ID that has none, and refuses a ring that cannot open an existing canary.
   The job body of `secrets-reencrypt` ([wire_api.go](../../internal/app/wire_api.go), `registerSecretsReencrypt`) calls

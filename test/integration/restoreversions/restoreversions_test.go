@@ -2,7 +2,8 @@
 
 // Package restoreversions tests the commands of steps 5 and 7 of the restore procedure (R-HA-025), `quader admin storage
 // restore-versions` and `quader admin maintenance pause-deletions` / `resume-deletions`, by running the binary against the
-// integration stack: an installation database, and the versioned blob bucket of the stack's SeaweedFS.
+// integration stack: an installation database, and the versioned blob bucket of the stack's SeaweedFS. The binary it builds runs
+// `quader admin secrets status` too (secrets_status_test.go), so that no other area builds it a second time.
 package restoreversions
 
 import (

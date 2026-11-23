@@ -208,7 +208,7 @@ func (a *App) apiServices() v1.Services {
 // ringSource reads the key rings of the replicas from the registry (R-OPS-003).
 type ringSource struct{ a *App }
 
-func (s ringSource) Rings(ctx context.Context) ([]v1.ReplicaRing, error) {
+func (s ringSource) Rings(ctx context.Context) ([]secrets.ReplicaRing, error) {
 	var infos []cluster.ReplicaInfo
 	err := s.a.database().Read(ctx, func(c q.DBTX) (err error) {
 		infos, err = cluster.ListReplicas(ctx, c, s.a.cfg.System)
@@ -217,13 +217,13 @@ func (s ringSource) Rings(ctx context.Context) ([]v1.ReplicaRing, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := make([]v1.ReplicaRing, 0, len(infos))
+	out := make([]secrets.ReplicaRing, 0, len(infos))
 	for _, i := range infos {
 		role := ""
 		if len(i.Roles) > 0 {
 			role = i.Roles[0]
 		}
-		out = append(out, v1.ReplicaRing{Name: i.Name, Role: role, Lost: i.Lost, ActiveKeyID: i.ActiveSecretKeyID, KeyIDs: i.SecretKeyIDs})
+		out = append(out, secrets.ReplicaRing{Name: i.Name, Role: role, Lost: i.Lost, ActiveKeyID: i.ActiveSecretKeyID, KeyIDs: i.SecretKeyIDs})
 	}
 	return out, nil
 }

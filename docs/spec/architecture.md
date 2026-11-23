@@ -4782,7 +4782,12 @@ rotate them and no object of a bucket is touched ([storage.md](storage.md) R-STO
   - the canary state;
   - the key IDs of every live replica.
 
-  It never reports key material, fingerprints, ciphertext or plaintext.
+  It never reports key material, fingerprints, ciphertext or plaintext. The implementation is `KeyRing.BuildReport`
+  ([report.go](../../internal/secrets/report.go)), which also decides whether the rings are compatible (below). The command
+  (built on 2026-11-23, [admin_secrets.go](../../cmd/quader/admin_secrets.go)) reads it with the key ring of the pod it runs in and
+  prints the active key, a line per key ID (`KEY ID`, `ACTIVE`, `IN THIS RING`, `SEALED VALUES`, `CANARY` with `ok`, `failed` or
+  `absent`), a line per live replica (`REPLICA`, `ROLE`, `ACTIVE KEY`, `KEY IDS`) and `rings compatible yes|no`; `--json` prints the
+  report as one document (`activeKeyId`, `keys`, `replicas`, `ringsCompatible`). It changes nothing.
 - Each replica publishes the key IDs of its ring and its active key ID with its heartbeat in the
   replica registry ([operations-and-observability.md](operations-and-observability.md) R-OPS-003).
   It publishes IDs only. The rings are compatible when every live replica's ring holds every key ID

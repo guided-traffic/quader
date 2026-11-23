@@ -22,6 +22,7 @@ commands:
   storage keys export|import <file>|new-generation --connection <id>   keep, bring back or renew the storage keys of the encrypted connections (R-STOR-083, R-STOR-085)
   storage offline list|get|verify|pull --keys <export> --key-ring <dir> (--connection-file <element> | --dir <path>)   read an encrypted connection's objects without a database (R-STOR-089)
   maintenance pause-deletions --reason <text> | resume-deletions   set or clear the deletion pause (R-HA-025)
+  secrets status [--json]                      the key ring of the stored secrets: key IDs, sealed values, canaries, the replicas' rings (R-ARCH-021)
   backup check [--json]                        verify the declared platform protection: archive_mode, bucket versioning (R-HA-023)
   npm reinstate <projectKey>/<repoKey> <name>@<version>   put back a version a journal replay withheld (R-NPM-047)
   oci reinstate <projectKey>/<repoKey> <name>@<digest>   put back a manifest a journal replay withheld (R-OCI-033)
@@ -62,6 +63,8 @@ func adminCmd(args []string, s streams) error {
 		return storageCmd(args[1:], s)
 	case "maintenance":
 		return maintenanceCmd(args[1:], s)
+	case "secrets":
+		return secretsCmd(args[1:], s)
 	case "post-restore":
 		return postRestoreCmd(args[1:], s)
 	case "npm":

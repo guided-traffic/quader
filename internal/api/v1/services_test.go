@@ -10,34 +10,6 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 )
 
-func TestRingsCompatible(t *testing.T) {
-	ring := func(name, role, active string, ids ...string) ReplicaRing {
-		return ReplicaRing{Name: name, Role: role, ActiveKeyID: active, KeyIDs: ids}
-	}
-	cases := []struct {
-		name       string
-		rings      []ReplicaRing
-		referenced []string
-		want       bool
-	}{
-		{"all rings equal", []ReplicaRing{ring("a", "web", "k1", "k1"), ring("b", "worker", "k1", "k1")}, []string{"k1"}, true},
-		{"a replica lacks a key that is active elsewhere", []ReplicaRing{ring("a", "web", "k1", "k1"), ring("b", "web", "k2", "k1", "k2")}, nil, false},
-		{"step 2 rolled out before step 1 reached every replica", []ReplicaRing{ring("a", "web", "k2", "k1"), ring("b", "worker", "k2", "k1", "k2")}, nil, false},
-		{"a replica lacks a key that sealed values reference", []ReplicaRing{ring("a", "web", "k2", "k2"), ring("b", "web", "k2", "k1", "k2")}, []string{"k1"}, false},
-		{"after step 1: new key present everywhere, old one active", []ReplicaRing{ring("a", "web", "k1", "k1", "k2"), ring("b", "web", "k1", "k1", "k2")}, []string{"k1"}, true},
-		{"a lost replica is left out", []ReplicaRing{ring("a", "web", "k2", "k1", "k2"), {Name: "gone", Role: "web", Lost: true, ActiveKeyID: "k1", KeyIDs: []string{"k1"}}}, nil, true},
-		{"a role that opens no sealed value is left out", []ReplicaRing{ring("a", "web", "k1", "k1"), ring("backup", "backup", "k0", "k0")}, nil, true},
-		{"no replica", nil, nil, true},
-	}
-	for _, c := range cases {
-		t.Run("R-API-049 "+c.name, func(t *testing.T) {
-			if got := RingsCompatible(c.rings, c.referenced); got != c.want {
-				t.Fatalf("RingsCompatible = %v, want %v", got, c.want)
-			}
-		})
-	}
-}
-
 func TestIdempotencyKeyAndBodyHash(t *testing.T) {
 	key := func(vals ...string) (string, bool, error) {
 		r := httptest.NewRequest("POST", "/x", nil)

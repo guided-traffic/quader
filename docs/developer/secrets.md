@@ -34,10 +34,12 @@ of this package.
 `ring.Status()` returns the key IDs, the active ID and which keys are loaded. `ring.StatusWithCounts(ctx, counter)`
 adds the sealed values per key ID over every registered column; the PostgreSQL layer implements
 `ValueCounter`. A key ID that values reference but the ring lacks is listed with `loaded: false`.
-`GET /api/v1/system/encryption` ([encryption_api.go](../../internal/api/v1/encryption_api.go)) and the start-up check
-(`verifyKeyRingCanaries` in [wire_api.go](../../internal/app/wire_api.go)) call `StatusWithCounts`; neither adds key
-material, fingerprints, ciphertext or plaintext. The command `quader admin secrets status` that R-ARCH-021 names beside
-the API is not built. `KeyRing` implements `String` and `LogValue` with key IDs only.
+`ring.BuildReport(ctx, counter, canaries, rings)` ([report.go](../../internal/secrets/report.go)) joins them with the canary state
+per key ID (`ok`, `failed`, `absent`) and the rings of the live replicas, and decides `RingsCompatible`: it is the one report of
+`quader admin secrets status` ([admin_secrets.go](../../cmd/quader/admin_secrets.go)) and `GET /api/v1/system/encryption`
+([encryption_api.go](../../internal/api/v1/encryption_api.go)); the start-up check (`verifyKeyRingCanaries` in
+[wire_api.go](../../internal/app/wire_api.go)) calls `StatusWithCounts`. None adds key material, fingerprints, ciphertext or plaintext.
+`KeyRing` implements `String` and `LogValue` with key IDs only.
 
 ## Envelope
 

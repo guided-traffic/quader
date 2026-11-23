@@ -58,19 +58,9 @@ type Enqueuer interface {
 	Enqueue(ctx context.Context, tx meta.Tx, e jobs.EnqueueSpec) (jobs.Result, error)
 }
 
-// ReplicaRing is the key ring one replica published with its heartbeat
-// (R-OPS-003): key IDs only.
-type ReplicaRing struct {
-	Name        string
-	Role        string
-	Lost        bool
-	ActiveKeyID string
-	KeyIDs      []string
-}
-
-// RingSource lists the rings of the replicas in the registry.
+// RingSource lists the rings of the replicas in the registry (R-OPS-003): key IDs only.
 type RingSource interface {
-	Rings(ctx context.Context) ([]ReplicaRing, error)
+	Rings(ctx context.Context) ([]secrets.ReplicaRing, error)
 }
 
 func unavailable(what string) error {

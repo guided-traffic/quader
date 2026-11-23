@@ -66,15 +66,3 @@ func TestR_API_029_PackageFileContentURL(t *testing.T) {
 		t.Errorf("downloadUrl %q must stay the protocol URL", out.Files[0].DownloadUrl)
 	}
 }
-
-// TestR_OPS_004_RingsOfEveryRole: the key ring of a replica of every role counts in the compatibility rule (Q-OPS-161).
-func TestR_OPS_004_RingsOfEveryRole(t *testing.T) {
-	for _, role := range []string{"api", "packages", "worker", "web", "all"} {
-		if !opensSecrets(role) {
-			t.Errorf("a %s replica is left out of the key ring rule", role)
-		}
-	}
-	if opensSecrets("backup") || opensSecrets("") {
-		t.Error("a role that never registers counts")
-	}
-}
