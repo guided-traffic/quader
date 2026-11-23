@@ -922,12 +922,18 @@ codes:
 
 | Code | Figure | `Retry-After` |
 |---|---|---|
-| `rate_limited` | `requestsPerSecond`/`requestsBurst`, `requestsPerHour` | the time after which the caller's next request fits, if nothing else uses the room: the refused request is in no window (R-LIM-017), so the wait is true; whole seconds, at least 1 s |
+| `rate_limited` | `requestsPerSecond`/`requestsBurst`, `requestsPerHour` | the time after which the caller's next request fits, if nothing else uses the room: the refused request is in no window (R-LIM-017), so the wait is true; at least 1 s, rounded up as **One wait** says |
 | `download_limit_reached` | `cachedBytesPerHour`, `bytesPerDay` | the time until the window's estimate leaves room for one more byte, at least 1 s, at most the window: up to an hour or a day, and honest (the owner's decision 20) |
 | `upstream_limit_reached` | `uncachedBytesPerHour`, `upstreamRequestsPerHour`, a ceiling | as above |
 | `too_many_parallel_downloads` | `parallelDownloads` | 1 s |
 | `caller_blocked` | a block (R-LIM-025) | the block's remaining time |
 
+- **One wait** ([Q-LIM-291](#q-lim-291--a-refusal-names-one-wait-in-the-unit-its-text-names-it-in)). The wait of the table is rounded up
+  once, to whole seconds below two minutes and to whole minutes from there, and that one value is `Retry-After`, `retryAfterSeconds`,
+  the `t` of the refusal's RateLimit policy and the wait the `detail` names, exactly: "45 seconds", "14 minutes", "113 minutes", and
+  from two hours "3 hours" or "2 hours 1 minute". A caller that waits it is never early and waits at most 59 s more than the counters
+  need; a byte or upstream figure's wait stays at most its window. A format that caps `Retry-After` (NuGet and Ansible Galaxy at 30 s,
+  for their clients' timeouts) keeps the detail's wait, which is the limit's.
 - **A client that retries a refusal** is admitted once it waits what `Retry-After` says: at a request figure that is a second or two;
   at a byte figure it is the rest of the hour or the day, and a client that waits up to that long holds its command for that time
   (podman: about 16 to 20 minutes before it gives up; the manual names the CI job's timeout as the setting for it). A client that
@@ -3075,6 +3081,28 @@ Tests: `TestR_LIM_022_ARefusedUpstreamRequestIsCountedNowhere` in [engine_test.g
 [endpoint_ratelimit_test.go](../../internal/api/v1/endpoint_ratelimit_test.go), `TestLimiterGiveBack` in
 [limiter_test.go](../../internal/cluster/limiter_test.go), and the script against the stack's Valkey in
 `TestQ_LIM_110_AGiveBackTakesBackWhatATakeCountedAndAPeekAddsNothing` ([units_test.go](../../test/integration/valkey/units_test.go)).
+
+### Q-LIM-291 · A refusal names one wait, in the unit its text names it in
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Found by the
+builder of the limits' screens on 2026-11-23 and read in the code the same day: `refusal.err` rounded the wait up to whole seconds for
+`Retry-After` and `retryAfterSeconds`, and `humanDuration` rounded the same wait up again for the detail, to whole minutes from two minutes
+and to whole hours from two hours. A wait of 2 h 0 min 1 s was "Try again in 3 hours." beside `Retry-After: 7201`, one of 2 min 1 s
+"3 minutes" beside `121`: two times for one refusal, the text's up to an hour later. A `rate_limited` refusal of `requestsPerHour` that
+says "113 minutes" is not one of them: the sliding window's wait can reach two windows when the current one holds more than the limit
+(`cluster.RoomAfter`), and its header said 6,780 s as well.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One value: the wait rounded up to whole seconds below two minutes and to whole minutes from there; the detail names it exactly ("2 hours 1 minute"), and `Retry-After`, `retryAfterSeconds` and the refusal's RateLimit policy carry it (chosen) | The text and the header are one time | A caller that waits what it reads is never early; a person reads minutes, not 7,201 seconds | A wait from two minutes is up to 59 s longer than the counters need |
+| (b) The header keeps whole seconds; the text rounds down | The header exact | — | The text would tell a person to come back before the limit has room |
+| (c) The text names seconds always | One unit | Exact | "Try again in 5,400 seconds" |
+
+**Choice:** (a). A byte or upstream figure's wait stays at most its window: the windows are whole minutes (an hour, a day), so rounding up
+to a minute does not pass them. **Applied in the spec:** R-LIM-020 (the table of codes, **One wait**). Code: `waitOf` and `humanDuration`
+in [errors.go](../../internal/limits/errors.go). Test: `TestR_LIM_020_TheDetailAndRetryAfterNameOneWait`
+([errors_test.go](../../internal/limits/errors_test.go)): every code that carries a wait, 21 waits from 0 to 47 hours, the detail read back
+against `Retry-After`, `retryAfterSeconds` and the RateLimit policy (unit, microseconds).
 
 ## What this does not cover
 

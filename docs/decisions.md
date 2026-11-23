@@ -10652,10 +10652,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-LIM
 
-60 questions on [spec/usage-and-limits.md](spec/usage-and-limits.md).
+61 questions on [spec/usage-and-limits.md](spec/usage-and-limits.md).
 
 <details>
-<summary>Q-LIM: 60 questions</summary>
+<summary>Q-LIM: 61 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10719,6 +10719,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-LIM-98](spec/usage-and-limits.md#q-lim-98--a-link-is-charged-its-size-when-it-is-issued-and-its-parallel-lease-ends-with-the-redirect) | A link is charged its size when it is issued, and its parallel lease ends with the redirect | Decided by the planner in the owner's absence | (a) `Admit` before the link as before a stream; the item's size charged at issuance; the lease ends with the `307` | [ADR-242](#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing) |
 | [Q-LIM-99](spec/usage-and-limits.md#q-lim-99--a-speed-limit-does-not-stop-a-link-the-budgets-are-charged-at-the-issue) | A speed limit does not stop a link; the budgets are charged at the issue | Decided by the development agent on 2026-11-22, after the owner left the open questions to it | (c) The figure does not stop a link; the transfer by a link is not paced; the hour and day budgets are charged in full at issuance; in `enforce` and in `audit` alike | [ADR-242](#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing), [ADR-250](#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward) |
 | [Q-LIM-110](spec/usage-and-limits.md#q-lim-110--an-upstream-request-step-9a-refuses-is-counted-nowhere-and-a-request-stage-7-refuses-is-given-back-to-the-endpoints-class) | An upstream request step 9a refuses is counted nowhere, and a request stage 7 refuses is given back to the endpoint's class | That a refused request does not count is the owner's decision 19 (Q-LIM-57), carried on 2026-11-23 to step 9a and to the endpoint's class of R-EP-015 | (a) Step 9a decides and counts in one take, the script of stage 7: the upstream request windows take the request, the uncached byte windows are only checked (they must have room and are not added to); an upstream request the parallel lease refuses after the take admitted it is given back by the same script. The endpoint's class keeps its own step and is given back the request stage 7 refuses | — |
+| [Q-LIM-291](spec/usage-and-limits.md#q-lim-291--a-refusal-names-one-wait-in-the-unit-its-text-names-it-in) | A refusal names one wait, in the unit its text names it in | Decided by the development agent | (a) One value: the wait rounded up to whole seconds below two minutes and to whole minutes from there; the detail names it exactly ("2 hours 1 minute"), and `Retry-After`, `retryAfterSeconds` and the refusal's RateLimit policy carry it | — |
 
 </details>
 

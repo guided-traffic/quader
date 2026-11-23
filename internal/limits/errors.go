@@ -34,10 +34,9 @@ func (r refusal) err() *errs.Error {
 	if (r.code == CodeDownloadLimitReached || r.code == CodeUpstreamLimitReached) && r.window > 0 {
 		r.retry = min(r.retry, r.window) // at most the window (R-LIM-020)
 	}
-	retry := max(time.Second, r.retry.Round(time.Second))
-	if r.retry > retry {
-		retry += time.Second
-	}
+	// One value for every place that names the wait: the detail, Retry-After, retryAfterSeconds and the RateLimit field's t
+	// (Q-LIM-291).
+	retry := waitOf(r.retry)
 	opts := []errs.Option{
 		errs.WithRetryAfter(retry),
 		errs.WithExtension("figure", r.figure),
@@ -116,13 +115,38 @@ func trimFloat(v float64) string {
 	return fmt.Sprintf("%.1f", v)
 }
 
-func humanDuration(d time.Duration) string {
-	switch s := int64(d / time.Second); {
-	case s < 120:
-		return fmt.Sprintf("%d seconds", s)
-	case s < 2*3600:
-		return fmt.Sprintf("%d minutes", (s+59)/60)
-	default:
-		return fmt.Sprintf("%d hours", (s+3599)/3600)
+// waitOf is the wait a refusal names: at least a second, rounded up to the unit its text names it in, whole seconds below two
+// minutes and whole minutes from there (R-LIM-020, Q-LIM-291). Rounding up keeps the wait honest: a caller that waits it is not
+// early, and it waits at most 59 s more than the window needs. A wait at most a window of whole minutes stays at most that window.
+func waitOf(d time.Duration) time.Duration {
+	d = max(time.Second, d)
+	s := (d + time.Second - 1) / time.Second * time.Second
+	if s < 2*time.Minute {
+		return s
 	}
+	return (s + time.Minute - 1) / time.Minute * time.Minute
+}
+
+// humanDuration names a wait of waitOf exactly, in the unit waitOf rounded it to: "45 seconds", "14 minutes", "113 minutes", and
+// from two hours "3 hours" or "2 hours 1 minute".
+func humanDuration(d time.Duration) string {
+	s := int64(d / time.Second)
+	if s < 120 {
+		return plural(s, "second")
+	}
+	m := s / 60
+	if m < 120 {
+		return plural(m, "minute")
+	}
+	if m%60 == 0 {
+		return plural(m/60, "hour")
+	}
+	return plural(m/60, "hour") + " " + plural(m%60, "minute")
+}
+
+func plural(n int64, unit string) string {
+	if n == 1 {
+		return "1 " + unit
+	}
+	return fmt.Sprintf("%d %ss", n, unit)
 }
