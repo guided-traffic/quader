@@ -474,6 +474,12 @@ func (c *HTTPClient) accept(resp *http.Response, release func()) (*Response, err
 	if merr != nil {
 		return nil, &AnswerError{Status: resp.StatusCode, Err: merr}
 	}
+	// The client offers no handover yet (R-BAS-072 is the engine's, not built), so an answer of the class handover, or one
+	// that carries a handover's value, answers a forward that offered none: a bad answer, never an empty 200 for a caller
+	// (R-BAS-073).
+	if m.Class == iface.ClassHandover || len(resp.Header.Values(iface.HeaderHandover)) > 0 {
+		return nil, &AnswerError{Status: resp.StatusCode, Err: errors.New("a handover answers a forward that offered none")}
+	}
 	body := resp.Body
 	if (resp.StatusCode == http.StatusBadRequest || resp.StatusCode == http.StatusUnauthorized) &&
 		strings.HasPrefix(resp.Header.Get("Content-Type"), iface.ProblemMediaType) {

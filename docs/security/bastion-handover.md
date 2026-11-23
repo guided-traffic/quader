@@ -4,7 +4,10 @@ Status: specified on 2026-11-22, not built ([bastion.md](../spec/bastion.md#the-
 [storage.md](../spec/storage.md) R-STOR-095, R-STOR-096;
 [ADR-250](../decisions.md#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward)).
 Nothing of it runs: no forward is answered with a handover, `blob.Store.CopyDataKey` exists (encryption's package 2) but nothing calls it,
-and a Bastion makes no request to the main installation's object store. Every gap below is dormant until the design is built and an administrator switches the handover on for a
+and a Bastion makes no request to the main installation's object store. The wire is built (interface version 6,
+[handover.go](../../internal/bastion/iface/handover.go)): the value's checks, a data key type that renders `[REDACTED]` in every form, and
+the redaction of `Quader-Bastion-Handover` in logs, spans and support bundles; the Bastion's client refuses a handover answer, since it offers
+none yet. Every gap below is dormant until the design is built and an administrator switches the handover on for a
 Bastion registration; the sections describe that design.
 
 The perspective of this page is what changes in the trust between the main installation, a Bastion in the DMZ and the object store when a
@@ -94,7 +97,9 @@ The link client trusts the system roots and the Bastion chart's `trustedCA` (Q-B
 already: a CA added for one vouches for the other. The integrity of the bytes does not rest on that trust (above); a party that could
 present a certificate for the store's host would see a plain object and the link, which serves that object for its life. The client sends no
 credential and no header of the interface, follows no redirect, and refuses a link that is not `https` or whose host is a host of the Bastion
-or of the main installation (R-BAS-074); the main installation checks every public address against Quader's hosts when it is saved and at
+or of the main installation (R-BAS-074); the value's check already refuses such a link, compares the host by name whatever the port, and
+refuses a link with user information, which Go's client would send as a credential
+([Q-BAS-281](../spec/bastion.md#q-bas-281--the-wires-checks-are-narrower-than-the-list-of-r-bas-073)); the main installation checks every public address against Quader's hosts when it is saved and at
 every start (R-STOR-072, R-STOR-074). The connection to the store is not under the egress address policy of the upstream clients, as the
 connection to the main installation is not
 ([H-446](../spec/bastion.md#h-446--the-connection-to-the-main-installation-is-not-under-the-egress-address-policy)): its host comes from the

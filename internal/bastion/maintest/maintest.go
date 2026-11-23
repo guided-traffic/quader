@@ -6,9 +6,11 @@
 // What it models of the main installation: the Bastion token check (401 bastion_token_invalid), the interface
 // version check (400 bastion_interface_mismatch), the handshake with the response base URL derived from the
 // forwarded headers of R-BAS-017, the feed with its lookback, entry IDs, paging and reset (R-BAS-015), the
-// downloads intake, the rules of a check's packages (R-BAS-083), and the recording of every request the Bastion sent. A
-// forward handler marks a response, its package and the caller's shape on it included (R-BAS-082), with [Main.Mark]; the
-// check function answers the pairs it is asked about. What it does not model: users,
+// downloads intake, the rules of a check's packages (R-BAS-083), the registration's switch of the handover and the rule
+// that only a forward that offered gets one (R-BAS-071, R-BAS-073), and the recording of every request the Bastion sent. A
+// forward handler marks a response, its package and the caller's shape on it included (R-BAS-082), with [Main.Mark], and
+// answers with a handover instead of the bytes with [Main.HandOver]; the check function answers the pairs it is asked
+// about. What it does not model: users,
 // policies, repositories, formats. The check answer and the forwarded answer are functions the test sets, and so are
 // the handshake's format table and bound repository (R-BAS-057), which are data of the main installation's formats.
 package maintest
@@ -76,6 +78,7 @@ type Main struct {
 	downloadsFail int
 	formats       iface.HandshakeFormats
 	bound         string
+	handover      bool
 
 	headers map[string]http.Header
 
@@ -100,6 +103,12 @@ type Forwarded struct {
 	Header http.Header
 	Body   []byte
 	At     time.Time
+}
+
+// Offer returns the handover offer the forward carried (R-BAS-072); ok is false for none or a malformed one.
+func (f Forwarded) Offer() (iface.HandoverOffer, bool) {
+	o, ok, err := iface.HandoverOfferFrom(f.Header)
+	return o, ok && err == nil
 }
 
 // New starts the fake. It is closed with the test.
@@ -239,6 +248,10 @@ func (m *Main) SetFormats(t iface.HandshakeFormats) { m.lock(func() { m.formats 
 // SetBoundRepository sets the handshake's boundRepository (R-BAS-057): the repository the main installation binds the
 // Bastion's host to; empty binds none, the default.
 func (m *Main) SetBoundRepository(repo string) { m.lock(func() { m.bound = repo }) }
+
+// SetHandover sets the registration's switch of the handover per blob (R-BAS-071): the handshake's member handover, and
+// whether [Main.HandOver] hands anything over. Off by default, as for a new registration.
+func (m *Main) SetHandover(on bool) { m.lock(func() { m.handover = on }) }
 
 // Formats is the format table a main installation of today sends, filled from the formats' catalog.Facts in the order of
 // the IDs (R-BAS-057):
@@ -494,6 +507,7 @@ func (m *Main) handshake(w http.ResponseWriter, r *http.Request, rt *regToken) {
 		ServerTime:       m.now().UTC(),
 		Formats:          m.formats,
 		BoundRepository:  m.bound,
+		Handover:         m.handover,
 	}
 	m.mu.Unlock()
 	m.writeJSON(w, hs)
@@ -658,6 +672,33 @@ func (m *Main) versionNow() int {
 func (m *Main) Mark(w http.ResponseWriter, mk iface.Marking) {
 	mk.Interface = m.versionNow()
 	mk.Set(w.Header())
+}
+
+// HandOver answers a forward with a handover instead of the bytes, as the main installation does (R-BAS-073, storage.md
+// R-STOR-095 steps 1 and 5), and reports whether it did: only while the switch of [Main.SetHandover] is on, only to a
+// forward whose offer is well formed, and only for a blob of at most the offered size. Then it writes the answer: status 200,
+// the marking mk with the class handover and the counted download, h in iface.HeaderHandover, Content-Length 0 and no body;
+// headers the handler set before (the file's ETag) stay. Otherwise it writes nothing, and the handler answers with the
+// bytes. A value EncodeHandover refuses fails the test and is not handed over.
+func (m *Main) HandOver(w http.ResponseWriter, r *http.Request, mk iface.Marking, h iface.Handover) bool {
+	m.mu.Lock()
+	on, version := m.handover, m.version
+	m.mu.Unlock()
+	offer, offered, err := iface.HandoverOfferFrom(r.Header)
+	if !on || !offered || err != nil || h.Size > offer.MaxSize {
+		return false
+	}
+	v, err := iface.EncodeHandover(h)
+	if err != nil {
+		m.t.Errorf("maintest: the test's handover cannot be encoded: %v", err)
+		return false
+	}
+	mk.Class, mk.Counted, mk.Interface = iface.ClassHandover, true, version
+	mk.Set(w.Header())
+	w.Header().Set(iface.HeaderHandover, v)
+	w.Header().Set("Content-Length", "0")
+	w.WriteHeader(http.StatusOK)
+	return true
 }
 
 const base62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"

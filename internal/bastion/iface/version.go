@@ -12,4 +12,8 @@ package iface
 //
 // Version 5 (R-BAS-087): the marking's package headers, the check's packages,
 // and the unverified reading of a registry token's grant and expiry.
-const InterfaceVersion = 5
+//
+// Version 6 (R-BAS-073): the handover per blob. The header [HeaderHandover] with
+// the offer [HandoverOffer] and the value [Handover], the class [ClassHandover],
+// and the handshake's member handover.
+const InterfaceVersion = 6

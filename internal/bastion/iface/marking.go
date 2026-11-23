@@ -32,12 +32,17 @@ const (
 	// ClassPass is every other answer: Volatile and other routes, errors,
 	// redirects. The Bastion keeps nothing of it.
 	ClassPass Class = "pass"
+	// ClassHandover is the 200 of a Download route or of a file under /files/ that the main installation answers with a
+	// [Handover] in [HeaderHandover] instead of the bytes: the file's own headers, Content-Length 0 and no body (R-BAS-073).
+	// It answers only a recognized forward that carried a [HandoverOffer]; the Bastion reads the bytes from the object store
+	// and keeps them as an artifact (R-BAS-074). The engine never passes such an answer to a caller.
+	ClassHandover Class = "handover"
 )
 
-// Valid reports whether c is one of the five classes.
+// Valid reports whether c is one of the six classes.
 func (c Class) Valid() bool {
 	switch c {
-	case ClassArtifact, ClassShared, ClassPrivate, ClassAbsent, ClassPass:
+	case ClassArtifact, ClassShared, ClassPrivate, ClassAbsent, ClassPass, ClassHandover:
 		return true
 	}
 	return false

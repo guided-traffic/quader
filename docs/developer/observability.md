@@ -68,7 +68,11 @@ Rules for code:
   `Scrubber.Error`.
 - `Quader-Bastion-Authorization` is a secret header (R-BAS-008): `SensitiveKey` matches the word `authorization` in a header name, so a logged
   `http.Header` shows it as `[REDACTED]`, and `qdr_bst_…` is a token for the scrubber like every `qdr_<type>_` value. The Recognize stage also
-  removes the header from the request the later stages receive. The other `Quader-Bastion-*` headers carry no secret.
+  removes the header from the request the later stages receive.
+- `Quader-Bastion-Handover` is a secret header too (R-BAS-073): on an answer it holds a signed link and, for an encrypted copy, a data key.
+  `SensitiveKey` names it as a whole key (`sensitiveWholeKeys`: `quader_bastion_handover`, with `-` read as `_`), so `bastion_handover`, a
+  field that holds an outcome, stays readable; the scrubber redacts its value after the header's name (not the offer `accept; …`) and a bare
+  value by its start `eyJsaW5rIjoi`. The other `Quader-Bastion-*` headers carry no secret.
 - Never log bodies or headers other than `User-Agent`, `Content-Type`, `Content-Length`, `Accept`.
 - Span attributes are scrubbed again right before export (`scrubExporter`), so a missed call site cannot leak.
 

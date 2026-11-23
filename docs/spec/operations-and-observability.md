@@ -1663,8 +1663,13 @@ delivery-log entry or an error message. These rules are mandatory, and code revi
 2. **Key-based redaction.** A handler-level `ReplaceAttr` replaces the value of any attribute whose
    key contains `password`, `secret`, `token`, `authorization`, `cookie`, `api_key`, `apikey`,
    `private_key` or `credential` (case-insensitive). The ID fields `token_id` and `token_type` are
-   exempt.
+   exempt. The key `quader_bastion_handover` (the header `Quader-Bastion-Handover`, with `-` read as
+   `_`) is replaced as a whole key, not as a part, so that a field such as `bastion_handover` that
+   holds an outcome stays readable ([bastion.md](bastion.md) R-BAS-073).
 3. **Pattern scrubbing** of string values:
+   - the value of `Quader-Bastion-Handover` after the header's name becomes `[REDACTED]`, except the
+     Bastion's offer `accept; …`, and so does a bare handover value, recognised by its start
+     `eyJsaW5rIjoi` (the base64url of `{"link":"`, R-BAS-073);
    - Quader token formats (`qdr_pat_`, `qdr_sat_`, `qdr_cit_` followed by the token body,
      INV-8) become `qdr_<type>_[REDACTED]`;
    - `Bearer <value>` becomes `Bearer [REDACTED]`;

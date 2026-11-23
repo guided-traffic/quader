@@ -49,9 +49,17 @@ const (
 	HeaderPackageRead = "Quader-Bastion-Package-Read"
 )
 
+// HeaderHandover is the one header of the interface that travels both ways (R-BAS-072, R-BAS-073). On a forward of the
+// Bastion it is the offer to take a handover, a [HandoverOffer] in the form "accept; max-size=<n>"; on the answer of the
+// main installation, whose class is then [ClassHandover], it is the [Handover]: base64url JSON with a signed link and, for
+// an encrypted copy, a data key. Both sides redact it like Authorization in every log, span and support bundle (R-OPS-013),
+// and the Bastion's client strips it from every answer before the engine sees it, like every header with [HeaderPrefix].
+const HeaderHandover = "Quader-Bastion-Handover"
+
 // HeaderPrefix starts every header of the interface. The main installation never
-// echoes a request header with this prefix and redacts [HeaderAuthorization] like
-// Authorization in every log, span and support bundle (R-BAS-008, R-OPS-013).
+// echoes a request header with this prefix and redacts [HeaderAuthorization] and
+// [HeaderHandover] like Authorization in every log, span and support bundle
+// (R-BAS-008, R-BAS-073, R-OPS-013).
 const HeaderPrefix = "Quader-Bastion-"
 
 // The values of the headers above.

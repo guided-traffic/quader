@@ -3200,7 +3200,9 @@ from the object store itself and the main installation's bandwidth is spared. It
 released blob and for nothing else. Since a Bastion serves images ([Every format](#every-format)), its first fills are layers of
 gigabytes; the handover takes them off the main installation.
 
-Status: specified on 2026-11-22 by the planner, not built. It builds on specifications whose code is not on `main`: the serve point and
+Status: specified on 2026-11-22 by the planner; the wire is built (package 1, 2026-11-23: interface version 6, R-BAS-073's types and
+checks, [Q-BAS-280](#q-bas-280--the-wire-checks-storedsize-against-ssize-itself) and
+[Q-BAS-281](#q-bas-281--the-wires-checks-are-narrower-than-the-list-of-r-bas-073)), nothing that offers, hands over or reads. It builds on specifications whose code is not on `main`: the serve point and
 the domain package of the signed links ([storage.md](storage.md) R-STOR-070 to R-STOR-074, package 2 of
 [developer/download-links.md](../developer/download-links.md)), the copies a read would try now (`blob.Store.Servable`, R-STOR-062, stage
 1's package A), and for an encrypted connection the storage keys and `blob.Store.CopyDataKey` (R-STOR-083, packages 2 and 3 of
@@ -3369,7 +3371,11 @@ object by its keyed name where the connection has keyed names (R-STOR-086).
   `https` URL whose host is none of R-BAS-074's; `expiresAt` lies in the future; `connection` is an identifier of R-STOR-050; `sha256` is 64
   hexadecimal digits and equals the content address of the answer's `ETag` (R-BAS-022); `size` is at most the `max-size` it offered;
   `storedSize` equals `size` on a plain copy and `S(size)` on an encrypted one; `dataKey` is present exactly when `encrypted` is true and holds
-  32 bytes.
+  32 bytes. *Amended on 2026-11-23 ([Q-BAS-281](#q-bas-281--the-wires-checks-are-narrower-than-the-list-of-r-bas-073)):* the link also
+  carries no user information and no fragment, and its host is compared by name, case-insensitively and whatever its port; the digest's
+  digits are lower case; the sizes are not negative; the value and the data key are strict base64url without padding, and the value one JSON
+  object without an unknown member or trailing data; the offer has one spelling, `accept; max-size=<n>` with `n` from 1 to 2⁶³−1 without a
+  sign or a leading zero, and the main installation treats any other value, or more than one, as no offer.
 - **The interface's additions** (R-BAS-009), which raise `iface.InterfaceVersion` to 6, the version after the read shapes per package
   (R-BAS-087, [Q-BAS-251](#q-bas-251--the-version-numbering-against-the-handover); *amended on 2026-11-22: it said 5*): the request header `Quader-Bastion-Handover` with the
   value `accept; max-size=<n>`, the class `handover`, the response header `Quader-Bastion-Handover` with the value above, and the handshake's
@@ -3393,6 +3399,30 @@ Acceptance criteria:
 - Unit (`internal/api/bastionmark`): the class and the header are added only to a recognized forward that offered; an ordinary request that
   sends `Quader-Bastion-Handover: accept; max-size=1048576` gets the file and no `Quader-Bastion-` header
   (`TestR_BAS_073_OnlyARecognizedForwardThatOfferedGetsAHandover`).
+
+*As built on 2026-11-23, the wire (package 1 of [the build plan](../developer/bastion-handover.md)):* `iface.InterfaceVersion` is 6, and
+[interface.txt](../../internal/bastion/iface/testdata/interface.txt) records `HeaderHandover`, `ClassHandover` (a valid class),
+`Handshake.Handover` (`"handover"`, always present, false until package 2 reads the registration's member) and the types of
+[handover.go](../../internal/bastion/iface/handover.go): `HandoverOffer` with `String`, `Set`, `ParseHandoverOffer` and `HandoverOfferFrom`;
+`Handover` with `EncodeHandover`, `DecodeHandover`, `Set`, `HandoverFrom` and `Check(HandoverCheck)`; `HandoverKey` for the data key;
+`MaxHandoverBytes` (8 KiB) and `ETagContentAddress`. `DecodeHandover` holds every check that needs nothing but the value, `S(size)` included
+([Q-BAS-280](#q-bas-280--the-wire-checks-storedsize-against-ssize-itself)); `Check` holds the rest (the expiry against the Bastion's clock, a
+zero clock refusing, the offer, the `ETag`, the hosts); `EncodeHandover` refuses whatever `DecodeHandover` refuses, so the main installation
+cannot send a value the Bastion refuses on its form. The data key is a `HandoverKey` whose bytes sit behind a pointer: `String`, `GoString`,
+`Format` (every verb), `LogValue` and `MarshalJSON` write `[REDACTED]`, and `Handover`'s own `String`, `Format`, `LogValue` and `MarshalJSON`
+leave out the link and the key; the wire form exists only in `EncodeHandover` and `DecodeHandover`, and no error text holds the link, the key
+or a byte of a malformed value (a JSON syntax error is reported by its offset) (`TestR_BAS_073_TheHandoverValue`,
+`TestR_BAS_073_TheChecksBeforeTheRead`, `TestR_BAS_072_TheOffer`, `TestR_BAS_076_AHandedKeyIsRenderedNowhere`; the copies of `S` and of the
+connection pattern are held to `blobcrypt.StoredSize` and `config.ValidConnectionID` by `TestR_BAS_073_TheStoredSizeIsTheFormats` and
+`TestR_BAS_073_TheConnectionIsAnIdentifierOfTheConfiguration`). The redaction of R-OPS-013 names the header whole
+(`quader_bastion_handover`, so the request log's `bastion_handover` outcome stays readable) and scrubs the value after the header's name and,
+bare, by its start, the base64url of `{"link":"` (`TestR_BAS_073_TheHandoverHeaderIsRedactedLikeAuthorization`). `maintest` speaks version 6:
+`SetHandover` is the registration's switch and the handshake's member, `HandOver` answers a forward with a handover only while the switch is on,
+the forward offered and the blob is within the offer, and `Forwarded.Offer` reads what a forward offered. The Bastion's client offers nothing
+yet and refuses an answer of the class `handover`, or one that carries the header, as a bad answer, so a defect of the main installation never
+reaches the engine as an empty `200` (`TestR_BAS_073_TheClientAndTheFakeSpeakVersion6`, which also shows that a caller's own
+`Quader-Bastion-Handover` never reaches the main installation). Nobody offers and nobody hands over: the marking stage (package 2) and the
+engine's offer and read (package 3) are not built, nor is `TestR_BAS_073_OnlyARecognizedForwardThatOfferedGetsAHandover`.
 
 ### R-BAS-074 · The direct read and its verification
 Priority: **P1** · Covers: quader-only
@@ -8640,6 +8670,46 @@ revalidated whatever answer its caller held (R-BAS-020, R-BAS-022).
 [developer/bastion.md](../developer/bastion.md#the-real-clients-through-a-bastion) gives the whole count per client. **Applied in the
 spec:** R-BAS-085 (the end-to-end criterion, as built), H-1242, H-1420; code: `noArtifactRequest` and `ociFeedQuiet` in
 [oci_bastion_test.go](../../test/e2e/oci_bastion_test.go).
+
+### Q-BAS-280 · The wire checks storedSize against S(size) itself
+
+Status: **Decided by the development agent** during the build of R-BAS-073 (package 1 of the handover) — selected from the options below; the
+owner sees it when it is built.
+
+Context: R-BAS-073 lists `storedSize` equal to `S(size)` on an encrypted copy among the checks of the value, and its criterion has the unit
+test of `internal/bastion/iface` refuse a value that breaks it. The build plan's row of package 1 left that one check to the engine, because
+`S` belongs to the stored format (`blobcrypt.StoredSize`, R-STOR-076), and `iface` is a leaf that imports nothing of the module (R-BAS-001,
+R-ARCH-002): both sides import it, and the Bastion must not depend on the main installation's packages through it. The same holds for the
+connection identifier's pattern (`config.ValidConnectionID`, R-STOR-050).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `iface` writes `S` and the connection pattern itself, and an internal test holds each to its owner (chosen) | Two small rules copied into the leaf, at every segment boundary and the range's ends compared with `blobcrypt.StoredSize`, and the pattern with `config.ValidConnectionID` | Every check of R-BAS-073 in one place that both sides call; no caller can forget one or pass a wrong rule; the leaf stays a leaf; a change of the format fails the test, not the wire | A second spelling of `S`, which the stored format fixes (`quader-blob-v1`; a new format is a new identifier) |
+| (b) `Handover.Check` takes the size function as a parameter, and the Bastion passes `blobcrypt.StoredSize` | One spelling | `S` stays the format's | A check a caller completes; `DecodeHandover` cannot refuse the value on its form, and `EncodeHandover` at the main installation would need the same parameter |
+| (c) The engine checks it, as the build plan said | One spelling | | One check of the list outside the type that holds the others; the criterion of R-BAS-073 is not met in `iface` |
+
+**Choice:** (a). **Rationale:** a value that the main installation may write and the Bastion may read is decided in one function on both
+sides; the copy is two lines with a test that compares it across the whole range. **Applied in the spec:** R-BAS-073; code: `storedSizeOf`
+and `validConnection` in [handover.go](../../internal/bastion/iface/handover.go), `TestR_BAS_073_TheStoredSizeIsTheFormats`,
+`TestR_BAS_073_TheConnectionIsAnIdentifierOfTheConfiguration`; the build plan's row of package 1 is amended.
+
+### Q-BAS-281 · The wire's checks are narrower than the list of R-BAS-073
+
+Status: **Decided by the development agent** during the build of R-BAS-073 (package 1 of the handover) — selected from the options below; the
+owner sees it when it is built.
+
+Context: the list of R-BAS-073 says what a handover's members must be; it does not say what of a URL, a base64 text or a JSON object is
+refused beyond that, nor how the offer is spelled. The Bastion acts on the value: it fetches the link with a client of its own that sends no
+credential (R-BAS-074), and Go's HTTP client sends the user information of a URL as `Authorization: Basic`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Refuse the user information and a fragment of the link; compare the host by name, case-insensitively and whatever the port; lower-case digits; no negative size; strict base64url without padding for the value and the key; one JSON object without an unknown member or trailing data; one spelling of the offer, any other value no offer (chosen) | Each value has one form, and a link carries nothing the client would send | A link with user information would make the link client send a credential, which R-BAS-074 forbids; a refused host on another port still leads back into Quader; the main installation writes the value, so a narrower reader refuses nothing it writes | Rules the list did not name |
+| (b) Only the list | | Nothing beyond the requirement | The link client would have to refuse user information itself, and a host could be reached back on another port |
+
+**Choice:** (a). **Rationale:** every addition refuses a value the main installation never writes, and a refusal ends in the bytes through
+the main installation (R-BAS-075), never in a failed download. **Applied in the spec:** R-BAS-073 (amended); code:
+[handover.go](../../internal/bastion/iface/handover.go).
 
 ## What this does not cover
 

@@ -69,6 +69,9 @@ type Handshake struct {
 	// endpoint's host_roots binds the host of [Handshake.ResponseBaseURL] to
 	// (R-EP-006, R-BAS-057, Q-BAS-178), absent when it binds none.
 	BoundRepository string `json:"boundRepository,omitempty"`
+	// Handover is the registration's switch of the handover per blob (R-BAS-071): while it is true the Bastion offers
+	// to take a handover on a miss ([HandoverOffer], R-BAS-072). Always present.
+	Handover bool `json:"handover"`
 }
 
 // HandshakeFormat is one entry of the handshake's format table (R-BAS-057): the

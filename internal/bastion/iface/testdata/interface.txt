@@ -1,9 +1,10 @@
-interface version 5
+interface version 6
 const APIPrefix = "/api/"
 const APIv1Prefix = "/api/v1/"
 const BearerScheme = "Bearer"
 const ClassAbsent Class = "absent"
 const ClassArtifact Class = "artifact"
+const ClassHandover Class = "handover"
 const ClassPass Class = "pass"
 const ClassPrivate Class = "private"
 const ClassShared Class = "shared"
@@ -32,6 +33,7 @@ const FeedPrincipal FeedKind = "principal"
 const FeedSettings FeedKind = "settings"
 const FeedToken FeedKind = "token"
 const FilesPrefix = "/files/"
+const HandoverKeyBytes = 32
 const HeaderAuthorization = "Quader-Bastion-Authorization"
 const HeaderClass = "Quader-Bastion-Class"
 const HeaderCounted = "Quader-Bastion-Counted"
@@ -40,6 +42,7 @@ const HeaderForwardedFor = "X-Forwarded-For"
 const HeaderForwardedHost = "X-Forwarded-Host"
 const HeaderForwardedPort = "X-Forwarded-Port"
 const HeaderForwardedProto = "X-Forwarded-Proto"
+const HeaderHandover = "Quader-Bastion-Handover"
 const HeaderInterface = "Quader-Bastion-Interface"
 const HeaderPackage = "Quader-Bastion-Package"
 const HeaderPackageRead = "Quader-Bastion-Package-Read"
@@ -50,6 +53,7 @@ const HeaderReplica = "Quader-Bastion-Replica"
 const HeaderRepository = "Quader-Bastion-Repository"
 const HeaderRoute = "Quader-Bastion-Route"
 const HeaderSubject = "Quader-Bastion-Subject"
+const MaxHandoverBytes = 8 << 10
 const MaxPackageBytes = 512
 const MaxRegistryTokenBytes = 4096
 const MediaType = "application/json"
@@ -88,6 +92,23 @@ func (Class) Valid() bool
 func (Cursor) String() string
 func (Cursor) Synthetic() bool
 func (FeedKind) Valid() bool
+func (Handover) Check(c HandoverCheck) error
+func (Handover) Format(f fmt.State, _ rune)
+func (Handover) GoString() string
+func (Handover) LogValue() slog.Value
+func (Handover) MarshalJSON() ([]byte, error)
+func (Handover) Set(hdr http.Header) error
+func (Handover) String() string
+func (HandoverKey) Bytes() []byte
+func (HandoverKey) Destroy()
+func (HandoverKey) Format(f fmt.State, _ rune)
+func (HandoverKey) GoString() string
+func (HandoverKey) LogValue() slog.Value
+func (HandoverKey) MarshalJSON() ([]byte, error)
+func (HandoverKey) Present() bool
+func (HandoverKey) String() string
+func (HandoverOffer) Set(h http.Header)
+func (HandoverOffer) String() string
 func (HandshakeFormats) Lookup(id string) HandshakeFormat
 func (HandshakeFormats) RegistryRoot() (HandshakeFormat, bool)
 func (HandshakeFormats) Validate() error
@@ -96,9 +117,16 @@ func (PackageReads) MarshalJSON() ([]byte, error)
 func (Read) Valid() bool
 func (RegistryGrant) Pulls(repository, pkg string) bool
 func (Subject) Header() string
+func DecodeHandover(v string) (Handover, error)
 func DecodeStrict(r io.Reader, v any) error
+func ETagContentAddress(etag string) (string, bool)
+func EncodeHandover(h Handover) (string, error)
+func HandoverFrom(hdr http.Header) (h Handover, ok bool, err error)
+func HandoverOfferFrom(h http.Header) (offer HandoverOffer, ok bool, err error)
 func Marshal(v any) ([]byte, error)
+func NewHandoverKey(b []byte) (HandoverKey, error)
 func ParseCursor(s string) (Cursor, error)
+func ParseHandoverOffer(v string) (HandoverOffer, error)
 func ParseMarking(h http.Header) (m Marking, ok bool, err error)
 func ParseSubjectHeader(v string) (Subject, error)
 func RegistryTokenAnonymous(s string) bool
@@ -151,12 +179,30 @@ type FeedEntry: field Principals []string `json:"principals,omitempty"`
 type FeedEntry: field Repositories []string `json:"repositories,omitempty"`
 type FeedEntry: field Tokens []string `json:"tokens,omitempty"`
 type FeedKind string
+type Handover struct
+type Handover: field Connection string `json:"connection"`
+type Handover: field DataKey HandoverKey `json:"dataKey,omitzero"`
+type Handover: field Encrypted bool `json:"encrypted"`
+type Handover: field ExpiresAt time.Time `json:"expiresAt"`
+type Handover: field Link string `json:"link"`
+type Handover: field SHA256 string `json:"sha256"`
+type Handover: field Size int64 `json:"size"`
+type Handover: field StoredSize int64 `json:"storedSize"`
+type HandoverCheck struct
+type HandoverCheck: field ETag string
+type HandoverCheck: field Now time.Time
+type HandoverCheck: field Offer HandoverOffer
+type HandoverCheck: field RefusedHosts []string
+type HandoverKey struct
+type HandoverOffer struct
+type HandoverOffer: field MaxSize int64
 type Handshake struct
 type Handshake: field AnonymousReads bool `json:"anonymousReads"`
 type Handshake: field Bastion HandshakeBastion `json:"bastion"`
 type Handshake: field BoundRepository string `json:"boundRepository,omitempty"`
 type Handshake: field Feed HandshakeFeed `json:"feed"`
 type Handshake: field Formats HandshakeFormats `json:"formats"`
+type Handshake: field Handover bool `json:"handover"`
 type Handshake: field Installation HandshakeInstallation `json:"installation"`
 type Handshake: field InterfaceVersion int `json:"interfaceVersion"`
 type Handshake: field RecordDownloads bool `json:"recordDownloads"`
@@ -213,4 +259,5 @@ type Subject: field RetryAfterSeconds *int `json:"retryAfterSeconds,omitempty"`
 type Subject: field TokenID string `json:"tokenId,omitempty"`
 type SubjectKind string
 var ErrCursor = errors.New("bastion feed cursor: malformed")
+var ErrHandover = errors.New("bastion handover: refused")
 var ErrMarking = errors.New("bastion marking: malformed")

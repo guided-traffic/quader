@@ -44,12 +44,27 @@ func exemptKey(k string) bool {
 	return k == "token_id" || k == "token_type"
 }
 
+// sensitiveWholeKeys are keys whose value is replaced although they hold none of
+// sensitiveKeyParts, matched whole after lower-casing with "-" read as "_", so
+// that a key that merely contains the word stays readable (R-OPS-013 rule 2):
+// the header Quader-Bastion-Handover carries a signed link and, for an encrypted
+// copy, a data key (R-BAS-073), while a field such as bastion_handover holds an
+// outcome.
+func sensitiveWholeKeys() []string {
+	return []string{"quader_bastion_handover"}
+}
+
 // SensitiveKey reports whether the value of an attribute with this key is
 // redacted regardless of its content.
 func SensitiveKey(key string) bool {
 	k := strings.ToLower(key)
 	if exemptKey(k) {
 		return false
+	}
+	for _, w := range sensitiveWholeKeys() {
+		if strings.ReplaceAll(k, "-", "_") == w {
+			return true
+		}
 	}
 	for _, p := range sensitiveKeyParts() {
 		if strings.Contains(k, p) {
@@ -68,6 +83,7 @@ type Scrubber struct {
 	cliPoll  *regexp.Regexp
 	callback *regexp.Regexp
 	idHint   *regexp.Regexp
+	handover *regexp.Regexp
 	query    *regexp.Regexp
 }
 
@@ -98,6 +114,10 @@ func NewScrubber(queryParams []string) *Scrubber {
 		callback: regexp.MustCompile(`(/auth/oidc/[^/?#\s"']+/callback\?)[^#\s"']*`),
 		// An ID token presented as a logout hint is a signed identity statement.
 		idHint: regexp.MustCompile(`(?i)([?&;]id_token_hint)=[^&#\s"']*`),
+		// The value of Quader-Bastion-Handover on an answer: after the header's
+		// name, and bare by its start, the base64url of `{"link":"` that every
+		// encoded handover begins with (R-BAS-073). The offer "accept; …" stays.
+		handover: regexp.MustCompile(`(?i)(Quader-Bastion-Handover\s*[:=]\s*)([A-Za-z0-9_\-]+)|eyJsaW5rIjoi[A-Za-z0-9_\-]*`),
 	}
 	if len(queryParams) > 0 {
 		quoted := make([]string, len(queryParams))
@@ -139,10 +159,27 @@ func (s *Scrubber) String(in string) string {
 	if strings.Contains(out, "id_token_hint") {
 		out = s.idHint.ReplaceAllString(out, "${1}="+RedactedValue)
 	}
+	if strings.Contains(out, "eyJsaW5rIjoi") || strings.Contains(out, "andover") || strings.Contains(out, "ANDOVER") {
+		out = s.handover.ReplaceAllStringFunc(out, s.redactHandover)
+	}
 	if s.query != nil && strings.ContainsAny(out, "?&;") {
 		out = s.query.ReplaceAllString(out, "${1}="+RedactedValue)
 	}
 	return out
+}
+
+// redactHandover rewrites one match of the handover pattern: the header's name
+// stays, its value is redacted unless it is the Bastion's offer ("accept"); a
+// bare value is redacted whole.
+func (s *Scrubber) redactHandover(m string) string {
+	sub := s.handover.FindStringSubmatch(m)
+	if len(sub) != 3 || sub[1] == "" {
+		return RedactedValue
+	}
+	if strings.EqualFold(sub[2], "accept") {
+		return m
+	}
+	return sub[1] + RedactedValue
 }
 
 // redactUserinfo rewrites one match of the userinfo pattern: "user:secret@"

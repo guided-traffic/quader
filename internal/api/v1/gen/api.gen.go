@@ -7751,7 +7751,11 @@ type BastionHandshake struct {
 
 	// Formats One entry per registered format with routes: the facts of the format a Bastion needs before or without a response of
 	// the main installation (R-BAS-057). A format the table does not name gets no replay headers and the rate-limit status 429.
-	Formats      []BastionHandshakeFormat `json:"formats"`
+	Formats []BastionHandshakeFormat `json:"formats"`
+
+	// Handover The registration's switch of the handover per blob (R-BAS-071, R-BAS-073): while it is true the Bastion offers to take a
+	// handover on a miss (`Quader-Bastion-Handover: accept; max-size=<n>`, R-BAS-072). Off for a new registration.
+	Handover     bool `json:"handover"`
 	Installation struct {
 		BaseUrl string `json:"baseUrl"`
 		Release string `json:"release"`

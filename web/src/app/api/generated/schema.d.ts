@@ -12229,6 +12229,11 @@ export interface components {
              * @example web/docker-hub
              */
             boundRepository?: string;
+            /**
+             * @description The registration's switch of the handover per blob (R-BAS-071, R-BAS-073): while it is true the Bastion offers to take a
+             *     handover on a miss (`Quader-Bastion-Handover: accept; max-size=<n>`, R-BAS-072). Off for a new registration.
+             */
+            handover: boolean;
         };
         /** @description A format's facts in the handshake's format table (R-BAS-057, R-BAS-058). */
         BastionHandshakeFormat: {

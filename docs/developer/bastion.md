@@ -183,12 +183,13 @@ internal/bastionmain/ the main installation's seams (a domain package)
 |---|---|
 | [iface/version.go](../../internal/bastion/iface/version.go) | `InterfaceVersion` |
 | [iface/routes.go](../../internal/bastion/iface/routes.go) | the four route paths, the feed query parameters, the operation names, the mirrored path families |
-| [iface/headers.go](../../internal/bastion/iface/headers.go) | every header name of R-BAS-008, R-BAS-013, R-BAS-014, R-BAS-017, R-BAS-059 (`Quader-Bastion-Counted`) and R-BAS-082 (`Quader-Bastion-Package`, `Quader-Bastion-Package-Read`), the probe, route and counted values, the token prefix |
+| [iface/headers.go](../../internal/bastion/iface/headers.go) | every header name of R-BAS-008, R-BAS-013, R-BAS-014, R-BAS-017, R-BAS-059 (`Quader-Bastion-Counted`), R-BAS-082 (`Quader-Bastion-Package`, `Quader-Bastion-Package-Read`) and R-BAS-073 (`Quader-Bastion-Handover`), the probe, route and counted values, the token prefix |
 | [iface/marking.go](../../internal/bastion/iface/marking.go) | `Class`, `Read`, `Marking` (Set, Parse, Strip; `Counted`; `Package` and `PackageRead` with the five refusals of R-BAS-082 in `parsePackage`), `SubjectKind`, `Subject` and its header form |
 | [iface/package.go](../../internal/bastion/iface/package.go) | the package names of the interface: `ValidPackage`, `MaxPackageBytes` (512) and the strict percent-encoding of `Quader-Bastion-Package` (R-BAS-082) |
 | [iface/cursor.go](../../internal/bastion/iface/cursor.go) | `Cursor` and the synthetic `t:<RFC 3339>` form |
 | [iface/wire.go](../../internal/bastion/iface/wire.go) | the bodies of the handshake (with the format table `HandshakeFormats` and `BoundRepository`, R-BAS-057), check (with `packages` in request and answer, always written, and the request's rules `CheckRequest.PackagesProblem`, R-BAS-083), feed and downloads, `FeedKind`, `DecodeStrict`, `Marshal` |
 | [iface/regtoken.go](../../internal/bastion/iface/regtoken.go) | the registry token's form below `/v2/` and the unverified reading of its claims: the anonymous claim (R-BAS-052, Q-BAS-185), the grant (`RegistryTokenGrant`, `RegistryGrant.Pulls`, Q-BAS-246) and the expiry (`RegistryTokenExpiry`, Q-BAS-252) |
+| [iface/handover.go](../../internal/bastion/iface/handover.go) | the handover per blob (R-BAS-072, R-BAS-073): the offer `HandoverOffer`, the value `Handover` with `EncodeHandover`, `DecodeHandover` and `Check`, the data key `HandoverKey` that renders `[REDACTED]`, `ETagContentAddress`, and the copies of `S` and of the connection pattern ([Q-BAS-280](../spec/bastion.md#q-bas-280--the-wire-checks-storedsize-against-ssize-itself)) |
 | [iface/problems.go](../../internal/bastion/iface/problems.go) | the problem codes of R-BAS-008, R-BAS-009, R-BAS-014 and R-BAS-029 |
 | [iface/surface_test.go](../../internal/bastion/iface/surface_test.go) | the generator of the surface and the guard of R-BAS-009 |
 | [answers/answers.go](../../internal/bastion/answers/answers.go) | `Answer`, `State.Check` (the four rules), `FeedLog` (Record, Prune, Reset) |
@@ -276,9 +277,13 @@ with fields and JSON tags, functions) into [testdata/interface.txt](../../intern
 first line. `TestR_BAS_009_TheInterfaceChangesOnlyWithItsVersion` fails when the code and the file differ. To change the interface:
 raise `InterfaceVersion`, then `go test ./internal/bastion/iface -run TestR_BAS_009 -update-interface`; the regeneration refuses to write
 a changed surface under an unchanged version. The OpenAPI document must name the new version in `x-quader-bastion-interface`
-(`LoadDocument` checks it), and the release notes announce it. The interface is at version 5 since the wire of the read shapes per package
-([bastion-package-shapes.md](bastion-package-shapes.md), P1): the two package headers of the marking, the check's `packages`, and the
-unverified reading of a registry token's grant and expiry.
+(`LoadDocument` checks it), and the release notes announce it. The interface is at version 6 since the wire of the handover per blob
+([bastion-handover.md](bastion-handover.md), package 1): `Quader-Bastion-Handover` as the offer on a forward and as the value on an answer,
+the class `handover`, the handshake's `handover`, and the types `HandoverOffer`, `Handover` and `HandoverKey` with every check of R-BAS-073
+in [handover.go](../../internal/bastion/iface/handover.go). Version 5 was the read shapes per package
+([bastion-package-shapes.md](bastion-package-shapes.md), P1). The interface is a leaf that imports nothing of the module: where a check needs a
+rule of another package (the stored format's `S`, the connection pattern), the rule is written in `iface` and an internal test holds it to its
+owner ([Q-BAS-280](../spec/bastion.md#q-bas-280--the-wire-checks-storedsize-against-ssize-itself)).
 
 ## Shared state and the guard
 
@@ -930,7 +935,7 @@ older one the handshake fails and the role stays unreachable.
 | `go test ./internal/bastionmain ./internal/auth ./internal/authz ./internal/project ./internal/auth/principal ./cmd/quader` | package 1: the authenticator, a Bastion token as no credential on any other route, the refusals of a Bastion as principal, the usage of `quader admin bastion` |
 | `make test-integration` (`test/integration/bastionreg`) | package 1 against PostgreSQL: `TestR_BAS_004_*` and `TestR_BAS_005_*` (registrations, tokens, limits, capabilities, events and journal, the authenticator across replicas, the admin commands) |
 | `go test ./internal/api/v1` | the document's interface operations, the `{bastion: true}` form, the stubs, the check against a fake stage and resolver, the intake's HTTP side, the read class of a Bastion |
-| `go test ./internal/bastionmain ./internal/httpserver ./internal/observability` | the Recognize stage and its throttle, the feed's mapping table, the intake and the contact helpers; the forwarded headers of a Bastion (`bastion_forwarded_test.go`); the redaction of `Quader-Bastion-Authorization` |
+| `go test ./internal/bastionmain ./internal/httpserver ./internal/observability` | the Recognize stage and its throttle, the feed's mapping table, the intake and the contact helpers; the forwarded headers of a Bastion (`bastion_forwarded_test.go`); the redaction of `Quader-Bastion-Authorization` and `Quader-Bastion-Handover` |
 | `make test-integration` (`test/integration/bastioniface`) | the Recognize stage and the four operations behind the real chain, stage, token service, decision point and audit writer on PostgreSQL, with fakes for the two seams of packages 1 and 3 |
 | `go test ./internal/archtest/...` | R-BAS-001's import rule (direct, and transitive over the dependency closure with the listed exceptions) and the layers of the Bastion's packages |
 | `go test ./internal/authz -run R_BAS_012` | the shape against the decision point ([authorization.md](authorization.md#read-shapes)) |

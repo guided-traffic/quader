@@ -13447,7 +13447,7 @@ paths:
         and the token in use, the response base URL this request resolved to, whether anonymous requests read anything (`anonymousReads`), the download
         switch and the feed position. Records the replica's last contact at most once a minute. Not part of the management
         API's v1 promise but of the interface version (R-ARCH-025, R-BAS-009).
-      x-quader-bastion-interface: 5
+      x-quader-bastion-interface: 6
       x-quader-permission:
         bastion: true
       parameters:
@@ -13489,7 +13489,7 @@ paths:
         (`npm-all` instead of `web/npm-all`) answers `400 malformed_request`, like a body that does not read; a pair that
         breaks a rule of R-BAS-083 answers `422` with a field error at `/packages/<i>`; another interface version answers
         `400 bastion_interface_mismatch`.
-      x-quader-bastion-interface: 5
+      x-quader-bastion-interface: 6
       x-quader-permission:
         bastion: true
       parameters:
@@ -13539,7 +13539,7 @@ paths:
         `cursor` of an earlier answer or a synthetic `t:<RFC 3339>`; the answer holds every entry newer than the cursor and the
         entries within `bastions.feed.lookback` behind it, which the Bastion skips by ID. `reset: true` tells the Bastion to
         drop every answer.
-      x-quader-bastion-interface: 5
+      x-quader-bastion-interface: 6
       x-quader-permission:
         bastion: true
       parameters:
@@ -13589,7 +13589,7 @@ paths:
         asynchronous `artifact.downloaded` with `details.origin: bastion`; an event older than `bastions.downloads.max_age` is
         not recorded and counts as dropped, one in the future is recorded at the time of receipt. A non-zero `dropped` records
         `bastion.downloads.dropped`. With `audit.record_downloads: false` the answer is `204` and nothing is recorded.
-      x-quader-bastion-interface: 5
+      x-quader-bastion-interface: 6
       x-quader-permission:
         bastion: true
       parameters:
@@ -26652,7 +26652,7 @@ components:
       type: object
       additionalProperties: false
       description: The answer of the handshake (R-BAS-010).
-      required: [interfaceVersion, bastion, installation, responseBaseUrl, anonymousReads, recordDownloads, feed, serverTime, formats]
+      required: [interfaceVersion, bastion, installation, responseBaseUrl, anonymousReads, recordDownloads, feed, serverTime, formats, handover]
       properties:
         interfaceVersion:
           type: integer
@@ -26712,6 +26712,11 @@ components:
             (R-EP-006, R-BAS-057), named as the registry root reads the binding: only a repository that exists and is of the format that
             declares the registry root (Q-BAS-188); absent otherwise.
           example: web/docker-hub
+        handover:
+          type: boolean
+          description: |
+            The registration's switch of the handover per blob (R-BAS-071, R-BAS-073): while it is true the Bastion offers to take a
+            handover on a miss (`Quader-Bastion-Handover: accept; max-size=<n>`, R-BAS-072). Off for a new registration.
     BastionHandshakeFormat:
       type: object
       additionalProperties: false
