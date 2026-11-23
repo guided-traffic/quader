@@ -65,6 +65,9 @@ func layerTable() []layerRule {
 		// S3 sink of a restore (internal/blob/s3) can name its digest type without importing a domain package (R-BAK-021).
 		{"internal/backup/format", layerLeaf},
 		{"internal/tlsfiles", layerLeaf},
+		// The one copy of a large local write, flushed every 32 MiB (vulnerability-scanning.md Q-VULN-225): standard library only, so
+		// the image scanner, the loaders of both databases and the updater write their files the same way.
+		{"internal/syncwrite", layerLeaf},
 		// The OpenPGP signer and verifier of the Debian repositories (R-DEB-015, R-DEB-016, R-DEB-020, Q-ARCH-383): with the verifier of
 		// OpenPGP signatures on artifacts (internal/signatures/scheme/openpgp, signatures.md R-SIG-006) the only importer
 		// of the OpenPGP module, standard library otherwise. A leaf so that the format (edge), its data port (domain) and the

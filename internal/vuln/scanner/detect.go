@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/auth/registrytoken"
+	"github.com/guided-traffic/quader/internal/syncwrite"
 	"github.com/guided-traffic/quader/internal/vuln/imagescan"
 )
 
@@ -216,7 +217,9 @@ func writeAnalysis(body io.Reader, path string) error {
 		return err
 	}
 	defer func() { _ = f.Close() }()
-	n, err := io.Copy(f, io.LimitReader(zr, imagescan.MaxAnalysisBytes+1))
+	// Flushed every 32 MiB: an analysis decodes to as much as 256 MiB, whose dirty pages would count against the scanner container's
+	// memory (Q-VULN-225).
+	n, err := syncwrite.Copy(f, io.LimitReader(zr, imagescan.MaxAnalysisBytes+1), syncwrite.Every)
 	switch {
 	case wire.over:
 		return malformed(fmt.Sprintf("the body exceeds %d bytes", imagescan.MaxStoredAnalysisBytes))

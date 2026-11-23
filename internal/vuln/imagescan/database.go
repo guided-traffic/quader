@@ -13,6 +13,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/guided-traffic/quader/internal/syncwrite"
 )
 
 // The bounds of the database archive: only its two files are taken, each within a size limit (R-VULN-035).
@@ -230,34 +232,16 @@ func UnpackDatabase(ctx context.Context, r io.Reader, digest, dir string, hold f
 // ErrLayerDigest reports whether err is a layer whose bytes are not the digest it was read under.
 func ErrLayerDigest(err error) bool { return errors.Is(err, errLayerDigest) }
 
-// syncEvery is how many bytes of a database file are written before they are flushed to the disk. The kernel charges the dirty pages
-// of a write to the writer's memory cgroup and, on a node whose file system does not write them back per cgroup, starts the write-back
-// only at the machine's thresholds: the loader's container of 256 MiB was killed with 233 MB of dirty pages and none under write-back
-// while it unpacked a database of 1.8 GB (measured on the kind cluster on 2026-11-21, Q-VULN-212). A flush every 32 MiB bounds them.
-const syncEvery = 32 << 20
-
 func writeDBFile(path string, r io.Reader, size int64) error {
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600) //nolint:gosec // a path below the caller's directory, named by this package
 	if err != nil {
 		return err
 	}
 	defer func() { _ = f.Close() }()
-	src := io.LimitReader(r, size+1)
-	var n int64
-	for {
-		c, err := io.CopyN(f, src, syncEvery)
-		n += c
-		if c > 0 {
-			if serr := f.Sync(); serr != nil {
-				return serr
-			}
-		}
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if err != nil {
-			return err
-		}
+	// Flushed every 32 MiB, so the container of the loader is not killed for the dirty pages of its write (Q-VULN-212).
+	n, err := syncwrite.Copy(f, io.LimitReader(r, size+1), syncwrite.Every)
+	if err != nil {
+		return err
 	}
 	if n != size {
 		return fmt.Errorf("a file of the database is not the size its header names (%d of %d bytes)", n, size)

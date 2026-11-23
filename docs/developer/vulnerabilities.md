@@ -813,7 +813,7 @@ loader (container database, kind trivy-db): every 5 s before its first database,
    GET /scan/v1/trivy-database                     → {"digest": "sha256:<hex>", "size": 142567123, "builtAt": "…"} or {"digest": ""}
    GET /scan/v1/trivy-database/sha256:<hex>        → the layer, Content-Length and Repr-Digest; another digest or a missing item 404
    UnpackDatabase into <dir>/unpack-*, the room of each file held from its header against dir_budget, each file flushed to the disk every
-   32 MiB (Q-VULN-212), the hash checked, metadata.json checked, renamed to <dir>/<hex>; the older databases go before a new one; one
+   32 MiB (Q-VULN-212, syncwrite.Copy, which the scanner's blobs and analyses use too, Q-VULN-225), the hash checked, metadata.json checked, renamed to <dir>/<hex>; the older databases go before a new one; one
    that does not fit beside the newest replaces it
 ```
 

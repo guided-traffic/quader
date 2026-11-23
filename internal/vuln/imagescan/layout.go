@@ -20,6 +20,7 @@ import (
 	"github.com/klauspost/compress/zstd"
 
 	"github.com/guided-traffic/quader/internal/formats/untrusted"
+	"github.com/guided-traffic/quader/internal/syncwrite"
 )
 
 // The codes of a scan that did not finish (R-VULN-034). Terminal ones are not retried until the manifest, the limits or the analyser change.
@@ -217,7 +218,9 @@ func copyBlob(ctx context.Context, src BlobReader, ref ImageRef, d descriptor, b
 	}
 	defer func() { _ = f.Close() }()
 	sum := sha256.New()
-	n, err := io.Copy(io.MultiWriter(f, sum), io.LimitReader(contextReader{ctx, rc}, d.Size+1))
+	// Flushed every 32 MiB, as the database's loader does: a layer of gigabytes would otherwise leave its dirty pages in the scanner
+	// container's memory until the kernel kills it (Q-VULN-212, Q-VULN-225).
+	n, err := syncwrite.Copy(f, io.TeeReader(io.LimitReader(contextReader{ctx, rc}, d.Size+1), sum), syncwrite.Every)
 	if err != nil {
 		return err
 	}
