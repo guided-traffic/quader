@@ -198,6 +198,17 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
   the role `scanner`, the worker's one link per purpose) keeps the name of its purpose.
 - **The repository of the runners' image takes no commit without the owner's word** (`container-images`, its own `CLAUDE.md`;
   he released one commit and push for the image on 2026-11-19): ask again each time.
+- **Quality before quantity: no new format until the existing ones are finished** (owner, 2026-11-23, 08:09, two
+  minutes after the development agent had started planners for the next two formats of FULL.md and marked them
+  there: "Stop mal, nicht die FULL.md weiter bearbeiten. Noch keine neuen Formate einführen. Ich will zunächst die
+  bestehenden vollkommen schick machen und wir haben hier noch einiges zutun. Bevor wir also Quantität anfangen,
+  machen wir erst Qualität zu ende."). No unit of FULL.md's blocks B and D (a new format, or a new class of a
+  format) is planned, specified or built, and FULL.md is not edited, until he says that the existing formats are
+  done. Section 1's order, by which an empty section 10 leads to FULL.md's next unit, does not hold while this
+  rule stands. What is worked on instead is what makes npm, NuGet, OCI, Debian, Ansible Galaxy and generic files
+  and the platform under them right: the open findings of section 8, section 12, and what he names. Work that
+  only makes room for more formats (the case runner for a new format's areas, the kit move's later packages)
+  waits with the formats.
 
 ## 1 · Find the next phase
 
@@ -5746,6 +5757,12 @@ Bastion with its read shapes per package, the handover, exposure, search, retent
 to name every decision that limits one of the owner's by the protocol. Planners do not count against
 the four builders. The case runner for a new format's areas is built when the harness has landed, so
 that the first format's areas are written in that shape.
+**Stopped by the owner at 08:09: no new formats yet** (his words are in section 0's standing rules:
+quality before quantity). Both planners were stopped within the minute, three and four minutes after
+their starts; neither had written a file, and their worktrees are gone. FULL.md's two marks are taken
+back to what they were. **The development agent's decision of 08:04 was wrong in its premise:** an empty
+section 10 does not mean the existing formats are finished, and he had not said so. The case runner and
+the kit move's second to ninth packages, which make room for more formats, wait with the formats.
 **In work since 05:38: package 7 of the encryption, the destruction of a retired connection's keys**
 (R-STOR-097 to R-STOR-103 and the journal's replay; the development agent's answer of 2026-11-22 to the
 question of what stays readable at a provider). It stands on the handover's second package as it lands;

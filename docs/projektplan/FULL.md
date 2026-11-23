@@ -56,13 +56,13 @@ follow the [roadmap's format order](../coverage/roadmap.md#p1-format-expansion-o
 - 🟢 Client setup instructions in the UI: the setup page offers `ansible-galaxy` with eight snippets, the guide per class, the repository screens with import tasks and tombstones; journey `20-ansible`
 
 ### F1 · Generic files: remote and virtual
-- 🟡 Spec page `formats/generic.md` extended (a planner writes it with the build plan since 2026-11-23)
+- ⚪ Spec page `formats/generic.md` extended
 - ⚪ Remote: proxy any HTTP file source; Virtual: one path over several repositories
 - ⚪ Integration tests
 - ⚪ E2E tests: large files to many clients with a single upstream request, upload through a virtual repository
 
 ### F2 · PyPI (Python)
-- 🟡 Spec page `formats/pypi.md` (a planner writes it with the build plan since 2026-11-23)
+- ⚪ Spec page `formats/pypi.md`
 - ⚪ Local, remote (pypi.org), virtual; simple index (HTML and JSON)
 - ⚪ Clients: pip, Twine, Poetry, uv
 - ⚪ Integration tests
