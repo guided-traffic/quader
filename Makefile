@@ -637,6 +637,10 @@ dev-pg-stop: ## Stop PostgreSQL for DURATION (default 30s) by fencing the CloudN
 dev-drain: ## Drain a node under k6 load with cursor-persisting jobs; fails on a failed request (deploy/dev/drain.sh, E0.14)
 	deploy/dev/drain.sh
 
+.PHONY: nightly-load-guard
+nightly-load-guard: ## Before a code push: exit 1 while load legs of the nightly run, 2 when gh cannot tell (tools/nightly-load-guard.sh; docs/developer/releasing.md#a-code-push-during-a-nightly)
+	tools/nightly-load-guard.sh
+
 .PHONY: e2e
 e2e: ## End-to-end tests on the dev cluster (deploy/dev/e2e.sh); SET=push|failover|access-long|access|full|drain|drain-roles|npm|npm-closing|npm-ha|npm-ha-crash|npm-ha-soak|npm-ha-closing|ha-suite|ha-faults|ha-pooler|nuget-clients|nuget|nuget-closing|nuget-ha|drain-load|drain-load-b|drain-load-c|drain-load-e|drain-load-pooler|cold-crash|oci-clients|oci|oci-closing|oci-long|apt-clients|deb|deb-closing|ansible-clients|ansible|ansible-closing|ci|ci-ha|bastion|bastion-long|vuln|vuln-long|vuln-pooler|upgrade|backup|backup-pitr|<go test -run regexp>, default: all but the profile switch
 	deploy/dev/e2e.sh '$(SET)'

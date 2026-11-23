@@ -717,6 +717,18 @@ Locally, from the repository root, after `make image VERSION=dev` and `make dev-
 then `make dev-down`; the latency tests need `make integration-up && make test-performance`.
 A red long leg does not hold the release: it is recorded as an open finding instead (owner, 2026-11-01).
 
+#### A code push during a nightly
+
+A push of code starts the kind legs of Test and Release on the runners the nightly's load legs measure on; ten of them beside a load
+leg made it six to nine times slower (F-164). So no code is pushed while a load leg runs (decision 22 of the reading of 2026-11-23),
+and a latency miss is read with the recorder ([Reading a stall](e2e.md#reading-a-stall)) before it is called the product's; no test is
+relabelled. Before a push, `make nightly-load-guard` ([nightly-load-guard.sh](../../tools/nightly-load-guard.sh)) lists the jobs of a
+nightly in progress that are load legs (`Latency`, `Vulnerability scanning performance`, and the sets of an HA scenario, a drain, a fault,
+a failover, a crash, a soak, a pooler or a long run) and exits 1 while one runs or waits; it exits 2 when `gh` cannot tell, and does not
+guess. A push of documents with `[skip ci]` starts nothing and may go at any time. Held by
+`TestNightlyLoadGuardNamesTheLoadLegsThatRun` ([nightlyguard_test.go](../../internal/tools/ciworkflows/nightlyguard_test.go), recorded
+answers of `gh`). What it does not do: stop a push (nothing on the remote refuses one), or hold a push by someone who does not run it.
+
 #### Dispatching a branch
 
 `gh workflow run "HA and Performance (nightly)" --ref <branch> -f sets=<set>` runs the workflow file of the branch, and the run is in
