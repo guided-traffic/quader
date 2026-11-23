@@ -21,6 +21,7 @@ type metrics struct {
 	integrity    *prometheus.CounterVec
 	egressDenied *prometheus.CounterVec
 	fillRefused  *prometheus.CounterVec
+	tokens       *prometheus.CounterVec
 }
 
 func newMetrics(reg prometheus.Registerer) *metrics {
@@ -71,10 +72,14 @@ func newMetrics(reg prometheus.Registerer) *metrics {
 			Name: "quader_endpoint_cache_fill_refused_total",
 			Help: "Upstream contacts the endpoint's cache-fill policy prevented.",
 		}, []string{"endpoint"}),
+		tokens: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "quader_oci_upstream_token_requests_total",
+			Help: "Requests to the token service of a remote repository's upstream in the token handshake, by outcome: ok, denied, failed (R-OCI-034).",
+		}, []string{"repo", "outcome"}),
 	}
 	if reg != nil {
 		reg.MustRegister(m.lookups, m.upstreamReqs, m.upstreamDur, m.upstreamUp, m.collapsed, m.sourceNet,
-			m.bypass, m.queueWait, m.integrity, m.egressDenied, m.fillRefused)
+			m.bypass, m.queueWait, m.integrity, m.egressDenied, m.fillRefused, m.tokens)
 	}
 	for _, r := range []string{bypassValkey, bypassWaitTimeout, bypassDraining} {
 		m.bypass.WithLabelValues(r) // visible from the first scrape
@@ -94,6 +99,19 @@ func (m *metrics) forget(name string) {
 	m.queueWait.DeletePartialMatch(l)
 	m.integrity.DeletePartialMatch(l)
 	m.egressDenied.DeletePartialMatch(l)
+	m.tokens.DeletePartialMatch(l)
+}
+
+// The outcomes of quader_oci_upstream_token_requests_total (R-OCI-034).
+const (
+	tokenOK     = "ok"
+	tokenDenied = "denied"
+	tokenFailed = "failed"
+)
+
+// tokenRequest counts one request to an upstream's token service in the handshake; a token the replica holds costs none.
+func (m *metrics) tokenRequest(repo, outcome string) {
+	m.tokens.WithLabelValues(repo, outcome).Inc()
 }
 
 // The lookup results of quader_remote_cache_lookups_total.

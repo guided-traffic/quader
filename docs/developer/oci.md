@@ -798,8 +798,7 @@ discovery through a virtual one), the counting stub registry, and the end-to-end
 [e2e.md](e2e.md#the-oci-tests)).
 
 Not built: an exposure adapter
-of the format (an endpoint with exposure rules serves no container images, Q-OCI-23); the metric `quader_oci_upstream_token_requests_total`
-of R-OCI-034; the presigned redirect of blob downloads (H-601); retention of untagged manifests (H-580).
+of the format (an endpoint with exposure rules serves no container images, Q-OCI-23); the presigned redirect of blob downloads (H-601); retention of untagged manifests (H-580).
 
 ## What this page does not cover
 

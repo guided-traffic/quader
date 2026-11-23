@@ -267,8 +267,11 @@ func (e *Engine) token(ctx context.Context, h handshake, orig *http.Request, cha
 	if stand != nil && *stand == tk {
 		return attempt{}, false, nil
 	}
-	ent, cached, err := e.tokenOnce(ctx, h.rem.Repo.Name.String(), tk, rejected, func(ctx context.Context) (tokenEntry, error) {
-		return e.requestToken(ctx, h, treq)
+	name := h.rem.Repo.Name.String()
+	ent, cached, err := e.tokenOnce(ctx, name, tk, rejected, func(ctx context.Context) (tokenEntry, error) {
+		ent, err := e.requestToken(ctx, h, treq)
+		e.m.tokenRequest(name, tokenOutcome(err))
+		return ent, err
 	})
 	if err != nil {
 		return attempt{}, false, err
@@ -482,6 +485,19 @@ func (e *Engine) requestToken(ctx context.Context, h handshake, treq *http.Reque
 	}
 	ttl = min(ttl, maxTokenLifetime)
 	return tokenEntry{authorization: value, expires: e.now().Add(ttl - tokenSkew)}, nil
+}
+
+// tokenOutcome is the outcome of one request to a token service for quader_oci_upstream_token_requests_total (R-OCI-034): ok for a
+// token, denied for the service's 401 or 403 (the repository's credential was refused), failed for every other end: a transport
+// error, another status, an answer that is too large or holds no token that can be sent.
+func tokenOutcome(err error) string {
+	if err == nil {
+		return tokenOK
+	}
+	if h, ok := asHandshakeError(err); ok && h.fail != nil && (h.fail.status == http.StatusUnauthorized || h.fail.status == http.StatusForbidden) {
+		return tokenDenied
+	}
+	return tokenFailed
 }
 
 // asHandshakeError returns the handshake error in err's chain.

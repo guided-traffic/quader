@@ -141,7 +141,7 @@ Not verified in this version: whether a Docker Engine presents the credential of
 | `storage.uploads.writer_lease`, `session_ttl`, `session_max_age` | `60s`, `4h`, `20h` | How long a request may hold an upload, how long an idle upload lives, and the age at which any upload ends |
 | `storage.uploads.max_open_sessions` | `100` | Open uploads per principal and repository; one more answers `429` |
 
-The complete reference is in the [full reference](https://github.com/guided-traffic/quader/blob/main/README.md#-full-reference). What the registry records: `quader_oci_registry_tokens_total{outcome}` counts the answers of the token service, `quader_oci_sweep_blobs_removed_total` the layers the sweep removed, `quader_storage_upload_sessions_total{outcome}` the uploads by how they ended; the audit log has `auth.registry_token.denied` for a refused token request, `oci.manifest.deleted` for a deleted manifest and `oci.reinstate` for a manifest an administrator put back.
+The complete reference is in the [full reference](https://github.com/guided-traffic/quader/blob/main/README.md#-full-reference). What the registry records: `quader_oci_registry_tokens_total{outcome}` counts the answers of the token service, `quader_oci_sweep_blobs_removed_total` the layers the sweep removed, `quader_storage_upload_sessions_total{outcome}` the uploads by how they ended, `quader_oci_upstream_token_requests_total{repo,outcome}` the requests of a remote repository to its upstream's token service (`ok`, `denied` when the service refused the repository's credential, `failed`); the audit log has `auth.registry_token.denied` for a refused token request, `oci.manifest.deleted` for a deleted manifest and `oci.reinstate` for a manifest an administrator put back.
 
 ## After a restore
 
@@ -156,6 +156,5 @@ A manifest that was deleted after the restore point may have been deleted on pur
 - **No vulnerability scanning** of images.
 - **Several tags in one push** (`?tag=`) answer `400 UNSUPPORTED`; clients push one tag per request.
 - **Deletes through a virtual repository** answer `405`.
-- The metric `quader_oci_upstream_token_requests_total` of the handshakes of remote repositories is not counted yet.
 
 [Known limitations](limitations.md) lists the limits of the other areas.
