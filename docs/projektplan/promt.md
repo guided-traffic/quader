@@ -429,18 +429,18 @@ order is what a user or an operator meets first. The state is kept here.
 | Package | What it closes | State |
 |---|---|---|
 | Signatures with the real clients | the check of the repairs of 2026-11-21 with the real clients, and what it finds | landed at 09:39 |
-| Screens, first round | fourteen findings of screens (the entries of repository, version, vulnerability and audit pages, the npm form, the malware settings, the signatures' lists) | built (seventeen commits); looked at and sent back at 10:33 with three points and for the rebase onto the stack at the gates |
+| Screens, first round | fourteen findings of screens (the entries of repository, version, vulnerability and audit pages, the npm form, the malware settings, the signatures' lists) | built and reworked (twenty-two commits, the storage walk's race among them); looked at twice; at the landing's gates since 11:33 |
 | W1 · Authorization answers the same in every format | the administrator flag shown to `tokens:read` alone (H-836); the global read policy and the default-scope token; the refusals that end a virtual read | landed at 10:49 |
-| W3 · The download limits count what they promise | refused requests that still count (the upstream budget, an endpoint's rate class); seven paths without a test; three statements; the help text of waiting downloads | built (two commits); at the landing's gates since 10:50, with the Debian repair |
+| W3 · The download limits count what they promise | refused requests that still count (the upstream budget, an endpoint's rate class); seven paths without a test; three statements; the help text of waiting downloads | landed at 11:35 |
 | W2 · Scanning keeps its promises to an operator | a scan attempt lost when a repository is enabled again; the scanner's spool that `QuaderSpoolNearlyFull` does not see; layer writes without a flush; a removed scanner pod shown ready; two measurements | in work since 10:51 |
-| W6 · The pipeline loses nothing and scans every image it runs | a push that cancels the run before it; the analyser's and ClamAV's images never scanned; the evidence record and the badge that stand still; a `unit` target with the emptied AWS environment; the lint's limit and serial runs; fuzz names; the pins of the e2e legs; a partial dispatch; the disk watcher; the key of the clients' image cache, which changes with every commit, so a push never hits it | in work since 10:30 |
-| W5a · NuGet and OCI | NuGet's README route that answers 501; the challenge of an upstream token; what the two formats' pages count and the code does not | waits for a place |
-| W5b · Debian and Ansible Galaxy | `member_expired` and a member's recorded `Date` without an integration case; the wiki's cases; the requirements no test names; the check against the public Galaxy; first the Debian test that made `main` red for the third time | in work since 10:08 |
+| W6 · The pipeline loses nothing and scans every image it runs | a push that cancels the run before it; the analyser's and ClamAV's images never scanned; the evidence record and the badge that stand still; a `unit` target with the emptied AWS environment; the lint's limit and serial runs; fuzz names; the pins of the e2e legs; a partial dispatch; the disk watcher; the key of the clients' image cache, which changes with every commit, so a push never hits it | built (fourteen commits; the disk watcher and the evidence record not built, each for a reason); at the landing's gates since 11:19; the evidence record with the release follows as a step of its own when the first run has shown the rest |
+| W5a · NuGet and OCI | NuGet's README route that answers 501; the challenge of an upstream token; what the two formats' pages count and the code does not; the tag listing's measurement with 100,000 tags | in work since 11:21 |
+| W5b · Debian and Ansible Galaxy | `member_expired` and a member's recorded `Date` without an integration case; the wiki's cases; the requirements no test names; the check against the public Galaxy; first the Debian test that made `main` red for the third time | the Debian remote's repair landed at 11:35; the rest in work |
 | W4 · Go tests wait for what they stand for | fixed sleeps and paced setups in integration and unit tests; four convention checks that sit in a format's area; tests that depend on the machine; the harness's policy helper that writes an empty policy without a word | waits for a place |
 | W8 · Web and end-to-end tests wait for what they stand for | the fixed 320 ms of choosing a person; paced setups of the e2e environments; the fixed waits of three seconds in the limits' client cases and the load test's tokens (from W3, since they need the kind cluster); a code push during a nightly | after the screens' first round |
 | W7 · The development profiles run the image they are given | the image tag `:dev`; one image tag per checkout; instances of the UI profile, one per builder; `nuget-ha` cut to what NuGet's client adds; the drain variant that Q-VULN-128 said to fold into a pooler leg once one runs under npm's load, which two do now; the development profile's root CA that is issued twice at a start; the Valkey outage with a replaced pod, which only a set runs that nothing has run since 2026-11-18 | after W6 (it owns the Makefile) |
 | W9 · Screens show every state, second round | the system page; a technical token's description and removal; states the renders never show (an open row menu, the shared error notice); a failed test link's reason as a sentence of the page; the audit log's filter by a resource; the eleven points seen on the first round's renders | after the screens' first round |
-| W10a · Documents and the decisions' index | 1,050 of 3,425 decided questions without a row in the index (generated with a check from now); stale sentences in spec, developer pages, README and manual | waits for a place |
+| W10a · Documents and the decisions' index | 1,050 of 3,425 decided questions without a row in the index (generated with a check from now); stale sentences in spec, developer pages, README and manual | in work since 11:34 |
 | W10b · Translations and test names | the extraction check; names of tests that carry a decision's number; the German texts that say "du" | last |
 | W11 · Readings and statements (the development agent) | the stall family of the runs before 2026-11-18; pipeline artifacts to read before they expire (from 2026-12-02); entries that close by a reasoned statement | the statements landed at 09:39, the readings of runs are back and both are marked in the lists; left: two single sets to dispatch in the pipeline window, a count of a cold load's requests, a trace of the Bastion's answers by kind |
 
@@ -629,6 +629,13 @@ records the recorder that tells such a stall apart).
   `signatures` on 2026-11-21; the evaluation itself allows, which a unit test now holds. A test that
   expects a refusal can pass for this reason alone. To do (W4): the helper fails when a selector resolves
   to no row, then every area is run once and each test that relied on it is repaired.
+- **Seen by the builder of W6 on 2026-11-23, outside its package:** (1) the Makefile lists the integration
+  packages with `go list` on every call of `make`, which downloads the modules in jobs without the module
+  cache, the gating jobs `image`, `container-scan`, `malware-scan` and `release-tooling` among them (W7,
+  which takes the Makefile next); (2) with runs of `main` side by side, `tools/fetch-e2e-reports.sh` takes
+  the newest report by the artifact's creation time, which can be an older commit's (with the evidence
+  record's step); (3) `TestR_MAL_014_APendingDownloadIsServedWhenItsVerdictArrives` failed once at a load
+  of about 100 (5.01 s against the gate's wait of 5 s; alone it passed) (W4).
 - **The layout checks stopped once at the admin area's Storage page (Test and Release 45140417183 of
   2026-11-23, a push without a change under `web/`; the run before it was green):** `admin-system-storage`
   "stopped at 390 px: locator.click: Timeout 15000ms exceeded", waiting for the second closed disclosure of
@@ -689,26 +696,6 @@ records the recorder that tells such a stall apart).
   (4) the journal's shipper uses the plain client and not the guarded one, so it passes the circuit breaker and the
   metrics by; (5) the finalize of an upload session checks its server-side copy by size alone (the gap H-591, known).
   None is repaired; (1) and (2) belong to what the storage topic decides, (3) and (4) wait for a batch.
-- **Partly closed; open: the check of each repair with the real client (in work since 08:15 on 2026-11-23).**
-  Closed: (1), (3) and (4) by 48a4cd763 on 2026-11-21: `nugetcms` reads a signer named by its key
-  (`TestR_SIG_029_TheSignatureDotnetNugetSignWritesIsValid` on the real tools' signatures), a batch replaces
-  the attachments of its own sources only (`TestR_SIG_004_ADetectorsBatchSpeaksForTheDetectorsSourcesOnly`), a
-  remote's version reads the document it holds the version as (`TestR_SIG_034_VersionSignatures`); (2), (6)
-  and (7) by 3550b3d69 on 2026-11-21: a writer reads through the gate where the signing tools read
-  (`TestOCIGate_R_SIG_064_ThePusherSignsWithCosignAndAReaderPullsOnlyThen`), the texts name the publisher's or
-  the build's signature and the artifact as the client does (Q-SIG-212, Q-SIG-213);
-  `docs/developer/signatures.md` marks each of the six "Repaired". (5) stands as decided: NuGet's client gets
-  no text in a header for now (Q-SIG-214). As it stood:
-  **The signatures, measured with real clients on 2026-11-21** (confirmed by reproduction; commands and outputs in
-  [developer/signatures.md](../developer/signatures.md#defects-found)): (1) no real NuGet signature is readable, neither of `dotnet nuget sign`
-  nor of nuget.org, because both name the signer by `subjectKeyIdentifier` and the parser of `nugetcms` takes only issuer and serial; every
-  NuGet signature reads **Scheme not supported** and a gated repository refuses every signed package; (2) in a gated OCI repository
-  `cosign sign` and `notation sign` are refused on their read of the manifest, so an image pushed there cannot be signed there (needs a
-  decision of what passes); (3) a signature posted for a new Ansible version is deleted from the store by the worker's discovery, which
-  replaces the attachments of the archive's item, while the version document keeps serving it; (4) a remote OCI image's version view lists
-  none of the signatures its fetch stored; (5) `dotnet restore` and `ansible-galaxy` never show the gate's text, and Docker's pending pull
-  shows none either; (6) the text of `missing` says "it has no signature" for a package that carries a registry signature; (7) the texts
-  name storage paths such as `unsigned/_tags/1.0`.
 - Three narrow lists of the signatures' screens (the security dashboard's view, the admin page's project section, a
   project's anchors) stand as blocks even at 1,440 px, as other narrow lists do; the layout checks accept it (found on
   2026-11-21 by the builder of the signatures' screens, left for the owner's look).
@@ -717,9 +704,6 @@ records the recorder that tells such a stall apart).
   (`deploy/dev/values-restore.yaml`) leave malware scanning on by the chart's default, so the drills run ClamAV and its
   updater, which reaches ClamAV's network, against Q-MAL-90. (Both found on 2026-11-21 by the builder of package 3 of the
   analyser's move, left.)
-- In the integration stack a global read policy seeded for an OCI repository answered `deny.no-grant` to a token of the
-  default scope; the test of the gate's releases uses a project's reader instead (found on 2026-11-21 by that package's
-  builder, the cause not looked into: a fault of the setup or of the policy's evaluation).
 - The developer page on secrets (`docs/developer/secrets.md`) still lists the task `secrets-reencrypt` under what is
   deliberately not there and calls the API's steps work of a later milestone; both exist (found on 2026-11-21 by the builder
   that repaired the task's test, left).
@@ -774,8 +758,6 @@ records the recorder that tells such a stall apart).
   Ansible Galaxy, open gaps on [formats/ansible.md](../spec/formats/ansible.md) and its security pages: H-861 (digest conflicts
   counted per merge), H-863 (a role lookup is not merged across members), H-851 (the core's archive bounds). The base64 body of a
   publish is held to the system upload limit before `ansible.max_archive_bytes` sees the decoded bytes (Q-ANS-53), not tested.
-- H-836: a holder of `tokens:read` alone sees which token owners are administrators; only a custom role is affected, because the
-  three system roles with `tokens:read` also hold `identities:read`.
 - `api-and-ui.md` has Q-API-260 to 263 after its first `## What this does not cover` and a second such heading after them.
 - The coverage badge and the evidence record stand still until the first stable release (Q-ARCH-457).
 - An opened audit event at 390 px breaks its **Time** over two lines (the layout check's "a time in 2 lines", seen on
@@ -1406,6 +1388,58 @@ the plan.
   same leg had passed an hour before on the same product code. Cause not known: which replica answered it and with
   which code of a 503 (the listener's admission, the collapse's wait, the upstream stub) is the first thing to read
   at a recurrence.
+- **Closed on 2026-11-23 by the check with the real clients and the repair of point (5): none of the seven
+  points occurs any more, and what a client cannot show stays as a written gap.** 66ecdd123 makes
+  `dotnet restore` print a refusal's text from `X-NuGet-Warning` and `ansible-galaxy` from the version
+  document it reads before the archive (Q-SIG-241, which replaces Q-SIG-214;
+  `TestR_SIG_068_TheChecksOfADownloadReachNuGetsClientsAsAWarning`,
+  `TestR_SIG_068_TheVersionDocumentAnswersWhatTheArchivesDownloadWould`), and ee4d5c87a holds point (1) with
+  two packages `dotnet nuget sign` signed
+  (`TestR_SIG_029_TheSignaturesDotnetNugetSignWritesAreFoundByBothFormsOfTheSigner`); "Defects found" of
+  `docs/developer/signatures.md` records each point measured again with its client. Left as gaps: Docker,
+  Podman and the kubelet show no text while an image is being checked (H-1540), and `ansible-galaxy` only the
+  status for an archive no repository stored before (H-1541); not verified: nuget.org's countersignature under
+  the shipped anchors with a client, and the Details link of a refusal opened in a browser. Open until now:
+  the check of each repair with the real client (in work since 08:15 on 2026-11-23). Closed before: (1), (3)
+  and (4) by 48a4cd763 on 2026-11-21: `nugetcms` reads a signer named by its key
+  (`TestR_SIG_029_TheSignatureDotnetNugetSignWritesIsValid` on the real tools' signatures), a batch replaces
+  the attachments of its own sources only (`TestR_SIG_004_ADetectorsBatchSpeaksForTheDetectorsSourcesOnly`), a
+  remote's version reads the document it holds the version as (`TestR_SIG_034_VersionSignatures`); (2), (6)
+  and (7) by 3550b3d69 on 2026-11-21: a writer reads through the gate where the signing tools read
+  (`TestOCIGate_R_SIG_064_ThePusherSignsWithCosignAndAReaderPullsOnlyThen`), the texts name the publisher's or
+  the build's signature and the artifact as the client does (Q-SIG-212, Q-SIG-213);
+  `docs/developer/signatures.md` marks each of the six "Repaired". (5) stands as decided: NuGet's client gets
+  no text in a header for now (Q-SIG-214). As it stood:
+  **The signatures, measured with real clients on 2026-11-21** (confirmed by reproduction; commands and outputs in
+  [developer/signatures.md](../developer/signatures.md#defects-found)): (1) no real NuGet signature is readable, neither of `dotnet nuget sign`
+  nor of nuget.org, because both name the signer by `subjectKeyIdentifier` and the parser of `nugetcms` takes only issuer and serial; every
+  NuGet signature reads **Scheme not supported** and a gated repository refuses every signed package; (2) in a gated OCI repository
+  `cosign sign` and `notation sign` are refused on their read of the manifest, so an image pushed there cannot be signed there (needs a
+  decision of what passes); (3) a signature posted for a new Ansible version is deleted from the store by the worker's discovery, which
+  replaces the attachments of the archive's item, while the version document keeps serving it; (4) a remote OCI image's version view lists
+  none of the signatures its fetch stored; (5) `dotnet restore` and `ansible-galaxy` never show the gate's text, and Docker's pending pull
+  shows none either; (6) the text of `missing` says "it has no signature" for a package that carries a registry signature; (7) the texts
+  name storage paths such as `unsigned/_tags/1.0`.
+- **Closed on 2026-11-23 by a7af2b386: the evaluation allows, and the setup was at fault.**
+  `TestR_AUTHZ_013_AGlobalReadPolicyAdmitsATokenOfTheDefaultScope`
+  (`internal/authz/global_policy_default_scope_test.go`) admits a pull's reads of an OCI image, the manifest
+  by tag and a blob by digest, through the session and through a token of the default scope, and shows that a
+  policy whose selector names no repository answers `deny.no-grant`, which is what the harness's helper
+  `testenv.Stack.Policy` writes when a key resolves to no repository. That helper's defect stays open as its
+  own entry of section 8 ("The integration harness writes an empty policy without a word", package W4).
+  As it stood:
+  In the integration stack a global read policy seeded for an OCI repository answered `deny.no-grant` to a token of the
+  default scope; the test of the gate's releases uses a project's reader instead (found on 2026-11-21 by that package's
+  builder, the cause not looked into: a fault of the setup or of the policy's evaluation).
+- **Closed on 2026-11-23 by 993b8fe07: a token answer carries `ownerIsAdmin`, and a service account answer
+  `isAdmin`, only for a caller with `identities:read` and for the token's own owner.** Held by
+  `TestR_AUTH_028_TheOwnersRoleIsShownOnlyWithIdentitiesRead` and
+  `TestR_AUTH_020_AServiceAccountStatesItsRoleOnlyWithIdentitiesRead`
+  (`internal/api/v1/tokens_admin_fact_test.go`); Q-AUTH-428 in `docs/spec/identity-and-authentication.md` says
+  that H-836 is closed, and the token lists mark an administrator token inactive only where the owner's role
+  is known to be lost. As it stood:
+  H-836: a holder of `tokens:read` alone sees which token owners are administrators; only a custom role is affected, because the
+  three system roles with `tokens:read` also hold `identities:read`.
 
 ## 10 · Owner tasks of 2026-11-07: the next registries
 
@@ -5445,6 +5479,10 @@ Everything that waits for the owner, one line each, with where the detail is. Pu
 
 Each needs something that is his alone; none blocks a package. Named to him on 2026-11-23.
 
+- The last readings of a runner that is evicted for its storage limit: a job that loses its runner leaves no
+  log at the hosting service at all (job 127312908376 has no steps and no log), so a watcher inside the job
+  cannot keep them; they are the pod's events in his runners' cluster. The disk watcher of the kind legs is
+  therefore not built (decision 6 of the reading, taken back on 2026-11-23).
 - The runner controller's listener that loses its assignment, so that a queued job holds the nightly's group: its
   cause is in the logs of his runners' cluster.
 - The figures of the upload limits (Q-LIM-27, two entries): he put them after the first step; until he moves them,
@@ -6624,7 +6662,70 @@ the same check for every unit with a spool; the layer writes' flush; a removed p
 measurements on the stack; and what the pipeline's one measurement of the read path must record, which
 the development agent dispatches in the window). Builders with a test load: the screens' first round,
 W5b, W6, W2, the landing's gates.
-**11:03, the release of the push of 10:49 is out** (a `feat:`; its image and chart at 11:08).
+**11:03, the release of the push of 10:49 is out** (a `feat:`; its image and chart at 11:08); **11:12, it
+runs on the owner's installation** (read at 11:16: both charts on it and ready, 21 pods ready, no restart,
+the Bastion's registry answers 401 with a valid certificate). The run's four shards are green.
+**11:17, the owner asked where the run stands and what is open;** answered with the counts (84 and 30
+open, 51 in the lists Closed, twelve entries new today), the packages' states, the two red jobs and
+their causes, and that nothing waits for him. Told with it: the lists lag behind the landings of 09:39
+and 10:49; a writer prepares their marking since 11:19 (read-only).
+**11:18, W6 is back** (fourteen commits, one per item; every gate exit 0 but `make unit`, by one test of
+the malware gate at a load of about 100, section 8). Built: (1) a run of `main` has a concurrency group
+of its own, so quick pushes run side by side and none is cancelled or replaced (the form with one group
+and no cancelling would drop the middle one of three); two releases cannot both publish, since the
+release of an older commit finds `main` moved past it and ends without releasing (read in the release
+tool's source); it costs a full run for every push of a burst, about 308 runner minutes each. (2) The
+clients' image cache key no longer holds the commit (the binary in the key was stamped with it); a test
+builds it twice at two commits and two paths. (3) A job scans the analyser's and ClamAV's images by
+their pins, reports and gates nothing; a local scan found 6 high findings in the analyser's image and
+70 in ClamAV's Debian packages, none accepted in the ignore file. (4) `make unit`, the lint's one
+limit and its wait for another run, fuzz names without requirement codes, the shrink time. (5) A
+partial dispatch of the nightly starts only the jobs it names; a change of the two image pins starts
+the vulnerability leg; `make image` prunes what its builds left; the stale sentences. **Not built, each
+for a reason the development agent accepts:** the disk watcher (a lost runner leaves no log at all, so
+its readings would be lost with it; to the list With the owner), and the evidence record with the
+release, whose question it answered first: the local tool only renders the committed record and decides
+no requirement, the pipeline's job derives the record from the tests that ran, and they write the same
+paths; the newest green record holds 1,059 requirements against 657 committed, and eleven commits since
+the minimal gate edited the file by hand. **Decided by the development agent:** the pipeline becomes the
+only source of the record (the release commits the newest green record and badge and never waits for
+them), the local tool stays a renderer, no builder adds a requirement by hand; it is built as a step
+of its own after the first run has shown the other changes of the pipeline working, since it brings
+back a commit by the release on `main`, which every landing then has to fetch first. **What changes in
+this plan's rules when item (1) is on `main`:** a code push no longer waits for the shards of the run
+before it; a push without a run (a `[skip ci]` commit) between a code push and its Semantic Release
+still costs that release, since the older run then finds `main` moved and no newer run exists.
+**11:19, W6's fourteen commits are at their gates** on a second landing stack, on top of the Debian repair
+and W3 (no conflict; no integration area, since nothing of the product changed).
+**11:35, landed in one push: the Debian remote's repair and W3** (four commits, the head a `test:` over two
+`fix:`). The gates, 10:50 to 11:18, each exit 0: build, both vets, the unit run under an emptied AWS
+environment, generate, the coverage tool's four steps, cyclo, the end-to-end tree's vet, the pinned lint
+(nine minutes at a load of 45 to 65), then `debvirtual` 242 s, `debremote` 56 s, `deblocal` 181 s,
+`debkeys` 18 s, `endpoints` 22 s, `limits` 108 s, `valkey` 137 s, `ociremote` 91 s, `ci` 214 s, `npm`
+456 s, `oci` 24 s. Pushed when the end-to-end legs of the run of 10:49 had ended; its layout checks were
+still running and are cut by this push, the last time a push cuts a run.
+**11:21, the builder of W5a started** (NuGet's route of a package's embedded files instead of its 501; the
+kit's check of an upstream's challenge; the tag listing of a remote OCI repository measured with
+100,000 tags before anything is built). **11:25, the marking of what the landings of 09:39 and 10:49
+closed is prepared** (a writer, each closing verified on `main`): three entries of the product close (the
+signatures with the real clients; H-836; the global read policy in the integration stack); every other
+entry of the storage topic had been moved in the morning; applied with this landing. **Open now: 81 and
+30.** **11:32, the screens' first round is back from its three points and the walk's repair** (twenty-two
+commits on the stack of the Debian repair and W3): one shared helper breaks a name at its separators
+and never inside a word or a version, on the Bastion's card, in the audit log and in the signature
+findings; a certificate's page carries its badge alone; a version held only by disabled repositories
+offers no install command and says why (the version's answer says per repository whether it is
+available; the gap it had entered is taken out); the storage tab's walk selects its two sections by
+what a click does not change and waits for each. It ran the areas `packages`, `repository`, `api`, `npm`
+and `limits`, each exit 0, and added a case for the certificates' query, which no tier had held. Looked
+at by the development agent a second time (the signature findings at 1024, the German version page of a
+disabled repository): accepted. **11:33, its gates run** on a third landing stack on top of W6 (the
+basics, the web gates, the fixture layout tests, the pinned lint, then `packages`, `repository`, `api`,
+`npm`, `limits`, `audit`). **11:34, the builder of W10a started** (the decisions' index generated from
+the spec pages' blocks and held by the documentation tool's check; the sentences that are no longer
+true). The three stacks land one after the other: this one now, W6 when this one's release is out (so
+that a fault of the changed workflow cannot hold the repairs' release), the screens after it.
+Builders with a test load: W5b, W2, W5a, W10a, the landing's gates.
 **In work since 05:38: package 7 of the encryption, the destruction of a retired connection's keys**
 (R-STOR-097 to R-STOR-103 and the journal's replay; the development agent's answer of 2026-11-22 to the
 question of what stays readable at a provider). It stands on the handover's second package as it lands;
