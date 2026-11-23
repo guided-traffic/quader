@@ -2636,6 +2636,37 @@ runs are in `git log`; this section holds the current state.
   shows on either side, to take out of the two halves what the joined case shows as well, and to make
   once the measurement the build plan names (a blob of about 300 MiB with the handover on and off, against
   the stack's store only). The landing's gates run over both commits when it reports.
+  **The joined case reported at 06:30** (one commit of the type `fix` on the joined tree; its builder worked
+  from 05:56; every gate exit 0, the full unit run, the lint over the whole repository and the area
+  `bastion` among them). **The two sides met as each expected the other, and looking at what the one signs
+  against what the other refuses showed a defect of the Bastion's side:** a handover's value that the
+  Bastion refuses (a link to a refused host, an expired link, a blob above the offer, a digest that is
+  not the validator's, a value that does not decode) fell back without the cooldown, and such a value
+  repeats at every miss, so every miss cost the main installation a second forward and a second counted
+  download without a bound, against the bound H-1342 states. The integration stack makes it by itself:
+  with no public address set, a link names the store's endpoint on the host the Bastion also knows as
+  the main installation's. Closed: a refused value starts the cooldown (Q-BAS-293), held by a unit case
+  that fails on the engine before. The main installation's side needed nothing. **The case,
+  `TestR_BAS_070_ALargeFileIsReadFromTheObjectStore`,** runs the suite's real main installation with the
+  switch on through the API and the real Bastion role, the store behind a small relay that counts what
+  the store sends and can refuse or cut one object: a cold read (the caller's bytes and headers; the
+  main installation's answer of the class `handover` without a body, its log line and metric; the
+  Bastion's outcome and bytes), counted once, a hit that asks the main installation nothing, the package
+  of an npm tarball kept from the handover's answer, a read cut after 96 KiB continued by range against
+  the real serve point without a second count, a refused link that falls back and is counted twice as
+  H-1342 says, an ordinary request with the offer, the switch off, and no usable link in either side's
+  log. It takes 8.1 s with three files of 64 KiB, one of 160 KiB and a tarball of some hundred bytes.
+  **The two halves are deleted,** since the joined case shows what each showed, and their two checks of
+  their own moved into it; no requirement lost its test; the area gains 5.8 s over the halves' 2.3 s.
+  **The measurement, once, under a load of 30 to 32:** a blob of 300 MiB through the Bastion took 7.1 s
+  with the handover on, with no byte sent by the main installation and all 314,572,800 by the store, and
+  18.3 s with it off, all of them sent by the main installation. The byte counts are the finding; the
+  times say only that the direct read was not slower here. **For package 5's manual:** an unset public
+  address whose endpoint shares a host name with the main installation's makes every link refused; since
+  the repair that costs one forward a replica a minute and fires the alert. **In the landing's gates
+  since 06:31, both commits on `main`'s top:** the set without the lint, which its builder ran on this
+  code, and the Bastion's five areas with `api`. It is pushed after the run of the push before it has
+  ended.
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
@@ -5486,6 +5517,10 @@ run; his installation runs that release; the handover's third package stands on 
 a clean tree, the encryption's fourth, sixth and seventh packages changed files within minutes, and the
 planner of the installation's cost has made its two area runs and writes. Nothing reported, nothing
 stuck, nothing collides.
+**The timer's check at 06:14:** the run of the 05:48 push has no failed job (the four shards, the layout
+checks and three end-to-end legs run); his installation runs its release; the four builders each changed
+files within five minutes; one builder's lint held the load at about 40 for some minutes. Nothing to
+land, no place free.
 **Package 3 of the encryption, the store and the sessions, reported at 02:36** (one commit of the type `feat`
 on the stack of four; its builder worked from 23:10; every gate exit 0, seventeen integration areas, but the
 `proxy` area, whose test of the fetch slots met a migration's timeout at a load of 35 to 76 and passes alone
