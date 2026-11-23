@@ -241,7 +241,7 @@ did not do", F-126, the mirror's back-off bound, the process environment and the
 Q-ARCH-1040; its release shows the rest); `drain-roles` ran alone at 22:24, green, and closed its entry.
 **T-25 landed at 22:58** (one commit; Q-UI-1040 to Q-UI-1043; the renders looked at by the development agent;
 the browser journeys it rewrote run first in the pipeline's e2e legs). Started at 22:53 in the freed place: **T-24 · R4** (downloads ahead and the queue; R3 waits for R2's landing,
-since it wires R2's decider). Started at 23:00 in T-25's place: **W8** (web and end-to-end tests wait for what they stand for, with the
+since it wires R2's decider). **The rest of the Go tests landed at 23:12** (three commits; F-126 not reproduced, open). Started at 23:00 in T-25's place: **W8** (web and end-to-end tests wait for what they stand for, with the
 layout fixtures in three browsers and an instance of the UI profile that is claimed, not chosen: two builders
 took instance 6 a minute apart that evening). Waiting for a place: W10b, the documents' second round, the two
 findings of T-25's renders, T-24 R3, and the two nightly sets `upgrade-release` and `vuln-perf` (to be
@@ -298,19 +298,11 @@ starts from it and from his word how the work goes on, not from the order of the
   push beside it:** `upgrade-release` and the vulnerability performance set (`drain-roles` ran alone at
   22:24 and closed its entry); the two
   changed nightly sets `npm-ha` and `nuget-ha` have not run since their change either.
-- **What W4 did not do** (its builder's list of 17:46, word for word in the run record): a unit test of a
-  real Sentinel failover while a start waits for Valkey's first answer (F-249; needs a fake Sentinel in
-  `internal/cluster`); `TestR_CI_003_StaleAndUnreachable` with its fixed sleeps of 1.2 s and 6 s;
-  `revoke_bound_test.go` of the area `ci`, which still counts reads from the statistics with waits of
-  2.5 s; `vulnblock/querycount_test.go`, which still counts statements in windows of the database's log
-  instead of by request ID; the propagation waits of 3 to 5 s in the area `ci` that stand for no bound;
-  the Bastion's `downloads_test.go` with a queue timeout of 100 ms; `TestBurstBesideEmptyCaches` with a
-  fixed second.
+- **What W4 did not do**: landed at 23:12 with the integration tests' environment and ports and the mirror's
+  back-off bound (section 8, Closed); F-126 stays open with a new reading.
 - **Single open entries without a package**, each in section 8 with its "To do": the cancel through
-  poolers that are not peers (H-1662); the trace of the Bastion's answers by kind; the integration
-  tests that start a process with the caller's whole environment; the free port taken from port 0;
-  `TestConcurrentWritersOnOnePath` (F-126); the mirror's back-off test that missed its lower bound by a
-  millisecond; and every other entry of sections 8 and 12 that names no package.
+  poolers that are not peers (H-1662); the trace of the Bastion's answers by kind;
+  `TestConcurrentWritersOnOnePath` (F-126, a recurrence to read); and every other entry of sections 8 and 12 that names no package.
 - **With the owner** (the list of that name in section 8 and his walk): the decisions the development
   agent took today, each a decision block on its page and listed in the run record; the README's badge
   on the branch `coverage` instead of `main`, told to him at 16:11.
@@ -431,7 +423,9 @@ Rules while building:
   **a specification is landed like code** (the chart tests and the full unit run beside the evidence's checks and
   the count test, because the specification's blocks are inputs of tests: two landings of 2026-11-22 without
   them left the chart gate red for two and a half hours); the evidence record is written by the pipeline and
-  never by hand; **the development agent's own gates and integration runs use a worktree of their own, never a
+  never by hand; **the documentation's link check `go run ./internal/tools/coverage -links` runs beside `-check`**
+  (T-25's landing of 2026-11-23 ran only `-check` and left the job `coverage generator (links and rules)` red on
+  a link to a removed file); **the development agent's own gates and integration runs use a worktree of their own, never a
   builder's,** because a builder that is resumed edits its worktree (on 2026-11-22 fourteen integration areas
   of such a run failed to build in the minute a resumed builder changed a signature, and three before them
   ran on a tree in the middle of an edit);
@@ -564,6 +558,9 @@ order is what a user or an operator meets first. The state is kept here.
   named `project-list.ts`, which T-25 removed; its builder ran `coverage -check` and not `-links`. Repaired at
   23:06 (the link names `projects-home.ts`, where the list's columns are now); the builder's brief names
   `go run ./internal/tools/coverage -links` from now on, as the pre-push list of the development agent does.
+  The repair touches `docs/` alone and starts no run (the path filter of `Test and Release`), so the run at the
+  tip stays the red one and nothing is released until the next code push: the evidence record's publish
+  (f292d0097), T-25 (7bc671b5c) and the Bastion's fix of 18:39 (0c158f5a4) go out with it.
 
 Several entries below name **F-133**, closed on 2026-11-19: the stall family on the CI runners. Every kind cluster of a machine
 sat in one cgroup of weight 100, the runner pods in one of weight 1250, so beside the small jobs of a Test and Release run a
@@ -586,7 +583,12 @@ records the recorder that tells such a stall apart).
   with two writers per folder, not excluded; the spec names the limit and its 503); a 503 of the object store or the database, or a
   500, cannot be told from the code. The test now prints the replicas' request log with the first refused request: a 503 "The path
   is being changed by concurrent requests" is the five-round limit, a 503 with a store or database cause is the infrastructure, a
-  500 is a fault of the product. Next step: read it in a recurrence.
+  500 is a fault of the product. Next step: read it in a recurrence. **Read again on 2026-11-23, 23:10, by the
+  builder of the rest of the Go tests:** not reproduced in three runs (one normal, one with one core in the
+  background class at a load of 12, one probe of 516 rounds with no deadlock, so three deadlocks in a row are an
+  unlikely cause); left as candidates the deploy's five-round link limit, whose window widens on a starved host,
+  the files environment's retry bound of 2 s for a connection error, and a 503 of the object store. The loop of
+  4 s became 80 rounds per writer (no fix of the cause, no dependence on the host's speed). Next step unchanged.
 - **A stall without a neighbour** (standing since 2026-11-23; the runs of the stall family before 2026-11-18
   are in the list Closed). It opens when a kind leg fails on a latency bound, a `502` or `503` of the edge or
   a request held at the edge, or a fault test stops with "the cluster was not healthy before the fault", and
@@ -658,19 +660,6 @@ records the recorder that tells such a stall apart).
   `web/e2e/renders/render.spec.ts`) but records no count, so the GETs of a cold load of each main screen are
   still to be counted once on the UI stack and set against the default `read` budget (50 per second, burst
   200).
-- **Partly closed; open: the overload area's burst beside empty caches (its cause not read).** Closed: the
-  profile's image tag `:dev` and the fixed tags of the driver's and the stubs' images, by package W7 (2026-11-23,
-  Q-HA-489: every image of the profiles carries the checkout's tag, `dev` in the main checkout, and the charts run the
-  image they are given); the query budget's second failure, by 7c6e0acb1 (2026-11-23), the repair of the entry above; the 71 s and 141 s in which npm and pnpm
-  refuse an altered tarball cost no suite, since signed links go to OCI and Ansible Galaxy only (3ccf4deee)
-  and no end-to-end case waits for an integrity refusal of npm. As it stood:
-  **Seen by the builder of the links' second package on 2026-11-22 and 23 and left for the batch:** the
-  development profile's script loads the image it is given while the chart keeps the tag `:dev`, so the
-  pods cannot pull; the end-to-end driver's and the stub's images carry fixed tags, so two worktrees that
-  run a leg at once overwrite each other's images; the overload area's burst beside empty caches sheds
-  requests at a host load of about 41 and passes at 7; **the query budget's harness failed a second time,**
-  on the Debian case in a builder's run, and passed on the next run (the entry above); npm and pnpm take 71 s
-  and 141 s to refuse an altered tarball, by their retries.
 - **Partly closed; open: the unit test of a removal refused whole, the engine test of a cache miss's first
   answer and the token API's unit test of an upper-case path pattern (each waits for the owner's go for new
   formats), and the evidence record that holds no requirement of Ansible Galaxy (not looked into).** Closed:
@@ -773,10 +762,6 @@ records the recorder that tells such a stall apart).
   a system mapping are chosen from the search" (no match for `web-leads`; alone the file passed 41 of 41),
   and `TestR_HA_011_UploadsDuringARolloutRestart` of the area `files` (the committing upload got `EOF`
   during the rolling restart). To do (W4, W8): what each waits for.
-- **`TestR_REPO_054_SlowDownWithoutAHintBacksOffExponentially` (area `mirror`) missed its lower bound once
-  (2026-11-23, at the gates of the contracts' builder):** its third wait measured 1.9986 s against a floor
-  of 2 s; the rerun passed. A wait compared with a floor to the millisecond. Not looked into. To do: the
-  floor is compared with the clock that set the wait, or with a tolerance the test states.
 - **The first publish of the evidence record was refused, so the branch `coverage` does not exist and the
   README's badge is invalid (2026-11-23; Test and Release 45212749706, the job Semantic Release, read at
   17:29).** The release itself went out through the changed job (17:23) and the image and chart after it
@@ -1004,6 +989,53 @@ records the recorder that tells such a stall apart).
   not reworded.
 
 ### Closed
+
+- **Closed on 2026-11-23, 23:12: what W4 did not do, and the integration tests' environment and ports** (three
+  commits of the rest of the Go tests): F-249 by `TestR_HA_008_StartDuringASentinelFailoverWaitsForTheNewPrimary`
+  (unit, `internal/cluster`, 0.15 s, a fake Sentinel that first names an old primary that never answers);
+  `TestR_CI_003_StaleAndUnreachable` waits computed from each bound and the instant the test set it (12.6 s to
+  4.5 s) and asserts that a lookup past `max_stale` re-reads the stored set without a JWKS request; the area
+  `ci`'s `revoke_bound_test.go` counts the revocation's reads in its own transaction from
+  `pg_stat_xact_user_tables` (16.5 s to 1.5 s); `vulnblock/querycount_test.go` and `querybudget` count by request
+  ID through `testenv.RequestTransactions` and `PerRequest(ids)`, and no test reads the database's log any more
+  (140 s to 28 s; `LogStatements`, `StatementLogSince` and `QUADER_TEST_PG_CONTAINER` removed); the propagation
+  waits of the area `ci` run one `PollNow` or wait on a replica's grant index, and those that stand for Q-CI-51's
+  bound wait exactly one poll interval after the replica's last read; the Bastion's `downloads_test.go` holds the
+  forwarded reads at the front and expects exactly ten `503 bastion_busy`, two held forwards, then two 200s;
+  every process an integration test starts takes `testenv.ChildEnv`, held by
+  `TestNoIntegrationTestReadsTheCallersWholeEnvironment`, and `TestFreeAddrHandsNoAddressOutTwice` holds the free
+  port (the five listeners left on port 0 keep their listener open). Gates: the full unit run, lint, cyclo,
+  archtest, `coverage -check` and `-links`, sixteen integration areas once each, the Sentinel tests in the
+  pinned Linux image. Not verified: whether the area `oci`'s conformance suite ran (20 s) or was left out for
+  lack of its binary.
+- **Closed on 2026-11-23, 23:12, at its cause: `TestR_REPO_054_SlowDownWithoutAHintBacksOffExponentially` (area
+  `mirror`) missed its lower bound once.** The engine sets `until = now + wait` and later sleeps `until − now`, so
+  the recorded sleep is a little shorter than the wait; the test now checks the wait's end against the floor from
+  the instant the stub received the refused request, and the sleep against the ceiling, both exact, no bound
+  loosened (about 7 s as before). As it stood:
+  (2026-11-23, at the gates of the contracts' builder):** its third wait measured 1.9986 s against a floor
+  of 2 s; the rerun passed. A wait compared with a floor to the millisecond. Not looked into. To do: the
+  floor is compared with the clock that set the wait, or with a tolerance the test states.
+- **Closed on 2026-11-23, 23:12, on a cause inferred from measured waits, not from a recurrence: the overload
+  area's burst beside empty caches (F-060).** The 300 downloads queue for the harness's five connections of the
+  request pool, and the harness capped that wait at 3 s through its retry bound; measured once with one core in
+  the background class at a load of 10, 150 of 355 waits took 0.5 to 1 s, so a host four times as loaded passes
+  3 s and answers `503 database_unavailable`, which fits F-060's 503s (that run kept no codes). The replica of the
+  test runs with the product's default `database.retry.max_elapsed` of 30 s, `TestBurstBesideEmptyCaches` has no
+  fixed second (the admission decides without waiting), and a failure prints the refused bodies and the pool's
+  waits. Closed before: the
+  profile's image tag `:dev` and the fixed tags of the driver's and the stubs' images, by package W7 (2026-11-23,
+  Q-HA-489: every image of the profiles carries the checkout's tag, `dev` in the main checkout, and the charts run the
+  image they are given); the query budget's second failure, by 7c6e0acb1 (2026-11-23), the repair of the entry above; the 71 s and 141 s in which npm and pnpm
+  refuse an altered tarball cost no suite, since signed links go to OCI and Ansible Galaxy only (3ccf4deee)
+  and no end-to-end case waits for an integrity refusal of npm. As it stood:
+  **Seen by the builder of the links' second package on 2026-11-22 and 23 and left for the batch:** the
+  development profile's script loads the image it is given while the chart keeps the tag `:dev`, so the
+  pods cannot pull; the end-to-end driver's and the stub's images carry fixed tags, so two worktrees that
+  run a leg at once overwrite each other's images; the overload area's burst beside empty caches sheds
+  requests at a host load of about 41 and passes at 7; **the query budget's harness failed a second time,**
+  on the Debian case in a builder's run, and passed on the next run (the entry above); npm and pnpm take 71 s
+  and 141 s to refuse an altered tarball, by their retries.
 
 - **Closed on 2026-11-23, 22:55, as the neighbours' load: the drain of the roles missed its latency criterion in
   the scheduled nightly of 2026-11-23.** The set `drain-roles` dispatched alone in the pipeline window with no
