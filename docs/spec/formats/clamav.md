@@ -173,8 +173,8 @@ The routes, all `GET` and `HEAD`, the action `read`, the kind `Metadata` ([Q-CLA
   and `public` a ClamAV installation is also admitted by its client certificate on an endpoint that admits certificates (R-CLAMAV-010).
 - The malware gate never asks about an item of a system repository (R-MAL-013), and the vulnerability block has nothing to block: the
   format has no vulnerability adapter.
-- **Through a Bastion** ([bastion.md](../bastion.md#r-bas-056--the-clamav-definitions-through-a-bastion) R-BAS-056; specified, not
-  built): the endpoint is served to the anonymous caller and to tokens, a container is kept in the Bastion's cache whatever its size,
+- **Through a Bastion** ([bastion.md](../bastion.md#r-bas-056--the-clamav-definitions-through-a-bastion) R-BAS-056; built): the
+  endpoint is served to the anonymous caller and to tokens, a container is kept in the Bastion's cache whatever its size,
   `freshclam`'s check with `Range` and `If-Modified-Since` is answered from it, and the Bastion's own rate-limit refusals of the format
   are `503`, never `429` (the format's `catalog.Facts.Bastion`). The client certificates of R-CLAMAV-010 do not reach a Bastion
   ([Q-BAS-176](../bastion.md#q-bas-176--the-clamav-definitions-through-a-bastion-anonymous-and-tokens-no-client-certificate)).

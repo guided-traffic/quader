@@ -1,6 +1,9 @@
 # NuGet
 
-Status: specification — in implementation (phase 4): the format skeleton (registration, route table, service index, settings, configuration, error shape) is built; the operations behind the other routes, the data port and the remote and virtual classes are not
+Status: built, except R-NUGET-011 (autocomplete), R-NUGET-021 and R-NUGET-022 (the symbol server and the symbol proxy), the pass-through
+of an upstream's vulnerability information of R-NUGET-023 (`nuget.vulnerabilityInfo: upstream`), R-NUGET-025 (the metadata reindex),
+R-NUGET-029 (upstream package digests from catalog leaves) and R-NUGET-035 (the upstream catalogue and the delivery rules of a remote, in
+work); NuGet v2 is deferred (INV-14)
 
 This page specifies how Quader serves NuGet packages: the NuGet v3 server API for local, remote
 and virtual repositories under `/api/nuget/<projectKey>/<repoKey>/`, package ingestion and `.nuspec` parsing,
@@ -71,7 +74,7 @@ request descriptors as in R-NUGET-015, where symbol files carry a routing name d
 name in the symbol key.
 
 The skeleton of the format (phase 4, WP3.1c) registers the class `local` alone; `virtual` joined with its
-adapter (WP3.2c, Q-NUGET-56) and `remote` joins when its adapter exists, each in the change that writes the
+adapter (WP3.2c, Q-NUGET-56) and `remote` joined with its adapter, each in the change that wrote the
 adapter (Q-NUGET-28), and the format enums of the management API follow the registry (Q-API-190). Two kinds of path meet in the format
 and are never mixed: the *protocol path* a client requests below `/api/nuget/<projectKey>/<repoKey>/`
 (`v3/flatcontainer/acme.widgets/index.json`) and the *canonical path* of an item or a cache entry
@@ -158,11 +161,10 @@ values it knows, each resource MUST be listed under every alias in the table.
   package details, owner details, report abuse) MUST NOT be listed. The repository signatures resource stays unlisted also once
   signatures are verified: it names the certificates a source signs with itself, and Quader signs no NuGet package
   ([signatures.md](../signatures.md) Q-SIG-36); also with stage 2 a package's bytes are never countersigned, and its receipt attestation
-  is served by the management API (R-SIG-044, R-SIG-054, specified, not built).
+  is served by the management API (R-SIG-044, R-SIG-054).
 - The service index is rendered by `nuget.ServiceIndex` from the repository's base URL, key and class
-  alone. The MVP resources of the table are listed from the skeleton on, although the operations behind
-  them are written by later work packages and answer 501 `nuget_not_implemented` until then
-  (Q-NUGET-32).
+  alone. The MVP resources of the table are listed and served; the routes of an operation that is not built (autocomplete and the
+  symbol server, both P1) answer 501 `nuget_not_implemented` (Q-NUGET-32).
 
 HTTP conventions for every NuGet endpoint:
 
@@ -519,7 +521,7 @@ cache fills. A raw deploy is not an ingestion path of NuGet (Q-NUGET-13). The Nu
   package signatures and lock-file hashes would fail on the client
   ([implementation guide](https://learn.microsoft.com/en-us/nuget/api/implementation-guide)). A
   `.signature.p7s` entry is kept; reading and verifying it, and showing the author's signature and nuget.org's countersignature, is
-  specified in [signatures.md](../signatures.md) R-SIG-029 (not built; until then it is not verified, H-36).
+  specified in [signatures.md](../signatures.md) R-SIG-029 and built.
 - Metadata is complete when the ingestion request returns: a client that pushes and immediately
   restores or searches sees the new version, on any replica and whether or not Valkey is
   available (R-ARCH-012 in [architecture.md](../architecture.md), R-NUGET-030). Every metadata

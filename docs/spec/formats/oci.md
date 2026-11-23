@@ -1,7 +1,8 @@
 # OCI and Docker registry
 
-Status: specification — not implemented (phase T-16, FULL.md block B F4): local, remote (modes `pullThrough` and `mirror`) and
-virtual repositories for container images and other OCI content, Docker CLI and Podman as tested clients
+Status: built, except R-OCI-038 (the upstream catalogue and the delivery rules of a remote, in work); phase T-16, FULL.md block B F4:
+local, remote (modes `pullThrough` and `mirror`) and virtual repositories for container images and other OCI content, Docker CLI and
+Podman as tested clients; what stays is in [Deferred](#deferred) and in [What this does not cover](#what-this-does-not-cover)
 
 This page specifies how Quader serves container images: the OCI distribution API under `/v2/` for local, remote and virtual
 repositories of the format `oci`, which serves Docker image manifests and OCI manifests alike; the registry's token service and
@@ -220,7 +221,7 @@ The registry uses the token flow of the Docker registry token authentication spe
 - **Realm.** The realm is built from the response base URL of the endpoint the request arrived on (R-EP-003), so it is
   reachable under every host the endpoint serves; on a bound host it is that host's own `/v2/_token` (R-EP-007). Through a Bastion it
   is the Bastion's `/v2/_token`, which forwards the token request to this token service ([bastion.md](../bastion.md#r-bas-051--the-registry-root-at-a-bastion)
-  R-BAS-051; specified, not built).
+  R-BAS-051).
 - **Kubernetes** pulls with an image pull secret whose password is a Quader token (PKG-DOCKER-015); the kubelet's container
   runtime follows the same flow.
 
@@ -420,7 +421,7 @@ ALTER TABLE remote_cache_entries ADD COLUMN media_type text CHECK (length(media_
   entries and own no row; the package screens list the tags of a remote from the entries (R-OCI-036).
 - Layer deduplication across names and repositories is the blob store's: a blob item references the one object of its
   SHA-256 (R-STOR-005).
-- **The column `attachment`** (stage 3 of the signatures, specified, not built: [signatures.md](../signatures.md) R-SIG-063,
+- **The column `attachment`** (stage 3 of the signatures, built: [signatures.md](../signatures.md) R-SIG-063,
   [Q-SIG-82](../signatures.md#q-sig-82--oci-the-gate-is-on-manifests-an-index-covers-its-children-and-an-attachment-is-known-by-its-content)):
   `oci_manifests.attachment boolean NOT NULL DEFAULT false`, set by the hook that records a manifest when its content is a signature, an
   attestation or an SBOM by R-SIG-023's rules and no layer has an image layer's media type, or for an index whose every descriptor carries
@@ -479,7 +480,7 @@ Priority: **P1** · Covers: PKG-DOCKER-017, PKG-OCI-007
 - A tag is resolved at request time; a client that pulls by digest (Kubernetes does, PKG-DOCKER-015) gets the manifest as long
   as it is stored, whether a tag still points at it or not (untagged manifests stay, R-OCI-018).
 - Read-your-writes (R-ARCH-012): a push answered `201` on one replica is served by the next pull on any replica.
-- **A repository's signature gate** (specified, not built: [signatures.md](../signatures.md) R-SIG-063, R-SIG-064) judges every `GET` and
+- **A repository's signature gate** (built: [signatures.md](../signatures.md) R-SIG-063, R-SIG-064) judges every `GET` and
   `HEAD` of a manifest by tag and by digest, in every class, where the image block of the vulnerability scanning is asked: a manifest that
   is no attachment passes on its own verified signature or on that of an index of the name that lists it, and is refused `403 DENIED` with
   the gate's text otherwise, or answered `503 UNAVAILABLE` with `Retry-After` while its signatures are being checked. Blobs are not judged.
@@ -501,7 +502,7 @@ Priority: **P1** · Covers: PKG-DOCKER-017, PKG-OCI-006
   ([storage.md](../storage.md) R-STOR-014), a `GET` of a blob that meets the conditions of R-STOR-070 is answered `307` to a link of
   the object store: the route `oci.blob.get` declares that the clients check the digest in its path (R-STOR-071), and the links' host is
   no host of Quader nor below one, so the image clients written in Go do not carry their `Authorization` to it (R-STOR-072). A `HEAD`
-  and a manifest are always answered by Quader. Specified, not built (H-601: a blob is streamed).
+  and a manifest are always answered by Quader.
 - Download integrity (R-STOR-013) applies: a blob whose stored bytes do not match their SHA-256 ends the response.
 
 Acceptance criteria:
@@ -702,15 +703,17 @@ Priority: **P1** · Covers: PKG-OCI-009, PKG-OCI-010, PKG-OCI-011
   inserts its own row.
 - The referrers tag schema (`sha256-<hex>` tags) is not maintained by Quader: the API exists from the start, so clients never
   fall back to it. A client that pushes such a tag stores it, and it is listed and served like every tag. **Superseded in part by
-  [signatures.md](../signatures.md) R-SIG-024 (specified, not built):** that tag and cosign's tags `sha256-<hex>.sig`, `.att` and
-  `.sbom` are attachment tags of the digest they name: on the wire unchanged, without a version row (built: a push of such a tag
-  writes no version, [hooks.go](../../../internal/formats/oci/hooks.go)), shown at their image and removed with it (R-SIG-025, not built;
+  [signatures.md](../signatures.md) R-SIG-024 (built):** that tag and cosign's tags `sha256-<hex>.sig`, `.att` and
+  `.sbom` are attachment tags of the digest they name: on the wire unchanged, without a version row (a push of such a tag
+  writes no version, [hooks.go](../../../internal/formats/oci/hooks.go)), shown at their image and removed with it (R-SIG-025, built for a
+  delete and an eviction; the trash, retention and copy do not exist yet;
   [Q-SIG-32](../signatures.md#q-sig-32--an-attachment-tag-is-recognised-by-its-name-and-gets-no-version)).
-- **Quader's own referrer** (stage 2, [signatures.md](../signatures.md) R-SIG-054, specified, not built): while the installation has a
-  signing identity, Quader stores a receipt attestation of every top-level manifest as a referrer of it (a Sigstore bundle, the form cosign
-  writes), listed here like any referrer; a remote appends Quader's referrers of the digest to the upstream's answer. It is not written for
-  a digest that a `sha256-<hex>.sig` or `.att` tag names, nor in a remote whose upstream has no referrers API, and it is removed when such a
-  tag arrives, because cosign stops reading those tags once a bundle stands among the referrers
+- **Quader's own referrer** (stage 2, [signatures.md](../signatures.md) R-SIG-054, built): while the installation has a
+  signing identity, Quader stores a receipt attestation of every top-level manifest of a local repository as a referrer of it (a Sigstore
+  bundle, the form cosign writes), listed here like any referrer; a remote's and a virtual's images are attested through the API alone
+  ([Q-SIG-183](../signatures.md#q-sig-183--the-referrer-stands-in-a-local-repository-only-a-remotes-and-a-virtuals-images-are-attested-through-the-api)).
+  It is not written for a digest that a `sha256-<hex>.sig` or `.att` tag names, and it is removed when such a tag arrives, because cosign
+  stops reading those tags once a bundle stands among the referrers
   ([Q-SIG-66](../signatures.md#q-sig-66--quaders-referrer-never-stands-where-cosign-would-stop-reading-an-older-signature)).
 
 Acceptance criteria:
@@ -946,9 +949,10 @@ Priority: **P1** · Covers: PKG-DOCKER-022, PKG-OCI-009
   1,000 descriptors as the local class's page is and filtered for the caller (Q-OCI-123);
   an upstream 404 is answered 404, so that the client falls back to the tag schema through the same remote (Q-OCI-15), and so is an answer that
   cannot be had (offline, circuit open, a caller who may not fill, or an upstream that was asked and failed, [Q-OCI-204](#q-oci-204--the-referrers-of-a-remote-whose-upstream-was-asked-and-failed-are-404)): an empty index would say that nothing refers to the digest (Q-OCI-128). The
-  manifests a client then fetches by digest are cached like every manifest. Quader's own receipt referrers of the digest
-  ([signatures.md](../signatures.md) R-SIG-054, specified, not built) are appended to an upstream's answer that is an index; a 404 stays
-  a 404, so that no answer of Quader's own hides the upstream's tag schema.
+  manifests a client then fetches by digest are cached like every manifest. Quader writes no receipt referrer in a remote and appends
+  none to an upstream's answer ([signatures.md](../signatures.md) R-SIG-054,
+  [Q-SIG-183](../signatures.md#q-sig-183--the-referrer-stands-in-a-local-repository-only-a-remotes-and-a-virtuals-images-are-attested-through-the-api)):
+  a remote's image is attested through the API, so no answer of Quader's own hides the upstream's tag schema.
 
 Acceptance criteria:
 
@@ -1103,7 +1107,7 @@ Priority: **P1** · Covers: PKG-DOCKER-005, PKG-DOCKER-008
 - The format declares `/v2/` as its bound-host prefix; the core's dispatcher fixes the repository from the binding and runs
   authorization and exposure on it exactly as for an unbound address. A Bastion whose base URL is a bound host serves the mirror too: the
   handshake names the bound repository ([bastion.md](../bastion.md#r-bas-057--format-facts-at-the-bastion-the-handshakes-format-table-and-bound-hosts)
-  R-BAS-057; specified, not built).
+  R-BAS-057).
 - A binding to a repository that does not exist or is not of the format behaves as no binding (R-EP-006): the dispatcher reads
   it per request, through the repository reader, in one function (`BoundRepository`) that the match of `/v2/`, the token
   service's scope grammar and the catalog all call, so the address of a request, the scopes of its token and the names of its
@@ -1660,9 +1664,9 @@ Acceptance criteria:
 | PKG-OCI-014 (build caches), PKG-OCI-015 | P1 | BuildKit registry caches as a tested client. |
 | PKG-OCI-016, PKG-OCI-017 | P1 | wasm-to-oci and ORAS as tested clients; the registry side is content-agnostic already. |
 | PKG-OCI-018 | P1 | Helm charts in OCI repositories (F5). |
-| Cosign beyond referrers | P1 | Verification and display of Notation, Sigstore and the older cosign layout are specified as stage 1 of [signatures.md](../signatures.md) (R-SIG-023 to R-SIG-027); a policy that refuses is stage 3. |
+| Cosign beyond referrers | P1 | Verification and display of Notation, Sigstore and the older cosign layout are stage 1 of [signatures.md](../signatures.md) (R-SIG-023 to R-SIG-027), built; a policy that refuses is stage 3, built too. |
 | OCI on endpoints with exposure rules | P1 | The format has no exposure adapter yet, so an endpoint with `exposure: rules` does not serve it (R-EP-018, Q-OCI-23). |
-| OCI through the Bastion | — | *Superseded on 2026-11-22:* a Bastion serves the registry root and its token flow ([bastion.md](../bastion.md#r-bas-051--the-registry-root-at-a-bastion) R-BAS-051 to R-BAS-054, MVP; specified, not built). |
+| OCI through the Bastion | — | *Superseded on 2026-11-22:* a Bastion serves the registry root and its token flow ([bastion.md](../bastion.md#r-bas-051--the-registry-root-at-a-bastion) R-BAS-051 to R-BAS-054, MVP; built). |
 
 ## Security notes
 
@@ -2479,7 +2483,7 @@ revisit it when a customer endpoint needs images.
 liefern wie die Hauptinstanz"). A Bastion connects to the default endpoint, which serves everything a caller may read (Q-BAS-4), so the
 reason above, the exposure rules of tags, never applied to it. A Bastion serves `/v2/` at its own host root, its token flow through the
 main installation's token service ([bastion.md](../bastion.md#r-bas-051--the-registry-root-at-a-bastion) R-BAS-051 to R-BAS-054,
-Q-BAS-165 to Q-BAS-168; specified, not built). The statement about exposure rules stands.
+Q-BAS-165 to Q-BAS-168; built). The statement about exposure rules stands.
 
 **Applied in the spec:** [Deferred](#deferred).
 

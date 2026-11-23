@@ -1,6 +1,9 @@
 # npm registry
 
-Status: specification — local repositories partly implemented (routes, classification, error shape, publish, the data port; the work packages of documents, dist-tags, unpublish and identity, and the remote and virtual classes, are not built)
+Status: built, except R-NPM-018 (deprecate), R-NPM-020 and R-NPM-021 (web login, legacy login and logout), R-NPM-022 (trusted
+publishing), R-NPM-034 (the external dependency rewrite), R-NPM-035 (the recalculation of npm metadata), R-NPM-036 (a deploy of a
+tarball without the npm client), R-NPM-037 (search), R-NPM-039 (the build-tool lookup) and R-NPM-049 (the upstream catalogue and the
+delivery rules of a remote, in work)
 
 This page specifies how Quader speaks the npm registry protocol for local, remote and virtual
 npm repositories: the endpoints below `/api/npm/<projectKey>/<repoKey>/`, how the npm format plug-in classifies
@@ -1570,7 +1573,7 @@ Priority: **MVP** · Covers: PKG-NPM-038
   every version of a local repository carries Quader's `dist.signatures` and the local keys endpoint lists Quader's keys; a remote's and a
   virtual's versions keep their upstream's and their winning member's signatures. Quader's receipt attestation of a tarball is served by
   the management API, never in `dist.attestations` (R-SIG-054).
-- **A repository's signature gate** (stage 3, specified, not built: [signatures.md](../signatures.md) R-SIG-061 to R-SIG-068) passes a
+- **A repository's signature gate** (stage 3, built: [signatures.md](../signatures.md) R-SIG-061 to R-SIG-068) passes a
   tarball on its provenance, never on the registry's signature alone, which npmjs puts on every package: in a gated remote of npmjs only
   versions published with a provenance pass. The provenance bundle of a local version passes as a signature file. The package document
   keeps listing the versions the gate refuses, as for the vulnerability block (Q-SIG-89), and a refused tarball answers `E403` with the
@@ -2139,8 +2142,7 @@ URL>"` in `.yarnrc.yml`. The registry URL is the one of the selected repository,
 repository, which forwards the publish to its deployment target; the credential line of the configure
 snippet is keyed to that URL, so no second credential is needed (Q-API-180). The GitLab CI snippets
 below are not templates. While the installation has a signing identity, the tab `verify` holds `npm audit signatures` for the npm
-client and, for every client, the check of a tarball's receipt attestation with cosign ([signatures.md](../signatures.md) R-SIG-055,
-specified, not built).
+client and, for every client, the check of a tarball's receipt attestation with cosign ([signatures.md](../signatures.md) R-SIG-055).
 
 <details>
 <summary>Snippets per client</summary>

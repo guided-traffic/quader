@@ -128,7 +128,7 @@ Signed-By: /etc/apt/keyrings/quader-web-apt.asc
 
 - Every repository of every project is reached on the same host and port; no host-root binding is needed or offered for the
   format in this phase. A Bastion serves the same addresses on its own host ([bastion.md](../bastion.md#r-bas-055--debian-through-a-bastion)
-  R-BAS-055; specified, not built).
+  R-BAS-055).
 - Raw file access (`/files/<projectKey>/<repoKey>/<path>`, INV-6) reads package files and the generated index files of a local
   repository (R-DEB-003). A raw deploy into a Debian repository answers 409, as for every format that is not served at
   `/files/` ([architecture.md](../architecture.md) Q-ARCH-223); a raw delete of a package file runs R-DEB-013, of a generated
@@ -960,7 +960,7 @@ Priority: **P2** · Covers: PKG-DEB-021
   stronger (Q-DEB-35); signatures by other keys are ignored while one verifies. A key the operator left in the set after it
   expired can therefore not sign a backdated release. The verifying key's fingerprint is recorded with the release (R-DEB-023).
 - **No signature gate.** A repository's gate "only artifacts with a verified signature" (stage 3 of [signatures.md](../signatures.md),
-  R-SIG-061, specified, not built) is not offered for Debian: apt checks the index's signature and no package's, so no `.deb` carries a
+  R-SIG-061) is not offered for Debian: apt checks the index's signature and no package's, so no `.deb` carries a
   publisher's signature that could pass; `deb.upstreamKeys` stays the remote's condition on its upstream's index
   ([Q-SIG-80](../signatures.md#q-sig-80--debian-the-gate-is-not-offered)).
 - **A change of the keys re-verifies** (Q-DEB-32, Q-DEB-42). An update that removes fingerprints clears `verified_by` of every
@@ -1836,7 +1836,7 @@ Acceptance criteria:
 | Signing keys in an external key service | P2 | A key management service or an HSM that signs without handing out the key (Q-DEB-9). |
 | Debian vulnerability matching | P2 | OSV's Debian data is keyed by source package and release; it needs a mapping of its own (Q-DEB-26). |
 | Copy and move of Debian packages | P1 | With R-STOR-019: the coordinates travel with the file. |
-| Debian on endpoints with exposure rules, in nested virtual repositories | P2 | Q-DEB-26; nested virtual repositories with R-REPO-018. Through the Bastion: *superseded on 2026-11-22*, [bastion.md](../bastion.md#r-bas-055--debian-through-a-bastion) R-BAS-055 (MVP; specified, not built). |
+| Debian on endpoints with exposure rules, in nested virtual repositories | P2 | Q-DEB-26; nested virtual repositories with R-REPO-018. Through the Bastion: *superseded on 2026-11-22*, [bastion.md](../bastion.md#r-bas-055--debian-through-a-bastion) R-BAS-055 (MVP; built). |
 
 ## Security notes
 
@@ -2346,7 +2346,7 @@ endpoint or an audit needs Debian content.
 **Superseded in part on 2026-11-22.** The owner decided that a Bastion serves every format as the main installation does ("Er soll alles
 liefern wie die Hauptinstanz"). A Bastion connects to the default endpoint and never narrows a signed index, so the problem of Q-DEB-19 per
 endpoint does not arise there: the signed indexes pass unchanged, and by-hash keeps an `apt update` consistent
-([bastion.md](../bastion.md#r-bas-055--debian-through-a-bastion) R-BAS-055, Q-BAS-174, Q-BAS-175; specified, not built). The statements
+([bastion.md](../bastion.md#r-bas-055--debian-through-a-bastion) R-BAS-055, Q-BAS-174, Q-BAS-175; built). The statements
 about exposure rules and vulnerability matching stand.
 
 **Applied in the spec:** [Deferred](#deferred); [Changes to other pages](#changes-to-other-pages) (endpoints.md,

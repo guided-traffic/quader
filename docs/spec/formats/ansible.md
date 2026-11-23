@@ -1,10 +1,15 @@
 # Ansible Galaxy repositories
 
-Status: specification, building (block B, unit F0 of [FULL.md](../../projektplan/FULL.md)). Built: the format skeleton and the local class (publish, import
-tasks, the three read operations, tombstones, the reindex, the package screens). Not built yet: the remote class, the virtual class and
-the client surface. It is the first registry after the beta because it replaces a Galaxy system the owner runs today.
-The documentation of a collection version (the Documentation and Contents tabs, R-ANS-033 to R-ANS-046, owner task T-19) is built in the backend (the generator, the rows, the route
-`docs-blob/` for the three classes, the three operations, the fetch job and the counting stub); the screens and the end-to-end rows are the work of builder B2.
+Status: built (block B, unit F0 of [FULL.md](../../projektplan/FULL.md)), except R-ANS-047 (the upstream catalogue and the delivery
+rules of a remote, in work) and the restore of a version from the trash
+([H-852](#h-852--the-restore-of-a-version-from-the-trash-is-not-served)): the format skeleton, the local class (publish, import tasks, the
+three read operations, tombstones, the reindex, the package screens), the remote class with the mirror and roles by translation, the
+virtual class, the client surface, the import of an existing Galaxy (R-ANS-027) and the hub token exchange (R-ANS-019, never run against
+the service, [H-842](#h-842--the-hub-token-exchange-is-specified-from-documentation-and-never-run-against-the-service)). It is the first
+registry after the beta because it replaces a Galaxy system the owner runs today.
+The documentation of a collection version (the Documentation and Contents tabs, R-ANS-033 to R-ANS-046, owner task T-19) is built: the
+generator, the rows, the route `docs-blob/` for the three classes, the three operations, the fetch job, the counting stub, the screens and
+the end-to-end rows.
 
 This page specifies how Quader serves Ansible content to `ansible-galaxy`: the format `ansible` for local, remote and virtual
 repositories; the subset of the Galaxy API that `ansible-galaxy collection install`, `collection publish`, `role install` and a
@@ -563,7 +568,7 @@ Priority: **P1** · Covers: PKG-ANSIBLE-005
   R-SIG-031:** a local version takes detached signatures through the management API (`POST
   /api/v1/projects/{projectKey}/repositories/{repoKey}/ansible/collections/{collection}/versions/{version}/signatures`, built), served in
   `signatures[]` with the key's fingerprint; Quader's verification and display of a remote's signatures is stage 1's package 2. A
-  repository's signature gate (stage 3, R-SIG-061 to R-SIG-068, specified, not built) serves a collection archive only on a publisher's
+  repository's signature gate (stage 3, R-SIG-061 to R-SIG-068, built) serves a collection archive only on a publisher's
   signature an accepted anchor knows; an entry of a signing service is a registry's and does not pass alone, and a role archive, which
   carries no signature, is refused.
 - **Vulnerabilities.** The vulnerability pipeline (vulnerability-scanning.md) matches stored versions to OSV advisories by ecosystem
@@ -1713,7 +1718,7 @@ Every entry of the catalog page, with what is built, what stays and what is not 
 | PKG-ANSIBLE-007 Legacy roles through remote repositories | Built by translation for the public Galaxy's roles; Git and URL roles, role publish and role import are not offered | R-ANS-014, R-ANS-020, Q-ANS-6 |
 | PKG-ANSIBLE-008 No browsing of uncached content | Built | R-ANS-017 |
 | PKG-ANSIBLE-009 Remote repositories for Galaxy | Built, with `pullThrough` and `mirror` | R-ANS-016 to R-ANS-018, R-ANS-021 |
-| PKG-ANSIBLE-010 Proxy the Red Hat Automation Hub | Specified; built last; the service was never reached | R-ANS-019, H-842 |
+| PKG-ANSIBLE-010 Proxy the Red Hat Automation Hub | Built last; the service was never reached | R-ANS-019, H-842 |
 | PKG-ANSIBLE-011 Virtual repositories | Built | R-ANS-022, R-ANS-023 |
 | PKG-ANSIBLE-012 `ansible.cfg` configuration | Built as setup snippets; the token is an environment variable, not an `ansible.cfg` line | R-ANS-025, R-ANS-006 |
 | PKG-ANSIBLE-013 Credentials for role installation | Built as the netrc snippet and Basic on the role routes | R-ANS-015 |
@@ -1783,7 +1788,7 @@ Acceptance criteria:
 | Deletion by the Galaxy API (`DELETE` of a collection or a version), namespaces (`v3/namespaces/`), collection deprecation, `move`/`copy` between repositories of the Galaxy API | P2 | `ansible-galaxy` does not call them; deletion is the management API's |
 | Signing: Quader-held keys, uploaded signatures, server-side signature verification of a remote's signatures | P2 | H-839; the protocol is ready (`signatures[]`) |
 | Vulnerability evaluation of collections | P2 | H-841; needs an advisory source |
-| Exposure rules for the format | P2 | Q-ANS-25; the Bastion: *superseded on 2026-11-22*, [bastion.md](../bastion.md#r-bas-050--every-formats-read-paths-at-the-bastions-host) R-BAS-050 (MVP; specified, not built) |
+| Exposure rules for the format | P2 | Q-ANS-25; the Bastion: *superseded on 2026-11-22*, [bastion.md](../bastion.md#r-bas-050--every-formats-read-paths-at-the-bastions-host) R-BAS-050 (MVP; built) |
 | Git and URL roles through a proxy; role publish | P2 | Not offered by design (R-ANS-014) |
 | Automation Hub certified content beyond the token exchange (per-repository `content/<repo>/` paths, approval workflows) | P2 | Only the hub as an upstream is specified |
 | Search over collections (`v3/plugin/…/search`, `ansible-galaxy collection list --remote`) | P2 | The client's `search` is for roles and uses `v1/search/roles`, not offered |
@@ -2049,7 +2054,7 @@ version accepts them through the management API ([signatures.md](../signatures.m
 [Q-SIG-37](../signatures.md#q-sig-37--ansible-signatures-of-a-local-version-arrive-through-the-management-api)); it still signs
 nothing. Stage 2 keeps that for the version document: no registry signature of a local collection
 ([Q-SIG-68](../signatures.md#q-sig-68--ansible-galaxy-quader-does-not-sign-local-collections-in-stage-2)); an archive's receipt
-attestation is served by the management API (R-SIG-054, specified, not built).
+attestation is served by the management API (R-SIG-054, built).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -2228,7 +2233,7 @@ Status: **Decided by the development agent** — selected from the options below
 **Superseded in part on 2026-11-22.** The owner decided that a Bastion serves every format as the main installation does ("Er soll alles
 liefern wie die Hauptinstanz"). The format's routes are served through a Bastion by their kinds like npm's, and `ansible.version.deleted`
 is a `content` entry of the feed ([bastion.md](../bastion.md#r-bas-050--every-formats-read-paths-at-the-bastions-host) R-BAS-050,
-Q-BAS-175; specified, not built). The statements about exposure rules and vulnerability matching stand.
+Q-BAS-175; built). The statements about exposure rules and vulnerability matching stand.
 
 **Applied in the spec:** Deferred; endpoints.md.
 
