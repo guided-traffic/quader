@@ -2366,7 +2366,19 @@ runs are in `git log`; this section holds the current state.
   an offer can still be the bytes; a fallback forward is counted again (H-1342); package 4 turns the
   pass over encrypted copies into a second pass and writes the trace before the marking is noted;
   package 5's screen of the Bastions needs the test link for encrypted connections too, which the
-  storage settings page offers for plain ones only.
+  storage settings page offers for plain ones only. **The landing's gates ran from 05:08 to 05:37,
+  twenty-eight of them, each exit 0** (the lint in six minutes; the ten integration areas in eighteen,
+  none of them waiting for a stack). The run of the push before it had its four integration shards and
+  its end-to-end legs green by then and its layout checks still running; the run before that had lost
+  its layout checks to a push, so this push waited for them. **That run ended at 05:47 with every job
+  green** (the four integration shards, the layout checks and its four end-to-end legs among them; no job
+  was run again). **Landed on 2026-11-23 at 05:48,** one commit of the type `feat`. With it an
+  administrator can switch on the handover per registration through the API, and the main installation
+  then answers a Bastion's offer for a large file of a plain connection with a link; **no Bastion offers
+  yet (package 3), so nothing changes on an installation by this release,** and the interface's version
+  stays the sixth. Its builder's worktree and branch are removed. His UI's backend is started again on
+  this state (ready at 05:48). Released at 06:00; the plan's commits of the minutes between waited for
+  it.
 - **The repair of the four tests reported at 03:55** (one commit of the type `test`; its builder worked from
   03:16; every gate exit 0, the two integration areas among them). None of the four causes was the
   product's, and each repaired test fails when the product's behaviour is taken away. (1) The key
@@ -2587,6 +2599,41 @@ runs are in `git log`; this section holds the current state.
   hand over, so that it does not wait for package 2; the joined integration case comes when both are on
   `main`. Builders with a test load: the kit move's package 1, the handover's packages 2 and 3, the
   encryption's package 4, and the landing's gates.
+  **Reported at 05:52** (one commit of the type `feat`; its builder worked from 04:45; every gate exit 0, the
+  lint over the whole repository and the Bastion's five integration areas among them). **Built:** the
+  offer on every forwarded `GET` of a miss while the handshake says the registration's handover is on
+  (never on a `HEAD`, a probe, a core route, a follower's conditional request, a continuation or the
+  forward that replaces a failed handover), its size the smaller of the largest object and the spool's
+  free room; the client that takes a handover only when its forward offered; a link client of its own
+  (trust from the main installation's CA file read again without a restart, no redirect, no cookie, no
+  credential, no header of Quader's, links to the Bastion's or the main installation's hosts refused); the
+  plain reader with the digest at the end and the encrypted reader that checks the stored size, with the
+  first 64 KiB verified before the caller gets a byte and the handed key destroyed at every end; the
+  fallback before the first byte (one miss, a cooldown of 60 s only when the network or the store
+  failed), the continuation by range after it, the mark of a key whose digest failed; four metrics, the
+  request log's field and the alert `QuaderBastionHandoverFailing`. Decisions Q-BAS-290 to 292 (one
+  outcome per handover by the path it took; a blob of one segment is verified whole before its first
+  byte; the replacing forward counts no second miss and a core route carries no offer); gap H-1445 (the
+  store's answers to direct reads are counted as outcomes only, a fallback's cause is in the log line).
+  Seventeen rules were each taken out once and caught by a named test; the check of the continuation's
+  answer was not caught at first and got a case. Its cost: the unit job about 2.6 s (one test binary
+  more), the shard with `bastion` about 0.4 s, the chart's tests under 0.1 s. **For an operator, to go into
+  the manual with package 5: a connection's public address needs a host name that is not the main
+  installation's,** since the Bastion compares hosts by name whatever the port and refuses a link to the
+  main installation's host, so every handover would fall back; and the Bastion's trusted CA vouches for
+  the object store too. **Not verified by it:** any provider's store; the encrypted read against a real
+  encrypted connection (package 4's case). **Moved onto `main` by the development agent at 05:55** over the
+  second package: twelve conflicts in three documents, each merged to what holds with both sides built
+  (the status paragraphs of the specification, the security page and the build plan; both sections of
+  what a package left; the test table with both packages' measured rows), and two stale sentences beside
+  them corrected; the build, the vet, the links and the unit packages of both sides pass on the joined
+  tree. **Not landed yet: the two sides were built apart, each against a double of the other, and the
+  build plan lands package 3 with the integration case that joins them. Its builder is sent back at
+  05:56** to build that case on the joined tree (the real main installation with the switch on, the real
+  Bastion role, one file of 64 KiB read from the stack's store), to repair at its cause whatever the join
+  shows on either side, to take out of the two halves what the joined case shows as well, and to make
+  once the measurement the build plan names (a blob of about 300 MiB with the handover on and off, against
+  the stack's store only). The landing's gates run over both commits when it reports.
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
@@ -5389,12 +5436,54 @@ installation alone takes most of the cost, since the decision of 02:29 stood on 
 sort the areas' remaining tests by whether they can share an installation; and to order its packages
 against the kit move's second to ninth, which delete tests from the same files. A planner does not count
 against the four builders.
+**The plan came back at 05:52** (kept in the scratchpad as `wp10-plan-installation-cost.md`; its planner
+worked from 05:15 and ran the area `ansiblelocal` twice on the second stack, about 2 min 45 s each without
+a wait, once plain and once with the pipeline's coverage flags, with a timing probe added through an
+overlay from the scratchpad, nothing changed in the repository). **Its measurement overturns the reason
+of the decision of 02:29: the cost of a test's own installation is not the replica's start.** One
+installation with one replica takes about 1.83 s on this machine, of which 0.60 s is the harness building
+a validator of the API's document for every stack (the same 1.2 MB parsed again each time), 0.57 to 0.69 s
+the migration's 109 steps, 0.24 to 0.30 s the replica's start, 0.22 s its stop, of which 0.199 s is the
+harness's fixed wait for the drain, and about 0.1 s the rest; creating the database takes 12 ms, the
+wait for readiness nothing, and a clone of a migrated template 27 to 66 ms against 570 to 840 ms of
+migration. In the pipeline an installation costs about 2.5 s, computed from the least times of three
+kinds of test in the run of 05:01, not measured on a runner. **Three changes in two packages of test code
+take about 1.95 s of those 2.5 s from about a thousand tests of every area, not of the format areas
+alone:** the validator parsed once per test binary, a migrated template database that every stack clones
+(with the installation's three identity rows drawn again, or the tests share Valkey's state), and the
+drain's wait set to nothing in the harness. Computed for the pipeline: about 34 runner minutes a push,
+7 to 11.5 minutes a shard (shards of 21 to 25 minutes where they take 32 to 35); with this machine's
+seconds in place of the pipeline's, at least 24 minutes. One installation per area, done after that,
+saves about 0.4 s a merged test, about two minutes a push for about 150 rewritten files; its worth is in
+a new format, about 25 s each, the difference between eighteen and twenty-one further formats before a
+shard reaches its cut. Its sorting of the 361 format tests that stay after the kit move, from a search of
+each test's body and so an estimate: 278 can share their area's installation as they are, 22 more once a
+count over the whole installation is narrowed to the case's repository, 49 share a few variants, 12 need
+their own; about 38 installations in place of 361. Seen beside: a run from the main checkout publishes
+the locally built UI into every installation, 1.7 s each, which the pipeline and a worktree do not pay.
+**Decided by the development agent at 05:57, in place of the decision of 02:29:** (1) the three changes
+first, as one package of three commits, at the next free builder's place and before the handover's
+surface, since they also shorten every landing's wait for the shards; with them the placeholder UI for
+the harness's replicas. (2) One installation per area becomes the rule for a new format's areas, through
+a case runner with the isolation's rules; an existing area is restructured only if the shards after (1)
+need the room, and then only from a `main` that holds every kit move package of that area. (3) The kit
+move's second to ninth packages stay, since each takes tests out of what a new format must repeat, but
+they wait for (1): a deleted test then saves about half a second where the kit move's plan counted two,
+and their order is set again by what is left. **The check after (1) lands:** the least time of a
+data-port test in the pipeline falls from about 1.9 s to about 0.7 s; if it does not, the split computed
+for the pipeline is wrong. Not verified by the planner: the split on a runner, the count of about a
+thousand tests, the sorting behind helpers, a clone's time under the pipeline's load.
 **The timer's check at 05:14:** the release of the 05:01 push is out and the plan's commits went with it;
 the run of that push has no failed job (the four integration shards, the layout checks and four
 end-to-end legs run); the three builders (the handover's third package, the encryption's fourth and
 sixth) each changed files within the last quarter of an hour; the landing's gates of the handover's
 second package stand at seventeen of seventeen exit 0 before the lint and the integration areas. No
 builder is started beside the gates.
+**The timer's check at 05:44:** the run of the 05:01 push has every job green but its layout checks, which
+run; his installation runs that release; the handover's third package stands on a commit of its own with
+a clean tree, the encryption's fourth, sixth and seventh packages changed files within minutes, and the
+planner of the installation's cost has made its two area runs and writes. Nothing reported, nothing
+stuck, nothing collides.
 **Package 3 of the encryption, the store and the sessions, reported at 02:36** (one commit of the type `feat`
 on the stack of four; its builder worked from 23:10; every gate exit 0, seventeen integration areas, but the
 `proxy` area, whose test of the fetch slots met a migration's timeout at a load of 35 to 76 and passes alone
@@ -5447,13 +5536,28 @@ copy is not scrubbed, repaired or backed up (H-1410). The first instance's env f
 its lock at 04:54 and carries the new variables; its containers ran through. The scripts that stood
 provisionally in the main checkout's working tree were taken out and came back with the merge in the same
 second. The three builders' worktrees and branches are removed. His UI's backend is started again on this
-state (ready at 05:02). Released at 05:13; the plan's commits of the minutes between waited for it.
+state (ready at 05:02). Released at 05:13; the plan's commits of the minutes between waited for it. **His
+installation runs the release since 05:22** (read at 05:38: both releases ready, every pod on the new
+image without a restart, the migration's job succeeded; from outside the Bastion answers with its
+certificate checked). The interface's version did not change with this release.
 **In work since 05:03: package 6 of the encryption,** the offline tool (the objects of an encrypted
 connection read with an export of the keys and the key ring, without a database), the chart's acceptance
 of an encrypted connection with its refusals and the alert of an unknown key, what is left of the API, and
 every document an operator reads before switching encryption on. It lands after package 4, since the
 chart's acceptance makes an encrypted connection reachable and the jobs and the backup must handle one by
 then. Builders with a test load: the handover's packages 2 and 3, the encryption's packages 4 and 6.
+**In work since 05:38: package 7 of the encryption, the destruction of a retired connection's keys**
+(R-STOR-097 to R-STOR-103 and the journal's replay; the development agent's answer of 2026-11-22 to the
+question of what stays readable at a provider). It stands on the handover's second package as it lands;
+its migration is 00112. It is told: the order of the destroying transaction holds exactly and a dry run
+writes nothing; each holder, the backups' check, the retirement, the confirmation, the replicas'
+forgetting, the refusal to draw over a destroyed identifier, the replay's skip of a configured
+connection and the import of a destroyed row are each taken out once; the scrub's and the sweep's
+mapping of the new reason are the smallest edits, since package 4 rewrites those files; the readers of
+its rows in the offline tool and the API are package 6's; and what `VACUUM` leaves of a key on disk is
+read and, where the stack shows it, established once. Until package 4 lands, the backups' check refuses
+every installation that records a backup run. Builders with a test load: the handover's package 3, the
+encryption's packages 4, 6 and 7; the planner of the installation's cost with one or two area runs.
 **In work since 04:29, on its commit: package 4 of the encryption, the jobs, the backup and the restore:**
 the reconciliation's four cases with a new data key between two encrypted connections, the scrub and the
 sweep reading the format, the backup that keeps an encrypted copy as stored under its key's name with the
