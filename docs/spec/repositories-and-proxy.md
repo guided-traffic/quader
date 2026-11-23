@@ -9496,9 +9496,9 @@ what it does with every background work. Revisit if background downloads crowd o
 of their own.
 
 **Applied in the spec:** R-REPO-065. Code: [background_download.go](../../internal/formathost/background_download.go),
-[wire_background_download.go](../../internal/app/wire_background_download.go).
+[wire_remote_downloads.go](../../internal/app/wire_remote_downloads.go) (`wire_background_download.go` until the download queue).
 
-**Revised on 2026-11-23** by [remote-curation.md](remote-curation.md) Q-CUR-18 (specified, not built): the background download is a row of the repository's download queue,
+**Revised on 2026-11-23** by [remote-curation.md](remote-curation.md) Q-CUR-18 (built by the download queue, R4): the background download is a row of the repository's download queue,
 run by one attempt of the job `remote-download` on the queue `downloads`, the queue of its own that the rationale above foresaw; the row
 keeps its retries and is seen on the repository's tab **Downloads** instead of the Jobs tab.
 
@@ -9542,7 +9542,7 @@ growth of a repository as a whole.
 **Applied in the spec:** R-REPO-065. Code: `decide` in [probe.go](../../internal/formathost/probe.go), `RunBackgroundDownload` in
 [background_download.go](../../internal/formathost/background_download.go), `formats.MaxProbeFiles`.
 
-**Revised on 2026-11-23** by [remote-curation.md](remote-curation.md) Q-CUR-18 (specified, not built): the per-repository bound of queued or running downloads gives way to
+**Revised on 2026-11-23** by [remote-curation.md](remote-curation.md) Q-CUR-18 (built by the download queue, R4): the per-repository bound of queued or running downloads gives way to
 a bound of running rows (`proxy.downloads.per_repository`, 4) and of waiting rows (`proxy.downloads.max_waiting_per_repository`, 10,000);
 a probe beyond the running bound waits instead of being refused `queue_full`. The bounds of one download stay.
 

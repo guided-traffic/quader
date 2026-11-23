@@ -179,9 +179,9 @@ so for them the rule seldom changes anything; for a container image it does.
   have been limited ([Download limits](download-limits.md)). The client must be allowed to fill the repository's cache.
 - **What bounds it.** One background download per version at a time, at most as many of a repository at once as its upstream fetches
   (`remote.limits.maxConcurrentFetches`, 64), at most 1,000 files and the repository's largest artifact size in sum
-  (`remote.limits.maxArtifactBytes`, 10 GiB unless set). It runs as a job (**Administration**, **System**, **Jobs**, kind
-  `remote-background-download`), gives way to the downloads of clients, waits while the upstream is down or asks to slow down, and keeps
-  the repository's include and exclude patterns.
+  (`remote.limits.maxArtifactBytes`, 10 GiB unless set). It is a row of the repository's download queue, which runs at most four rows of
+  a repository at once and lets the rest wait; it gives way to the downloads of clients, waits while the upstream is down or asks to slow
+  down, retries a failure that a later attempt can overcome, and keeps the repository's include and exclude patterns.
 - **What you see.** The version is listed on the repository's page once its content is stored, with its size; **Last download** and the
   downloads stay those of clients, so a tag only asked about reads **Never**. Of a multi-platform image the size counts the platforms
   stored and is marked partial while the image has more.

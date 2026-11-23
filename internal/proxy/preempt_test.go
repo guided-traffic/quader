@@ -409,7 +409,7 @@ func TestBackgroundClassification(t *testing.T) {
 		t.Run("R-REPO-054 a background request's answer is a rate limit: "+name, func(t *testing.T) {
 			r := resp(tc.status, tc.body, tc.header...)
 			defer func() { _ = r.Body.Close() }()
-			res, ok := f.rateLimited(r)
+			res, ok, _ := f.rateLimited(r)
 			if !ok || res.err != nil || res.usable() {
 				t.Fatalf("ok %v, result %+v", ok, res)
 			}
@@ -442,7 +442,7 @@ func TestBackgroundClassification(t *testing.T) {
 	t.Run("R-REPO-054 a plain 503, a 500 and a 404 are no rate limit for a background request", func(t *testing.T) {
 		for _, s := range []int{500, 503, 502, 404, 401} {
 			r := resp(s, "")
-			_, ok := f.rateLimited(r)
+			_, ok, _ := f.rateLimited(r)
 			_ = r.Body.Close()
 			if ok {
 				t.Errorf("%d is a rate limit", s)

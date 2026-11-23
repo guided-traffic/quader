@@ -14,7 +14,8 @@ import (
 
 // A probe starts the download (repositories-and-proxy.md R-REPO-065, W-25): a client that asks a remote repository for the manifest of a
 // tag, or a HEAD of it, and fetches nothing else, makes the repository download the image of the platforms of oci.platforms in the
-// background, as a job of a worker, charged to the client (usage-and-limits.md R-LIM-037).
+// background, as a row of its download queue that a worker runs (remote-curation.md R-CUR-013), charged to the client (usage-and-limits.md
+// R-LIM-037).
 
 // The repositories of these tests, besides newEnv's: the stub's registry, the platforms linux/amd64 only.
 const (
@@ -188,13 +189,28 @@ func TestR_REPO_065_AProbeOfATagDownloadsTheImageOfTheListedPlatformsInTheBackgr
 		}
 	})
 
+	t.Run("R-CUR-013 the download is a row of origin probe, done with its counters", func(t *testing.T) {
+		testenv.WaitFor(t, "the probe's row done", 30*time.Second, func() bool {
+			return e.st.Number(`SELECT count(*) FROM remote_download d JOIN repositories r ON r.id = d.repo_id
+				WHERE r.key = $1 AND d.origin = 'probe' AND d.name = 'library/alpine' AND d.version = '3.20' AND d.state = 'done'
+				AND d.outcome = 'completed'`, rProbe) == 1
+		})
+		files := e.st.Number(`SELECT d.files FROM remote_download d JOIN repositories r ON r.id = d.repo_id
+			WHERE r.key = $1 AND d.origin = 'probe' AND d.version = '3.20'`, rProbe)
+		stored := e.st.Number(`SELECT d.stored + d.present FROM remote_download d JOIN repositories r ON r.id = d.repo_id
+			WHERE r.key = $1 AND d.origin = 'probe' AND d.version = '3.20'`, rProbe)
+		if files < int64(len(want)) || stored != files {
+			t.Errorf("the row counts %d files, %d stored or present; want at least %d, all of them", files, stored, len(want))
+		}
+	})
+
 	t.Run("a second probe of the stored image starts nothing", func(t *testing.T) {
-		jobs := e.st.Number(`SELECT count(*) FROM job WHERE kind = 'remote-background-download'`)
+		jobs := e.st.Number(`SELECT count(*) FROM remote_download WHERE origin = 'probe'`)
 		if a := e.get(rep, rProbe, "library/alpine/manifests/3.20"); a.Status != http.StatusOK {
 			t.Fatalf("the second probe: %d", a.Status)
 		}
 		time.Sleep(2 * time.Second)
-		if n := e.st.Number(`SELECT count(*) FROM job WHERE kind = 'remote-background-download'`); n != jobs {
+		if n := e.st.Number(`SELECT count(*) FROM remote_download WHERE origin = 'probe'`); n != jobs {
 			t.Errorf("%d jobs after the second probe, %d before", n, jobs)
 		}
 	})
@@ -236,7 +252,7 @@ func TestR_REPO_065_TheSwitchAndThePatternsStopABackgroundDownload(t *testing.T)
 		t.Fatalf("the excluded image answers %d, want 404", a.Status)
 	}
 	time.Sleep(3 * time.Second)
-	if n := e.st.Number(`SELECT count(*) FROM job WHERE kind = 'remote-background-download'`); n != 0 {
+	if n := e.st.Number(`SELECT count(*) FROM remote_download WHERE origin = 'probe'`); n != 0 {
 		t.Errorf("%d background downloads were queued", n)
 	}
 	for _, b := range blobsOf(amd) {
@@ -299,7 +315,7 @@ func TestR_LIM_037_TheUpstreamBudgetOfTheProbesCallerDecides(t *testing.T) {
 				t.Errorf("a blob was fetched for a caller without upstream budget: %s", b)
 			}
 		}
-		if n := e.st.Number(`SELECT count(*) FROM job WHERE kind = 'remote-background-download'`); n != 0 {
+		if n := e.st.Number(`SELECT count(*) FROM remote_download WHERE origin = 'probe'`); n != 0 {
 			t.Errorf("%d background downloads were queued", n)
 		}
 	})

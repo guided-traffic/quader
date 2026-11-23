@@ -174,6 +174,12 @@ type Options struct {
 	Mirror MirrorServices
 	// <<< M6b mirror
 
+	// >>> T-24 downloads
+	// RemoteDownloads holds the services of the download queue of a remote repository (remote_downloads_api.go); a nil queue answers
+	// their operations with 503.
+	RemoteDownloads RemoteDownloadsServices
+	// <<< T-24 downloads
+
 	// >>> M2 packages
 	// Packages are the services of the package operations (packages_api.go); a
 	// zero value answers them with 503.

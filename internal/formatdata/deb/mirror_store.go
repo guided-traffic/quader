@@ -27,7 +27,12 @@ func (s mirrorStore) scopeKeys(ctx context.Context, sc rows.MirrorScope) ([]stri
 		if err != nil {
 			return err
 		}
-		verified, err := qs.DebMirrorVerifiedDirs(ctx, q.DebMirrorVerifiedDirsParams{RepoID: sc.RepoID, Dirs: dirs})
+		var verified []string
+		if sc.AnyIndex {
+			verified, err = qs.RemoteDownloadDebDirs(ctx, sc.RepoID)
+		} else {
+			verified, err = qs.DebMirrorVerifiedDirs(ctx, q.DebMirrorVerifiedDirsParams{RepoID: sc.RepoID, Dirs: dirs})
+		}
 		if err != nil || len(verified) == 0 {
 			return err
 		}
@@ -39,7 +44,7 @@ func (s mirrorStore) scopeKeys(ctx context.Context, sc rows.MirrorScope) ([]stri
 			if rows.IsSources(ix.Path) && !sc.Sources {
 				continue
 			}
-			if rows.InScope(ix.Path, sc.Components, sc.Architectures) {
+			if (sc.AnyIndex && !rows.IsSources(ix.Path)) || rows.InScope(ix.Path, sc.Components, sc.Architectures) {
 				keys = append(keys, ix.Dir+"|"+ix.Path)
 			}
 		}

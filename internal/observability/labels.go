@@ -16,6 +16,8 @@ func allowedLabels() []string {
 		"operation", "kind", "result", "outcome", "task", "cache", "state", "status", "direction", "auth_method",
 		"query", "name", "reason", "mode", "family", "label", "source", "check", "action", "trigger", "via", "limit",
 		"area", "db_pool", "command", "mechanism", "limiter", "key_id", "ecosystem", "severity",
+		// What caused a row of a remote repository's download queue (remote-curation.md R-CUR-011, R-CUR-019): six values fixed in code.
+		"origin",
 		// A Bastion registration's name, bounded by bastions.max_registrations (bastion.md R-BAS-004, storage.md Q-STOR-430).
 		"bastion",
 	}

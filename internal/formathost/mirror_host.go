@@ -72,6 +72,7 @@ const (
 	fillMirror filler = iota
 	fillBackgroundDownload
 	fillImageDatabase
+	fillDownloadAhead
 )
 
 // who is the actor, the subject and the reason the fill transaction records for the work.
@@ -79,6 +80,8 @@ func (f filler) who() (audit.Actor, authz.Subject, string) {
 	switch f {
 	case fillBackgroundDownload:
 		return authz.BackgroundDownloadActor(), authz.BackgroundDownloadSubject(), authz.ReasonBackgroundDownload
+	case fillDownloadAhead:
+		return authz.BackgroundDownloadActor(), authz.BackgroundDownloadSubject(), authz.ReasonDownloadAhead
 	case fillImageDatabase:
 		return authz.ImageDatabaseActor(), authz.ImageDatabaseSubject(), authz.ReasonImageDatabase
 	}

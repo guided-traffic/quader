@@ -2833,6 +2833,252 @@ func (e ProjectRole) Valid() bool {
 	}
 }
 
+// Defines values for RemoteDownloadDelivery.
+const (
+	DownloadDeliveryBlocked    RemoteDownloadDelivery = "blocked"
+	DownloadDeliveryDelivered  RemoteDownloadDelivery = "delivered"
+	DownloadDeliveryNotAllowed RemoteDownloadDelivery = "notAllowed"
+)
+
+// Valid indicates whether the value is a known member of the RemoteDownloadDelivery enum.
+func (e RemoteDownloadDelivery) Valid() bool {
+	switch e {
+	case DownloadDeliveryBlocked:
+		return true
+	case DownloadDeliveryDelivered:
+		return true
+	case DownloadDeliveryNotAllowed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RemoteDownloadOrigin.
+const (
+	DownloadOriginAllow   RemoteDownloadOrigin = "allow"
+	DownloadOriginBulk    RemoteDownloadOrigin = "bulk"
+	DownloadOriginClient  RemoteDownloadOrigin = "client"
+	DownloadOriginPerson  RemoteDownloadOrigin = "person"
+	DownloadOriginProbe   RemoteDownloadOrigin = "probe"
+	DownloadOriginRequest RemoteDownloadOrigin = "request"
+)
+
+// Valid indicates whether the value is a known member of the RemoteDownloadOrigin enum.
+func (e RemoteDownloadOrigin) Valid() bool {
+	switch e {
+	case DownloadOriginAllow:
+		return true
+	case DownloadOriginBulk:
+		return true
+	case DownloadOriginClient:
+		return true
+	case DownloadOriginPerson:
+		return true
+	case DownloadOriginProbe:
+		return true
+	case DownloadOriginRequest:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RemoteDownloadState.
+const (
+	DownloadStateCancelled RemoteDownloadState = "cancelled"
+	DownloadStateDone      RemoteDownloadState = "done"
+	DownloadStateFailed    RemoteDownloadState = "failed"
+	DownloadStateRunning   RemoteDownloadState = "running"
+	DownloadStateWaiting   RemoteDownloadState = "waiting"
+)
+
+// Valid indicates whether the value is a known member of the RemoteDownloadState enum.
+func (e RemoteDownloadState) Valid() bool {
+	switch e {
+	case DownloadStateCancelled:
+		return true
+	case DownloadStateDone:
+		return true
+	case DownloadStateFailed:
+		return true
+	case DownloadStateRunning:
+		return true
+	case DownloadStateWaiting:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RemoteDownloadBulkLevel.
+const (
+	BulkLevelPackage RemoteDownloadBulkLevel = "package"
+	BulkLevelSection RemoteDownloadBulkLevel = "section"
+)
+
+// Valid indicates whether the value is a known member of the RemoteDownloadBulkLevel enum.
+func (e RemoteDownloadBulkLevel) Valid() bool {
+	switch e {
+	case BulkLevelPackage:
+		return true
+	case BulkLevelSection:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RemoteDownloadBulkState.
+const (
+	BulkStateBounded   RemoteDownloadBulkState = "bounded"
+	BulkStateCancelled RemoteDownloadBulkState = "cancelled"
+	BulkStateDone      RemoteDownloadBulkState = "done"
+	BulkStateExpanding RemoteDownloadBulkState = "expanding"
+	BulkStateFailed    RemoteDownloadBulkState = "failed"
+	BulkStateQueued    RemoteDownloadBulkState = "queued"
+)
+
+// Valid indicates whether the value is a known member of the RemoteDownloadBulkState enum.
+func (e RemoteDownloadBulkState) Valid() bool {
+	switch e {
+	case BulkStateBounded:
+		return true
+	case BulkStateCancelled:
+		return true
+	case BulkStateDone:
+		return true
+	case BulkStateExpanding:
+		return true
+	case BulkStateFailed:
+		return true
+	case BulkStateQueued:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RemoteDownloadFailureStep.
+const (
+	DownloadStepBody    RemoteDownloadFailureStep = "body"
+	DownloadStepConnect RemoteDownloadFailureStep = "connect"
+	DownloadStepGate    RemoteDownloadFailureStep = "gate"
+	DownloadStepPlan    RemoteDownloadFailureStep = "plan"
+	DownloadStepRequest RemoteDownloadFailureStep = "request"
+	DownloadStepResolve RemoteDownloadFailureStep = "resolve"
+	DownloadStepStatus  RemoteDownloadFailureStep = "status"
+	DownloadStepStore   RemoteDownloadFailureStep = "store"
+	DownloadStepTls     RemoteDownloadFailureStep = "tls"
+	DownloadStepVerify  RemoteDownloadFailureStep = "verify"
+)
+
+// Valid indicates whether the value is a known member of the RemoteDownloadFailureStep enum.
+func (e RemoteDownloadFailureStep) Valid() bool {
+	switch e {
+	case DownloadStepBody:
+		return true
+	case DownloadStepConnect:
+		return true
+	case DownloadStepGate:
+		return true
+	case DownloadStepPlan:
+		return true
+	case DownloadStepRequest:
+		return true
+	case DownloadStepResolve:
+		return true
+	case DownloadStepStatus:
+		return true
+	case DownloadStepStore:
+		return true
+	case DownloadStepTls:
+		return true
+	case DownloadStepVerify:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RemoteDownloadFailureClass.
+const (
+	DownloadClassBound               RemoteDownloadFailureClass = "bound"
+	DownloadClassCircuitOpen         RemoteDownloadFailureClass = "circuit_open"
+	DownloadClassContentRefused      RemoteDownloadFailureClass = "content_refused"
+	DownloadClassEgressDenied        RemoteDownloadFailureClass = "egress_denied"
+	DownloadClassGateRefused         RemoteDownloadFailureClass = "gate_refused"
+	DownloadClassIntegrity           RemoteDownloadFailureClass = "integrity"
+	DownloadClassInternal            RemoteDownloadFailureClass = "internal"
+	DownloadClassNetwork             RemoteDownloadFailureClass = "network"
+	DownloadClassStorage             RemoteDownloadFailureClass = "storage"
+	DownloadClassTls                 RemoteDownloadFailureClass = "tls"
+	DownloadClassUpstreamAuth        RemoteDownloadFailureClass = "upstream_auth"
+	DownloadClassUpstreamError       RemoteDownloadFailureClass = "upstream_error"
+	DownloadClassUpstreamNotFound    RemoteDownloadFailureClass = "upstream_not_found"
+	DownloadClassUpstreamRateLimited RemoteDownloadFailureClass = "upstream_rate_limited"
+	DownloadClassUpstreamUnexpected  RemoteDownloadFailureClass = "upstream_unexpected"
+)
+
+// Valid indicates whether the value is a known member of the RemoteDownloadFailureClass enum.
+func (e RemoteDownloadFailureClass) Valid() bool {
+	switch e {
+	case DownloadClassBound:
+		return true
+	case DownloadClassCircuitOpen:
+		return true
+	case DownloadClassContentRefused:
+		return true
+	case DownloadClassEgressDenied:
+		return true
+	case DownloadClassGateRefused:
+		return true
+	case DownloadClassIntegrity:
+		return true
+	case DownloadClassInternal:
+		return true
+	case DownloadClassNetwork:
+		return true
+	case DownloadClassStorage:
+		return true
+	case DownloadClassTls:
+		return true
+	case DownloadClassUpstreamAuth:
+		return true
+	case DownloadClassUpstreamError:
+		return true
+	case DownloadClassUpstreamNotFound:
+		return true
+	case DownloadClassUpstreamRateLimited:
+		return true
+	case DownloadClassUpstreamUnexpected:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RemoteDownloadRequestLevel.
+const (
+	DownloadLevelPackage RemoteDownloadRequestLevel = "package"
+	DownloadLevelSection RemoteDownloadRequestLevel = "section"
+	DownloadLevelVersion RemoteDownloadRequestLevel = "version"
+)
+
+// Valid indicates whether the value is a known member of the RemoteDownloadRequestLevel enum.
+func (e RemoteDownloadRequestLevel) Valid() bool {
+	switch e {
+	case DownloadLevelPackage:
+		return true
+	case DownloadLevelSection:
+		return true
+	case DownloadLevelVersion:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RemoteFormatName.
 const (
 	RemoteFormatNameAnsible RemoteFormatName = "ansible"
@@ -6241,6 +6487,63 @@ func (e GetClientSetupParamsCredentials) Valid() bool {
 	case GetClientSetupParamsCredentialsNone:
 		return true
 	case GetClientSetupParamsCredentialsPlaceholder:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListRemoteDownloadsParamsState.
+const (
+	ListDownloadsStateCancelled ListRemoteDownloadsParamsState = "cancelled"
+	ListDownloadsStateDone      ListRemoteDownloadsParamsState = "done"
+	ListDownloadsStateFailed    ListRemoteDownloadsParamsState = "failed"
+	ListDownloadsStateRunning   ListRemoteDownloadsParamsState = "running"
+	ListDownloadsStateWaiting   ListRemoteDownloadsParamsState = "waiting"
+)
+
+// Valid indicates whether the value is a known member of the ListRemoteDownloadsParamsState enum.
+func (e ListRemoteDownloadsParamsState) Valid() bool {
+	switch e {
+	case ListDownloadsStateCancelled:
+		return true
+	case ListDownloadsStateDone:
+		return true
+	case ListDownloadsStateFailed:
+		return true
+	case ListDownloadsStateRunning:
+		return true
+	case ListDownloadsStateWaiting:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListRemoteDownloadsParamsOrigin.
+const (
+	ListDownloadsOriginAllow   ListRemoteDownloadsParamsOrigin = "allow"
+	ListDownloadsOriginBulk    ListRemoteDownloadsParamsOrigin = "bulk"
+	ListDownloadsOriginClient  ListRemoteDownloadsParamsOrigin = "client"
+	ListDownloadsOriginPerson  ListRemoteDownloadsParamsOrigin = "person"
+	ListDownloadsOriginProbe   ListRemoteDownloadsParamsOrigin = "probe"
+	ListDownloadsOriginRequest ListRemoteDownloadsParamsOrigin = "request"
+)
+
+// Valid indicates whether the value is a known member of the ListRemoteDownloadsParamsOrigin enum.
+func (e ListRemoteDownloadsParamsOrigin) Valid() bool {
+	switch e {
+	case ListDownloadsOriginAllow:
+		return true
+	case ListDownloadsOriginBulk:
+		return true
+	case ListDownloadsOriginClient:
+		return true
+	case ListDownloadsOriginPerson:
+		return true
+	case ListDownloadsOriginProbe:
+		return true
+	case ListDownloadsOriginRequest:
 		return true
 	default:
 		return false
@@ -12086,6 +12389,179 @@ type RegistryPresets struct {
 	Presets []RegistryPreset `json:"presets"`
 }
 
+// RemoteDownload A row of a remote repository's download queue (R-CUR-011, R-CUR-012).
+type RemoteDownload struct {
+	Attempts  int                 `json:"attempts"`
+	Bulk      *openapi_types.UUID `json:"bulk"`
+	Bytes     int64               `json:"bytes"`
+	CreatedAt time.Time           `json:"createdAt"`
+
+	// Delivery Whether the delivery rules deliver the version (R-CUR-009); a row that fetches what they do not deliver stores it for examination.
+	Delivery      RemoteDownloadDelivery `json:"delivery"`
+	Failure       *RemoteDownloadFailure `json:"failure"`
+	Files         int                    `json:"files"`
+	FinishedAt    *time.Time             `json:"finishedAt"`
+	Id            openapi_types.UUID     `json:"id"`
+	MaxAttempts   int                    `json:"maxAttempts"`
+	Name          string                 `json:"name"`
+	NextAttemptAt *time.Time             `json:"nextAttemptAt"`
+
+	// Occurrences A client's failures of the same file, aggregated (origin client).
+	Occurrences int                  `json:"occurrences"`
+	Origin      RemoteDownloadOrigin `json:"origin"`
+
+	// Outcome The outcome of a done row: completed, bounded, refused, skipped; null for a row that is not done.
+	Outcome   *string                `json:"outcome"`
+	Present   int                    `json:"present"`
+	Refused   int                    `json:"refused"`
+	Request   *openapi_types.UUID    `json:"request"`
+	StartedAt *time.Time             `json:"startedAt"`
+	StartedBy *RemoteDownloadStarter `json:"startedBy"`
+	State     RemoteDownloadState    `json:"state"`
+	Stored    int                    `json:"stored"`
+
+	// Version The version; empty for a file of no version (an OCI blob).
+	Version string `json:"version"`
+}
+
+// RemoteDownloadDelivery Whether the delivery rules deliver the version (R-CUR-009); a row that fetches what they do not deliver stores it for examination.
+type RemoteDownloadDelivery string
+
+// RemoteDownloadOrigin defines model for RemoteDownload.Origin.
+type RemoteDownloadOrigin string
+
+// RemoteDownloadState defines model for RemoteDownload.State.
+type RemoteDownloadState string
+
+// RemoteDownloadBounds defines model for RemoteDownloadBounds.
+type RemoteDownloadBounds struct {
+	IncludePrereleases bool  `json:"includePrereleases"`
+	MaxBytes           int64 `json:"maxBytes"`
+	MaxVersions        int   `json:"maxVersions"`
+}
+
+// RemoteDownloadBulk A bulk download (R-CUR-010, R-CUR-012), expanded into rows within its bounds.
+type RemoteDownloadBulk struct {
+	Bounds     RemoteDownloadBounds    `json:"bounds"`
+	CreatedAt  time.Time               `json:"createdAt"`
+	Failure    *RemoteDownloadFailure  `json:"failure"`
+	FinishedAt *time.Time              `json:"finishedAt"`
+	Id         openapi_types.UUID      `json:"id"`
+	Level      RemoteDownloadBulkLevel `json:"level"`
+
+	// Rows The bulk's rows by state.
+	Rows           map[string]int64        `json:"rows"`
+	StartedBy      *RemoteDownloadStarter  `json:"startedBy"`
+	State          RemoteDownloadBulkState `json:"state"`
+	Subject        string                  `json:"subject"`
+	VersionsFound  int                     `json:"versionsFound"`
+	VersionsQueued int                     `json:"versionsQueued"`
+}
+
+// RemoteDownloadBulkLevel defines model for RemoteDownloadBulk.Level.
+type RemoteDownloadBulkLevel string
+
+// RemoteDownloadBulkState defines model for RemoteDownloadBulk.State.
+type RemoteDownloadBulkState string
+
+// RemoteDownloadCounts defines model for RemoteDownloadCounts.
+type RemoteDownloadCounts struct {
+	Done    int64 `json:"done"`
+	Failed  int64 `json:"failed"`
+	Running int64 `json:"running"`
+	Waiting int64 `json:"waiting"`
+}
+
+// RemoteDownloadFailure The failure of a row's attempt in its own words (R-CUR-011, Q-CUR-20): the class and the step a script filters on, the engine's
+// code, the file, the address asked without its query (a signed address of a CDN carries a credential in it), the upstream's
+// status, the first 512 bytes of a non-success answer as text, the upstream's Retry-After and Quader's sentence for a person.
+type RemoteDownloadFailure struct {
+	Address *string   `json:"address,omitempty"`
+	At      time.Time `json:"at"`
+	Attempt int       `json:"attempt"`
+
+	// Class The class of a failure (remote-curation.md R-CUR-011, Q-CUR-20).
+	Class   RemoteDownloadFailureClass `json:"class"`
+	Code    string                     `json:"code"`
+	Detail  string                     `json:"detail"`
+	Excerpt *string                    `json:"excerpt,omitempty"`
+	File    *string                    `json:"file,omitempty"`
+
+	// RetryAfter Seconds.
+	RetryAfter *int                      `json:"retryAfter,omitempty"`
+	Status     *int                      `json:"status,omitempty"`
+	Step       RemoteDownloadFailureStep `json:"step"`
+}
+
+// RemoteDownloadFailureStep defines model for RemoteDownloadFailure.Step.
+type RemoteDownloadFailureStep string
+
+// RemoteDownloadFailureClass The class of a failure (remote-curation.md R-CUR-011, Q-CUR-20).
+type RemoteDownloadFailureClass string
+
+// RemoteDownloadPage defines model for RemoteDownloadPage.
+type RemoteDownloadPage struct {
+	Counts     RemoteDownloadCounts `json:"counts"`
+	Items      []RemoteDownload     `json:"items"`
+	NextCursor *string              `json:"nextCursor"`
+}
+
+// RemoteDownloadPreview defines model for RemoteDownloadPreview.
+type RemoteDownloadPreview struct {
+	Bounds       RemoteDownloadBounds `json:"bounds"`
+	Bytes        *int64               `json:"bytes"`
+	NotDelivered int                  `json:"notDelivered"`
+	Note         *string              `json:"note"`
+	Packages     *int                 `json:"packages"`
+	SizeUnknown  int                  `json:"sizeUnknown"`
+	Stored       int                  `json:"stored"`
+	Versions     *int                 `json:"versions"`
+}
+
+// RemoteDownloadRequest A download ahead of a client (R-CUR-010): `version` with `name` and `version`; `package` with `name`; `section` with `section`,
+// a level of the upstream catalogue. The bounds of a package and a section default to `proxy.downloads.max_versions_per_bulk`
+// and `proxy.downloads.max_bytes_per_bulk` and may only be lowered.
+type RemoteDownloadRequest struct {
+	IncludePrereleases *bool                      `json:"includePrereleases,omitempty"`
+	Level              RemoteDownloadRequestLevel `json:"level"`
+	MaxBytes           *int64                     `json:"maxBytes,omitempty"`
+	MaxVersions        *int                       `json:"maxVersions,omitempty"`
+	Name               *string                    `json:"name,omitempty"`
+	Section            *string                    `json:"section,omitempty"`
+	Version            *string                    `json:"version,omitempty"`
+}
+
+// RemoteDownloadRequestLevel defines model for RemoteDownloadRequest.Level.
+type RemoteDownloadRequestLevel string
+
+// RemoteDownloadRetried defines model for RemoteDownloadRetried.
+type RemoteDownloadRetried struct {
+	Retried int `json:"retried"`
+}
+
+// RemoteDownloadRetryRequest defines model for RemoteDownloadRetryRequest.
+type RemoteDownloadRetryRequest struct {
+	Bulk *openapi_types.UUID `json:"bulk,omitempty"`
+
+	// Class The class of a failure (remote-curation.md R-CUR-011, Q-CUR-20).
+	Class *RemoteDownloadFailureClass `json:"class,omitempty"`
+}
+
+// RemoteDownloadStarted The answer of a start (R-CUR-010): the row of one version, or the bulk of a package or a sub-section.
+type RemoteDownloadStarted struct {
+	// Bulk A bulk download (R-CUR-010, R-CUR-012), expanded into rows within its bounds.
+	Bulk *RemoteDownloadBulk `json:"bulk,omitempty"`
+
+	// Download A row of a remote repository's download queue (R-CUR-011, R-CUR-012).
+	Download *RemoteDownload `json:"download,omitempty"`
+}
+
+// RemoteDownloadStarter The person who started a row, its bulk or its request; both members are null for a reader who may not see the name.
+type RemoteDownloadStarter struct {
+	Id   *string `json:"id"`
+	Name *string `json:"name"`
+}
+
 // RemoteExtraHost defines model for RemoteExtraHost.
 type RemoteExtraHost struct {
 	// Pattern A host name pattern in lower case with the wildcards `*` and `?`, for example `*.nuget.org`. No port, no path.
@@ -17295,6 +17771,57 @@ type GetDebIndexStateParams struct {
 	WaitFor *string `form:"waitFor,omitempty" json:"waitFor,omitempty"`
 }
 
+// CancelRemoteDownloadBulkParams defines parameters for CancelRemoteDownloadBulk.
+type CancelRemoteDownloadBulkParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// ListRemoteDownloadsParams defines parameters for ListRemoteDownloads.
+type ListRemoteDownloadsParams struct {
+	State  *ListRemoteDownloadsParamsState  `form:"state,omitempty" json:"state,omitempty"`
+	Class  *RemoteDownloadFailureClass      `form:"class,omitempty" json:"class,omitempty"`
+	Origin *ListRemoteDownloadsParamsOrigin `form:"origin,omitempty" json:"origin,omitempty"`
+	Bulk   *openapi_types.UUID              `form:"bulk,omitempty" json:"bulk,omitempty"`
+	Name   *string                          `form:"name,omitempty" json:"name,omitempty"`
+
+	// Limit Page size, 1 to `api.page_size_max` (R-API-010).
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// ListRemoteDownloadsParamsState defines parameters for ListRemoteDownloads.
+type ListRemoteDownloadsParamsState string
+
+// ListRemoteDownloadsParamsOrigin defines parameters for ListRemoteDownloads.
+type ListRemoteDownloadsParamsOrigin string
+
+// StartRemoteDownloadParams defines parameters for StartRemoteDownload.
+type StartRemoteDownloadParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// RetryRemoteDownloadsParams defines parameters for RetryRemoteDownloads.
+type RetryRemoteDownloadsParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// CancelRemoteDownloadParams defines parameters for CancelRemoteDownload.
+type CancelRemoteDownloadParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// RetryRemoteDownloadParams defines parameters for RetryRemoteDownload.
+type RetryRemoteDownloadParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
 // GetRepositoryGuideParams defines parameters for GetRepositoryGuide.
 type GetRepositoryGuideParams struct {
 	// Client One of the format's `clients` (`GET /api/v1/formats`); another value answers `400 malformed_request`.
@@ -18526,6 +19053,15 @@ type PutDebCoordinatesJSONRequestBody = DebCoordinatesRequest
 
 // CreateDebSigningKeyJSONRequestBody defines body for CreateDebSigningKey for application/json ContentType.
 type CreateDebSigningKeyJSONRequestBody = DebSigningKeyCreate
+
+// StartRemoteDownloadJSONRequestBody defines body for StartRemoteDownload for application/json ContentType.
+type StartRemoteDownloadJSONRequestBody = RemoteDownloadRequest
+
+// PreviewRemoteDownloadJSONRequestBody defines body for PreviewRemoteDownload for application/json ContentType.
+type PreviewRemoteDownloadJSONRequestBody = RemoteDownloadRequest
+
+// RetryRemoteDownloadsJSONRequestBody defines body for RetryRemoteDownloads for application/json ContentType.
+type RetryRemoteDownloadsJSONRequestBody = RemoteDownloadRetryRequest
 
 // CreateRepositoryLimitAssignmentJSONRequestBody defines body for CreateRepositoryLimitAssignment for application/json ContentType.
 type CreateRepositoryLimitAssignmentJSONRequestBody = LimitAssignmentWrite
@@ -19975,6 +20511,33 @@ type ServerInterface interface {
 	// ReinstateDebSigningKey Return a withheld signing key to the repository
 	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/deb/signing-keys/{fingerprint}/reinstate)
 	ReinstateDebSigningKey(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, fingerprint DebFingerprint)
+	// GetRemoteDownloadBulk Read a bulk download
+	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks/{bulkId})
+	GetRemoteDownloadBulk(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, bulkId string)
+	// CancelRemoteDownloadBulk Cancel a bulk download
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks/{bulkId}/cancel)
+	CancelRemoteDownloadBulk(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, bulkId string, params CancelRemoteDownloadBulkParams)
+	// ListRemoteDownloads List the download queue of a remote repository
+	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/downloads)
+	ListRemoteDownloads(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params ListRemoteDownloadsParams)
+	// StartRemoteDownload Start a download ahead of a client
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/downloads)
+	StartRemoteDownload(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params StartRemoteDownloadParams)
+	// PreviewRemoteDownload Preview a download ahead of a client
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/preview)
+	PreviewRemoteDownload(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string)
+	// RetryRemoteDownloads Retry every failed download that matches
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/retry)
+	RetryRemoteDownloads(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params RetryRemoteDownloadsParams)
+	// GetRemoteDownload Read one row of the download queue
+	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/{downloadId})
+	GetRemoteDownload(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, downloadId string)
+	// CancelRemoteDownload Cancel a download
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/{downloadId}/cancel)
+	CancelRemoteDownload(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, downloadId string, params CancelRemoteDownloadParams)
+	// RetryRemoteDownload Retry a failed or cancelled download
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/{downloadId}/retry)
+	RetryRemoteDownload(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, downloadId string, params RetryRemoteDownloadParams)
 	// GetRepositoryGuide The guide of a repository for one client
 	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/guide)
 	GetRepositoryGuide(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params GetRepositoryGuideParams)
@@ -28794,6 +29357,580 @@ func (siw *ServerInterfaceWrapper) ReinstateDebSigningKey(w http.ResponseWriter,
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ReinstateDebSigningKey(w, r, projectKey, repoKey, fingerprint)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetRemoteDownloadBulk operation middleware
+func (siw *ServerInterfaceWrapper) GetRemoteDownloadBulk(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "bulkId" -------------
+	var bulkId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "bulkId", r.PathValue("bulkId"), &bulkId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "bulkId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRemoteDownloadBulk(w, r, projectKey, repoKey, bulkId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CancelRemoteDownloadBulk operation middleware
+func (siw *ServerInterfaceWrapper) CancelRemoteDownloadBulk(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "bulkId" -------------
+	var bulkId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "bulkId", r.PathValue("bulkId"), &bulkId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "bulkId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CancelRemoteDownloadBulkParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelRemoteDownloadBulk(w, r, projectKey, repoKey, bulkId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListRemoteDownloads operation middleware
+func (siw *ServerInterfaceWrapper) ListRemoteDownloads(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListRemoteDownloadsParams
+
+	// ------------- Optional query parameter "state" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "class" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "class", r.URL.Query(), &params.Class, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "class"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "class", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "origin" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "origin", r.URL.Query(), &params.Origin, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "origin"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "origin", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "bulk" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "bulk", r.URL.Query(), &params.Bulk, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "bulk"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "bulk", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "name" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "name", r.URL.Query(), &params.Name, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "name"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListRemoteDownloads(w, r, projectKey, repoKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// StartRemoteDownload operation middleware
+func (siw *ServerInterfaceWrapper) StartRemoteDownload(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params StartRemoteDownloadParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StartRemoteDownload(w, r, projectKey, repoKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PreviewRemoteDownload operation middleware
+func (siw *ServerInterfaceWrapper) PreviewRemoteDownload(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PreviewRemoteDownload(w, r, projectKey, repoKey)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RetryRemoteDownloads operation middleware
+func (siw *ServerInterfaceWrapper) RetryRemoteDownloads(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RetryRemoteDownloadsParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RetryRemoteDownloads(w, r, projectKey, repoKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetRemoteDownload operation middleware
+func (siw *ServerInterfaceWrapper) GetRemoteDownload(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "downloadId" -------------
+	var downloadId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "downloadId", r.PathValue("downloadId"), &downloadId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "downloadId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetRemoteDownload(w, r, projectKey, repoKey, downloadId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CancelRemoteDownload operation middleware
+func (siw *ServerInterfaceWrapper) CancelRemoteDownload(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "downloadId" -------------
+	var downloadId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "downloadId", r.PathValue("downloadId"), &downloadId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "downloadId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CancelRemoteDownloadParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelRemoteDownload(w, r, projectKey, repoKey, downloadId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RetryRemoteDownload operation middleware
+func (siw *ServerInterfaceWrapper) RetryRemoteDownload(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "downloadId" -------------
+	var downloadId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "downloadId", r.PathValue("downloadId"), &downloadId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "downloadId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RetryRemoteDownloadParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RetryRemoteDownload(w, r, projectKey, repoKey, downloadId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -38119,6 +39256,15 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/usage/subjects/{kind}/{id}", wrapper.GetProjectUsageSubject)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/users/me/usage", wrapper.GetMyUsage)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/users/me/limits", wrapper.GetMyLimits)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/preview", wrapper.PreviewRemoteDownload)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/downloads", wrapper.ListRemoteDownloads)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/downloads", wrapper.StartRemoteDownload)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/retry", wrapper.RetryRemoteDownloads)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/{downloadId}", wrapper.GetRemoteDownload)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/{downloadId}/retry", wrapper.RetryRemoteDownload)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/{downloadId}/cancel", wrapper.CancelRemoteDownload)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks/{bulkId}", wrapper.GetRemoteDownloadBulk)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks/{bulkId}/cancel", wrapper.CancelRemoteDownloadBulk)
 
 	return m
 }

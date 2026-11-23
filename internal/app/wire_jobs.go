@@ -70,12 +70,12 @@ func (a *App) jobRegistry() (*jobs.Registry, error) {
 }
 
 // tasksNotBuilt are the tasks of R-OPS-019 that the specification names and whose schedules the configuration's default carries
-// ahead of the code that registers them (remote-curation.md R-CUR-020): the two tasks of a remote repository's download queue
-// (R-CUR-011, R-CUR-016), whose registration is being built. A key of maintenance.tasks that names one is accepted and has no effect
-// until the task is registered (Q-OPS-418); a name leaves this list in the change that registers its task. A function, not a package
-// variable (R-ARCH-032); the names are written out, so that the list does not depend on the curation's package.
+// ahead of the code that registers them (remote-curation.md R-CUR-020): the retention of what was fetched for examination
+// (R-CUR-016), whose registration is being built. A key of maintenance.tasks that names one is accepted and has no effect until the
+// task is registered (Q-OPS-418); a name leaves this list in the change that registers its task. A function, not a package variable
+// (R-ARCH-032); the names are written out, so that the list does not depend on the curation's package.
 func tasksNotBuilt() []string {
-	return []string{"remote-downloads-dispatch", "remote-examination-cleanup"}
+	return []string{"remote-examination-cleanup"}
 }
 
 // checkTaskNames refuses a configuration that schedules a task this version does not have (R-OPS-019, Q-OPS-418): a key of

@@ -46,8 +46,8 @@ formats.Capabilities: field SourceSpeller SourceSpeller
 formats.Capabilities: field VersionPath VersionPather
 formats.Capabilities: field ViewSizer ViewSizer
 formats.Capabilities: field Vulnerability VulnerabilityAdapter
+formats.Catalogue: embedded VersionProber
 formats.Catalogue: embedded discover.Catalogue
-formats.Catalogue: method VersionProbe(context.Context, discover.Upstream, string, string) (Probe, bool, error)
 formats.CatalogueDeclaration: field Levels []string
 formats.CatalogueDeclaration: field Lookup bool
 formats.CatalogueDeclaration: field NoLevels string
@@ -394,6 +394,7 @@ formats.RemoteCaps: field Names NameServer
 formats.RemoteCaps: field Revalidate Revalidator
 formats.RemoteCaps: field Signatures SignatureFetcher
 formats.RemoteCaps: field Stood StoodChallengeReader
+formats.RemoteCaps: field VersionProbe VersionProber
 formats.RemoteContext: field Discovery any
 formats.RemoteContext: field Repo *repository.Repository
 formats.RemoteContext: field Settings json.RawMessage
@@ -614,6 +615,7 @@ formats.VersionFetch: method String() string
 formats.VersionFetch: type uint8
 formats.VersionID: type int64
 formats.VersionPather: method VersionPath(string, string) (Path, bool)
+formats.VersionProber: method VersionProbe(context.Context, discover.Upstream, string, string) (Probe, bool, error)
 formats.VersionRow: field Attributes json.RawMessage
 formats.VersionRow: field CreatedAt time.Time
 formats.VersionRow: field CreatedBy string
@@ -690,6 +692,7 @@ formats.NoMarkup: func() Markup
 formats.NoSignatures: func(string, string) SignatureAdapter
 formats.NoVulnerabilityData: func() VulnerabilityData
 formats.ProbeFiles: func(Probe) []discover.Item
+formats.ProbeFromPlan: func(discover.Plan, string) (Probe, bool)
 formats.RefusalFrom: func(*http.Request) (Refusal, bool)
 formats.Register: func(Format)
 formats.RemoteCapabilities: func(ID) RemoteCaps

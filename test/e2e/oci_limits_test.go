@@ -139,7 +139,7 @@ func TestOCILimits_F161_SignInsAndPullsFromOneAddressMeetNoAnonymousBudget(t *te
 
 // TestOCIProbe_R_REPO_065_ManifestInspectThroughAVirtualRepositoryDownloadsTheImage is W-25 with a real client: `docker manifest
 // inspect` of a tag through a virtual repository asks for the manifest only, and the remote member downloads the image's blobs in the
-// background (the job remote-background-download), so a pull afterwards is served from the cache. The path through a virtual repository
+// background (a row of origin probe of its download queue, remote-curation.md R-CUR-013), so a pull afterwards is served from the cache. The path through a virtual repository
 // is tested here once for every format (the member search is format-independent); the charge, the switch and the budget are the
 // integration sets'. npm, NuGet, Debian and Ansible Galaxy have no client command that sends a probe without fetching the content
 // itself (docs/spec/repositories-and-proxy.md R-REPO-065).

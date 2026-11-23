@@ -2,14 +2,10 @@ package formathost
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/hex"
 	"errors"
-	"strconv"
 	"sync"
 	"time"
-
-	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
@@ -21,8 +17,9 @@ import (
 // A probe starts the download (repositories-and-proxy.md R-REPO-065, walk item W-25): a request of a client that names exactly one
 // version or one file of a remote repository without fetching its content - the manifest of an OCI tag, an npm version document, a
 // HEAD of a file - may start the download of that version's content in the background. The format's handler tells the host of a
-// probe it answered (formats.RemoteFetcher.Probed); the host decides on the probe's request and, when everything admits it, queues
-// the job remote-background-download, which a worker runs through the same gate and engine as a mirror pass (background_download.go).
+// probe it answered (formats.RemoteFetcher.Probed); the host decides on the probe's request and, when everything admits it, inserts
+// a row of origin probe into the repository's download queue (remote-curation.md R-CUR-013), whose run is every row's
+// (background_download.go): a job remote-download of a worker, through the same gate and engine as a mirror pass.
 //
 // The decision never fails, delays or changes the probe's answer: it runs after Probed returned, at most probeDecisions at once per
 // replica, each within probeDecisionTimeout.
@@ -32,9 +29,9 @@ import (
 // patterns, platforms and bounds apply, while the charge stays the probe's: the budget key resolved at the addressed repository, the
 // member's ceiling, the usage recorded at the member (usage-and-limits.md Q-LIM-2, R-LIM-037).
 
-// The outcomes of a probe's decision and of a background download (the label outcome of quader_remote_background_downloads_total).
+// The outcomes of a probe's decision (the label outcome of quader_remote_downloads_total with the origin probe, R-CUR-019).
 const (
-	// ProbeStarted: the job was queued.
+	// ProbeStarted: the row was queued.
 	ProbeStarted = "started"
 	// ProbeOff: the repository's switch remote.downloadOnProbe is off, or the repository cannot fetch now (offline, disabled, the
 	// cache view, only-if-cached).
@@ -45,9 +42,9 @@ const (
 	ProbeLocal = "local"
 	// ProbeNotAdmitted: the repository's patterns, a global claim or the caller's populate permission refuse the content.
 	ProbeNotAdmitted = "not_admitted"
-	// ProbeActive: a background download of the version is queued or running.
+	// ProbeActive: the version has a waiting or running row of the queue.
 	ProbeActive = "active"
-	// ProbeQueueFull: the repository has limits.maxConcurrentFetches background downloads queued or running.
+	// ProbeQueueFull: the repository's waiting rows reach proxy.downloads.max_waiting_per_repository (R-CUR-011).
 	ProbeQueueFull = "queue_full"
 	// ProbeLimited: step 9a refused the probe's caller in Enforce (usage-and-limits.md R-LIM-037).
 	ProbeLimited = "limited"
@@ -55,90 +52,55 @@ const (
 	ProbeBusy = "busy"
 	// ProbeFailed: the decision could not be taken (a store or queue error).
 	ProbeFailed = "failed"
-	// DownloadCompleted, DownloadBounded and DownloadFailed are the outcomes of a job: everything stored, cut at a bound, failed
-	// after its last attempt.
-	DownloadCompleted = "completed"
-	DownloadBounded   = "bounded"
-	DownloadFailed    = "failed_download"
 )
 
 const (
 	// probeDecisions bounds the decisions a replica takes at once; a probe beyond them starts nothing (outcome busy).
 	probeDecisions = 16
-	// probeDecisionTimeout bounds one decision: the lookups of what is stored, the queue, step 9a and the enqueue.
+	// probeDecisionTimeout bounds one decision: the lookups of what is stored, the queue, step 9a and the insert.
 	probeDecisionTimeout = 10 * time.Second
 )
 
-// BackgroundDownloads is the queue of the jobs remote-background-download as the decision on a probe uses it; the composition root
-// builds it over internal/jobs (R-REPO-065).
-type BackgroundDownloads interface {
-	// Busy reports whether a background download with the dedup key is queued or running, and how many of the repository are.
-	Busy(ctx context.Context, key string, repoID int64) (active bool, ofRepository int, err error)
-	// Enqueue queues the job; created is false when one with the same key was queued meanwhile.
-	Enqueue(ctx context.Context, a BackgroundDownload) (created bool, err error)
+// Downloads is the download queue as the decision on a probe uses it (R-CUR-013); the composition root builds it over
+// internal/remotecuration/queue.
+type Downloads interface {
+	// Queued reports whether the version has a waiting or running row, and whether the repository's waiting rows reach their bound.
+	Queued(ctx context.Context, repoID int64, name, version string) (active, full bool, err error)
+	// AddProbe inserts the row of origin probe; created is false when a row of the version was queued meanwhile, full when the
+	// bound of waiting rows was met meanwhile.
+	AddProbe(ctx context.Context, d ProbeDownload) (created, full bool, err error)
 }
 
-// BackgroundDownload are the arguments of a job remote-background-download: the repository, the probe and the ticket of the limits
-// the download is charged with (usage-and-limits.md R-LIM-037).
-type BackgroundDownload struct {
-	RepoID  int64    `json:"repoId"`
-	Name    string   `json:"name"`
-	Version string   `json:"version,omitempty"`
-	Files   []string `json:"files"`
+// ProbeCounter counts the decisions on probes by repository; *queue.Metrics implements it.
+type ProbeCounter interface {
+	Decision(repo, outcome string)
+}
+
+// ProbeDownload is the row a probe queues: the repository, the probe and the ticket of the limits the download is charged with
+// (usage-and-limits.md R-LIM-037). A probe that names no version (a HEAD of an OCI blob) is a row named by its file, so that two blobs
+// of one image are two rows.
+type ProbeDownload struct {
+	RepoID  int64
+	Name    string
+	Version string
+	Files   []string
 	// Document and Digest are the probe's metadata entry and the hex of what it held (formats.Probe).
-	Document string        `json:"document,omitempty"`
-	Digest   string        `json:"digest,omitempty"`
-	Ticket   limits.Ticket `json:"ticket"`
+	Document string
+	Digest   string
+	Ticket   limits.Ticket
 }
 
-// Key is the dedup key of the job: one background download of a version of a repository at a time, across replicas (R-REPO-065).
-// A probe without a version (a HEAD of an OCI blob) is keyed by its file.
-func (a BackgroundDownload) Key() string {
-	what := a.Version
-	if what == "" && len(a.Files) > 0 {
-		what = a.Files[0]
+// RowName is the name of the row: the package, or the file of a probe without a version.
+func (d ProbeDownload) RowName() string {
+	if d.Version == "" && len(d.Files) > 0 {
+		return d.Files[0]
 	}
-	sum := sha256.Sum256([]byte(a.Name + "\x00" + what))
-	return BackgroundDownloadKind + ":" + strconv.FormatInt(a.RepoID, 10) + ":" + hex.EncodeToString(sum[:16])
+	return d.Name
 }
 
-// probe returns the probe the job was queued for.
-func (a BackgroundDownload) probe() formats.Probe {
-	p := formats.Probe{Name: a.Name, Version: a.Version, Document: formats.Path{Path: a.Document}}
-	for _, f := range a.Files {
-		p.Files = append(p.Files, formats.Path{Path: f})
-	}
-	if b, err := hex.DecodeString(a.Digest); err == nil && len(b) == len(p.Digest) {
-		copy(p.Digest[:], b)
-	}
-	return p
-}
-
-// ProbeMetrics counts the decisions on probes and the ends of background downloads by format and outcome.
-type ProbeMetrics struct {
-	Outcomes *prometheus.CounterVec
-}
-
-// MetricBackgroundDownloads is the family of [ProbeMetrics].
-const MetricBackgroundDownloads = "quader_remote_background_downloads_total"
-
-// NewProbeMetrics registers the family in reg; a nil registerer keeps it unregistered.
-func NewProbeMetrics(reg prometheus.Registerer) (*ProbeMetrics, error) {
-	m := &ProbeMetrics{Outcomes: prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: MetricBackgroundDownloads,
-		Help: "Decisions on probes of remote repositories and the ends of the background downloads they started, by format and outcome (R-REPO-065).",
-	}, []string{"format", "outcome"})}
-	if reg != nil {
-		if err := reg.Register(m.Outcomes); err != nil {
-			return nil, err
-		}
-	}
-	return m, nil
-}
-
-func (m *ProbeMetrics) count(format, outcome string) {
-	if m != nil && m.Outcomes != nil {
-		m.Outcomes.WithLabelValues(format, outcome).Inc()
+func (h *Host) countProbe(repo, outcome string) {
+	if h.o.ProbeMetrics != nil {
+		h.o.ProbeMetrics.Decision(repo, outcome)
 	}
 }
 
@@ -164,20 +126,20 @@ func (r *remote) Probed(ctx context.Context, rq *formats.Request, p formats.Prob
 	if h.o.Downloads == nil || rq == nil || rq.Repo == nil || systemRead(rq) {
 		return // the image scanning's pull is no probe (system_read.go)
 	}
-	format := rq.Repo.Format
+	repo := rq.Repo.Name.String()
 	virtual := rq.Repo.Class == repository.Virtual
 	precheck := r.precheck
 	if virtual {
 		precheck = r.precheckVirtual
 	}
 	if out := precheck(rq, p); out != "" {
-		h.o.ProbeMetrics.count(format, out)
+		h.countProbe(repo, out)
 		return
 	}
 	select {
 	case h.pr.sem <- struct{}{}:
 	default:
-		h.o.ProbeMetrics.count(format, ProbeBusy)
+		h.countProbe(repo, ProbeBusy)
 		return
 	}
 	charge := limits.FromContext(ctx)
@@ -192,7 +154,7 @@ func (r *remote) Probed(ctx context.Context, rq *formats.Request, p formats.Prob
 		if err != nil {
 			h.o.Log.Warn("the decision on a probe failed; no background download starts", "repo", rq.Repo.Name.String(), "error", err)
 		}
-		h.o.ProbeMetrics.count(format, out)
+		h.countProbe(repo, out)
 	}()
 }
 
@@ -403,21 +365,20 @@ func (r *remote) decide(ctx context.Context, rq *formats.Request, p formats.Prob
 	if stored {
 		return ProbeStored, nil
 	}
-	st, _ := rq.Repo.Remote()
-	args := BackgroundDownload{RepoID: rq.RepoRef().ID, Name: p.Name, Version: p.Version, Document: p.Document.Path}
+	args := ProbeDownload{RepoID: rq.RepoRef().ID, Name: p.Name, Version: p.Version, Document: p.Document.Path}
 	for _, file := range admitted {
 		args.Files = append(args.Files, file.Path)
 	}
 	if p.Document.Path != "" {
 		args.Digest = hex.EncodeToString(p.Digest[:])
 	}
-	active, n, err := h.o.Downloads.Busy(ctx, args.Key(), args.RepoID)
+	active, full, err := h.o.Downloads.Queued(ctx, args.RepoID, args.RowName(), args.Version)
 	switch {
 	case err != nil:
 		return ProbeFailed, err
 	case active:
 		return ProbeActive, nil
-	case n >= max(1, st.Limits.MaxConcurrentFetches):
+	case full:
 		return ProbeQueueFull, nil
 	}
 	ticket, _, err := charge.StartBackground(ctx, args.RepoID)
@@ -429,10 +390,12 @@ func (r *remote) decide(ctx context.Context, rq *formats.Request, p formats.Prob
 		return ProbeFailed, err
 	}
 	args.Ticket = ticket
-	created, err := h.o.Downloads.Enqueue(ctx, args)
+	created, full, err := h.o.Downloads.AddProbe(ctx, args)
 	switch {
 	case err != nil:
 		return ProbeFailed, err
+	case full:
+		return ProbeQueueFull, nil
 	case !created:
 		return ProbeActive, nil
 	}

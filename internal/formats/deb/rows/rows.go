@@ -445,6 +445,9 @@ type MirrorScope struct {
 	// Translations are the languages of the i18n/Translation-<language> files a pass keeps.
 	Translations []string
 	Sources      bool
+	// AnyIndex widens the scope to every suite whose stored release a key verifies and every binary index parsed below it, whatever
+	// Suites, Components and Architectures say: the files of one version a download ahead looks for (remote-curation.md R-CUR-011).
+	AnyIndex bool
 }
 
 // VirtualInputs are what a build of a virtual repository reads in its snapshot (R-DEB-026): the repository's own suites with their

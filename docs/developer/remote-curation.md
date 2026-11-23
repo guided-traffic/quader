@@ -1,6 +1,6 @@
 # Curating a remote repository: the work packages
 
-Status: specified on 2026-11-23; the contracts package (C) built on 2026-11-23, the rest not. The specification is [spec/remote-curation.md](../spec/remote-curation.md) with the format
+Status: specified on 2026-11-23; the contracts package (C) and the downloads ahead with their queue (R4) built on 2026-11-23, the rest not. The specification is [spec/remote-curation.md](../spec/remote-curation.md) with the format
 pages' requirements (R-NPM-049, R-NUGET-035, R-OCI-038, R-DEB-036, R-ANS-047) and the changed sentences its section "Changes to other
 pages" lists; the security view is [security/remote-curation.md](../security/remote-curation.md). This page cuts the work into packages
 for builders, in the order they can land, each a whole feature that leaves `main` working, with the files and directories each owns so
@@ -64,8 +64,8 @@ Built on 2026-11-23. What it holds, and what the next packages build on:
 | [events_remote_curation.go](../../internal/audit/events_remote_curation.go) | the twelve events of R-CUR-019 with their schemas, modes, webhook and journal flags; `remote.examination.discarded` classified as yielding no entry in [feed.go](../../internal/bastionmain/feed.go), its row in the table of R-HA-054, its replay handler pending in `cmd/quader/journal_handlers_test.go` until R2b; the audit log's names of the twelve in `web/src/app/features/audit/audit-labels.ts` with their German texts |
 | [remote_curation.go](../../internal/config/remote_curation.go), [jobs.go](../../internal/config/jobs.go), [maintenance.go](../../internal/config/maintenance.go) | `proxy.delivery.*`, `proxy.catalogue.*` (with `cache_ttl` and `timeout` as durations), `proxy.downloads.*`, `jobs.workers.downloads` and the queue `downloads`, the tasks' schedules |
 
-Not in C, and so the next package's: the registration of the kind `remote-download` and of the two tasks with the job framework (R4,
-R2b: until then the queue has workers and the tasks have schedules, and nothing runs on them), the check of `Register` that a remote
+Not in C, and so the next package's: the registration of the kind `remote-download` and of the two tasks with the job framework (R4
+registers the kind and the dispatch task, R2b the cleanup task), the check of `Register` that a remote
 adapter implements `formats.Catalogue` (R3, with the five catalogues, Q-CUR-109), the repository members `remote.delivery.*` (R2).
 
 Tests (unit, about 0.1 s together): `internal/formats` (the declaration's checks), `internal/formats/all` (the pins and the canons),
@@ -115,21 +115,45 @@ and the Debian search (`TestR_DEB_036_…`, about 3 s). What a leg gains: the un
 
 ## R4 · Downloads ahead and the queue
 
-| Area | Files |
-|---|---|
-| The queue | `internal/remotecuration/queue/` (store, order, dispatch task, retention, bulk expansion through the catalogue's interface) |
-| The run | `internal/formathost/background_download.go` (generalized: a probe or `VersionProbe`, the failure in words, the row's counters), `internal/formathost/probe.go` (the row instead of the job), `internal/app/wire_remote_downloads.go` (replacing `wire_background_download.go`) |
-| The failure's words | `internal/proxy/classify.go` (the step beside the code), the excerpt and the address without its query |
-| A fill without a client | `internal/proxy/fill.go`, `internal/vuln/enforce/enforce.go` (no count and no event of a refused download, Q-CUR-22) |
-| The client failure rows | a recorder in `internal/proxy` behind a port of `internal/remotecuration/queue` |
-| The charge | `internal/limits` (the ticket of a person's operation) |
-| The API | `internal/api/v1/remote_downloads_api.go`, `api/openapi.yaml` (`# >>> T-24 downloads`) |
-| Metrics | `quader_remote_downloads_total`, `quader_remote_downloads`, `quader_remote_download_failures_total` (replacing `quader_remote_background_downloads_total`) |
+Built on 2026-11-23 (R-CUR-010 to R-CUR-013, Q-CUR-80 to Q-CUR-85). No migration: the tables are 00114's. What it holds:
 
-Tests: unit, the classification table of about 30 failures from `httptest` and a fake resolver, the queue's order and retries (about 1 s);
-integration, `TestR_CUR_010_…` (npm, about 3 s), one download ahead per other format (about 2 s each), `TestR_CUR_011_…` (failure and
-retry, about 3 s), and the existing `TestR_REPO_065_*` and `TestQ_REPO_367_*` against the row. What a leg gains: the unit job about 1 s, the
-shards about 15 s.
+| File or directory | What |
+|---|---|
+| [internal/remotecuration/queue](../../internal/remotecuration/queue/queue.go) | `queue.go` the row, the bulk, the settings, the result of a run, the errors (`FullError`, `QueuedError`); `service.go` the service: `Add` (a row, started at once when its repository has a free place), `Start`, `Claim` and `Finish` of a run, `Retry`, `RetryMatching`, `Cancel`, `Queued` and `Active` (`remotecuration.Queue`); `decide.go` the backoff and the end of an attempt (`settle`), pure; `bulk.go` the bulk, its expansion through the `Planner` port and its bounds; `dispatch.go` the task `remote-downloads-dispatch` (orphans, due repositories, one step of every expanding bulk, the bulks' ends, retention, the gauge); `client.go` the rows of clients' failed fetches with their throttle; `metrics.go` the three families of R-CUR-019; `store.go` the ports `Store`, `Tx`, `Reader`, `Maintenance`; `store_pg.go` PostgreSQL |
+| [remote_downloads.sql](../../internal/meta/postgres/queries/remote_downloads.sql) | every statement of the queue; a row and a bulk cross the boundary as `to_jsonb` text, decoded by one function each; the repository's row `FOR NO KEY UPDATE` before every start (Q-CUR-82); `RemoteDownloadDebDirs` for Debian's `AnyIndex` scope |
+| [background_download.go](../../internal/formathost/background_download.go) | `MirrorHost.RunDownload`, the run of every row: what has nothing to do (`skipped`), the charge (`limits.Engine.Resume`), the plan (the row's probe, else `formats.VersionProber`), `ProbeContent`, the fills in the run's window, the refusals counted and kept, the failure in words (`proxy.Describe`); `MirrorHost.Versions` and `Packages`, the planner of a bulk over the format's mirror plan (sections answer `discover.ErrNotOffered` until R3) |
+| [probe.go](../../internal/formathost/probe.go) | the decision on a probe inserts a row of origin `probe` through the port `Downloads` (`Queued`, `AddProbe`) and counts through `ProbeCounter` |
+| `version_probe.go` of [npm](../../internal/formats/npm/version_probe.go), [nuget](../../internal/formats/nuget/version_probe.go), [oci](../../internal/formats/oci/version_probe.go), [deb](../../internal/formats/deb/version_probe.go), [ansible](../../internal/formats/ansible/version_probe.go) | `formats.VersionProber`: npm, NuGet and Debian from their mirror plan's rows (`formats.ProbeFromPlan`), OCI the tag's manifest by its digest, Ansible Galaxy the archive after its version document; Debian looks in every verified suite and parsed binary index (`rows.MirrorScope.AnyIndex`, [mirror_store.go](../../internal/formatdata/deb/mirror_store.go)) |
+| [catalogue.go](../../internal/formats/catalogue.go), [remote.go](../../internal/formats/remote.go) | `VersionProber`, embedded by `Catalogue`; `RemoteCaps.VersionProbe` |
+| [failure.go](../../internal/proxy/failure.go), [classify.go](../../internal/proxy/classify.go), [fetch.go](../../internal/proxy/fetch.go) | `proxy.Exchange` (the step, the address without its query, the status, the excerpt, the Retry-After) as the cause of the engine's error; `Describe`; `ClientFailures` and the leader's record of a client's failure (Q-CUR-84) |
+| [fill.go](../../internal/proxy/fill.go), [enforce.go](../../internal/vuln/enforce/enforce.go) | `Miss.NoClient`: a fill without a client refused by the miss gate counts no refused download and writes no event (Q-CUR-22) |
+| [background.go](../../internal/limits/background.go) | `Engine.StartDownload`: step 9a of a person's download of one version, no request counted (Q-CUR-85) |
+| [access.go](../../internal/api/edge/access.go) | `Access.MayPopulateAct`: the populate check of an explicit act, without the session cookie's refusal (Q-CUR-27) |
+| [remote_downloads_api.go](../../internal/api/v1/remote_downloads_api.go), `api/openapi.yaml` (`# >>> T-24 downloads`) | the operations of R-CUR-010 and R-CUR-012 and who may call them (R-CUR-005) |
+| [wire_remote_downloads.go](../../internal/app/wire_remote_downloads.go) | the service (built at its first use), the kind `remote-download` (queue `downloads`, one attempt, exclusive per row, 30 minutes), the task `remote-downloads-dispatch` (queue `maintenance`), the ports of the format host and the remote engine, the API's services; it replaces `wire_background_download.go` |
+
+The run's end: a cancelled job ends its row `cancelled`; a job that reached its 30 minutes ends its attempt `bound` (Q-CUR-83); a job
+released at shutdown or whose lease was lost leaves its row `running` with its job, which runs again or which the dispatch finds orphaned.
+The delivery rules' decider is `remotecuration.DeliverAll` in the API's services until R2 wires its own: who may start a version and the
+row's member `delivery` read it.
+
+Not built here, and why: a sub-section's bulk and the counts of a package's preview wait for the catalogue (R3, Q-CUR-80); the tab
+**Downloads** is R5a's; the examination's rows (`remote_examinations`) and the request's examination are R2b's.
+
+Tests and what they cost (each run once, R-CUR-022):
+
+| Test | Tier | Run time | Data |
+|---|---|---|---|
+| `TestR_CUR_011_TheFailureOfAnExchangeInPreciseWords` (`internal/proxy`) | unit | about 20 ms | answers of an `httptest` server of a few hundred bytes, a closed port, a resolver that answers nothing, an untrusted certificate |
+| the five tests of [queue_test.go](../../internal/remotecuration/queue/queue_test.go) (order and bound, waiting bound, backoff, retries, client throttle, bulks) | unit | milliseconds | none (a store in memory) |
+| `TestR_CUR_010_APersonsDownloadOfOneVersionIsChargedToThePerson` (`internal/limits`) | unit | milliseconds | none |
+| `TestR_CUR_014_AFillWithoutAClientIsNoRefusedDownload` (`internal/vuln/enforce`) | unit | milliseconds | none |
+| `TestR_CUR_010_ADownloadAheadOfOneVersionAndOfAPackage`, `TestR_CUR_011_AFailureInItsOwnWordsAndTheRetries` (area `npm`) | integration | about 4 s each | the stub's corpus: one package of three versions |
+| `TestR_CUR_010_…` of the areas `nuget`, `ociremote`, `debremote`, `ansibleremote` | integration | about 3 s each | one version of each stub's corpus |
+| the existing `TestR_REPO_065_*`, `TestQ_REPO_367_*` against the row, one more assertion of the row's counters | integration | unchanged | unchanged |
+
+What a leg gains: the unit job well under a second; the integration shards about 20 s together (npm 8 s, four formats 3 s each). A new
+format adds its `version_probe.go` and one `TestR_CUR_010_…` of about 3 s in its own area.
 
 ## R2b · Requests, examination, retention
 

@@ -130,6 +130,13 @@ tags:
       that narrow what it serves.
   # <<< upstream
   #
+  # >>> T-24 downloads
+  - name: remote-curation
+    description: |
+      The curation of a remote repository (remote-curation.md): its delivery rules, the upstream catalogue, the downloads ahead of a
+      client with their queue, and the requests for an allow.
+  # <<< T-24 downloads
+  #
   # >>> M1 files
   - name: items
     description: Files and folders of a repository, their listing, statistics and deletion.
@@ -19189,6 +19196,529 @@ paths:
         "503":
           $ref: "#/components/responses/Unavailable"
   # <<< W-26 limits
+  #
+  # >>> T-24 downloads
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/preview:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+    post:
+      operationId: previewRemoteDownload
+      tags: [remote-curation]
+      summary: Preview a download ahead of a client
+      description: |
+        What a download ahead of one version, every version of a package or a sub-section would queue (remote-curation.md R-CUR-010):
+        the versions and packages, their announced bytes (`null` where the upstream does not tell), how many have no announced size,
+        how many are stored already and how many the delivery rules do not deliver, and the bounds that apply. Where the upstream
+        catalogue cannot count a level, `versions` and `bytes` are `null` and `note` says that the bounds cut while the bulk runs. Nothing
+        is queued and nothing is fetched. Needs what the start of the same download needs (R-CUR-005); a local or virtual repository
+        answers `400 not_applicable`, a sub-section of an upstream that lists no levels `400 catalogue_not_offered`.
+      x-quader-permission:
+        authenticated: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemoteDownloadRequest"
+            example:
+              level: package
+              name: "@acme/a"
+              maxVersions: 100
+      responses:
+        "200":
+          description: The preview.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteDownloadPreview"
+              example:
+                versions: 3
+                packages: 1
+                bytes: null
+                sizeUnknown: 3
+                stored: 0
+                notDelivered: 0
+                bounds: {maxVersions: 100, maxBytes: 107374182400, includePrereleases: true}
+                note: null
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/downloads:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+    get:
+      operationId: listRemoteDownloads
+      tags: [remote-curation]
+      summary: List the download queue of a remote repository
+      description: |
+        The rows of the repository's download queue (R-CUR-011, R-CUR-012): running first, then waiting, then the rest, newest first
+        within each, with `counts` of the waiting, running, failed and done rows. `state`, `class` (a failure's class), `origin`, `bulk`
+        and `name` (an exact package name) filter. Cursor pagination (R-API-010). Needs `read` on the repository; a repository hidden
+        from the caller answers `404`, a local or virtual one `400 not_applicable`. `startedBy` names a person only to those who may
+        set rules and to that person.
+      x-quader-permission:
+        authenticated: true
+      parameters:
+        - name: state
+          in: query
+          schema:
+            type: string
+            enum: [waiting, running, done, failed, cancelled]
+            x-enum-varnames: [ListDownloadsStateWaiting, ListDownloadsStateRunning, ListDownloadsStateDone, ListDownloadsStateFailed, ListDownloadsStateCancelled]
+        - name: class
+          in: query
+          schema:
+            $ref: "#/components/schemas/RemoteDownloadFailureClass"
+        - name: origin
+          in: query
+          schema:
+            type: string
+            enum: [person, request, allow, bulk, probe, client]
+            x-enum-varnames: [ListDownloadsOriginPerson, ListDownloadsOriginRequest, ListDownloadsOriginAllow, ListDownloadsOriginBulk, ListDownloadsOriginProbe, ListDownloadsOriginClient]
+        - name: bulk
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: name
+          in: query
+          schema:
+            type: string
+            maxLength: 1024
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: One page of rows.
+          headers:
+            Link:
+              $ref: "#/components/headers/Link"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteDownloadPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    post:
+      operationId: startRemoteDownload
+      tags: [remote-curation]
+      summary: Start a download ahead of a client
+      description: |
+        Queues a download ahead of a client into the repository's cache (R-CUR-010): one version (`202` with its row), or every version
+        of a package or a sub-section (`202` with the bulk, `Location` its address), expanded into rows by the task
+        `remote-downloads-dispatch` within the bounds. A download ahead does not depend on the delivery rules: what they do not deliver is
+        stored for examination and not served (R-CUR-014). One version the rules deliver needs the caller's populate right (`read` and
+        the action of `cacheFillAction`; the session cookie is no refusal here, Q-CUR-27) and is charged to the caller's budget: a
+        refusal by the limits answers `429` and queues nothing. One version the rules do not deliver, a package and a sub-section need
+        `manage` on the repository or the system role `admin` and are system work. `409 already_queued` names the row of a version that
+        waits or runs; `429 download_queue_full` when the repository's waiting rows reach their bound. Writes `remote.download.started`.
+      x-quader-permission:
+        authenticated: true
+      x-quader-idempotency-key: optional
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemoteDownloadRequest"
+            example:
+              level: version
+              name: "@acme/a"
+              version: "1.0.0"
+      responses:
+        "202":
+          description: The row of the version, or the bulk.
+          headers:
+            Location:
+              $ref: "#/components/headers/Location"
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteDownloadStarted"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/retry:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+    post:
+      operationId: retryRemoteDownloads
+      tags: [remote-curation]
+      summary: Retry every failed download that matches
+      description: |
+        Every failed row of the repository that matches `class` and `bulk` waits again with its attempts reset, at most 10,000, one per
+        version that has no waiting or running row (R-CUR-012); rows of clients' failed fetches are not retried by this operation. Needs
+        `manage` on the repository or the system role `admin`. Writes `remote.download.retried` with the count.
+      x-quader-permission:
+        authenticated: true
+      x-quader-idempotency-key: optional
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemoteDownloadRetryRequest"
+            example:
+              class: upstream_error
+      responses:
+        "200":
+          description: How many rows wait again.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteDownloadRetried"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/{downloadId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+      - name: downloadId
+        in: path
+        required: true
+        description: The row's ID; any other text names no row (`404`).
+        schema:
+          type: string
+          x-quader-reserved-names: [preview, retry]
+    get:
+      operationId: getRemoteDownload
+      tags: [remote-curation]
+      summary: Read one row of the download queue
+      description: "One row with its failure (R-CUR-012). Needs `read` on the repository."
+      x-quader-permission:
+        authenticated: true
+      responses:
+        "200":
+          description: The row.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteDownload"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/{downloadId}/retry:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+      - name: downloadId
+        in: path
+        required: true
+        description: The row's ID; any other text names no row (`404`).
+        schema:
+          type: string
+          x-quader-reserved-names: [preview, retry]
+    post:
+      operationId: retryRemoteDownload
+      tags: [remote-curation]
+      summary: Retry a failed or cancelled download
+      description: |
+        A failed or cancelled row waits again with its attempts reset (R-CUR-012); a row of a client's failed fetch becomes a download
+        ahead of that file's version by the caller, charged to the caller as one version is. `409 not_retryable` for a row in another
+        state, `409 already_queued` when the version waits or runs in another row. Needs the person who started the row, `manage` or
+        the system role `admin`; a row a probe or a client caused, who may download that version. Writes `remote.download.retried`.
+      x-quader-permission:
+        authenticated: true
+      x-quader-idempotency-key: optional
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: The row, waiting or running.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteDownload"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/{downloadId}/cancel:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+      - name: downloadId
+        in: path
+        required: true
+        description: The row's ID; any other text names no row (`404`).
+        schema:
+          type: string
+          x-quader-reserved-names: [preview, retry]
+    post:
+      operationId: cancelRemoteDownload
+      tags: [remote-curation]
+      summary: Cancel a download
+      description: |
+        A waiting row is cancelled at once; a running row stops after the file it stores and ends cancelled (R-CUR-012). A row that
+        ended is answered as it is. Needs what a retry of the row needs. Writes `remote.download.cancelled`.
+      x-quader-permission:
+        authenticated: true
+      x-quader-idempotency-key: optional
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: The row after the cancel.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteDownload"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks/{bulkId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+      - name: bulkId
+        in: path
+        required: true
+        description: The bulk's ID; any other text names no bulk (`404`).
+        schema:
+          type: string
+    get:
+      operationId: getRemoteDownloadBulk
+      tags: [remote-curation]
+      summary: Read a bulk download
+      description: "The bulk with its counters and the counts of its rows by state (R-CUR-012). Needs `read` on the repository."
+      x-quader-permission:
+        authenticated: true
+      responses:
+        "200":
+          description: The bulk.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteDownloadBulk"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks/{bulkId}/cancel:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+      - name: bulkId
+        in: path
+        required: true
+        description: The bulk's ID; any other text names no bulk (`404`).
+        schema:
+          type: string
+    post:
+      operationId: cancelRemoteDownloadBulk
+      tags: [remote-curation]
+      summary: Cancel a bulk download
+      description: |
+        Stops the bulk's expansion and cancels its waiting rows (R-CUR-012); running rows end on their own. Needs the person who
+        started it, `manage` or the system role `admin`. Writes `remote.download.cancelled`.
+      x-quader-permission:
+        authenticated: true
+      x-quader-idempotency-key: optional
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: The bulk after the cancel.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteDownloadBulk"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  # <<< T-24 downloads
 components:
   securitySchemes:
     bearerAuth:
@@ -31495,3 +32025,302 @@ components:
           items: {$ref: "#/components/schemas/LimitProjectRow"}
         nextCursor: {type: [string, "null"]}
     # <<< W-26 limits
+    #
+    # >>> T-24 downloads
+    RemoteDownloadFailureClass:
+      type: string
+      description: The class of a failure (remote-curation.md R-CUR-011, Q-CUR-20).
+      enum: [upstream_not_found, upstream_auth, upstream_rate_limited, upstream_error, upstream_unexpected, network, tls, egress_denied, integrity, content_refused, gate_refused, circuit_open, bound, storage, internal]
+      x-enum-varnames: [DownloadClassUpstreamNotFound, DownloadClassUpstreamAuth, DownloadClassUpstreamRateLimited, DownloadClassUpstreamError, DownloadClassUpstreamUnexpected, DownloadClassNetwork, DownloadClassTls, DownloadClassEgressDenied, DownloadClassIntegrity, DownloadClassContentRefused, DownloadClassGateRefused, DownloadClassCircuitOpen, DownloadClassBound, DownloadClassStorage, DownloadClassInternal]
+    RemoteDownloadFailure:
+      type: object
+      additionalProperties: false
+      description: |
+        The failure of a row's attempt in its own words (R-CUR-011, Q-CUR-20): the class and the step a script filters on, the engine's
+        code, the file, the address asked without its query (a signed address of a CDN carries a credential in it), the upstream's
+        status, the first 512 bytes of a non-success answer as text, the upstream's Retry-After and Quader's sentence for a person.
+      required: [class, step, code, detail, attempt, at]
+      properties:
+        class:
+          $ref: "#/components/schemas/RemoteDownloadFailureClass"
+        step:
+          type: string
+          enum: [plan, resolve, connect, tls, request, status, body, verify, gate, store]
+          x-enum-varnames: [DownloadStepPlan, DownloadStepResolve, DownloadStepConnect, DownloadStepTls, DownloadStepRequest, DownloadStepStatus, DownloadStepBody, DownloadStepVerify, DownloadStepGate, DownloadStepStore]
+        code:
+          type: string
+        file:
+          type: [string, "null"]
+        address:
+          type: [string, "null"]
+        status:
+          type: [integer, "null"]
+        excerpt:
+          type: [string, "null"]
+          maxLength: 512
+        retryAfter:
+          type: [integer, "null"]
+          description: Seconds.
+        detail:
+          type: string
+        attempt:
+          type: integer
+          minimum: 0
+        at:
+          type: string
+          format: date-time
+    RemoteDownloadStarter:
+      type: object
+      additionalProperties: false
+      description: The person who started a row, its bulk or its request; both members are null for a reader who may not see the name.
+      required: [id, name]
+      properties:
+        id:
+          type: [string, "null"]
+        name:
+          type: [string, "null"]
+    RemoteDownload:
+      type: object
+      additionalProperties: false
+      description: A row of a remote repository's download queue (R-CUR-011, R-CUR-012).
+      required: [id, name, version, origin, state, outcome, attempts, maxAttempts, nextAttemptAt, startedBy, bulk, request, files, stored,
+        present, refused, bytes, occurrences, failure, createdAt, startedAt, finishedAt, delivery]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        version:
+          type: string
+          description: The version; empty for a file of no version (an OCI blob).
+        origin:
+          type: string
+          enum: [person, request, allow, bulk, probe, client]
+          x-enum-varnames: [DownloadOriginPerson, DownloadOriginRequest, DownloadOriginAllow, DownloadOriginBulk, DownloadOriginProbe, DownloadOriginClient]
+        state:
+          type: string
+          enum: [waiting, running, done, failed, cancelled]
+          x-enum-varnames: [DownloadStateWaiting, DownloadStateRunning, DownloadStateDone, DownloadStateFailed, DownloadStateCancelled]
+        outcome:
+          type: [string, "null"]
+          description: "The outcome of a done row: completed, bounded, refused, skipped; null for a row that is not done."
+        attempts:
+          type: integer
+        maxAttempts:
+          type: integer
+        nextAttemptAt:
+          type: [string, "null"]
+          format: date-time
+        startedBy:
+          oneOf:
+            - $ref: "#/components/schemas/RemoteDownloadStarter"
+            - type: "null"
+        bulk:
+          type: [string, "null"]
+          format: uuid
+        request:
+          type: [string, "null"]
+          format: uuid
+        files:
+          type: integer
+        stored:
+          type: integer
+        present:
+          type: integer
+        refused:
+          type: integer
+        bytes:
+          type: integer
+          format: int64
+        occurrences:
+          type: integer
+          description: A client's failures of the same file, aggregated (origin client).
+        failure:
+          oneOf:
+            - $ref: "#/components/schemas/RemoteDownloadFailure"
+            - type: "null"
+        createdAt:
+          type: string
+          format: date-time
+        startedAt:
+          type: [string, "null"]
+          format: date-time
+        finishedAt:
+          type: [string, "null"]
+          format: date-time
+        delivery:
+          type: string
+          enum: [delivered, blocked, notAllowed]
+          x-enum-varnames: [DownloadDeliveryDelivered, DownloadDeliveryBlocked, DownloadDeliveryNotAllowed]
+          description: Whether the delivery rules deliver the version (R-CUR-009); a row that fetches what they do not deliver stores it for examination.
+    RemoteDownloadCounts:
+      type: object
+      additionalProperties: false
+      required: [waiting, running, failed, done]
+      properties:
+        waiting:
+          type: integer
+          format: int64
+        running:
+          type: integer
+          format: int64
+        failed:
+          type: integer
+          format: int64
+        done:
+          type: integer
+          format: int64
+    RemoteDownloadPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor, counts]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RemoteDownload"
+        nextCursor:
+          type: [string, "null"]
+        counts:
+          $ref: "#/components/schemas/RemoteDownloadCounts"
+    RemoteDownloadRequest:
+      type: object
+      additionalProperties: false
+      description: |
+        A download ahead of a client (R-CUR-010): `version` with `name` and `version`; `package` with `name`; `section` with `section`,
+        a level of the upstream catalogue. The bounds of a package and a section default to `proxy.downloads.max_versions_per_bulk`
+        and `proxy.downloads.max_bytes_per_bulk` and may only be lowered.
+      required: [level]
+      properties:
+        level:
+          type: string
+          enum: [version, package, section]
+          x-enum-varnames: [DownloadLevelVersion, DownloadLevelPackage, DownloadLevelSection]
+        name:
+          type: string
+          minLength: 1
+          maxLength: 1024
+        version:
+          type: string
+          minLength: 1
+          maxLength: 256
+        section:
+          type: string
+          minLength: 1
+          maxLength: 1024
+        maxVersions:
+          type: integer
+          minimum: 1
+        maxBytes:
+          type: integer
+          format: int64
+          minimum: 1
+        includePrereleases:
+          type: boolean
+          default: true
+    RemoteDownloadBounds:
+      type: object
+      additionalProperties: false
+      required: [maxVersions, maxBytes, includePrereleases]
+      properties:
+        maxVersions:
+          type: integer
+        maxBytes:
+          type: integer
+          format: int64
+        includePrereleases:
+          type: boolean
+    RemoteDownloadPreview:
+      type: object
+      additionalProperties: false
+      required: [versions, packages, bytes, sizeUnknown, stored, notDelivered, bounds, note]
+      properties:
+        versions:
+          type: [integer, "null"]
+        packages:
+          type: [integer, "null"]
+        bytes:
+          type: [integer, "null"]
+          format: int64
+        sizeUnknown:
+          type: integer
+        stored:
+          type: integer
+        notDelivered:
+          type: integer
+        bounds:
+          $ref: "#/components/schemas/RemoteDownloadBounds"
+        note:
+          type: [string, "null"]
+    RemoteDownloadBulk:
+      type: object
+      additionalProperties: false
+      description: A bulk download (R-CUR-010, R-CUR-012), expanded into rows within its bounds.
+      required: [id, level, subject, state, bounds, versionsFound, versionsQueued, failure, startedBy, createdAt, finishedAt, rows]
+      properties:
+        id:
+          type: string
+          format: uuid
+        level:
+          type: string
+          enum: [package, section]
+          x-enum-varnames: [BulkLevelPackage, BulkLevelSection]
+        subject:
+          type: string
+        state:
+          type: string
+          enum: [expanding, queued, done, bounded, cancelled, failed]
+          x-enum-varnames: [BulkStateExpanding, BulkStateQueued, BulkStateDone, BulkStateBounded, BulkStateCancelled, BulkStateFailed]
+        bounds:
+          $ref: "#/components/schemas/RemoteDownloadBounds"
+        versionsFound:
+          type: integer
+        versionsQueued:
+          type: integer
+        failure:
+          oneOf:
+            - $ref: "#/components/schemas/RemoteDownloadFailure"
+            - type: "null"
+        startedBy:
+          oneOf:
+            - $ref: "#/components/schemas/RemoteDownloadStarter"
+            - type: "null"
+        createdAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: [string, "null"]
+          format: date-time
+        rows:
+          type: object
+          description: The bulk's rows by state.
+          additionalProperties:
+            type: integer
+            format: int64
+    RemoteDownloadStarted:
+      type: object
+      additionalProperties: false
+      description: "The answer of a start (R-CUR-010): the row of one version, or the bulk of a package or a sub-section."
+      properties:
+        download:
+          $ref: "#/components/schemas/RemoteDownload"
+        bulk:
+          $ref: "#/components/schemas/RemoteDownloadBulk"
+    RemoteDownloadRetryRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        class:
+          $ref: "#/components/schemas/RemoteDownloadFailureClass"
+        bulk:
+          type: string
+          format: uuid
+    RemoteDownloadRetried:
+      type: object
+      additionalProperties: false
+      required: [retried]
+      properties:
+        retried:
+          type: integer
+    # <<< T-24 downloads

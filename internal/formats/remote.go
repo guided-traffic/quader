@@ -343,6 +343,9 @@ type RemoteCaps struct {
 	// Catalogue is the adapter's view of its upstream for a person (remote-curation.md R-CUR-007); nil until the format's catalogue is
 	// built, which its Descriptor.Catalogue declares.
 	Catalogue Catalogue
+	// VersionProbe names what a download of one version starts from (remote-curation.md R-CUR-011); nil for an adapter that cannot
+	// name it, whose downloads of a version without a probe fail at the step plan. A [Catalogue] implements it.
+	VersionProbe VersionProber
 }
 
 // RemoteCapabilities returns the capabilities Register recorded for a format; the zero value for an ID that

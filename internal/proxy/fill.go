@@ -69,7 +69,7 @@ func (e *Engine) Fill(ctx context.Context, rq Request) (FillOutcome, error) {
 	}
 	if err := e.o.Enforce.GateMiss(ctx, enforce.Miss{
 		Repo: rem.Repo, Addressed: rq.Addressed, Package: rq.Package, Version: rq.Version, Path: rq.Path,
-		Actor: auditActor(rq.Caller), Source: rq.Caller.Source, Endpoint: rq.Caller.Endpoint,
+		Actor: auditActor(rq.Caller), Source: rq.Caller.Source, Endpoint: rq.Caller.Endpoint, NoClient: true,
 	}); err != nil {
 		return FillOutcome{}, err
 	}

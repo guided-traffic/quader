@@ -15,6 +15,13 @@ import (
 // [RemoteCaps.Catalogue].
 type Catalogue interface {
 	discover.Catalogue
+	VersionProber
+}
+
+// VersionProber is the call of the catalogue that the download queue's run makes (remote-curation.md R-CUR-011, Q-CUR-80): the five
+// formats with a remote class implement it on their remote adapters ahead of the browsing calls, so that a download of one version runs
+// before the catalogue is built; [CapabilitiesOf] finds it as [RemoteCaps.VersionProbe].
+type VersionProber interface {
 	// VersionProbe names what a download of one version starts from: the probe the queue's run hands to
 	// [RemoteAdapter.ProbeContent] (R-CUR-011). It may read and store the version's documents through u, which in a run is the
 	// worker's, never the catalogue's. ok is false when the upstream does not have the version.
@@ -66,4 +73,17 @@ func checkCatalogue(_ Format, d Descriptor) error {
 		}
 	}
 	return nil
+}
+
+// ProbeFromPlan is the probe of one version from a mirror plan of its package (discover.Lister.MirrorPlan): the files of the items of
+// that version, in the plan's order. ok is false when the plan has no item of the version. A format whose plan of a package reads
+// one or two documents names a version's download with it (npm, NuGet, Debian; R-CUR-011).
+func ProbeFromPlan(plan discover.Plan, version string) (Probe, bool) {
+	p := Probe{Name: plan.Name, Version: version}
+	for _, it := range plan.Items {
+		if it.Version == version && len(p.Files) < MaxProbeFiles {
+			p.Files = append(p.Files, Path{Path: it.Path})
+		}
+	}
+	return p, len(p.Files) > 0
 }

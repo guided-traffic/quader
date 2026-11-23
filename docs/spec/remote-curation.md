@@ -1,6 +1,6 @@
 # Curating a remote repository
 
-Status: specified on 2026-11-23; its contracts (the tables, the types, the codes, the events, the keys) are built, its behaviour is not. The owner asked for it on 2026-11-23 (task T-24 of the
+Status: specified on 2026-11-23; its contracts (the tables, the types, the codes, the events, the keys) are built, and the downloads ahead with their queue (R-CUR-010 to R-CUR-013, package R4); the rest of its behaviour is not. The owner asked for it on 2026-11-23 (task T-24 of the
 [project plan](../projektplan/promt.md)), at 12:38:
 
 > In Repositories, die Remote sind, fehlt mir dafür ein Reiter um das Remote zu durchsuchen. Manche Varianten von
@@ -607,7 +607,10 @@ Priority: **P1** · Covers: RMT-027
   | `POST downloads` | the same | `202` with the queue row of a version, or the bulk `{"id", "state": "expanding", …}` and `Location` of `download-bulks/{id}`; `409 already_queued` names the row of a version that is waiting or running |
 
   The preview of a version or a package is one catalogue call (`Package`); of a section the level's count where the upstream tells it
-  (Debian's index rows, a Galaxy namespace's count, a Docker Hub namespace's count), else `null`.
+  (Debian's index rows, a Galaxy namespace's count, a Docker Hub namespace's count), else `null`. Until the catalogue is built (R3) the
+  preview of a version answers one version of unknown size and whether the rules deliver it, the preview of a package `versions` and
+  `bytes` `null` with the note, and a section `400 catalogue_not_offered`; a package's bulk is expanded through the format's mirror plan
+  with the bulk's bounds ([Q-CUR-80](#q-cur-80--a-download-of-one-version-runs-before-the-catalogue-the-call-that-names-its-files-is-a-contract-interface-of-its-own)).
 - **Bounds of a bulk**, each a value in the form that the person may lower: `maxVersions` (`proxy.downloads.max_versions_per_bulk`,
   10,000 by default), `maxBytes` (`proxy.downloads.max_bytes_per_bulk`, 100 GiB), `includePrereleases` (true), and for a package
   `newest` (all). A size the upstream does not announce counts when the file is stored: the bulk stops adding rows when the stored bytes
@@ -626,7 +629,8 @@ Priority: **P1** · Covers: RMT-027
   - every version of a package, a section, and the version an allow starts are system work in the sense of Q-LIM-19: recorded under the
     subject `system` with the person named in the row and the usage store's `startedBy`, charged to no ceiling, and bounded by the
     preview, the bounds above, the waiting rows of R-CUR-011, the repository's share of background slots (R-REPO-055) and the upstream's
-    own throttling (R-REPO-054). A mirror (Q-REPO-142) keeps a scope current without end and stays an installation's decision; a bulk is
+    own throttling (R-REPO-054). The usage store has no `startedBy`: the person is the row's, the bulk's and the event's
+    ([Q-CUR-85](#q-cur-85--the-usage-store-records-a-bulk-under-system-the-person-is-the-rows-and-the-events)). A mirror (Q-REPO-142) keeps a scope current without end and stays an installation's decision; a bulk is
     one act, previewed and bounded, and so a project's (Q-CUR-17).
 - **Not a download.** A download ahead writes no download statistics (R-STOR-015) and no **Last download**, and is not a download of the
   limits' figures (R-LIM-007): it counts in `background_fetches` of the person charged, or of `system`.
@@ -636,11 +640,18 @@ Priority: **P1** · Covers: RMT-027
 
 Acceptance criteria:
 
-- Integration (area `npm`, `TestR_CUR_010_…`, about 3 s, the stub's corpus): the Maintainer previews `@acme/a` (3 versions, size
-  `null`, `sizeUnknown: 3`), starts it, and three rows end `done`; the stub served three tarballs; the Developer's `POST` of the same
-  answers `403`; the Developer's one version is charged to the Developer (usage row `background_fetches` 1); `maxVersions: 2` queues two.
-- Integration, one download ahead per format (areas `nuget`, `ociremote`, `deb`, `ansible`, about 2 s each): one version is stored and
-  listed; for OCI the platforms of `oci.platforms` with their layers.
+- Integration (area `npm`, `TestR_CUR_010_ADownloadAheadOfOneVersionAndOfAPackage`, about 3 s, the stub's corpus): a reader who may
+  populate downloads one version, which ends `done` and is charged to the reader (usage row `background_fetches` 1); the reader's `POST`
+  of a package answers `403`; the Maintainer's preview of the package answers; the Maintainer's bulk with `maxVersions: 2` queues two
+  rows that end `done`, the newest version among them. The preview's counts of a package (3 versions, size `null`, `sizeUnknown: 3`) wait
+  for the catalogue (R3, Q-CUR-80).
+- Unit (`internal/limits`, `TestR_CUR_010_APersonsDownloadOfOneVersionIsChargedToThePerson`, milliseconds): one background download and
+  one upstream request of the person's budget key, no request.
+- Unit (`internal/remotecuration/queue`, `TestR_CUR_010_ABulkIsExpandedWithinItsBounds`, milliseconds): `maxVersions`, `maxBytes` of
+  the announced sizes, the pause at the bound of waiting rows, a section's packages, a failure without a planner.
+- Integration, one download ahead per format (areas `nuget`, `ociremote`, `debremote`, `ansibleremote`, `TestR_CUR_010_…`, about 3 s
+  each): one version is stored; for OCI the platforms of `oci.platforms` with their layers; for Debian the file a parsed index lists,
+  verified against its digest.
 
 ### R-CUR-011 · The download queue of a remote repository
 Priority: **P1** · Covers: RMT-027
@@ -714,7 +725,8 @@ Priority: **P1** · Covers: RMT-027
   free place: at its insert, at the end of another row's run (in that run's settling transaction), and by the task `remote-downloads-dispatch`
   (every minute, on the queue `maintenance` as the mirror's dispatch, R-OPS-019) for rows whose `not_before` came. Each run is one job `remote-download` on the queue `downloads`
   (`jobs.workers.downloads`, 4 per replica by default), `MaxAttempts 1`, exclusive per row, 30 minutes (R-REPO-065's bounds of one
-  download: at most 1,000 files, at most the repository's `limits.maxArtifactBytes`). The job of R-REPO-065,
+  download: at most 1,000 files, at most the repository's `limits.maxArtifactBytes`). Every start takes the repository's row with
+  `FOR NO KEY UPDATE` first, so the bound holds across replicas ([Q-CUR-82](#q-cur-82--the-bound-of-running-rows-holds-across-replicas-by-the-repositorys-row-lock)). The job of R-REPO-065,
   `remote-background-download`, is this job: a probe inserts a row (R-CUR-013).
 - **The run** (in `internal/formathost/background_download.go`, R-REPO-065's run, which this generalizes): the probe of the row, else the
   format's `Catalogue.VersionProbe` (its documents read and stored through the worker's upstream; the step `plan`); then
@@ -744,12 +756,16 @@ Priority: **P1** · Covers: RMT-027
   | `attempt`, `at` | the attempt's number and time |
 
   The engine tells the steps apart from what Go's transport reports: a `*net.DNSError` is `resolve`, a dial error `connect`, a TLS record
-  or verification error `tls`, a timeout while the body is read `body` (`internal/proxy/classify.go` gains the step beside the code).
+  or verification error `tls`, a timeout while the body is read `body` (`internal/proxy/classify.go` gains the step beside the code). A
+  failed exchange names its own step wherever the run was; `plan`, `verify`, `gate` and `store` name failures that are no exchange's
+  ([Q-CUR-81](#q-cur-81--the-step-of-a-failure-is-the-exchanges-where-an-exchange-failed)). A run that reaches the job's 30 minutes ends
+  its attempt `bound`, step `body`, code `download_timeout` ([Q-CUR-83](#q-cur-83--a-probe-without-a-version-is-a-row-named-by-its-file-a-run-that-reaches-its-timeout-is-a-bound)).
 - **A client's failed fetch** is recorded in the same table (Q-CUR-19), so the tab answers "why did my pull fail": a fetch of a client
   that ends with a failure of the classes above writes, at most once per repository and file per replica and minute, one row of origin
   `client` and state `failed` per repository and file, whose `occurrences` and failure the next failure updates; at most
   `proxy.downloads.client_failures_per_repository` (1,000) such rows per repository, the oldest removed. A `404` of the upstream is not
-  recorded (the negative cache holds it, R-REPO-028).
+  recorded (the negative cache holds it, R-REPO-028). The leader of a client's flight records it where the engine classifies the failure
+  and where the integrity check refuses ([Q-CUR-84](#q-cur-84--a-clients-failed-fetch-is-recorded-on-the-fetchs-own-failure-once-per-flight)).
 - **Retention:** rows `done` and `cancelled` are removed `proxy.downloads.done_retention` (168 h) after they finished, rows `failed` after
   `proxy.downloads.failed_retention` (720 h), a bulk with its rows when its last row is removed; the task `remote-downloads-dispatch`
   removes them in batches of 1,000.
@@ -758,11 +774,14 @@ Priority: **P1** · Covers: RMT-027
 
 Acceptance criteria:
 
-- Unit (`internal/proxy`, milliseconds, a table of about 30 transport and answer failures produced by `httptest` and a fake resolver):
-  each maps to its class, step and code; the query is dropped from the address; the excerpt is cut and cleaned.
-- Unit (`internal/remotecuration/queue`, milliseconds, a fake store and clock): the order of the waiting rows, the per-repository bound of
-  running rows, the backoff and `Retry-After`, the end at `max_attempts`, the bound of waiting rows.
-- Integration (area `npm`, `TestR_CUR_011_…`, about 3 s): the stub answers `503` twice and then `200`: the row shows `upstream_error`,
+- Unit (`internal/proxy`, `TestR_CUR_011_TheFailureOfAnExchangeInPreciseWords`, milliseconds, about 30 transport and answer failures
+  produced by `httptest`, a closed port, a resolver that answers no name, an untrusted certificate and a deadline): each maps to its
+  class, step and code; the query is dropped from the address; the excerpt is cut and cleaned.
+- Unit (`internal/remotecuration/queue`, milliseconds, a store in memory and a fixed clock): the order of the waiting rows, the
+  per-repository bound of running rows, the backoff and `Retry-After`, the end at `max_attempts`, the bound of waiting rows, the throttle
+  of a client's failures.
+- Integration (area `npm`, `TestR_CUR_011_AFailureInItsOwnWordsAndTheRetries`, about 4 s; the test makes the waiting row due and runs the
+  task through the system tasks' API instead of waiting for the backoff): the stub answers `503` twice and then `200`: the row shows `upstream_error`,
   step `status`, the stub's address without its query, status 503 and the excerpt, then `done` after the third attempt; a stub that
   answers `401` ends the row `failed` at once with `upstream_auth`.
 
@@ -799,7 +818,8 @@ The owner's decisions of 2026-11-19 (W-25) about the trigger, the platforms, the
 ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-065). What changes:
 
 - The decision's step 5 inserts a row of origin `probe` (with the probe's files, document and digest, and the caller's ticket) instead of
-  a job; a version that has a waiting or running row starts nothing (`active`); "fewer than `limits.maxConcurrentFetches`" becomes the
+  a job; a probe without a version (an OCI blob) is a row named by its file (Q-CUR-83); a version that has a waiting or running row starts
+  nothing (`active`); "fewer than `limits.maxConcurrentFetches`" becomes the
   bound of waiting rows of R-CUR-011, and the outcome `queue_full` is counted only there.
 - The run is R-CUR-011's: the switch `downloadOnProbe` still decides at the probe; a row that waits while it is turned off is `skipped`.
 - **What a user sees** is the row on the tab **Downloads** (R-CUR-018), with its counters and its failure, instead of a job on the jobs
@@ -1209,7 +1229,7 @@ remote:
 ```
 
 The installation's keys ([remote_curation.go](../../internal/config/remote_curation.go), [jobs.go](../../internal/config/jobs.go),
-[maintenance.go](../../internal/config/maintenance.go), `docs/developer/configuration.md`; built, nothing reads them yet). A duration is a
+[maintenance.go](../../internal/config/maintenance.go), `docs/developer/configuration.md`; `proxy.downloads.*`, `jobs.workers.downloads` and the schedule of `remote-downloads-dispatch` are read since R4, the rest by their packages). A duration is a
 duration and not an integer with a unit in its name ([../developer/configuration.md](../developer/configuration.md#adding-a-key)), so the
 catalogue's cache period and call time are `cache_ttl` and `timeout`:
 
@@ -1918,11 +1938,136 @@ development agent would revisit the requests if a retired repository's open requ
 **Applied in the spec:** R-CUR-021 ("A repository that goes away"); [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-067
 step 5 (a sentence); the function in [00114_remote_curation.sql](../../internal/meta/postgres/migrations/00114_remote_curation.sql).
 
+### Q-CUR-80 · A download of one version runs before the catalogue: the call that names its files is a contract interface of its own
+
+Status: **Decided by the development agent** — selected from the options below while building the download queue (R4); the owner reviews
+it at the walkthrough.
+
+Context: R-CUR-011's run starts from the row's probe, else from the format's `Catalogue.VersionProbe` (Q-CUR-109), and a bulk is
+expanded through the catalogue's interface. The catalogue's package (R3) is not built: no format's adapter implements `formats.Catalogue`,
+so a person's download of one version, the acceptance of R-CUR-010 and R-CUR-011, and every bulk would have nothing to start from.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `VersionProbe` is the interface `formats.VersionProber`, which `formats.Catalogue` embeds and `CapabilitiesOf` finds as `RemoteCaps.VersionProbe`; the five formats implement it now in `version_probe.go`; a package bulk is expanded through the format's mirror lister (`MirrorPlan`) with the bulk's bounds until the catalogue answers it; a sub-section answers `400 catalogue_not_offered` until the catalogue lists levels (chosen) | One method of the contract ahead of the rest | A version and a package can be downloaded ahead now in every format, with their integration cases; the declaration never claims a browsing call the adapter does not answer (Q-CUR-109's reason against stubs); R3 adds the browsing calls beside it | The contract surface grows by one interface; the preview of a package counts nothing until the catalogue does (`versions` and `bytes` are `null` with a note) |
+| (b) The queue waits for R3 | Nothing new | One package fewer touches the contract | No download ahead runs, and R4's acceptance waits for another package |
+| (c) Every format answers `VersionProbe` through its mirror plan in the format host | No contract change | One generic path | OCI reads every tag's manifest of an image and filters by the mirror's tag patterns; Ansible Galaxy reads every version document; a Debian remote without mirror suites finds nothing |
+
+**Choice:** (a). npm, NuGet and Debian name a version's files from their mirror plan's rows (`formats.ProbeFromPlan`); OCI reads the tag's
+document and names the manifest by its digest, as a client's GET of the tag does; Ansible Galaxy reads the version document. Debian looks in
+every suite whose release a key verifies and every binary index parsed below it, whatever its mirror scope (`rows.MirrorScope.AnyIndex`):
+a remote with no mirror suites can download ahead what its clients have read the indexes of.
+
+**Rationale:** the call is the queue's, not the screens'; the development agent would revisit it if the catalogue's `Package` answers a
+version's files more cheaply than the plan.
+
+**Applied in the spec:** R-CUR-010 (the preview without the catalogue), R-CUR-011 (the run's plan); [architecture.md](architecture.md)
+R-ARCH-008 (the contract block); [../developer/remote-curation.md](../developer/remote-curation.md) (R4).
+
+### Q-CUR-81 · The step of a failure is the exchange's where an exchange failed
+
+Status: **Decided by the development agent** — selected from the options below while building the download queue (R4); the owner reviews
+it at the walkthrough.
+
+Context: R-CUR-011 lists `plan` (reading the documents that name the files) beside the steps of one exchange (`resolve`, `connect`,
+`tls`, `request`, `status`, `body`) and its acceptance wants a 503 of the stub shown as step `status`. The first attempt of a version reads
+its document in the step `plan`, so the two descriptions meet.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A failed exchange names its own step wherever the run was; `plan`, `verify`, `gate` and `store` name failures that are no exchange's (a version the document does not list, a digest that differs, a gate's refusal, the object store) (chosen) | The step says what failed | A script that filters `step=tls` finds every TLS failure; the address and the status say which document | Whether a document or a file failed is read from the address, not the step |
+| (b) The phase wins: a failure while the plan is read is `plan` | The phase | Two steps for one fact | `plan` would hide the transport's step that R-CUR-011 asks for |
+
+**Choice:** (a). The engine attaches what the exchange told to its error (`proxy.Exchange`: the step, the address without its query, the
+status, the excerpt, the Retry-After) and `proxy.Describe` maps any error of a fill to the class, the step and the code.
+
+**Rationale:** the development agent would revisit it if the screens need the phase as well; it would be a member of its own.
+
+**Applied in the spec:** R-CUR-011 ("The failure").
+
+### Q-CUR-82 · The bound of running rows holds across replicas by the repository's row lock
+
+Status: **Decided by the development agent** — selected from the options below while building the download queue (R4); the owner reviews
+it at the walkthrough.
+
+Context: R-CUR-011 starts rows at an insert, at the end of another row's run and in the dispatch task, on any replica, at most
+`proxy.downloads.per_repository` at once. Transactions run in READ COMMITTED: two starts that count the running rows at once would both
+start one.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every start takes the repository's row with `SELECT … FOR NO KEY UPDATE` first, then counts and starts (chosen) | A row lock | No lock category to register; it does not conflict with the key-share lock a row's foreign key takes, so an insert is never held | A start waits for a configuration write of the same repository, which is short |
+| (b) A transaction-scoped advisory lock of a new category | `pg_advisory_xact_lock(<category>, repo)` | Touches no table | A category to register in `internal/cluster/locks.go` and R-ARCH's table for one bound |
+| (c) No lock | Count and start | Simplest | The bound is exceeded by concurrent starts |
+
+**Choice:** (a). **Rationale:** the development agent would revisit it if a configuration write of a remote shows waits behind its starts.
+
+**Applied in the spec:** R-CUR-011 ("Execution").
+
+### Q-CUR-83 · A probe without a version is a row named by its file; a run that reaches its timeout is a bound
+
+Status: **Decided by the development agent** — selected from the options below while building the download queue (R4); the owner reviews
+it at the walkthrough.
+
+Context: `remote_download_one_active` keeps one waiting or running row per repository, name and version, and an OCI blob's HEAD names a
+file of no version (`version` ''). Two blobs of one image would be one row. Separately, a run is a job of 30 minutes (R-REPO-065's bound),
+and R-CUR-011 does not say what its end is.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A probe without a version is a row whose name is the probed file; a run that reaches 30 minutes ends its attempt `bound`, step `body`, code `download_timeout`, not retried (chosen) | Each blob its row; a timeout is a bound | Two blobs of one image are fetched both; what a timed-out attempt stored stays, and a retry by a person goes on from it | The tab shows a blob's path as its name |
+| (b) Name the row by the image and refuse the second blob as active | One row per image | Fewer rows | The second probe is lost |
+| (c) A timeout is `internal` and retried | Retried | Goes on by itself | A download that cannot finish in 30 minutes retries five times for 2.5 hours |
+
+**Choice:** (a). **Rationale:** the development agent would revisit the timeout if large images on slow links need more than one attempt
+by default.
+
+**Applied in the spec:** R-CUR-011, R-CUR-013.
+
+### Q-CUR-84 · A client's failed fetch is recorded on the fetch's own failure, once per flight
+
+Status: **Decided by the development agent** — selected from the options below while building the download queue (R4); the owner reviews
+it at the walkthrough.
+
+Context: Q-CUR-19 records a client's failed fetch as a row of origin `client`, at most once per repository and file per replica and minute.
+Where a client's failure is known: the engine's classification of an answer or a transport error, the integrity check, and every
+collapsed waiter that receives the leader's result.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The leader of a client's flight records it where the engine classifies the failure and where the integrity check refuses, through `proxy.ClientFailures`; a 404 and a shutdown are not recorded; waiters record nothing (chosen) | One write per failed flight, then the throttle | The flight is the upstream exchange; the failure has its words there | A failure the format's handler makes of a good answer (a document it cannot read) is not recorded |
+| (b) Record in the format host for every client error | Every error | Covers the format's own refusals | Many errors are no upstream failure (403 of a rule, 404 of a package); the words are not known there |
+
+**Choice:** (a). **Rationale:** the development agent would revisit it if the tab must show a format's refusal of an upstream document.
+
+**Applied in the spec:** R-CUR-011 ("A client's failed fetch").
+
+### Q-CUR-85 · The usage store records a bulk under `system`; the person is the row's and the event's
+
+Status: **Decided by the development agent** — selected from the options below while building the download queue (R4); the owner reviews
+it at the walkthrough.
+
+Context: R-CUR-010 records a bulk "under the subject `system` with the person named in the row and the usage store's `startedBy`". The
+usage store (`usage_bucket`) has no such column; a background request without a charge is recorded under `system` already (Q-LIM-19).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A bulk's fetches are recorded under `system` as every uncharged background request; the person is the row's `started_by`, the bulk's and the event `remote.download.started` (chosen) | No usage column | No change of the usage store, its rollups and its API | The usage overview does not say who started system work; the rows go after their retention, the event stays |
+| (b) A column `started_by` in the usage buckets | A key of the usage rows | The overview could name the person | Every bucket's key grows for one origin of work |
+
+**Choice:** (a). A person's download of one version is charged to the person (R-LIM-037's shape, `limits.Engine.StartDownload`): the POST of
+the management API counts no request, only the background download and its upstream exchanges. **Rationale:** the development agent would
+revisit it if an administrator needs the usage overview to name who caused system work ([H-1841](../security/remote-curation.md#h-1841--the-usage-overview-does-not-name-who-started-a-bulk)).
+
+**Applied in the spec:** R-CUR-010 ("Whose budget").
+
 ## What this does not cover
 
 - [H-1720](../security/remote-curation.md#h-1720--a-search-tells-the-upstreams-operator-what-people-look-for) to
-  [H-1729](../security/remote-curation.md#h-1729--a-reader-learns-what-is-being-examined): the gaps of this page's mechanisms, on its
-  security page.
+  [H-1729](../security/remote-curation.md#h-1729--a-reader-learns-what-is-being-examined),
+  [H-1840](../security/remote-curation.md#h-1840--clients-failures-of-many-files-write-as-many-rows-a-minute) and
+  [H-1841](../security/remote-curation.md#h-1841--the-usage-overview-does-not-name-who-started-a-bulk): the gaps of this page's
+  mechanisms, on its security page.
 - The conditions of a curation policy and their wizard (SEC-009 to SEC-011), curation across sites (SEC-040, REPL-061).
 - Rules of a local or a virtual repository.
 - PyPI and every other format that does not exist (R-CUR-023).

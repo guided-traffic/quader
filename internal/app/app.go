@@ -193,8 +193,8 @@ type App struct {
 	registryMetrics *registrytoken.Metrics
 	// scannerSrv is the scanner's listener of the role scanner (wire_scanner.go); nil elsewhere and in the loader of the kind trivy-db.
 	scannerSrv *httpserver.Server
-	// probeState holds the counters of the background downloads a probe starts (wire_background_download.go).
-	probeState
+	// downloadsState holds the download queue of the remote repositories (wire_remote_downloads.go).
+	downloadsState
 	// attestations are the hooks of the receipt attestations (wire_attestations.go).
 	attestations attestationHooks
 }
@@ -607,6 +607,8 @@ func (a *App) startClient() error {
 			SystemState: part[infra](a.parts).sys,
 			// The download limits and the usage overview (wire_limits.go).
 			Limits: a.limitsAPI(),
+			// The download queue of the remote repositories (wire_remote_downloads.go).
+			RemoteDownloads: a.remoteDownloadsAPI(),
 			// The list of damaged blobs and the recheck of one blob (wire_storage_scrub.go).
 			Storage: a.storageAPI(),
 			// The malware scanning's operations and the member malware of a file (wire_malware.go).

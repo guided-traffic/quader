@@ -7373,6 +7373,243 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview a download ahead of a client
+         * @description What a download ahead of one version, every version of a package or a sub-section would queue (remote-curation.md R-CUR-010):
+         *     the versions and packages, their announced bytes (`null` where the upstream does not tell), how many have no announced size,
+         *     how many are stored already and how many the delivery rules do not deliver, and the bounds that apply. Where the upstream
+         *     catalogue cannot count a level, `versions` and `bytes` are `null` and `note` says that the bounds cut while the bulk runs. Nothing
+         *     is queued and nothing is fetched. Needs what the start of the same download needs (R-CUR-005); a local or virtual repository
+         *     answers `400 not_applicable`, a sub-section of an upstream that lists no levels `400 catalogue_not_offered`.
+         */
+        post: operations["previewRemoteDownload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/downloads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * List the download queue of a remote repository
+         * @description The rows of the repository's download queue (R-CUR-011, R-CUR-012): running first, then waiting, then the rest, newest first
+         *     within each, with `counts` of the waiting, running, failed and done rows. `state`, `class` (a failure's class), `origin`, `bulk`
+         *     and `name` (an exact package name) filter. Cursor pagination (R-API-010). Needs `read` on the repository; a repository hidden
+         *     from the caller answers `404`, a local or virtual one `400 not_applicable`. `startedBy` names a person only to those who may
+         *     set rules and to that person.
+         */
+        get: operations["listRemoteDownloads"];
+        put?: never;
+        /**
+         * Start a download ahead of a client
+         * @description Queues a download ahead of a client into the repository's cache (R-CUR-010): one version (`202` with its row), or every version
+         *     of a package or a sub-section (`202` with the bulk, `Location` its address), expanded into rows by the task
+         *     `remote-downloads-dispatch` within the bounds. A download ahead does not depend on the delivery rules: what they do not deliver is
+         *     stored for examination and not served (R-CUR-014). One version the rules deliver needs the caller's populate right (`read` and
+         *     the action of `cacheFillAction`; the session cookie is no refusal here, Q-CUR-27) and is charged to the caller's budget: a
+         *     refusal by the limits answers `429` and queues nothing. One version the rules do not deliver, a package and a sub-section need
+         *     `manage` on the repository or the system role `admin` and are system work. `409 already_queued` names the row of a version that
+         *     waits or runs; `429 download_queue_full` when the repository's waiting rows reach their bound. Writes `remote.download.started`.
+         */
+        post: operations["startRemoteDownload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry every failed download that matches
+         * @description Every failed row of the repository that matches `class` and `bulk` waits again with its attempts reset, at most 10,000, one per
+         *     version that has no waiting or running row (R-CUR-012); rows of clients' failed fetches are not retried by this operation. Needs
+         *     `manage` on the repository or the system role `admin`. Writes `remote.download.retried` with the count.
+         */
+        post: operations["retryRemoteDownloads"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/{downloadId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The row's ID; any other text names no row (`404`). */
+                downloadId: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Read one row of the download queue
+         * @description One row with its failure (R-CUR-012). Needs `read` on the repository.
+         */
+        get: operations["getRemoteDownload"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/{downloadId}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The row's ID; any other text names no row (`404`). */
+                downloadId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry a failed or cancelled download
+         * @description A failed or cancelled row waits again with its attempts reset (R-CUR-012); a row of a client's failed fetch becomes a download
+         *     ahead of that file's version by the caller, charged to the caller as one version is. `409 not_retryable` for a row in another
+         *     state, `409 already_queued` when the version waits or runs in another row. Needs the person who started the row, `manage` or
+         *     the system role `admin`; a row a probe or a client caused, who may download that version. Writes `remote.download.retried`.
+         */
+        post: operations["retryRemoteDownload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/{downloadId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The row's ID; any other text names no row (`404`). */
+                downloadId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a download
+         * @description A waiting row is cancelled at once; a running row stops after the file it stores and ends cancelled (R-CUR-012). A row that
+         *     ended is answered as it is. Needs what a retry of the row needs. Writes `remote.download.cancelled`.
+         */
+        post: operations["cancelRemoteDownload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks/{bulkId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The bulk's ID; any other text names no bulk (`404`). */
+                bulkId: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Read a bulk download
+         * @description The bulk with its counters and the counts of its rows by state (R-CUR-012). Needs `read` on the repository.
+         */
+        get: operations["getRemoteDownloadBulk"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks/{bulkId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The bulk's ID; any other text names no bulk (`404`). */
+                bulkId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a bulk download
+         * @description Stops the bulk's expansion and cancels its waiting rows (R-CUR-012); running rows end on their own. Needs the person who
+         *     started it, `manage` or the system role `admin`. Writes `remote.download.cancelled`.
+         */
+        post: operations["cancelRemoteDownloadBulk"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -15496,6 +15733,165 @@ export interface components {
         LimitProjectList: {
             items: components["schemas"]["LimitProjectRow"][];
             nextCursor: string | null;
+        };
+        /**
+         * @description The class of a failure (remote-curation.md R-CUR-011, Q-CUR-20).
+         * @enum {string}
+         */
+        RemoteDownloadFailureClass: "upstream_not_found" | "upstream_auth" | "upstream_rate_limited" | "upstream_error" | "upstream_unexpected" | "network" | "tls" | "egress_denied" | "integrity" | "content_refused" | "gate_refused" | "circuit_open" | "bound" | "storage" | "internal";
+        /**
+         * @description The failure of a row's attempt in its own words (R-CUR-011, Q-CUR-20): the class and the step a script filters on, the engine's
+         *     code, the file, the address asked without its query (a signed address of a CDN carries a credential in it), the upstream's
+         *     status, the first 512 bytes of a non-success answer as text, the upstream's Retry-After and Quader's sentence for a person.
+         */
+        RemoteDownloadFailure: {
+            class: components["schemas"]["RemoteDownloadFailureClass"];
+            /** @enum {string} */
+            step: "plan" | "resolve" | "connect" | "tls" | "request" | "status" | "body" | "verify" | "gate" | "store";
+            code: string;
+            file?: string | null;
+            address?: string | null;
+            status?: number | null;
+            excerpt?: string | null;
+            /** @description Seconds. */
+            retryAfter?: number | null;
+            detail: string;
+            attempt: number;
+            /** Format: date-time */
+            at: string;
+        };
+        /** @description The person who started a row, its bulk or its request; both members are null for a reader who may not see the name. */
+        RemoteDownloadStarter: {
+            id: string | null;
+            name: string | null;
+        };
+        /** @description A row of a remote repository's download queue (R-CUR-011, R-CUR-012). */
+        RemoteDownload: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** @description The version; empty for a file of no version (an OCI blob). */
+            version: string;
+            /** @enum {string} */
+            origin: "person" | "request" | "allow" | "bulk" | "probe" | "client";
+            /** @enum {string} */
+            state: "waiting" | "running" | "done" | "failed" | "cancelled";
+            /** @description The outcome of a done row: completed, bounded, refused, skipped; null for a row that is not done. */
+            outcome: string | null;
+            attempts: number;
+            maxAttempts: number;
+            /** Format: date-time */
+            nextAttemptAt: string | null;
+            startedBy: components["schemas"]["RemoteDownloadStarter"] | null;
+            /** Format: uuid */
+            bulk: string | null;
+            /** Format: uuid */
+            request: string | null;
+            files: number;
+            stored: number;
+            present: number;
+            refused: number;
+            /** Format: int64 */
+            bytes: number;
+            /** @description A client's failures of the same file, aggregated (origin client). */
+            occurrences: number;
+            failure: components["schemas"]["RemoteDownloadFailure"] | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            startedAt: string | null;
+            /** Format: date-time */
+            finishedAt: string | null;
+            /**
+             * @description Whether the delivery rules deliver the version (R-CUR-009); a row that fetches what they do not deliver stores it for examination.
+             * @enum {string}
+             */
+            delivery: "delivered" | "blocked" | "notAllowed";
+        };
+        RemoteDownloadCounts: {
+            /** Format: int64 */
+            waiting: number;
+            /** Format: int64 */
+            running: number;
+            /** Format: int64 */
+            failed: number;
+            /** Format: int64 */
+            done: number;
+        };
+        RemoteDownloadPage: {
+            items: components["schemas"]["RemoteDownload"][];
+            nextCursor: string | null;
+            counts: components["schemas"]["RemoteDownloadCounts"];
+        };
+        /**
+         * @description A download ahead of a client (R-CUR-010): `version` with `name` and `version`; `package` with `name`; `section` with `section`,
+         *     a level of the upstream catalogue. The bounds of a package and a section default to `proxy.downloads.max_versions_per_bulk`
+         *     and `proxy.downloads.max_bytes_per_bulk` and may only be lowered.
+         */
+        RemoteDownloadRequest: {
+            /** @enum {string} */
+            level: "version" | "package" | "section";
+            name?: string;
+            version?: string;
+            section?: string;
+            maxVersions?: number;
+            /** Format: int64 */
+            maxBytes?: number;
+            /** @default true */
+            includePrereleases: boolean;
+        };
+        RemoteDownloadBounds: {
+            maxVersions: number;
+            /** Format: int64 */
+            maxBytes: number;
+            includePrereleases: boolean;
+        };
+        RemoteDownloadPreview: {
+            versions: number | null;
+            packages: number | null;
+            /** Format: int64 */
+            bytes: number | null;
+            sizeUnknown: number;
+            stored: number;
+            notDelivered: number;
+            bounds: components["schemas"]["RemoteDownloadBounds"];
+            note: string | null;
+        };
+        /** @description A bulk download (R-CUR-010, R-CUR-012), expanded into rows within its bounds. */
+        RemoteDownloadBulk: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            level: "package" | "section";
+            subject: string;
+            /** @enum {string} */
+            state: "expanding" | "queued" | "done" | "bounded" | "cancelled" | "failed";
+            bounds: components["schemas"]["RemoteDownloadBounds"];
+            versionsFound: number;
+            versionsQueued: number;
+            failure: components["schemas"]["RemoteDownloadFailure"] | null;
+            startedBy: components["schemas"]["RemoteDownloadStarter"] | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            finishedAt: string | null;
+            /** @description The bulk's rows by state. */
+            rows: {
+                [key: string]: number;
+            };
+        };
+        /** @description The answer of a start (R-CUR-010): the row of one version, or the bulk of a package or a sub-section. */
+        RemoteDownloadStarted: {
+            download?: components["schemas"]["RemoteDownload"];
+            bulk?: components["schemas"]["RemoteDownloadBulk"];
+        };
+        RemoteDownloadRetryRequest: {
+            class?: components["schemas"]["RemoteDownloadFailureClass"];
+            /** Format: uuid */
+            bulk?: string;
+        };
+        RemoteDownloadRetried: {
+            retried: number;
         };
     };
     responses: {
@@ -31167,6 +31563,387 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LimitExplanation"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    previewRemoteDownload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "level": "package",
+                 *       "name": "@acme/a",
+                 *       "maxVersions": 100
+                 *     }
+                 */
+                "application/json": components["schemas"]["RemoteDownloadRequest"];
+            };
+        };
+        responses: {
+            /** @description The preview. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "versions": 3,
+                     *       "packages": 1,
+                     *       "bytes": null,
+                     *       "sizeUnknown": 3,
+                     *       "stored": 0,
+                     *       "notDelivered": 0,
+                     *       "bounds": {
+                     *         "maxVersions": 100,
+                     *         "maxBytes": 107374182400,
+                     *         "includePrereleases": true
+                     *       },
+                     *       "note": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["RemoteDownloadPreview"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listRemoteDownloads: {
+        parameters: {
+            query?: {
+                state?: "waiting" | "running" | "done" | "failed" | "cancelled";
+                class?: components["schemas"]["RemoteDownloadFailureClass"];
+                origin?: "person" | "request" | "allow" | "bulk" | "probe" | "client";
+                bulk?: string;
+                name?: string;
+                /** @description Page size, 1 to `api.page_size_max` (R-API-010). */
+                limit?: components["parameters"]["Limit"];
+                /** @description The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for. */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of rows. */
+            200: {
+                headers: {
+                    Link: components["headers"]["Link"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemoteDownloadPage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    startRemoteDownload: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "level": "version",
+                 *       "name": "@acme/a",
+                 *       "version": "1.0.0"
+                 *     }
+                 */
+                "application/json": components["schemas"]["RemoteDownloadRequest"];
+            };
+        };
+        responses: {
+            /** @description The row of the version, or the bulk. */
+            202: {
+                headers: {
+                    Location: components["headers"]["Location"];
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemoteDownloadStarted"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    retryRemoteDownloads: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                /**
+                 * @example {
+                 *       "class": "upstream_error"
+                 *     }
+                 */
+                "application/json": components["schemas"]["RemoteDownloadRetryRequest"];
+            };
+        };
+        responses: {
+            /** @description How many rows wait again. */
+            200: {
+                headers: {
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemoteDownloadRetried"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getRemoteDownload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The row's ID; any other text names no row (`404`). */
+                downloadId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The row. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemoteDownload"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    retryRemoteDownload: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The row's ID; any other text names no row (`404`). */
+                downloadId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The row, waiting or running. */
+            200: {
+                headers: {
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemoteDownload"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    cancelRemoteDownload: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The row's ID; any other text names no row (`404`). */
+                downloadId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The row after the cancel. */
+            200: {
+                headers: {
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemoteDownload"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getRemoteDownloadBulk: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The bulk's ID; any other text names no bulk (`404`). */
+                bulkId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The bulk. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemoteDownloadBulk"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    cancelRemoteDownloadBulk: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The bulk's ID; any other text names no bulk (`404`). */
+                bulkId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The bulk after the cancel. */
+            200: {
+                headers: {
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemoteDownloadBulk"];
                 };
             };
             400: components["responses"]["BadRequest"];

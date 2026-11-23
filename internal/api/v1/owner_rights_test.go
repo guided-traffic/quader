@@ -54,6 +54,16 @@ var ownerRightsExempt = map[string]string{
 	"rotateCurrentToken":  "acts on the presenting token itself, only if it was created selfRotatable (R-AUTH-030)",
 	"runRepositoryMirror": "repositories:write-config or an Owner of the project, both through the decision point with the scope",
 	"revokeBastionToken":  "endpoints:write or tokens:revoke through the decision point, with the scope (requireAny)",
+	// >>> T-24 downloads
+	"previewRemoteDownload": "read and the populate right, or manage, through the decision point with the scope (mayStart, " +
+		"remote-curation.md R-CUR-005); nothing is written",
+	"startRemoteDownload": "read and the populate right, or manage, through the decision point with the scope (mayStart, R-CUR-005)",
+	"retryRemoteDownload": "the starter of the row, manage, or the populate right on a probe's or a client's row, through the decision " +
+		"point with the scope (mayActOnRow, R-CUR-005)",
+	"cancelRemoteDownload":     "as retryRemoteDownload",
+	"retryRemoteDownloads":     "manage through the decision point with the scope (R-CUR-005)",
+	"cancelRemoteDownloadBulk": "the starter of the bulk or manage through the decision point with the scope (R-CUR-005)",
+	// <<< T-24 downloads
 }
 
 // ownerRightsReads are the authenticated reads (GET) that do not declare x-quader-owner-rights, each with why a token whose
@@ -76,12 +86,17 @@ var ownerRightsReads = map[string]string{
 		"(inLine in visible, Q-AUTH-199)",
 	"getJob": "settings:read through the decision point, or the starter's own job; the read stays open so a token polls the run " +
 		"it started (visibleJobs, Q-API-215)",
-	"listJobs":                         "as getJob (visibleJobs, Q-API-215)",
-	"listOwnedPackages":                "policies:read through the decision point, or the caller's own identity, then filtered to the repositories the subject reads with its scope (OwnedBy, ReadableOn)",
-	"listRoles":                        "the fixed catalogue of the system roles; nothing of an account",
-	"getVersion":                       "the build facts of the replica; nothing of an account",
-	"getAvatar":                        "an image by its digest, readable by every authenticated caller (Q-AUTH-195); nothing of the caller's account",
-	"getRepositoryMirror":              "decided through the decision point with the scope (requireMirrorReader)",
+	"listJobs":            "as getJob (visibleJobs, Q-API-215)",
+	"listOwnedPackages":   "policies:read through the decision point, or the caller's own identity, then filtered to the repositories the subject reads with its scope (OwnedBy, ReadableOn)",
+	"listRoles":           "the fixed catalogue of the system roles; nothing of an account",
+	"getVersion":          "the build facts of the replica; nothing of an account",
+	"getAvatar":           "an image by its digest, readable by every authenticated caller (Q-AUTH-195); nothing of the caller's account",
+	"getRepositoryMirror": "decided through the decision point with the scope (requireMirrorReader)",
+	// >>> T-24 downloads
+	"listRemoteDownloads":   "read on the repository through the decision point with the scope (downloadSetup, R-CUR-005)",
+	"getRemoteDownload":     "as listRemoteDownloads",
+	"getRemoteDownloadBulk": "as listRemoteDownloads",
+	// <<< T-24 downloads
 	"listCacheEntries":                 "decided through the decision point with the scope (requireCacheReader)",
 	"getVulnerabilitySummary":          "counts over the repositories the read scope of the decision point admits for the subject, scope included (vulnCaller, ReadScopeOn)",
 	"getVulnerabilityTrend":            "as getVulnerabilitySummary",

@@ -359,6 +359,7 @@ func CapabilitiesOf(f Format) Capabilities {
 		c.Remote.Names, _ = ra.(NameServer)
 		c.Remote.Signatures, _ = ra.(SignatureFetcher)
 		c.Remote.Catalogue, _ = ra.(Catalogue)
+		c.Remote.VersionProbe, _ = ra.(VersionProber)
 	}
 	return c
 }

@@ -30,6 +30,29 @@ func (u *usageRecorder) backgroundTotals(subject string) (requests, bg, uncached
 	return
 }
 
+// R-CUR-010, Q-CUR-17: a person's download ahead of one version is charged as a probe's background download is: one background
+// download and one upstream request of the person's budget key, and no request of the management API. Unit tier, milliseconds.
+func TestR_CUR_010_APersonsDownloadOfOneVersionIsChargedToThePerson(t *testing.T) {
+	ctx := context.Background()
+	repo := qname.Repo{Project: "platform", Key: "docker-hub"}
+	r := newRig(t, ModeEnforce, BuiltinProfiles()[ProfileAnonymous])
+	caller := anonCaller("198.51.100.30")
+	ticket, ok, err := r.e.StartDownload(ctx, caller, repo, 21)
+	if err != nil || !ok || !ticket.Charged() || ticket.Ceiling != CeilingKey(21, CeilingAnonymous) {
+		t.Fatalf("ticket %+v, ok %t, err %v", ticket, ok, err)
+	}
+	r.e.Flush(ctx)
+	s, _ := SubjectOf(caller)
+	requests, bg, _, upstream, _ := r.usage.backgroundTotals(s.String())
+	if requests != 0 || bg != 1 || upstream != 1 {
+		t.Fatalf("requests %d, background downloads %d, upstream requests %d; want 0, 1, 1", requests, bg, upstream)
+	}
+	var none *Engine
+	if _, ok, err := none.StartDownload(ctx, caller, repo, 21); ok || err != nil {
+		t.Errorf("an installation without the limits charged the download: %t, %v", ok, err)
+	}
+}
+
 func TestR_LIM_037_ABackgroundDownloadIsChargedToTheProbe(t *testing.T) {
 	ctx := context.Background()
 	repo := qname.Repo{Project: "platform", Key: "docker-hub"}

@@ -55,6 +55,21 @@ func (c *Charge) StartBackground(ctx context.Context, repoID int64) (t Ticket, o
 	return t, true, nil
 }
 
+// StartDownload decides a person's download ahead of one version (remote-curation.md R-CUR-010, Q-CUR-17): step 9a of the person's
+// subject at the remote repo (repoID) for the person's budget key and the remote's ceiling of the person's class, as
+// [Charge.StartBackground] decides a probe's, and the ticket the row carries to the worker. The POST of the management API that asks
+// is no request of the protocol paths: nothing but the background download and its upstream request is counted. ok is false on an
+// engine without the limits (a nil engine): the download runs charged to nobody.
+func (e *Engine) StartDownload(ctx context.Context, caller Caller, repo qname.Repo, repoID int64) (t Ticket, ok bool, err error) {
+	if e == nil {
+		return Ticket{}, false, nil
+	}
+	s, _ := SubjectOf(caller)
+	res, key, mode := e.resolve(s, repo)
+	c := &Charge{e: e, Subject: s, Resolution: res, Key: key, Mode: mode, Addressed: repo, id: e.nextID(), started: e.now()}
+	return c.StartBackground(ctx, repoID)
+}
+
 // ticket is the charge as a [Ticket].
 func (c *Charge) ticket() Ticket {
 	c.mu.Lock()

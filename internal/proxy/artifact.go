@@ -539,8 +539,10 @@ func (f *fetcher) integrityMismatch(ctx context.Context, sp *items.Spooled) flig
 	e.o.Audit.Record(ctx, e.event(rq, audit.EventProxyIntegrityMismatch, map[string]any{
 		"path": rq.Path, "announced": announcedJSON(rq.Expected), "computedSha256": hex.EncodeToString(sp.SHA256[:]),
 	}))
-	return flightResult{err: errs.E(errs.UpstreamFailed, errs.CodeUpstreamIntegrityMismatch,
-		"The artifact does not match the digest the upstream announced; it was not stored.")}
+	err := errs.E(errs.UpstreamFailed, errs.CodeUpstreamIntegrityMismatch,
+		"The artifact does not match the digest the upstream announced; it was not stored.")
+	f.clientFailure(ctx, err)
+	return flightResult{err: err}
 }
 
 // digestChanged ends a fetch that lost to a duplicate flight: another flight

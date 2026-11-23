@@ -160,7 +160,7 @@ func (a *App) registerFormatJobs(r *jobs.Registry) {
 	r.RegisterTask(ocidata.SweepJobKind, spec)
 	debdata.RegisterJobs(r, a.debHandlers())
 	ansibledata.RegisterJobs(r, ansibledata.Handlers{Reindex: a.ansibleReindexHandler(), DocsFill: a.ansibleDocsFillHandler(), ImportTaskKeep: a.cfg.Ansible.ImportTaskKeep})
-	a.registerBackgroundDownloadJobs(r)
+	a.registerDownloadJobs(r)
 	sigfetch.RegisterKind(r, a.signatureFetchHandler())
 }
 
@@ -411,8 +411,8 @@ func (a *App) wireFormatHost(_ context.Context, in infra, fm formatsArea, repo r
 		// A download of a route whose clients check a digest may be answered with a signed link (storage.md R-STOR-070).
 		Links:          dl.links,
 		DownloadBuffer: int(a.cfg.Storage.Download.BufferSize), Log: a.log.With("component", "formats"),
-		// A probe starts the background download of its version (R-REPO-065).
-		Downloads: backgroundDownloads{a}, ProbeMetrics: a.probeMetrics(),
+		// A probe inserts the row of its version into the download queue (R-REPO-065, R-CUR-013).
+		Downloads: probeDownloads{a}, ProbeMetrics: a.probeMetrics(),
 	}
 	// A nil pointer in an interface would not be nil: the session service is set only where it was built.
 	if a.uploads != nil {

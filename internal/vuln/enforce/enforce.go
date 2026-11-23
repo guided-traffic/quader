@@ -170,6 +170,9 @@ type Download struct {
 	Source audit.Source
 	// Endpoint is the endpoint the request arrived on.
 	Endpoint string
+	// NoClient marks a fill without a client (a mirror's pass, a download ahead): its refusal is the fill's outcome and is neither
+	// counted as a refused download nor recorded as one (remote-curation.md R-CUR-014, Q-CUR-22).
+	NoClient bool
 }
 
 // Refuse counts the block, records the audit event (at most once a minute per repository, version and client address) and
@@ -180,8 +183,10 @@ func (e *Enforcer) Refuse(ctx context.Context, d Download) error {
 		return nil
 	}
 	pkg, version := e.named(ctx, d)
-	e.count(d)
-	e.record(ctx, d, pkg, version)
+	if !d.NoClient {
+		e.count(d)
+		e.record(ctx, d, pkg, version)
+	}
 	if !d.Block.Refused() {
 		return nil
 	}
@@ -340,6 +345,8 @@ type Miss struct {
 	Actor            audit.Actor
 	Source           audit.Source
 	Endpoint         string
+	// NoClient marks a fill without a client: Download.NoClient (Q-CUR-22).
+	NoClient bool
 }
 
 // GateMiss is the gate of the remote miss (R-VULN-015 "Remote miss"): the version a path maps to is evaluated before anything
@@ -378,7 +385,7 @@ func (e *Enforcer) gate(ctx context.Context, p vuln.Policy, m Miss) error {
 	return e.Refuse(ctx, Download{
 		Addressed: addressed, Store: m.Repo.Name.String(), RepoID: m.Repo.ID, Format: m.Repo.Format, Path: m.Path,
 		Package: m.Package, Version: m.Version, Ecosystem: p.Ecosystem, Stored: false, Block: block,
-		Actor: m.Actor, Source: m.Source, Endpoint: m.Endpoint,
+		Actor: m.Actor, Source: m.Source, Endpoint: m.Endpoint, NoClient: m.NoClient,
 	})
 }
 

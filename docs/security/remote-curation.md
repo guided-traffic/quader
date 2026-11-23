@@ -151,7 +151,8 @@ holds and an allowed one does not, and a client that learned its digest elsewher
 ### H-1725 · A holder of `manage` can make Quader fetch up to a bulk's bound without a ceiling
 
 Component: the downloads ahead (R-CUR-010, Q-CUR-17). Subject: the upstream's quota of the installation, its object store, and the
-upstream's operator. Dormant until built. A bulk is system work: no ceiling of the remote counts it. A Maintainer can start bulks one after
+upstream's operator. Live since the download queue (R4) is built: a package's bulk runs now, a sub-section's once the catalogue lists
+levels (R3). A bulk is system work: no ceiling of the remote counts it. A Maintainer can start bulks one after
 another, each up to 10,000 versions and 100 GiB, bounded by the waiting rows and the four running rows per repository, the background
 share of the fetch slots and the upstream's throttling, not by a budget. On Docker Hub anonymously, 100 manifest pulls a window are used
 up by one bulk of 50 two-platform tags, and every client of the installation's address waits for the window. What makes it real: a
@@ -177,7 +178,8 @@ makes it real: a malicious package fetched for examination whose malware no sign
 
 ### H-1728 · The excerpt of an upstream's error answer is shown to every reader of the repository
 
-Component: the download queue's failures (R-CUR-011). Subject: every reader of a remote's tab **Downloads**. Dormant until built. The
+Component: the download queue's failures (R-CUR-011). Subject: every reader of a remote's tab **Downloads**. Live since the download
+queue (R4) is built, through `GET …/downloads` (the tab comes with R5a); a client's failed fetch writes its excerpt as well (Q-CUR-19). The
 first 512 bytes of an upstream's non-success answer are kept and shown as text; the address is shown without its query. An upstream whose
 error page names internal hosts, accounts or tokens shows them to every reader of the repository. What makes it real: a private
 registry or proxy behind the remote whose error pages carry internal details.
@@ -188,3 +190,21 @@ Component: the listing of a remote (R-API-081, R-CUR-014, Q-CUR-26). Subject: wh
 built. A stored version that the rules do not deliver is listed to every reader of the repository, marked not delivered, with its
 verdicts; so is an open request's examination. A reader therefore learns which packages are being looked at before a decision. What
 makes it real: an examination that is confidential to its deciders, such as a package considered for a security product.
+
+### H-1840 · Clients' failures of many files write as many rows a minute
+
+Component: the rows of clients' failed fetches (R-CUR-011, Q-CUR-19, Q-CUR-84). Subject: the database of the installation. Live since the
+download queue (R4) is built. A failure is written at most once per repository and file per replica and minute, and at most 1,000 such
+rows stay per repository, but the throttle is per file: a client, or several, that asks a failing upstream for many different files
+causes one write per file and replica a minute, each followed by the trim of the repository's client rows. What makes it real: an
+upstream that fails while a build fetches thousands of files through a remote, or a caller who requests made-up paths of a remote whose
+upstream answers them with a 5xx instead of a 404.
+
+### H-1841 · The usage overview does not name who started a bulk
+
+Component: the charge of a bulk (R-CUR-010, Q-CUR-17, Q-CUR-85). Subject: an administrator who reads the usage overview to find out
+who used an upstream's quota. Live since the download queue (R4) is built. A bulk is system work, recorded in the usage store under
+`system` with no person; the person stands in the bulk's and its rows' `started_by`, which go after the queue's retention (7 days for
+done rows, 30 for failed ones), and in the audit event `remote.download.started`, which stays as long as the audit log keeps it. What
+makes it real: a quota of an upstream used up by bulks, looked into after the rows are gone, by someone without the audit log.
+

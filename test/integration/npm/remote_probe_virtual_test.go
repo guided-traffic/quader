@@ -29,7 +29,7 @@ func TestQ_REPO_367_TheVersionDocumentOfAVirtualRepositoryDownloadsTheTarballAtT
 	}
 	time.Sleep(1500 * time.Millisecond) // the change area reaches the replica's index
 	jobs := func() int64 {
-		return r.st.Number(`SELECT count(*) FROM job WHERE kind = 'remote-background-download'`)
+		return r.st.Number(`SELECT count(*) FROM remote_download WHERE origin = 'probe'`)
 	}
 
 	p := upstreamPackage(t, 3)

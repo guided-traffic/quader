@@ -11,6 +11,7 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/outbound"
 	"github.com/guided-traffic/quader/internal/proxy/upstream"
+	"github.com/guided-traffic/quader/internal/remotecuration"
 )
 
 // failure is the classification of an upstream outcome (R-REPO-029): what the client
@@ -32,12 +33,25 @@ type failure struct {
 	// host is the host a security event names; "" is the host of the fetch's request. A token service's refusal names the
 	// service's host.
 	host string
+	// x is what the exchange told for the failure in words of R-CUR-011 (failure.go); a zero Step attaches nothing.
+	x Exchange
 }
 
 // classifyStatus maps the status of an upstream response that is neither a success
 // nor a 404 or 410 (R-REPO-029 table).
 func classifyStatus(rem Remote, resp *http.Response) failure {
-	f := failure{status: resp.StatusCode}
+	return classifyStatusSniffed(rem, resp, nil)
+}
+
+// classifyStatusSniffed is classifyStatus for an answer of which sniffed bytes of the body were read already.
+func classifyStatusSniffed(rem Remote, resp *http.Response, sniffed []byte) failure {
+	f := failure{status: resp.StatusCode, x: Exchange{Step: remotecuration.StepStatus, Status: resp.StatusCode, Excerpt: excerptOf(resp, sniffed)}}
+	if resp.Request != nil {
+		f.x.Address = addressOf(resp.Request.URL)
+	}
+	if d, ok := upstream.ParseRetryAfter(resp.Header.Get("Retry-After"), time.Now()); ok {
+		f.x.RetryAfter = d
+	}
 	switch s := resp.StatusCode; s {
 	case http.StatusUnauthorized, http.StatusForbidden:
 		f.err = errs.E(errs.UpstreamFailed, errs.CodeUpstreamAuthFailed,
@@ -80,6 +94,15 @@ func max0(d time.Duration) time.Duration {
 
 // classifyError maps a failure to send the request or to read its body.
 func (e *Engine) classifyError(rem Remote, target *url.URL, err error, idle bool) failure {
+	f := e.classifyTransport(rem, target, err, idle)
+	if f.x.Step == "" && f.err != nil && f.err.Code != errs.CodeShuttingDown {
+		f.x = Exchange{Step: stepOf(err, idle), Address: addressOf(target)}
+	}
+	return f
+}
+
+// classifyTransport is classifyError without the exchange's words.
+func (e *Engine) classifyTransport(rem Remote, target *url.URL, err error, idle bool) failure {
 	host := target.Hostname()
 	if he, ok := asHandshakeError(err); ok {
 		return he.failure() // the token service's failure is the answer; the circuit describes the registry

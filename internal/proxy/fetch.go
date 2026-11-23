@@ -505,6 +505,15 @@ func (f *fetcher) failed(ctx context.Context, fail failure) flightResult {
 	case "tls":
 		e.securityEvent(ctx, rq, audit.EventProxyTLSUntrusted, host, map[string]string{"host": host})
 	}
+	if fail.x.Step != "" {
+		if fail.x.Address == "" {
+			fail.x.Address = addressOf(f.target0())
+		}
+		fail.err = withExchange(fail.err, fail.x)
+	}
+	if fail.err != nil {
+		f.clientFailure(ctx, fail.err)
+	}
 	return flightResult{err: fail.err, status: fail.status}
 }
 
@@ -527,13 +536,16 @@ func (f *fetcher) respond(ctx context.Context, resp *http.Response, idle *atomic
 		// mark is set from a 401, which would stop the cached manifests and blobs of the image being served (R-REPO-029, Q-OCI-127).
 		return f.notFound(ctx, resp)
 	}
+	var sniffed []byte
 	if f.rq.background() {
 		// The mirror's own classification of a throttling answer (R-REPO-054); a client keeps R-REPO-029's.
-		if res, ok := f.rateLimited(resp); ok {
+		res, ok, sniff := f.rateLimited(resp)
+		if ok {
 			return res
 		}
+		sniffed = sniff
 	}
-	return f.failed(ctx, classifyStatus(f.rq.Remote, resp))
+	return f.failed(ctx, classifyStatusSniffed(f.rq.Remote, resp, sniffed))
 }
 
 // success records a 2xx or a 304 for the circuit: a client's request does, a background request never does, whatever the

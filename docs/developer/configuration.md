@@ -262,8 +262,9 @@ container and 1,191 for 2 GiB, which is the floor the chart checks. The 80 % and
 The installation's keys of the curation of a remote repository ([remote_curation.go](../../internal/config/remote_curation.go),
 fields `Delivery`, `Catalogue` and `Downloads` of `Proxy`; [remote-curation.md](../spec/remote-curation.md) R-CUR-020), the queue
 `downloads` (`jobs.workers.downloads`, [jobs.go](../../internal/config/jobs.go)) and the two tasks' schedules (the default map of
-[maintenance.go](../../internal/config/maintenance.go)). They are read by the packages of [remote-curation.md](remote-curation.md); the
-contracts package only declares them. A repository's own switches (`remote.delivery.mode`, `examineOnRequest`,
+[maintenance.go](../../internal/config/maintenance.go)). They are read by the packages of [remote-curation.md](remote-curation.md):
+`proxy.downloads`, `jobs.workers.downloads` and the schedule of `remote-downloads-dispatch` by the download queue
+([wire_remote_downloads.go](../../internal/app/wire_remote_downloads.go)), the rest by the packages still to come. A repository's own switches (`remote.delivery.mode`, `examineOnRequest`,
 `examinedRetentionDays`) are members of its document, not keys of this file. The unit tests are in
 [remote_curation_test.go](../../internal/config/remote_curation_test.go).
 

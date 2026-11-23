@@ -70,6 +70,9 @@ type Notifier interface {
 
 // Options configure [New].
 type Options struct {
+	// ClientFailures records a client's failed fetch as a row of the repository's download queue (remote-curation.md R-CUR-011,
+	// Q-CUR-19); nil records none.
+	ClientFailures ClientFailures
 	// Detach strips what belongs to the request from the context of a fetch that
 	// outlives it, such as the request's memory ticket: a flight's memory is the
 	// flight's. Optional.

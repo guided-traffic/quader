@@ -91,20 +91,20 @@ func (r Request) background() bool { return r.Priority == PriorityBackground }
 // rateLimited classifies the answer of the upstream to a background request as a rate limit (R-REPO-054): the typed error
 // instead of the client classification. It reads at most [upstream.SlowDownSniffBytes] of the body of a 503. A client request
 // never comes here, so a client's 503 SlowDown stays upstream_error.
-func (f *fetcher) rateLimited(resp *http.Response) (flightResult, bool) {
+func (f *fetcher) rateLimited(resp *http.Response) (flightResult, bool, []byte) {
 	var body []byte
 	switch resp.StatusCode {
 	case http.StatusServiceUnavailable:
 		body, _ = io.ReadAll(io.LimitReader(resp.Body, upstream.SlowDownSniffBytes))
 	case http.StatusTooManyRequests, http.StatusForbidden:
 	default:
-		return flightResult{}, false
+		return flightResult{}, false, nil
 	}
 	rl, ok := upstream.RateLimitOf(resp.StatusCode, resp.Header, body, f.e.now())
 	if !ok {
-		return flightResult{}, false
+		return flightResult{}, false, body
 	}
-	return flightResult{own: &upstream.RateLimitError{RateLimit: rl, Repo: f.rq.Remote.Repo.Name.String()}, status: resp.StatusCode}, true
+	return flightResult{own: &upstream.RateLimitError{RateLimit: rl, Repo: f.rq.Remote.Repo.Name.String()}, status: resp.StatusCode}, true, body
 }
 
 // roleMirror is the flight_role of the upstream log record of a background request (R-REPO-057).

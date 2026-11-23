@@ -1825,6 +1825,7 @@ type RemoteCaps struct {
 	Names      NameServer    // the shadowing check from the rows of the remote's indexes, for a format without a package document; nil otherwise
 	Signatures SignatureFetcher // the background fetch of a remote's signatures (signatures.md R-SIG-026); nil for a format whose signatures come with what a client fetches anyway
 	Catalogue  Catalogue        // the view of the upstream for a person (remote-curation.md R-CUR-007); nil until the format's catalogue is built
+	VersionProbe VersionProber  // what a download of one version starts from (remote-curation.md R-CUR-011, Q-CUR-80); a Catalogue implements it
 }
 
 func RemoteCapabilities(id ID) RemoteCaps
@@ -1836,6 +1837,14 @@ func RemoteCapabilities(id ID) RemoteCaps
 // version starts from.
 type Catalogue interface {
 	discover.Catalogue
+	VersionProber
+}
+
+// VersionProber is the call of the catalogue that the download queue's run makes (remote-curation.md R-CUR-011, Q-CUR-80): the five
+// formats with a remote class implement it ahead of the browsing calls, so that a download of one version runs before the catalogue
+// is built. ProbeFromPlan(plan, version) is the probe of one version from a mirror plan of its package, which npm, NuGet and Debian
+// answer it with.
+type VersionProber interface {
 	VersionProbe(ctx context.Context, u discover.Upstream, name, version string) (p Probe, ok bool, err error)
 }
 

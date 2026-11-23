@@ -225,6 +225,24 @@ func TestR_VULN_015_ReportModeCountsAndRefusesNothing(t *testing.T) {
 	}
 }
 
+// R-CUR-014, Q-CUR-22: the miss gate refuses a fill without a client (a mirror's pass, a download ahead) as any fill, and the refusal
+// is the fill's outcome: no count of a refused download and no event. Unit tier, milliseconds.
+func TestR_CUR_014_AFillWithoutAClientIsNoRefusedDownload(t *testing.T) {
+	f := newFixture(t, states{"npm": {Complete: true}}, vuln.EnforceBlocks)
+	f.ev.block = vuln.Block{Reason: vuln.BlockMalicious, AdvisoryID: "MAL-2026-1234"}
+	m := Miss{Package: "quader-test-mal", Version: "1.0.0", Path: "quader-test-mal/-/quader-test-mal-1.0.0.tgz", NoClient: true}
+	m.Repo.Name = qr("npm-remote")
+	if e, ok := errs.As(f.e.gate(context.Background(), scanned, m)); !ok || e.Code != errs.CodeVulnerabilityBlocked {
+		t.Fatalf("the gate let a known-malicious version be fetched: %v", e)
+	}
+	if n := counter(t, f.m.DownloadsBlocked.WithLabelValues("npm", "malicious", "enforce")); n != 0 {
+		t.Errorf("quader_vuln_downloads_blocked_total = %v for a fill without a client, want 0", n)
+	}
+	if len(f.rec.evs) != 0 {
+		t.Errorf("%d events for a fill without a client, want none", len(f.rec.evs))
+	}
+}
+
 // R-VULN-015 "Remote miss": the evaluation names the block, the installation's mode decides whether it is enforced, and a miss
 // without a finding links the advisory page.
 func TestR_VULN_015_TheMissGateAppliesTheEvaluationAndTheMissingDataRule(t *testing.T) {

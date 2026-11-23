@@ -23,6 +23,7 @@ func TestR_VULN_044_TheDatabaseTasksFillsAreRecordedForSystemImageDatabase(t *te
 		{fillMirror, "mirror", authz.ReasonMirror},
 		{fillBackgroundDownload, "background-download", authz.ReasonBackgroundDownload},
 		{fillImageDatabase, "image-database", authz.ReasonImageDatabase},
+		{fillDownloadAhead, "background-download", authz.ReasonDownloadAhead}, // R-CUR-010
 	} {
 		var preq proxy.Request
 		(&backgroundFacts{fill: c.fill, ceiling: 2, jobID: "job-1"}).apply(&preq, rq, formats.PathInfo{Package: "aquasec/trivy-db"}, formats.Path{Path: "aquasec/trivy-db/_blobs/sha256:00"})

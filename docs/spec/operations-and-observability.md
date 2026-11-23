@@ -1025,6 +1025,7 @@ Rules for every metric family, including families that format pages and other sp
 | `figure` | The figures of [usage-and-limits.md](usage-and-limits.md) R-LIM-004 by their API names, and `ceiling`; fixed in code |
   | `key_id` | Key IDs of the stored-secret key ring and key IDs that sealed values still reference ([architecture.md](architecture.md) R-ARCH-021); bounded by configuration |
   | `ecosystem`, `severity` | From M4b ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-024): the OSV ecosystem names of the formats with the vulnerability adapter (`npm`, `NuGet`), `""` for a source without ecosystems; the severity levels `critical`, `high`, `medium`, `low`, `none`, `unknown` |
+  | `origin` | What caused a row of a remote repository's download queue ([remote-curation.md](remote-curation.md) R-CUR-011, R-CUR-019): `person`, `request`, `allow`, `bulk`, `probe`, `client`; fixed in code |
   | `bastion` | Bastion registration names ([bastion.md](bastion.md) R-BAS-004), bounded by `bastions.max_registrations`; the one principal name a label may carry ([storage.md](storage.md) Q-STOR-430) |
   | `version`, `revision`, `goversion`, `role` | Only on `quader_build_info` |
 
@@ -1271,7 +1272,9 @@ HTTP duration histograms use the buckets 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.
 | `quader_mirror_interval_seconds` (6b) | gauge | `repo` | The configured `remote.mirror.intervalSeconds`; read from the repository snapshot (R-REPO-057) |
 | `quader_mirror_consecutive_failures` (6b) | gauge | `repo` | Failed pass attempts in a row; read from PostgreSQL; none for a paused mirror (R-REPO-057, Q-OPS-171) |
 | `quader_mirror_next_pass_timestamp_seconds` (6b) | gauge | `repo` | When the mirror next acts (a due pass, or the last write of the pass in progress); read from PostgreSQL; none for a paused mirror (R-REPO-057, Q-OPS-171) |
-| `quader_remote_background_downloads_total` | counter | `format`, `outcome` (the decisions `started`, `off`, `stored`, `not_admitted`, `active`, `queue_full`, `limited`, `busy`, `failed`; the jobs' `completed`, `bounded`, `failed_download`) | The decisions on probes of remote repositories and the ends of the background downloads they started; no repository, no subject ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-065, Q-REPO-366) |
+| `quader_remote_downloads_total` | counter | `repo`, `origin`, `outcome` (the ends of the queue's runs `completed`, `bounded`, `refused`, `skipped`, `failed`, `cancelled`; the decisions on probes, origin `probe`: `started`, `off`, `stored`, `local`, `not_admitted`, `active`, `queue_full`, `limited`, `busy`, `failed`) | The ends of the download queue's rows and the decisions on probes ([remote-curation.md](remote-curation.md) R-CUR-013, R-CUR-019) |
+| `quader_remote_downloads` | gauge | `repo`, `state` | Rows of the download queues by state, set by the task `remote-downloads-dispatch` every minute on the worker that runs it (R-CUR-019) |
+| `quader_remote_download_failures_total` | counter | `repo`, `class` | Failed attempts of the download queue's rows by failure class (R-CUR-011, R-CUR-019) |
 
 </details>
 
@@ -2356,8 +2359,8 @@ requirement: the MVP registers `gc`, `gc-full`, `audit-retention`, `replica-regi
 `ci-keys-refresh`, `ci-replay-cleanup` and `ci-issuance-retention` of
 [gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-030, and from M4b the four tasks of
 [vulnerability-scanning.md](vulnerability-scanning.md)); P1 requirements add theirs when they ship (the download queue of remote
-repositories adds `remote-downloads-dispatch` and `remote-examination-cleanup`, [remote-curation.md](remote-curation.md) R-CUR-011,
-R-CUR-016, specified, not built).
+repositories adds `remote-downloads-dispatch`, [remote-curation.md](remote-curation.md) R-CUR-011, and
+`remote-examination-cleanup`, R-CUR-016, specified, not built).
 
 **Tasks and leases.** A *task* is a named maintenance job, recurring or manual-only. A singleton
 scheduler enqueues due tasks into the job queue. The scheduler runs on the `worker` replica that
@@ -2414,7 +2417,7 @@ shared key is offered again on the next scheduler tick, so it is postponed, neve
 | `ansible-import-task-sweep` | [formats/ansible.md](formats/ansible.md) R-ANS-009: deletes the import tasks of publishes older than `ansible.import_task_keep` and keeps the versions; queue `maintenance`, exclusive; the job kind `ansible-reindex` (queue `index`, coalesce) is enqueued by the reindex endpoint | `17 3 * * *` (formats/ansible.md) |
 | `deb-index-refresh` | [formats/debian.md](formats/debian.md) R-DEB-010: enqueues a `deb-index` job for a repository whose retention is due, a virtual repository whose check is due and a remote repository's housekeeping, and deletes nothing itself (Q-DEB-33); queue `maintenance`, exclusive | `* * * * *` (formats/debian.md) |
 | `mirror-dispatch` | [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-053: starts the passes of the remote repositories in mode `mirror` that are due; queue `maintenance` (Q-ARCH-321), exclusive | `* * * * *` (repositories-and-proxy.md) |
-| `remote-downloads-dispatch` | [remote-curation.md](remote-curation.md) R-CUR-011: starts the rows of a remote repository's download queue whose next attempt came and removes finished rows after their retention; specified, not built | `* * * * *` (remote-curation.md) |
+| `remote-downloads-dispatch` | [remote-curation.md](remote-curation.md) R-CUR-011: lets the running rows whose job ended wait again, starts the waiting rows of a remote repository's download queue whose next attempt came, goes one step on with every bulk that expands, ends the bulks whose rows all ended, removes finished rows after their retention and sets the gauge `quader_remote_downloads` | `* * * * *` (remote-curation.md) |
 | `remote-examination-cleanup` | [remote-curation.md](remote-curation.md) R-CUR-016: removes what was fetched for examination and not delivered after the repository's `remote.delivery.examinedRetentionDays`; specified, not built | `0 4 * * *` (remote-curation.md) |
 | `remote-cache-cleanup` | [storage.md](storage.md) R-STOR-045; the per-repository expiry setting belongs to [repositories-and-proxy.md](repositories-and-proxy.md) (RET-036, RMT-021); specified, not built | `0 3 * * *` (proposed, storage.md) |
 | `token-cleanup`, `session-cleanup` | [identity-and-authentication.md](identity-and-authentication.md) R-AUTH-043 (R-AUTH-023; R-AUTH-005, R-AUTH-010, R-AUTH-034) | `40 3 * * *` and `*/10 * * * *` (identity-and-authentication.md) |
@@ -2455,8 +2458,8 @@ API shows them and can trigger a run, but it cannot edit them. A task's default 
 when its key is absent; the owning page of a task sets that default, and the table above repeats
 it. A key that names a task the version does not have stops startup with an error that names the key and lists the tasks
 there are (Q-OPS-418): a misspelt name would otherwise be ignored, and the task it meant would run on its default. The one exception
-is a task the specification puts into the configuration's default before a replica registers it (`remote-downloads-dispatch` and
-`remote-examination-cleanup`, R-CUR-020): its key is accepted and has no effect until the task is registered.
+is a task the specification puts into the configuration's default before a replica registers it (`remote-examination-cleanup`,
+R-CUR-020): its key is accepted and has no effect until the task is registered.
 
 API:
 

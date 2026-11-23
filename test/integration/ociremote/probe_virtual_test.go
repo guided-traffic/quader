@@ -17,8 +17,8 @@ import (
 // R-LIM-037).
 
 func (e *renv) jobsOf(member string) int64 {
-	return e.st.Number(`SELECT count(*) FROM job j JOIN repositories r ON r.id = (j.args->>'repoId')::bigint
-		WHERE j.kind = 'remote-background-download' AND r.key = $1`, member)
+	return e.st.Number(`SELECT count(*) FROM remote_download d JOIN repositories r ON r.id = d.repo_id
+		WHERE d.origin = 'probe' AND r.key = $1`, member)
 }
 
 func TestQ_REPO_367_AProbeThroughAVirtualRepositoryDownloadsAtTheMemberThatServesIt(t *testing.T) {

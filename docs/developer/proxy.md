@@ -511,13 +511,16 @@ format handler (a declared probe, answered with success; remote or virtual)
             else the first the gate does not refuse ─ rq.Member(member) ─ precheck on the member
             decide (on the member's request for a virtual repository)
             patterns and claims per file ─ MayPopulateOn (question) ─ Cached per file until one is missing
-            ─ BackgroundDownloads.Busy (the job's dedup key, the repository's count < maxConcurrentFetches)
-            ─ limits.Charge.StartBackground (step 9a for the probe's caller) ─ BackgroundDownloads.Enqueue
-job remote-background-download (queue default, exclusive per version)          app/wire_background_download.go
-  └─ MirrorHost.RunBackgroundDownload                                             formathost/background_download.go
-       limits.Engine.Resume(ticket) ─ the pass upstream with the charge and the background-download populate
+            ─ Downloads.Queued (a waiting or running row of the version; the bound of waiting rows)
+            ─ limits.Charge.StartBackground (step 9a for the probe's caller) ─ Downloads.AddProbe (a row of origin probe)
+row of remote_download, started by queue.Service (remotecuration/queue)        app/wire_remote_downloads.go
+job remote-download (queue downloads, one attempt, exclusive per row)
+  └─ MirrorHost.RunDownload                                                       formathost/background_download.go
+       limits.Engine.Resume(ticket) ─ the pass upstream with the charge and the populate of system:background-download
+       ─ the row's probe, else formats.VersionProber.VersionProbe (the step plan)
        ─ RemoteAdapter.ProbeContent (OCI reads the manifests through u.Artifact) ─ fillPath per file, in the window,
          at most 1,000 files and limits.maxArtifactBytes in sum ─ MarkBackgroundDownloaded on the probe's document
+  └─ queue.Service.Finish: the row's state, counters and failure (proxy.Describe), the next rows of the repository
 ```
 
 - **The charge.** `proxy.Request.Charge` carries the resumed charge into `fetcher.run`, which calls `Charge.Exchange` instead of step 9a: the
@@ -530,12 +533,17 @@ job remote-background-download (queue default, exclusive per version)          a
   settings decide and the job is the member's; the charge in the context is the probe's, whose place and budget key stage 7 resolved at
   the virtual repository, and `Charge.StartBackground(memberID)` counts the member's ceiling and records the usage at the member. The
   member search asks no upstream: the gate runs on a copy of the member request with `CacheView` set.
-- **Metrics.** `quader_remote_background_downloads_total{format,outcome}` (`ProbeMetrics`, one family per process); `local` is a probe through
-  a virtual repository whose local member holds the version.
+- **The queue.** Since the download queue (remote-curation.md R-CUR-013) a probe's download is a row of `remote_download`, run like every
+  row of it; the developer page [remote-curation.md](remote-curation.md#r4--downloads-ahead-and-the-queue) has the queue, its run and its
+  failures. A failure of an exchange carries its words as the cause of the engine's error (`proxy.Exchange`, [failure.go](../../internal/proxy/failure.go));
+  `proxy.Describe` maps any error of a fill to the class, the step and the code of R-CUR-011, and the leader of a client's flight records
+  its failure through `Options.ClientFailures` (Q-CUR-84).
+- **Metrics.** `quader_remote_downloads_total{repo,origin,outcome}` with the origin `probe` for the decisions (`ProbeCounter`, the queue's
+  metrics); `local` is a probe through a virtual repository whose local member holds the version.
 - **Tests.** The format's probes: `TestR_REPO_065_*` in each format's `probe_test.go`, with `formattest.MemRemote.ProbesSeen`; the table of every
   format in [all_test.go](../../internal/formats/all/all_test.go); the charge in [background_test.go](../../internal/limits/background_test.go);
   the whole path against the OCI stub in [probe_test.go](../../test/integration/ociremote/probe_test.go) (a replica of the role `all`, which runs
-  the job); the member search in [probe_test.go](../../internal/formathost/probe_test.go); through a virtual repository against the stubs in
+  the row's job, and the row of origin probe with its counters); the member search in [probe_test.go](../../internal/formathost/probe_test.go); through a virtual repository against the stubs in
   [probe_virtual_test.go](../../test/integration/ociremote/probe_virtual_test.go) and
   [remote_probe_virtual_test.go](../../test/integration/npm/remote_probe_virtual_test.go).
 - **Why NuGet, Ansible Galaxy and Debian through a virtual repository have unit tests only.** What a format adds there is which of its
@@ -556,8 +564,8 @@ job remote-background-download (queue default, exclusive per version)          a
 
 [wire_proxy_engine.go](../../internal/app/wire_proxy_engine.go) is the area `proxy-engine` (a component with `Drain` and `Quiesce`); its
 inputs are the upstream clients, the invalidation set, the item store and the replica count. The format host takes it as `Options.Engine`.
-The format host of a client listener also takes `Options.Downloads` (the job queue of the background downloads) and `Options.ProbeMetrics`
-([wire_background_download.go](../../internal/app/wire_background_download.go)).
+The format host of a client listener also takes `Options.Downloads` (the download queue a probe inserts its row into) and
+`Options.ProbeMetrics` ([wire_remote_downloads.go](../../internal/app/wire_remote_downloads.go)).
 
 ### Binding to the virtual engine
 

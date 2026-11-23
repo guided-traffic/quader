@@ -127,10 +127,10 @@ type Options struct {
 	// Links is the delivery by signed links of the object store (storage.md R-STOR-070): a download of a route whose clients check a
 	// digest may be answered with a link to the stored object (download_links.go). nil streams every download.
 	Links *downloadlinks.Links
-	// Downloads is the queue of the background downloads a probe starts (R-REPO-065); nil starts none. ProbeMetrics counts the
-	// decisions; nil counts nothing.
-	Downloads    BackgroundDownloads
-	ProbeMetrics *ProbeMetrics
+	// Downloads is the download queue a probe inserts its row into (R-REPO-065, remote-curation.md R-CUR-013); nil starts none.
+	// ProbeMetrics counts the decisions; nil counts nothing.
+	Downloads    Downloads
+	ProbeMetrics ProbeCounter
 	Log          *slog.Logger
 }
 

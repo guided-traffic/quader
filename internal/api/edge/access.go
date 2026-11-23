@@ -114,6 +114,16 @@ func (a *Access) Decide(ctx context.Context, c authz.Coordinate) authz.Decision 
 	return a.D.DecideOn(ctx, a.Index(), a.Subject, c)
 }
 
+// MayPopulateAct asks the populate check of an explicit act of the management API (remote-curation.md R-CUR-010, Q-CUR-27): a POST that
+// needs the session's CSRF token is an act the person meant, not a navigation or an image, so the session cookie's refusal of
+// R-AUTHZ-008 does not apply; read, the action of cacheFillAction and the endpoint's cache_fill decide as for a client. Nothing is
+// audited: the act's own event records it.
+func (a *Access) MayPopulateAct(ctx context.Context, c authz.Coordinate) authz.Decision {
+	sub := a.Subject
+	sub.SessionID, sub.AuthMethod = "", ""
+	return a.D.MayPopulateOn(ctx, a.Index(), sub, c)
+}
+
 // Readable filters repository keys to those the subject may read.
 func (a *Access) Readable(ctx context.Context, keys []qname.Repo) ([]qname.Repo, error) {
 	return a.D.ReadableOn(ctx, a.Index(), a.Subject, keys)
