@@ -120,7 +120,7 @@ func (s stack) config(t testing.TB, database string) config.Database {
 		LeasePoolSize: 2, LeaseCheckInterval: 5 * time.Second,
 		Session: config.DatabaseSession{
 			StatementTimeout: 30 * time.Second, LockTimeout: 5 * time.Second,
-			IdleInTransactionSessionTimeout: 60 * time.Second,
+			IdleInTransactionSessionTimeout: 60 * time.Second, ClientConnectionCheckInterval: time.Second,
 		},
 		Retry:           config.DatabaseRetry{InitialBackoff: 50 * time.Millisecond, MaxBackoff: 200 * time.Millisecond, MaxElapsed: 2 * time.Second},
 		Keepalive:       config.DatabaseKeepalive{Idle: 15 * time.Second, Interval: 5 * time.Second, Count: 3, UserTimeout: 30 * time.Second},

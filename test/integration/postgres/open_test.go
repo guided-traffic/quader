@@ -178,7 +178,7 @@ func TestOpenConnectionClasses(t *testing.T) {
 		) {
 			t.Helper()
 			for setting, want := range map[string]string{
-				"statement_timeout": "30s", "lock_timeout": "5s", "idle_in_transaction_session_timeout": "1min",
+				"statement_timeout": "30s", "lock_timeout": "5s", "idle_in_transaction_session_timeout": "1min", "client_connection_check_interval": "1s",
 				"search_path": "quader", "TimeZone": "UTC", "tcp_keepalives_idle": "60",
 				"tcp_keepalives_interval": "10", "tcp_keepalives_count": "6",
 			} {
@@ -655,7 +655,7 @@ func TestSessionGuard(t *testing.T) {
 	cfg, name, admin := migrated(t, st)
 
 	t.Run("R-ARCH-017 a web replica pointed at the same pooler starts and becomes ready", func(t *testing.T) {
-		for _, stmt := range []string{"statement_timeout = '30s'", "lock_timeout = '5s'", "idle_in_transaction_session_timeout = '60s'", "search_path = quader"} {
+		for _, stmt := range []string{"statement_timeout = '30s'", "lock_timeout = '5s'", "idle_in_transaction_session_timeout = '60s'", "client_connection_check_interval = '1s'", "search_path = quader"} {
 			if _, err := admin.Exec(context.Background(), fmt.Sprintf("ALTER ROLE %s IN DATABASE %s SET %s", st.user, name, stmt)); err != nil {
 				t.Fatal(err)
 			}
@@ -684,7 +684,7 @@ func TestTransactionPooler(t *testing.T) {
 	pooled := st.pooled(cfg)
 
 	for _, stmt := range []string{
-		"statement_timeout = '30s'", "lock_timeout = '5s'", "idle_in_transaction_session_timeout = '60s'", "search_path = quader",
+		"statement_timeout = '30s'", "lock_timeout = '5s'", "idle_in_transaction_session_timeout = '60s'", "client_connection_check_interval = '1s'", "search_path = quader",
 	} {
 		if _, err := admin.Exec(context.Background(), fmt.Sprintf("ALTER ROLE %s IN DATABASE %s SET %s", st.user, name, stmt)); err != nil {
 			t.Fatal(err)

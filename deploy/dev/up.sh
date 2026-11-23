@@ -45,7 +45,8 @@
 #                          needs (R-HA-059 rule 5: PodDisruptionBudgets, node spread, a grace period of 120 s, a pooled connection
 #                          lifetime of 60 s + 15 s) and the role defaults that preflight reads on a pooled connection, which this
 #                          script sets with ALTER ROLE quader IN DATABASE quader SET ... (statement_timeout 30s, lock_timeout 5s,
-#                          idle_in_transaction_session_timeout 60s, search_path quader: the configuration's defaults).
+#                          idle_in_transaction_session_timeout 60s, client_connection_check_interval 1s, search_path quader: the
+#                          configuration's defaults).
 #   QUADER_PITR=1          also install the Barman Cloud plugin of CloudNativePG (tools/versions.env DEV_BARMAN_PLUGIN_*) and archive the WAL
 #                          of quader-db to the bucket quader-pg-archive (pitr.yaml, R-HA-023); the point-in-time restore drill needs it
 #                          (docs/developer/e2e.md#the-point-in-time-restore-drill). It is off by default: the plugin adds a Deployment and a
@@ -226,7 +227,7 @@ task_postgres() {
   ready="$(kn get cluster quader-db -o jsonpath='{.status.readyInstances}')"
   [ "$ready" = "2" ] || { echo "quader-db has $ready ready instances, want 2"; exit 1; }
   if [ "$POOLER" = "1" ]; then
-    # A transaction-mode pooler cannot pass these four settings as startup parameters (R-HA-058); preflight refuses to start
+    # A transaction-mode pooler cannot pass these five settings as startup parameters (R-HA-058); preflight refuses to start
     # without them as role defaults. The values are the defaults of database.session (internal/config/database.go). Idempotent.
     local primary
     primary="$(kn get cluster quader-db -o jsonpath='{.status.currentPrimary}')"
@@ -234,6 +235,7 @@ task_postgres() {
       ALTER ROLE quader IN DATABASE quader SET statement_timeout = '30s';
       ALTER ROLE quader IN DATABASE quader SET lock_timeout = '5s';
       ALTER ROLE quader IN DATABASE quader SET idle_in_transaction_session_timeout = '60s';
+      ALTER ROLE quader IN DATABASE quader SET client_connection_check_interval = '1s';
       ALTER ROLE quader IN DATABASE quader SET search_path = quader;"
     kn apply -f "$DEV_DIR/pooler.yaml"
     # The operator creates the Deployments a moment after the Pooler objects.

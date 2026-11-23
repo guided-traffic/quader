@@ -290,6 +290,7 @@ func runtimeParams(c config.Database, instance string, k connKind) map[string]st
 	p["statement_timeout"] = strconv.FormatInt(stmt.Milliseconds(), 10)
 	p["lock_timeout"] = strconv.FormatInt(c.Session.LockTimeout.Milliseconds(), 10)
 	p["idle_in_transaction_session_timeout"] = strconv.FormatInt(c.Session.IdleInTransactionSessionTimeout.Milliseconds(), 10)
+	p["client_connection_check_interval"] = strconv.FormatInt(c.Session.ClientConnectionCheckInterval.Milliseconds(), 10)
 	p["search_path"] = c.Schema
 	p["tcp_keepalives_idle"] = strconv.Itoa(wholeSeconds(c.ServerKeepalive.Idle))
 	p["tcp_keepalives_interval"] = strconv.Itoa(wholeSeconds(c.ServerKeepalive.Interval))

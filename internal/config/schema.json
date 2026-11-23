@@ -1990,6 +1990,14 @@
         "session": {
           "additionalProperties": false,
           "properties": {
+            "client_connection_check_interval": {
+              "default": "1s",
+              "description": "PostgreSQL's client_connection_check_interval: a statement whose client went away ends within it (R-ARCH-019). Through a transaction-mode pooler a role default, like the other session settings.",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_DATABASE_SESSION_CLIENT_CONNECTION_CHECK_INTERVAL",
+              "x-quader-type": "duration"
+            },
             "idle_in_transaction_session_timeout": {
               "default": "1m",
               "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",

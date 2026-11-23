@@ -115,9 +115,13 @@ func checkBookkeeping(ctx context.Context, db q.DBTX, schema string, info q.Serv
 		info.RoleName, strings.Join(writable, " and "), bookkeepingRevokeStep, strings.Join(writable, ", "), info.RoleName)
 }
 
-// checkRoleDefaults verifies, on a pooled connection, that the four session
+// checkRoleDefaults verifies, on a pooled connection, that the five session
 // settings that cannot travel as startup parameters through a transaction-mode
 // pooler come from the runtime login's role defaults (R-HA-058, R-HA-014).
+// client_connection_check_interval is one of them because a pooler is where a
+// cancel request can be dropped: an instance that does not hold the client
+// drops it, and the statement ends only once the server sees its client gone
+// (H-1662, Q-ARCH-1041).
 func checkRoleDefaults(ctx context.Context, db q.DBTX, cfg config.Database, endpoint string) error {
 	rows, err := q.New(db).SessionSettings(ctx)
 	if err != nil {
@@ -127,6 +131,7 @@ func checkRoleDefaults(ctx context.Context, db q.DBTX, cfg config.Database, endp
 		"statement_timeout":                   strconv.FormatInt(cfg.Session.StatementTimeout.Milliseconds(), 10),
 		"lock_timeout":                        strconv.FormatInt(cfg.Session.LockTimeout.Milliseconds(), 10),
 		"idle_in_transaction_session_timeout": strconv.FormatInt(cfg.Session.IdleInTransactionSessionTimeout.Milliseconds(), 10),
+		"client_connection_check_interval":    strconv.FormatInt(cfg.Session.ClientConnectionCheckInterval.Milliseconds(), 10),
 		"search_path":                         cfg.Schema,
 	}
 	var problems []string

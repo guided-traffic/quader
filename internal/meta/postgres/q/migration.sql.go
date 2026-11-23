@@ -312,7 +312,7 @@ func (q *Queries) ServerInfo(ctx context.Context) (ServerInfoRow, error) {
 const sessionSettings = `-- name: SessionSettings :many
 SELECT name::text, setting::text
   FROM pg_catalog.pg_settings
- WHERE name IN ('statement_timeout', 'lock_timeout', 'idle_in_transaction_session_timeout', 'search_path')
+ WHERE name IN ('statement_timeout', 'lock_timeout', 'idle_in_transaction_session_timeout', 'client_connection_check_interval', 'search_path')
 `
 
 type SessionSettingsRow struct {

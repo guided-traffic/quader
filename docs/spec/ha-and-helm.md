@@ -1903,7 +1903,7 @@ Routing reads to replicas is Deferred.
 | `server_encoding` | `UTF8` (checked at startup) | Package names and metadata are Unicode |
 | `max_connections` | ≥ the budget of R-HA-016 (checked by the migration Job) | Scaling out without it exhausts connections |
 | `tcp_keepalives_idle`, `tcp_keepalives_interval`, `tcp_keepalives_count` | Recommended `60`, `10`, `6` | The server ends the session of a vanished replica, and releases its advisory locks, within about 2 minutes instead of the OS default ([connection settings](https://www.postgresql.org/docs/current/runtime-config-connection.html)). Quader sends the same values as startup parameters on every session it opens, the lock-holding ones included (R-HA-015), so the advisory-lock bound holds without this server setting; the server setting still covers other clients |
-| `client_connection_check_interval` | Recommended `10s` | Detects a vanished client during a long query |
+| `client_connection_check_interval` | Recommended `10s` for other clients | Detects a vanished client during a long query. Quader sets its own per session, `database.session.client_connection_check_interval` (1 s), as a startup parameter or, through a transaction-mode pooler, a role default (R-HA-015, [architecture.md](architecture.md) Q-ARCH-1041), so its bound holds without this server setting |
 | WAL archiving | Required for point-in-time recovery (R-HA-023) | Restore to a point in time |
 | Synchronous replication | Recommended, with one synchronous standby | Without it, a failover can lose transactions that were acknowledged as `201`. With CloudNativePG: `postgresql.synchronous: {method: any, number: 1, dataDurability: required}` ([replication](https://cloudnative-pg.io/docs/1.30/replication)); `required` pauses writes when no standby is available, `preferred` keeps writing and risks that loss. With `required`, run at least three instances, so that a drained or lost standby still leaves a synchronous standby and a node drain never pauses writes (R-HA-059) |
 | `default_tablespace` | Empty or a tablespace created for the purpose | Partitioned tables cannot be created in `pg_global` |
@@ -2100,8 +2100,9 @@ GRANT EXECUTE ON FUNCTION audit_maintain_partitions() TO quader_app;
   ALTER ROLE quader_app_a IN DATABASE quader SET statement_timeout = '30s';                   -- example: database.session.statement_timeout
   ALTER ROLE quader_app_a IN DATABASE quader SET lock_timeout = '5s';                         -- example
   ALTER ROLE quader_app_a IN DATABASE quader SET idle_in_transaction_session_timeout = '60s'; -- example
+  ALTER ROLE quader_app_a IN DATABASE quader SET client_connection_check_interval = '1s';    -- example
   ALTER ROLE quader_app_a IN DATABASE quader SET search_path = quader;                         -- example: database.schema
-  -- the same four statements for quader_app_b
+  -- the same five statements for quader_app_b
   ```
 
 Configuration:
@@ -2164,6 +2165,7 @@ is reported as a reload failure.
 | `statement_timeout` | `database.session.statement_timeout` (migrations: 0) |
 | `lock_timeout` | `database.session.lock_timeout` |
 | `idle_in_transaction_session_timeout` | `database.session.idle_in_transaction_session_timeout` |
+| `client_connection_check_interval` | `database.session.client_connection_check_interval`: a statement whose client went away ends within it ([architecture.md](architecture.md) Q-ARCH-1041) |
 | `TimeZone` | `UTC` |
 | `search_path` | `database.schema` |
 | `tcp_keepalives_idle`, `tcp_keepalives_interval`, `tcp_keepalives_count` | `database.server_keepalive.idle`, `.interval` (whole seconds) and `.count` |
@@ -2205,6 +2207,7 @@ database:
     statement_timeout: 30s            # default (proposed)
     lock_timeout: 5s                  # default (proposed)
     idle_in_transaction_session_timeout: 60s  # default (proposed)
+    client_connection_check_interval: 1s      # default: a statement whose client went away ends within it (architecture.md Q-ARCH-1041)
   request_statement_timeout: 5s       # default: every statement of an HTTP request (architecture.md R-ARCH-019, Q-ARCH-650)
   server_keepalive:                   # sent as tcp_keepalives_* startup parameters
     idle: 60s                         # default (proposed)
@@ -2402,11 +2405,19 @@ connections stay supported and remain the default.
   Transaction-scoped advisory locks (`pg_advisory_xact_lock`) work through the pooler.
 - **Settings.** Through the pooler, the main pool sends only `application_name` and `TimeZone` as
   startup parameters (R-HA-015). `statement_timeout`, `lock_timeout`,
-  `idle_in_transaction_session_timeout` and `search_path` come from role defaults on each runtime
-  login (R-HA-014), and request transactions still set `SET LOCAL statement_timeout`
-  (R-ARCH-019). At startup, preflight reads the four settings on a pooled connection of the request
+  `idle_in_transaction_session_timeout`, `client_connection_check_interval` and `search_path` come from role defaults on each
+  runtime login (R-HA-014), and request transactions still set `SET LOCAL statement_timeout`
+  (R-ARCH-019). At startup, preflight reads the five settings on a pooled connection of the request
   endpoint and of the control endpoint, and refuses to start, naming the login and the setting,
   when one differs from the configured value.
+- **Cancel requests.** A read outside a transaction that passes the request's bound is ended by the driver with a cancel request
+  to the pooler's address and a close of its connection ([architecture.md](architecture.md) Q-ARCH-650). Several pooler instances
+  behind one Service forward a cancel only to the instance that holds the client when they are configured as peers (PgBouncer's
+  `peer_id` and `[peers]`, which needs a stable address per instance); an operator's pooler need not be. What ends the statement
+  either way is the close: PgBouncer closes the server connection of a client that leaves in the middle of a statement, and the
+  role default `client_connection_check_interval` makes the server end a statement whose client is gone within that interval
+  ([architecture.md](architecture.md) Q-ARCH-1041). A pooler that keeps a server connection running after its client left would
+  need peers; PgBouncer does not.
 - **Prepared statements.** pgx caches protocol-level prepared statements per connection. PgBouncer
   supports them in transaction mode while `max_prepared_statements` is above 0, which its
   documentation gives as default 200
@@ -4786,6 +4797,7 @@ config:
       statement_timeout: 30s
       lock_timeout: 5s
       idle_in_transaction_session_timeout: 60s
+      client_connection_check_interval: 1s
     request_statement_timeout: 5s
     retry:
       initial_backoff: 100ms
@@ -10022,7 +10034,8 @@ closes an idle connection past its lifetime only in its health check; and every 
 | (d) No lifetime | Quader keeps its connections and the pooler pod is killed at the end of its grace | — | Same as (c) |
 
 **Choice:** (b). The role defaults are the configuration's defaults (`internal/config/database.go`): `statement_timeout` 30s,
-`lock_timeout` 5s, `idle_in_transaction_session_timeout` 60s and `search_path` `quader`, set by `up.sh` with
+`lock_timeout` 5s, `idle_in_transaction_session_timeout` 60s, `client_connection_check_interval` 1s (Q-ARCH-1041 of
+[architecture.md](architecture.md)) and `search_path` `quader`, set by `up.sh` with
 `ALTER ROLE quader IN DATABASE quader SET …` when `QUADER_POOLER=1`. The facts read from the cluster: PgBouncer 1.25.2 in CloudNativePG
 1.30's pooler image; the pooler's certificate names only the cluster's Services, so `deploy/dev/postgres.yaml` adds the pooler
 Services to `certificates.serverAltDNSNames` (a pooler started before the change presents the old certificate until it restarts);

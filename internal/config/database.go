@@ -60,6 +60,10 @@ type DatabaseSession struct {
 	StatementTimeout                time.Duration `yaml:"statement_timeout" default:"30s"`
 	LockTimeout                     time.Duration `yaml:"lock_timeout" default:"5s"`
 	IdleInTransactionSessionTimeout time.Duration `yaml:"idle_in_transaction_session_timeout" default:"60s"`
+	// ClientConnectionCheckInterval is PostgreSQL's client_connection_check_interval: how often a running statement checks that
+	// its client is still connected. A request's statement whose cancel request was dropped (a pooler instance that does not hold
+	// the client) ends within it once its connection is closed, not at statement_timeout (R-ARCH-019, Q-ARCH-1041).
+	ClientConnectionCheckInterval time.Duration `yaml:"client_connection_check_interval" default:"1s" validate:"min=100ms" doc:"PostgreSQL's client_connection_check_interval: a statement whose client went away ends within it (R-ARCH-019). Through a transaction-mode pooler a role default, like the other session settings."`
 }
 
 // DatabaseRetry bounds the retry of an operation that hit a failover (R-HA-015).

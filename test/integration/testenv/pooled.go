@@ -27,6 +27,7 @@ func ThroughPgBouncer(tb testing.TB, cfg config.Database, user string, maint *pg
 		"statement_timeout = " + strconv.FormatInt(cfg.Session.StatementTimeout.Milliseconds(), 10),
 		"lock_timeout = " + strconv.FormatInt(cfg.Session.LockTimeout.Milliseconds(), 10),
 		"idle_in_transaction_session_timeout = " + strconv.FormatInt(cfg.Session.IdleInTransactionSessionTimeout.Milliseconds(), 10),
+		"client_connection_check_interval = " + strconv.FormatInt(cfg.Session.ClientConnectionCheckInterval.Milliseconds(), 10),
 		"search_path = " + cfg.Schema,
 	} {
 		if _, err := maint.Exec(context.Background(), "ALTER ROLE "+user+" IN DATABASE "+cfg.Name+" SET "+set); err != nil {

@@ -21,7 +21,7 @@ connection is named `quader:<instance>:<class>` (`application_name`, cut to 63 b
 Behind `database.pooler.mode: transaction` the main and control pools send only `application_name` and
 `TimeZone` as startup parameters and use pgx `QueryExecModeExec` (unnamed extended-protocol statements, no
 per-connection statement cache), which works with and without `max_prepared_statements`. `statement_timeout`,
-`lock_timeout`, `idle_in_transaction_session_timeout` and `search_path` then come from role defaults
+`lock_timeout`, `idle_in_transaction_session_timeout`, `client_connection_check_interval` and `search_path` then come from role defaults
 (`ALTER ROLE <login> IN DATABASE <db> SET …`); `Open` reads them on both endpoints and refuses to start naming the
 login and the setting. Direct and session-mode connections send all of them, plus `tcp_keepalives_*`, as startup
 parameters, and wrap pgx's dial with client keepalive and `TCP_USER_TIMEOUT` (Linux).
@@ -54,7 +54,11 @@ The connection string carries neither.
   (`httpserver.Chain.RequestContext`, [wire_endpoints.go](../../internal/app/wire_endpoints.go)); jobs and loops have no bound and run under
   `database.session.statement_timeout`. A transaction's statement past the bound is SQLSTATE `57014` and keeps its connection; a read's
   statement past it ends with its context, its connection is closed and replaced, and it is never run again (`errStatementBound`,
-  `retryNo`); both answer `503` `database_timeout`. Through more than one pooler instance a read's cancel can be dropped (H-1662). A handler whose requirement names a longer bound sets it on its own context.
+  `retryNo`); both answer `503` `database_timeout`. Through more than one pooler instance a read's cancel can reach an instance that
+  does not hold the client and be dropped; the statement still ends within `database.session.client_connection_check_interval`
+  (1 s), because the pooler closes the server connection of a client that left mid-statement and the server's check sees it gone
+  (Q-ARCH-1041, `TestR_ARCH_019_AStatementWhoseCancelIsDroppedEndsWhenItsClientIsGone` in
+  [cancel_test.go](../../test/integration/postgres/cancel_test.go)). A handler whose requirement names a longer bound sets it on its own context.
 - `q.Pipeline(ctx, tx, steps...)` ([pipeline.go](../../internal/meta/postgres/q/pipeline.go)) runs the statements of several steps
   in one round trip (`store.Eval.Pipeline` for the vulnerability store): a step calls the generated `Queries` methods it is given and
   keeps their results; the statements are recorded in a first pass, sent as one pgx batch on the transaction and answered to a

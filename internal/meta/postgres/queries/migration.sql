@@ -10,7 +10,7 @@ SELECT current_setting('server_version_num')::int AS version_num,
 -- name: SessionSettings :many
 SELECT name::text, setting::text
   FROM pg_catalog.pg_settings
- WHERE name IN ('statement_timeout', 'lock_timeout', 'idle_in_transaction_session_timeout', 'search_path');
+ WHERE name IN ('statement_timeout', 'lock_timeout', 'idle_in_transaction_session_timeout', 'client_connection_check_interval', 'search_path');
 
 -- name: SchemaOwnedBy :one
 SELECT pg_get_userbyid(nspowner)::text AS owner

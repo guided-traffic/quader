@@ -12702,8 +12702,9 @@ its connection. Both answer the same `503` `database_timeout`, and neither runs 
 (a read of several statements, a slow scan of a row) does not count: the read fails only when its function failed. **Through a pooler**
 in transaction mode, the cancel request goes to the pooler's address: PgBouncer forwards it to the server connection its client is linked
 to while the statement runs. With more than one pooler instance behind one Service, a cancel can reach an instance that does not hold the
-client, which drops it ([H-1662](#h-1662--a-cancel-request-that-reaches-another-pooler-instance-does-not-end-the-statement)). The session's
-own `statement_timeout`, the role default through a pooler (R-HA-014, 30 s), stays the server's backstop.
+client, which drops it; the statement then ends because its client is gone, within `database.session.client_connection_check_interval`
+([Q-ARCH-1041](#q-arch-1041--a-statement-whose-cancel-request-is-dropped-ends-when-the-server-sees-its-client-gone)). The session's own
+`statement_timeout`, the role default through a pooler (R-HA-014, 30 s), stays the server's backstop.
 
 **Requests that need longer**, checked the same day: none needs it. The audit export reads in keyset batches of short queries and holds no
 connection while it writes; the export of the findings counts at most `export.max_rows` + 1 and reads pages of 500; the usage export reads
@@ -12720,22 +12721,46 @@ object-store work runs outside every transaction; the settings' malware backlog 
 file's download through the item store's transaction), the subtest R-ARCH-019 of `TestInTx` (integration, `postgres`), `TestBeginOptions`
 and `TestStatementBoundIsNoOutage` (unit).
 
+### Q-ARCH-1041 · A statement whose cancel request is dropped ends when the server sees its client gone
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+Closes H-1662 of this page.
+
+Context: a read outside a transaction that passes the request's bound is ended by the driver with a cancel request to the address it
+connected to and a close of its connection (Q-ARCH-650, Q-ARCH-498). Through a pooler with several instances behind one Service the
+cancel request can reach an instance that does not hold the client, which drops it: PgBouncer forwards a cancel only for a client it
+holds, unless its instances are configured as peers. Measured on 2026-11-24 with the integration stack's PgBouncer 1.25 behind a proxy
+whose new connections reach "another instance" that forwards nothing (the replica's own connections reach PgBouncer): a `pg_sleep(20)`
+read with a bound of 300 ms answered `database_timeout`, its cancel request was dropped, and the statement still ran 3 s later, as it
+would have to its end or to the session's `statement_timeout` (30 s), holding a server connection of the pooler. What did end it was
+not the cancel: PgBouncer closes the server connection of a client that leaves in the middle of a statement, and the server notices a
+gone client during a statement only with `client_connection_check_interval` above 0, which is 0 by default. With 1 s as a role default
+the same statement ended 0.7 s after the bound. The development profile and the owner's installation were read the same day: the
+profile's two `Pooler` instances per endpoint are not peers; the owner's installation reaches PostgreSQL without a pooler (its
+`database.host` is the database's read-write Service), so the cancel reaches the server there and H-1662 was dormant.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `database.session.client_connection_check_interval` (1 s by default), sent as a startup parameter on direct connections and a role default through a transaction-mode pooler, verified by preflight like the other session settings (chosen) | The server ends a statement within the interval once its client is gone, whoever dropped the cancel | Works with any pooler that closes a server connection whose client left mid-statement (PgBouncer does), any number of instances, no configuration of the pooler; it also ends a statement whose cancel was lost on a direct connection | One more role default an operator of a pooler sets; a timer at the server during a running statement, a `poll` per interval |
+| (b) PgBouncer's peers (`peer_id` and `[peers]` on every instance) | The instance that receives a cancel forwards it to the one that holds the client | The cancel itself arrives | Every instance needs a stable address the others list: a StatefulSet with a headless Service instead of the operator's Deployment; CloudNativePG's `Pooler` does not configure peers; an operator's own pooler is not ours to configure |
+| (c) Run `DB.Read` in a transaction with `SET LOCAL statement_timeout` | The server ends the statement at the bound without a cancel | No cancel at all | A `BEGIN` and a `COMMIT` more for every read of a request, the round trips Q-ARCH-650 (b) rejected on the download path |
+| (d) Leave the gap: the session's `statement_timeout` ends it within 30 s | Nothing to build | — | A server connection per statement that passes its bound, for up to 30 s, under the load that makes statements pass it |
+
+**Choice:** (a). **Rationale:** the cancel is one way to end a statement; a closed connection is the other, and the only one Quader
+controls end to end. The interval's cost is a check while a statement runs, which is idle work for the short statements of a request.
+The development agent would revisit it if a pooler were met that keeps a server connection running after its client left: that pooler
+would need peers, and the chart's page says so.
+
+**Applied in the spec:** [ha-and-helm.md](ha-and-helm.md) R-HA-014 (the role default), R-HA-015 (the parameter's table and the
+configuration), R-HA-058 (preflight's five settings and the cancel requests through a pooler), Q-HA-173's profile (the role default of
+`up.sh`); H-1662 is closed. Code: [database.go](../../internal/config/database.go) (`DatabaseSession.ClientConnectionCheckInterval`),
+`runtimeParams` in [connect.go](../../internal/meta/postgres/connect.go), `checkRoleDefaults` in
+[preflight.go](../../internal/meta/postgres/preflight.go), [deploy/dev/up.sh](../../deploy/dev/up.sh). Test:
+`TestR_ARCH_019_AStatementWhoseCancelIsDroppedEndsWhenItsClientIsGone` ([cancel_test.go](../../test/integration/postgres/cancel_test.go),
+integration, `postgres`, about 2 s).
+
 ## What this does not cover
 
-
-### H-1662 · A cancel request that reaches another pooler instance does not end the statement
-
-Stage: a read outside a transaction on a request path whose statement passes `database.request_statement_timeout` (R-ARCH-019,
-Q-ARCH-650), in an installation whose request pool goes through PgBouncer in transaction mode with more than one instance behind one
-Service (the pooler profile of [ha-and-helm.md](ha-and-helm.md) R-HA-058 runs two). Dormant without a pooler and with one instance.
-
-The driver ends such a statement with a cancel request to the address it connected to, the Service. PgBouncer forwards a cancel only for a
-client it holds; an instance that does not hold the client drops it, unless the instances are configured as peers, which the profile does
-not do. The request still answers `503` `database_timeout` at the bound and its connection is let go, but the statement runs on at the
-server until it ends by itself or by the session's `statement_timeout` (the role default through a pooler, 30 s, R-HA-014), and holds a
-server connection of the pooler meanwhile. What makes it real: statements that pass the bound often, for example under a lock or a
-starved database, each costing a server connection for up to 30 s. Not measured on the profile; the forwarding rule is PgBouncer's
-documented behaviour, not a run of ours.
 
 ### H-1 · Format code runs in-process without isolation
 

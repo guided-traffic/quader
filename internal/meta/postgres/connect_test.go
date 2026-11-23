@@ -28,7 +28,7 @@ func testConfig() config.Database {
 		LeasePoolSize: 4,
 		Session: config.DatabaseSession{
 			StatementTimeout: 30 * time.Second, LockTimeout: 5 * time.Second,
-			IdleInTransactionSessionTimeout: 60 * time.Second,
+			IdleInTransactionSessionTimeout: 60 * time.Second, ClientConnectionCheckInterval: time.Second,
 		},
 		ServerKeepalive: config.DatabaseServerKeepalive{Idle: 60 * time.Second, Interval: 10 * time.Second, Count: 6},
 		Retry:           config.DatabaseRetry{InitialBackoff: 100 * time.Millisecond, MaxBackoff: 2 * time.Second, MaxElapsed: 30 * time.Second},
@@ -57,7 +57,7 @@ func TestRuntimeParams(t *testing.T) {
 		p := runtimeParams(c, "pod", connKind{class: classMain})
 		want := map[string]string{
 			"application_name": "quader:pod:main", "TimeZone": "UTC", "statement_timeout": "30000",
-			"lock_timeout": "5000", "idle_in_transaction_session_timeout": "60000", "search_path": "quader",
+			"lock_timeout": "5000", "idle_in_transaction_session_timeout": "60000", "client_connection_check_interval": "1000", "search_path": "quader",
 			"tcp_keepalives_idle": "60", "tcp_keepalives_interval": "10", "tcp_keepalives_count": "6",
 		}
 		for k, v := range want {
