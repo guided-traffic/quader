@@ -193,6 +193,13 @@ who holds the capability, is bound by none of the rules; the Owner's answers are
 `TestR_AUTHZ_026_AnOwnerWritesRemoteRepositoriesWithinTheRules` ([owner_repositories_test.go](../../test/integration/projects/owner_repositories_test.go))
 drives every rule over HTTP as an Owner and as an administrator.
 
+**Curation of a remote** (specified on 2026-11-23, not built, [remote-curation.md](remote-curation.md)): a Maintainer and an Owner set a remote's delivery
+rules, decide requests for an allow, fetch for examination and start bulk downloads within their bounds, by the action `manage`; the
+delivery mode and the repository's switches stay configuration (an Owner, `repositories:write-config`); a mirror's scope
+(`remote.mirror.include`) stays `repositories:write-config`'s, so a Maintainer's allow widens a mirror only within it (Q-CUR-5). A bulk is
+charged to no ceiling ([H-1725](remote-curation.md#h-1725--a-holder-of-manage-can-make-quader-fetch-up-to-a-bulks-bound-without-a-ceiling)).
+On a repository of the project `upstream`, which has no members, the administrator alone.
+
 ## The built-in project `upstream`: where a project's boundary is crossed
 
 Partly built (the owner's decisions of 2026-11-20, [repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-066 to

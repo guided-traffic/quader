@@ -39,6 +39,10 @@ marks and names the digests the upstream announced for an artifact, and the engi
 
 ## When Quader asks the upstream
 
+Specified on 2026-11-23 and not built ([remote-curation.md](remote-curation.md)): besides a client's miss, a probe's background download and a mirror's pass,
+Quader asks the upstream for a person's download ahead of a client and for the upstream catalogue's calls; a remote's delivery rules
+decide a client's miss before the steps below, and a catalogue call stores nothing.
+
 A request for an artifact passes these checks in this order before anything is sent ([artifact.go](../../internal/proxy/artifact.go)
 `Artifact`; a metadata document the same in [metadata.go](../../internal/proxy/metadata.go) `metadata` and `beforeFetch`):
 

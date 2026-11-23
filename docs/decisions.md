@@ -2544,6 +2544,39 @@ R-HA-054, Q-HA-416, Q-HA-417; [operations-and-observability.md](spec/operations-
 [security/stored-content-visibility.md](security/stored-content-visibility.md) H-1314, H-1316;
 [developer/stored-content-encryption.md](developer/stored-content-encryption.md) package 7.
 
+### ADR-277 · A remote repository can be curated: delivery rules in two modes, an upstream catalogue, downloads ahead and their queue, requests with examination
+
+**Status:** Decided by the owner on 2026-11-23 (task T-24: the wish, the two modes, the deciders, the request, the fetch for
+examination, and a tab each for the upstream and the queue, [Q-CUR-1](spec/remote-curation.md#q-cur-1--a-remote-repositorys-page-has-tabs-its-content-upstream-and-downloads));
+the design decided by the development agent ([Q-CUR-2](spec/remote-curation.md#q-cur-2--the-words-allow-and-block-two-modes-a-plain-user-reads-no-release)
+to [Q-CUR-28](spec/remote-curation.md#q-cur-28--the-upstream-is-another-surface-the-protocol-routes-keep-what-they-serve)). Specified,
+not built.
+
+**Context.** The owner, 2026-11-23, 12:38: "In Repositories, die Remote sind, fehlt mir dafür ein Reiter um das Remote zu durchsuchen
+… Wir brauchen in bei Remote-Repos als ein Whitelisting und Blacklisting Konzept. Default ist Blacklisting … Remote-Repos benötigen auch
+einen Reiter mit dem der User sich die aktuelle Download-Queue des Remote-repos anschauen kann"; at 12:57 the request for an allow, at
+13:01 the fetch for examination without delivery. A remote fetched only for a client's request, a probe or a mirror's pass; its patterns
+admitted or hid whole packages; no surface showed its upstream or a failed download.
+
+**Decision.**
+- A remote delivers everything except what is blocked (default) or only what is allowed; a rule allows or blocks a sub-section, a package
+  (future versions included) or a version; the narrowest rule decides, a block wins at equal width; the patterns of a remote become rules
+  ([remote-curation.md](spec/remote-curation.md) R-CUR-001, R-CUR-002).
+- The refusal is a delivery gate: before a fill, at the serve point as the fourth check of the one decision, and in documents; its own
+  answer in each format; a miss of a virtual member (R-CUR-003, R-CUR-004).
+- The holders of `manage` and the administrator set rules and decide requests; the mode is configuration; a gate's release stays triage
+  (R-CUR-005).
+- The upstream catalogue is a declared port of the format contract (contract version 8) that stores nothing, with a budget, a cache and
+  bounds of its own (R-CUR-007 to R-CUR-009).
+- Downloads ahead at three levels with a preview and bounds; a repository's download queue as rows run by jobs, failures in the failure's
+  own words, retries; the probe's background download a row of it (R-CUR-010 to R-CUR-013).
+- A download ahead does not depend on the rules: what it stores and the rules do not deliver is stored for examination, scanned, shown with
+  its verdicts and removed after 30 days without a decision; a request starts that examination at once (R-CUR-014 to R-CUR-016).
+
+**Consequences.** Every format with a remote class declares its catalogue and filters its documents by the rules (kit checks 21 and 22);
+a Debian remote's curated view is a virtual repository over it; the page of a remote repository has tabs; R-UI-052, R-REPO-005, R-REPO-024,
+R-REPO-065, R-AUTHZ-008, R-API-081 and INV-11 changed. The security view is [security/remote-curation.md](security/remote-curation.md).
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -10071,6 +10104,46 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-CLAMAV-16](spec/formats/clamav.md#q-clamav-16--the-snippet-writes-the-address-without-its-trailing-slash) | The snippet writes the address without its trailing slash | Decided by the development agent | (a) A template function `trimslash` beside `schemeless` and `hostname` | — |
 | [Q-CLAMAV-17](spec/formats/clamav.md#q-clamav-17--a-commit-without-its-metadata-is-refused) | A commit without its metadata is refused | Decided by the development agent | (a) `OnCommit` refuses a commit at a path outside the layout and one without the payload of its kind (`rows.Container`, `rows.Signature`) whose database and version agree with the path | — |
 | [Q-CLAMAV-18](spec/formats/clamav.md#q-clamav-18--the-guide-names-the-endpoints-on-which-a-certificate-reads-the-repository-now) | The guide names the endpoints on which a certificate reads the repository now | Decided by the development agent | (a) A field `GuideData.CertificateURLs`: the registry URL on every endpoint with `auth.client_certificates` on which a certificate subject reads the repository now, asked of the decision point | [ADR-232](#adr-232--the-guide-data-names-the-addresses-on-which-a-client-certificate-reads-the-repository) |
+
+</details>
+
+### Q-CUR
+
+28 questions on [spec/remote-curation.md](spec/remote-curation.md).
+
+<details>
+<summary>Q-CUR: 28 questions</summary>
+
+| ID | Question | Status | Choice | ADR |
+|---|---|---|---|---|
+| [Q-CUR-1](spec/remote-curation.md#q-cur-1--a-remote-repositorys-page-has-tabs-its-content-upstream-and-downloads) | A remote repository's page has tabs: its content, Upstream and Downloads | Decided by the owner on 2026-11-23 | (a) A tab strip on a remote's page only: the content, **Upstream**, **Downloads**, each with its address | [ADR-277](#adr-277--a-remote-repository-can-be-curated-delivery-rules-in-two-modes-an-upstream-catalogue-downloads-ahead-and-their-queue-requests-with-examination) |
+| [Q-CUR-2](spec/remote-curation.md#q-cur-2--the-words-allow-and-block-two-modes-a-plain-user-reads-no-release) | The words: allow and block, two modes a plain user reads, no "release" | Decided by the development agent | (a) `allow` and `block`; modes `allExceptBlocked` and `onlyAllowed` ("Delivers everything except what is blocked", "Delivers only what is allowed"); German erlauben and sperren | [ADR-277](#adr-277--a-remote-repository-can-be-curated-delivery-rules-in-two-modes-an-upstream-catalogue-downloads-ahead-and-their-queue-requests-with-examination) |
+| [Q-CUR-3](spec/remote-curation.md#q-cur-3--one-rule-model-the-narrowest-decides-a-block-wins-at-equal-width-exact-versions-only) | One rule model: the narrowest decides, a block wins at equal width, exact versions only | Decided by the development agent | (a) Three kinds (section, package, version), the narrowest kind decides, block wins at equal width, exact versions | — |
+| [Q-CUR-4](spec/remote-curation.md#q-cur-4--a-remotes-patterns-become-rules-and-lose-their-hiding) | A remote's patterns become rules, and lose their hiding | Decided by the development agent | (a) A remote has no patterns; an exclude is a section block, an include list the mode `onlyAllowed` with section allows; what is stored and not delivered is shown as such | — |
+| [Q-CUR-5](spec/remote-curation.md#q-cur-5--the-mirrors-scope-is-its-own-member-and-the-rules-filter-it) | The mirror's scope is its own member, and the rules filter it | Decided by the development agent | (a) `remote.mirror.include`, a member of `remote.mirror` (write-config only); a pass stores what the scope and the rules admit | — |
+| [Q-CUR-6](spec/remote-curation.md#q-cur-6--the-rules-refusal-is-a-delivery-gate-before-the-fill-at-the-serve-point-in-documents) | The rule's refusal is a delivery gate: before the fill, at the serve point, in documents | Decided by the development agent | (a) A gate in the signature gate's shape: asked before a fill (no upstream request), as the fourth check of the one serve decision, and as a filter of documents | — |
+| [Q-CUR-7](spec/remote-curation.md#q-cur-7--the-rules-place-in-the-serve-decision-after-what-was-found-in-the-content-before-what-is-missing) | The rule's place in the serve decision: after what was found in the content, before what is missing | Decided by the development agent | (a) `malware_found`, `vulnerability_blocked`, `not_allowed_in_repository`, then the unverified and missing | — |
+| [Q-CUR-8](spec/remote-curation.md#q-cur-8--403-not_allowed_in_repository-a-miss-of-a-virtual-member-and-the-answer-when-nothing-serves) | `403 not_allowed_in_repository`, a miss of a virtual member, and the answer when nothing serves | Decided by the development agent | (a) `403` with its own code and a text with where to ask; a member's refusal continues the walk; when nothing serves, the rule refusal is the answer before `404` | — |
+| [Q-CUR-9](spec/remote-curation.md#q-cur-9--debian-the-upstreams-signed-indexes-pass-unchanged-the-filtered-view-is-a-virtual-repository) | Debian: the upstream's signed indexes pass unchanged; the filtered view is a virtual repository | Decided by the development agent | (a) Addressed directly, the remote serves the upstream's indexes and refuses the files the rules refuse; through a virtual repository, its merge drops the rows the member's rules refuse | — |
+| [Q-CUR-10](spec/remote-curation.md#q-cur-10--oci-a-tag-is-the-version-content-by-digest-follows-the-image-and-the-stored-tags) | OCI: a tag is the version; content by digest follows the image and the stored tags | Decided by the development agent | (a) A rule's version is a tag; a manifest by digest is delivered when the image is delivered without version rules, or a delivered tag's stored document names it directly or through a stored index; a blob by digest is delivered when some version of the image is | — |
+| [Q-CUR-11](spec/remote-curation.md#q-cur-11--who-the-holders-of-manage-and-the-administrator-allow-the-mode-is-configuration-triage-stays-separate) | Who: the holders of `manage` and the administrator allow; the mode is configuration; triage stays separate | Decided by the development agent | (a) Rules and requests: `manage` or `admin`; the mode: configuration (write-config, Owner); gates' releases stay triage | — |
+| [Q-CUR-12](spec/remote-curation.md#q-cur-12--the-catalogue-is-a-declared-part-of-the-format-contract-the-contract-version-rises-to-8) | The catalogue is a declared part of the format contract; the contract version rises to 8 | Decided by the development agent | (a) Every remote format declares its catalogue or a reason per call, as it declares its probes; version 8 | — |
+| [Q-CUR-13](spec/remote-curation.md#q-cur-13--the-catalogue-stores-nothing-in-the-cache) | The catalogue stores nothing in the cache | Decided by the development agent | (a) The catalogue reads stored documents and fetches the rest without storing; its own short cache keeps parsed pages | — |
+| [Q-CUR-14](spec/remote-curation.md#q-cur-14--who-browses-what-signed-in-readers-in-mode-onlyallowed-a-reader-sees-what-is-delivered-and-looks-up-by-name) | Who browses what: signed-in readers; in mode `onlyAllowed` a reader sees what is delivered and looks up by name | Decided by the development agent | (a) Signed-in readers; in `onlyAllowed` search and levels show readers the delivered hits with the count of the others, a lookup by exact name shows any package | — |
+| [Q-CUR-15](spec/remote-curation.md#q-cur-15--second-hosts-come-from-the-preset-and-docker-hubs-undocumented-search-is-used-with-a-fallback) | Second hosts come from the preset, and Docker Hub's undocumented search is used with a fallback | Decided by the development agent | (a) `catalogueHosts` of a preset; an undocumented endpoint only where no documented one answers the need, and its failure turns the capability off for the period | — |
+| [Q-CUR-16](spec/remote-curation.md#q-cur-16--debian-quader-searches-the-indexes-it-read-by-words-as-apt-search-does) | Debian: Quader searches the indexes it read, by words, as `apt search` does | Decided by the development agent | (a) Words AND-ed, each a case-insensitive substring of the name, `Provides`, the short description and the long description of `Translation-en` where read; `Names only` | — |
+| [Q-CUR-17](spec/remote-curation.md#q-cur-17--one-version-is-charged-to-the-person-a-bulk-is-bounded-system-work-by-a-projects-decider) | One version is charged to the person; a bulk is bounded system work by a project's decider | Decided by the development agent | (a) One version and a request's examination charged to the person (R-LIM-037's shape); a bulk and an allow's download system work, previewed and bounded, by `manage` | — |
+| [Q-CUR-18](spec/remote-curation.md#q-cur-18--the-queue-is-a-table-whose-rows-run-as-one-attempt-jobs-and-nothing-is-refused-because-others-run) | The queue is a table whose rows run as one-attempt jobs, and nothing is refused because others run | Decided by the development agent | (a) `remote_download` rows own their state and retries; each attempt is a job `remote-download` with one attempt; a bounded number runs per repository, the rest waits | — |
+| [Q-CUR-19](spec/remote-curation.md#q-cur-19--a-clients-failed-fetch-is-a-row-of-the-queue-aggregated-and-bounded) | A client's failed fetch is a row of the queue, aggregated and bounded | Decided by the development agent | (a) A row of origin `client` per repository and file, updated at most once a minute per replica, 1,000 per repository | — |
+| [Q-CUR-20](spec/remote-curation.md#q-cur-20--a-failure-is-a-class-a-step-a-code-the-address-without-its-query-the-status-and-an-excerpt) | A failure is a class, a step, a code, the address without its query, the status and an excerpt | Decided by the development agent | (a) The members of R-CUR-011, closed lists for `class` and `step`, the step from Go's transport errors | — |
+| [Q-CUR-21](spec/remote-curation.md#q-cur-21--an-examination-stores-whatever-the-rules-say-the-vulnerability-miss-gate-still-refuses-what-it-knows) | An examination stores whatever the rules say; the vulnerability miss gate still refuses what it knows | Decided by the development agent | (a) A download ahead ignores the rules; the miss gate refuses known-malicious and triage-blocked versions as for any fill; npm and NuGet show the vulnerability verdict before a fetch | — |
+| [Q-CUR-22](spec/remote-curation.md#q-cur-22--a-fill-without-a-client-refused-by-the-miss-gate-is-no-refused-download) | A fill without a client refused by the miss gate is no refused download | Decided by the development agent | (a) Neither the count nor the event for a fill without a client; the fill's own record holds the refusal | — |
+| [Q-CUR-23](spec/remote-curation.md#q-cur-23--a-request-is-one-entry-per-subject-starts-the-examination-at-once-and-an-allow-downloads-what-was-asked) | A request is one entry per subject, starts the examination at once, and an allow downloads what was asked | Decided by the development agent | (a) One entry per subject with askers and client refusals; examination of the version asked (of a package, its newest) charged to the asker, a switch per repository; an allow writes the rule and starts the download of what was asked, every version on a choice | — |
+| [Q-CUR-24](spec/remote-curation.md#q-cur-24--what-was-fetched-for-examination-is-discarded-on-a-decision-or-after-30-days) | What was fetched for examination is discarded on a decision or after 30 days | Decided by the development agent | (a) **Discard** beside **Allow**, a decline discards, and a daily task removes what a download ahead stored without delivery once its examination row is older than `examinedRetentionDays` (30); journaled | — |
+| [Q-CUR-25](spec/remote-curation.md#q-cur-25--future-versions-a-rule-allows-them-the-mirror-keeps-them-fetched) | Future versions: a rule allows them, the mirror keeps them fetched | Decided by the development agent | (a) A package rule allows future versions; storing them ahead is the mirror's job, within its scope | — |
+| [Q-CUR-26](spec/remote-curation.md#q-cur-26--a-stored-version-the-rules-do-not-deliver-is-listed-marked-with-no-install-command) | A stored version the rules do not deliver is listed, marked, with no install command | Decided by the development agent | (a) Listed with `available: false` and the reason, no install command | — |
+| [Q-CUR-27](spec/remote-curation.md#q-cur-27--a-download-ahead-is-an-explicit-act-of-the-management-api-outside-the-session-cookies-refusal) | A download ahead is an explicit act of the management API, outside the session cookie's refusal | Decided by the development agent | (a) A `POST` of the management API, which needs the session's CSRF token or a token, run by a worker as the system for the person, who is asked for their own actions; the data path keeps the cookie's refusal | — |
+| [Q-CUR-28](spec/remote-curation.md#q-cur-28--the-upstream-is-another-surface-the-protocol-routes-keep-what-they-serve) | The upstream is another surface: the protocol routes keep what they serve | Decided by the development agent | (a) The catalogue is a management API surface for a person; every protocol route and the package list keep their answers, filtered by the rules | [ADR-277](#adr-277--a-remote-repository-can-be-curated-delivery-rules-in-two-modes-an-upstream-catalogue-downloads-ahead-and-their-queue-requests-with-examination) |
 
 </details>
 

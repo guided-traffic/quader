@@ -9,14 +9,14 @@ the catalog or the spec, then regenerate this file whenever an ID, a title, a pr
 `Covers:` line changes. The rules and the headline numbers are in
 [README.md](README.md#how-the-numbers-are-produced).
 
-**Status.** 657 of 1,234 spec requirements are implemented: a passing test names them and no
+**Status.** 657 of 1,262 spec requirements are implemented: a passing test names them and no
 failing test does (the list is [implemented.txt](implemented.txt)). *implemented*: every requirement
 that lists the feature in its `Covers:` line is implemented. *specified*: at least one spec
 requirement lists the feature in its `Covers:` line and not all of them are implemented. *open*: no
 requirement does. For entries with priority *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 798 specified (506 of them implemented), 1,441 open.
-1,234 spec requirements: 772 cover catalog features, 462 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 805 specified (506 of them implemented), 1,434 open.
+1,262 spec requirements: 787 cover catalog features, 475 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -27,9 +27,9 @@ end](#requirements-that-cover-no-catalog-feature)).
 | Catalog page | Prefix | Features | MVP specified | Specified | Open | Implemented |
 |---|---|---:|---:|---:|---:|---:|
 | [Repositories](#repositories-repo) | `REPO` | 68 | 24 of 24 | 41 | 27 | 29 |
-| [Remote repositories](#remote-repositories-rmt) | `RMT` | 49 | 18 of 18 | 31 | 18 | 22 |
+| [Remote repositories](#remote-repositories-rmt) | `RMT` | 49 | 18 of 18 | 32 | 17 | 22 |
 | [Replication, federation and multi-site topology](#replication-federation-and-multi-site-topology-repl) | `REPL` | 72 | – | 0 | 72 | 0 |
-| [Artifact management](#artifact-management-art) | `ART` | 53 | 10 of 10 | 32 | 21 | 16 |
+| [Artifact management](#artifact-management-art) | `ART` | 53 | 10 of 10 | 33 | 20 | 16 |
 | [Search and query language](#search-and-query-language-srch) | `SRCH` | 64 | – | 3 | 61 | 1 |
 | [Builds and CI integration](#builds-and-ci-integration-bld) | `BLD` | 49 | – | 0 | 49 | 0 |
 | [Identity and access](#identity-and-access-iam) | `IAM` | 69 | 24 of 24 | 36 | 33 | 30 |
@@ -42,7 +42,7 @@ end](#requirements-that-cover-no-catalog-feature)).
 | [Operations, monitoring and configuration](#operations-monitoring-and-configuration-ops) | `OPS` | 100 | 17 of 17 | 43 | 57 | 26 |
 | [Events and extensibility](#events-and-extensibility-evt) | `EVT` | 82 | 1 of 1 | 26 | 56 | 3 |
 | [Distribution and release lifecycle](#distribution-and-release-lifecycle-dist) | `DIST` | 70 | 2 of 2 | 2 | 68 | 0 |
-| [Security scanning and curation](#security-scanning-and-curation-sec) | `SEC` | 98 | 18 of 18 | 18 | 80 | 7 |
+| [Security scanning and curation](#security-scanning-and-curation-sec) | `SEC` | 98 | 18 of 18 | 23 | 75 | 7 |
 | [UI inventory](#ui-inventory-ui) | `UI` | 61 | 33 of 33 | 47 | 14 | 33 |
 | [Content API operation catalog](#content-api-operation-catalog-api) | `API` | 166 | 15 of 15 | 71 | 95 | 28 |
 | [Operation catalog: administration API](#operation-catalog-administration-api-admapi) | `ADMAPI` | 114 | 34 of 34 | 54 | 60 | 41 |
@@ -171,10 +171,10 @@ Catalog page: [repositories.md](../features/repositories.md) · specified by pri
 
 ## Remote repositories (RMT)
 
-Catalog page: [remote-repositories.md](../features/remote-repositories.md) · specified by priority: MVP 18 of 18 · P1 13 of 14 · P2 0 of 17
+Catalog page: [remote-repositories.md](../features/remote-repositories.md) · specified by priority: MVP 18 of 18 · P1 13 of 14 · P2 1 of 17
 
 <details>
-<summary>49 features: 31 specified, 18 open, 22 implemented</summary>
+<summary>49 features: 32 specified, 17 open, 22 implemented</summary>
 
 | ID | Feature | Priority | Status | Covered by |
 |---|---|---|---|---|
@@ -204,7 +204,7 @@ Catalog page: [remote-repositories.md](../features/remote-repositories.md) · sp
 | RMT-024 | HEAD request bypass | P2 | open | – |
 | RMT-025 | Eager fetching of companion artifacts | P2 | open | – |
 | RMT-026 | Cache invalidation | MVP | implemented | [R-ARCH-018](../spec/architecture.md) (implemented), [R-NPM-024](../spec/formats/npm.md) (implemented), [R-REPO-045](../spec/repositories-and-proxy.md) (implemented) |
-| RMT-027 | Cache pre-population without client transfer | P2 | open | – |
+| RMT-027 | Cache pre-population without client transfer | P2 | specified | [R-CUR-010](../spec/remote-curation.md), [R-CUR-011](../spec/remote-curation.md), [R-CUR-012](../spec/remote-curation.md) |
 | RMT-028 | Download redirect for cached artifacts | P2 | open | – |
 | RMT-029 | Assumed-offline period | MVP | implemented | [R-ARCH-013](../spec/architecture.md) (implemented), [R-REPO-029](../spec/repositories-and-proxy.md) (implemented) |
 | RMT-030 | Repository offline mode | MVP | implemented | [R-REPO-004](../spec/repositories-and-proxy.md) (implemented), [R-REPO-030](../spec/repositories-and-proxy.md) (implemented) |
@@ -316,10 +316,10 @@ Catalog page: [replication-and-federation.md](../features/replication-and-federa
 
 ## Artifact management (ART)
 
-Catalog page: [artifacts.md](../features/artifacts.md) · specified by priority: MVP 10 of 10 · P1 20 of 20 · P2 2 of 22 · Out of scope 0 of 1
+Catalog page: [artifacts.md](../features/artifacts.md) · specified by priority: MVP 10 of 10 · P1 20 of 20 · P2 3 of 22 · Out of scope 0 of 1
 
 <details>
-<summary>53 features: 32 specified, 21 open, 16 implemented</summary>
+<summary>53 features: 33 specified, 20 open, 16 implemented</summary>
 
 | ID | Feature | Priority | Status | Covered by |
 |---|---|---|---|---|
@@ -366,7 +366,7 @@ Catalog page: [artifacts.md](../features/artifacts.md) · specified by priority:
 | ART-041 | Item details pane | MVP | implemented | [R-UI-010](../spec/api-and-ui.md) (implemented) |
 | ART-042 | HTML directory-listing browser | P1 | implemented | [R-STOR-017](../spec/storage.md) (implemented) |
 | ART-043 | Public repository view under a path prefix | P2 | implemented | [R-EP-005](../spec/endpoints.md) (implemented) |
-| ART-044 | Browsing uncached remote content | P2 | open | – |
+| ART-044 | Browsing uncached remote content | P2 | specified | [R-CUR-007](../spec/remote-curation.md), [R-CUR-008](../spec/remote-curation.md), [R-CUR-009](../spec/remote-curation.md), [R-CUR-018](../spec/remote-curation.md) |
 | ART-045 | Content browsing of files and archives | P2 | open | – |
 | ART-046 | Followers (change notifications) | P2 | open | – |
 | ART-047 | WebDAV access | P2 | open | – |
@@ -1253,10 +1253,10 @@ Catalog page: [distribution-and-lifecycle.md](../features/distribution-and-lifec
 
 ## Security scanning and curation (SEC)
 
-Catalog page: [security-scanning-and-curation.md](../features/security-scanning-and-curation.md) · specified by priority: MVP 18 of 18 · P1 0 of 18 · P2 0 of 17 · Later 0 of 43 · Out of scope 0 of 2
+Catalog page: [security-scanning-and-curation.md](../features/security-scanning-and-curation.md) · specified by priority: MVP 18 of 18 · P1 4 of 18 · P2 1 of 17 · Later 0 of 43 · Out of scope 0 of 2
 
 <details>
-<summary>98 features: 18 specified, 80 open, 7 implemented</summary>
+<summary>98 features: 23 specified, 75 open, 7 implemented</summary>
 
 | ID | Feature | Priority | Status | Covered by |
 |---|---|---|---|---|
@@ -1267,7 +1267,7 @@ Catalog page: [security-scanning-and-curation.md](../features/security-scanning-
 | SEC-005 | Package labels | P2 | open | – |
 | SEC-006 | Custom licenses | P2 | open | – |
 | SEC-090 | Package intelligence browser | P2 | open | – |
-| SEC-007 | Upstream curation service | P1 | open | – |
+| SEC-007 | Upstream curation service | P1 | specified | [R-CUR-001](../spec/remote-curation.md), [R-CUR-003](../spec/remote-curation.md), [R-CUR-004](../spec/remote-curation.md), [R-CUR-014](../spec/remote-curation.md) |
 | SEC-008 | Curated remote repositories | P1 | open | – |
 | SEC-009 | Curation policy | P1 | open | – |
 | SEC-010 | Curation policy scope | P1 | open | – |
@@ -1289,15 +1289,15 @@ Catalog page: [security-scanning-and-curation.md](../features/security-scanning-
 | SEC-026 | Compliant version fallback per client | P1 | open | – |
 | SEC-027 | Curated remote repositories inside virtual repositories | P1 | open | – |
 | SEC-028 | Policy waivers | P1 | open | – |
-| SEC-029 | Waiver requests and approval | P2 | open | – |
+| SEC-029 | Waiver requests and approval | P2 | specified | [R-CUR-015](../spec/remote-curation.md) |
 | SEC-030 | Time-limited waivers | P2 | open | – |
 | SEC-031 | Waivers for pending and fully blocked packages | P2 | open | – |
-| SEC-032 | Curation audit log | P1 | open | – |
+| SEC-032 | Curation audit log | P1 | specified | [R-CUR-004](../spec/remote-curation.md), [R-CUR-019](../spec/remote-curation.md) |
 | SEC-033 | Compliant version fallback audit | P2 | open | – |
 | SEC-034 | Curation notifications | P2 | open | – |
-| SEC-035 | Curation roles | P1 | open | – |
+| SEC-035 | Curation roles | P1 | specified | [R-CUR-005](../spec/remote-curation.md) |
 | SEC-036 | Effective policies of a repository | P1 | open | – |
-| SEC-037 | Curation management operations | P1 | open | – |
+| SEC-037 | Curation management operations | P1 | specified | [R-CUR-006](../spec/remote-curation.md), [R-CUR-018](../spec/remote-curation.md) |
 | SEC-038 | Dependency pre-check | P2 | open | – |
 | SEC-039 | On-demand evaluation of uncovered packages | Later | open | – |
 | SEC-040 | Curation policy sharing across sites | Later | open | – |
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>462 requirements</summary>
+<summary>475 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3209,6 +3209,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-ANS-044 | Reindex, restore and the generator version | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
 | R-ANS-045 | Metrics and audit of the documentation | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
 | R-ANS-046 | End-to-end rows per class | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
+| R-ANS-047 | The upstream catalogue and the delivery rules of an Ansible Galaxy remote | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
 | R-CLAMAV-001 | The format `clamav` and its descriptor | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
 | R-CLAMAV-002 | Packages, versions and the layout | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
 | R-CLAMAV-003 | What a version shows | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
@@ -3227,11 +3228,13 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-DEB-033 | Audit events and metrics | P2 | [formats/debian.md](../spec/formats/debian.md) |
 | R-DEB-034 (implemented) | Limits for untrusted content | P2 | [formats/debian.md](../spec/formats/debian.md) |
 | R-DEB-035 (implemented) | Test suites | P2 | [formats/debian.md](../spec/formats/debian.md) |
+| R-DEB-036 | The upstream catalogue and the delivery rules of a Debian remote | P1 | [formats/debian.md](../spec/formats/debian.md) |
 | R-NPM-026 (implemented) | Versions removed upstream | MVP | [formats/npm.md](../spec/formats/npm.md) |
 | R-NPM-044 (implemented) | npm audit events and metrics | MVP | [formats/npm.md](../spec/formats/npm.md) |
 | R-NPM-046 | npm across replicas: no state between requests, Valkey degradation, drain | MVP | [formats/npm.md](../spec/formats/npm.md) |
 | R-NPM-047 (implemented) | npm data in backups and restores | MVP | [formats/npm.md](../spec/formats/npm.md) |
 | R-NPM-048 (implemented) | npm documents on an endpoint with exposure rules | MVP | [formats/npm.md](../spec/formats/npm.md) |
+| R-NPM-049 | The upstream catalogue and the delivery rules of an npm remote | P1 | [formats/npm.md](../spec/formats/npm.md) |
 | R-NUGET-027 (implemented) | Acceptance test suite | MVP | [formats/nuget.md](../spec/formats/nuget.md) |
 | R-NUGET-028 (implemented) | Audit events and metrics for NuGet | MVP | [formats/nuget.md](../spec/formats/nuget.md) |
 | R-NUGET-030 (implemented) | NuGet on interchangeable replicas (INV-18) | MVP | [formats/nuget.md](../spec/formats/nuget.md) |
@@ -3239,6 +3242,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-NUGET-032 (implemented) | Pushes and deletes across drains, restarts and client retries | MVP | [formats/nuget.md](../spec/formats/nuget.md) |
 | R-NUGET-033 (implemented) | NuGet data in backups and restores | MVP | [formats/nuget.md](../spec/formats/nuget.md) |
 | R-NUGET-034 (implemented) | NuGet documents on an endpoint with exposure rules | MVP | [formats/nuget.md](../spec/formats/nuget.md) |
+| R-NUGET-035 | The upstream catalogue and the delivery rules of a NuGet remote | P1 | [formats/nuget.md](../spec/formats/nuget.md) |
 | R-OCI-026 (implemented) | Mirror settings of an OCI remote | P1 | [formats/oci.md](../spec/formats/oci.md) |
 | R-OCI-032 (implemented) | OCI on n replicas, without Valkey and during a drain | P1 | [formats/oci.md](../spec/formats/oci.md) |
 | R-OCI-033 (implemented) | OCI data in backups and restores | P1 | [formats/oci.md](../spec/formats/oci.md) |
@@ -3246,6 +3250,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-OCI-035 (implemented) | Test suites | P1 | [formats/oci.md](../spec/formats/oci.md) |
 | R-OCI-036 | The tags of a remote repository on the package screens | P1 | [formats/oci.md](../spec/formats/oci.md) |
 | R-OCI-037 | Scan tokens: the registry token of the image scanning's pull | P1 | [formats/oci.md](../spec/formats/oci.md) |
+| R-OCI-038 | The upstream catalogue and the delivery rules of an OCI remote | P1 | [formats/oci.md](../spec/formats/oci.md) |
 | R-CI-029 (implemented) | CI state across replicas, Valkey outages and restores | MVP | [gitlab-ci-oidc.md](../spec/gitlab-ci-oidc.md) |
 | R-CI-030 (implemented) | Background tasks of the CI exchange | MVP | [gitlab-ci-oidc.md](../spec/gitlab-ci-oidc.md) |
 | R-HA-067 | Where the scanner runs outside the chart | P1 | [ha-and-helm.md](../spec/ha-and-helm.md) |
@@ -3300,6 +3305,14 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-OPS-018 (implemented) | Trace context and OpenTelemetry export | MVP | [operations-and-observability.md](../spec/operations-and-observability.md) |
 | R-OPS-047 | Installation-wide cache flush | P1 | [operations-and-observability.md](../spec/operations-and-observability.md) |
 | R-OPS-024 (implemented) | Read-only maintenance mode | P1 | [operations-and-observability.md](../spec/operations-and-observability.md) |
+| R-CUR-002 | The include and exclude patterns of a remote repository are rules | P1 | [remote-curation.md](../spec/remote-curation.md) |
+| R-CUR-013 | A probe's background download is a row of the queue | P1 | [remote-curation.md](../spec/remote-curation.md) |
+| R-CUR-016 | What was fetched for examination is not kept for ever | P1 | [remote-curation.md](../spec/remote-curation.md) |
+| R-CUR-017 | Future versions, and the mirror | P1 | [remote-curation.md](../spec/remote-curation.md) |
+| R-CUR-020 | Configuration | P1 | [remote-curation.md](../spec/remote-curation.md) |
+| R-CUR-021 | Replicas, Valkey, drains, backups and restores | P1 | [remote-curation.md](../spec/remote-curation.md) |
+| R-CUR-022 | Tests and what they cost | P1 | [remote-curation.md](../spec/remote-curation.md) |
+| R-CUR-023 | Formats that come later | P1 | [remote-curation.md](../spec/remote-curation.md) |
 | R-REPO-060 (implemented) | Move a repository to another project | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-061 (implemented) | Narrowings of a repository in the revocation journal | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |
 | R-REPO-066 | The project `upstream` and the repositories the product declares in it | MVP | [repositories-and-proxy.md](../spec/repositories-and-proxy.md) |

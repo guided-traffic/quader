@@ -62,11 +62,13 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 	// R-SIG-043, stage 1 of the signatures on artifacts) listed the P1 entries BEYOND-015 and BEYOND-021 and the P2 entries BEYOND-016,
 	// BEYOND-034 and PKG-NPM-024, and after its stage 2 (R-SIG-044 to R-SIG-060, Quader signs) listed the P2 entry PKG-NPM-037, and its
 	// stage 3 (R-SIG-061 to R-SIG-078, the gate per repository) the P2 entry BEYOND-019. Several object-store connections (R-STOR-050 to
-	// R-STOR-063, stage 1 of the stored content) list the P2 entries STOR-011, STOR-012 and STOR-015.
+	// R-STOR-063, stage 1 of the stored content) list the P2 entries STOR-011, STOR-012 and STOR-015. The curation of a remote repository
+	// (remote-curation.md, R-CUR-001 to R-CUR-023) lists the P1 entries SEC-007, SEC-032, SEC-035 and SEC-037 and the P2 entries SEC-029,
+	// RMT-027 and ART-044.
 	want := map[string][2]int{
 		prioMVP:   {395, 395},
-		prioP1:    {514, 345},
-		prioP2:    {884, 56},
+		prioP1:    {514, 349},
+		prioP2:    {884, 59},
 		prioLater: {374, 2},
 		prioOut:   {72, 0},
 	}
@@ -88,11 +90,11 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		if got := len(m.Features); got != 2239 {
 			t.Errorf("catalog entries: got %d, want 2239", got)
 		}
-		if got := m.countSpecified(m.Features); got != 798 {
-			t.Errorf("listed entries: got %d, want 798", got)
+		if got := m.countSpecified(m.Features); got != 805 {
+			t.Errorf("listed entries: got %d, want 805", got)
 		}
-		if got := m.countOpen(m.Features); got != 1441 {
-			t.Errorf("not listed entries: got %d, want 1441", got)
+		if got := m.countOpen(m.Features); got != 1434 {
+			t.Errorf("not listed entries: got %d, want 1434", got)
 		}
 	})
 	t.Run("E0.8 requirement counts", func(t *testing.T) {
@@ -106,9 +108,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// encryption of stored content (R-STOR-075 to R-STOR-091, R-BAK-031, R-BAS-061, and R-STOR-048 from P2 to P1). 1217 since the
 		// handover per blob to a Bastion (R-BAS-070 to R-BAS-079, R-STOR-095, R-STOR-096, twelve P1 requirements). 1226 since the read
 		// shapes per package at a Bastion (R-BAS-080 to R-BAS-088, nine P1 requirements). 1234 since the destruction of a retired
-		// connection's storage keys (R-STOR-097 to R-STOR-103, R-BAK-032, eight P1 requirements).
-		if len(m.Reqs) != 1234 || count[prioMVP] != 718 || count[prioP1] != 477 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1234 (718, 477, 39)",
+		// connection's storage keys (R-STOR-097 to R-STOR-103, R-BAK-032, eight P1 requirements). 1262 since the curation of a remote
+		// repository (R-CUR-001 to R-CUR-023, R-NPM-049, R-NUGET-035, R-OCI-038, R-DEB-036, R-ANS-047, 28 P1 requirements).
+		if len(m.Reqs) != 1262 || count[prioMVP] != 718 || count[prioP1] != 505 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1262 (718, 505, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

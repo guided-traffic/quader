@@ -34,6 +34,10 @@ refused with 429 or slowed; it is never given a 403 or a 404 by a limit, so a li
 - A registry token spends the budget of the Quader token it was issued for.
 - A request forwarded by a Bastion with a caller's credential spends that caller's budget; an anonymous one spends the forwarded
   client address, which the main installation reads only from the Bastions it trusts (R-BAS-017).
+- A download ahead of a client (specified on 2026-11-23, not built, [remote-curation.md](remote-curation.md)): one version that a person starts, and the
+  examination a person's request for an allow starts, spend that person's budget as a probe's background download spends its caller's;
+  a bulk of a holder of `manage` is system work and spends no budget
+  ([H-1725](remote-curation.md#h-1725--a-holder-of-manage-can-make-quader-fetch-up-to-a-bulks-bound-without-a-ceiling)).
 
 ## Trust in the client address
 

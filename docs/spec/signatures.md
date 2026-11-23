@@ -3282,6 +3282,12 @@ Priority: **P1** · Covers: quader-only
   gate follows it there.
 - The malware gate's `Check` is split for this into its decision and its wait; its answers, events and metrics stay as they are.
 
+**A fourth check** (specified on 2026-11-23, not built): a remote repository's delivery rules ([remote-curation.md](remote-curation.md)
+R-CUR-003) decide a stored item at the same serve points, in this order: `malware_found`, `vulnerability_blocked`,
+`not_allowed_in_repository`, `signature_not_verified`, `malware_not_checked`, `vulnerability_data_missing`. A finding in the content holds
+whatever the rules say and comes first; the rules come before every check that is missing or pending, and their refusal never waits
+(Q-CUR-7).
+
 Built (package 1): `gate.Serve` ([serve.go](../../internal/signatures/gate/serve.go)), which both serve points build; the malware gate's
 `Check` is `Decide`, `Refuse` and `Begin` with a `Wait` of its own, and its answers, events and metrics stay. The unit test is in
 `internal/signatures/gate`, where the combination lives ([Q-SIG-136](#q-sig-136--one-decision-one-wait-lives-in-the-gates-package)).

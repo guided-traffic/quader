@@ -669,7 +669,9 @@ Priority: **P1** · Covers: PKG-ANSIBLE-008, PKG-ANSIBLE-009
   stays and remains downloadable by path. The remote does not track removal marks (`TracksVersionRemoval` false, H-848).
 - **No browsing of uncached content** (PKG-ANSIBLE-008). The artifact browser lists what the cache holds, never the upstream's
   catalogue; the Galaxy index (`v3/collections/` without a name) is not served by a remote, so a client cannot list the upstream
-  through Quader. The mirror (R-ANS-021) is the only thing that reads the index.
+  through Quader. The mirror (R-ANS-021) and the upstream catalogue of the management API, which shows a person the upstream on the
+  repository's tab **Upstream** (R-ANS-047, [remote-curation.md](../remote-curation.md) R-CUR-007), read the index; neither serves it to
+  a client.
 - **Errors.** An upstream 404 for a collection or version is a negative entry (300 s) and 404 to the client; an upstream 401 or 403 is
   `upstream_unavailable` with the status in `detail` (a hub credential problem, R-ANS-019); a 429 follows the engine's rules.
 
@@ -797,14 +799,15 @@ Acceptance criteria:
 Priority: **P1** · Covers: PKG-ANSIBLE-009
 
 The owner required a full mirror for Docker and APT as an option; the same is offered here ([Q-ANS-16](#q-ans-16--a-mirror-of-the-collection-index-is-offered-it-keeps-what-the-patterns-select)). A remote in mode `mirror`
-(R-REPO-050 to R-REPO-059) keeps the collections its patterns select, so that they stay installable without the upstream.
+(R-REPO-050 to R-REPO-059) keeps the collections its scope (`remote.mirror.include`) and its delivery rules select
+([remote-curation.md](../remote-curation.md) R-CUR-017), so that they stay installable without the upstream.
 
 - **The adapter implements `MirrorLister`.** Methods: `listing` (what `auto` takes): the collection index of the upstream
   (`v3/collections/?limit=100&offset=<n>`, verified to list `namespace`, `name`, `versions_url`, `highest_version` and to page by
   `offset`; the public Galaxy offers no change feed and the filter `namespace`), a full pass every time, with the cursor
-  `{"offset": n}`; `names`: the include patterns without a wildcard read as `<ns>.<name>`; `feed` is not offered. As for every method,
+  `{"offset": n}`; `names`: the patterns of `remote.mirror.include` without a wildcard read as `<ns>.<name>`; `feed` is not offered. As for every method,
   the names the repository holds are added to a full pass.
-- **A pattern is the unit of choice.** The patterns select by `<ns>.<name>` (`community.*`, `acme.tools`); a mirror with no pattern
+- **A pattern is the unit of choice.** The patterns of `remote.mirror.include` select by `<ns>.<name>` (`community.*`, `acme.tools`); a mirror with no pattern
   that bounds a name set (R-REPO-051's bounding rule; a literal prefix) is refused as the engine refuses it for npm; `*` is therefore
   possible only by an operator's explicit choice of the unbounded form that the engine allows, and a full mirror of the public Galaxy
   is then a configuration, not a default ([H-846](#h-846--the-size-of-a-full-mirror-of-the-public-galaxy-is-not-measured)).
@@ -1671,7 +1674,7 @@ The engine, the bounds and the throttling are the core's; this is what the forma
   collection a paged version list; per version the document with `artifact.sha256`, `artifact.size` and `download_url`.
 - **Methods** (`discover.Method`): `feed` not offered (no change feed was found); `listing` (what `auto` takes) walks the index by offset
   and returns the names the scope admits, in the index's order, in pages of the engine's limit with the cursor `{"offset": n}`; `names`
-  takes literal include patterns as `<ns>.<name>`.
+  takes literal patterns of `remote.mirror.include` as `<ns>.<name>`.
 - **The plan of a name** ([Q-ANS-52](#q-ans-52--the-mirror-lists-by-offset-and-plans-from-the-version-lists-and-the-version-bounds-cut-before-documents-are-read)): the version documents of the collection through `Upstream.Document`, newest first by semver, each an item
   (`collections/<ns>/<name>/<ns>-<name>-<version>.tar.gz`) with the announced `artifact.size` and the pre-release flag; the digest
   reaches the engine through the gate of R-ANS-018 from the recorded row.
@@ -1741,6 +1744,37 @@ because several blocks are held equal to the code by tests.
 | [operations-and-observability.md](../operations-and-observability.md) | The job kind `ansible-docs-fill` and the three series of R-ANS-045 | R-ANS-042, R-ANS-045 |
 | [repositories-and-proxy.md](../repositories-and-proxy.md) | R-REPO-043: a remote document that fills derived rows (`docs/<version>.json`) | R-ANS-035 |
 | [decisions.md](../../decisions.md) | ADR-191 and the table rows of Q-ANS-1 to Q-ANS-28; ADR-196 and ADR-197 (written with this specification) | Q-ANS-66, Q-ANS-69 |
+
+## Curation of a remote
+
+### R-ANS-047 · The upstream catalogue and the delivery rules of an Ansible Galaxy remote
+Priority: **P1** · Covers: quader-only
+
+What an Ansible Galaxy remote answers to the catalogue and the rules of [remote-curation.md](../remote-curation.md) (R-CUR-003,
+R-CUR-007), from the protocol research of 2026-11-23:
+
+| Capability | Ansible Galaxy |
+|---|---|
+| Search | `upstream`: `GET <api root>v3/plugin/ansible/search/collection-versions/?keywords=&is_highest=true&limit=50&offset=` (pulp_ansible and Galaxy NG; the public Galaxy ranks the namespace, the name, the tags and the description); an upstream that answers it with `404` has `search: none` for the cache period. The UI search `_ui/v1/search/` answered `500` and is not used |
+| Levels | `namespace` → collections: the namespaces `v3/namespaces/?limit=&offset=` (the public Galaxy counts 38,639, empty ones included) and a namespace's collections from the collection index with the filter `namespace` (the mirror's listing, R-ANS-021) |
+| Lookup and versions | the collection document and its version list (`created_at`, `requires_ansible`, `marks`), read as R-ANS-017 reads them, without storing; the collection's `deprecated` |
+| Sizes | `perVersion`: a version list carries no size; the version document does (`artifact.size`), one request per version, read when a version's row is opened |
+| Version canon | the SemVer text as given |
+| One version's download | the collection archive the version document names (R-ANS-017); a role's archive by its id |
+
+- **Documents:** the version list served from the stored pages lists the delivered versions, `meta.count` counts them and the links are
+  computed over them; the collection document's `highest_version` is the highest delivered version; the version document and the
+  archive of a refused version answer the refusal of R-CUR-004; a collection without a delivered version answers it at its document.
+- **The rules** see a collection by `<ns>.<name>` and a role by the name the format gives it, as the patterns did (H-856 stands).
+- **What `ansible-galaxy` shows:** the refusal's text from the error's `detail`; a version range resolves within the delivered versions.
+- No rate limit of the public Galaxy was found; Red Hat's hosted hub needs its own sign-in (not verified, H-842).
+
+Acceptance criteria:
+
+- Unit (kit checks 21 and 22, milliseconds): the keyword search, the namespace level and the package call against canned answers; a
+  refused version is absent from the version list and `meta.count`.
+- End-to-end (the leg `ansible`, about 10 s): with one version of a stub collection allowed, `ansible-galaxy collection install ns.name`
+  installs it, and `ns.name:==<refused>` prints the refusal.
 
 ## Deferred
 

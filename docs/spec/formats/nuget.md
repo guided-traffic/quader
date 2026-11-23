@@ -1482,8 +1482,9 @@ Priority: **MVP** · Covers: PKG-NUGET-024, PKG-NUGET-028
   in R-NUGET-015 (`registration`, `versions[].@id` into the hive that matches the request's
   `semVerLevel`); `owners`, `verified`, `deprecation`, `vulnerabilities`, download counts and
   `packageTypes` are kept, `deprecation` and `vulnerabilities` without the upstream's addresses as
-  in R-NUGET-015 (Q-NUGET-85). Results whose ID is excluded by the remote's patterns, refused by remote
-  refusal (a `global` claim, R-REPO-023), or not readable by the caller are removed, and
+  in R-NUGET-015 (Q-NUGET-85). Results whose ID the remote's delivery rules do not deliver (R-NUGET-035; a remote has no patterns,
+  [remote-curation.md](../remote-curation.md) R-CUR-002), refused by remote
+  refusal (a `global` claim, R-REPO-023), or not readable by the caller are removed, versions the rules refuse are removed from a result, and
   `totalHits` is reduced by the number removed from the returned page. Through a virtual
   repository, R-NUGET-018 step 2 also removes IDs that its claims and pin rules keep away from this
   remote. A result is converted into the shape of a local result and rendered by the same code: a
@@ -2596,7 +2597,8 @@ what the NuGet format contributes through the mirror interface of [architecture.
     `listing truncated at <n> of <totalHits>` (Q-NUGET-98). The upstream refuses a larger `skip` when it answers a 4xx to a
     request whose `skip` is above 0, and a window ends early when it answers a page that is empty or short before `totalHits`
     (Q-NUGET-101). Unlisted-only IDs are not in a search, so a listing never finds them.
-  - `names`: the include patterns without a wildcard, read as IDs, and the NuGet IDs the repository holds.
+  - `names`: the patterns of `remote.mirror.include` without a wildcard, read as IDs, the IDs of the delivery rules that allow in mode `onlyAllowed`
+    ([remote-curation.md](../remote-curation.md) R-CUR-017), and the NuGet IDs the repository holds.
 - **The plan of an ID** (Q-NUGET-97). The format fills the ID's version list (`{lower_id}/index.json`, the package document of
   R-REPO-003) and its registration index (`{lower_id}/.registration/index.json` and the pages it does not inline) through the
   remote engine, and returns the versions of the version list newest first by NuGet's SemVer 2.0.0 precedence (R-NUGET-004),
@@ -2694,6 +2696,40 @@ pre-releases):
   `endpoint_read_only`, and so do `DELETE` and `POST <feed>/package/acme.sdk/2.0.0`. `dotnet nuget push`
   against `customers`' `index.json` stops in the client, which finds no `PackagePublish` resource
   (Q-EP-68).
+
+## Curation of a remote
+
+### R-NUGET-035 · The upstream catalogue and the delivery rules of a NuGet remote
+Priority: **P1** · Covers: quader-only
+
+What a NuGet remote answers to the catalogue and the rules of [remote-curation.md](../remote-curation.md) (R-CUR-003, R-CUR-007), from
+the protocol research of 2026-11-23:
+
+| Capability | NuGet |
+|---|---|
+| Search | `upstream`: the service index's `SearchQueryService` (the resource R-NUGET-016 forwards to), with `q` as typed (the field syntax `id:`, `packageid:`, `owner:`, `tags:` passes), `prerelease=true`, `semVerLevel=2.0.0`, `take=50`; nuget.org caps `skip` at 3,000, so the window is 3,050 hits (`Truncated` beyond); unlisted packages never appear (the protocol's rule). An upstream without the resource has `search: none` |
+| Levels | none: IDs are flat ("NuGet IDs have no levels; search for a prefix with `id:`."). Dotted prefixes and nuget.org's reserved prefixes are a naming rule, not a listing |
+| Lookup and versions | the registration index and its pages (`listed`, `published`, `deprecation`, `vulnerabilities`) with the flat container's version list, which names unlisted versions too (`unlisted` flag); the stored documents when the remote holds them |
+| Sizes | `unknown`: nuget.org's registrations carry no `packageSize`; only a catalog leaf does, one request per version, which the catalogue does not send |
+| Version canon | the normalized version of R-NUGET-003 (`1.0` and `1.0.0.0` are `1.0.0`), so a rule on `1.0.0` meets a request for `1.0` |
+| One version's download | the `.nupkg` |
+
+- **Documents** follow the rules as R-NUGET-034 follows an endpoint's exposure: the flat container's version list and the registration
+  hives (paging over the delivered versions), the search and autocomplete of the protocol (forwarded results of R-NUGET-016 included,
+  `totalHits` reduced by what was removed); an ID without a delivered version answers the refusal of R-CUR-004 at its version list and
+  registration index; the `.nupkg` and `.nuspec` of a refused version answer it.
+- **The search guard** of R-NUGET-016 withholds a term that a blocking rule covers, and in mode `onlyAllowed` a term that no allowing rule
+  covers ([remote-curation.md](../remote-curation.md) R-CUR-002).
+- **What `dotnet` shows:** `dotnet restore` resolves a floating or ranged reference within the delivered versions; a refused package
+  prints the warning of `X-NuGet-Warning` with the text and fails it.
+- nuget.org documents no rate limit for its v3 search.
+
+Acceptance criteria:
+
+- Unit (kit checks 21 and 22, milliseconds): the search with `skip` at the window's end, the package call over a registration of two pages;
+  a refused `2.0.0` is absent from the version list, the registration and the search.
+- End-to-end (the leg `nuget`, about 10 s): with `version Acme.Core@1.1.0 allow`, a project referencing `Acme.Core` `[1.0,2.0)` restores
+  1.1.0 from the stub's versions.
 
 ## Deferred
 

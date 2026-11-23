@@ -723,7 +723,9 @@ Acceptance criteria:
 Priority: **P1** · Covers: PKG-DOCKER-003, PKG-DOCKER-022
 
 - `GET /v2/_catalog?n=&last=` answers `{"repositories": [...]}` with the full names `<projectKey>/<repoKey>/<name>` of every
-  image name the caller may read in local repositories and in the caches of remote repositories of the format, in lexical
+  image name the caller may read in local repositories and in the caches of remote repositories of the format (a remote's name only
+  while its delivery rules deliver some version of it, R-OCI-038; the upstream's names are the upstream catalogue's, a surface of the
+  management API, [remote-curation.md](../remote-curation.md) R-CUR-007), in lexical
   order, with `n` capped at 1,000 and the `Link` rule of R-OCI-015 (Q-OCI-19). Virtual repositories are not expanded: their
   members appear under their own names.
 - The data port gives the registry root one page per repository: the image names that hold a manifest row, in byte order after a
@@ -996,10 +998,10 @@ the background download of a probed tag read ([repositories-and-proxy.md](../rep
 - The generic members keep their meaning: `maxVersionsPerPackage` is the number of newest tags kept per image among the tags
   matched by a wildcard pattern, by the tag order of Q-OCI-17 (a tag an exact pattern names is kept besides them, Q-OCI-180); `includePrereleases` decides about tags the tag order marks as
   pre-releases; `maxBytes` bounds the repository's bytes (R-REPO-052).
-- `oci.mirror` decides what the mirror covers like the patterns do, so the rule of R-REPO-050 that keeps `includePatterns`,
-  `excludePatterns`, `remote.url` and `remote.extraHosts` for an Owner without `repositories:write-config` keeps
+- `oci.mirror` decides what the mirror covers like `remote.mirror.include` does ([remote-curation.md](../remote-curation.md) R-CUR-017), so the rule of
+  R-REPO-050 that keeps `remote.mirror.include`, `remote.url` and `remote.extraHosts` for an Owner without `repositories:write-config` keeps
   `<format>.mirror` as well (Q-OCI-22).
-- Docker Hub as upstream: R-REPO-052's bound applies unchanged (the include list names images, or `maxBytes`); the default
+- Docker Hub as upstream: R-REPO-052's bound applies unchanged (`remote.mirror.include` names images, or `maxBytes`); the default
   `tags: ["latest"]` bounds the tags of each image.
 
 Acceptance criteria:
@@ -1409,7 +1411,7 @@ named (Q-OCI-16).
     `n=1000` following `Link`, else `last`; each name below the remote's namespace prefix (R-OCI-021) loses the prefix, is
     checked against the include and exclude patterns and the claims, and is returned. A catalog that ends with a page shorter
     than `n` and no `Link` is complete. Every pass is full.
-  - `names`: the include patterns without a wildcard, read as image names (`library/nginx`, `bitnami/redis`), and, as for every
+  - `names`: the patterns of `remote.mirror.include` without a wildcard (and the names the delivery rules allow, R-CUR-017), read as image names (`library/nginx`, `bitnami/redis`), and, as for every
     method, the names the repository holds. For Docker Hub this is the only method; a one-component pattern `nginx` is the name
     `library/nginx` (R-OCI-025): the name stays `nginx` through the discovery, where the engine checks it against the patterns
     again, and the plan asks for `library/nginx` and stores below it (Q-OCI-183).
@@ -1603,6 +1605,44 @@ R-ARCH-009 by `TestR_ARCH_008_TheWrittenContractEqualsTheCode`):
 | [endpoints.md](../endpoints.md) | R-EP-007: the Docker Engine mirror points at R-OCI-029 | — |
 | [ha-and-helm.md](../ha-and-helm.md) | R-HA-041: the acceptance criterion points at the e2e set `oci` | — |
 | [vulnerability-scanning.md](../vulnerability-scanning.md) | [Images](../vulnerability-scanning.md#images) (R-VULN-033 to R-VULN-037): each image manifest is scanned, an image's findings carry its digest, and a blocked pull answers `DENIED` | Q-OCI-2, Q-VULN-134 |
+
+## Curation of a remote
+
+### R-OCI-038 · The upstream catalogue and the delivery rules of an OCI remote
+Priority: **P1** · Covers: quader-only
+
+What an OCI remote answers to the catalogue and the rules of [remote-curation.md](../remote-curation.md) (R-CUR-003, R-CUR-007), from the
+protocol research of 2026-11-23. The distribution specification has no search and no listing (its text does not contain `_catalog`);
+what more a registry offers is its operator's, so the capabilities are the preset's (Q-CUR-15):
+
+| Upstream | Search | Levels | Versions (tags) and sizes |
+|---|---|---|---|
+| A registry without a preset | `none` ("This registry offers no search; look an image up by its full name.") | the root lists the names of `GET /v2/_catalog` (the mirror's listing, `mirror_listing.go`) where the registry answers it, else none | `tags/list`, lexical, `n=100` a page; no size, time or digest per tag; a tag's digest by a `HEAD` of its manifest when its row is opened (a `HEAD` is no pull on Docker Hub) — sizes `unknown` |
+| Docker Hub (`docker-hub`; catalogue host `hub.docker.com`, no credential) | `upstream`: `GET /v2/search/repositories/?query=&page_size=50` on the Hub API, which its operator does not document: used with the fallback of R-CUR-008 | `namespace` → images: `GET /v2/namespaces/{namespace}/repositories` (documented); the namespaces themselves are not listable; official images are the namespace `library` | `GET /v2/namespaces/{namespace}/repositories/{image}/tags` (documented path; `full_size`, `last_updated`, `digest`, per architecture `size`, observed) — sizes `known` |
+| Quay (`quay`, same host) | `upstream`: `GET /api/v1/find/repositories?query=` (10 a page) | `namespace` → images: `GET /api/v1/repository?public=true&namespace=` | `GET /api/v1/repository/{namespace}/{image}/tag/` (100 a page, `manifest_digest`, `last_modified`; no size for an index) — sizes `perVersion` |
+| GitHub (`ghcr`) | `none` ("ghcr.io offers no search and no listing of images; look an image up by its full name.") | none: its listing needs a GitHub token with `read:packages`, which a registry credential is not | `tags/list` — sizes `unknown` |
+| GitLab (`gitlab`; catalogue host `gitlab.com`, no credential) | `none` | `project` → images: `GET /api/v4/projects/{url-encoded path}/registry/repositories` for a public project; a group's listing needs a token and is not offered | `tags/list`; a tag's `total_size` from the project API when its row is opened — sizes `perVersion` |
+
+- **The version is the tag** (Q-CUR-10); its canon is the tag as given. A manifest by digest is delivered when the image is delivered with
+  no version rule of it, or when a delivered tag's stored document names the digest, directly or through a stored index
+  (`oci_references`); a blob by digest when some version of the image is delivered. A tag that moves upstream delivers what it names when it
+  is read.
+- **One version's download** is the probe's content (R-REPO-065, Q-OCI-224): the tag's manifest; of an index the manifests of
+  `oci.platforms` with their attestations; their configs and layers.
+- **Documents:** the tags list (the stored list and the pass-through pages of R-OCI-024) lists the delivered tags, through the format's
+  `Host.PathsAllowed`, which the rules join; the catalog (R-OCI-017) lists a remote's image only while some version of it is delivered;
+  the referrers of a refused manifest answer the refusal.
+- **What `docker` shows:** `denied: <image> <tag> is not allowed in <project>/<repo>: …`.
+- **Limits the downloads meet** (the preview says them): Docker Hub allows an anonymous caller 100 manifest pulls per window (observed as
+  one hour on 2026-11-23, documented as six), counted per architecture of a multi-platform pull, and its Hub API answered with a limit of
+  180 requests a minute; GitLab allows 500 unauthenticated requests a minute; Quay and ghcr.io name no number.
+
+Acceptance criteria:
+
+- Unit (kit checks 21 and 22, milliseconds): each preset's capabilities from its declaration; the tags list without a refused tag; a
+  manifest by the digest of a refused tag answers the refusal while a delivered tag's digest is served.
+- Unit (`internal/formats/oci`, milliseconds): the Hub search's fallback when the canned answer is a `404` or does not parse.
+- End-to-end (the leg `oci`, about 10 s): `docker pull` of a refused tag through the remote prints `denied:` with the text.
 
 ## Deferred
 

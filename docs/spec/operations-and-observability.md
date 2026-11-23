@@ -2347,7 +2347,9 @@ requirement: the MVP registers `gc`, `gc-full`, `audit-retention`, `replica-regi
 [identity-and-authentication.md](identity-and-authentication.md) R-AUTH-043, and
 `ci-keys-refresh`, `ci-replay-cleanup` and `ci-issuance-retention` of
 [gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-030, and from M4b the four tasks of
-[vulnerability-scanning.md](vulnerability-scanning.md)); P1 requirements add theirs when they ship.
+[vulnerability-scanning.md](vulnerability-scanning.md)); P1 requirements add theirs when they ship (the download queue of remote
+repositories adds `remote-downloads-dispatch` and `remote-examination-cleanup`, [remote-curation.md](remote-curation.md) R-CUR-011,
+R-CUR-016, specified, not built).
 
 **Tasks and leases.** A *task* is a named maintenance job, recurring or manual-only. A singleton
 scheduler enqueues due tasks into the job queue. The scheduler runs on the `worker` replica that

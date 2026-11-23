@@ -272,7 +272,7 @@ read (R-REPO-010) and the object body of configuration as code
 | `key`, `class`, `format` | R-REPO-001, R-REPO-002 | — (required) | this page |
 | `description` | Public description, shown to everyone who can read the repository | `""` (≤ 2000 characters) | this page |
 | `adminNotes` | Notes shown only to holders of `repositories:read-config` | `""` (≤ 8000 characters) | this page |
-| `includePatterns`, `excludePatterns` | R-REPO-005 | `[]` (everything), `[]` | this page |
+| `includePatterns`, `excludePatterns` | R-REPO-005; local and virtual repositories only (a remote's delivery rules, [remote-curation.md](remote-curation.md) R-CUR-002) | `[]` (everything), `[]` | this page |
 | `disabled` | Takes no part in resolution, download or deploy. Setting it records `repository.disabled`, journaled, so a restore keeps it set ([authorization.md](authorization.md) R-AUTHZ-031, Q-AUTHZ-238) | `false` | this page |
 | `visibility` | `{"artifacts": "<level>", "wiki": "<level>"}`, each `private`, `internal` or `public`: who reads the repository's artifacts and its wiki besides members and grants; never above the project's level, the wiki never above the artifacts; a level the installation restricts is chosen by an administrator only (R-AUTHZ-037). Stored in two columns, not in `config` ([Q-REPO-307](#q-repo-307--requireauthentication-goes-and-the-repository-document-shows-its-two-levels-as-one-member)) | both the lower of the installation's default and the project's level | [R-AUTHZ-033](authorization.md) |
 | `priorityMember` | R-REPO-022; local and remote only | `false` | this page |
@@ -321,6 +321,12 @@ Acceptance criteria:
 ### R-REPO-005 · Include and exclude patterns
 Priority: **MVP** · Covers: REPO-011, RMT-034
 
+- **Local and virtual repositories.** A remote repository has no include and exclude patterns: its delivery rules say what it
+  delivers, and a write that sets either list on a remote answers `422 not_applicable` ([remote-curation.md](remote-curation.md) R-CUR-002, Q-CUR-4). An
+  acceptance criterion of this or another page that sets `includePatterns` or `excludePatterns` on a remote reads as its rules: an
+  exclude pattern is a `section` rule with `block`, an include list the mode `onlyAllowed` with a `section` rule with `allow` per
+  pattern, and an include list of a mirror also its `remote.mirror.include` (R-CUR-017). What follows is about local and virtual
+  repositories.
 - A path or package is admitted when it matches at least one include pattern (an empty include list
   admits everything) and no exclude pattern.
 - The subject of the patterns is declared by the format (R-REPO-003):
@@ -874,6 +880,7 @@ R-REPO-004) and the entry is reported `suspended`.
 | Audit event, flagged `journal: revocation` | Recorded | Entry carries |
 |---|---|---|
 | `repository.narrowed` | By an update (R-REPO-011) whose change narrows one of the parts below, beside its `repository.updated`, in the same transaction; an update that narrows nothing records none ([Q-REPO-245](#q-repo-245--a-narrowing-update-records-repositorynarrowed-beside-repositoryupdated-with-only-the-parts-that-narrowed)) | `repositoryId` (decimal text, as `repository.disabled` carries it), `key` (the qualified name, for display), and each part that narrowed, only when it did: `include`, `excludeAdded`, `autoClaim`, `membersRemoved`, `pinsAdded`, `pinMembersRemoved`, `vulnerabilities`, and (specified, not built) `signatures` |
+| `remote.examination.discarded` | By a discard of what a remote stores and its delivery rules do not deliver, and by the task that removes it after its days ([remote-curation.md](remote-curation.md) R-CUR-016) | `repositoryId`, `key`, `name`, `version` (absent for a package); replay evicts what the restored repository stores of the subject and still does not deliver, and nothing else |
 | `repository.claims_changed` | By every change of a repository's claims (R-REPO-023): a claims write of the API and the auto claim of a first publish; every event carries its entry ([Q-REPO-250](#q-repo-250--every-claims-change-carries-a-journal-entry-and-a-replayed-manual-claim-that-overlaps-another-repositorys-claim-disables-its-repository)) | `repositoryId`, `key`, `source` (`manual`, `auto`) and `added`: the claims created and those widened from `members` to `global`, each `{pattern, scope}`; a removal and a narrowing to `members` widen and are not part of it. The `added` list of the event's details keeps listing every claim whose scope changed, a narrowing included, as R-OPS-016 has it |
 
 **What narrows.** The update compares the stored document and the rows of its virtual section with the new ones, in the
@@ -889,11 +896,13 @@ transaction that writes them (the comparison that fills `changes`):
 | `vulnerabilities` ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-002) | a member moves towards more blocking, in the order of Q-VULN-69: `enabled` to true, `matchPublicAdvisories` to a higher rank, `blockMalicious` to true, `onMissingData` to `block` | `vulnerabilities`: the member before and after, an absent member as its defaults |
 | `malware` ([malware-scanning.md](malware-scanning.md) R-MAL-020) | `onlyChecked` goes from false to true | `malware: {"onlyChecked": true}`; replay sets it on |
 | `signatures` ([signatures.md](signatures.md) R-SIG-061) | `onlyVerified` goes from false to true, `anchors` from empty (any anchor) to a list, or a reference leaves a list that stays non-empty | `signatures`: the member before and after; replay sets `onlyVerified` on and `anchors` to the narrower of the restored and the journaled value, and disables the repository when two lists share no reference |
+| `rules` (the delivery rules of a remote, [remote-curation.md](remote-curation.md) R-CUR-006), recorded by a write of the rules, which is no update of the document | a `block` is added, an `allow` removed, or an `allow` turned into a `block` | `rules`: `{"blocksAdded": [<subject>], "allowsRemoved": [<subject>]}`, a subject as `{"kind", "pattern" \| "name" [, "version"]}`; replay adds the blocks, removes the allows, and disables the repository when its rule set would exceed `proxy.delivery.max_rules` |
+| `remote.delivery.mode` (R-CUR-001) | it goes from `allExceptBlocked` to `onlyAllowed` | `deliveryMode: "onlyAllowed"`; replay sets it |
 | `storage.downloadLinks` ([storage.md](storage.md) R-STOR-014) | its effective value (an absent member is `true`) goes from true to false | `downloadLinksOff: true`; replay sets the member `false` and keeps the rest of `storage` |
 
 The other members are not journaled ([Q-REPO-246](#q-repo-246--patterns-auto-claims-virtual-members-pin-rules-and-the-vulnerabilities-member-are-journaled-upstream-storage-and-format-settings-are-not)):
 `description`, `adminNotes`, `priorityMember`, `virtual.deployTarget`, `virtual.mergedMetadataTtlSeconds`, the `remote` section
-apart from `cacheFillAction`, `storage` apart from `downloadLinks`, `local.caps`, `local.ownershipDomain` and the format members. A restore reverts them; the
+apart from `cacheFillAction` and `delivery.mode`, `storage` apart from `downloadLinks`, `local.caps`, `local.ownershipDomain` and the format members. A restore reverts them; the
 security-relevant ones are [H-569](../security/backup-and-restore.md#h-569--upstream-storage-and-format-settings-of-a-repository-come-back-with-a-restore).
 `disabled`, `visibility`, `hideExistence`, `local.packageOwnership` and `remote.cacheFillAction` keep the events of
 R-AUTHZ-031. A widening part of an update that also narrows (a pattern added to an include list, a member added) is not part of
@@ -1246,7 +1255,9 @@ For a request to virtual repository V with descriptor d (R-REPO-003) by caller c
    it by a block of the vulnerability scanning or by the malware gate, or holds it pending a malware verdict (`503
    malware_check_pending`), is no failure: its answer ends the walk in every tier ([vulnerability-scanning.md](vulnerability-scanning.md)
    R-VULN-015, [malware-scanning.md](malware-scanning.md) R-MAL-018). The walk names what lets it go on: "not found" is a `404`, `403
-   forbidden` (step 4) or `403 populate_not_permitted`; a transient failure is a `502` or `504`, or a `503` with
+   forbidden` (step 4), `403 populate_not_permitted` or `403 not_allowed_in_repository`, a remote member's delivery rules refusing
+   the request ([remote-curation.md](remote-curation.md) R-CUR-004); when nothing serves the request and no member failed transiently, the first member's
+   refusal by its rules is the answer instead of `404`, because "not found" would hide the act that changes it (Q-CUR-8); a transient failure is a `502` or `504`, or a `503` with
    `upstream_assumed_offline`, `upstream_rate_limited`, `fetch_queue_timeout`, `content_unavailable` or `unavailable`. Every other
    answer of a member, a gate's pending answer and a refusal written later included, ends the walk with that answer
    ([formats/oci.md](formats/oci.md) Q-OCI-245, the one rule of every format).
@@ -1258,6 +1269,7 @@ For a request to virtual repository V with descriptor d (R-REPO-003) by caller c
   evaluates steps 1 to 6 for the calling principal without transferring content and without
   contacting upstreams, and returns per member the decision and its reason (`disabled`,
   `not_admitted`, `pinned-out`, `claimed-elsewhere`, `refused-claimed`, `no-read`, `no-cache-fill`,
+  `not-allowed` (a remote member's delivery rules refuse the path, [remote-curation.md](remote-curation.md) R-CUR-004),
   `hit`, `miss`, `negative`, `offline`, `circuit-open`). Members the caller cannot read appear only
   as a count (`"unreadableMembers": 2`) unless the caller holds `repositories:read-config`.
   Permission: the gate of step 1. The members are listed in the order of the member list; the
@@ -1972,7 +1984,7 @@ on and off, sets its level, may set its address and an account (owner), and may 
 | `visibility` (both parts, one level) | an administrator | `setUpstreamRepositoryVisibility`, `setAllUpstreamRepositoriesVisibility` (R-REPO-073) |
 | `remote.url`, `remote.extraHosts`, and for an APT archive `deb.upstreamKeys` | the product; an administrator may override them | `setUpstreamRepositoryAddress`, `resetUpstreamRepositoryAddress` |
 | `remote.authMode`, `remote.username`, `remote.password` | an administrator | `setUpstreamRepositoryAccount`, `removeUpstreamRepositoryAccount` |
-| `adminNotes`, `includePatterns`, `excludePatterns`, `vulnerabilities`, `malware` ([malware-scanning.md](malware-scanning.md) R-MAL-020), `signatures` ([signatures.md](signatures.md) R-SIG-040, R-SIG-061, Q-SIG-128, Q-SIG-138: the whole member, the fetch switch and the gate), offline (`remote.availability.mode`), `remote.cacheFillAction` | an administrator | a merge patch of the document (R-REPO-011, `If-Match`); a system repository's `vulnerabilities`, `malware` and `signatures` are the product's (R-REPO-070, R-REPO-075) |
+| `adminNotes`, the delivery mode and rules (`remote.delivery`, the rules of [remote-curation.md](remote-curation.md) R-CUR-006; a repository of the kind `system` keeps the product's), `vulnerabilities`, `malware` ([malware-scanning.md](malware-scanning.md) R-MAL-020), `signatures` ([signatures.md](signatures.md) R-SIG-040, R-SIG-061, Q-SIG-128, Q-SIG-138: the whole member, the fetch switch and the gate), offline (`remote.availability.mode`), `remote.cacheFillAction` | an administrator | a merge patch of the document (R-REPO-011, `If-Match`); a system repository's `vulnerabilities`, `malware` and `signatures` are the product's (R-REPO-070, R-REPO-075) |
 | every other member: `hideExistence`, `priorityMember`, `remote.mode` (always `pullThrough`) and `remote.mirror`, the cache periods, `remote.downloadOnProbe`, `remote.headers`, `remote.clientCertificate`, `remote.outboundProxy`, `remote.sourceNetwork`, `remote.forwardAuthOnRedirect`, the size and integrity settings, `storage`, the format members but `deb.upstreamKeys` | the product | fixed at the format's defaults of R-REPO-063 |
 
 - **The document.** A merge patch of an `upstream` repository that changes a member of the product's rows, or one that a dedicated
@@ -2026,10 +2038,12 @@ it is always private and only for the scanner; it is switched on with the image 
 off unless an administrator wants it; there is no second way that falls back to the public source.
 
 - **Declaration** (`wellknown.Declared`, kind `system`): the key `scanner-trivy`, the format `oci`, the class `remote`, the upstream
-  `https://mirror.gcr.io/` without `extraHosts`, `includePatterns: ["aquasec/trivy-db"]` (the image name of the database at that
+  `https://mirror.gcr.io/` without `extraHosts`, `remote.delivery.mode: onlyAllowed` with the product's one delivery rule `package
+  aquasec/trivy-db allow` (a remote has no include patterns, [remote-curation.md](remote-curation.md) R-CUR-002; the reconcile writes the rule and a rule write
+  on the repository answers 409 `managed_by_product`) (the image name of the database at that
   registry, the address the scanning's task used before [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-044), both levels
   `private`, `vulnerabilities: {"enabled": false}` where the format has the member (the scanning does not scan its own database),
-  `remote.cache.unusedRetentionHours: 48`, `disabled: false`. The include patterns, the levels, the vulnerabilities member and the cache
+  `remote.cache.unusedRetentionHours: 48`, `disabled: false`. The delivery mode and rule, the levels, the vulnerabilities member and the cache
   period are the product's: the operations of R-REPO-073 and a merge patch answer 409 or 422 `managed_by_product` for them. The cache
   period is stored before the cleanup of R-REPO-046 that applies it is built
   ([Q-REPO-392](#q-repo-392--scanner-trivy-stores-its-cache-period-before-the-cleanup-that-applies-it-exists)). The include
@@ -2368,9 +2382,12 @@ A remote repository proxies exactly one upstream and caches what clients ask for
 fetches the content of a version when a client fetches it, or, when a client only probes the version (names exactly that version
 or file without fetching it, directly or through a virtual repository the remote serves it for, Q-REPO-367), in the background right
 after the probe, charged to that client's upstream budget (R-REPO-065,
-[usage-and-limits.md](usage-and-limits.md) R-LIM-037, INV-11); `downloadOnProbe: false` turns the second off, and nothing else is
-fetched ahead. In the mode `mirror` background passes also store what the upstream offers within the remote's patterns and bounds,
-before a client asks (R-REPO-050 to R-REPO-059). Clients cannot deploy into it. Every setting below is a member of the
+[usage-and-limits.md](usage-and-limits.md) R-LIM-037, INV-11); `downloadOnProbe: false` turns the second off. Besides that, it fetches
+ahead only what a person starts through the management API (a version, every version of a package, a sub-section) and what a request
+for an allow starts for examination, each a row of the repository's download queue ([remote-curation.md](remote-curation.md) R-CUR-010, R-CUR-011, R-CUR-015).
+What it delivers is decided by its delivery mode and rules (`remote.delivery`, R-CUR-001). In the mode `mirror` background passes
+also store what the upstream offers within the mirror's scope, the rules and the bounds, before a client asks (R-REPO-050 to R-REPO-059,
+R-CUR-017). Clients cannot deploy into it. Every setting below is a member of the
 `remote` section; omitted members take the default, format defaults come from the format catalog
 (R-REPO-003).
 
@@ -2417,6 +2434,10 @@ before a client asks (R-REPO-050 to R-REPO-059). Clients cannot deploy into it. 
 | `mirror.includePrereleases` | Whether the pass stores prerelease versions | `true` | | — | R-REPO-051 |
 | `mirror.maxBytes` | Byte bound of the repository's stored content for the pass, `null` = none of its own | `null` | 1048576–2^62 | — | R-REPO-052 |
 | `downloadOnProbe` | A request that names exactly one version or file without fetching its content starts the background download of that version | `true` | | — | R-REPO-065 |
+| `delivery.mode` | `allExceptBlocked` or `onlyAllowed`: what the remote delivers without a rule | `allExceptBlocked` | | SEC-007 | [remote-curation.md](remote-curation.md) R-CUR-001 |
+| `delivery.examineOnRequest` | A request for an allow starts the download of what it asks for, for examination | `true` | | SEC-029 | R-CUR-015 |
+| `delivery.examinedRetentionDays` | Days after which what a download ahead stored for examination, and the rules still do not deliver, is removed | `30` | 1–365 | — | R-CUR-016 |
+| `mirror.include` | The mirror's scope: name patterns; empty is everything the rules deliver | `[]` | ≤ 100 | — | R-CUR-017 |
 
 </details>
 
@@ -2706,8 +2727,8 @@ For a request with descriptor d (R-REPO-003) to remote repository R by caller c,
 execute these steps in order:
 
 1. R disabled → 404 `repository_disabled`.
-2. d not admitted by R's patterns, or d's package name refused because of a claim (R-REPO-023) →
-   404, no upstream request.
+2. d's package name refused because of a claim (R-REPO-023) → 404, no upstream request. (A remote has no patterns; its delivery
+   rules decide at step 4 for a stored item and at step 5a for a miss, [remote-curation.md](remote-curation.md) R-CUR-003.)
 3. c lacks `read` on R for d → 401, 403 or 404 per [R-AUTHZ-016](authorization.md).
 4. Look up the cache entry (R, path, variant). An entry marked upstream gone, and every entry of a
    package that is gone from R, counts as absent here and in every later step (R-REPO-029; gone
@@ -2719,6 +2740,10 @@ execute these steps in order:
    steps (one flight, R-REPO-026) and then applies the format's removal marks to the outcome
    ([formats/npm.md](formats/npm.md) R-NPM-025, Q-NPM-13; R-REPO-029).
 5. Request through the cache view, or with `Cache-Control: only-if-cached` → R-REPO-032.
+5a. R's delivery rules do not deliver d (a package document, version list or tag list of a package with no delivered version; an
+   artifact of a version that is not delivered) → 403 `not_allowed_in_repository`, no upstream request ([remote-curation.md](remote-curation.md) R-CUR-003,
+   R-CUR-004). A stored item is decided by the rules at the serve point of step 4, as the fourth check of the one serve decision
+   ([signatures.md](signatures.md) R-SIG-069).
 6. R offline, global offline (R-REPO-031), or read-only maintenance mode with `cacheFill: false`
    ([R-OPS-024](operations-and-observability.md)) → serve an existing entry as stale, otherwise 404
    `not_cached_offline`.
@@ -4165,29 +4190,32 @@ probe's answer is the one it would have been ([Q-REPO-362](#q-repo-362--the-deci
 1. The repository is a remote, not disabled, its `remote.downloadOnProbe` is on (R-REPO-024, [Q-REPO-360](#q-repo-360--a-remote-repository-can-turn-the-background-download-off)),
    it may contact its upstream (not offline, not `proxy.global_offline`), and the request may (not the cache view, not
    `Cache-Control: only-if-cached`).
-2. The repository's include and exclude patterns admit the files, and no global claim refuses the name at the remote (R-REPO-005,
-   R-REPO-023), as `Host.Authorize` decides a client's read of them.
+2. No global claim refuses the name at the remote (R-REPO-023), as `Host.Authorize` decides a client's read of it. A remote has no
+   patterns, and a probe answered with success was delivered by the delivery rules ([remote-curation.md](remote-curation.md) R-CUR-002, R-CUR-003).
 3. The probe's caller may fill the repository (R-AUTHZ-008, asked as a question and audited nowhere): a caller who may read but not
    populate starts nothing.
 4. The content is not stored already: a probe whose files are all stored starts nothing ([Q-REPO-364](#q-repo-364--stored-already-is-read-from-the-files-the-answer-names)).
-5. No background download of the version is queued or running, and the repository has fewer than `limits.maxConcurrentFetches`
-   (64 by default) of them queued or running ([Q-REPO-363](#q-repo-363--what-bounds-one-background-download)).
+5. No row of the version waits or runs in the repository's download queue, and the queue has fewer waiting rows than
+   `proxy.downloads.max_waiting_per_repository` (10,000 by default): a row waits for its turn rather than being refused because others
+   run ([remote-curation.md](remote-curation.md) R-CUR-011, R-CUR-013, Q-CUR-18; [Q-REPO-363](#q-repo-363--what-bounds-one-background-download) as revised there).
 6. Step 9a of R-REPO-025 admits an upstream request for the probe's caller at this moment, which counts it for the caller's budget
    key and the remote's ceiling (R-LIM-037). In `audit` a background download that 9a would have refused starts and is recorded as
    `would_limit`.
 
-**The background download** is the job `remote-background-download` of the worker ([Q-REPO-361](#q-repo-361--the-background-download-is-a-job-of-the-worker)):
-queue `default`, exclusive per version of a repository (one at a time across replicas), five attempts, 30 minutes per attempt. It runs
+**The background download** is a row of origin `probe` of the repository's download queue, run by the job `remote-download` of the
+worker ([remote-curation.md](remote-curation.md) R-CUR-011, R-CUR-013; [Q-REPO-361](#q-repo-361--the-background-download-is-a-job-of-the-worker) as revised
+there): queue `downloads`, one row of a version at a time across replicas, five attempts that the row schedules, 30 minutes per attempt. It runs
 through the same gate and engine as a mirror pass: every request takes a background slot within the repository's background share
 and yields to client fetches (R-REPO-055), reads the upstream's circuit without moving it and waits out a rate limit (R-REPO-054);
-every file goes through the format's gate, the repository's include and exclude patterns ([Q-REPO-365](#q-repo-365--the-include-and-exclude-patterns-hold-for-every-background-fill)),
-the vulnerability scanning's rule for a miss and the integrity checks of a client's fill. A file another fetch stored meanwhile costs
+every file goes through the format's gate, the claims ([Q-REPO-365](#q-repo-365--the-include-and-exclude-patterns-hold-for-every-background-fill),
+whose patterns a remote no longer has), the vulnerability scanning's rule for a miss and the integrity checks of a client's fill. A file another fetch stored meanwhile costs
 nothing; a refused file is counted and the rest goes on. One background download stores at most 1,000 files and at most the
 repository's `limits.maxArtifactBytes` (the system value `proxy.max_artifact_bytes`, 10 GiB by default) in sum; what goes beyond is
 not fetched and the job ends `bounded`. Its upstream exchanges and uncached bytes are charged to the probe's budget key and the
 remote's ceiling at the flushes after they were read (R-LIM-037, [Q-LIM-54](usage-and-limits.md#q-lim-54--a-background-download-carries-the-probes-charge-to-the-worker-as-a-ticket)).
 
-**What a user sees.** The job on the Jobs tab with its result (files, stored, present, refused, bytes, outcome). The versions it
+**What a user sees.** The row on the repository's tab **Downloads** with its counters (files, stored, present, refused, bytes), its
+outcome and its failure in the failure's own words ([remote-curation.md](remote-curation.md) R-CUR-011, R-CUR-018). The versions it
 stored are listed by R-API-081 like a client's fetch: in npm, NuGet, Ansible Galaxy and Debian once the file is stored, in OCI once
 the background download stored the whole content of the tag's document ([api-and-ui.md](api-and-ui.md) R-API-081, migration 00083).
 Their sizes are true by R-API-080: an OCI index counts the platforms held, marked partial while the index names more than the
@@ -4196,9 +4224,11 @@ usage overview counts it in `background_fetches` of the probe's caller (R-LIM-02
 
 **Audit and metrics** ([Q-REPO-366](#q-repo-366--a-background-download-is-audited-by-its-fills-and-counted-by-one-metric-family)): no
 audit event of its own; each file it stores records the populate event of a fill (R-AUTHZ-029) with the actor
-`system:background-download` and the reason `background-download`. `quader_remote_background_downloads_total{format,outcome}` counts
-the decisions (`started`, `off`, `stored`, `local`, `not_admitted`, `active`, `queue_full`, `limited`, `busy`, `failed`) and the ends of the
-jobs (`completed`, `bounded`, `failed_download` per failed attempt); it carries no repository and no subject (R-OPS-007).
+`system:background-download` and the reason `background-download`. `quader_remote_downloads_total{repo,origin,outcome}` with the
+origin `probe` counts the decisions (`started`, `off`, `stored`, `local`, `not_admitted`, `active`, `queue_full`, `limited`, `busy`,
+`failed`) and the ends of the rows (R-CUR-019); it carries the repository, capped as R-OPS-007 caps it, and no subject. It replaces
+`quader_remote_background_downloads_total{format,outcome}`, which had no repository because a probe's downloads had no list of their own
+(Q-CUR-18).
 
 Acceptance criteria:
 
@@ -4236,8 +4266,8 @@ for each format is on the format pages: [formats/npm.md](formats/npm.md#mirror-d
 Priority: **MVP** · Covers: API-082, API-083
 
 - `remote.mode` is `pullThrough` (the default) or `mirror`. Every other remote setting of R-REPO-024 applies in both
-  modes: the upstream, its credentials and egress rules, the patterns, the cache periods, the circuit, offline mode and the
-  limits.
+  modes: the upstream, its credentials and egress rules, the delivery mode and rules ([remote-curation.md](remote-curation.md) R-CUR-001), the cache periods, the
+  circuit, offline mode and the limits.
 - The mirror's settings are the members of `remote.mirror`. They are present in the canonical section in both modes, with
   their defaults where the request omitted them, and take effect only in mode `mirror`:
 
@@ -4251,6 +4281,7 @@ Priority: **MVP** · Covers: API-082, API-083
   | `maxVersionsPerPackage` | Newest versions of a package the pass stores, by the format's version order; `0`: all | `0` | 0–10000 |
   | `includePrereleases` | Whether prerelease versions are stored | `true` | |
   | `maxBytes` | Byte bound of the repository's stored content beyond which the pass adds nothing; `null`: no bound of its own (R-REPO-052) | `null` | 1048576–2^62 |
+  | `include` | The mirror's scope: name patterns of R-AUTHZ-005; a pass stores what the scope and the delivery rules both admit; `[]`: everything the rules deliver ([remote-curation.md](remote-curation.md) R-CUR-017) | `[]` | ≤ 100 patterns |
 
 - A stored section written before these members existed reads back with them at their defaults: the read fills them, and
   no migration rewrites stored documents (Q-REPO-130). A document read and sent back therefore saves unchanged.
@@ -4269,8 +4300,9 @@ Priority: **MVP** · Covers: API-082, API-083
   invalidates nothing.
 - Who may set them: a holder of `repositories:write-config`; an Owner without `repositories:write-config` only keeps what is stored, pauses,
   resumes or turns the mode back to `pullThrough` (Q-REPO-142; 422 `mirror_restricted` otherwise). While a mirror stays a
-  mirror it also keeps the `includePatterns`, `excludePatterns`, `remote.url` and `remote.extraHosts` as stored: they decide what
-  the mirror covers and where it reads from, so a write that changes one answers 422 `mirror_restricted` at its pointer
+  mirror it also keeps `remote.url` and `remote.extraHosts` as stored, as it keeps `remote.mirror.include` with the rest of
+  `remote.mirror`: they decide what the mirror covers and where it reads from (a remote has no include and exclude patterns; its
+  delivery rules, which the holders of `manage` set, widen a mirror only within that scope, [remote-curation.md](remote-curation.md) Q-CUR-5), so a write that changes one answers 422 `mirror_restricted` at its pointer
   (Q-REPO-193); a write that turns the mode back to `pullThrough` may change them. What a format's mirror keeps beyond the
   generic members is the format's member `<format>.mirror` (`oci.mirror`, [formats/oci.md](formats/oci.md) R-OCI-026; `deb.mirror`, [formats/debian.md](formats/debian.md) R-DEB-024): an
   Owner keeps it as stored, in either mode, like `remote.mirror` (the format's defaults on a create), and a write that changes
@@ -4328,21 +4360,22 @@ Priority: **MVP** · Covers: quader-only
   |---|---|---|
   | `feed` | An append-only change feed or catalog of the upstream with a position (cursor) | A full pass reads it from its beginning; an incremental pass reads what changed after the cursor of the last complete pass |
   | `listing` | A paged listing of every package of the upstream | Every pass is full |
-  | `names` | The include patterns without a wildcard, read as exact names | Every pass is full |
+  | `names` | The patterns of `remote.mirror.include` without a wildcard, read as exact names, and in mode `onlyAllowed` the names of the delivery rules that allow ([remote-curation.md](remote-curation.md) R-CUR-017) | Every pass is full |
 
-  Whatever the method, every full pass also takes the exact names of the include patterns and the names of the packages
+  Whatever the method, every full pass also takes the exact names of `remote.mirror.include` and the names of the packages
   the repository already holds (its package rows, [storage.md](storage.md) R-STOR-003; paged under the bound of 10,000 pending
   names, Q-REPO-158), so that a package that clients
   pulled is kept current and a name a feed missed is caught. `auto` takes the first method the upstream offers; a method
   set explicitly that the upstream does not offer ends the pass with `discovery_unavailable`. What each upstream offers, and
   what of it Quader uses, is on the format pages.
 - **A pass is full** when the repository has no cursor of a complete feed pass; when the method differs from the one of
-  that cursor; when `fullPassIntervalSeconds` is not `0` and the last full pass is older; when the include or exclude
-  patterns changed since the last complete pass (the state keeps a fingerprint of both lists); and when it is requested
+  that cursor; when `fullPassIntervalSeconds` is not `0` and the last full pass is older; when `remote.mirror.include` or
+  the revision of the delivery rules changed since the last complete pass (the state keeps a fingerprint of both); and when it is requested
   (R-REPO-056). Otherwise a `feed` pass is incremental.
-- **Patterns bound everything** (R-REPO-005). A name that the include and exclude patterns do not admit, or that a claim
-  refuses (R-REPO-023, R-REPO-025 step 2), is never asked for, not even its document. A format may use the literal prefix of
-  an include pattern to narrow a listing request it sends (npm's key ranges); it still checks every name it returns.
+- **The scope and the rules bound everything** ([remote-curation.md](remote-curation.md) R-CUR-017). A name that `remote.mirror.include` does not cover or the
+  delivery rules do not deliver, or that a claim refuses (R-REPO-023, R-REPO-025 step 2), is never asked for, not even its document,
+  and a version the rules do not deliver is not stored. A format may use the literal prefix of a pattern of the scope to narrow a
+  listing request it sends (npm's key ranges); it still checks every name it returns.
 - **Versions.** `maxVersionsPerPackage` keeps the newest n versions of the plan, after `includePrereleases: false` has
   removed the prerelease ones. A format may name versions that always count (npm: the version of the `latest` dist-tag,
   [formats/npm.md](formats/npm.md) Q-NPM-71; OCI: the tags an exact pattern of `oci.mirror.tags` names, Q-OCI-180). A version
@@ -4380,8 +4413,8 @@ never bounded by them.
 - **A bound is required for a well-known upstream.** A mirror whose `url` is a preset's URL (R-REPO-062,
   [Q-REPO-323](#q-repo-323--every-preset-is-a-well-known-upstream-for-the-mirror-bound): `https://registry.npmjs.org/`,
   `https://api.nuget.org/v3/index.json`, `https://deb.debian.org/debian/`, `https://quay.io/` and every other) is refused with 422
-  `mirror_unbounded` at `/remote/mode` unless the repository has a non-empty include list in which every pattern has a literal
-  part before its first wildcard (`@types/*`, `Microsoft.Extensions.*`, `lodash`; not `*`, `**`, `@*/*` or `?x`), or a
+  `mirror_unbounded` at `/remote/mode` unless the repository has a non-empty `remote.mirror.include` in which every pattern has a literal
+  part before its first wildcard (the delivery rules are no bound: a holder of `manage` can allow `**`, Q-CUR-5) (`@types/*`, `Microsoft.Extensions.*`, `lodash`; not `*`, `**`, `@*/*` or `?x`), or a
   `maxBytes` (Q-REPO-132). A mirror of any other upstream without either is saved with the warning `mirror_unbounded`.
 - **`maxBytes`** bounds the repository's logical bytes: the folded counter `repository_usage.logical_bytes` of
   [storage.md](storage.md) R-STOR-003, the number the repository quota of R-STOR-029 reads, which counts what clients filled
@@ -7854,6 +7887,10 @@ it with Q-REPO-142's condition, a per-project allowance.
 **Applied in the spec:** R-REPO-050; [authorization.md](authorization.md) R-AUTHZ-026; [security/delegated-administration.md](../security/delegated-administration.md). Code:
 `internal/repository/validate_mirror.go` (`checkDelegatedMirrorScope`), `delegated.go`.
 
+**Revised on 2026-11-23** by [remote-curation.md](remote-curation.md) Q-CUR-5 (specified, not built): a remote has no include and exclude lists; the mirror's scope is
+`remote.mirror.include`, frozen with the rest of `remote.mirror`, and the frozen `remote.url` and `remote.extraHosts` stay. A Maintainer's
+delivery rules widen a mirror only within that scope.
+
 ### Q-REPO-194 · One predicate decides whether a url is a format's well-known upstream
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -9451,6 +9488,10 @@ of their own.
 **Applied in the spec:** R-REPO-065. Code: [background_download.go](../../internal/formathost/background_download.go),
 [wire_background_download.go](../../internal/app/wire_background_download.go).
 
+**Revised on 2026-11-23** by [remote-curation.md](remote-curation.md) Q-CUR-18 (specified, not built): the background download is a row of the repository's download queue,
+run by one attempt of the job `remote-download` on the queue `downloads`, the queue of its own that the rationale above foresaw; the row
+keeps its retries and is seen on the repository's tab **Downloads** instead of the Jobs tab.
+
 ### Q-REPO-362 · The decision on a probe runs after the answer, on the probe's replica
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -9491,6 +9532,10 @@ growth of a repository as a whole.
 **Applied in the spec:** R-REPO-065. Code: `decide` in [probe.go](../../internal/formathost/probe.go), `RunBackgroundDownload` in
 [background_download.go](../../internal/formathost/background_download.go), `formats.MaxProbeFiles`.
 
+**Revised on 2026-11-23** by [remote-curation.md](remote-curation.md) Q-CUR-18 (specified, not built): the per-repository bound of queued or running downloads gives way to
+a bound of running rows (`proxy.downloads.per_repository`, 4) and of waiting rows (`proxy.downloads.max_waiting_per_repository`, 10,000);
+a probe beyond the running bound waits instead of being refused `queue_full`. The bounds of one download stay.
+
 ### Q-REPO-364 · Stored already is read from the files the answer names
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
@@ -9524,6 +9569,10 @@ names it discovers, but a fill of a path the patterns refuse (a blob of an exclu
 
 **Choice:** (a). **Applied in the spec:** R-REPO-065. Code: `admitted` and `fillPath` in
 [mirror_host.go](../../internal/formathost/mirror_host.go), `mirror.RefusedPatterns`.
+
+**Revised on 2026-11-23** by [remote-curation.md](remote-curation.md) Q-CUR-4 and Q-CUR-21 (specified, not built): a remote has no patterns; a download ahead stores what it
+names whatever the delivery rules say, and a mirror's pass stores what its scope and the rules admit (R-CUR-017). The claims still hold
+for every background fill.
 
 ### Q-REPO-366 · A background download is audited by its fills and counted by one metric family
 

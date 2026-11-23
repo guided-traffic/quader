@@ -65,6 +65,11 @@ the process through the kubelet's swap and the next read (see [transport-encrypt
 
 ## Upstream credentials of remote repositories
 
+Specified on 2026-11-23, not built: the upstream catalogue of a remote asks with the same credential, to the same hosts, so its answers are
+that account's view ([remote-curation.md](remote-curation.md),
+[H-1722](remote-curation.md#h-1722--the-catalogue-shows-what-the-upstream-credential-sees)); a catalogue host of a preset receives no
+credential.
+
 A remote repository's password (the token with `authMode: bearer`) is a secret field ([R-REPO-033](../spec/repositories-and-proxy.md),
 [remote.go](../../internal/repository/remote.go), `SecretField`). Three forms exist, and each has one place:
 

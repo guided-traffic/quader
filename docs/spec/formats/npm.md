@@ -1602,14 +1602,15 @@ what the npm format contributes through the mirror interface of [architecture.md
 - **Methods** (Q-NPM-69):
   - `feed`, offered when `remote.url` is the public registry (`https://registry.npmjs.org/`, without query, fragment or user information: `discover.SameUpstream`, Q-NPM-75): a full pass first reads the
     root's `update_seq` and keeps it as the cursor of the next incremental pass, then lists names with `_all_docs`, one key
-    range per include pattern's literal prefix (`startkey` the prefix, `endkey` the prefix followed by `￰`), or the
-    whole key space without include patterns, paged by `startkey` after the last id and `limit: 10000`. An incremental pass
+    range per literal prefix of a pattern of `remote.mirror.include` ([remote-curation.md](../remote-curation.md) R-CUR-017; `startkey` the prefix, `endkey` the prefix followed by `￰`), or the
+    whole key space without such patterns, paged by `startkey` after the last id and `limit: 10000`. An incremental pass
     reads `_changes` from the stored sequence with `limit: 10000` and takes the ids of the changes; a change marked
     `deleted` makes the pass refresh that package's document (R-NPM-026) and store nothing. The ids are package names; each
-    is checked against the patterns, the claims and the name rule of R-NPM-002.
+    is checked against the mirror's scope, the delivery rules, the claims and the name rule of R-NPM-002.
   - `listing`: not offered by any npm upstream; `auto` skips it. npm's search (`-/v1/search`) is a ranked text search with
     a capped window, not a listing, and is not used (Q-NPM-70).
-  - `names`: the include patterns without a wildcard, read as package names, and the npm packages the repository holds.
+  - `names`: the patterns of `remote.mirror.include` without a wildcard, read as package names, the names of the delivery rules that allow a package
+    or a version in mode `onlyAllowed` (R-CUR-017), and the npm packages the repository holds.
 - **The plan of a package.** The format fills the full package document (`<name>`, variant `full`, R-NPM-024) through the
   remote engine and returns its versions newest first by semver precedence, each with its tarball path (R-NPM-025), the
   announced size where the document has one (`dist.unpackedSize` is not the tarball's size and is not used; Q-NPM-74) and whether it is
@@ -1938,7 +1939,9 @@ Priority: **P1** · Covers: PKG-NPM-048, SRCH-050
 - Index: PostgreSQL full-text over name, description and keywords of each package's `latest`
   version (`search_vector` of R-NPM-006 and R-NPM-024), updated inside the publish, unpublish and
   dist-tag transactions, so a package is searchable as soon as its publish returns. Remote
-  repositories search their stored documents only and never send the query upstream. Virtual
+  repositories search their stored documents only and never send the query upstream; a result whose package the remote's delivery
+  rules do not deliver is dropped (R-NPM-049). Searching the upstream is the upstream catalogue's, a surface of the management API for
+  a person, never this route ([remote-curation.md](../remote-curation.md) R-CUR-007). Virtual
   repositories search the members selected as in R-NPM-030, deduplicate by name in member order,
   and rank by text relevance, returned as score.
 - Permission: `read`, results filtered per name (R-AUTHZ-007).
@@ -2733,6 +2736,40 @@ Acceptance criteria (fixture of [endpoints.md](../endpoints.md) R-EP-012, with `
   that resolves 2.0.0 succeeds with npm, pnpm and both Yarn lines of R-NPM-045.
 - After a rule update that hides 2.0.0, a conditional request with the earlier ETag on any replica
   answers 200 with a document without 2.0.0.
+
+## Curation of a remote
+
+### R-NPM-049 · The upstream catalogue and the delivery rules of an npm remote
+Priority: **P1** · Covers: quader-only
+
+What an npm remote answers to the catalogue and the rules of [remote-curation.md](../remote-curation.md) (R-CUR-003, R-CUR-007),
+from the protocol research of 2026-11-23 (the public registry's documentation and single live requests):
+
+| Capability | npm |
+|---|---|
+| Search | `upstream`: `GET -/v1/search?text=&size=50&from=`; the public registry ranks names, descriptions, keywords and maintainers; `text` takes 2 to 64 characters (a shorter text is not sent, the screen asks for two); the window is 5,250 hits (from `from=5000` on the registry answers its first page again, so Quader stops at 5,250 with `Truncated`); qualifiers are sent as typed. A registry that answers `404`, `405` or `501` to the route has `search: none` for the cache period ("This npm registry does not answer searches.") |
+| Levels | `scope`, only for the preset of the public registry: the members of a scope are the key range `startkey="@<scope>/"`, `endkey="@<scope>/￰"` of `_all_docs` on the replication host the mirror reads (`replicate.npmjs.com`, declared in `MirrorHosts`, Q-NPM-72), at most 1,000 names a page, without a credential. The scopes themselves are not listable: a scope is entered by its name. Other npm registries: none ("This npm registry lists no scopes.") |
+| Lookup and versions | the full package document: versions, `time` of each, `deprecated`, the dist-tags, `dist.integrity`; the stored document when the remote holds one. Bounded by `proxy.catalogue.max_document_bytes` (the largest seen, `typescript`, 2.0 MB with 3,893 versions) |
+| Sizes | `unknown`: the document carries no tarball size; `dist.unpackedSize` is shown as the unpacked size |
+| Version canon | the version as the document writes it (SemVer) |
+| One version's download | the tarball the document's `dist.tarball` names, at the remote's path (R-NPM-025) |
+
+- **Documents** follow the rules as R-NPM-048 follows an endpoint's exposure, after the rewrite of R-NPM-024: `versions` and `time` of
+  the full and the abbreviated document list the delivered versions; a tag other than `latest` whose version is refused is dropped;
+  `latest` moves to the highest delivered version that is no prerelease (else the highest delivered); the top-level fields come from the
+  moved `latest`; a package without a delivered version answers the refusal of R-CUR-004. The single-version document of a refused
+  version and its tarball answer the refusal. The search of the protocol (R-NPM-037) drops a result whose package is not delivered.
+  One filter serves the endpoint's view and the rules' view, so a document lists what both let through.
+- **What `npm` shows:** `npm install <name>@^1` resolves within the delivered versions; a refused tarball fails with `npm error 403 403
+  Forbidden - GET … - <name> <version> is not allowed in …`.
+- The public registry states no rate limit for its search; the catalogue's budget (R-CUR-008) is Quader's own.
+
+Acceptance criteria:
+
+- Unit (kit checks 21 and 22, milliseconds): the search, the scope level and the package call against the fixture's canned answers; a
+  refused `2.0.0` is absent from every document and `latest` moves to `1.9.0`.
+- End-to-end (the leg `npm`, about 10 s): with `version left-pad@1.1.3 allow` in mode `onlyAllowed`, `npm install left-pad@^1` installs
+  1.1.3 from the stub's three versions, and `npm install left-pad@1.3.0` prints the refusal's text.
 
 ## Deferred
 

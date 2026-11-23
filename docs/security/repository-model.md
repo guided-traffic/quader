@@ -42,6 +42,11 @@ search has no name, so the routing of the plan applies none and the search decid
 ([handlers_search.go](../../internal/formats/nuget/handlers_search.go) `patternsOf`, Q-NUGET-77;
 `TestR_REPO_005_TheNuGetSearchOfALocalRepositoryAppliesItsPatterns`).
 
+**A remote repository's delivery rules** (specified on 2026-11-23, not built, [remote-curation.md](remote-curation.md)): a remote has no include and exclude
+patterns; its delivery mode and rules say what it delivers, set by the holders of `manage` and decided before a fill, at the serve point
+and in documents. Unlike a pattern, a rule hides nothing from a view: a stored version it refuses is listed as not delivered with its
+verdicts. A rule set is part of the repository's snapshot and propagates as the snapshot does, so H-132 applies to it.
+
 ## The snapshot and the configuration document
 
 The snapshot ([reader.go](../../internal/repository/reader.go)) holds, per repository, the settings that request paths

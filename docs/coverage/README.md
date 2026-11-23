@@ -19,11 +19,11 @@ regenerated.
 |---|---|---|
 | **Implemented** | **22.6%** (506 of 2,239 catalog features) | measured from passing tests that name requirements (Q-ROAD-4) |
 | **MVP features covered by spec requirements** | **100%** (395 of 395) | measured from `Covers:` lines |
-| P1 features covered by spec requirements | 67.1% (345 of 514) | measured from `Covers:` lines |
-| In-scope features covered (MVP, P1, P2, Later) | 36.8% (798 of 2,167) | measured from `Covers:` lines |
+| P1 features covered by spec requirements | 67.9% (349 of 514) | measured from `Covers:` lines |
+| In-scope features covered (MVP, P1, P2, Later) | 37.1% (805 of 2,167) | measured from `Covers:` lines |
 | Catalog features | 2,239 on 60 pages | measured from catalog headings |
-| Spec requirements | 1,234 on 24 pages (718 MVP, 477 P1, 39 P2) | measured from spec headings |
-| Requirements covering no catalog feature | 462 (`quader-only`) | measured from `Covers:` lines |
+| Spec requirements | 1,262 on 25 pages (718 MVP, 505 P1, 39 P2) | measured from spec headings |
+| Requirements covering no catalog feature | 475 (`quader-only`) | measured from `Covers:` lines |
 <!-- coverage-gen:end headline -->
 
 **What the owner constraints of 2026-10-28 changed.** The tables were regenerated on 2026-10-29,
@@ -52,11 +52,11 @@ see [Honesty notes](#honesty-notes).
 | Priority | Features | Specified | Open | Specified share | Covered by an MVP requirement | Implemented |
 |---|---:|---:|---:|---:|---:|---:|
 | **MVP** | 395 | 395 | 0 | 100% | 395 | 353 |
-| **P1** | 514 | 345 | 169 | 67.1% | 68 | 118 |
-| **P2** | 884 | 56 | 828 | 6.3% | 12 | 34 |
+| **P1** | 514 | 349 | 165 | 67.9% | 68 | 118 |
+| **P2** | 884 | 59 | 825 | 6.7% | 12 | 34 |
 | **Later** | 374 | 2 | 372 | 0.5% | 0 | 1 |
 | **Out of scope** | 72 | 0 | 72 | 0% | 0 | 0 |
-| **Total** | 2,239 | 798 | 1,441 | 35.6% | 475 | 506 |
+| **Total** | 2,239 | 805 | 1,434 | 36.0% | 475 | 506 |
 <!-- coverage-gen:end priority -->
 
 The column *Covered by an MVP requirement* shows where the spec pulls work forward: 55 P1 features
@@ -75,9 +75,9 @@ Each page name links to that page's section of the checklist.
 | Catalog page | Features | MVP | P1 | P2 | Later | Out of scope | Specified | Open |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | [Repositories](checklist.md#repositories-repo) | 68 | 24 | 26 | 16 | 1 | 1 | 41 | 27 |
-| [Remote repositories](checklist.md#remote-repositories-rmt) | 49 | 18 | 14 | 17 | 0 | 0 | 31 | 18 |
+| [Remote repositories](checklist.md#remote-repositories-rmt) | 49 | 18 | 14 | 17 | 0 | 0 | 32 | 17 |
 | [Replication, federation and multi-site topology](checklist.md#replication-federation-and-multi-site-topology-repl) | 72 | 0 | 0 | 17 | 51 | 4 | 0 | 72 |
-| [Artifact management](checklist.md#artifact-management-art) | 53 | 10 | 20 | 22 | 0 | 1 | 32 | 21 |
+| [Artifact management](checklist.md#artifact-management-art) | 53 | 10 | 20 | 22 | 0 | 1 | 33 | 20 |
 | [Search and query language](checklist.md#search-and-query-language-srch) | 64 | 0 | 24 | 35 | 5 | 0 | 3 | 61 |
 | [Builds and CI integration](checklist.md#builds-and-ci-integration-bld) | 49 | 0 | 15 | 22 | 11 | 1 | 0 | 49 |
 | [Identity and access](checklist.md#identity-and-access-iam) | 69 | 24 | 11 | 23 | 6 | 5 | 36 | 33 |
@@ -90,7 +90,7 @@ Each page name links to that page's section of the checklist.
 | [Operations, monitoring and configuration](checklist.md#operations-monitoring-and-configuration-ops) | 100 | 17 | 23 | 34 | 1 | 25 | 43 | 57 |
 | [Events and extensibility](checklist.md#events-and-extensibility-evt) | 82 | 1 | 24 | 12 | 43 | 2 | 26 | 56 |
 | [Distribution and release lifecycle](checklist.md#distribution-and-release-lifecycle-dist) | 70 | 2 | 0 | 0 | 67 | 1 | 2 | 68 |
-| [Security scanning and curation](checklist.md#security-scanning-and-curation-sec) | 98 | 18 | 18 | 17 | 43 | 2 | 18 | 80 |
+| [Security scanning and curation](checklist.md#security-scanning-and-curation-sec) | 98 | 18 | 18 | 17 | 43 | 2 | 23 | 75 |
 | [UI inventory](checklist.md#ui-inventory-ui) | 61 | 33 | 14 | 8 | 3 | 3 | 47 | 14 |
 | [Content API operation catalog](checklist.md#content-api-operation-catalog-api) | 166 | 15 | 56 | 44 | 48 | 3 | 71 | 95 |
 | [Operation catalog: administration API](checklist.md#operation-catalog-administration-api-admapi) | 114 | 34 | 23 | 23 | 28 | 6 | 54 | 60 |

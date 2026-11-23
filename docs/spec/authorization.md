@@ -922,7 +922,7 @@ Priority: **MVP** · Covers: IAM-022
 | `deploy` | Create content that does not exist yet (a new file, a new package version), and change metadata that steers resolution: npm dist-tags and deprecation, NuGet relist | Fetch uncached content when `cacheFillAction` is `deploy` (R-AUTHZ-008) | No effect (writes are checked on the target, R-AUTHZ-009) |
 | `overwrite` | Replace an existing file with different bytes; needed together with `deploy` | No effect | No effect |
 | `delete` | Delete files, versions and whole packages (npm unpublish, NuGet delete) | Evict cached content | No effect |
-| `manage` | Repository-scoped administration of content: package ownership (R-AUTHZ-019), metadata recalculation, restore from the trash can (P1), effective permissions of items (R-AUTHZ-024), delegated policy editing (R-AUTHZ-025) | Same, plus invalidating cached metadata | Invalidate the merged-metadata cache of the virtual repository |
+| `manage` | Repository-scoped administration of content: package ownership (R-AUTHZ-019), metadata recalculation, restore from the trash can (P1), effective permissions of items (R-AUTHZ-024), delegated policy editing (R-AUTHZ-025) | Same, plus invalidating cached metadata, the delivery rules, the decision of requests for an allow, the discard of what was examined, and downloads ahead of a client beyond one delivered version ([remote-curation.md](remote-curation.md) R-CUR-005) | Invalidate the merged-metadata cache of the virtual repository |
 
 Dist-tags, deprecation and relisting need `deploy`, not `annotate`: moving `latest`, deprecating a
 version or relisting one changes what `npm install` or NuGet's version selection picks, which is a
@@ -1111,6 +1111,13 @@ the remote request path (R-REPO-025, step 9) is this setting.
   ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-065): only when the probe's caller may populate the repository
   (this check, asked as a question and audited nowhere). The download's fills write the populate event with
   `system:background-download` as actor and `reason: background-download` (Q-REPO-366); the caller is named in the usage store.
+- **A download ahead of a client populates as the system, for the person who started it.** A person starts a download into a remote's
+  cache through the management API ([remote-curation.md](remote-curation.md) R-CUR-010): an explicit `POST`, which a session sends only with its CSRF token
+  (R-API-006), run by a worker. The refusal of the session cookie below guards the data path against a link or an image that makes a
+  browser fill a cache; it does not apply to this act. One version the rules deliver needs the person's own `read` and the action of
+  `cacheFillAction` and the endpoint's `cache_fill` (this check without the cookie's refusal); a version the rules do not deliver,
+  every version and a sub-section need `manage` (R-CUR-005). The fills write the populate event with `system:background-download` as
+  actor and the reason `download-ahead`; the person is named in the queue row and in `remote.download.started` (Q-CUR-17).
 - **The image scanning's database populates as the system.** The task `vuln-sync-trivy-db` makes the database's repository hold the
   layer without a caller ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-044, [repositories-and-proxy.md](repositories-and-proxy.md)
   R-REPO-070): the decision to scan images is the populate decision, and each fill writes the populate event with

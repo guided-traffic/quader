@@ -801,7 +801,9 @@ Rules this page adds:
 - A 202 answer always carries `Location` pointing at a resource the caller may poll; while the
   work runs, polling answers carry `Retry-After` with a suggested interval.
 - Callers who are not administrators may read and cancel the jobs they started (in addition to the
-  administrator access of R-OPS-019). A job records the principal that started it, not the credential:
+  administrator access of R-OPS-019). A download into a remote's cache is not one of them: it is a row of the repository's download
+  queue, which every reader of the repository sees and its starter retries or cancels, and its run is a job of the system
+  ([remote-curation.md](remote-curation.md) R-CUR-011, R-CUR-012). A job records the principal that started it, not the credential:
   the principal cancels it through a session or a token that inherits its rights; a token whose scope
   does not inherit them answers 403 and cancels only as a holder of `settings:write` (Q-API-215). Reading
   the job stays open to such a token, so a pipeline polls the job it started.
@@ -1914,8 +1916,12 @@ The owner's decision of 2026-11-19 (W-24, "Option A"): a remote repository lists
 a row is true ([Q-API-343](#q-api-343--a-remote-lists-a-version-once-a-client-fetched-it-or-a-mirror-pass-stored-it)).
 
 - A remote repository lists a version once a client fetched it through the repository, the background download a probe started
-  stored it ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-065) or, in mirror mode, a pass stored it; nothing the upstream
-  merely knows. A client that only checked a version lists it once its background download stored the content. Per format:
+  stored it ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-065), a download ahead of a client stored it
+  ([remote-curation.md](remote-curation.md) R-CUR-010) or, in mirror mode, a pass stored it; nothing the upstream
+  merely knows (the upstream is the upstream catalogue's, another surface, R-CUR-007). A stored version that the repository's delivery
+  rules do not deliver (fetched for examination, or blocked after it was fetched) is listed like every stored version, and its
+  repository entry says `available: false` with `unavailableReason` `blocked` or `notAllowed`, so no install command is offered through
+  it ([remote-curation.md](remote-curation.md) R-CUR-014, Q-CUR-26). A client that only checked a version lists it once its background download stored the content. Per format:
 
   | Format | A version is listed once | The upstream's metadata alone lists nothing |
   |---|---|---|
@@ -4000,7 +4006,9 @@ not a screen per format ([content-shape.ts](../../web/src/app/features/repositor
   caller who can read the configuration (`repositories:read-config`, or the Owner of the project) and a `more_vert` menu with
   **Files** (every format but generic, whose content is its files, Q-UI-511) and **Vulnerabilities** (not for generic and virtual).
 - Where the content is narrow, the actions go under the heading, the sentence and the badges, on one line.
-- No tabs: the content (captioned Images, Packages or Files) follows the header. **Set up client** opens the repository's page
+- No tabs on a local or a virtual repository: the content (captioned Images, Packages or Files) follows the header. A remote
+  repository has the tabs of [remote-curation.md](remote-curation.md) R-CUR-018 (the owner's word of 2026-11-23, Q-CUR-1): its content
+  (Packages or Images), **Upstream** and **Downloads**, each with its address. **Set up client** opens the repository's page
   Set up client (`…/repositories/<key>/setup`, R-UI-120); it is the page's one way to the setup (Q-UI-321).
 - A package format (npm, NuGet, OCI, Debian, every format with a view adapter) lists its items from `GET /api/v1/packages` with
   `repository=<qualified name>` and `format=<format>`, the filter `q` (query, server-side, name and description; a field as wide as
@@ -14866,6 +14874,9 @@ development agent revisits it if users want the setup and the content side by si
 
 **Applied in the spec:** R-UI-052 and the route table (no `tab` parameter). Built in fix wave 2; a disabled repository offers no
 **Set up client**, as its tab did not.
+
+**Revised on 2026-11-23** by the owner's word ([remote-curation.md](remote-curation.md) Q-CUR-1): a remote repository's page has the
+tabs of its content, **Upstream** and **Downloads**; the setup keeps its one way through the header, so this choice stands.
 
 **Revisited on 2026-11-18:** the button opens the repository's own page `…/repositories/<key>/setup` (R-UI-120) and has the default
 look of **Set up client** on a page ([Q-UI-487](#q-ui-487--set-up-client-is-a-default-button-on-a-page-and-a-quiet-row-action-in-a-table-row)).

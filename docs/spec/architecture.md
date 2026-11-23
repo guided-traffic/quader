@@ -2763,9 +2763,13 @@ Priority: **MVP** · Covers: FMT-001, FMT-002, FMT-003
   - an external process would add a network hop to every package request.
 - At start-up, `Register` panics, and the process exits, on any of these:
   - a duplicate or reserved ID;
-  - a `ContractVersion` mismatch (the contract is frozen since the end of M3, E3.3 and ADR-141, at 7 since the probes, ADR-207,
+  - a `ContractVersion` mismatch (the contract is frozen since the end of M3, E3.3 and ADR-141, at 7 since the probes, ADR-207, and at 8 with the declaration of the upstream catalogue, [remote-curation.md](remote-curation.md)
+    R-CUR-007, specified on 2026-11-23 and not built,
     after 6 of the download limits, ADR-206, 5 of the fetch of a version, ADR-205, 4 of the upstream presets, ADR-198, 3 of the upload sessions, ADR-178, and 2 of the project model, ADR-156; a change that raises it moves every
     format in the same change, R-ARCH-025);
+  - a format with the class `remote` that declares no upstream catalogue (`Descriptor.Catalogue`: the calls its remote adapter
+    answers, at least the lookup by exact name, and a reason for each it does not), or whose adapter does not answer a declared call
+    ([remote-curation.md](remote-curation.md) R-CUR-007, specified, not built);
   - a format with the class `remote` that declares neither `Probes` nor a `NoProbe` reason, or a probe on a route it does not have,
     that does not serve the class `remote`, whose method is not GET or HEAD, or that says nothing of what it names (R-REPO-065);
   - a route set that fails the kit's ambiguity check, which `Register` runs itself: every route has
@@ -2895,6 +2899,18 @@ own tests:
     sample committed through the in-memory host, or a remote's stored document), for which `Detect` names the expected candidate with its
     subject and locator; committing a sample raises no version row whose lead item carries the signature; a format that declares none
     detects nothing over its content cases. It is never skipped.
+
+Checks 19 (the Bastion's facts, [bastion.md](bastion.md) R-BAS-058) and 20 (the routes whose clients check a digest) are specified on
+their pages. Two more are specified on 2026-11-23 and not built ([remote-curation.md](remote-curation.md) R-CUR-022), numbered 21 and 22
+unless a check lands before them, in which case they take the next free numbers:
+
+21. The upstream catalogue (R-CUR-007), for a format with the class remote: each declared call answers the fixture's fake upstream in
+    process with a page of names the format's rule accepts, a cursor that continues and an end; an undeclared call answers
+    `ErrNotOffered`; an answer above the catalogue's bounds fails; no call reaches a host outside the upstream, its `extraHosts` and the
+    declared catalogue hosts.
+22. The delivery rules (R-CUR-003, R-CUR-004), for a format with the class remote: against a host whose rule set refuses one version of
+    the fixture's package, no document of the format lists that version, its file answers `403` with `Cache-Control: no-store` and the
+    code in the format's shape, and a package whose every version is refused answers that refusal at its document.
 
 A check that cannot apply to a format is skipped in the format's test with a stated reason (generic
 has no routes, no clients and no package names); a skip without a reason fails the check, so a

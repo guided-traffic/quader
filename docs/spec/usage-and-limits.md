@@ -1743,6 +1743,10 @@ nothing of it:
   would not, no background download starts and the probe is answered as it would have been.
 - The background download's uncached bytes are charged to the probe's budget key and to the ceiling at the flush after they were
   read, as a leader's are (R-LIM-006), also when the probe's client left long before.
+- The same charge holds for a download of one version that a person starts through the management API and for the fetch for
+  examination that a person's request for an allow starts ([remote-curation.md](remote-curation.md) R-CUR-010, R-CUR-015): step 9a
+  decides when the operation is called, for the person's budget key and the remote's ceiling of the person's class, and the ticket
+  travels with the queue row. A refusal by 9a queues nothing (`429`).
 - It is not paced by the caller's `uncachedBytesPerSecond` and takes no parallel lease: it runs as a background request with the
   bounds W-25 gives it.
 - The usage store counts it in `background_fetches` of the probe's row (R-LIM-027); in `audit`, a background download that 9a would
@@ -2192,7 +2196,10 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) Charge the signed-in ceiling | — | One upstream budget | A mirror pass would starve signed-in users |
 | (c) A third ceiling class "system" | — | Separate budget | A further setting per remote beside the mirror's own bounds |
 
-**Choice:** (a). **Rationale:** the mirror's operator chose to mirror and bounded it. Revisit if mirrors exhaust an upstream's
+**Choice:** (a). The bulk downloads ahead of a client of [remote-curation.md](remote-curation.md) (every version of a package, a
+sub-section, and the version an allow starts) are system work of this kind, recorded with the person who started them and bounded by
+their preview, their bounds and the queue's (R-CUR-010, Q-CUR-17); a person's download of one version and a request's examination are
+charged to that person as R-LIM-037 charges a probe's. **Rationale:** the mirror's operator chose to mirror and bounded it. Revisit if mirrors exhaust an upstream's
 quota in practice. **Applied in the spec:** R-LIM-001, R-LIM-006, R-LIM-015.
 
 ### Q-LIM-20 · Buckets of five minutes for a day, of an hour for 30 days, then daily sums per repository and caller kind

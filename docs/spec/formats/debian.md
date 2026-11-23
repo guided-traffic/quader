@@ -1211,7 +1211,7 @@ A remote repository of the format runs in either mode of R-REPO-050. What a mirr
   floor with the rows, the first release stored is taken as it is ([H-630](#h-630--a-restore-without-remote-caches-forgets-the-newest-upstream-release-a-remote-had-seen)).
 - `deb.mirror` decides what the mirror covers, as the patterns do, so an Owner without `repositories:write-config` keeps it as
   stored (R-REPO-050, 422 `mirror_restricted`).
-- The well-known upstream (`https://deb.debian.org/debian/`) needs R-REPO-052's bound (include patterns with a literal part or
+- The well-known upstream (`https://deb.debian.org/debian/`) needs R-REPO-052's bound (`remote.mirror.include` with a literal part or
   `maxBytes`) besides `suites`.
 
 Acceptance criteria:
@@ -1642,7 +1642,8 @@ suites, components and architectures the operator names (Q-DEB-17).
   - `feed`: not offered; APT archives have no change feed.
   - `listing` (what `auto` takes): the `Packages` indexes of the mirrored suites, components and architectures and `binary-all`,
     and the `Sources` indexes with `sources: true`. Every pass is full.
-  - `names`: the include patterns without a wildcard, read as package names and looked up in the same indexes.
+  - `names`: the patterns of `remote.mirror.include` without a wildcard (and the names the delivery rules allow, [remote-curation.md](../remote-curation.md)
+    R-CUR-017), read as package names and looked up in the same indexes.
   - As for every method, the names the repository holds are added (R-REPO-051).
 - **The index step** (the first page of a pass). For each mirrored suite: its release document through `discover.Upstream.Document`
   (stored, revalidated when expired or when validated before the pass's attempt began, R-REPO-051), verified by a key of the
@@ -1681,7 +1682,7 @@ suites, components and architectures the operator names (Q-DEB-17).
   upstream's release anew.
 - **Bounds.** R-REPO-052 applies; the sizes the rows announce let `maxBytes` be checked before each fetch. A component of a Debian
   suite holds tens of thousands of packages per architecture, so the defaults keep one component and one architecture, and the
-  well-known upstream needs include patterns or `maxBytes` as well (R-DEB-024).
+  well-known upstream needs `remote.mirror.include` or `maxBytes` as well (R-DEB-024).
 
 Acceptance criteria (integration, the stub of R-DEB-035):
 
@@ -1777,6 +1778,46 @@ IDs of other pages below are reserved for those edits and recorded there by the 
 | [endpoints.md](../endpoints.md) | R-EP-018: the format has no exposure adapter, so an endpoint with exposure rules does not serve it | Q-DEB-26 |
 | [vulnerability-scanning.md](../vulnerability-scanning.md) | Deferred: Debian packages are not matched in this phase | Q-DEB-26 |
 | [decisions.md](../../decisions.md) | ADR-170, ADR-171, ADR-172 and the table rows of Q-DEB-1 to Q-DEB-43 | — |
+
+## Curation of a remote
+
+### R-DEB-036 · The upstream catalogue and the delivery rules of a Debian remote
+Priority: **P1** · Covers: quader-only
+
+What a Debian remote answers to the catalogue and the rules of [remote-curation.md](../remote-curation.md) (R-CUR-003, R-CUR-007), from
+the protocol research of 2026-11-23. The archive format is static files: there is no search and no listing of suites in the protocol,
+and `apt search` is local, over the `Packages` indexes and their `Translation` files (apt-cache(8)). A server that holds those files
+answers what `apt search` answers.
+
+| Capability | Debian |
+|---|---|
+| Search | `index`: over the indexes the remote holds (R-DEB-023), the words AND-ed, each a case-insensitive substring of the package name, its `Provides`, its short description (`Description` of the `Packages` record) and its long description (`Description-<lang>` of `i18n/Translation-en`, matched by `Description-md5`), or of the name and `Provides` only with **Names only** (`apt-cache search --names-only`); no regular expression (Q-CUR-16). 50 hits a page, by name. A suite whose indexes the remote does not hold is not searched, and the screen says which |
+| Levels | `suite` → `component` → `architecture`: the suites the remote knows (those whose release it stored, and `deb.mirror.suites`; a suite is not listable in the protocol, so a person adds one by its name with **Read the index**), the components and architectures its stored release names |
+| Read the index | a download ahead of a suite's release (verified against `deb.upstreamKeys`, R-DEB-020), and the `Packages` of the chosen components and architectures and their `Translation-en`, parsed by R-DEB-023: a queue row (R-CUR-011) whose name is the release directory and whose version is empty, started by whoever may populate the repository and charged to that person, as a client's `apt update` would be |
+| Lookup and versions | the rows of the name in the indexes held: version, architecture, `Size`, `SHA256`, section, the source package; versions are compared by dpkg's order |
+| Sizes | `known`: every index row carries `Size` |
+| Version canon | the version as the index row has it (`[epoch:]upstream[-revision]`) |
+| One version's download | the `.deb` of that version for each architecture the person chooses, by default those of `deb.mirror.architectures`, else every architecture the indexes list for it |
+
+- **The parse** of R-DEB-023 also keeps the `Provides` and the short description of each row, and, for every `Translation-en` the remote
+  holds, its long descriptions in `deb_remote_descriptions (repo_id, dir, md5, text)` (a text at most 8 KiB, the rows going with their
+  index), so the search reads rows and no file.
+- **The rules** see a binary package's name (`Package`) and its version; a source package's name is no subject of a rule.
+- **Documents** (Q-CUR-9): a Debian remote passes its upstream's `InRelease`, `Release` and indexes through byte for byte (R-DEB-019), so
+  a client that uses it directly lists every package and is refused the files the rules refuse, with the status line `403 Forbidden`
+  only (apt shows no body). The filtered view is a virtual repository over the remote: its merge (R-DEB-025) leaves out the rows that its
+  member's rules refuse, and a change of a remote's rules enqueues the `deb-index` job of each virtual repository that lists it. The
+  client setup of a Debian remote in mode `onlyAllowed` names the virtual repository as the one to use.
+
+Acceptance criteria:
+
+- Integration (area `deb`, `TestR_DEB_036_…`, about 3 s, the counting stub archive): the search `ssl lib` finds the stub's package whose
+  name holds `ssl` and whose description holds `lib`; `Names only` finds only names; a suite read by **Read the index** is searchable after
+  its row ends `done`.
+- Integration (the same case): the remote's `InRelease` is the stub's byte for byte; a refused `.deb` answers `403`; the virtual
+  repository's `Packages` lacks its row after the merge.
+- End-to-end (the leg `deb`, about 10 s): `apt-get install` through the virtual repository of a refused package answers apt's "Unable to
+  locate package", an allowed one installs.
 
 ## Deferred
 
