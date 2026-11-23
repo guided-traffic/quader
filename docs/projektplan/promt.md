@@ -619,6 +619,10 @@ records the recorder that tells such a stall apart).
   requests at a host load of about 41 and passes at 7; **the query budget's harness failed a second time,**
   on the Debian case in a builder's run, and passed on the next run (the entry above); npm and pnpm take 71 s
   and 141 s to refuse an altered tarball, by their retries.
+- **The offline tool has not read a real backup's pool (2026-11-23).** The encryption's fourth and sixth
+  packages were built apart; the tool's reading of a pool object is tested with names its own test
+  writes. One case in the area `backup` after an encrypted backup (list the pool with the export and the
+  key ring) would join them, a second or two. For the batch.
 - **Seen by the builder of the kit move's first package on 2026-11-23 and left for the batch:** the rule
   that a removal is refused whole when one of its files may not be deleted has no unit test (two integration
   tests of npm and NuGet hold it); the headers of the first answer of a cache miss have no test at the
@@ -2666,7 +2670,22 @@ runs are in `git log`; this section holds the current state.
   the repair that costs one forward a replica a minute and fires the alert. **In the landing's gates
   since 06:31, both commits on `main`'s top:** the set without the lint, which its builder ran on this
   code, and the Bastion's five areas with `api`. It is pushed after the run of the push before it has
-  ended.
+  ended. **That run ended at 06:35 with every job green,** thirty-four of them at their first attempt.
+  **The landing's gates ran from 06:31 to 06:48, twenty-three of them, each exit 0. Landed on 2026-11-23
+  at 06:48, in one push of two commits** (the Bastion's side, type `feat`, and the joined case with the
+  repair, type `fix`). With it the handover works for plain connections from end to end, off for every
+  registration until an administrator switches it on through the API; its place on the screen is package
+  5. The interface's version stays the sixth. Its builder's worktree and branch are removed. His UI's
+  backend is started again on this state (ready at 06:49). Released at 07:02; the plan's commits of the
+  minutes between waited for it.
+- **In work since 06:49: package 5 of the handover, the surface:** on a Bastion's card the switch "Direct
+  reads from the object store" with its sentence, for who may change a registration, and under it only
+  where it helps the connections a Bastion cannot read with the reason and one link to the storage
+  settings; the storage settings' test link for an encrypted connection too; the manual's section (what
+  it is, when to switch it on with the measurement, what it needs, above all a public address on a host
+  name that is not the main installation's, what an administrator takes on, the sizing, how to see why it
+  does not work). Rendered on a stack of its own in every state, both schemes, wide and narrow. Builders
+  with a test load: the encryption's package 7, the tests' harness, this one, and the landing's gates.
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
@@ -5521,6 +5540,10 @@ stuck, nothing collides.
 checks and three end-to-end legs run); his installation runs its release; the four builders each changed
 files within five minutes; one builder's lint held the load at about 40 for some minutes. Nothing to
 land, no place free.
+**The timer's check at 06:44:** the landing's gates of the handover's third package stand at twenty-two of
+twenty-two exit 0 before their last area; the run of the push before ended green; the encryption's
+seventh package and the tests' harness changed files within four minutes, the harness's builder with
+three commits standing; the encryption's fourth and sixth packages lie stacked for the next push.
 **Package 3 of the encryption, the store and the sessions, reported at 02:36** (one commit of the type `feat`
 on the stack of four; its builder worked from 23:10; every gate exit 0, seventeen integration areas, but the
 `proxy` area, whose test of the fetch slots met a migration's timeout at a load of 35 to 76 and passes alone
@@ -5641,6 +5664,39 @@ pool's record and the re-pool that the key destruction's specification put into 
 with and without the key ring, the restore that draws keys; it closes the gap that an encrypted copy is
 not scrubbed, repaired or backed up. Builders with a test load: the kit move's package 1, the handover's
 package 2, the second stack, this one, and the landing's gates.
+**Package 4 reported at 06:37** (one commit of the type `feat` on the state of the 05:01 push; its builder
+worked from 04:29; every gate exit 0, the lint over the whole repository on its final tree after nine
+findings of its own were repaired, and seven integration areas, `backup` last in 475 s). **What each job
+does with an encrypted connection now:** the reconciliation reads a source through its reader, checked
+against the digest, and writes it with a new data key under the target's key, never the source's
+ciphertext; the scrub reads every copy whole, each of seven reasons marks the copy and queues a repair
+from another connection, an unknown key is counted and not marked; the orphan sweep places an object
+without a copy row by its record and never deletes one it cannot place; the operator check opens each
+copy's record from the request it sends anyway; **the backup takes an encrypted copy into the pool as
+stored, under a name that carries the key's identifier, and the backup's pod holds no key;** the deep
+verification checks record and size without the key ring and decrypts with it; the restore follows the
+specification's table and refuses a key the backup's database lacks. The two refusals of a backup and a
+restore while a connection is encrypted are gone, and with them the gaps H-1410 and H-1411. Migration
+00111 (a pin records its pool object). **A defect it found and closed:** a copy inside the store of an
+object above 5 GiB, made in parts, could have joined one write's record to another write's bytes when
+the source was written again during the copy; every copy request now carries the source's entity tag
+and a changed source fails the copy, which then takes the next. Decisions Q-STOR-440 to 442 and Q-BAK-80
+to 83; Q-STOR-384 ended. **New gap H-1440:** since the backup's pod holds no key, a copy damaged at the
+provider before its first backup, and not yet found by the scrub, enters the pool unnoticed, later
+backups inherit it and a restore stops on it; the deep verification with the key ring finds it. Each
+defence was taken out once and a named test caught it; the scrub's mark for a wrong digest had no case
+and got one. Its cost: the unit job about 0.2 s, the shard with `blob` 3.1 s, with `backup` 6.4 s.
+**Not verified by it:** a real store's honouring of the entity tag on the parts of a copy (shown against
+a fake of the store only); the final blob list's cost with millions of blobs; the memory of a stream
+into an encrypted connection on a worker. **Moved onto `main` by the development agent with package 6 on
+top, at 06:39,** over the handover's third package: its migration 00111 follows the handover's 00110,
+which had been missing under its own base; seven conflicts in documents, each merged to the state with
+both packages (the README's sixth step, the limitations' entry, the status paragraphs of the
+specification and the build plan, both packages' decision blocks), and two sentences that said the
+chart still refuses an encrypted connection corrected. **Both are in the landing's gates since 06:49,**
+the full set with the unit run and the lint and nine integration areas, `backup` last. **Not shown by a
+test of either:** the offline tool reading the pool of a real backup; both follow the specification's
+pool name, and the tool's case writes the names itself (section 8).
 
 The blocks of the specification keep their status as decided by the development agent; the three he confirmed
 himself (Q-SIG-76, Q-SIG-79, Q-SIG-80) and the one he decided (Q-SIG-211) get his name in the commit of the trace.
