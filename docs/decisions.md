@@ -12017,10 +12017,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-514 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+515 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 514 questions</summary>
+<summary>Q-UI: 515 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12538,6 +12538,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1042](spec/api-and-ui.md#q-ui-1042--the-repositories-of-every-project-are-the-project-lists-columns-with-the-project-and-no-new-repository) | The repositories of every project are the project list's columns with the project, and no New repository | Decided by the development agent | (a) A project's list's columns (the visibility icon before the key, format, class, **Set up client** and the menu) with **Project** after the repository; **Last activity** for the holder of `repositories:write-config` while a row has one; no copy button; the project filter a choice of the projects the caller sees, by display name; no **New repository**, the line under the heading saying where a repository is created | — |
 | [Q-UI-1043](spec/api-and-ui.md#q-ui-1043--admin-without-the-dashboard-starts-at-the-first-entry-of-the-admin-side-bar-or-on-the-start-page) | `/admin` without the dashboard starts at the first entry of the admin side bar, or on the start page | Decided by the development agent | (a) The dashboard for `settings:read`, else the first entry of the admin side bar the caller has, in its order; with none, the start page | — |
 | [Q-UI-1044](spec/api-and-ui.md#q-ui-1044--an-instance-of-the-ui-development-profile-is-claimed-not-chosen) | An instance of the UI development profile is claimed, not chosen | Decided by the development agent on 2026-11-23 | (a) A claim per instance, the file `<main>/.dev/ui-dev-claims/<n>` with the claiming checkout's path, read and written under an flock(2) lock; a worktree without `UI_INSTANCE` takes the instance it claims or the first free one; a number another existing checkout claims is refused; a claim whose checkout is gone is taken over after its compose project's containers and volumes are removed; `make ui-dev-down PURGE=1` ends it | — |
+| [Q-UI-1045](spec/api-and-ui.md#q-ui-1045--the-layout-checks-fixtures-run-in-three-engines-and-chromium-sets-text-without-hinting) | The layout checks' fixtures run in three engines, and Chromium sets text without hinting | Decided by the development agent on 2026-11-23 | (a) The checks measure what they name in a way that holds in every engine (`label-apart`: the value's middle below the name's bottom), the fixtures run in Chromium, Firefox and WebKit with no mark for one engine, and Chromium runs with `--font-render-hinting=none` in the fixtures and the renders | — |
 
 </details>
 

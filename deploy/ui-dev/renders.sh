@@ -20,8 +20,9 @@ mkdir -p .out
 backend_log="$root/.out/ui-renders.backend.log"
 web_log="$root/.out/ui-renders.web.log"
 
-# The layout checks first, on their fixtures (seconds, no stack): a check that cannot find the defects it names judges nothing.
-(cd web && npx playwright test -c e2e/playwright.layout.config.ts)
+# The layout checks first, on their fixtures (seconds, no stack): a check that cannot find the defects it names judges nothing. In
+# Chromium, the engine of the screens' renders; `make ui-layout-test` runs them in Firefox and WebKit too (Q-UI-1045).
+(cd web && npx playwright test -c e2e/playwright.layout.config.ts --project chromium)
 
 deploy/ui-dev/up.sh
 

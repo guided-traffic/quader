@@ -1,5 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
-import { authFile, edge } from './renders/paths';
+import { CHROMIUM_TEXT, authFile, edge } from './renders/paths';
 
 /**
  * `make ui-renders` (docs/developer/web-ui.md#renders-of-every-screen): every screen of the UI as pictures to judge, against
@@ -36,8 +36,10 @@ export default defineConfig({
     navigationTimeout: 60_000,
     trace: 'off',
     screenshot: 'off',
-    // The scrollbars are shown, as on a desktop with a mouse: one beside a table's rows takes the table's width.
-    launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'] },
+    // The scrollbars are shown, as on a desktop with a mouse: one beside a table's rows takes the table's width (15 px in Chromium on
+    // macOS and Linux alike once the flag is gone). Text is set without hinting (CHROMIUM_TEXT, Q-UI-1045), so the walk measures the
+    // same widths on the development machine and on the runner.
+    launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'], args: [...CHROMIUM_TEXT] },
   },
   projects: (['anonymous', 'plain', 'power', 'admin', 'auditor'] as const).map((kind) => ({
     name: kind,

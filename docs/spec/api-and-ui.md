@@ -8136,8 +8136,10 @@ its pictures.
   `icon-apart` (one that shares no height with its line), `row-offset` (a table's row; R-UI-172), `joined` (a button joined to
   a field, an address or a command with its copy button, is as high as the field and is no control beside a text); each names
   the element, its text and the distance in px ([web-ui.md](../developer/web-ui.md#renders-of-every-screen)).
-- The checks are tested on fixture pages of their own in Chromium with the app's fonts, without the UI stack (`make ui-layout-test`,
-  [Q-UI-723](#q-ui-723--the-checks-are-tested-on-fixture-pages-in-the-playwright-chromium-not-in-the-angular-test-runner)): the
+- The checks are tested on fixture pages of their own in Chromium, Firefox and WebKit with the app's fonts, without the UI stack
+  (`make ui-layout-test`, [Q-UI-723](#q-ui-723--the-checks-are-tested-on-fixture-pages-in-the-playwright-chromium-not-in-the-angular-test-runner),
+  [Q-UI-1045](#q-ui-1045--the-layout-checks-fixtures-run-in-three-engines-and-chromium-sets-text-without-hinting); the screens are
+  rendered in Chromium, which sets text without hinting so that the development machine and the runner measure the same widths): the
   owner's row must fail with the 8 px he saw, each exception of R-UI-175 must pass, and an offset of 1.5 px must fail. `make
   ui-renders` runs them before the screens.
 - The shared patterns of the style guide are rendered with the app's own global stylesheet on the same pages and must pass, so the
@@ -19624,7 +19626,8 @@ test logs the largest distance on every run).
 
 ### Q-UI-723 · The checks are tested on fixture pages in the Playwright Chromium, not in the Angular test runner
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The
+fixtures run in Firefox and WebKit too since [Q-UI-1045](#q-ui-1045--the-layout-checks-fixtures-run-in-three-engines-and-chromium-sets-text-without-hinting).
 
 Context: [layout.ts](../../web/e2e/renders/layout.ts) had no test of its own; a check was proven only by a full render run, which
 needs the stack and takes about 20 minutes, and the run that passed the owner's row proved nothing about it.
@@ -22856,6 +22859,41 @@ against one Docker daemon.
 **Applied in the spec:** none (development tooling). Code: [instance.sh](../../deploy/ui-dev/instance.sh), [down.sh](../../deploy/ui-dev/down.sh);
 held by `TestUIDevInstancesAreClaimedNotChosen` ([checkoutprofiles_test.go](../../internal/tools/ciworkflows/checkoutprofiles_test.go)).
 Elsewhere: [web-ui.md](../developer/web-ui.md#instances-one-per-builder).
+
+### Q-UI-1045 · The layout checks' fixtures run in three engines, and Chromium sets text without hinting
+
+Status: **Decided by the development agent on 2026-11-23** — selected from the options below; the owner reviews it at the walkthrough.
+Amends [Q-UI-723](#q-ui-723--the-checks-are-tested-on-fixture-pages-in-the-playwright-chromium-not-in-the-angular-test-runner).
+A first form (the fixtures in three engines with two of them marked as failing in Firefox) landed and was taken back the same day:
+the marks held on the development machine and not on the runner, whose Firefox found what the development machine's did not.
+
+Context: two things measured differently on the development machine (macOS) and on the runner (Linux). (1) `label-apart` compared
+the top of a value's first line with the bottom of its column's name; the box of a line of text is the font's content area, which
+outgrows a line of 1rem by a pixel or two, by a different amount per engine and platform (Firefox on macOS measured the name 18 px
+high, Chromium 17), so the same layout was "under the name" in one engine and not in the other. (2) The walk passed the audit log's
+table on the development machine that fell to blocks on the runner: measured on 2026-11-23 with the app's font, Chromium on Linux
+hints the glyphs and rounds every advance to a whole pixel, which set a bold line 366 px wide that macOS set 355.5 px wide (3 %);
+Firefox and WebKit measured the same on both to a twentieth of a pixel, and the scrollbar is 15 px in Chromium on both once
+`--hide-scrollbars` is not given.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The checks measure what they name in a way that holds in every engine (`label-apart`: the value's middle below the name's bottom), the fixtures run in Chromium, Firefox and WebKit with no mark for one engine, and Chromium runs with `--font-render-hinting=none` in the fixtures and the renders (chosen) | `layout.ts`, the two configurations, `CHROMIUM_TEXT` of `paths.ts`, the job installs Firefox and WebKit | One measurement on both machines; a builder's render is what the runner renders | The renders show Chromium's text without hinting, as macOS sets it, where a reader on Linux sees it hinted |
+| (b) Marks per engine and machine | — | — | What the first form did; they hold until a machine changes |
+| (c) A reserve in every check for the runner's wider text | — | No flag | A margin that only covers what was measured once, and hides an offset the check exists to find |
+
+**Choice:** (a). Measured on the development machine and in the Linux image of the pinned Playwright (`mcr.microsoft.com/playwright`,
+arm64): the 150 fixture tests pass in all three engines on both; without the flag Chromium on Linux measured the four sample lines
+2 to 13 px wider, with it within 0.05 px of macOS. The runner is amd64 with the browsers `playwright-install.sh` installs: its first
+`UI layout checks` shows it, and only the pipeline can.
+
+**Rationale:** the walk judges the layout a reader sees from the widths of text, and a width that depends on the machine makes the
+judgment the machine's. The development agent would revisit it if the owner wants the renders to show Linux's hinted text, which
+then needs a Linux browser on the development machine too.
+
+**Applied in the spec:** R-UI-176. Code: [layout.ts](../../web/e2e/renders/layout.ts) (`label-apart`),
+[playwright.layout.config.ts](../../web/e2e/playwright.layout.config.ts), [playwright.renders.config.ts](../../web/e2e/playwright.renders.config.ts),
+[paths.ts](../../web/e2e/renders/paths.ts), the job `ui-layout` of [release.yml](../../.github/workflows/release.yml).
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 
 Status: **Decided by the owner, 2026-11-23** (T-25, 19:30, whole: "Ich finde Projects und Repositories haben im Admin-Mneü nichts

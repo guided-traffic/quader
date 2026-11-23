@@ -62,7 +62,7 @@ Run in `web/` after `nvm use` (or any Node matching `.nvmrc`).
 | `make web-i18n-check` | The same without writing: fails when `messages.xlf` differs from a fresh extraction by a byte, or `messages.de.xlf` lacks a unit, holds a removed one, or holds one with other location notes or another English source (CI: the job `web`, after `make web-test`). The extraction builds the application once: 10 to 14 seconds on the development machine (four runs), which the job `web` gains; not measured on a runner yet |
 | `npm run generate:api` | `openapi-typescript ../api/openapi.yaml` into `src/app/api/generated/schema.d.ts`, committed. Rerun it whenever `api/openapi.yaml` changes |
 | `npm run build` | Localized production build into `web/dist/web/browser/<locale>/` |
-| `npx playwright install --with-deps chromium` | The browser build of the locked Playwright version, outside the repository (needed for the journeys, not for `npm test`) |
+| `npx playwright install --with-deps chromium firefox webkit` | The browser builds of the locked Playwright version, outside the repository (Chromium for the journeys and the renders, all three for `make ui-layout-test`; not needed for `npm test`) |
 | `npm run build:embed` | `build`, the compressed-size budget check, the check of the hashed names ([hashed.mjs](../../web/scripts/hashed.mjs)), then copy each locale to `internal/webui/dist/<locale>/` with its `3rdpartylicenses.txt` (Q-UI-144). `QUADER_UI_BUNDLE_MARK=1` builds the second bundle of the upgrade test (`--extract-licenses=false`: the same code under other hashed names, Q-HA-124) |
 
 `make web` runs `make web-ci` (`npm ci`) and `make web-embed` (`npm run build:embed`); lint and the unit tests are
@@ -358,7 +358,13 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    The checks are tested on fixture pages of their own (`make ui-layout-test`,
    [layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts), [playwright.layout.config.ts](../../web/e2e/playwright.layout.config.ts),
    [Q-UI-723](../spec/api-and-ui.md#q-ui-723--the-checks-are-tested-on-fixture-pages-in-the-playwright-chromium-not-in-the-angular-test-runner)):
-   Chromium sets a page's content with the app's fonts and runs `layoutFindings`; the owner's row of 2026-11-19 must fail with the
+   Chromium, Firefox and WebKit each set a page's content with the app's fonts and run `layoutFindings` (the screens themselves are
+   rendered in Chromium only; [Q-UI-1045](../spec/api-and-ui.md#q-ui-1045--the-layout-checks-fixtures-run-in-three-engines-and-chromium-sets-text-without-hinting);
+   no fixture is marked for one engine: `label-apart` takes a value as under its name when the value's middle is below the name's
+   bottom, since the box of a line of text outgrows its line by a different pixel in each engine), and Chromium runs with
+   `--font-render-hinting=none` here and in the renders (`CHROMIUM_TEXT` of [paths.ts](../../web/e2e/renders/paths.ts)): with hinting,
+   the runner's Chromium on Linux set the app's text up to 3 % wider than the development machine's, and the walk passed a table there
+   that fell to blocks on the runner; without it both measure the same widths to a twentieth of a pixel. The owner's row of 2026-11-19 must fail with the
    8 px he saw, each exception must pass, an offset of 1.5 px must fail and one of 0.5 px must not, and the shared patterns of the
    style guide, built from the global classes and rendered with `web/src/styles` compiled, must have no finding (the guard of the
    line rule without a stack, [Q-UI-725](../spec/api-and-ui.md#q-ui-725--the-guard-without-a-stack-renders-the-shared-patterns-with-the-global-stylesheet-and-a-lint-rule-refuses-the-off-line-declarations)).

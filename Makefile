@@ -162,7 +162,7 @@ ui-dev-down: ## Stop the UI development services; PURGE=1 also removes their dat
 # Rule 11 of docs/projektplan/promt.md: a UI change is rendered and looked at before it lands. The job ui-layout of Test and
 # Release runs the same two targets on every push (Q-ARCH-510).
 .PHONY: ui-layout-test
-ui-layout-test: ## The layout checks of the renders on fixture pages in Chromium: no stack, seconds (after web-ci; web/e2e/playwright.layout.config.ts)
+ui-layout-test: ## The layout checks of the renders on fixture pages in Chromium, Firefox and WebKit: no stack, seconds (after web-ci and `npx playwright install chromium firefox webkit`; web/e2e/playwright.layout.config.ts)
 	cd web && npx playwright test -c e2e/playwright.layout.config.ts
 
 .PHONY: ui-renders

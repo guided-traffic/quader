@@ -643,7 +643,8 @@ jobs:
           npm ci
           # The browser build is the one the locked @playwright/test version names (one version per tool), through the
           # script that installs its system libraries only where they are missing.
-          ../.github/scripts/playwright-install.sh chromium
+          # Firefox and WebKit run the layout checks' fixtures only (Q-UI-1045); the screens are rendered in Chromium.
+          ../.github/scripts/playwright-install.sh chromium firefox webkit
 
       - name: Check the layout checks on their fixture pages
         run: make ui-layout-test

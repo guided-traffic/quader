@@ -15,3 +15,12 @@ export const outDir = join(root, '.out', 'ui-renders');
 export const authFile = (kind: string): string => join(outDir, '.auth', `${kind}.json`);
 /** One line of JSON per picture and per failure, written by the renders and read by the contact sheet. */
 export const manifestDir = join(outDir, '.manifest');
+
+/**
+ * Chromium's arguments for text (Q-UI-1045): no font hinting. On Linux, the runner's, Chromium hints the app's font and rounds
+ * every glyph's advance to a whole pixel, which set the same words up to 3 % wider than on macOS (bold "Imported advisory data
+ * from the vulnerability source" 366 px against 355.5 px), so the walk passed a table on the development machine that fell to
+ * blocks on the runner (2026-11-23). Without hinting Linux measures what macOS measures, to a twentieth of a pixel; Firefox and
+ * WebKit measured alike on both without a flag.
+ */
+export const CHROMIUM_TEXT = ['--font-render-hinting=none'] as const;

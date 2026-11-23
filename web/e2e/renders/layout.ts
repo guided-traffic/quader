@@ -571,7 +571,10 @@ export function layoutFindings(): LayoutFinding[] {
     for (const f of facts) {
       // A value whose first piece (its first word, or its first box that does not break: a link of the house, a badge) is wider
       // than the room beside the name could not stand there: on a line of its own is its right place.
-      if (f.value && f.value.top >= f.name.bottom - LINE_TOLERANCE && (f.piece === null || f.piece <= f.room)) {
+      // "Under the name" is the value's middle below the name's bottom, not its top against that bottom: the box of a line of text is
+      // its font's content area, which outgrows a line of 1rem by a pixel or two and by a different amount in each engine (Firefox
+      // measured the name 18 px high where Chromium measured 17, so a value on the next line started 2 px above the name's bottom).
+      if (f.value && (f.value.top + f.value.bottom) / 2 >= f.name.bottom && (f.piece === null || f.piece <= f.room)) {
         add(
           'label-apart',
           f.cell,
