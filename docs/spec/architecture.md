@@ -4116,11 +4116,12 @@ Priority: **MVP** · Covers: HA-062
   - No outbound HTTP, no object-store call and no Valkey call runs inside a transaction.
   - **Every statement of an HTTP request ends after `database.request_statement_timeout`** (5 s by default, at most
     `database.session.statement_timeout`), and the request answers `503` `database_timeout`
-    ([Q-ARCH-594](#q-arch-594--every-statement-of-an-http-request-ends-after-the-requests-bound-set-in-the-same-query-as-its-begin)). The
-    client listener's chain puts the bound into the request's context (`meta.WithStatementTimeout`); every transaction that runs
+    ([Q-ARCH-650](#q-arch-650--every-statement-of-an-http-request-ends-after-the-requests-bound-set-local-in-a-transaction-a-deadline-on-a-single-read)).
+    The client listener's chain puts the bound into the request's context (`meta.WithStatementTimeout`); every transaction that runs
     with it opens with `BEGIN ISOLATION LEVEL READ COMMITTED; SET LOCAL statement_timeout = <ms>` in one simple query, so the bound costs
-    no round trip of its own and holds through a transaction-mode pooler, and a read through `DB.Read` runs in one such transaction
-    (each statement still reads its own snapshot). A transaction that sets its own `SET LOCAL statement_timeout` afterwards (the
+    no round trip of its own and holds through a transaction-mode pooler; a read outside a transaction (`DB.Read`) runs each statement
+    with a deadline of the bound on its context, which the driver turns into a cancel request at the server, and stays one round trip
+    per statement. A transaction that sets its own `SET LOCAL statement_timeout` afterwards (the
     grant-index build) has that one. A request whose requirement names a longer bound sets it on its own context; none does today.
     Jobs and the replica's own loops carry no bound and run under `database.session.statement_timeout` (30 s by default).
 - **Connection count** (INV-12). A `web` replica opens `main` only. A `worker` replica opens `main`
@@ -12355,38 +12356,68 @@ can change what it returns, and the package-state check, which looks for maps, s
 **Applied:** [app.go](../../internal/app/app.go) (`apiDocument`, `processDocument`), [document_test.go](../../internal/app/document_test.go);
 Q-OPS-157.
 
-### Q-ARCH-594 · Every statement of an HTTP request ends after the request's bound, set in the same query as its BEGIN
+### Q-ARCH-650 · Every statement of an HTTP request ends after the request's bound: SET LOCAL in a transaction, a deadline on a single read
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Found on
-2026-11-23: R-ARCH-019 said that request-path transactions set `SET LOCAL statement_timeout` (5 s) and its acceptance criterion that a
-request-path query held up by `pg_sleep(10)` answers `503` `database_timeout` after 5 s, and [api-and-ui.md](api-and-ui.md) R-API-014
-sizes the idempotency wait "below the 5 s statement timeout"; but the one function that set it (`DB.RequestTx`) had no caller, so every
-request ran under the session's 30 s. No later decision had put requests under the session's timeout; the code was what was wrong.
-Reproduced by `TestR_ARCH_019_ARequestsStatementEndsAtTheRequestBound` (integration, `api`): with the bound at 500 ms, a list held up by
-a lock on its table answered after 5.0 s, when the session's `lock_timeout` ended it.
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough; the shape of a
+single read decided by the coordinator of the run on 2026-11-23. Found on 2026-11-23: R-ARCH-019 said that request-path transactions set
+`SET LOCAL statement_timeout` (5 s) and its acceptance criterion that a request-path query held up by `pg_sleep(10)` answers `503`
+`database_timeout` after 5 s, and [api-and-ui.md](api-and-ui.md) R-API-014 sizes the idempotency wait "below the 5 s statement timeout";
+but the one function that set it (`DB.RequestTx`) had no caller, so every request ran under the session's 30 s. No later decision had put
+requests under the session's timeout; the code was what was wrong. Reproduced by `TestR_ARCH_019_ARequestsStatementEndsAtTheRequestBound`
+(integration, `api`): with the bound at 500 ms, a list held up by a lock on its table answered after 5.0 s, when the session's
+`lock_timeout` ended it.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The chain puts the bound into every request's context; the runner opens each transaction of such a context with `BEGIN …; SET LOCAL statement_timeout` in one simple query, and runs `DB.Read` in such a transaction (chosen) | Every statement of every request, whatever store runs it, with no change to the stores | No round trip more for a transaction; one place; a job keeps the session's timeout because its context has no bound | A read through `DB.Read` on a request costs `BEGIN` and `COMMIT`, two round trips |
-| (b) Call `RequestTx` from every handler | The requirement's sentence as written | Explicit | Some hundred call sites through the stores and the format contract; a store reached by a request through a path that forgets it runs unbounded |
-| (c) A context deadline of 5 s on every request | The driver cancels | No statement more | The deadline ends the whole request, not a statement; the connection is closed instead of returned; the answer is a cancelled context, not `database_timeout` |
+| (a) The chain puts the bound into every request's context; a transaction of such a context opens with `BEGIN …; SET LOCAL statement_timeout` in one simple query; a read outside a transaction (`DB.Read`) runs each statement with a deadline of the bound on its context (chosen) | Every statement of every request, whatever store runs it, with no change to the stores | No round trip more in either shape; a job keeps the session's timeout because its context has no bound | Two mechanisms for one bound |
+| (b) As (a), with `DB.Read` run in a transaction opened with the bound | One mechanism | `SET LOCAL` everywhere | A `BEGIN` and a `COMMIT` more for every read of a request, on the download path that R-ARCH-027 counts, through a pooler in transaction mode; R-ARCH-019 speaks of request-path transactions |
+| (c) Call `RequestTx` from every handler | The requirement's sentence as written | Explicit | Some hundred call sites through the stores and the format contract; a store reached by a request through a path that forgets it runs unbounded |
+| (d) A context deadline of 5 s on the whole request | The driver cancels | Nothing per statement | The deadline ends the whole request, not a statement, and a download that streams for longer is cut |
 
 **Choice:** (a), with the bound a configuration key, `database.request_statement_timeout` (5s by default, at least 100 ms, at most
-`database.session.statement_timeout`). **Requests that need longer**, checked the same day: none needs it. The audit export reads in keyset
-batches of short queries and holds no connection while it writes; the export of the findings counts at most `export.max_rows` + 1 and
-reads pages of 500; the usage export reads the scope's aggregates of its window in the statements of the list; a commit of an upload
-writes its rows in short statements, and its object-store work runs outside every transaction; the settings' malware backlog reads in
-about 0.25 s per million items ([malware-scanning.md](malware-scanning.md) H-1660). A request whose statement grows with the data beyond
-the bound answers `database_timeout` and is a finding of its own, never a blanket exemption.
+`database.session.statement_timeout`). **Why two shapes:** `SET LOCAL` holds only inside a transaction, and a transaction pays it in the
+query that opens it; a single statement outside a transaction has nothing to carry it without a round trip of its own, so its bound is a
+deadline on the statement's context. The driver ends such a statement with a cancel request to the server (pgx's context watcher, the
+discard of [Q-ARCH-498](#q-arch-498--a-connection-the-pool-gives-up-on-gives-its-place-back-at-once-its-cancel-request-goes-out-on-its-own))
+and closes the connection, which the pool replaces; a transaction's statement ends at the server by its own `statement_timeout` and keeps
+its connection. Both answer the same `503` `database_timeout`, and neither runs again. A deadline that passes after its statement ended
+(a read of several statements, a slow scan of a row) does not count: the read fails only when its function failed. **Through a pooler**
+in transaction mode, the cancel request goes to the pooler's address: PgBouncer forwards it to the server connection its client is linked
+to while the statement runs. With more than one pooler instance behind one Service, a cancel can reach an instance that does not hold the
+client, which drops it ([H-1662](#h-1662--a-cancel-request-that-reaches-another-pooler-instance-does-not-end-the-statement)). The session's
+own `statement_timeout`, the role default through a pooler (R-HA-014, 30 s), stays the server's backstop.
+
+**Requests that need longer**, checked the same day: none needs it. The audit export reads in keyset batches of short queries and holds no
+connection while it writes; the export of the findings counts at most `export.max_rows` + 1 and reads pages of 500; the usage export reads
+the scope's aggregates of its window in the statements of the list; a commit of an upload writes its rows in short statements, and its
+object-store work runs outside every transaction; the settings' malware backlog reads in about 0.25 s per million items
+([malware-scanning.md](malware-scanning.md) H-1660). A request whose statement grows with the data beyond the bound answers
+`database_timeout` and is a finding of its own, never a blanket exemption.
 
 **Applied in the spec:** R-ARCH-019; [ha-and-helm.md](ha-and-helm.md) R-HA-015 (the configuration). Code:
-[timeout.go](../../internal/meta/timeout.go), [tx.go](../../internal/meta/postgres/tx.go) (`beginOptions`, `readOn`),
-[chain.go](../../internal/httpserver/chain.go) (`RequestContext`), [wire_endpoints.go](../../internal/app/wire_endpoints.go),
-[database.go](../../internal/config/database.go). Tests: `TestR_ARCH_019_ARequestsStatementEndsAtTheRequestBound` (integration, `api`,
-2.1 s), the subtest R-ARCH-019 of `TestInTx` (integration, `postgres`, 1.1 s).
+[timeout.go](../../internal/meta/timeout.go), [tx.go](../../internal/meta/postgres/tx.go) (`beginOptions`, `boundedConn`),
+[retry.go](../../internal/meta/postgres/retry.go) (a bound that passed is no outage), [chain.go](../../internal/httpserver/chain.go)
+(`RequestContext`), [wire_endpoints.go](../../internal/app/wire_endpoints.go), [database.go](../../internal/config/database.go). Tests:
+`TestR_ARCH_019_ARequestsStatementEndsAtTheRequestBound` (integration, `api`, 3.3 s, both shapes: the audit list through `DB.Read`, a
+file's download through the item store's transaction), the subtest R-ARCH-019 of `TestInTx` (integration, `postgres`), `TestBeginOptions`
+and `TestStatementBoundIsNoOutage` (unit).
 
 ## What this does not cover
 
+
+### H-1662 · A cancel request that reaches another pooler instance does not end the statement
+
+Stage: a read outside a transaction on a request path whose statement passes `database.request_statement_timeout` (R-ARCH-019,
+Q-ARCH-650), in an installation whose request pool goes through PgBouncer in transaction mode with more than one instance behind one
+Service (the pooler profile of [ha-and-helm.md](ha-and-helm.md) R-HA-058 runs two). Dormant without a pooler and with one instance.
+
+The driver ends such a statement with a cancel request to the address it connected to, the Service. PgBouncer forwards a cancel only for a
+client it holds; an instance that does not hold the client drops it, unless the instances are configured as peers, which the profile does
+not do. The request still answers `503` `database_timeout` at the bound and its connection is let go, but the statement runs on at the
+server until it ends by itself or by the session's `statement_timeout` (the role default through a pooler, 30 s, R-HA-014), and holds a
+server connection of the pooler meanwhile. What makes it real: statements that pass the bound often, for example under a lock or a
+starved database, each costing a server connection for up to 30 s. Not measured on the profile; the forwarding rule is PgBouncer's
+documented behaviour, not a run of ours.
 
 ### H-1 · Format code runs in-process without isolation
 

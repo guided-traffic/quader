@@ -3,13 +3,16 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
@@ -87,14 +90,20 @@ func beginOptions(ctx context.Context) pgx.TxOptions {
 // being unavailable (errs.Unavailable, `database_unavailable`, 503). Any other
 // error is returned as it is.
 //
-// fn runs on one pooled connection, outside a transaction, or, on a request path
-// whose context carries a statement bound, in one READ COMMITTED transaction opened
-// with it (R-ARCH-019): it may issue several statements, but they do not see one
-// snapshot, and it must consume every row it reads before it returns. It must be safe to run again, because a retry starts
+// fn runs on one pooled connection, outside a transaction: it may issue several
+// statements, but they do not see one snapshot, and it must consume every row it
+// reads before it returns. It must be safe to run again, because a retry starts
 // over on a new connection. Handlers use Read instead of the raw pool, which
-// has no retry (R-ARCH-019, R-ARCH-023).
+// has no retry (R-ARCH-019, R-ARCH-023). On a request path whose context carries a
+// statement bound, each statement runs with a deadline of that bound on its own
+// context: the driver cancels it at the server, and the read answers 503
+// database_timeout, as a transaction's statement past its SET LOCAL does; the read
+// stays one round trip per statement (Q-ARCH-650).
 func (db *DB) Read(ctx context.Context, fn func(q.DBTX) error) error {
 	err := db.retry.doCtx(ctx, func(actx context.Context) error { return readOnce(actx, db.main, fn) })
+	if errors.Is(err, errStatementBound) {
+		return errs.E(errs.Unavailable, errs.CodeDatabaseTimeout, "the database did not answer in time", errs.WithCause(err))
+	}
 	if err != nil && IsStatementTimeout(err) {
 		return Unavailable(err)
 	}
@@ -117,8 +126,21 @@ func readOnce(ctx context.Context, pool *pgxpool.Pool, fn func(q.DBTX) error) er
 			_ = conn.Hijack().Close(context.Background())
 		}
 	}()
-	err = readOn(ctx, conn, fn)
+	var target q.DBTX = conn
+	var bc *boundedConn
+	if d, ok := meta.StatementTimeout(ctx); ok {
+		bc = &boundedConn{DBTX: conn, d: d}
+		target = bc
+	}
+	err = fn(target)
 	settled = true
+	// A deadline that passed after its statement had ended does not count: the read failed only when fn did.
+	if bc != nil && bc.end() && err != nil {
+		// A statement passed the bound: the driver closed the connection and cancelled the statement at the server. The read ends
+		// here; it is not run again, and it is not a failover.
+		_ = conn.Hijack().Close(context.Background())
+		return fmt.Errorf("%w: %w", errStatementBound, err)
+	}
 	if conn.Conn().IsClosed() || classify(err) == retryFailover {
 		_ = conn.Hijack().Close(context.Background())
 		if err != nil && classify(err) == retryNo {
@@ -130,24 +152,74 @@ func readOnce(ctx context.Context, pool *pgxpool.Pool, fn func(q.DBTX) error) er
 	return err
 }
 
-// readOn runs fn on the connection. With a statement bound in ctx (R-ARCH-019) its statements run in one READ COMMITTED
-// transaction opened with that bound: SET LOCAL holds only inside a transaction, and each statement still reads its own
-// snapshot, as a read without one does.
-func readOn(ctx context.Context, conn *pgxpool.Conn, fn func(q.DBTX) error) error {
-	if _, ok := meta.StatementTimeout(ctx); !ok {
-		return fn(conn)
+// errStatementBound is a statement of a read outside a transaction that passed the request's statement bound (Q-ARCH-650).
+var errStatementBound = errors.New("database: a statement passed the request's statement bound")
+
+// boundedConn is the connection of a read outside a transaction on a request path (Q-ARCH-650): every statement runs with a deadline
+// of d on the context it is given, which the driver turns into a cancel request at the server. A statement outside a transaction has
+// no SET LOCAL to hold the bound, and a transaction around it would cost a BEGIN and a COMMIT. The deadlines end with the read (end).
+type boundedConn struct {
+	q.DBTX
+	d time.Duration
+
+	mu   sync.Mutex
+	ctxs []context.Context
+	ends []context.CancelFunc
+}
+
+func (b *boundedConn) bound(ctx context.Context) context.Context {
+	c, cancel := context.WithTimeoutCause(ctx, b.d, errStatementBound)
+	b.mu.Lock()
+	b.ctxs, b.ends = append(b.ctxs, c), append(b.ends, cancel)
+	b.mu.Unlock()
+	return c
+}
+
+func (b *boundedConn) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
+	c := b.bound(ctx)
+	tag, err := b.DBTX.Exec(c, sql, args...)
+	if err == nil {
+		b.done(c) // the statement has ended: its deadline must not count against the rest of the read
 	}
-	tx, err := conn.BeginTx(ctx, beginOptions(ctx))
-	if err != nil {
-		return err
+	return tag, err
+}
+
+func (b *boundedConn) Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
+	return b.DBTX.Query(b.bound(ctx), sql, args...)
+}
+
+func (b *boundedConn) QueryRow(ctx context.Context, sql string, args ...any) pgx.Row {
+	return b.DBTX.QueryRow(b.bound(ctx), sql, args...)
+}
+
+// done ends the deadline of a statement that has ended.
+func (b *boundedConn) done(c context.Context) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	for i, x := range b.ctxs {
+		if x == c {
+			b.ends[i]()
+			b.ctxs, b.ends = append(b.ctxs[:i], b.ctxs[i+1:]...), append(b.ends[:i], b.ends[i+1:]...)
+			return
+		}
 	}
-	if err := fn(tx); err != nil {
-		rctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
-		defer cancel()
-		_ = tx.Rollback(rctx)
-		return err
+}
+
+// end ends the deadlines of the read's statements and reports whether one of them passed the bound before the read ended. The
+// function of the read has consumed its rows by then (Read's contract).
+func (b *boundedConn) end() bool {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	passed := false
+	for _, c := range b.ctxs {
+		if errors.Is(context.Cause(c), errStatementBound) {
+			passed = true
+		}
 	}
-	return tx.Commit(ctx)
+	for _, cancel := range b.ends {
+		cancel()
+	}
+	return passed
 }
 
 // transact is the core of InTx and InPgxTx: retry around one attempt. The After

@@ -170,7 +170,7 @@ func (a *App) startEndpoint(rt *endpointRuntime, router *httpserver.Router) erro
 		Authenticate: a.authenticate(rt), Bastion: bastion, Preflight: part[apiArea](a.parts).preflight, RateLimit: a.endpointStage(rt), Replica: a.id.Instance, ReplicaHeader: rt.ep.ReplicaHeader(),
 		Draining:   a.health.Draining,
 		ExpectMark: blob.WithAwaitedBody,
-		// Every statement of a request ends after database.request_statement_timeout (R-ARCH-019, Q-ARCH-594).
+		// Every statement of a request ends after database.request_statement_timeout (R-ARCH-019, Q-ARCH-650).
 		RequestContext: func(ctx context.Context) context.Context {
 			return meta.WithStatementTimeout(ctx, cfg.Database.RequestStatementTimeout)
 		},

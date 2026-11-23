@@ -9125,10 +9125,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-ARCH
 
-269 questions on [spec/architecture.md](spec/architecture.md).
+270 questions on [spec/architecture.md](spec/architecture.md).
 
 <details>
-<summary>Q-ARCH: 269 questions</summary>
+<summary>Q-ARCH: 270 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9401,6 +9401,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ARCH-597](spec/architecture.md#q-arch-597--a-partial-dispatch-of-the-nightly-starts-only-the-jobs-whose-legs-it-names) | A partial dispatch of the nightly starts only the jobs whose legs it names | Decided by the development agent | (a) Every job with the step `Select the leg`, but `image`, has a job-level `if` that names its key and the sets of its legs | — |
 | [Q-ARCH-638](spec/architecture.md#q-arch-638--a-run-builds-each-set-of-clients-images-once-in-a-job-of-its-own-and-the-legs-only-load-it) | A run builds each set of clients images once, in a job of its own, and the legs only load it | Decided by the development agent | (a) A job `client-images` with one row per set and runner kind that the run's legs need; it looks the key up and builds and saves on a miss; the legs need it and only restore and load | — |
 | [Q-ARCH-639](spec/architecture.md#q-arch-639--every-fetch-of-an-image-build-has-a-bound-and-a-retry-of-its-own-and-a-failure-names-it) | Every fetch of an image build has a bound and a retry of its own, and a failure names it | Decided by the development agent | (a) The builds run apt-install.sh for their OS packages and a small [fetch.sh](../.github/scripts/fetch.sh) for every other fetch, both mounted from a named build context `ci`; the base images are pulled before the build through fetch.sh | — |
+| [Q-ARCH-650](spec/architecture.md#q-arch-650--every-statement-of-an-http-request-ends-after-the-requests-bound-set-local-in-a-transaction-a-deadline-on-a-single-read) | Every statement of an HTTP request ends after the request's bound: SET LOCAL in a transaction, a deadline on a single read | Decided by the development agent | (a), with the bound a configuration key, `database.request_statement_timeout` (5s by default, at least 100 ms, at most `database.session.statement_timeout`). | — |
 
 </details>
 
@@ -11769,10 +11770,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-STOR
 
-215 questions on [spec/storage.md](spec/storage.md).
+216 questions on [spec/storage.md](spec/storage.md).
 
 <details>
-<summary>Q-STOR: 215 questions</summary>
+<summary>Q-STOR: 216 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11991,6 +11992,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-STOR-471](spec/storage.md#q-stor-471--the-link-is-signed-before-the-data-key-is-taken) | The link is signed before the data key is taken | Decided by the builder | (a) Step 9, then step 8 | [ADR-250](#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward) |
 | [Q-STOR-472](spec/storage.md#q-stor-472--the-value-is-encoded-before-the-trace-and-the-key-destroyed-before-the-insert) | The value is encoded before the trace, and the key destroyed before the insert | Decided by the builder | (a) Encode, destroy the key, write the trace, note the value for the marking | [ADR-250](#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward) |
 | [Q-STOR-475](spec/storage.md#q-stor-475--the-dry-run-counts-the-files-whose-data-key-was-handed-and-the-handovers-and-names-the-audit-logs-bound) | The dry run counts the files whose data key was handed and the handovers, and names the audit log's bound | Decided by the development agent | (a) Both numbers and the bound: the files (the distinct `sha256` of the events of the connection or under one of its keys), the handovers (the events), and the day the audit log goes back to | [ADR-255](#adr-255--the-storage-keys-of-a-retired-connection-can-be-destroyed-so-that-what-stays-at-a-provider-becomes-unreadable) |
+| [Q-STOR-486](spec/storage.md#q-stor-486--a-spool-file-is-flushed-every-32-mib-while-the-body-arrives-as-every-large-local-write-is) | A spool file is flushed every 32 MiB while the body arrives, as every large local write is | Decided by the development agent | (a) The spool writes through `syncwrite.Writer`, which flushes at every 32 MiB written, whatever the size of the reads; the rest of a body after the last flush is left to the page cache | — |
 
 </details>
 
@@ -12515,10 +12517,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-VULN
 
-183 questions on [spec/vulnerability-scanning.md](spec/vulnerability-scanning.md).
+184 questions on [spec/vulnerability-scanning.md](spec/vulnerability-scanning.md).
 
 <details>
-<summary>Q-VULN: 183 questions</summary>
+<summary>Q-VULN: 184 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12704,6 +12706,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-VULN-214](spec/vulnerability-scanning.md#q-vuln-214--the-upgrade-removes-the-stored-analyses-and-every-image-is-analysed-afresh-by-the-scanner) | The upgrade removes the stored analyses, and every image is analysed afresh by the scanner | Decided by the development agent | (a) The migration deletes every row of `vuln_image_sbom` | [ADR-229](#adr-229--the-scanner-unit-detects-as-well-and-the-analyser-comes-from-its-own-image) |
 | [Q-VULN-225](spec/vulnerability-scanning.md#q-vuln-225--every-large-write-of-the-scanning-units-is-flushed-every-32-mib-by-the-loaders-mechanism) | Every large write of the scanning units is flushed every 32 MiB, by the loader's mechanism | Decided by the development agent | (a) One copy that flushes every 32 MiB, the loader's, moved into a leaf package (`internal/syncwrite`) and used by all five writes | — |
 | [Q-VULN-226](spec/vulnerability-scanning.md#q-vuln-226--a-pull-refused-for-a-repository-the-listener-holds-for-disabled-is-put-off-without-an-attempt) | A pull refused for a repository the listener holds for disabled is put off without an attempt | Decided by the development agent | (a) The refusal names `repository_disabled` in `Quader-Error-Code` on the registry's `404`; the scanner answers `409` `repository_disabled`; the worker puts the scan off a minute without an attempt | — |
+| [Q-VULN-237](spec/vulnerability-scanning.md#q-vuln-237--a-write-the-scanners-own-volume-refuses-is-the-scanners-fault-put-off-on-another-scanner) | A write the scanner's own volume refuses is the scanner's fault, put off on another scanner | Decided by the development agent | (a) A code of its own, `503` `scanner_disk_failed`, an error log line of the scanner that names the working directory; the worker tries it like `scanner_busy`, three times on new connections, and puts the scan off a minute without an attempt | — |
 | [Q-VULN-267](spec/vulnerability-scanning.md#q-vuln-267--the-probe-of-variant-d-stays-in-its-own-set-no-pooler-leg-under-load-runs-the-profile-vuln) | The probe of variant D stays in its own set: no pooler leg under load runs the profile vuln | Decided by the development agent on 2026-11-23 | (a) Keep `vuln-pooler` as its own set | — |
 
 </details>

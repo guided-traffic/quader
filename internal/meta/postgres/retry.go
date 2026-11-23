@@ -42,7 +42,9 @@ func classify(err error) retryKind {
 		return retryNo
 	}
 	var unknown *outcomeUnknownError
-	if errors.As(err, &unknown) {
+	if errors.As(err, &unknown) || errors.Is(err, errStatementBound) {
+		// A statement that passed the request's bound (Q-ARCH-650) is no outage: its connection is closed because the driver
+		// cancelled it, and running it again would pass the bound again.
 		return retryNo
 	}
 	var pe *pgconn.PgError
