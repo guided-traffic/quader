@@ -443,13 +443,13 @@ order is what a user or an operator meets first. The state is kept here.
 | W3 · The download limits count what they promise | refused requests that still count (the upstream budget, an endpoint's rate class); seven paths without a test; three statements; the help text of waiting downloads | landed at 11:37 |
 | W2 · Scanning keeps its promises to an operator | a scan attempt lost when a repository is enabled again; the scanner's spool that `QuaderSpoolNearlyFull` does not see; layer writes without a flush; a removed scanner pod shown ready; two measurements | landed at 12:45 (six commits); a second step is in work: the request's statement timeout that no request uses, the upload spool's unflushed copy, a write failure reported as a malformed request, the command `quader admin secrets status`, the malware rows of the audit events' table |
 | W6 · The pipeline loses nothing and scans every image it runs | a push that cancels the run before it; the analyser's and ClamAV's images never scanned; the evidence record and the badge that stand still; a `unit` target with the emptied AWS environment; the lint's limit and serial runs; fuzz names; the pins of the e2e legs; a partial dispatch; the disk watcher; the key of the clients' image cache, which changes with every commit, so a push never hits it | landed at 11:50 (fourteen commits; the disk watcher not built, see With the owner); its first runs are read against what each item must show; the evidence record with the release follows as a step of its own |
-| W5a · NuGet and OCI | NuGet's README route that answers 501; the challenge of an upstream token; what the two formats' pages count and the code does not; the tag listing's measurement with 100,000 tags | built (five commits), back at 12:33: NuGet serves the icon, the license file and the README a package embeds; an upstream's token requests are counted; the kit holds every format's challenge; the tag listing measured with 100,000 tags. It lands next, after a rebase onto the generated index; a second step follows (the version list that reads every row for every page, in every format; the shadowing check that OCI and Debian do not record) |
+| W5a · NuGet and OCI | NuGet's README route that answers 501; the challenge of an upstream token; what the two formats' pages count and the code does not; the tag listing's measurement with 100,000 tags | landed at 13:18 (five commits and the repair of a stale test): NuGet serves the icon, the license file and the README a package embeds; an upstream's token requests are counted; the kit holds every format's challenge; the tag listing measured with 100,000 tags. A second step is in work since 13:19: the version list that reads every row for every page, in every format; the shadowing check that OCI and Debian do not record |
 | W5b · Debian and Ansible Galaxy | `member_expired` and a member's recorded `Date` without an integration case; the wiki's cases; the requirements no test names; the check against the public Galaxy; first the Debian test that made `main` red for the third time | the Debian remote's repair landed at 11:37, the rest at 12:45 (two commits); a second step is in work since 11:58: collections with symbolic links, a stale `InRelease` after a key change, a requirement's numbers, the formats' log lines without the replica's fields |
 | W4 · Go tests wait for what they stand for | fixed sleeps and paced setups in integration and unit tests; four convention checks that sit in a format's area; tests that depend on the machine; the harness's policy helper that writes an empty policy without a word | waits for a place |
 | W8 · Web and end-to-end tests wait for what they stand for | the fixed 320 ms of choosing a person; paced setups of the e2e environments; the fixed waits of three seconds in the limits' client cases and the load test's tokens (from W3, since they need the kind cluster); a code push during a nightly | after the screens' first round |
 | W7 · The development profiles run the image they are given | the image tag `:dev`; one image tag per checkout; instances of the UI profile, one per builder; `nuget-ha` cut to what NuGet's client adds; the drain variant that Q-VULN-128 said to fold into a pooler leg once one runs under npm's load, which two do now; the development profile's root CA that is issued twice at a start; the Valkey outage with a replaced pod, which only a set runs that nothing has run since 2026-11-18 | after W6 (it owns the Makefile) |
 | W9 · Screens show every state, second round | the system page; a technical token's description and removal; states the renders never show (an open row menu, the shared error notice); a failed test link's reason as a sentence of the page; the audit log's filter by a resource; the eleven points seen on the first round's renders; the malware settings before the first signature set | in work since 11:55; what a person meets on a page first, to land ahead |
-| W10a · Documents and the decisions' index | 1,050 of 3,425 decided questions without a row in the index (generated with a check from now); stale sentences in spec, developer pages, README and manual | landed at 12:45 (two commits): the index is generated and held by the documentation check, 3,480 rows, one per decided question; what its builder saw and left is built by a writer (one commit, back at 12:57) and lands with the next push |
+| W10a · Documents and the decisions' index | 1,050 of 3,425 decided questions without a row in the index (generated with a check from now); stale sentences in spec, developer pages, README and manual | landed at 12:45 (two commits): the index is generated and held by the documentation check, 3,480 rows, one per decided question; what its builder saw and left was built by a writer and landed at 13:18 |
 | W10b · Translations and test names | the extraction check; names of tests that carry a decision's number; the German texts that say "du" | last |
 | W11 · Readings and statements (the development agent) | the stall family of the runs before 2026-11-18; pipeline artifacts to read before they expire (from 2026-12-02); entries that close by a reasoned statement | the statements landed at 09:39, the readings of runs are back and both are marked in the lists; left: two single sets to dispatch in the pipeline window, a count of a cold load's requests, a trace of the Bastion's answers by kind |
 
@@ -893,6 +893,17 @@ records the recorder that tells such a stall apart).
   every row (Q-OCI-256); H-829 stays open with these numbers, which are in `docs/developer/oci.md`. To
   do (the second step of W5a): the keyset statement of the version list, for every format; then the
   lookup by id; then the list's estimate; the measurement again after each.
+- **A landing's gate missed the area whose test held the answer the landing changed (2026-11-23, 13:08;
+  Test and Release 45168001439, `integration (shard b)`).** `TestR_REPO_009_to_013_RepositoryLifecycle`
+  of the area `transfer` failed with "the consumer view has disabled": the screens' first round had put
+  `disabled` into the consumer view of a repository and into the specification (6b8eae484) and the
+  test still listed it among the keys a reader must not see. The landing's gate had chosen its areas
+  by the package's subject. The test's repair is with the builder of W5a (a commit of its own, first).
+  **Decided by the development agent for every landing from now:** a change of an answer of the
+  management API or of a format's route is followed by a search of the test tree for the changed
+  field or code, and every area that names it is in the landing's gate. To do (W4, with the
+  convention checks): whether a cheap check can name, for a changed API field, the areas that assert
+  it.
 - **The evidence record lists npm's search as implemented and the route answers that it is not (found on
   2026-11-23 by the inventory of T-24).** `docs/coverage/implemented.txt` holds R-NPM-037; `-/v1/search` is
   one of the deferred paths of R-NPM-043 in `internal/formats/npm/routes.go`. Not read: which test makes
@@ -1919,7 +1930,7 @@ The work queue of T-24, a first cut; the planner's cut replaces it when the spec
 
 | Package | What it delivers | State |
 |---|---|---|
-| T-24 · R0 · Three researches | what the code has today near the wishes (the model of a remote, the pull-through path of each format, patterns and disabling, mirrors, the job system, the tabs, the roles); what each format's upstream protocol allows for search, enumeration, levels, versions, sizes ahead of a download, and the limits a bulk download meets, from primary sources and single live requests; what the scans do with an item that is stored and not served | the first two back at 12:58 and 12:59; the third in work since 13:02 |
+| T-24 · R0 · Three researches (done) | what the code has today near the wishes (the model of a remote, the pull-through path of each format, patterns and disabling, mirrors, the job system, the tabs, the roles); what each format's upstream protocol allows for search, enumeration, levels, versions, sizes ahead of a download, and the limits a bulk download meets, from primary sources and single live requests; what the scans do with an item that is stored and not served | back at 12:58, 12:59 and 13:10; their substance is with the planner |
 | T-24 · R1 · The specification | requirements and decision blocks for the delivery rules, the upstream catalogue, the downloads ahead of a client, the queue and the two tabs; the contracts (the format contract's new port, the management API, the schema); the cut into packages with what each costs in tests | in work since 13:01 (a planner in a worktree of its own, with the development agent's sixteen decisions on the owner's words); landed like code |
 | T-24 · R2 · Delivery rules | the two modes, rules on a package, on chosen versions and on a sub-section, future versions; evaluated at one point for every format, honoured by virtual repositories and Bastions; the audit events; the API | after R1 |
 | T-24 · R2b · Requests for a release | a user asks for a package or a version in a repository that delivers only what was released; the list of requests for those who may release, with what the rules refused to clients; release or decline with a reason; a release starts the download (R4) | after R2 |
@@ -7402,6 +7413,48 @@ with a remote class and no new format; the existing sentences that change; secur
 that stay runnable; the fetch for examination. **13:01, the owner adds the fetch for examination**
 (section 10, item 6); the planner is told, and a third research started at 13:02 on what the scans do
 with an item that is stored and not served.
+**13:00, the push of 12:45 is released** (its unit job green, which is what the repair of the Bastion's
+fill still had to show; the screens' first round is released with it); image and chart at 13:05; **the
+owner's installation runs it since 13:07** (read at 13:12: the upgrade succeeded, twenty pods ready, no
+restart, the migration job completed). The plan commit of 13:04 went out after the release.
+**13:08, `integration (shard b)` of that run is red by a stale test** (section 8): the screens' first
+round put `disabled` into the consumer view of a repository and into the specification, and the area
+`transfer` still holds it among the keys a reader must not see; no landing gate ran that area. The
+builder of W5a repairs the test first, as a commit of its own that goes into the landing at its gates.
+**13:09, W5a's five commits are rebased onto the `main` of 12:45 and reported** (every gate exit 0
+there, the lint 0 issues; `nuget` 383 s, `oci` 22 s, `ociremote` 92 s, `ocilocal` 30 s, `ocivirtual`
+19 s, `upstream` 16 s); picked onto the landing branch with the writer's commit of W10a's leftovers,
+no conflict, the index regenerated without a change; the landing's gates run since 13:12 (the stack
+differs from the builder's gated head by a comment, the README and a chart test, so its areas are not
+run again).
+**13:16, the landing's gates are green** (build, vet, the whole unit set, the chart's alert test,
+generate, the documentation tool without a change, links, check, cyclo, the lint over the whole
+repository with 0 issues). **13:15, the repair of the stale test is back** (one commit: `disabled` is
+asserted as present in the consumer view, false for an enabled repository and true for a disabled
+one; a search of the test tree, the kit and the UI's specs found no second place); picked on top, the
+area `transfer` 82 s and its lint exit 0 in the landing worktree. **13:18, landed and pushed** (seven
+commits: W5a's five, the writer's one, the test's repair), with this plan commit under it. The
+format's end-to-end leg of this push is the first run of the case that expects a client-packed
+README to be served. What the landing closes in the lists is marked by a writer next.
+**13:10, the third research of T-24 is back** (what the scans do with content that is stored and not
+served). Every scan starts from the store's commit hook, the same for a client's fill, a mirror pass
+and a background download, so a fetch for examination needs no new trigger. npm and NuGet are matched
+against advisories by name and version, and the verdict of a version that is not stored can be
+computed without a fetch; Debian and Ansible Galaxy have no vulnerability analysis; an image is
+analysed from its content once its configured platforms are stored. The vulnerability gate refuses a
+fill of a version it knows as malicious or blocked, also to the system. Patterns hide a package and
+its findings from every view, and a disabled repository makes the malware scanner's read fail, so
+neither can be the state "stored, examined, not delivered"; the nearest is the signature gate with
+its releases. A Maintainer sees every finding of their repositories and may rescan, and cannot
+triage. Cache clean-up is specified and not built, so examined content would stay for ever. **Decided
+by the development agent and given to the planner (D17 to D20):** the rule's refusal is a delivery
+gate in the shape of the signature gate, keyed by sub-section, package and version and granted by the
+holders of `manage`; what is blocked or not yet allowed stays visible with its verdicts and only the
+data path refuses; the catalogue shows the vulnerability verdict of npm and NuGet versions without a
+fetch and says for the other formats what appears when; a version the vulnerability gate knows as
+malicious is not fetched to look at, and the queue's row says so in the gate's words; allowing a
+package and lifting a gate's refusal stay two acts of two groups, shown apart; content examined and
+not allowed gets a discard and a bounded life of its own.
 **12:42, the last gates of one stack of eleven commits are green** (W2's six, W5b's two, the Bastion's
 repair, W10a's two; the index of decisions was regenerated at the pick and holds 3,480 rows, the three
 that W2 had written by hand among them): build, vet, the whole unit set, the repair's three tests ten
