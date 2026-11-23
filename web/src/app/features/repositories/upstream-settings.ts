@@ -159,8 +159,11 @@ export function upstreamPointerLabel(pointer: string): string | null {
             (input)="set({ url: $any($event.target).value })"
             (blur)="leaveUrl()"
           />
+          <!-- The hint names the buttons the form offers above the field: the public ones, the installation's, or both (R-UI-082). -->
           <p id="d-remote-url" class="hint">
-            @if (presets().length > 0) {
+            @if (presets().length > 0 && own().length > 0) {
+              <ng-container i18n="@@upstream.url.hint-both">Choose a well-known registry or one of this installation, or enter the address of another.</ng-container>
+            } @else if (presets().length > 0) {
               <ng-container i18n="@@upstream.url.hint-presets">Choose a well-known registry or enter the address of another.</ng-container>
             } @else if (own().length > 0) {
               <ng-container i18n="@@upstream.url.hint-own">Choose a registry of this installation or enter the address of another.</ng-container>

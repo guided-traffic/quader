@@ -2530,7 +2530,7 @@
       </notes>
       <segment>
         <source>Well-known registries</source>
-        <target>Bekannte Registries</target>
+        <target>Bekannte Registrys</target>
       </segment>
     </unit>
     <unit id="general.mode.confirm-1">
@@ -43553,6 +43553,12 @@
       <segment>
         <source>Choose a registry of this installation or enter the address of another.</source>
         <target>Wählen Sie eine Registry dieser Installation oder geben Sie die Adresse einer anderen ein.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.url.hint-both">
+      <segment>
+        <source>Choose a well-known registry or one of this installation, or enter the address of another.</source>
+        <target>Wählen Sie eine bekannte Registry oder eine dieser Installation, oder geben Sie die Adresse einer anderen ein.</target>
       </segment>
     </unit>
     <unit id="presets.field.format">

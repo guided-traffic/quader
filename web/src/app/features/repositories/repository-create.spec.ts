@@ -330,6 +330,8 @@ describe('The creation form of a repository', () => {
     await chooseClass(r, 'remote');
     const groups = [...r.root.querySelectorAll('quader-upstream-settings [role="group"] > .field-label')].map((l) => text(l));
     expect(groups.slice(0, 2)).toEqual(['Well-known registries', 'Registries of this installation']);
+    // The hint under the field names both kinds of button it offers (R-UI-082).
+    expect(text($(r, '#d-remote-url'))).toBe('Choose a well-known registry or one of this installation, or enter the address of another.');
     const presets = [...r.root.querySelectorAll<HTMLButtonElement>('[aria-pressed]')];
     expect(presets.map((b) => text(b))).toEqual(['Docker Hub', 'Quay', 'GitHub (ghcr.io)', 'GitLab', 'Harbor']);
     presets[4]!.click();
