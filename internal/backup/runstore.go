@@ -49,10 +49,12 @@ type RunStore interface {
 	// Fence is the fenced lease check before the manifest and before every deletion of the pruning phase (R-BAK-010): it
 	// moves the run from one state to another only while the lease has more than margin left, and reports whether it did.
 	Fence(ctx context.Context, id string, from, to State, margin time.Duration) (bool, error)
-	// AddPins inserts the to-copy set in one transaction.
+	// AddPins inserts the to-copy set in one transaction: each entry's digest, size and, for a re-pooled entry, the pool object it
+	// inherits (R-BAK-032, Q-BAK-80).
 	AddPins(ctx context.Context, id string, entries []format.BlobEntry) error
-	// DeletePins removes confirmed pins; the caller batches up to 1,000.
-	DeletePins(ctx context.Context, id string, digests []format.Digest) error
+	// SetPinPools records the pool object of each confirmed pin (each entry's digest and Pool); the caller batches up to 1,000. The
+	// pins stay until the run's final blob list is written from them (R-BAK-032).
+	SetPinPools(ctx context.Context, id string, entries []format.BlobEntry) error
 	// Finish ends the run: state, result and error are written, the hold becomes none and the run's pins are deleted, in
 	// one transaction.
 	Finish(ctx context.Context, id string, state State, result, runErr json.RawMessage) error
@@ -239,28 +241,28 @@ func (s *PGStore) AddPins(ctx context.Context, id string, entries []format.BlobE
 	if len(entries) == 0 {
 		return nil
 	}
-	digests, sizes := make([][]byte, len(entries)), make([]int64, len(entries))
+	digests, sizes, pools := make([][]byte, len(entries)), make([]int64, len(entries)), make([]string, len(entries))
 	for i, e := range entries {
 		d := e.Digest
-		digests[i], sizes[i] = d[:], e.Size
+		digests[i], sizes[i], pools[i] = d[:], e.Size, e.Pool
 	}
 	return s.write(ctx, func(qs *q.Queries) error {
-		return qs.InsertBackupPins(ctx, q.InsertBackupPinsParams{RunID: id, Digests: digests, Sizes: sizes})
+		return qs.InsertBackupPins(ctx, q.InsertBackupPinsParams{RunID: id, Digests: digests, Sizes: sizes, Pools: pools})
 	})
 }
 
-// DeletePins implements RunStore.
-func (s *PGStore) DeletePins(ctx context.Context, id string, digests []format.Digest) error {
-	if len(digests) == 0 {
+// SetPinPools implements RunStore.
+func (s *PGStore) SetPinPools(ctx context.Context, id string, entries []format.BlobEntry) error {
+	if len(entries) == 0 {
 		return nil
 	}
-	raw := make([][]byte, len(digests))
-	for i := range digests {
-		d := digests[i]
-		raw[i] = d[:]
+	digests, pools := make([][]byte, len(entries)), make([]string, len(entries))
+	for i, e := range entries {
+		d := e.Digest
+		digests[i], pools[i] = d[:], e.PoolOf()
 	}
 	return s.write(ctx, func(qs *q.Queries) error {
-		_, err := qs.DeleteBackupPins(ctx, q.DeleteBackupPinsParams{RunID: id, Digests: raw})
+		_, err := qs.SetBackupPinPools(ctx, q.SetBackupPinPoolsParams{RunID: id, Digests: digests, Pools: pools})
 		return err
 	})
 }

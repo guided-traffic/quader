@@ -243,7 +243,9 @@ func (t *Target) Head(ctx context.Context, key string) (target.Object, error) {
 	if err != nil {
 		return target.Object{}, terr(mapError(ctx, "HeadObject", key, err))
 	}
-	return objectOf(key, sizeOf(out.ContentLength), out.ETag, out.LastModified, out.ServerSideEncryption, out.SSEKMSKeyId, out.ChecksumSHA256, out.ChecksumType), nil
+	o := objectOf(key, sizeOf(out.ContentLength), out.ETag, out.LastModified, out.ServerSideEncryption, out.SSEKMSKeyId, out.ChecksumSHA256, out.ChecksumType)
+	o.Metadata = lowerKeys(out.Metadata) // an encrypted copy's record in the pool (R-BAK-031)
+	return o, nil
 }
 
 // Get implements target.Store.
@@ -255,6 +257,7 @@ func (t *Target) Get(ctx context.Context, key string) (io.ReadCloser, target.Obj
 		return nil, target.Object{}, terr(mapError(ctx, "GetObject", key, err))
 	}
 	o := objectOf(key, sizeOf(out.ContentLength), out.ETag, out.LastModified, out.ServerSideEncryption, out.SSEKMSKeyId, out.ChecksumSHA256, out.ChecksumType)
+	o.Metadata = lowerKeys(out.Metadata)
 	w := newIdle(t.c.idle, cancel)
 	return &body{ReadCloser: out.Body, w: w, cancel: cancel, op: "GetObject", key: key}, o, nil
 }
@@ -275,7 +278,7 @@ func (t *Target) Put(ctx context.Context, key string, data []byte, opts target.P
 		Bucket: &t.c.bucket, Key: &key, Body: &seeker{rs: bytes.NewReader(data), w: w}, ContentLength: aws.Int64(int64(len(data))),
 		ContentType: aws.String(contentType(opts)), StorageClass: types.StorageClass(t.c.cfg.StorageClass),
 		ServerSideEncryption: s.mode, SSEKMSKeyId: s.key, BucketKeyEnabled: s.bucket,
-		ChecksumSHA256: aws.String(base64.StdEncoding.EncodeToString(sum[:])),
+		ChecksumSHA256: aws.String(base64.StdEncoding.EncodeToString(sum[:])), Metadata: opts.Metadata,
 	}
 	if opts.IfAbsent && !t.noCond.Load() {
 		in.IfNoneMatch = aws.String("*")

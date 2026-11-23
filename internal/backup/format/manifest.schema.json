@@ -4,7 +4,7 @@
   "title": "quader backup manifest, format 1 (R-BAK-003)",
   "type": "object",
   "required": ["format", "backupId", "installationId", "incarnation", "quader", "schema", "postgres", "startedAt", "snapshotAt",
-    "completedAt", "previousBackupId", "options", "source", "tables", "sequences", "blobs", "secrets", "encryption"],
+    "completedAt", "previousBackupId", "options", "source", "tables", "sequences", "blobs", "secrets", "storageKeys", "encryption"],
   "properties": {
     "format": {"type": "integer", "minimum": 1},
     "backupId": {"type": "string", "pattern": "^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{4}$"},
@@ -122,6 +122,26 @@
       "type": "object",
       "required": ["keyIds"],
       "properties": {"keyIds": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}}
+    },
+    "storageKeys": {
+      "type": "object",
+      "required": ["pool", "sealed", "destroyed"],
+      "properties": {
+        "pool": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["keyId", "objects", "bytes"],
+            "properties": {
+              "keyId": {"type": "string", "pattern": "^[a-z0-9-]{3,64}$"},
+              "objects": {"type": "integer", "minimum": 0},
+              "bytes": {"type": "integer", "minimum": 0}
+            }
+          }
+        },
+        "sealed": {"type": "array", "items": {"type": "string", "pattern": "^[a-z0-9-]{3,64}$"}},
+        "destroyed": {"type": "array", "items": {"type": "string", "pattern": "^[a-z0-9-]{3,64}$"}}
+      }
     },
     "encryption": {
       "type": "object",

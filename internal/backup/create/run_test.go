@@ -202,21 +202,21 @@ func TestR_BAK_013_PinsAreDeletedInBatchesOfAtMost1000(t *testing.T) {
 
 func TestR_BAK_009_SamplerKeepsAUniformReservoir(t *testing.T) {
 	s := newSampler(5)
+	seen := map[format.Digest]bool{}
 	for i := range 1000 {
 		var d format.Digest
 		d[0], d[1] = byte(i>>8), byte(i)
-		s.listed(d)
-		if i%2 == 0 {
-			s.copying()
+		if i%2 == 1 { // the diff offers only the entries an earlier backup's pool holds
+			s.inherited(format.BlobEntry{Digest: d, Pool: format.PoolPlain})
+			seen[d] = true
 		}
 	}
-	s.flush()
-	if len(s.out) != 5 {
-		t.Fatalf("sample = %d", len(s.out))
+	if len(s.out) != 5 || s.seen != 500 {
+		t.Fatalf("sample = %d of %d", len(s.out), s.seen)
 	}
-	for _, d := range s.out {
-		if (int(d[0])<<8|int(d[1]))%2 == 0 {
-			t.Fatalf("a digest the run copied itself is in the sample: %x", d[:2])
+	for _, e := range s.out {
+		if !seen[e.Digest] || e.Pool != format.PoolPlain {
+			t.Fatalf("an entry that was not offered, or without its pool, is in the sample: %x", e.Digest[:2])
 		}
 	}
 }

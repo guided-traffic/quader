@@ -101,10 +101,18 @@ func (l *fakeLedger) Copies(_ context.Context, d blob.Digest) ([]CopyRow, bool, 
 	return slices.Clone(cs), ok, nil
 }
 
-func (l *fakeLedger) Whole(_ context.Context, d blob.Digest, conn, from string, _, _ int64) (bool, error) {
+func (l *fakeLedger) Whole(_ context.Context, d blob.Digest, conn, from string, _, stored int64, keyID string) (bool, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.whole = append(l.whole, conn+"/"+d.Hex()[:6])
+	for i, cp := range l.copies[d] {
+		if cp.Connection == conn && cp.State == from {
+			l.copies[d][i].StoredSize = stored
+			if keyID != "" {
+				l.copies[d][i].StorageKeyID = keyID
+			}
+		}
+	}
 	return l.set(d, conn, from, blob.CopyPresent), nil
 }
 

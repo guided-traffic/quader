@@ -21,6 +21,11 @@ import (
 // the right size is skipped, so a resumed restore copies only what is missing. The blobs come before the load so that the load
 // commits references only to objects that exist (R-STOR-005). Once the marker's phase is loaded the step has completed.
 func (r *Restorer) stepBlobs(ctx context.Context, st *state, marker *postgres.RestoreMarker) error {
+	// an encrypted sink's keys serve the fix-ups too, also when a resumed restore is past this step (R-BAK-031)
+	r.marker = marker
+	if err := r.prepareSink(st, marker); err != nil {
+		return err
+	}
 	if marker.Phase != postgres.PhaseBlobs {
 		return nil
 	}
@@ -47,7 +52,7 @@ func (r *Restorer) stepBlobs(ctx context.Context, st *state, marker *postgres.Re
 	it := format.Without(list, skip)
 
 	conc := max(r.d.Config.Copy.Concurrency, 1)
-	cp := &copier{r: r, st: st, mode: r.d.Config.Copy.ServerSide, sink: sink.Store}
+	cp := &copier{r: r, st: st, mode: r.d.Config.Copy.ServerSide, sink: sink.Store, conn: sink}
 	if cp.mode == "never" {
 		cp.streamOnly.Store(true)
 	}
@@ -102,8 +107,9 @@ produce:
 	if got := hex.EncodeToString(sum.Sum(nil)); got != st.m.Blobs.SHA256 {
 		return backup.Failf(backup.ExitFailed, backup.CodeInternal, "the blob list has SHA-256 %s, the manifest says %s; run quader backup verify", got, st.m.Blobs.SHA256)
 	}
-	// The copies are verified when this process streamed and hashed every blob and skipped none (Q-BAK-72).
-	r.streamedAll = cp.skipped.Load() == 0 && cp.server.Load() == 0
+	// The copies are verified when this process streamed and hashed every blob and skipped none (Q-BAK-72); an encrypted pool object
+	// written as it is was not hashed (R-BAK-031).
+	r.streamedAll = cp.skipped.Load() == 0 && cp.server.Load() == 0 && cp.asIsN.Load() == 0
 	r.d.Log.Info("blobs copied", "connection", sink.ID, "copied", cp.copied.Load(), "skipped", cp.skipped.Load(), "server_side", cp.server.Load(), "streamed", cp.streamed.Load())
 	return nil
 }
@@ -114,6 +120,8 @@ type copier struct {
 	st         *state
 	mode       string
 	sink       BlobStore
+	conn       Connection
+	asIsN      atomic.Int64
 	streamOnly atomic.Bool
 	copied     atomic.Int64
 	skipped    atomic.Int64
@@ -122,6 +130,9 @@ type copier struct {
 }
 
 func (c *copier) one(ctx context.Context, e format.BlobEntry) error {
+	if c.conn.Encrypted || e.Encrypted() {
+		return c.sealedOne(ctx, c.conn, e)
+	}
 	sink := c.sink
 	has, err := sink.Has(ctx, e.Digest, e.Size)
 	if err != nil {

@@ -115,29 +115,32 @@ func (s *Sweeper) Sweep(ctx context.Context, complete []listing.Backup) (SweepRe
 		return nil
 	}
 
-	var prev format.Digest
+	// The keep set is a set of pool names (R-BAK-032): a digest, followed for an encrypted pool object by "." and its storage key's
+	// identifier. "." sorts before every hex digit, so the names come in the order the pool lists its keys.
+	var prev format.BlobEntry
 	havePrev := false
 	listed := 0
 	err := s.Store.List(ctx, s.Layout.PoolPrefix(), func(o target.Object) error {
 		if listed++; listed%listing.PageSize == 0 {
 			s.tick() // a listing page is progress even when it holds nothing to delete (R-BAK-013)
 		}
-		d, ok := s.Layout.ParsePool(o.Key)
+		d, pool, ok := s.Layout.ParsePool(o.Key)
+		cur := format.BlobEntry{Digest: d, Pool: pool}
 		switch {
 		case !ok:
 			rep.Stopped = fmt.Sprintf("%s is not a pool key", o.Key)
 			return ErrSweepStopped
-		case havePrev && !prev.Less(d):
-			rep.Stopped = fmt.Sprintf("%s does not follow %s", o.Key, s.Layout.Pool(prev))
+		case havePrev && prev.PoolName() >= cur.PoolName():
+			rep.Stopped = fmt.Sprintf("%s does not follow %s", o.Key, s.Layout.PoolObject(prev))
 			return ErrSweepStopped
 		}
-		prev, havePrev = d, true
-		for headOK && head.Digest.Less(d) {
+		prev, havePrev = cur, true
+		for headOK && head.PoolName() < cur.PoolName() {
 			if err := advance(); err != nil {
 				return err
 			}
 		}
-		if headOK && head.Digest == d {
+		if headOK && head.PoolName() == cur.PoolName() {
 			return nil
 		}
 		batch = append(batch, o.Key)

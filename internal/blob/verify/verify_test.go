@@ -12,7 +12,9 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/blobcrypt"
 	"github.com/guided-traffic/quader/internal/blob/blobtest"
+	"github.com/guided-traffic/quader/internal/config"
 )
 
 // fakeDB is a Source over a slice of rows; it records the page sizes it was asked for.
@@ -263,5 +265,64 @@ func TestR_HA_024_VerifyRetriesATransientErrorBeforeItGivesUp(t *testing.T) {
 	rep, err := Run(context.Background(), Options{DB: db, Connections: conns(store), Sleep: noSleep})
 	if err != nil || !rep.OK() || rep.Checked != 1 {
 		t.Fatalf("rep = %+v, err = %v", rep, err)
+	}
+}
+
+// TestR_STOR_087_TheOperatorCheckOpensTheRecordOfAnEncryptedCopy: on an encrypted connection the check opens each copy's record from
+// the HeadObject it sends, against the copy row and the blob row, and reads no body (storage.md R-STOR-087): a whole copy is no
+// finding; a changed wrap is a record finding of reason record; a record of a key the replica lost one of reason unknown_key; the blob
+// whose only copy fails is lost with kind record.
+func TestR_STOR_087_TheOperatorCheckOpensTheRecordOfAnEncryptedCopy(t *testing.T) {
+	ctx := context.Background()
+	store, ks := blobtest.New(), blobtest.NewKeys()
+	sk := ks.Draw("default", 1)
+	p := "quader"
+	c := blob.NewConnection(config.StorageConnection{ID: "default", Bucket: "a", Prefix: &p, Encrypted: true}, store)
+	c.UseKeys(ks)
+	db := &fakeDB{items: map[blob.Digest][]Item{}}
+	for i := range 3 {
+		data := bytes.Repeat([]byte{byte(i + 1)}, 1024)
+		d := blob.Digest(sha256.Sum256(data))
+		cw, err := c.WriteSealedStream(ctx, d, 1024, bytes.NewReader(data), 1<<20)
+		if err != nil {
+			t.Fatal(err)
+		}
+		db.rows = append(db.rows, Row{Digest: d, Size: 1024, Copies: []Copy{{Connection: "default", Key: cw.Key, StoredSize: cw.StoredSize, State: blob.CopyPresent}}})
+	}
+	sort.Slice(db.rows, func(i, j int) bool { return bytes.Compare(db.rows[i].Digest[:], db.rows[j].Digest[:]) < 0 })
+	changed := db.rows[1].Copies[0].Key
+	md := store.MetadataOf(changed)
+	md[blobcrypt.MetaWrap] = "A" + md[blobcrypt.MetaWrap][1:]
+	if md[blobcrypt.MetaWrap] == store.MetadataOf(changed)[blobcrypt.MetaWrap] {
+		md[blobcrypt.MetaWrap] = "B" + md[blobcrypt.MetaWrap][1:]
+	}
+	store.SetMetadata(changed, md)
+	gets := store.Count("get")
+	run := func() *Report {
+		rep, err := Run(ctx, Options{DB: db, Connections: []Conn{{ID: "default", Objects: store, Keys: func(ctx context.Context) blobcrypt.KeyLookup {
+			return ks.Lookup(ctx, "default")
+		}}}, Sleep: noSleep})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return rep
+	}
+	rep := run()
+	if len(rep.Copies) != 1 || rep.Copies[0].Kind != KindRecord || rep.Copies[0].Reason != "record" || rep.Copies[0].Key != changed ||
+		rep.Lost != 1 || rep.Record != 1 || rep.Findings[0].Kind != KindRecord || rep.ConnectionFindings("default") != 1 {
+		t.Fatalf("report %+v", rep)
+	}
+	if store.Count("get") != gets {
+		t.Fatal("the check read a body")
+	}
+	ks.Forget("default", sk)
+	rep = run()
+	if len(rep.Copies) != 3 || rep.Copies[0].Reason == "" || rep.Lost != 3 {
+		t.Fatalf("with the key lost: %+v", rep)
+	}
+	for _, cf := range rep.Copies {
+		if cf.Key != changed && cf.Reason != "unknown_key" {
+			t.Fatalf("copy %s: reason %s, want unknown_key", cf.Key, cf.Reason)
+		}
 	}
 }

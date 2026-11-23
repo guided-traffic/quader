@@ -49,7 +49,8 @@ func (s *Scrubber) recheckCopy(ctx context.Context, c *blob.Connection, d blob.D
 	out, n, err := readWhole(ctx, c, cp.Copy, d, nil)
 	s.o.Metrics.read(c.ID(), n)
 	switch {
-	case out == outcomeError || out == outcomeCancelled:
+	case out == outcomeError || out == outcomeCancelled || out == outcomeUnknownKey:
+		// an unknown storage key is no evidence about the object (Q-STOR-311): the copy keeps its state
 		s.o.Log.Warn("the recheck could not read a copy; it is left as it is", "connection", c.ID(), "sha256", d.Hex(), "error", err)
 	case cp.State == blob.CopyPresent && out == outcomeOK:
 		err = s.o.Ledger.Verified(ctx, d, c.ID(), cp.CreatedUs)
@@ -58,7 +59,7 @@ func (s *Scrubber) recheckCopy(ctx context.Context, c *blob.Connection, d blob.D
 	case cp.State == blob.CopyPresent && out == outcomeMissing:
 		s.o.Ledger.Damaged(ctx, d, cp.Copy, blob.CopyMissing)
 	case out == outcomeOK:
-		_, err = s.o.Ledger.Whole(ctx, d, c.ID(), cp.State, cp.StateChangedUs, cp.StoredSize)
+		_, err = s.o.Ledger.Whole(ctx, d, c.ID(), cp.State, cp.StateChangedUs, cp.StoredSize, "")
 	}
 	if err != nil && out == outcomeOK {
 		s.o.Log.Warn("the recheck could not record a whole copy", "connection", c.ID(), "sha256", d.Hex(), "error", err)

@@ -36,7 +36,7 @@ commands:
   create [--trigger schedule|manual] [--exclude-remote-caches] [--no-prune] [--adopt-target] [--json]
                                  write one backup to the configured target (R-BAK-009)
   list [--all] [--json]          list the backups of the target (R-BAK-018)
-  verify <id> | --latest | --all [--deep] [--bytes-per-second N] [--json]
+  verify <id> | --latest | --all [--deep [--key-ring <dir>]] [--bytes-per-second N] [--json]
                                  check backups without changing them (R-BAK-019)
   delete <id> [--yes] [--allow-last]   delete one backup, then sweep the pool (R-BAK-016)
   prune                          apply the retention policy and sweep the pool (R-BAK-016, R-BAK-017)

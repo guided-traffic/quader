@@ -40,8 +40,9 @@ SELECT sequencename::text AS name, last_value, start_value
 
 -- name: ListBackupPins :many
 -- The to-copy set of a run in digest order after a position, for the copy phase (R-BAK-006): the set is never held in
--- memory, so a first backup of millions of blobs stays bounded.
-SELECT sha256, size FROM backup_blob_pin
+-- memory, so a first backup of millions of blobs stays bounded. The final blob list reads them once more for their pool objects
+-- (R-BAK-032); an empty pool is a pin whose copy was not confirmed.
+SELECT sha256, size, COALESCE(pool, '')::text AS pool FROM backup_blob_pin
  WHERE run_id = sqlc.arg(run_id)::text::uuid AND sha256 > sqlc.arg(after)::bytea
  ORDER BY sha256
  LIMIT sqlc.arg(row_limit)::int;
@@ -50,10 +51,16 @@ SELECT sha256, size FROM backup_blob_pin
 -- The state of a blob row at READ COMMITTED, the check that tells source damage from a lost hold (R-BAK-006).
 SELECT state, content_status FROM blobs WHERE sha256 = sqlc.arg(sha256)::bytea;
 
+-- name: BackupStorageKeyStates :many
+-- The storage keys the snapshot's database holds, with their states (R-BAK-032): the manifest's storageKeys.sealed and destroyed.
+SELECT key_id, state FROM storage_keys ORDER BY key_id;
+
 -- name: BackupPresentCopies :many
 -- The present copies of a page of pins at READ COMMITTED, read when the copy phase reaches the page (R-BAK-030, Q-BAK-70): one
--- lookup by the primary key of blob_copies per page of 1,000 pins.
-SELECT sha256, connection_id, object_key, stored_size, (verified_at IS NOT NULL)::boolean AS verified
+-- lookup by the primary key of blob_copies per page of 1,000 pins. The storage key of a copy on an encrypted connection names its
+-- pool object (R-BAK-032); empty on a plain one.
+SELECT sha256, connection_id, object_key, stored_size, (verified_at IS NOT NULL)::boolean AS verified,
+       COALESCE(storage_key_id, '')::text AS storage_key_id
   FROM blob_copies
  WHERE sha256 = ANY(sqlc.arg(digests)::bytea[]) AND state = 'present'
  ORDER BY sha256, connection_id;

@@ -71,8 +71,8 @@ func (s *Scrubber) repair(ctx context.Context, target *blob.Connection, d blob.D
 	var moved int64
 	for _, src := range sources {
 		from, _ := s.o.Connections.Get(src.Connection)
-		n, err := s.write(ctx, from, src.Copy, target, tgt.ObjectKey, d, th)
-		moved += n
+		w, err := s.write(ctx, from, src.Copy, target, tgt.ObjectKey, d, th)
+		moved += w.moved
 		var bad *errSource
 		switch {
 		case errors.As(err, &bad):
@@ -83,7 +83,7 @@ func (s *Scrubber) repair(ctx context.Context, target *blob.Connection, d blob.D
 				"sha256", d.Hex(), "error", err)
 			return RepairFailed, moved
 		}
-		back := blob.Copy{Connection: target.ID(), ObjectKey: tgt.ObjectKey, StoredSize: src.StoredSize}
+		back := blob.Copy{Connection: target.ID(), ObjectKey: tgt.ObjectKey, StoredSize: w.stored}
 		out, n2, rerr := readWhole(ctx, target, back, d, th)
 		moved += n2
 		if out != outcomeOK {
@@ -91,7 +91,7 @@ func (s *Scrubber) repair(ctx context.Context, target *blob.Connection, d blob.D
 			s.o.Log.Warn("a replaced copy did not read back whole; it stays marked for the reconciliation", "connection", target.ID(), "sha256", d.Hex(), "error", rerr)
 			return RepairFailed, moved
 		}
-		if _, err := s.o.Ledger.Whole(ctx, d, target.ID(), tgt.State, tgt.StateChangedUs, src.StoredSize); err != nil {
+		if _, err := s.o.Ledger.Whole(ctx, d, target.ID(), tgt.State, tgt.StateChangedUs, w.stored, w.keyID); err != nil {
 			s.o.Log.Warn("a replaced copy could not be recorded; the reconciliation records it", "connection", target.ID(), "sha256", d.Hex(), "error", err)
 			return RepairFailed, moved
 		}
@@ -101,27 +101,95 @@ func (s *Scrubber) repair(ctx context.Context, target *blob.Connection, d blob.D
 	return RepairNoSource, moved
 }
 
-// write streams the blob's bytes from a source copy to key on target, checking the source against the digest on the way: an
-// object up to one part in one PutObject, a larger one as a multipart upload of parts read with ranged reads. It holds one part
-// in memory. A source that is gone or has another length or digest is an *errSource.
-func (s *Scrubber) write(ctx context.Context, from *blob.Connection, src blob.Copy, target *blob.Connection, key string, d blob.Digest, th *throttle) (int64, error) {
-	size := src.StoredSize
+// written is what a repair's write did: the bytes it moved, and the copy row of the object it wrote, its stored size and, on an
+// encrypted connection, the storage key of its new data key.
+type written struct {
+	moved  int64
+	stored int64
+	keyID  string
+}
+
+// write streams the blob's bytes from a source copy to key on target, checking the source against the digest on the way: on a plain
+// target an object up to one part in one PutObject, a larger one as a multipart upload of parts read with ranged reads; on an
+// encrypted target through the connection's writer with a new data key, under the same name, which depends on the digest and the
+// name key only (R-STOR-087). It holds one part in memory. The source is read through its connection's reader, bound to the digest:
+// on an encrypted source decrypted and authenticated. A source that is gone, has another length or digest, or whose record or
+// segments a reason that marks refuses is an *errSource.
+func (s *Scrubber) write(ctx context.Context, from *blob.Connection, src blob.Copy, target *blob.Connection, key string, d blob.Digest, th *throttle) (written, error) {
+	size, err := plainSize(from, src)
+	if err != nil {
+		return written{}, &errSource{status: blob.CopyCorrupt}
+	}
+	if target.Encrypted() {
+		return s.writeSealed(ctx, from, src, target, key, d, size, th)
+	}
 	part := blob.PartSize(size, s.o.PartSize)
 	if size <= part {
-		data, err := readSource(ctx, from, src, nil, size, th)
+		data, err := readSource(ctx, from, src, d, size, nil, size, th)
 		if err != nil {
-			return int64(len(data)), err
+			return written{moved: int64(len(data))}, err
 		}
 		if blob.Digest(sha256.Sum256(data)) != d {
-			return size, &errSource{status: blob.CopyCorrupt}
+			return written{moved: size}, &errSource{status: blob.CopyCorrupt}
 		}
-		return size, target.Objects().Put(ctx, key, bytes.NewReader(data), size, payloadChecksum(target, data, d), nil)
+		return written{moved: size, stored: size}, target.Objects().Put(ctx, key, bytes.NewReader(data), size, payloadChecksum(target, data, d), nil)
 	}
-	return s.writeParts(ctx, from, src, target, key, d, part, th)
+	moved, err := s.writeParts(ctx, from, src, target, key, d, size, part, th)
+	return written{moved: moved, stored: size}, err
+}
+
+// writeSealed is write onto an encrypted target: the source read whole, throttled, into the target's writer, which hashes it, seals
+// it under a new data key and completes nothing of a stream that is not the blob (Q-STOR-308, Q-STOR-440).
+func (s *Scrubber) writeSealed(ctx context.Context, from *blob.Connection, src blob.Copy, target *blob.Connection, key string, d blob.Digest,
+	size int64, th *throttle,
+) (written, error) {
+	body, _, err := from.ReadBlob(ctx, d, size, src, nil, true)
+	if err != nil {
+		return written{}, sourceErr(ctx, err)
+	}
+	defer func() { _ = body.Close() }()
+	cr := &countingReader{r: &throttled{ctx: ctx, r: body, th: th}}
+	cw, err := target.WriteSealedStream(ctx, d, size, cr, s.o.PartSize)
+	var se *blob.StreamSourceError
+	switch {
+	case errors.As(err, &se) && errors.Is(se.Err, blob.ErrStreamNotBlob):
+		return written{moved: cr.n}, &errSource{status: blob.CopyCorrupt}
+	case errors.As(err, &se):
+		return written{moved: cr.n}, sourceErr(ctx, se.Err)
+	case err != nil:
+		return written{moved: cr.n}, err
+	case cw.Key != key:
+		return written{moved: cr.n}, fmt.Errorf("connection %s names the blob %s, its copy row %s", target.ID(), cw.Key, key)
+	}
+	return written{moved: cr.n, stored: cw.StoredSize, keyID: cw.StorageKeyID}, nil
+}
+
+// sourceErr is a failure of reading a repair's source: evidence about the source copy (no such object, a reason of the stored format
+// that marks) as an *errSource, anything else as it is.
+func sourceErr(ctx context.Context, err error) error {
+	switch judge(ctx, err) {
+	case outcomeMissing:
+		return &errSource{status: blob.CopyMissing}
+	case outcomeCorrupt:
+		return &errSource{status: blob.CopyCorrupt}
+	}
+	return err
+}
+
+// countingReader counts the bytes read through it.
+type countingReader struct {
+	r io.Reader
+	n int64
+}
+
+func (c *countingReader) Read(p []byte) (int, error) {
+	n, err := c.r.Read(p)
+	c.n += int64(n)
+	return n, err
 }
 
 func (s *Scrubber) writeParts(ctx context.Context, from *blob.Connection, src blob.Copy, target *blob.Connection, key string, d blob.Digest,
-	part int64, th *throttle,
+	size, part int64, th *throttle,
 ) (moved int64, err error) {
 	objects := target.Objects()
 	algorithm := target.PayloadChecksum()
@@ -144,9 +212,9 @@ func (s *Scrubber) writeParts(ctx context.Context, from *blob.Connection, src bl
 	}()
 	whole := sha256.New()
 	var parts []blob.Part
-	for off, number := int64(0), 1; off < src.StoredSize; off, number = off+part, number+1 {
-		n := min(part, src.StoredSize-off)
-		data, rerr := readSource(ctx, from, src, &blob.ByteRange{Offset: off, Length: n}, n, th)
+	for off, number := int64(0), 1; off < size; off, number = off+part, number+1 {
+		n := min(part, size-off)
+		data, rerr := readSource(ctx, from, src, d, size, &blob.ByteRange{Offset: off, Length: n}, n, th)
 		moved += int64(len(data))
 		if rerr != nil {
 			return moved, rerr
@@ -166,20 +234,18 @@ func (s *Scrubber) writeParts(ctx context.Context, from *blob.Connection, src bl
 	return moved, objects.CompleteMultipart(ctx, key, id, parts)
 }
 
-// readSource reads n bytes of a source copy (all of it when rng is nil) into memory. A source the store does not have is an
-// *errSource; a whole read of another length is one too; a cut ranged read is an error, not evidence.
-func readSource(ctx context.Context, from *blob.Connection, src blob.Copy, rng *blob.ByteRange, n int64, th *throttle) ([]byte, error) {
-	body, _, err := from.Read(ctx, src, rng)
-	if errors.Is(err, blob.ErrNotFound) {
-		return nil, &errSource{status: blob.CopyMissing}
-	}
+// readSource reads n bytes of the blob d of size bytes from a source copy (all of it when rng is nil) into memory, through the
+// connection's reader bound to the digest. A source the store does not have, or whose stored format a reason that marks refuses, is
+// an *errSource; a whole read of another length is one too; a cut ranged read is an error, not evidence.
+func readSource(ctx context.Context, from *blob.Connection, src blob.Copy, d blob.Digest, size int64, rng *blob.ByteRange, n int64, th *throttle) ([]byte, error) {
+	body, _, err := from.ReadBlob(ctx, d, size, src, rng, rng == nil)
 	if err != nil {
-		return nil, err
+		return nil, sourceErr(ctx, err)
 	}
 	defer func() { _ = body.Close() }()
 	buf := bytes.NewBuffer(make([]byte, 0, n))
 	if _, err := io.Copy(buf, &throttled{ctx: ctx, r: io.LimitReader(body, n+1), th: th}); err != nil {
-		return buf.Bytes(), err
+		return buf.Bytes(), sourceErr(ctx, err)
 	}
 	if int64(buf.Len()) != n {
 		if rng == nil {

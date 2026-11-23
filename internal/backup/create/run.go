@@ -26,6 +26,8 @@ type runState struct {
 
 	started time.Time
 	res     *backup.Result
+	// staying and configured are the ids of the configuration's connections with drain: false and of all of them (R-BAK-032).
+	staying, configured map[string]bool
 
 	// Set by the preflight.
 	prev          *previousBackup
@@ -47,6 +49,8 @@ type runState struct {
 	writers   []target.ObjectWriter
 
 	pruneWarned bool
+	// warned is set when the run added a warning of its own to the result: the final list names keys of connections that are gone.
+	warned bool
 }
 
 func (r *runState) fault(ctx context.Context, point string) error {
@@ -152,7 +156,8 @@ func (r *runState) copying(ctx context.Context) error {
 		}
 		return err
 	}
-	return nil
+	// the final blob list from the provisional one and the pins, then the hold released (R-BAK-032)
+	return r.finalList(ctx)
 }
 
 // cleanup releases what an ended run may still hold: open uploads, the snapshot and its connections.
@@ -190,12 +195,13 @@ func (r *runState) abort(ctx context.Context, w target.ObjectWriter) {
 
 // newWriter starts a streaming upload and remembers it, so an ended run aborts what it left open.
 func (r *runState) newWriter(ctx context.Context, key string) (target.ObjectWriter, error) {
-	return r.newWriterHint(ctx, key, 0)
+	return r.newWriterHint(ctx, key, 0, nil)
 }
 
-// newWriterHint is newWriter for an object of known size, so that the adapter picks a part size that fits it.
-func (r *runState) newWriterHint(ctx context.Context, key string, size int64) (target.ObjectWriter, error) {
-	w, err := r.d.Target.Writer(ctx, key, target.PutOptions{SizeHint: size})
+// newWriterHint is newWriter for an object of known size, so that the adapter picks a part size that fits it, with the user
+// metadata md (an encrypted copy's record, R-BAK-031).
+func (r *runState) newWriterHint(ctx context.Context, key string, size int64, md map[string]string) (target.ObjectWriter, error) {
+	w, err := r.d.Target.Writer(ctx, key, target.PutOptions{SizeHint: size, Metadata: md})
 	if err != nil {
 		return nil, err
 	}

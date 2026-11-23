@@ -104,9 +104,9 @@ func (q *Queries) DeleteCollectedCopies(ctx context.Context, arg DeleteCollected
 }
 
 const sweepAdoptCopy = `-- name: SweepAdoptCopy :execrows
-INSERT INTO blob_copies (sha256, connection_id, object_key, stored_size, state, created_at, checked_at, state_changed_at)
+INSERT INTO blob_copies (sha256, connection_id, object_key, stored_size, storage_key_id, state, created_at, checked_at, state_changed_at)
 VALUES ($1::bytea, $2::text, $3::text, $4::bigint,
-        $5::text, to_timestamp($6::float8), now(), now())
+        NULLIF($5::text, ''), $6::text, to_timestamp($7::float8), now(), now())
 ON CONFLICT DO NOTHING
 `
 
@@ -115,19 +115,22 @@ type SweepAdoptCopyParams struct {
 	ConnectionID string
 	ObjectKey    string
 	StoredSize   int64
+	StorageKeyID string
 	State        string
 	WrittenUnix  float64
 }
 
 // The adoption of an object of a live blob without a copy row (R-STOR-026), in the transaction that holds the blob's mark lock
-// (LockBlobForMark): present and not verified, or corrupt when its size is not the blob's. created_at is when the store says the
-// object was written.
+// (LockBlobForMark): present and not verified, or corrupt when its size is not the blob's stored size. created_at is when the store
+// says the object was written. On an encrypted connection storage_key_id is the storage key its record names (R-STOR-087); empty is
+// NULL.
 func (q *Queries) SweepAdoptCopy(ctx context.Context, arg SweepAdoptCopyParams) (int64, error) {
 	result, err := q.db.Exec(ctx, sweepAdoptCopy,
 		arg.Sha256,
 		arg.ConnectionID,
 		arg.ObjectKey,
 		arg.StoredSize,
+		arg.StorageKeyID,
 		arg.State,
 		arg.WrittenUnix,
 	)
@@ -181,6 +184,7 @@ func (q *Queries) SweepClaimOrphan(ctx context.Context, arg SweepClaimOrphanPara
 
 const sweepLookup = `-- name: SweepLookup :many
 SELECT k.object_key::text AS object_key, (c.sha256 IS NOT NULL)::boolean AS has_copy, COALESCE(c.state, '')::text AS copy_state,
+       COALESCE(c.sha256, '\x'::bytea)::bytea AS copy_sha256,
        COALESCE(c.stored_size, -1)::bigint AS stored_size, COALESCE(b.state, '')::text AS blob_state, COALESCE(b.size, -1)::bigint AS blob_size
   FROM (SELECT unnest($1::text[]) AS object_key, unnest($2::bytea[]) AS sha256) AS k
   LEFT JOIN blob_copies c ON c.connection_id = $3::text AND c.object_key = k.object_key
@@ -197,13 +201,15 @@ type SweepLookupRow struct {
 	ObjectKey  string
 	HasCopy    bool
 	CopyState  string
+	CopySha256 []byte
 	StoredSize int64
 	BlobState  string
 	BlobSize   int64
 }
 
 // The rows of the objects of one page of an orphan sweep's listing (R-STOR-026): the copy by its name on the connection
-// (blob_copies_key) and the blob by the digest the name carries. An absent row is has_copy false or an empty blob_state.
+// (blob_copies_key) with the digest it stands for, and the blob by the digest the name carries (a keyed name carries none: the sweep
+// asks again with the digest the object's record names, R-STOR-087). An absent row is has_copy false or an empty blob_state.
 func (q *Queries) SweepLookup(ctx context.Context, arg SweepLookupParams) ([]SweepLookupRow, error) {
 	rows, err := q.db.Query(ctx, sweepLookup, arg.Keys, arg.Digests, arg.ConnectionID)
 	if err != nil {
@@ -217,6 +223,7 @@ func (q *Queries) SweepLookup(ctx context.Context, arg SweepLookupParams) ([]Swe
 			&i.ObjectKey,
 			&i.HasCopy,
 			&i.CopyState,
+			&i.CopySha256,
 			&i.StoredSize,
 			&i.BlobState,
 			&i.BlobSize,

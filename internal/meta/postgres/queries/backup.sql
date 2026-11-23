@@ -75,14 +75,20 @@ UPDATE backup_run
  WHERE id = sqlc.arg(id)::text::uuid AND state IN ('starting', 'snapshot', 'copying', 'finalizing', 'pruning');
 
 -- name: InsertBackupPins :exec
--- The to-copy set (R-BAK-006 step 2), in batches. digests and sizes are parallel arrays.
-INSERT INTO backup_blob_pin (run_id, sha256, size)
-SELECT sqlc.arg(run_id)::text::uuid, unnest(sqlc.arg(digests)::bytea[]), unnest(sqlc.arg(sizes)::bigint[])
+-- The to-copy set (R-BAK-006 step 2), in batches. digests, sizes and pools are parallel arrays; a pool is empty (NULL) for a new
+-- digest and the inherited pool object for a re-pooled one (R-BAK-032, Q-BAK-80).
+INSERT INTO backup_blob_pin (run_id, sha256, size, pool)
+SELECT sqlc.arg(run_id)::text::uuid, d.sha256, d.size, NULLIF(d.pool, '')
+  FROM (SELECT unnest(sqlc.arg(digests)::bytea[]) AS sha256, unnest(sqlc.arg(sizes)::bigint[]) AS size,
+               unnest(sqlc.arg(pools)::text[]) AS pool) AS d
 ON CONFLICT DO NOTHING;
 
--- name: DeleteBackupPins :execrows
--- Pins are deleted in batches of up to 1,000 after their copy is confirmed (R-BAK-006).
-DELETE FROM backup_blob_pin WHERE run_id = sqlc.arg(run_id)::text::uuid AND sha256 = ANY(sqlc.arg(digests)::bytea[]);
+-- name: SetBackupPinPools :execrows
+-- The pool objects of confirmed pins, in batches of up to 1,000 (R-BAK-006 "Confirmation", R-BAK-032): the pins stay until the
+-- final blob list is written from them.
+UPDATE backup_blob_pin p SET pool = d.pool
+  FROM (SELECT unnest(sqlc.arg(digests)::bytea[]) AS sha256, unnest(sqlc.arg(pools)::text[]) AS pool) AS d
+ WHERE p.run_id = sqlc.arg(run_id)::text::uuid AND p.sha256 = d.sha256;
 
 -- name: DeleteBackupPinsOfRun :execrows
 DELETE FROM backup_blob_pin WHERE run_id = sqlc.arg(run_id)::text::uuid;

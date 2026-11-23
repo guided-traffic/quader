@@ -18,6 +18,9 @@ const (
 	ResultCorrupt = "corrupt"
 	ResultMissing = "missing"
 	ResultError   = "error"
+	// ResultUnknownKey is a copy on an encrypted connection whose record names a storage key the replica does not hold: no evidence
+	// about the object, so it is not marked and stays due (R-STOR-087, Q-STOR-311).
+	ResultUnknownKey = "unknown_key"
 )
 
 // The outcomes of quader_storage_scrub_repairs_total (Q-STOR-265).
@@ -38,7 +41,7 @@ type Metrics struct {
 func NewMetrics(m *observability.Metrics) *Metrics {
 	return &Metrics{
 		copies: m.NewCounterVec("quader_storage_scrub_copies_total",
-			"Copies the scrub read to their end, by connection and result: ok, corrupt, missing or error (R-STOR-027).", "connection", "result"),
+			"Copies the scrub read to their end, by connection and result: ok, corrupt, missing, error or unknown_key (R-STOR-027, R-STOR-087).", "connection", "result"),
 		bytes: m.NewCounterVec("quader_storage_scrub_read_bytes_total",
 			"Bytes the scrub read from a connection, its repairs' reads included (R-STOR-027).", "connection"),
 		repairs: m.NewCounterVec("quader_storage_scrub_repairs_total",

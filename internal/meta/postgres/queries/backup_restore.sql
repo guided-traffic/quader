@@ -137,10 +137,33 @@ SELECT audit_create_partitions(now(), now() + interval '3 months');
 -- name: RestoreRecordConnection :exec
 -- A connection of the restoring installation's configuration (R-BAK-030): storage_connections is transient and comes back
 -- empty, and the fix-up records each connection with the bucket and the prefix the configuration resolves to, so the first
--- replica finds the fixed properties it configures (storage.md R-STOR-051).
-INSERT INTO storage_connections (id, bucket, prefix)
-VALUES (sqlc.arg(id)::text, sqlc.arg(bucket)::text, sqlc.arg(prefix)::text)
+-- replica finds the fixed properties it configures (storage.md R-STOR-051), encrypted and keyed_names among them (R-STOR-075).
+INSERT INTO storage_connections (id, bucket, prefix, encrypted, keyed_names)
+VALUES (sqlc.arg(id)::text, sqlc.arg(bucket)::text, sqlc.arg(prefix)::text, sqlc.arg(encrypted)::boolean, sqlc.arg(keyed_names)::boolean)
 ON CONFLICT (id) DO NOTHING;
+
+-- name: RestoreRecordCopyRows :execrows
+-- The copies of a page of restored blobs on an encrypted connection step 3 wrote into (backup-and-restore.md R-BAK-031): the name its
+-- naming function gives each digest (a keyed name SQL cannot compute), S(L), and the storage key the object's record names; present
+-- for a live blob whose object step 3 wrote, missing for one the backup listed as damaged; verified as RestoreRecordCopies.
+INSERT INTO blob_copies (sha256, connection_id, object_key, stored_size, storage_key_id, state, created_at, verified_at, state_changed_at)
+SELECT b.sha256, sqlc.arg(connection_id)::text, d.object_key, d.stored_size, NULLIF(d.storage_key_id, ''),
+       CASE WHEN b.content_status = 'ok' THEN 'present' ELSE 'missing' END,
+       now(),
+       CASE WHEN b.content_status = 'ok' AND sqlc.arg(verified)::boolean THEN sqlc.arg(verified_at)::text::timestamptz END,
+       now()
+  FROM (SELECT unnest(sqlc.arg(digests)::bytea[]) AS sha256, unnest(sqlc.arg(object_keys)::text[]) AS object_key,
+               unnest(sqlc.arg(stored_sizes)::bigint[]) AS stored_size, unnest(sqlc.arg(storage_key_ids)::text[]) AS storage_key_id) AS d
+  JOIN blobs b ON b.sha256 = d.sha256 AND b.state = 'live'
+ON CONFLICT DO NOTHING;
+
+-- name: RestoreInsertStorageKey :exec
+-- A key the restore drew for the encrypted connection it wrote into, whose id the backup holds no key of (R-BAK-031, Q-BAK-82): the
+-- active one of its kind, sealed with the key ring under its identifier (storage.md R-STOR-083).
+INSERT INTO storage_keys (key_id, connection_id, kind, generation, sealed_key, state)
+VALUES (sqlc.arg(key_id)::text, sqlc.arg(connection_id)::text, sqlc.arg(kind)::text, sqlc.arg(generation)::integer,
+        sqlc.arg(sealed_key)::text, 'active')
+ON CONFLICT (key_id) DO NOTHING;
 
 -- name: RestoreRecordCopies :execrows
 -- A copy of every restored live blob on the connection step 3 wrote into (R-BAK-030): present for a blob whose object it wrote,

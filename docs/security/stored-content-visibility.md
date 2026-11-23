@@ -2,8 +2,9 @@
 
 Status: specified on 2026-11-22 ([storage.md](../spec/storage.md) R-STOR-075, R-STOR-086, R-STOR-088;
 [backup-and-restore.md](../spec/backup-and-restore.md) R-BAK-031; [bastion.md](../spec/bastion.md) R-BAS-061). The Bastion's cache with a key
-is built ([security/bastion.md](bastion.md#with-a-cache-key)); the encrypted connections of the main installation are not, and until they are a
-provider sees every blob in the clear under its SHA-256, as [object-store-connections.md](object-store-connections.md) says.
+is built ([security/bastion.md](bastion.md#with-a-cache-key)); the encrypted connections of the main installation are built (package 3) and
+their backups too (package 4), but the Helm chart refuses `encrypted: true` until package 6, so until then a provider of an installation of the
+chart sees every blob in the clear under its SHA-256, as [object-store-connections.md](object-store-connections.md) says.
 
 The perspective of this page is a party that can list and read a bucket but holds no key: the provider and its operators, a principal its
 policies admit, whoever copied the bucket, a reader of a backup's target, a holder of a Bastion's cache store. It says what such a party still
@@ -55,8 +56,9 @@ can point at a popular artifact. Live on every connection, encrypted or not; no 
 ### H-1314 · The backup's pool names blobs by their digest
 
 Component: the pool of a backup ([backup-and-restore.md](../spec/backup-and-restore.md) R-BAK-031, Q-BAK-65). Subject: blobs of encrypted
-connections in a backup. A pool object keeps the ciphertext and the record but is named `pool/sha256/<digest>.<key id>` (R-BAK-032, a name
-that gains the storage key's identifier so that a retired connection's keys can be destroyed, specified, not built), so a reader of the backup's
+connections in a backup. A pool object keeps the ciphertext and the record but is named `pool/sha256/<h0h1>/<h2h3>/<digest>.<key id>`
+(R-BAK-032, built with package 4: a name that carries the storage key's identifier so that a retired connection's keys can be destroyed), so a
+reader of the backup's
 target confirms known files by name, which the keyed names hide at the connection. Live for every backup of an installation with an encrypted
 connection; it adds nothing while the database files beside it are readable (H-48), and becomes the leak once R-BAK-027 encrypts them. Naming
 the pool by the copies' keyed names is the owner's open question (Q-BAK-65 (b)).

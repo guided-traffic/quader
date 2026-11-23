@@ -103,11 +103,24 @@ const (
 	PhaseFixed  = "fixed"
 )
 
-// RestoreMarker is the value of system_state key restore_in_progress (R-BAK-021 step 2): {"backupId", "phase", "startedAt"}.
+// RestoreMarker is the value of system_state key restore_in_progress (R-BAK-021 step 2): {"backupId", "phase", "startedAt"}, and the
+// storage keys the restore drew for the encrypted connection it writes into when the backup holds none of its id, sealed with the key
+// ring, which the fix-ups insert into storage_keys once the load has replaced the table (backup-and-restore.md R-BAK-031, Q-BAK-82).
 type RestoreMarker struct {
-	BackupID  string    `json:"backupId"`
-	Phase     string    `json:"phase"`
-	StartedAt time.Time `json:"startedAt"`
+	BackupID    string       `json:"backupId"`
+	Phase       string       `json:"phase"`
+	StartedAt   time.Time    `json:"startedAt"`
+	StorageKeys []RestoreKey `json:"storageKeys,omitempty"`
+}
+
+// RestoreKey is a row of storage_keys a restore drew: its identifier, connection, kind and generation, and its value sealed with the
+// key ring under its identifier (storage.md R-STOR-083).
+type RestoreKey struct {
+	KeyID      string `json:"keyId"`
+	Connection string `json:"connection"`
+	Kind       string `json:"kind"`
+	Generation int    `json:"generation"`
+	Sealed     string `json:"sealed"`
 }
 
 // RestoreMigration is the restore mode of the migration runner (R-BAK-023, R-ARCH-026 "Restore mode").

@@ -246,7 +246,8 @@ func (q *Queries) DamagedBlobsByCopy(ctx context.Context, arg DamagedBlobsByCopy
 }
 
 const scrubCopies = `-- name: ScrubCopies :many
-SELECT c.connection_id, c.object_key, c.stored_size, c.state, c.verified_at, c.checked_at, c.state_changed_at,
+SELECT c.connection_id, c.object_key, c.stored_size, COALESCE(c.storage_key_id, '')::text AS storage_key_id, c.state, c.verified_at,
+       c.checked_at, c.state_changed_at,
        (EXTRACT(EPOCH FROM c.state_changed_at) * 1000000)::bigint AS state_changed_us,
        (EXTRACT(EPOCH FROM c.created_at) * 1000000)::bigint AS created_us,
        (sc.retired_at IS NOT NULL)::boolean AS retired
@@ -260,6 +261,7 @@ type ScrubCopiesRow struct {
 	ConnectionID   string
 	ObjectKey      string
 	StoredSize     int64
+	StorageKeyID   string
 	State          string
 	VerifiedAt     pgtype.Timestamptz
 	CheckedAt      pgtype.Timestamptz
@@ -270,7 +272,7 @@ type ScrubCopiesRow struct {
 }
 
 // The copies of one blob with what the scrub's repair and the recheck compare: the time of the copy's last change of state and
-// of its write, in microseconds.
+// of its write, in microseconds, and the storage key of a copy on an encrypted connection (empty on a plain one).
 func (q *Queries) ScrubCopies(ctx context.Context, sha256 []byte) ([]ScrubCopiesRow, error) {
 	rows, err := q.db.Query(ctx, scrubCopies, sha256)
 	if err != nil {
@@ -284,6 +286,7 @@ func (q *Queries) ScrubCopies(ctx context.Context, sha256 []byte) ([]ScrubCopies
 			&i.ConnectionID,
 			&i.ObjectKey,
 			&i.StoredSize,
+			&i.StorageKeyID,
 			&i.State,
 			&i.VerifiedAt,
 			&i.CheckedAt,
@@ -512,15 +515,17 @@ func (q *Queries) ScrubOverdue(ctx context.Context, arg ScrubOverdueParams) (int
 }
 
 const scrubRecordWhole = `-- name: ScrubRecordWhole :execrows
-UPDATE blob_copies SET state = 'present', stored_size = $1::bigint, verified_at = now(), checked_at = now(),
+UPDATE blob_copies SET state = 'present', stored_size = $1::bigint,
+       storage_key_id = COALESCE(NULLIF($2::text, ''), storage_key_id), verified_at = now(), checked_at = now(),
        state_changed_at = now()
- WHERE sha256 = $2::bytea AND connection_id = $3::text AND state = $4::text
+ WHERE sha256 = $3::bytea AND connection_id = $4::text AND state = $5::text
    AND state IN ('missing', 'corrupt')
-   AND (EXTRACT(EPOCH FROM state_changed_at) * 1000000)::bigint = $5::bigint
+   AND (EXTRACT(EPOCH FROM state_changed_at) * 1000000)::bigint = $6::bigint
 `
 
 type ScrubRecordWholeParams struct {
 	StoredSize     int64
+	StorageKeyID   string
 	Sha256         []byte
 	ConnectionID   string
 	FromState      string
@@ -529,10 +534,12 @@ type ScrubRecordWholeParams struct {
 
 // A copy marked missing or corrupt was shown whole (written again and read back by the scrub's repair, or read to its end by a
 // recheck): it is present and verified, but only while it is still the row that was found damaged (the same state and the same
-// time of that change), so a row that collection dropped and a commit wrote again is never taken for it.
+// time of that change), so a row that collection dropped and a commit wrote again is never taken for it. A repair on an encrypted
+// connection names the storage key it wrapped the new data key under (R-STOR-087); empty keeps the row's.
 func (q *Queries) ScrubRecordWhole(ctx context.Context, arg ScrubRecordWholeParams) (int64, error) {
 	result, err := q.db.Exec(ctx, scrubRecordWhole,
 		arg.StoredSize,
+		arg.StorageKeyID,
 		arg.Sha256,
 		arg.ConnectionID,
 		arg.FromState,

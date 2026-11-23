@@ -7,7 +7,8 @@ implementation, [stored-content-encryption.md](../developer/stored-content-encry
 Bastion's cache seals with it once its chart gives it a key, its record in front of each object's body rather than in metadata
 ([bastion.md](bastion.md#with-a-cache-key), Q-BAS-212). The main installation writes and reads through it on every connection with
 `encrypted: true` since package 3 (2026-11-22, [stored-content-encryption.md](../developer/stored-content-encryption.md#package-3-encrypted-connections-as-built)):
-the store's writer, its reader and the upload sessions; the jobs of R-STOR-087 learn it with package 4 (H-1410). On a plain connection
+the store's writer, its reader and the upload sessions; the jobs of R-STOR-087, the backup's pool and the restore since package 4
+(2026-11-23, [stored-content-encryption.md](../developer/stored-content-encryption.md#package-4-as-built)). On a plain connection
 [object-store-connections.md](object-store-connections.md) describes what a reader of a bucket can do: read every blob, and replace one that
 only a full read then finds.
 
@@ -117,28 +118,7 @@ commitment in the body is needed for it (Q-BAS-234).
 Component: the record in the object's metadata (the owner's decision 2 (e), [storage.md](../spec/storage.md) R-STOR-077). Subject: copies of a
 bucket made outside Quader. A tool that copies objects to a file system or another store without their user metadata (many do by default when
 the target is a disk) loses every record and with it every data key: the copy is ciphertext nobody can open. Quader's own copies keep it (the
-reconciliation writes records, a backup's pool keeps them, `quader admin storage offline pull` writes each record beside its object, the last
-two with packages 4 and 6). Live for every operator who backs up an encrypted bucket with a tool of his own; the manual says to use a copy that
+reconciliation writes records, a backup's pool keeps them (package 4), `quader admin storage offline pull` writes each record beside its object
+(package 6, not built)). Live for every operator who backs up an encrypted bucket with a tool of his own; the manual says to use a copy that
 keeps metadata, and `offline pull` once it is built.
 
-### H-1410 · Until the jobs read the stored format, an encrypted copy is neither scrubbed nor repaired nor backed up
-
-Component: the stage-1 jobs over an encrypted connection after package 3 and before package 4 ([storage.md](../spec/storage.md) R-STOR-087,
-[Q-STOR-384](../spec/storage.md#q-stor-384--until-the-jobs-read-the-stored-format-each-passes-over-or-refuses-an-encrypted-connection)).
-Subject: every copy on an encrypted connection. The scrub passes over every encrypted connection, so a damaged copy there is found only by a
-download that reads it whole, and a copy no client reads is never checked; its overdue copies are not counted either. The reconciliation does
-not fill an encrypted connection (the connection's client refuses its plain write, Q-STOR-382), so a blob lies on an encrypted connection only
-where a commit wrote it, and a corrupt encrypted copy is not repaired. A backup refuses to run while a connection is encrypted, and a restore
-refuses an encrypted first connection. Live on every installation with `encrypted: true` until package 4 lands; what makes it real is a
-damaged or lost encrypted object whose blob no other connection holds. `storage.replication.min_copies` equal to the number of connections
-narrows it: every commit then writes every connection itself.
-
-### H-1411 · The orphan sweep of a connection without keyed names adopts an unplaced encrypted object as corrupt
-
-Component: the orphan sweep ([storage.md](../spec/storage.md) R-STOR-026, R-STOR-087, [sweep.go](../../internal/blob/sweep.go)) on an encrypted
-connection with `keyed_names: false`, before package 4. Subject: an object below `sha256/` of a live blob that has no copy row on the connection
-(a write whose commit crashed after the object, a restore). The stage-1 sweep compares the listed size with the blob's plain size, which an
-encrypted object never has (`S(L)`), and records the copy `corrupt` with the plain size; its repair is refused (Q-STOR-382). The object itself
-is neither changed nor deleted, and the blob stays readable from every other present copy. With keyed names (the default) the sweep lists
-nothing below `sha256/` of the connection and reports `keyed/` as a foreign key, never deleting there. Live only with `keyed_names: false`
-until package 4 teaches the sweep to read the record.

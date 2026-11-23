@@ -288,6 +288,7 @@ type BackupBlobPin struct {
 	RunID  pgtype.UUID
 	Sha256 []byte
 	Size   int64
+	Pool   pgtype.Text
 }
 
 type BackupRun struct {

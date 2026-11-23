@@ -3,6 +3,7 @@ package keys
 import (
 	"errors"
 	"fmt"
+	"io"
 
 	"github.com/guided-traffic/quader/internal/blob/blobcrypt"
 	"github.com/guided-traffic/quader/internal/secrets"
@@ -78,6 +79,24 @@ func openKey(ring Sealer, id, sealed string) (*blobcrypt.StorageKey, error) {
 	}
 	defer clear(raw)
 	return blobcrypt.NewStorageKey(id, raw)
+}
+
+// OpenStorageKey opens the sealed value of the row id of storage_keys (a storage key or a name key) with the ring: what a reader of a
+// backup's own storage_keys does, the restore and `quader backup verify --deep --key-ring` (backup-and-restore.md R-BAK-031). A key
+// the ring cannot open is a Refusal naming the identifier and the root key. The caller destroys the key.
+func OpenStorageKey(ring Sealer, id, sealed string) (*blobcrypt.StorageKey, error) {
+	return openKey(ring, id, sealed)
+}
+
+// SealStorageKey seals k for the row id of storage_keys with the ring and destroys k: the restore Job draws the keys of an encrypted
+// connection it restores into and whose id the backup does not hold, and the restored database inserts them (R-BAK-031, Q-BAK-82).
+func SealStorageKey(ring Sealer, id string, k blobcrypt.Key) (string, error) {
+	return sealKey(ring, id, k)
+}
+
+// NewKeyID draws the identifier of a new key of the kind (KindStorage or KindName) for the connection and generation from random.
+func NewKeyID(kind, connection string, generation int, random io.Reader) (string, error) {
+	return newID(kind, connection, generation, random)
 }
 
 // openRefusal is the sentence of a key that does not open with the ring at hand.

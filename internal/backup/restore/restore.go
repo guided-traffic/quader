@@ -19,6 +19,7 @@ import (
 	"github.com/guided-traffic/quader/internal/backup/tables"
 	"github.com/guided-traffic/quader/internal/backup/target"
 	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/blobcrypt"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/journal"
 	"github.com/guided-traffic/quader/internal/meta"
@@ -44,6 +45,8 @@ type Deps struct {
 	// Journal builds the revocation journal of a source; nil means this binary cannot read one.
 	Journal func(ctx context.Context, env JournalEnv) (Journal, error)
 	Config  config.Backup
+	// PartSize is storage.object_store.multipart.part_size: the part an encrypted sink's writes hold in memory (R-BAK-031).
+	PartSize int64
 	// Registry classifies the tables; nil means tables.Default().
 	Registry *tables.Registry
 	Log      *slog.Logger
@@ -66,6 +69,19 @@ type Restorer struct {
 	// streamedAll is true when this process wrote every blob of step 3 itself by streaming and hashing it and skipped none:
 	// the fix-up then records the copies verified (Q-BAK-72).
 	streamedAll bool
+	// sinkKeys are the keys of an encrypted sink, drawn the keys the restore opened from its marker, marker the marker of the run
+	// (R-BAK-031, Q-BAK-82).
+	sinkKeys *sinkKeys
+	drawn    []*blobcrypt.StorageKey
+	marker   *postgres.RestoreMarker
+}
+
+// partSize is the part of an encrypted sink's writes.
+func (r *Restorer) partSize() int64 {
+	if r.d.PartSize > 0 {
+		return r.d.PartSize
+	}
+	return 16 << 20
 }
 
 // sink is the connection step 3 writes into: the first of the configuration without drain (R-BAK-030).
@@ -220,6 +236,12 @@ func (r *Restorer) run(ctx context.Context, opts backup.RestoreOptions) (*backup
 		return nil, err
 	}
 	st := &state{id: opts.ID, m: m}
+	defer func() {
+		st.opened.Close()
+		for _, k := range r.drawn {
+			k.Key.Destroy()
+		}
+	}()
 	if done, err := r.alreadyRestored(ctx, opts.ID); err != nil {
 		return nil, err
 	} else if done {
@@ -240,6 +262,9 @@ func (r *Restorer) run(ctx context.Context, opts backup.RestoreOptions) (*backup
 		rep.Journal = "skipped"
 	}
 	r.d.Log.Info("restore checks passed", "backup", opts.ID, "anchored", st.anchored, "snapshot_at", m.SnapshotAt, "schema_step", m.Schema.Step)
+	if st.drawn, err = r.drawKeys(st); err != nil {
+		return nil, err
+	}
 
 	phase := func(name string, fn func() error) error {
 		start := time.Now()
@@ -281,7 +306,7 @@ func (r *Restorer) stepSchema(ctx context.Context, st *state) (*postgres.Restore
 		}
 	}
 	r.hook("step2:anchored")
-	fresh := postgres.RestoreMarker{BackupID: string(st.id), Phase: postgres.PhaseBlobs, StartedAt: r.d.Now().UTC()}
+	fresh := postgres.RestoreMarker{BackupID: string(st.id), Phase: postgres.PhaseBlobs, StartedAt: r.d.Now().UTC(), StorageKeys: st.drawn}
 	if _, err := s.MigrateTo(ctx, postgres.RestoreMigration{UpTo: st.m.Schema.Step, Marker: &fresh, After: func(sr postgres.StepResult) {
 		r.progress()
 		r.hook(fmt.Sprintf("step2:migrated:%d", sr.Version))
@@ -385,10 +410,14 @@ func (r *Restorer) fixupEnv(st *state) fixup.Env {
 		ExcludeRemoteCaches: st.m.Options.ExcludeRemoteCaches, SinkVerified: r.streamedAll,
 	}
 	for _, c := range r.d.Connections {
-		env.Connections = append(env.Connections, fixup.ConnectionRecord{ID: c.ID, Bucket: c.Bucket, Prefix: c.Prefix})
+		env.Connections = append(env.Connections, fixup.ConnectionRecord{ID: c.ID, Bucket: c.Bucket, Prefix: c.Prefix, Encrypted: c.Encrypted, KeyedNames: c.KeyedNames})
 	}
 	if sink, err := r.sink(); err == nil {
 		env.Sink = sink.ID
+		if sink.Encrypted && r.sinkKeys != nil {
+			env.SinkCopies = r.sinkCopies(st, sink)
+			env.StorageKeys = drawnRows(r.marker)
+		}
 	}
 	return env
 }

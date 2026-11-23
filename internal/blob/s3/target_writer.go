@@ -125,7 +125,7 @@ func (w *writer) flush() error {
 		s := t.c.sse()
 		out, err := t.c.api.CreateMultipartUpload(w.ctx, &awss3.CreateMultipartUploadInput{
 			Bucket: &t.c.bucket, Key: &w.key, ContentType: aws.String(contentType(w.opts)), StorageClass: types.StorageClass(t.c.cfg.StorageClass),
-			ServerSideEncryption: s.mode, SSEKMSKeyId: s.key, BucketKeyEnabled: s.bucket,
+			ServerSideEncryption: s.mode, SSEKMSKeyId: s.key, BucketKeyEnabled: s.bucket, Metadata: w.opts.Metadata,
 		})
 		if err != nil {
 			return terr(mapError(w.ctx, "CreateMultipartUpload", w.key, err))

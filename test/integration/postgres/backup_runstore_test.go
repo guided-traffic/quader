@@ -97,11 +97,23 @@ func TestBackupRunStore(t *testing.T) {
 		if !held(d1) || !held(d2) || held(other) {
 			t.Fatalf("pinned digests are held, others are not: %v %v %v", held(d1), held(d2), held(other))
 		}
-		if err := store.DeletePins(ctx, runA, []format.Digest{d1}); err != nil {
+		// a confirmed pin records its pool object and keeps holding its digest: the final blob list is written from the pins, and
+		// the hold ends when it turns 'none' after that list (R-BAK-032)
+		if err := store.SetPinPools(ctx, runA, []format.BlobEntry{{Digest: d1, Pool: format.PoolPlain}, {Digest: d2, Pool: "sk-archive-1-0a1b2c3d"}}); err != nil {
 			t.Fatal(err)
 		}
-		if held(d1) || !held(d2) {
-			t.Fatal("a confirmed pin stops holding its digest")
+		var pools string
+		if err := admin.QueryRow(ctx, `SELECT string_agg(pool, ',' ORDER BY size) FROM quader.backup_blob_pin WHERE run_id = $1`, runA).Scan(&pools); err != nil || pools != "-,sk-archive-1-0a1b2c3d" {
+			t.Fatalf("pools = %q, %v", pools, err)
+		}
+		if !held(d1) || !held(d2) {
+			t.Fatal("a confirmed pin stopped holding its digest before the hold was released")
+		}
+		if err := store.SetHold(ctx, runA, backup.HoldPinned, backup.HoldNone); err != nil {
+			t.Fatal(err)
+		}
+		if held(d1) || held(d2) {
+			t.Fatal("the pins hold their digests after the hold turned none")
 		}
 	})
 

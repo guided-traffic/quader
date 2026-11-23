@@ -170,6 +170,8 @@ func (s *Stage) finish(ctx context.Context, f Fencer, into *backup.Result, scan 
 			BackupID: string(m.BackupID), SnapshotAt: m.SnapshotAt, QuaderVersion: m.Quader.Version, SchemaStep: m.Schema.Step,
 			DatabaseBytes: listing.DatabaseBytes(m), BlobCount: m.Blobs.Referenced, BlobBytes: m.Blobs.ReferencedBytes,
 			Damaged: len(m.Blobs.Damaged) > 0,
+			// the keys the destruction of a retired connection's keys reads (R-BAK-016, R-BAK-032); null without storageKeys
+			PoolKeyIDs: m.PoolKeyIDs(), SealedKeyIDs: m.SealedKeyIDs(),
 		})
 	}
 	if create {

@@ -110,6 +110,39 @@ type Want struct {
 // size its wrap binds; each failure is a refusal with the reason of its step. Nothing of the body is read: a refusal here
 // comes before the first byte. The caller destroys the returned key when its read is done.
 func Open(meta map[string]string, keys KeyLookup, want Want) (DataKey, error) {
+	dk, err := openWrap(meta, keys) // steps 1 to 3
+	if err != nil {
+		return DataKey{}, err
+	}
+	if err := checkCopy(dk, want); err != nil { // steps 4 and 5
+		dk.Key.Destroy()
+		return DataKey{}, err
+	}
+	if err := checkCommitment(meta[MetaCommitment], dk.Key); err != nil { // step 6
+		dk.Key.Destroy()
+		return DataKey{}, err
+	}
+	return dk, nil
+}
+
+// OpenRecord runs steps 1 to 3 and step 6 of R-STOR-077 on an object's metadata and returns the data key with the digest and size
+// its wrap binds, without steps 4 and 5: for a reader that has no copy row to hold the record against and learns the blob from the
+// wrap (the orphan sweep, R-STOR-087, Q-STOR-314). The caller compares the stored size with StoredSize of the returned size itself,
+// and destroys the key.
+func OpenRecord(meta map[string]string, keys KeyLookup) (DataKey, error) {
+	dk, err := openWrap(meta, keys)
+	if err != nil {
+		return DataKey{}, err
+	}
+	if err := checkCommitment(meta[MetaCommitment], dk.Key); err != nil {
+		dk.Key.Destroy()
+		return DataKey{}, err
+	}
+	return dk, nil
+}
+
+// openWrap runs steps 1 to 3: the format, the storage key the record names, the wrap opened under it.
+func openWrap(meta map[string]string, keys KeyLookup) (DataKey, error) {
 	if meta[MetaFormat] != Format { // step 1; a missing key reads as ""
 		return DataKey{}, refuse(ReasonFormat, MetaFormat+" is not "+Format)
 	}
@@ -127,19 +160,27 @@ func Open(meta map[string]string, keys KeyLookup, want Want) (DataKey, error) {
 	if sk.ID != id {
 		return DataKey{}, errors.New("blobcrypt: the key lookup for " + id + " returned the storage key " + sk.ID)
 	}
-	dk, err := unwrap(meta[MetaWrap], sk) // step 3
-	if err != nil {
-		return DataKey{}, err
+	return unwrap(meta[MetaWrap], sk) // step 3
+}
+
+// CheckRecordForm checks, without a key, that metadata carries a record of the stored format in its form (R-STOR-077): the format's
+// identifier, a key identifier, a wrap of WrapSize bytes and a commitment of 32 bytes, both base64url. It is what a reader that holds
+// no storage key can check of a record (a backup's deep verification without the key ring, R-BAK-031, Q-BAK-66); it proves nothing
+// about the bytes.
+func CheckRecordForm(meta map[string]string) error {
+	if meta[MetaFormat] != Format {
+		return refuse(ReasonFormat, MetaFormat+" is not "+Format)
 	}
-	if err := checkCopy(dk, want); err != nil { // steps 4 and 5
-		dk.Key.Destroy()
-		return DataKey{}, err
+	if !ValidKeyID(meta[MetaKey]) {
+		return refuse(ReasonRecord, MetaKey+" is missing or is no key identifier")
 	}
-	if err := checkCommitment(meta[MetaCommitment], dk.Key); err != nil { // step 6
-		dk.Key.Destroy()
-		return DataKey{}, err
+	if w, err := b64().DecodeString(meta[MetaWrap]); err != nil || len(w) != WrapSize {
+		return refuse(ReasonRecord, MetaWrap+" is missing or is not "+strconv.Itoa(WrapSize)+" bytes of base64url")
 	}
-	return dk, nil
+	if c, err := b64().DecodeString(meta[MetaCommitment]); err != nil || len(c) != 32 {
+		return refuse(ReasonCommitment, MetaCommitment+" is missing or is not 32 bytes of base64url")
+	}
+	return nil
 }
 
 // unwrap opens W under the storage key it names (step 3).

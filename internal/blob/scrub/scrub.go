@@ -87,12 +87,15 @@ const (
 // ConnectionResult is what a run did on one connection.
 type ConnectionResult struct {
 	Connection string `json:"connection"`
-	// Read is the number of copies read; Verified, Corrupt, Missing and Errors split it by result.
-	Read     int64 `json:"read"`
-	Verified int64 `json:"verified"`
-	Corrupt  int64 `json:"corrupt"`
-	Missing  int64 `json:"missing"`
-	Errors   int64 `json:"errors"`
+	// Read is the number of copies read; Verified, Corrupt, Missing, Errors and UnknownKey split it by result. UnknownKey counts the
+	// copies on an encrypted connection whose record names a storage key this replica does not hold: not marked, still due
+	// (R-STOR-087, Q-STOR-311).
+	Read       int64 `json:"read"`
+	Verified   int64 `json:"verified"`
+	Corrupt    int64 `json:"corrupt"`
+	Missing    int64 `json:"missing"`
+	Errors     int64 `json:"errors"`
+	UnknownKey int64 `json:"unknownKey"`
 	// Bytes is what the reader moved, its repairs included.
 	Bytes int64 `json:"bytes"`
 	// Repaired and RepairsFailed count the damaged copies the run replaced, or could not, from another connection.
@@ -259,7 +262,7 @@ func (s *Scrubber) lookAgain(ctx context.Context, c *blob.Connection, g Gone, th
 		return ""
 	case outcomeOK:
 		r.MissingLooked++
-		if ok, werr := s.o.Ledger.Whole(ctx, g.Digest, c.ID(), blob.CopyMissing, g.StateChangedUs, g.StoredSize); werr == nil && ok {
+		if ok, werr := s.o.Ledger.Whole(ctx, g.Digest, c.ID(), blob.CopyMissing, g.StateChangedUs, g.StoredSize, ""); werr == nil && ok {
 			r.MissingFound++
 			s.o.Log.Info("the object of a copy marked missing is whole again", "connection", c.ID(), "sha256", g.Digest.Hex())
 		}
@@ -309,6 +312,12 @@ func (s *Scrubber) copy(ctx context.Context, c *blob.Connection, due Due, th *th
 		if errors.Is(err, blob.ErrCircuitOpen) {
 			return EndedCircuitOpen
 		}
+	case outcomeUnknownKey:
+		r.Read++
+		r.UnknownKey++
+		s.o.Metrics.copy(c.ID(), ResultUnknownKey)
+		s.o.Log.Warn("the record of a copy names a storage key this replica does not hold; it is not marked and stays due until the export of the storage keys is imported",
+			"connection", c.ID(), "sha256", due.Digest.Hex(), "error", err)
 	}
 	return ""
 }

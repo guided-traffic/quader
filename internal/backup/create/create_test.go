@@ -82,7 +82,8 @@ func TestR_BAK_007_HoldProtocolOrder(t *testing.T) {
 	if _, err := p.Create(context.Background(), backup.CreateOptions{}); err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"hold-all=all", "snapshot=all", "pins-committed=all", "hold-pinned=pinned", "copied=none", "finalizing=none"}
+	// R-BAK-007 step 5, R-BAK-032: the pins hold until the final blob list is written from them, at the end of the phase copying
+	want := []string{"hold-all=all", "snapshot=all", "pins-committed=all", "hold-pinned=pinned", "copied=pinned", "finalizing=none"}
 	if !slices.Equal(seen, want) {
 		t.Fatalf("hold at the points = %v, want %v", seen, want)
 	}
@@ -154,7 +155,7 @@ func TestR_BAK_006_ServerSideAndStreamingCopy(t *testing.T) {
 		if _, err := e.create(backup.CreateOptions{}); err != nil {
 			t.Fatal(err)
 		}
-		if e.mem.Calls["copy"] != 1 || e.mem.Calls["writer"] != 3 { // blob list and two tables; the blob itself is not streamed
+		if e.mem.Calls["copy"] != 1 || e.mem.Calls["writer"] != 4 { // the provisional and the final blob list and two tables; the blob itself is not streamed
 			t.Fatalf("calls = %v", e.mem.Calls)
 		}
 	})

@@ -49,15 +49,25 @@ func mapSnapshotError(err error) error {
 
 // Open implements Snapshotter.
 func (s *PGSnapshotter) Open(ctx context.Context, opts SnapshotOptions, onLocked func(context.Context) error) (Snapshot, error) {
+	// the storage keys are read inside the snapshot with the key IDs, on the snapshot's own transaction (R-BAK-032)
+	var storageKeys []StorageKeyState
+	reads := func(ctx context.Context, db q.DBTX) ([]string, error) {
+		ids, err := sealedKeyIDs(ctx, db)
+		if err != nil {
+			return nil, err
+		}
+		storageKeys, err = storageKeyStates(ctx, db)
+		return ids, err
+	}
 	snap, err := s.db.OpenBackupSnapshot(ctx, postgres.BackupSnapshotParams{
 		Registry: opts.Registry, ExcludeRemoteCaches: opts.ExcludeRemoteCaches, Parallel: opts.Parallel,
-		LockTimeout: opts.LockTimeout, MigrationWait: opts.MigrationWait, KeyIDs: sealedKeyIDs,
+		LockTimeout: opts.LockTimeout, MigrationWait: opts.MigrationWait, KeyIDs: reads,
 	}, onLocked)
 	if err != nil {
 		return nil, mapSnapshotError(err)
 	}
 	pi := snap.Info()
-	info := SnapshotInfo{At: pi.At, ServerVersion: pi.ServerVersion, KeyIDs: pi.KeyIDs}
+	info := SnapshotInfo{At: pi.At, ServerVersion: pi.ServerVersion, KeyIDs: pi.KeyIDs, StorageKeys: storageKeys}
 	for _, st := range pi.Steps {
 		info.Schema.Steps = append(info.Schema.Steps, format.SchemaStep{Step: st.Step, Name: st.Name, SHA256: st.SHA256})
 		info.Schema.Step = max(info.Schema.Step, st.Step)
@@ -146,5 +156,19 @@ func sealedKeyIDs(ctx context.Context, db q.DBTX) ([]string, error) {
 		out = append(out, id)
 	}
 	slices.Sort(out)
+	return out, nil
+}
+
+// storageKeyStates reads the rows of storage_keys with their states (R-BAK-032): a destroyed key keeps its row and loses its sealed
+// value (storage.md R-STOR-097), every other row is a key the snapshot holds sealed.
+func storageKeyStates(ctx context.Context, db q.DBTX) ([]StorageKeyState, error) {
+	rows, err := q.New(db).BackupStorageKeyStates(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("the storage keys of the snapshot: %w", err)
+	}
+	out := make([]StorageKeyState, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, StorageKeyState{ID: r.KeyID, Destroyed: r.State == "destroyed"})
+	}
 	return out, nil
 }

@@ -11,7 +11,10 @@ data key into its row with the key ring ([storage.md](../spec/storage.md) R-STOR
 `encrypted: true` until package 6, so an installation of the chart has no encrypted connection yet. The destruction of a retired
 connection's keys ([storage.md](../spec/storage.md) R-STOR-097 to R-STOR-103, Q-STOR-309 (b),
 [ADR-255](../decisions.md#adr-255--the-storage-keys-of-a-retired-connection-can-be-destroyed-so-that-what-stays-at-a-provider-becomes-unreadable))
-is specified, not built (package 7, with the pool's part in package 4).
+is specified, not built (package 7); its part in the backup, the storage key in each pool object's name and the manifest's `storageKeys`
+([backup-and-restore.md](../spec/backup-and-restore.md) R-BAK-032), is built with package 4 (2026-11-23). Since package 4 the restore Job
+opens every storage key a backup holds with the key ring before it writes, and draws the keys of an encrypted connection the backup holds
+none of (R-BAK-031).
 
 The perspective of this page is the keys of encrypted connections: where each lies, which process opens it, how it rotates, and what its loss
 or its leak costs and needs. The format they protect is [stored-content-format.md](stored-content-format.md).

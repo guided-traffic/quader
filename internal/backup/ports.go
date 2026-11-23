@@ -47,8 +47,17 @@ type SnapshotInfo struct {
 	Schema        format.SchemaInfo
 	// KeyIDs are the key IDs of the sealed values and canary rows (R-BAK-003).
 	KeyIDs []string
+	// StorageKeys are the rows of storage_keys inside the snapshot, by identifier, with whether each is destroyed: the manifest's
+	// storageKeys.sealed and destroyed (R-BAK-032, storage.md R-STOR-097).
+	StorageKeys []StorageKeyState
 	// Tables are the tables to export (class data and blobs), the largest first.
 	Tables []TableInfo
+}
+
+// StorageKeyState is one row of storage_keys as the snapshot holds it: its identifier and whether it is destroyed.
+type StorageKeyState struct {
+	ID        string
+	Destroyed bool
 }
 
 // Snapshotter opens the snapshot of R-BAK-005: it takes the shared migration lock, commits the 'all' hold through the
@@ -119,6 +128,10 @@ type SourceCopy struct {
 	Connection string
 	Key        string
 	StoredSize int64
+	// Encrypted is true on an encrypted connection: the object is ciphertext with its record, which the pool keeps as stored under a
+	// name of its storage key (R-BAK-031, R-BAK-032); StorageKeyID is the copy row's storage key (blob_copies.storage_key_id).
+	Encrypted    bool
+	StorageKeyID string
 	// Verified is true when the copy's verified_at is set: the whole stored object was shown to be the blob (R-STOR-052).
 	Verified bool
 	// ServerSide is true when the connection's normalised endpoint is the target's, so a server-side copy can read it
@@ -130,17 +143,28 @@ type SourceCopy struct {
 	Drain    bool
 }
 
+// SourceObject is what a copy's object says of itself: its size, its user metadata, where an encrypted connection's object
+// keeps its record (storage.md R-STOR-077), and its entity tag, which a server-side copy of an encrypted object holds the store to
+// (target.ObjectRef.IfMatch).
+type SourceObject struct {
+	Size     int64
+	Metadata map[string]string
+	ETag     string
+}
+
 // BlobSource reads the copies of the source's blobs (R-BAK-006, R-BAK-030), with the read credentials of the backup account
 // (backup.source.connections, or each connection's own). Its implementation is [StoreSource].
 type BlobSource interface {
 	// Copies returns the present copies of each digest on the connections of the backup's configuration, read when the copy
 	// phase reaches them (Q-BAK-70). A digest without such a copy is absent from the map.
 	Copies(ctx context.Context, digests []format.Digest) (map[format.Digest][]SourceCopy, error)
-	// Size is the size of a copy's object (HeadObject), or ErrBlobNotFound; a failure of the connection wraps ErrCopyUnavailable.
-	Size(ctx context.Context, c SourceCopy) (int64, error)
-	// Open streams length bytes of a copy from offset (a ranged GetObject); length < 0 reads to the end. A missing object is
-	// ErrBlobNotFound, a failure of the connection, also while the body is read, wraps ErrCopyUnavailable.
-	Open(ctx context.Context, c SourceCopy, offset, length int64) (io.ReadCloser, error)
+	// Stat is the size and the metadata of a copy's object (HeadObject), or ErrBlobNotFound; a failure of the connection wraps
+	// ErrCopyUnavailable.
+	Stat(ctx context.Context, c SourceCopy) (SourceObject, error)
+	// Open streams length bytes of a copy from offset (a ranged GetObject); length < 0 reads to the end. The object it returns is
+	// what the answer says: the total size and the metadata. A missing object is ErrBlobNotFound, a failure of the connection, also
+	// while the body is read, wraps ErrCopyUnavailable.
+	Open(ctx context.Context, c SourceCopy, offset, length int64) (io.ReadCloser, SourceObject, error)
 	// Ref names a copy's object for a server-side copy.
 	Ref(c SourceCopy) target.ObjectRef
 }

@@ -22,6 +22,9 @@ import (
 var (
 	// ErrNotFound is a missing object.
 	ErrNotFound = errors.New("target: object not found")
+	// ErrSourceChanged is a server-side copy whose source no longer has the entity tag the caller named (ObjectRef.IfMatch): the
+	// object was written again since the caller read its head. Nothing is left at the destination key.
+	ErrSourceChanged = errors.New("target: the source object changed")
 	// ErrExists is a conditional create (PutOptions.IfAbsent) that found the object.
 	ErrExists = errors.New("target: object exists")
 	// ErrConditionalUnsupported is a store that rejects conditional writes. The marker and the pool never need one for
@@ -42,6 +45,9 @@ type Object struct {
 	// SHA256 is the full-object SHA-256 as lowercase hex, where the store reports one for the object (R-BAK-006). Empty
 	// when it does not.
 	SHA256 string
+	// Metadata is the object's user metadata, where an encrypted connection's copy in the pool keeps its record (R-BAK-031); nil
+	// when it has none. List leaves it out.
+	Metadata map[string]string
 }
 
 // PutOptions are the optional parts of a write.
@@ -54,6 +60,9 @@ type PutOptions struct {
 	// object fits S3's 10,000 parts; a hint above the 5 TiB object limit fails Writer up front. Without a hint the part size
 	// grows with the part number, which reaches about 850 GiB.
 	SizeHint int64
+	// Metadata is stored with the object as its user metadata: the record of an encrypted connection's copy that the pool keeps as
+	// stored (R-BAK-031). Nil stores none.
+	Metadata map[string]string
 }
 
 // ObjectRef names an object in a bucket that is not the target, the source of a server-side copy.
@@ -66,6 +75,15 @@ type ObjectRef struct {
 	// 10 seconds while a request is outstanding, so that a long server-side copy ticks the run's lease (R-BAK-013). It runs on
 	// a goroutine of the adapter, concurrently with the caller's own code, and must be safe for that; it must not block.
 	Progress func(copied int64)
+	// Metadata is the source object's user metadata as its HeadObject answered: a copy in one request keeps the source's own
+	// (the metadata directive COPY), and a multipart copy, which keeps none, sets these on its upload, so that an encrypted
+	// connection's copy keeps its record in the pool (R-BAK-031).
+	Metadata map[string]string
+	// IfMatch, when set, is the entity tag the source's HeadObject answered: every request of the copy reads the source only while
+	// it still has this tag (x-amz-copy-source-if-match), and a source written again since fails the copy with ErrSourceChanged.
+	// An encrypted connection's object written again has another record and other bytes, so a multipart copy must not take its
+	// parts from two writes, nor the record of one with the parts of another (R-BAK-031).
+	IfMatch string
 }
 
 // CopyMode says how a pool object reached the target (R-BAK-006), the label of

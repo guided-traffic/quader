@@ -141,7 +141,7 @@ func (e *env) has(key string) bool {
 func (e *env) poolKeys() []string {
 	var out []string
 	for _, k := range e.mem.Keys() {
-		if _, ok := e.l.ParsePool(k); ok {
+		if _, _, ok := e.l.ParsePool(k); ok {
 			out = append(out, k)
 		}
 	}

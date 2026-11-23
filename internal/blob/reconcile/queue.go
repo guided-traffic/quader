@@ -222,8 +222,9 @@ func (rn *run) record(ctx context.Context, dst *blob.Connection, b target, m mad
 				return nil
 			}
 		}
+		// the row the write makes: on an encrypted connection the keyed name, S(L) and the storage key (R-STOR-080, R-STOR-087)
 		if err := qs.PutBlobCopy(ctx, q.PutBlobCopyParams{
-			Sha256: b.digest.Bytes(), ConnectionID: dst.ID(), ObjectKey: dst.ObjectKey(b.digest), StoredSize: b.size, Verified: m.verified,
+			Sha256: b.digest.Bytes(), ConnectionID: dst.ID(), ObjectKey: m.key, StoredSize: m.stored, StorageKeyID: m.keyID, Verified: m.verified,
 		}); err != nil {
 			return err
 		}

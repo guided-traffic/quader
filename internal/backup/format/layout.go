@@ -18,7 +18,10 @@ const (
 	// ManifestName, BlobListName and TablesDir are the objects of one backup directory.
 	ManifestName = "manifest.json"
 	BlobListName = "blobs.idx.zst"
-	TablesDir    = "db"
+	// PendingBlobListName is the provisional blob list of a run while it copies, deleted once the final list is written
+	// (R-BAK-032).
+	PendingBlobListName = "blobs.pending.zst"
+	TablesDir           = "db"
 	// TableSuffix ends the name of a table file.
 	TableSuffix = ".copy.zst"
 )
@@ -71,28 +74,44 @@ func (l Layout) Marker() string { return l.join(MarkerName) }
 // PoolPrefix is the key prefix of the pool, with a trailing slash, for listing.
 func (l Layout) PoolPrefix() string { return l.join(PoolDir) + "/" }
 
-// Pool is the pool key of a digest, with the fan-out of R-STOR-001: <h0h1>/<h2h3>/<hex>.
+// Pool is the key of a digest's plain pool object, with the fan-out of R-STOR-001: <h0h1>/<h2h3>/<hex>.
 func (l Layout) Pool(d Digest) string {
 	h := d.Hex()
 	return l.join(PoolDir, h[0:2], h[2:4], h)
 }
 
-// ParsePool reads a pool key back. It reports false for a key that does not match the pool layout exactly, which the
-// sweep treats as foreign (R-BAK-017).
-func (l Layout) ParsePool(key string) (Digest, bool) {
+// PoolObject is the key of the pool object a blob list line names (R-BAK-032): the plain object for PoolPlain (or an empty pool),
+// <h0h1>/<h2h3>/<hex>.<key id> for an encrypted connection's copy wrapped under that storage key.
+func (l Layout) PoolObject(e BlobEntry) string {
+	if !e.Encrypted() {
+		return l.Pool(e.Digest)
+	}
+	return l.Pool(e.Digest) + "." + e.Pool
+}
+
+// ParsePool reads a pool key back: the digest and the pool (PoolPlain, or the storage key's identifier after the "."). It reports
+// false for a key that does not match the pool layout exactly, which the sweep treats as foreign (R-BAK-017, R-BAK-032).
+func (l Layout) ParsePool(key string) (Digest, string, bool) {
 	rest, ok := strings.CutPrefix(key, l.PoolPrefix())
 	if !ok {
-		return Digest{}, false
+		return Digest{}, "", false
 	}
 	parts := strings.Split(rest, "/")
 	if len(parts) != 3 {
-		return Digest{}, false
+		return Digest{}, "", false
 	}
-	d, err := ParseDigest(parts[2])
-	if err != nil || parts[0] != parts[2][0:2] || parts[1] != parts[2][2:4] {
-		return Digest{}, false
+	name, pool, encrypted := strings.Cut(parts[2], ".")
+	if encrypted && !ValidPoolKey(pool) {
+		return Digest{}, "", false
 	}
-	return d, true
+	if !encrypted {
+		pool = PoolPlain
+	}
+	d, err := ParseDigest(name)
+	if err != nil || parts[0] != name[0:2] || parts[1] != name[2:4] {
+		return Digest{}, "", false
+	}
+	return d, pool, true
 }
 
 // BackupsPrefix is the key prefix of all backup directories, with a trailing slash.
@@ -104,6 +123,10 @@ func (l Layout) Dir(id ID) string { return l.join(BackupsDir, string(id)) + "/" 
 // Manifest, BlobList and Table are the keys of the objects of one backup.
 func (l Layout) Manifest(id ID) string { return l.Dir(id) + ManifestName }
 func (l Layout) BlobList(id ID) string { return l.Dir(id) + BlobListName }
+
+// PendingBlobList is the key of a run's provisional blob list (R-BAK-032).
+func (l Layout) PendingBlobList(id ID) string { return l.Dir(id) + PendingBlobListName }
+
 func (l Layout) Table(id ID, table string) string {
 	return l.Dir(id) + TablesDir + "/" + table + TableSuffix
 }

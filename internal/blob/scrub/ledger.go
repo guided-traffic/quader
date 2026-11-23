@@ -71,9 +71,10 @@ type Ledger interface {
 	// Copies returns the copies of a blob; found is false when no live blob row has the digest.
 	Copies(ctx context.Context, d blob.Digest) (copies []CopyRow, found bool, err error)
 	// Whole records that a copy found missing or corrupt was shown whole (from its state, changed at changedUs): present and
-	// verified with storedSize, its queue row gone, the blob's state following. It reports false when the row is no longer
-	// the one found damaged.
-	Whole(ctx context.Context, d blob.Digest, conn, from string, changedUs, storedSize int64) (bool, error)
+	// verified with storedSize and, when keyID is not empty, the storage key that wrapped the data key of the object a repair wrote
+	// on an encrypted connection (empty keeps the row's); its queue row gone, the blob's state following. It reports false when the
+	// row is no longer the one found damaged.
+	Whole(ctx context.Context, d blob.Digest, conn, from string, changedUs, storedSize int64, keyID string) (bool, error)
 }
 
 // PGLedger is the ledger over PostgreSQL and the blob store, whose mark of a damaged copy it uses.
@@ -188,7 +189,10 @@ func (l PGLedger) Copies(ctx context.Context, d blob.Digest) ([]CopyRow, bool, e
 		rows, err := qs.ScrubCopies(ctx, d.Bytes())
 		for _, r := range rows {
 			cp := CopyRow{
-				Copy:           blob.Copy{Connection: r.ConnectionID, ObjectKey: r.ObjectKey, StoredSize: r.StoredSize, State: r.State, Retired: r.Retired},
+				Copy: blob.Copy{
+					Connection: r.ConnectionID, ObjectKey: r.ObjectKey, StoredSize: r.StoredSize, StorageKeyID: r.StorageKeyID, State: r.State,
+					Retired: r.Retired,
+				},
 				StateChangedUs: r.StateChangedUs, CreatedUs: r.CreatedUs,
 			}
 			// a NULL timestamp is the zero time (this tree imports no driver type, R-ARCH-002)
@@ -211,7 +215,7 @@ func (l PGLedger) Copies(ctx context.Context, d blob.Digest) ([]CopyRow, bool, e
 // Whole implements [Ledger]: one transaction holds the blob's lock of a mark (FOR NO KEY UPDATE, the blob must be live), sets
 // the copy present and verified when it is still the row found damaged, deletes its queue row and lets the blob's content
 // state follow from its copies (R-STOR-052).
-func (l PGLedger) Whole(ctx context.Context, d blob.Digest, conn, from string, changedUs, storedSize int64) (bool, error) {
+func (l PGLedger) Whole(ctx context.Context, d blob.Digest, conn, from string, changedUs, storedSize int64, keyID string) (bool, error) {
 	var changed, healed bool
 	err := l.DB.InTx(ctx, func(tx meta.Tx) error {
 		changed, healed = false, false
@@ -224,7 +228,7 @@ func (l PGLedger) Whole(ctx context.Context, d blob.Digest, conn, from string, c
 			return err
 		}
 		n, err := qs.ScrubRecordWhole(ctx, q.ScrubRecordWholeParams{
-			StoredSize: storedSize, Sha256: d.Bytes(), ConnectionID: conn, FromState: from, StateChangedUs: changedUs,
+			StoredSize: storedSize, StorageKeyID: keyID, Sha256: d.Bytes(), ConnectionID: conn, FromState: from, StateChangedUs: changedUs,
 		})
 		if err != nil || n == 0 {
 			return err

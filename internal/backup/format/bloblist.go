@@ -15,13 +15,69 @@ import (
 	"github.com/klauspost/compress/zstd"
 )
 
-// BlobEntry is one line of a blob list: a digest and the blob's size in bytes (R-BAK-002).
+// BlobEntry is one line of a blob list: a digest, the blob's size in bytes and the pool object that holds it (R-BAK-002, R-BAK-032).
 type BlobEntry struct {
 	Digest Digest
 	Size   int64
+	// Pool names the pool object of the line: PoolPlain for the plain object, the identifier of the storage key that wraps an
+	// encrypted connection's copy as stored, or, in a provisional list only, PoolPending for a digest the run copies. Empty is
+	// PoolPlain when a list is written, and in an entry the snapshot streams, which carries no pool.
+	Pool string
 	// Status is the blobs.content_status of the row the entry was read from in the snapshot, "missing" or "corrupt" for a
 	// damaged blob; empty means ok. It is not part of a blob list line (R-BAK-006 "Source damage").
 	Status string
+}
+
+// The pool column of a blob list line (R-BAK-002, R-BAK-032).
+const (
+	// PoolPlain is the plain pool object pool/sha256/<h0h1>/<h2h3>/<hex>.
+	PoolPlain = "-"
+	// PoolPending stands, in the provisional list of a run, for a digest of the to-copy set, whose pool object the final list
+	// names from the run's pins.
+	PoolPending = "+"
+)
+
+// PoolOf is the pool of the entry as a line names it: PoolPlain for an empty one.
+func (e BlobEntry) PoolOf() string {
+	if e.Pool == "" {
+		return PoolPlain
+	}
+	return e.Pool
+}
+
+// Encrypted reports whether the entry names an encrypted pool object: a storage key's identifier.
+func (e BlobEntry) Encrypted() bool { p := e.PoolOf(); return p != PoolPlain && p != PoolPending }
+
+// PoolName is the name of the entry's pool object below the pool's fan-out: the digest, followed by "." and the storage key's
+// identifier for an encrypted one. Names sort as the pool lists its keys: a digest's plain object before its encrypted ones, both
+// before the next digest, since "." sorts before every hex digit (R-BAK-017).
+func (e BlobEntry) PoolName() string {
+	if !e.Encrypted() {
+		return e.Digest.Hex()
+	}
+	return e.Digest.Hex() + "." + e.Pool
+}
+
+// ValidPoolKey reports whether id may name the storage key of an encrypted pool object: the rule of a record's key identifier, 3 to 64
+// characters of [a-z0-9-] (storage.md R-STOR-077), which neither PoolPlain nor PoolPending meets.
+func ValidPoolKey(id string) bool {
+	if len(id) < 3 || len(id) > 64 {
+		return false
+	}
+	for i := range len(id) {
+		if c := id[i]; (c < 'a' || c > 'z') && (c < '0' || c > '9') && c != '-' {
+			return false
+		}
+	}
+	return true
+}
+
+// entryLess orders entries by pool name: by digest, a digest's plain object first.
+func entryLess(a, b BlobEntry) bool {
+	if a.Digest != b.Digest {
+		return a.Digest.Less(b.Digest)
+	}
+	return a.PoolName() < b.PoolName()
 }
 
 // BlobIterator is a sorted stream of blob entries, ascending by digest without duplicates. Next returns io.EOF after the
@@ -56,16 +112,17 @@ func (s *SumWriter) SHA256() string { return hex.EncodeToString(s.h.Sum(nil)) }
 // Bytes is the number of bytes written so far.
 func (s *SumWriter) Bytes() int64 { return s.n }
 
-// BlobListWriter writes a blob list: zstd-compressed UTF-8 text, one line `<64 lowercase hex> <size>\n` per blob, ascending
-// by digest, without duplicates. It refuses an entry that breaks the order, so a bug in a producer cannot leave a list
-// that the sweep and the diff would misread.
+// BlobListWriter writes a blob list: zstd-compressed UTF-8 text, one line `<64 lowercase hex> <size> <pool>\n` per blob, ascending
+// by digest, without duplicates (R-BAK-002, R-BAK-032). It refuses an entry that breaks the order or names no pool, so a bug in a
+// producer cannot leave a list that the sweep and the diff would misread.
 type BlobListWriter struct {
-	zw   *zstd.Encoder
-	last Digest
-	have bool
-	n    int64
-	size int64
-	line [64 + 1 + 20 + 1]byte
+	zw      *zstd.Encoder
+	last    Digest
+	have    bool
+	n       int64
+	size    int64
+	pending bool
+	line    [64 + 1 + 20 + 1 + 64 + 1]byte
 }
 
 // blobListWindow is the zstd window of a blob list. A decoder allocates its history from the frame's window, and the sweep and
@@ -82,6 +139,20 @@ func NewBlobListWriter(w io.Writer, level int) (*BlobListWriter, error) {
 	return &BlobListWriter{zw: zw}, nil
 }
 
+// NewPendingBlobListWriter is a writer of a run's provisional list (R-BAK-032): its lines may name PoolPending.
+func NewPendingBlobListWriter(w io.Writer, level int) (*BlobListWriter, error) {
+	b, err := NewBlobListWriter(w, level)
+	if b != nil {
+		b.pending = true
+	}
+	return b, err
+}
+
+// validPool reports whether a line may name the pool: PoolPlain, a storage key's identifier, PoolPending in a provisional list.
+func validPool(p string, pending bool) bool {
+	return p == PoolPlain || ValidPoolKey(p) || (pending && p == PoolPending)
+}
+
 // Add appends an entry.
 func (b *BlobListWriter) Add(e BlobEntry) error {
 	if e.Size < 0 {
@@ -90,9 +161,15 @@ func (b *BlobListWriter) Add(e BlobEntry) error {
 	if b.have && !b.last.Less(e.Digest) {
 		return fmt.Errorf("blob list: %s does not follow %s: entries must ascend without duplicates", e.Digest.Hex(), b.last.Hex())
 	}
+	pool := e.PoolOf()
+	if !validPool(pool, b.pending) {
+		return fmt.Errorf("blob list: %s names the pool %q, which is no pool object", e.Digest.Hex(), pool)
+	}
 	buf := append(b.line[:0], e.Digest.Hex()...)
 	buf = append(buf, ' ')
 	buf = strconv.AppendInt(buf, e.Size, 10)
+	buf = append(buf, ' ')
+	buf = append(buf, pool...)
 	buf = append(buf, '\n')
 	if _, err := b.zw.Write(buf); err != nil {
 		return err
@@ -111,10 +188,20 @@ func (b *BlobListWriter) Close() error { return b.zw.Close() }
 
 // BlobListReader reads a blob list and verifies its order while it reads.
 type BlobListReader struct {
-	zr   *zstd.Decoder
-	sc   *bufio.Scanner
-	last Digest
-	have bool
+	zr      *zstd.Decoder
+	sc      *bufio.Scanner
+	last    Digest
+	have    bool
+	pending bool
+}
+
+// NewPendingBlobListReader reads a run's provisional list, whose lines may name PoolPending (R-BAK-032).
+func NewPendingBlobListReader(r io.Reader) (*BlobListReader, error) {
+	b, err := NewBlobListReader(r)
+	if b != nil {
+		b.pending = true
+	}
+	return b, err
 }
 
 // NewBlobListReader decompresses r.
@@ -136,9 +223,13 @@ func (b *BlobListReader) Next() (BlobEntry, error) {
 		}
 		return BlobEntry{}, io.EOF
 	}
-	digest, size, ok := strings.Cut(b.sc.Text(), " ")
+	digest, rest, ok := strings.Cut(b.sc.Text(), " ")
 	if !ok {
 		return BlobEntry{}, fmt.Errorf("blob list: line %q has no size", b.sc.Text())
+	}
+	size, pool, ok := strings.Cut(rest, " ")
+	if !ok || !validPool(pool, b.pending) {
+		return BlobEntry{}, fmt.Errorf("blob list: line %q names no pool object", b.sc.Text())
 	}
 	d, err := ParseDigest(digest)
 	if err != nil {
@@ -152,7 +243,7 @@ func (b *BlobListReader) Next() (BlobEntry, error) {
 		return BlobEntry{}, fmt.Errorf("blob list: %s does not follow %s: entries must ascend without duplicates", digest, b.last.Hex())
 	}
 	b.last, b.have = d, true
-	return BlobEntry{Digest: d, Size: n}, nil
+	return BlobEntry{Digest: d, Size: n, Pool: pool}, nil
 }
 
 // Close releases the decompressor.
@@ -194,7 +285,8 @@ func (w *without) Next() (BlobEntry, error) {
 
 // Diff is the one-pass merge of R-BAK-006 step 2. referenced is the sorted referenced set from the snapshot; known is the
 // sorted set already in the pool (the previous list minus its damaged blobs). Every referenced entry goes to list, the
-// new blob list; the ones that known lacks also go to toCopy. Both streams are read once, in bounded memory, and an input
+// new blob list, carrying the pool of known's entry when known has the digest (the pool object it inherits, R-BAK-032) and
+// none otherwise; the ones that known lacks also go to toCopy. Both streams are read once, in bounded memory, and an input
 // that is out of order is an error. Either callback may be nil.
 func Diff(referenced, known BlobIterator, list, toCopy func(BlobEntry) error) error {
 	var k BlobEntry
@@ -233,6 +325,9 @@ func Diff(referenced, known BlobIterator, list, toCopy func(BlobEntry) error) er
 				return err
 			}
 		}
+		if kok && k.Digest == r.Digest {
+			r.Pool = k.PoolOf()
+		}
 		if list != nil {
 			if err := list(r); err != nil {
 				return err
@@ -249,9 +344,10 @@ func Diff(referenced, known BlobIterator, list, toCopy func(BlobEntry) error) er
 	}
 }
 
-// Union merges sorted streams into one sorted stream without duplicates: the keep set of the pool sweep, the blob lists of
-// the remaining complete backups (R-BAK-017). The number of streams is the number of retained backups, so the merge scans
-// their heads instead of keeping a heap.
+// Union merges sorted streams into one stream sorted by pool name without duplicates: the keep set of the pool sweep, the blob
+// lists of the remaining complete backups (R-BAK-017, R-BAK-032). Two lists that name one digest with different pool objects give
+// both, the plain one first. The number of streams is the number of retained backups, so the merge scans their heads instead of
+// keeping a heap.
 func Union(its ...BlobIterator) BlobIterator {
 	u := &union{its: its, head: make([]BlobEntry, len(its)), ok: make([]bool, len(its))}
 	u.primed = false
@@ -263,7 +359,7 @@ type union struct {
 	head   []BlobEntry
 	ok     []bool
 	primed bool
-	last   Digest
+	last   BlobEntry
 	have   bool
 }
 
@@ -292,7 +388,7 @@ func (u *union) Next() (BlobEntry, error) {
 	for {
 		best := -1
 		for i := range u.its {
-			if u.ok[i] && (best < 0 || u.head[i].Digest.Less(u.head[best].Digest)) {
+			if u.ok[i] && (best < 0 || entryLess(u.head[i], u.head[best])) {
 				best = i
 			}
 		}
@@ -303,10 +399,10 @@ func (u *union) Next() (BlobEntry, error) {
 		if err := u.fill(best); err != nil {
 			return BlobEntry{}, err
 		}
-		if u.have && u.last == e.Digest {
+		if u.have && u.last.Digest == e.Digest && u.last.PoolName() == e.PoolName() {
 			continue
 		}
-		u.last, u.have = e.Digest, true
+		u.last, u.have = e, true
 		return e, nil
 	}
 }

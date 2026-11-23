@@ -103,6 +103,9 @@ func (t *Target) Copy(ctx context.Context, src target.ObjectRef, dstKey string) 
 	if ctx.Err() == nil && errors.Is(err, context.DeadlineExceeded) {
 		return fmt.Errorf("%w: the copy of %s did not finish within %s: %w", target.ErrServerCopyUnavailable, src.Key, t.bound(src.Size), err)
 	}
+	if code, status := apiCode(err); src.IfMatch != "" && (status == http.StatusPreconditionFailed || code == "PreconditionFailed") {
+		return fmt.Errorf("%w: %s: %w", target.ErrSourceChanged, src.Key, err)
+	}
 	if code, status := apiCode(err); unavailable(code, status) {
 		return fmt.Errorf("%w: %w", target.ErrServerCopyUnavailable, err)
 	}
@@ -114,7 +117,7 @@ func (t *Target) copyOne(ctx context.Context, src target.ObjectRef, dstKey strin
 	ctx, cancel := context.WithTimeout(ctx, t.bound(src.Size))
 	defer cancel()
 	_, err := t.c.long().CopyObject(ctx, &awss3.CopyObjectInput{
-		Bucket: &t.c.bucket, Key: &dstKey, CopySource: aws.String(copySource(src.Bucket, src.Key)),
+		Bucket: &t.c.bucket, Key: &dstKey, CopySource: aws.String(copySource(src.Bucket, src.Key)), CopySourceIfMatch: ifMatch(src),
 		MetadataDirective: types.MetadataDirectiveCopy, StorageClass: types.StorageClass(t.c.cfg.StorageClass),
 		ServerSideEncryption: s.mode, SSEKMSKeyId: s.key, BucketKeyEnabled: s.bucket,
 	})
@@ -133,7 +136,7 @@ func (t *Target) copyParts(ctx context.Context, run *copyRun, src target.ObjectR
 	cctx, cancel := context.WithTimeout(ctx, t.bound(0))
 	out, err := api.CreateMultipartUpload(cctx, &awss3.CreateMultipartUploadInput{
 		Bucket: &t.c.bucket, Key: &dstKey, ContentType: aws.String("application/octet-stream"), StorageClass: types.StorageClass(t.c.cfg.StorageClass),
-		ServerSideEncryption: s.mode, SSEKMSKeyId: s.key, BucketKeyEnabled: s.bucket,
+		ServerSideEncryption: s.mode, SSEKMSKeyId: s.key, BucketKeyEnabled: s.bucket, Metadata: src.Metadata, // a multipart copy keeps no metadata of its own (R-BAK-031)
 	})
 	cancel()
 	if err != nil {
@@ -156,6 +159,7 @@ func (t *Target) copyParts(ctx context.Context, run *copyRun, src target.ObjectR
 		po, perr := api.UploadPartCopy(pctx, &awss3.UploadPartCopyInput{
 			Bucket: &t.c.bucket, Key: &dstKey, UploadId: id, PartNumber: aws.Int32(n),
 			CopySource: aws.String(copySource(src.Bucket, src.Key)), CopySourceRange: aws.String(fmt.Sprintf("bytes=%d-%d", off, last)),
+			CopySourceIfMatch: ifMatch(src),
 		})
 		pcancel()
 		if perr != nil {
@@ -172,4 +176,12 @@ func (t *Target) copyParts(ctx context.Context, run *copyRun, src target.ObjectR
 		Bucket: &t.c.bucket, Key: &dstKey, UploadId: id, MultipartUpload: &types.CompletedMultipartUpload{Parts: parts},
 	})
 	return mapError(ctx, "CompleteMultipartUpload", dstKey, err)
+}
+
+// ifMatch is the x-amz-copy-source-if-match of a copy's requests: the entity tag the caller read, or none.
+func ifMatch(src target.ObjectRef) *string {
+	if src.IfMatch == "" {
+		return nil
+	}
+	return aws.String(src.IfMatch)
 }

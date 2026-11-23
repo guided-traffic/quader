@@ -5,16 +5,20 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/backup"
 	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/blobcrypt"
+	storagekeys "github.com/guided-traffic/quader/internal/blob/keys"
 	"github.com/guided-traffic/quader/internal/blob/s3"
 	"github.com/guided-traffic/quader/internal/blob/verify"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/internal/secrets"
 )
 
 const storageUsage = `usage: quader admin storage verify [--connection <id>] [--since <RFC 3339 time>] [--concurrency N] [--max-items N] [--json] [--config <file>]
@@ -90,6 +94,50 @@ func verifyConnections(clients []connectionClient) []verify.Conn {
 	return out
 }
 
+// recordKeys gives every encrypted connection of a verification the lookup of the storage keys its records name (R-STOR-087): a
+// holder over the database and the configured key ring, which opens the connections' rows of storage_keys and destroys the keys when
+// the returned function is called. Without an encrypted connection it loads no key ring.
+func recordKeys(ctx context.Context, cfg *config.Config, db *postgres.DB, conns []verify.Conn, log *slog.Logger) (func(), error) {
+	resolved, err := config.ResolveConnections(cfg.Storage.Connections, nil)
+	if err != nil {
+		return nil, backup.Fail(backup.ExitUsage, backup.CodeConfig, err)
+	}
+	encrypted := map[string]bool{}
+	for _, el := range resolved {
+		encrypted[el.ID] = el.Encrypted
+	}
+	need := false
+	for _, c := range conns {
+		need = need || encrypted[c.ID]
+	}
+	if !need {
+		return func() {}, nil
+	}
+	ring, err := secrets.Load(cfg.Secrets)
+	if err != nil {
+		return nil, backup.Fail(backup.ExitUsage, backup.CodeConfig, err)
+	}
+	h, err := storagekeys.New(storagekeys.Options{DB: db, Ring: ring, Log: log})
+	if err != nil {
+		return nil, err
+	}
+	for i := range conns {
+		id := conns[i].ID
+		if !encrypted[id] {
+			continue
+		}
+		if err := h.Load(ctx, id); err != nil {
+			h.Close()
+			if storagekeys.IsRefusal(err) {
+				return nil, backup.Fail(backup.ExitUsage, backup.CodeConfig, err)
+			}
+			return nil, err
+		}
+		conns[i].Keys = func(ctx context.Context) blobcrypt.KeyLookup { return h.Lookup(ctx, id) }
+	}
+	return h.Close, nil
+}
+
 // storageVerifyCmd is quader admin storage verify (R-STOR-058, R-HA-024, R-HA-025 step 4): it asks the store of each
 // connection, or of the one named, for the object of every present copy of a live blob, prints one line per missing copy and
 // one per item that references a blob none of whose copies is there. It runs with the runtime database role and each
@@ -135,8 +183,14 @@ func storageVerifyCmd(args []string, s streams) error {
 	if err != nil {
 		return backupExit(err)
 	}
+	conns := verifyConnections(clients)
+	closeKeys, err := recordKeys(ctx, cfg, db, conns, env.log)
+	if err != nil {
+		return backupExit(err)
+	}
+	defer closeKeys()
 	rep, err := verify.Run(ctx, verify.Options{
-		DB: verify.PGSource{DB: db}, Connections: verifyConnections(clients), Connection: *conn, Since: cut,
+		DB: verify.PGSource{DB: db}, Connections: conns, Connection: *conn, Since: cut,
 		Concurrency: *conc, MaxItems: *maxItems, Log: env.log,
 	})
 	if errors.Is(err, verify.ErrUnknownConnection) {
@@ -199,6 +253,9 @@ func writeVerifyReport(w io.Writer, rep *verify.Report) error {
 		if c.Error != "" {
 			ended = ", ended: " + c.Error
 		}
+		if c.Record > 0 {
+			ended = fmt.Sprintf(", %d with a record that does not open (R-STOR-087)", c.Record) + ended
+		}
 		if _, err := fmt.Fprintf(w, "connection %s: %d copies checked, %d missing, %d of another size, %d not checked%s\n",
 			c.Connection, c.Checked, c.Missing, c.SizeMismatch, c.Unchecked, ended); err != nil {
 			return err
@@ -214,8 +271,11 @@ func writeVerifyReport(w io.Writer, rep *verify.Report) error {
 }
 
 func copyDetail(cf verify.CopyFinding) string {
-	if cf.Kind == verify.KindSizeMismatch {
+	switch cf.Kind {
+	case verify.KindSizeMismatch:
 		return fmt.Sprintf("object has %d bytes, the row says %d", cf.ObjectSize, cf.StoredSize)
+	case verify.KindRecord:
+		return "the record of the encrypted object does not open: " + cf.Reason
 	}
 	return "object missing"
 }
@@ -223,8 +283,11 @@ func copyDetail(cf verify.CopyFinding) string {
 // writeLost prints the lines of one lost blob: one per item, the number of the rest, or one line when no item references it.
 func writeLost(w io.Writer, f verify.Finding) error {
 	detail := "no copy has its object"
-	if f.Kind == verify.KindSizeMismatch {
+	switch f.Kind {
+	case verify.KindSizeMismatch:
 		detail = "no copy has its object of its size"
+	case verify.KindRecord:
+		detail = "no copy has its object with a record that opens"
 	}
 	if len(f.Items) == 0 {
 		_, err := fmt.Fprintf(w, "blob %s: %s (no item references it)\n", f.SHA256, detail)

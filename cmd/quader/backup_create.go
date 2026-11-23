@@ -100,9 +100,16 @@ func (c *commandCreator) Create(ctx context.Context, opts backup.CreateOptions) 
 		Clock: retention.RunSweepClock{Runs: store}, Log: e.log,
 	}
 	info := buildinfo.Get()
+	var staying []string
+	for _, s := range sources {
+		if !s.Drain {
+			staying = append(staying, s.ID)
+		}
+	}
 	pipeline, err := create.New(create.Deps{
 		Cfg:               cfg.Backup,
 		SourceConnections: refs,
+		Staying:           staying,
 		Instance:          e.instance, JobName: jobName(e.environ), Version: info.Version, Revision: info.Commit, BackupRole: cfg.Database.BackupRole,
 		Store: store, Prune: stage, Facts: facts, Grants: facts, Pins: facts, BlobState: facts,
 		Snapshot: backup.NewPGSnapshotter(db),
@@ -137,12 +144,6 @@ func backupSources(ctx context.Context, cfg *config.Config, out *outbound.Factor
 	var sources []backup.SourceConnection
 	var refs []format.ConnectionRef
 	for i, el := range conns {
-		if el.Encrypted {
-			// the backup copies objects as they lie and checks them against the digest; the pool of an encrypted connection's records
-			// is not built (backup-and-restore.md R-BAK-031, package 4 of docs/developer/stored-content-encryption.md), so a run refuses
-			// rather than record its blobs as damaged or copy ciphertext it cannot confirm
-			return nil, nil, fmt.Errorf("storage.connections[%d] (%s): encrypted: the backup of an encrypted connection is not built yet (backup-and-restore.md R-BAK-031)", i, el.ID)
-		}
 		cc := config.ClientConfig(i, el, cfg.Storage.ObjectStore)
 		if creds, ok := read[el.ID]; ok {
 			cc.Credentials = creds
@@ -154,9 +155,10 @@ func backupSources(ctx context.Context, cfg *config.Config, out *outbound.Factor
 		guard := blob.NewGuard(client, cfg.Storage.ObjectStore.CircuitBreaker, blob.WithGuardMetrics(bm), blob.WithGuardConnection(el.ID),
 			blob.WithGuardLogger(log, cc.Credentials.Source))
 		endpoint := config.NormalizeEndpoint(el.Endpoint)
+		// an encrypted connection's copies go into the pool as stored, with their records; the pod opens nothing (R-BAK-031)
 		sources = append(sources, backup.SourceConnection{
 			ID: el.ID, Drain: el.Drain, Objects: guard, Endpoint: endpoint, Bucket: el.Bucket,
-			ServerSide: config.ComparableEndpoint(el.Endpoint, el.Region) == target,
+			ServerSide: config.ComparableEndpoint(el.Endpoint, el.Region) == target, Encrypted: el.Encrypted,
 		})
 		refs = append(refs, format.ConnectionRef{ID: el.ID, Endpoint: endpoint, Bucket: el.Bucket, Prefix: el.KeyPrefix()})
 	}

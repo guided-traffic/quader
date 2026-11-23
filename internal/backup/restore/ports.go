@@ -7,6 +7,7 @@ import (
 	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/backup"
 	"github.com/guided-traffic/quader/internal/backup/format"
+	"github.com/guided-traffic/quader/internal/backup/target"
 	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/journal"
 	"github.com/guided-traffic/quader/internal/meta"
@@ -44,6 +45,9 @@ var _ Session = (*postgres.RestoreSession)(nil)
 // and the probe of check 7. internal/blob/s3.BlobSink implements it.
 type BlobStore interface {
 	backup.BlobSink
+	// CopyAs copies a pool object server-side to key, keeping the source's metadata (an encrypted pool object's record, which src's
+	// Metadata repeats for a multipart copy). It returns target.ErrServerCopyUnavailable when it cannot (R-BAK-031).
+	CopyAs(ctx context.Context, src target.ObjectRef, key string) error
 	// FirstForeign returns the first key below the blob prefix that is neither a probe object nor the connection's marker
 	// <prefix>/_connection, and with allowBlobs not below sha256/ either; empty when there is none (R-BAK-020 check 5).
 	FirstForeign(ctx context.Context, allowBlobs bool) (string, error)
@@ -62,6 +66,11 @@ type Connection struct {
 	Bucket, Prefix string
 	Drain          bool
 	Store          BlobStore
+	// Encrypted and KeyedNames are the connection's fixed properties (storage.md R-STOR-075, R-STOR-086), which the fix-up records;
+	// Writer is an encrypted connection's writer and naming function over its client, through which step 3 writes into it
+	// (R-BAK-031). Nil on a plain connection.
+	Encrypted, KeyedNames bool
+	Writer                *blob.Connection
 }
 
 // JournalEnv is what the journal needs to be built for one restore.

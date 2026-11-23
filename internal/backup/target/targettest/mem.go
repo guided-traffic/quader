@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"maps"
 	"sort"
 	"strings"
 	"sync"
@@ -29,6 +30,12 @@ type Mem struct {
 	KMSKeyID string
 	// Source resolves the ObjectRef of a server-side copy; nil makes Copy return target.ErrServerCopyUnavailable.
 	Source func(target.ObjectRef) ([]byte, bool)
+	// SourceMetadata resolves the metadata of the object a server-side copy reads, which the copy keeps (the metadata directive
+	// COPY); nil keeps the ObjectRef's own Metadata.
+	SourceMetadata func(target.ObjectRef) map[string]string
+	// SourceETag resolves the entity tag the source of a server-side copy has when the copy runs; a copy whose ObjectRef.IfMatch
+	// is another fails with target.ErrSourceChanged. Nil checks none.
+	SourceETag func(target.ObjectRef) string
 	// Calls counts the requests by name (put, writer, copy, head, get, list, delete), so a test can assert that a retry
 	// wrote no object that was already present (R-BAK-013).
 	Calls map[string]int
@@ -38,6 +45,7 @@ type entry struct {
 	data []byte
 	at   time.Time
 	sse  string
+	meta map[string]string
 }
 
 // New returns an empty target.
@@ -74,6 +82,16 @@ func (m *Mem) Set(key string, data []byte) {
 	m.mu.Unlock()
 }
 
+// SetMetadata replaces an object's metadata directly, as a test that edits the target by hand does.
+func (m *Mem) SetMetadata(key string, md map[string]string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if e, ok := m.objs[key]; ok {
+		e.meta = maps.Clone(md)
+		m.objs[key] = e
+	}
+}
+
 // Remove deletes an object directly.
 func (m *Mem) Remove(key string) {
 	m.mu.Lock()
@@ -85,7 +103,10 @@ func (m *Mem) count(name string) { m.Calls[name]++ }
 
 func (m *Mem) info(key string, e entry) target.Object {
 	sum := sha256.Sum256(e.data)
-	return target.Object{Key: key, Size: int64(len(e.data)), LastModified: e.at, SSE: e.sse, KMSKeyID: m.KMSKeyID, SHA256: hex.EncodeToString(sum[:]), ETag: hex.EncodeToString(sum[:8])}
+	return target.Object{
+		Key: key, Size: int64(len(e.data)), LastModified: e.at, SSE: e.sse, KMSKeyID: m.KMSKeyID, SHA256: hex.EncodeToString(sum[:]), ETag: hex.EncodeToString(sum[:8]),
+		Metadata: maps.Clone(e.meta),
+	}
 }
 
 // Head implements target.Store.
@@ -120,7 +141,7 @@ func (m *Mem) Put(_ context.Context, key string, body []byte, opts target.PutOpt
 	if _, ok := m.objs[key]; ok && opts.IfAbsent {
 		return target.Object{}, target.ErrExists
 	}
-	e := entry{data: append([]byte(nil), body...), at: m.now(), sse: m.SSE}
+	e := entry{data: append([]byte(nil), body...), at: m.now(), sse: m.SSE, meta: maps.Clone(opts.Metadata)}
 	m.objs[key] = e
 	return m.info(key, e), nil
 }
@@ -155,7 +176,7 @@ func (w *writer) Close(_ context.Context) (target.Object, error) {
 	if _, ok := w.m.objs[w.key]; ok && w.opts.IfAbsent {
 		return target.Object{}, target.ErrExists
 	}
-	e := entry{data: w.buf.Bytes(), at: w.m.now(), sse: w.m.SSE}
+	e := entry{data: w.buf.Bytes(), at: w.m.now(), sse: w.m.SSE, meta: maps.Clone(w.opts.Metadata)}
 	w.m.objs[w.key] = e
 	return w.m.info(w.key, e), nil
 }
@@ -212,7 +233,14 @@ func (m *Mem) Copy(_ context.Context, src target.ObjectRef, dstKey string) error
 	if !ok {
 		return target.ErrNotFound
 	}
-	m.objs[dstKey] = entry{data: append([]byte(nil), data...), at: m.now(), sse: m.SSE}
+	if src.IfMatch != "" && m.SourceETag != nil && m.SourceETag(src) != src.IfMatch {
+		return target.ErrSourceChanged
+	}
+	md := src.Metadata
+	if m.SourceMetadata != nil {
+		md = m.SourceMetadata(src)
+	}
+	m.objs[dstKey] = entry{data: append([]byte(nil), data...), at: m.now(), sse: m.SSE, meta: maps.Clone(md)}
 	if src.Progress != nil {
 		src.Progress(int64(len(data)))
 	}

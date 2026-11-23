@@ -204,7 +204,8 @@ func (s *RestoreSession) Load(ctx context.Context, plan LoadPlan, src LoadSource
 	if err := s.setUserTriggers(ctx, tx, truncate, true); err != nil {
 		return res, err
 	}
-	if err := insertMarker(ctx, tx, RestoreMarker{BackupID: plan.Marker.BackupID, Phase: PhaseLoaded, StartedAt: plan.Marker.StartedAt}); err != nil {
+	// the keys a restore drew go with the marker: the TRUNCATE replaced storage_keys, and the fix-ups insert them (R-BAK-031)
+	if err := insertMarker(ctx, tx, RestoreMarker{BackupID: plan.Marker.BackupID, Phase: PhaseLoaded, StartedAt: plan.Marker.StartedAt, StorageKeys: plan.Marker.StorageKeys}); err != nil {
 		return res, err
 	}
 	if err := qs.RestoreEnsureAuditPartitions(ctx); err != nil {

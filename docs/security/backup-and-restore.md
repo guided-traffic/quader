@@ -100,6 +100,46 @@ rewrite refused during the export, the migration lock, partitioned `audit_event`
 [create_process_test.go](../../test/integration/backup/create_process_test.go) (the command's exit codes, `kill -9`). Not verified:
 a standby (the stack has none; the mapping is unit tested) and the Kubernetes behaviour of the Job.
 
+## An encrypted connection's copies in a backup
+
+Built with package 4 of [stored-content-encryption.md](../developer/stored-content-encryption.md#package-4-as-built) (R-BAK-031, R-BAK-032).
+The backup pod holds no key ring and no storage key: it copies an encrypted copy's object as stored, the ciphertext with the record in its
+user metadata, into the pool object `pool/sha256/<h0h1>/<h2h3>/<hex>.<key id>`, whose name carries the storage key the record names
+([copy.go](../../internal/backup/create/copy.go)). No code of the backup decrypts, so no plaintext of an encrypted connection's blob reaches
+the target. What the pod checks without a key:
+
+- the record's form (the format's four keys) and the object's size against the copy row's stored size; an object on an encrypted connection
+  without a record is no copy to take, the next copy is tried, and only when none is left is the blob recorded as damaged
+  (`TestR_BAK_031_ThePoolKeepsAnEncryptedCopyAsStored`);
+- that the pool object it wrote has the stored size and a record of the key its name carries, so a pool object never stands under a key
+  other than the one that opens it;
+- that one pool object comes from one write of the source: a streamed copy refuses an object whose later ranged reads answer another record
+  than its first, and a server-side copy names the entity tag of the head it read on every request (`x-amz-copy-source-if-match`), so that a
+  copy the scrub's repair wrote again meanwhile is not taken as the record of one write with the bytes of another
+  (`TestR_BAK_031_AServerSideCopyReadsTheSourceOnlyWhileItsEntityTagHolds`). Either is a copy whose connection did not answer, and the next
+  copy is tried.
+
+The manifest lists the pool's keys (`storageKeys`), and the backup's database holds them sealed under the key ring, so a reader of the target
+without the key ring learns names, sizes and key identifiers
+([H-1314](stored-content-visibility.md#h-1314--the-backups-pool-names-blobs-by-their-digest)), not content. `quader backup verify --deep`
+without `--key-ring` checks such an object's record from its head and counts it `not_authenticated`; with `--key-ring <dir>` it opens the
+backup's storage keys in that one process and reads each object through the format's reader (the tags, the final segment, the digest),
+reporting one that does not authenticate as `digest_mismatch` ([verify.go](../../internal/backup/verify/verify.go),
+`TestR_BAK_031_VerifyDeepOfEncryptedPoolObjects`).
+
+The restore Job holds the key ring. Check 3 opens every storage key of the backup that is not destroyed and refuses a backup whose pool names
+a key its database lacks or holds destroyed; step 3 refuses each pool object whose key the restored database does not hold and each one that
+does not authenticate as it reads it (exit `1`). Into an encrypted first connection it writes through the format's writer with new data
+keys, or copies a pool object wrapped under a key of that connection's own id as stored; the keys it draws for an encrypted connection the
+backup holds none of lie sealed with the key ring in the restore's marker until the fix-up inserts them
+([sealed.go](../../internal/backup/restore/sealed.go), Q-BAK-82, `TestR_BAK_031_TheRestoresTable`). Plaintext of an encrypted pool object goes
+only into a plain first connection the restoring configuration names, as R-BAK-031's table says. Verified in this repo with PostgreSQL and
+the stack's S3: `TestR_BAK_031_EncryptedConnectionsBackedUpAndRestored` (the pool's names and records, the manifest's keys, `verify --deep`
+without and with the key ring and a flipped bit, a restore into an encrypted connection of the same id and one into another, the downloads
+after both, the drain and the re-pool from the plain connection). Not verified:
+`x-amz-copy-source-if-match` on `UploadPartCopy` at a real store (the multipart copy is unit tested against a fake S3; the integration blobs
+are small enough for one `CopyObject`).
+
 ## The revocation journal
 
 A restore undoes every access removal made after its point in time. The journal records them a second time outside PostgreSQL, in the
@@ -368,6 +408,7 @@ The mechanisms of this page add:
 - [H-569](#h-569--upstream-storage-and-format-settings-of-a-repository-come-back-with-a-restore): upstream, storage and format settings of a repository come back with a restore.
 - [H-1284](#h-1284--an-entry-only-a-connection-that-cannot-be-listed-holds-is-not-replayed): an entry only a connection that cannot be listed holds is not replayed.
 - [H-1285](#h-1285--a-drain-that-runs-beside-a-backup-of-an-older-configuration-can-leave-that-backup-without-a-blob): a drain that runs beside a backup of an older configuration can leave that backup without a blob.
+- [H-1440](#h-1440--an-encrypted-copy-enters-the-pool-unauthenticated-and-a-damaged-one-stops-the-restore): an encrypted copy enters the pool unauthenticated, and a damaged one stops the restore.
 - [H-566](../spec/backup-and-restore.md#h-566--the-drill-uses-one-s3-login-for-the-blob-store-the-backup-target-and-the-restore): the drill uses one S3 login for the blob store, the backup target and the restore.
 - [H-567](../spec/backup-and-restore.md#h-567--hand-written-journal-objects-are-tried-at-replay-level-not-through-the-restore-job-on-a-cluster): hand-written journal objects are tried at replay level, not through the restore Job on a cluster.
 - [H-568](../spec/backup-and-restore.md#h-568--the-restore-across-releases-and-across-postgresql-major-versions-is-not-run-by-the-drill): the restore across releases and across PostgreSQL major versions is not run by the drill.
@@ -439,3 +480,16 @@ next backup, of the new configuration, copies it. With one configuration on both
 the last copy, and the run takes the next one. Live only for a backup run that began before such an upgrade and outlasts the filling of
 the new connection; dormant otherwise. Mitigation: add a connection and drain the old one in two upgrades, the second after the new one is
 `active`, or run a backup after the drain.
+
+### H-1440 · An encrypted copy enters the pool unauthenticated, and a damaged one stops the restore
+
+Component: the copy of an encrypted connection's copy into the pool (R-BAK-031, [copy.go](../../internal/backup/create/copy.go)) and step 3
+of the restore ([sealed.go](../../internal/backup/restore/sealed.go)). Subject: a blob whose pool object comes from an encrypted copy. The
+backup pod holds no key, so it confirms such a copy by its stored size and its record's form, not by its content, where a streamed plain copy
+is hashed against its digest. A copy whose body was changed or damaged in the bucket, and that the scrub has not marked yet (within the
+connection's `scrub_period`, 30 days by default), becomes the pool object and is listed as sound; later backups inherit it, since the pool
+object of a digest is copied once. The restore reads it through the format's reader, refuses it at the first tag that fails, and stops with
+exit `1`, as for a missing pool object; no other copy of the blob is in the backup. Live for every backup of an installation with an
+encrypted connection; what makes it real is a copy damaged at the provider before the backup's first copy of its blob. Mitigation:
+`quader backup verify --deep --key-ring <dir>` reads every encrypted pool object through the reader and reports such an object; the blob
+is copied again into a new pool object only when its key's connection departs (the re-pool of R-BAK-032), not because the old one is damaged.

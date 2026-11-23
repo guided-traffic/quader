@@ -3,6 +3,7 @@
 package fixture
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -10,6 +11,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/klauspost/compress/zstd"
 
 	"github.com/guided-traffic/quader/internal/backup/format"
 	"github.com/guided-traffic/quader/internal/backup/target/targettest"
@@ -29,6 +32,21 @@ type Spec struct {
 	Incomplete bool
 	// Tables maps a table name to the bytes of its file; the default is one table "items".
 	Tables map[string]string
+	// Sealed are blobs an encrypted connection stored: each is listed under its storage key and written to its encrypted pool object
+	// with its record (R-BAK-031, R-BAK-032).
+	Sealed []Sealed
+	// StorageKeys is the COPY text of the backup's storage_keys (key_id, connection_id, kind, generation, sealed_key, state), written
+	// zstd-compressed as its table file; empty writes none.
+	StorageKeys string
+}
+
+// Sealed is a blob as an encrypted connection stored it: its plaintext, the storage key its record names, its stored bytes and its
+// record.
+type Sealed struct {
+	Content  string
+	KeyID    string
+	Body     []byte
+	Metadata map[string]string
 }
 
 // Backup is what Put wrote.
@@ -66,6 +84,13 @@ func Put(tb testing.TB, m *targettest.Mem, l format.Layout, s Spec) Backup {
 		d := Digest(c)
 		byDigest[d] = format.BlobEntry{Digest: d, Size: int64(len(c))}
 		m.Set(l.Pool(d), []byte(c))
+	}
+	for _, sb := range s.Sealed {
+		d := Digest(sb.Content)
+		e := format.BlobEntry{Digest: d, Size: int64(len(sb.Content)), Pool: sb.KeyID}
+		byDigest[d] = e
+		m.Set(l.PoolObject(e), sb.Body)
+		m.SetMetadata(l.PoolObject(e), sb.Metadata)
 	}
 	damaged := []format.DamagedBlob{}
 	for _, c := range s.Damaged {
@@ -111,6 +136,21 @@ func Put(tb testing.TB, m *targettest.Mem, l format.Layout, s Spec) Backup {
 		man.Tables = append(man.Tables, format.TableFile{
 			Name: n, Class: "data", File: format.TablesDir + "/" + n + format.TableSuffix,
 			Columns: [][2]string{{"id", "bigint"}}, Rows: 2, Bytes: int64(len(body)) * 3, CompressedBytes: int64(len(body)), SHA256: sum(body),
+		})
+	}
+	if s.StorageKeys != "" {
+		var buf bytes.Buffer
+		zw, err := zstd.NewWriter(&buf)
+		if err != nil {
+			tb.Fatal(err)
+		}
+		_, _ = zw.Write([]byte(s.StorageKeys))
+		_ = zw.Close()
+		m.Set(l.Table(s.ID, "storage_keys"), buf.Bytes())
+		man.Tables = append(man.Tables, format.TableFile{
+			Name: "storage_keys", Class: "data", File: format.TablesDir + "/storage_keys" + format.TableSuffix,
+			Columns: [][2]string{{"key_id", "text"}, {"connection_id", "text"}, {"kind", "text"}, {"generation", "integer"}, {"sealed_key", "text"}, {"state", "text"}},
+			Rows:    int64(strings.Count(s.StorageKeys, "\n")), Bytes: int64(len(s.StorageKeys)), CompressedBytes: int64(buf.Len()), SHA256: sum(buf.Bytes()),
 		})
 	}
 	if !s.Incomplete {

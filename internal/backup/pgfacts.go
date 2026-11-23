@@ -116,15 +116,19 @@ func (f *PGFacts) PresentCopies(ctx context.Context, digests []format.Digest) ([
 			if err != nil {
 				return err
 			}
-			out = append(out, CopyRow{Digest: d, Connection: r.ConnectionID, Key: r.ObjectKey, StoredSize: r.StoredSize, Verified: r.Verified})
+			out = append(out, CopyRow{
+				Digest: d, Connection: r.ConnectionID, Key: r.ObjectKey, StoredSize: r.StoredSize, Verified: r.Verified, StorageKeyID: r.StorageKeyID,
+			})
 		}
 		return nil
 	})
 	return out, err
 }
 
-// Pins returns up to limit pins of a run after a digest, in digest order (R-BAK-006): the copy phase pages through its to-copy
-// set so that a first backup of millions of blobs stays in bounded memory.
+// Pins returns up to limit pins of a run after a digest, in digest order (R-BAK-006), each with the pool object it names so far
+// (R-BAK-032): empty for a new digest whose copy is not confirmed, the inherited pool object of a re-pooled one until its copy is.
+// The copy phase pages through its to-copy set so that a first backup of millions of blobs stays in bounded memory, and the final
+// blob list reads it once more.
 func (f *PGFacts) Pins(ctx context.Context, runID string, after format.Digest, limit int) ([]format.BlobEntry, error) {
 	var out []format.BlobEntry
 	err := f.read(ctx, func(qs *q.Queries) error {
@@ -137,7 +141,7 @@ func (f *PGFacts) Pins(ctx context.Context, runID string, after format.Digest, l
 			if len(r.Sha256) != len(after) {
 				return fmt.Errorf("a pin has a digest of %d bytes", len(r.Sha256))
 			}
-			e := format.BlobEntry{Size: r.Size}
+			e := format.BlobEntry{Size: r.Size, Pool: r.Pool}
 			copy(e.Digest[:], r.Sha256)
 			out = append(out, e)
 		}

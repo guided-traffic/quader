@@ -4408,16 +4408,16 @@ replica holds with the change area `storage_keys` and the re-read for an unknown
 `encrypted: true` and `keyed_names` are accepted (R-STOR-075), the start check requires `metadata`, every write of a blob to an encrypted
 connection is the stored format with its record (R-STOR-080), the sessions seal their data keys and their staging (R-STOR-081), the reads
 open the record and authenticate every segment and mark as R-STOR-082 says, and the objects get keyed names (R-STOR-086). The connections'
-API shows `keyedNames` and `storageKeys[]` (R-STOR-088, built ahead with stage 1's package F). The jobs of R-STOR-087, the backup's pool and
-the restore (R-BAK-031), the offline tool (R-STOR-089) and the chart's acceptance (R-STOR-088) are not built; until package 4 the stage-1
-jobs pass over or refuse an encrypted connection as
-[Q-STOR-384](#q-stor-384--until-the-jobs-read-the-stored-format-each-passes-over-or-refuses-an-encrypted-connection) says, and the chart
-still refuses `encrypted: true` until package 6. The order of the packages is on the developer page
+API shows `keyedNames` and `storageKeys[]` (R-STOR-088, built ahead with stage 1's package F). The jobs of R-STOR-087, the backup's pool with
+its keys and the restore (backup-and-restore.md R-BAK-031, R-BAK-032) are built (package 4, on 2026-11-23): every stage-1 job reads and
+writes an encrypted connection in the stored format, the backup and the restore handle its copies. The offline tool (R-STOR-089) and the
+chart's acceptance (R-STOR-088) are not built; the chart still refuses `encrypted: true` until package 6. The order of the packages is on the
+developer page
 [stored-content-encryption.md](../developer/stored-content-encryption.md). The destruction of a retired connection's keys, so that what stays
 at a provider becomes unreadable (R-STOR-097 to R-STOR-103,
 [Q-STOR-309](#q-stor-309--a-storage-key-is-a-row-with-an-identifier-of-its-own-drawn-at-the-connections-first-start-never-deleted) (b),
 [ADR-255](../decisions.md#adr-255--the-storage-keys-of-a-retired-connection-can-be-destroyed-so-that-what-stays-at-a-provider-becomes-unreadable)),
-is specified, not built (package 7, with its part in the backup in package 4). Its security pages are [stored-content-format.md](../security/stored-content-format.md) (the format and what it withstands),
+is specified, not built (package 7; its part in the backup, the pool's keys of R-BAK-032, is built with package 4). Its security pages are [stored-content-format.md](../security/stored-content-format.md) (the format and what it withstands),
 [stored-content-keys.md](../security/stored-content-keys.md) (the keys and who holds them) and
 [stored-content-visibility.md](../security/stored-content-visibility.md) (what stays visible to a provider).
 
@@ -4708,8 +4708,10 @@ Acceptance criteria:
 Priority: **P1** · Covers: STOR-022
 
 **Built** on 2026-11-22 (package 3): [sealedwrite.go](../../internal/blob/sealedwrite.go) and the multipart of
-[transfer.go](../../internal/blob/transfer.go). The writes of the reconciliation and of a restore into an encrypted connection named below
-come with package 4; until then the client of the connection refuses them (Q-STOR-382, Q-STOR-384).
+[transfer.go](../../internal/blob/transfer.go). The streams of the reconciliation, of the scrub's repair and of a restore into an encrypted
+connection (package 4, on 2026-11-23) go through `Connection.WriteSealedStream` ([sealedstream.go](../../internal/blob/sealedstream.go)),
+the same writes with one part in memory in place of the spool
+([Q-STOR-440](#q-stor-440--a-stream-into-an-encrypted-connection-holds-one-part-in-memory-not-the-spool)).
 
 Every write of a blob from a spool goes this way on an encrypted connection: an upload (R-STOR-004 to R-STOR-006), the fill of a remote
 repository (the proxy's artifacts and documents, through `items.Spool` and `blob.Store.CommitAll`), an import (through the target format's
@@ -5071,42 +5073,58 @@ Acceptance criteria:
 Priority: **P1** · Covers: STOR-015, STOR-022
 
 What stage 1's jobs do when a connection is encrypted (decision 7: switching encryption on or off is a new connection that the
-reconciliation fills; [Q-STOR-308](#q-stor-308--a-copy-into-an-encrypted-connection-always-gets-a-new-data-key)). **Not built** (package 4);
-until it lands each job passes over or refuses an encrypted connection as
-[Q-STOR-384](#q-stor-384--until-the-jobs-read-the-stored-format-each-passes-over-or-refuses-an-encrypted-connection) says.
+reconciliation fills; [Q-STOR-308](#q-stor-308--a-copy-into-an-encrypted-connection-always-gets-a-new-data-key)). **Built** on 2026-11-23
+(package 4): the reconciliation's copier ([copy.go](../../internal/blob/reconcile/copy.go)), the scrub's reader and repair
+([read.go](../../internal/blob/scrub/read.go), [repair.go](../../internal/blob/scrub/repair.go)), the orphan sweep's reading of the record
+([sweep_sealed.go](../../internal/blob/sweep_sealed.go)), the operator check's record ([verify.go](../../internal/blob/verify/verify.go)) and
+the stream into an encrypted connection ([sealedstream.go](../../internal/blob/sealedstream.go)), with the decisions
+[Q-STOR-440](#q-stor-440--a-stream-into-an-encrypted-connection-holds-one-part-in-memory-not-the-spool) to
+[Q-STOR-442](#q-stor-442--the-operator-check-opens-a-records-steps-1-to-6-and-reports-unknown_key-as-a-finding-record).
 
 - **The reconciliation's copies** (R-STOR-056), from a present copy on connection A to connection B:
 
   | A | B | What the worker does | The copy on B |
   |---|---|---|---|
   | plain | plain | as stage 1: a server-side copy within one endpoint, a stream across | as stage 1 |
-  | plain | encrypted | reads A whole through its reader, hashing (a mismatch marks A's copy `corrupt` and tries the next source), into its spool; then writes the spool to B as R-STOR-080 says, with a new data key | `present`, verified where B enforces payload checksums |
+  | plain | encrypted | reads A whole through its reader into B's writer, which hashes the plaintext as it passes (a mismatch completes nothing, marks A's copy `corrupt` and tries the next source) and writes it as R-STOR-080 says, with a new data key, one part in memory (Q-STOR-440) | `present`, verified where B enforces payload checksums |
   | encrypted | plain | reads A through its reader (decrypting, authenticating, hashing) and streams the plaintext to B as stage 1 streams | as stage 1's stream |
   | encrypted | encrypted | as plain to encrypted: decrypted from A, a new data key and new bytes on B, never a copy of A's ciphertext | `present`, verified where B enforces payload checksums |
 
-  A server-side copy is made only between two plain connections (R-STOR-062), so `storage.reconcile.server_side` concerns them alone. The
-  worker's spool bounds the streams into an encrypted connection (R-STOR-004's budget). Switching encryption on is therefore the owner's
+  A server-side copy is made only between two plain connections (R-STOR-062), so `storage.reconcile.server_side` concerns them alone. A
+  stream into an encrypted connection holds one part (`storage.object_store.multipart.part_size`) in memory, as a streamed copy between plain
+  connections does (Q-STOR-255, Q-STOR-440). A source read through its connection's reader is bound to the blob's digest and size; a refusal
+  of a reason that marks is evidence against the source, `unknown_key` is not (Q-STOR-311). Switching encryption on is therefore the owner's
   scenario: a new element with `encrypted: true` (the same bucket under another prefix will do), the reconciliation fills it, the old element
   gets `drain: true`; while it runs every blob lies twice. Switching it off, and answering a leaked storage key, are the same with the roles
   exchanged.
 - **The scrub** (R-STOR-027) reads every copy whole through its reader: on an encrypted connection that is steps 1 to 7 of R-STOR-077,
   every segment, the final segment and the digest. Every named failure but `unknown_key` marks the copy `corrupt` and queues its repair,
-  `destroyed_key` included (R-STOR-101); `unknown_key` leaves it due and counts it. The repair writes the copy anew from another connection's copy, with a new data key on an
-  encrypted connection, under the same name (the name depends on the digest and the name key only).
+  `destroyed_key` included (R-STOR-101); `unknown_key` leaves it due and counts it (`unknownKey` in the run's result, the result
+  `unknown_key` of `quader_storage_scrub_copies_total`). The repair writes the copy anew from another connection's copy, with a new data key
+  on an encrypted connection, under the same name (the name depends on the digest and the name key only), reads it back whole and records its
+  stored size and storage key. The blob's size a read binds is the plaintext size the copy's stored size stands for (the inverse of `S`,
+  R-STOR-076): with the digest bound as well it is the blob row's. On a plain connection a read refused as `format` (an object that carries a
+  record, Q-STOR-383) marks the copy too.
 - **A drain** (R-STOR-056) deletes the draining connection's objects as stage 1 says; its storage keys stay (R-STOR-083) until the operator
   destroys them after the connection is retired (R-STOR-099). A drain deletes only the objects that have copy rows, and `forget-connection`
   deletes none, so noncurrent versions and leftovers stay at the provider either way.
 - **The orphan sweep** (R-STOR-026) on an encrypted connection with keyed names lists `<prefix>/keyed/<xx>/`; an object whose name has a copy
   row is checked as stage 1 says (a listed size other than `stored_size` marks it `corrupt`). An object without a copy row is placed by its
   record ([Q-STOR-314](#q-stor-314--the-orphan-sweep-reads-the-record-of-an-object-it-cannot-place-and-never-deletes-one-without-a-readable-record)):
-  one `HeadObject`, steps 1 to 3 of R-STOR-077 and the check that the name is the keyed name of the unwrapped digest; then, by that digest,
-  stage 1's rules (adopted `present` and not verified for a live blob, with its `storage_key_id`; claimed through a `deleting` blob row and
-  deleted when no blob row exists and it is older than `min_age`). An object whose record does not open, whose record names a destroyed key
-  (`destroyed_key`, R-STOR-101), or whose name is not the keyed name of its digest, is reported as foreign and never deleted. On an encrypted connection without keyed names the sweep lists `sha256/` as stage 1
-  says, and an adoption also opens the record.
+  one `HeadObject`, steps 1 to 3 and 6 of R-STOR-077 and the check that the name is the keyed name of the unwrapped digest; then, by that
+  digest, stage 1's rules (adopted `present` and not verified for a live blob, with its `storage_key_id`, or `corrupt` with its repair queued
+  when the size the store answers is not `S(L)`; claimed through a `deleting` blob row and deleted when no blob row exists and it is older
+  than `min_age`). An object whose record does not open, whose record names a destroyed key (`destroyed_key`, R-STOR-101), whose name is not
+  the keyed name of its digest, or whose wrap binds the live blob's digest with another size, is reported as foreign and never deleted
+  ([Q-STOR-441](#q-stor-441--the-orphan-sweep-places-every-object-without-a-copy-row-by-its-record-also-below-sha256)). On an encrypted
+  connection without keyed names the sweep lists `sha256/` as stage 1 says, and every object without a copy row, an orphan as much as one
+  to adopt, is placed by its record and its name's digest the same way (Q-STOR-441).
 - **Collection** (R-STOR-057) deletes by the copy row's `object_key`; nothing changes.
 - **The operator check** (`quader admin storage verify`, R-STOR-058) also opens the record of each copy on an encrypted connection (one unwrap
-  from the `HeadObject` it sends anyway, no body read): a record that fails steps 1 to 5 is a finding `record` of that copy.
+  from the `HeadObject` it sends anyway, no body read): a record that fails steps 1 to 6 against the copy row and the blob row is a finding
+  `record` of that copy with the step's reason, and a blob none of whose copies is there is lost with the kind `record` when one of them had
+  such a finding; the command loads the key ring only when a connection is encrypted
+  ([Q-STOR-442](#q-stor-442--the-operator-check-opens-a-records-steps-1-to-6-and-reports-unknown_key-as-a-finding-record)).
 - **`restore-versions`** (R-HA-025, per connection) makes an older version current again; its record is its own, under a key of the
   connection, which is not destroyed while the connection is configured or holds anything (R-STOR-098), so it reads (R-STOR-078's last row),
   unless its key was destroyed; `restore-versions` never runs on a retired connection, since no replica configures it.
@@ -10323,7 +10341,9 @@ served as the blob's bytes: ciphertext to a client, and to a ranged read without
 
 ### Q-STOR-384 · Until the jobs read the stored format, each passes over or refuses an encrypted connection
 
-Status: **Decided by the builder** — selected from the options below; the owner reviews it.
+Status: **Decided by the builder** — selected from the options below; the owner reviews it. *Ended on 2026-11-23 by package 4: every job reads
+and writes the stored format (R-STOR-087, backup-and-restore.md R-BAK-031); the filtered view of the scrub and the two refusals of the backup
+commands are gone, and so are the gaps the decision recorded.*
 
 Context: R-STOR-087 and R-BAK-031 are package 4's. After package 3 the stage-1 jobs meet encrypted copies: read through the connection's
 reader they get plaintext (the scrub would compare its length with the stored size and mark every copy `corrupt`); the backup copies objects
@@ -10336,11 +10356,8 @@ as they lie and checks them against the digest; the restore writes the pool's ob
 | (c) Let each job run as stage 1 | — | — | The scrub marks every encrypted copy corrupt; the restore writes plaintext |
 
 **Choice:** (a). With `storage.replication.min_copies` equal to the number of connections a commit writes every encrypted connection
-itself, so a second one is filled without the reconciliation. **Applied in the spec:** R-STOR-087, R-STOR-080; the gaps are
-[H-1410](../security/stored-content-format.md#h-1410--until-the-jobs-read-the-stored-format-an-encrypted-copy-is-neither-scrubbed-nor-repaired-nor-backed-up)
-and [H-1411](../security/stored-content-format.md#h-1411--the-orphan-sweep-of-a-connection-without-keyed-names-adopts-an-unplaced-encrypted-object-as-corrupt);
-code: `scrubbed` of [wire_storage_scrub.go](../../internal/app/wire_storage_scrub.go), [backup_create.go](../../cmd/quader/backup_create.go),
-[backup_restore.go](../../cmd/quader/backup_restore.go).
+itself, so a second one is filled without the reconciliation. **Applied in the spec:** R-STOR-087, R-STOR-080, until package 4 closed the two
+gaps it recorded (an encrypted copy neither scrubbed, repaired nor backed up; the sweep adopting an unplaced encrypted object as corrupt).
 
 ### Q-STOR-385 · An encrypted read holds back its last segment
 
@@ -10376,6 +10393,55 @@ beside that check on the same registry (bastion.md R-BAS-008), with the registra
 
 **Choice:** (a). **Applied in the spec:** [operations-and-observability.md](operations-and-observability.md) R-OPS-007's table; code:
 `allowedLabels` in [labels.go](../../internal/observability/labels.go).
+
+### Q-STOR-440 · A stream into an encrypted connection holds one part in memory, not the spool
+
+Status: **Decided by the builder** (package 4) — selected from the options below; the owner reviews it.
+
+Context: R-STOR-087 had the reconciliation read a source "into its spool" and write the spool to an encrypted connection, and R-STOR-080
+named the streams of the reconciliation and of a restore among the writes "from a spool". The scrub's repair writes into an encrypted
+connection as well and holds no spool; the restore Job has none configured. The writer encrypts a section of plaintext as it is read, twice
+where a payload checksum is taken, and the SDK's retry seeks back in it (Q-STOR-301): what it needs is the part, not the whole blob.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One writer for every stream into an encrypted connection: the plaintext read part by part into memory (`multipart.part_size`, raised to fit 10,000 parts), each part sealed under the write's data key as it is sent, the SHA-256 and the length checked before the last part and the completion (chosen) | `Connection.WriteSealedStream` | The same memory as a streamed copy between plain connections (Q-STOR-255); no disk and no spool budget for a job; one function for the reconciliation, the scrub's repair and the restore; a stream that is not the blob completes nothing | A retry of the whole copy reads the source again |
+| (b) Spool the source, then the store's writer | As specified | A retry of a part reads the spool, not the source | The scrub and the restore Job would need a spool of their own; a blob as large as the spool's budget blocks every other stream of the worker |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-080, R-STOR-087, backup-and-restore.md R-BAK-031; code:
+[sealedstream.go](../../internal/blob/sealedstream.go).
+
+### Q-STOR-441 · The orphan sweep places every object without a copy row by its record, also below sha256/
+
+Status: **Decided by the builder** (package 4) — selected from the options below; the owner reviews it.
+
+Context: R-STOR-087 read steps 1 to 3 of the record of an object below `keyed/` that has no copy row and applied stage 1's rules by the
+digest; below `sha256/` of an encrypted connection without keyed names it opened the record only for an adoption. Q-STOR-314's rule is that
+the sweep never deletes an object without a readable record. Steps 4 and 5 compare with a copy row the object does not have.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) For every object without a copy row on an encrypted connection: one `HeadObject`, steps 1 to 3 and 6 (`blobcrypt.OpenRecord`), the name checked against the wrap's digest; adopted `corrupt` when the stored size is not `S(L)`; reported as foreign when the wrap binds the live blob's digest with another size; an orphan claimed only once placed (chosen) | Q-STOR-314 below `sha256/` as below `keyed/` | No object of an encrypted connection is deleted unless its record opens and names it; a genuine record on a cut body is adopted and repaired as stage 1 adopts a short object | One `HeadObject` per orphan below `sha256/` that stage 1 deleted by its name |
+| (b) Steps 1 to 6 with the head's size as the object's (`blobcrypt.Open` without a copy row) | No new function in `blobcrypt` | One call | A cut body yields no digest, so it can be neither adopted nor named |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-087; code: [sweep_sealed.go](../../internal/blob/sweep_sealed.go), `OpenRecord` of
+[record.go](../../internal/blob/blobcrypt/record.go).
+
+### Q-STOR-442 · The operator check opens a record's steps 1 to 6 and reports unknown_key as a finding record
+
+Status: **Decided by the builder** (package 4) — selected from the options below; the owner reviews it.
+
+Context: R-STOR-087 asked the operator check for a finding `record` when steps 1 to 5 fail. The check holds the copy row and the blob row,
+so `blobcrypt.Open` runs steps 1 to 6 at the cost of one comparison more. An unknown key is no damage (Q-STOR-311), but the copy cannot be read
+now, which is what the operator check reports.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Steps 1 to 6; every refusal is a finding `record` with its reason (`unknown_key` among them); a blob none of whose copies is there is lost of kind `record`; the key ring is loaded only when a connection is encrypted (chosen) | One unwrap per copy, from the `HeadObject` it sends anyway | The operator sees the reason, and an unreadable blob as lost, whatever the cause; a plain installation's check needs no key ring | A blob whose key only awaits the import is reported lost until then |
+| (b) Leave `unknown_key` out of the findings | As the scrub | No alarm before the import | A blob nobody can read now passes the check that exists to find exactly that |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-087; code: `openRecord` of [verify.go](../../internal/blob/verify/verify.go), `recordKeys`
+of [admin_storage.go](../../cmd/quader/admin_storage.go).
 
 ## What this does not cover
 

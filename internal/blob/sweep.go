@@ -374,7 +374,8 @@ func (s *sweep) foreign(ctx context.Context, conn *Connection, res *SweepConnect
 	if conn.Prefix() != "" {
 		top = conn.Prefix() + "/"
 	}
-	families := map[string]bool{top + "sha256/": true, top + "_uploads/": true, top + "_probe/": true, top + "_journal/": true}
+	// keyed/ takes the place of sha256/ on an encrypted connection with keyed names (R-STOR-086)
+	families := map[string]bool{blobFamily(conn): true, top + "_uploads/": true, top + "_probe/": true, top + "_journal/": true}
 	err := s.listAll(ctx, conn, top, "/", func(page ListPage) error {
 		for _, p := range page.Prefixes {
 			if !families[p] {
@@ -391,7 +392,7 @@ func (s *sweep) foreign(ctx context.Context, conn *Connection, res *SweepConnect
 	if err != nil {
 		return err
 	}
-	sha := KeyPrefix(conn.Prefix())
+	sha := blobFamily(conn)
 	return s.listAll(ctx, conn, sha, "/", func(page ListPage) error {
 		for _, p := range page.Prefixes {
 			if hh := strings.TrimSuffix(strings.TrimPrefix(p, sha), "/"); !isPrefixHex(hh) {
@@ -442,24 +443,40 @@ func (s *sweep) listAll(ctx context.Context, conn *Connection, prefix, delimiter
 	}
 }
 
-// listed is an object of a listing below sha256/ with the digest its name carries.
+// listed is an object of a listing below sha256/ with the digest its name carries, or below keyed/, whose name carries none until
+// the object's record named it (placed).
 type listed struct {
 	o ObjectInfo
 	d Digest
+	// keyID and stored are what an object's record says, for an object of an encrypted connection the sweep placed by its record:
+	// the storage key it names and S(L) of the size its wrap binds (R-STOR-087).
+	keyID  string
+	stored int64
 }
 
 // prefix walks one top-level prefix of a connection, a page of the listing at a time, and drops the rows whose deletes have settled.
 func (s *sweep) prefix(ctx context.Context, conn *Connection, hh string, res *SweepConnectionResult) error {
-	err := s.listAll(ctx, conn, KeyPrefix(conn.Prefix())+hh+"/", "", func(page ListPage) error {
+	err := s.listAll(ctx, conn, blobFamily(conn)+hh+"/", "", func(page ListPage) error {
 		var items []listed
 		for _, o := range page.Objects {
 			res.ObjectsSeen++
+			if conn.KeyedNames() {
+				if !isKeyedName(conn.Prefix(), o.Key) {
+					s.foreignKey(conn, res, o.Key)
+					continue
+				}
+				items = append(items, listed{o: o})
+				continue
+			}
 			d, ok := ParseKey(conn.Prefix(), o.Key)
 			if !ok {
 				s.foreignKey(conn, res, o.Key)
 				continue
 			}
 			items = append(items, listed{o: o, d: d})
+		}
+		if conn.Encrypted() {
+			return s.sealedPage(ctx, conn, items, res)
 		}
 		return s.page(ctx, conn, items, res)
 	})
@@ -597,6 +614,12 @@ func (s *sweep) adopt(ctx context.Context, conn *Connection, it listed, blobSize
 			state = CopyCorrupt
 		}
 	}
+	return s.adoptRow(ctx, conn, it, blobSize, state, "")
+}
+
+// adoptRow inserts the adopted copy row of the object it of a live blob: its stored size, its state and, on an encrypted connection,
+// the storage key its record names; a corrupt one queues its repair.
+func (s *sweep) adoptRow(ctx context.Context, conn *Connection, it listed, stored int64, state, keyID string) bool {
 	var adopted bool
 	var dm damage
 	err := s.r.c.db.InTx(ctx, func(tx meta.Tx) error {
@@ -611,7 +634,7 @@ func (s *sweep) adopt(ctx context.Context, conn *Connection, it listed, blobSize
 			return err
 		}
 		n, err := qs.SweepAdoptCopy(ctx, q.SweepAdoptCopyParams{
-			Sha256: it.d.Bytes(), ConnectionID: conn.ID(), ObjectKey: it.o.Key, StoredSize: blobSize, State: state,
+			Sha256: it.d.Bytes(), ConnectionID: conn.ID(), ObjectKey: it.o.Key, StoredSize: stored, StorageKeyID: keyID, State: state,
 			WrittenUnix: float64(it.o.LastModified.UnixNano()) / 1e9,
 		})
 		if err != nil || n == 0 {

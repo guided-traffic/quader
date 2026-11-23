@@ -255,20 +255,6 @@ func SingleConnection(prefix string, objects ObjectStore) *Connections {
 // List is the connections in list order.
 func (cs *Connections) List() []*Connection { return slices.Clone(cs.list) }
 
-// Without is the set without the connections drop reports, in list order and with their positions kept: the view of a job that
-// passes over some connections (the scrub over the encrypted ones until it reads the stored format, stored-content-encryption.md).
-// It may be empty.
-func (cs *Connections) Without(drop func(*Connection) bool) *Connections {
-	out := &Connections{byID: map[string]*Connection{}}
-	for _, c := range cs.list {
-		if !drop(c) {
-			out.list = append(out.list, c)
-			out.byID[c.ID()] = c
-		}
-	}
-	return out
-}
-
 // Get is the connection of an id, false when this replica does not configure it.
 func (cs *Connections) Get(id string) (*Connection, bool) {
 	c, ok := cs.byID[id]

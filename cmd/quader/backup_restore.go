@@ -12,6 +12,7 @@ import (
 	"github.com/guided-traffic/quader/internal/backup"
 	"github.com/guided-traffic/quader/internal/backup/format"
 	"github.com/guided-traffic/quader/internal/backup/restore"
+	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/blob/s3"
 	"github.com/guided-traffic/quader/internal/buildinfo"
 	"github.com/guided-traffic/quader/internal/config"
@@ -120,24 +121,22 @@ func restoreConnections(ctx context.Context, cfg *config.Config, out *outbound.F
 		return nil, err
 	}
 	res := make([]restore.Connection, 0, len(conns))
-	sink := true
 	for i, el := range conns {
-		if sink && !el.Drain {
-			sink = false
-			if el.Encrypted {
-				// the restore writes the pool's objects as they lie into the first connection without drain; into an encrypted one
-				// that would be the blobs in the clear, and its table and drawing of keys are not built (backup-and-restore.md R-BAK-031)
-				return nil, fmt.Errorf("storage.connections[%d] (%s): encrypted: a restore into an encrypted connection is not built yet; put a connection that is not encrypted first (backup-and-restore.md R-BAK-031)", i, el.ID)
-			}
-		}
 		cc := config.ClientConfig(i, el, cfg.Storage.ObjectStore)
 		client, err := s3.NewFromFactory(ctx, cc, out)
 		if err != nil {
 			return nil, err
 		}
-		res = append(res, restore.Connection{
+		c := restore.Connection{
 			ID: el.ID, Bucket: el.Bucket, Prefix: el.KeyPrefix(), Drain: el.Drain, Store: s3.NewBlobSink(client, cc, int64(cfg.Backup.Copy.PartSize)),
-		})
+			Encrypted: el.Encrypted, KeyedNames: el.UsesKeyedNames(),
+		}
+		if el.Encrypted {
+			// an encrypted connection is written through its own writer with the keys the restore opens from the backup or draws
+			// (backup-and-restore.md R-BAK-031)
+			c.Writer = blob.NewConnection(el, client)
+		}
+		res = append(res, c)
 	}
 	return res, nil
 }

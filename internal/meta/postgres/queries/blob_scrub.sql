@@ -33,8 +33,9 @@ UPDATE blob_copies SET verified_at = now(), checked_at = now()
 
 -- name: ScrubCopies :many
 -- The copies of one blob with what the scrub's repair and the recheck compare: the time of the copy's last change of state and
--- of its write, in microseconds.
-SELECT c.connection_id, c.object_key, c.stored_size, c.state, c.verified_at, c.checked_at, c.state_changed_at,
+-- of its write, in microseconds, and the storage key of a copy on an encrypted connection (empty on a plain one).
+SELECT c.connection_id, c.object_key, c.stored_size, COALESCE(c.storage_key_id, '')::text AS storage_key_id, c.state, c.verified_at,
+       c.checked_at, c.state_changed_at,
        (EXTRACT(EPOCH FROM c.state_changed_at) * 1000000)::bigint AS state_changed_us,
        (EXTRACT(EPOCH FROM c.created_at) * 1000000)::bigint AS created_us,
        (sc.retired_at IS NOT NULL)::boolean AS retired
@@ -46,8 +47,10 @@ SELECT c.connection_id, c.object_key, c.stored_size, c.state, c.verified_at, c.c
 -- name: ScrubRecordWhole :execrows
 -- A copy marked missing or corrupt was shown whole (written again and read back by the scrub's repair, or read to its end by a
 -- recheck): it is present and verified, but only while it is still the row that was found damaged (the same state and the same
--- time of that change), so a row that collection dropped and a commit wrote again is never taken for it.
-UPDATE blob_copies SET state = 'present', stored_size = sqlc.arg(stored_size)::bigint, verified_at = now(), checked_at = now(),
+-- time of that change), so a row that collection dropped and a commit wrote again is never taken for it. A repair on an encrypted
+-- connection names the storage key it wrapped the new data key under (R-STOR-087); empty keeps the row's.
+UPDATE blob_copies SET state = 'present', stored_size = sqlc.arg(stored_size)::bigint,
+       storage_key_id = COALESCE(NULLIF(sqlc.arg(storage_key_id)::text, ''), storage_key_id), verified_at = now(), checked_at = now(),
        state_changed_at = now()
  WHERE sha256 = sqlc.arg(sha256)::bytea AND connection_id = sqlc.arg(connection_id)::text AND state = sqlc.arg(from_state)::text
    AND state IN ('missing', 'corrupt')

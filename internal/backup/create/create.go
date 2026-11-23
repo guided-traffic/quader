@@ -55,6 +55,9 @@ type Deps struct {
 	// SourceConnections name where the connections of the source are (no credentials), in the order of the configuration:
 	// recorded in the manifest, for the journal of a restore (R-BAK-030).
 	SourceConnections []format.ConnectionRef
+	// Staying are the ids of the configuration's connections with drain: false: a pool object wrapped under a storage key of any
+	// other connection is copied again from one of them (the re-pool, R-BAK-032).
+	Staying []string
 	// Instance is the pod name, Version and Revision the build.
 	Instance, Version, Revision string
 	// JobName is the Kubernetes Job of the pod (QUADER_JOB_NAME); empty outside a Job (R-BAK-010).
@@ -98,7 +101,7 @@ const (
 	PointSnapshot      = "snapshot"       // the snapshot is open
 	PointPinsCommitted = "pins-committed" // every pin is committed, the hold is still 'all'
 	PointHoldPinned    = "hold-pinned"    // the hold is 'pinned'
-	PointCopied        = "copied"         // every pin is gone, the hold is 'none'
+	PointCopied        = "copied"         // every pin is decided and records its pool object; the hold is still 'pinned'
 	PointFinalizing    = "finalizing"     // before the spot check and the manifest
 )
 
@@ -187,7 +190,16 @@ func (p *Pipeline) Create(ctx context.Context, opts backup.CreateOptions) (*back
 	}
 
 	h, hctx := backup.StartHandle(ctx, d.Store, run, p.timing(), d.Log)
-	r := &runState{p: p, d: d, h: h, opts: opts, id: id, runID: runID, layout: layout, facts: facts, started: started, res: &backup.Result{BackupID: string(id)}}
+	r := &runState{
+		p: p, d: d, h: h, opts: opts, id: id, runID: runID, layout: layout, facts: facts, started: started, res: &backup.Result{BackupID: string(id)},
+		staying: map[string]bool{}, configured: map[string]bool{},
+	}
+	for _, c := range d.Staying {
+		r.staying[c] = true
+	}
+	for _, c := range d.SourceConnections {
+		r.configured[c.ID] = true
+	}
 	d.Log.Info("backup run started", "run", runID, "backup", id, "trigger", opts.Trigger)
 
 	err = r.execute(hctx)
@@ -212,7 +224,7 @@ func (r *runState) finish(ctx, hctx context.Context, err error) (*backup.Result,
 
 	if err == nil {
 		state := backup.StateCompleted
-		if r.res.DamagedBlobs > 0 || r.pruneWarned {
+		if r.res.DamagedBlobs > 0 || r.pruneWarned || r.warned {
 			state = backup.StateCompletedWithWarning
 		}
 		r.res.Outcome = string(state)

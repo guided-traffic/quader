@@ -138,6 +138,13 @@ func (s *BlobSink) CopyFrom(ctx context.Context, src target.ObjectRef, d format.
 	return s.confirm(ctx, d, size)
 }
 
+// CopyAs copies a pool object server-side to key, keeping the source's metadata: an encrypted connection's copy written as it is, with
+// its record, into a restore's encrypted sink (backup-and-restore.md R-BAK-031). It returns target.ErrServerCopyUnavailable when the
+// store or the credentials cannot, and target.ErrNotFound for a missing source. The caller confirms the object.
+func (s *BlobSink) CopyAs(ctx context.Context, src target.ObjectRef, key string) error {
+	return s.copier.Copy(ctx, src, key)
+}
+
 // confirm checks that the object exists with the expected size.
 func (s *BlobSink) confirm(ctx context.Context, d format.Digest, size int64) error {
 	ok, err := s.Has(ctx, d, size)
@@ -245,8 +252,8 @@ func (s *BlobSink) root() string {
 
 // FirstForeign returns the first thing below the blob prefix that is neither a probe object, nor the connection's marker
 // <prefix>/_connection (which Marker reads), nor, with allowBlobs, a blob: the first other object directly below the prefix
-// or the first key prefix other than _probe/ (and sha256/). It lists with a delimiter, so a prefix full of blobs costs one
-// request (R-BAK-020 check 5, R-BAK-030).
+// or the first key prefix other than _probe/ (and sha256/ and keyed/, where an encrypted connection with keyed names keeps its
+// blobs, R-BAK-031). It lists with a delimiter, so a prefix full of blobs costs one request (R-BAK-020 check 5, R-BAK-030).
 func (s *BlobSink) FirstForeign(ctx context.Context, allowBlobs bool) (string, error) {
 	root := s.root()
 	marker := blob.MarkerKey(s.prefix)
@@ -263,7 +270,7 @@ func (s *BlobSink) FirstForeign(ctx context.Context, allowBlobs bool) (string, e
 		}
 		for _, p := range page.Prefixes {
 			name := strings.TrimPrefix(p, root)
-			if name == "_probe/" || (allowBlobs && name == "sha256/") {
+			if name == "_probe/" || (allowBlobs && (name == "sha256/" || name == "keyed/")) {
 				continue
 			}
 			return p, nil

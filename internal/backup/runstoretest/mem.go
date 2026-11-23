@@ -166,8 +166,8 @@ func (m *Mem) Fence(_ context.Context, id string, from, to backup.State, margin 
 // AddPins implements backup.RunStore.
 func (m *Mem) AddPins(context.Context, string, []format.BlobEntry) error { return nil }
 
-// DeletePins implements backup.RunStore.
-func (m *Mem) DeletePins(context.Context, string, []format.Digest) error { return nil }
+// SetPinPools implements backup.RunStore.
+func (m *Mem) SetPinPools(context.Context, string, []format.BlobEntry) error { return nil }
 
 // Finish implements backup.RunStore.
 func (m *Mem) Finish(_ context.Context, id string, state backup.State, result, runErr json.RawMessage) error {

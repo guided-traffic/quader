@@ -637,3 +637,28 @@ func TestR_BAK_017_RunSweepClockReadsTheNewestRecordedSweep(t *testing.T) {
 		t.Fatalf("at %v ok %v err %v", at, ok, err)
 	}
 }
+
+// TestR_BAK_032_TheKeepSetIsASetOfPoolNames: a digest's plain pool object and its encrypted ones are kept or swept each by its own
+// name (R-BAK-017, R-BAK-032), and the retained backups carry the key identifiers of their manifests.
+func TestR_BAK_032_TheKeepSetIsASetOfPoolNames(t *testing.T) {
+	e := newEnv(t, Policy{KeepLast: 5})
+	d := fixture.Digest("sealed blob")
+	kept := format.BlobEntry{Digest: d, Pool: "sk-archive-1-0000000a"}
+	other := format.BlobEntry{Digest: d, Pool: "sk-archive-2-0000000b"}
+	e.put(t, fixture.Spec{ID: fixture.ID(1), Blobs: []string{"plain"}, Sealed: []fixture.Sealed{{Content: "sealed blob", KeyID: kept.Pool, Body: []byte("ciphertext")}}})
+	e.mem.Set(e.l.Pool(d), []byte("sealed blob"))
+	e.mem.Set(e.l.PoolObject(other), []byte("other ciphertext"))
+	res := &backup.Result{}
+	if err := e.stage.prune(context.Background(), &fakeFence{}, res, false); err != nil {
+		t.Fatal(err)
+	}
+	if !e.has(e.l.PoolObject(kept)) || e.has(e.l.Pool(d)) || e.has(e.l.PoolObject(other)) || res.PoolObjectsDeleted != 2 {
+		t.Fatalf("kept %v, plain %v, other key %v, deleted %d", e.has(e.l.PoolObject(kept)), e.has(e.l.Pool(d)), e.has(e.l.PoolObject(other)), res.PoolObjectsDeleted)
+	}
+	if !e.has(e.l.Pool(fixture.Digest("plain"))) || len(res.Warnings) != 0 {
+		t.Fatalf("the plain listed object went, or warnings %v", res.Warnings)
+	}
+	if len(res.Retained) != 1 || res.Retained[0].PoolKeyIDs != nil || res.Retained[0].SealedKeyIDs != nil {
+		t.Fatalf("a manifest without storageKeys gives null key identifiers: %+v", res.Retained)
+	}
+}

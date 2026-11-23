@@ -142,7 +142,8 @@ func (q *Queries) BackupMissingPrivileges(ctx context.Context, pairs []string) (
 }
 
 const backupPresentCopies = `-- name: BackupPresentCopies :many
-SELECT sha256, connection_id, object_key, stored_size, (verified_at IS NOT NULL)::boolean AS verified
+SELECT sha256, connection_id, object_key, stored_size, (verified_at IS NOT NULL)::boolean AS verified,
+       COALESCE(storage_key_id, '')::text AS storage_key_id
   FROM blob_copies
  WHERE sha256 = ANY($1::bytea[]) AND state = 'present'
  ORDER BY sha256, connection_id
@@ -154,10 +155,12 @@ type BackupPresentCopiesRow struct {
 	ObjectKey    string
 	StoredSize   int64
 	Verified     bool
+	StorageKeyID string
 }
 
 // The present copies of a page of pins at READ COMMITTED, read when the copy phase reaches the page (R-BAK-030, Q-BAK-70): one
-// lookup by the primary key of blob_copies per page of 1,000 pins.
+// lookup by the primary key of blob_copies per page of 1,000 pins. The storage key of a copy on an encrypted connection names its
+// pool object (R-BAK-032); empty on a plain one.
 func (q *Queries) BackupPresentCopies(ctx context.Context, digests [][]byte) ([]BackupPresentCopiesRow, error) {
 	rows, err := q.db.Query(ctx, backupPresentCopies, digests)
 	if err != nil {
@@ -173,6 +176,7 @@ func (q *Queries) BackupPresentCopies(ctx context.Context, digests [][]byte) ([]
 			&i.ObjectKey,
 			&i.StoredSize,
 			&i.Verified,
+			&i.StorageKeyID,
 		); err != nil {
 			return nil, err
 		}
@@ -260,6 +264,36 @@ func (q *Queries) BackupSequencesWithoutSelect(ctx context.Context, schema strin
 	return items, nil
 }
 
+const backupStorageKeyStates = `-- name: BackupStorageKeyStates :many
+SELECT key_id, state FROM storage_keys ORDER BY key_id
+`
+
+type BackupStorageKeyStatesRow struct {
+	KeyID string
+	State string
+}
+
+// The storage keys the snapshot's database holds, with their states (R-BAK-032): the manifest's storageKeys.sealed and destroyed.
+func (q *Queries) BackupStorageKeyStates(ctx context.Context) ([]BackupStorageKeyStatesRow, error) {
+	rows, err := q.db.Query(ctx, backupStorageKeyStates)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []BackupStorageKeyStatesRow{}
+	for rows.Next() {
+		var i BackupStorageKeyStatesRow
+		if err := rows.Scan(&i.KeyID, &i.State); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const backupTableColumns = `-- name: BackupTableColumns :many
 SELECT c.relname::text AS table_name, a.attname::text AS column_name, pg_catalog.format_type(a.atttypid, a.atttypmod)::text AS column_type
   FROM pg_catalog.pg_class c
@@ -329,7 +363,7 @@ func (q *Queries) BackupTablesWithoutSelect(ctx context.Context, schema string) 
 }
 
 const listBackupPins = `-- name: ListBackupPins :many
-SELECT sha256, size FROM backup_blob_pin
+SELECT sha256, size, COALESCE(pool, '')::text AS pool FROM backup_blob_pin
  WHERE run_id = $1::text::uuid AND sha256 > $2::bytea
  ORDER BY sha256
  LIMIT $3::int
@@ -344,10 +378,12 @@ type ListBackupPinsParams struct {
 type ListBackupPinsRow struct {
 	Sha256 []byte
 	Size   int64
+	Pool   string
 }
 
 // The to-copy set of a run in digest order after a position, for the copy phase (R-BAK-006): the set is never held in
-// memory, so a first backup of millions of blobs stays bounded.
+// memory, so a first backup of millions of blobs stays bounded. The final blob list reads them once more for their pool objects
+// (R-BAK-032); an empty pool is a pin whose copy was not confirmed.
 func (q *Queries) ListBackupPins(ctx context.Context, arg ListBackupPinsParams) ([]ListBackupPinsRow, error) {
 	rows, err := q.db.Query(ctx, listBackupPins, arg.RunID, arg.After, arg.RowLimit)
 	if err != nil {
@@ -357,7 +393,7 @@ func (q *Queries) ListBackupPins(ctx context.Context, arg ListBackupPinsParams) 
 	items := []ListBackupPinsRow{}
 	for rows.Next() {
 		var i ListBackupPinsRow
-		if err := rows.Scan(&i.Sha256, &i.Size); err != nil {
+		if err := rows.Scan(&i.Sha256, &i.Size, &i.Pool); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

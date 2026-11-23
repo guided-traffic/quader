@@ -26,16 +26,19 @@ type fakeRuns struct {
 	mu       sync.Mutex
 	run      backup.Run
 	have     bool
-	pins     map[format.Digest]int64
-	holds    []backup.Hold // every hold the run had, in order
-	taken    *backup.Run   // when set, Begin reports the slot as taken by this run
+	pins     map[format.Digest]format.BlobEntry
+	pinPools map[format.Digest]string // every pool a pin recorded, kept after Finish deletes the pins
+	holds    []backup.Hold            // every hold the run had, in order
+	taken    *backup.Run              // when set, Begin reports the slot as taken by this run
 	fenceOK  bool
 	finished backup.State
 	result   json.RawMessage
 	errJSON  json.RawMessage
 }
 
-func newFakeRuns() *fakeRuns { return &fakeRuns{pins: map[format.Digest]int64{}, fenceOK: true} }
+func newFakeRuns() *fakeRuns {
+	return &fakeRuns{pins: map[format.Digest]format.BlobEntry{}, pinPools: map[format.Digest]string{}, fenceOK: true}
+}
 
 func (f *fakeRuns) Begin(_ context.Context, r backup.NewRun) (backup.Run, error) {
 	f.mu.Lock()
@@ -107,16 +110,20 @@ func (f *fakeRuns) AddPins(_ context.Context, _ string, es []format.BlobEntry) e
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	for _, e := range es {
-		f.pins[e.Digest] = e.Size
+		f.pins[e.Digest] = e
 	}
 	return nil
 }
 
-func (f *fakeRuns) DeletePins(_ context.Context, _ string, ds []format.Digest) error {
+func (f *fakeRuns) SetPinPools(_ context.Context, _ string, es []format.BlobEntry) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	for _, d := range ds {
-		delete(f.pins, d)
+	for _, e := range es {
+		if p, ok := f.pins[e.Digest]; ok {
+			p.Pool = e.Pool
+			f.pins[e.Digest] = p
+			f.pinPools[e.Digest] = e.Pool
+		}
 	}
 	return nil
 }
@@ -130,7 +137,7 @@ func (f *fakeRuns) Finish(_ context.Context, _ string, s backup.State, res, e js
 	f.run.State, f.run.Hold = s, backup.HoldNone
 	f.holds = append(f.holds, backup.HoldNone)
 	f.finished, f.result, f.errJSON = s, res, e
-	f.pins = map[format.Digest]int64{}
+	f.pins = map[format.Digest]format.BlobEntry{}
 	return nil
 }
 func (f *fakeRuns) PruneHistory(context.Context, time.Duration) (int64, error) { return 0, nil }
@@ -140,9 +147,9 @@ func (f *fakeRuns) Pins(_ context.Context, _ string, after format.Digest, limit 
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	var out []format.BlobEntry
-	for d, s := range f.pins {
+	for d, e := range f.pins {
 		if after.Less(d) {
-			out = append(out, format.BlobEntry{Digest: d, Size: s})
+			out = append(out, e)
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Digest.Less(out[j].Digest) })
@@ -185,6 +192,7 @@ type fakeSnap struct {
 	closed     bool
 	released   bool
 	onExport   func(ctx context.Context)
+	keys       []backup.StorageKeyState // the rows of storage_keys the snapshot holds
 }
 
 func (s *fakeSnap) Open(ctx context.Context, _ backup.SnapshotOptions, onLocked func(context.Context) error) (backup.Snapshot, error) {
@@ -200,7 +208,7 @@ func (s *fakeSnap) Open(ctx context.Context, _ backup.SnapshotOptions, onLocked 
 
 func (s *fakeSnap) Info() backup.SnapshotInfo {
 	return backup.SnapshotInfo{
-		At: time.Now(), ServerVersion: "17.6", KeyIDs: []string{"2026-10"}, Tables: s.tables,
+		At: time.Now(), ServerVersion: "17.6", KeyIDs: []string{"2026-10"}, Tables: s.tables, StorageKeys: s.keys,
 		Schema: format.SchemaInfo{Step: 2, Steps: []format.SchemaStep{{Step: 1, Name: "a", SHA256: "00"}, {Step: 2, Name: "b", SHA256: "11"}}},
 	}
 }
@@ -238,14 +246,23 @@ type fakeSource struct {
 	sizes  map[format.Digest]int64
 	down   map[string]bool // connections that answer every request with a failure of the connection
 	drain  map[string]bool
-	heads  map[string]int // Size calls per connection
-	mu     sync.Mutex
+	heads  map[string]int // Stat calls per connection
+	// enc names the connections that are encrypted, meta the record of each encrypted object and keys the storage key of each
+	// encrypted copy row (R-BAK-031, R-BAK-032).
+	enc  map[string]bool
+	meta map[string]map[format.Digest]map[string]string
+	keys map[string]map[format.Digest]string
+	// etag is the entity tag Stat answers for each connection's objects; empty when unset.
+	etag map[string]string
+	mu   sync.Mutex
 }
 
 func newFakeSource() *fakeSource {
 	return &fakeSource{
 		data: map[format.Digest][]byte{}, second: map[format.Digest][]byte{}, rows: map[format.Digest][]string{},
 		sizes: map[format.Digest]int64{}, down: map[string]bool{}, drain: map[string]bool{}, heads: map[string]int{},
+		enc: map[string]bool{}, meta: map[string]map[format.Digest]map[string]string{}, keys: map[string]map[format.Digest]string{},
+		etag: map[string]string{},
 	}
 }
 
@@ -271,43 +288,50 @@ func (s *fakeSource) Copies(_ context.Context, digests []format.Digest) (map[for
 	for _, d := range digests {
 		for _, conn := range s.rows[d] {
 			pos := map[string]int{"default": 1, "secondary": 2}[conn]
-			out[d] = append(out[d], backup.SourceCopy{Connection: conn, Key: d.Hex(), StoredSize: s.sizes[d], ServerSide: conn == "default", Position: pos, Drain: s.drain[conn]})
+			size := s.sizes[d]
+			if s.enc[conn] {
+				size = int64(len(s.objects(conn)[d]))
+			}
+			out[d] = append(out[d], backup.SourceCopy{
+				Connection: conn, Key: d.Hex(), StoredSize: size, ServerSide: conn == "default", Position: pos,
+				Drain: s.drain[conn], Encrypted: s.enc[conn], StorageKeyID: s.keys[conn][d],
+			})
 		}
 	}
 	return out, nil
 }
 
-func (s *fakeSource) Size(_ context.Context, c backup.SourceCopy) (int64, error) {
+func (s *fakeSource) Stat(_ context.Context, c backup.SourceCopy) (backup.SourceObject, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.heads[c.Connection]++
 	if s.down[c.Connection] {
-		return 0, fmt.Errorf("%w: 503", backup.ErrCopyUnavailable)
+		return backup.SourceObject{}, fmt.Errorf("%w: 503", backup.ErrCopyUnavailable)
 	}
 	d, _ := format.ParseDigest(c.Key)
 	b, ok := s.objects(c.Connection)[d]
 	if !ok {
-		return 0, backup.ErrBlobNotFound
+		return backup.SourceObject{}, backup.ErrBlobNotFound
 	}
-	return int64(len(b)), nil
+	return backup.SourceObject{Size: int64(len(b)), Metadata: s.meta[c.Connection][d], ETag: s.etag[c.Connection]}, nil
 }
 
-func (s *fakeSource) Open(_ context.Context, c backup.SourceCopy, off, length int64) (io.ReadCloser, error) {
+func (s *fakeSource) Open(_ context.Context, c backup.SourceCopy, off, length int64) (io.ReadCloser, backup.SourceObject, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.down[c.Connection] {
-		return nil, fmt.Errorf("%w: 503", backup.ErrCopyUnavailable)
+		return nil, backup.SourceObject{}, fmt.Errorf("%w: 503", backup.ErrCopyUnavailable)
 	}
 	d, _ := format.ParseDigest(c.Key)
 	b, ok := s.objects(c.Connection)[d]
 	if !ok {
-		return nil, backup.ErrBlobNotFound
+		return nil, backup.SourceObject{}, backup.ErrBlobNotFound
 	}
 	end := int64(len(b))
 	if length >= 0 {
 		end = min(off+length, end)
 	}
-	return io.NopCloser(bytes.NewReader(b[off:end])), nil
+	return io.NopCloser(bytes.NewReader(b[off:end])), backup.SourceObject{Size: int64(len(b)), Metadata: s.meta[c.Connection][d]}, nil
 }
 
 func (s *fakeSource) Ref(c backup.SourceCopy) target.ObjectRef {
@@ -362,6 +386,8 @@ type env struct {
 	deps   Deps
 	prune  *fakePrune
 	now    time.Time
+	// noSecondary leaves the connection secondary out of the configuration: a connection that is gone (R-BAK-032).
+	noSecondary bool
 }
 
 type fakePrune struct {
@@ -423,7 +449,7 @@ func (e *env) addBlob(content string) format.Digest {
 func (e *env) build() *Pipeline {
 	e.t.Helper()
 	e.deps = Deps{
-		Cfg: e.cfg, SourceConnections: []format.ConnectionRef{{ID: "default", Bucket: "blobs", Prefix: "b"}}, Instance: "pod-1", Version: "0.1.0", Revision: "abc",
+		Cfg: e.cfg, SourceConnections: e.sources(), Staying: e.staying(), Instance: "pod-1", Version: "0.1.0", Revision: "abc",
 		BackupRole: "quader_backup", Store: e.runs, Facts: e.facts, Grants: e.facts, Pins: e.runs, Snapshot: e.snap, Source: e.src,
 		BlobState: e.facts, Target: e.mem, Prune: e.prune, Events: e.events, Metrics: nil, Registry: tables.New(),
 		Now:   func() time.Time { return e.now },
@@ -434,6 +460,26 @@ func (e *env) build() *Pipeline {
 		e.t.Fatal(err)
 	}
 	return p
+}
+
+// sources are the configured connections of the run: default, and secondary once a test gave it a copy.
+func (e *env) sources() []format.ConnectionRef {
+	out := []format.ConnectionRef{{ID: "default", Bucket: "blobs", Prefix: "b"}}
+	if !e.noSecondary {
+		out = append(out, format.ConnectionRef{ID: "secondary", Bucket: "second", Prefix: "b"})
+	}
+	return out
+}
+
+// staying are the configured connections without drain: true.
+func (e *env) staying() []string {
+	var out []string
+	for _, c := range e.sources() {
+		if !e.src.drain[c.ID] {
+			out = append(out, c.ID)
+		}
+	}
+	return out
 }
 
 func (e *env) create(opts backup.CreateOptions) (*backup.Result, error) {

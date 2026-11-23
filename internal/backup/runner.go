@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/backup/format"
+	storagekeys "github.com/guided-traffic/quader/internal/blob/keys"
 )
 
 // The operation interfaces of the backup commands. cmd/quader builds one implementation of each and calls it; the work
@@ -58,6 +59,9 @@ type VerifyOptions struct {
 	Latest, All    bool
 	Deep           bool
 	BytesPerSecond int64
+	// KeyRing is the key ring of --key-ring, which opens the storage keys a backup holds, so that --deep reads every encrypted pool
+	// object as the scrub reads a copy; nil checks their records' form only (R-BAK-031, Q-BAK-66).
+	KeyRing storagekeys.Sealer
 }
 
 // FindingKind is what verify found wrong (R-BAK-019).
@@ -85,6 +89,9 @@ type Finding struct {
 type VerifyReport struct {
 	Verified []format.ID `json:"verified"`
 	Findings []Finding   `json:"findings"`
+	// NotAuthenticated counts the encrypted pool objects a --deep run checked without the key ring: their record's form, its key in
+	// the backup's storage_keys and their size, not their bytes (R-BAK-031).
+	NotAuthenticated int64 `json:"notAuthenticated"`
 }
 
 // Verifier checks backups without changing them.
@@ -194,6 +201,9 @@ type Result struct {
 	// digest, a connection that did not answer. The run went on with the next copy of the blob, or recorded the blob as damaged
 	// when none was left (R-BAK-030); the reads and the scrub of the installation find the same damage.
 	SourceFailures map[string]int64 `json:"sourceFailures,omitempty"`
+	// Repooled counts the blobs the run copied into the pool again because the pool object they inherited is wrapped under a storage
+	// key of a connection that drains or is gone, while a connection that stays holds them (R-BAK-032).
+	Repooled int64 `json:"repooled,omitempty"`
 
 	UnregisteredTables []string `json:"unregisteredTables,omitempty"`
 	Warnings           []string `json:"warnings,omitempty"`
@@ -228,6 +238,11 @@ type Retained struct {
 	BlobCount     int64     `json:"blobCount"`
 	BlobBytes     int64     `json:"blobBytes"`
 	Damaged       bool      `json:"damaged"`
+	// PoolKeyIDs and SealedKeyIDs are copied from storageKeys.pool and storageKeys.sealed of the backup's manifest; null for a manifest
+	// without storageKeys, which the destruction of a retired connection's keys counts as unknown (R-BAK-016, R-BAK-032, storage.md
+	// R-STOR-100).
+	PoolKeyIDs   []string `json:"poolKeyIds"`
+	SealedKeyIDs []string `json:"sealedKeyIds"`
 }
 
 // Runners is the set of implementations cmd/quader calls. A work package fills one field; until it does, the constructor

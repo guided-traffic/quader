@@ -20,6 +20,11 @@ type state struct {
 	inspect  postgres.RestoreInspection
 	anchored bool
 	journal  Journal
+	// keys are the backup's storage keys and opened those that are not destroyed, opened with the key ring by check 3 (R-BAK-031);
+	// drawn are the keys the restore drew for an encrypted sink whose id the backup holds none of (Q-BAK-82).
+	keys   backup.SealedKeys
+	opened *backup.OpenedKeys
+	drawn  []postgres.RestoreKey
 }
 
 // checkFailure is a failed check of R-BAK-020: exit 6, naming the check.
@@ -164,7 +169,7 @@ func (r *Restorer) checkKeys(ctx context.Context, st *state) error {
 			return checkFailure(3, "key ring", backup.CodeKeyRingMismatch, fmt.Errorf("key ring does not match backup: %w", err))
 		}
 	}
-	return nil
+	return r.checkStorageKeys(ctx, st)
 }
 
 // checkDatabase is check 4: the schema exists and holds no relation, or carries the anchor of this very restore.

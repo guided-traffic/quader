@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/blobcrypt"
 )
 
 // Defaults of [Options].
@@ -62,10 +63,13 @@ type Objects interface {
 	Head(ctx context.Context, key string) (blob.ObjectInfo, error)
 }
 
-// Conn is one connection of the configuration: its id, as the copy rows name it, and its client.
+// Conn is one connection of the configuration: its id, as the copy rows name it, and its client. Keys, set for an encrypted
+// connection, is the lookup of the storage keys its records name: the check opens each copy's record from the HeadObject it sends
+// anyway, without reading the body (storage.md R-STOR-087).
 type Conn struct {
 	ID      string
 	Objects Objects
+	Keys    func(ctx context.Context) blobcrypt.KeyLookup
 }
 
 // Options configure a run.
@@ -92,6 +96,9 @@ const (
 	// KindSizeMismatch is a copy whose object has another size than the copy's stored size, and a lost blob one of whose copies
 	// had another size.
 	KindSizeMismatch = "size_mismatch"
+	// KindRecord is a copy on an encrypted connection whose record fails steps 1 to 6 of R-STOR-077 against its copy row (R-STOR-087),
+	// and a lost blob one of whose copies did; the finding names the step's reason.
+	KindRecord = "record"
 )
 
 // CopyFinding is one copy whose object is missing or of another size: a finding of its connection.
@@ -102,6 +109,8 @@ type CopyFinding struct {
 	Kind       string `json:"kind"`
 	StoredSize int64  `json:"storedSize"`
 	ObjectSize int64  `json:"objectSize,omitempty"`
+	// Reason is the reason of the stored format a record finding failed with: format, unknown_key, record, size or commitment.
+	Reason string `json:"reason,omitempty"`
 }
 
 // Finding is one lost blob, none of whose copies is there with its size, with the items that reference it.
@@ -128,6 +137,7 @@ type ConnectionReport struct {
 	Checked      int64  `json:"checked"`
 	Missing      int64  `json:"missing"`
 	SizeMismatch int64  `json:"sizeMismatch"`
+	Record       int64  `json:"record"`
 	Unchecked    int64  `json:"unchecked"`
 	// Error is why the connection's checks ended early: a permission or configuration error of its store.
 	Error string `json:"error,omitempty"`
@@ -143,6 +153,7 @@ type Report struct {
 	Lost         int64              `json:"lost"`
 	Missing      int64              `json:"missing"`
 	SizeMismatch int64              `json:"sizeMismatch"`
+	Record       int64              `json:"record"`
 	Findings     []Finding          `json:"findings"`
 	Copies       []CopyFinding      `json:"copies"`
 	Unchecked    []Unchecked        `json:"unchecked"`
@@ -160,7 +171,7 @@ func (r *Report) OK() bool {
 func (r *Report) ConnectionFindings(id string) int64 {
 	for _, c := range r.Connections {
 		if c.Connection == id {
-			return c.Missing + c.SizeMismatch
+			return c.Missing + c.SizeMismatch + c.Record
 		}
 	}
 	return 0
@@ -266,10 +277,11 @@ func (st *state) checked(c Copy) *connState {
 
 // The results of one copy's check.
 type result struct {
-	kind       string // KindMissing, KindSizeMismatch, or "" when there
+	kind       string // KindMissing, KindSizeMismatch, KindRecord, or "" when there
 	objectSize int64
-	err        error // the copy could not be checked
-	skipped    bool  // not a copy this run checks
+	reason     string // the reason of a KindRecord
+	err        error  // the copy could not be checked
+	skipped    bool   // not a copy this run checks
 }
 
 // checkPage asks the stores about every present copy of a page with at most o.Concurrency checks at a time.
@@ -295,7 +307,7 @@ func (st *state) checkPage(ctx context.Context, rows []Row) [][]result {
 			go func(i, j int, cs *connState, c Copy) {
 				defer wg.Done()
 				defer func() { <-sem }()
-				out[i][j] = st.check(ctx, cs, c)
+				out[i][j] = st.check(ctx, cs, row, c)
 			}(i, j, cs, c)
 		}
 	}
@@ -303,9 +315,10 @@ func (st *state) checkPage(ctx context.Context, rows []Row) [][]result {
 	return out
 }
 
-// check is one existence check with its attempts. A missing object and a size mismatch are results; a transient error that
-// outlasts the attempts is a result too (the copy is not checked); a configuration error ends the connection's checks.
-func (st *state) check(ctx context.Context, cs *connState, c Copy) result {
+// check is one existence check with its attempts. A missing object, a size mismatch and, on an encrypted connection, a record that
+// does not open against the copy row are results; a transient error that outlasts the attempts is a result too (the copy is not
+// checked); a configuration error ends the connection's checks.
+func (st *state) check(ctx context.Context, cs *connState, row Row, c Copy) result {
 	var last error
 	for attempt := range headAttempts {
 		if err := st.endedErr(cs); err != nil {
@@ -322,6 +335,8 @@ func (st *state) check(ctx context.Context, cs *connState, c Copy) result {
 			return result{kind: KindMissing}
 		case err == nil && info.Size >= 0 && info.Size != c.StoredSize:
 			return result{kind: KindSizeMismatch, objectSize: info.Size}
+		case err == nil && cs.conn.Keys != nil:
+			return openRecord(ctx, cs, row, c, info)
 		case err == nil:
 			return result{}
 		case blob.IsConfig(err):
@@ -352,7 +367,7 @@ func (st *state) endedErr(cs *connState) error {
 func (st *state) record(ctx context.Context, row Row, results []result) error {
 	rep := st.rep
 	rep.Checked++
-	there, open, sized := false, false, false
+	there, open, sized, recorded := false, false, false, false
 	for j, c := range row.Copies {
 		r := results[j]
 		if r.skipped {
@@ -370,14 +385,19 @@ func (st *state) record(ctx context.Context, row Row, results []result) error {
 		case r.kind == "":
 			there = true
 		default:
-			if r.kind == KindMissing {
+			switch r.kind {
+			case KindMissing:
 				cs.rep.Missing++
-			} else {
+			case KindRecord:
+				cs.rep.Record++
+				recorded = true
+			default:
 				cs.rep.SizeMismatch++
 				sized = true
 			}
 			rep.Copies = append(rep.Copies, CopyFinding{
 				Connection: c.Connection, SHA256: row.Digest.Hex(), Key: c.Key, Kind: r.kind, StoredSize: c.StoredSize, ObjectSize: r.objectSize,
+				Reason: r.reason,
 			})
 		}
 	}
@@ -392,10 +412,14 @@ func (st *state) record(ctx context.Context, row Row, results []result) error {
 		items = []Item{}
 	}
 	f := Finding{Kind: KindMissing, SHA256: row.Digest.Hex(), Size: row.Size, Items: items, ItemCount: n}
-	if sized {
+	switch {
+	case sized:
 		f.Kind = KindSizeMismatch
 		rep.SizeMismatch++
-	} else {
+	case recorded:
+		f.Kind = KindRecord
+		rep.Record++
+	default:
 		rep.Missing++
 	}
 	rep.Lost++
@@ -438,4 +462,25 @@ func sleep(ctx context.Context, d time.Duration) error {
 	case <-ctx.Done():
 		return ctx.Err()
 	}
+}
+
+// openRecord runs steps 1 to 6 of R-STOR-077 on the record of a copy on an encrypted connection, from its HeadObject, against the copy
+// row and the blob row (R-STOR-087): a refusal is a KindRecord finding with its reason, unknown_key included, since the copy cannot be
+// read now; a failed lookup of the keys (the database) leaves the copy unchecked.
+func openRecord(ctx context.Context, cs *connState, row Row, c Copy, info blob.ObjectInfo) result {
+	size := info.Size
+	if size < 0 {
+		size = c.StoredSize
+	}
+	dk, err := blobcrypt.Open(info.Metadata, cs.conn.Keys(ctx), blobcrypt.Want{
+		Known: true, Digest: row.Digest, Size: row.Size, StoredSize: c.StoredSize, ObjectSize: size,
+	})
+	if err != nil {
+		if reason, ok := blobcrypt.ReasonOf(err); ok {
+			return result{kind: KindRecord, reason: string(reason)}
+		}
+		return result{err: err}
+	}
+	dk.Key.Destroy()
+	return result{}
 }

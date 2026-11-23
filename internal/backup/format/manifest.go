@@ -31,7 +31,46 @@ type Manifest struct {
 	Sequences        []Sequence  `json:"sequences"`
 	Blobs            BlobsInfo   `json:"blobs"`
 	Secrets          SecretsInfo `json:"secrets"`
-	Encryption       Encryption  `json:"encryption"`
+	// StorageKeys names the storage keys the backup needs and holds (R-BAK-003, R-BAK-032); nil in a manifest written before them.
+	StorageKeys *StorageKeysInfo `json:"storageKeys,omitempty"`
+	Encryption  Encryption       `json:"encryption"`
+}
+
+// StorageKeysInfo is the manifest's storageKeys (R-BAK-032): Pool, counted from the final blob list, the storage keys its encrypted
+// pool objects are wrapped under; Sealed and Destroyed, read from storage_keys inside the snapshot, the identifiers its database holds
+// sealed and destroyed (storage.md R-STOR-097). The retention listing copies Pool and Sealed of every retained backup, which the
+// destruction of a retired connection's keys reads (storage.md R-STOR-100).
+type StorageKeysInfo struct {
+	Pool      []PoolKey `json:"pool"`
+	Sealed    []string  `json:"sealed"`
+	Destroyed []string  `json:"destroyed"`
+}
+
+// PoolKey is one storage key of the pool: the encrypted pool objects the blob list names under it and their bytes as stored.
+type PoolKey struct {
+	KeyID   string `json:"keyId"`
+	Objects int64  `json:"objects"`
+	Bytes   int64  `json:"bytes"`
+}
+
+// PoolKeyIDs is the identifiers of Pool, nil for a manifest without storageKeys.
+func (m *Manifest) PoolKeyIDs() []string {
+	if m.StorageKeys == nil {
+		return nil
+	}
+	out := make([]string, 0, len(m.StorageKeys.Pool))
+	for _, k := range m.StorageKeys.Pool {
+		out = append(out, k.KeyID)
+	}
+	return out
+}
+
+// SealedKeyIDs is Sealed, nil for a manifest without storageKeys.
+func (m *Manifest) SealedKeyIDs() []string {
+	if m.StorageKeys == nil {
+		return nil
+	}
+	return append([]string{}, m.StorageKeys.Sealed...)
 }
 
 // QuaderInfo names the build that took the backup.
@@ -226,7 +265,26 @@ func (m *Manifest) Validate() error {
 		// A snapshot always holds at least the canary rows of the key ring (R-ARCH-021).
 		errs = append(errs, errors.New("secrets.keyIds is empty"))
 	}
-	return errors.Join(errs...)
+	return errors.Join(append(errs, m.StorageKeys.validate()...)...)
+}
+
+// validate checks the identifiers and counts of the manifest's storageKeys (R-BAK-032); a manifest without the block has none to check.
+func (sk *StorageKeysInfo) validate() []error {
+	if sk == nil {
+		return nil
+	}
+	var errs []error
+	for _, k := range sk.Pool {
+		if !ValidPoolKey(k.KeyID) || k.Objects < 0 || k.Bytes < 0 {
+			errs = append(errs, fmt.Errorf("storageKeys.pool: %q with %d objects of %d bytes", k.KeyID, k.Objects, k.Bytes))
+		}
+	}
+	for _, id := range append(append([]string{}, sk.Sealed...), sk.Destroyed...) {
+		if !ValidPoolKey(id) {
+			errs = append(errs, fmt.Errorf("storageKeys: %q is no key identifier", id))
+		}
+	}
+	return errs
 }
 
 // DamagedSet returns the damaged digests as a set of hex strings.

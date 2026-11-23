@@ -76,6 +76,34 @@ func (q *Queries) RestoreEnsureAuditPartitions(ctx context.Context) error {
 	return err
 }
 
+const restoreInsertStorageKey = `-- name: RestoreInsertStorageKey :exec
+INSERT INTO storage_keys (key_id, connection_id, kind, generation, sealed_key, state)
+VALUES ($1::text, $2::text, $3::text, $4::integer,
+        $5::text, 'active')
+ON CONFLICT (key_id) DO NOTHING
+`
+
+type RestoreInsertStorageKeyParams struct {
+	KeyID        string
+	ConnectionID string
+	Kind         string
+	Generation   int32
+	SealedKey    string
+}
+
+// A key the restore drew for the encrypted connection it wrote into, whose id the backup holds no key of (R-BAK-031, Q-BAK-82): the
+// active one of its kind, sealed with the key ring under its identifier (storage.md R-STOR-083).
+func (q *Queries) RestoreInsertStorageKey(ctx context.Context, arg RestoreInsertStorageKeyParams) error {
+	_, err := q.db.Exec(ctx, restoreInsertStorageKey,
+		arg.KeyID,
+		arg.ConnectionID,
+		arg.Kind,
+		arg.Generation,
+		arg.SealedKey,
+	)
+	return err
+}
+
 const restoreMarkDamagedBlobs = `-- name: RestoreMarkDamagedBlobs :execrows
 UPDATE blobs SET content_status = $1::text
  WHERE sha256 = ANY($2::bytea[])
@@ -96,22 +124,30 @@ func (q *Queries) RestoreMarkDamagedBlobs(ctx context.Context, arg RestoreMarkDa
 }
 
 const restoreRecordConnection = `-- name: RestoreRecordConnection :exec
-INSERT INTO storage_connections (id, bucket, prefix)
-VALUES ($1::text, $2::text, $3::text)
+INSERT INTO storage_connections (id, bucket, prefix, encrypted, keyed_names)
+VALUES ($1::text, $2::text, $3::text, $4::boolean, $5::boolean)
 ON CONFLICT (id) DO NOTHING
 `
 
 type RestoreRecordConnectionParams struct {
-	ID     string
-	Bucket string
-	Prefix string
+	ID         string
+	Bucket     string
+	Prefix     string
+	Encrypted  bool
+	KeyedNames bool
 }
 
 // A connection of the restoring installation's configuration (R-BAK-030): storage_connections is transient and comes back
 // empty, and the fix-up records each connection with the bucket and the prefix the configuration resolves to, so the first
-// replica finds the fixed properties it configures (storage.md R-STOR-051).
+// replica finds the fixed properties it configures (storage.md R-STOR-051), encrypted and keyed_names among them (R-STOR-075).
 func (q *Queries) RestoreRecordConnection(ctx context.Context, arg RestoreRecordConnectionParams) error {
-	_, err := q.db.Exec(ctx, restoreRecordConnection, arg.ID, arg.Bucket, arg.Prefix)
+	_, err := q.db.Exec(ctx, restoreRecordConnection,
+		arg.ID,
+		arg.Bucket,
+		arg.Prefix,
+		arg.Encrypted,
+		arg.KeyedNames,
+	)
 	return err
 }
 
@@ -147,6 +183,48 @@ func (q *Queries) RestoreRecordCopies(ctx context.Context, arg RestoreRecordCopi
 		arg.KeyPrefix,
 		arg.Verified,
 		arg.VerifiedAt,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const restoreRecordCopyRows = `-- name: RestoreRecordCopyRows :execrows
+INSERT INTO blob_copies (sha256, connection_id, object_key, stored_size, storage_key_id, state, created_at, verified_at, state_changed_at)
+SELECT b.sha256, $1::text, d.object_key, d.stored_size, NULLIF(d.storage_key_id, ''),
+       CASE WHEN b.content_status = 'ok' THEN 'present' ELSE 'missing' END,
+       now(),
+       CASE WHEN b.content_status = 'ok' AND $2::boolean THEN $3::text::timestamptz END,
+       now()
+  FROM (SELECT unnest($4::bytea[]) AS sha256, unnest($5::text[]) AS object_key,
+               unnest($6::bigint[]) AS stored_size, unnest($7::text[]) AS storage_key_id) AS d
+  JOIN blobs b ON b.sha256 = d.sha256 AND b.state = 'live'
+ON CONFLICT DO NOTHING
+`
+
+type RestoreRecordCopyRowsParams struct {
+	ConnectionID  string
+	Verified      bool
+	VerifiedAt    string
+	Digests       [][]byte
+	ObjectKeys    []string
+	StoredSizes   []int64
+	StorageKeyIds []string
+}
+
+// The copies of a page of restored blobs on an encrypted connection step 3 wrote into (backup-and-restore.md R-BAK-031): the name its
+// naming function gives each digest (a keyed name SQL cannot compute), S(L), and the storage key the object's record names; present
+// for a live blob whose object step 3 wrote, missing for one the backup listed as damaged; verified as RestoreRecordCopies.
+func (q *Queries) RestoreRecordCopyRows(ctx context.Context, arg RestoreRecordCopyRowsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, restoreRecordCopyRows,
+		arg.ConnectionID,
+		arg.Verified,
+		arg.VerifiedAt,
+		arg.Digests,
+		arg.ObjectKeys,
+		arg.StoredSizes,
+		arg.StorageKeyIds,
 	)
 	if err != nil {
 		return 0, err

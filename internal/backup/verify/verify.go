@@ -10,12 +10,15 @@ import (
 	"io"
 	"log/slog"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/backup"
 	"github.com/guided-traffic/quader/internal/backup/format"
 	"github.com/guided-traffic/quader/internal/backup/listing"
 	"github.com/guided-traffic/quader/internal/backup/target"
+	"github.com/guided-traffic/quader/internal/blob/blobcrypt"
+	storagekeys "github.com/guided-traffic/quader/internal/blob/keys"
 )
 
 // DefaultConcurrency is the number of pool objects checked at once.
@@ -138,9 +141,64 @@ func (v *Verifier) verify(ctx context.Context, opts backup.VerifyOptions, h *bac
 			usable = append(usable, m)
 		}
 	}
-	pool, err := v.checkPool(ctx, usable, opts, h)
+	keys := &backupKeys{v: v, ring: opts.KeyRing, read: map[format.ID]backup.SealedKeys{}, opened: map[format.ID]*backup.OpenedKeys{}}
+	defer keys.close()
+	pool, err := v.checkPool(ctx, usable, opts, h, keys)
 	rep.Findings = append(rep.Findings, pool...)
+	rep.NotAuthenticated = keys.unauthenticated.Load()
 	return rep, err
+}
+
+// backupKeys reads, once per backup, the storage keys a backup holds (its own storage_keys, R-BAK-031), and opens them with the key
+// ring of --key-ring when one is given.
+type backupKeys struct {
+	v               *Verifier
+	ring            storagekeys.Sealer
+	mu              sync.Mutex
+	manifests       map[format.ID]*format.Manifest
+	read            map[format.ID]backup.SealedKeys
+	opened          map[format.ID]*backup.OpenedKeys
+	unauthenticated atomic.Int64
+}
+
+func (k *backupKeys) rows(ctx context.Context, id format.ID) (backup.SealedKeys, error) {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	if r, ok := k.read[id]; ok {
+		return r, nil
+	}
+	r, err := backup.ReadBackupKeys(ctx, k.v.Store, k.v.Layout, k.manifests[id])
+	if err != nil {
+		return nil, err
+	}
+	k.read[id] = r
+	return r, nil
+}
+
+func (k *backupKeys) open(ctx context.Context, id format.ID) (*backup.OpenedKeys, error) {
+	rows, err := k.rows(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	if o, ok := k.opened[id]; ok {
+		return o, nil
+	}
+	o, err := rows.Open(k.ring)
+	if err != nil {
+		return nil, err
+	}
+	k.opened[id] = o
+	return o, nil
+}
+
+func (k *backupKeys) close() {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	for _, o := range k.opened {
+		o.Close()
+	}
 }
 
 func (v *Verifier) selectBackups(ctx context.Context, opts backup.VerifyOptions, h *backup.Handle) ([]format.ID, error) {
@@ -258,9 +316,10 @@ type source struct {
 	ok   bool
 }
 
-// poolItem is one distinct digest with the sizes the backups that list it expect.
+// poolItem is one distinct pool object (a digest and the pool its lines name, R-BAK-032) with the sizes the backups that list it
+// expect.
 type poolItem struct {
-	digest  format.Digest
+	entry   format.BlobEntry
 	backups []format.ID
 	sizes   []int64
 }
@@ -268,8 +327,12 @@ type poolItem struct {
 // checkPool merges the blob lists of the given backups in digest order and checks every distinct digest once: HeadObject for
 // the object and its size, and with Deep a download that recomputes the SHA-256. A finding is reported for every backup that
 // lists the digest, minus the backups that list it as damaged.
-func (v *Verifier) checkPool(ctx context.Context, manifests []*format.Manifest, opts backup.VerifyOptions, h *backup.Handle) ([]backup.Finding, error) {
+func (v *Verifier) checkPool(ctx context.Context, manifests []*format.Manifest, opts backup.VerifyOptions, h *backup.Handle, keys *backupKeys) ([]backup.Finding, error) {
 	var findings []backup.Finding
+	keys.manifests = map[format.ID]*format.Manifest{}
+	for _, m := range manifests {
+		keys.manifests[m.BackupID] = m
+	}
 	srcs := make([]*source, 0, len(manifests))
 	defer func() {
 		for _, s := range srcs {
@@ -322,7 +385,7 @@ func (v *Verifier) checkPool(ctx context.Context, manifests []*format.Manifest, 
 		go func() {
 			defer wg.Done()
 			for it := range items {
-				fs, err := v.checkObject(wctx, it, opts.Deep, lim)
+				fs, err := v.checkObject(wctx, it, opts.Deep, lim, keys)
 				mu.Lock()
 				findings = append(findings, fs...)
 				if err != nil && firstErr == nil {
@@ -338,18 +401,18 @@ produce:
 	for {
 		var lowest *source
 		for _, s := range srcs {
-			if s.ok && (lowest == nil || s.head.Digest.Less(lowest.head.Digest)) {
+			if s.ok && (lowest == nil || s.head.PoolName() < lowest.head.PoolName()) {
 				lowest = s
 			}
 		}
 		if lowest == nil {
 			break
 		}
-		it := poolItem{digest: lowest.head.Digest}
+		it := poolItem{entry: format.BlobEntry{Digest: lowest.head.Digest, Pool: lowest.head.PoolOf()}}
 		// advance mutates findings, which the workers append to: hold the lock around it.
 		mu.Lock()
 		for _, s := range srcs {
-			if s.ok && s.head.Digest == it.digest {
+			if s.ok && s.head.PoolName() == it.entry.PoolName() {
 				it.backups = append(it.backups, s.m.BackupID)
 				it.sizes = append(it.sizes, s.head.Size)
 				advance(s)
@@ -370,11 +433,23 @@ produce:
 	return findings, ctx.Err()
 }
 
-// checkObject checks one pool object for every backup that lists it.
-func (v *Verifier) checkObject(ctx context.Context, it poolItem, deep bool, lim *limiter) ([]backup.Finding, error) {
-	key := v.Layout.Pool(it.digest)
+// checkObject checks one pool object for every backup that lists it: the object its lines name (R-BAK-032), of the listed size, or
+// for an encrypted connection's copy of S(L) of the listed size (R-BAK-031).
+func (v *Verifier) checkObject(ctx context.Context, it poolItem, deep bool, lim *limiter, keys *backupKeys) ([]backup.Finding, error) {
+	key := v.Layout.PoolObject(it.entry)
+	name := it.entry.PoolName()
 	finding := func(i int, kind backup.FindingKind, detail string) backup.Finding {
-		return backup.Finding{Kind: kind, BackupID: string(it.backups[i]), Object: it.digest.Hex(), Detail: detail}
+		return backup.Finding{Kind: kind, BackupID: string(it.backups[i]), Object: name, Detail: detail}
+	}
+	stored := func(size int64) int64 {
+		if !it.entry.Encrypted() {
+			return size
+		}
+		s, err := blobcrypt.StoredSize(size)
+		if err != nil {
+			return -1
+		}
+		return s
 	}
 	var out []backup.Finding
 	obj, err := v.Store.Head(ctx, key)
@@ -385,18 +460,21 @@ func (v *Verifier) checkObject(ctx context.Context, it poolItem, deep bool, lim 
 		return out, nil
 	}
 	if err != nil {
-		return nil, fmt.Errorf("checking pool object %s: %w", it.digest.Hex(), err)
+		return nil, fmt.Errorf("checking pool object %s: %w", name, err)
 	}
-	sizeOK := false
+	sizeOK := -1
 	for i, want := range it.sizes {
-		if obj.Size != want {
+		if obj.Size != stored(want) {
 			out = append(out, finding(i, backup.FindingSizeMismatch, fmt.Sprintf("%d bytes, the blob list says %d", obj.Size, want)))
 			continue
 		}
-		sizeOK = true
+		sizeOK = i
 	}
-	if !deep || !sizeOK {
+	if !deep || sizeOK < 0 {
 		return out, nil
+	}
+	if it.entry.Encrypted() {
+		return v.checkSealed(ctx, it, sizeOK, key, obj, lim, keys, out, finding)
 	}
 	sum, _, err := listing.HashObject(ctx, v.Store, key, lim.wait)
 	switch {
@@ -407,8 +485,8 @@ func (v *Verifier) checkObject(ctx context.Context, it poolItem, deep bool, lim 
 			}
 		}
 	case err != nil:
-		return out, fmt.Errorf("downloading pool object %s: %w", it.digest.Hex(), err)
-	case sum != it.digest.Hex():
+		return out, fmt.Errorf("downloading pool object %s: %w", name, err)
+	case sum != it.entry.Digest.Hex():
 		for i, want := range it.sizes {
 			if obj.Size == want {
 				out = append(out, finding(i, backup.FindingDigestMismatch, "the content hashes to "+sum))
@@ -416,4 +494,87 @@ func (v *Verifier) checkObject(ctx context.Context, it poolItem, deep bool, lim 
 		}
 	}
 	return out, nil
+}
+
+// checkSealed is the deep check of an encrypted connection's copy in the pool (R-BAK-031, Q-BAK-66). Without a key ring: the record
+// has the format's four keys in their form, its key is the one the pool name carries and a row of the storage keys of a backup that
+// lists it, and the size is S(L) (checked before); the object counts as not authenticated. With --key-ring: the backup's storage keys
+// are opened and the object is read as the scrub reads a copy, every segment, the final segment and the digest; a failure is
+// digest_mismatch.
+func (v *Verifier) checkSealed(ctx context.Context, it poolItem, i int, key string, obj target.Object, lim *limiter, keys *backupKeys,
+	out []backup.Finding, finding func(int, backup.FindingKind, string) backup.Finding,
+) ([]backup.Finding, error) {
+	all := func(kind backup.FindingKind, detail string) []backup.Finding {
+		for j, want := range it.sizes {
+			if s, err := blobcrypt.StoredSize(want); err == nil && s == obj.Size {
+				out = append(out, finding(j, kind, detail))
+			}
+		}
+		return out
+	}
+	if err := blobcrypt.CheckRecordForm(obj.Metadata); err != nil || obj.Metadata[blobcrypt.MetaKey] != it.entry.Pool {
+		return all(backup.FindingDigestMismatch, "the pool object carries no record of the storage key its name carries"), nil
+	}
+	id := it.backups[i]
+	rows, err := keys.rows(ctx, id)
+	if err != nil {
+		return out, err
+	}
+	k, held := rows[it.entry.Pool]
+	if !held || k.Destroyed() {
+		return all(backup.FindingDigestMismatch, "the storage key "+it.entry.Pool+" is no key the backup's database holds"), nil
+	}
+	if keys.ring == nil {
+		keys.unauthenticated.Add(1)
+		return out, nil
+	}
+	opened, err := keys.open(ctx, id)
+	if err != nil {
+		return out, err
+	}
+	size := it.sizes[i]
+	rc, got, err := v.Store.Get(ctx, key)
+	switch {
+	case errors.Is(err, target.ErrNotFound):
+		return all(backup.FindingMissing, "the object vanished during the download"), nil
+	case err != nil:
+		return out, fmt.Errorf("downloading pool object %s: %w", it.entry.PoolName(), err)
+	}
+	defer func() { _ = rc.Close() }()
+	stored, _ := blobcrypt.StoredSize(size)
+	dk, err := blobcrypt.Open(got.Metadata, opened.Lookup(k.Connection), blobcrypt.Want{
+		Known: true, Digest: it.entry.Digest, Size: size, StoredSize: stored, ObjectSize: got.Size,
+	})
+	if err != nil {
+		return all(backup.FindingDigestMismatch, "the record does not open: "+err.Error()), nil
+	}
+	defer dk.Key.Destroy()
+	r, err := blobcrypt.NewReader(&pacedReader{ctx: ctx, r: rc, lim: lim}, dk, true)
+	if err == nil {
+		_, err = io.Copy(io.Discard, r)
+	}
+	if _, ok := blobcrypt.ReasonOf(err); ok {
+		return all(backup.FindingDigestMismatch, "the object does not authenticate: "+err.Error()), nil
+	}
+	if err != nil {
+		return out, fmt.Errorf("downloading pool object %s: %w", it.entry.PoolName(), err)
+	}
+	return out, nil
+}
+
+// pacedReader throttles a download to --bytes-per-second.
+type pacedReader struct {
+	ctx context.Context //nolint:containedctx // the reader's calls carry no context of their own
+	r   io.Reader
+	lim *limiter
+}
+
+func (p *pacedReader) Read(b []byte) (int, error) {
+	n, err := p.r.Read(b)
+	if n > 0 {
+		if werr := p.lim.wait(p.ctx, n); werr != nil {
+			return n, werr
+		}
+	}
+	return n, err
 }

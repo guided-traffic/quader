@@ -28,10 +28,25 @@ type copyServer struct {
 	denyAt  int32 // the part number answered with AccessDenied; 0 for none
 	aborted atomic.Int32
 	parts   atomic.Int32
+	// etag is the source's entity tag: a request whose x-amz-copy-source-if-match names another is answered 412. ifMatch records
+	// the header of every copy request.
+	etag    string
+	mu      sync.Mutex
+	ifMatch []string
 }
 
 func (c *copyServer) handle(w http.ResponseWriter, r *http.Request) bool {
 	q := r.URL.Query()
+	if r.Method == http.MethodPut && r.Header.Get("X-Amz-Copy-Source") != "" {
+		m := r.Header.Get("X-Amz-Copy-Source-If-Match")
+		c.mu.Lock()
+		c.ifMatch = append(c.ifMatch, m)
+		c.mu.Unlock()
+		if m != "" && m != c.etag {
+			s3Error(w, r, http.StatusPreconditionFailed, "PreconditionFailed")
+			return true
+		}
+	}
 	switch {
 	case r.Method == http.MethodPut && r.Header.Get("X-Amz-Copy-Source") != "" && q.Get("partNumber") == "":
 		time.Sleep(c.delay)
@@ -191,5 +206,31 @@ func TestR_STOR_033_AReaderThatPausesIsNotAStalledStore(t *testing.T) {
 	}
 	if !bytes.Equal(append(head, rest...), data) {
 		t.Fatal("the content differs")
+	}
+}
+
+func TestR_BAK_031_AServerSideCopyReadsTheSourceOnlyWhileItsEntityTagHolds(t *testing.T) {
+	// An encrypted connection's object written again has another record and other bytes: every request of the copy names the
+	// entity tag of the head the caller read, and a source that no longer has it is ErrSourceChanged, the upload aborted.
+	for _, size := range []int64{1000, 12 << 20} { // one CopyObject; three UploadPartCopy
+		cs := &copyServer{etag: `"v1"`}
+		e := newTargetEnv(t, "none", s3.WithSingleCopyLimit(6<<20), s3.WithCopyPartSize(5<<20))
+		e.fake.fail = cs.handle
+		if err := e.t.Copy(context.Background(), target.ObjectRef{Bucket: "src", Key: "k", Size: size, IfMatch: `"v1"`}, "pool/x"); err != nil {
+			t.Fatalf("size %d: %v", size, err)
+		}
+		for _, m := range cs.ifMatch {
+			if m != `"v1"` {
+				t.Fatalf("size %d: the copy requests named %q", size, cs.ifMatch)
+			}
+		}
+		cs.etag, cs.ifMatch = `"v2"`, nil
+		err := e.t.Copy(context.Background(), target.ObjectRef{Bucket: "src", Key: "k", Size: size, IfMatch: `"v1"`}, "pool/x")
+		if !errors.Is(err, target.ErrSourceChanged) || errors.Is(err, target.ErrServerCopyUnavailable) {
+			t.Fatalf("size %d: err = %v, want ErrSourceChanged", size, err)
+		}
+		if size > 6<<20 && cs.aborted.Load() != 1 {
+			t.Fatalf("%d aborts, want 1", cs.aborted.Load())
+		}
 	}
 }

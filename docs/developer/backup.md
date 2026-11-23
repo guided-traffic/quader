@@ -482,10 +482,10 @@ opens the connections when the run starts, with the run's context (a SIGTERM end
 | [create.go](../../internal/backup/create/create.go) | `Deps`, `New`, `Create`: facts, grants, the run row, `finish` (completed, warnings, failed, interrupted; audit events, `system.backup.completed` with the outcome `warning` for a run that ended `completed_with_warnings`, which `backup_record_event()` accepts for that event alone since migration 00084; hold and pins released by `Finish`) |
 | [run.go](../../internal/backup/create/run.go) | the phase machine, the snapshot phase with the `all` hold in the `onLocked` callback, cleanup of open uploads and the snapshot |
 | [preflight.go](../../internal/backup/create/preflight.go) | the probe and the encryption check (R-BAK-026), the marker, adoption, the listing that finds the previous backup |
-| [diff.go](../../internal/backup/create/diff.go) | the merge of the referenced set with the previous list: new blob list, pins in batches, the reservoir of the spot check, hold `all` to `pinned` |
+| [diff.go](../../internal/backup/create/diff.go) | the merge of the referenced set with the previous list: the provisional blob list (`blobs.pending.zst`, `+` for each digest the copy decides), pins in batches, a re-pooled pin with the pool object it inherits (R-BAK-032, Q-BAK-80, Q-BAK-81), the reservoir of the spot check, hold `all` to `pinned` |
 | [export.go](../../internal/backup/create/export.go) | table export with `database.parallel` workers into zstd and a multipart upload, sequences, release of the lock, close of the snapshot |
-| [copy.go](../../internal/backup/create/copy.go) | the blob copy: pages through the pins and reads the present copies of each page once (`BlobSource.Copies`, Q-BAK-70), takes one copy per blob in the order of R-BAK-030 (`order`: on the target's endpoint first, verified first there, a draining connection's last) and the next on a missing object, another size, another digest or a connection that does not answer (`failureReason`), server-side (refused per connection, `serverOff`) or streaming with the digest check, damage versus lost hold, a blob only an unanswering connection could give ends the run with exit 75 (Q-BAK-71), `sourceFailures` per connection, batched pin deletion |
-| [finalize.go](../../internal/backup/create/finalize.go) | the fences, the spot check, the manifest, the pruning stage |
+| [copy.go](../../internal/backup/create/copy.go) | the blob copy: pages through the pins and reads the present copies of each page once (`BlobSource.Copies`, Q-BAK-70), takes one copy per blob in the order of R-BAK-030 (`order`: on the target's endpoint first, verified first there, a draining connection's last) and the next on a missing object, another size, another digest or a connection that does not answer (`failureReason`), server-side (refused per connection, `serverOff`) or streaming with the digest check, damage versus lost hold, a blob only an unanswering connection could give ends the run with exit 75 (Q-BAK-71), `sourceFailures` per connection; an encrypted copy taken as stored by its record (R-BAK-031); the pool object of each confirmed pin recorded in `backup_blob_pin.pool` in batches (`record`) |
+| [finalize.go](../../internal/backup/create/finalize.go) | the final blob list from the provisional one and the pins at the end of the phase `copying`, then hold `none` (`finalList`); the fences, the spot check, the manifest with `storageKeys`, the pruning stage |
 | [util.go](../../internal/backup/create/util.go) | error classification (R-BAK-013), the rate limiter, a small error group |
 
 The database side: [backup_snapshot.go](../../internal/meta/postgres/backup_snapshot.go) (pgx: the backup role's pool, the shared migration
@@ -510,7 +510,8 @@ never pinned, the previous blob list is hashed and counted while it streams and 
 
 The order that matters, with `Deps.Fault` points for tests between the steps: shared migration lock, hold `all` committed
 (`hold-all`), table locks and snapshot (`snapshot`), pins inserted and committed (`pins-committed`), hold `pinned`
-(`hold-pinned`), copy, last pin gone and hold `none` (`copied`), fence (`finalizing`), manifest. A pause at a point is how the
+(`hold-pinned`), copy, every pin decided with its pool object recorded (`copied`), the final blob list written and hold `none`, which ends the pins'
+hold (their rows go with the run), fence (`finalizing`), manifest. A pause at a point is how the
 integration tests hold a run between two steps of R-BAK-007.
 
 Tests: `go test -race ./internal/backup/...` (fakes: an in-memory run store with the fencing, a fake snapshotter, `targettest.Mem`);

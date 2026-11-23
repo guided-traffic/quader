@@ -185,6 +185,11 @@ func (b *fakeBlobs) CopyFrom(_ context.Context, ref target.ObjectRef, _ format.D
 	return nil
 }
 
+// CopyAs is never available: a pool object written as it is streams (R-BAK-031).
+func (b *fakeBlobs) CopyAs(context.Context, target.ObjectRef, string) error {
+	return target.ErrServerCopyUnavailable
+}
+
 func (b *fakeBlobs) FirstForeign(_ context.Context, allow bool) (string, error) {
 	b.allowSeen = allow
 	return b.foreign, nil
@@ -221,9 +226,11 @@ type env struct {
 	sess   *fakeSession
 	blobs  *fakeBlobs
 	extra  []Connection
-	jrn    *fakeJournal
-	pool   map[format.Digest][]byte
-	out    bytes.Buffer
+	// sinkConn replaces the connection default as the first of the restoring configuration (an encrypted sink, R-BAK-031).
+	sinkConn *Connection
+	jrn      *fakeJournal
+	pool     map[format.Digest][]byte
+	out      bytes.Buffer
 }
 
 func zstdBytes(t *testing.T, b []byte) []byte {
@@ -318,6 +325,9 @@ func newEnv(t *testing.T) *env {
 
 // connections are the restoring configuration: the connection default over e.blobs, then e.extra.
 func (e *env) connections() []Connection {
+	if e.sinkConn != nil {
+		return append([]Connection{*e.sinkConn}, e.extra...)
+	}
 	return append([]Connection{{ID: "default", Bucket: "blobs", Prefix: "quader", Store: e.blobs}}, e.extra...)
 }
 

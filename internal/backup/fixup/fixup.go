@@ -52,11 +52,35 @@ type Env struct {
 	// SinkVerified is true when the restore process that ran step 3 streamed and hashed every blob it wrote there and skipped
 	// none, so the copies are verified (Q-BAK-72); false after a server-side copy, a skipped object or a resumption.
 	SinkVerified bool
+	// SinkCopies, set when the sink is an encrypted connection, yields the copy row of every blob of the backup's list there: the
+	// name its naming function gives the digest, S(L) and the storage key the object's record names (backup-and-restore.md
+	// R-BAK-031). Nil records the copies of a plain sink by the name of R-STOR-001.
+	SinkCopies func(ctx context.Context, yield func(SinkCopy) error) error
+	// StorageKeys are the keys the restore drew for the encrypted sink whose id the backup holds no key of, sealed with the key ring
+	// (Q-BAK-82): inserted into storage_keys, which the load replaced.
+	StorageKeys []StorageKeyRow
 }
 
-// ConnectionRecord is a connection as the fix-up records it in storage_connections (storage.md R-STOR-051).
+// ConnectionRecord is a connection as the fix-up records it in storage_connections (storage.md R-STOR-051), with its fixed
+// properties encrypted and keyed_names (R-STOR-075).
 type ConnectionRecord struct {
-	ID, Bucket, Prefix string
+	ID, Bucket, Prefix    string
+	Encrypted, KeyedNames bool
+}
+
+// SinkCopy is the copy row of one blob on an encrypted sink.
+type SinkCopy struct {
+	Digest       format.Digest
+	ObjectKey    string
+	StoredSize   int64
+	StorageKeyID string
+}
+
+// StorageKeyRow is a row of storage_keys a restore drew.
+type StorageKeyRow struct {
+	KeyID, Connection, Kind string
+	Generation              int
+	Sealed                  string
 }
 
 // CacheEraser removes every cached item of one remote repository through the storage delete path with the trash can

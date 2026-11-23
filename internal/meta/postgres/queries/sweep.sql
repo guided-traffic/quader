@@ -29,8 +29,10 @@ RETURNING c.sha256, c.connection_id;
 
 -- name: SweepLookup :many
 -- The rows of the objects of one page of an orphan sweep's listing (R-STOR-026): the copy by its name on the connection
--- (blob_copies_key) and the blob by the digest the name carries. An absent row is has_copy false or an empty blob_state.
+-- (blob_copies_key) with the digest it stands for, and the blob by the digest the name carries (a keyed name carries none: the sweep
+-- asks again with the digest the object's record names, R-STOR-087). An absent row is has_copy false or an empty blob_state.
 SELECT k.object_key::text AS object_key, (c.sha256 IS NOT NULL)::boolean AS has_copy, COALESCE(c.state, '')::text AS copy_state,
+       COALESCE(c.sha256, '\x'::bytea)::bytea AS copy_sha256,
        COALESCE(c.stored_size, -1)::bigint AS stored_size, COALESCE(b.state, '')::text AS blob_state, COALESCE(b.size, -1)::bigint AS blob_size
   FROM (SELECT unnest(sqlc.arg(keys)::text[]) AS object_key, unnest(sqlc.arg(digests)::bytea[]) AS sha256) AS k
   LEFT JOIN blob_copies c ON c.connection_id = sqlc.arg(connection_id)::text AND c.object_key = k.object_key
@@ -38,11 +40,12 @@ SELECT k.object_key::text AS object_key, (c.sha256 IS NOT NULL)::boolean AS has_
 
 -- name: SweepAdoptCopy :execrows
 -- The adoption of an object of a live blob without a copy row (R-STOR-026), in the transaction that holds the blob's mark lock
--- (LockBlobForMark): present and not verified, or corrupt when its size is not the blob's. created_at is when the store says the
--- object was written.
-INSERT INTO blob_copies (sha256, connection_id, object_key, stored_size, state, created_at, checked_at, state_changed_at)
+-- (LockBlobForMark): present and not verified, or corrupt when its size is not the blob's stored size. created_at is when the store
+-- says the object was written. On an encrypted connection storage_key_id is the storage key its record names (R-STOR-087); empty is
+-- NULL.
+INSERT INTO blob_copies (sha256, connection_id, object_key, stored_size, storage_key_id, state, created_at, checked_at, state_changed_at)
 VALUES (sqlc.arg(sha256)::bytea, sqlc.arg(connection_id)::text, sqlc.arg(object_key)::text, sqlc.arg(stored_size)::bigint,
-        sqlc.arg(state)::text, to_timestamp(sqlc.arg(written_unix)::float8), now(), now())
+        NULLIF(sqlc.arg(storage_key_id)::text, ''), sqlc.arg(state)::text, to_timestamp(sqlc.arg(written_unix)::float8), now(), now())
 ON CONFLICT DO NOTHING;
 
 -- name: SweepClaimOrphan :one

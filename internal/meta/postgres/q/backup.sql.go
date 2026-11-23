@@ -313,24 +313,6 @@ func (q *Queries) CountRevocationOutbox(ctx context.Context) (int64, error) {
 	return column_1, err
 }
 
-const deleteBackupPins = `-- name: DeleteBackupPins :execrows
-DELETE FROM backup_blob_pin WHERE run_id = $1::text::uuid AND sha256 = ANY($2::bytea[])
-`
-
-type DeleteBackupPinsParams struct {
-	RunID   string
-	Digests [][]byte
-}
-
-// Pins are deleted in batches of up to 1,000 after their copy is confirmed (R-BAK-006).
-func (q *Queries) DeleteBackupPins(ctx context.Context, arg DeleteBackupPinsParams) (int64, error) {
-	result, err := q.db.Exec(ctx, deleteBackupPins, arg.RunID, arg.Digests)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected(), nil
-}
-
 const deleteBackupPinsOfAbandonedRuns = `-- name: DeleteBackupPinsOfAbandonedRuns :exec
 DELETE FROM backup_blob_pin WHERE run_id IN (SELECT id FROM backup_run WHERE state = 'abandoned')
 `
@@ -513,8 +495,10 @@ func (q *Queries) HeartbeatBackupRun(ctx context.Context, arg HeartbeatBackupRun
 }
 
 const insertBackupPins = `-- name: InsertBackupPins :exec
-INSERT INTO backup_blob_pin (run_id, sha256, size)
-SELECT $1::text::uuid, unnest($2::bytea[]), unnest($3::bigint[])
+INSERT INTO backup_blob_pin (run_id, sha256, size, pool)
+SELECT $1::text::uuid, d.sha256, d.size, NULLIF(d.pool, '')
+  FROM (SELECT unnest($2::bytea[]) AS sha256, unnest($3::bigint[]) AS size,
+               unnest($4::text[]) AS pool) AS d
 ON CONFLICT DO NOTHING
 `
 
@@ -522,11 +506,18 @@ type InsertBackupPinsParams struct {
 	RunID   string
 	Digests [][]byte
 	Sizes   []int64
+	Pools   []string
 }
 
-// The to-copy set (R-BAK-006 step 2), in batches. digests and sizes are parallel arrays.
+// The to-copy set (R-BAK-006 step 2), in batches. digests, sizes and pools are parallel arrays; a pool is empty (NULL) for a new
+// digest and the inherited pool object for a re-pooled one (R-BAK-032, Q-BAK-80).
 func (q *Queries) InsertBackupPins(ctx context.Context, arg InsertBackupPinsParams) error {
-	_, err := q.db.Exec(ctx, insertBackupPins, arg.RunID, arg.Digests, arg.Sizes)
+	_, err := q.db.Exec(ctx, insertBackupPins,
+		arg.RunID,
+		arg.Digests,
+		arg.Sizes,
+		arg.Pools,
+	)
 	return err
 }
 
@@ -770,6 +761,28 @@ func (q *Queries) RevocationOutboxPendingByConnection(ctx context.Context, conne
 		return nil, err
 	}
 	return items, nil
+}
+
+const setBackupPinPools = `-- name: SetBackupPinPools :execrows
+UPDATE backup_blob_pin p SET pool = d.pool
+  FROM (SELECT unnest($2::bytea[]) AS sha256, unnest($3::text[]) AS pool) AS d
+ WHERE p.run_id = $1::text::uuid AND p.sha256 = d.sha256
+`
+
+type SetBackupPinPoolsParams struct {
+	RunID   string
+	Digests [][]byte
+	Pools   []string
+}
+
+// The pool objects of confirmed pins, in batches of up to 1,000 (R-BAK-006 "Confirmation", R-BAK-032): the pins stay until the
+// final blob list is written from them.
+func (q *Queries) SetBackupPinPools(ctx context.Context, arg SetBackupPinPoolsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setBackupPinPools, arg.RunID, arg.Digests, arg.Pools)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const setBackupRunHold = `-- name: SetBackupRunHold :execrows

@@ -23,6 +23,9 @@ type SourceConnection struct {
 	Endpoint, Bucket string
 	// ServerSide is true when the connection's endpoint is the target's (R-BAK-006).
 	ServerSide bool
+	// Encrypted is the connection's fixed property encrypted (storage.md R-STOR-075): its copies go into the pool as stored, with
+	// their records, under the name of the storage key each record names (R-BAK-031, R-BAK-032).
+	Encrypted bool
 }
 
 // CopyRow is a present copy of blob_copies as the copy phase reads it.
@@ -32,6 +35,8 @@ type CopyRow struct {
 	Key        string
 	StoredSize int64
 	Verified   bool
+	// StorageKeyID is the storage key of a copy on an encrypted connection, empty on a plain one.
+	StorageKeyID string
 }
 
 // CopyReader reads the present copies of digests at READ COMMITTED. [PGFacts] implements it.
@@ -78,7 +83,7 @@ func (s *StoreSource) Copies(ctx context.Context, digests []format.Digest) (map[
 		}
 		out[r.Digest] = append(out[r.Digest], SourceCopy{
 			Connection: r.Connection, Key: r.Key, StoredSize: r.StoredSize, Verified: r.Verified,
-			ServerSide: c.ServerSide, Position: c.position, Drain: c.Drain,
+			ServerSide: c.ServerSide, Position: c.position, Drain: c.Drain, Encrypted: c.Encrypted, StorageKeyID: r.StorageKeyID,
 		})
 	}
 	return out, nil
@@ -104,34 +109,34 @@ func sourceErr(err error) error {
 	return err
 }
 
-// Size implements BlobSource: HeadObject of the copy's object.
-func (s *StoreSource) Size(ctx context.Context, c SourceCopy) (int64, error) {
+// Stat implements BlobSource: HeadObject of the copy's object.
+func (s *StoreSource) Stat(ctx context.Context, c SourceCopy) (SourceObject, error) {
 	sc, err := s.conn(c)
 	if err != nil {
-		return 0, err
+		return SourceObject{}, err
 	}
 	info, err := sc.Objects.Head(ctx, c.Key)
 	if err != nil {
-		return 0, sourceErr(err)
+		return SourceObject{}, sourceErr(err)
 	}
 	if info.Size < 0 {
-		return 0, fmt.Errorf("%w: connection %s did not report the size of %s", ErrCopyUnavailable, c.Connection, c.Key)
+		return SourceObject{}, fmt.Errorf("%w: connection %s did not report the size of %s", ErrCopyUnavailable, c.Connection, c.Key)
 	}
-	return info.Size, nil
+	return SourceObject{Size: info.Size, Metadata: info.Metadata, ETag: info.ETag}, nil
 }
 
 // Open implements BlobSource: a ranged GetObject; a negative length reads to the end. A read of the body that fails is a
 // failure of the connection.
-func (s *StoreSource) Open(ctx context.Context, c SourceCopy, offset, length int64) (io.ReadCloser, error) {
+func (s *StoreSource) Open(ctx context.Context, c SourceCopy, offset, length int64) (io.ReadCloser, SourceObject, error) {
 	sc, err := s.conn(c)
 	if err != nil {
-		return nil, err
+		return nil, SourceObject{}, err
 	}
-	rc, _, err := sc.Objects.Get(ctx, c.Key, &blob.ByteRange{Offset: offset, Length: length})
+	rc, info, err := sc.Objects.Get(ctx, c.Key, &blob.ByteRange{Offset: offset, Length: length})
 	if err != nil {
-		return nil, sourceErr(err)
+		return nil, SourceObject{}, sourceErr(err)
 	}
-	return sourceBody{rc}, nil
+	return sourceBody{rc}, SourceObject{Size: info.Size, Metadata: info.Metadata}, nil
 }
 
 // sourceBody marks a failed read of a copy's body as a failure of its connection.
