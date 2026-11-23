@@ -49809,7 +49809,7 @@
     </unit>
     <unit id="principal-field.failed">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:466</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:467</note>
       </notes>
       <segment>
         <source>The search failed. Change the text to try again.</source>
@@ -49818,7 +49818,7 @@
     </unit>
     <unit id="principal-field.searching">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:467</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:468</note>
       </notes>
       <segment>
         <source>Searching…</source>
@@ -49827,7 +49827,7 @@
     </unit>
     <unit id="principal-field.none-user">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:472</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:473</note>
       </notes>
       <segment>
         <source>Nobody matches “<ph id="0" equiv="text" disp="text"/>”. A person can be found after their first sign-in.</source>
@@ -49836,7 +49836,7 @@
     </unit>
     <unit id="principal-field.none">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:473</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:474</note>
       </notes>
       <segment>
         <source>Nothing matches “<ph id="0" equiv="text" disp="text"/>”.</source>
@@ -49845,7 +49845,7 @@
     </unit>
     <unit id="principal-field.more">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:477</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:478</note>
       </notes>
       <segment>
         <source>More match. Type more of the name.</source>
@@ -49854,7 +49854,7 @@
     </unit>
     <unit id="principal-field.one-match">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:486</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:487</note>
       </notes>
       <segment>
         <source>1 match.</source>
@@ -49863,7 +49863,7 @@
     </unit>
     <unit id="principal-field.matches">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:486</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:487</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> matches.</source>
@@ -49872,7 +49872,7 @@
     </unit>
     <unit id="principal-field.list">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:521</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:522</note>
       </notes>
       <segment>
         <source>Matches for <ph id="0" equiv="field" disp="this.label()"/></source>
@@ -49881,7 +49881,7 @@
     </unit>
     <unit id="principal-field.chosen">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:525</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:526</note>
       </notes>
       <segment>
         <source>Chosen for <ph id="0" equiv="field" disp="this.label()"/></source>
@@ -49890,7 +49890,7 @@
     </unit>
     <unit id="principal-field.remove">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:529</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:530</note>
       </notes>
       <segment>
         <source>Remove <ph id="0" equiv="name" disp="this.primaryOf(c)"/></source>
@@ -49899,7 +49899,7 @@
     </unit>
     <unit id="principal-field.kind-group">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:553</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:554</note>
       </notes>
       <segment>
         <source>Group</source>
@@ -49908,7 +49908,7 @@
     </unit>
     <unit id="principal-field.kind-other">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:554</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:555</note>
       </notes>
       <segment>
         <source>CI identity</source>
@@ -49917,7 +49917,7 @@
     </unit>
     <unit id="principal-field.kind-technical-token">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:555</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:556</note>
       </notes>
       <segment>
         <source>Technical token</source>
@@ -49926,7 +49926,7 @@
     </unit>
     <unit id="principal-field.kind-ci-project">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:556</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:557</note>
       </notes>
       <segment>
         <source>CI project</source>
@@ -49935,7 +49935,7 @@
     </unit>
     <unit id="principal-field.kind-project-account">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:558</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:559</note>
       </notes>
       <segment>
         <source>Service account of <ph id="0" equiv="project" disp="c.project"/></source>
@@ -49944,7 +49944,7 @@
     </unit>
     <unit id="principal-field.kind-account">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:559</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:560</note>
       </notes>
       <segment>
         <source>Service account</source>
