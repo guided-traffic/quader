@@ -208,7 +208,15 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
   rule stands. What is worked on instead is what makes npm, NuGet, OCI, Debian, Ansible Galaxy and generic files
   and the platform under them right: the open findings of section 8, section 12, and what he names. Work that
   only makes room for more formats (the case runner for a new format's areas, the kit move's later packages)
-  waits with the formats.
+  waits with the formats. **Every open finding first** (six minutes later, 08:15, to the development agent's
+  question whether he had points of his own: "Ich schaue mich gerade schon um, mir ist erstmal wichtig, dass du
+  abschließt was du als noch offen kennst. Also bitte kümmere dich intensiv um die 52 offenen befunde, schließe
+  alles ab, bearbeite alle bugs. Erst wenn das alles sauber ist, würde ich mit dir über meine Details sprechen."):
+  the run works section 8 and section 12 down to nothing, and his own points come after that. The number 52 was
+  the development agent's and too low: it had counted only the entries with a bold heading; section 8 holds 110
+  entries (46 of tests and tools, 64 of the product) and section 12 another 43, counted at 08:16. An entry is
+  closed by a repair with what holds it, or, where nothing can be built, by the check that would catch it again
+  or the reasoned statement of what was looked at; never by deleting it.
 
 ## 1 · Find the next phase
 
@@ -5763,6 +5771,26 @@ their starts; neither had written a file, and their worktrees are gone. FULL.md'
 back to what they were. **The development agent's decision of 08:04 was wrong in its premise:** an empty
 section 10 does not mean the existing formats are finished, and he had not said so. The case runner and
 the kit move's second to ninth packages, which make room for more formats, wait with the formats.
+**The run's work from 08:15, by his word: every open finding of sections 8 and 12.** Started:
+(1) **since 08:15, the signatures with the real clients:** the seven defects measured on 2026-11-21 and left
+(no real NuGet signature is readable, since the parser knows a signer only by issuer and serial and the
+clients name it by the key's identifier, so a gated repository refuses every signed package; signing in a
+gated OCI repository; a posted Ansible signature deleted by the worker's discovery; a remote image's
+version view without its signatures; the gate's text that three clients never show; the text of a
+missing signature for a package with a registry's signature; storage paths in the texts), each
+reproduced first, with the real client where one is on the machine, repaired for every format that has
+the cause, and held at the cheapest tier. (2) **Since 08:16, fourteen findings of screens** (a disabled
+repository's Download, the version page's header, the shared error notice, the vulnerability pages'
+header and what a plain user sees there, a Details section's memory, the audit log, the local npm form,
+two texts, the ClamAV definitions' setup, an opened audit event, the signatures' narrow lists), each
+checked, repaired on every screen with the cause, rendered before and after in both schemes at three
+widths and in German, and held by a component test or a walk of the layout checks. (3) **Since 08:17, a
+planner sorts all 153 entries** (read-only): one row per separate defect, whether it is still open as the
+code stands, its kind, where, its size, what closes it; then the work packages for everything open, cut
+by files so that four can run side by side, ordered by what a user or an operator meets first; the rows
+that need a decision, with a recommendation, and the rows only the owner can close. It does not count
+against the four. Builders with a test load: the handover's data keys, the two of this list, and the
+landing's gates.
 **In work since 05:38: package 7 of the encryption, the destruction of a retired connection's keys**
 (R-STOR-097 to R-STOR-103 and the journal's replay; the development agent's answer of 2026-11-22 to the
 question of what stays readable at a provider). It stands on the handover's second package as it lands;
