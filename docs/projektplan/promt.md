@@ -2372,6 +2372,12 @@ runs are in `git log`; this section holds the current state.
   builder. Package F, the encryption's package 3 and the links' package 3 are active within three minutes;
   the planner of the kit move is at work. No push is in the pipeline. His installation and its Bastion run
   the newest release, ready.
+- **The timer's check at 02:44:** the release of the Bastion's P3 with the links' second package is cut and
+  its chart not published yet; no failed job in its run. The gates of the Bastion's P4 with package F
+  together exit 0 up to the fifth of eleven integration areas, the unit run and the lint among them; three
+  runs wait at the stack's lock. The encryption's package 3 (moving onto the landing's top), the links'
+  package 3, the handover's package 1 and the kit move's package 1 are active within two minutes. The load
+  is 34. His installation runs the release before this one, ready, until the chart is published.
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
