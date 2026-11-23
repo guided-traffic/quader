@@ -8345,7 +8345,8 @@ caller, not its reference: a user's display name ("Priya Raman"), a technical to
 ([Q-UI-765](#q-ui-765--a-callers-page-is-titled-with-the-callers-name-and-its-reference-stands-under-it)).
 
 - **Top**: under the title the caller's kind and its reference (a user's `@priya`, a CI project's issuer), for a technical token a
-  link to its account; when blocked, a notice
+  link to its account; a client certificate's kind alone, since its title is the certificate's subject and **By credential** tells
+  two certificates apart by their serial; when blocked, a notice
   "Blocked until 10:55 after 61 refused requests in an hour" with **Lift block** for a caller who may lift it.
 - **Limits**: one block per budget key (the instance, and each project or repository whose rule applies to it): its place, the rule
   that applies and why in one sentence, read from the explanation ("Rule for the group contractors at web/npm-remote, profile

@@ -189,6 +189,9 @@ describe("A caller's usage (R-UI-184) and a user's own (R-UI-185)", () => {
         };
       },
     });
+    // Under the title the kind's badge alone: the badge says Client certificate, and the certificates stand under By credential.
+    expect(text(root.querySelector('.badge')!)).toBe('Client certificate');
+    expect(root.querySelector('.reference')).toBeNull();
     const section = [...root.querySelectorAll('section')].find((s) => text(s).startsWith('By credential'))!;
     const rows = [...section.querySelectorAll('tbody tr th')].map((th) => [...th.querySelectorAll('.token > *')].map((e) => text(e)));
     expect(rows).toEqual([

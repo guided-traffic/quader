@@ -195,7 +195,8 @@ export function subjectTitle(subject: UsageSubject): string {
 /**
  * The reference under a caller's title (R-UI-184, Q-UI-765): a user's `@name`, a CI project's issuer, the background work of
  * System; null where the line holds it otherwise (a technical token's account is a link there) or the title is the reference
- * (an address).
+ * (an address, a certificate's subject: the kind's badge says "Client certificate" already, and the page lists the certificates by
+ * serial under By credential).
  */
 export function subjectReference(subject: UsageSubject): string | null {
   switch (subject.kind) {
@@ -206,7 +207,6 @@ export function subjectReference(subject: UsageSubject): string | null {
     case 'technicalToken':
       return subject.deleted ? deletedSuffix() : null;
     case 'certificate':
-      return subjectView(subject).secondary;
     case 'anonymous':
       return null;
   }
