@@ -10409,6 +10409,30 @@ in [hooks.go](../../internal/formats/oci/hooks.go), `commitFile` in [hooks.go](.
 `TestR_REPO_048_AnOCIPushRecordsTheGuardsOfItsFirstVersion`, `TestR_REPO_048_ADebianUploadRecordsTheGuardsOfItsFirstVersion` (unit,
 milliseconds).
 
+### Q-REPO-481 · The million entries of R-REPO-045's criterion are a measurement; the test holds the invalidation's shape with 2,000
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `TestInvalidationAtScale` (area `repository`) seeded 1,000,000 metadata entries for the first criterion of R-REPO-045 (an
+invalidation with an empty path returns within one second) and then folded all of them. On 2026-11-23 the seeding took 74 s and the fold
+met the statement timeout after 207 s on a loaded host. What can regress is the invalidation's shape: the call is one insert and one
+count and touches no entry; every replica finds the cached packages invalid from its set without a query; the fold expires them in
+batches and marks the row folded. None of that needs a million rows. The second is a property of the million on a given machine.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The test holds the shape with 2,000 entries and a fold batch of 250 (eight batches); the million and its second are run once with `QUADER_TEST_INVALIDATION_ENTRIES=1000000` and written down (chosen) | A measurement, a test | About a second in the area instead of up to five minutes; every assertion of the shape stays | The second is not checked on every change |
+| (b) Keep the million as a test | | The criterion's number is run | A test of minutes that a loaded host fails, which the repository's rule calls a measurement |
+| (c) Drop the scale case | | | The shape loses its test |
+
+**Choice:** (a). The criterion keeps its number: it says what an installation of that size gets, and the measurement shows it
+([test-cost.md](../developer/test-cost.md#12-the-million-of-r-repo-045-measured-once-2026-11-23)). **Rationale:** "A measurement is not a test" (the repository's rule of
+2026-11-20): run once and written down, it becomes a test only if it runs in seconds and asserts something that can regress, and the
+shape is what regresses.
+
+**Applied in the spec:** R-REPO-045's criterion is measured, not tested, at its million. Code:
+[invalidation_test.go](../../test/integration/repository/invalidation_test.go).
+
 ## What this does not cover
 
 ### H-4 · Malicious content from a legitimate upstream

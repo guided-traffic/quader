@@ -30,7 +30,7 @@ func waitGauge(t *testing.T, r *replica, name string, want float64) {
 func TestR_BAS_027_TheMainInstallationUnreachable(t *testing.T) {
 	w := newWorld(t, worldOptions{})
 	w.content()
-	b := w.newBastion(t, bastionOptions{Settings: "  answers:\n    period: 30s\n    grace_period: 60s\n"}).wait()
+	b := w.newBastion(t, bastionOptions{CutsLink: true, Settings: "  answers:\n    period: 30s\n    grace_period: 60s\n"}).wait()
 	r := b.reps[0]
 	known := callOpts{token: w.full.token, addr: "198.51.100.51"}
 	tgz := tarballPath(npmAll, "@acme/sdk", "1.0.0")
@@ -86,7 +86,7 @@ func TestR_BAS_009_R_BAS_028_InterfaceMismatch(t *testing.T) {
 		t.Run(dir, func(t *testing.T) {
 			w := newWorld(t, worldOptions{})
 			w.content()
-			b := w.newBastion(t, bastionOptions{Settings: "  answers:\n    period: 30s\n    grace_period: 60s\n"}).wait()
+			b := w.newBastion(t, bastionOptions{CutsLink: true, Settings: "  answers:\n    period: 30s\n    grace_period: 60s\n"}).wait()
 			r := b.reps[0]
 			known := callOpts{token: w.full.token, addr: "198.51.100.61"}
 			tgz := tarballPath(npmAll, "@acme/sdk", "1.0.0")
@@ -160,7 +160,7 @@ func TestR_BAS_005_R_BAS_006_ARevokedBastionToken(t *testing.T) {
 	w := newWorld(t, worldOptions{})
 	w.content()
 	second := w.issueBastionToken("partners")
-	b := w.newBastion(t, bastionOptions{Token: second.token, Settings: "  answers:\n    period: 30s\n    grace_period: 60s\n"}).wait()
+	b := w.newBastion(t, bastionOptions{CutsLink: true, Token: second.token, Settings: "  answers:\n    period: 30s\n    grace_period: 60s\n"}).wait()
 	r := b.reps[0]
 	known := callOpts{token: w.full.token, addr: "198.51.100.81"}
 	tgz := tarballPath(npmAll, "@acme/sdk", "1.0.0")

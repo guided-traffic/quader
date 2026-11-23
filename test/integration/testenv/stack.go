@@ -112,25 +112,7 @@ func NewStack(tb testing.TB, o StackOptions) *Stack {
 	name := "quader_" + o.Name + "_" + RandHex(5)
 	dir := tb.TempDir()
 	cfg := databaseConfig(tb, dir, name)
-	maint, err := pgx.Connect(ctx, PgDSN(tb, "postgres"))
-	if err != nil {
-		tb.Fatalf("connect to PostgreSQL: %v", err)
-	}
-	tpl := stackTemplate(tb, cfg, false)
-	err = cloneTemplate(ctx, maint, name, tpl)
-	if templateGone(err) {
-		// Another process made a newer template and dropped this one (a changed migration in another checkout, a new day).
-		tpl = stackTemplate(tb, cfg, true)
-		err = cloneTemplate(ctx, maint, name, tpl)
-	}
-	if err != nil {
-		_ = maint.Close(ctx)
-		tb.Fatalf("create the database %s from the template %s: %v", name, tpl, err)
-	}
-	tb.Cleanup(func() {
-		_, _ = maint.Exec(context.Background(), "DROP DATABASE IF EXISTS "+name+" WITH (FORCE)")
-		_ = maint.Close(context.Background())
-	})
+	maint := cloneDatabase(tb, cfg)
 	conn, err := pgx.Connect(ctx, PgDSN(tb, name))
 	if err != nil {
 		tb.Fatal(err)

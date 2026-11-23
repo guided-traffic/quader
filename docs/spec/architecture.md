@@ -11609,6 +11609,63 @@ hold the message and the key. Not verified: a real stalled mirror (the bound and
 the `*-stub-image` targets of the [Makefile](../../Makefile). Elsewhere: [releasing.md](../developer/releasing.md#what-the-jobs-fetch-and-what-is-cached),
 [e2e.md](../developer/e2e.md#the-images-of-a-ci-leg).
 
+### Q-ARCH-700 · A statement budget counts the statements that ran with the request's ID, not the database's log of a window
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the area `querybudget` (R-ARCH-027) measured a download's statements from the database's log: the statements of a window
+of 30 downloads that ran in nine of ten requests and spread over half of the window. On 2026-11-23, at a host load above 40, a
+download by signed link was charged a `GetSystemState` beside its `GetLiveItem`: the replica's readiness check reads `system_state`
+on its own rhythm, and a window that the host stretched held enough of its rounds to pass both rules. No rule on the instants of a
+log tells such a rhythm from a statement of every request. The first-request measurement of the same area had counted by the request's
+ID since F-125 (`testenv.RequestTransactions`, the pgx tracer of the replica's request pool and control connection).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every budget of the area counts by the request's ID: the replicas run the tracer, a statement counts in a request when it ran with that request's context, and a name counts per request when it ran in nine requests of ten (chosen) | The log and its windows go | Independent of the host's speed; the scheduler's run, the readiness check and the batched writers carry no request ID; no wait for the log and no wait for a scheduled run to end | A statement a request causes on a connection without its context (a goroutine on `context.Background()`) is not counted; none is known on a download's path |
+| (b) Name `GetSystemState` among the replica's own statements, as the probes are | One line | | The next background statement fails the same way; a download that did read `system_state` would no longer be seen |
+| (c) Keep the log and pause the readiness check during the window | | | A hook in the product for a test |
+
+**Choice:** (a), in `perRequestAs` and `perRequest` of [download_test.go](../../test/integration/querybudget/download_test.go) and the
+replicas of `env.start`. The windows' fixed waits went with the log: a second before each window, 300 ms after it, the wait for the
+first run of the weekly orphan sweep in the Debian case, and the second before each first request after a write, which is now one
+change-log poll of the replica (`PollNow`). The area's run on 2026-11-23 at a host load of 35 to 40: every download 1 statement
+(`GetLiveItem`), the virtual repository's remote member 2, as before. **Rationale:** the budget is the request's; only the request's ID
+says which statements are its. The same windows of the log remain in the area `vulnblock` (`querycount_test.go`), not touched here.
+
+**Applied in the spec:** none (test wiring). Code: [download_test.go](../../test/integration/querybudget/download_test.go),
+[link_test.go](../../test/integration/querybudget/link_test.go), [deb_test.go](../../test/integration/querybudget/deb_test.go),
+[document_test.go](../../test/integration/querybudget/document_test.go), [env_test.go](../../test/integration/querybudget/env_test.go).
+
+### Q-ARCH-702 · A test waits for the state it stands for and does not depend on the host's speed
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: on 2026-11-23 four builders' gates beside each other took the development machine to a load of 30 to 130, and integration
+and unit tests failed by it, each once or twice and green alone (the plan's section 8, package W4). Read in the code, each depended on
+the host's speed in one of five ways: a wall clock that a budget refills from (`TestR_AUTH_038_E1_8_ThrottleAcrossThreeReplicas`: 9
+a minute, a token back every 6.7 s); a period of real time the test must beat (`ColdAndWarmCache`: 3 s between a cold and a warm run);
+a product bound the harness had shortened below its default and that the test does not stand for (the Bastion's link: 1 s to connect,
+3 s to call the main installation unreachable, 10 s for an answer; the commit grace of 4 s against an object write of 1.5 s; Valkey's
+command timeout of 500 ms; the gate's wait of 5 s in `TestR_MAL_014`; delete_settle/2 = 75 ms between an object write and its row in
+`TestGCKilledAtRandomPoints`); a fixed sleep for an event (`TestR_HA_011`'s 300 ms until an upload is in flight); a migration of a new
+database inside the area's minute (`blob`, `repository`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Per test, the cause removed: a stopped or advanced clock where the test's own clock decides; the product's default, or a generous value with its reason beside it, for a bound the test does not stand for; a wait for the event; a clone of the template for a component area's database (chosen) | Each test says what it waits for | Independent of the host; nothing hidden | A bound the product keeps short is no longer exercised by these tests: each is the subject of a test of its own |
+| (b) Retries around the tests, or `-count` loops | | A green pipeline | Hides a product failure behind the same retry |
+| (c) Fewer gates beside each other | | | The tests stay as fragile; the cap of the cores (`LOCAL_CORES`) is done besides, not instead |
+
+**Choice:** (a). Where each test now stands and what bounds it is in
+[build-and-test.md](../developer/build-and-test.md#tests-that-hold-on-a-loaded-host); the database of a component area is
+`testenv.MigratedDatabase`, a clone of the template of
+[Q-ARCH-581](#q-arch-581--every-stack-of-the-in-process-harness-is-a-clone-of-a-migrated-template-with-identity-rows-of-its-own).
+Each repaired test was run with `GOMAXPROCS=1` under `taskpolicy -c background` beside the other builders' gates. **Rationale:** a test
+that a slow host fails says nothing about the product; a bound that is the product's stays in the test that stands for it and says so.
+
+**Applied in the spec:** none (test wiring).
+
 ### Q-ARCH-522 · The kind legs load the Quader image the job `image` of their run built, and need that job
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.

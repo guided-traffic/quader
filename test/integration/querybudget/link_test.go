@@ -28,7 +28,7 @@ func linkBudget(t *testing.T, e *env) {
 	endpoint, _ := url.Parse(testenv.S3Config(t).Endpoint)
 	e.st.Exec(`UPDATE download_link_settings SET enabled = true, min_size = 0, public_addresses = jsonb_build_object('default', $1::text),
 		version = version + 1`, "https://localhost:"+endpoint.Port())
-	r := e.st.Start(t, testenv.ReplicaOptions{Name: "web-links"})
+	r := e.start(t, testenv.ReplicaOptions{Name: "web-links"})
 	layer := []byte("a layer of a few bytes, handed to a link")
 	sum := sha256.Sum256(layer)
 	digest := "sha256:" + hex.EncodeToString(sum[:])
@@ -46,7 +46,7 @@ func linkBudget(t *testing.T, e *env) {
 		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 		Timeout:       10 * time.Second,
 	}
-	get := func() int {
+	get := func() (int, string) {
 		req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, e.st.Origin(r.Addr("default"))+path, nil)
 		req.Host = testenv.DefaultHost
 		req.Header.Set("Authorization", "Bearer "+e.tokAdmin)
@@ -56,30 +56,16 @@ func linkBudget(t *testing.T, e *env) {
 		}
 		_, _ = io.Copy(io.Discard, resp.Body)
 		_ = resp.Body.Close()
-		return resp.StatusCode
+		return resp.StatusCode, resp.Header.Get("X-Request-Id")
 	}
-	// The link check of the replica's start runs beside its first readiness; the first link waits for it. The replicas of this test
-	// have the role web, which runs no scheduler, so no first run of the weekly orphan sweep falls into the window (deb_test.go waits
-	// for it on its replica of the role all).
-	testenv.WaitFor(t, "the first link", 10*time.Second, func() bool { return get() == http.StatusTemporaryRedirect })
-	time.Sleep(time.Second)
-	starts := make([]time.Time, 0, requests)
-	for range requests {
-		starts = append(starts, time.Now())
-		if code := get(); code != http.StatusTemporaryRedirect {
-			t.Fatalf("%s: %d, want 307", path, code)
-		}
-	}
-	time.Sleep(300 * time.Millisecond)
-	got := testenv.PerRequest(testenv.StatementLogSince(t, starts[0].Add(-100*time.Millisecond)), starts, background)
+	// The link check of the replica's start runs beside its first readiness; the first link waits for it.
+	testenv.WaitFor(t, "the first link", 30*time.Second, func() bool { code, _ := get(); return code == http.StatusTemporaryRedirect })
+	got := e.perRequest(t, path, get, http.StatusTemporaryRedirect)
 	total := 0
 	for _, v := range got {
 		total += v
 	}
 	t.Logf("statements per download by link: %d (%s)", total, describe(got))
-	if total == 0 {
-		t.Fatal("no statement ran per request; the log is not read")
-	}
 	if total > 1 {
 		t.Errorf("a download by link runs %d statements (%s), the budget of R-ARCH-027 is 1", total, describe(got))
 	}

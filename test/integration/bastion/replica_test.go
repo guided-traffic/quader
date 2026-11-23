@@ -85,6 +85,19 @@ type bastionOptions struct {
 	CAFile string
 	// Deps sees each replica's engine dependencies after the server built them (the link client of a handover among them).
 	Deps func(*engine.Deps)
+	// CutsLink gives the link to the main installation the short bounds of a test that cuts it and waits for the Bastion to
+	// notice (unreachable_after 3 s, connect_timeout 1 s, response_header_timeout 10 s). Every other Bastion keeps the product's
+	// defaults (10 s, 5 s, 30 s): with the short ones a host at a load of 30 to 130 made a Bastion that nobody cut answer
+	// 503 main_unreachable and 504 main_timeout in tests that compare answers (2026-11-23).
+	CutsLink bool
+}
+
+// linkBounds are the bounds of the link to the main installation of a Bastion of o (bastionOptions.CutsLink).
+func linkBounds(o bastionOptions) string {
+	if o.CutsLink {
+		return "    unreachable_after: 3s\n    connect_timeout: 1s\n    response_header_timeout: 10s\n"
+	}
+	return "    unreachable_after: 10s\n    connect_timeout: 5s\n    response_header_timeout: 30s\n"
 }
 
 // bastion is a Bastion: its replicas.
@@ -192,8 +205,8 @@ func (b *bastion) start(t *testing.T, dir string, o bastionOptions, i int) *repl
 	var y strings.Builder
 	fmt.Fprintf(&y, "server:\n  listen: 127.0.0.1:0\n  ops_listen: localhost:0\n  base_url: %s\n  trusted_proxies: [\"127.0.0.1/32\"]\n%s", base, o.Server)
 	fmt.Fprintf(&y, "bastion:\n  replicas: %d\n  signing_key_file: %s\n", o.Replicas, b.sh.keyFile)
-	fmt.Fprintf(&y, "  main:\n    url: %s\n    token_file: %s\n    ca_file: %s\n    handshake_interval: 5s\n    unreachable_after: 3s\n    connect_timeout: 1s\n    response_header_timeout: 10s\n    token_reload_interval: 1s\n%s",
-		mainURL, b.tokenFil, caFile, o.MainSettings)
+	fmt.Fprintf(&y, "  main:\n    url: %s\n    token_file: %s\n    ca_file: %s\n    handshake_interval: 5s\n%s    token_reload_interval: 1s\n%s",
+		mainURL, b.tokenFil, caFile, linkBounds(o), o.MainSettings)
 	y.WriteString("  feed:\n    poll_interval: 1s\n  audit:\n    flush_interval: 1s\n")
 	if o.Backend == "bucket" {
 		y.WriteString(b.sh.bucketYML)

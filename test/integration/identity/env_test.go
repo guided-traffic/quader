@@ -103,10 +103,8 @@ func newEnv(t *testing.T) *env {
 	st := getStack(t)
 	name := "quader_ident_" + randHex(5)
 	maint := st.admin(t, "postgres")
-	if _, err := maint.Exec(context.Background(), "CREATE DATABASE "+name+" ENCODING 'UTF8' TEMPLATE template0"); err != nil {
-		t.Fatalf("create database: %v", err)
-	}
-	t.Cleanup(func() { _, _ = maint.Exec(context.Background(), "DROP DATABASE IF EXISTS "+name+" WITH (FORCE)") })
+	// A clone of the migrated template (Q-ARCH-581): migrating a new database met the areas' minute on a starved host.
+	testenv.MigratedDatabase(t, name)
 	dir := t.TempDir()
 	userFile, passFile := filepath.Join(dir, "username"), filepath.Join(dir, "password")
 	if err := os.WriteFile(userFile, []byte(st.user+"\n"), 0o600); err != nil {
@@ -131,14 +129,6 @@ func newEnv(t *testing.T) *env {
 		Keepalive:       config.DatabaseKeepalive{Idle: 15 * time.Second, Interval: 5 * time.Second, Count: 3, UserTimeout: 30 * time.Second},
 		ServerKeepalive: config.DatabaseServerKeepalive{Idle: 60 * time.Second, Interval: 10 * time.Second, Count: 6},
 		Preflight:       config.DatabasePreflight{ConnectionBudget: "enforce", ReservedConnections: 10, AllowSuperuser: true},
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-	if _, err := postgres.Migrate(ctx, cfg, postgres.MigrateOptions{
-		Instance: "it-migrate", Version: "0.1.0", Log: quiet,
-		Migrate: config.Migrate{AdvisoryLockWait: 20 * time.Second, DDLLockTimeout: 2 * time.Second, DDLLockRetries: 3},
-	}); err != nil {
-		t.Fatalf("migrate: %v", err)
 	}
 	if testenv.PgPooled(t) {
 		cfg = testenv.ThroughPgBouncer(t, cfg, st.user, maint)
@@ -275,6 +265,10 @@ type replicaOpts struct {
 	// rejected credentials per minute and address, among liveReplicas replicas.
 	failureBudget int
 	liveReplicas  int
+	// limiterNow is the clock of the cluster limiters (failureBudget, flowStarts); nil is the real one. A test that counts
+	// a budget across several requests stops it, so that no window turns and no token refills however long the requests
+	// take on a loaded host.
+	limiterNow func() time.Time
 	// flowStarts, when positive, gives the API the cluster limiter auth.flow_starts
 	// with that many requests per minute and address.
 	flowStarts int
@@ -417,7 +411,7 @@ func (e *env) newReplica(name string, o replicaOpts) *replica {
 		DB: r.db, Notifier: r.changes, Recorder: r.recorder, BreakGlassName: "breakglass", Metrics: metrics,
 	})
 	if o.flowStarts > 0 {
-		ls, err := cluster.NewLimiterSet(cluster.LimiterOptions{Valkey: r.vk, Registry: prometheus.NewRegistry(), LiveReplicas: func() int { return max(1, o.liveReplicas) }})
+		ls, err := cluster.NewLimiterSet(cluster.LimiterOptions{Valkey: r.vk, Registry: prometheus.NewRegistry(), LiveReplicas: func() int { return max(1, o.liveReplicas) }, Now: o.limiterNow})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -426,7 +420,7 @@ func (e *env) newReplica(name string, o replicaOpts) *replica {
 	limiter := o.limiter
 	if o.failureBudget > 0 {
 		live := max(1, o.liveReplicas)
-		ls, err := cluster.NewLimiterSet(cluster.LimiterOptions{Valkey: r.vk, Registry: r.reg, LiveReplicas: func() int { return live }})
+		ls, err := cluster.NewLimiterSet(cluster.LimiterOptions{Valkey: r.vk, Registry: r.reg, LiveReplicas: func() int { return live }, Now: o.limiterNow})
 		if err != nil {
 			t.Fatal(err)
 		}

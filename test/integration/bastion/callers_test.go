@@ -190,7 +190,7 @@ func TestR_BAS_022_R_BAS_024_NegativeCacheOnlyForFullReaders(t *testing.T) {
 	b2 := w.newBastion(t, bastionOptions{Cache: "    negative_period: 1s\n"}).wait()
 	missing2 := "/api/npm/" + npmLocal + "/another-missing"
 	b2.reps[0].do(t, "GET", missing2, full)
-	time.Sleep(1300 * time.Millisecond)
+	b2.clk.Advance(1300 * time.Millisecond) // past negative_period on the Bastion's clock, which judges a negative entry
 	m = w.front.Mark()
 	b2.reps[0].do(t, "GET", missing2, full)
 	if n := len(w.front.Forwards(m, "/api/")); n != 1 {

@@ -89,6 +89,10 @@ func TestJobs(t *testing.T) {
 	openGate := func() { gateOnce.Do(func() { close(gate) }) }
 	defer openGate()
 	var coalesced, inCoalesce, maxCoalesce atomic.Int64
+	// burstDone ends a coalesced rebuild: it is closed once every enqueue of the burst has returned, so a rebuild always lasts
+	// longer than the burst (R-ARCH-016's criterion) however long the burst takes on a loaded host. A fixed 1.5 s stood there
+	// before, and a host on which the 100 enqueues took 2.6 s legally ran a third execution (2026-11-21).
+	burstDone := make(chan struct{})
 	causes := make(chan error, 8)
 
 	kinds := func(r *jobs.Registry, rep *replica) {
@@ -121,8 +125,12 @@ func TestJobs(t *testing.T) {
 				maxCoalesce.Store(n)
 			}
 			coalesced.Add(1)
-			time.Sleep(1500 * time.Millisecond)
-			inCoalesce.Add(-1)
+			defer inCoalesce.Add(-1)
+			select {
+			case <-burstDone:
+			case <-ctx.Done():
+				return ctx.Err()
+			}
 			return nil
 		}})
 		r.RegisterKind("it.flaky", jobs.KindSpec{MaxAttempts: 3, Handler: func(ctx context.Context, run *jobs.Run) error {
@@ -301,6 +309,7 @@ func TestJobs(t *testing.T) {
 			}()
 		}
 		wg.Wait()
+		close(burstDone)
 		t.Logf("100 enqueues in %s created %d rows", time.Since(start).Round(time.Millisecond), created.Load())
 		waitFor(t, "the queue to drain", 30*time.Second, func() bool {
 			return e.scalar(`SELECT count(*) FROM job WHERE kind = 'it.coalesce' AND state IN ('queued','running')`) == 0

@@ -3,27 +3,51 @@
 package ci
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/guided-traffic/quader/internal/ci/subject"
+	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/test/integration/testenv"
 	"github.com/guided-traffic/quader/test/oidcstub"
 )
 
-// statsFlushWait bounds the delay of the table statistics: one second between two flushes of a backend plus
-// the 500 ms poll that keeps it busy, plus a margin.
-const statsFlushWait = 2500 * time.Millisecond
+// keyReads counts the reads of a stored key set (the statement CiKeysGet) a replica sends, as its pgx tracer.
+type keyReads struct{ n atomic.Int64 }
+
+func (k *keyReads) TraceQueryStart(ctx context.Context, _ *pgx.Conn, d pgx.TraceQueryStartData) context.Context {
+	if strings.Contains(d.SQL, "-- name: CiKeysGet ") {
+		k.n.Add(1)
+	}
+	return ctx
+}
+
+func (*keyReads) TraceQueryEnd(context.Context, *pgx.Conn, pgx.TraceQueryEndData) {}
+
+// pollAll has each replica poll its change log once and apply every change committed before (R-ARCH-018).
+func pollAll(t *testing.T, rs ...*testenv.Replica) {
+	t.Helper()
+	for _, r := range rs {
+		if err := r.App.Changes().PollNow(t.Context()); err != nil {
+			t.Fatalf("%s: change-log poll: %v", r.Name, err)
+		}
+	}
+}
 
 func TestR_CI_003_ARotationCausesOneFetchAndRandomKidsCauseNone(t *testing.T) {
 	d := startDouble(t, oidcstub.Config{})
 	// A 60 s throttle: the 100 random kids all fall into it.
 	e := newEnv(t, options{valkey: true, kidInterval: "60s"})
-	a := e.web("web-a")
+	reads := &keyReads{}
+	a := e.stack.Start(t, testenv.ReplicaOptions{Name: "web-a", Role: "web", Database: []postgres.Option{postgres.WithQueryTracer(reads)}})
 	wantStatus(t, e.do(a, "POST", issuersPath, d.body("gitlab-main")), 201, "")
 	is := issuerOf(t, a, d.stub.Issuer())
 	first := mint(t, d, oidcstub.MintOptions{})
@@ -44,19 +68,10 @@ func TestR_CI_003_ARotationCausesOneFetchAndRandomKidsCauseNone(t *testing.T) {
 	}
 
 	d.stub.Reset()
-	// The reads of the table are counted by its statistics, which a backend flushes to the shared
-	// statistics only when it ends a statement at least one second after its last flush, or after one
-	// second of idleness (PGSTAT_MIN_INTERVAL, PGSTAT_IDLE_INTERVAL). A backend that a replica polls every
-	// 500 ms therefore lands its pending counts up to 1.5 s late: the reads of the rotation above were
-	// seen arriving between 0.9 s and 1.6 s after it, on either side of a 1.5 s wait. The wait before each
-	// reading is long enough that every count of the activity before it has arrived, which makes both ends
-	// of a window exact. Other readers (the database gauge of the key age) read the table too, so the same
-	// window without tokens is measured as the baseline.
-	reads := func() int64 {
-		time.Sleep(statsFlushWait)
-		return e.number("SELECT coalesce(sum(seq_scan + coalesce(idx_scan, 0)), 0) FROM pg_stat_user_tables WHERE relname = 'ci_issuer_keys'")
-	}
-	r0 := reads()
+	// The replica's own reads of the stored set are counted as it sends them (keyReads), so the window's ends are exact
+	// however slow the host. The table's statistics counted them before, which a backend publishes up to 1.5 s late and a
+	// loaded host later still, and every reader of the table with them.
+	before := reads.n.Load()
 	start := time.Now()
 	for i := range 100 {
 		tok := mint(t, d, oidcstub.MintOptions{HeaderKID: fmt.Sprintf("random-%d", i)})
@@ -65,15 +80,12 @@ func TestR_CI_003_ARotationCausesOneFetchAndRandomKidsCauseNone(t *testing.T) {
 		}
 	}
 	window := time.Since(start)
+	got := reads.n.Load() - before
 	if c := d.stub.Counts(); c.JWKS != 0 || c.Discovery != 0 {
 		t.Errorf("100 random kids caused fetches: %+v", c)
 	}
-	r1 := reads()
-	time.Sleep(window)
-	r2 := reads()
-	excess := (r1 - r0) - (r2 - r1)
-	if allowed := int64(window/(500*time.Millisecond)) + 2; excess > allowed {
-		t.Errorf("100 random kids in %v caused %d more reads of ci_issuer_keys than an idle window, want at most one per cluster.epoch_poll_interval (%d)", window, excess, allowed)
+	if allowed := int64(window/(500*time.Millisecond)) + 2; got > allowed {
+		t.Errorf("100 random kids in %v caused %d reads of the stored set, want at most one per cluster.epoch_poll_interval (%d)", window, got, allowed)
 	}
 }
 
@@ -82,11 +94,14 @@ func TestR_CI_003_ANewKeyIsAcceptedOnEveryReplicaWithValkeyStopped(t *testing.T)
 	e := newEnv(t, options{valkey: false})
 	a, b, c := e.web("web-a"), e.web("web-b"), e.web("web-c")
 	wantStatus(t, e.do(a, "POST", issuersPath, d.body("gitlab-main")), 201, "")
-	within(t, "every replica resolving the issuer", 4*time.Second, func() bool {
-		_, okB, _ := b.App.CIIssuers().Resolve(t.Context(), d.stub.Issuer())
-		_, okC, _ := c.App.CIIssuers().Resolve(t.Context(), d.stub.Issuer())
-		return okB && okC
-	})
+	// Without Valkey the change-log poll carries the new issuer; one poll of each replica applies it, however long a poll takes
+	// on a loaded host (a bound of 4 s stood here; the propagation's own bound is TestR_CI_003_ALaggingReplicaLearnsANewIssuerWithinThePollInterval's).
+	pollAll(t, b, c)
+	for _, r := range []*testenv.Replica{b, c} {
+		if _, ok, err := r.App.CIIssuers().Resolve(t.Context(), d.stub.Issuer()); !ok || err != nil {
+			t.Fatalf("%s does not resolve the issuer after its change-log poll: %v", r.Name, err)
+		}
+	}
 	old := mint(t, d, oidcstub.MintOptions{})
 	isA, isB, isC := issuerOf(t, a, d.stub.Issuer()), issuerOf(t, b, d.stub.Issuer()), issuerOf(t, c, d.stub.Issuer())
 	// Fill the copies with a normal read, which is no re-read.
@@ -206,25 +221,24 @@ func TestR_CI_003_AFetchHoldsNoTransactionOpenAndAnUnchangedSetLeavesTheEpoch(t 
 			}
 			return func() { _ = tx.Rollback(t.Context()) }
 		}
-		// A store holds the key row; an exchange (FOR SHARE on the issuer row) is not delayed.
+		// A store holds the key row; an exchange (FOR SHARE on the issuer row) is not delayed: with NOWAIT a lock it would
+		// wait for fails at once (55P03), whatever the host's speed; a clock against a second did not tell a wait from a
+		// slow host.
 		release := hold("SELECT 1 FROM ci_issuer_keys WHERE issuer_id = $1::uuid FOR UPDATE")
-		start := time.Now()
-		e.exec("SELECT 1 FROM ci_issuers WHERE id = $1::uuid FOR SHARE", id)
 		tx := e.conn(t)
-		x, _ := tx.Begin(t.Context())
-		_, _ = x.Exec(t.Context(), "SELECT 1 FROM ci_issuers WHERE id = $1::uuid FOR SHARE", id)
-		if time.Since(start) > time.Second {
-			t.Errorf("an exchange waited %v for a key store", time.Since(start))
+		x, err := tx.Begin(t.Context())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := x.Exec(t.Context(), "SELECT 1 FROM ci_issuers WHERE id = $1::uuid FOR SHARE NOWAIT", id); err != nil {
+			t.Errorf("an exchange would wait for a key store: %v", err)
 		}
 		_ = x.Rollback(t.Context())
 		release()
-		// An exchange holds the issuer row; a key store does not wait for it.
+		// An exchange holds the issuer row; a key store does not wait for it: the refresh answers while the hold stays, which
+		// a store that waited for the row could not do before the hold ends (the replica's lock_timeout would end it first).
 		release = hold("SELECT 1 FROM ci_issuers WHERE id = $1::uuid FOR SHARE")
-		start = time.Now()
 		wantStatus(t, e.do(a, "POST", issuersPath+"/gitlab-main/keys/refresh", nil), 200, "")
-		if time.Since(start) > 3*time.Second {
-			t.Errorf("a key store waited %v for an exchange", time.Since(start))
-		}
 		release()
 	})
 }
@@ -241,7 +255,10 @@ func TestR_CI_003_StaleAndUnreachable(t *testing.T) {
 	wantStatus(t, e.do(a, "POST", issuersPath, d.body("gitlab-main")), 201, "")
 	id := e.text("SELECT id::text FROM ci_issuers WHERE name = 'gitlab-main'")
 	tok := mint(t, d, oidcstub.MintOptions{})
-	within(t, "web-b resolving", 4*time.Second, func() bool { _, ok, _ := b.App.CIIssuers().Resolve(t.Context(), d.stub.Issuer()); return ok })
+	pollAll(t, b)
+	if _, ok, err := b.App.CIIssuers().Resolve(t.Context(), d.stub.Issuer()); !ok || err != nil {
+		t.Fatalf("web-b does not resolve the issuer after its change-log poll: %v", err)
+	}
 	isA, isB := issuerOf(t, a, d.stub.Issuer()), issuerOf(t, b, d.stub.Issuer())
 	age := func(secs int) {
 		e.exec("UPDATE ci_issuer_keys SET fetched_at = now() - make_interval(secs => $1) WHERE issuer_id = $2::uuid", secs, id)
@@ -249,11 +266,7 @@ func TestR_CI_003_StaleAndUnreachable(t *testing.T) {
 		// Without Valkey the change-log poll carries the change (R-ARCH-018). Waiting for one poll of each replica
 		// instead of a fixed time makes the state of both copies certain before the lookups below, however long a
 		// poll takes on a loaded machine.
-		for _, r := range []*testenv.Replica{a, b} {
-			if err := r.App.Changes().PollNow(t.Context()); err != nil {
-				t.Fatalf("%s: change-log poll: %v", r.Name, err)
-			}
-		}
+		pollAll(t, a, b)
 	}
 
 	t.Run("R-CI-003 a refresh that stores an unchanged set keeps every replica succeeding past max_stale", func(t *testing.T) {

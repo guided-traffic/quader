@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/auth/scope"
-	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
@@ -17,11 +16,13 @@ import (
 // request after a write, which renders what no cache holds yet. They are the ones the replica's query tracer attributes to the
 // request's ID (X-Request-Id), so a statement of the replica's own loops (the readiness check reads system_state twice, the
 // registration, the change-log poll) or of the stack's other writers never falls into the count, whatever instant it ran in
-// (F-125). The pause before the request only lets what the write set off (the change-log poll that invalidates the caches)
-// arrive; it counts nothing.
+// (F-125). Before the request the replica polls its change log once, which applies every change committed before (the write's
+// invalidation of the caches), however long a poll takes on a loaded host; a fixed second stood there before.
 func firstRequestStatements(t *testing.T, e *env, r *testenv.Replica, rt *testenv.RequestTransactions, path, token string) map[string]int {
 	t.Helper()
-	time.Sleep(time.Second)
+	if err := r.App.Changes().PollNow(t.Context()); err != nil {
+		t.Fatalf("the change-log poll before the request: %v", err)
+	}
 	rt.Count(true)
 	defer rt.Count(false)
 	a := e.st.Do(r, "GET", path, token, nil)
@@ -62,15 +63,14 @@ func leastOf(rounds []map[string]int) (map[string]int, int) {
 // the revision in one statement.
 func TestR_ARCH_027_ADocumentOfACallerWithPathPatternsCostsOneStatement(t *testing.T) {
 	e := newEnv(t)
-	e.st.LogStatements(t) // the cached subtests count from the database log
 	narrowed := e.st.User("narrowed")
 	e.st.Policy("narrowed-read", []string{"read"}, []string{rNPM, rNuGet}, narrowed)
 	for _, p := range []string{"budget-doc/-/budget-doc-2.0.0.tgz", "budget.doc/2.0.0/**"} {
 		e.st.Exec(`INSERT INTO authz_policy_pattern (policy_id, dimension, mode, pattern) SELECT id, 'path', 'exclude', $1 FROM authz_policy WHERE name = 'narrowed-read'`, p)
 	}
 	tokNarrowed := e.st.Token(narrowed, scope.Default())
-	rt := testenv.NewRequestTransactions()
-	r := e.st.Start(t, testenv.ReplicaOptions{Name: "web-doc", Database: []postgres.Option{rt.Option()}})
+	rt := e.rt
+	r := e.start(t, testenv.ReplicaOptions{Name: "web-doc"})
 	for _, v := range []string{"1.0.0", "2.0.0"} {
 		e.publish(r, rNPM, "budget-doc", v)
 		e.push(r, rNuGet, "Budget.Doc", v)
@@ -131,8 +131,8 @@ func TestR_ARCH_027_ADocumentOfACallerWithPathPatternsCostsOneStatement(t *testi
 // runs, named like one of the replica's, is not the request's.
 func TestR_ARCH_027_AStatementOfAnotherConnectionIsNotTheRequests(t *testing.T) {
 	e := newEnv(t)
-	rt := testenv.NewRequestTransactions()
-	r := e.st.Start(t, testenv.ReplicaOptions{Name: "web-foreign", Database: []postgres.Option{rt.Option()}})
+	rt := e.rt
+	r := e.start(t, testenv.ReplicaOptions{Name: "web-foreign"})
 	e.publish(r, rNPM, "budget-foreign", "1.0.0")
 	path := "/api/npm/it/" + rNPM + "/budget-foreign"
 

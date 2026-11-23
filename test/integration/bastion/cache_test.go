@@ -39,7 +39,10 @@ func TestR_BAS_021_R_BAS_022_R_BAS_023_ColdAndWarmCache(t *testing.T) {
 	for _, v := range variants() {
 		t.Run(v.name, func(t *testing.T) {
 			o := v.o
-			o.Cache = "    metadata_revalidate_after: 3s\n"
+			// The period is the default minute and the Bastion's clock moves past it (b.clk): with 3 s of the real clock, a
+			// starved host took longer than the period between the cold and the warm run, and the warm run revalidated a
+			// document it was to serve from the cache (2026-11-23, at a host load of 30 to 59).
+			o.Cache = "    metadata_revalidate_after: 1m\n"
 			b := w.newBastion(t, o).wait()
 			r0 := b.reps[0]
 			r1 := b.reps[len(b.reps)-1]
@@ -75,7 +78,7 @@ func TestR_BAS_021_R_BAS_022_R_BAS_023_ColdAndWarmCache(t *testing.T) {
 			}
 
 			// After metadata_revalidate_after: only conditional requests, none of which transfers an artifact.
-			time.Sleep(3200 * time.Millisecond)
+			b.clk.Advance(time.Minute + time.Second)
 			m = w.front.Mark()
 			s = npmRun(t, r0, npmAll, full, "@acme/sdk", "plain-lib")
 			g = nugetRun(t, r0, ngAll, full, "Acme.Sdk", "Other.Lib")

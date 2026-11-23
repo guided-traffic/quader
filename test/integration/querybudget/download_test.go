@@ -7,24 +7,17 @@ import (
 	"sort"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/guided-traffic/quader/test/integration/testenv"
 	"github.com/guided-traffic/quader/test/nugetstub"
 )
 
-// background are the statements of the replica itself (its health probes and its registration), which run whatever is served.
-var background = map[string]bool{
-	"GetSchemaState": true, "TableExists": true, "SELECT NOT pg_is_in_recovery()": true, "-- ping": true, "ping": true, "UpsertReplica": true,
-	"ListClusterEpochs": true, "EndpointsCountServingReplicas": true,
-}
-
-// requests is how many downloads of one path a window holds: a statement of the request runs once per download, the batched and
-// the cached ones (download statistics, token and principal reads) run less often.
+// requests is how many downloads of one path a window holds: a statement of the request runs once per download, the cached ones
+// (token and principal reads whose entry expired) in a few of them.
 const requests = 30
 
-// perDownload runs a path against a replica and returns the statements of the window by name, per download: the statements that
-// ran for nearly every request, divided by the number of requests.
+// perDownload runs a path against a replica and returns the statements of the downloads by name, per download: the statements
+// that ran in nearly every request, by the number of times per request.
 func perDownload(t *testing.T, e *env, r *testenv.Replica, path string) map[string]int {
 	t.Helper()
 	return perRequestAs(t, e, r, path, e.tokReader)
@@ -32,7 +25,12 @@ func perDownload(t *testing.T, e *env, r *testenv.Replica, path string) map[stri
 
 // perRequestAs is perDownload for the caller of a token. The budget is the default installation's: the malware scanning is on
 // (malware.enabled, its default) and nothing is strict, which the window checks before it starts (R-MAL-013, Q-MAL-92). hdr are
-// header pairs every download sends (a Bastion's forward, handover_test.go).
+// header pairs every download sends (a Bastion's forward, handover_test.go). The replica is one of e.start's.
+//
+// A statement is a download's when it ran with the download's request ID (testenv.RequestTransactions, Q-ARCH-700): what the
+// replica's own loops, its scheduler, the batched writers or another process send meanwhile has none and never counts,
+// however long the downloads take. The windows of the database's log before counted a GetSystemState of the readiness check
+// as a download's when a loaded host stretched the window over enough of its rounds (2026-11-23).
 func perRequestAs(t *testing.T, e *env, r *testenv.Replica, path, token string, hdr ...string) map[string]int {
 	t.Helper()
 	if a := e.st.Do(r, "GET", "/api/v1/malware/switch", token, nil); a.Status != 200 ||
@@ -42,26 +40,47 @@ func perRequestAs(t *testing.T, e *env, r *testenv.Replica, path, token string, 
 	if a := e.st.Do(r, "GET", path, token, nil, hdr...); a.Status != 200 {
 		t.Fatalf("warm-up %s: %d %.200s", path, a.Status, a.Body)
 	}
-	time.Sleep(time.Second)
-	starts := make([]time.Time, 0, requests)
+	return e.perRequest(t, path, func() (int, string) {
+		a := e.st.Do(r, "GET", path, token, nil, hdr...)
+		return a.Status, a.Header.Get("X-Request-Id")
+	}, 200)
+}
+
+// perRequest sends requests requests by send, each answered want, and returns the statements of the requests by name, per
+// request: a name that ran in at least nine requests in ten, by the number of its runs per request, rounded. A name that ran in
+// fewer is a cache entry that expired in one of them, which is no statement of every request.
+func (e *env) perRequest(t *testing.T, what string, send func() (status int, id string), want int) map[string]int {
+	t.Helper()
+	ids := make([]string, 0, requests)
+	e.rt.Count(true)
 	for range requests {
-		starts = append(starts, time.Now())
-		if a := e.st.Do(r, "GET", path, token, nil, hdr...); a.Status != 200 {
-			t.Fatalf("%s: %d", path, a.Status)
+		status, id := send()
+		if status != want {
+			e.rt.Count(false)
+			t.Fatalf("%s: %d, want %d", what, status, want)
+		}
+		if id == "" {
+			e.rt.Count(false)
+			t.Fatalf("%s: the answer carries no X-Request-Id", what)
+		}
+		ids = append(ids, id)
+	}
+	e.rt.Count(false)
+	runs, in := map[string]int{}, map[string]int{}
+	for _, id := range ids {
+		for name, n := range e.rt.Of(id).Statements() {
+			runs[name] += n
+			in[name]++
 		}
 	}
-	time.Sleep(300 * time.Millisecond)
-	// A statement of the request runs once per download and across the downloads; the scheduler's tick, which offers every
-	// task's slot at once, does not count however many tasks there are, and one slow download does not hide the downloads'
-	// statements (testenv.PerRequest, Q-MAL-92).
-	stmts := testenv.StatementLogSince(t, starts[0].Add(-100*time.Millisecond))
-	out := testenv.PerRequest(stmts, starts, background)
-	if len(out) == 0 {
-		counts := map[string]int{}
-		for _, s := range stmts {
-			counts[testenv.StatementName(s.Text)]++
+	out := map[string]int{}
+	for name, n := range runs {
+		if in[name]*10 >= len(ids)*9 {
+			out[name] = (n + len(ids)/2) / len(ids)
 		}
-		t.Fatalf("no statement ran per request; the log is not read: %v", counts)
+	}
+	if len(out) == 0 {
+		t.Fatalf("%s: no statement ran in nine requests in ten; the counter is not in the replica (e.start): %v", what, runs)
 	}
 	return out
 }
@@ -85,8 +104,7 @@ func describe(c map[string]int) string {
 // second statement of the request is left.
 func TestR_ARCH_027_ADownloadCostsOneStatement(t *testing.T) {
 	e := newEnv(t)
-	e.st.LogStatements(t)
-	r := e.st.Start(t, testenv.ReplicaOptions{Name: "web-1"})
+	r := e.start(t, testenv.ReplicaOptions{Name: "web-1"})
 
 	const local = "budget-local"
 	e.publish(r, rNPM, local, "1.0.0")

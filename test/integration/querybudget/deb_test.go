@@ -16,8 +16,7 @@ import (
 // check decides on (the serve-facts kind deb_local), so no second statement of the request is left.
 func TestR_ARCH_027_ADebianDownloadCostsOneStatement(t *testing.T) {
 	e := newEnv(t)
-	e.st.LogStatements(t)
-	r := e.st.Start(t, testenv.ReplicaOptions{Name: "web-1", Role: "all", Env: []string{"QUADER_DEB_INDEX_DELAY=1s"}})
+	r := e.start(t, testenv.ReplicaOptions{Name: "web-1", Role: "all", Env: []string{"QUADER_DEB_INDEX_DELAY=1s"}})
 
 	keys := "/api/v1/projects/it/repositories/" + rDeb + "/deb/signing-keys"
 	if a := e.st.Do(r, "POST", keys, e.tokAdmin, map[string]any{"generate": true}); a.Status/100 != 2 {
@@ -51,12 +50,8 @@ func TestR_ARCH_027_ADebianDownloadCostsOneStatement(t *testing.T) {
 	if byHash == "" {
 		t.Fatal("the Release lists no Packages.gz")
 	}
-	// The replica of the role all enqueues the latest slot of every task at its first tick, the weekly orphan sweep among them, which
-	// walks the 256 prefixes of the connection with a pause check, a finish of the settled deletes and a checkpoint each (storage.md
-	// R-STOR-026): within the window of the downloads that rhythm passes for statements of every download. The window starts once
-	// that run has ended.
-	awaitFirstRun(t, e, "orphan-sweep")
-
+	// The replica of the role all runs its scheduler's first tick (the weekly orphan sweep among the tasks) beside the downloads;
+	// its statements carry no request ID and count nowhere (perRequestAs), so the downloads do not wait for it.
 	for _, rt := range []struct {
 		name, path string
 		budget     int
@@ -77,17 +72,5 @@ func TestR_ARCH_027_ADebianDownloadCostsOneStatement(t *testing.T) {
 				t.Errorf("a download runs %d statements (%s), the budget of R-ARCH-027 is %d", total, describe(got), rt.budget)
 			}
 		})
-	}
-}
-
-// awaitFirstRun waits until the run of a task that the scheduler's first tick enqueued has ended, at most two minutes.
-func awaitFirstRun(t *testing.T, e *env, task string) {
-	t.Helper()
-	deadline := time.Now().Add(2 * time.Minute)
-	for e.st.Number(`SELECT count(*) FROM job WHERE task = $1 AND state IN ('succeeded', 'failed', 'cancelled')`, task) == 0 {
-		if time.Now().After(deadline) {
-			t.Fatalf("the first run of the task %s did not end within two minutes", task)
-		}
-		time.Sleep(500 * time.Millisecond)
 	}
 }

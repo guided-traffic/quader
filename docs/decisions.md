@@ -9127,10 +9127,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-ARCH
 
-270 questions on [spec/architecture.md](spec/architecture.md).
+272 questions on [spec/architecture.md](spec/architecture.md).
 
 <details>
-<summary>Q-ARCH: 270 questions</summary>
+<summary>Q-ARCH: 272 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9404,6 +9404,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ARCH-638](spec/architecture.md#q-arch-638--a-run-builds-each-set-of-clients-images-once-in-a-job-of-its-own-and-the-legs-only-load-it) | A run builds each set of clients images once, in a job of its own, and the legs only load it | Decided by the development agent | (a) A job `client-images` with one row per set and runner kind that the run's legs need; it looks the key up and builds and saves on a miss; the legs need it and only restore and load | — |
 | [Q-ARCH-639](spec/architecture.md#q-arch-639--every-fetch-of-an-image-build-has-a-bound-and-a-retry-of-its-own-and-a-failure-names-it) | Every fetch of an image build has a bound and a retry of its own, and a failure names it | Decided by the development agent | (a) The builds run apt-install.sh for their OS packages and a small [fetch.sh](../.github/scripts/fetch.sh) for every other fetch, both mounted from a named build context `ci`; the base images are pulled before the build through fetch.sh | — |
 | [Q-ARCH-650](spec/architecture.md#q-arch-650--every-statement-of-an-http-request-ends-after-the-requests-bound-set-local-in-a-transaction-a-deadline-on-a-single-read) | Every statement of an HTTP request ends after the request's bound: SET LOCAL in a transaction, a deadline on a single read | Decided by the development agent | (a), with the bound a configuration key, `database.request_statement_timeout` (5s by default, at least 100 ms, at most `database.session.statement_timeout`). | — |
+| [Q-ARCH-700](spec/architecture.md#q-arch-700--a-statement-budget-counts-the-statements-that-ran-with-the-requests-id-not-the-databases-log-of-a-window) | A statement budget counts the statements that ran with the request's ID, not the database's log of a window | Decided by the development agent | (a), in `perRequestAs` and `perRequest` of [download_test.go](../test/integration/querybudget/download_test.go) and the replicas of `env.start`. | — |
+| [Q-ARCH-702](spec/architecture.md#q-arch-702--a-test-waits-for-the-state-it-stands-for-and-does-not-depend-on-the-hosts-speed) | A test waits for the state it stands for and does not depend on the host's speed | Decided by the development agent | (a) Per test, the cause removed: a stopped or advanced clock where the test's own clock decides; the product's default, or a generous value with its reason beside it, for a bound the test does not stand for; a wait for the event; a clone of the template for a component area's database | — |
 
 </details>
 
@@ -11277,10 +11279,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-REPO
 
-235 questions on [spec/repositories-and-proxy.md](spec/repositories-and-proxy.md).
+236 questions on [spec/repositories-and-proxy.md](spec/repositories-and-proxy.md).
 
 <details>
-<summary>Q-REPO: 235 questions</summary>
+<summary>Q-REPO: 236 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11519,6 +11521,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-REPO-419](spec/repositories-and-proxy.md#q-repo-419--the-repository-administrators-write-the-presets-and-a-creator-reads-them-with-the-forms-defaults) | The repository administrators write the presets, and a creator reads them with the form's defaults | Decided by the development agent | (a) `repositories:write-config` writes, `repositories:read-config` reads the list; a creator reads the format's presets in `getRepositoryDefaults` | — |
 | [Q-REPO-420](spec/repositories-and-proxy.md#q-repo-420--switching-the-clients-off-is-the-journal-part-clientsoff) | Switching the clients off is the journal part `clientsOff` | Decided by the development agent | (a) A part `clientsOff` of `repository.narrowed`; the replay sets `clients_enabled` false and writes the document so that every replica reads it | — |
 | [Q-REPO-431](spec/repositories-and-proxy.md#q-repo-431--oci-and-debian-record-packagepublished-with-the-guards-of-a-first-version) | OCI and Debian record package.published with the guards of a first version | Decided by the development agent | (a) Both write `package.published` (`package`, `version`, `files`, the guards) and the security event: OCI for a new tag and for the first manifest of a name pushed by its digest, Debian for every package file an upload stores | — |
+| [Q-REPO-481](spec/repositories-and-proxy.md#q-repo-481--the-million-entries-of-r-repo-045s-criterion-are-a-measurement-the-test-holds-the-invalidations-shape-with-2000) | The million entries of R-REPO-045's criterion are a measurement; the test holds the invalidation's shape with 2,000 | Decided by the development agent | (a) The test holds the shape with 2,000 entries and a fold batch of 250 (eight batches); the million and its second are run once with `QUADER_TEST_INVALIDATION_ENTRIES=1000000` and written down | — |
 
 </details>
 

@@ -49,6 +49,22 @@ func (e *wenv) semver2Jobs(state, result string) int64 {
 		semver2Kind, state, result)
 }
 
+// awaitSemver2Runs waits until n runs of the recomputation succeeded with the result state result. The bound is the test's, two
+// minutes, for a worker that starts, enqueues and runs one job; on a host at a load of 42 to 46 the former 30 s ran out once
+// (2026-11-23). It says where the runs stood when it ran out: none queued is the worker's start, a queued or running one is its
+// pick-up or its work.
+func (e *wenv) awaitSemver2Runs(result string, n int64) {
+	e.t.Helper()
+	deadline := time.Now().Add(2 * time.Minute)
+	for e.semver2Jobs("succeeded", result) < n {
+		if time.Now().After(deadline) {
+			e.t.Fatalf("%d runs of the recomputation did not succeed (%s) within 2 min; the runs: %s", n, result,
+				e.st.Text(`SELECT coalesce(string_agg(state::text || ' after ' || attempt || ' attempts', ', ' ORDER BY created_at), 'none') FROM job WHERE kind = $1`, semver2Kind))
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+}
+
 // hive lists the versions the registration index of acme.widgets in a hive shows to a reader,
 // with the index's validator.
 func (e *wenv) hive(r *testenv.Replica, hive string) ([]string, string) {
@@ -118,7 +134,7 @@ func TestR_NUGET_004_AWorkerRecomputesTheSemVer2FlagOfVersionsStoredBeforeTheRul
 	}
 
 	e.st.Start(t, testenv.ReplicaOptions{Name: "worker-a", Role: "worker"})
-	testenv.WaitFor(t, "the recomputation", 30*time.Second, func() bool { return e.semver2Jobs("succeeded", "recomputed") == 1 })
+	e.awaitSemver2Runs("recomputed", 1)
 
 	if got := e.semver2("acme.widgets", "1.1.0"); got != "true" {
 		t.Errorf("1.1.0 says is_semver2 = %s after the recomputation", got)
@@ -161,7 +177,7 @@ func TestR_NUGET_004_AWorkerRecomputesTheSemVer2FlagOfVersionsStoredBeforeTheRul
 	t.Run("a second run over the rows changes nothing", func(t *testing.T) {
 		e.st.Exec(`DELETE FROM system_state WHERE key = 'nuget_semver2_recomputed'`)
 		e.st.Start(t, testenv.ReplicaOptions{Name: "worker-c", Role: "worker"})
-		testenv.WaitFor(t, "the second run", 30*time.Second, func() bool { return e.semver2Jobs("succeeded", "recomputed") == 2 })
+		e.awaitSemver2Runs("recomputed", 2)
 		res := e.semver2Result()
 		if res["changed"] != 0.0 || res["packages"] != 0.0 || res["examined"] != 2.0 {
 			t.Errorf("result = %v, want the two SemVer 1 rows examined and nothing changed", res)
@@ -183,7 +199,7 @@ func TestR_NUGET_004_AWorkerRecomputesTheSemVer2FlagOfVersionsStoredBeforeTheRul
 		e.st.Exec(`INSERT INTO job (id, kind, queue, dedup_key, dedup_mode, checkpoint)
 			VALUES (gen_random_uuid(), $1, 'maintenance', $1, 'coalesce', jsonb_build_object('after', $2::bigint, 'examined', 7, 'changed', 2, 'packages', 1))`,
 			semver2Kind, after)
-		testenv.WaitFor(t, "the resumed run", 30*time.Second, func() bool { return e.semver2Jobs("succeeded", "recomputed") == 3 })
+		e.awaitSemver2Runs("recomputed", 3)
 		res := e.semver2Result()
 		if res["examined"] != 7.0 || res["changed"] != 2.0 || res["packages"] != 1.0 {
 			t.Errorf("result = %v, want the counts of the checkpoint and nothing read after it", res)
@@ -207,7 +223,7 @@ func TestR_HA_022_TheSemVer2RecomputationWaitsForAReplicaOfTheOldRelease(t *test
 		VALUES (gen_random_uuid(), 'web-old', '0.9.0', 'f6037ef', '{web}', 'ready', '{}', '', now(), now() + interval '10 minutes')`)
 
 	e.st.Start(t, testenv.ReplicaOptions{Name: "worker-a", Role: "worker"})
-	testenv.WaitFor(t, "the waiting run", 30*time.Second, func() bool { return e.semver2Jobs("succeeded", "waiting") == 1 })
+	e.awaitSemver2Runs("waiting", 1)
 	if got := e.semver2Result()["waitingFor"]; !slices.Equal(strsOf(got), []string{"web-old (0.9.0)"}) {
 		t.Errorf("waitingFor = %v", got)
 	}
@@ -224,7 +240,7 @@ func TestR_HA_022_TheSemVer2RecomputationWaitsForAReplicaOfTheOldRelease(t *test
 	// The replica of the old release is gone; the queued run need not wait out its delay.
 	e.st.Exec(`DELETE FROM replica WHERE name = 'web-old'`)
 	e.st.Exec(`UPDATE job SET run_at = now() WHERE kind = $1 AND state = 'queued'`, semver2Kind)
-	testenv.WaitFor(t, "the run after it", 30*time.Second, func() bool { return e.semver2Jobs("succeeded", "recomputed") == 1 })
+	e.awaitSemver2Runs("recomputed", 1)
 	if got := e.semver2("acme.widgets", "1.1.0"); got != "true" {
 		t.Errorf("1.1.0 says %s after the run that followed the wait", got)
 	}

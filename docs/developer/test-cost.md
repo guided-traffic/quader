@@ -1228,3 +1228,53 @@ neighbours differ between runs.
 
 Not measured: the clone under a runner's load apart from the shards' times above; a run from the main checkout with the
 built UI after the change (it pays neither the UI's 1.7 s nor the drain, by construction); any other area before and after.
+
+## 12. The million of R-REPO-045, measured once (2026-11-23)
+
+R-REPO-045's first criterion, an invalidation with an empty path that returns within one second over 1,000,000 cached metadata
+entries, is a measurement, not a test
+([Q-REPO-481](../spec/repositories-and-proxy.md#q-repo-481--the-million-entries-of-r-repo-045s-criterion-are-a-measurement-the-test-holds-the-invalidations-shape-with-2000)).
+Run once with `QUADER_TEST_INVALIDATION_ENTRIES=1000000 test/integration/run.sh -run TestInvalidationAtScale -v ./test/integration/repository/`
+on the developer workstation (20 CPUs, instance 2 of the integration stack, 15:18 to 15:20, host load 12 to 18, the cap of 6 cores) [V]:
+
+| Step | Time |
+|---|---:|
+| Seed 1,000,000 entries (one `INSERT … SELECT generate_series`) and `VACUUM (ANALYZE)` | 15.8 s |
+| `Invalidate` with an empty path: one row, one count | **46 ms** (the bound is 1 s) |
+| The fold with the product's batch of 5,000 (200 batches), every entry expired, the row folded | 70 s |
+| The test in all | 86.4 s |
+
+The same test in the pipeline before the change: 116.8 s (section 3.2, shard b). On 2026-11-23, at a host load of 30 to 110, the
+seeding took 74 s and the fold met the statement timeout after 207 s. As a test it now holds the shape with 2,000 entries and a fold
+batch of 250: 0.5 to 0.9 s [V]. Not measured: the call on PostgreSQL of the reference environment, and the fold beside a cache that
+serves requests meanwhile.
+
+## 13. What the repairs of the tests that depended on the host cost (2026-11-23)
+
+The tests a loaded host broke on 2026-11-23 were repaired
+([Q-ARCH-702](../spec/architecture.md#q-arch-702--a-test-waits-for-the-state-it-stands-for-and-does-not-depend-on-the-hosts-speed);
+the list is in [build-and-test.md](build-and-test.md#tests-that-hold-on-a-loaded-host)). The same selection of tests, run once before
+(the base revision 829bd5d0e, 15:20 to 15:25) and once after (15:25 to 15:28), one after the other on instance 2 of the integration
+stack, the cap of 6 cores, host load 11 to 16 [V], seconds of the `go test -json` events. No data changed; no test was added.
+
+| Area (shard) | Test | Before | After |
+|---|---|---:|---:|
+| `identity` (b) | `TestR_AUTH_038_E1_8_ThrottleAcrossThreeReplicas` / `…RevocationByValueCountsInTheFlowStartBudget` | 2.5 / 2.5 | 1.8 / 0.5 |
+| `bastion` (c) | `ColdAndWarmCache` (four Bastions) | 17.8 | 5.2 |
+| `bastion` (c) | `EveryCallerIsAnsweredAsTheMainInstallationAnswers` / `NegativeCacheOnlyForFullReaders` | 14.0 / 2.8 | 8.9 / 1.4 |
+| `blob` (c) | `TestGCKilledAtRandomPoints` / `TestGarbageCollection` | 19.7 / 13.4 | 15.3 / 6.3 |
+| `files` (b) | `TestR_HA_011_UploadsDuringARolloutRestart` / `TestR_STOR_017_ADeployHoldsEveryAncestorOfItsPath` | 9.4 / 2.0 | 8.0 / 1.3 |
+| `nuget` (a) | `TestR_NUGET_004_AWorkerRecomputesTheSemVer2Flag…` | 11.8 | 10.8 |
+| `repository` (b) | `TestInvalidationNegativeRetention` | 1.3 | 0.7 |
+| `repository` (b) | `TestInvalidationAtScale` (not in the run: the million, section 12) | 86.4 (116.8 in the pipeline) | 0.5 to 0.9 |
+| `querybudget` (b) | the whole area | 81.0 | 29.1 |
+| `ci` (d) | `TestR_CI_003_ARotationCausesOneFetchAndRandomKidsCauseNone` / `…AFetchHolds…` / `…StaleAndUnreachable` | 9.2 / 8.2 / 12.0 | 2.8 / 7.8 / 12.0 |
+| `coordination` (a) | `TestJobs` | 15.4 | 12.1 |
+| **sum of the run** | nine areas, without the million | **235.1** | **135.3** |
+
+Where the time went: the querybudget windows waited 1.3 s each and the Debian case for the first orphan sweep (Q-ARCH-700); the
+key reads waited for four flushes of the table's statistics (10 s); `ColdAndWarmCache` slept 3.2 s in each of four Bastions; the
+component areas' databases were migrated (0.6 s each), now cloned. What each shard gains, computed from the table [I]: shard b about
+52 s (`querybudget`) and 85 to 115 s (`TestInvalidationAtScale`), shard c about 19 s, shards a and d about 3 to 7 s each. Bounds that
+are longer now than before and cost nothing on a host that keeps up: the Bastion's link bounds, the commit grace of one case, the waits
+of `TestR_MAL_014` and `TestR_NUGET_004`; they are reached only on a host that would have failed before.

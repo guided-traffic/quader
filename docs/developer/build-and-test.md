@@ -104,6 +104,31 @@ because a CI runner with a CPU limit and the race detector took tens of times as
 wait, because the code under test reads it at a moment the test does not see. The evidence: the start-up tests of `internal/app` failed in
 50 of 300 processes run at once on 20 CPUs before this rule and in none after it.
 
+### Tests that hold on a loaded host
+
+On 2026-11-23 four builders' gates beside each other took the development machine to a load of 30 to 130, and the tests below failed by
+it, each green alone. What each waited for, and what it waits for now
+([Q-ARCH-702](../spec/architecture.md#q-arch-702--a-test-waits-for-the-state-it-stands-for-and-does-not-depend-on-the-hosts-speed)):
+
+| Test (area) | What a starved host broke | Now |
+|---|---|---|
+| `TestR_AUTH_038_E1_8_ThrottleAcrossThreeReplicas`, `TestR_AUTH_038_RevocationByValueCountsInTheFlowStartBudget` (`identity`) | a budget of 9 (4) a minute refilled a token every 6.7 s (15 s) of the real clock, and a window of the cluster's count turned once a minute: 401 where 429 was expected | the limiters' clock stands still (`replicaOpts.limiterNow`); Valkey gets 10 s for a count, and a failure prints how often a replica decided on its share |
+| `ColdAndWarmCache` (`bastion`) | the warm run came more than `metadata_revalidate_after` (3 s) after the cold one and revalidated | the period is the default minute and the Bastion's clock moves past it (`b.clk.Advance`) |
+| `ColdAndWarmCache`, `EveryCallerIsAnsweredAsTheMainInstallationAnswers` (`bastion`) | the harness's link bounds (connect 1 s, unreachable after 3 s, an answer within 10 s): 503 `main_unreachable` and 504 `main_timeout` from a Bastion nobody cut | the product's defaults (5 s, 10 s, 30 s); the short ones only for a Bastion of `bastionOptions{CutsLink: true}`, the tests that cut the link |
+| `TestGCKilledAtRandomPoints` (`blob`) | a commit must insert its row within `delete_settle/2` (75 ms with `gcFast`) of its object write; five misses answer "commit did not settle" | the helper `garbage` retries a busy commit as a client does, for at most two minutes, and says the window when it gives up |
+| `TestR_HA_011_UploadsDuringARolloutRestart` (`files`) | 300 ms before stopping the server, where the upload had not reached it yet; a commit grace of 4 s against an object write of 1.5 s | the test waits until the listener has the request (`Server.Active`); the committing case runs with a commit grace of a minute |
+| `TestR_MAL_014_APendingDownloadIsServedWhenItsVerdictArrives` and its neighbours (`internal/malware/gate`, unit) | the gate's wait of 5 s ended the download before the signal (5.01 s) | the wait is an hour where the wait's bound is not the subject; the test's own bounds tell an answer at once from the whole wait (10 s against 25 s) |
+| `TestR_NUGET_004_AWorkerRecomputesTheSemVer2Flag…` (`nuget`) | 30 s for a worker to start, enqueue and run one job | two minutes, and a failure lists the runs and their states |
+| `TestInvalidationAtScale` (`repository`) | a million entries seeded in 74 s and folded until the statement timeout | 2,000 entries and a fold batch of 250; the million is a measurement ([test-cost.md](test-cost.md#12-the-million-of-r-repo-045-measured-once-2026-11-23), [Q-REPO-481](../spec/repositories-and-proxy.md#q-repo-481--the-million-entries-of-r-repo-045s-criterion-are-a-measurement-the-test-holds-the-invalidations-shape-with-2000)) |
+| `TestInvalidationNegativeRetention`, `TestGarbageCollection` (`repository`, `blob`) | the migration of a new database met the area's minute | the area's database is a clone of the template (`testenv.MigratedDatabase`); so are those of `identity`, `files` and `coordination` |
+| `TestR_ARCH_027_*` (`querybudget`) | a window of the database's log counted the readiness check's `GetSystemState` as a download's | the statements that ran with the request's ID ([Q-ARCH-700](../spec/architecture.md#q-arch-700--a-statement-budget-counts-the-statements-that-ran-with-the-requests-id-not-the-databases-log-of-a-window)) |
+| `TestR_CI_003_*` (`ci`) | reads of the key set counted from the table's statistics, published up to 1.5 s late; a second as the bound of a lock wait; 4 s for a change to propagate | the replica's own reads counted by a tracer; `FOR SHARE NOWAIT` and an answer while the lock is held; one change-log poll (`PollNow`) |
+| `TestJobs`, 100 coalesced enqueues (`coordination`) | a rebuild of a fixed 1.5 s against a burst that took 2.6 s | the rebuild lasts until the burst has returned |
+| `TestR_STOR_017_ADeployHoldsEveryAncestorOfItsPath` (`files`) | the deadlock check picked the test's DELETE when it waited later than a second after the deploy | the test's transaction retries a deadlock as a client does; three rounds for one that shows the recreation |
+
+How a repair was shown to hold: the one test run with `GOMAXPROCS=1` under `taskpolicy -c background` (the lowest CPU class of macOS)
+while the other builders' gates ran, never by starving the machine for everyone and never by a `-count` loop.
+
 ### The unit run's time
 
 `make test` runs every package under the race detector with the coverage of the whole module (`-coverpkg=./...`), eight

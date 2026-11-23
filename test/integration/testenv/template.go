@@ -226,6 +226,56 @@ func dropOtherTemplates(ctx context.Context, maint *pgx.Conn, keep string, logf 
 	}
 }
 
+// cloneDatabase creates the database cfg.Name as a clone of the template of the test process on cfg's server and drops it when the
+// test ends. It returns the connection to the maintenance database that drops it; the caller may use it until then.
+func cloneDatabase(tb testing.TB, cfg config.Database) *pgx.Conn {
+	tb.Helper()
+	ctx := context.Background()
+	maint, err := pgx.Connect(ctx, PgDSN(tb, "postgres"))
+	if err != nil {
+		tb.Fatalf("connect to PostgreSQL: %v", err)
+	}
+	tpl := stackTemplate(tb, cfg, false)
+	err = cloneTemplate(ctx, maint, cfg.Name, tpl)
+	if templateGone(err) {
+		// Another process made a newer template and dropped this one (a changed migration in another checkout, a new day).
+		tpl = stackTemplate(tb, cfg, true)
+		err = cloneTemplate(ctx, maint, cfg.Name, tpl)
+	}
+	if err != nil {
+		_ = maint.Close(ctx)
+		tb.Fatalf("create the database %s from the template %s: %v", cfg.Name, tpl, err)
+	}
+	tb.Cleanup(func() {
+		_, _ = maint.Exec(context.Background(), "DROP DATABASE IF EXISTS "+cfg.Name+" WITH (FORCE)")
+		_ = maint.Close(context.Background())
+	})
+	return maint
+}
+
+// MigratedDatabase creates the database name, migrated to the embedded migrations, for an area that builds its components on
+// pools of its own instead of a Stack (blob, repository, identity, files, coordination): a clone of the template of the test
+// process with identity rows of its own (Q-ARCH-581), dropped when the test ends. The clone takes 30 to 70 ms where migrating a
+// new database took 0.6 s on an idle host and more than the areas' minute on a starved one (2026-11-23, at host loads of 30 to
+// 110). An area whose subject is the migration itself (postgres, backup, stack) migrates a database of its own instead.
+func MigratedDatabase(tb testing.TB, name string) {
+	tb.Helper()
+	cfg := databaseConfig(tb, tb.TempDir(), name)
+	cloneDatabase(tb, cfg)
+	ctx := context.Background()
+	conn, err := pgx.Connect(ctx, PgDSN(tb, name))
+	if err != nil {
+		tb.Fatalf("connect to %s: %v", name, err)
+	}
+	defer func() { _ = conn.Close(ctx) }()
+	if _, err := conn.Exec(ctx, "SET search_path TO quader"); err != nil {
+		tb.Fatal(err)
+	}
+	if err := drawIdentity(ctx, conn); err != nil {
+		tb.Fatalf("the identity rows of %s: %v", name, err)
+	}
+}
+
 // cloneTemplate creates the database name from the template tpl.
 func cloneTemplate(ctx context.Context, maint *pgx.Conn, name, tpl string) error {
 	_, err := maint.Exec(ctx, "CREATE DATABASE "+name+" TEMPLATE "+tpl)

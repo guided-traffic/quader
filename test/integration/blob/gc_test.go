@@ -26,9 +26,15 @@ func (p *pgEnv) release(tb testing.TB, path string) {
 func garbage(tb testing.TB, r *replica, path string) (blob.Digest, []byte) {
 	tb.Helper()
 	data := randomBytes(2000)
-	_, d, err := r.upload(context.Background(), path, data)
+	// A commit may insert its row only within delete_settle/2 of its object write, 75 ms with gcFast's settings, and is
+	// answered "retry" after commit_attempts rounds that miss it (R-STOR-005): a client retries, and so does this helper (a
+	// host at a load of 30 to 75 missed it five times in a row, "commit did not settle", 2026-11-23).
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+	d, err := uploadRetrying(ctx, r, path, data)
 	if err != nil {
-		tb.Fatal(err)
+		tb.Fatalf("upload of %s: %v (every round must insert its row within delete_settle/2 = %s of its object write; retried for 2 min)",
+			path, err, r.cfg.GC.DeleteSettle/2)
 	}
 	r.pg.release(tb, path)
 	return d, data

@@ -42,15 +42,16 @@ const (
 	rNPMVirt  = "npm-virtual"
 	rNuGet    = "nuget-local"
 	rNuGetRem = "nuget-remote"
-	rNuGetVrt = "nuget-virtual"
 	rDeb      = "deb-local"
 )
 
-// env is one installation with a local, a remote and a virtual repository of each of npm and NuGet, a stub upstream of each
-// and a reader.
+// env is one installation with a local and a remote repository of each of npm and NuGet, a virtual one of npm over its two, a
+// local Debian repository, a stub upstream of npm and of NuGet, and a reader.
 type env struct {
-	t         *testing.T
-	st        *testenv.Stack
+	t  *testing.T
+	st *testenv.Stack
+	// rt counts the statements of each request on the replicas of e.start (Q-ARCH-700).
+	rt        *testenv.RequestTransactions
 	npmStub   *npmstub.Server
 	nugetStub *nugetstub.Server
 	npmURL    string
@@ -108,7 +109,7 @@ func newEnvWith(t *testing.T, valkey bool) *env {
 		`QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32","::1/128"]`,
 		"QUADER_PROXY_LOCK_POLL_INTERVAL_MS=50",
 	}})
-	e := &env{t: t, st: st, npmStub: npmSrv, nugetStub: nugetSrv, npmURL: npmRun.URL + "/", nugetURL: nuget.URL + "/v3/index.json"}
+	e := &env{t: t, st: st, rt: testenv.NewRequestTransactions(), npmStub: npmSrv, nugetStub: nugetSrv, npmURL: npmRun.URL + "/", nugetURL: nuget.URL + "/v3/index.json"}
 	for _, p := range corpus.Default().Packages {
 		if !strings.HasPrefix(p.Name, "@") && len(p.Versions) > 0 && len(p.Versions) < 30 {
 			e.pkg, e.ver = p.Name, p.Versions[0].Version
@@ -137,8 +138,7 @@ func newEnvWith(t *testing.T, valkey bool) *env {
 	}
 	st.Repository(rDeb, "local", "deb", `{}`)
 	virtual(rNPMVirt, "npm", rNPM, rNPMRem)
-	virtual(rNuGetVrt, "nuget", rNuGet, rNuGetRem)
-	all := []string{rNPM, rNPMRem, rNPMVirt, rNuGet, rNuGetRem, rNuGetVrt, rDeb}
+	all := []string{rNPM, rNPMRem, rNPMVirt, rNuGet, rNuGetRem, rDeb}
 	st.Policy("readers", []string{"read"}, all, reader)
 	st.Policy("writers", []string{"read", "deploy", "delete"}, []string{rNPM, rNuGet, rDeb}, rita)
 	st.Policy("fillers", []string{"read"}, all, rita)
@@ -167,6 +167,13 @@ func (e *env) remoteConfig(url string, extraHosts []any) string {
 		e.t.Fatal(err)
 	}
 	return string(b)
+}
+
+// start starts a replica whose statements e.rt counts by request.
+func (e *env) start(t *testing.T, o testenv.ReplicaOptions) *testenv.Replica {
+	t.Helper()
+	o.Database = append(o.Database, e.rt.Option())
+	return e.st.Start(t, o)
 }
 
 func (e *env) do(r *testenv.Replica, path string) testenv.Answer {

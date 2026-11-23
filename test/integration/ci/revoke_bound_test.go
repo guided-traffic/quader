@@ -32,6 +32,9 @@ func TestR_CI_017_ARevocationReadsOnlyTheUnexpiredRecords(t *testing.T) {
 	e.exec("ANALYZE ci_token_issuances")
 	e.exec("ANALYZE api_token")
 	a := e.web("web-a")
+	// The table's statistics, which a backend publishes up to 1.5 s late (one second between two flushes plus the 500 ms
+	// poll that keeps it busy), plus a margin.
+	const statsFlushWait = 2500 * time.Millisecond
 	tuples := func() int64 {
 		time.Sleep(statsFlushWait)
 		return e.number("SELECT coalesce(sum(seq_tup_read + coalesce(idx_tup_fetch, 0)), 0) FROM pg_stat_user_tables WHERE relname = 'ci_token_issuances'")

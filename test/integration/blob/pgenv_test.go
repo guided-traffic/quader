@@ -50,12 +50,8 @@ func newPG(tb testing.TB) *pgEnv {
 	}
 	name := "quader_blob_" + runID(tb)
 	maint := connect("postgres")
-	if _, err := maint.Exec(context.Background(), "CREATE DATABASE "+name+" ENCODING 'UTF8' TEMPLATE template0"); err != nil {
-		tb.Fatalf("create database: %v", err)
-	}
-	tb.Cleanup(func() {
-		_, _ = maint.Exec(context.Background(), "DROP DATABASE IF EXISTS "+name+" WITH (FORCE)")
-	})
+	// A clone of the migrated template (Q-ARCH-581): migrating a new database met this area's minute on a starved host.
+	testenv.MigratedDatabase(tb, name)
 
 	dir := tb.TempDir()
 	userFile, passFile := filepath.Join(dir, "username"), filepath.Join(dir, "password")
@@ -84,12 +80,6 @@ func newPG(tb testing.TB) *pgEnv {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
-	if _, err := postgres.Migrate(ctx, cfg, postgres.MigrateOptions{
-		Instance: "it-blob-migrate", Version: "0.1.0", Log: quiet,
-		Migrate: config.Migrate{AdvisoryLockWait: 20 * time.Second, DDLLockTimeout: 2 * time.Second, DDLLockRetries: 3},
-	}); err != nil {
-		tb.Fatalf("migrate: %v", err)
-	}
 	if testenv.PgPooled(tb) {
 		cfg = testenv.ThroughPgBouncer(tb, cfg, user, maint)
 	}

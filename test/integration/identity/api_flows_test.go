@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	v1 "github.com/guided-traffic/quader/internal/api/v1"
 	"github.com/guided-traffic/quader/internal/api/v1/apitest"
@@ -156,6 +157,30 @@ func TestR_API_014_ConcurrentCreatesWithOneKeyMakeOneObject(t *testing.T) {
 	}
 }
 
+// fallbackDecisions is how often the replica's limiters decided on the replica's share (quader_ratelimit_decisions_total of
+// mode fallback): a Valkey that did not answer in time.
+func fallbackDecisions(t *testing.T, r *replica) float64 {
+	t.Helper()
+	families, err := r.reg.Gather()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var n float64
+	for _, f := range families {
+		if f.GetName() != "quader_ratelimit_decisions_total" {
+			continue
+		}
+		for _, m := range f.GetMetric() {
+			for _, l := range m.GetLabel() {
+				if l.GetName() == "mode" && l.GetValue() == "fallback" {
+					n += m.GetCounter().GetValue()
+				}
+			}
+		}
+	}
+	return n
+}
+
 func basic(secret string) string {
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte("any:"+secret))
 }
@@ -164,6 +189,11 @@ func basic(secret string) string {
 // credentials presented as Bearer and as Basic count in one cluster-wide budget
 // per address, so the address is throttled on a replica that saw none of them.
 // With Valkey stopped each replica counts its own share of the budget.
+//
+// The limiters' clock stands still (replicaOpts.limiterNow): the budget is 9 a minute, so with the real clock a token came
+// back every 6.7 s and a window of the cluster's count turned once a minute, and a host whose requests took that long
+// admitted a credential the test expected to be throttled (401 for 429 at a host load of 40 to 46, 2026-11-23). What the
+// test stands for is which requests share a budget, not how fast it refills, which internal/cluster's unit tests hold.
 func TestR_AUTH_038_E1_8_ThrottleAcrossThreeReplicas(t *testing.T) {
 	bad := func(t *testing.T) string {
 		t.Helper()
@@ -173,9 +203,15 @@ func TestR_AUTH_038_E1_8_ThrottleAcrossThreeReplicas(t *testing.T) {
 		}
 		return s
 	}
+	stopped := time.Now()
+	clock := func() time.Time { return stopped }
 	t.Run("Valkey running: one budget for the cluster", func(t *testing.T) {
 		e := newEnv(t)
-		opts := replicaOpts{valkey: vkLive, failureBudget: 9, liveReplicas: 3}
+		// A count that Valkey does not answer within its command timeout falls back to the replica's share, which is not what
+		// this case tests; the harness's 500 ms are a product default a starved host can miss, so the case gives Valkey 10 s
+		// and says so when a replica decided on its share all the same.
+		e.vcfg.CommandTimeout = 10 * time.Second
+		opts := replicaOpts{valkey: vkLive, failureBudget: 9, liveReplicas: 3, limiterNow: clock}
 		reps := []*replica{e.newReplica("a", opts), e.newReplica("b", opts), e.newReplica("c", opts)}
 		for _, r := range reps {
 			waitFor(t, "Valkey on "+r.name, 20e9, r.vk.Available)
@@ -199,6 +235,13 @@ func TestR_AUTH_038_E1_8_ThrottleAcrossThreeReplicas(t *testing.T) {
 		}
 		// The budget is used up: an unknown credential gets 429 on every replica, and a
 		// replica that counted 3 of the 9 does not wait for its own share.
+		t.Cleanup(func() {
+			if t.Failed() {
+				for _, r := range reps {
+					t.Logf("%s decided %v times on its share instead of the cluster's count", r.name, fallbackDecisions(t, r))
+				}
+			}
+		})
 		for _, n := range nodes {
 			rp := n.call(get, "/api/v1/auth/whoami", bad(t), nil)
 			want(t, rp, 429, "rate_limited")
@@ -213,7 +256,7 @@ func TestR_AUTH_038_E1_8_ThrottleAcrossThreeReplicas(t *testing.T) {
 	})
 	t.Run("Valkey stopped: each replica enforces its share", func(t *testing.T) {
 		e := newEnv(t)
-		opts := replicaOpts{valkey: vkDead, failureBudget: 9, liveReplicas: 3}
+		opts := replicaOpts{valkey: vkDead, failureBudget: 9, liveReplicas: 3, limiterNow: clock}
 		reps := []*replica{e.newReplica("a", opts), e.newReplica("b", opts), e.newReplica("c", opts)}
 		nodes := make([]*served, 3)
 		for i, r := range reps {
@@ -232,9 +275,12 @@ func TestR_AUTH_038_E1_8_ThrottleAcrossThreeReplicas(t *testing.T) {
 // TestR_AUTH_038_RevocationByValueCountsInTheFlowStartBudget: POST
 // /api/v1/tokens/revoke is one of the unauthenticated endpoints that share the
 // cluster-wide budget auth.flow_starts per address (R-AUTH-038).
+// The limiter's clock stands still and Valkey has 10 s for a count, as in TestR_AUTH_038_E1_8_ThrottleAcrossThreeReplicas.
 func TestR_AUTH_038_RevocationByValueCountsInTheFlowStartBudget(t *testing.T) {
 	e := newEnv(t)
-	opts := replicaOpts{valkey: vkLive, flowStarts: 4, liveReplicas: 3}
+	e.vcfg.CommandTimeout = 10 * time.Second
+	stopped := time.Now()
+	opts := replicaOpts{valkey: vkLive, flowStarts: 4, liveReplicas: 3, limiterNow: func() time.Time { return stopped }}
 	reps := []*replica{e.newReplica("a", opts), e.newReplica("b", opts), e.newReplica("c", opts)}
 	for _, r := range reps {
 		waitFor(t, "Valkey on "+r.name, 20e9, r.vk.Available)

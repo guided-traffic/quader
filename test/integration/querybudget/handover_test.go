@@ -27,7 +27,7 @@ func handoverBudget(t *testing.T, e *env) {
 	endpoint, _ := url.Parse(testenv.S3Config(t).Endpoint)
 	e.st.Exec(`UPDATE download_link_settings SET min_size = 0, public_addresses = jsonb_build_object('default', $1::text), version = version + 1`,
 		"https://localhost:"+endpoint.Port())
-	r := e.st.Start(t, testenv.ReplicaOptions{Name: "web-handover"})
+	r := e.start(t, testenv.ReplicaOptions{Name: "web-handover"})
 	if a := e.st.Do(r, "POST", "/api/v1/bastions", e.tokAdmin, map[string]any{"name": "dmz"}); a.Status != http.StatusCreated {
 		t.Fatalf("register: %d %s", a.Status, a.Body)
 	}

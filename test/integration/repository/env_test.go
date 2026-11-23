@@ -95,12 +95,8 @@ func newEnv(t *testing.T) *env {
 	}
 	name := "quader_repo_" + randHex(5)
 	maint := admin(t, "postgres")
-	if _, err := maint.Exec(context.Background(), "CREATE DATABASE "+name+" ENCODING 'UTF8' TEMPLATE template0"); err != nil {
-		t.Fatalf("create database: %v", err)
-	}
-	t.Cleanup(func() {
-		_, _ = maint.Exec(context.Background(), "DROP DATABASE IF EXISTS "+name+" WITH (FORCE)")
-	})
+	// A clone of the migrated template (Q-ARCH-581): migrating a new database met this area's minute on a starved host.
+	testenv.MigratedDatabase(t, name)
 	dir := t.TempDir()
 	userFile, passFile := filepath.Join(dir, "username"), filepath.Join(dir, "password")
 	if err := os.WriteFile(userFile, []byte(user+"\n"), 0o600); err != nil {
@@ -125,14 +121,6 @@ func newEnv(t *testing.T) *env {
 		Keepalive:       config.DatabaseKeepalive{Idle: 15 * time.Second, Interval: 5 * time.Second, Count: 3, UserTimeout: 30 * time.Second},
 		ServerKeepalive: config.DatabaseServerKeepalive{Idle: 60 * time.Second, Interval: 10 * time.Second, Count: 6},
 		Preflight:       config.DatabasePreflight{ConnectionBudget: "enforce", ReservedConnections: 10, AllowSuperuser: true},
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-	if _, err := postgres.Migrate(ctx, cfg, postgres.MigrateOptions{
-		Instance: "it-migrate", Version: "0.1.0", Log: quiet,
-		Migrate: config.Migrate{AdvisoryLockWait: 20 * time.Second, DDLLockTimeout: 2 * time.Second, DDLLockRetries: 3},
-	}); err != nil {
-		t.Fatalf("migrate: %v", err)
 	}
 	if testenv.PgPooled(t) {
 		cfg = testenv.ThroughPgBouncer(t, cfg, user, maint)

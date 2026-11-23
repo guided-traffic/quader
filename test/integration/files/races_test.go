@@ -5,6 +5,7 @@ package files
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"sync/atomic"
@@ -14,6 +15,7 @@ import (
 	"github.com/guided-traffic/quader/internal/qname"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/guided-traffic/quader/internal/auth/principal"
 	"github.com/guided-traffic/quader/internal/authz"
@@ -31,15 +33,19 @@ import (
 // folder delete does: the deploy waits for the lock (it holds every ancestor FOR
 // SHARE, not only the parent), finds the folders gone, creates them again and
 // commits a file with all its folders present (R-STOR-017).
+//
+// The deploy holds the lower ancestors FOR SHARE while it waits for a, so the chain's DELETE closes a cycle that PostgreSQL's
+// deadlock check breaks by aborting the session that runs it: the deploy's when the DELETE waits before the deploy's check, one
+// deadlock_timeout (1 s) into its wait; the DELETE's own otherwise, which a loaded host made happen (2026-11-20). The deploy
+// retries a deadlock; the test's transaction is a client too and does the same: a round whose DELETE was the one aborted lets
+// the deploy commit under the folders that stayed, which holds the invariant and does not show the recreation, and the test
+// starts a round with a new file. Three rounds pass for one that shows it, on any host where one of them gets its DELETE
+// waiting within a second of the deploy's wait.
 func TestR_STOR_017_ADeployHoldsEveryAncestorOfItsPath(t *testing.T) {
 	e := newEnv(t)
 	e.breakGlass()
 	r := e.newReplica("a", replicaOpts{})
 	r.createRepository("generic-up", nil)
-	if res := r.put("admin", "/files/it/generic-up/a/b/c/old.bin", "old"); res.status != 201 {
-		t.Fatalf("%d %s", res.status, res.body)
-	}
-
 	ctx := context.Background()
 	cfg, err := pgx.ParseConfig(testenv.PgDSN(t, e.db))
 	if err != nil {
@@ -50,6 +56,26 @@ func TestR_STOR_017_ADeployHoldsEveryAncestorOfItsPath(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = conn.Close(context.Background()) })
+
+	const rounds = 3
+	for round := 1; round <= rounds; round++ {
+		if stor017Round(t, e, r, conn, round) {
+			return
+		}
+		t.Logf("round %d: the deadlock check aborted the chain's DELETE; the deploy committed under the folders that stayed", round)
+	}
+	t.Fatalf("in %d rounds the deadlock check aborted the chain's DELETE each time: no round got its DELETE waiting within "+
+		"deadlock_timeout (1 s) of the deploy's wait, so none showed the deploy recreating the folders", rounds)
+}
+
+// stor017Round is one round of TestR_STOR_017_ADeployHoldsEveryAncestorOfItsPath: true when the chain's DELETE committed and the
+// deploy recreated the folders, false when the deadlock check aborted the DELETE and the deploy committed under the folders.
+func stor017Round(t *testing.T, e *env, r *replica, conn *pgx.Conn, round int) bool {
+	t.Helper()
+	ctx := context.Background()
+	if res := r.put("admin", "/files/it/generic-up/a/b/c/old.bin", "old"); res.status != 201 && res.status != 200 {
+		t.Fatalf("%d %s", res.status, res.body)
+	}
 	tx, err := conn.Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -59,9 +85,10 @@ func TestR_STOR_017_ADeployHoldsEveryAncestorOfItsPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	file := fmt.Sprintf("a/b/c/new-%d.bin", round)
 	done := make(chan response, 1)
-	go func() { done <- r.put("admin", "/files/it/generic-up/a/b/c/new.bin", "new") }()
-	waitFor(t, "the deploy waiting for the lock of the ancestor", 10*time.Second, func() bool {
+	go func() { done <- r.put("admin", "/files/it/generic-up/"+file, "new") }()
+	waitFor(t, "the deploy waiting for the lock of the ancestor", 60*time.Second, func() bool {
 		select {
 		case res := <-done:
 			t.Fatalf("the deploy finished while the ancestor was locked: %d %s", res.status, res.body)
@@ -69,10 +96,17 @@ func TestR_STOR_017_ADeployHoldsEveryAncestorOfItsPath(t *testing.T) {
 		}
 		return e.number("SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock'") > 0
 	})
-	if _, err := tx.Exec(ctx, "DELETE FROM items WHERE path IN ('a/b/c/old.bin', 'a/b/c', 'a/b', 'a')"); err != nil {
-		t.Fatal(err)
-	}
-	if err := tx.Commit(ctx); err != nil {
+	_, err = tx.Exec(ctx, "DELETE FROM items WHERE path IN ('a/b/c/old.bin', 'a/b/c', 'a/b', 'a')")
+	recreated := err == nil
+	var pe *pgconn.PgError
+	switch {
+	case recreated:
+		if err := tx.Commit(ctx); err != nil {
+			t.Fatal(err)
+		}
+	case errors.As(err, &pe) && pe.Code == "40P01":
+		_ = tx.Rollback(ctx)
+	default:
 		t.Fatal(err)
 	}
 	res := <-done
@@ -82,9 +116,10 @@ func TestR_STOR_017_ADeployHoldsEveryAncestorOfItsPath(t *testing.T) {
 	if n := e.number("SELECT count(*) FROM items WHERE kind = 'folder' AND path IN ('a', 'a/b', 'a/b/c') AND trashed_at IS NULL"); n != 3 {
 		t.Fatalf("%d of the 3 ancestors exist: the file sits under missing folders", n)
 	}
-	if n := e.number("SELECT count(*) FROM items WHERE path = 'a/b/c/new.bin' AND kind = 'file'"); n != 1 {
+	if n := e.number("SELECT count(*) FROM items WHERE path = $1 AND kind = 'file'", file); n != 1 {
 		t.Fatalf("%d files", n)
 	}
+	return recreated
 }
 
 // TestR_STOR_018_ADeleteJobRemovesOnlyWhatWasAuthorized enqueues the delete of a

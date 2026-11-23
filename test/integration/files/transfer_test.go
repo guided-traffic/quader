@@ -349,6 +349,11 @@ func trickle(n int, d time.Duration) (io.Reader, *atomic.Int64) {
 	return pr, sent
 }
 
+// spooling reports whether the replica's client listener has a request in flight: the upload is accepted and its handler
+// reads the body, which bytes on the wire alone do not show (the kernel takes them before the server accepts the connection).
+// The tests that call it send one request at a time.
+func spooling(r *replica) bool { return r.server.Active() > 0 }
+
 func TestR_HA_011_UploadsDuringARolloutRestart(t *testing.T) {
 	t.Run("R-HA-011 an upload in flight when the replica is told to stop finishes; the next upload goes to another replica", func(t *testing.T) {
 		te := newTransferEnv(t)
@@ -366,7 +371,8 @@ func TestR_HA_011_UploadsDuringARolloutRestart(t *testing.T) {
 			res, err := client.Do(req) //nolint:bodyclose // the receiver of the channel closes it
 			out <- result{res, err}
 		}()
-		time.Sleep(300 * time.Millisecond)
+		// In flight: the handler reads the body into its spool (a fixed 300 ms let a loaded host stop the server first).
+		waitFor(t, "the handler spooling the upload", 60*time.Second, func() bool { return spooling(a) })
 		a.drain.Store(true)
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -408,27 +414,31 @@ func TestR_HA_011_UploadsDuringARolloutRestart(t *testing.T) {
 			}
 			errc <- err
 		}()
-		time.Sleep(300 * time.Millisecond)
+		waitFor(t, "the handler spooling the upload", 60*time.Second, func() bool { return spooling(a) })
 		ctx, cancel := context.WithTimeout(context.Background(), 400*time.Millisecond)
 		defer cancel()
 		if err := a.server.Shutdown(ctx); err == nil {
 			t.Fatal("the shutdown should have cut the upload")
 		}
 		<-errc
-		time.Sleep(200 * time.Millisecond)
 		if n := te.number("SELECT count(*) FROM items WHERE path = 'roll/cut.bin'"); n != 0 {
 			t.Fatalf("%d items committed by a cut upload", n)
 		}
-		if entries, _ := os.ReadDir(a.spoolDir); len(entries) != 0 {
-			t.Errorf("the spool of the cut upload was not removed: %v", entries)
-		}
+		// The handler of the cut request removes its spool file when it returns, after the client saw the cut.
+		waitFor(t, "the removal of the cut upload's spool file", 30*time.Second, func() bool {
+			left, _ := os.ReadDir(a.spoolDir)
+			return len(left) == 0
+		})
 		if res := b.put("ci", "/files/it/generic-local/roll/cut.bin", string(content(200_000, 1))); res.status != 201 {
 			t.Fatalf("retry: %d %s", res.status, res.body)
 		}
 	})
 
 	t.Run("R-ARCH-024 R-HA-011 an upload whose body has arrived is never cut between its commit and its status line", func(t *testing.T) {
-		te := newTransferEnv(t)
+		// The commit grace is a minute here, not the product's 4 s: the case stands for a commit that the shutdown's deadline
+		// does not cut, not for the size of the grace (httpserver's unit tests hold its bound). With 4 s, the 1.5 s object write
+		// left 2.5 s for the row and the status line, and a host at a load of 45 to 75 cut the upload with EOF (2026-11-23).
+		te := newTransferEnv(t, func(o *replicaOpts) { o.commitGrace = time.Minute })
 		a := te.a
 		a.obj.putDelay.Store(int64(1500 * time.Millisecond)) // the object write takes longer than the deadline
 		data := content(300_000, 5)
