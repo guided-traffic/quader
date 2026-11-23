@@ -1,6 +1,8 @@
+import { DocumentBlock } from '../../shared/document-block';
 import { DatePipe } from '@angular/common';
 import {
   Component,
+  ElementRef,
   computed,
   effect,
   inject,
@@ -8,6 +10,7 @@ import {
   resource,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AUDIT_CATEGORIES, AuditApi, AuditEvent, AuditFilters } from '../../api/audit-api';
@@ -19,10 +22,11 @@ import { FilterPanel } from '../../shared/ui/filter-panel';
 import { ListChip, ListHead } from '../../shared/ui/list-head';
 import { NoValue } from '../../shared/ui/no-value';
 import { ProjectLink } from '../../shared/ui/project-mark';
+import { TimeAgo } from '../../shared/ui/time-ago';
 import { PagedResource, asApiError, valueOf } from '../../shared/paged-resource';
 import { actionSuggestions, auditActionLabel, categoryLabel, outcomeLabel } from './audit-labels';
 import { PageHeader } from '../../shared/ui/page-header';
-import { KEY_MARKS, breakParts } from '../../shared/break-parts';
+import { ADDRESS_MARKS, KEY_MARKS, PartsText, breakParts } from '../../shared/break-parts';
 import { PrincipalField, choiceFromRef, refOf } from '../../shared/ui/principal-field';
 
 /** The page size of the table (the server default and a good fit for one screen). */
@@ -50,13 +54,16 @@ const PRESETS: Readonly<Record<string, number>> = {
     DatePipe,
     RouterLink,
     CopyButton,
+    DocumentBlock,
     DataTable,
     ErrorNotice,
     FilterPanel,
     ListHead,
     NoValue,
     PrincipalField,
+    PartsText,
     ProjectLink,
+    TimeAgo,
   ],
   templateUrl: './audit-log.html',
   styleUrl: './audit-log.scss',
@@ -91,7 +98,11 @@ export class AuditLog {
   /** The log of the default 24 hours without a filter says there is none; a filtered one that nothing matches (Q-UI-565). */
   protected readonly noEvent = $localize`:@@audit.empty-none:There is no event in the last 24 hours.`;
   protected readonly noMatch = $localize`:@@audit.empty:No event matches.`;
-  /** No sort control: the log is always newest first, and the API takes no sort parameter. */
+  /**
+   * No sort control: the log is always newest first, and the API takes no sort parameter. Five columns that fit 1,024 px, and the log
+   * beside an opened event at 1,440 px, whatever the events hold (Q-UI-997): the address an event came from stands under its actor,
+   * the project under its target.
+   */
   protected readonly columns: readonly TableColumn[] = [
     {
       id: 'time',
@@ -99,23 +110,14 @@ export class AuditLog {
       help: $localize`:@@audit.help.time:Events are listed newest first. Narrow the time range in the filters to reach older ones.`,
     },
     { id: 'actor', label: $localize`:@@audit.col.actor:Actor` },
-    // An action's name and key wrap in 9 rem; a longer key breaks where it must (audit-log.scss), so that the log fits 1440 px.
-    { id: 'action', label: $localize`:@@audit.col.action:Action`, width: '9rem' },
+    // An action's name and key wrap in 7.5 rem; a longer key breaks where it must (audit-log.scss).
+    { id: 'action', label: $localize`:@@audit.col.action:Action`, width: '7.5rem' },
     { id: 'target', label: $localize`:@@audit.col.target:Target` },
-    // A project's mark and the longest word of its name: without a least width the name broke inside its words, "Platfor" /
-    // "m enginee" / "ring", beside a target that took the room (found by the renders' check, R-UI-171).
-    {
-      id: 'project',
-      label: $localize`:@@audit.col.project:Project`,
-      width: '7rem',
-      help: $localize`:@@audit.help.project:The project of the repository the event is about; a dash when it is about none.`,
-    },
     {
       id: 'outcome',
       label: $localize`:@@audit.col.outcome:Outcome`,
       help: $localize`:@@audit.help.outcome:Success: the action was carried out. Failure: it was allowed but did not work. Denied: the caller was not permitted. Warning: it was carried out, and an administrator should look at it.`,
     },
-    { id: 'source', label: $localize`:@@audit.col.source:Source address` },
   ];
 
   protected readonly preset = computed(() => this.range() ?? '24h');
@@ -186,9 +188,7 @@ export class AuditLog {
     const e = this.selected.error();
     return e ? asApiError(e) : null;
   });
-  protected readonly detailsJson = computed(() =>
-    JSON.stringify(valueOf(this.selected)?.details ?? {}, null, 2),
-  );
+  protected readonly details = computed(() => valueOf(this.selected)?.details ?? {});
 
   constructor() {
     effect(() => {
@@ -197,7 +197,19 @@ export class AuditLog {
       untracked(() => void this.list.start(this.api.events(filters), AUDIT_PAGE_SIZE));
     });
     effect(() => this.restage());
+    // An event opened from the list takes the focus, so the page brings it into view where it stands above the log (Q-UI-997).
+    effect(() => {
+      const heading = this.eventHeading();
+      if (heading && this.focusEvent) {
+        this.focusEvent = false;
+        heading.nativeElement.focus();
+      }
+    });
   }
+
+  private readonly eventHeading = viewChild<ElementRef<HTMLElement>>('eventHeading');
+  /** An event was opened from the list: its heading takes the focus once it is shown. */
+  private focusEvent = false;
 
   /** The drawer's values back to the ones in the URL: after a change of the URL, and when the drawer closes without **Apply**. */
   protected restage(): void {
@@ -308,7 +320,10 @@ export class AuditLog {
   }
 
   protected open(id: string): void {
-    void this.router.navigate([], { queryParams: { event: id }, queryParamsHandling: 'merge' });
+    // An event already shown keeps its heading: it takes the focus at once; a first one when it is shown.
+    const shown = this.eventHeading();
+    this.focusEvent = !shown;
+    void this.router.navigate([], { queryParams: { event: id }, queryParamsHandling: 'merge' }).then(() => shown?.nativeElement.focus());
   }
 
   protected close(): void {
@@ -385,6 +400,8 @@ export class AuditLog {
 
   protected readonly copyId = $localize`:@@audit.copy-id:Copy the event ID`;
   protected readonly copyTrace = $localize`:@@audit.copy-trace:Copy the trace ID`;
+  protected readonly addressMarks = ADDRESS_MARKS;
+  protected readonly copyDetails = $localize`:@@audit.copy-details:Copy the details`;
 }
 
 /** A `datetime-local` value in the browser's zone as an RFC 3339 instant; the fallback for an empty or bad value. */

@@ -25,9 +25,9 @@ export function timeAgo(iso: string, now: number = Date.now()): string {
   selector: 'quader-time-ago',
   imports: [DatePipe],
   template: `@if (absolute() === 'title') {
-      <time [attr.datetime]="at()" [attr.title]="at() | date: 'medium'">{{ relative() }}</time>
+      <time [attr.datetime]="at()" [attr.title]="at() | date: 'medium' : zone()">{{ relative() }}</time>
     } @else {
-      {{ relative() }} (<time [attr.datetime]="at()">{{ at() | date: 'medium' }}</time>)
+      {{ relative() }} (<time [attr.datetime]="at()">{{ at() | date: 'medium' : zone() }}</time>)
     }`,
   // The date and the time are one value: a line breaks before or after it, never inside it.
   styles: `
@@ -42,6 +42,8 @@ export class TimeAgo {
   readonly at = input.required<string>();
   /** Where the absolute time stands: in brackets after the relative one, or in the title of a list's cell. */
   readonly absolute = input<'brackets' | 'title'>('brackets');
+  /** The zone of the absolute time ("UTC" where the page shows times in UTC, as the audit log can); the browser's by default. */
+  readonly zone = input<string | undefined>(undefined);
   /** The time it is now, in milliseconds; a test sets it, the page leaves it to the clock. */
   readonly now = input<number | null>(null);
 

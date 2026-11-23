@@ -217,14 +217,24 @@ describe('Audit log', () => {
     expect(pre).toContain('"after"');
   });
 
-  it('R-UI-037 times follow the locale and switch to UTC with the toggle', async () => {
+  it('R-UI-037 Q-UI-997 a time is relative with the moment as its title, which follows the locale and switches to UTC with the toggle', async () => {
     const local = await open();
     const utc = await open({ utc: '1' });
-    const localTime = local.root.querySelector('tbody time')!.textContent;
-    const utcTime = utc.root.querySelector('tbody time')!.textContent;
-    expect(utcTime).toContain('11:58:02');
-    expect(localTime).toBeTruthy();
+    const localTime = local.root.querySelector('tbody time')!;
+    const utcTime = utc.root.querySelector('tbody time')!;
+    expect(utcTime.textContent).toMatch(/ago|now/);
+    expect(utcTime.getAttribute('title')).toContain('11:58:02');
+    expect(localTime.getAttribute('title')).toBeTruthy();
     expect((utc.root.querySelector('#a-utc') as HTMLInputElement).checked).toBe(true);
+  });
+
+  it('Q-UI-997 the log keeps five columns: the address stands under the actor, the project under the target', async () => {
+    const { root } = await open();
+    const heads = [...root.querySelectorAll('table thead th')].map((th) => text(th as HTMLElement));
+    expect(heads.map((h) => h.replace(/help_outline|Help.*$/, '').trim())).toEqual(['Time', 'Actor', 'Action', 'Target', 'Outcome']);
+    const actorWithAddress = [...root.querySelectorAll('tbody td.actor')].find((td) => text(td as HTMLElement).includes('10.12.4.7'));
+    expect(actorWithAddress?.querySelector('.secondary')?.textContent).toContain('10.12.4.7');
+    expect(root.querySelector('tbody td.target .target-project quader-project-link')).toBeTruthy();
   });
 
   it('R-UI-037 the export links carry the current filter and both formats', async () => {

@@ -11169,15 +11169,6 @@
         <target> Die Installation nennt ihren Namespace oder den Namen ihres CronJobs nicht. Ersetzen Sie die Platzhalter in spitzen Klammern. </target>
       </segment>
     </unit>
-    <unit id="audit.help.project">
-      <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:98</note>
-      </notes>
-      <segment>
-        <source>The project of the repository the event is about; a dash when it is about none.</source>
-        <target>Das Projekt des Repositorys, auf das sich das Ereignis bezieht; ein Strich, wenn es sich auf keines bezieht.</target>
-      </segment>
-    </unit>
     <unit id="vuln.filter.to">
       <notes>
         <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:190,191</note>
@@ -25898,15 +25889,6 @@
       <segment>
         <source>Disable this service account?</source>
         <target>Dieses Servicekonto deaktivieren?</target>
-      </segment>
-    </unit>
-    <unit id="audit.col.project">
-      <notes>
-        <note category="location">src/app/features/audit/audit-log.ts:97</note>
-      </notes>
-      <segment>
-        <source>Project</source>
-        <target>Projekt</target>
       </segment>
     </unit>
     <unit id="audit.range.24h">
@@ -50089,6 +50071,12 @@
       <segment>
         <source>Copy the result</source>
         <target>Ergebnis kopieren</target>
+      </segment>
+    </unit>
+    <unit id="audit.copy-details">
+      <segment>
+        <source>Copy the details</source>
+        <target>Details kopieren</target>
       </segment>
     </unit>
   </file>

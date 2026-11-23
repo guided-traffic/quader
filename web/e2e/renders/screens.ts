@@ -2636,11 +2636,11 @@ export const screens: readonly Screen[] = [
   // The upstream of a remote where it is entered: the presets, the credentials, Test connection, the details (R-UI-082).
   ...upstreams,
   // At 1,280 px too: the log scrolled sideways there (its Source address column).
-  { id: 'admin-audit', path: '/ui/admin/audit', kinds: admins, walk: filtersOpen(), widths: [1280] },
+  { id: 'admin-audit', path: '/ui/admin/audit', kinds: admins, walk: filtersOpen(), widths: [1280], tables: 'quader-audit-log quader-data-table' },
   // One event opened: its time on one line at 390 px, the copy buttons of its IDs on their lines (R-UI-037).
-  { id: 'admin-audit-event', path: '/ui/admin/audit', kinds: admins, walk: auditEvent, widths: [1280] },
+  { id: 'admin-audit-event', path: '/ui/admin/audit', kinds: admins, walk: auditEvent, widths: [1280], tables: 'quader-audit-log quader-data-table' },
   // The traces of data keys handed to a Bastion (storage.md R-STOR-096), answered in the browser: the list and one opened.
-  { id: 'admin-audit-data-keys', path: '/ui/admin/audit', kinds: admins, walk: auditDataKeys },
+  { id: 'admin-audit-data-keys', path: '/ui/admin/audit', kinds: admins, walk: auditDataKeys, tables: 'quader-audit-log quader-data-table' },
   { id: 'admin-advisory-sources', path: '/ui/admin/advisory-sources', kinds: admins, walk: databaseCommandsOpen },
   // The auditor reads the sources and the image scanners (settings:read, R-OPS-048).
   { id: 'admin-advisory-sources-read', path: '/ui/admin/advisory-sources', kinds: ['auditor'] },

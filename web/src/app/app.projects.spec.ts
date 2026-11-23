@@ -245,7 +245,8 @@ describe('The administration area (R-UI-041, Q-UI-129)', () => {
     expect([...accounts.root.querySelectorAll('th[scope="col"]')].map((h) => h.textContent?.trim())).toContain('Project');
     const policies = await render('/admin/permissions');
     expect([...policies.root.querySelectorAll('th[scope="col"]')].map((h) => h.textContent?.trim() ?? '')).toContainEqual(expect.stringMatching(/^Project/));
+    // The audit log names a repository's project under its target, by its mark and its name (Q-UI-997).
     const audit = await render('/admin/audit');
-    expect([...audit.root.querySelectorAll('th[scope="col"]')].map((h) => h.textContent?.trim() ?? '')).toContainEqual(expect.stringMatching(/^Project/));
+    expect(audit.root.querySelector('tbody td.target .target-project quader-project-link')).toBeTruthy();
   });
 });

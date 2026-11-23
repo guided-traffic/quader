@@ -112,11 +112,20 @@
       (more)="list.more()"
     >
       @for (e of list.items(); track e.id) {
+        <!-- One form at 1,440 and 1,024 px whatever the events hold (Q-UI-997, the rule of Q-UI-969): the time relative with the moment
+             as its title, the actor with the address it came from under it, the action with its key, the target with its project
+             under it, the outcome; blocks only where even these columns do not fit (390 px). -->
         <tr [class.current]="e.id === event()">
-          <td>
-            <time [attr.datetime]="e.occurredAt">{{ e.occurredAt | date: 'medium' : timeZone() }}</time>
+          <td class="nowrap">
+            <quader-time-ago [at]="e.occurredAt" absolute="title" [zone]="timeZone()" />
           </td>
-          <td translate="no" class="wrap read-text actor">{{ actorName(e) }}</td>
+          <td class="read-text actor">
+            <span translate="no">{{ actorName(e) }}</span>
+            <!-- The address breaks only after its dots and colons: an IPv6 address on one line widened the column past 1,024 px. -->
+            @if (e.source.ip; as ip) {
+              <span class="secondary" translate="no"><quader-parts-text [value]="ip" [marks]="addressMarks" /></span>
+            }
+          </td>
           <th scope="row">
             <button
               type="button"
@@ -134,7 +143,8 @@
           </th>
           <!-- The target: a repository and its path are read and wrap in their column (UI-A-46); a resource the entry knows by name
                shows the name, as the actor does, with its kind and identifier under it; otherwise its kind and its identifier, which
-               stays on one line and is cut, its full value the title (Q-UI-568). -->
+               stays on one line and is cut, its full value the title (Q-UI-568). The project of a repository stands under it by its
+               mark and its name (Q-UI-424). -->
           <td class="target">
             @if (e.repository) {
               <span class="read-text" translate="no">{{ targetText(e) }}</span>
@@ -151,13 +161,8 @@
             } @else {
               <quader-no-value />
             }
-          </td>
-          <!-- A row names its project by its mark and its name (Q-UI-424). -->
-          <td>
             @if (projectOf(e); as project) {
-              <quader-project-link [key]="project" />
-            } @else {
-              <quader-no-value />
+              <span class="target-project"><quader-project-link [key]="project" /></span>
             }
           </td>
           <!-- The outcome is a status: its badge, the word with a capital (Q-UI-560, Q-UI-564). -->
@@ -177,13 +182,6 @@
               }
             }
           </td>
-          <td translate="no">
-            @if (e.source.ip; as ip) {
-              {{ ip }}
-            } @else {
-              <quader-no-value />
-            }
-          </td>
         </tr>
       }
     </quader-data-table>
@@ -192,7 +190,7 @@
   @if (event()) {
     <section class="detail" aria-labelledby="event-heading">
       <div class="detail-head">
-        <h2 id="event-heading" tabindex="-1" i18n="@@audit.detail.heading">Event</h2>
+        <h2 #eventHeading id="event-heading" tabindex="-1" i18n="@@audit.detail.heading">Event</h2>
         <button class="btn btn-tertiary" type="button" (click)="close()" i18n="@@audit.detail.close">
           Close
         </button>
@@ -288,7 +286,7 @@
           }
         </dl>
         <h3 i18n="@@audit.detail.details">Details</h3>
-        <pre class="code-block" translate="no" tabindex="0">{{ detailsJson() }}</pre>
+        <quader-document-block [document]="details()" [wrap]="true" [copyLabel]="copyDetails" />
       } @else {
         <p role="status" i18n="@@repo.loading">Loading.</p>
       }

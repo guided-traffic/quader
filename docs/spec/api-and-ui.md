@@ -5177,21 +5177,27 @@ Acceptance criteria:
 ### R-UI-037 · Audit log
 Priority: **MVP** · Covers: OPS-023
 
-- Table from `GET /api/v1/audit/events`: time, actor, action (a short plain name of its own for every event type of the audit
+- Table from `GET /api/v1/audit/events` in five columns, one form at 1,440 and 1,024 px whatever the events hold and blocks only at
+  390 px ([Q-UI-997](#q-ui-997--the-audit-log-keeps-five-columns-and-an-opened-event-stands-beside-it-only-where-both-keep-their-form)):
+  time (relative, the moment in full as its title), actor (with the address the event came from under it), action (a short plain
+  name of its own for every event type of the audit
   registry, in English and German, with the event name under it, which breaks after its dots only, [Q-UI-567](#q-ui-567--an-audit-actions-key-breaks-after-its-dots-only)); an unknown name is shown as sent), target (the actor and a
   repository's target wrap in their column and are never cut, UI-A-46; a resource the entry knows by name shows the name, any
-  other its kind and its identifier on one line, [Q-UI-568](#q-ui-568--an-audit-target-the-entry-knows-by-name-shows-the-name-another-its-identifier-on-one-line)), outcome (a badge, **Success**, **Failure**, **Denied**,
-  [Q-UI-564](#q-ui-564--a-status-word-starts-with-a-capital)),
-  source address; filters time range (presets and custom), actor, action, category, project, repository,
-  outcome (the list's drawer, R-UI-101; the head has no search by name, its end the time zone and the exports); "Load more". The log is always newest first and has no sort control. The action filter suggests every
+  other its kind and its identifier on one line, [Q-UI-568](#q-ui-568--an-audit-target-the-entry-knows-by-name-shows-the-name-another-its-identifier-on-one-line);
+  a repository's project by its mark and its name under it), outcome (a badge, **Success**, **Failure**, **Denied**,
+  [Q-UI-564](#q-ui-564--a-status-word-starts-with-a-capital)); filters time range (presets and custom), actor, action, category,
+  repository, outcome (the list's drawer, R-UI-101; the head has no search by name, its end the time zone and the exports); "Load more". The log is always newest first and has no sort control. The action filter suggests every
   prefix of the registry's event types at every level (`ci.*`, `ci.issuer.*`) and every type with its name, from the registry.
-- Detail panel with the full event and links to actor and target. Where the panel is narrower than 25 rem (beside the log at
-  1,280 px, under it at 390 px) each fact's name stands above its value, so that the time of the event stays on one line
+- Detail panel with the full event and links to actor and target. It stands beside the log from 68 rem of content (1,440 px) and above
+  it, at the log's width, where it is narrower; an event opened from the list takes the focus, so the page brings it into view (Q-UI-997).
+  Where the panel is narrower than 25 rem (390 px) each fact's name stands above its value, so that the time of the event stays on one line
   ([Q-UI-972](#q-ui-972--a-narrow-audit-event-puts-each-facts-name-above-its-value)). The actor's kind and credential stand on a line
   under its name; the action's key under its name, or alone where the action has no name of its own, and a key breaks after a dot or an
-  underscore only, in the panel and in the row (Q-UI-567); the slash between a repository and its path belongs to the path.
-- Times in the user's locale with a UTC toggle; export of the current filter as CSV or JSON Lines
-  (`/api/v1/audit/events/export`).
+  underscore only, in the panel and in the row (Q-UI-567); the slash between a repository and its path belongs to the path. The details wrap their long lines in the panel, every
+  string longer than 200 characters shortened to its start and its length, and a copy button copies them whole
+  ([Q-UI-995](#q-ui-995--a-document-shortens-a-long-string-to-its-start-and-its-length-and-copies-whole-a-code-block-scrolls-a-few-screens-at-most)).
+- Times in the user's locale with a UTC toggle (in the list the title of each relative time, in the panel the moment); export of the
+  current filter as CSV or JSON Lines (`/api/v1/audit/events/export`).
 
 Acceptance criteria:
 
@@ -22468,6 +22474,31 @@ the limit of 200 characters if a value a reader needs (a long URL with its query
 
 **Applied in the spec:** R-UI-037, R-UI-087, R-UI-170. Code: [document-block.ts](../../web/src/app/shared/document-block.ts),
 `allowed` and `CODE_BLOCK_SCROLL` of [layout.ts](../../web/e2e/renders/layout.ts).
+
+### Q-UI-997 · The audit log keeps five columns, and an opened event stands beside it only where both keep their form
+
+Status: **Decided by the development agent** on 2026-11-23, closing points 1 to 4 of the open finding "Seen by the builder of the screens'
+first round on its renders" by the rule of the lists of
+[Q-UI-969](#q-ui-969--the-signatures-lists-keep-one-form-a-table-at-1440-and-1024-px-blocks-at-390-px); the owner reviews it at the
+walkthrough. Amends [Q-UI-431](#q-ui-431--a-time-in-a-list-is-relative-with-the-absolute-time-as-its-title-a-log-writes-the-moment) for
+the audit log's rows.
+
+Context: measured on the renders' data, the log's seven columns needed 1,125 px at their least widths against 697 at 1,024 px and 1,113
+at 1,440 px: a table or blocks at 1,440 px by what its rows held, blocks at 1,280 and 1,024 px; an opened event beside the log at 1,280 px
+left it 552 px, and at 390 px the event stood under all 100 rows of the list; its details, a code block, scrolled sideways in the panel.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Five columns: **Time** (relative, the moment as its title, which the UTC toggle follows), **Actor** (the source address under it), **Action** (7.5 rem, its key under it), **Target** (8 rem, a repository's project under it), **Outcome**; 663 px at their least widths. The event beside the log from 68 rem of content (1,440 px, the log at 682 px), above it at the log's width where narrower, and an opened event takes the focus; its details wrap (chosen) | Q-UI-969's rule | One form at 1,440, 1,280 and 1,024 px; a reader finds the event where he opened it | A row's moment is read from its title; the address and the project are read, not scanned down a column |
+| (b) The seven columns, a region that scrolls sideways | — | Every fact a column | Refused from 1,024 px by the renders' checks |
+| (c) The event in a drawer over the log | ADR-200's drawer | The log keeps its width | A new interaction for the page; the drawer covers the rows one compares |
+
+**Choice:** (a). **Rationale:** the rule of the admin area's lists; the time stays exact in the title and in the panel, which a log
+needs, and its relative form is what the reader of the newest events scans. The development agent would revisit the relative time if
+an operator needs to compare moments across rows at a glance.
+
+**Applied in the spec:** R-UI-037. Code: [audit-log.html](../../web/src/app/features/audit/audit-log.html),
+[audit-log.scss](../../web/src/app/features/audit/audit-log.scss), `zone` of [time-ago.ts](../../web/src/app/shared/ui/time-ago.ts).
 
 ## What this does not cover
 
