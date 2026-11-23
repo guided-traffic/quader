@@ -498,10 +498,10 @@ $(TRIVY_BIN):
 	  mv "$@.part" $@
 
 .PHONY: trivy
-trivy: $(TRIVY_BIN) ## Take the analyser's binary out of TRIVY_IMAGE into .bin/trivy-<tag>-<digest> (Linux only; CI: container-scan puts the directory on PATH)
+trivy: $(TRIVY_BIN) ## Take the analyser's binary out of TRIVY_IMAGE into .bin/trivy-<tag>-<digest> (Linux only; CI: container-scan and upstream-image-scan put the directory on PATH)
 
 .PHONY: trivy-dir
-trivy-dir: ## Print the directory of make trivy's binary, relative to the repository (CI: container-scan appends it to GITHUB_PATH)
+trivy-dir: ## Print the directory of make trivy's binary, relative to the repository (CI: container-scan and upstream-image-scan append it to GITHUB_PATH)
 	@echo $(TRIVY_DIR)
 
 .PHONY: chart-test

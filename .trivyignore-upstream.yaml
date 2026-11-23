@@ -1,0 +1,8 @@
+# Findings of the scan of the images the chart runs and Quader does not build (the job "Container Scan (Trivy, images the chart
+# runs)", Q-ARCH-596): the analyser of the image scanning (TRIVY_IMAGE) and ClamAV (CLAMAV_IMAGE). That scan reports and gates
+# nothing; an entry here takes a finding out of its report, so that the report lists what is still to be read. The form is that of
+# .trivyignore.yaml, held by internal/tools/ciworkflows: one identifier, the paths in the image it is accepted at, the day it ends
+# and why it does not apply there. docs/developer/releasing.md#the-images-the-chart-runs
+#
+# None today. What the first scan of 2026-11-23 found (run locally with the pinned analyser) is written in that section.
+vulnerabilities: []

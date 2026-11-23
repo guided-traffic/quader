@@ -1047,6 +1047,110 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+  # The images the chart runs and Quader does not build (H-1003, H-1109, Q-ARCH-596): the analyser of the image scanning
+  # (TRIVY_IMAGE) and ClamAV (CLAMAV_IMAGE), by the digests tools/versions.env pins and the chart's values hold to. The job
+  # reports and gates nothing: Semantic Release does not need it and a finding does not fail it, because a finding in an
+  # upstream build is fixed by the publisher and a raise of the pin, not in this repository, and must not hold Quader's releases.
+  # The findings of CRITICAL or HIGH with a fix go into the job summary, with a warning per image, and as SARIF into the artifact
+  # trivy-upstream-report beside trivy-container-report. .trivyignore-upstream.yaml takes out what is decided not to apply.
+  upstream-image-scan:
+    name: Container Scan (Trivy, images the chart runs)
+    runs-on: self-hosted
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Load the tool pins
+        uses: ./.github/actions/load-pins
+
+      - name: Set up Go
+        timeout-minutes: 5
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      # The Makefile lists the integration packages when make starts, which reads every module of go.sum.
+      - name: Download the Go modules of go.sum
+        timeout-minutes: 10
+        uses: ./.github/actions/go-modules
+
+      - name: Install build tools
+        timeout-minutes: 9
+        uses: ./.github/actions/build-tools
+
+      - name: Install jq for the summary
+        timeout-minutes: 9
+        run: .github/scripts/apt-install.sh jq
+
+      - name: Log in to Docker Hub (the scanned images and the analyser)
+        uses: docker/login-action@v4
+        with:
+          username: guidedtraffic
+          password: ${{ secrets.DOCKERHUB_PAT }}
+
+      - name: Install the pinned Trivy
+        timeout-minutes: 10
+        id: trivy_install
+        run: |
+          set -euo pipefail
+          make trivy
+          echo "$PWD/$(make -s trivy-dir)" >> "$GITHUB_PATH"
+
+      - name: Scan the analyser's image
+        timeout-minutes: 10
+        uses: aquasecurity/trivy-action@v0.36.0
+        env:
+          TRIVY_IGNOREFILE: .trivyignore-upstream.yaml
+        with:
+          image-ref: ${{ env.TRIVY_IMAGE }}
+          format: json
+          output: trivy-upstream-analyser.json
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+          scanners: vuln
+          skip-setup-trivy: true
+
+      - name: Scan the ClamAV image
+        if: always() && steps.trivy_install.outcome == 'success'
+        timeout-minutes: 10
+        uses: aquasecurity/trivy-action@v0.36.0
+        env:
+          TRIVY_IGNOREFILE: .trivyignore-upstream.yaml
+        with:
+          image-ref: ${{ env.CLAMAV_IMAGE }}
+          format: json
+          output: trivy-upstream-clamav.json
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+          scanners: vuln
+          skip-setup-trivy: true
+
+      # TRIVY_IMAGE and CLAMAV_IMAGE are in the job's environment through load-pins.
+      - name: The findings in the job summary
+        if: always()
+        timeout-minutes: 5
+        run: |
+          .github/scripts/upstream-image-report.sh \
+            analyser "$TRIVY_IMAGE" trivy-upstream-analyser.json \
+            clamav "$CLAMAV_IMAGE" trivy-upstream-clamav.json
+
+      - name: Upload the reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: trivy-upstream-report
+          path: trivy-upstream-*.sarif
+          if-no-files-found: warn
+          retention-days: 30
+
   integration:
     # Valkey 9.1 only: quader is in development and guarantees no older line (owner, 2026-10-29). The packages run in four
     # shards with a stack each (make test-integration SHARD=a|b|c|d, the rule in the Makefile, Q-ARCH-544, Q-ARCH-565). A shard

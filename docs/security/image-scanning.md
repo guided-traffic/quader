@@ -265,9 +265,15 @@ Subject: the scanner pods and what they hold (above). Live. Quader does not buil
 library it was built with stays in every scanner pod until the publisher releases a new build and the pin is raised, whatever Quader's
 own toolchain is. Renovate raises a new digest of the same version by itself and opens a new version for review
 ([Q-HA-381](../spec/ha-and-helm.md#q-ha-381--one-pin-by-digest-the-charts-value-held-equal-by-a-chart-test-and-one-renovate-group-that-reviews-a-new-version)).
-Since 2026-11-21 the release image carries no analyser, so the release's container scan, which scans that image, no longer sees one, and
-nothing in the pipeline scans `TRIVY_IMAGE`: a finding in the analyser is not reported by Quader's own checks. Known on 2026-11-19 and
-still in the pinned build: CVE-2026-97054, in the HTTP/1 server of `net/http` (the build of upstream is Go 1.27.3); Quader runs the
+Since 2026-11-21 the release image carries no analyser, so the release's container scan, which scans that image, no longer sees one.
+Since 2026-11-23 the job `upstream-image-scan` of Test and Release scans `TRIVY_IMAGE` by its digest on every push and pull request and
+reports its findings of CRITICAL or HIGH that have a fix in the job summary, with a warning, and in the artifact `trivy-upstream-report`
+([Q-ARCH-596](../spec/architecture.md#q-arch-596--the-images-the-chart-runs-are-scanned-in-a-job-of-their-own-that-reports-and-gates-nothing),
+[releasing.md](../developer/releasing.md#the-images-the-chart-runs)). It gates nothing: a reported finding stays in every scanner pod until
+the publisher's new build and the raise of the pin. Its first scan, on 2026-11-23, found none in the analyser's binary and six in the
+image's `git` packages, which the scanner pods do not run. What it leaves out: a finding below HIGH, as the container scan does. Known on
+2026-11-19 and still in the pinned build, of MEDIUM and therefore not in that report: CVE-2026-97054, in the HTTP/1 server of `net/http`
+(the build of upstream is Go 1.27.3); Quader runs the
 analyser as a command for one analysis or one detection, with an empty environment, no listener and no network use of its own (see
 above), so a server-side finding does not apply; until 2026-11-21 it was accepted in [.trivyignore.yaml](../../.trivyignore.yaml) at the
 analyser's path of the release image, which no longer exists. What is not covered: a finding in the analyser's parsers, which read the

@@ -20,6 +20,7 @@ type step struct {
 	If             string            `yaml:"if"`
 	Uses           string            `yaml:"uses"`
 	With           map[string]string `yaml:"with"`
+	Env            map[string]string `yaml:"env"`
 	Run            string            `yaml:"run"`
 	TimeoutMinutes yaml.Node         `yaml:"timeout-minutes"`
 }

@@ -11411,6 +11411,34 @@ of a leg logs the restored key).
 **Applied in the spec:** none (CI wiring). Code: [client-images.sh](../../.github/scripts/client-images.sh); test
 [clientimages_test.go](../../internal/tools/ciworkflows/clientimages_test.go). Elsewhere: [releasing.md](../developer/releasing.md#the-caches).
 
+### Q-ARCH-596 · The images the chart runs are scanned in a job of their own that reports and gates nothing
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the chart runs two images Quader does not build, the analyser's `TRIVY_IMAGE` (R-HA-070) and ClamAV's `CLAMAV_IMAGE`
+(R-MAL-027), and since the release image no longer carries the analyser nothing in the pipeline scanned either
+([H-1003](../security/image-scanning.md#h-1003--the-analyser-is-an-upstream-build-with-the-vulnerabilities-of-its-day),
+[H-1109](../security/malware-scanning.md#h-1109--clamd-is-the-publishers-build-with-the-flaws-of-its-day)). Scanned on 2026-11-23
+with the pinned analyser: 6 findings of HIGH with a fix in the analyser's image, 70 in the ClamAV image, none in Quader's power to fix.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A job of Test and Release that reports and gates nothing (chosen) | Every push scans both by their pins; the findings go into the job summary, a warning and the artifact `trivy-upstream-report`; a finding does not fail the job and Semantic Release does not need it | A pin raise is scanned in its own pull request; a finding is visible in the run where the daily database learns it | About three runner minutes per push for images that do not change with the push |
+| (b) A gating step | A finding holds the release | Nothing ships beside a known finding | Every run would be held today (76 findings), by builds Quader cannot change |
+| (c) A job of the nightly | Once a day | Fewer runner minutes | A pin raise is scanned only after it is merged; the report is not where the release is |
+| (d) Steps in the gating container scan, continued on error | No new pod | Cheapest | A hang of a pull would hold a gating job up to its limit |
+
+**Choice:** (a). **Rationale:** an upstream image's finding must not hold Quader's releases, and (b) would hold every one today. The job takes the pinned analyser (`make trivy`), CRITICAL and HIGH with a fix as the container scan does, and an
+ignore file of its own, `.trivyignore-upstream.yaml`, with the form of `.trivyignore.yaml`. A scan that cannot run is red and holds
+nothing. `TestTheImagesTheChartRunsAreScannedAndHoldNoRelease` fails when an image of a chart's values by digest is not scanned by its
+pin, when a scan fails on a finding or when Semantic Release needs the job. Not verified on GitHub: the job's run time and its summary
+(the first run shows both).
+
+**Applied in the spec:** none (CI wiring). Code: [release.yml](../../.github/workflows/release.yml) (`upstream-image-scan`),
+[upstream-image-report.sh](../../.github/scripts/upstream-image-report.sh), [.trivyignore-upstream.yaml](../../.trivyignore-upstream.yaml);
+test [trivyignore_test.go](../../internal/tools/ciworkflows/trivyignore_test.go). Elsewhere: [releasing.md](../developer/releasing.md#the-images-the-chart-runs),
+[image-scanning.md](../security/image-scanning.md) (H-1003), [malware-scanning.md](../security/malware-scanning.md) (H-1109).
+
 **Applied:** [client-images.sh](../../.github/scripts/client-images.sh).
 
 ### Q-ARCH-522 · The kind legs load the Quader image the job `image` of their run built, and need that job

@@ -107,6 +107,7 @@ which bounds the install in time ([OS packages in the jobs](#os-packages-in-the-
 | image | `make image IMAGE=guidedtraffic/quader:dev VERSION=dev` | the [Containerfile](../../Containerfile) for the runner's architecture, loaded into Docker; the image must run as `65532:65532` (R-HA-033); then `docker save` and the artifact `quader-image` (one day), which every kind leg of the run loads instead of building the image itself ([Q-ARCH-522](../spec/architecture.md#q-arch-522--the-kind-legs-load-the-quader-image-the-job-image-of-their-run-built-and-need-that-job)) |
 | SBOM generator (pinned syft, test image) | `make sbom-generator-check` | builds the SBOM generator of the release image and a two-platform test image with it, and asserts that both attestations name the pinned syft; needed by Semantic Release ([below](#sbom-generator)) |
 | Container Scan (Trivy, built image) | `make image IMAGE=quader:scan`, `make trivy`, then Trivy | Trivy (the binary `make trivy` takes out of `TRIVY_IMAGE`, the scanner pods' own analyser, one version in the repository, Q-HA-381) on the built image, which carries no analyser: fixed OS and library vulnerabilities of CRITICAL or HIGH, secrets and misconfigurations, less the findings accepted for a time ([below](#accepted-findings-of-the-container-scan)); SARIF uploaded as `trivy-container-report` |
+| Container Scan (Trivy, images the chart runs) | `make trivy`, then Trivy | the images the chart runs and Quader does not build, the analyser's `TRIVY_IMAGE` and ClamAV's `CLAMAV_IMAGE`, by the digests of `tools/versions.env`: OS and library vulnerabilities of CRITICAL or HIGH with a fix, less [.trivyignore-upstream.yaml](../../.trivyignore-upstream.yaml), into the job summary with a warning per image and as SARIF into `trivy-upstream-report`; a finding does not fail it and Semantic Release does not need it ([below](#the-images-the-chart-runs)) |
 | integration (shard a, b, c, d) | `make integration-up`, `make test-integration SHARD=<a\|b\|c\|d>`, `make integration-down` | the integration tier against the compose stack on TLS, on Valkey 9.1 only (no older line is guaranteed while Quader is in development); four legs with a stack each, by a rule on the area's name that places a new package without anyone editing it ([Q-ARCH-565](../spec/architecture.md#q-arch-565--the-integration-tests-run-in-four-shards-the-fourth-takes-the-virtual-areas-and-the-security-checks), after [Q-ARCH-544](../spec/architecture.md#q-arch-544--the-integration-shards-are-cut-by-a-rule-that-spreads-a-formats-areas-over-all-three)): the suffix decides first, every `<format>local` in shard `a`, every `<format>remote` in shard `c`, every `<format>virtual` in shard `d`; then shard `a` the packages `coordination`, `mirror`, `npm`, `nuget` and `proxy`, shard `c` the packages `api`, `backup*`, `restore*`, `storage*`, `postgres`, `blob`, `valkey` and `bastion*` and the OCI conformance suite, shard `d` the security checks `ci`, `vuln*`, `malware*` and `sign*`, shard `b` every other one (every new platform area among them). From the package times of run 44948103795 about 32, 31, 33 and 31 of the 45 minutes (a, b, c, d; with three shards that run took 38, 43 and 42); a shard that is stopped by its limit or passes 43.5 minutes is cut again by the rule, the limit is not raised. Uploads `test-integration-<shard>` and `profile-integration-<shard>` |
 | S3 conformance | `make silo-up`, `make s3-conformance`, `make silo-down` | the conformance tests of R-STOR-035 against Silo (the image `SILO_IMAGE`), served over TLS only; the server log is uploaded on failure |
 | which e2e legs the change runs (`e2e-scope`) | [.github/scripts/e2e-legs.sh](../../.github/scripts/e2e-legs.sh) | reads the changed paths of the push once and outputs, per leg (`npm`, `nuget`, `oci`, `deb`, `ansible`, `bastion`, `vuln`), whether it runs ([below](#which-e2e-legs-a-change-runs)); on `self-hosted`, about a quarter of a minute (a checkout of the whole history and the script); the legs it decides need it and run unless it said `false` |
@@ -215,7 +216,8 @@ its own package's test binary only), `internal/tools/` and `internal/archtest/` 
 `test/chart/`, `test/compat/`, `test/coverage/`, the root `package.json` and `package-lock.json` and `hack/` (semantic-release), the test
 advisory source and the CI issuer double (`test/osvstub/`, `test/oidcstub/` and their manifests: `deploy/dev/e2e.sh` starts them for the
 vuln sets and for ci, access-long and backup only), the Bastion's chart, `deploy/ui-dev/` and `test/devidp/` (the layout checks), the
-workflows `performance.yml`, `build.yml` and `renovate.yml`, `.github/actions/select-leg/`, the configuration of golangci-lint, Trivy,
+workflows `performance.yml`, `build.yml` and `renovate.yml`, `.github/actions/select-leg/`, the report script of the scan of the images
+the chart runs (`.github/scripts/upstream-image-report.sh`), the configuration of golangci-lint, Trivy (both ignore files),
 Renovate, semantic-release and actionlint, and in release.yml every job that is not a leg's, `image` or `e2e-scope`. A compile error in a
 file of this list that a leg builds is found by `lint`, which builds every tag.
 
@@ -290,7 +292,8 @@ cloudnative-pg after about 5 minutes). Their digests are pinned ([Q-ARCH-356](..
 The container scan gates the release, and it scans everything in the image: Quader's own binary on the distroless base. Until
 2026-11-21 the image also carried the analyser of the image scanning, the upstream release archive at its pin, a binary Quader does
 not build; since R-HA-070 the scanner pods copy the analyser from its own image (`TRIVY_IMAGE`), which this job does not scan
-([H-1003](../security/image-scanning.md#h-1003--the-analyser-is-an-upstream-build-with-the-vulnerabilities-of-its-day)). When the
+([H-1003](../security/image-scanning.md#h-1003--the-analyser-is-an-upstream-build-with-the-vulnerabilities-of-its-day)); the job
+`upstream-image-scan` scans it and reports without gating ([the images the chart runs](#the-images-the-chart-runs)). When the
 vulnerability database learns of a finding in a binary of the image Quader does not build, the gate turns red on a commit that changed
 nothing, and stays red until upstream releases a new build. [.trivyignore.yaml](../../.trivyignore.yaml) is the place for such a
 finding, and only for it:
@@ -309,6 +312,32 @@ The file holds no entry since 2026-11-21. Its first entry (2026-11-19 to 2026-11
 server in the analyser built upstream with Go 1.27.3, at `usr/local/bin/trivy`, which the release image no longer has; Quader runs the
 analyser as a command for one scan and never as a server, and the finding stays with the pinned analyser
 ([image-scanning.md](../security/image-scanning.md#h-1003--the-analyser-is-an-upstream-build-with-the-vulnerabilities-of-its-day)).
+
+### The images the chart runs
+
+The chart runs two images Quader does not build: the analyser of the image scanning (`TRIVY_IMAGE`, whose binary the scanner pods
+copy, R-HA-070) and ClamAV (`CLAMAV_IMAGE`, `clamd` and `freshclam`, R-MAL-027), each by the digest of
+[tools/versions.env](../../tools/versions.env) that the chart's values are held to. The job `upstream-image-scan` of Test and Release
+scans both on every push and pull request ([Q-ARCH-596](../spec/architecture.md#q-arch-596--the-images-the-chart-runs-are-scanned-in-a-job-of-their-own-that-reports-and-gates-nothing)):
+the pinned analyser (`make trivy`), the vulnerabilities of the OS packages and libraries of CRITICAL or HIGH that have a fix, less what
+[.trivyignore-upstream.yaml](../../.trivyignore-upstream.yaml) accepts (the same form as the container scan's file, held by the same
+test). [upstream-image-report.sh](../../.github/scripts/upstream-image-report.sh) writes the findings into the job summary, a warning
+per image that has any, and the SARIF of each scan into the artifact `trivy-upstream-report` (30 days), beside `trivy-container-report`.
+
+It gates nothing: Semantic Release does not need the job, and a finding does not fail it. A finding in an upstream build is fixed by its
+publisher, and Quader takes the fix with the raise of the pin, which Renovate opens (Q-HA-381 for the analyser, Q-MAL-80 for ClamAV); a
+red job would ask for work this repository cannot do. A scan that cannot run (the pull or the database fails) is red and holds nothing.
+`TestTheImagesTheChartRunsAreScannedAndHoldNoRelease` ([internal/tools/ciworkflows](../../internal/tools/ciworkflows/trivyignore_test.go))
+fails when an image of a chart's values by digest is not scanned by its pin, when a scan fails on a finding, or when Semantic Release
+needs the job. It costs one standard runner for about three minutes per run (estimated from the container scan's steps in run
+45133371730: the analyser in 6 s, a scan in 19 s, plus the pulls of both images and the module cache; not measured).
+
+What the first scan shows, run on 2026-11-23 with the pinned analyser on the development machine (linux/arm64 images, the day's
+database): in the analyser's image 6 findings, all HIGH, three of `git` and three of `git-init-template` (Alpine 3.24.3, fixed in
+2.54.1-r0), none in the analyser's binary `usr/local/bin/trivy`; in the ClamAV image 70, all HIGH, in Debian 13.7's packages (`krb5`
+among them). The scanner pods run the analyser's binary alone, copied out of its image, and not `git`; `clamd` and `freshclam` run in
+the ClamAV image itself with its libraries. No finding is accepted in the ignore file: whether one does not apply is decided per
+finding, with its path, as for the container scan.
 
 ## OS packages in the jobs
 
@@ -465,7 +494,7 @@ inputs determine, from where, and what caches it; the development agent read it 
 | Node.js, Helm, kubectl | the jobs that use them | the actions' own hosts (Helm: get.helm.sh, kubectl: dl.k8s.io) | the pins | none | unchanged; 5-minute step bounds in gating jobs |
 | Docker Buildx | every job that builds an image | the runner's copy, else github.com | the pin | the archive cached by pin and digest | unchanged ([Pinned tools in the jobs](#pinned-tools-in-the-jobs)) |
 | promtool | chart | github.com release assets | the pin | none | unchanged ([tools/github-download.sh](../../tools/github-download.sh), bounded) |
-| Trivy (`make trivy`) | container-scan; the `vuln` legs load the same image into kind | Docker Hub (`TRIVY_IMAGE`, by digest; 58.5 MB for arm64, 63.4 MB for amd64) | the pin | none | the binary out of the analyser's image since 2026-11-21 (R-HA-070), no GitHub download |
+| Trivy (`make trivy`) | container-scan and upstream-image-scan; the `vuln` legs load the same image into kind | Docker Hub (`TRIVY_IMAGE`, by digest; 58.5 MB for arm64, 63.4 MB for amd64) | the pin | none | the binary out of the analyser's image since 2026-11-21 (R-HA-070), no GitHub download |
 | Playwright's browser | ui-layout, the kind legs with browser journeys | Playwright's download host | the locked Playwright | none | unchanged (Q-ARCH-526) |
 | OS packages | through [apt-install.sh](../../.github/scripts/apt-install.sh) | the Ubuntu archive | the runner image | the runner image carries them since 2026-11-19 | unchanged ([OS packages in the jobs](#os-packages-in-the-jobs)) |
 
