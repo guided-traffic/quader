@@ -32,7 +32,7 @@ and its permissions in [permissions.md](permissions.md); the rules are in the sp
 | Cached artifacts under their SHA-256, shared documents, negative entries, and per-caller documents in memory only (R-BAS-022 to R-BAS-024) | Any credential for the main installation's object store, PostgreSQL or upstream registries (R-BAS-030); the chart does not limit where its pods connect ([H-522](#h-522--the-chart-restricts-no-egress-of-the-bastion-pods)) |
 | The signing key for its records in Valkey and the bucket (R-BAS-032) | A right to write Kubernetes Secrets or to issue tokens (R-BAS-006, R-BAS-045) |
 | The cache key, when its chart gives one (`secrets.cacheKey`): every object of its cache store is then an object of the stored format under keys derived from it ([below](#with-a-cache-key), R-BAS-061; [stored-content-visibility.md](stored-content-visibility.md#h-1318--the-bastions-cache-shows-sizes-counts-and-times-and-stays-plain-without-a-key)) | Any key of the main installation's stored content ([stored-content-keys.md](stored-content-keys.md)) |
-| With the handover switched on for its registration, for the length of one read: the link of one object of the main installation's store and, on an encrypted connection, that object's data key (R-BAS-070 to R-BAS-079, specified, not built; [bastion-handover.md](bastion-handover.md)) | An account of the main installation's store, a storage key, a name key or anything of the key ring; a data key it was not handed for a caller's fill |
+| With the handover switched on for its registration, for the length of one read: the link of one object of the main installation's store and, on an encrypted connection, that object's data key (R-BAS-070 to R-BAS-079, built; [bastion-handover.md](bastion-handover.md)) | An account of the main installation's store, a storage key, a name key or anything of the key ring; a data key it was not handed for a caller's fill |
 
 Every decision about a caller is the main installation's. A miss is forwarded with the caller's own credential and decided by
 the main installation's own route; a cached artifact is served only after a `full` read answer or a conditional request with the
@@ -322,7 +322,7 @@ The owner's decision of 2026-11-22 that a Bastion serves every format as the mai
 backstop admits `/v2/`, a registry token's shape is capped at `partial` at the marking and the check, and the marking tells a Bastion when
 a download was counted. The Bastion's side: the rows held by the engine name their tests in the table above, and the Bastion caps a
 registry token's shape itself as well (Q-BAS-198). The cap stays on the repository when the read shapes per package let a registry token be
-`full` on the images of its grant ([below](#read-shapes-per-package), specified, not built). What it changes in the trust boundary:
+`full` on the images of its grant ([below](#read-shapes-per-package), built). What it changes in the trust boundary:
 
 | Change | What it means for trust | Held by |
 |---|---|---|
@@ -340,8 +340,8 @@ registry token's shape itself as well (Q-BAS-198). The cap stays on the reposito
 
 ## The handover per blob
 
-The owner's decision 12 (b) of 2026-11-22 ([spec/bastion.md](../spec/bastion.md#the-handover-per-blob), R-BAS-070 to R-BAS-079), specified
-and not built: with the handover switched on for its registration, a Bastion that misses a large file may be answered with a link of the main
+The owner's decision 12 (b) of 2026-11-22 ([spec/bastion.md](../spec/bastion.md#the-handover-per-blob), R-BAS-070 to R-BAS-079), built:
+with the handover switched on for its registration, a Bastion that misses a large file may be answered with a link of the main
 installation's object store and, for a copy on an encrypted connection, that copy's data key, and reads the file from the store itself. It
 lifts Q-BAS-10 for that and for nothing else. Its perspective, its boundary and its gaps (H-1340 to H-1345) are on
 [bastion-handover.md](bastion-handover.md).

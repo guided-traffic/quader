@@ -1,8 +1,8 @@
 # Visibility levels: who reads what
 
 Status: specified in [authorization.md](../spec/authorization.md) R-AUTHZ-003, R-AUTHZ-030 and R-AUTHZ-033 to R-AUTHZ-038 and
-[identity-and-authentication.md](../spec/identity-and-authentication.md) R-AUTH-037 and R-AUTH-044 (task T-18), and built in
-steps. Built: the schema with the rules of the container in the database ([00073_visibility.sql](../../internal/meta/postgres/migrations/00073_visibility.sql),
+[identity-and-authentication.md](../spec/identity-and-authentication.md) R-AUTH-037 and R-AUTH-044 (task T-18), and built.
+Built: the schema with the rules of the container in the database ([00073_visibility.sql](../../internal/meta/postgres/migrations/00073_visibility.sql),
 [00074_external_users.sql](../../internal/meta/postgres/migrations/00074_external_users.sql),
 [00075_principal_builtins.sql](../../internal/meta/postgres/migrations/00075_principal_builtins.sql)), the contracts
 ([visibility.go](../../internal/authz/visibility.go): `Level`, `Part`, `Subject.Internal`), the levels in the grant index, and the removal of
@@ -10,7 +10,7 @@ the anonymous switch, the principal `authenticated` and `requireAuthentication`.
 [visible.go](../../internal/authz/visible.go)). The restricted levels of R-AUTHZ-037 (owner requirement W-11) are built: the column of
 [00077_visibility_restricted.sql](../../internal/meta/postgres/migrations/00077_visibility_restricted.sql), the rules in
 [internal/visibility](../../internal/visibility/visibility.go) and the writes of [projects](../../internal/project/visibility.go) and
-[repositories](../../internal/repository/visibility.go). The change that builds each remaining part names its code here.
+[repositories](../../internal/repository/visibility.go).
 
 This page answers one question: besides the members of a project and the principals a grant names, who reads a repository's
 artifacts and its wiki, who decides that, and what keeps the answer from being wider than intended. The decision point, the grant

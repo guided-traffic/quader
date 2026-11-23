@@ -1,7 +1,7 @@
 # Signatures on artifacts
 
-Status: stage 1 in work: the detectors, the store and the hooks that record candidates and origins, the read and the integrity check of
-every scheme, the trust step, the anchors with the switch and the blocks, the jobs and the API are built, and so is the formats' wire
+Status: all three stages built. Stage 1: the detectors, the store and the hooks that record candidates and origins, the read and the
+integrity check of every scheme, the trust step, the anchors with the switch and the blocks, the jobs and the API are built, and so is the formats' wire
 behaviour (an OCI attachment follows its image, the background fetch of a remote's signatures, npm's keys and attestations endpoints,
 the signatures a client posts for a local Ansible Galaxy version), and so are the screens ([developer/signatures.md](../developer/signatures.md)); stage 1 of [signatures.md](../spec/signatures.md) (R-SIG-001 to R-SIG-043,
 [ADR-226](../decisions.md#adr-226--quader-detects-reads-and-verifies-the-signatures-of-every-format-and-shows-them-at-the-artifact) to
@@ -10,9 +10,9 @@ Quader signs (R-SIG-044 to R-SIG-060,
 [ADR-230](../decisions.md#adr-230--quader-signs-with-one-identity-per-installation-npms-registry-signatures-and-a-receipt-attestation-of-every-artifact-signed-in-the-worker)),
 and stage 3, the gate per repository (R-SIG-061 to R-SIG-078,
 [ADR-231](../decisions.md#adr-231--a-repository-can-serve-only-artifacts-with-a-verified-signature-a-gate-at-download-for-every-format-judged-from-stored-verdicts-and-failing-closed)).
-Of stage 2 the identity (package 1), npm's registry signatures (package 2) and the identity's section of the admin area are built, the
-attestations and the rest of the screens are not; of stage 3 the gate itself is built (package 1), releases, the preview and the impact
-count (package 2) and the screens (package 3) are not.
+Of stage 2 the identity (package 1), npm's registry signatures (package 2), the receipt attestations (package 3) and the screens
+(package 4: the identity's section of the admin area and Quader's own signatures at a version, a file and an image) are built; of stage 3
+the gate itself (package 1), releases, the preview and the impact count (package 2) and the screens (package 3) are built.
 The perspective of this page is what a verdict about a signature can be made to say, by whom, and what reading a hostile signature container
 can do to the process that reads it; for stage 2, what Quader's own signature makes others believe, who holds the key that makes it, and
 what a holder of that key can do; and for stage 3, what a repository's gate keeps out, who can open it, and what it does when it cannot
@@ -88,12 +88,13 @@ makes npm's registry signature of every version of a local npm repository (R-SIG
 repository receives (R-SIG-051 to R-SIG-054). Debian's index signatures keep their own per-repository keys
 ([deb-signing.md](deb-signing.md)).
 
-**What is built** (packages 1, 2 and 3 of 4, [developer/signatures.md](../developer/signatures.md#stage-2-quader-signs)): the identity with
+**What is built** (all four packages, [developer/signatures.md](../developer/signatures.md#stage-2-quader-signs)): the identity with
 its states, its two ways in, its checks, the announce and the switch under the lock, removal and retirement, the trusted root and the chain,
 the events, metrics and alerts, the frame of the job `signing`, npm's registry signature of every version of a local repository with the
-local keys endpoint, and the receipt attestations. The job signs in the worker with the session's key inside a transaction that holds the
-current identity's row; the signing code (`internal/signing/npmsign`, `internal/signing/attest`) receives the key as a `crypto.Signer` from
-the job and imports neither the key package nor the job (`CheckSigningKey`). What an npm signature says is that this installation served
+local keys endpoint, the receipt attestations, and the screens (the section Signing identity, Quader's own signatures at an artifact).
+The job signs in the worker with the session's key inside a transaction that holds the current identity's row; the signing code
+(`internal/signing/npmsign`, `internal/signing/attest`) receives the key as a `crypto.Signer` from the job and imports neither the key
+package nor the job (`CheckSigningKey`). What an npm signature says is that this installation served
 this name, version and integrity from a local repository: the message is `<name>@<version>:<integrity>`, the integrity the one the publish
 computed of the stored tarball. A receipt attestation is a statement of every artifact a user's repository receives, signed as a Sigstore
 bundle with the identity's leaf (R-SIG-051, R-SIG-052); both are kept in stage 1's store with `identity_id` set and the attachment source

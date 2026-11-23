@@ -84,9 +84,9 @@ Quader calls these S3 operations and no others ([internal/blob/s3](../../interna
 
 The client also implements `ListMultipartUploads` and a presigned `GetObject`. `ListMultipartUploads` is called by the staging step of the
 orphan sweep (a `worker`, on every connection, R-STOR-026) and by the object-store conformance check of R-STOR-035
-([conformance.go](../../internal/blob/conformance.go)); the presigned `GetObject` only by the check in the integration tier. Specified and
-not built ([download-links.md](download-links.md), [storage.md](../spec/storage.md) R-STOR-072, R-STOR-074): with the delivery by signed
-links switched on, a replica that serves downloads signs a `GetObject` of one key for a client, which that client then sends with the
+([conformance.go](../../internal/blob/conformance.go)); the presigned `GetObject` by the check in the integration tier and by the delivery
+by signed links ([download-links.md](download-links.md), [storage.md](../spec/storage.md) R-STOR-072, R-STOR-074; off by default): with it
+switched on, a replica that serves downloads signs a `GetObject` of one key for a client, which that client then sends with the
 runtime credential's authority until the link expires, and its start writes, signs and fetches one probe per connection. Every replica's
 startup check sends a part number twice in a multipart upload and completes it, naming one ETag, then deletes the object
 (`CreateMultipartUpload`, `UploadPart`, `CompleteMultipartUpload`, `DeleteObject` below `<prefix>/_probe/`); `AbortMultipartUpload` is called only when
@@ -150,7 +150,7 @@ footprint and gains three things, none of them a credential: an init container o
 copies the binary; a container `database` of the Quader image with the scanner's own pair, which reads the database routes of the scan
 listener and writes the database volume; and two volumes, the binary and the database, both read-only in the scanner's container.
 
-The malware scanner (specified, not built; [R-HA-068](../spec/ha-and-helm.md#r-ha-068--the-malware-scanner-deployment)) has the same
+The malware scanner ([R-HA-068](../spec/ha-and-helm.md#r-ha-068--the-malware-scanner-deployment)) has the same
 footprint, with a read of one blob instead of one image, and a second container `clamd` of ClamAV's official image that mounts no TLS
 pair and no configuration of Quader and opens no network listener. `freshclam` runs in the updater, a Deployment of its own
 ([R-HA-069](../spec/ha-and-helm.md#r-ha-069--the-updater-deployment-malware-updater-freshclam); the chart renders it, and no worker pod carries `freshclam`): its

@@ -1,7 +1,7 @@
 # Remote repositories
 
 Status: built (M2). The generic engine of the remote repositories ([internal/proxy](../../internal/proxy)) serves every format that has
-a remote adapter, today npm and NuGet; [internal/formathost](../../internal/formathost) (`remote.go`) adapts a format to it and computes
+a remote adapter, today npm, NuGet, OCI, Debian and Ansible; [internal/formathost](../../internal/formathost) (`remote.go`) adapts a format to it and computes
 the populate check per request. Not built, and refused with `422 not_applicable` when a configuration sets them, so that no setting is
 accepted without being enforced ([validate_remote.go](../../internal/repository/validate_remote.go)): the pass-through mode
 (`cache.storeArtifacts: false`, R-REPO-044), the cleanup of unused cache content (`cache.unusedRetentionHours` above 0, R-REPO-046),

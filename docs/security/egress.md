@@ -130,7 +130,7 @@ The advisory provider of an npm audit forward is reached through the same client
 ## The well-known repositories: what an installation reaches by default
 
 Built ([repositories-and-proxy.md](../spec/repositories-and-proxy.md) R-REPO-066 to R-REPO-070; the image scanning's reading of
-`scanner-trivy` is [vulnerability-scanning.md](../spec/vulnerability-scanning.md) R-VULN-044's and not built). The built-in project
+`scanner-trivy` is [vulnerability-scanning.md](../spec/vulnerability-scanning.md) R-VULN-044's and built too). The built-in project
 `upstream` holds a remote repository per well-known public registry of the format catalog (Docker Hub, Quay, `ghcr.io`, GitLab's
 registry, the npm registry, nuget.org, the Debian and Ubuntu archives, Ansible Galaxy) and `scanner-trivy` for the analyser's database.
 

@@ -477,7 +477,7 @@ nothing else (`TestR_BAS_004_CapabilitiesGateTheOperations`).
 
 ## The image scanner is a system subject with one fixed rule
 
-Specified, not built ([R-AUTHZ-002](../spec/authorization.md#r-authz-002--principals-and-the-principal-set-of-a-request),
+Built in [system.go](../../internal/authz/system.go) ([R-AUTHZ-002](../spec/authorization.md#r-authz-002--principals-and-the-principal-set-of-a-request),
 [R-AUTHZ-015](../spec/authorization.md#r-authz-015--evaluation-algorithm),
 [R-OCI-037](../spec/formats/oci.md#r-oci-037--scan-tokens-the-registry-token-of-the-image-scannings-pull)). The scanner's pull is decided
 for the subject `system:vuln-scanner-trivy`, which has no principal row and is decided before every other step of `Allowed`: `read` of the one

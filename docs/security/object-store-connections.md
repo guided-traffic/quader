@@ -3,11 +3,12 @@
 Status: specified on 2026-11-22 ([storage.md](../spec/storage.md) R-STOR-050 to R-STOR-063, R-STOR-026, R-STOR-027,
 R-STOR-035; [ha-and-helm.md](../spec/ha-and-helm.md) R-HA-072; [backup-and-restore.md](../spec/backup-and-restore.md) R-BAK-030;
 [ADR-239](../decisions.md#adr-239--several-object-store-connections-every-blob-on-every-connection-a-row-per-copy-one-reconciliation-and-a-scrub-per-copy)),
-partly built: the connections, their copies, the commit and the reads over them, the marker and the start check per connection, the
+built: the connections, their copies, the commit and the reads over them, the marker and the start check per connection, the
 reconciliation that copies every blob to every connection, fills a new one and drains an old one, the scrub with its repair and the
 operator check per connection, sessions on their connection, collection per copy and the orphan sweep per connection, the backup and the
-restore per connection and the journal per connection ([storage.md](../spec/storage.md#several-object-store-connections), the status
-there); the connections' API and screens are not. What [privilege-footprint.md](privilege-footprint.md) and
+restore per connection and the journal per connection, and since 2026-11-23 the connections' read-only API and the tab **Storage** of
+System status (R-STOR-061, R-STOR-028; [storage.md](../spec/storage.md#several-object-store-connections), the status there). What
+[privilege-footprint.md](privilege-footprint.md) and
 [transport-encryption.md](transport-encryption.md) say of the object store holds for each connection.
 
 The perspective of this page is the stored content once it lies on several object stores: which parties can read it, change it or delete

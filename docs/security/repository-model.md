@@ -177,10 +177,10 @@ The gaps of the spec pages whose mechanism this page describes:
 
 ### H-1026 · Switching a well-known repository on widens every virtual repository that lists it
 
-Stage: the state of a well-known repository (R-REPO-068, not built: nothing switches one on yet) and the placeholders of R-REPO-072 (built).
+Stage: the state of a well-known repository (R-REPO-068, built: an administrator switches one on) and the placeholders of R-REPO-072 (built).
 Subject: the names that the virtual repositories listing it resolve.
 
-- **Dormant until the switch of R-REPO-068 is built; live by design from then on (the owner's placeholder, "b").** While a listed well-known repository is off, a name that no
+- **Live by design since the switch of R-REPO-068 is built (the owner's placeholder, "b").** While a listed well-known repository is off, a name that no
   local member holds answers 404 through the virtual repository. The moment an administrator switches it on, such a name resolves from
   the public registry in every virtual repository that lists it, with no change there and no event in the team's audit. A team that
   listed `upstream/npmjs` while it was off, did not claim its internal names and relies on the 404 for a name it has not published yet,

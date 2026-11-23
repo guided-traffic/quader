@@ -4,8 +4,8 @@ Status: built (M2): the publish, the unpublish and the dist-tags of a local npm 
 its tombstones, the remote class with its document checks, takedown marks and tarball digests, the merge of a virtual repository, the
 audit forward of R-NPM-038, and the journal entry a restore replays. The local audit (mode `local`, M4b) is on
 [vulnerability-scanning.md](vulnerability-scanning.md#client-audits), the mirror passes of a remote (phase 6b) on [mirror.md](mirror.md).
-Not built: the trusted-publishing exchange of R-NPM-022, deprecation (R-NPM-018) and the signing keys and attestations of an npm
-registry (below).
+Not built: the trusted-publishing exchange of R-NPM-022 and deprecation (R-NPM-018). The registry signatures, the keys and the
+attestations of an npm repository are built ([below](#provenance-and-registry-signatures)).
 
 This page describes what a caller can do to an npm repository through the protocol, what an upstream registry can make Quader store and
 serve, and what stops either from doing more. The authorization it relies on is on [permissions.md](permissions.md), the credentials on

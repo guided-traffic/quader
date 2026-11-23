@@ -85,8 +85,9 @@ repository adds are [oci-remote.md](oci-remote.md) and [oci-virtual.md](oci-virt
 
 - [H-600](../spec/formats/oci.md#h-600--the-sizes-a-manifest-declares-are-not-compared-with-the-stored-blobs): the sizes a manifest
   declares are the pusher's claims, not compared with the stored blobs, and the package screen sums them.
-- [H-601](../spec/formats/oci.md#h-601--blob-downloads-are-streamed-and-never-redirected-to-the-object-store): every blob download goes
-  through a replica; the presigned redirect is not built.
+- [H-601](../spec/formats/oci.md#h-601--blob-downloads-are-streamed-and-never-redirected-to-the-object-store): a blob download goes
+  through a replica unless the installation's delivery by signed links is on and the download meets
+  [its conditions](../spec/storage.md#r-stor-070--the-conditions-of-one-download-in-the-order-of-the-serve-point).
 - [H-602](../spec/formats/oci.md#h-602--the-first-push-of-a-name-by-digest-can-claim-the-name-for-a-caller-that-never-pushes-a-tag): a
   push by digest claims an unclaimed name for a holder of `deploy` that never pushes a tag.
 - [H-604](../spec/formats/oci.md#h-604--the-shadowing-check-is-asked-once-per-push-until-the-name-has-a-tag): each child push of a fresh

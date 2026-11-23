@@ -3,9 +3,8 @@
 Status: built (phase T-16, work packages of the token service and of the registry root): the registry token, its keys, its
 verification in the authentication stage, the scope grammar, the grant, the token service at `/v2/_token`, the enforcement point of the
 grant below `/v2/`, and the mount of `/v2/` that puts them on a route: the two patterns on one handler, the dispatcher's handler, the version check, the
-catalog, the bound host, the challenge's scope per route and the route-table checks. Not built yet: the handlers of the repository
-routes (the OCI format answers 501 until their work packages land) and the catalog's page in the format's data port (the catalog answers
-501 until it exists).
+catalog, the bound host, the challenge's scope per route and the route-table checks. The handlers of the repository routes and the
+catalog's page in the format's data port are built as well.
 
 Perspective: what a container client presents to the registry, what the token service gives it in return, what a registry token can do
 and for how long, which key signs it, and what a stolen one is worth. The Quader tokens themselves are on
