@@ -431,17 +431,17 @@ order is what a user or an operator meets first. The state is kept here.
 | Signatures with the real clients | the check of the repairs of 2026-11-21 with the real clients, and what it finds | landed at 09:39 |
 | Screens, first round | fourteen findings of screens (the entries of repository, version, vulnerability and audit pages, the npm form, the malware settings, the signatures' lists) | in work since 08:16 |
 | W1 · Authorization answers the same in every format | the administrator flag shown to `tokens:read` alone (H-836); the global read policy and the default-scope token; the refusals that end a virtual read | built at 09:30 and sent back to finish the shared virtual read, whose file was another builder's until then |
-| W3 · The download limits count what they promise | refused requests that still count (the upstream budget, an endpoint's rate class); seven paths without a test; the fixed waits of three seconds in the clients' cases; the help text of waiting downloads | waits for a place |
+| W3 · The download limits count what they promise | refused requests that still count (the upstream budget, an endpoint's rate class); seven paths without a test; three statements; the help text of waiting downloads | in work since 09:40 |
 | W2 · Scanning keeps its promises to an operator | a scan attempt lost when a repository is enabled again; the scanner's spool that `QuaderSpoolNearlyFull` does not see; layer writes without a flush; a removed scanner pod shown ready; two measurements | waits for a place |
 | W6 · The pipeline loses nothing and scans every image it runs | a push that cancels the run before it; the analyser's and ClamAV's images never scanned; the evidence record and the badge that stand still; a `unit` target with the emptied AWS environment; the lint's limit and serial runs; fuzz names; the pins of the e2e legs; a partial dispatch; the disk watcher; the key of the clients' image cache, which changes with every commit, so a push never hits it | waits for a place |
 | W5a · NuGet and OCI | NuGet's README route that answers 501; the challenge of an upstream token; what the two formats' pages count and the code does not | waits for a place |
-| W5b · Debian and Ansible Galaxy | `member_expired` and a member's recorded `Date` without an integration case; the wiki's cases; the requirements no test names; the check against the public Galaxy | waits for a place |
+| W5b · Debian and Ansible Galaxy | `member_expired` and a member's recorded `Date` without an integration case; the wiki's cases; the requirements no test names; the check against the public Galaxy; first the Debian test that made `main` red for the third time | in work since 10:08 |
 | W4 · Go tests wait for what they stand for | fixed sleeps and paced setups in integration and unit tests; four convention checks that sit in a format's area; tests that depend on the machine; the harness's policy helper that writes an empty policy without a word | waits for a place |
-| W8 · Web and end-to-end tests wait for what they stand for | the fixed 320 ms of choosing a person; paced setups of the e2e environments; a code push during a nightly | after the screens' first round |
+| W8 · Web and end-to-end tests wait for what they stand for | the fixed 320 ms of choosing a person; paced setups of the e2e environments; the fixed waits of three seconds in the limits' client cases and the load test's tokens (from W3, since they need the kind cluster); a code push during a nightly | after the screens' first round |
 | W7 · The development profiles run the image they are given | the image tag `:dev`; one image tag per checkout; instances of the UI profile, one per builder; `nuget-ha` cut to what NuGet's client adds; the drain variant that Q-VULN-128 said to fold into a pooler leg once one runs under npm's load, which two do now; the development profile's root CA that is issued twice at a start; the Valkey outage with a replaced pod, which only a set runs that nothing has run since 2026-11-18 | after W6 (it owns the Makefile) |
-| W9 · Screens show every state, second round | the system page; a technical token's description and removal; states the renders never show (an open row menu, the shared error notice) | after the screens' first round |
+| W9 · Screens show every state, second round | the system page; a technical token's description and removal; states the renders never show (an open row menu, the shared error notice); a failed test link's reason as a sentence of the page; the audit log's filter by a resource | after the screens' first round |
 | W10a · Documents and the decisions' index | 1,050 of 3,425 decided questions without a row in the index (generated with a check from now); stale sentences in spec, developer pages, README and manual | waits for a place |
-| W10b · Translations and test names | the extraction check; names of tests that carry a decision's number | last |
+| W10b · Translations and test names | the extraction check; names of tests that carry a decision's number; the German texts that say "du" | last |
 | W11 · Readings and statements (the development agent) | the stall family of the runs before 2026-11-18; pipeline artifacts to read before they expire (from 2026-12-02); entries that close by a reasoned statement | the statements landed at 09:39, the readings of runs are back and both are marked in the lists; left: two single sets to dispatch in the pipeline window, a count of a cold load's requests, a trace of the Bastion's answers by kind |
 
 ### Tests and tools
@@ -629,6 +629,15 @@ records the recorder that tells such a stall apart).
   `signatures` on 2026-11-21; the evaluation itself allows, which a unit test now holds. A test that
   expects a refusal can pass for this reason alone. To do (W4): the helper fails when a selector resolves
   to no row, then every area is run once and each test that relied on it is repaired.
+- **Three integration tests failed on a starved machine on 2026-11-23, about 09:52 to 09:57, at a load of
+  30 to 59 (four builders and the landing at their gates), and are not looked into:**
+  `TestR_BAS_021_R_BAS_022_R_BAS_023_ColdAndWarmCache/volume+valkey` ("a warm run sent 1 requests for
+  artifacts or documents to the main installation", Valkey's probe timing out in the Bastion's log);
+  `TestR_BAS_021_R_BAS_023_R_BAS_024_EveryCallerIsAnsweredAsTheMainInstallationAnswers` (the Bastion
+  answered 503 `main_unreachable` where the main installation answered 404); `TestGCKilledAtRandomPoints`
+  of `blob` ("commit did not settle", on two trees in the same minutes, green at a load of 12 to 17). To do
+  (W4): for each, whether it waits for what it stands for or for a time a starved host does not keep; the
+  two of the Bastion compare answers while a link's health is in doubt, which a test can wait out.
 - **`TestR_AUTH_038_E1_8_ThrottleAcrossThreeReplicas` (area `identity`) failed once under load
   (2026-11-23, about 09:25, host load 40 to 46, four builders at their gates):** 401 where 429 was
   expected; alone it passed in 7 s. Not looked into. To do (W4): what it waits for and whether the
@@ -840,6 +849,22 @@ records the recorder that tells such a stall apart).
   `guided-traffic/container-images`; and the tag rule ("Option A"): the runners name the tag that does not move,
   `<runner version>-<build time>`. [releasing.md](../developer/releasing.md) describes both without the owner.
 
+- **A failed test link's reason is a developer's English sentence, in both languages (seen by the
+  development agent on 2026-11-23 on the renders of the handover's data keys).** The storage settings and a
+  Bastion's card put the server's detail into their sentence as it comes: "the link answered 403 with 0
+  bytes, want 200 with the probe's 2048", also inside a German sentence. To do (W9): the page builds the
+  sentence from the answer's fields (the status and the bytes received against those expected) with a
+  German unit, and the answer carries them as fields if it does not yet.
+- **About seven German texts address the reader with "du"; the other 370 or so with "Sie" (counted by the
+  development agent on 2026-11-23 in `web/src/locale/messages.de.xlf`).** Among them the Bastions page's
+  introduction and two of its dialogs, "Das bist du", a project's summary, a token's hint and the address
+  in use. To do (W10b): each gets the formal address, and the translation check refuses the informal one.
+- **The audit log's page cannot filter by a resource (said by the builder of the handover's data keys on
+  2026-11-23).** The keys handed to one Bastion are the events `bastion.data_key.handed` whose resource is
+  that registration; the page filters them by the action alone, and the manual sends an administrator with
+  several Bastions to the API (`resourceType`, `resourceId`). To do (W9): read what the filter of the page
+  offers and give it the resource in the form its other fields have, if a field of the answer is all it
+  needs.
 - **The count of a writer's reads through the signature gate may count pushes (seen on 2026-11-23 by the
   builder of the signatures with the real clients, not looked into).** After a few pushes and signings with
   Docker, cosign and Notation the counter stood at 29, so a `docker push`'s own reads probably count as a
@@ -6408,6 +6433,58 @@ coverage tool's four steps, cyclo, the end-to-end tree's vet, the pinned lint, a
 file of the web or of the chart changed. Both writers' scripts ran on the plan in order. **Open now: 76
 entries in section 8 and 30 in section 12** (88 and 35 at 09:04; three new findings and one standing
 entry came in between), 38 and 13 in the lists Closed, counted by the lists' bullets.
+**09:40, the builder of W3 started** on the landed tree: a refused request no longer counts in the upstream
+budget and in an endpoint's rate class (decision 23), the paths without a test at the tier the reading
+named for each, three statements where their reason belongs. The limits' end-to-end cases (fixed waits,
+the load test's tokens) went to W8, which works on the kind cluster anyway. The owner's development
+backend runs on the landed tree since 09:40 (ready). The worktrees of the signatures' builder and of the
+statements' writer are removed. Builders with a test load: the data keys' join, the screens' first
+round, W1, W3.
+**09:44, the data keys' join is back** (two commits: the package rebased, and the join; every gate exit 0,
+the area `bastion` 171 s at a load of 16 to 20). What the join found, as each join of this topic did:
+the card and the storage settings said an encrypted connection is never read by a Bastion, which the
+package makes false; the card's link to the storage settings showed for plain connections only; the
+sentence of an address under Quader's own host spoke of image clients where a Bastion is meant; and
+the key destruction's dry run prints "data keys handed to a Bastion: N" and counts events, so one file
+handed twice counts twice. Now: an encrypted connection is judged by its handover reasons like a plain
+one (Q-BAS-300 ends Q-BAS-296; Q-UI-990 amends Q-UI-958), the card's sentence names the key, the manual
+says in plain words what an administrator takes on and where the keys a Bastion received are listed,
+a destroyed storage key makes the forward stream with the reason `key` and leaves no trace (unit), and
+the dry run's count is asserted with the traces the package writes. **Looked at by the development
+agent before the landing** (the card with three reasons and beside a registration that is off, the
+storage settings with an encrypted connection and its two sentences, the audit list and the opened
+event; both schemes, 1440 and 390, German): the surface is accepted. Seen on the way and entered in
+section 8: the test link's English detail, the German "du", the audit page without a filter by a
+resource; three defects of the opened audit event at 390 px went to the builder of the screens at
+09:46. **09:45, the two commits are at the landing's gates** (stacked on `main` without a conflict: the
+basics, the web gates, the pinned lint, the areas `bastion`, `bastioniface`, `bastionreg`, `audit`,
+`files`, `blob`, `querybudget`, `ci`, `api`); the push waits for the shards of the run of 09:39. **09:46,
+its builder repairs the dry run's line** as a third commit for a later push: the files whose key was
+handed, the hand-overs, and the bound of the audit log (decided by the development agent; an operator
+reads that line before something that cannot be undone).
+**The rule "features only" of 2026-11-21 has ended:** it stood "until he is back", and the owner is
+at his desk since this morning. The pipeline's windows hold again as written (17 to 20 and 22 to 08).
+The timer's text was of 2026-11-22 and is set again with the run's work of today.
+**09:52, the release of the push of 09:39 is out; 10:01, it runs on the owner's installation** (read at
+10:07: both charts on it and ready, 21 pods ready, no restart; the Bastion's registry answers 401 with a
+valid certificate). **10:00, one job of that run is red: `integration (shard d)`**, by
+`TestR_DEB_025_AReleaseNoCurrentKeyVerifiesIsNotMerged`, the test of section 12 D that failed twice on
+2026-11-20; the push touched nothing of Debian. It is not re-run: its cause is read now, as the first
+item of the builder of W5b (started 10:08), and its repair lands ahead of the rest of that package.
+**10:05, the gates of the data keys' two commits: two areas failed under load** (`bastion`: a warm cache
+that asked the main installation once, and a Bastion's 503 where the main installation answered 404,
+with Valkey's probe timing out in the log; `blob`: `TestGCKilledAtRandomPoints`, "commit did not
+settle"; the machine's load was 30 to 59, four builders at their gates, and the data keys' builder saw
+the same `blob` test fail in the same minutes on its own tree and pass at a load of 12 to 17). Every
+other gate exit 0. **10:05, the dry run's line is repaired** (a third commit, Q-STOR-475): "files whose
+data key was handed to a Bastion: 2 (3 handovers; the audit log goes back to 2026-03-20)", the files by
+their digest, the bound from the retention's setting; its builder found one more sentence the join had
+missed: the manual said what a provider keeps after the keys are destroyed stays readable only with
+the key ring and an old copy of the keys, and a file whose data key a Bastion received is readable with
+that key alone. **10:07, the three commits are at the gates again** (the basics, the pinned lint, and
+the areas `bastion`, `blob`, `backup` at a load of 13). The three tests that fail on a starved machine
+are entered in section 8 for W4.
+Builders with a test load: the screens' first round, W1, W3, W5b, the landing's gates.
 **In work since 05:38: package 7 of the encryption, the destruction of a retired connection's keys**
 (R-STOR-097 to R-STOR-103 and the journal's replay; the development agent's answer of 2026-11-22 to the
 question of what stays readable at a provider). It stands on the handover's second package as it lands;
@@ -7938,7 +8015,12 @@ the walk items and the run record); what the code holds beyond the plan has not 
   `integration (shard c)`: "the build after the change left the suite current", while the log shows the build failing with
   `member_unverified` in the second the replica shut down; no limit in it, first record of it). **Again** in Test and
   Release 44715970992 of b74d0e98 (2026-11-20, `integration (shard c)`, 14.58 s; nothing of that push touches the Debian
-  virtual repository): two occurrences in a day, to be read at its cause next, not re-run.
+  virtual repository): two occurrences in a day, to be read at its cause next, not re-run. **A third time on
+  2026-11-23** (Test and Release 45140417183, `integration (shard d)`, 11.90 s, a push that touched nothing of
+  Debian: "the build after the change left the suite current with reason \"\", want failed with
+  member_unverified"). The reading's hypothesis, not verified: the test's helper accepts any index build
+  started after a mark taken before the change's request. In work since 10:08 as the first item of W5b,
+  to land ahead of the rest.
 - **Partly closed; open: F-126 (its recurrence) and V-7b, which is measured once (decision 3 of the reading of
   2026-11-23).** Closed: F-124 and the stall of the whole cluster in the set `push`, by the statement on the
   stall family ("Reading a stall" of `docs/developer/e2e.md`; the standing entry "A stall without a neighbour"
