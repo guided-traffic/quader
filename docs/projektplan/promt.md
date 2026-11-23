@@ -430,10 +430,10 @@ order is what a user or an operator meets first. The state is kept here.
 |---|---|---|
 | Signatures with the real clients | the check of the repairs of 2026-11-21 with the real clients, and what it finds | landed at 09:39 |
 | Screens, first round | fourteen findings of screens (the entries of repository, version, vulnerability and audit pages, the npm form, the malware settings, the signatures' lists) | in work since 08:16 |
-| W1 · Authorization answers the same in every format | the administrator flag shown to `tokens:read` alone (H-836); the global read policy and the default-scope token; the refusals that end a virtual read | built for every format; at the landing's gates since 10:30, stacked on the handover's data keys |
+| W1 · Authorization answers the same in every format | the administrator flag shown to `tokens:read` alone (H-836); the global read policy and the default-scope token; the refusals that end a virtual read | built for every format; at the landing's gates since 10:29, stacked on the handover's data keys |
 | W3 · The download limits count what they promise | refused requests that still count (the upstream budget, an endpoint's rate class); seven paths without a test; three statements; the help text of waiting downloads | in work since 09:40 |
 | W2 · Scanning keeps its promises to an operator | a scan attempt lost when a repository is enabled again; the scanner's spool that `QuaderSpoolNearlyFull` does not see; layer writes without a flush; a removed scanner pod shown ready; two measurements | waits for a place |
-| W6 · The pipeline loses nothing and scans every image it runs | a push that cancels the run before it; the analyser's and ClamAV's images never scanned; the evidence record and the badge that stand still; a `unit` target with the emptied AWS environment; the lint's limit and serial runs; fuzz names; the pins of the e2e legs; a partial dispatch; the disk watcher; the key of the clients' image cache, which changes with every commit, so a push never hits it | waits for a place |
+| W6 · The pipeline loses nothing and scans every image it runs | a push that cancels the run before it; the analyser's and ClamAV's images never scanned; the evidence record and the badge that stand still; a `unit` target with the emptied AWS environment; the lint's limit and serial runs; fuzz names; the pins of the e2e legs; a partial dispatch; the disk watcher; the key of the clients' image cache, which changes with every commit, so a push never hits it | in work since 10:30 |
 | W5a · NuGet and OCI | NuGet's README route that answers 501; the challenge of an upstream token; what the two formats' pages count and the code does not | waits for a place |
 | W5b · Debian and Ansible Galaxy | `member_expired` and a member's recorded `Date` without an integration case; the wiki's cases; the requirements no test names; the check against the public Galaxy; first the Debian test that made `main` red for the third time | in work since 10:08 |
 | W4 · Go tests wait for what they stand for | fixed sleeps and paced setups in integration and unit tests; four convention checks that sit in a format's area; tests that depend on the machine; the harness's policy helper that writes an empty policy without a word | waits for a place |
@@ -650,7 +650,7 @@ records the recorder that tells such a stall apart).
   two of the Bastion compare answers while a link's health is in doubt, which a test can wait out.
   `ColdAndWarmCache` failed a second time at 10:18 in its subtest `bucket` (a 504 in a warm run) at a load
   of up to 133, which the landing's own gates helped to make: the lint ran beside two integration
-  streams; from 10:30 a landing runs its lint before its areas.
+  streams; from 10:29 a landing runs its lint before its areas.
 - **`TestR_AUTH_038_E1_8_ThrottleAcrossThreeReplicas` (area `identity`) failed once under load
   (2026-11-23, about 09:25, host load 40 to 46, four builders at their gates):** 401 where 429 was
   expected; alone it passed in 7 s. Not looked into. To do (W4): what it waits for and whether the
@@ -6512,10 +6512,19 @@ walk. Its gates exit 0 but two under load (section 8). **10:26, the run of 09:39
 the shard of the Debian test, and the layout checks, which stopped once at the admin area's Storage page
 (section 8; a research reads the cause, started 10:26). **10:29, the data keys' second gate run ended:**
 `blob` and `backup` exit 0 (545 s and 623 s on a starved machine), the basics and the lint exit 0,
-`bastion` exit 1 again by the same cache test in another subtest (section 8). **10:30, one stack for one
+`bastion` exit 1 again by the same cache test in another subtest (section 8). **10:29, one stack for one
 push:** W1's three commits on the data keys' three, no conflict; its gates run with the lint before the
 areas: the basics, the web gates, the lint, then `bastion`, `authz`, `apikey`, `identity`, `files` and
 `ocivirtual`, `oci`, `signatures`, `virtual`, `npm`, `nuget`, `ansiblevirtual` in two streams.
+**10:30, the builder of W6 started** (the pipeline and the build tools; it builds no test load but one unit
+run and one lint): one commit per item, so that each can land and be taken back alone, each held by
+the repository's own check of the workflows, since no builder can run the pipeline: a push to `main` no
+longer cancels the run before it; the clients' image cache key without the commit's stamp; a scan of
+the analyser's and ClamAV's images that gates nothing; the disk watcher of the kind legs; a target
+`unit` with a runner's environment, the lint's limit; the evidence record and the badge with a release,
+after it has settled whether the pipeline's record and the local tool write the same file by the same
+rule (if not, it stops there and says what each is for); the stale sentences. Builders with a test
+load: the screens' first round, W3, W5b, W6, the landing's gates.
 **In work since 05:38: package 7 of the encryption, the destruction of a retired connection's keys**
 (R-STOR-097 to R-STOR-103 and the journal's replay; the development agent's answer of 2026-11-22 to the
 question of what stays readable at a provider). It stands on the handover's second package as it lands;
