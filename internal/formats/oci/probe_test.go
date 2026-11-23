@@ -10,6 +10,9 @@ import (
 	"testing"
 
 	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/formattest"
+	"github.com/guided-traffic/quader/internal/qname"
+	"github.com/guided-traffic/quader/internal/repository"
 )
 
 func probePathsOf(p formats.Probe) []string {
@@ -69,6 +72,57 @@ func TestR_REPO_065_WhatAProbeOfTheRegistryIs(t *testing.T) {
 			t.Fatalf("probes %+v", got)
 		}
 	})
+}
+
+// remoteMemberResolver plans one remote member for every path of a virtual repository.
+type remoteMemberResolver struct {
+	proceedResolver
+	member formats.RepoRef
+}
+
+func (r remoteMemberResolver) Plan(context.Context, *formats.Request, formats.Path, formats.PathInfo) (*formats.VirtualPlan, error) {
+	return &formats.VirtualPlan{Admitted: true, Members: []formats.PlannedMember{{Member: r.member, Tier: formats.TierRemote, MayFill: true}}}, nil
+}
+
+// TestQ_REPO_367_WhatAProbeOfTheRegistryIsThroughAVirtualRepository: the same requests are probes through a virtual address, told to
+// the host with the request of the remote member that answered them (the walk serves a member's answer through the member's own
+// handler), whose content and charge the host then decides on; a GET of a blob and a tag no member holds are none. Milliseconds.
+func TestQ_REPO_367_WhatAProbeOfTheRegistryIsThroughAVirtualRepository(t *testing.T) {
+	cfg, layer := []byte("cfg"), []byte("layer")
+	image := imageManifestBytes(sha(cfg), sha(layer))
+	mem := &formattest.MemRemote{
+		Docs:      map[string][]byte{TagPath("app", "1"): image},
+		Artifacts: map[string][]byte{ManifestPath("app", sha(image)): image, BlobPath("app", sha(layer)): layer},
+	}
+	member := repository.Repository{ID: "2", Name: qname.Repo{Project: "it", Key: "docker-hub"}, Class: repository.Remote, Format: string(ID), Lifecycle: "active"}
+	fx := newFixture(t, formattest.HostOptions{
+		Class: formats.Virtual, RepoKey: "docker-all", Remote: mem,
+		Resolver: remoteMemberResolver{member: formats.RepoRef{ID: 2, Name: member.Name, Class: formats.Remote, Format: ID}},
+	})
+	*fx.h.Repo() = repository.Assemble(*fx.h.Repo(), []repository.Repository{member}, nil, 60)
+	tagFiles := []string{ManifestPath("app", sha(image)), BlobPath("app", sha(cfg)), BlobPath("app", sha(layer))}
+	for _, tc := range []struct {
+		method, path string
+		files        []string // nil: no probe
+	}{
+		{http.MethodGet, "app/manifests/1", tagFiles},
+		{http.MethodHead, "app/manifests/1", tagFiles},
+		{http.MethodGet, "app/blobs/" + sha(layer), nil},
+		{http.MethodHead, "app/blobs/" + sha(layer), []string{BlobPath("app", sha(layer))}},
+		{http.MethodGet, "app/manifests/2", nil},
+	} {
+		mem.Probes, mem.ProbedOn = nil, nil
+		resp := fx.request(tc.method, tc.path, nil, "")
+		got, on := mem.ProbesSeen(), mem.ProbedOnSeen()
+		switch {
+		case tc.files == nil && len(got) != 0:
+			t.Errorf("%s %s (%d) is no probe and told the host of %+v", tc.method, tc.path, resp.Code, got)
+		case tc.files != nil && (resp.Code != http.StatusOK || len(got) != 1 || !reflect.DeepEqual(probePathsOf(got[0]), tc.files)):
+			t.Errorf("%s %s: %d, probes %+v, want the files %v", tc.method, tc.path, resp.Code, got, tc.files)
+		case tc.files != nil && (on[0].Name != member.Name || on[0].Class != formats.Remote):
+			t.Errorf("%s %s was told on %+v, want the remote member", tc.method, tc.path, on[0])
+		}
+	}
 }
 
 // TestQ_OCI_223_ATagOfAnIndexNamesThePlatformsOfTheRepositorysList: the probe of a tag whose manifest is an index names the manifests

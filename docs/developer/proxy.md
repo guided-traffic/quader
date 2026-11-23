@@ -537,6 +537,19 @@ job remote-background-download (queue default, exclusive per version)          a
   the job); the member search in [probe_test.go](../../internal/formathost/probe_test.go); through a virtual repository against the stubs in
   [probe_virtual_test.go](../../test/integration/ociremote/probe_virtual_test.go) and
   [remote_probe_virtual_test.go](../../test/integration/npm/remote_probe_virtual_test.go).
+- **Why NuGet, Ansible Galaxy and Debian through a virtual repository have unit tests only.** What a format adds there is which of its
+  answers through the virtual repository is a probe and which files it names: `TestQ_REPO_367_WhatAProbeOf…IsThroughAVirtualRepository`
+  in each format's `probe_test.go` (OCI's tells it on the request of the remote member whose answer the walk served, the others on the
+  virtual repository's). What follows, the member search and the decision on the member, is shared code: once at the unit tier
+  (`TestQ_REPO_367_AProbeThroughAVirtualRepositoryIsTheProbeOfTheMemberThatServesIt` in
+  [probe_test.go](../../internal/formathost/probe_test.go)) and twice in integration, npm's case for the probe told on the virtual
+  repository and OCI's for the one told on the member. A further format adds its unit case, not an integration case.
+- **The patterns on the background path.** The decision admits each file of a probe, and the job and a mirror pass fill each file,
+  only when the repository's include and exclude patterns admit it: one check, `patternsAdmit` in
+  [mirror_host.go](../../internal/formathost/mirror_host.go), the same for every format, held by
+  `TestR_REPO_065_TheBackgroundPathAdmitsOnlyWhatThePatternsAdmit` ([probe_patterns_test.go](../../internal/formathost/probe_patterns_test.go)).
+  The integration case `TestR_REPO_065_TheSwitchAndThePatternsStopABackgroundDownload` holds the read's own refusal of an excluded image,
+  which never reaches the decision.
 
 ### Wiring
 

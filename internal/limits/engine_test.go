@@ -521,6 +521,33 @@ func TestR_LIM_024_ParallelDownloads(t *testing.T) {
 	})
 }
 
+// R-LIM-024, R-LIM-039: a replica that dies with downloads running neither drops nor renews their leases; they end at their score,
+// limits.parallel.lease after their last renewal, and the next download of the subject on another replica is admitted then. The
+// crash is a replica's engine that is left alone: no Finish, no flush, no Stop.
+func TestR_LIM_024_ACrashedReplicasLeasesEndAtTheirScore(t *testing.T) {
+	ctx := context.Background()
+	f := BuiltinProfiles()[ProfileAnonymous] // 4 parallel
+	r := newRig(t, ModeEnforce, f)
+	other := NewEngine(Options{
+		Store: r.store, Index: func() *Index { return r.x }, Replica: "r2", Now: r.clk.now, LeaseTTL: time.Minute,
+		Share: func() int { return 2 },
+	})
+	for i := range 4 { // the crashed replica's downloads
+		if err := r.e.Admit(ctx, r.e.Begin(anonCaller("198.51.100.12"), qname.Repo{})); err != nil {
+			t.Fatalf("download %d on the replica that crashes: %v", i+1, err)
+		}
+	}
+	admit := func() error { return other.Admit(ctx, other.Begin(anonCaller("198.51.100.12"), qname.Repo{})) }
+	r.clk.add(time.Minute - time.Second)
+	if err := admit(); codeOf(err) != CodeTooManyParallelDownloads {
+		t.Fatalf("a second before the leases end: %v, want too_many_parallel_downloads", err)
+	}
+	r.clk.add(time.Second)
+	if err := admit(); err != nil {
+		t.Fatalf("at the leases' end: %v", err)
+	}
+}
+
 func TestR_LIM_022_StepNineA(t *testing.T) {
 	f := BuiltinProfiles()[ProfileAnonymous]
 	f[UpstreamRequestsPerHour] = 2

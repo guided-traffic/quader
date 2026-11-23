@@ -48,6 +48,8 @@ type envOptions struct {
 	env    []string
 	// readable are further repositories (made by seed) the reader reads
 	readable []string
+	// endpoints is server.endpoints of the replica (QUADER_SERVER_ENDPOINTS); empty keeps the default endpoint as it is.
+	endpoints string
 }
 
 func newEnvWith(t *testing.T, o envOptions) *env {
@@ -66,7 +68,7 @@ func newEnvWith(t *testing.T, o envOptions) *env {
 	}
 	st.Policy("readers", []string{"read"}, append([]string{rFiles}, o.readable...), reader)
 	st.Policy("writers", []string{"read", "deploy"}, []string{rFiles}, ada)
-	e.r = st.Start(t, testenv.ReplicaOptions{Name: "web-1", Role: o.role, Env: o.env})
+	e.r = st.Start(t, testenv.ReplicaOptions{Name: "web-1", Role: o.role, Env: o.env, Endpoints: o.endpoints})
 	e.file = bytes.Repeat([]byte("q"), fileSize)
 	e.filePath = "/files/it/" + rFiles + "/a.bin"
 	if a := st.Do(e.r, "PUT", e.filePath, e.admin, e.file, "Content-Type", "application/octet-stream"); a.Status/100 != 2 {

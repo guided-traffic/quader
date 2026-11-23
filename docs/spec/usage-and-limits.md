@@ -1778,7 +1778,11 @@ Priority: **MVP** · Covers: BEYOND-030
   nothing, the subjects of R-LIM-001 (a user's personal tokens, two technical tokens of one account at each level, an address and an
   IPv6 `/64`, an administrator), what is cached served with the upstream budget used up, the anonymous ceiling against a second
   address, Audit beside Enforce, the switch reaching a second replica; with Valkey stopped, the fallback of R-LIM-019; the cost of
-  R-LIM-017. Not held yet: a crashed replica's leases, a CI token on the request path (its subject is unit-tested).
+  R-LIM-017; a CI token on the request path charged to its CI project, through the issuer double of the set `ci`; a request through
+  a host bound to a repository charged to that repository; the daily fold of hourly rows older than 30 days. A crashed replica's
+  leases, which end at their score, are the unit tier's (`TestR_LIM_024_ACrashedReplicasLeasesEndAtTheirScore`): the crash is an
+  engine left alone, and the stack can stop a replica only gracefully. The `RateLimit` policy of each figure that refuses beside the
+  request figures is a table at the unit tier (`TestR_LIM_020_TheRateLimitPolicyOfEveryFigureThatRefusesBesideTheRequestFigures`).
 - **Format contract**: R-LIM-036's kit check and table for the six formats.
 - **e2e**: no set of the limits' own (Q-LIM-55). Each format's own set holds one case of its client against a repository of the case
   whose rule refuses the client's next request (`requestsPerSecond` 1 with a burst of 1: a `429` with `Retry-After` 1) and, where it

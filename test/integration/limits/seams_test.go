@@ -116,6 +116,13 @@ func TestR_LIM_028_ADeletedTechnicalTokensRuleGoesAndItsUsageStays(t *testing.T)
 	if a := e.st.Do(e.r, "DELETE", "/api/v1/service-accounts/mirror/technical-tokens/"+name, e.admin, nil); a.Status != 204 {
 		t.Fatalf("delete: %d %s", a.Status, a.Body)
 	}
+	// Two hourly rows of two people, 31 days old, of one day and one repository: the run folds them (R-LIM-028).
+	const oldHour = `date_trunc('day', now() - interval '31 days') + interval '10 hours'`
+	for i, who := range []string{"u-fold-a", "u-fold-b"} {
+		e.st.Exec(`INSERT INTO usage_bucket (granularity, bucket_start, subject_kind, subject_ref, place, repository_id, requests, cached_bytes)
+			SELECT '1h', `+oldHour+` + make_interval(hours => $2::int), 'user', $1, 'instance', id, 3 + $2::int, 100 FROM repositories WHERE key = $3`,
+			who, i, rFiles)
+	}
 	// The worker queues the daily task's next scheduled run when it starts (`25 3 * * *`), and a run is refused while one waits:
 	// the scheduled one is taken out, so the test's own run is the one that cleans up.
 	e.st.Exec(`DELETE FROM job WHERE kind = 'limits-cleanup' AND state = 'queued'`)
@@ -142,6 +149,17 @@ func TestR_LIM_028_ADeletedTechnicalTokensRuleGoesAndItsUsageStays(t *testing.T)
 	if subject := e.tokenRow(t, technical)["subject"].(map[string]any); subject["deleted"] != true || subject["name"] != technical {
 		t.Fatalf("the overview names the deleted token %v", subject)
 	}
+	t.Run("R-LIM-028 the hourly rows older than 30 days are one daily sum without a person, and they are gone", func(t *testing.T) {
+		sum := e.st.Text(`SELECT count(*) || ' ' || COALESCE(sum(subjects), 0) || ' ' || COALESCE(sum(requests), 0) || ' ' || COALESCE(sum(cached_bytes), 0)
+			FROM usage_daily_summary s JOIN repositories r ON r.id = s.repository_id
+			WHERE r.key = $1 AND s.subject_kind = 'user' AND s.day = ((`+oldHour+`) AT TIME ZONE 'UTC')::date`, rFiles)
+		if sum != "1 2 7 200" {
+			t.Errorf("the daily sums of the day (rows, people, requests, cached bytes): %s, want 1 2 7 200", sum)
+		}
+		if n := e.st.Number(`SELECT count(*) FROM usage_bucket WHERE granularity = '1h' AND bucket_start < now() - interval '30 days'`); n != 0 {
+			t.Errorf("%d hourly rows older than 30 days are left", n)
+		}
+	})
 }
 
 // R-LIM-019: with Valkey stopped, a replica decides on its own share and never refuses because Valkey failed: the hour's
