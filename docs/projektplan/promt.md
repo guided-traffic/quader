@@ -243,14 +243,16 @@ Q-ARCH-1040; its release shows the rest); `drain-roles` ran alone at 22:24, gree
 the browser journeys it rewrote run first in the pipeline's e2e legs). Started at 22:53 in the freed place: **T-24 · R4** (downloads ahead and the queue; R3 waits for R2's landing,
 since it wires R2's decider). **The rest of the Go tests landed at 23:12** (three commits; F-126 not reproduced, open). Started at 23:00 in T-25's place: **W8** (web and end-to-end tests wait for what they stand for, with the
 layout fixtures in three browsers and an instance of the UI profile that is claimed, not chosen: two builders
-took instance 6 a minute apart that evening). Started at 23:20 in that place: **W10b with the documents' second
+took instance 6 a minute apart that evening). W8 landed at 00:05 (eleven commits). Started at 23:20 in that place: **W10b with the documents' second
 round** (the extraction check, the stale location notes, test names that carry a decision's number, "du",
 and every item the writer left). **Landed at 23:52** (three commits: the documents, the extraction check, 28 renames and the rule that a test
 name carries a requirement's number, never a decision's). Its first builder was of a type without a shell (the development agent's
 choice, a mistake already known from 2026-11-03): it wrote the check and the documents and could run, extract
 and commit nothing; a second builder with a shell finishes the same worktree from 23:35. Found by it: about
 1,000 test names still carry a decision's number (some 440 in about 120 web spec files, at least 600 in Go),
-a package of its own. Waiting for a place: the renames of those test names, the two findings of T-25's renders, T-24 R3, and the two nightly sets `upgrade-release` and `vuln-perf` (to be
+a package of its own. Started at 23:51 in its place: **the screens' render findings** (the stacked rows' places, "–" for no
+role, one gender of "Token" in German, the signature column at 1,024 px). Waiting for a place: the renames of
+those test names, T-24 R3, and the two nightly sets `upgrade-release` and `vuln-perf` (to be
 dispatched in a window with no code push beside them).
 
 Read this first. By the owner's words of 17:15 (section 0) nothing new was begun; this list is what was
@@ -286,11 +288,12 @@ starts from it and from his word how the work goes on, not from the order of the
   packages that run side by side write only their own marked section of `api/openapi.yaml`, their own
   query file and wiring file; decision blocks of the series Q-CUR from 40 (R2), 60 (R3), 80 (R4).
 - **T-25 · Projects and Repositories leave the admin area's menu**: landed at 22:58 (section 10).
-- **W8 · Web and end-to-end tests wait for what they stand for** (the packages' table of section 8), with
-  what today added to it: a cluster name and ports per checkout so that a builder runs the journey or
-  the end-to-end test it changed before it reports; the walk's widths on the development machine and on
-  the runner; the journeys' texts from the source the pages take them from; the fixed waits of the
-  limits' client cases; the count of a cold load's requests.
+- **W8 · Web and end-to-end tests wait for what they stand for**: landed at 00:05 (eleven commits; section 8,
+  Closed). Left by it: the ten fixed waits of `search-field.spec.ts`, the 2 s flush waits of the limits'
+  five client cases, R-ARCH-034's count by the limiter's metric, `TestE1_14Exposure`'s burst that depends on
+  the runner's speed, a render seed independent of a public registry, F-95 (a recurrence to read), and a
+  push during a nightly, which `make nightly-load-guard` names and nothing stops; the runner side of the
+  layout fixtures and of the walk's widths shows in the next `UI layout checks` job.
 - **W10b · Translations and test names**: landed at 23:52; left: about 1,000 test names that carry a
   decision's number (a package of its own).
 - **A second round of the documents' writer**: landed at 23:52 with W10b.
@@ -549,7 +552,7 @@ order is what a user or an operator meets first. The state is kept here.
 | W5a · NuGet and OCI | NuGet's README route that answers 501; the challenge of an upstream token; what the two formats' pages count and the code does not; the tag listing's measurement with 100,000 tags | landed at 13:18 (five commits and the repair of a stale test): NuGet serves the icon, the license file and the README a package embeds; an upstream's token requests are counted; the kit holds every format's challenge; the tag listing measured with 100,000 tags. The second step landed at 16:13 (two commits and migration 00113): a page of versions reads its page and no version past it, in every format (an image with 100,000 tags lists a page in 43 ms instead of 16.6 s); OCI and Debian record a publish with the undetermined shadowing check. Left open with numbers: the package list of such an image (H-829), the order by version in memory (H-1683) |
 | W5b · Debian and Ansible Galaxy | `member_expired` and a member's recorded `Date` without an integration case; the wiki's cases; the requirements no test names; the check against the public Galaxy; first the Debian test that made `main` red for the third time | the Debian remote's repair landed at 11:37, the rest at 12:45 (two commits); the second step landed at 13:47 (three commits): collections with symbolic links, a stale `InRelease` after a key change, a requirement's numbers, the formats' log lines without the replica's fields |
 | W4 · Go tests wait for what they stand for | fixed sleeps and paced setups in integration and unit tests; four convention checks that sit in a format's area; tests that depend on the machine; the harness's policy helper that writes an empty policy without a word | in work since 14:31; its first part landed at 16:58 (two commits): the tests a loaded host broke wait for the state they stand for, and a local gate runs on six cores unless `LOCAL_CORES` lifts the cap. The rest landed at 18:39 (six commits; what it did not do is listed in section 1): the fixed sleeps and paced setups, the convention checks, the harness's policy helper, the default logger outside the formats, the check that names the areas of a changed answer |
-| W8 · Web and end-to-end tests wait for what they stand for | the fixed 320 ms of choosing a person; paced setups of the e2e environments; the fixed waits of three seconds in the limits' client cases and the load test's tokens (from W3, since they need the kind cluster); a code push during a nightly | after the screens' first round |
+| W8 · Web and end-to-end tests wait for what they stand for | the fixed 320 ms of choosing a person; paced setups of the e2e environments; the fixed waits of three seconds in the limits' client cases and the load test's tokens (from W3, since they need the kind cluster); a code push during a nightly | landed at 00:05 on 2026-11-24 (eleven commits; what it left is in section 1) |
 | W7 · The development profiles run the image they are given | the image tag `:dev`; one image tag per checkout; instances of the UI profile, one per builder; `nuget-ha` cut to what NuGet's client adds; the drain variant that Q-VULN-128 said to fold into a pooler leg once one runs under npm's load, which two do now; the development profile's root CA that is issued twice at a start; the Valkey outage with a replaced pod, which only a set runs that nothing has run since 2026-11-18 | landed: its first item (a bound and a retry per fetch of an image's build, one build of an image per run, a failure that names the fetch) at 13:56, the rest at 14:48 (the checkout's image tag, instances of the UI profile, the root CA issued once, `nuget-ha` cut, the Valkey outage case in `npm-ha`, the Makefile's lazy package list); the drain variant is not folded (Q-VULN-267); the two changed sets of the nightly have not run yet |
 | W9 · Screens show every state, second round | the system page; a technical token's description and removal; states the renders never show (an open row menu, the shared error notice); a failed test link's reason as a sentence of the page; the audit log's filter by a resource; the eleven points seen on the first round's renders; the malware settings before the first signature set | the first group (what a person meets on a page first: the lists that keep their table, the stored document, the test link's reason, the audit log's filter by a resource, the malware settings) and the owner's menu entries T-23 landed at 14:34 (fifteen commits); the other groups landed at 17:53 (eighteen commits): the system page, a technical token's description and removal, the states the renders never showed (the open row menus, the shared error notice), a person named the same way on every page, the server's messages that name the new pages, the German pages' formal address, the audit log's table beside an opened event. Left open by its builder: a remote's row filled by a mirror pass on no screen, "Token" with two genders in German, the signature column at 1,024 px (run record) |
 | W10a · Documents and the decisions' index | 1,050 of 3,425 decided questions without a row in the index (generated with a check from now); stale sentences in spec, developer pages, README and manual | landed at 12:45 (two commits): the index is generated and held by the documentation check, 3,480 rows, one per decided question; what its builder saw and left was built by a writer and landed at 13:18 |
@@ -575,13 +578,6 @@ charged to its own pod, and a neighbour costs a loaded leg about a tenth of its 
 ([Q-HA-305](../spec/ha-and-helm.md#q-ha-305--a-stall-of-the-kind-nodes-is-told-apart-from-a-neighbours-load-and-a-fault-test-does-not-start-on-a-sick-cluster)
 records the recorder that tells such a stall apart).
 
-- **The setup of an end-to-end set can run into the write class's rate limit** (2026-11-20, `make e2e SET=vuln` on an idle
-  20-core host: `create service account e2e-nuget: 429 rate_limited`, burst 50, then 10 a second). The setup of `vuln`
-  now waits out a 429 by its `Retry-After`; the other sets' setups were not looked at, and a fast runner can hit the same.
-- **Two component tests of the person search wait a fixed 320 ms** (`policy-editor.spec.ts`, "no match "@sam" under
-  Principal"; `project-screens.spec.ts`, "Service account of web"): both failed one `make web-test` on 2026-11-20 at a
-  host load of 53 and passed when their files ran alone. A fixed wait measures the host; the tests should wait for the
-  lookup's answer.
 - **F-126 · `TestConcurrentWritersOnOnePath` R-STOR-003 refused one of the PUTs or DELETEs of six writers on one folder once**
   (Test and Release 43013671879, shard b); the status was not logged. **Read in the night of 2026-11-18, cause not established:** a
   delete never waits on a folder lock (`SKIP LOCKED`), other deadlocks are retried three times; a deploy's link step gives up with
@@ -656,16 +652,6 @@ records the recorder that tells such a stall apart).
 - Many existing web specs carry decision IDs in their test names (`app.projects.spec.ts`, `app.routes.spec.ts`, `app.spec.ts`), where
   the convention is requirement IDs.
 - A disk watcher in the jobs, so that a lost runner can be read, was proposed and not built.
-- **Partly closed; open: whether a browser that restores many tabs at once reaches the default read limit (not
-  measured).** Closed: the renders' 429s, by 8bcfe103a (2026-11-12): the UI development profile raises the
-  read, write and anonymous budgets, each with its reason beside it (`api.rate_limits` in
-  `deploy/ui-dev/config.sh`). As it stood:
-  The 429s of the renders came from the `read` class (`make ui-renders` opens three pages of one user at once); the UI development
-  profile admits more. Not verified: restoring many tabs at once may reach the limit.
-  Read on 2026-11-23: no run can tell; the render walk sees every API call of a page (`trackRequests` in
-  `web/e2e/renders/render.spec.ts`) but records no count, so the GETs of a cold load of each main screen are
-  still to be counted once on the UI stack and set against the default `read` budget (50 per second, burst
-  200).
 - **Partly closed; open: the unit test of a removal refused whole, the engine test of a cache miss's first
   answer and the token API's unit test of an upper-case path pattern (each waits for the owner's go for new
   formats), and the evidence record that holds no requirement of Ansible Galaxy (not looked into).** Closed:
@@ -737,22 +723,6 @@ records the recorder that tells such a stall apart).
   the newest report by the artifact's creation time, which can be an older commit's (with the evidence
   record's step); (3) `TestR_MAL_014_APendingDownloadIsServedWhenItsVerdictArrives` failed once at a load
   of about 100 (5.01 s against the gate's wait of 5 s; alone it passed) (W4).
-- **Partly closed; open: the web's `ci-editor-screens.spec.ts`, "the groups of a system mapping are chosen
-  from the search": what it waits for (W8).** Closed: `TestR_HA_011_UploadsDuringARolloutRestart`, by
-  ff478f910 (2026-11-23, Q-ARCH-702): the upload in flight is waited for until the replica's client listener
-  has the request (`spooling`, `Server.Active` of `internal/httpserver/server.go`) instead of a fixed 300 ms,
-  the cut upload's spool file until it is removed, and the case of the committing upload, the one that got
-  `EOF`, runs with a commit grace of a minute instead of the product's 4 s, since it stands for a commit the
-  shutdown does not cut and not for the grace's size (`test/integration/files/transfer_test.go`); in the table
-  "Tests that hold on a loaded host" of `docs/developer/build-and-test.md`. The area `files` passed in the
-  landing's gates (run record, 16:44, on the same commits with the contracts' commit among them). The
-  builder's proof: each repaired test passed with one core under the background scheduling class at a host
-  load of 15 to 20 (run record, 15:37); the original failure was not reproduced. As it stood:
-  **Two more tests failed on a starved machine on 2026-11-23, about 10:10 to 10:17, at a load of 45 to 75
-  (seen by the builder of W1, not repeated by it):** the web's `ci-editor-screens.spec.ts`, "the groups of
-  a system mapping are chosen from the search" (no match for `web-leads`; alone the file passed 41 of 41),
-  and `TestR_HA_011_UploadsDuringARolloutRestart` of the area `files` (the committing upload got `EOF`
-  during the rolling restart). To do (W4, W8): what each waits for.
 - **The first publish of the evidence record was refused, so the branch `coverage` does not exist and the
   README's badge is invalid (2026-11-23; Test and Release 45212749706, the job Semantic Release, read at
   17:29).** The release itself went out through the changed job (17:23) and the image and chart after it
@@ -782,16 +752,6 @@ records the recorder that tells such a stall apart).
   `::warning::`, `git ls-tree -r --name-only origin/coverage` lists the four files, and the badge shows a number;
   the first publish may carry a record of a run before that commit whose `../spec/` links lead nowhere, which a
   later publish replaces (`git show origin/coverage:docs/coverage/checklist.md | grep -c '](\.\./'` prints 0).
-- **The layout checks' fixtures in Firefox and WebKit were taken back the day they landed (2026-11-23;
-  Q-UI-1008, commit 5d5d29e11 of the screens' rest, reverted at 18:19).** Two fixtures of the check
-  `label-apart` were marked as expected to fail in Firefox; they fail in the development machine's Firefox
-  and pass in the runner's, so the job ended with "Expected to fail, but passed" (two of 150) before any
-  screen was rendered. The builder had run them on the development machine only, and its worktree was
-  gone when the run was read; by the owner's word of 17:15 no builder is started, so the development
-  agent reverted the one commit (the fixtures run in Chromium alone again, 50 tests; the decision block
-  went with it) instead of leaving the job red without a screen. To do (W8): the fixtures in three
-  browsers again, with markings that hold on both machines (by what the check measures, not by the
-  browser's name alone), run once in the pipeline before they are trusted.
 - **The layout job of the revert's push failed in the walk's seed, before a screen was rendered (2026-11-23;
   Test and Release 45226379787, the push of 18:19, read at 18:29).** The fixtures passed (50 in Chromium);
   then the seed's publish of the Ansible collection `acme.platform` 1.0.0 was answered `503
@@ -891,41 +851,7 @@ records the recorder that tells such a stall apart).
   helpers) and fail on a loaded machine; they passed alone each time (seen by three builders on 2026-11-21 at host loads
   of 60 to 120, left). A comment of the UI development profile still says the role `all` calls its own image scanner.
 - The coverage badge and the evidence record stand still until the first stable release (Q-ARCH-457).
-- The clients' cases for the download limits (five formats, end to end) wait a fixed three seconds for a new rule
-  to reach every replica; a replica that takes longer counts the first document against the instance and the
-  archive is admitted where the case expects a 429 (read on 2026-11-21, not seen).
 
-- **Partly closed; open: whether the journeys' texts can come from the source the pages take them from
-  (W8).** Closed: that the repaired journeys pass, read from the pipeline on 2026-11-23 at 16:01:
-  `e2e (access-long)` is green in the runs of the pushes of 14:49 and 15:13 (Test and Release 45187733127,
-  45191858474), and `e2e (vuln)` in the run of the push of 15:30 (45195009156), after a second break of the
-  security dashboard's journey that has its own entry in the list Closed. Closed before: the repair, by ddb4d860a
-  (2026-11-23): `web/e2e/tests/05-exposure.spec.ts` chooses the repository's option by the format's name that
-  `GET /api/v1/formats` answers (`formatName` of `web/e2e/support.ts`), the source the page reads, and the
-  security dashboard's journey (`web/e2e/vuln/16-security-dashboard.spec.ts`) finds a repository under its
-  package, the second break of the same kind, which the search found; the search of the journeys, their
-  support code and the Go end-to-end tests for the texts the two rounds changed found nothing else (run
-  record, 14:41). Type-checked and linted, not run. The rule for every change of a visible text is decided, in
-  the entry's text. As it stood:
-  **The journey of an exposure rule is red in every run since the screens' first round (2026-11-23, five
-  runs from 11:52 on; `e2e (access-long)`, `05-exposure.spec.ts:39`).** The first round made a format's
-  name what a page shows instead of its key (68253fbd9), the rule editor's option of a repository ends
-  in that name, and the journey still selects the option by "(generic)". The journeys had been
-  type-checked at that landing, not run, and no gate greps them. **Corrected on 14:37:** the entry said
-  at 14:14 that the leg had passed in the run before and read the failure as the runners' load; the
-  leg had failed there too. The repair is with the builder of W9, first and as a commit of its own,
-  with a search of every journey and end-to-end test for a text the two rounds changed. **Decided by
-  the development agent for every change of a visible text from now:** the journeys and the Go
-  end-to-end tests are searched for the old text in the same commit, and the builder's report says
-  so. To do (W8): whether the journeys' texts can come from the source the pages take them from.
-- **Two checkouts still collide on the kind cluster's name and the edge port (2026-11-23, seen by the
-  builder of W7 and said in Q-HA-489).** The image tag is per checkout now; the cluster a profile starts
-  and the port it publishes are not, so a builder's worktree and the main checkout cannot run a
-  profile at the same time, and a builder who needs a journey on a cluster waits for another. To do
-  (W8, which needs the cluster for the journeys): a cluster name and ports per checkout, in the shape
-  of the integration stack's and the UI profile's instances; **then a builder runs the journey or the
-  end-to-end test it changed before it reports**, which no builder can today (a journey's new line
-  made `e2e (vuln)` red on 2026-11-23, and only the pipeline could show it).
 - **A cancel of a statement may not reach the database through the development profile's poolers (gap
   H-1662, 2026-11-23, from the second step of W2).** A single read of a request is bounded by a deadline
   with which the driver cancels the statement; the profile runs two pooler instances behind one
@@ -964,6 +890,91 @@ records the recorder that tells such a stall apart).
   stack).** By the code the page shows the badge "None yet" with a sentence and no error banner. To do
   (W9): a render state of it, looked at.
 ### Closed
+
+- **Closed on 2026-11-24, 00:05, by W8:** measured once on the UI profile: 8 to 15 API reads per main screen (15 for the security dashboard as an administrator), so about 13 tabs of the heaviest screen restore at once within the read class's burst of 200, written into `web-ui.md` (`UI_RENDERS_COUNT=1` repeats it); a real browser's restore not measured. As it stood: **Partly closed; open: whether a browser that restores many tabs at once reaches the default read limit (not
+  measured).** Closed: the renders' 429s, by 8bcfe103a (2026-11-12): the UI development profile raises the
+  read, write and anonymous budgets, each with its reason beside it (`api.rate_limits` in
+  `deploy/ui-dev/config.sh`). As it stood:
+  The 429s of the renders came from the `read` class (`make ui-renders` opens three pages of one user at once); the UI development
+  profile admits more. Not verified: restoring many tabs at once may reach the limit.
+  Read on 2026-11-23: no run can tell; the render walk sees every API call of a page (`trackRequests` in
+  `web/e2e/renders/render.spec.ts`) but records no count, so the GETs of a cold load of each main screen are
+  still to be counted once on the UI stack and set against the default `read` budget (50 per second, burst
+  200).
+
+- **Closed on 2026-11-24, 00:05, by W8:** yes: `ui('<ID>')` of `web/e2e/support.ts` reads `messages.xlf` (or the German file), and the lint fails on an unknown ID or on words that differ from the file (Q-UI-1046); only `16-security-dashboard.spec.ts` is converted, the others move when they are next changed. As it stood: **Partly closed; open: whether the journeys' texts can come from the source the pages take them from
+  (W8).** Closed: that the repaired journeys pass, read from the pipeline on 2026-11-23 at 16:01:
+  `e2e (access-long)` is green in the runs of the pushes of 14:49 and 15:13 (Test and Release 45187733127,
+  45191858474), and `e2e (vuln)` in the run of the push of 15:30 (45195009156), after a second break of the
+  security dashboard's journey that has its own entry in the list Closed. Closed before: the repair, by ddb4d860a
+  (2026-11-23): `web/e2e/tests/05-exposure.spec.ts` chooses the repository's option by the format's name that
+  `GET /api/v1/formats` answers (`formatName` of `web/e2e/support.ts`), the source the page reads, and the
+  security dashboard's journey (`web/e2e/vuln/16-security-dashboard.spec.ts`) finds a repository under its
+  package, the second break of the same kind, which the search found; the search of the journeys, their
+  support code and the Go end-to-end tests for the texts the two rounds changed found nothing else (run
+  record, 14:41). Type-checked and linted, not run. The rule for every change of a visible text is decided, in
+  the entry's text. As it stood:
+  **The journey of an exposure rule is red in every run since the screens' first round (2026-11-23, five
+  runs from 11:52 on; `e2e (access-long)`, `05-exposure.spec.ts:39`).** The first round made a format's
+  name what a page shows instead of its key (68253fbd9), the rule editor's option of a repository ends
+  in that name, and the journey still selects the option by "(generic)". The journeys had been
+  type-checked at that landing, not run, and no gate greps them. **Corrected on 14:37:** the entry said
+  at 14:14 that the leg had passed in the run before and read the failure as the runners' load; the
+  leg had failed there too. The repair is with the builder of W9, first and as a commit of its own,
+  with a search of every journey and end-to-end test for a text the two rounds changed. **Decided by
+  the development agent for every change of a visible text from now:** the journeys and the Go
+  end-to-end tests are searched for the old text in the same commit, and the builder's report says
+  so. To do (W8): whether the journeys' texts can come from the source the pages take them from.
+
+- **Closed on 2026-11-24, 00:05, by W8:** every `adminAPI` client of the e2e tests waits out a 429 of the write class and only that one; the vuln setup's fixed 6 s and `pacedSATokens`' own retry are gone (vuln set not run). As it stood: **The setup of an end-to-end set can run into the write class's rate limit** (2026-11-20, `make e2e SET=vuln` on an idle
+  20-core host: `create service account e2e-nuget: 429 rate_limited`, burst 50, then 10 a second). The setup of `vuln`
+  now waits out a 429 by its `Retry-After`; the other sets' setups were not looked at, and a fast runner can hit the same.
+
+- **Closed on 2026-11-24, 00:05, by W8:** a gauge `quader_limits_index_epoch` tells which change of the limits each replica's index holds; the e2e cases and the integration area `limits` wait until every serving replica holds the database's epoch (about 0.1 s instead of 3 s per rule, about 5.8 s less per format leg; seven waits of 1.5 s gone in `limits`), and the HA loads' k6 use 20 tokens of their own account (Q-LIM-111). Run: `TestNPMLimits` on a cluster, the area `limits`; not run: the OCI, Debian, NuGet and Ansible cases and the HA loads. Left: the 2 s flush waits of the five cases (proposal: a counter of flushes). As it stood: The clients' cases for the download limits (five formats, end to end) wait a fixed three seconds for a new rule
+  to reach every replica; a replica that takes longer counts the first document against the instance and the
+  archive is admitted where the case expects a 429 (read on 2026-11-21, not seen).
+
+- **Closed on 2026-11-24, 00:05, by W8:** `label-apart` measures a value's middle against the name's bottom, since a line's box outgrows a 1rem line by a different pixel in each engine; the fixtures run in three browsers with no mark for an engine, 150 of 150 on macOS and in the Linux image; the job `ui-layout` installs Firefox and WebKit (Q-UI-1045). Shown on the runner only by the next `UI layout checks` job, to be read. As it stood: **The layout checks' fixtures in Firefox and WebKit were taken back the day they landed (2026-11-23;
+  Q-UI-1008, commit 5d5d29e11 of the screens' rest, reverted at 18:19).** Two fixtures of the check
+  `label-apart` were marked as expected to fail in Firefox; they fail in the development machine's Firefox
+  and pass in the runner's, so the job ended with "Expected to fail, but passed" (two of 150) before any
+  screen was rendered. The builder had run them on the development machine only, and its worktree was
+  gone when the run was read; by the owner's word of 17:15 no builder is started, so the development
+  agent reverted the one commit (the fixtures run in Chromium alone again, 50 tests; the decision block
+  went with it) instead of leaving the job red without a screen. To do (W8): the fixtures in three
+  browsers again, with markings that hold on both machines (by what the check measures, not by the
+  browser's name alone), run once in the pipeline before they are trusted.
+
+- **Closed on 2026-11-24, 00:05, by W8:** its failure had the cause of the person search's fixed wait (`choosePrincipal`) and is closed with it. As it stood: **Partly closed; open: the web's `ci-editor-screens.spec.ts`, "the groups of a system mapping are chosen
+  from the search": what it waits for (W8).** Closed: `TestR_HA_011_UploadsDuringARolloutRestart`, by
+  ff478f910 (2026-11-23, Q-ARCH-702): the upload in flight is waited for until the replica's client listener
+  has the request (`spooling`, `Server.Active` of `internal/httpserver/server.go`) instead of a fixed 300 ms,
+  the cut upload's spool file until it is removed, and the case of the committing upload, the one that got
+  `EOF`, runs with a commit grace of a minute instead of the product's 4 s, since it stands for a commit the
+  shutdown does not cut and not for the grace's size (`test/integration/files/transfer_test.go`); in the table
+  "Tests that hold on a loaded host" of `docs/developer/build-and-test.md`. The area `files` passed in the
+  landing's gates (run record, 16:44, on the same commits with the contracts' commit among them). The
+  builder's proof: each repaired test passed with one core under the background scheduling class at a host
+  load of 15 to 20 (run record, 15:37); the original failure was not reproduced. As it stood:
+  **Two more tests failed on a starved machine on 2026-11-23, about 10:10 to 10:17, at a load of 45 to 75
+  (seen by the builder of W1, not repeated by it):** the web's `ci-editor-screens.spec.ts`, "the groups of
+  a system mapping are chosen from the search" (no match for `web-leads`; alone the file passed 41 of 41),
+  and `TestR_HA_011_UploadsDuringARolloutRestart` of the area `files` (the committing upload got `EOF`
+  during the rolling restart). To do (W4, W8): what each waits for.
+
+- **Closed on 2026-11-24, 00:05, by W8:** the shared person field marks its list `aria-busy` until the lookup answers, and `choosePrincipal`, `project-screens.spec.ts` and the field's spec wait for that (about 70 ms less per choice; one 320 ms stays on purpose, proving that one character searches nothing); passed under `taskpolicy -c background`. Left: ten fixed 300 ms waits of `search-field.spec.ts`. As it stood: **Two component tests of the person search wait a fixed 320 ms** (`policy-editor.spec.ts`, "no match "@sam" under
+  Principal"; `project-screens.spec.ts`, "Service account of web"): both failed one `make web-test` on 2026-11-20 at a
+  host load of 53 and passed when their files ran alone. A fixed wait measures the host; the tests should wait for the
+  lookup's answer.
+
+- **Closed on 2026-11-24, 00:05, by W8:** two checkouts and two builders no longer collide: in a worktree `deploy/dev/lib.sh` uses the cluster `quader-<worktree>`, a port kind picks free and `.dev/kubeconfig`, the main checkout keeps `quader`, 8080 and the caller's kubeconfig; instances 2 to 8 of the UI profile are claimed under a lock in `<main>/.dev/ui-dev-claims/<n>`, a removed worktree's claim is taken over, an instance that runs without a claim is never picked (Q-HA-491, Q-UI-1044); held by `TestDevProfileClusterPortAndKubeconfigArePerCheckout` and `TestUIDevInstancesAreClaimedNotChosen` (unit, about 4 s); run on the development machine: a worktree's cluster on port 54091 beside the main checkout's. As it stood: **Two checkouts still collide on the kind cluster's name and the edge port (2026-11-23, seen by the
+  builder of W7 and said in Q-HA-489).** The image tag is per checkout now; the cluster a profile starts
+  and the port it publishes are not, so a builder's worktree and the main checkout cannot run a
+  profile at the same time, and a builder who needs a journey on a cluster waits for another. To do
+  (W8, which needs the cluster for the journeys): a cluster name and ports per checkout, in the shape
+  of the integration stack's and the UI profile's instances; **then a builder runs the journey or the
+  end-to-end test it changed before it reports**, which no builder can today (a journey's new line
+  made `e2e (vuln)` red on 2026-11-23, and only the pipeline could show it).
 
 - **Closed on 2026-11-23, 23:50, by the documents' second round (W10b): what the same writer saw in the
   documents and left.** The README's key features name the Bastion, Ansible Galaxy, malware scanning, signatures,
