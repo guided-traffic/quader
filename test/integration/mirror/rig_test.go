@@ -612,13 +612,20 @@ func tarballPath(name, version string) string {
 	return name + "/-/" + base + "-" + version + ".tgz"
 }
 
-// fakeClock is the engine's clock with an offset on the system's time: a test moves the time of the dispatch and of the waits
+// offsetClock is the engine's clock with an offset on the system's time: a test moves the time of the dispatch and of the waits
 // without waiting. Sleeps are real, so that the waits of a pass can be measured against the stub's own times.
 type offsetClock struct {
 	mu     sync.Mutex
 	offset time.Duration
 	// slept records every sleep the engine asked for.
-	slept []time.Duration
+	slept []sleep
+}
+
+// sleep is one sleep of the engine: what it asked for and the system time at which it ends. The engine sleeps the rest of a
+// wait it decided earlier (until − now), so the length is a little shorter than the wait and the end is the wait's end.
+type sleep struct {
+	d   time.Duration
+	end time.Time
 }
 
 func (c *offsetClock) Now() time.Time {
@@ -635,13 +642,13 @@ func (c *offsetClock) advance(d time.Duration) {
 
 func (c *offsetClock) Sleep(ctx context.Context, d time.Duration) error {
 	c.mu.Lock()
-	c.slept = append(c.slept, d)
+	c.slept = append(c.slept, sleep{d: d, end: time.Now().Add(d)})
 	c.mu.Unlock()
 	return mirror.SystemClock{}.Sleep(ctx, d)
 }
 
-func (c *offsetClock) sleeps() []time.Duration {
+func (c *offsetClock) sleeps() []sleep {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return append([]time.Duration(nil), c.slept...)
+	return append([]sleep(nil), c.slept...)
 }

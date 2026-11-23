@@ -5,7 +5,6 @@ package identity
 import (
 	"bytes"
 	"context"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -34,7 +33,7 @@ func TestR_AUTH_015_TheTokenCommandNamesAProjectAccount(t *testing.T) {
 
 	bin := filepath.Join(t.TempDir(), "quader")
 	build := exec.Command("go", "build", "-o", bin, "github.com/guided-traffic/quader/cmd/quader")
-	build.Env = append(os.Environ(), "CGO_ENABLED=0")
+	build.Env = testenv.ChildEnv("CGO_ENABLED=0")
 	if out, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("go build: %v\n%s", err, out)
 	}

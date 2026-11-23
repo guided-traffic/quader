@@ -267,18 +267,24 @@ func TestR_REPO_054_SlowDownWithoutAHintBacksOffExponentially(t *testing.T) {
 		within(t, "first pause", ts[3].Sub(ts[2]), 450*time.Millisecond, 1400*time.Millisecond)
 		within(t, "second pause", ts[4].Sub(ts[3]), 950*time.Millisecond, 2400*time.Millisecond)
 		within(t, "third pause", ts[5].Sub(ts[4]), 1950*time.Millisecond, 4400*time.Millisecond)
-		var waits []time.Duration
+		var waits []sleep
 		for _, s := range clock.sleeps() {
-			if s >= 400*time.Millisecond {
+			if s.d >= 400*time.Millisecond {
 				waits = append(waits, s)
 			}
 		}
 		if len(waits) != 3 {
 			t.Fatalf("the engine slept %v, want three waits", waits)
 		}
+		// The engine decides a wait when the answer arrives and sleeps what is left of it, so a sleep is a little shorter than
+		// the wait (1.9986 s of a wait of at least 2 s on 2026-11-23). Each side is held where it is exact: the wait ends no
+		// earlier than its floor after the refused request reached the stub, and no sleep is longer than the ceiling.
 		for i, rng := range [][2]time.Duration{{500 * time.Millisecond, time.Second}, {time.Second, 2 * time.Second}, {2 * time.Second, 4 * time.Second}} {
-			if waits[i] < rng[0] || waits[i] > rng[1] {
-				t.Errorf("wait %d is %s, want within %s to %s", i+1, waits[i], rng[0], rng[1])
+			if got := waits[i].end.Sub(ts[2+i]); got < rng[0] {
+				t.Errorf("wait %d ends %s after its refused request, want at least %s", i+1, got, rng[0])
+			}
+			if waits[i].d > rng[1] {
+				t.Errorf("wait %d sleeps %s, want at most %s", i+1, waits[i].d, rng[1])
 			}
 		}
 	})

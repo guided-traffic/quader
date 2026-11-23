@@ -5,7 +5,6 @@ package bastionreg
 import (
 	"bytes"
 	"context"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -22,7 +21,7 @@ func buildQuader(t *testing.T) string {
 	t.Helper()
 	bin := filepath.Join(t.TempDir(), "quader")
 	cmd := exec.Command("go", "build", "-o", bin, "github.com/guided-traffic/quader/cmd/quader")
-	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
+	cmd.Env = testenv.ChildEnv("CGO_ENABLED=0")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("go build: %v\n%s", err, out)
 	}

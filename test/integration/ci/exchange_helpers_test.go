@@ -94,16 +94,24 @@ func (x *xenv) addMapping(r *testenv.Replica, body map[string]any) {
 // the replica's index as every request does (R-AUTHZ-028), so a test that exchanges at once waits for it.
 func (x *xenv) settled() {
 	x.t.Helper()
-	want := x.epoch(cluster.AreaAuthz)
 	x.mu.Lock()
 	reps := append([]*testenv.Replica(nil), x.reps...)
 	x.mu.Unlock()
+	x.grantsSettled(reps...)
+}
+
+// grantsSettled waits until the grant index of each replica holds the authorization epoch of the database: the index is
+// built in the background after a change reaches the replica (R-AUTHZ-028), so a test that needs a policy change in force
+// waits for that build, not for a time.
+func (e *env) grantsSettled(reps ...*testenv.Replica) {
+	e.t.Helper()
+	want := e.epoch(cluster.AreaAuthz)
 	for _, r := range reps {
-		e, _ := r.App.Authorizer().(*authz.Engine)
-		if e == nil {
-			x.t.Fatalf("%s has no grant index", r.Name)
+		ix, _ := r.App.Authorizer().(*authz.Engine)
+		if ix == nil {
+			e.t.Fatalf("%s has no grant index", r.Name)
 		}
-		within(x.t, r.Name+"'s grant index at epoch "+fmt.Sprint(want), 10*time.Second, func() bool { return e.Epoch() >= want })
+		within(e.t, r.Name+"'s grant index at epoch "+fmt.Sprint(want), 10*time.Second, func() bool { return ix.Epoch() >= want })
 	}
 }
 

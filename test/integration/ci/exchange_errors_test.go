@@ -182,10 +182,10 @@ func TestR_CI_008_EveryReasonOfTheErrorTable(t *testing.T) {
 		body := g.JSON(t)
 		body["enabled"] = false
 		wantStatus(t, x.do(a, "PUT", issuersPath+"/gitlab-other", body, "If-Match", etag(g)), 200, "")
-		within(t, "the copy of the issuers", 5*time.Second, func() bool {
-			is, ok, _ := a.App.CIIssuers().Resolve(t.Context(), other.stub.Issuer())
-			return ok && !is.Enabled
-		})
+		pollAll(t, a)
+		if is, ok, err := a.App.CIIssuers().Resolve(t.Context(), other.stub.Issuer()); !ok || is.Enabled || err != nil {
+			t.Fatalf("after its change-log poll the copy of the issuers holds the issuer as found %v, enabled %v (%v)", ok, is.Enabled, err)
+		}
 		wantOAuth(t, x.exchange(a, mintOf(other, oidcstub.MintOptions{})), 400, "invalid_request", "issuer_disabled")
 	})
 
@@ -207,11 +207,8 @@ func TestR_CI_008_EveryReasonOfTheErrorTable(t *testing.T) {
 		id := x.text("SELECT id::text FROM ci_issuers WHERE name = 'gitlab-stale'")
 		x.exec("UPDATE ci_issuer_keys SET fetched_at = now() - interval '3 minutes' WHERE issuer_id = $1::uuid", id)
 		x.bump(cluster.AreaCIIssuerKeys, map[string]string{"issuer": id})
-		var last testenv.Answer
-		within(t, "the replica reading the aged row", 5*time.Second, func() bool {
-			last = x.exchange(a, mintOf(stale, oidcstub.MintOptions{}))
-			return last.Status == 503
-		})
+		pollAll(t, a) // the replica's copy of the key row is dropped and read again: the aged row
+		last := x.exchange(a, mintOf(stale, oidcstub.MintOptions{}))
 		wantOAuth(t, last, 503, "temporarily_unavailable", "signing_keys_unavailable")
 		if last.Header.Get("Retry-After") == "" {
 			t.Error("a 503 without Retry-After")

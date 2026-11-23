@@ -55,10 +55,11 @@ func TestR_CI_001_DeclaredIssuersAreReadOnlyAndFollowTheConfiguration(t *testing
 	}
 
 	t.Run("R-CI-001 after quader migrate the issuer is read with source configuration", func(t *testing.T) {
-		within(t, "the replica seeing the issuer", 3*time.Second, func() bool {
-			_, ok, _ := a.App.CIIssuers().Resolve(t.Context(), d.stub.Issuer())
-			return ok
-		})
+		// The migration's change message reaches the replica with its next change-log poll.
+		pollAll(t, a)
+		if _, ok, err := a.App.CIIssuers().Resolve(t.Context(), d.stub.Issuer()); !ok || err != nil {
+			t.Fatalf("the replica does not resolve the declared issuer after its change-log poll: %v", err)
+		}
 		r := e.do(a, "GET", issuersPath+"/gitlab-main", nil)
 		wantStatus(t, r, 200, "")
 		got := r.JSON(t)
@@ -102,9 +103,10 @@ func TestR_CI_001_DeclaredIssuersAreReadOnlyAndFollowTheConfiguration(t *testing
 		if e.number("SELECT version FROM ci_issuers") != 2 || e.events("ci.issuer.updated") != 1 {
 			t.Errorf("version %d, updated events %d", e.number("SELECT version FROM ci_issuers"), e.events("ci.issuer.updated"))
 		}
-		within(t, "the replica reading the new description", 3*time.Second, func() bool {
-			return e.do(a, "GET", issuersPath+"/gitlab-main", nil).JSON(t)["description"] == "the main instance"
-		})
+		pollAll(t, a)
+		if got := e.do(a, "GET", issuersPath+"/gitlab-main", nil).JSON(t)["description"]; got != "the main instance" {
+			t.Errorf("the replica reads the description %q after its change-log poll", got)
+		}
 	})
 
 	t.Run("R-CI-001 removed from ci.issuers the next migrate disables it, and only then may it be deleted", func(t *testing.T) {

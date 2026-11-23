@@ -52,7 +52,7 @@ func TestOCIConformance(t *testing.T) {
 			defer cancel()
 			cmd := exec.CommandContext(ctx, bin, "-test.v", "-test.timeout=24m")
 			cmd.Dir = dir
-			cmd.Env = append(os.Environ(),
+			cmd.Env = testenv.ChildEnv(
 				"OCI_ROOT_URL=http://"+listen,
 				"OCI_NAMESPACE="+project+"/"+run.repo+"/conformance",
 				"OCI_CROSSMOUNT_NAMESPACE="+project+"/"+repoOther+"/conformance",

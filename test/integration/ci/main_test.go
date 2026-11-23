@@ -64,15 +64,23 @@ type env struct {
 	bobPAT   string // a user who becomes a project Owner (admin scope, no role)
 }
 
+const (
+	// defaultKIDInterval is ci.signing_keys.unknown_kid_refresh_interval of an environment that names none.
+	defaultKIDInterval = time.Second
+	// epochPollInterval is cluster.epoch_poll_interval of every environment: the change-log poll and the throttle of a
+	// replica's re-reads of the issuers and of a key row (R-CI-003, Q-CI-51).
+	epochPollInterval = 500 * time.Millisecond
+)
+
 func newEnv(t *testing.T, o options) *env {
 	t.Helper()
 	if o.kidInterval == "" {
-		o.kidInterval = "1s"
+		o.kidInterval = defaultKIDInterval.String()
 	}
 	s := testenv.NewStack(t, testenv.StackOptions{Valkey: o.valkey, Name: "ci", Env: append([]string{
 		// The issuer double listens on the loopback address, which the egress policy denies by default.
 		`QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.0/8","::1/128"]`,
-		"QUADER_CLUSTER_EPOCH_POLL_INTERVAL=500ms", "QUADER_JOBS_POLL_INTERVAL=200ms",
+		"QUADER_CLUSTER_EPOCH_POLL_INTERVAL=" + epochPollInterval.String(), "QUADER_JOBS_POLL_INTERVAL=200ms",
 		"QUADER_CI_SIGNING_KEYS_UNKNOWN_KID_REFRESH_INTERVAL=" + o.kidInterval,
 	}, o.env...)})
 	e := &env{t: t, stack: s}

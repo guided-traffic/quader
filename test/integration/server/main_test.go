@@ -33,7 +33,7 @@ func TestMain(m *testing.M) {
 	}
 	binary = filepath.Join(dir, "quader")
 	cmd := exec.Command("go", "build", "-o", binary, "github.com/guided-traffic/quader/cmd/quader")
-	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
+	cmd.Env = testenv.ChildEnv("CGO_ENABLED=0")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		fmt.Fprintf(os.Stderr, "go build: %v\n%s", err, out)
 		os.Exit(1)

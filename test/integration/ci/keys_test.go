@@ -246,9 +246,10 @@ func TestR_CI_003_AFetchHoldsNoTransactionOpenAndAnUnchangedSetLeavesTheEpoch(t 
 func TestR_CI_003_StaleAndUnreachable(t *testing.T) {
 	d := startDouble(t, oidcstub.Config{})
 	// max_stale 1 m needs a refresh bound of 1 m (max_stale is at least max_refresh_interval).
+	const maxStale = time.Minute
 	e := newEnv(t, options{valkey: false, env: []string{
 		"QUADER_CI_SIGNING_KEYS_MIN_REFRESH_INTERVAL=10s", "QUADER_CI_SIGNING_KEYS_DEFAULT_REFRESH_INTERVAL=1m",
-		"QUADER_CI_SIGNING_KEYS_MAX_REFRESH_INTERVAL=1m", "QUADER_CI_SIGNING_KEYS_MAX_STALE=1m",
+		"QUADER_CI_SIGNING_KEYS_MAX_REFRESH_INTERVAL=1m", "QUADER_CI_SIGNING_KEYS_MAX_STALE=" + maxStale.String(),
 	}})
 	a, b := e.web("web-a"), e.web("web-b")
 	_ = e.worker("worker-a")
@@ -260,32 +261,42 @@ func TestR_CI_003_StaleAndUnreachable(t *testing.T) {
 		t.Fatalf("web-b does not resolve the issuer after its change-log poll: %v", err)
 	}
 	isA, isB := issuerOf(t, a, d.stub.Issuer()), issuerOf(t, b, d.stub.Issuer())
-	age := func(secs int) {
-		e.exec("UPDATE ci_issuer_keys SET fetched_at = now() - make_interval(secs => $1) WHERE issuer_id = $2::uuid", secs, id)
+	// age stores the set as fetched the given time ago and returns that instant. The replicas run in this process and measure
+	// a set's age with its clock, so the instant is taken from it and not from the database's now().
+	age := func(ago time.Duration) time.Time {
+		at := time.Now().Add(-ago)
+		e.exec("UPDATE ci_issuer_keys SET fetched_at = $1 WHERE issuer_id = $2::uuid", at, id)
 		e.bump("ci_issuer_keys", map[string]string{"issuer": id}) // the copies are dropped, as a change message does
 		// Without Valkey the change-log poll carries the change (R-ARCH-018). Waiting for one poll of each replica
 		// instead of a fixed time makes the state of both copies certain before the lookups below, however long a
 		// poll takes on a loaded machine.
 		pollAll(t, a, b)
+		return at
 	}
 
 	t.Run("R-CI-003 a refresh that stores an unchanged set keeps every replica succeeding past max_stale", func(t *testing.T) {
-		age(55) // short of max_stale on every replica's copy; the sleeps below bring it to 1 s short
-		time.Sleep(1200 * time.Millisecond)
+		// The copies are filled two seconds short of max_stale: the room the lookups and the refresh below have.
+		fetched := age(maxStale - 2*time.Second)
 		if keyLookup(t, a, isA, tok) != nil || keyLookup(t, b, isB, tok) != nil {
-			t.Fatal("the set 1 s short of max_stale is refused")
+			t.Fatal("the set short of max_stale is refused")
 		}
 		before := e.epoch("ci_issuer_keys")
 		wantStatus(t, e.do(a, "POST", issuersPath+"/gitlab-main/keys/refresh", nil), 200, "") // the task's store: same set
 		if e.epoch("ci_issuer_keys") != before {
 			t.Fatal("an unchanged set sent a change message")
 		}
-		time.Sleep(6 * time.Second) // the copies are now older than max_stale
+		// The copies pass max_stale by the replicas' clock; the millisecond covers the microseconds the database keeps.
+		time.Sleep(time.Until(fetched.Add(maxStale + time.Millisecond)))
+		fetches := d.stub.Counts().JWKS
 		if err := keyLookup(t, a, isA, tok); err != nil {
 			t.Errorf("replica A after the copy passed max_stale: %v", err)
 		}
 		if err := keyLookup(t, b, isB, tok); err != nil {
 			t.Errorf("replica B after the copy passed max_stale: %v", err)
+		}
+		// The stored set was re-read; nothing was fetched from the issuer for it.
+		if n := d.stub.Counts().JWKS - fetches; n != 0 {
+			t.Errorf("the replicas fetched the key set %d times after their copies passed max_stale; want the stored set re-read", n)
 		}
 	})
 
@@ -293,23 +304,24 @@ func TestR_CI_003_StaleAndUnreachable(t *testing.T) {
 		if err := d.stub.SetFault(oidcstub.Fault{Unreachable: true}); err != nil {
 			t.Fatal(err)
 		}
-		age(30)
-		time.Sleep(1200 * time.Millisecond)
+		age(maxStale / 2)
 		if err := keyLookup(t, a, isA, tok); err != nil {
 			t.Fatalf("cached keys inside max_stale: %v", err)
 		}
-		age(61)
-		time.Sleep(1200 * time.Millisecond)
+		age(maxStale + time.Second)
 		if err := keyLookup(t, a, isA, tok); !errors.Is(err, subject.ErrKeysUnavailable) {
 			t.Errorf("replica A past max_stale: %v, want signing_keys_unavailable", err)
 		}
+		// A's on-demand fetch, the one that met the unreachable issuer, began inside the lookup above.
+		tried := time.Now()
 		if err := keyLookup(t, b, isB, tok); !errors.Is(err, subject.ErrKeysUnavailable) {
 			t.Errorf("replica B past max_stale: %v, want signing_keys_unavailable", err)
 		}
 		if err := d.stub.SetFault(oidcstub.Fault{}); err != nil {
 			t.Fatal(err)
 		}
-		time.Sleep(1200 * time.Millisecond)
+		// A fetches on demand again once unknown_kid_refresh_interval has passed since its last attempt (R-CI-003 step 2).
+		time.Sleep(time.Until(tried.Add(defaultKIDInterval)))
 		if err := keyLookup(t, a, isA, tok); err != nil {
 			t.Errorf("after the issuer is back, the on-demand fetch recovers: %v (last_error %q, age %s s, counts %+v, refresh events %d, failed %d)", err,
 				e.text("SELECT coalesce(last_error, '') FROM ci_issuer_keys"), e.text("SELECT extract(epoch FROM now() - fetched_at)::int::text FROM ci_issuer_keys"),

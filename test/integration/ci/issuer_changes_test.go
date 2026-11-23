@@ -92,25 +92,38 @@ func TestR_CI_005_AnIssuerChangeThatUnpinsMappingsIsRefused(t *testing.T) {
 func TestR_CI_003_ALaggingReplicaLearnsANewIssuerWithinThePollInterval(t *testing.T) {
 	x := newXEnv(t, options{valkey: false})
 	a, b := x.web("web-a"), x.web("web-b")
+	// onB is one exchange on B and the instant it was answered: B, whose change log is stopped, reads the issuers only inside
+	// its own exchanges, so its last read is never later than its last answer.
+	var lastB time.Time
+	onB := func() testenv.Answer {
+		r := x.exchange(b, x.mint(oidcstub.MintOptions{}))
+		lastB = time.Now()
+		return r
+	}
+	// afterTheInterval waits until B's last read of the issuers is one cluster.epoch_poll_interval old: B's next miss or
+	// disabled hit re-reads them (Q-CI-51). That is the bound the test stands for, not a time a loaded host keeps.
+	afterTheInterval := func() { time.Sleep(time.Until(lastB.Add(epochPollInterval))) }
+
 	// B's copy holds no issuer, then B stops listening.
-	wantOAuth(t, x.exchange(b, x.mint(oidcstub.MintOptions{})), 400, "invalid_request", "unknown_issuer")
+	wantOAuth(t, onB(), 400, "invalid_request", "unknown_issuer")
 	if err := b.App.Changes().Stop(t.Context()); err != nil {
 		t.Fatal(err)
 	}
 	x.issuer(a)
 	wantStatus(t, x.do(a, "POST", mappingsOf(xIssuer), releaseMapping("acme-release-publish", 100)), 201, "")
-	within(t, "B serving the issuer created on A", 5*time.Second, func() bool {
-		return x.exchange(b, x.mint(oidcstub.MintOptions{})).Status == 200
-	})
+	afterTheInterval()
+	if r := onB(); r.Status != 200 {
+		t.Fatalf("B one poll interval after its last read of the issuers: %d %s, want the issuer created on A served", r.Status, r.Body)
+	}
 
 	t.Run("R-CI-002 a re-enabled issuer is served on B within the interval", func(t *testing.T) {
 		wantStatus(t, x.replaceIssuer(a, xIssuer, map[string]any{"enabled": false}), 200, "")
-		within(t, "B refusing the disabled issuer", 5*time.Second, func() bool {
-			return x.exchange(b, x.mint(oidcstub.MintOptions{})).Status == 400
-		})
+		// B's copy still holds the issuer enabled; the exchange's own read of the issuer row refuses it (R-CI-007).
+		wantOAuth(t, onB(), 400, "invalid_request", "issuer_disabled")
 		wantStatus(t, x.replaceIssuer(a, xIssuer, map[string]any{"enabled": true}), 200, "")
-		within(t, "B serving the re-enabled issuer", 5*time.Second, func() bool {
-			return x.exchange(b, x.mint(oidcstub.MintOptions{})).Status == 200
-		})
+		afterTheInterval()
+		if r := onB(); r.Status != 200 {
+			t.Fatalf("B one poll interval after its last read of the issuers: %d %s, want the re-enabled issuer served", r.Status, r.Body)
+		}
 	})
 }

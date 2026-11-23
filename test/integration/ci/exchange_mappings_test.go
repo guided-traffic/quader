@@ -292,20 +292,21 @@ func TestR_CI_001_ExchangeAnswersIssuerDisabledForARemovedIssuer(t *testing.T) {
 	if err := x.declare(declared(x.d, xIssuer)); err != nil {
 		t.Fatal(err)
 	}
-	within(t, "the replica seeing the declared issuer", 5*time.Second, func() bool {
-		_, ok, _ := a.App.CIIssuers().Resolve(t.Context(), x.d.stub.Issuer())
-		return ok
-	})
+	// A migration's change message reaches the replica with its next change-log poll.
+	pollAll(t, a)
+	if _, ok, err := a.App.CIIssuers().Resolve(t.Context(), x.d.stub.Issuer()); !ok || err != nil {
+		t.Fatalf("the replica does not resolve the declared issuer after its change-log poll: %v", err)
+	}
 	x.addMapping(a, releaseMapping("acme-release-publish", 100))
 	wantToken(t, x.exchange(a, x.mint(oidcstub.MintOptions{})))
 	// The next migration no longer declares it: disabled with removed_from_configuration (Q-CI-16).
 	if err := x.declare(); err != nil {
 		t.Fatal(err)
 	}
-	within(t, "the replica seeing the removal", 5*time.Second, func() bool {
-		is, ok, _ := a.App.CIIssuers().Resolve(t.Context(), x.d.stub.Issuer())
-		return ok && !is.Enabled
-	})
+	pollAll(t, a)
+	if is, ok, err := a.App.CIIssuers().Resolve(t.Context(), x.d.stub.Issuer()); !ok || is.Enabled || err != nil {
+		t.Fatalf("after its change-log poll the replica resolves the removed issuer as found %v, enabled %v (%v)", ok, is.Enabled, err)
+	}
 	wantOAuth(t, x.exchange(a, x.mint(oidcstub.MintOptions{})), 400, "invalid_request", "issuer_disabled")
 }
 

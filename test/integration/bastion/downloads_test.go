@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -91,33 +92,56 @@ func TestR_BAS_025_TheBudgetAndCollapsedMisses(t *testing.T) {
 	}
 
 	t.Run("the budget", func(t *testing.T) {
+		// max_concurrent 2: the forwarded reads are held at the main installation until every other request has been
+		// answered, so the two slots stay taken and each further request waits out queue_timeout. Which requests are served
+		// and which are busy is decided by the held slots, not by how fast the host runs them.
 		b := w.newBastion(t, bastionOptions{Settings: relaxed, MainSettings: "    max_concurrent: 2\n    queue_timeout: 100ms\n"}).wait()
 		r := b.reps[0]
-		w.front.SetGate(slow)
+		release := make(chan struct{})
+		var releaseOnce sync.Once
+		open := func() { releaseOnce.Do(func() { close(release) }) }
+		defer open() // a failed test holds nothing at the front
+		var held atomic.Int32
+		w.front.SetGate(func(req *http.Request) {
+			if kindOf(req) == "forward" {
+				held.Add(1)
+				<-release
+			}
+		})
 		defer w.front.SetGate(nil)
 		w.front.ResetPeak()
-		var wg sync.WaitGroup
-		var mu sync.Mutex
-		codes := map[int]int{}
+		answers := make(chan reply, names)
 		for i := 0; i < names; i++ {
-			wg.Add(1)
 			go func() {
-				defer wg.Done()
-				got := r.do(t, "GET", tarballPath(npmAll, fmt.Sprintf("flood-%d", i), "1.0.0"), callOpts{token: w.full.token, addr: "198.51.100.101"})
-				mu.Lock()
-				codes[got.Status]++
-				mu.Unlock()
-				if got.Status == http.StatusServiceUnavailable && got.Code() != "bastion_busy" {
-					t.Errorf("503 with code %q", got.Code())
-				}
+				answers <- r.do(t, "GET", tarballPath(npmAll, fmt.Sprintf("flood-%d", i), "1.0.0"), callOpts{token: w.full.token, addr: "198.51.100.101"})
 			}()
 		}
-		wg.Wait()
+		next := func() reply {
+			t.Helper()
+			select {
+			case got := <-answers:
+				return got
+			case <-time.After(time.Minute):
+				t.Fatalf("no answer within a minute; %d forwarded reads held", held.Load())
+				return reply{}
+			}
+		}
+		for k := 0; k < names-2; k++ {
+			if got := next(); got.Status != http.StatusServiceUnavailable || got.Code() != "bastion_busy" {
+				t.Errorf("a request beyond the two slots: %d %q, want 503 bastion_busy", got.Status, got.Code())
+			}
+		}
+		if n := held.Load(); n != 2 {
+			t.Fatalf("%d forwarded reads reached the main installation while two slots were taken, max_concurrent is 2", n)
+		}
+		open()
+		for k := 0; k < 2; k++ {
+			if got := next(); got.Status != http.StatusOK {
+				t.Errorf("a request that held a slot: %d, want 200", got.Status)
+			}
+		}
 		if p := w.front.Peak(); p > 2 {
 			t.Fatalf("%d forwarded reads were in flight at the main installation, max_concurrent is 2", p)
-		}
-		if codes[http.StatusServiceUnavailable] == 0 || codes[http.StatusOK] == 0 {
-			t.Fatalf("answers: %v (some served, some busy expected)", codes)
 		}
 	})
 

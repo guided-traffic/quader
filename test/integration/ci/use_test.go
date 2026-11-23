@@ -384,8 +384,9 @@ func TestR_AUTHZ_014_RemovingAMappingFromAPolicyFailsTheNextInstall(t *testing.T
 			})
 			wantStatus(t, created, 201, "")
 			tok := e.issue(reps[0], e.bundle("4711", "acme/web/frontend", m.contribution(nil)), job{"1", "2"}, 10*time.Minute)
+			e.grantsSettled(reps...)
 			for _, r := range reps {
-				within(t, r.Name+" granting the install", 3*time.Second, func() bool { return e.install(r, "npm-all", tok.secret, "@acme/base").Status == 200 })
+				mustStatus(t, r.Name+" granting the install", e.install(r, "npm-all", tok.secret, "@acme/base"), 200)
 			}
 			patched := e.do(reps[0], "PATCH", "/api/v1/permission-policies/ci-read-internal", map[string]any{"entries": []any{}},
 				"If-Match", etag(created), "Content-Type", "application/merge-patch+json")

@@ -174,6 +174,9 @@ type result struct {
 	sum        [32]byte
 	n          int64
 	err        error
+	// refusal is the start of the body of an answer that is not 200: the error code says which admission or which
+	// dependency refused (a shed for the memory, a database that did not answer in time).
+	refusal string
 }
 
 // finish reads the whole response.
@@ -184,6 +187,10 @@ func (s *slow) finish() result {
 		return result{err: err}
 	}
 	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		b, err := io.ReadAll(io.LimitReader(res.Body, 512))
+		return result{status: res.StatusCode, retryAfter: res.Header.Get("Retry-After"), n: int64(len(b)), err: err, refusal: string(b)}
+	}
 	h := sha256.New()
 	n, err := io.Copy(h, res.Body)
 	out := result{status: res.StatusCode, retryAfter: res.Header.Get("Retry-After"), n: n, err: err}

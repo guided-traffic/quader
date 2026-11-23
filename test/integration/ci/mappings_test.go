@@ -471,9 +471,10 @@ func TestR_CI_009_TheSetTxReadsTheCommittedStateAndLabelsIt(t *testing.T) {
 	wantStatus(t, e.do(a, "POST", mappingsOf("gitlab-main"), readOnlyMapping("one", 1, all(eq("project_id", "1")), "it/npm-internal")), 201, "")
 	// The change message of the create evicts the issuer's set when it is applied, and the fill rule (R-ARCH-018)
 	// does not cache a set read while one is being applied: wait until A applied everything, then fill the copy.
-	within(t, "A applying the change of the create", 5*time.Second, func() bool {
-		return a.App.Changes().Applied(cluster.AreaCIMappings) == e.epoch(cluster.AreaCIMappings)
-	})
+	pollAll(t, a)
+	if applied, want := a.App.Changes().Applied(cluster.AreaCIMappings), e.epoch(cluster.AreaCIMappings); applied != want {
+		t.Fatalf("A applied the epoch %d of ci_mappings after its change-log poll, want %d", applied, want)
+	}
 	within(t, "A's copy holding the set", 5*time.Second, func() bool {
 		set, err := a.App.CIMappings().Set(t.Context(), id)
 		if err != nil || len(set.Mappings) != 1 {

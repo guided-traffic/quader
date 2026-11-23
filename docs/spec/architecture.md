@@ -11881,6 +11881,17 @@ database inside the area's minute (`blob`, `repository`).
 Each repaired test was run with `GOMAXPROCS=1` under `taskpolicy -c background` beside the other builders' gates. **Rationale:** a test
 that a slow host fails says nothing about the product; a bound that is the product's stays in the test that stands for it and says so.
 
+**Extended on 2026-11-23 (the rest of W4), the same choice:** a change that reaches a replica is applied by one change-log poll
+(`PollNow`) where the test does not stand for how fast it arrives, and the wait for a grant is the wait for the replica's grant index
+(the area `ci`); where a test does stand for a bound, the wait is computed from it and from the instant the test saw the state begin
+(one `cluster.epoch_poll_interval` after a replica's last read of the issuers; `max_stale` after the instant the test set as
+`fetched_at`; `unknown_kid_refresh_interval` after the last fetch); a read count is the transaction's own
+(`pg_stat_xact_user_tables`), not the table's published statistics; a budget of held slots is shown with slots that stay held, not
+with forwards slowed by a time (the Bastion's `max_concurrent`); a measured wait is compared on each side where it is exact (the
+mirror's back-off: the end of the wait against its floor, the sleep against its ceiling); a burst queued for the harness's five
+connections waits under the product's default `database.retry.max_elapsed` of 30 s, not the harness's 3 s; and a loop of writers
+does a fixed number of rounds instead of running for a time.
+
 **Applied in the spec:** none (test wiring).
 
 ### Q-ARCH-703 · A landing names the areas whose tests name a member the change made to an answer

@@ -497,7 +497,8 @@ listeners and the listener's CA as `server.internal_tls.ca_file`, which a TLS st
 (`Stack.Environ`) with `QUADER_RUNTIME_MEMORY_LIMIT_BYTES` of 256 MiB: 1,000 downloads whose clients read nothing, the memory
 guard's slots and `503`s, and the memory the runtime holds, sampled from `/metrics` ([Stage 4 and the memory guard](#stage-4-and-the-memory-guard)).
 `TestBurstBesideEmptyCaches` offers 300 held downloads to a 1 GiB replica with the default caches (none is shed, where the
-budgets would have left 77 slots), and `TestHeldDownloadCost` measures what a held download of 5 and 8 MiB costs (heap in use,
+budgets would have left 77 slots; the replica runs with the product's `database.retry.max_elapsed` of 30 s, since the 300 queue for
+the harness's five connections, which a loaded host can make longer than its 3 s), and `TestHeldDownloadCost` measures what a held download of 5 and 8 MiB costs (heap in use,
 stacks, resident set per download, logged with `-v`): the basis of the request bytes in Q-ARCH-328.
 A memory limit is per process, which is why this suite cannot use the in-process harness.
 

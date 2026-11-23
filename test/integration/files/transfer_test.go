@@ -529,7 +529,9 @@ func TestConcurrentWritersOnOnePath(t *testing.T) {
 	})
 
 	t.Run("R-STOR-003 deploys under a folder and deletes of its last child never leave an item without its parent folder", func(t *testing.T) {
-		stop := make(chan struct{})
+		// A fixed number of rounds, not a time: the same interleavings are tried on a fast and on a loaded host, and the test
+		// ends when the writers have done them (about 4 s on the development machine, 2026-11-23).
+		const rounds = 80
 		var wg sync.WaitGroup
 		var fail atomic.Int64
 		var firstFail atomic.Value // the first refused request, so that a failure names its status
@@ -539,12 +541,7 @@ func TestConcurrentWritersOnOnePath(t *testing.T) {
 			go func() {
 				defer wg.Done()
 				r := []*replica{a, b}[w%2]
-				for i := 0; ; i++ {
-					select {
-					case <-stop:
-						return
-					default:
-					}
+				for i := range rounds {
 					p := fmt.Sprintf("/files/it/generic-local/orph/d%d/f%d.bin", w%3, i%4)
 					if a := r.put("maint", p, fmt.Sprint(w, i)); a.status != 201 && a.status != 200 {
 						fail.Add(1)
@@ -561,11 +558,9 @@ func TestConcurrentWritersOnOnePath(t *testing.T) {
 				}
 			}()
 		}
-		time.Sleep(4 * time.Second)
-		close(stop)
 		wg.Wait()
 		if fail.Load() != 0 {
-			// The lines of the first refused request by its ID: the tail of a four-second loop of six writers need not hold them (F-126).
+			// The lines of the first refused request by its ID: the tail of the loop of six writers need not hold them (F-126).
 			id, _ := firstID.Load().(string)
 			var lines []string
 			for _, l := range strings.Split(requests.String(), "\n") {

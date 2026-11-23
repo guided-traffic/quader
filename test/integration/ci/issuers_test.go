@@ -37,10 +37,12 @@ func TestR_CI_002_TheIssuerLifecycle(t *testing.T) {
 	d := startDouble(t, oidcstub.Config{})
 	e := newEnv(t, options{valkey: true})
 	a, b := e.web("web-a"), e.web("web-b")
+	var created time.Time // when the create was answered: the issuer row is committed
 
 	t.Run("R-CI-002 create answers 201 with Location and ETag, the defaults filled in and the keys fetched", func(t *testing.T) {
 		before := e.epoch("ci_mappings")
 		r := e.do(a, "POST", issuersPath, d.body("gitlab-main", map[string]any{"description": "the instance"}))
+		created = time.Now()
 		wantStatus(t, r, 201, "")
 		if loc := r.Header.Get("Location"); !strings.HasSuffix(loc, issuersPath+"/gitlab-main") {
 			t.Errorf("Location = %q", loc)
@@ -79,10 +81,12 @@ func TestR_CI_002_TheIssuerLifecycle(t *testing.T) {
 	})
 
 	t.Run("R-CI-002 the other replica resolves the issuer within the poll interval", func(t *testing.T) {
-		within(t, "web-b resolving gitlab-main", 3*time.Second, func() bool {
-			_, ok, err := b.App.CIIssuers().Resolve(t.Context(), d.stub.Issuer())
-			return err == nil && ok
-		})
+		// Whatever B's copy holds and whether a change message arrived: a miss re-reads the issuers once the last read is
+		// an interval old (Q-CI-51), and any read of B before the commit is that old one interval after it.
+		time.Sleep(time.Until(created.Add(epochPollInterval)))
+		if _, ok, err := b.App.CIIssuers().Resolve(t.Context(), d.stub.Issuer()); !ok || err != nil {
+			t.Fatalf("web-b does not resolve gitlab-main one poll interval after the create: %v", err)
+		}
 	})
 
 	t.Run("R-CI-002 a create of the same name or the same issuer URL is 409", func(t *testing.T) {
@@ -208,10 +212,10 @@ func TestR_CI_002_TheIssuerLifecycle(t *testing.T) {
 		if e.number("SELECT count(*) FROM ci_issuer_keys") != 0 {
 			t.Error("the key row stays after the delete")
 		}
-		within(t, "web-b dropping the deleted issuer", 3*time.Second, func() bool {
-			_, ok, err := b.App.CIIssuers().Resolve(t.Context(), d.stub.Issuer())
-			return err == nil && !ok
-		})
+		pollAll(t, b)
+		if _, ok, err := b.App.CIIssuers().Resolve(t.Context(), d.stub.Issuer()); ok || err != nil {
+			t.Errorf("web-b still resolves the deleted issuer after its change-log poll (%v)", err)
+		}
 	})
 }
 
