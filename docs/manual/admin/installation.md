@@ -164,7 +164,7 @@ backup:
 config:
   backup:
     target:
-      bucket: quader-backups        # example: a bucket of its own, not the blob bucket
+      bucket: quader-backups        # example: a bucket of its own, not the bucket of an object-store connection
 ```
 
 By default the backup pods reach the target with the default credential chain of their pod, such as a workload identity on their ServiceAccount (`backup.serviceAccount.annotations`); for static keys, set `config.backup.target.credentials.source: static` and name the Secret in `secrets.backupTarget.existingSecret`. When a connection uses static keys (`credentials_source: static`), the backup pods also need the `backupSource` of its entry in `secrets.storageConnections`, a login that may only read its bucket. [Backups](operations.md#backups) shows the runs.

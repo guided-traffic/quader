@@ -16,7 +16,7 @@ A backup holds the database, every blob a snapshot row references, and a manifes
 
 - Valkey: nothing in it is the only copy, and a restored installation starts on a new keyspace;
 - the stored-secret keys, the configuration file, the Helm values and the Kubernetes Secrets;
-- UI sessions and other transient tables, uploads in progress, and the revocation journal, which stays in the blob bucket on purpose ([What a restore does to access removed after the restore point](#what-a-restore-does-to-access-removed-after-the-restore-point));
+- UI sessions and other transient tables, uploads in progress, and the revocation journal, which stays in the buckets of the object-store connections on purpose ([What a restore does to access removed after the restore point](#what-a-restore-does-to-access-removed-after-the-restore-point));
 - audit events written after the snapshot, which exist only in the `log: audit` stream ([Monitoring and operations](operations.md#the-audit-log)).
 
 ## Set up the backup
@@ -83,7 +83,7 @@ The same pattern runs `backup list` and `backup delete <id> --yes`. Without `--d
 
 ## Restore a backup
 
-A restore goes into a new, empty installation: an empty database schema and an empty blob prefix. Restoring onto a blob prefix that holds objects is not built. The restore applies the migrations itself and replays the revocation journal, so no migration Job and no `post-restore` is needed.
+A restore goes into a new, empty installation: an empty database schema and an empty prefix on every object-store connection. Restoring onto a prefix that holds objects is not built. The restore applies the migrations itself and replays the revocation journal, so no migration Job and no `post-restore` is needed.
 
 ### Preconditions
 
@@ -137,14 +137,14 @@ The Job copies the blobs, loads the tables in one transaction, applies the later
 
 ## Restore to a point in time
 
-This restores PostgreSQL through your platform to a time *t*, without a Quader backup. It needs a platform that keeps a recovery window, and the blob bucket either versioned or a garbage-collection grace period that covers the window.
+This restores PostgreSQL through your platform to a time *t*, without a Quader backup. It needs a platform that keeps a recovery window, and the bucket of every object-store connection either versioned or a garbage-collection grace period that covers the window.
 
 ### Prepare the platform
 
 | What | How |
 |---|---|
-| PostgreSQL | Continuous archiving to a bucket other than the blob bucket, with different credentials: with CloudNativePG the Barman Cloud plugin, on a managed service its point-in-time recovery |
-| Blob bucket | Versioning with noncurrent expiry of at least the recovery window, or a `storage.gc.grace_period` of at least the window |
+| PostgreSQL | Continuous archiving to a bucket other than the connections' buckets, with different credentials: with CloudNativePG the Barman Cloud plugin, on a managed service its point-in-time recovery |
+| The bucket of each connection | Versioning with noncurrent expiry of at least the recovery window, or a `storage.gc.grace_period` of at least the window |
 | Object-store credentials | The runtime credential must not hold `s3:DeleteObjectVersion`, `s3:PutBucketVersioning`, `s3:PutLifecycleConfiguration` or `s3:PutBucketPolicy`, so a compromised replica can create delete markers but cannot destroy history |
 
 Declare the window in the configuration so that Quader checks it:
@@ -240,7 +240,7 @@ If the replay leaves no administrator, the output says so; sign in with the brea
 
 - entries not yet shipped when the old database stopped, normally less than one `backup.revocation_journal.ship_interval` (5 s by default); `QuaderRevocationJournalBacklog` warns of a backlog;
 - a removal made while `backup.revocation_journal.enabled` was `false`;
-- a journal that is gone with the blob bucket, or skipped with `--skip-revocation-journal` (`restore.skipRevocationJournal`, `postRestore.skipRevocationJournal`), which the restore records in `system.restored`;
+- a journal that is gone with the buckets of every connection, or skipped with `--skip-revocation-journal` (`restore.skipRevocationJournal`, `postRestore.skipRevocationJournal`), which the restore records in `system.restored`;
 - without bucket versioning, journal objects deleted with the runtime credential: give the restore a login that lists object versions (`restore.journalCredentials`, `postRestore.journalCredentials`) so a delete marker cannot hide an entry;
 - a row that could not be written to the journal: `QuaderRevocationJournalQuarantined` fires and `quader admin post-restore` reports it.
 
