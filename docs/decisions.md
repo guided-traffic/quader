@@ -9127,10 +9127,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-ARCH
 
-276 questions on [spec/architecture.md](spec/architecture.md).
+277 questions on [spec/architecture.md](spec/architecture.md).
 
 <details>
-<summary>Q-ARCH: 276 questions</summary>
+<summary>Q-ARCH: 277 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9410,6 +9410,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ARCH-703](spec/architecture.md#q-arch-703--a-landing-names-the-areas-whose-tests-name-a-member-the-change-made-to-an-answer) | A landing names the areas whose tests name a member the change made to an answer | Decided by the development agent | (a), [apiareas](../internal/tools/apiareas/main.go), held by `TestTheChangedMembersAndTheAreasThatNameThem` and `TestTheRealDocumentHasMembers` (milliseconds); how a landing uses it is in [build-and-test.md](developer/build-and-test.md#which-areas-a-changed-answer-needs). | — |
 | [Q-ARCH-811](spec/architecture.md#q-arch-811--the-pipeline-writes-the-evidence-record-and-the-coverage-badge-onto-the-branch-coverage-main-holds-neither) | The pipeline writes the evidence record and the coverage badge onto the branch `coverage`; `main` holds neither | Decided by the development agent | (c), with the record whole as set out above, and (b) for a test that holds a refusal. | — |
 | [Q-ARCH-1040](spec/architecture.md#q-arch-1040--a-commit-on-the-branch-coverage-holds-the-record-and-the-badge-alone) | A commit on the branch `coverage` holds the record and the badge alone | Decided by the development agent | (c) The four files and nothing else; the branch's head as the only parent; the pages' links to the rest of the repository at the record's commit on GitHub; (ii) `badges/coverage.json` | — |
+| [Q-ARCH-1041](spec/architecture.md#q-arch-1041--a-statement-whose-cancel-request-is-dropped-ends-when-the-server-sees-its-client-gone) | A statement whose cancel request is dropped ends when the server sees its client gone | Decided by the development agent on 2026-11-24 | (a) `database.session.client_connection_check_interval` (1 s by default), sent as a startup parameter on direct connections and a role default through a transaction-mode pooler, verified by preflight like the other session settings | — |
 
 </details>
 
@@ -10666,10 +10667,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-LIM
 
-62 questions on [spec/usage-and-limits.md](spec/usage-and-limits.md).
+63 questions on [spec/usage-and-limits.md](spec/usage-and-limits.md).
 
 <details>
-<summary>Q-LIM: 62 questions</summary>
+<summary>Q-LIM: 63 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10734,6 +10735,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-LIM-99](spec/usage-and-limits.md#q-lim-99--a-speed-limit-does-not-stop-a-link-the-budgets-are-charged-at-the-issue) | A speed limit does not stop a link; the budgets are charged at the issue | Decided by the development agent on 2026-11-22, after the owner left the open questions to it | (c) The figure does not stop a link; the transfer by a link is not paced; the hour and day budgets are charged in full at issuance; in `enforce` and in `audit` alike | [ADR-242](#adr-242--delivery-by-signed-links-of-the-object-store-one-switch-of-the-installation-where-a-link-costs-nothing), [ADR-250](#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward) |
 | [Q-LIM-110](spec/usage-and-limits.md#q-lim-110--an-upstream-request-step-9a-refuses-is-counted-nowhere-and-a-request-stage-7-refuses-is-given-back-to-the-endpoints-class) | An upstream request step 9a refuses is counted nowhere, and a request stage 7 refuses is given back to the endpoint's class | That a refused request does not count is the owner's decision 19 (Q-LIM-57), carried on 2026-11-23 to step 9a and to the endpoint's class of R-EP-015 | (a) Step 9a decides and counts in one take, the script of stage 7: the upstream request windows take the request, the uncached byte windows are only checked (they must have room and are not added to); an upstream request the parallel lease refuses after the take admitted it is given back by the same script. The endpoint's class keeps its own step and is given back the request stage 7 refuses | — |
 | [Q-LIM-111](spec/usage-and-limits.md#q-lim-111--a-replica-reports-the-epoch-of-the-limits-it-decides-with) | A replica reports the epoch of the limits it decides with | Decided by the development agent on 2026-11-23 | (a) The index's load reads the area's epoch first, in the transaction of its snapshot, and the replica reports it as the gauge `quader_limits_index_epoch`; a test waits until every replica's gauge reaches the epoch the database holds after its change | — |
+| [Q-LIM-112](spec/usage-and-limits.md#q-lim-112--a-replica-counts-the-rounds-of-its-charge-buffer) | A replica counts the rounds of its charge buffer | Decided by the development agent on 2026-11-24 | (a) A counter `quader_limits_flushes_total` of the rounds that ended; a test reads it on every serving replica after the request and waits for two more rounds | — |
 | [Q-LIM-291](spec/usage-and-limits.md#q-lim-291--a-refusal-names-one-wait-in-the-unit-its-text-names-it-in) | A refusal names one wait, in the unit its text names it in | Decided by the development agent | (a) One value: the wait rounded up to whole seconds below two minutes and to whole minutes from there; the detail names it exactly ("2 hours 1 minute"), and `Retry-After`, `retryAfterSeconds` and the refusal's RateLimit policy carry it | — |
 
 </details>
