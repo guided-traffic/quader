@@ -117,6 +117,15 @@ describe('App shell', () => {
     const groups = [...sidebar.querySelectorAll<HTMLElement>('nav [role="group"]')];
     expect(groups.map((g) => root.querySelector(`#${g.getAttribute('aria-labelledby')}`)?.textContent?.trim())).toEqual(['Your work', 'Security audit']);
     expect([...groups[1]!.querySelectorAll('a .nav-label')].map((a) => a.textContent?.trim())).toEqual(['Security dashboard', 'Malware', 'Signatures']);
+    // Each link's accessible name is its word alone: the icon's ligature ("bug_report") is hidden from assistive technology, so a journey
+    // names the entries by their accessible names (journey 16), not by their text, which holds the ligature.
+    const accessibleName = (a: Element): string => {
+      const copy = a.cloneNode(true) as Element;
+      copy.querySelectorAll('[aria-hidden="true"]').forEach((n) => n.remove());
+      return a.getAttribute('aria-label') ?? (copy.textContent ?? '').replace(/\s+/g, ' ').trim();
+    };
+    expect([...groups[1]!.querySelectorAll('a')].map(accessibleName)).toEqual(['Security dashboard', 'Malware', 'Signatures']);
+    expect([...groups[1]!.querySelectorAll('a')].map((a) => a.textContent?.trim())).not.toEqual(['Security dashboard', 'Malware', 'Signatures']);
     // The entries are plain entries: no folding group, no chevron, in the home side bar.
     expect(sidebar.querySelector('button.group-toggle')).toBeNull();
     expect(sidebar.querySelector('.expand-chevron')).toBeNull();
