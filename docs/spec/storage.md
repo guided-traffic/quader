@@ -3369,6 +3369,12 @@ Acceptance criteria:
 - With `mode: kms`, `aws s3api head-object` of a new blob shows `ServerSideEncryption: aws:kms`
   and the configured key; downloads and multipart uploads work with the minimal KMS permissions.
 
+Held by `TestR_STOR_032_EveryWriteCarriesTheConnectionsEncryption` ([sse_test.go](../../internal/blob/s3/sse_test.go); unit, milliseconds,
+a fake endpoint, no provider called): for `none`, `s3` and `kms` with and without a bucket key, taken from a connection's element through
+`config.ClientConfig`, `PutObject`, `CreateMultipartUpload` and `CopyObject` and the `CreateMultipartUpload` of a copy in parts carry
+the mode, the key and the bucket key, and `UploadPart`, `UploadPartCopy`, `CompleteMultipartUpload`, `HeadObject` and `GetObject` carry
+none. What a provider does with them (the acceptance criterion above) is not tested: no test calls an object storage provider.
+
 ### R-STOR-033 · Connection pool, timeouts, retries and circuit breaker
 Priority: **MVP** · Covers: STOR-024, STOR-017
 
