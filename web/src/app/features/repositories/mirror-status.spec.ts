@@ -62,6 +62,7 @@ describe('Mirror status panel', () => {
     const states: readonly [MirrorStatus['state'], string, Partial<MirrorStatus>][] = [
       ['off', 'Off', { mode: 'pullThrough', lastCompletePass: null, nextPassAt: null }],
       ['paused', 'Paused', {}],
+      ['unbounded', 'No bound', {}],
       ['scheduled', 'Scheduled', {}],
       ['running', 'Running', { pass: PASS }],
       ['waiting', 'Waiting', { pass: { ...PASS, job: null } }],
@@ -91,13 +92,14 @@ describe('Mirror status panel', () => {
       expect(await tone({ state: 'running', pass: PASS })).not.toContain('ok');
       expect(await tone({ state: 'failing' })).toContain('bad');
       expect(await tone({ state: 'bound_reached' })).toContain('warn');
+      expect(await tone({ state: 'unbounded' })).toContain('warn');
     });
 
     it('stateInfo names the number of failures; mirrorActive is true for running and waiting only', () => {
       const status = sampleMirrorStatus({ state: 'failing', errors: { consecutiveFailures: 5, lastAt: null, lastCode: null, lastMessage: null } });
       expect(stateInfo(status).sentence).toContain('5');
       expect(['running', 'waiting'].every((s) => mirrorActive(s as never))).toBe(true);
-      expect(['off', 'paused', 'scheduled', 'bound_reached', 'failing'].some((s) => mirrorActive(s as never))).toBe(false);
+      expect(['off', 'paused', 'unbounded', 'scheduled', 'bound_reached', 'failing'].some((s) => mirrorActive(s as never))).toBe(false);
     });
   });
 
@@ -165,6 +167,9 @@ describe('Mirror status panel', () => {
       );
       const paused = await render([sampleMirrorStatus({ state: 'paused' })]);
       expect(text(paused.r.root.querySelector('[data-testid="mirror-next"]')!)).toContain('No pass is planned.');
+      // Q-CUR-43: a mirror without its bound does not run, whatever its stored next pass says.
+      const unbounded = await render([sampleMirrorStatus({ state: 'unbounded', nextPassAt: '2026-11-04T11:00:00Z' })]);
+      expect(text(unbounded.r.root.querySelector('[data-testid="mirror-next"]')!)).toContain('No pass is planned.');
     });
 
     it('R-UI-021 shows the last error with code, message and time, and "No error." without one', async () => {
@@ -360,7 +365,7 @@ describe('Mirror status panel', () => {
       expect(notice.querySelector('[role="alert"]')).toBeNull();
     });
 
-    it('R-UI-021 R-REPO-056 mirror_off and mirror_paused are shown inline, in words', async () => {
+    it('R-UI-021 R-REPO-056 mirror_off, mirror_paused and mirror_unbounded are shown inline, in words', async () => {
       const { r, fake } = await render([sampleMirrorStatus()]);
       fake.runMirrorError = new ApiError(409, { code: 'mirror_off' }, null);
       button(r.root, 'Run a pass now').click();
@@ -371,6 +376,11 @@ describe('Mirror status panel', () => {
       button(r.root, 'Run a pass now').click();
       await settle(r.fixture);
       expect(text(r.root.querySelector('.notices')!)).toContain('The mirror is paused. Resume it to run a pass.');
+
+      fake.runMirrorError = new ApiError(422, { code: 'mirror_unbounded' }, null);
+      button(r.root, 'Run a pass now').click();
+      await settle(r.fixture);
+      expect(text(r.root.querySelector('.notices')!)).toContain('The mirror has no bound, so no pass runs.');
     });
 
     it('R-UI-021 a 400 not_applicable is shown inline; another failure is an error notice', async () => {

@@ -6287,7 +6287,8 @@ export interface paths {
          *     pass starts when a process that claims the queue takes the job, and is full when the body says `full: true`. The
          *     body is optional. Answers `202` with the job. `409 mirror_pass_running` names the job (extension `job`) while a pass is
          *     queued or running, `409 mirror_off` for a remote in mode `pullThrough`, `409 mirror_paused` for a paused mirror,
-         *     `409 mirror_rate_limited` (extension `until`) while the upstream's wait lies ahead;
+         *     `409 mirror_rate_limited` (extension `until`) while the upstream's wait lies ahead, `422 mirror_unbounded` for a mirror
+         *     of a well-known upstream that has no bound (the state `unbounded`, R-REPO-052, Q-CUR-43);
          *     a local or virtual repository answers `400 not_applicable`. The request writes the audit event
          *     `mirror.pass_requested`. Needs `repositories:write-config`, `manage` on the repository (which the role Maintainer and Owner
          *     grant), or the role Owner of its project; a repository that is hidden from the caller answers `404`.
@@ -14735,13 +14736,15 @@ export interface components {
              */
             mode: "pullThrough" | "mirror";
             /**
-             * @description `off` for mode `pullThrough`; `paused` for `remote.mirror.paused`; `failing` after three or more failures in a row;
+             * @description `off` for mode `pullThrough`; `paused` for `remote.mirror.paused`; `unbounded` for a mirror of a well-known upstream
+             *     that has neither a bounding `remote.mirror.include` nor `remote.mirror.maxBytes` (R-REPO-052): a save refuses it, and
+             *     one stored under an earlier rule does not run until it has a bound (Q-CUR-43); `failing` after three or more failures in a row;
              *     `bound_reached` while the storage bound stops additions (R-REPO-052); `running` while a pass is in progress and
              *     its job runs; `waiting` while a pass is in progress and no job runs it, for a long rate-limit wait, a failure or a
              *     release, until the next job; `scheduled` otherwise. The first of these that holds is the state, in this order.
              * @enum {string}
              */
-            state: "off" | "paused" | "scheduled" | "running" | "waiting" | "bound_reached" | "failing";
+            state: "off" | "paused" | "unbounded" | "scheduled" | "running" | "waiting" | "bound_reached" | "failing";
             pass: components["schemas"]["MirrorPass"] | null;
             lastCompletePass: components["schemas"]["MirrorPassSummary"] | null;
             /**
@@ -29513,6 +29516,7 @@ export interface operations {
             409: components["responses"]["Conflict"];
             413: components["responses"]["PayloadTooLarge"];
             415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             503: components["responses"]["Unavailable"];

@@ -148,7 +148,11 @@ Priority: **P1** · Covers: quader-only
   The two lists are no second mechanism beside the rules (Q-CUR-4). Local and virtual repositories keep their patterns as R-REPO-005
   says.
 - **No migration** carries a stored remote's patterns into rules (the stage's rule, [CLAUDE.md](../../CLAUDE.md)): a remote that held
-  patterns before this change delivers everything until its rules are set.
+  patterns before this change delivers everything until its rules are set. Its stored lists are read by nothing: neither the snapshot
+  nor its document holds them, so an update of it is not refused for them and the next write stores the section without them
+  ([Q-CUR-45](#q-cur-45--a-remotes-stored-patterns-are-not-read-into-its-document-either), `TestR_CUR_002_AStoredRemotesPatternsAreNotRead`).
+  A mirror whose bound were those patterns does not run until it has a bound of its own
+  ([Q-CUR-43](#q-cur-43--a-mirror-without-its-bound-does-not-run-and-says-so)).
 - **What a blocked name loses:** a pattern hid a package from every view, its findings included, because it was not served
   (`internal/packages/view/service.go:194`, `internal/vuln/report/report.go:220`). A rule does not hide: what a remote stores and its
   rules do not deliver stays visible, with its verdicts, to whoever may read the repository's content in the screens and the management
@@ -245,7 +249,10 @@ Priority: **P1** · Covers: SEC-007, SEC-032
   rule refusal (its text names that member), else `404`: "not found" would hide the act that changes the answer (Q-CUR-8). A rule of the
   virtual repository's own does not exist; its patterns stay R-REPO-005's.
 - **A Bastion** forwards a miss to the main installation's route (R-BAS-013), which decides as above; what a Bastion holds of a version
-  that a narrowing of the rules refuses is dropped by the `content` entry of `repository.narrowed` (R-CUR-021, R-BAS-015).
+  that a narrowing of the rules refuses is dropped by the `content` entry of `repository.narrowed` (R-CUR-021, R-BAS-015). It relays the
+  refusal unchanged and keeps no copy of it, because the refusal says `Cache-Control: no-store` (R-BAS-020,
+  [Q-CUR-44](#q-cur-44--a-bastion-keeps-no-refusal-of-the-rules-an-allow-reaches-its-clients-at-once)): an allow reaches a Bastion's
+  clients at once.
 - **Audit:** `remote.delivery.refused` (R-CUR-019), asynchronous, at most once a minute per repository, package, version and client
   address on each replica, as `vulnerability.download_blocked` is throttled; details: the path, the package, the version, the reason
   (`blocked` or `not_allowed`), the kind (`document` or `artifact`).
@@ -1030,7 +1037,9 @@ Priority: **P1** · Covers: quader-only
   names of the `package` rules with `allow` and of the `version` rules, so an allow-list is mirrored by naming it. A change of the rules
   that widens what is delivered makes the next pass full (the state's fingerprint covers the scope and the rules' revision).
 - **The bound of a well-known upstream** (R-REPO-052) is met by a scope of `remote.mirror.include` that passes today's bound rule
-  (`discover.LiteralPrefix`) or by `remote.mirror.maxBytes`; the rules alone are no bound, because a Maintainer can allow `**`.
+  (`discover.LiteralPrefix`) or by `remote.mirror.maxBytes`; the rules alone are no bound, because a Maintainer can allow `**`. The
+  bound is checked when a pass starts as well as when the mirror is saved: a stored mirror without it does not run and its status reads
+  `unbounded` (Q-CUR-43).
 - Q-REPO-193 freezes for an Owner the scope, the URL and the extra hosts of a mirror; the include and exclude patterns leave that rule with
   the patterns of a remote. A Maintainer's rules widen a mirror only within the scope an administrator set.
 
@@ -2041,20 +2050,90 @@ catalogue's (R-ARCH-010).
 - R-CUR-017: the mirror's scope and the rules (`TestR_CUR_017_TheMirrorAdmitsWhatItsScopeAndTheRulesAdmit`,
   `TestR_CUR_017_AMirrorStoresWhatItsScopeAndTheRulesBothAdmit`).
 
-**Not built** (the plan takes them over):
-- R-CUR-005: the rows of the project `upstream` (`upstream/npmjs`) and the `409 managed_by_product` of a rule write on a system repository
-  have no integration case (the upstream area's harness does not wire the rules' API); the unit of the code path is not written either.
-- R-CUR-006: the replay of the parts `rules` and `deliveryMode` after a restore has no test of its own (the code is
-  `internal/repository/journal_replay_delivery.go`).
-- R-CUR-004: the refusal through a Bastion is the main installation's (built by construction); the Bastion's integration areas were run,
-  no case of a refusal through a Bastion was added.
-- The screens (R5a, R5b) and the manual's sentences (R6) of the rules.
+**Built with the landing** (the three items the first report left open):
+- R-CUR-005: the rows of the project `upstream` on `upstream/npmjs` and the `409 managed_by_product` of a rule's write and removal on
+  `upstream/scanner-trivy` (`TestR_CUR_005_TheRowsOfTheProjectUpstream`, area `repository`, on the replicas of the testenv harness, which
+  wire the rules' API).
+- R-CUR-006: the replay of the parts `rules` and `deliveryMode` after a restore, and the fail-closed disable of a rule set at its bound
+  (`TestR_CUR_006_TheRulesAndTheModeNarrowedAfterARestorePointAreReplayed`, area `backup`).
+- R-CUR-004: the refusal through a Bastion (`TestR_CUR_004_ARuleRefusalReachesTheClientThroughABastionAndIsNotKept`, unit,
+  `internal/bastion/engine`); it found that a Bastion kept the refusal for its answer period, which Q-CUR-44 ends.
+
+**Not built** (the plan takes them over): the screens of the rules (R5a, R5b) and the manual's sentences about them (R6). The forms of a
+remote no longer offer the include and exclude patterns, and the mirror's form has **Mirror only these packages** (R-CUR-018, cut forward
+from R5b).
 
 **Rationale:** each detail keeps one answer per question. The development agent would revisit the treatment of a stored document of a
 refused package if serving it stale were wanted.
 
 **Applied in the spec:** R-CUR-003 (this block), [architecture.md](architecture.md) R-ARCH-010 (checks 21 to 23),
 [formats/oci.md](formats/oci.md) R-OCI-038 (the tags list).
+
+### Q-CUR-43 · A mirror without its bound does not run, and says so
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: with R-CUR-017 a mirror's scope moved from the repository's `includePatterns` to `remote.mirror.include`, and a remote's stored
+patterns are no longer read (no migration, by the stage's rule). The bound of R-REPO-052 was checked only when a mirror was saved, and a
+pass took `remote.mirror.include` with "empty means everything". A mirror of a public registry stored with patterns as its only bound would
+therefore have stored everything the upstream offers at its next pass.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The dispatch and the pass apply the save's predicate (`repository.UnboundedMirror`): such a mirror is not dispatched, a pass of it ends `skipped: unbounded`, its status reads `unbounded`, its run answers 422 `mirror_unbounded` (chosen) | `internal/repository/validate_mirror.go`, `internal/mirror/engine.go`, `internal/mirror/pass.go`, `internal/api/v1/mirror_api.go` | One predicate for the save and the run, so what a save refuses never runs, whatever stored it; the owner sees why it stands and what fixes it; nothing is lost (a pass in progress keeps its pending names) | A stored mirror stops until an administrator gives it a scope or `maxBytes` |
+| (b) A pass of an unbounded mirror stores nothing beyond a default byte bound | A hidden `maxBytes` | It keeps running | A bound nobody chose; the mirror fills up to it with what nobody asked for |
+| (c) Copy the stored include patterns into `remote.mirror.include` on read | A migration path | Nothing stops | The stage forbids migration paths (pre-alpha, no installations to carry) |
+
+**Choice:** (a). The state `unbounded` stands after `paused` and before `failing`: a paused mirror does not run either, and the pause is
+the choice someone made. The alert `QuaderMirrorStale` fires for it after an hour, as for any mirror whose next pass is overdue; its text
+names the cause. **Rationale:** the guard costs one lookup in the snapshot per dispatch and pass, and it is the only thing that protects
+a stored mirror whose owner never reads the change. The development agent would revisit (b) if a mirror that stops were worse for an
+installation than one that fills.
+
+**Applied in the spec:** [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-052, R-REPO-056; R-CUR-017.
+
+### Q-CUR-44 · A Bastion keeps no refusal of the rules: an allow reaches its clients at once
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a Bastion keeps the main installation's `403` as the caller's URL answer for the answer period (`bastion.answers.period`, 5 min by
+default, R-BAS-020), and a feed entry ends it early: a token, principal or grants entry, or the `content` entry of a narrowing. The refusal
+of the rules (`403 not_allowed_in_repository`, R-CUR-004) is lifted by an allow, which is a widening and journals nothing, so the test of a
+refusal through a Bastion showed the kept refusal replayed after the allow for the rest of the period. The refusal already says
+`Cache-Control: no-store`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A Bastion keeps no `403` that says `Cache-Control: no-store`; it relays it unchanged (chosen) | `internal/bastion/engine/forward.go` (`onPass`, `noStore`) | An allow reaches a Bastion's clients as it reaches the main installation's; the Bastion honours the directive the refusal carries; no new feed kind | A client that retries a refused version in a loop through a Bastion costs the main installation one request each time, bounded by the Bastion's guard and budget; the main installation decides it from its snapshot before any fill |
+| (b) Keep it, as a refusal of a right is kept (the owner's rule that a widening of a right may take the period) | As before | Fewest requests | A person whose package a Maintainer just allowed is refused for up to 5 min (an hour at the most) behind a Bastion, and nowhere else |
+| (c) Journal an allow as a feed entry that ends the URL answers of the repository | A widening in the revocation feed | Keeps the refusals | The feed carries revocations; a widening in it changes R-BAS-015's classification for every Bastion |
+
+**Choice:** (a). **Rationale:** the owner's rule about a right's widening is about who may read; the rules decide what a repository
+delivers to everyone who may, and the refusal marks itself as not to be stored. The development agent would revisit (b) if refused loops
+through Bastions showed in the main installation's load.
+
+**Applied in the spec:** R-CUR-004 ("A Bastion"); [bastion.md](bastion.md) R-BAS-020, R-BAS-022 (the check of a cached artifact).
+
+### Q-CUR-45 · A remote's stored patterns are not read into its document either
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a remote stored with include or exclude patterns (every remote saved before the rules, and `upstream/scanner-trivy`, whose
+product pattern was `aquasec/trivy-db`) kept them in its document while the snapshot ignored them. An update starts from the stored
+document, so every update of such a remote answered 422 `not_applicable` at `/includePatterns`, the screens offer no field to clear
+them, and the reconcile of `quader migrate` that writes scanner-trivy's product rule failed with it: a replica of the profile of the
+renders did not start (found while rendering this change).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The document of a remote is read without patterns, as the snapshot reads it (chosen) | `toDocument` in `internal/repository/store.go` | One reading of a remote everywhere; the next write stores the section without them; nothing is migrated | A stored list stays in the row until that write (it is read by nothing) |
+| (b) The reconcile clears the patterns of a system repository | `setFixed` | Smallest | Every other stored remote still cannot be updated, through the API or the screens |
+| (c) The validation lets unchanged stored patterns pass | A compare in the update | Keeps the stored lists visible | The document shows a member that does nothing and that no screen offers |
+
+**Choice:** (a). **Rationale:** R-CUR-002 says a remote has no patterns; the document is where a reader and a writer meet that rule.
+The development agent would revisit it if a remote's old lists were wanted as a record (the audit log has them).
+
+**Applied in the spec:** R-CUR-002 (the paragraph on stored sections).
 
 ### Q-CUR-130 · Until the catalogue's screens land, the strip holds the content and Downloads, and a visitor sees none
 

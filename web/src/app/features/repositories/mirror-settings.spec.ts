@@ -118,6 +118,8 @@ describe('Mirror settings of a remote repository', () => {
     it('R-UI-044 server pointers of the section map to their control and label', () => {
       expect(mirrorTarget('/remote/mode')).toBe('f-remote-mode');
       expect(mirrorTarget('/remote/mirror/intervalSeconds')).toBe('f-remote-mirror-intervalSeconds');
+      expect(mirrorTarget('/remote/mirror/include/1')).toBe('f-remote-mirror-include');
+      expect(mirrorPointerLabel('/remote/mirror/include/1')).toBe('Mirror only these packages');
       expect(mirrorTarget('/remote/mirror/unknown')).toBe('f-remote-mirror');
       expect(mirrorTarget('/key')).toBeNull();
       expect(mirrorPointerLabel('/remote/mirror/maxBytes')).toBe('Storage limit in bytes');
@@ -159,6 +161,7 @@ describe('Mirror settings of a remote repository', () => {
       await chooseMirror(r);
 
       for (const id of [
+        'f-remote-mirror-include',
         'f-remote-mirror-paused',
         'f-remote-mirror-intervalSeconds',
         'f-remote-mirror-fullPassIntervalSeconds',
@@ -176,6 +179,9 @@ describe('Mirror settings of a remote repository', () => {
       expect(text(r.root)).not.toContain('Default:');
       expect(control(r.root, 'f-remote-mirror-includePrereleases').checked).toBe(true);
 
+      expect(r.root.querySelector<HTMLTextAreaElement>('#f-remote-mirror-include')!.value).toBe('');
+
+      type(r.root.querySelector<HTMLTextAreaElement>('#f-remote-mirror-include')!, '@acme/*\n\nleft-pad\n');
       type(control(r.root, 'f-remote-mirror-intervalSeconds'), '7200');
       type(control(r.root, 'f-remote-mirror-concurrency'), '4');
       type(control(r.root, 'f-remote-mirror-maxBytes'), '1073741824');
@@ -188,8 +194,13 @@ describe('Mirror settings of a remote repository', () => {
       const created = fake.repositories.find((x) => x.key === 'upstream-cache') as Repository;
       expect(created.remote).toEqual({
         mode: 'mirror',
-        mirror: { intervalSeconds: 7200, includePrereleases: false, maxBytes: 1073741824 },
+        mirror: { include: ['@acme/*', 'left-pad'], intervalSeconds: 7200, includePrereleases: false, maxBytes: 1073741824 },
       });
+      // A remote has no include and exclude patterns (R-CUR-002): the form offers none and the create sends none.
+      expect(r.root.querySelector('#f-includePatterns')).toBeNull();
+      expect(r.root.querySelector('#f-excludePatterns')).toBeNull();
+      expect(created.includePatterns ?? []).toEqual([]);
+      expect(created.excludePatterns ?? []).toEqual([]);
     });
 
     it('R-UI-084 an emptied member shows its default again when it is left and is not written', async () => {
@@ -206,21 +217,22 @@ describe('Mirror settings of a remote repository', () => {
       expect(control(r.root, 'f-remote-mirror-maxBytes').classList.contains('field-w-bytes')).toBe(true);
     });
 
-    it('R-REPO-052 R-UI-021 the well-known upstream without a bound shows the refusal sentence, a literal-prefix include or a storage limit removes it, every other preset is refused too, another upstream shows the warning', async () => {
+    it('R-REPO-052 R-CUR-017 R-UI-021 the well-known upstream without a bound shows the refusal sentence, a literal-prefix scope or a storage limit removes it, every other preset is refused too, another upstream shows the warning', async () => {
       const r = await remoteForm([NPM], 'npm');
       await chooseMirror(r);
       const note = () => r.root.querySelector('#mirror-unbounded')?.textContent?.replace(/\s+/g, ' ');
-      expect(note()).toContain('A mirror of a well-known public registry needs a bound.');
+      expect(note()).toContain('A mirror of a well-known public registry needs a bound:');
       expect(note()).toContain('the server refuses to save it');
       await expectAccessible(r.root);
 
-      type(r.root.querySelector<HTMLTextAreaElement>('#f-includePatterns')!, '**');
+      const scope = () => r.root.querySelector<HTMLTextAreaElement>('#f-remote-mirror-include')!;
+      type(scope(), '**');
       await settle(r.fixture);
       expect(note()).toContain('needs a bound');
-      type(r.root.querySelector<HTMLTextAreaElement>('#f-includePatterns')!, '@types/*');
+      type(scope(), '@types/*');
       await settle(r.fixture);
       expect(note()).toBeUndefined();
-      type(r.root.querySelector<HTMLTextAreaElement>('#f-includePatterns')!, '');
+      type(scope(), '');
       type(control(r.root, 'f-remote-mirror-maxBytes'), '2097152');
       await settle(r.fixture);
       expect(note()).toBeUndefined();

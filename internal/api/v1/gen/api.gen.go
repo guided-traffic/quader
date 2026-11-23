@@ -2493,6 +2493,7 @@ const (
 	MirrorStatusStatePaused       MirrorStatusState = "paused"
 	MirrorStatusStateRunning      MirrorStatusState = "running"
 	MirrorStatusStateScheduled    MirrorStatusState = "scheduled"
+	MirrorStatusStateUnbounded    MirrorStatusState = "unbounded"
 	MirrorStatusStateWaiting      MirrorStatusState = "waiting"
 )
 
@@ -2510,6 +2511,8 @@ func (e MirrorStatusState) Valid() bool {
 	case MirrorStatusStateRunning:
 		return true
 	case MirrorStatusStateScheduled:
+		return true
+	case MirrorStatusStateUnbounded:
 		return true
 	case MirrorStatusStateWaiting:
 		return true
@@ -11554,7 +11557,9 @@ type MirrorStatus struct {
 	Pass       *MirrorPass     `json:"pass"`
 	RateLimit  MirrorRateLimit `json:"rateLimit"`
 
-	// State `off` for mode `pullThrough`; `paused` for `remote.mirror.paused`; `failing` after three or more failures in a row;
+	// State `off` for mode `pullThrough`; `paused` for `remote.mirror.paused`; `unbounded` for a mirror of a well-known upstream
+	// that has neither a bounding `remote.mirror.include` nor `remote.mirror.maxBytes` (R-REPO-052): a save refuses it, and
+	// one stored under an earlier rule does not run until it has a bound (Q-CUR-43); `failing` after three or more failures in a row;
 	// `bound_reached` while the storage bound stops additions (R-REPO-052); `running` while a pass is in progress and
 	// its job runs; `waiting` while a pass is in progress and no job runs it, for a long rate-limit wait, a failure or a
 	// release, until the next job; `scheduled` otherwise. The first of these that holds is the state, in this order.
@@ -11564,7 +11569,9 @@ type MirrorStatus struct {
 // MirrorStatusMode The repository's `remote.mode` (R-REPO-050).
 type MirrorStatusMode string
 
-// MirrorStatusState `off` for mode `pullThrough`; `paused` for `remote.mirror.paused`; `failing` after three or more failures in a row;
+// MirrorStatusState `off` for mode `pullThrough`; `paused` for `remote.mirror.paused`; `unbounded` for a mirror of a well-known upstream
+// that has neither a bounding `remote.mirror.include` nor `remote.mirror.maxBytes` (R-REPO-052): a save refuses it, and
+// one stored under an earlier rule does not run until it has a bound (Q-CUR-43); `failing` after three or more failures in a row;
 // `bound_reached` while the storage bound stops additions (R-REPO-052); `running` while a pass is in progress and
 // its job runs; `waiting` while a pass is in progress and no job runs it, for a long rate-limit wait, a failure or a
 // release, until the next job; `scheduled` otherwise. The first of these that holds is the state, in this order.

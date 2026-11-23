@@ -37,7 +37,7 @@ interface StateInfo {
 type RunNotice =
   | { readonly kind: 'started'; readonly job: JobReference; readonly full: boolean }
   | { readonly kind: 'running'; readonly job: JobReference | null }
-  | { readonly kind: 'off' | 'paused' | 'not-applicable' };
+  | { readonly kind: 'off' | 'paused' | 'unbounded' | 'not-applicable' };
 
 /** The words of a state; the colour is a second signal, never the only one (R-UI-044). */
 export function stateInfo(status: MirrorStatus): StateInfo {
@@ -55,6 +55,13 @@ export function stateInfo(status: MirrorStatus): StateInfo {
         icon: 'pause_circle',
         tone: 'neutral',
         sentence: $localize`:@@mirror.state.paused.text:No pass starts. Resume the mirror to continue.`,
+      };
+    case 'unbounded':
+      return {
+        label: $localize`:@@mirror.state.unbounded:No bound`,
+        icon: 'block',
+        tone: 'warn',
+        sentence: $localize`:@@mirror.state.unbounded.text:No pass starts: a mirror of a well-known registry needs packages to mirror whose patterns each start with a literal part, or a storage limit. Set one in the mirror settings and save.`,
       };
     case 'running':
       return {
@@ -245,6 +252,12 @@ function boundText(kind: string): string {
                   <ng-container i18n="@@mirror.run.paused">The mirror is paused. Resume it to run a pass.</ng-container>
                 </p>
               }
+              @case ('unbounded') {
+                <p class="field-error">
+                  <span class="material-icons inline" aria-hidden="true">error</span>
+                  <ng-container i18n="@@mirror.run.unbounded">The mirror has no bound, so no pass runs. Set the packages to mirror or a storage limit and save first.</ng-container>
+                </p>
+              }
               @case ('not-applicable') {
                 <p class="field-error">
                   <span class="material-icons inline" aria-hidden="true">error</span>
@@ -342,7 +355,7 @@ function boundText(kind: string): string {
         <dl class="facts" data-testid="mirror-next">
           <dt i18n="@@mirror.next.at">Due</dt>
           <dd>
-            @if (s.state === 'paused' || s.state === 'off') {
+            @if (s.state === 'paused' || s.state === 'off' || s.state === 'unbounded') {
               <ng-container i18n="@@mirror.next.none">No pass is planned.</ng-container>
             } @else if (s.nextPassAt; as at) {
               <time [attr.datetime]="at">{{ at | date: 'medium' }}</time>
@@ -583,6 +596,9 @@ export class MirrorStatusPanel {
         return;
       case 'mirror_paused':
         this.notice.set({ kind: 'paused' });
+        return;
+      case 'mirror_unbounded':
+        this.notice.set({ kind: 'unbounded' });
         return;
       case 'not_applicable':
         this.notice.set({ kind: 'not-applicable' });

@@ -333,6 +333,12 @@ export class RepositoryCreate implements HasUnsavedChanges {
   // ---- Format settings and mirror ----
 
   protected readonly mirrorGroup = computed(() => this.cls() === 'remote' && this.descriptor()?.mirror === true);
+  /** The hint of Advanced settings: a remote repository has no paths (R-CUR-002). */
+  protected readonly advancedHint = computed(() =>
+    this.cls() === 'remote'
+      ? $localize`:@@repo.create.advanced-hint-remote:Notes, access details, the mirror and the settings of the format. The defaults suit most repositories.`
+      : $localize`:@@repo.create.advanced-hint:Notes, paths and the settings of the format. The defaults suit most repositories.`,
+  );
   private readonly member = computed<FormatMemberOf | null>(() => {
     const f = this.descriptor();
     if (!f) return null;

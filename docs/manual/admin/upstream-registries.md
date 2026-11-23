@@ -123,7 +123,7 @@ Both need a recent sign-in and the registry's current `ETag` in `If-Match` (`GET
 ## What else you may change
 
 The registry's settings page, under **Open repository** (the repository document,
-`PATCH /api/v1/projects/upstream/repositories/<key>`), keeps editable what narrows what it serves: the include and exclude patterns,
+`PATCH /api/v1/projects/upstream/repositories/<key>`), keeps editable what narrows what it serves:
 **Offline** (`remote.availability.mode`) and the administrator's notes. The address, the account, the level and the format's settings
 show there read-only with "Managed in Admin area › Upstream registries.". The vulnerability settings and who may fill the cache
 (`remote.cacheFillAction`) are taken too, through the API. Every other setting is Quader's and answers `422 managed_by_product` at the

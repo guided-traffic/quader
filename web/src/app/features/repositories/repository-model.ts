@@ -205,8 +205,10 @@ export function settingsOf(form: RepositoryForm, format?: FormatMemberOf): Recor
   return {
     description: form.description,
     adminNotes: form.adminNotes,
-    includePatterns: lines(form.includePatterns),
-    excludePatterns: lines(form.excludePatterns),
+    // A remote repository has no include and exclude patterns: its delivery rules decide what it delivers (R-CUR-002).
+    ...(format?.remote
+      ? {}
+      : { includePatterns: lines(form.includePatterns), excludePatterns: lines(form.excludePatterns) }),
     disabled: form.disabled,
     hideExistence: form.hideExistence,
     ...(format && Object.keys(member).length > 0 ? { [format.name]: member } : {}),
@@ -240,8 +242,9 @@ export function createBodyOf(
         ...(format.upstream ? { upstream: format.upstream } : {}),
       })
     : undefined;
-  const includes = lines(form.includePatterns);
-  const excludes = lines(form.excludePatterns);
+  // A remote repository has no include and exclude patterns (R-CUR-002): a list typed before the class was changed is not sent.
+  const includes = cls === 'remote' ? [] : lines(form.includePatterns);
+  const excludes = cls === 'remote' ? [] : lines(form.excludePatterns);
   const virtual = extras.virtual;
   const withMembers = virtual !== undefined && (virtual.members.length > 0 || virtual.deployTarget !== null);
   return {

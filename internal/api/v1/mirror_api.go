@@ -50,6 +50,9 @@ type MirrorTarget struct {
 	Key      qname.Repo
 	Class    repository.Class
 	Settings repository.RemoteSettings
+	// Unbounded is the URL of the well-known upstream of a mirror that has no bound of R-REPO-052 (repository.UnboundedMirror),
+	// empty when it has one or is no mirror (Q-CUR-43).
+	Unbounded string
 }
 
 // MirrorRepositories looks a repository up by key; 404 repository_not_found when there is none.
@@ -78,6 +81,7 @@ func (t serviceTargets) Target(ctx context.Context, key qname.Repo) (MirrorTarge
 		return MirrorTarget{}, errs.E(errs.Internal, errs.CodeInternal, "The remote section of the repository could not be read.")
 	}
 	out.Settings = rs
+	out.Unbounded, _ = repository.UnboundedMirror(nil, st.Repository)
 	return out, nil
 }
 
@@ -350,14 +354,15 @@ func (s *Server) GetRepositoryMirror(w http.ResponseWriter, r *http.Request, pro
 		httpserver.Problem(w, r, errs.Wrap(err, "api.getRepositoryMirror"))
 		return
 	}
-	writeJSON(w, r, http.StatusOK, buildMirrorStatus(t.Settings, row))
+	writeJSON(w, r, http.StatusOK, buildMirrorStatus(t, row))
 }
 
 // buildMirrorStatus is the status document of R-REPO-056 from the repository's remote section and the row read.
-func buildMirrorStatus(rs repository.RemoteSettings, row MirrorRow) gen.MirrorStatus {
+func buildMirrorStatus(t MirrorTarget, row MirrorRow) gen.MirrorStatus {
+	rs := t.Settings
 	out := gen.MirrorStatus{
 		Mode:           gen.MirrorStatusMode(modeOf(rs)),
-		State:          mirrorStateOf(rs, row),
+		State:          mirrorStateOf(t, row),
 		NextPassAt:     row.NextPassAt,
 		LastFullPassAt: row.LastFullPassAt,
 		Errors: gen.MirrorErrors{
@@ -416,15 +421,19 @@ func strPtr(s string) *string {
 	return &s
 }
 
-// mirrorStateOf derives the state of R-REPO-056. The first that holds wins: off (mode pullThrough), paused, failing (three
-// or more failures in a row), bound_reached, running (a pass in progress whose job runs), waiting (a pass in progress and no
-// job that runs it), scheduled (Q-API-196).
-func mirrorStateOf(rs repository.RemoteSettings, row MirrorRow) gen.MirrorStatusState {
+// mirrorStateOf derives the state of R-REPO-056. The first that holds wins: off (mode pullThrough), paused, unbounded (a mirror
+// of a well-known upstream without a bound, which does not run, Q-CUR-43), failing (three or more failures in a row),
+// bound_reached, running (a pass in progress whose job runs), waiting (a pass in progress and no job that runs it), scheduled
+// (Q-API-196).
+func mirrorStateOf(t MirrorTarget, row MirrorRow) gen.MirrorStatusState {
+	rs := t.Settings
 	switch {
 	case !rs.Mirrored():
 		return gen.MirrorStatusStateOff
 	case rs.Mirror.Paused:
 		return gen.MirrorStatusStatePaused
+	case t.Unbounded != "":
+		return gen.MirrorStatusStateUnbounded
 	case row.ConsecutiveFailures >= mirror.FailingFailures:
 		return gen.MirrorStatusStateFailing
 	case row.BoundReached != "":
@@ -483,6 +492,9 @@ func (s *Server) RunRepositoryMirror(w http.ResponseWriter, r *http.Request, pro
 		err = errs.E(errs.Conflict, errs.CodeMirrorOff, "The repository "+strconv.Quote(key.String())+" runs in mode pullThrough and has no mirror; set remote.mode to mirror first.")
 	case t.Settings.Mirror.Paused:
 		err = errs.E(errs.Conflict, errs.CodeMirrorPaused, "The mirror of "+strconv.Quote(key.String())+" is paused; set remote.mirror.paused to false first.")
+	case t.Unbounded != "":
+		err = errs.E(errs.Unprocessable, errs.CodeMirrorUnbounded, "The mirror of "+strconv.Quote(key.String())+" reads "+t.Unbounded+
+			" and has no bound, so it does not run; set remote.mirror.include with patterns that each have a literal prefix, or remote.mirror.maxBytes, first.")
 	default:
 		err = mirrorRateLimitRefusal(ctx, state, t, time.Now())
 	}

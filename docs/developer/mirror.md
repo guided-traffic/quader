@@ -121,6 +121,9 @@ written), upserts the request and records `mirror.pass_requested`. The status ne
   or `cancelling`; a pass in progress whose job is any other state, or gone, is `waiting` (Q-API-196).
 - `bound_reached` is `bytes`, `quota` or `capacity` (the check of the table), cleared by the engine when the bound no longer holds; the status
   shows `bound_reached` for as long as the column is set. `consecutive_failures >= 3` shows `failing`, ahead of the bound and the pass.
+- `unbounded` is not stored: the status derives it from the document with the predicate the dispatch and the pass use
+  (`repository.UnboundedMirror`, `MirrorTarget.Unbounded`), after `paused` and before `failing`; the run answers 422 `mirror_unbounded`
+  for it (Q-CUR-43).
 - `last_error` is shown unchanged as `errors.lastMessage`: it must name hosts and never a URL or a credential (Q-REPO-166, H-530).
 
 **Tests.** Handler tests with narrowed callers and every error path:
@@ -163,9 +166,11 @@ PostgreSQL through `mirror.Store`.
 1. **The dispatch** (every minute, exclusive, on the queue `maintenance`, Q-ARCH-321; it fails with the cause when `Host.Ready` errs, Q-ARCH-320): lists the snapshot, ensures a `mirror_state` row for every remote in mode mirror,
    clears the pass and the pending names of every remote repository of the snapshot that left the mode (Q-REPO-162; an empty snapshot clears nothing), reads the rows that are due
    (`next_pass_at` passed or null, or a request, and no `rate_limited_until` ahead) and enqueues `mirror-pass` under `PassKey` for
-   each that is in service, not paused and has a lister (`Host.Lister`).
+   each that is in service, not paused, bounded (`repository.UnboundedMirror`, the save's bound rule of R-REPO-052, Q-CUR-43) and has a
+   lister (`Host.Lister`).
 2. **The claim** (`begin`): a job fails with the cause when `Host.Ready` errs; one that finds the repository gone, no longer a mirror,
-   paused or disabled, its document not loading (`invalid_document`) or the upstream's wait ahead (`rate_limited`, Q-REPO-187) does
+   paused or disabled, its document not loading (`invalid_document`), a mirror of a well-known upstream without a bound (`unbounded`,
+   Q-CUR-43) or the upstream's wait ahead (`rate_limited`, Q-REPO-187) does
    nothing (its result says `skipped`); otherwise one statement makes it the owner of the pass (the fence, [the security page](../security/mirror.md)).
    The kind of a new pass is `DecideKind`; the method may raise it to full (`FinalKind`, Q-REPO-156).
 3. **The checks**: offline mode or the global switch end the attempt `offline`; a bound that was set and still holds (the counter at

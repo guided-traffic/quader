@@ -8,6 +8,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/formats/catalog"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/qname"
 )
 
 // mirrorCatalog holds a format whose remote adapter can discover (the catalog fact Mirror), with the well-known upstream
@@ -187,7 +188,53 @@ func TestMirrorBound(t *testing.T) {
 			if got := warningCodes(v)["/remote/mode"] == WarnMirrorUnbounded; got != tc.warned {
 				t.Fatalf("warned = %v (%v)", got, warningCodes(v))
 			}
+			// The same bound on a stored document, which the mirror's dispatch, pass and status read (Q-CUR-43): what a save
+			// refuses is unbounded, what it saves (with or without the warning) is not.
+			r, err := Build(1, 1, qname.Repo{Project: "web", Key: "m-remote"}, Remote, "mirrorable", []byte(`{"remote":`+withMirrorInclude(t, tc.remote, tc.include)+`}`), mirrorCatalog())
+			if err != nil {
+				t.Fatal(err)
+			}
+			preset, unbounded := UnboundedMirror(mirrorCatalog(), r)
+			if unbounded != tc.refused || (unbounded && preset != "https://registry.example.org/") {
+				t.Fatalf("UnboundedMirror = %q, %v; the save refused = %v", preset, unbounded, tc.refused)
+			}
 		})
+	}
+	// A remote stored with include patterns before R-CUR-017 made remote.mirror.include the scope: the patterns are not read, so the
+	// mirror has no bound and does not run (Q-CUR-43).
+	r, err := Build(1, 1, qname.Repo{Project: "web", Key: "m-remote"}, Remote, "mirrorable",
+		[]byte(`{"includePatterns":["@types/*"],"remote":{`+known+`}}`), mirrorCatalog())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, unbounded := UnboundedMirror(mirrorCatalog(), r); !unbounded {
+		t.Fatal("a mirror whose only bound is a stored include pattern is not unbounded")
+	}
+}
+
+// TestR_CUR_002_AStoredRemotesPatternsAreNotRead (Q-CUR-45): a remote stored with include and exclude patterns (as one was before the
+// delivery rules) reads back without them, so an update that starts from the stored document is not refused at /includePatterns; a
+// local repository keeps its lists.
+func TestR_CUR_002_AStoredRemotesPatternsAreNotRead(t *testing.T) {
+	cfg := []byte(`{"includePatterns":["aquasec/trivy-db"],"excludePatterns":["x/*"],"remote":{"url":"https://partner.example.test/"}}`)
+	doc, err := toDocument(q.Repository{Key: "m-remote", Class: "remote", Format: "mirrorable", Config: cfg}, mirrorCatalog())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(doc.IncludePatterns) != 0 || len(doc.ExcludePatterns) != 0 {
+		t.Fatalf("the remote reads back with patterns %v %v", doc.IncludePatterns, doc.ExcludePatterns)
+	}
+	// The stored section here is not the canonical one a save writes, so only the patterns' pointers are asked.
+	_, v := validate(mirrorCatalog(), &doc, false)
+	if codes := fieldCodes(v); codes["/includePatterns"] != "" || codes["/excludePatterns"] != "" {
+		t.Fatalf("the document read back is refused for its patterns: %v", codes)
+	}
+	local, err := toDocument(q.Repository{Key: "m-local", Class: "local", Format: "mirrorable", Config: []byte(`{"includePatterns":["@acme/*"]}`)}, mirrorCatalog())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(local.IncludePatterns, []string{"@acme/*"}) {
+		t.Fatalf("the local repository's include list %v", local.IncludePatterns)
 	}
 }
 

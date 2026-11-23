@@ -123,6 +123,12 @@ func (e *Engine) begin(ctx context.Context, jobID string, a PassArgs, res Result
 	case repo.Disabled || rs.Mirror.Paused:
 		return nil, "paused", nil
 	}
+	if _, unbounded := repository.UnboundedMirror(e.o.Catalog, repo); unbounded {
+		// The bound of R-REPO-052 is checked when a pass starts, not only when the mirror is saved: a document stored under an
+		// earlier rule can lack it, and such a pass would store everything the upstream offers (Q-CUR-43). The pass, if one is in
+		// progress, keeps its pending names for the moment the mirror has a bound.
+		return nil, "unbounded", nil
+	}
 	if _, ok := e.o.Host.Lister(repo.Format); !ok {
 		return nil, "", fmt.Errorf("mirror: the %s format has no discovery", repo.Format)
 	}

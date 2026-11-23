@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 	"github.com/guided-traffic/quader/internal/mirror/discover"
 	rc "github.com/guided-traffic/quader/internal/remotecuration"
 )
@@ -123,10 +124,10 @@ func (r *remoteResolver) mirrorRanges(m MirrorSettings) {
 // (Q-REPO-323), needs a scope (remote.mirror.include) whose patterns each bound it, or maxBytes; any other upstream without either
 // is saved with a warning. The delivery rules are no bound: a Maintainer can allow everything (R-CUR-017).
 func (r *remoteResolver) checkMirrorBound(s *RemoteSettings) {
-	if s.Mirror.MaxBytes != nil || boundingIncludes(s.Mirror.Include) {
+	if bounded(s.Mirror) {
 		return
 	}
-	if known, ok := r.presetUpstream(s.URL); ok {
+	if known, ok := presetUpstream(r.info, s.URL); ok {
 		r.v.add("/remote/mode", errs.CodeMirrorUnbounded,
 			"a mirror of "+known+" needs a bound: remote.mirror.include with patterns that each have a literal prefix (such as @types/* or Microsoft.Extensions.*), or remote.mirror.maxBytes")
 		return
@@ -135,14 +136,36 @@ func (r *remoteResolver) checkMirrorBound(s *RemoteSettings) {
 		"the mirror has neither a scope (remote.mirror.include) with a literal prefix nor remote.mirror.maxBytes: it stores everything the upstream offers and the rules deliver")
 }
 
+// UnboundedMirror reports whether a repository is a mirror that the bound of R-REPO-052 would refuse to save today: a mirror of
+// one of its format's presets with neither a bounding scope (remote.mirror.include) nor remote.mirror.maxBytes; preset is that
+// upstream's URL. A save checks the bound (checkMirrorBound), but a stored document can lack it when it was saved under an earlier
+// rule (a remote's include patterns were a mirror's scope before R-CUR-017), so the mirror's dispatch, its pass and its status ask
+// this too (Q-CUR-43). cat nil is the process's catalog; a format the catalog does not know has no presets.
+func UnboundedMirror(cat *catalog.Registry, r Repository) (preset string, unbounded bool) {
+	s, ok := r.Remote()
+	if !ok || !s.Mirrored() || bounded(s.Mirror) {
+		return "", false
+	}
+	info, ok := catalog.Or(cat).Lookup(r.Format)
+	if !ok {
+		return "", false
+	}
+	return presetUpstream(info, s.URL)
+}
+
+// bounded reports whether a mirror's settings carry a bound of R-REPO-052: maxBytes, or a scope whose patterns each bound it.
+func bounded(m MirrorSettings) bool {
+	return m.MaxBytes != nil || boundingIncludes(m.Include)
+}
+
 // presetUpstream returns the URL of the format's preset that raw names, compared with the one predicate of the bound rule
 // (discover.SameUpstream); ok is false for an upstream that is no preset.
-func (r *remoteResolver) presetUpstream(raw string) (string, bool) {
+func presetUpstream(info catalog.Entry, raw string) (string, bool) {
 	u, err := url.Parse(raw)
 	if err != nil {
 		return "", false
 	}
-	for _, p := range r.info.UpstreamPresets {
+	for _, p := range info.UpstreamPresets {
 		if discover.SameUpstream(u, p.URL) {
 			return p.URL, true
 		}

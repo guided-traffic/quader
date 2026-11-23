@@ -8,7 +8,7 @@ import { UpstreamApi } from '../../api/upstream-api';
 import { FakeUpstreamApi } from '../../api/testing/fakes-upstream';
 import { projectEntries } from '../../core/navigation';
 import { SessionStore } from '../../core/session-store';
-import { expectAccessible, renderScreen, settle, text } from '../../testing/screen';
+import { expectAccessible, renderScreen, sectionHeadings, settle, text } from '../../testing/screen';
 import { BrowserStorage } from '../../core/storage';
 import { ProjectSwitcher } from '../projects/project-switcher';
 import { UPSTREAM_PROJECT } from '../../core/upstream-project';
@@ -165,7 +165,7 @@ describe('The project upstream in the main area (R-UI-190, Q-UI-837)', () => {
     expect(text(on.root.querySelector('[aria-labelledby="repo-visibility-fixed"]')!)).toContain('Its visibility is Public while ClamAV definition updates is on.');
   });
 
-  it('R-UI-190 the settings of upstream/npmjs show the upstream read-only with the link, the include patterns editable, no Wiki visibility and no Delete repository', async () => {
+  it('R-UI-190 R-CUR-002 the settings of upstream/npmjs show the upstream read-only with the link, no Access details, no Wiki visibility and no Delete repository', async () => {
     const { root } = await renderScreen(RepositoryDetail, {
       inputs: { project: 'upstream', key: 'npmjs' },
       setup: (get) => {
@@ -191,7 +191,11 @@ describe('The project upstream in the main area (R-UI-190, Q-UI-837)', () => {
     expect(upstream.querySelector('a')!.getAttribute('href')).toBe('/admin/upstream/npmjs');
     expect(upstream.querySelector<HTMLInputElement>('#f-remote-url-managed')!.readOnly).toBe(true);
     expect(root.querySelector('quader-upstream-settings')).toBeNull();
-    expect(root.querySelector<HTMLTextAreaElement>('#f-includePatterns')!.readOnly).toBe(false);
+    // A remote has no include and exclude patterns (R-CUR-002), and Hide existence is the product's: no Access details at all.
+    expect(root.querySelector('#f-includePatterns')).toBeNull();
+    expect(sectionHeadings(root).some((h) => h.startsWith('Access details'))).toBe(false);
+    expect(sectionHeadings(root).some((h) => h.startsWith('Administrator notes'))).toBe(true);
+    expect(root.querySelector<HTMLTextAreaElement>('#f-adminNotes')!.readOnly).toBe(false);
     expect(root.querySelector<HTMLTextAreaElement>('#f-description')!.readOnly).toBe(true);
     expect([...root.querySelectorAll('button')].some((b) => text(b) === 'Delete repository')).toBe(false);
     expect(text(root.querySelector('.subject')!)).toContain('Not switched on');

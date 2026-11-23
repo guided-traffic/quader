@@ -25,6 +25,16 @@ import { rebaseForm, sectionPatch } from './settings-sections';
 
 const DEB: FormatMemberOf = { name: 'deb', schema: DEB_SETTINGS_SCHEMA as SettingSchema, formatMirror: true, remote: 'structural', mirror: true };
 
+/** A local repository: the include and exclude patterns are a local's or a virtual's (R-CUR-002). */
+const GENERIC_LOCAL = {
+  key: 'files',
+  project: 'web',
+  class: 'local',
+  format: 'generic',
+  description: 'Build output',
+  visibility: { artifacts: 'private', wiki: 'private' },
+} as unknown as Repository;
+
 const OCI_REMOTE = {
   key: 'docker-hub',
   project: 'web',
@@ -60,7 +70,11 @@ describe('The sections of the repository settings page (R-UI-087)', () => {
         formatMember: { origin: 'other', mirror: { suites: ['stable', 'testing'] } },
       };
       expect(sectionPatch('general', base, now, DEB)).toEqual({ description: 'new' });
-      expect(sectionPatch('access', base, now, DEB)).toEqual({ includePatterns: ['a/**'] });
+      // A remote has no include and exclude patterns (R-CUR-002): its Access details never write them; a local's do.
+      expect(sectionPatch('access', base, now, DEB)).toEqual({});
+      expect(sectionPatch('access', base, now, { name: 'deb', schema: DEB_SETTINGS_SCHEMA as SettingSchema })).toEqual({
+        includePatterns: ['a/**'],
+      });
       expect(sectionPatch('format', base, now, DEB)).toEqual({ deb: { origin: 'other' } });
       expect(sectionPatch('mirror', base, now, DEB)).toEqual({ deb: { mirror: { suites: ['stable', 'testing'] } } });
       expect(sectionPatch('notes', base, now, DEB)).toEqual({});
@@ -108,7 +122,7 @@ describe('The sections of the repository settings page (R-UI-087)', () => {
     });
 
     it('R-UI-087 an unsaved include pattern in the closed Access details says so after its title, and leaving asks', async () => {
-      const r = await openSettings(OCI_REMOTE);
+      const r = await openSettings(GENERIC_LOCAL);
       await openSection(r.fixture, r.root, 'Access details');
       type(r.root.querySelector<HTMLTextAreaElement>('#f-includePatterns')!, 'library/**');
       await settle(r.fixture);
@@ -141,8 +155,18 @@ describe('The sections of the repository settings page (R-UI-087)', () => {
       expect(r.root.querySelector<HTMLTextAreaElement>('#f-adminNotes')!.value).toBe('note of mine');
     });
 
-    it('R-UI-087 a server error in a section is shown in that section only', async () => {
+    it('R-CUR-002 R-UI-087 the Access details of a remote hold Hide existence and no include or exclude patterns', async () => {
       const r = await openSettings(OCI_REMOTE);
+      await openSection(r.fixture, r.root, 'Access details');
+      expect(r.root.querySelector('#f-includePatterns')).toBeNull();
+      expect(r.root.querySelector('#f-excludePatterns')).toBeNull();
+      expect(r.root.querySelector('#f-hideExistence')).not.toBeNull();
+      const access = [...r.root.querySelectorAll('quader-disclosure')].find((d) => d.querySelector('#f-hideExistence'))!;
+      expect(text(access)).toContain('What callers without access learn about the repository.');
+    });
+
+    it('R-UI-087 a server error in a section is shown in that section only', async () => {
+      const r = await openSettings(GENERIC_LOCAL);
       r.fake.patch = async () => {
         throw new ApiError(
           422,

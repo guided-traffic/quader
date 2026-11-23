@@ -433,8 +433,9 @@ const (
 // the configuration members and the stubs of the contract wave. The 422 codes appear as errors[].code of validation_failed
 // with the pointer of the member. The codes of the status and run operations (R-REPO-056) come with their work package.
 const (
-	// CodeMirrorUnbounded: a mirror of the format's well-known upstream without a bounding include list and without
-	// remote.mirror.maxBytes (R-REPO-052, Q-REPO-132); elsewhere the same code is a warning.
+	// CodeMirrorUnbounded: a mirror of the format's well-known upstream without a bounding scope (remote.mirror.include) and without
+	// remote.mirror.maxBytes (R-REPO-052, Q-REPO-132); elsewhere the same code is a warning. The run operation answers it for a stored
+	// mirror that lacks the bound (Q-CUR-43).
 	CodeMirrorUnbounded = "mirror_unbounded"
 	// CodeMirrorRestricted: a project Owner's write changes remote.mode or remote.mirror other than pausing,
 	// resuming or turning the mode back to pullThrough (Q-REPO-142).
@@ -1042,7 +1043,7 @@ var registry = []CodeInfo{
 	// <<< remote curation
 	//
 	// >>> M6b mirror
-	{CodeMirrorUnbounded, Invalid, "Mirror unbounded", "A mirror of the format's well-known upstream needs a bound: include patterns that each have a literal prefix, or remote.mirror.maxBytes."},
+	{CodeMirrorUnbounded, Invalid, "Mirror unbounded", "A mirror of the format's well-known upstream needs a bound: a scope (remote.mirror.include) whose patterns each have a literal prefix, or remote.mirror.maxBytes. Until it has one it is neither saved nor run."},
 	{CodeMirrorRestricted, Invalid, "Mirror restricted", "Only a holder of repositories:write-config sets remote.mode mirror or changes remote.mirror; a project Owner keeps the stored settings, pauses, resumes or turns the mode back to pullThrough."},
 	{CodeMirrorPassRunning, Conflict, "Mirror pass running", "A pass of the repository's mirror is queued or running; the extension job names it. Wait for it to end, or read its job."},
 	{CodeMirrorOff, Conflict, "Mirror off", "The remote repository runs in mode pullThrough, so it has no mirror to run. Set remote.mode to mirror first."},

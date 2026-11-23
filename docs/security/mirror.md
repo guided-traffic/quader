@@ -56,6 +56,7 @@ A hostile or broken upstream decides which names it lists. What bounds them:
 | Three attempts per package, a minute more each | `MaxPackageAttempts`, `PackageRetryStep` | a package that fails is left to the next pass and counted failed |
 | The window and the ceiling | `throttle.go` | never more requests in flight than the background share of R-REPO-055 |
 | The byte bound, `maxBytes` | `bounds.go` | no artifact whose announced size would cross it (R-REPO-052) |
+| The bound of a well-known upstream, at the pass as at the save | `repository.UnboundedMirror` in `Dispatch` and `begin` | a stored mirror of a preset without a bounding `remote.mirror.include` and without `maxBytes` (one saved under an earlier rule) does not run and reads `unbounded`, instead of storing the whole public registry (Q-CUR-43) |
 
 The pass sends nothing while a rate limit asks it to wait, honours a wait of up to six hours, and never moves the circuit of the
 clients ([Q-REPO-139](../spec/repositories-and-proxy.md#q-repo-139--the-mirrors-requests-neither-move-nor-reset-the-circuit-and-an-open-circuit-pauses-the-mirror)).

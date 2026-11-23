@@ -115,6 +115,7 @@ func newMirrorEnv(t *testing.T, val *apitest.Validator, access Access, dec authz
 		"npm-mirror":  {ID: 7, Key: qr("npm-mirror"), Class: repository.Remote, Settings: mirrorSettings(repository.ModeMirror, nil)},
 		"npm-pull":    {ID: 8, Key: qr("npm-pull"), Class: repository.Remote, Settings: mirrorSettings(repository.ModePullThrough, nil)},
 		"npm-paused":  {ID: 9, Key: qr("npm-paused"), Class: repository.Remote, Settings: mirrorSettings(repository.ModeMirror, func(r *repository.RemoteSettings) { r.Mirror.Paused = true })},
+		"npm-unbound": {ID: 12, Key: qr("npm-unbound"), Class: repository.Remote, Settings: mirrorSettings(repository.ModeMirror, nil), Unbounded: "https://registry.npmjs.org/"},
 		"npm-local":   {ID: 10, Key: qr("npm-local"), Class: repository.Local},
 		"npm-virtual": {ID: 11, Key: qr("npm-virtual"), Class: repository.Virtual},
 	}}
@@ -352,7 +353,7 @@ func TestR_REPO_056_MirrorStatusDocument(t *testing.T) {
 			t.Error("the last complete pass stays after the mode is turned back (Q-REPO-148)")
 		}
 	})
-	t.Run("R-REPO-056 Q-API-196 the state is the first that holds of off, paused, failing, bound_reached, running, waiting, scheduled", func(t *testing.T) {
+	t.Run("R-REPO-056 Q-API-196 Q-CUR-43 the state is the first that holds of off, paused, unbounded, failing, bound_reached, running, waiting, scheduled", func(t *testing.T) {
 		mirrorRS := mirrorSettings(repository.ModeMirror, nil)
 		pausedRS := mirrorSettings(repository.ModeMirror, func(r *repository.RemoteSettings) { r.Mirror.Paused = true })
 		pullRS := mirrorSettings(repository.ModePullThrough, func(r *repository.RemoteSettings) { r.Mirror.Paused = true })
@@ -371,6 +372,8 @@ func TestR_REPO_056_MirrorStatusDocument(t *testing.T) {
 		}{
 			{"pullThrough beats paused", pullRS, MirrorRow{ConsecutiveFailures: 9}, "off"},
 			{"paused beats failing", pausedRS, MirrorRow{ConsecutiveFailures: 9, BoundReached: "bytes"}, "paused"},
+			{"paused beats unbounded", pausedRS, MirrorRow{}, "paused"},
+			{"unbounded beats failing and a running pass", mirrorRS, inPass("running", func(r *MirrorRow) { r.ConsecutiveFailures = 3 }), "unbounded"},
 			{"two failures do not fail", mirrorRS, MirrorRow{ConsecutiveFailures: 2}, "scheduled"},
 			{"three failures fail", mirrorRS, MirrorRow{ConsecutiveFailures: 3}, "failing"},
 			{"failing beats a bound", mirrorRS, MirrorRow{ConsecutiveFailures: 4, BoundReached: "quota"}, "failing"},
@@ -382,13 +385,22 @@ func TestR_REPO_056_MirrorStatusDocument(t *testing.T) {
 			{"a pass whose job ended", mirrorRS, inPass("failed", nil), "waiting"},
 			{"a pass whose job row is gone", mirrorRS, inPass("", nil), "waiting"},
 		} {
-			if got := string(mirrorStateOf(c.rs, c.row)); got != c.want {
+			target := MirrorTarget{Settings: c.rs}
+			if strings.HasPrefix(c.name, "unbounded") || strings.HasSuffix(c.name, "unbounded") {
+				target.Unbounded = "https://registry.npmjs.org/"
+			}
+			if got := string(mirrorStateOf(target, c.row)); got != c.want {
 				t.Errorf("%s: %s, want %s", c.name, got, c.want)
 			}
 		}
 	})
 	t.Run("R-REPO-056 a paused repository answers paused through the router", func(t *testing.T) {
 		if got := status(t, "npm-paused", nil); got["state"] != "paused" {
+			t.Errorf("state = %v", got["state"])
+		}
+	})
+	t.Run("R-REPO-052 Q-CUR-43 a mirror without a bound answers unbounded through the router", func(t *testing.T) {
+		if got := status(t, "npm-unbound", nil); got["state"] != "unbounded" {
 			t.Errorf("state = %v", got["state"])
 		}
 	})
@@ -570,6 +582,13 @@ func TestR_REPO_056_MirrorRun(t *testing.T) {
 	t.Run("R-REPO-056 a remote in mode pullThrough answers 409 mirror_off", func(t *testing.T) {
 		e, w := run(t, writeConfigCall, mirrorDecider{read: true}, "/api/v1/projects/it/repositories/npm-pull/mirror/run", "", nil)
 		problem(t, w, 409, "mirror_off")
+		if len(e.queue.specs) != 0 {
+			t.Errorf("enqueued %+v", e.queue.specs)
+		}
+	})
+	t.Run("R-REPO-052 Q-CUR-43 a mirror without a bound answers 422 mirror_unbounded and enqueues nothing", func(t *testing.T) {
+		e, w := run(t, writeConfigCall, mirrorDecider{read: true}, "/api/v1/projects/it/repositories/npm-unbound/mirror/run", "", nil)
+		problem(t, w, 422, "mirror_unbounded")
 		if len(e.queue.specs) != 0 {
 			t.Errorf("enqueued %+v", e.queue.specs)
 		}

@@ -27,8 +27,11 @@
   inline-size: 100%;
 }
 
+// Its items stand at its top: an icon before an error of two lines stays on the first line's middle (R-UI-175) instead of being
+// stretched to the height of the text.
 .field-error {
   display: flex;
+  align-items: flex-start;
   gap: var(--quader-space-1);
   margin: var(--quader-space-1) 0 0;
   color: var(--quader-status-bad);

@@ -769,6 +769,59 @@ async function* mirrorMode(page: Page): AsyncGenerator<string> {
   await expect(section.locator('quader-format-settings')).toBeVisible();
   await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
   yield 'mirror';
+  // The packages to mirror (remote.mirror.include, R-CUR-017): several patterns, one of them long; the bound's notice goes.
+  await section
+    .locator('#f-remote-mirror-include')
+    .fill('library/nginx\nbitnami/redis\ncustomer-portal-release-delivery/frontend-assets-*\nacme/*');
+  await expect(section.locator('#mirror-unbounded')).toHaveCount(0);
+  yield 'mirror-scope';
+}
+
+/** A mirror status of the state unbounded, as the server answers it for a stored mirror of a well-known registry without a bound. */
+const unboundedStatus = {
+  mode: 'mirror',
+  state: 'unbounded',
+  pass: null,
+  lastCompletePass: null,
+  nextPassAt: '2026-11-23T09:00:00Z',
+  lastFullPassAt: null,
+  errors: { consecutiveFailures: 0, lastAt: null, lastCode: null, lastMessage: null },
+  rateLimit: { waits: 0, waitSeconds: 0, lastAt: null, lastStatus: null, until: null },
+  bound: { reached: null, at: null, maxBytes: null, usedBytes: 0 },
+};
+
+/**
+ * A stored mirror of a well-known registry without a bound (Q-CUR-43): the status says **No bound** and plans no pass, and **Run a pass
+ * now** answers 422 mirror_unbounded in words. The seed stores no such mirror (a save refuses it): the repository's answer is changed in
+ * the browser to the mode mirror and the status and the run are the server's answers for one; nothing is saved.
+ */
+async function* mirrorUnbounded(page: Page): AsyncGenerator<string> {
+  const repo = `**/api/v1/projects/${mainProject}/repositories/npmjs`;
+  await page.route(`${repo}/mirror`, (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(unboundedStatus) }),
+  );
+  await page.route(`${repo}/mirror/run`, (route) =>
+    route.fulfill({
+      status: 422,
+      contentType: 'application/problem+json',
+      body: JSON.stringify({
+        type: '/api/v1/problems/mirror_unbounded',
+        title: 'Mirror unbounded',
+        status: 422,
+        code: 'mirror_unbounded',
+        detail: 'The mirror of "web-frontend/npmjs" reads https://registry.npmjs.org/ and has no bound, so it does not run.',
+      }),
+    }),
+  );
+  await answerWith(page, repo, (body) => ({ ...body, remote: { ...(body['remote'] as Record<string, unknown>), mode: 'mirror' } }));
+  const section = page.locator('main quader-disclosure').filter({ has: page.locator('quader-mirror-settings') });
+  await section.getByRole('button', { name: 'Mirror', exact: true }).click();
+  await expect(section.locator('[data-testid="mirror-state"][data-state="unbounded"]')).toBeVisible();
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  yield 'unbounded';
+  await section.getByRole('button', { name: 'Run a pass now' }).click();
+  await expect(section.getByText('The mirror has no bound, so no pass runs.')).toBeVisible();
+  yield 'unbounded-run';
 }
 
 /**
@@ -2633,6 +2686,13 @@ export const screens: readonly Screen[] = [
   // The settings page of each class, standard sections open and every detail opened in a second picture (R-UI-087).
   { id: 'repository-settings-npm-local', path: `${P}/repositories/npm-internal/settings`, kinds: all, walk: allSections },
   { id: 'repository-settings-npm-remote', path: `${P}/repositories/npmjs/settings`, kinds: all, walk: remoteSections },
+  {
+    id: 'repository-settings-npm-mirror-unbounded',
+    path: `${P}/repositories/npmjs/settings`,
+    kinds: owners,
+    walk: mirrorUnbounded,
+    expected: [{ match: /^POST \/api\/v1\/projects\/[^/]+\/repositories\/npmjs\/mirror\/run answered 422$/, why: 'the run of a mirror without a bound' }],
+  },
   { id: 'repository-settings-npm-virtual', path: `${P}/repositories/npm/settings`, kinds: all, walk: allSections },
   { id: 'repository-settings-generic', path: `${P}/repositories/assets/settings`, kinds: owners, walk: allSections },
   { id: 'repository-settings-generic-advanced', path: `${P}/repositories/assets/settings`, kinds: admins, walk: advancedOpen },

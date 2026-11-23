@@ -284,17 +284,19 @@ func (e *engine) tooSlow(began time.Time, sent int64) bool {
 	return el > e.paceGrace && float64(sent) < el.Seconds()*float64(e.paceMinRate)
 }
 
-// onPass handles every other answer: nothing is kept but a refusal of the read (R-BAS-020). A 403 is kept. A
-// 404 that is not marked absent is never kept, whether it answers a plain fetch or a conditional request: it may
-// be a missing name or one the caller may not see, and replaying it only for names the Bastion holds would show a
-// narrowed reader which hidden names are cached (R-BAS-024, Q-BAS-42, Q-BAS-124).
+// onPass handles every other answer: nothing is kept but a refusal of the read (R-BAS-020). A 403 is kept, unless it
+// says Cache-Control: no-store: the refusal of a remote's delivery rules (403 not_allowed_in_repository, R-CUR-004) is
+// lifted by an allow, which no feed entry announces, so a kept copy would outlive the allow by up to the answer period
+// (Q-CUR-44). A 404 that is not marked absent is never kept, whether it answers a plain fetch or a conditional request:
+// it may be a missing name or one the caller may not see, and replaying it only for names the Bastion holds would show
+// a narrowed reader which hidden names are cached (R-BAS-024, Q-BAS-42, Q-BAS-124).
 func (e *engine) onPass(q *rq, resp *mainclient.Response, sent time.Time) {
 	if resp.Status >= http.StatusBadRequest {
 		e.markVolatileFor(q) // a refusal is this caller's: the main installation answers another caller otherwise
 	} else {
 		e.markVolatile(q.cacheKey) // a search or another answer that is nobody's to share
 	}
-	keepable := resp.Status == http.StatusForbidden
+	keepable := resp.Status == http.StatusForbidden && !noStore(resp.Header)
 	if q.r.Method == http.MethodGet && keepable {
 		body, rest, whole := readBounded(resp.Body, maxRefusalBody)
 		if whole {
@@ -306,6 +308,19 @@ func (e *engine) onPass(q *rq, resp *mainclient.Response, sent time.Time) {
 		return
 	}
 	e.passThrough(q, resp, nil, metrics.ClassPass, metrics.ResultMiss)
+}
+
+// noStore reports whether a response's Cache-Control carries the directive no-store (RFC 9111 section 5.2.2.5).
+func noStore(h http.Header) bool {
+	for _, v := range h.Values("Cache-Control") {
+		for d := range strings.SplitSeq(v, ",") {
+			name, _, _ := strings.Cut(strings.TrimSpace(d), "=")
+			if strings.EqualFold(name, "no-store") {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // passThroughRest continues a pass-through after a prefix of the body was read.

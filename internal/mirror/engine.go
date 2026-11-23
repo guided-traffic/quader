@@ -53,7 +53,9 @@ type Options struct {
 	GlobalOffline func() bool
 	// NormalizeName normalizes a package name with a format's rule; nil is the catalog's.
 	NormalizeName func(format, name string) (string, bool)
-	Log           *slog.Logger
+	// Catalog holds the formats' presets, which the bound of R-REPO-052 reads (repository.UnboundedMirror); nil is the process's.
+	Catalog *catalog.Registry
+	Log     *slog.Logger
 }
 
 // Engine runs the dispatch and the passes of the mirrors of one process (docs/developer/mirror.md).
@@ -176,6 +178,10 @@ func (e *Engine) Dispatch(ctx context.Context) (DispatchResult, error) {
 		r := byID[id]
 		s, _ := mirrored(r)
 		if r.Disabled || s.Mirror.Paused {
+			continue
+		}
+		if _, unbounded := repository.UnboundedMirror(e.o.Catalog, r); unbounded {
+			// A mirror that a save would refuse today does not run; its status says unbounded (Q-CUR-43).
 			continue
 		}
 		if _, ok := e.o.Host.Lister(r.Format); !ok {

@@ -169,6 +169,12 @@ func toDocument(r q.Repository, cat *catalog.Registry) (Document, error) {
 		return Document{}, err
 	}
 	d.normalize()
+	if Class(r.Class) == Remote {
+		// A remote has no patterns (remote-curation.md R-CUR-002): what a section stored before the rules held is not read, here as in
+		// the snapshot (toRepository), so the document an update starts from and a reader sees has none, and the update is not refused
+		// for a member nobody can see or send (Q-CUR-45).
+		d.IncludePatterns, d.ExcludePatterns = []string{}, []string{}
+	}
 	if Class(r.Class) == Remote && len(d.Remote) > 0 {
 		// PostgreSQL keeps the section as jsonb, which has its own member order and
 		// spacing: render it from the settings, as the validation does, so that a

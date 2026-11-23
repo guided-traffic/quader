@@ -45,8 +45,8 @@ The page of a repository shows its **Project**. A repository is created in its p
    **Test connection** (see [The upstream of a remote repository](#the-upstream-of-a-remote-repository)). A virtual repository adds
    its **Members** and the **Deployment target**, which starts at the first local member you add
    (see [Members of a virtual repository](#members-of-a-virtual-repository)).
-6. Everything else is in **Advanced settings**, closed: **Administrator notes**, **Paths** (include and exclude patterns),
-   **Access details** (hiding existence), the **Mirror** of a remote repository of a format that can mirror, and the format's own
+6. Everything else is in **Advanced settings**, closed: **Administrator notes**, **Paths** (include and exclude patterns, of a local or
+   a virtual repository; a remote repository has none, its delivery rules decide what it delivers), **Access details** (hiding existence), the **Mirror** of a remote repository of a format that can mirror, and the format's own
    settings, such as **npm settings**. Every field shows its default as its value; you need to change none of them for a working
    repository.
 7. Select **Create repository**. A field shows its error once you left it or pressed **Create repository**; the list at the top
@@ -69,8 +69,8 @@ A repository is never created disabled; disabling is an action of its settings p
 |---|---|---|---|
 | **Description** | `description` | empty | Shown to everyone who can read the repository; at most 2000 characters |
 | **Notes** (section **Administrator notes**) | `adminNotes` | empty | Shown only to holders of `repositories:read-config`; at most 8000 characters |
-| **Include patterns** | `includePatterns` | empty | What the repository admits; empty admits everything |
-| **Exclude patterns** | `excludePatterns` | empty | What it refuses; an exclude wins over an include |
+| **Include patterns** | `includePatterns` | empty | What the repository admits; empty admits everything. A local or a virtual repository only: a remote repository refuses the member (`422 not_applicable`), its delivery rules decide what it delivers |
+| **Exclude patterns** | `excludePatterns` | empty | What it refuses; an exclude wins over an include. A local or a virtual repository only, as above |
 | **Disable repository** in **Advanced** | `disabled` | off | The repository keeps its content but serves and accepts nothing |
 | **Hide existence from callers without access** | `hideExistence` | **Use the installation setting** | **Hide: answer as if it did not exist** answers 404 to refused reads, **Do not hide: answer 403** answers 403 |
 | **Downloads of this repository may go by signed links of the object store** (section **Download links**) | `storage.downloadLinks` | on | Off keeps every download of the repository streamed by Quader, whatever the installation's switch says; see [Download links](download-links.md#a-repositorys-opt-out). It can be set while the installation's switch is off and takes effect when an administrator switches links on. The box is disabled on a format not every client of which checks a digest; the API answers `422 not_applicable` there |
@@ -181,7 +181,7 @@ so for them the rule seldom changes anything; for a container image it does.
   (`remote.limits.maxConcurrentFetches`, 64), at most 1,000 files and the repository's largest artifact size in sum
   (`remote.limits.maxArtifactBytes`, 10 GiB unless set). It is a row of the repository's download queue, which runs at most four rows of
   a repository at once and lets the rest wait; it gives way to the downloads of clients, waits while the upstream is down or asks to slow
-  down, retries a failure that a later attempt can overcome, and keeps the repository's include and exclude patterns.
+  down, retries a failure that a later attempt can overcome, and fetches nothing the repository's delivery rules refuse.
 - **What you see.** The version is listed on the repository's page once its content is stored, with its size; **Last download** and the
   downloads stay those of clients, so a tag only asked about reads **Never**. Of a multi-platform image the size counts the platforms
   stored and is marked partial while the image has more.
@@ -190,7 +190,7 @@ so for them the rule seldom changes anything; for a container image it does.
   two-platform image costs up to two pulls besides the client's own. Turned off, the remote fetches only what clients download.
 - **Through a virtual repository.** The same requests sent to a virtual repository start the download at the remote member that serves
   the version: the member whose cache holds it, else the first remote member whose stored documents list it, else (NuGet) the first remote
-  member. That member's switch, patterns, **Platforms** and bounds decide, and the version is stored there. A version a local member holds
+  member. That member's switch, delivery rules, **Platforms** and bounds decide, and the version is stored there. A version a local member holds
   starts nothing. The client's budget is the one it has at the virtual repository; the member's ceilings apply and the usage is recorded at
   the member.
 
@@ -198,10 +198,11 @@ so for them the rule seldom changes anything; for a container image it does.
 
 A remote repository of a format whose upstream Quader can list (npm, NuGet, OCI and Debian) has a **Mirror** group in **Advanced settings** of the creation form and a closed section **Mirror** on its settings page. It is shown only for such formats; a format that cannot list its upstream has none.
 
-**Mode** is **Pull-through** (the default: fetch and store what clients ask for) or **Mirror** (also store, in background passes, every package of the upstream that the include patterns and the bounds admit). The other members show in mode **Mirror** only:
+**Mode** is **Pull-through** (the default: fetch and store what clients ask for) or **Mirror** (also store, in background passes, every package of the upstream that **Mirror only these packages**, the repository's delivery rules and the bounds admit). The other members show in mode **Mirror** only:
 
 | UI label | Document key | Default | Range |
 |---|---|---|---|
+| **Mirror only these packages** | `remote.mirror.include` | empty (every package the repository delivers) | One name pattern per line, at most 100; such as `@types/*` |
 | **Paused** | `remote.mirror.paused` | off | No pass starts; a running pass stops before its next package |
 | **Pass interval in seconds** | `remote.mirror.intervalSeconds` | `3600` | 300 to 604800 |
 | **Full pass interval in seconds** | `remote.mirror.fullPassIntervalSeconds` | `604800` | `0`, or 86400 to 7776000 |
@@ -211,7 +212,7 @@ A remote repository of a format whose upstream Quader can list (npm, NuGet, OCI 
 | **Include prerelease versions** | `remote.mirror.includePrereleases` | on | |
 | **Storage limit in bytes** | `remote.mirror.maxBytes` | empty (no limit of its own) | at least 1048576 |
 
-A member left empty or at its default is not written. Under the mode, a notice says when the mirror has no bound; it follows the **Upstream URL** you entered: for the address of one of the format's well-known registries (the buttons above the URL, such as `https://registry.npmjs.org/` for npm or `https://quay.io/` for OCI) the server refuses to save the mirror unless the include patterns each start with a literal part (such as `@types/*`; not `*`, `**` or `@*/*`) or a storage limit is set; for any other upstream it saves the mirror with a warning. The server decides, and its answer appears at the mode or at the member it names.
+A member left empty or at its default is not written. Under the mode, a notice says when the mirror has no bound; it follows the **Upstream URL** you entered: for the address of one of the format's well-known registries (the buttons above the URL, such as `https://registry.npmjs.org/` for npm or `https://quay.io/` for OCI) the server refuses to save the mirror unless the patterns of **Mirror only these packages** each start with a literal part (such as `@types/*`; not `*`, `**` or `@*/*`) or a storage limit is set; for any other upstream it saves the mirror with a warning. The server decides, and its answer appears at the mode or at the member it names.
 
 Only a holder of `repositories:write-config` sets the mode and the members. An Owner of the repository's project without that capability can switch **Paused** and turn the mode back to pull-through, and cannot turn a remote repository into a mirror or change its settings (`mirror_restricted`). A format that cannot list its upstream answers `not_applicable` at the mode for a save with **Mirror**.
 
@@ -223,6 +224,7 @@ On the page of a remote repository that is stored in mode **Mirror**, the sectio
 |---|---|
 | **Off** | The repository is in pull-through mode; no pass runs |
 | **Paused** | **Paused** is on: no pass starts |
+| **No bound** | The mirror reads one of the format's well-known registries and has neither **Mirror only these packages** with patterns that each start with a literal part nor a **Storage limit in bytes**: no pass starts until it has one. A save refuses such a mirror; one stored before the scope moved to **Scope** can still be in this state |
 | **Scheduled** | No pass is in progress; the next one starts when it is due. Green only when the last complete pass was **Complete** |
 | **Running** | A pass is in progress |
 | **Waiting** | A pass is in progress and waits for its next run, after a long rate-limit wait, a failure or a release |
@@ -242,7 +244,7 @@ With `repositories:write-config`, or with `manage` on the repository (the roles 
 
 - **Pause** and **Resume** change **Paused** at once, with the version of the repository you loaded; they do not save the other edits in the form, which stay as they are. If someone else changed the repository since you opened it, the conflict dialog opens (**Overwrite** pauses anyway, **Reload** takes the stored version); if they already paused it, nothing more happens.
 - **Run a pass now** asks for a pass (`POST /api/v1/projects/<projectKey>/repositories/<key>/mirror/run`) and shows its job: **A pass is queued.** with the job's id, its state and a link **Open the mirror jobs**, which opens the Jobs screen ([System status, Jobs and Audit log](operations.md)) filtered by the kind `mirror-pass`. The arrow next to the button opens **Run a full pass**, which discovers every name again instead of reading the feed from its cursor.
-- While a pass is already queued or running the answer is **A pass is already queued or running.** with that job. A paused mirror answers **The mirror is paused. Resume it to run a pass.**, and a repository in pull-through mode says that there is no mirror to run.
+- While a pass is already queued or running the answer is **A pass is already queued or running.** with that job. A paused mirror answers **The mirror is paused. Resume it to run a pass.**, a mirror in the state **No bound** answers that it needs a scope or a storage limit first, and a repository in pull-through mode says that there is no mirror to run.
 
 ## Settings that are set through the API
 
@@ -291,7 +293,8 @@ The `remote` section of an npm remote repository:
 | `integrity.blockUnexpectedContentTypes`, `allowedContentTypes` | `true`, `[]` | Refuse upstream answers of unexpected content types |
 | `limits.maxArtifactBytes`, `maxMetadataBytes` | system value | Largest upstream answer |
 | `limits.maxConcurrentFetches` | `64` | Budget of upstream requests of the repository in flight at once. Each replica takes `ceil(budget ÷ n)` of it for the n replicas that fill client misses, so the cluster-wide total stays within `budget + n − 1`, plus the background share B of a mirror (R-REPO-040). A fetch counts until the upstream's answer has been read, not while Quader stores it |
-| `mode` | `pullThrough` | `pullThrough` or `mirror`: a mirror also stores, in background passes, what the upstream offers within the include patterns and the bounds below. A mirror of `https://registry.npmjs.org/` needs include patterns that each start with a literal part (such as `@types/*`) or `mirror.maxBytes`; only a holder of `repositories:write-config` sets the mode, an Owner of the project without it may pause a mirror or turn it back to `pullThrough` |
+| `mode` | `pullThrough` | `pullThrough` or `mirror`: a mirror also stores, in background passes, what the upstream offers within `mirror.include` and the bounds below. A mirror of `https://registry.npmjs.org/` needs `mirror.include` patterns that each start with a literal part (such as `@types/*`) or `mirror.maxBytes`, and one stored without either does not run; only a holder of `repositories:write-config` sets the mode, an Owner of the project without it may pause a mirror or turn it back to `pullThrough` |
+| `mirror.include` | `[]` | The packages the mirror stores, name patterns (at most 100); empty means every package the delivery rules deliver. Only a holder of `repositories:write-config` changes it |
 | `mirror.paused` | `false` | Pause or resume the mirror |
 | `mirror.intervalSeconds`, `fullPassIntervalSeconds` | `3600`, `604800` | Time between passes; age of the last full pass after which a pass reads everything again |
 | `mirror.discovery` | `auto` | `auto`, `feed`, `listing` or `names` |

@@ -217,7 +217,10 @@ export class RepositoryDetail implements HasUnsavedChanges {
   protected readonly clientsCapable = computed(() => this.systemRepository() && mayServeClients(this.key()));
   /** The statement of a system repository's level, naming the work that reads it (R-UI-190). */
   protected readonly systemLevel = computed(() => systemLevelSentence(this.key(), this.systemLevelValue()));
-  /** What an administrator narrows on a well-known repository: patterns, offline, notes (R-REPO-069); nothing on a system one. */
+  /**
+   * What an administrator narrows on a well-known repository: offline and the notes (R-REPO-069); nothing on a system one. A remote has no
+   * patterns: its delivery rules narrow it (R-CUR-002).
+   */
   protected readonly canNarrow = computed(() => this.canChange() && !this.systemRepository());
   /** The page of the repository in the admin area, where its state, level, address and account are set (R-UI-188). */
   protected readonly adminLink = computed(() => ['/admin/upstream', this.key()]);
@@ -248,8 +251,8 @@ export class RepositoryDetail implements HasUnsavedChanges {
   );
 
   /**
-   * A section saves for whom may change the repository; of a well-known repository only the sections that narrow it (the patterns,
-   * offline in the upstream's section, the notes), and nothing of a system repository (R-UI-190).
+   * A section saves for whom may change the repository; of a well-known repository only the sections that narrow it (offline in the
+   * upstream's section, the notes), and nothing of a system repository (R-UI-190).
    */
   protected canSave(section: SettingsSection): boolean {
     if (!this.canChange()) return false;
@@ -263,6 +266,12 @@ export class RepositoryDetail implements HasUnsavedChanges {
 
   /** The upstream settings: a remote repository (R-UI-082). */
   protected readonly upstreamSection = computed(() => this.stored()?.class === 'remote');
+  /** The hint of Access details: a remote repository has no patterns (R-CUR-002), only the hiding of existence. */
+  protected readonly accessHint = computed(() =>
+    this.upstreamSection()
+      ? $localize`:@@repo.settings.access-hint-remote:What callers without access learn about the repository.`
+      : $localize`:@@repo.settings.access-hint:Which paths the repository admits, and what callers without access learn about it.`,
+  );
   /** The section Mirror: a remote repository of a format that can mirror (R-UI-021, Q-UI-104). */
   protected readonly mirrorSection = computed(
     () => this.stored()?.class === 'remote' && this.format()?.mirror === true && !isUpstreamProject(this.project()),

@@ -285,23 +285,29 @@
           </quader-disclosure>
         }
 
-        <quader-disclosure
-          i18n-heading="@@repo.group.access"
-          heading="Access details"
-          i18n-hint="@@repo.settings.access-hint"
-          hint="Which paths the repository admits, and what callers without access learn about it."
-          [note]="unsaved('access')"
-        >
-          <form (submit)="saveSection('access', $event)" novalidate>
-            <quader-repository-fields section="paths" [form]="current" (formChange)="setForm($event)" [readonly]="!canSave('access')" [fieldErrors]="errorsOf('access')" />
-            <!-- Hide existence is the product's on a well-known repository (R-REPO-069). -->
-            @if (!managed()) {
-              <quader-repository-fields section="access" [form]="current" (formChange)="setForm($event)" [readonly]="!canChange()" [fieldErrors]="errorsOf('access')" />
-            }
-            <ng-container *ngTemplateOutlet="problems; context: { $implicit: 'access' }" />
-            <ng-container *ngTemplateOutlet="save; context: { $implicit: 'access', suffix: sectionLabel('access') }" />
-          </form>
-        </quader-disclosure>
+        <!-- A remote repository has no include and exclude patterns: its delivery rules decide what it delivers (R-CUR-002). Its
+             Access details hold only the hiding of existence, which is the product's on a well-known repository (R-REPO-069), so a
+             well-known remote has no such section. -->
+        @if (!(upstreamSection() && managed())) {
+          <quader-disclosure
+            i18n-heading="@@repo.group.access"
+            heading="Access details"
+            [hint]="accessHint()"
+            [note]="unsaved('access')"
+          >
+            <form (submit)="saveSection('access', $event)" novalidate>
+              @if (!upstreamSection()) {
+                <quader-repository-fields section="paths" [form]="current" (formChange)="setForm($event)" [readonly]="!canSave('access')" [fieldErrors]="errorsOf('access')" />
+              }
+              <!-- Hide existence is the product's on a well-known repository (R-REPO-069). -->
+              @if (!managed()) {
+                <quader-repository-fields section="access" [form]="current" (formChange)="setForm($event)" [readonly]="!canChange()" [fieldErrors]="errorsOf('access')" />
+              }
+              <ng-container *ngTemplateOutlet="problems; context: { $implicit: 'access' }" />
+              <ng-container *ngTemplateOutlet="save; context: { $implicit: 'access', suffix: sectionLabel('access') }" />
+            </form>
+          </quader-disclosure>
+        }
 
         <!-- >>> malware -->
         <!-- The stricter-only setting of the malware scan (R-MAL-020, R-MAL-024): a closed section after Access details, while the

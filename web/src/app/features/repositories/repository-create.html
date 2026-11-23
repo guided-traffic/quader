@@ -153,15 +153,17 @@
       class="advanced-settings"
       i18n-heading="@@repo.create.advanced"
       heading="Advanced settings"
-      i18n-hint="@@repo.create.advanced-hint"
-      hint="Notes, paths and the settings of the format. The defaults suit most repositories."
+      [hint]="advancedHint()"
       [(expanded)]="advancedOpen"
     >
       <h3 i18n="@@repo.field.notes">Administrator notes</h3>
       <quader-repository-fields section="notes" [(form)]="form" [fieldErrors]="fieldErrors()" />
 
-      <h3 i18n="@@repo.group.paths">Paths</h3>
-      <quader-repository-fields section="paths" [(form)]="form" [fieldErrors]="fieldErrors()" />
+      <!-- A remote repository has no include and exclude patterns: its delivery rules decide what it delivers (R-CUR-002). -->
+      @if (cls() !== 'remote') {
+        <h3 i18n="@@repo.group.paths">Paths</h3>
+        <quader-repository-fields section="paths" [(form)]="form" [fieldErrors]="fieldErrors()" />
+      }
 
       <h3 i18n="@@repo.group.access">Access details</h3>
       <quader-repository-fields section="access" [(form)]="form" [fieldErrors]="fieldErrors()" />

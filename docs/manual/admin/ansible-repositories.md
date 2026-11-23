@@ -17,7 +17,7 @@ Give clients a virtual repository: one `server_list` entry then reads your own c
 
 ## Mirror
 
-A remote in mode `mirror` keeps the collections its include patterns select (`acme.*`, `community.general`), so that they stay installable while the upstream is away. A pattern that bounds the set is required. A pass stores the collection documents, the version lists and version documents, and every archive of the selected collections within the version bounds; installs afterwards make no request to the upstream. Roles and the index of a hub are not read. A mirror of the whole public Galaxy is a configuration of its own and not measured, so plan its storage before you start one; start and watch a pass on the edit form of the repository.
+A remote in mode `mirror` keeps the collections that **Mirror only these packages** selects (`acme.*`, `community.general`) and its delivery rules deliver, so that they stay installable while the upstream is away. A pattern that bounds the set is required. A pass stores the collection documents, the version lists and version documents, and every archive of the selected collections within the version bounds; installs afterwards make no request to the upstream. Roles and the index of a hub are not read. A mirror of the whole public Galaxy is a configuration of its own and not measured, so plan its storage before you start one; start and watch a pass on the edit form of the repository.
 
 ## Settings
 

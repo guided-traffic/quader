@@ -335,7 +335,7 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
     severity: warning
   annotations:
     summary: The mirror {{ "{{ $labels.repo }}" }} is more than an hour behind its schedule.
-    description: Its next pass was due an hour ago and nothing started it, or the pass in progress has not written for an hour. No process claims the queue mirror, the passes are held back by a rate limit that lasts hours, or the job is lost (R-REPO-053, R-REPO-054). Check the pods that claim the queue, the status of the repository and quader_mirror_pending_packages. A paused mirror is not reported.
+    description: Its next pass was due an hour ago and nothing started it, or the pass in progress has not written for an hour. No process claims the queue mirror, the passes are held back by a rate limit that lasts hours, the job is lost (R-REPO-053, R-REPO-054), or the mirror reads a well-known upstream without a bound and does not run (state unbounded, R-REPO-052). Check the pods that claim the queue, the status of the repository and quader_mirror_pending_packages. A paused mirror is not reported.
 - alert: QuaderBlobMissing
   expr: sum(increase(quader_storage_blobs_damaged_total{ {{ $ns }},status="missing" }[1h])) > 0
   labels:

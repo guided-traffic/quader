@@ -90,7 +90,8 @@ Every German text addresses the reader formally, as "Sie" ("Geben Sie … ein", 
 | advisory source, mirror repository | Advisory-Quelle, Spiegel-Repository |
 | security dashboard (admin area), advisory ID (CVE, GHSA) | Sicherheits-Dashboard, Advisory-Kennung |
 | mirror (mode of a remote repository), pull-through, pass (of a mirror) | Mirror, Pull-through, Durchlauf |
-| mirror state (off, paused, scheduled, running, waiting, bound reached, failing) | Aus, Pausiert, Geplant, Läuft, Wartet, Grenze erreicht, Fehlerhaft |
+| mirror state (off, paused, no bound, scheduled, running, waiting, bound reached, failing) | Aus, Pausiert, Keine Grenze, Geplant, Läuft, Wartet, Grenze erreicht, Fehlerhaft |
+| Mirror only these packages (`remote.mirror.include`), the packages to mirror | Nur diese Pakete im Mirror, die zu mirrorenden Pakete |
 | pause, resume (a mirror); run a pass now, run a full pass | pausieren, fortsetzen; Durchlauf jetzt starten, Vollständigen Durchlauf starten |
 | rate-limit wait, bound (of a mirror), discovery (of names) | Rate-Limit-Wartezeit, Grenze, Ermittlung |
 | download queue (of a remote repository), bulk download, download state (waiting, running, failed, done, cancelled), retry, attempt, probe (a client's question about a version that starts a download) | Download-Warteschlange, Sammeldownload, Wartet, Läuft, Fehlgeschlagen, Fertig, Abgebrochen, wiederholen, Versuch, Abfrage |

@@ -40,8 +40,11 @@ export interface RepoSeed {
   readonly members?: readonly string[];
   /** The upstream of a remote repository whose format has no well-known one. */
   readonly url?: string;
-  /** The names the repository admits (R-REPO-005); absent admits every name. */
-  readonly includePatterns?: readonly string[];
+  /**
+   * The sections a remote delivers, each an allow rule in the delivery mode onlyAllowed (remote-curation.md R-CUR-001; a remote has no
+   * include patterns, R-CUR-002); absent delivers everything.
+   */
+  readonly allowSections?: readonly string[];
   /** The member `vulnerabilities` of the repository document (R-VULN-002). */
   readonly vulnerabilities?: { readonly matchPublicAdvisories: 'auto' | 'always' | 'never' };
   /** `remote.downloadOnProbe` of a remote (R-REPO-065); absent is the default, on. Set on an existing repository too. */
@@ -128,7 +131,7 @@ export const repositories: readonly RepoSeed[] = [
     class: 'remote',
     description: 'The guidedtraffic images of Docker Hub, cached. Open to everyone, also without signing in.',
     visibility: { artifacts: 'public', wiki: 'internal' },
-    includePatterns: ['guidedtraffic/*'],
+    allowSections: ['guidedtraffic/*'],
   },
   // A remote whose upstream is this installation (W-24): what a remote lists, without the internet. image-source holds an image of
   // two platforms; the seed pulls through image-cache one tag whole, one platform of another and only the index of a third, so that
@@ -327,8 +330,8 @@ export async function seedProjectsAndRepositories(admin: Api): Promise<void> {
     const body: Record<string, unknown> = { key: r.key, class: r.class, format: r.format };
     if (r.description) body['description'] = r.description;
     if (r.visibility) body['visibility'] = r.visibility;
-    if (r.includePatterns) body['includePatterns'] = r.includePatterns;
     if (r.class === 'remote' && r.url) body['remote'] = { url: r.url };
+    if (r.class === 'remote' && r.allowSections) body['remote'] = { ...(body['remote'] as object), delivery: { mode: 'onlyAllowed' } };
     if (r.class === 'remote' && r.downloadOnProbe !== undefined) body['remote'] = { ...(body['remote'] as object), downloadOnProbe: r.downloadOnProbe };
     if (publicRemotes.includes(r)) body['remote'] = { ...(body['remote'] as object | undefined), availability: { mode: 'offline' } };
     if (r.vulnerabilities) body['vulnerabilities'] = r.vulnerabilities;
@@ -344,6 +347,11 @@ export async function seedProjectsAndRepositories(admin: Api): Promise<void> {
       await expectStatus(set, [200], `downloadOnProbe of ${r.project}/${r.key}`);
     }
     if (res.status() === 409 && publicRemotes.includes(r)) await setAvailability(admin, r, 'offline');
+    for (const pattern of r.allowSections ?? []) {
+      // A second run finds the rule: the write of an existing subject answers 200 (R-CUR-006).
+      const rule = await admin.post(`/api/v1/projects/${r.project}/repositories/${r.key}/delivery-rules`, { kind: 'section', pattern, effect: 'allow' });
+      await expectStatus(rule, [200, 201], `the rule ${pattern} of ${r.project}/${r.key}`);
+    }
   }
 }
 

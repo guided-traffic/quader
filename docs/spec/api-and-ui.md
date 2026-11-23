@@ -4640,21 +4640,24 @@ Priority: **MVP** · Covers: UI-031
 - From phase 6b, on remote repositories of a format whose upstream can be discovered (`mirror: true` in
   `GET /api/v1/formats`, from the format's registration; the UI holds no list of such formats): a **Mirror**
   section with the mode (`pullThrough` or `mirror`) and the members of `remote.mirror`
-  ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-050), the warning or refusal `mirror_unbounded` at the
+  ([repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-050), first among them **Mirror only these packages** (`remote.mirror.include`, R-CUR-018, one name
+  pattern per line; empty means every package the repository delivers, [remote-curation.md](remote-curation.md) R-CUR-017), the warning or refusal `mirror_unbounded` at the
   mode with the sentence of R-REPO-052, and for an Owner without `repositories:write-config` the section read-only except
   **Pause** and **Turn off** (Q-REPO-142). The section is the group **Mirror** in **Advanced settings** of the creation form
   (R-UI-083) and the closed section **Mirror** of the settings page (R-UI-087, Q-UI-117); the members show in mode `mirror` and are written only where they differ from their defaults, and a create in
-  mode `pullThrough` writes no `remote` member; the early notice at the mode applies the server's bound rule to the upstream
-  URL entered and the server decides (Q-UI-118, Q-UI-122). On the settings page of a remote stored in mode `mirror`, the **Mirror**
+  mode `pullThrough` writes no `remote` member; the early notice at the mode applies the server's bound rule to the scope and the
+  storage limit for the upstream URL entered and the server decides (Q-UI-118, Q-UI-122). On the settings page of a remote stored in mode `mirror`, the **Mirror**
   section shows, above the settings (Q-UI-119), the status of `GET /api/v1/projects/{projectKey}/repositories/{repoKey}/mirror`: the state in words (off,
-  paused, scheduled, running, waiting, bound reached, failing; green only for a scheduled mirror after a complete pass), the pass
+  paused, no bound, scheduled, running, waiting, bound reached, failing; green only for a scheduled mirror after a complete pass;
+  **No bound** is a mirror of a well-known registry stored without its bound, which does not run, and plans no next pass,
+  [remote-curation.md](remote-curation.md) Q-CUR-43), the pass
   in progress with its counts and its job, the last complete pass, the next pass, the last error, the rate-limit waits and the
   bound. While a pass is in progress (`running`, `waiting`) the status is read again every 5 s, and no longer once the section
   is closed or the page left. A caller who may change the repository (the permission of Save, Q-UI-120) has **Pause** and **Resume**, which `PATCH`
   `remote.mirror.paused` with `If-Match` and nothing else of the form (a 412 opens the conflict dialog of R-UI-042), and **Run a
   pass now** (`POST …/mirror/run`, and **Run a full pass** from its menu), which shows the queued job with a link to the jobs of
-  the kind `mirror-pass`; `409 mirror_pass_running` shows the running job instead of an error, and `mirror_off` and
-  `mirror_paused` are shown in words (Q-UI-104, Q-UI-105, Q-UI-121).
+  the kind `mirror-pass`; `409 mirror_pass_running` shows the running job instead of an error, and `mirror_off`,
+  `mirror_paused` and `mirror_unbounded` are shown in words (Q-UI-104, Q-UI-105, Q-UI-121).
 - From M4b, on local and remote repositories of a format with the vulnerability adapter: the
   `vulnerabilities` member ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-002), and
   on the settings page a link to the repository's view of the vulnerability report (R-VULN-022).
@@ -6446,8 +6449,10 @@ Acceptance criteria:
 Priority: **MVP** · Covers: UI-031
 
 - The form's section **Advanced settings** (`<quader-disclosure>`, closed) has the sentence "Notes, paths and the settings of
-  the format. The defaults suit most repositories." and these groups, each under its own heading, where they apply:
-  **Administrator notes**; **Paths** (include and exclude patterns, the pattern syntax); **Access details** (Hide existence);
+  the format. The defaults suit most repositories." (of a remote: "Notes, access details, the mirror and the settings of the format.
+  The defaults suit most repositories.") and these groups, each under its own heading, where they apply:
+  **Administrator notes**; **Paths** (include and exclude patterns, the pattern syntax; a local or a virtual repository only: a remote
+  has none, its delivery rules decide what it delivers, [remote-curation.md](remote-curation.md) R-CUR-002); **Access details** (Hide existence);
   **Mirror** (a remote of a format with `mirror`: the mode, and in mode mirror the members of `remote.mirror` and the format's own
   `mirror` member, such as `oci.mirror` or `deb.mirror`); **<Display name> settings** (the format's other schema members for the class;
   absent when there are none) ([Q-UI-344](#q-ui-344--where-the-details-go)).
@@ -6550,7 +6555,8 @@ The settings page follows the style guide's settings pages: one column of at mos
 3. **Upstream** (remote), open: R-UI-082 with its **Upstream details** region, which holds **Offline** here.
 4. **Members** (virtual), open: the editor of R-UI-022 with its own save.
 5. Closed: **Mirror** (status above the settings, R-UI-021, and the format's `mirror` member), **<Display name> settings**, **Access
-   details** (include and exclude patterns, Hide existence), **Administrator notes**, **Signatures** (the background fetch of a remote and
+   details** (include and exclude patterns, Hide existence; of a remote only Hide existence, R-CUR-002, and none on a well-known remote,
+   whose Hide existence is the product's), **Administrator notes**, **Signatures** (the background fetch of a remote and
    the gate **Only artifacts with a verified signature can be downloaded from this repository**, [signatures.md](signatures.md)
    R-SIG-040 and R-SIG-074), **Download links** (every repository but a system repository: the repository's opt-out of
    signed links, disabled with its reason where it cannot act, R-UI-201, Q-UI-956), **Signing keys** and **Indexes** (Debian local and virtual), **Import tasks** and **Tombstones**
@@ -8622,7 +8628,7 @@ Priority: **MVP** · Covers: quader-only
   4. **Details**, closed: **Listed by** (the virtual repositories by qualified name, as links to their settings, as far as the caller
      reads them, and the number of the others: `listedByNames` and `listedBy` of the item read,
      [Q-API-363](#q-api-363--the-item-counts-the-listing-virtual-repositories-and-their-projects-and-an-answer-about-one-repository-names-them)), the settings an
-     administrator narrows (a link to the repository's settings page, R-UI-190, for the patterns, offline and the notes), the
+     administrator narrows (a link to the repository's settings page, R-UI-190, for offline and the notes), the
      limits of the repository (a link to the same page, whose section R-UI-180 is), created and last changed (read from the
      repository's document when Details is first opened).
 - A retired repository's page says "Quader no longer offers this registry. Its cached content is being removed." and shows only
@@ -8685,8 +8691,9 @@ Priority: **MVP** · Covers: quader-only
 - **A repository's settings page** (R-UI-087): Key and Description read-only; **Visibility** and **Upstream** read-only, each with the
   line "Managed in Admin area › Upstream registries." linked to R-UI-188 for an administrator; **Visibility** has no fold **Wiki
   visibility**, because the repository's one level covers its packages and its documentation and the repository document refuses a
-  change of either (`422 managed_by_product` at `/visibility`, R-REPO-069); **Access details** (include and exclude
-  patterns), the vulnerability settings, **Offline** and the cache-fill action editable for `repositories:write-config`; no
+  change of either (`422 managed_by_product` at `/visibility`, R-REPO-069); no **Access details** (a remote has no include and exclude
+  patterns, its delivery rules narrow it, [remote-curation.md](remote-curation.md) R-CUR-002, and Hide existence is the product's);
+  the vulnerability settings, **Offline** and the cache-fill action editable for `repositories:write-config`; no
   **Mirror**, no **Disable repository**, no **Move to another project**, no **Delete repository**. `scanner-trivy` shows everything
   read-only, its level as one statement in place of the group of levels, "Its visibility is always Private: only Quader's image
   scanning reads it.", without the line "Managed in …", which stays under **Upstream**, where its address is managed; `clamav`
@@ -8714,7 +8721,7 @@ Priority: **MVP** · Covers: quader-only
 Acceptance criteria (Vitest, about 1 s; rendered under rule 11): the project list shows **Upstream** with **Built-in**, first, above a
 project whose name and key sort before it, also when the list is sorted the other way, and its mark holds an arrow and no letter; its side bar
 has no **Access** and no **Settings**; the settings page of `upstream/npmjs` for an administrator shows **Upstream** read-only with the
-link and the include patterns editable, and no **Delete repository**.
+link, no **Access details**, **Administrator notes** editable, and no **Delete repository**.
 
 ### R-UI-191 · A new remote repository names the central one
 Priority: **MVP** · Covers: quader-only

@@ -1111,7 +1111,9 @@ package answer is `<credential key>|<projectKey>/<repoKey>|<package>`, and its V
      replicas;
   4. `o` is not earlier than the start of the replica's feed history plus 15 s (R-BAS-026).
 - A refused or invalid answer is kept like an allowed one, so a refused caller costs the main installation one request per
-  period; a widening of a right may take the period to reach the Bastion (owner). A `403` is kept; a `404` that is not marked `absent` never is,
+  period; a widening of a right may take the period to reach the Bastion (owner). A `403` is kept, unless it says `Cache-Control: no-store`
+  (the refusal of a remote's delivery rules, `403 not_allowed_in_repository`, which an allow lifts without a feed entry:
+  [remote-curation.md](remote-curation.md) Q-CUR-44); a `404` that is not marked `absent` never is,
   whether it answers a plain fetch or a conditional request, because it may be a missing name or a hidden one, and replaying it only
   for names the Bastion holds would show a narrowed reader which hidden names are cached
   ([Q-BAS-124](#q-bas-124--a-404-that-is-not-marked-absent-is-never-kept-as-a-url-answer), which replaces [Q-BAS-80](#q-bas-80--a-404-that-answers-a-plain-fetch-is-not-kept-as-the-callers-url-answer)).
@@ -1200,7 +1202,8 @@ for the bound (owner, Q-BAS-7):
 - **Check** otherwise: a conditional `GET` with the caller's own credential and `If-None-Match: "<sha256>"` through the real
   route ([Q-BAS-27](#q-bas-27--a-cached-artifact-is-checked-through-the-real-route)). `304`: the bytes are served from the cache,
   and `validatedAt` and the caller's URL answer are renewed. `200`: the new bytes replace the entry and are served. A refusal:
-  the main installation's answer is replayed, a `403` is kept as the caller's URL answer and a `404` is not (Q-BAS-124), and the entry stays for other callers; only a
+  the main installation's answer is replayed, a `403` is kept as the caller's URL answer (not one that says `Cache-Control: no-store`, Q-CUR-44 of
+  [remote-curation.md](remote-curation.md)) and a `404` is not (Q-BAS-124), and the entry stays for other callers; only a
   `404` marked `absent` removes it. The main installation answers the conditional from PostgreSQL without reading its object
   store (R-STOR-012), so a check costs no artifact transfer.
 - **Refuse without a request** when the caller's shape answer is `none`: the Bastion answers the stored status (R-BAS-029).

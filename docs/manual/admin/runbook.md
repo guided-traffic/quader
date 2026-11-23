@@ -233,13 +233,13 @@ The image scanning works in the scanner pods. Their spool holds the analyses and
 
 **What you see.** `QuaderMirrorFailing` or `QuaderMirrorStale`. The section **Mirror** of the repository's settings ([The status of a mirror](repositories.md#the-status-of-a-mirror)) shows **Failing**, **Waiting** or a **Next pass** long in the past, or the Jobs screen shows `mirror-pass` jobs of one repository queued and not running.
 
-**What it means.** Passes run in the queue `mirror`, on a worker that claims it (two at a time per replica by default, `config.jobs.workers.mirror`). A pass keeps its place; after a failure the dispatch, which runs every minute, continues it after a back-off. **Waiting** is a rate-limit wait, a failure or a release; **Bound reached** is a storage bound. A pass that the spool refuses waits 5 seconds and repeats the item.
+**What it means.** Passes run in the queue `mirror`, on a worker that claims it (two at a time per replica by default, `config.jobs.workers.mirror`). A pass keeps its place; after a failure the dispatch, which runs every minute, continues it after a back-off. **Waiting** is a rate-limit wait, a failure or a release; **Bound reached** is a storage bound; **No bound** is a mirror of a well-known registry that has neither a scope nor a storage limit, and it does not run. A pass that the spool refuses waits 5 seconds and repeats the item.
 
 **What to do.**
 
 1. Read **Last error** (the code, and hosts but never credentials), **Rate-limit waits** and **Bound** on the status.
 2. No progress and no error: check that a worker claims the queue `mirror` (`worker.pools` take queues away from the main worker) and that the worker pods are ready; `QuaderJobsStuck` fires on an unclaimed queue.
-3. `QuaderMirrorStale` with a rate limit: the upstream holds it back, and the passes continue by themselves when its limit allows. A pass that hit a bound: raise `remote.mirror.maxBytes` or the repository's quota.
+3. `QuaderMirrorStale` with a rate limit: the upstream holds it back, and the passes continue by themselves when its limit allows. A pass that hit a bound: raise `remote.mirror.maxBytes` or the repository's quota. **No bound**: give the mirror **Mirror only these packages** (`remote.mirror.include`, patterns that each start with a literal part, such as `@types/*`) or a **Storage limit in bytes**; the next dispatch runs it.
 4. **Run a pass now** queues one, and **Run a full pass** discovers every name again instead of reading the feed from its cursor. **Pause** and **Resume** stop and start passes. A `mirror-pass` job that hangs can be cancelled from the **Jobs** screen.
 
 **When to escalate.** To the owner of the upstream for rate limits and authentication errors. To the maintainers for an error code that does not change with the upstream: attach **Last error** and the job's result.

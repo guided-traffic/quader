@@ -776,6 +776,7 @@ export function sampleRepositoryDefaults(
       availability: { mode: 'online' },
       mode: 'pullThrough',
       mirror: {
+        include: [],
         paused: false,
         intervalSeconds: 3600,
         fullPassIntervalSeconds: 604800,

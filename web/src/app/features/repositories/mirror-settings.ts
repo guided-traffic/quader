@@ -14,6 +14,7 @@ export const MIRROR_SECTION_ID = 'f-remote-mirror';
 
 /** The members of `remote.mirror` the section has a control for (R-REPO-050). */
 const KNOWN_MEMBERS = [
+  'include',
   'paused',
   'intervalSeconds',
   'fullPassIntervalSeconds',
@@ -46,6 +47,7 @@ export function mirrorPointerLabel(pointer: string): string | null {
 
 function mirrorLabels(): Record<string, string> {
   return {
+    include: $localize`:@@mirror.include:Mirror only these packages`,
     paused: $localize`:@@mirror.paused:Paused`,
     intervalSeconds: $localize`:@@mirror.interval:Pass interval in seconds`,
     fullPassIntervalSeconds: $localize`:@@mirror.full-interval:Full pass interval in seconds`,
@@ -58,7 +60,7 @@ function mirrorLabels(): Record<string, string> {
 }
 
 /**
- * Whether an include pattern bounds a mirror (R-REPO-052, Q-REPO-132): an exact name, or a literal
+ * Whether a pattern of the scope bounds a mirror (R-REPO-052, Q-REPO-132): an exact name, or a literal
  * prefix before the first wildcard that holds more than the scope sigils `@` and `/`. The server
  * decides; the section only warns early with the same rule.
  */
@@ -101,7 +103,7 @@ interface NumberMember {
     <div class="mirror" [id]="sectionId" tabindex="-1">
       <p class="hint" i18n="@@mirror.intro">
         A remote repository fetches and stores what clients ask for. In mode mirror it also stores,
-        in background passes, what the upstream offers within the include patterns and bounds below.
+        in background passes, what the upstream offers within the packages and bounds below.
       </p>
       @for (e of problems('/remote/mirror'); track $index) {
         <p class="field-error">{{ message(e) }}</p>
@@ -146,8 +148,8 @@ interface NumberMember {
           />
           <span class="mode-title" i18n="@@mirror.mode.mirror">Mirror</span>
           <span class="hint" i18n="@@mirror.mode.mirror.hint"
-            >Also stores, in background passes, every package of the upstream that the include
-            patterns and bounds admit.</span
+            >Also stores, in background passes, every package of the upstream that the list of
+            packages and the bounds admit.</span
           >
         </label>
         @for (e of problems('/remote/mode'); track $index) {
@@ -175,20 +177,45 @@ interface NumberMember {
           <p class="banner-warning" role="note" id="mirror-unbounded">
             <span class="material-icons inline warn" aria-hidden="true">warning</span>
             <span i18n="@@mirror.unbounded.refused"
-              >A mirror of a well-known public registry needs a bound. Give include patterns
-              that each start with a literal part (such as <code translate="no">&#64;types/*</code>),
-              or a storage limit. Without either the server refuses to save it.</span
+              >A mirror of a well-known public registry needs a bound: packages to mirror whose
+              patterns each start with a literal part (such as <code translate="no">&#64;types/*</code>),
+              or a storage limit. Without either the server refuses to save it, and a mirror stored
+              without either does not run.</span
             >
           </p>
         } @else if (unbounded() === 'warned') {
           <p class="banner-warning" role="note" id="mirror-unbounded">
             <span class="material-icons inline warn" aria-hidden="true">warning</span>
             <span i18n="@@mirror.unbounded.warned"
-              >The mirror has neither include patterns that start with a literal part nor a storage
-              limit: it stores everything the upstream offers. It is saved with a warning.</span
+              >The mirror has neither packages whose patterns start with a literal part nor a storage
+              limit: it stores everything the upstream offers and the repository delivers. It is saved
+              with a warning.</span
             >
           </p>
         }
+
+        <div class="field scope">
+          <label class="field-label" for="f-remote-mirror-include" i18n="@@mirror.include">Mirror only these packages</label>
+          <textarea
+            id="f-remote-mirror-include"
+            class="area-input field-w-full"
+            rows="3"
+            spellcheck="false"
+            [value]="scope()"
+            [disabled]="restricted()"
+            [attr.aria-invalid]="invalid('include')"
+            aria-describedby="d-mirror-include"
+            (input)="setScope($any($event.target).value)"
+          ></textarea>
+          <p id="d-mirror-include" class="hint" i18n="@@mirror.include.hint">
+            One name pattern per line, such as <code translate="no">&#64;types/*</code>;
+            <code translate="no">*</code> matches any characters. Empty mirrors every package the
+            repository delivers.
+          </p>
+          @for (e of problems('/remote/mirror/include'); track $index) {
+            <p class="field-error">{{ message(e) }}</p>
+          }
+        </div>
 
         <div class="form-grid">
           <div class="field">
@@ -323,12 +350,28 @@ interface NumberMember {
     .mode-title {
       font-weight: 600;
     }
+    .scope {
+      display: flex;
+      flex-direction: column;
+      gap: var(--quader-space-1);
+      margin-block-end: var(--quader-space-4);
+
+      .hint {
+        margin: 0;
+      }
+    }
+    /* The button with its sentence under it, as a field has its hint: beside it, the smaller hint's line could not share the
+       button's middle (R-UI-175). */
     .turn-off {
       display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--quader-space-3);
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--quader-space-1);
       margin-block-end: var(--quader-space-4);
+
+      .hint {
+        margin: 0;
+      }
     }
   `,
 })
@@ -361,6 +404,12 @@ export class MirrorSettings {
   protected readonly discovery = computed(() => {
     const v = this.valueOf('discovery');
     return typeof v === 'string' ? v : 'auto';
+  });
+
+  /** The scope, `remote.mirror.include` (R-CUR-017), one pattern per line. */
+  protected readonly scope = computed(() => {
+    const v = this.valueOf('include');
+    return Array.isArray(v) ? v.join('\n') : '';
   });
 
   /** A member as it is set, else as the server's default has it. */
@@ -416,7 +465,8 @@ export class MirrorSettings {
     if (f.mirror['maxBytes'] !== undefined && f.mirror['maxBytes'] !== null && f.mirror['maxBytes'] !== '') {
       return null;
     }
-    const includes = lines(f.includePatterns);
+    const scope = f.mirror['include'];
+    const includes = Array.isArray(scope) ? scope.filter((p): p is string => typeof p === 'string') : [];
     if (includes.length > 0 && includes.every(boundsMirror)) return null;
     const entered = this.upstreamUrl()?.trim();
     const url = entered ? entered : (defaultPreset(this.format())?.url ?? null);
@@ -476,6 +526,11 @@ export class MirrorSettings {
       else mirror[name] = value;
       return { ...f, mirror };
     });
+  }
+
+  /** The scope as a list; empty lines are dropped (an empty list is the default, which is not written). */
+  protected setScope(text: string): void {
+    this.set('include', lines(text));
   }
 
   protected setNumber(name: string, text: string): void {

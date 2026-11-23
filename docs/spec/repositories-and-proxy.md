@@ -4326,11 +4326,11 @@ Configuration (example):
 key: npm-types                        # example
 class: remote
 format: npm
-includePatterns: ["@types/*"]         # example: the bound that R-REPO-052 asks for
 remote:
   url: https://registry.npmjs.org/
   mode: mirror                        # default (proposed): pullThrough
   mirror:
+    include: ["@types/*"]             # example: the scope, and the bound that R-REPO-052 asks for
     paused: false                     # default (proposed)
     intervalSeconds: 3600             # default (proposed)
     fullPassIntervalSeconds: 604800   # default (proposed)
@@ -4403,7 +4403,7 @@ Priority: **MVP** · Covers: quader-only
 Acceptance criteria (integration, counting stub upstreams of R-REPO-059):
 
 - An npm stub whose feed lists `@acme/a`, `@acme/b`, `@acme/c`, `left-pad` and `@other/x`, and a mirror with
-  `includePatterns: ["@acme/*"]`: the first pass stores every tarball of the three `@acme` packages; the stub records no
+  `remote.mirror.include: ["@acme/*"]`: the first pass stores every tarball of the three `@acme` packages; the stub records no
   request for a path of `left-pad` or `@other/x`.
 - With `maxVersionsPerPackage: 2` and `includePrereleases: false`, a package with versions `1.0.0`, `1.1.0`, `2.0.0-rc.1`
   and `1.2.0` (the `latest` tag on `1.1.0`): the pass stores `1.2.0` and `1.1.0`, and `npm install @acme/a@1.0.0` through the
@@ -4426,6 +4426,12 @@ never bounded by them.
   `mirror_unbounded` at `/remote/mode` unless the repository has a non-empty `remote.mirror.include` in which every pattern has a literal
   part before its first wildcard (the delivery rules are no bound: a holder of `manage` can allow `**`, Q-CUR-5) (`@types/*`, `Microsoft.Extensions.*`, `lodash`; not `*`, `**`, `@*/*` or `?x`), or a
   `maxBytes` (Q-REPO-132). A mirror of any other upstream without either is saved with the warning `mirror_unbounded`.
+- **The bound is checked when a pass starts, too** ([remote-curation.md](remote-curation.md) Q-CUR-43). A stored mirror of a
+  well-known upstream without the bound (one saved under an earlier rule, such as a remote whose include patterns were its scope) is
+  not dispatched, and a pass of it that a job starts ends at once with the result `skipped: unbounded`, without an upstream request;
+  a pass in progress keeps its pending names. Its status reads `unbounded` (R-REPO-056), and the run operation answers 422
+  `mirror_unbounded`. The predicate is the one of the save (`repository.UnboundedMirror`), so what a save refuses never runs; once
+  the mirror is saved with a bound, the next dispatch runs it.
 - **`maxBytes`** bounds the repository's logical bytes: the folded counter `repository_usage.logical_bytes` of
   [storage.md](storage.md) R-STOR-003, the number the repository quota of R-STOR-029 reads, which counts what clients filled
   as well. Before each artifact the pass reads the counter (one primary-key read) and adds the bytes it stored since the
@@ -4448,9 +4454,12 @@ never bounded by them.
 Acceptance criteria:
 
 - An npm mirror of `https://registry.npmjs.org/` without include patterns and without `maxBytes` answers 422
-  `mirror_unbounded`; with `includePatterns: ["@types/*"]` it is created; with `["**"]` it is refused again; with only
+  `mirror_unbounded`; with `remote.mirror.include: ["@types/*"]` it is created; with `["**"]` it is refused again; with only
   `"maxBytes": 10737418240` it is created. A mirror of a stub upstream with neither is created with the warning
   `mirror_unbounded`.
+- A stored mirror of the well-known upstream with neither is not dispatched, its pass is skipped as `unbounded`, its status reads
+  `unbounded`, and its run answers 422 `mirror_unbounded`; given a scope with a literal prefix it is dispatched and runs
+  (`TestR_REPO_052_AMirrorWithoutABoundDoesNotRun`, `TestMirrorBound`, `TestR_REPO_056_MirrorStatusDocument`, `TestR_REPO_056_MirrorRun`).
 - A mirror of a stub with 30 MiB of tarballs and `maxBytes: 10485760` ends its pass with `bound_reached`, stores at most
   10 MiB plus `concurrency` times the largest tarball, and writes one `mirror.bound_reached` event; `npm install` of a version
   it did not store succeeds through the same remote; after `maxBytes` is raised to 64 MiB, the next pass stores the rest.
@@ -4751,10 +4760,11 @@ Priority: **MVP** · Covers: API-084, API-085
 }
 ```
 
-- `state` is one of `off` (mode `pullThrough`), `paused`, `scheduled` (no pass in progress), `running` (a pass in progress whose
+- `state` is one of `off` (mode `pullThrough`), `paused`, `unbounded` (a mirror of a well-known upstream without the bound of
+  R-REPO-052, which does not run, Q-CUR-43), `scheduled` (no pass in progress), `running` (a pass in progress whose
   job is running), `waiting` (a pass in progress whose job ended for a long rate-limit wait or a failure, or is queued again after
   a release, and waits for its next run), `bound_reached` and `failing` (three or more failures in a row); the first that holds,
-  in the order `off`, `paused`, `failing`, `bound_reached`, `running`, `waiting`, `scheduled` (Q-API-196). The status is read from
+  in the order `off`, `paused`, `unbounded`, `failing`, `bound_reached`, `running`, `waiting`, `scheduled` (Q-API-196). The status is read from
   PostgreSQL by whichever replica answers; a remote in mode `mirror` that has no `mirror_state` row yet answers `scheduled` with
   nulls (Q-REPO-165). `pass.job` is a job reference of R-API-015, `null` once the job row is removed; `lastCompletePass` is the
   stored `last_pass` document and `null` when there is none or it cannot be read (Q-API-197).
@@ -4766,7 +4776,7 @@ Priority: **MVP** · Covers: API-084, API-085
   (R-REPO-024's rule for the upstream test).
 - The run operation records the request and enqueues the pass; a running or queued pass answers 409
   `mirror_pass_running` naming its job; a remote in mode `pullThrough` answers 409 `mirror_off`, a paused one 409
-  `mirror_paused`; 409 `mirror_rate_limited` with the extension `until` while the upstream's wait lies ahead (Q-REPO-187); a local or virtual repository 400 `not_applicable`. `{"full": true}` makes the requested pass full. The
+  `mirror_paused`; 422 `mirror_unbounded` for a mirror whose state is `unbounded` (Q-CUR-43); 409 `mirror_rate_limited` with the extension `until` while the upstream's wait lies ahead (Q-REPO-187); a local or virtual repository 400 `not_applicable`. `{"full": true}` makes the requested pass full. The
   request writes `mirror.pass_requested`. It writes only `pass_requested_at`, `pass_requested_by` and `pass_requested_full` of
   `mirror_state`, in the transaction that enqueues the job and writes the event (Q-API-198, Q-REPO-163); a refusal writes nothing.
 - **Pause and resume** are the member `remote.mirror.paused`, changed with the repository's `PATCH` and its `If-Match`

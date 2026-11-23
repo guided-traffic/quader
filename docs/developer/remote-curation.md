@@ -115,6 +115,22 @@ one case per format in its area (`TestR_CUR_003_…`, about 2 s each, 10 s in al
 are rewritten to rules in the same change (their count is listed in the commit). Data: the stubs' existing corpora. What a leg gains: the
 unit job about 1 s, the integration shards about 20 s.
 
+**What the landing added** (the three conditions before R2 landed, and the three tests its first report left open):
+
+| Where | What |
+|---|---|
+| [validate_mirror.go](../../internal/repository/validate_mirror.go) `UnboundedMirror`, [engine.go](../../internal/mirror/engine.go) `Dispatch`, [pass.go](../../internal/mirror/pass.go) `begin`, [mirror_api.go](../../internal/api/v1/mirror_api.go) | the bound of R-REPO-052 at a pass: a stored mirror of a preset without a bounding `remote.mirror.include` and without `maxBytes` is not dispatched, its pass ends `skipped: unbounded`, its status is `unbounded` and its run answers 422 `mirror_unbounded` (Q-CUR-43); one predicate with the save's `checkMirrorBound` |
+| [mirror-settings.ts](../../web/src/app/features/repositories/mirror-settings.ts), [repository-create.html](../../web/src/app/features/repositories/repository-create.html), [repository-detail.html](../../web/src/app/features/repositories/repository-detail.html), [repository-model.ts](../../web/src/app/features/repositories/repository-model.ts), [mirror-status.ts](../../web/src/app/features/repositories/mirror-status.ts) | no pattern fields on a remote's forms (nor sent by a create or a save); **Mirror only these packages** (`remote.mirror.include`) in the mirror's form; the state **No bound** and the run's refusal in the status |
+| [forward.go](../../internal/bastion/engine/forward.go) `onPass`, `noStore` | a Bastion keeps no `403` that says `Cache-Control: no-store`, so an allow reaches its clients at once (Q-CUR-44) |
+| [store.go](../../internal/repository/store.go) `toDocument` | a remote's document is read without the patterns a section stored before the rules held, so its updates and the reconcile's write of `upstream/scanner-trivy` are not refused for them (Q-CUR-45) |
+
+Their tests: `TestR_CUR_002_AStoredRemotesPatternsAreNotRead` (unit, milliseconds); `TestMirrorBound` (the save's cases against `UnboundedMirror`) and `TestR_REPO_052_AMirrorWithoutABoundDoesNotRun` (unit,
+milliseconds, no data); `TestR_REPO_056_MirrorStatusDocument` and `TestR_REPO_056_MirrorRun` (unit, the API's fakes);
+`TestR_CUR_004_ARuleRefusalReachesTheClientThroughABastionAndIsNotKept` (unit, `internal/bastion/engine`, milliseconds, one 1 kB tarball);
+`TestR_CUR_005_TheRowsOfTheProjectUpstream` (integration, area `repository`, about 0.5 s on one replica, rule rows only);
+`TestR_CUR_006_TheRulesAndTheModeNarrowedAfterARestorePointAreReplayed` (integration, area `backup`, about 1.2 s, about 100 rule rows);
+the web's unit tests of the forms and the status (Vitest, milliseconds each).
+
 ## R3 · Upstream catalogue
 
 | Area | Files |
