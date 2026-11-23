@@ -16,7 +16,7 @@ import (
 	"github.com/guided-traffic/quader/internal/secrets"
 )
 
-const secretsUsage = `usage: quader admin secrets status [--json] [--config <file>]
+const keyRingUsage = `usage: quader admin secrets status [--json] [--config <file>]
 
 status  the key ring of the stored secrets (R-ARCH-021): per key ID whether it is active, whether this pod's ring holds it, the sealed
         values under it and its canary (ok, failed, absent); the key IDs of every live replica and whether the rings are compatible.
@@ -30,7 +30,7 @@ func secretsCmd(args []string, s streams) error {
 	if len(args) >= 1 && args[0] == "status" {
 		return secretsStatusCmd(args[1:], s)
 	}
-	return usageError{secretsUsage}
+	return usageError{keyRingUsage}
 }
 
 // secretsStatusCmd is quader admin secrets status (R-ARCH-021): the report of internal/secrets (KeyRing.BuildReport), which
