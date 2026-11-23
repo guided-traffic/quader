@@ -2310,7 +2310,12 @@ runs are in `git log`; this section holds the current state.
   builder's gates on the same code, and the build, the vet of the integration code, the three touched
   packages' tests, the evidence and the links were checked on the two together. The run of the release
   before had ended at 04:05 with every job green. His UI's backend is started again on this state.
-  Released at 04:29; the plan's commits of the minutes between waited for it.
+  Released at 04:29; the plan's commits of the minutes between waited for it. **His installation runs the
+  release since 04:37** (read at 04:40: both releases ready, every pod on the new image; from outside the
+  Bastion answers with its certificate checked). **The two versions of the interface met for 28 seconds on
+  one Bastion replica:** it started at 04:35:19 with the interface's sixth version against the main
+  installation's fifth and reached it at 04:35:48; the second replica started sixteen seconds later and
+  reached it at once.
 - **In work since 03:25, on its commit: package 2 of the handover,** the main installation's side for plain
   copies: the registration's switch with its API, events and journal's replay, the conditions of the
   handover beside the link's at the serve point (after the gates and the admission; it does not read the
