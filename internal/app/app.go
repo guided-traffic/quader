@@ -120,12 +120,6 @@ type App struct {
 	// memGuard is the memory guard every endpoint's chain shares (memory.go).
 	memGuard *httpserver.MemoryGuard
 
-	// docOnce, doc and docErr hold the parsed management API document, which the
-	// authentication area and the client listener both need (apiDocument).
-	docOnce sync.Once
-	doc     *v1.Document
-	docErr  error
-
 	started atomic.Bool
 	// awaitingValkey is set while step 10 waits for Valkey's first answer; the
 	// startup check names it (Q-HA-13, awaitValkeyAnswer).
@@ -535,14 +529,16 @@ func (a *App) startComponent(ctx context.Context, c Component) error {
 	return nil
 }
 
-// apiDocument parses the management API document once per process: the
-// authentication area reads the public operations from it and the client listener
-// checks its route table against it, and parsing it is a large part of the
-// start-up (Q-OPS-157). It is not changed after it is loaded.
-func (a *App) apiDocument() (*v1.Document, error) {
-	a.docOnce.Do(func() { a.doc, a.docErr = v1.LoadDocument(v1.EmbeddedYAML()) })
-	return a.doc, a.docErr
-}
+// apiDocument is the management API document: the authentication area reads the
+// public operations from it and the client listener checks its route table against
+// it, and parsing it is a large part of the start-up (Q-OPS-157).
+func (a *App) apiDocument() (*v1.Document, error) { return processDocument() }
+
+// processDocument parses the embedded document once per process (Q-ARCH-583). It
+// is never changed after it is loaded, so every App of the process shares it: a
+// replica runs one App, the tests of this package and the integration harness run
+// many in one process.
+var processDocument = sync.OnceValues(func() (*v1.Document, error) { return v1.LoadDocument(v1.EmbeddedYAML()) })
 
 // startClient builds, for every endpoint this process serves, the router of its
 // surface and its chain, checks the route table and opens the listener (step 9,

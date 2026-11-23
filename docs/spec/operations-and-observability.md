@@ -5868,7 +5868,8 @@ with a CPU limit pays the same on every start and every rollout before it can an
 **Rationale:** work a replica needs only for an optional feature should not delay its readiness, least of all under a CPU limit. The development agent would
 revisit this if the first manual request showed up in latency reports, then with (b).
 
-**Applied in the spec:** this decision (step 9 of R-ARCH-024 binds the listener without rendering the manual; the text of that step needs no change). Code: `startClient` and `apiDocument` in `internal/app/app.go`,
+**Applied in the spec:** this decision (step 9 of R-ARCH-024 binds the listener without rendering the manual; the text of that step needs no change). Code: `startClient` and `apiDocument` in `internal/app/app.go` (once per process since
+[Q-ARCH-583](architecture.md#q-arch-583--a-process-parses-the-management-api-document-once-whatever-number-of-apps-it-runs), not once per `App`),
 `Server.manual` in `internal/api/v1/manual_api.go`. Test: `TestR_API_054_TheManualIsLoadedByTheFirstRequestThatNeedsIt`.
 
 ### Q-OPS-158 · The mirror's metric families carry the repository and no package

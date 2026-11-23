@@ -12049,6 +12049,30 @@ drain). `uiassets` passes its own trees and keeps testing the publication of a b
 (`ReplicaOptions.UI`, `placeholderUI`), [replica_integration_test.go](../../test/integration/testenv/replica_integration_test.go);
 [build-and-test.md](../developer/build-and-test.md#the-in-process-harness).
 
+### Q-ARCH-583 · A process parses the management API document once, whatever number of Apps it runs
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: [Q-OPS-157](operations-and-observability.md#q-ops-157--the-start-up-renders-the-manual-on-the-first-request-and-parses-the-api-document-once)
+made the composition root parse the embedded document once per `App` (`App.apiDocument`, a `sync.Once` field), shared by the
+authentication area and the client listener. A replica runs one `App`. The tests of `internal/app` and the integration harness start many
+in one process, and each start paid its own parse: 38 to 67 ms per replica start on the development workstation (the plan of the
+installation cost, [test-cost.md](../developer/test-cost.md)). The document is embedded in the binary and never changed after it is loaded.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One parse per process: a package-level `sync.OnceValues` that every `App` reads (chosen) | `processDocument` in `internal/app` | No change for a replica, which runs one `App`; every further start in a test process saves the parse | A package-level value in the composition root |
+| (b) Keep one parse per `App` | Nothing changes | No package-level value | About 0.04 to 0.07 s per replica start in every test with a replica |
+| (c) The harness parses it and hands it to `app.New` through an option | A test-only option | No package-level value | A second way into the composition root for one test concern; the tests of `internal/app` do not use the harness |
+
+**Choice:** (a). The value is a function that returns an immutable parse of bytes compiled into the binary, the same kind of value as the
+compiled patterns of the npm version grammar (`internal/formats/npm/semver`); it is not state between requests (R-ARCH-032), since no request
+can change what it returns, and the package-state check, which looks for maps, slices, pointers and `sync.Map`, does not report it.
+**Rationale:** the cost was paid only where many `App`s share a process, which is the tests; production behaviour is unchanged.
+
+**Applied:** [app.go](../../internal/app/app.go) (`apiDocument`, `processDocument`), [document_test.go](../../internal/app/document_test.go);
+Q-OPS-157.
+
 ## What this does not cover
 
 
