@@ -3215,7 +3215,10 @@ built (package 2, 2026-11-23: the registration's switch, the serve point's decis
 [Q-BAS-285](#q-bas-285--only-the-journaled-switch-off-is-listed-as-yielding-no-feed-entry)); the Bastion's side is built (package 3,
 2026-11-23: the offer, the direct read of a plain and of an encrypted copy, its failures, the metrics, the alert,
 [Q-BAS-290](#q-bas-290--a-handover-counts-one-outcome-by-the-path-it-took) to
-[Q-BAS-293](#q-bas-293--a-value-the-bastion-refuses-starts-the-cooldown)). A plain copy is
+[Q-BAS-293](#q-bas-293--a-value-the-bastion-refuses-starts-the-cooldown)); the surface is built (package 5, 2026-11-23: the card's switch
+**Direct reads from the object store** with its reasons, the manual's section,
+[Q-BAS-295](#q-bas-295--the-card-names-the-connections-a-bastion-cannot-read-and-only-those) and
+[Q-BAS-296](#q-bas-296--until-the-data-keys-are-handed-the-cards-sentence-names-no-key-and-an-encrypted-connection-has-its-line)). A plain copy is
 handed over once an administrator has switched a registration's handover on; the integration case that joins the two sides is built
 (2026-11-23, `TestR_BAS_070_ALargeFileIsReadFromTheObjectStore`): the two sides meet as each expected the other, and the look at the hosts'
 check against what the main installation signs found that a refused value did not start the cooldown, which the Bastion's side now does
@@ -3351,7 +3354,12 @@ Priority: **P1** · Covers: quader-only
   that file's key; the main installation decides and counts every download as before." While it is on, the card lists each connection with
   whether it can serve a handover and its reason where not ([storage.md](storage.md) R-STOR-096), and links to the storage settings'
   section **Download links**, whose details hold the minimum size, the links' life and the public addresses (R-STOR-014, R-UI-200). The
-  switch is never part of creating a registration.
+  switch is never part of creating a registration. *Amended on 2026-11-23 by package 5:* the card names only the connections a Bastion
+  cannot read, each with its reasons, and links to the storage settings only where one of them is a plain connection; nothing of the
+  connections while every one can serve a handover
+  ([Q-BAS-295](#q-bas-295--the-card-names-the-connections-a-bastion-cannot-read-and-only-those)). Until the data keys are handed
+  (package 4) the sentence names no key, and an encrypted connection has its line
+  ([Q-BAS-296](#q-bas-296--until-the-data-keys-are-handed-the-cards-sentence-names-no-key-and-an-encrypted-connection-has-its-line)).
 
 Acceptance criteria:
 
@@ -3379,7 +3387,27 @@ snapshot's value for the calling registration. The criterion is split by what it
 handshake, the snapshot and the registry and replay handler are unit tests (`TestR_BAS_071_TheOperationsOfTheSwitchAndTheHandshake` in
 `internal/api/v1`, `TestR_BAS_071_TheSnapshotOfTheSwitches` and `TestR_BAS_071_TheSwitchOffIsJournaledAndReplayed` in
 `internal/bastionmain`); what the service writes, records and journals and the replay against PostgreSQL are the integration area
-`bastionreg`'s (`TestR_BAS_071_TheSwitchIsPerRegistration`). The screen's switch and the Vitest criterion are package 5's.
+`bastionreg`'s (`TestR_BAS_071_TheSwitchIsPerRegistration`).
+
+*As built on 2026-11-23, the screen (package 5):* every card holds `<quader-bastion-handover>`
+([bastion-handover.ts](../../web/src/app/features/bastions/bastion-handover.ts)) between its actions and **Last contact**: the heading
+**Direct reads from the object store**, the switch (`quader-switch`, named "Direct reads from the object store for <name>") for a holder of
+`endpoints:write` and the word **On** or **Off** for who may only read, and the sentence "Large files go from the object store to this
+Bastion by a link per file; the main installation decides and counts every download as before." (Q-BAS-296). A change reads the
+registration for its `ETag` (the list carries none) and sends `PATCH {"handover": true|false}` with it; a refusal, a `412` of a change
+made in between included, stands under the sentence, and the switch keeps the state the server has. While the switch is on, the page
+reads `GET /api/v1/download-links/settings` once per load of the list, only for a viewer with `settings:read`
+([bastion-list.ts](../../web/src/app/features/bastions/bastion-list.ts)), and the card shows a line per connection a Bastion cannot read,
+"A Bastion gets the files of <name> through the main installation: <reasons>.", one clause per reason of R-STOR-096 (`not_https` "its
+address does not use https", `quader_host` "its address lies under <host>, an address of Quader", `link_check_failed` "its object store
+did not answer a test link as expected (<detail>)") and for an encrypted connection "the connection is encrypted"; where a plain connection
+is among them, the link **Public addresses in the storage settings** to `/admin/settings/storage#details`, which opens the page's
+**Details** (Q-BAS-295). Without `settings:read`, or when the read fails, the card shows the switch and its sentence alone. What the card
+cannot show, whether a Bastion's network reaches the store, is
+[H-1480](#h-1480--the-bastions-screen-shows-what-the-main-installation-can-sign-not-what-a-bastion-can-read). The Vitest
+criterion is `bastions.spec.ts`, "Direct reads from the object store on a Bastion card (R-BAS-071)": the switch off for a new
+registration, on with a connection's `not_https` and an encrypted connection's line and the link, every clause, the `412` and a refusal,
+the read-only word, no read without `settings:read`, and a read that fails.
 
 ### R-BAS-072 · The Bastion offers to take a handover on a miss
 Priority: **P1** · Covers: quader-only
@@ -3732,7 +3760,17 @@ Acceptance criteria:
 *As built on 2026-11-23, the Bastion's chart (package 3):* the alert in [_rules.tpl](../../deploy/helm/quader-bastion/templates/_rules.tpl)
 with its two promtool cases in [rules_test.yaml](../../deploy/helm/quader-bastion/tests/rules_test.yaml) and its name in the list of
 `disabledAlerts`, and the comment of `trustedCA.existingSecret` (`trust for the main installation, its object store, Valkey and the bucket`). No
-value was added. The admin area and the manual are package 5's.
+value was added.
+
+*As built on 2026-11-23, the admin area and the manual (package 5):* the card's switch and the connections' reasons are R-BAS-071's
+as-built note; the storage settings page offers every connection's public address and its test link, an encrypted connection's too, with
+what such a connection serves today ([api-and-ui.md](api-and-ui.md) R-UI-200,
+[Q-UI-958](api-and-ui.md#q-ui-958--an-encrypted-connection-has-its-address-and-its-test-link-for-a-bastion-and-says-what-it-serves-today)).
+The manual's section [Direct reads from the object store](../manual/admin/bastion.md#direct-reads-from-the-object-store) says what the
+handover is, when to switch it on (the measurement of [the build plan](../developer/bastion-handover.md#tests-and-what-they-cost)), what
+it needs (a public address on a host name that is not the main installation's, `trustedCA`, the Bastion's network), what an administrator
+takes on and what to do when a Bastion is taken over, the sizing, how to see that it works and why it does not, and that an encrypted
+connection's files are streamed until the data keys are handed.
 
 ### R-BAS-079 · Tests of the handover and what they cost
 Priority: **P1** · Covers: quader-only
@@ -8965,6 +9003,54 @@ kept (R-BAS-051).
 [engine/forward.go](../../internal/bastion/engine/forward.go), `offerFor` and `fallback` in
 [engine/handover.go](../../internal/bastion/engine/handover.go).
 
+### Q-BAS-295 · The card names the connections a Bastion cannot read, and only those
+
+Status: **Decided by the development agent** during the build of R-BAS-071's screen (package 5 of the handover) — selected from the
+options below; the owner sees it when it is built.
+
+Context: R-BAS-071 says that while the switch is on "the card lists each connection with whether it can serve a handover and its reason
+where not". The owner's rule "simple by default, details on demand" (the repository's working rules, R-UI-067) wants the plain path to be
+the switch and its sentence; which connections a Bastion reads from matters to an administrator when one of them cannot be read. The
+states come from `GET /api/v1/download-links/settings`, which needs `settings:read`, while the screen needs `endpoints:read` (a repository
+administrator holds the one and not the other).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Nothing of the connections while every one can serve a handover; a line per connection that cannot, its reasons in words, and one link to the storage settings' **Details**, where an address is set and tested (chosen) | The detail shows where it helps | The plain path stays the switch and one sentence on every installation that works; a fault is named where the switch is, with the place to fix it | An administrator does not see which connections a Bastion reads from while all can |
+| (b) As written: every connection with "can" or its reasons | | Complete | A list on every card that is on, of facts nobody acts on |
+| (c) A count ("1 of 3 connections cannot be read") and the link | | Shortest | The reason needs a second page |
+
+**Choice:** (a). The states are read once per load of the list, only while a registration's switch is on and the viewer holds
+`settings:read`; without it, or when the read fails, the card shows the switch and its sentence alone. The link is offered only where a
+plain connection is among the lines: for an encrypted one nothing on that page changes what happens to its files today (Q-BAS-296).
+**Applied in the spec:** R-BAS-071 (amended, as built); code: `handoverLines` and `BastionHandover` in
+[bastion-handover.ts](../../web/src/app/features/bastions/bastion-handover.ts), `loadConnections` in
+[bastion-list.ts](../../web/src/app/features/bastions/bastion-list.ts).
+
+### Q-BAS-296 · Until the data keys are handed, the card's sentence names no key and an encrypted connection has its line
+
+Status: **Decided by the development agent** during the build of R-BAS-071's screen (package 5 of the handover) — selected from the
+options below; the owner sees it when it is built.
+
+Context: R-BAS-071's sentence reads "Large files go from the object store to this Bastion by a link per file, and for an encrypted store
+with that file's key; the main installation decides and counts every download as before." Package 4 (the data keys) is not built: the main
+installation never names an encrypted copy (`case c.Encrypted(): continue` in
+[downloadlinks/handover.go](../../internal/downloadlinks/handover.go)), so the files of an encrypted connection go through the main
+installation whatever its link check says, while the settings' answer may call such a connection `handoverUsable`, because R-STOR-096
+decides by the address and the link check alone.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The sentence without the key's clause until package 4; while the switch is on, for each encrypted connection the line "A Bastion gets the files of <name> through the main installation: the connection is encrypted.", without the link (chosen) | The card says what the main installation does today | An administrator with an encrypted connection learns why its large files still pass the main installation; nothing promises a key that never leaves | Two texts change when package 4 lands |
+| (b) The sentence as written | | No change later | It names a key the main installation does not hand over |
+| (c) As written, and an encrypted connection judged by `handoverUsable` like a plain one | | One rule | An encrypted connection the answer calls usable shows nothing, and its files pass the main installation unnamed |
+
+**Choice:** (a). When package 4 lands, the sentence gains ", and for an encrypted store with that file's key", and an encrypted
+connection's line is its `handoverReasons` like a plain connection's (the branch `c.encrypted` of `handoverLines` goes).
+**Applied in the spec:** R-BAS-071 (amended, as built); code: `handoverLines` in
+[bastion-handover.ts](../../web/src/app/features/bastions/bastion-handover.ts); the build plan's
+[What package 5 left](../developer/bastion-handover.md#what-package-5-left).
+
 ## What this does not cover
 
 ### H-382 · A volumetric attack on bandwidth is not absorbed by the Bastion
@@ -9808,3 +9894,19 @@ all show as `quader_bastion_handovers_total{outcome="fallback"}` and the cooldow
 replaced by the forward without the offer" (level info, field `reason`, never the link). What makes it real: an operator who reads the metrics
 and not the logs when `QuaderBastionHandoverFailing` fires. What would close it: one outbound factory shared by the two clients of the Bastion,
 so that both count by their purpose.
+
+### H-1480 · The Bastions screen shows what the main installation can sign, not what a Bastion can read
+
+Stage: the card's lines of R-BAS-071 (package 5 of [the build plan](../developer/bastion-handover.md)). Subject: an administrator's view of
+whether the direct reads work, not a confidentiality or integrity property.
+
+Dormant until a registration's handover is on. The card names a connection only when the settings' answer says it cannot serve a handover
+(R-STOR-096): its address is not `https` or is a host of Quader, or the replica that answered could not read its own link. A connection whose
+address the main installation reaches but a Bastion's network does not, whose certificate a Bastion does not trust, or whose host name is
+the one a Bastion knows as the main installation's (Q-BAS-281: the main installation does not know a Bastion's `bastion.main.url`) shows
+nothing on the card, and every large file of it goes through the main installation after a fallback. What a Bastion met is on the Bastion:
+`quader_bastion_handovers_total{outcome}`, the alert `QuaderBastionHandoverFailing` and its log line (R-BAS-075, H-1445), which the main
+installation does not receive. What makes it real: an administrator who switches the handover on, sees no line on the card and reads that as
+working. The manual says how to see that it works ([admin/bastion.md](../manual/admin/bastion.md#direct-reads-from-the-object-store)), and
+the test link is run from the Bastion's network. What would close it: the Bastion's report (R-BAS-059) carrying its outcomes per
+connection, which the card would show.

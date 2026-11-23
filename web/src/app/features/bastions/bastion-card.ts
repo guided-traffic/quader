@@ -13,7 +13,9 @@ import { Confirm } from '../../shared/confirm-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
+import { DownloadLinkConnection } from '../../api/download-links-api';
 import { BastionTokenDialog, BastionTokenDialogData, BastionTokenDraft } from './bastion-dialogs';
+import { BastionHandover } from './bastion-handover';
 
 /** A token that expires within this many days carries the warning mark (R-BAS-007). */
 export const BASTION_TOKEN_WARN_DAYS = 30;
@@ -28,15 +30,16 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
 }
 
 /**
- * One Bastion registration (R-BAS-007): its facts and actions, the last contact of each replica and its
- * tokens. Disable and enable read the registration for its `ETag` first, because the list carries none
+ * One Bastion registration (R-BAS-007): its facts and actions, the switch of its direct reads from the object
+ * store (R-BAS-071, `<quader-bastion-handover>`), the last contact of each replica and its tokens. Disable
+ * and enable read the registration for its `ETag` first, because the list carries none
  * (R-API-012). A token's value is shown once through `<quader-token-secret>` and lives in this card's
  * signal only (R-UI-043). Which actions show follows the capabilities of R-BAS-004: `endpoints:write`
  * for the registration and for issuing a token, `endpoints:write` or `tokens:revoke` for revoking one.
  */
 @Component({
   selector: 'quader-bastion-card',
-  imports: [DatePipe, DataTable, ErrorNotice, NoValue, TokenSecret],
+  imports: [BastionHandover, DatePipe, DataTable, ErrorNotice, NoValue, TokenSecret],
   template: `
     <section class="card" [attr.aria-labelledby]="headingId()">
       <h2 [id]="headingId()" translate="no">{{ bastion().name }}</h2>
@@ -88,6 +91,8 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
         <quader-token-secret [value]="s.token" [description]="secretNote(s)" (closed)="secret.set(null)" />
       }
 
+      <quader-bastion-handover [bastion]="bastion()" [connections]="connections()" (changed)="changed.emit()" />
+
       <h3 i18n="@@bastion.contacts">Last contact</h3>
       <quader-data-table
         [caption]="contactsCaption()"
@@ -100,7 +105,7 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
           <tr>
             <th scope="row" translate="no">{{ c.replica }}</th>
             <td>{{ c.contactAt | date: 'medium' }}</td>
-            <td translate="no">
+            <td translate="no" class="wrap">
               @if (c.clientAddress; as v) {
                 {{ v }}
               } @else {
@@ -109,7 +114,7 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
             </td>
             <td translate="no">{{ c.release }}</td>
             <td translate="no">{{ c.interfaceVersion }}</td>
-            <td translate="no">
+            <td translate="no" class="wrap">
               @if (c.baseUrl; as v) {
                 {{ v }}
               } @else {
@@ -167,11 +172,24 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
     </section>
   `,
   styleUrl: '../../shared/access/access.scss',
+  styles: `
+    /* A client address (IPv6 has up to 39 characters) and a reported base URL keep one line in the table, and break inside themselves
+       where the rows stack and the value is wider than the block: at 390 px a base URL of 38 characters pushed the page sideways. */
+    td.wrap {
+      white-space: nowrap;
+    }
+    .stacked td.wrap {
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+  `,
 })
 export class BastionCard {
   readonly bastion = input.required<Bastion>();
   /** Entries of the token dialog kept across a re-authentication; the card opens the dialog with them once. */
   readonly draft = input<BastionTokenDraft | null>(null);
+  /** The connections' states of the download link settings, for the reasons of the direct reads (R-BAS-071); null when not read. */
+  readonly connections = input<readonly DownloadLinkConnection[] | null>(null);
   /** The registration changed or went away: the page reads the list again. */
   readonly changed = output<void>();
 

@@ -1,0 +1,121 @@
+import { Page, expect } from '@playwright/test';
+
+/**
+ * The Bastions screen's direct reads from the object store (bastion.md R-BAS-071), answered in the browser: the render profile has no
+ * registration and one plain connection, so two registrations with their replicas and tokens, the switch off and on, and connections a
+ * Bastion cannot read (a failed link check, an http address, an encrypted one) are answers of the walks. Nothing is saved: the switch
+ * is never sent.
+ */
+
+type Json = Record<string, unknown>;
+
+const DAY = 86_400_000;
+const at = (days: number): string => new Date(Date.now() + days * DAY).toISOString();
+
+function contact(replica: string, address: string, baseUrl: string, minutesAgo: number): Json {
+  return { replica, contactAt: at(-minutesAgo / 1440), clientAddress: address, release: '0.42.0', interfaceVersion: 6, baseUrl };
+}
+
+function token(id: string, description: string, hint: string, createdDays: number, expiresDays: number): Json {
+  return { id, hint, description, createdAt: at(-createdDays), expiresAt: at(expiresDays), lastUsedAt: at(-0.002) };
+}
+
+/** `partners`, off, and `dmz-frankfurt-edge`, the longest name of the rule but two, on. */
+function registrations(frankfurtOn: boolean): Json {
+  return {
+    items: [
+      {
+        id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a40',
+        name: 'dmz-frankfurt-edge',
+        description: 'The DMZ of the Frankfurt data centre, for the build agents of our partners',
+        enabled: true,
+        handover: frankfurtOn,
+        createdAt: at(-120),
+        tokens: [token('0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e42', 'frankfurt 2026', 'qdr_bst_9Hd2', 120, 245)],
+        contacts: [
+          contact('quader-bastion-6f8b9c7d4-x2k4q', '198.51.100.20', 'https://packages.frankfurt.example.com', 1),
+          contact('quader-bastion-6f8b9c7d4-m8v2j', '198.51.100.21', 'https://packages.frankfurt.example.com', 2),
+        ],
+      },
+      {
+        id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a41',
+        name: 'partners',
+        description: 'The partner network',
+        enabled: true,
+        handover: false,
+        createdAt: at(-170),
+        tokens: [token('0192f0d1-1c2a-7c3e-8a51-6f7d2b9c4e41', 'partners 2026', 'qdr_bst_3kQ9', 165, 200)],
+        contacts: [contact('quader-bastion-7d9c5b8f6-p4r7t', '203.0.113.7', 'https://packages.example.com', 1)],
+      },
+    ],
+  };
+}
+
+function connection(name: string, endpoint: string, over: Json = {}): Json {
+  return { name, encrypted: false, endpoint, publicAddress: null, usable: true, reasons: [], handoverUsable: true, handoverReasons: [], ...over };
+}
+
+/** One connection, which a Bastion can read: the card shows the switch and its sentence alone. */
+const readable = [connection('default', 'https://object.storage.eu01.onstackit.cloud', { publicAddress: 'https://objects.example.com' })];
+
+/** A connection a Bastion can read, one whose link check failed, one on an in-cluster http address and an encrypted one. */
+const blocked = [
+  ...readable,
+  connection('eu-backup-frankfurt', 'https://s3.backup.eu-central-2.example.net', {
+    usable: false,
+    handoverUsable: false,
+    reasons: [{ code: 'link_check_failed', detail: "the link answered 403 with 0 bytes, want 200 with the probe's 2048" }],
+    handoverReasons: [{ code: 'link_check_failed', detail: 'the link answered 403 with 0 bytes, want 200 with the probe\'s 2048' }],
+  }),
+  connection('onprem', 'http://seaweedfs.quader-storage.svc:8333', {
+    usable: false,
+    handoverUsable: false,
+    reasons: [{ code: 'not_https', detail: null }],
+    handoverReasons: [{ code: 'not_https', detail: null }],
+  }),
+  connection('archive', 'https://objects.archive.internal.example.com', { encrypted: true, usable: false, reasons: [{ code: 'encrypted', detail: null }] }),
+];
+
+/** The registrations and the connections' states as the walk wants them, then the page loaded again. */
+async function answer(page: Page, frankfurtOn: boolean, connections: readonly Json[]): Promise<void> {
+  const list = '**/api/v1/bastions';
+  const settings = '**/api/v1/download-links/settings';
+  await page.unroute(list);
+  await page.route(list, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(registrations(frankfurtOn)) }));
+  await page.unroute(settings);
+  await page.route(settings, async (route) => {
+    const res = await route.fetch();
+    await route.fulfill({ response: res, body: JSON.stringify({ ...((await res.json()) as Json), connections }) });
+  });
+  await page.reload();
+  await page.waitForLoadState('networkidle');
+  await expect(page.locator('main quader-bastion-card')).toHaveCount(2);
+}
+
+/**
+ * **Admin area › Bastions** (R-BAS-007, R-BAS-071): as the stack answers (no registration); two registrations with their replicas and
+ * tokens, `partners` with the direct reads off and `dmz-frankfurt-edge` with them on while every connection can be read (the switch
+ * and its sentence alone); the same with three connections a Bastion cannot read, each line with its reason, and the link to the
+ * storage settings.
+ */
+export async function* bastionsHandover(page: Page): AsyncGenerator<string> {
+  await expect(page.getByRole('heading', { name: 'Bastions', level: 1 })).toBeVisible();
+  yield '';
+  await answer(page, true, readable);
+  await expect(page.getByRole('switch', { name: 'Direct reads from the object store for dmz-frankfurt-edge' })).toHaveAttribute('aria-checked', 'true');
+  yield 'switch';
+  await answer(page, true, blocked);
+  await expect(page.locator('main [data-testid="bastion-handover-reasons"]')).toBeVisible();
+  yield 'reasons';
+  await page.unroute('**/api/v1/bastions');
+  await page.unroute('**/api/v1/download-links/settings');
+}
+
+/** The auditor (`endpoints:read`, `settings:read`): the state as a word, no switch, and the reasons of a registration whose reads are on. */
+export async function* bastionsRead(page: Page): AsyncGenerator<string> {
+  await answer(page, true, blocked);
+  await expect(page.locator('main [data-testid="bastion-handover-reasons"]')).toBeVisible();
+  yield 'reasons';
+  await page.unroute('**/api/v1/bastions');
+  await page.unroute('**/api/v1/download-links/settings');
+}

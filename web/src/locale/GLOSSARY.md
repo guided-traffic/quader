@@ -74,6 +74,7 @@ before using a new term in a German text.
 | ID token, exchange (of an ID token for a token) | ID-Token, Austausch |
 | inline grant, signing key, issuance (of a token) | Inline-Berechtigung, Signaturschlüssel, Ausstellung |
 | Bastion (the read-only cache instance), registration (of a Bastion), handshake, grace period | Bastion (plural Bastionen), Registrierung, Handshake, Karenzzeit |
+| direct reads from the object store (a Bastion's handover per blob), main installation | direkte Lesezugriffe auf den Objektspeicher, Hauptinstallation |
 | finding (a version affected by an advisory), advisory | Befund, Advisory |
 | vulnerability, malicious package | Schwachstelle, schädliches Paket |
 | severity (critical, high, medium, low, none, unknown) | Schweregrad (Kritisch, Hoch, Mittel, Niedrig, Keiner, Unbekannt) |

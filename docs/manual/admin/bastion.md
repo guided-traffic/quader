@@ -1,6 +1,6 @@
 # The Quader Bastion
 
-How to run a read-only, internet-facing cache of your installation for clients outside your network: register a Bastion, issue its token, set up the main installation, install the Bastion chart with a minimal or a highly available configuration, check that it works, renew its token without an outage, and what each alert of its monitoring means.
+How to run a read-only, internet-facing cache of your installation for clients outside your network: register a Bastion, issue its token, set up the main installation, install the Bastion chart with a minimal or a highly available configuration, check that it works, renew its token without an outage, let it read large files from the object store directly, and what each alert of its monitoring means.
 
 ## What a Bastion is
 
@@ -211,6 +211,46 @@ A token is renewed by hand, and the old and the new one work side by side, so no
 
 Renew in good time: the Bastion logs a warning at start and then daily while the token has less than `bastion.token.warn_before` left (default `720h`, 30 days), and the alert `QuaderBastionTokenExpiresSoon` fires from the same point.
 
+## Direct reads from the object store
+
+With **Direct reads from the object store** on for a registration, the main installation answers that Bastion's request for a large file with a link to the file in its object store, valid for a short time, instead of the file's bytes, and the Bastion reads the file from the store itself. The main installation still decides whether the caller may read the file, applies the malware and signature checks and the download limits, and counts the download, exactly as for every other request through the Bastion. The Bastion checks every byte against the file's digest before it keeps the file or completes it for a client, and when a direct read fails it fetches the file through the main installation instead, so a client sees at most a delay.
+
+**When to switch it on.** When large files, above all the layers of container images, are read through the Bastion and you want to spare the main installation's bandwidth. In a measurement on a development machine a file of 300 MiB read cold through a Bastion cost the main installation no byte of the file with the direct reads on, and its full size with them off. Small files gain nothing: a file smaller than the **Minimum size** of the download links (`1` MiB unless you change it, **Admin area › Settings › Storage › Details**) always comes through the main installation, and so does every file the Bastion has cached already. The direct reads do not depend on the switch of the clients' download links; they use its minimum size, its link life and the connections' public addresses.
+
+**What it needs**, for every connection of the object store that holds files the Bastion reads:
+
+- **A public address on a host name of its own.** The Bastion refuses a link to a host name it knows as the main installation's (`bastion.main.url`, `bastion.main.packages_url`) or as its own (`server.base_url`), whatever the port, so the store must be reached under another host name, such as `https://objects.example.com` *(example)*. Without a public address a link names the connection's endpoint, which for a store inside the cluster is an address the Bastion cannot reach or one it refuses. Set the address under **Details** of the storage settings, where Quader also refuses an address under one of its own host names.
+- **`https` and a certificate the Bastion trusts**, through the system roots or the chart's `trustedCA` (`trustedCA.existingConfigMap` or `trustedCA.existingSecret`). The same bundle vouches for the main installation and for the object store.
+- **The Bastion's network reaches the address** on its port. If you restrict the Bastion pods' outgoing connections with a policy of your own, admit the public address of every connection a link may name while the direct reads are on.
+
+Test it before you switch on: **Test link** under the connection's address in the storage settings gives a link to a small test file, valid for 60 seconds, with a `curl` command; run the command on a machine of the Bastion's network, for example in a pod of its namespace. When that network reaches the store, the file reads `Quader download link test: this link works.`
+
+**Switch it on** on the card of the registration in **Admin area › Bastions**: **Direct reads from the object store** (the permission `endpoints:write`). A new registration has it off. Through the API it is `PATCH /api/v1/bastions/<name>` with `{"handover": true}` or `false` and the registration's `ETag` in `If-Match`. Each change is an audit event (`bastion.handover.enabled`, `bastion.handover.disabled`), and a switch-off is part of the restore journal, so a restore to an earlier point keeps it off. The Bastion learns the state at its next handshake (`bastion.main.handshake_interval`, default `1m`). While it is on, the card names each connection whose files a Bastion still gets through the main installation, with the reason, and links to the storage settings where the address is set and tested.
+
+**Encrypted connections.** The files of a connection with `encrypted: true` are still sent by the main installation, as before: no link to them and no key of theirs leaves it. The card names such a connection while the direct reads are on.
+
+**What you take on.** Switching on hands a Bastion, which stands in your DMZ, a link per file it fetches:
+
+- a link is a bearer for its life: whoever holds it can fetch that one file until it expires (**Link valid for**, 60 seconds unless you change it), also after the caller's token is revoked;
+- a link shows the object store's public address, the bucket and the file's object name, so a Bastion that is taken over learns where your files lie and can try other requests against the store; it holds no credential of the store;
+- the store's request log, where its operator keeps one, shows the Bastion's egress address and which objects it reads;
+- a direct read that fails before its first byte is replaced by a fetch through the main installation, which counts the download and charges its size to the caller's limits a second time; where the cause is the network, the store or a link the Bastion refuses, the pause below keeps this to one such fetch per replica and minute. A read that breaks off midway is finished with a range through the main installation, which charges those bytes again and counts no second download.
+
+When a Bastion is taken over, switch its direct reads off and revoke its token on its card; the links it already holds stop working when their life is over.
+
+**Sizing.** The Bastion offers to take a file from the store only when it would keep it: the offer is bounded by the largest object it keeps (`bastion.cache.max_object_bytes`, default `2GiB`) and by the free room of its spool at the moment of the miss (`bastion.cache.spool_max_bytes` less the fills in progress). A larger file is sent by the main installation as before; for images with large layers raise both values as the table of the [highly available install](#a-highly-available-install) says.
+
+**How to see that it works, and why it does not.** A card without a line about the connections says that the main installation can sign and read a link to each of them; whether the Bastion's network reaches them shows only on the Bastion. The Bastion's metrics:
+
+| Series | What it says |
+|---|---|
+| `quader_bastion_handover_enabled` | `1` once the handshake says the direct reads are on for this registration |
+| `quader_bastion_handovers_total{outcome}` | per direct read: `read` (read from the store and kept), `fallback` (failed before its first byte, fetched through the main installation), `continued` (broke off and was finished through the main installation), `refused` (the bytes were not the file) |
+| `quader_bastion_fill_bytes_total{source}` | the bytes of the cache's fills from the store (`store`) and from the main installation (`main`) |
+| `quader_bastion_handover_cooldown` | `1` while the replica pauses its direct reads |
+
+On the main installation, a file handed over has `delivery` `handover` and `response_bytes` `0` in the request log and counts in `quader_storage_download_handovers_total{bastion}`; `quader_storage_download_handovers_declined_total{reason}` counts the offers it answered with the bytes and why (`size` for a file below the minimum size or above the Bastion's offer, `connection` for a file without a copy on a connection that can be read, an encrypted connection's included, `switch_off` for the offers a Bastion still sends after a switch-off until its next handshake). The alert `QuaderBastionHandoverFailing` fires when direct reads failed for 15 minutes and none succeeded. Each fallback is a line `a handover is replaced by the forward without the offer` in the Bastion's log, with the reason, such as a refused host, an expired link, a timeout or the store's status. After a failure of the network or the store, or after a link it refuses, a replica pauses its direct reads for a minute and fetches every miss through the main installation meanwhile; it tries again with the next miss after the pause.
+
 ## What the alerts mean
 
 With `metrics.prometheusRule.enabled` the chart renders one PrometheusRule. Every alert can be left out with `metrics.prometheusRule.disabledAlerts`, and the thresholds come from gauges the Bastion exports, not from chart values.
@@ -230,7 +270,7 @@ When the main installation is unreachable for a replica, the replica serves what
 | `QuaderBastionMainBudgetSaturated` | warning | Requests wait for a slot towards the main installation, for 10 minutes | The budget `bastion.main.max_concurrent` (default `64`, across all replicas) is used up, so some requests answer `503` `bastion_busy`. It happens while the cache is cold or after it was emptied. Raise the budget only after you checked what the main installation tolerates |
 | `QuaderBastionAuditEventsDropped` | warning | Download events were dropped | The buffer of download events was full, which happens while the main installation stays unreachable or cannot keep up. Those downloads are missing from the audit trail. Raise `bastion.audit.buffer_events` if outages are long |
 | `QuaderBastionCacheCorrupt` | warning | A cached object failed its check | The Bastion deleted it and fetched it again; no client received wrong bytes. Look at the disk or the bucket, and at who can write there |
-| `QuaderBastionHandoverFailing` | warning | Direct reads from the object store failed within 15 minutes and none succeeded, for 15 minutes | The Bastion gets large files through the main installation again, so nothing fails for clients, but the main installation's bandwidth is not spared. The Bastion's log names the reason in the line "a handover is replaced by the forward without the offer". Check that the Bastion's network reaches the object store's public address, that its certificate is trusted through the system roots or `trustedCA`, and that the address's host name is not the main installation's; or switch the registration's direct reads off |
+| `QuaderBastionHandoverFailing` | warning | Direct reads from the object store failed within 15 minutes and none succeeded, for 15 minutes | The Bastion gets large files through the main installation again, so nothing fails for clients, but the main installation's bandwidth is not spared. The Bastion's log names the reason in the line "a handover is replaced by the forward without the offer". Check that the Bastion's network reaches the object store's public address, that its certificate is trusted through the system roots or `trustedCA`, and that the address's host name is not the main installation's ([Direct reads from the object store](#direct-reads-from-the-object-store)); or switch the registration's direct reads off |
 | `QuaderBastionValkeyUnavailable` | warning | Valkey is unreachable, for 5 minutes; rendered only with Valkey configured | The replicas use their own state: limits are divided by the number of replicas, blocks are per replica and answers are asked again. Nothing is served wrongly. Restore Valkey |
 | `QuaderBastionReplicasNotReady` | warning | Fewer than 2 replicas are available, for 5 minutes | The Bastion has lost its redundancy; a drain or an upgrade can now cut clients off. Find out why pods are not ready |
 

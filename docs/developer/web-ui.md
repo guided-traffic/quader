@@ -1250,8 +1250,9 @@ R-BAS-007 against the operations of R-BAS-004; decisions [Q-BAS-95](../spec/bast
 
 | Route or place | Component | Services | Notes |
 |---|---|---|---|
-| `/admin/bastions` | [bastion-list](../../web/src/app/features/bastions/bastion-list.ts) | `BastionsApi`, `SessionStore` | Header with **New Bastion** (`endpoints:write`, with the reason when missing); one page, no paging (at most `bastions.max_registrations` registrations); the list is read again after every change and the cards stay on screen meanwhile, so a card keeps the token it shows once |
-| (one per registration) | [bastion-card](../../web/src/app/features/bastions/bastion-card.ts) | `BastionsApi`, `Confirm`, `SessionStore` | Status, description, creation; **Issue token**, **Disable** or **Enable**, **Delete** (`endpoints:write`); the table of the last contact per replica (replica, time, client address, release, interface version, reported base URL); the table of the tokens (hint, creation, expiry with the mark, last use, **Revoke** with `endpoints:write` or `tokens:revoke`) |
+| `/admin/bastions` | [bastion-list](../../web/src/app/features/bastions/bastion-list.ts) | `BastionsApi`, `DownloadLinksApi`, `SessionStore` | Header with **New Bastion** (`endpoints:write`, with the reason when missing); one page, no paging (at most `bastions.max_registrations` registrations); the list is read again after every change and the cards stay on screen meanwhile, so a card keeps the token it shows once; while a registration's direct reads are on and the viewer holds `settings:read`, the connections' states of `GET /api/v1/download-links/settings` once per load (`loadConnections`), handed to every card |
+| (one per registration) | [bastion-card](../../web/src/app/features/bastions/bastion-card.ts) | `BastionsApi`, `Confirm`, `SessionStore` | Status, description, creation; **Issue token**, **Disable** or **Enable**, **Delete** (`endpoints:write`); the direct reads (below); the table of the last contact per replica (replica, time, client address, release, interface version, reported base URL; the address and the URL break inside themselves only where the rows stack); the table of the tokens (hint, creation, expiry with the mark, last use, **Revoke** with `endpoints:write` or `tokens:revoke`) |
+| (on every card) | [bastion-handover](../../web/src/app/features/bastions/bastion-handover.ts) | `BastionsApi`, `Notifier`, `SessionStore` | **Direct reads from the object store** (R-BAS-071): the switch for `endpoints:write`, the word **On** or **Off** for who may only read, one sentence; a refusal under it; while on, a line per connection a Bastion cannot read (`handoverLines`, Q-BAS-295, Q-BAS-296) and, where a plain one is among them, **Public addresses in the storage settings** to `/admin/settings/storage#details` |
 | (dialogs) | [bastion-dialogs](../../web/src/app/features/bastions/bastion-dialogs.ts) | `BastionsApi`, `DraftStore` | `BastionCreateDialog` (the name rule shown once the field was left or a creation attempted, an idempotency key for the life of the dialog); `BastionTokenDialog` (description and a lifetime in days, empty for the default; the lost-answer retry of R-UI-042; on `401 reauthentication_required` - issuing a token needs a recent sign-in, R-API-007 - the entries are kept as a `BastionTokenDraft` of the route, never the token) |
 
 - *A re-authentication keeps the entries.* The list takes the draft of its route once (`DraftStore.take`) and hands it to the cards; the card of
@@ -1261,6 +1262,8 @@ R-BAS-007 against the operations of R-BAS-004; decisions [Q-BAS-95](../spec/bast
 - *The mark.* `tokenExpiry` marks a token that expires in less than `BASTION_TOKEN_WARN_DAYS` (30) days with text and an icon, never by colour alone, and an expired token with
   **Expired**; the remaining time is formatted by `Intl` through `formatDuration`, rounded up.
 - *Disable and enable* read the registration for its `ETag` (the list carries none) and send the merge patch with it; the UI never sends `If-Match: *`.
+  The switch of the direct reads does the same with `{"handover": …}` (`BastionsApi.setHandover`); it shows the state of the server's answer
+  (`linkedSignal` of the registration), so a refusal leaves it where it was.
 - *Capabilities decide what is shown* (R-UI-005): the entry of the sidebar and the screen need `endpoints:read`; the actions follow the table of R-BAS-004; the API decides in any case.
 - Files: [bastions-api.ts](../../web/src/app/api/bastions-api.ts) (`BastionsApi`, `HttpBastionsApi`, the generated types, `BASTION_NAME_PATTERN`),
   [fakes-bastions.ts](../../web/src/app/api/testing/fakes-bastions.ts) (`FakeBastionsApi`: the `ETag` and its 412, the token limit, the secret returned once),
@@ -1268,7 +1271,10 @@ R-BAS-007 against the operations of R-BAS-004; decisions [Q-BAS-95](../spec/bast
   [bastions.routes.ts](../../web/src/app/features/bastions/bastions.routes.ts), the sidebar entry in [navigation.ts](../../web/src/app/core/navigation.ts) and the help topic in
   [help-topics.ts](../../web/src/app/core/help-topics.ts). Specs: [bastions.spec.ts](../../web/src/app/features/bastions/bastions.spec.ts) (the list, the mark and its boundary, create,
   issue and the once-only display, the lost-answer retry, disable and enable with the tag, a stale tag, delete with the typed name, revoke, the capabilities, the states, the entry and
-  the help topic), `/admin/bastions` in the route map of `app.routes.spec.ts`.
+  the help topic, the direct reads of R-BAS-071), `/admin/bastions` in the route map of `app.routes.spec.ts`. The renders' walks `bastionsHandover` (the administrator)
+  and `bastionsRead` (the auditor) of [renders/bastions.ts](../../web/e2e/renders/bastions.ts) answer the registrations and the connections' states in the
+  browser: the profile has no registration and one plain connection. A refused switch shows an error notice, which fails a screen of the job `ui-layout`,
+  so that state is rendered by hand and not by the walk.
 - The browser journey is not written yet; see [e2e.md](e2e.md#browser-journeys) when it is. It should create `partners`, issue a token, copy it once, show the last contact after the
   Bastion of the e2e cluster starts, and show the mark for a token that expires in 20 days.
 
@@ -1444,9 +1450,11 @@ the files, the decisions and the tests are on [download-links.md](download-links
 switch reaches from the `routes` of its answer and their display names from `GET /api/v1/formats`, so a format that declares later needs no
 change of the page. The section reads `getDownloadLinkSwitch` once per page load through `DownloadLinksSwitchStore` and stands on every
 repository but a system one, usable while the installation's switch is off and disabled with its reason only where not every client of
-the format checks a digest (Q-UI-956). The renders'
+the format checks a digest (Q-UI-956). Every connection, an encrypted one too, has its public address and its test link under **Details**: an
+encrypted connection's is where a Bastion's direct reads go (Q-UI-958); the fragment `details`, which the Bastions screen links with, opens
+**Details**. The renders'
 walks (`storageSettings`, `downloadLinksSection` of [screens.ts](../../web/e2e/renders/screens.ts)) change the answers in the browser for the
-states the profile's one connection cannot hold: several connections, an encrypted one, a failed link check, none that can serve.
+states the profile's one connection cannot hold: several connections, an encrypted one and its test link, a failed link check, none that can serve.
 
 ## The signatures screens
 

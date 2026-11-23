@@ -36,6 +36,7 @@ import { withVerify } from './verify';
 import { routeTooMany } from './suggestions';
 import { clamavDatabases, clamavRegistry, clamavRow, definitionsExpected, definitionsWith, switchState } from './clamav';
 import { damagedBlobs, noDamagedBlob, oneConnection, secondUnreachable, severalConnections, twoConnectionFacts } from './storage';
+import { bastionsHandover, bastionsRead } from './bastions';
 
 /**
  * Every screen of the app (web/src/app/app.routes.ts and the route files of the feature areas), with the parameters of the
@@ -946,7 +947,8 @@ async function openHeaded(page: Page, heading: string): Promise<void> {
 /**
  * **Settings › Storage** (R-UI-200): as the stack answers (the switch off, the profile's one connection); Details open; a test link of
  * the connection's endpoint from the server; the switch on with that connection; three connections of which one is encrypted and one
- * failed its link check, Details open; no connection that can serve a link (an address under a host of Quader and an encrypted one);
+ * failed its link check, Details open; the encrypted one's test link (Q-UI-958); no connection that can serve a link (an address under
+ * a host of Quader and an encrypted one);
  * a link life and an address the page refuses at their fields before it sends. Nothing is saved.
  */
 async function* storageSettings(page: Page): AsyncGenerator<string> {
@@ -982,6 +984,17 @@ async function* storageSettings(page: Page): AsyncGenerator<string> {
   }));
   await openHeaded(page, 'Details');
   yield 'several';
+  // The encrypted connection's test link, for a Bastion's network (R-STOR-096, Q-UI-958); the profile has no such connection, so
+  // the test is answered in the browser as the API answers it.
+  const test = '**/api/v1/download-links/test';
+  await page.route(test, (route) => {
+    const url = 'https://objects.archive.internal.example.com/quader-blobs/quader/_probe/link-test-4f1c?X-Amz-Expires=60&X-Amz-Signature=5e3d';
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ url, expiresAt: new Date(Date.now() + 60_000).toISOString(), command: `curl -fsS '${url}'` }) });
+  });
+  await page.getByRole('button', { name: 'Test link (archive)' }).click();
+  await expect(page.locator('main [data-testid="links-test-archive"] quader-address-field')).toBeVisible();
+  yield 'encrypted-test';
+  await page.unroute(test);
   await answerWith(page, settings, (b) => ({
     ...b,
     enabled: true,
@@ -2431,7 +2444,9 @@ export const screens: readonly Screen[] = [
   { id: 'admin-ci', path: '/ui/admin/ci', kinds: admins },
   { id: 'admin-ci-new', path: '/ui/admin/ci/new', kinds: admins },
   { id: 'admin-ci-issuances', path: '/ui/admin/ci/issuances', kinds: admins, walk: filtersOpen() },
-  { id: 'admin-bastions', path: '/ui/admin/bastions', kinds: admins },
+  // The direct reads from the object store on a registration's card (R-BAS-071), answered in the browser (bastions.ts).
+  { id: 'admin-bastions', path: '/ui/admin/bastions', kinds: admins, walk: bastionsHandover },
+  { id: 'admin-bastions-read', path: '/ui/admin/bastions', kinds: ['auditor'], walk: bastionsRead },
   { id: 'admin-endpoints', path: '/ui/admin/endpoints', kinds: admins },
   // The endpoint every installation has (R-EP-001).
   { id: 'admin-endpoint', path: '/ui/admin/endpoints/default', kinds: admins },

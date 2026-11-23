@@ -12,8 +12,10 @@ named, and `blob.Store.CopyDataKey` still has no caller (package 4). The Bastion
 [internal/bastion/handover](../../internal/bastion/handover) with the refusals and checks below, the key's destruction at every end of a read,
 the fallback, the continuation, the cooldown and the alert; a Bastion offers only while its handshake says the registration's handover is on,
 and its client of the main installation refuses a handover answer to a forward that did not offer. So a link of a plain copy leaves the main
-installation only after an administrator has switched the handover on for a Bastion's registration; the switch is off for every registration
-until then. The gaps of a data key (H-1340, H-1341) stay dormant until package 4; the others are dormant until an administrator switches the
+installation only after an administrator has switched the handover on for a Bastion's registration, with **Direct reads from the object
+store** on its card or through the API (`endpoints:write`); the switch is off for every registration until then. What an administrator takes
+on by switching it on is said in plain words in the manual's
+[Direct reads from the object store](../manual/admin/bastion.md#direct-reads-from-the-object-store). The gaps of a data key (H-1340, H-1341) stay dormant until package 4; the others are dormant until an administrator switches the
 handover on for a registration. The two sides were built apart, each against a double of the other; the integration case that joins them
 (`TestR_BAS_070_ALargeFileIsReadFromTheObjectStore`, 2026-11-23) runs the real main installation, a Bastion and the stack's object store
 together: the value, the hosts' check, the `ETag`, the empty answer and the package headers meet, a continuation is answered by the real

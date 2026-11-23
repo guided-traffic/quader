@@ -33,7 +33,7 @@ The section **Download links** shows:
 |---|---|---|
 | **Minimum size in MiB** | `1` | Smaller files are always delivered by Quader. 0 to 1,048,576 |
 | **Link valid for, in seconds** | `60` | How long a link works. 10 to 3,600. A link can be passed on while it is valid; a short life is safer |
-| **Public address of** a connection | the connection's endpoint | The `https` origin your clients reach the object store at, such as `https://objects.example.com`; no path. Left as the endpoint (or emptied), it is not saved and links follow the endpoint |
+| **Public address of** a connection | the connection's endpoint | The `https` origin your clients reach the object store at, such as `https://objects.example.com`; no path. Left as the endpoint (or emptied), it is not saved and links follow the endpoint. A Bastion's [direct reads](bastion.md#direct-reads-from-the-object-store) use the same address. An encrypted connection has the field too: it serves no client, its address is where a Bastion will read, and for now a Bastion gets its files through the main installation |
 
 **Save changes** sends only what changed. Values outside their ranges and an address that is not an `https` origin are refused at the field before anything is sent; an address under a host name of Quader is refused by the server at the field. A change is recorded as `storage.download_links.changed` in the audit log with the values before and after, and every replica follows within two seconds. Switching off is part of the restore journal, so a restore to an earlier point keeps links off.
 
@@ -55,7 +55,7 @@ A client that gets a link must reach the object store's **public address** itsel
 - the clients trust the store's certificate;
 - the address is not a host name of Quader nor below one: container clients keep their credential for Quader's host and its subdomains and would send it to the store, which refuses such a link. The page refuses such an address.
 
-**Test link** under each address sends the address as typed (saved or not) and shows a link to a small test file, valid for 60 seconds, with a `curl` command. Open the link in your browser or run the command on a machine of your clients: when that network reaches the store, the file `quader-link-test.txt` reads `Quader download link test: this link works.` Quader itself sends no request to the address, so only a client of your network can tell. A connection that is failing answers that no test link was made.
+**Test link** under each address sends the address as typed (saved or not) and shows a link to a small test file, valid for 60 seconds, with a `curl` command. Open the link in your browser or run the command on a machine of your clients, or of a Bastion's network for its direct reads: when that network reaches the store, the file `quader-link-test.txt` reads `Quader download link test: this link works.` Quader itself sends no request to the address, so only a client of your network can tell. A connection that is failing answers that no test link was made.
 
 ## A connection that cannot serve links
 

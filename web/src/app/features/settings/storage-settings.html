@@ -139,7 +139,9 @@
               }
             </div>
 
-            @for (c of plainConnections(); track c.name) {
+            <!-- Every connection's address and test link; an encrypted connection serves no client, its address is for a Bastion's
+                 direct reads (Q-UI-958). -->
+            @for (c of connections(); track c.name) {
               <div class="link-address" [attr.data-testid]="'links-address-' + c.name">
                 <div class="field">
                   <label class="field-label" [for]="'links-address-' + c.name" i18n="@@links.address">Public address of {{ c.name }}</label>
@@ -156,12 +158,23 @@
                     [attr.aria-describedby]="'links-address-hint-' + c.name"
                     (input)="setAddress(c, $any($event.target).value)"
                   />
-                  <p class="hint" [id]="'links-address-hint-' + c.name" i18n="@@links.address.hint">
-                    The address your clients reach the object store at. It must not be an address of Quader.
-                  </p>
-                  @for (line of reasonsOf(c); track $index) {
+                  @if (c.encrypted) {
+                    <p class="hint" [id]="'links-address-hint-' + c.name" i18n="@@links.address.hint-encrypted">
+                      The address a Bastion reaches the object store at. It must not be an address of Quader. For now a Bastion gets the
+                      files of an encrypted connection through the main installation.
+                    </p>
+                  } @else {
+                    <p class="hint" [id]="'links-address-hint-' + c.name" i18n="@@links.address.hint">
+                      The address your clients reach the object store at. It must not be an address of Quader.
+                    </p>
+                  }
+                  @for (r of fieldReasons(c); track $index) {
                     <p class="hint reason" [attr.data-testid]="'links-reason-' + c.name">
-                      <span class="material-icons inline warn" aria-hidden="true">warning</span>{{ line }}
+                      @if (r.code === 'encrypted') {
+                        <span class="material-icons inline" aria-hidden="true">lock</span>
+                      } @else {
+                        <span class="material-icons inline warn" aria-hidden="true">warning</span>
+                      }{{ reasonText(c, r) }}
                     </p>
                   }
                   @if (shownError(addressPointer(c), addressError(c)) ?? testFieldError(c); as text) {
@@ -190,22 +203,22 @@
                         i18n-copyLabel="@@links.test.copy"
                         copyLabel="Copy the command"
                       />
-                      <p class="hint" i18n="@@links.test.text">
-                        Valid for 60 seconds. When your network reaches the object store, the file quader-link-test.txt reads 'Quader
-                        download link test: this link works.' Run the command on a machine of your clients to test their network.
-                      </p>
+                      @if (c.encrypted) {
+                        <p class="hint" i18n="@@links.test.text-encrypted">
+                          Valid for 60 seconds. When your network reaches the object store, the file quader-link-test.txt reads 'Quader
+                          download link test: this link works.' Run the command on a machine of a Bastion's network to test that network.
+                        </p>
+                      } @else {
+                        <p class="hint" i18n="@@links.test.text">
+                          Valid for 60 seconds. When your network reaches the object store, the file quader-link-test.txt reads 'Quader
+                          download link test: this link works.' Run the command on a machine of your clients or of a Bastion's network to
+                          test that network.
+                        </p>
+                      }
                     }
                   </div>
                 }
               </div>
-            }
-
-            @for (c of encryptedConnections(); track c.name) {
-              @for (line of reasonsOf(c); track $index) {
-                <p class="hint encrypted" [attr.data-testid]="'links-reason-' + c.name">
-                  <span class="material-icons inline" aria-hidden="true">lock</span>{{ line }}
-                </p>
-              }
             }
           </fieldset>
 

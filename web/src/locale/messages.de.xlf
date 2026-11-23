@@ -34477,6 +34477,114 @@
         <target>Bastion aktiviert.</target>
       </segment>
     </unit>
+    <unit id="bastion.handover.reason.not-https">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-handover.ts:17</note>
+      </notes>
+      <segment>
+        <source>its address does not use https</source>
+        <target>ihre Adresse verwendet kein https</target>
+      </segment>
+    </unit>
+    <unit id="bastion.handover.reason.quader-host">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-handover.ts:19</note>
+      </notes>
+      <segment>
+        <source>its address lies under <ph id="0" equiv="host" disp="detail"/>, an address of Quader</source>
+        <target>ihre Adresse liegt unter <ph id="0" equiv="host" disp="detail"/>, einer Adresse von Quader</target>
+      </segment>
+    </unit>
+    <unit id="bastion.handover.reason.encrypted">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-handover.ts:21</note>
+      </notes>
+      <segment>
+        <source>the connection is encrypted</source>
+        <target>die Verbindung ist verschlüsselt</target>
+      </segment>
+    </unit>
+    <unit id="bastion.handover.reason.link-check">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-handover.ts:23</note>
+      </notes>
+      <segment>
+        <source>its object store did not answer a test link as expected (<ph id="0" equiv="detail" disp="detail"/>)</source>
+        <target>ihr Objektspeicher hat einen Testlink nicht wie erwartet beantwortet (<ph id="0" equiv="detail" disp="detail"/>)</target>
+      </segment>
+    </unit>
+    <unit id="bastion.handover.line-plain">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-handover.ts:37</note>
+      </notes>
+      <segment>
+        <source>A Bastion gets the files of <ph id="0" equiv="name" disp="name"/> through the main installation.</source>
+        <target>Eine Bastion erhält die Dateien von <ph id="0" equiv="name" disp="name"/> über die Hauptinstallation.</target>
+      </segment>
+    </unit>
+    <unit id="bastion.handover.line">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-handover.ts:40</note>
+      </notes>
+      <segment>
+        <source>A Bastion gets the files of <ph id="0" equiv="name" disp="name"/> through the main installation: <ph id="1" equiv="reasons" disp="why"/>.</source>
+        <target>Eine Bastion erhält die Dateien von <ph id="0" equiv="name" disp="name"/> über die Hauptinstallation: <ph id="1" equiv="reasons" disp="why"/>.</target>
+      </segment>
+    </unit>
+    <unit id="bastion.handover.heading">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-handover.ts:73,75</note>
+      </notes>
+      <segment>
+        <source>Direct reads from the object store</source>
+        <target>Direkte Lesezugriffe auf den Objektspeicher</target>
+      </segment>
+    </unit>
+    <unit id="bastion.handover.note">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-handover.ts:82,85</note>
+      </notes>
+      <segment>
+        <source> Large files go from the object store to this Bastion by a link per file; the main installation decides and counts every download as before. </source>
+        <target> Große Dateien kommen über einen Link pro Datei aus dem Objektspeicher zu dieser Bastion; die Hauptinstallation entscheidet und zählt jeden Download wie bisher. </target>
+      </segment>
+    </unit>
+    <unit id="bastion.handover.settings">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-handover.ts:101,104</note>
+      </notes>
+      <segment>
+        <source>Public addresses in the storage settings</source>
+        <target>Öffentliche Adressen in den Speichereinstellungen</target>
+      </segment>
+    </unit>
+    <unit id="bastion.handover.switch-label">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-handover.ts:147</note>
+      </notes>
+      <segment>
+        <source>Direct reads from the object store for <ph id="0" equiv="name" disp="this.bastion().name"/></source>
+        <target>Direkte Lesezugriffe auf den Objektspeicher für <ph id="0" equiv="name" disp="this.bastion().name"/></target>
+      </segment>
+    </unit>
+    <unit id="bastion.handover.on-done">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-handover.ts:167</note>
+      </notes>
+      <segment>
+        <source>Direct reads from the object store switched on.</source>
+        <target>Direkte Lesezugriffe auf den Objektspeicher eingeschaltet.</target>
+      </segment>
+    </unit>
+    <unit id="bastion.handover.off-done">
+      <notes>
+        <note category="location">src/app/features/bastions/bastion-handover.ts:168</note>
+      </notes>
+      <segment>
+        <source>Direct reads from the object store switched off.</source>
+        <target>Direkte Lesezugriffe auf den Objektspeicher ausgeschaltet.</target>
+      </segment>
+    </unit>
     <unit id="audit.action.proxy.egress_denied">
       <notes>
         <note category="location">src/app/features/audit/audit-labels.ts:211</note>
@@ -35272,6 +35380,15 @@
         <target> Die Adresse, unter der Ihre Clients den Objektspeicher erreichen. Sie darf keine Adresse von Quader sein. </target>
       </segment>
     </unit>
+    <unit id="links.address.hint-encrypted">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:163,164</note>
+      </notes>
+      <segment>
+        <source> The address a Bastion reaches the object store at. It must not be an address of Quader. For now a Bastion gets the files of an encrypted connection through the main installation. </source>
+        <target> Die Adresse, unter der eine Bastion den Objektspeicher erreicht. Sie darf keine Adresse von Quader sein. Vorerst erhält eine Bastion die Dateien einer verschlüsselten Verbindung über die Hauptinstallation. </target>
+      </segment>
+    </unit>
     <unit id="links.test">
       <notes>
         <note category="location">src/app/features/settings/storage-settings.html:174,175</note>
@@ -35313,8 +35430,17 @@
         <note category="location">src/app/features/settings/storage-settings.html:194,195</note>
       </notes>
       <segment>
-        <source> Valid for 60 seconds. When your network reaches the object store, the file quader-link-test.txt reads &apos;Quader download link test: this link works.&apos; Run the command on a machine of your clients to test their network. </source>
-        <target> 60 Sekunden gültig. Erreicht Ihr Netz den Objektspeicher, steht in der Datei quader-link-test.txt „Quader download link test: this link works.“. Führen Sie den Befehl auf einem Rechner Ihrer Clients aus, um deren Netz zu prüfen. </target>
+        <source> Valid for 60 seconds. When your network reaches the object store, the file quader-link-test.txt reads &apos;Quader download link test: this link works.&apos; Run the command on a machine of your clients or of a Bastion&apos;s network to test that network. </source>
+        <target> 60 Sekunden gültig. Erreicht Ihr Netz den Objektspeicher, steht in der Datei quader-link-test.txt „Quader download link test: this link works.“. Führen Sie den Befehl auf einem Rechner Ihrer Clients oder im Netz einer Bastion aus, um dieses Netz zu prüfen. </target>
+      </segment>
+    </unit>
+    <unit id="links.test.text-encrypted">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.html:208,209</note>
+      </notes>
+      <segment>
+        <source> Valid for 60 seconds. When your network reaches the object store, the file quader-link-test.txt reads &apos;Quader download link test: this link works.&apos; Run the command on a machine of a Bastion&apos;s network to test that network. </source>
+        <target> 60 Sekunden gültig. Erreicht Ihr Netz den Objektspeicher, steht in der Datei quader-link-test.txt „Quader download link test: this link works.“. Führen Sie den Befehl auf einem Rechner im Netz einer Bastion aus, um dieses Netz zu prüfen. </target>
       </segment>
     </unit>
     <unit id="links.routes">

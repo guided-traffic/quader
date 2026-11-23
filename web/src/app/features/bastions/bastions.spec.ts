@@ -1,6 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { BastionsApi } from '../../api/bastions-api';
+import { DownloadLinksApi } from '../../api/download-links-api';
 import { ApiError } from '../../api/problem';
+import { FakeDownloadLinksApi, downloadLinkSettings, linkConnection } from '../../api/testing/fakes-download-links';
 import {
   BASTION_SECRET,
   FakeBastionsApi,
@@ -15,6 +17,7 @@ import { seriousViolations } from '../../testing/axe';
 import { DraftStore } from '../../shared/drafts';
 import { browserStorage, buttonByText, renderScreen, settle, sleep, storedText, text, type, typeAndLeave, typeInto } from '../../testing/screen';
 import { BASTION_TOKEN_WARN_DAYS, tokenExpiry } from './bastion-card';
+import { handoverLines } from './bastion-handover';
 import { BastionList } from './bastion-list';
 
 const overlay = (): HTMLElement => document.querySelector('.cdk-overlay-container') as HTMLElement;
@@ -332,6 +335,201 @@ describe('Bastions screen (R-BAS-007)', () => {
     await settle(again.fixture);
     expect(again.root.querySelector('quader-bastion-card')).toBeTruthy();
     void fixture;
+  });
+});
+
+describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () => {
+  const toggle = (root: HTMLElement, name: string): HTMLButtonElement | null =>
+    card(root, name).querySelector<HTMLButtonElement>('button[role="switch"]');
+  const reasons = (root: HTMLElement, name: string): Element | null =>
+    card(root, name).querySelector('[data-testid="bastion-handover-reasons"]');
+  /** The lines of the reasons without the glyph names of their icons. */
+  const lines = (el: Element): string[] =>
+    [...el.querySelectorAll('p.reason')].map((p) => {
+      const copy = p.cloneNode(true) as Element;
+      copy.querySelectorAll('.material-icons').forEach((i) => i.remove());
+      return text(copy);
+    });
+  /** One connection a Bastion can read, one whose address is plain http, and an encrypted one. */
+  const mixed = (links: FakeDownloadLinksApi): void => {
+    links.current = downloadLinkSettings({
+      connections: [
+        linkConnection(),
+        linkConnection({
+          name: 'eu-backup',
+          endpoint: 'http://seaweedfs.quader.svc:8333',
+          usable: false,
+          reasons: [{ code: 'not_https', detail: null }],
+          handoverUsable: false,
+          handoverReasons: [{ code: 'not_https', detail: null }],
+        }),
+        linkConnection({ name: 'archive', encrypted: true, usable: false, reasons: [{ code: 'encrypted', detail: null }] }),
+      ],
+    });
+  };
+
+  /** Counts the reads of the download link settings. */
+  const counted = (links: FakeDownloadLinksApi): { reads: number } => {
+    const count = { reads: 0 };
+    const read = links.settings.bind(links);
+    links.settings = async () => {
+      count.reads++;
+      return read();
+    };
+    return count;
+  };
+
+  it('R-BAS-071 a new registration shows the switch off with its one sentence, and nothing of the connections', async () => {
+    let count = { reads: 0 };
+    const { root } = await renderScreen(BastionList, { setup: (g) => void (count = counted(g(DownloadLinksApi) as FakeDownloadLinksApi)) });
+    const sw = toggle(root, 'partners')!;
+    expect(sw.getAttribute('aria-checked')).toBe('false');
+    expect(sw.getAttribute('aria-label')).toBe('Direct reads from the object store for partners');
+    expect(text(card(root, 'partners'))).toContain(
+      'Large files go from the object store to this Bastion by a link per file; the main installation decides and counts every download as before.',
+    );
+    expect(reasons(root, 'partners')).toBeNull();
+    // Nothing is on, so the connections' states are not read.
+    expect(count.reads).toBe(0);
+  });
+
+  it('R-BAS-071 switching on sends the merge patch with the ETag it read; once on, a connection a Bastion cannot read names its reason and the link to the storage settings', async () => {
+    const { fixture, root, get } = await renderScreen(BastionList, {
+      setup: (g) => mixed(g(DownloadLinksApi) as FakeDownloadLinksApi),
+    });
+    const api = get(BastionsApi) as FakeBastionsApi;
+    toggle(root, 'partners')!.click();
+    await sleep(fixture, 100);
+    expect(api.calls).toContain('setHandover partners true');
+    expect(api.ifMatch).toEqual(['"1"']);
+    expect(toggle(root, 'partners')!.getAttribute('aria-checked')).toBe('true');
+    const why = reasons(root, 'partners')!;
+    expect(lines(why)).toEqual([
+      'A Bastion gets the files of eu-backup through the main installation: its address does not use https.',
+      'A Bastion gets the files of archive through the main installation: the connection is encrypted.',
+    ]);
+    const link = why.querySelector<HTMLAnchorElement>('a')!;
+    expect(text(link)).toBe('Public addresses in the storage settings');
+    expect(link.getAttribute('href')).toBe('/admin/settings/storage#details');
+    // The other card is off and says nothing of the connections.
+    expect(reasons(root, 'standby')).toBeNull();
+    expect(await seriousViolations(root)).toEqual([]);
+    // Off again, and the reasons go.
+    toggle(root, 'partners')!.click();
+    await sleep(fixture, 100);
+    expect(api.calls).toContain('setHandover partners false');
+    expect(reasons(root, 'partners')).toBeNull();
+  });
+
+  it('R-BAS-071 on while every connection can be read: the switch and its sentence alone', async () => {
+    const { root } = await renderScreen(BastionList, {
+      setup: (g) => {
+        (g(BastionsApi) as FakeBastionsApi).bastions = [sampleBastion({ handover: true })];
+      },
+    });
+    expect(toggle(root, 'partners')!.getAttribute('aria-checked')).toBe('true');
+    expect(reasons(root, 'partners')).toBeNull();
+  });
+
+  it('R-BAS-071 an encrypted connection alone names that a Bastion gets its files through the main installation, with no link', async () => {
+    const { root } = await renderScreen(BastionList, {
+      setup: (g) => {
+        (g(BastionsApi) as FakeBastionsApi).bastions = [sampleBastion({ handover: true })];
+        (g(DownloadLinksApi) as FakeDownloadLinksApi).current = downloadLinkSettings({
+          connections: [linkConnection(), linkConnection({ name: 'archive', encrypted: true, usable: false, reasons: [{ code: 'encrypted', detail: null }] })],
+        });
+      },
+    });
+    const why = reasons(root, 'partners')!;
+    expect(lines(why)).toEqual(['A Bastion gets the files of archive through the main installation: the connection is encrypted.']);
+    expect(why.querySelector('a')).toBeNull();
+  });
+
+  it('R-BAS-071 each reason of R-STOR-096 has its clause, and the reasons of one connection share its line', () => {
+    expect(
+      handoverLines([
+        linkConnection({
+          name: 'default',
+          handoverUsable: false,
+          handoverReasons: [
+            { code: 'quader_host', detail: 'quader.example.com' },
+            { code: 'link_check_failed', detail: 'the link answered 403 with 0 bytes' },
+          ],
+        }),
+      ]).map((l) => l.text),
+    ).toEqual([
+      'A Bastion gets the files of default through the main installation: its address lies under quader.example.com, an address of Quader; its object store did not answer a test link as expected (the link answered 403 with 0 bytes).',
+    ]);
+    expect(handoverLines([linkConnection(), linkConnection({ name: 'b', handoverUsable: true })])).toEqual([]);
+  });
+
+  it('R-BAS-071 a change made in between is a 412 that stands under the sentence, and the switch keeps the state the server has', async () => {
+    const { fixture, root, get } = await renderScreen(BastionList);
+    const api = get(BastionsApi) as FakeBastionsApi;
+    const read = api.get.bind(api);
+    api.get = async (name) => {
+      const answer = await read(name);
+      api.bumpRevision(name);
+      return answer;
+    };
+    toggle(root, 'partners')!.click();
+    await sleep(fixture, 100);
+    const block = card(root, 'partners').querySelector('quader-bastion-handover')!;
+    expect(text(block)).toContain('Changed by someone else');
+    expect(toggle(root, 'partners')!.getAttribute('aria-checked')).toBe('false');
+    expect(toggle(root, 'partners')!.getAttribute('aria-busy')).toBeNull();
+  });
+
+  it('R-BAS-071 a refusal of the server stands under the sentence', async () => {
+    const { fixture, root, get } = await renderScreen(BastionList);
+    (get(BastionsApi) as FakeBastionsApi).failure = new ApiError(403, { code: 'forbidden', detail: 'The caller lacks endpoints:write.' }, 'req-9');
+    toggle(root, 'partners')!.click();
+    await sleep(fixture, 100);
+    const block = card(root, 'partners').querySelector('quader-bastion-handover')!;
+    expect(block.querySelector('quader-error-notice')).toBeTruthy();
+    expect(toggle(root, 'partners')!.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('R-BAS-071 who may only read sees the state as a word and the reasons, and is offered no switch', async () => {
+    const { root } = await renderScreen(BastionList, {
+      capabilities: ['endpoints:read', 'settings:read'],
+      setup: (g) => {
+        (g(BastionsApi) as FakeBastionsApi).bastions = [sampleBastion({ handover: true }), sampleBastion({ id: 'b-2', name: 'standby', handover: false })];
+        mixed(g(DownloadLinksApi) as FakeDownloadLinksApi);
+      },
+    });
+    expect(toggle(root, 'partners')).toBeNull();
+    expect(text(card(root, 'partners').querySelector('[data-testid="bastion-handover-state"]')!)).toBe('On');
+    expect(text(card(root, 'standby').querySelector('[data-testid="bastion-handover-state"]')!)).toBe('Off');
+    expect(lines(reasons(root, 'partners')!)).toHaveLength(2);
+    expect(await seriousViolations(root)).toEqual([]);
+  });
+
+  it('R-BAS-071 without settings:read the connections are not read and the card shows the state alone', async () => {
+    let count = { reads: 0 };
+    const { root } = await renderScreen(BastionList, {
+      capabilities: ['endpoints:read', 'endpoints:write'],
+      setup: (g) => {
+        (g(BastionsApi) as FakeBastionsApi).bastions = [sampleBastion({ handover: true })];
+        mixed(g(DownloadLinksApi) as FakeDownloadLinksApi);
+        count = counted(g(DownloadLinksApi) as FakeDownloadLinksApi);
+      },
+    });
+    expect(toggle(root, 'partners')!.getAttribute('aria-checked')).toBe('true');
+    expect(reasons(root, 'partners')).toBeNull();
+    expect(count.reads).toBe(0);
+  });
+
+  it('R-BAS-071 connections that cannot be read leave the switch and its sentence alone', async () => {
+    const { root } = await renderScreen(BastionList, {
+      setup: (g) => {
+        (g(BastionsApi) as FakeBastionsApi).bastions = [sampleBastion({ handover: true })];
+        (g(DownloadLinksApi) as FakeDownloadLinksApi).settings = () => Promise.reject(new ApiError(503, { code: 'unavailable' }, 'req-2'));
+      },
+    });
+    expect(toggle(root, 'partners')!.getAttribute('aria-checked')).toBe('true');
+    expect(reasons(root, 'partners')).toBeNull();
+    expect(root.querySelector('quader-error-notice')).toBeNull();
   });
 });
 

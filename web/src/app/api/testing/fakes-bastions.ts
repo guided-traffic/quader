@@ -14,8 +14,8 @@ import { Versioned } from '../repositories-api';
 /*
  * In-memory fake of the Bastion registrations (R-BAS-004, R-BAS-007, R-UI-047 component tier). It
  * models what the screen depends on: the `ETag` of a change (412 for a stale tag), the name rule and
- * the duplicate (422, 409), the limit of active tokens (409 `token_limit_reached`), and a token secret
- * that is returned once and never again.
+ * the duplicate (422, 409), the limit of active tokens (409 `token_limit_reached`), a token secret
+ * that is returned once and never again, and the switch of the direct reads (R-BAS-071).
  */
 
 const problem = (status: number, code: string, extra: Record<string, unknown> = {}): ApiError =>
@@ -156,6 +156,18 @@ export class FakeBastionsApi extends BastionsApi {
     if (etag !== this.etagOf(name)) throw problem(412, 'precondition_failed', { currentEtag: this.etagOf(name) });
     this.bumpRevision(name);
     const changed = { ...current, enabled };
+    this.bastions = this.bastions.map((b) => (b.name === name ? changed : b));
+    return { value: changed, etag: this.etagOf(name) };
+  }
+
+  override async setHandover(name: string, handover: boolean, etag: string): Promise<Versioned<Bastion>> {
+    this.fail();
+    this.ifMatch.push(etag);
+    this.calls.push(`setHandover ${name} ${handover}`);
+    const current = this.find(name);
+    if (etag !== this.etagOf(name)) throw problem(412, 'precondition_failed', { currentEtag: this.etagOf(name) });
+    this.bumpRevision(name);
+    const changed = { ...current, handover };
     this.bastions = this.bastions.map((b) => (b.name === name ? changed : b));
     return { value: changed, etag: this.etagOf(name) };
   }

@@ -1,5 +1,5 @@
 import { Component, LOCALE_ID, computed, inject, resource, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   DownloadLinkConnection,
   DownloadLinkReason,
@@ -87,8 +87,9 @@ interface TestOutcome {
 /**
  * **Admin area › Settings › Storage** (R-UI-200, Q-UI-950): the section **Download links**, the installation's switch of the delivery
  * by signed links of the object store (storage.md R-STOR-014). The plain path is the status, which connections serve links, and the
- * switch with what it means; the minimum size, the link's life, each connection's public address with its test link and reason, and
- * the downloads the switch reaches are details on demand behind **Details**. The formats the status names are the settings'
+ * switch with what it means; the minimum size, the link's life, each connection's public address with its test link and reason (an
+ * encrypted connection's too, for a Bastion's direct reads, Q-UI-958), and the downloads the switch reaches are details on demand
+ * behind **Details**, which the fragment `details` opens. The formats the status names are the settings'
  * `routes`, so a format that declares later appears without a change of this page. A holder of `settings:read` without
  * `settings:write` (the auditor) reads the state as text and is offered no action.
  */
@@ -130,9 +131,6 @@ interface TestOutcome {
     .reason {
       margin-block: var(--quader-space-2) 0;
     }
-    .encrypted {
-      margin: 0;
-    }
     .routes-hint {
       margin: 0 0 var(--quader-space-2);
     }
@@ -168,9 +166,11 @@ export class StorageSettingsPage {
 
   protected readonly settings = computed<DownloadLinkSettings | null>(() => this.loaded()?.settings ?? null);
   protected readonly canWrite = computed(() => this.session.has('settings:write'));
-  /** The connections a client's link can come from: an encrypted one never serves one, so it has no address here (R-UI-200). */
-  protected readonly plainConnections = computed(() => (this.settings()?.connections ?? []).filter((c) => !c.encrypted));
-  protected readonly encryptedConnections = computed(() => (this.settings()?.connections ?? []).filter((c) => c.encrypted));
+  /**
+   * Every connection has its public address and its test link (R-UI-200, Q-UI-958): a plain one's is where clients' links and a
+   * Bastion's direct reads go, an encrypted one's serves no client and is where a Bastion's direct reads will go (R-STOR-096).
+   */
+  protected readonly connections = computed(() => this.settings()?.connections ?? []);
   protected readonly usable = computed(() => (this.settings()?.connections ?? []).filter((c) => c.usable));
   protected readonly unusable = computed(() => (this.settings()?.connections ?? []).filter((c) => !c.usable));
   /** No connection can serve a link (Q-UI-954): the reasons stand above the switch, which stays usable. */
@@ -219,7 +219,7 @@ export class StorageSettingsPage {
       if (life !== s.linkLifeSeconds) out.linkLifeSeconds = life;
     }
     const addresses: Record<string, string | null> = {};
-    for (const c of this.plainConnections()) {
+    for (const c of this.connections()) {
       const want = this.wantedAddress(c);
       if (want !== c.publicAddress) addresses[c.name] = want;
     }
@@ -232,6 +232,8 @@ export class StorageSettingsPage {
   private readonly addressInvalidText = $localize`:@@links.address.invalid:Enter an https address without a path, such as https://objects.example.com.`;
 
   constructor() {
+    // The Bastions screen links here with the fragment `details` (R-BAS-071): the public addresses and their test links are in Details.
+    if (inject(ActivatedRoute).snapshot.fragment === 'details') this.detailsOpen.set(true);
     void this.load();
   }
 
@@ -296,11 +298,23 @@ export class StorageSettingsPage {
     return c.reasons.map((r) => linkReasonText(c.name, r));
   }
 
+  /**
+   * The reasons under a connection's field: all of a plain one's; of an encrypted one only that it is encrypted, since its other
+   * reasons are about clients' links, which it never serves (Q-UI-958).
+   */
+  protected fieldReasons(c: DownloadLinkConnection): readonly DownloadLinkReason[] {
+    return c.encrypted ? c.reasons.filter((r) => r.code === 'encrypted') : c.reasons;
+  }
+
+  protected reasonText(c: DownloadLinkConnection, r: DownloadLinkReason): string {
+    return linkReasonText(c.name, r);
+  }
+
   /** A failed save whose problems all stand at their fields shows no notice besides them. */
   protected readonly formError = computed(() => {
     const e = this.saveError();
     if (!e) return null;
-    const pointers = ['/minSize', '/linkLifeSeconds', ...this.plainConnections().map((c) => this.addressPointer(c))];
+    const pointers = ['/minSize', '/linkLifeSeconds', ...this.connections().map((c) => this.addressPointer(c))];
     return [...e.fieldErrors.keys()].length > 0 && [...e.fieldErrors.keys()].every((p) => pointers.includes(p)) ? null : e;
   });
 
@@ -309,7 +323,7 @@ export class StorageSettingsPage {
     const current = this.loaded();
     if (!current || this.busy()) return;
     this.attempted.set(true);
-    if (this.minSizeError() !== null || this.linkLifeError() !== null || this.plainConnections().some((c) => this.addressError(c) !== null)) {
+    if (this.minSizeError() !== null || this.linkLifeError() !== null || this.connections().some((c) => this.addressError(c) !== null)) {
       this.detailsOpen.set(true);
       return;
     }

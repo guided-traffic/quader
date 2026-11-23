@@ -1,3 +1,4 @@
+import { Router } from '@angular/router';
 import { DownloadLinksApi } from '../../api/download-links-api';
 import { ApiError } from '../../api/problem';
 import { RepositoriesApi } from '../../api/repositories-api';
@@ -94,7 +95,7 @@ describe('Admin area › Settings › Storage: Download links (R-UI-200)', () =>
     expect(root.querySelector('[data-testid="links-status"] .ok')).not.toBeNull();
   });
 
-  it('R-UI-200 several connections: the plain path names which serve links, Details holds each reason under its field and the encrypted one without a field', async () => {
+  it('R-UI-200 several connections: the plain path names which serve links, Details holds each reason under its field', async () => {
     const { root } = await render(ADMIN, mixed);
     expect([...root.querySelectorAll('[data-testid="links-connections"] :is(dt, dd)')].map(text)).toEqual([
       'Can serve links',
@@ -103,7 +104,6 @@ describe('Admin area › Settings › Storage: Download links (R-UI-200)', () =>
       'archive and eu-backup (Details says why)',
     ]);
     expect(root.querySelector('[data-testid="links-none"]')).toBeNull();
-    expect(root.querySelector('#links-address-archive')).toBeNull();
     expect(words(root.querySelector('[data-testid="links-reason-archive"]')!)).toBe('The connection archive is encrypted. Quader delivers its content itself.');
     expect(words(root.querySelector('[data-testid="links-reason-eu-backup"]')!)).toBe(
       "The object store of eu-backup did not answer a test link as expected: the link answered 403 with 0 bytes, want 200 with the probe's 2048. Quader delivers its content itself.",
@@ -197,6 +197,61 @@ describe('Admin area › Settings › Storage: Download links (R-UI-200)', () =>
     expect(open.href).toContain('https://objects.example.com/blobs/quader/_probe/link-test-');
     expect(addressValues(result)[0]).toMatch(/^curl -fsS 'https:\/\/objects\.example\.com\//);
     expect(text(result)).toContain('Valid for 60 seconds.');
+  });
+
+  it('R-STOR-096 Q-UI-958 an encrypted connection has its address and its test link for a Bastion, says it serves no client, and saves its address', async () => {
+    const { fixture, root, api } = await render(ADMIN, (fake) => {
+      mixed(fake);
+      // An encrypted connection whose address is also no https origin: only that it is encrypted stands under its field.
+      fake.current = {
+        ...fake.current,
+        connections: fake.current.connections.map((c) =>
+          c.name === 'archive' ? { ...c, reasons: [{ code: 'encrypted', detail: null }, { code: 'link_check_failed', detail: 'the store ignored the overrides' }] } : c,
+        ),
+      };
+    });
+    const archive = root.querySelector('[data-testid="links-address-archive"]')!;
+    expect(field(root, 'links-address-archive').value).toBe('https://s3.eu-central-1.example.com');
+    expect(text(archive)).toContain(
+      'The address a Bastion reaches the object store at. It must not be an address of Quader. For now a Bastion gets the files of an encrypted connection through the main installation.',
+    );
+    expect(text(archive)).not.toContain('your clients');
+    expect([...archive.querySelectorAll('[data-testid="links-reason-archive"]')].map(words)).toEqual([
+      'The connection archive is encrypted. Quader delivers its content itself.',
+    ]);
+    type(field(root, 'links-address-archive'), 'https://archive.objects.example.com');
+    await settle(fixture);
+    button(archive, /Test link/).click();
+    await settle(fixture);
+    expect(api.calls).toEqual([{ op: 'test', body: { connection: 'archive', publicAddress: 'https://archive.objects.example.com' } }]);
+    const result = root.querySelector('[data-testid="links-test-archive"]')!;
+    expect(addressValues(result)[0]).toMatch(/^curl -fsS 'https:\/\/archive\.objects\.example\.com\//);
+    expect(text(result)).toContain("Run the command on a machine of a Bastion's network to test that network.");
+    expect(text(result)).not.toContain('your clients');
+    button(root, /^\s*Save changes/).click();
+    await settle(fixture);
+    expect(api.calls[1]).toEqual({ op: 'settings', body: { patch: { publicAddresses: { archive: 'https://archive.objects.example.com' } }, etag: '"1"' } });
+    await expectAccessible(root);
+  });
+
+  it("R-UI-200 a plain connection's test link names the clients' and a Bastion's network", async () => {
+    const { fixture, root } = await render(ADMIN);
+    button(root, /Test link/).click();
+    await settle(fixture);
+    expect(text(root.querySelector('[data-testid="links-test-default"]')!)).toContain(
+      "Run the command on a machine of your clients or of a Bastion's network to test that network.",
+    );
+  });
+
+  it('R-BAS-071 the fragment details, which the Bastions screen links with, opens Details', async () => {
+    const { root } = await renderScreen(StorageSettingsPage, {
+      capabilities: ADMIN,
+      setup: async (get) => {
+        (get(RepositoriesApi) as FakeRepositoriesApi).formatsResult = [OCI_FORMAT, ANSIBLE_FORMAT];
+        await get(Router).navigateByUrl('/admin/settings/storage#details');
+      },
+    });
+    expect(root.querySelector('quader-disclosure button')!.getAttribute('aria-expanded')).toBe('true');
   });
 
   it('R-UI-200 Test link of an address that is no https origin says so at the field and sends nothing', async () => {

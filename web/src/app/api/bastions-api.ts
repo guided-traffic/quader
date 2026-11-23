@@ -28,6 +28,8 @@ export abstract class BastionsApi {
   abstract create(body: NewBastion, idempotencyKey: string): Promise<Bastion>;
   /** Disables or enables; a disabled registration's tokens are refused (R-BAS-004). */
   abstract setEnabled(name: string, enabled: boolean, etag: string): Promise<Versioned<Bastion>>;
+  /** Switches the direct reads from the object store on or off (the handover per blob, R-BAS-071); a new registration has them off. */
+  abstract setHandover(name: string, handover: boolean, etag: string): Promise<Versioned<Bastion>>;
   /** Deletes the registration and revokes its tokens. */
   abstract delete(name: string): Promise<void>;
   /** The secret is in this answer only (R-AUTH-022). */
@@ -54,6 +56,11 @@ export class HttpBastionsApi extends BastionsApi {
 
   override async setEnabled(name: string, enabled: boolean, etag: string): Promise<Versioned<Bastion>> {
     const r = await this.client.patch<Bastion>(`/api/v1/bastions/${seg(name)}`, { enabled }, etag);
+    return { value: r.body, etag: r.etag ?? '' };
+  }
+
+  override async setHandover(name: string, handover: boolean, etag: string): Promise<Versioned<Bastion>> {
+    const r = await this.client.patch<Bastion>(`/api/v1/bastions/${seg(name)}`, { handover }, etag);
     return { value: r.body, etag: r.etag ?? '' };
   }
 
