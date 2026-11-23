@@ -613,10 +613,15 @@ nuget-clients-smoke: nuget-clients-image nuget-stub-image ## Run the NuGet clien
 # each when it is dispatched with closing=true (Q-NPM-46). Locally: make fuzz-npm FUZZ=FuzzMatch FUZZTIME=1m.
 FUZZ ?= FuzzKitMatch
 FUZZTIME ?= 30m
+# The time go test spends shrinking each new input a fuzz target finds, for every fuzz target of the Makefile (fuzz-npm,
+# fuzz-nuget, fuzz-stored-format). Go's default is a minute per input, which stalls a target whose seeds are tens of kilobytes:
+# 175 executions in two minutes against 565,507 with five seconds (plan entry of 2026-11-22). A crash is still written and
+# fails the run; only its input may stay larger.
+FUZZMINIMIZETIME ?= 5s
 
 .PHONY: fuzz-npm
 fuzz-npm: ## Fuzz one npm target (FUZZ, default FuzzKitMatch) for FUZZTIME (default 30m); a failing input stays in internal/formats/npm/testdata/fuzz
-	go test ./internal/formats/npm -run '^$$' -fuzz '^$(FUZZ)$$' -fuzztime $(FUZZTIME)
+	go test ./internal/formats/npm -run '^$$' -fuzz '^$(FUZZ)$$' -fuzztime $(FUZZTIME) -fuzzminimizetime $(FUZZMINIMIZETIME)
 # <<< M2 npm-fuzz
 
 # >>> M2 npm-stub
@@ -678,7 +683,7 @@ NUGET_VECTORS := internal/formats/nuget/version/testdata/vectors.json
 fuzz-nuget: ## Fuzz every NuGet target (NUGET_FUZZ_TARGETS, package:Target pairs, the package below internal/) for NUGET_FUZZTIME each (default 5m); a failing input stays in the package's testdata/fuzz
 	@set -e; for t in $(NUGET_FUZZ_TARGETS); do pkg=$${t%%:*}; fz=$${t##*:}; \
 	  echo "fuzz $$pkg $$fz for $(NUGET_FUZZTIME)"; \
-	  go test ./internal/$$pkg -run '^$$' -fuzz "^$$fz\$$" -fuzztime $(NUGET_FUZZTIME); \
+	  go test ./internal/$$pkg -run '^$$' -fuzz "^$$fz\$$" -fuzztime $(NUGET_FUZZTIME) -fuzzminimizetime $(FUZZMINIMIZETIME); \
 	done
 
 .PHONY: nuget-vectors
@@ -841,6 +846,6 @@ STORED_FORMAT_FUZZTIME ?= 5m
 fuzz-stored-format: ## Fuzz every reader of the stored format (STORED_FORMAT_FUZZ_TARGETS) for STORED_FORMAT_FUZZTIME each (default 5m); a failing input stays in internal/blob/blobcrypt/testdata/fuzz
 	@set -e; for fz in $(STORED_FORMAT_FUZZ_TARGETS); do \
 	  echo "fuzz $$fz for $(STORED_FORMAT_FUZZTIME)"; \
-	  go test ./internal/blob/blobcrypt -run '^$$' -fuzz "^$$fz\$$" -fuzztime $(STORED_FORMAT_FUZZTIME); \
+	  go test ./internal/blob/blobcrypt -run '^$$' -fuzz "^$$fz\$$" -fuzztime $(STORED_FORMAT_FUZZTIME) -fuzzminimizetime $(FUZZMINIMIZETIME); \
 	done
 # <<< fuzz-stored-format

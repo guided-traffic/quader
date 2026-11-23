@@ -113,3 +113,23 @@ func TestTheUnitTargetRunsWithTheRunnersEnvironment(t *testing.T) {
 		}
 	}
 }
+
+// Every fuzz run of the Makefile bounds the shrinking of a new input (G3-25): Go's default of a minute per input stalled a target
+// whose seeds are tens of kilobytes (175 executions in two minutes against 565,507 with five seconds), so each go test -fuzz
+// passes -fuzzminimizetime $(FUZZMINIMIZETIME), the one setting.
+func TestEveryFuzzRunBoundsTheShrinkingOfAnInput(t *testing.T) {
+	t.Parallel()
+	runs := 0
+	for i, l := range strings.Split(readRepoFile(t, "Makefile"), "\n") {
+		if !strings.Contains(l, "go test ") || !strings.Contains(l, " -fuzz ") {
+			continue
+		}
+		runs++
+		if !strings.Contains(l, "-fuzzminimizetime $(FUZZMINIMIZETIME)") {
+			t.Errorf("Makefile:%d fuzzes without -fuzzminimizetime $(FUZZMINIMIZETIME): %s", i+1, strings.TrimSpace(l))
+		}
+	}
+	if runs < 3 {
+		t.Errorf("%d fuzz runs found in the Makefile; fuzz-npm, fuzz-nuget and fuzz-stored-format are three", runs)
+	}
+}
