@@ -120,6 +120,10 @@ type Chain struct {
 	// RateLimit is stage 7.
 	RateLimit func(http.Handler) http.Handler
 
+	// RequestContext, when set, derives the context of every request in step 1, before any other stage runs: the composition
+	// root puts the request's database statement bound there (architecture.md R-ARCH-019, meta.WithStatementTimeout), which
+	// the database runner reads; a handler whose requirement names a longer bound sets that one on its own context.
+	RequestContext func(context.Context) context.Context
 	// ExpectMark marks the context of a request that waits for "100 Continue" before it sends its body (a request with a
 	// body and Expect: 100-continue). It decides nothing: the upload entry point reads the mark after authorization and
 	// refuses before the first read of the body (R-HA-010, Q-STOR-149). Nil means none.
@@ -189,6 +193,9 @@ func (c Chain) recoverStage(next http.Handler) http.Handler {
 		}
 		if c.Endpoint != nil {
 			ctx = withEndpoint(ctx, c.Endpoint)
+		}
+		if c.RequestContext != nil {
+			ctx = c.RequestContext(ctx)
 		}
 		r = r.WithContext(ctx)
 		// Label the request before any stage copies it: stages 2 and 3 read r.Pattern

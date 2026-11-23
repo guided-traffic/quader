@@ -6,34 +6,37 @@ import "time"
 // R-HA-058). The credential is file-only: the files are read again on every new
 // connection, so a rotated Secret applies without a restart (R-HA-017).
 type Database struct {
-	Host               string                  `yaml:"host" validate:"required" doc:"Host name; a comma-separated list is allowed (R-HA-009)."`
-	Port               int                     `yaml:"port" default:"5432" validate:"min=1,max=65535"`
-	SessionHost        string                  `yaml:"session_host" default:"" doc:"Direct host for session-scoped connections; empty means host."`
-	SessionPort        int                     `yaml:"session_port" default:"0" validate:"min=0,max=65535" doc:"0 means port."`
-	ControlHost        string                  `yaml:"control_host" default:"" doc:"Control pooler host; empty means host."`
-	ControlPort        int                     `yaml:"control_port" default:"0" validate:"min=0,max=65535" doc:"0 means port."`
-	ControlName        string                  `yaml:"control_name" default:"" doc:"Database entry of the control pooler; empty means name."`
-	Name               string                  `yaml:"name" validate:"required"`
-	Schema             string                  `yaml:"schema" default:"quader"`
-	BackupRole         string                  `yaml:"backup_role" default:""`
-	UsernameFile       string                  `yaml:"username_file" default:"/var/run/secrets/quader/database/username" secret:"file"`
-	PasswordFile       string                  `yaml:"password_file" default:"/var/run/secrets/quader/database/password" secret:"file"`
-	SSLMode            string                  `yaml:"ssl_mode" default:"verify-full" validate:"oneof=verify-full|verify-ca|require|disable|allow|prefer"`
-	SSLRootCertFile    string                  `yaml:"ssl_root_cert_file" default:""`
-	SSLCertFile        string                  `yaml:"ssl_cert_file" default:""`
-	SSLKeyFile         string                  `yaml:"ssl_key_file" default:"" secret:"file"`
-	AllowInsecure      bool                    `yaml:"allow_insecure" default:"false" doc:"Permits ssl_mode disable, allow and prefer."`
-	ConnectTimeout     time.Duration           `yaml:"connect_timeout" default:"5s" validate:"min=100ms"`
-	TargetSessionAttrs string                  `yaml:"target_session_attrs" default:"read-write" validate:"oneof=read-write|primary|any"`
-	Pooler             DatabasePooler          `yaml:"pooler"`
-	Pool               DatabasePool            `yaml:"pool"`
-	LeasePoolSize      int                     `yaml:"lease_pool_size" default:"4" validate:"min=1" doc:"Concurrent singleton leases per replica."`
-	LeaseCheckInterval time.Duration           `yaml:"lease_check_interval" default:"5s" validate:"min=1s"`
-	Session            DatabaseSession         `yaml:"session"`
-	Retry              DatabaseRetry           `yaml:"retry"`
-	Keepalive          DatabaseKeepalive       `yaml:"keepalive"`
-	ServerKeepalive    DatabaseServerKeepalive `yaml:"server_keepalive" doc:"Sent as tcp_keepalives_* startup parameters (R-HA-015)."`
-	Preflight          DatabasePreflight       `yaml:"preflight"`
+	Host               string          `yaml:"host" validate:"required" doc:"Host name; a comma-separated list is allowed (R-HA-009)."`
+	Port               int             `yaml:"port" default:"5432" validate:"min=1,max=65535"`
+	SessionHost        string          `yaml:"session_host" default:"" doc:"Direct host for session-scoped connections; empty means host."`
+	SessionPort        int             `yaml:"session_port" default:"0" validate:"min=0,max=65535" doc:"0 means port."`
+	ControlHost        string          `yaml:"control_host" default:"" doc:"Control pooler host; empty means host."`
+	ControlPort        int             `yaml:"control_port" default:"0" validate:"min=0,max=65535" doc:"0 means port."`
+	ControlName        string          `yaml:"control_name" default:"" doc:"Database entry of the control pooler; empty means name."`
+	Name               string          `yaml:"name" validate:"required"`
+	Schema             string          `yaml:"schema" default:"quader"`
+	BackupRole         string          `yaml:"backup_role" default:""`
+	UsernameFile       string          `yaml:"username_file" default:"/var/run/secrets/quader/database/username" secret:"file"`
+	PasswordFile       string          `yaml:"password_file" default:"/var/run/secrets/quader/database/password" secret:"file"`
+	SSLMode            string          `yaml:"ssl_mode" default:"verify-full" validate:"oneof=verify-full|verify-ca|require|disable|allow|prefer"`
+	SSLRootCertFile    string          `yaml:"ssl_root_cert_file" default:""`
+	SSLCertFile        string          `yaml:"ssl_cert_file" default:""`
+	SSLKeyFile         string          `yaml:"ssl_key_file" default:"" secret:"file"`
+	AllowInsecure      bool            `yaml:"allow_insecure" default:"false" doc:"Permits ssl_mode disable, allow and prefer."`
+	ConnectTimeout     time.Duration   `yaml:"connect_timeout" default:"5s" validate:"min=100ms"`
+	TargetSessionAttrs string          `yaml:"target_session_attrs" default:"read-write" validate:"oneof=read-write|primary|any"`
+	Pooler             DatabasePooler  `yaml:"pooler"`
+	Pool               DatabasePool    `yaml:"pool"`
+	LeasePoolSize      int             `yaml:"lease_pool_size" default:"4" validate:"min=1" doc:"Concurrent singleton leases per replica."`
+	LeaseCheckInterval time.Duration   `yaml:"lease_check_interval" default:"5s" validate:"min=1s"`
+	Session            DatabaseSession `yaml:"session"`
+	// RequestStatementTimeout bounds every statement of an HTTP request (R-ARCH-019): the request's transactions and reads open
+	// with SET LOCAL statement_timeout to it, and a statement past it answers 503 database_timeout.
+	RequestStatementTimeout time.Duration           `yaml:"request_statement_timeout" default:"5s" validate:"min=100ms" doc:"Every database statement of an HTTP request ends after this long and the request answers 503 database_timeout (R-ARCH-019); jobs and loops run under session.statement_timeout. At most session.statement_timeout."`
+	Retry                   DatabaseRetry           `yaml:"retry"`
+	Keepalive               DatabaseKeepalive       `yaml:"keepalive"`
+	ServerKeepalive         DatabaseServerKeepalive `yaml:"server_keepalive" doc:"Sent as tcp_keepalives_* startup parameters (R-HA-015)."`
+	Preflight               DatabasePreflight       `yaml:"preflight"`
 }
 
 // DatabasePooler describes an external transaction-mode pooler (R-HA-058).
@@ -148,6 +151,9 @@ func (d *Database) Validate(r *Report) {
 		if d.ControlHost == "" {
 			r.Add("control_host", "is required with pooler.mode transaction")
 		}
+	}
+	if st := d.Session.StatementTimeout; st > 0 && d.RequestStatementTimeout > st {
+		r.Add("request_statement_timeout", "(%s) must not exceed session.statement_timeout (%s)", d.RequestStatementTimeout, st)
 	}
 	if d.Retry.InitialBackoff > d.Retry.MaxBackoff {
 		r.Add("retry.initial_backoff", "must not exceed retry.max_backoff")

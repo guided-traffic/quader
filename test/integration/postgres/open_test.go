@@ -21,6 +21,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
@@ -525,13 +526,37 @@ func TestInTx(t *testing.T) {
 		}
 	})
 
-	t.Run("R-ARCH-019 RequestTx sets the request-path statement timeout; a query past it is unavailable", func(t *testing.T) {
-		err := db.RequestTx(ctx, 300*time.Millisecond, func(tx meta.Tx) error {
-			_, err := unwrapTx(t, tx).Exec(ctx, "SELECT pg_sleep(5)")
+	t.Run("R-ARCH-019 a context with a statement bound ends a transaction's and a read's statement past it with database_timeout and frees the connection", func(t *testing.T) {
+		bctx := meta.WithStatementTimeout(ctx, 300*time.Millisecond)
+		code := func(err error) string {
+			e, _ := errs.As(err)
+			if e == nil {
+				return fmt.Sprint(err)
+			}
+			return e.Code
+		}
+		start := time.Now()
+		err := db.InTx(bctx, func(tx meta.Tx) error {
+			_, err := unwrapTx(t, tx).Exec(bctx, "SELECT pg_sleep(5)")
 			return err
 		})
-		if err == nil || !postgres.IsUnavailable(err) {
-			t.Fatalf("err = %v", err)
+		if code(err) != errs.CodeDatabaseTimeout || time.Since(start) > 3*time.Second {
+			t.Fatalf("the transaction: %v after %s", err, time.Since(start))
+		}
+		start = time.Now()
+		err = db.Read(bctx, func(c q.DBTX) error {
+			_, err := c.Exec(bctx, "SELECT pg_sleep(5)")
+			return err
+		})
+		if code(err) != errs.CodeDatabaseTimeout || time.Since(start) > 3*time.Second {
+			t.Fatalf("the read: %v after %s", err, time.Since(start))
+		}
+		if a := db.Stats().Main.Acquired; a != 0 {
+			t.Fatalf("%d connections still held", a)
+		}
+		// The connection went back to the pool and serves the next request; a context without the bound runs as before.
+		if err := db.Read(ctx, func(c q.DBTX) error { _, err := c.Exec(ctx, "SELECT pg_sleep(0.5)"); return err }); err != nil {
+			t.Fatalf("a read without the bound: %v", err)
 		}
 	})
 

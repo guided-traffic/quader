@@ -1475,6 +1475,7 @@ database:
     statement_timeout: 30s              # default
     lock_timeout: 5s                    # default
     idle_in_transaction_session_timeout: 60s   # default
+  request_statement_timeout: 5s         # default; every statement of an HTTP request, at most session.statement_timeout; past it 503 database_timeout
   retry:
     initial_backoff: 100ms              # default
     max_backoff: 2s                     # default

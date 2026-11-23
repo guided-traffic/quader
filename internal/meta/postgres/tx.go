@@ -69,16 +69,15 @@ func (db *DB) InPgxTx(ctx context.Context, fn func(pgx.Tx) error) error {
 	return db.transact(ctx, db.main, func(ptx pgx.Tx) (*txn, error) { return nil, fn(ptx) })
 }
 
-// RequestTx is InTx with the request-path statement timeout of R-ARCH-019: the
-// first statement of every attempt is SET LOCAL statement_timeout.
-func (db *DB) RequestTx(ctx context.Context, timeout time.Duration, fn func(meta.Tx) error) error {
-	return db.InTx(ctx, func(tx meta.Tx) error {
-		ptx, _ := Unwrap(tx)
-		if _, err := ptx.Exec(ctx, "SELECT set_config('statement_timeout', $1, true)", strconv.FormatInt(timeout.Milliseconds(), 10)); err != nil {
-			return err
-		}
-		return fn(tx)
-	})
+// beginOptions are the options of a READ COMMITTED transaction for ctx. A context with a statement bound
+// (meta.WithStatementTimeout, the request path of R-ARCH-019) opens the transaction with SET LOCAL statement_timeout in the
+// same simple query as its BEGIN, so the bound costs no round trip of its own and holds through a transaction-mode pooler.
+func beginOptions(ctx context.Context) pgx.TxOptions {
+	o := pgx.TxOptions{IsoLevel: pgx.ReadCommitted}
+	if d, ok := meta.StatementTimeout(ctx); ok {
+		o.BeginQuery = "BEGIN ISOLATION LEVEL READ COMMITTED; SET LOCAL statement_timeout = " + strconv.FormatInt(max(d.Milliseconds(), 1), 10)
+	}
+	return o
 }
 
 // Read runs a read on the request pool with the retry and the error mapping of
@@ -88,9 +87,10 @@ func (db *DB) RequestTx(ctx context.Context, timeout time.Duration, fn func(meta
 // being unavailable (errs.Unavailable, `database_unavailable`, 503). Any other
 // error is returned as it is.
 //
-// fn runs on one pooled connection, outside a transaction: it may issue several
-// statements, but they do not see one snapshot, and it must consume every row it
-// reads before it returns. It must be safe to run again, because a retry starts
+// fn runs on one pooled connection, outside a transaction, or, on a request path
+// whose context carries a statement bound, in one READ COMMITTED transaction opened
+// with it (R-ARCH-019): it may issue several statements, but they do not see one
+// snapshot, and it must consume every row it reads before it returns. It must be safe to run again, because a retry starts
 // over on a new connection. Handlers use Read instead of the raw pool, which
 // has no retry (R-ARCH-019, R-ARCH-023).
 func (db *DB) Read(ctx context.Context, fn func(q.DBTX) error) error {
@@ -117,7 +117,7 @@ func readOnce(ctx context.Context, pool *pgxpool.Pool, fn func(q.DBTX) error) er
 			_ = conn.Hijack().Close(context.Background())
 		}
 	}()
-	err = fn(conn)
+	err = readOn(ctx, conn, fn)
 	settled = true
 	if conn.Conn().IsClosed() || classify(err) == retryFailover {
 		_ = conn.Hijack().Close(context.Background())
@@ -128,6 +128,26 @@ func readOnce(ctx context.Context, pool *pgxpool.Pool, fn func(q.DBTX) error) er
 	}
 	conn.Release()
 	return err
+}
+
+// readOn runs fn on the connection. With a statement bound in ctx (R-ARCH-019) its statements run in one READ COMMITTED
+// transaction opened with that bound: SET LOCAL holds only inside a transaction, and each statement still reads its own
+// snapshot, as a read without one does.
+func readOn(ctx context.Context, conn *pgxpool.Conn, fn func(q.DBTX) error) error {
+	if _, ok := meta.StatementTimeout(ctx); !ok {
+		return fn(conn)
+	}
+	tx, err := conn.BeginTx(ctx, beginOptions(ctx))
+	if err != nil {
+		return err
+	}
+	if err := fn(tx); err != nil {
+		rctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer cancel()
+		_ = tx.Rollback(rctx)
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
 // transact is the core of InTx and InPgxTx: retry around one attempt. The After
@@ -168,7 +188,7 @@ func attempt(ctx context.Context, pool *pgxpool.Pool, body func(pgx.Tx) (*txn, e
 		conn.Release()
 	}()
 
-	tx, err := conn.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
+	tx, err := conn.BeginTx(ctx, beginOptions(ctx))
 	if err != nil {
 		broken = conn.Conn().IsClosed() || classify(err) != retryNo
 		return nil, err

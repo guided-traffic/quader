@@ -134,7 +134,7 @@ Every answer of Quader on a client listener carries `X-Request-Id`. A `503` with
 | Code | Meaning | What to do |
 |---|---|---|
 | `database_unavailable` | PostgreSQL could not be reached within the retry budget | [PostgreSQL](#postgresql-unavailable-or-failing-over) |
-| `database_timeout` | A statement exceeded its `statement_timeout` or `lock_timeout` | Transient: read `quader_db_slow_queries_total` and the database's locks if it persists |
+| `database_timeout` | A statement exceeded its time: 5 s for a statement of a request (`database.request_statement_timeout`), `database.session.statement_timeout` (30 s) for a job's, or its `lock_timeout` | Transient: read `quader_db_slow_queries_total` and the database's locks if it persists |
 | `authz_stale` | The replica could not confirm that its permission index is current within `authz.cache.max_staleness` (10 s) | [PostgreSQL](#postgresql-unavailable-or-failing-over), or `QuaderControlConnectionWaits`; another replica may answer |
 | `object_store_unavailable` | The object store cannot be reached | [The object store](#the-object-store-unavailable) |
 | `content_unavailable` | The stored object of this file is missing; a remote repository fetches it again and answers this only while it cannot | [When the object store loses objects](operations.md#when-a-dependency-is-unavailable) |

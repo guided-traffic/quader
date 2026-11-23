@@ -4114,8 +4114,15 @@ Priority: **MVP** · Covers: HA-062
     `meta.InTx`. A read that is best effort by nature (the installation facts of `GET /api/v1/system/info`)
     bounds the whole call with its own short context, so it never waits out the retry bound.
   - No outbound HTTP, no object-store call and no Valkey call runs inside a transaction.
-  - Request-path transactions set `SET LOCAL statement_timeout` (5 s, proposed). Jobs set their own
-    timeout.
+  - **Every statement of an HTTP request ends after `database.request_statement_timeout`** (5 s by default, at most
+    `database.session.statement_timeout`), and the request answers `503` `database_timeout`
+    ([Q-ARCH-594](#q-arch-594--every-statement-of-an-http-request-ends-after-the-requests-bound-set-in-the-same-query-as-its-begin)). The
+    client listener's chain puts the bound into the request's context (`meta.WithStatementTimeout`); every transaction that runs
+    with it opens with `BEGIN ISOLATION LEVEL READ COMMITTED; SET LOCAL statement_timeout = <ms>` in one simple query, so the bound costs
+    no round trip of its own and holds through a transaction-mode pooler, and a read through `DB.Read` runs in one such transaction
+    (each statement still reads its own snapshot). A transaction that sets its own `SET LOCAL statement_timeout` afterwards (the
+    grant-index build) has that one. A request whose requirement names a longer bound sets it on its own context; none does today.
+    Jobs and the replica's own loops carry no bound and run under `database.session.statement_timeout` (30 s by default).
 - **Connection count** (INV-12). A `web` replica opens `main` only. A `worker` replica opens `main`
   and `lease`. There is no listener session and no lock pool (Q-ARCH-14, Q-ARCH-6).
   - With direct connections, the server sees Σ replicas × `database.pool.max_conns` +
@@ -12342,6 +12349,36 @@ can change what it returns, and the package-state check, which looks for maps, s
 
 **Applied:** [app.go](../../internal/app/app.go) (`apiDocument`, `processDocument`), [document_test.go](../../internal/app/document_test.go);
 Q-OPS-157.
+
+### Q-ARCH-594 · Every statement of an HTTP request ends after the request's bound, set in the same query as its BEGIN
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Found on
+2026-11-23: R-ARCH-019 said that request-path transactions set `SET LOCAL statement_timeout` (5 s) and its acceptance criterion that a
+request-path query held up by `pg_sleep(10)` answers `503` `database_timeout` after 5 s, and [api-and-ui.md](api-and-ui.md) R-API-014
+sizes the idempotency wait "below the 5 s statement timeout"; but the one function that set it (`DB.RequestTx`) had no caller, so every
+request ran under the session's 30 s. No later decision had put requests under the session's timeout; the code was what was wrong.
+Reproduced by `TestR_ARCH_019_ARequestsStatementEndsAtTheRequestBound` (integration, `api`): with the bound at 500 ms, a list held up by
+a lock on its table answered after 5.0 s, when the session's `lock_timeout` ended it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The chain puts the bound into every request's context; the runner opens each transaction of such a context with `BEGIN …; SET LOCAL statement_timeout` in one simple query, and runs `DB.Read` in such a transaction (chosen) | Every statement of every request, whatever store runs it, with no change to the stores | No round trip more for a transaction; one place; a job keeps the session's timeout because its context has no bound | A read through `DB.Read` on a request costs `BEGIN` and `COMMIT`, two round trips |
+| (b) Call `RequestTx` from every handler | The requirement's sentence as written | Explicit | Some hundred call sites through the stores and the format contract; a store reached by a request through a path that forgets it runs unbounded |
+| (c) A context deadline of 5 s on every request | The driver cancels | No statement more | The deadline ends the whole request, not a statement; the connection is closed instead of returned; the answer is a cancelled context, not `database_timeout` |
+
+**Choice:** (a), with the bound a configuration key, `database.request_statement_timeout` (5s by default, at least 100 ms, at most
+`database.session.statement_timeout`). **Requests that need longer**, checked the same day: none needs it. The audit export reads in keyset
+batches of short queries and holds no connection while it writes; the export of the findings counts at most `export.max_rows` + 1 and
+reads pages of 500; the usage export reads the scope's aggregates of its window in the statements of the list; a commit of an upload
+writes its rows in short statements, and its object-store work runs outside every transaction; the settings' malware backlog reads in
+about 0.25 s per million items ([malware-scanning.md](malware-scanning.md) H-1660). A request whose statement grows with the data beyond
+the bound answers `database_timeout` and is a finding of its own, never a blanket exemption.
+
+**Applied in the spec:** R-ARCH-019; [ha-and-helm.md](ha-and-helm.md) R-HA-015 (the configuration). Code:
+[timeout.go](../../internal/meta/timeout.go), [tx.go](../../internal/meta/postgres/tx.go) (`beginOptions`, `readOn`),
+[chain.go](../../internal/httpserver/chain.go) (`RequestContext`), [wire_endpoints.go](../../internal/app/wire_endpoints.go),
+[database.go](../../internal/config/database.go). Tests: `TestR_ARCH_019_ARequestsStatementEndsAtTheRequestBound` (integration, `api`,
+2.1 s), the subtest R-ARCH-019 of `TestInTx` (integration, `postgres`, 1.1 s).
 
 ## What this does not cover
 

@@ -45,7 +45,14 @@ The connection string carries neither.
 - Stores reach SQL only through `postgres.Unwrap(tx)` (the pgx transaction) and sqlc (`q.New(ptx)`), as
   `internal/jobs` and `internal/blob` do. `DB.InPgxTx(ctx, func(pgx.Tx) error)` is the hook-less pgx form for this
   package and the retry tests. `DB.Tx` is an old name of `InTx` that stays only until the coordination integration
-  tests and the e2e driver use `InTx`. `RequestTx` adds `statement_timeout` via `set_config(..., true)`.
+  tests and the e2e driver use `InTx`.
+- **The request's statement bound** (R-ARCH-019, Q-ARCH-594). A context made by `meta.WithStatementTimeout(ctx, d)` makes every
+  transaction of `InTx`, `InPgxTx` and `Read` run its statements under `SET LOCAL statement_timeout = d`: `beginOptions` puts it into
+  the `BEGIN` (`pgx.TxOptions.BeginQuery`, one simple query, no round trip of its own), and `Read` runs its function in such a
+  transaction (`readOn`). The client listener's chain sets `database.request_statement_timeout` (5 s) on every request
+  (`httpserver.Chain.RequestContext`, [wire_endpoints.go](../../internal/app/wire_endpoints.go)); jobs and loops have no bound and run under
+  `database.session.statement_timeout`. A statement past the bound is SQLSTATE `57014`, which `transact` and `Read` turn into `503`
+  `database_timeout`; the connection goes back to the pool. A handler whose requirement names a longer bound sets it on its own context.
 - `q.Pipeline(ctx, tx, steps...)` ([pipeline.go](../../internal/meta/postgres/q/pipeline.go)) runs the statements of several steps
   in one round trip (`store.Eval.Pipeline` for the vulnerability store): a step calls the generated `Queries` methods it is given and
   keeps their results; the statements are recorded in a first pass, sent as one pgx batch on the transaction and answered to a

@@ -2200,6 +2200,7 @@ database:
     statement_timeout: 30s            # default (proposed)
     lock_timeout: 5s                  # default (proposed)
     idle_in_transaction_session_timeout: 60s  # default (proposed)
+  request_statement_timeout: 5s       # default: every statement of an HTTP request (architecture.md R-ARCH-019, Q-ARCH-594)
   server_keepalive:                   # sent as tcp_keepalives_* startup parameters
     idle: 60s                         # default (proposed)
     interval: 10s                     # default (proposed)
@@ -4779,6 +4780,7 @@ config:
       statement_timeout: 30s
       lock_timeout: 5s
       idle_in_transaction_session_timeout: 60s
+    request_statement_timeout: 5s
     retry:
       initial_backoff: 100ms
       max_backoff: 2s

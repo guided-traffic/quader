@@ -1920,6 +1920,14 @@
           },
           "type": "object"
         },
+        "request_statement_timeout": {
+          "default": "5s",
+          "description": "Every database statement of an HTTP request ends after this long and the request answers 503 database_timeout (R-ARCH-019); jobs and loops run under session.statement_timeout. At most session.statement_timeout.",
+          "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+          "type": "string",
+          "x-quader-env": "QUADER_DATABASE_REQUEST_STATEMENT_TIMEOUT",
+          "x-quader-type": "duration"
+        },
         "retry": {
           "additionalProperties": false,
           "properties": {
