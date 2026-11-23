@@ -2677,7 +2677,9 @@ runs are in `git log`; this section holds the current state.
   registration until an administrator switches it on through the API; its place on the screen is package
   5. The interface's version stays the sixth. Its builder's worktree and branch are removed. His UI's
   backend is started again on this state (ready at 06:49). Released at 07:02; the plan's commits of the
-  minutes between waited for it.
+  minutes between waited for it. **His installation runs the release since 07:11** (read at 07:12: both
+  releases ready, thirteen pods on the new image without a restart; the Bastion's start line names the
+  interface's sixth version; from outside it answers with its certificate checked).
 - **In work since 06:49: package 5 of the handover, the surface:** on a Bastion's card the switch "Direct
   reads from the object store" with its sentence, for who may change a registration, and under it only
   where it helps the connections a Bastion cannot read with the reason and one link to the storage
@@ -5657,6 +5659,40 @@ its rows in the offline tool and the API are package 6's; and what `VACUUM` leav
 read and, where the stack shows it, established once. Until package 4 lands, the backups' check refuses
 every installation that records a backup run. Builders with a test load: the handover's package 3, the
 encryption's packages 4, 6 and 7; the planner of the installation's cost with one or two area runs.
+**Package 7 reported at 07:11** (one commit of the type `feat` on the handover's second package; its
+builder worked from 05:38; every gate exit 0 with a placeholder for the migration step under its own,
+which was never committed: the full unit run, the lint over the whole repository, and the areas `blob`,
+`postgres`, `audit`, `backup` and two tests of `coordination`). **Built:** migration 00112 (a key's sealed
+value may be empty, the destruction's time, the state's checks, the record of every export); `quader admin
+storage keys destroy` in the specification's order (the locks, every holder, the backups' check, the
+confirmation compared in constant time, then the update, the change, the audit event with its outbox
+row), a dry run that reads the same and writes nothing, exit 5 for a refusal with one line per holder
+and exit 2 for a confirmation that does not fit; every replica forgets the connection's keys at the
+change and a read answers `destroyed_key`, which marks the copy; an identifier with destroyed keys is
+refused at the start, at the drawing and at a new generation; the export lists a destroyed row without
+its sealed value, and an import never brings a destroyed connection's key back and never destroys one;
+the journal's replay destroys only for a connection the restoring configuration does not name. The dry
+run says what can still open what the provider keeps: exports made before, with the last one's time,
+retained backups that hold the keys, PostgreSQL's old row versions and log, data keys handed to a
+Bastion. Decisions Q-STOR-460 to 462 and Q-HA-425 (an import gives a destroyed connection nothing back
+and never destroys; no backup known means no target configured; a destruction's change makes a replica
+forget the whole connection; a replay without the restoring configuration destroys nothing). No new
+gap. **Established once on the stack's PostgreSQL 18.6, for the gap H-1372:** after the update the old
+row version with the sealed value is still on its page, after a plain `VACUUM` it is gone from the page,
+and the write-ahead log after a checkpoint still holds one block with it; not known: whether freed
+space is always overwritten, and what standbys, archives and snapshots keep. Nine defences were each
+taken out once and caught; the second check of the drawing, inside its transaction, was not caught at
+first and got a case that destroys between the two reads. Its cost: the unit job about 0.24 s, the
+shard with `blob` about 0.1 s. **Not verified by it:** the backups' check passing with real retained
+backups, which needs package 4; the cost of counting handed data keys over a large audit trail.
+**Not landed: three packages built apart meet here, and their joins are product code. Its builder is
+sent back at 07:12** to move its commit onto the stack of packages 4 and 6 and to join them: the
+scrub's two lines against package 4's rewrite; the sweep counting a destroyed key as a record that does
+not open; the backups' check against a real retained backup in the backup area's encrypted case, with
+the lists of a retained backup's keys written as arrays and never as null; the restore's drawing under
+the rule of a destroyed identifier; package 6's readers of a destroyed row fed by a real row and a real
+export; and the offline tool reading the pool of a real backup, the open point of section 8. Whatever
+a join shows broken is repaired in the package that has it, under a commit of its own.
 **In work since 04:29, on its commit: package 4 of the encryption, the jobs, the backup and the restore:**
 the reconciliation's four cases with a new data key between two encrypted connections, the scrub and the
 sweep reading the format, the backup that keeps an encrypted copy as stored under its key's name with the
