@@ -4557,7 +4557,7 @@
     <unit id="audit.filter.category">
       <notes>
         <note category="location">src/app/features/audit/audit-log.html:79,80</note>
-        <note category="location">src/app/features/audit/audit-log.html:242,243</note>
+        <note category="location">src/app/features/audit/audit-log.html:250,251</note>
         <note category="location">src/app/features/audit/audit-log.ts:205</note>
       </notes>
       <segment>
@@ -4578,7 +4578,7 @@
     <unit id="audit.filter.repository">
       <notes>
         <note category="location">src/app/features/audit/audit-log.html:88,89</note>
-        <note category="location">src/app/features/audit/audit-log.html:270,271</note>
+        <note category="location">src/app/features/audit/audit-log.html:278,279</note>
         <note category="location">src/app/features/audit/audit-log.ts:207</note>
       </notes>
       <segment>
@@ -4613,7 +4613,7 @@
     </unit>
     <unit id="audit.detail.heading">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:216,217</note>
+        <note category="location">src/app/features/audit/audit-log.html:224,225</note>
       </notes>
       <segment>
         <source>Event</source>
@@ -4621,7 +4621,7 @@
     </unit>
     <unit id="audit.detail.close">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:218,220</note>
+        <note category="location">src/app/features/audit/audit-log.html:226,228</note>
       </notes>
       <segment>
         <source> Close </source>
@@ -4629,7 +4629,7 @@
     </unit>
     <unit id="audit.col.time">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:225,227</note>
+        <note category="location">src/app/features/audit/audit-log.html:233,235</note>
         <note category="location">src/app/features/audit/audit-log.ts:140</note>
       </notes>
       <segment>
@@ -4638,7 +4638,7 @@
     </unit>
     <unit id="audit.col.action">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:231,232</note>
+        <note category="location">src/app/features/audit/audit-log.html:239,240</note>
         <note category="location">src/app/features/audit/audit-log.ts:145</note>
         <note category="location">src/app/features/audit/audit-log.ts:203</note>
       </notes>
@@ -4648,7 +4648,7 @@
     </unit>
     <unit id="audit.col.outcome">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:244,246</note>
+        <note category="location">src/app/features/audit/audit-log.html:252,254</note>
         <note category="location">src/app/features/audit/audit-log.ts:149</note>
         <note category="location">src/app/features/audit/audit-log.ts:213</note>
       </notes>
@@ -4658,7 +4658,7 @@
     </unit>
     <unit id="audit.col.actor">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:252,254</note>
+        <note category="location">src/app/features/audit/audit-log.html:260,262</note>
         <note category="location">src/app/features/audit/audit-log.ts:143</note>
         <note category="location">src/app/features/audit/audit-log.ts:201</note>
       </notes>
@@ -4668,7 +4668,7 @@
     </unit>
     <unit id="audit.detail.token">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:266,267</note>
+        <note category="location">src/app/features/audit/audit-log.html:274,275</note>
       </notes>
       <segment>
         <source>Token</source>
@@ -4676,7 +4676,7 @@
     </unit>
     <unit id="audit.detail.resource">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:280,282</note>
+        <note category="location">src/app/features/audit/audit-log.html:288,290</note>
       </notes>
       <segment>
         <source>Resource</source>
@@ -4684,7 +4684,7 @@
     </unit>
     <unit id="audit.col.source">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:288,289</note>
+        <note category="location">src/app/features/audit/audit-log.html:296,297</note>
       </notes>
       <segment>
         <source>Source address</source>
@@ -4692,7 +4692,7 @@
     </unit>
     <unit id="audit.detail.endpoint">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:293,295</note>
+        <note category="location">src/app/features/audit/audit-log.html:301,303</note>
       </notes>
       <segment>
         <source>Endpoint</source>
@@ -4700,7 +4700,7 @@
     </unit>
     <unit id="audit.detail.replica">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:299,300</note>
+        <note category="location">src/app/features/audit/audit-log.html:307,308</note>
       </notes>
       <segment>
         <source>Replica</source>
@@ -4708,7 +4708,7 @@
     </unit>
     <unit id="audit.detail.event-id">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:302,304</note>
+        <note category="location">src/app/features/audit/audit-log.html:310,312</note>
       </notes>
       <segment>
         <source>Event ID</source>
@@ -4716,7 +4716,7 @@
     </unit>
     <unit id="audit.detail.trace">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:308,310</note>
+        <note category="location">src/app/features/audit/audit-log.html:316,318</note>
       </notes>
       <segment>
         <source>Trace ID</source>
@@ -4724,7 +4724,7 @@
     </unit>
     <unit id="audit.detail.details">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:315,316</note>
+        <note category="location">src/app/features/audit/audit-log.html:323,324</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -4732,7 +4732,7 @@
     </unit>
     <unit id="repo.loading">
       <notes>
-        <note category="location">src/app/features/audit/audit-log.html:318,320</note>
+        <note category="location">src/app/features/audit/audit-log.html:326,328</note>
         <note category="location">src/app/features/endpoints/endpoint-detail.html:15,16</note>
         <note category="location">src/app/features/endpoints/endpoint-detail.html:172,176</note>
         <note category="location">src/app/features/repositories/content/repository-content.html:192,195</note>
@@ -6491,7 +6491,7 @@
     <unit id="ci.issuances.f.issuer">
       <notes>
         <note category="location">src/app/features/ci/issuance-list.ts:167</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:294</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:298</note>
       </notes>
       <segment>
         <source>Issuer</source>
@@ -6500,7 +6500,7 @@
     <unit id="ci.issuances.f.project-id">
       <notes>
         <note category="location">src/app/features/ci/issuance-list.ts:170</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:295</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:299</note>
       </notes>
       <segment>
         <source>GitLab project ID</source>
@@ -6509,8 +6509,8 @@
     <unit id="ci.issuances.f.project-path">
       <notes>
         <note category="location">src/app/features/ci/issuance-list.ts:171</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:296</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:385</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:300</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:389</note>
       </notes>
       <segment>
         <source>Project path</source>
@@ -6519,7 +6519,7 @@
     <unit id="ci.issuances.f.pipeline">
       <notes>
         <note category="location">src/app/features/ci/issuance-list.ts:172</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:297</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:301</note>
       </notes>
       <segment>
         <source>Pipeline ID</source>
@@ -6528,7 +6528,7 @@
     <unit id="ci.issuances.f.job">
       <notes>
         <note category="location">src/app/features/ci/issuance-list.ts:174</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:298</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:302</note>
       </notes>
       <segment>
         <source>Job ID</source>
@@ -6537,7 +6537,7 @@
     <unit id="ci.issuances.f.mapping">
       <notes>
         <note category="location">src/app/features/ci/issuance-list.ts:176</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:299</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:303</note>
       </notes>
       <segment>
         <source>Mapping</source>
@@ -6546,8 +6546,8 @@
     <unit id="ci.issuances.f.state">
       <notes>
         <note category="location">src/app/features/ci/issuance-list.ts:178</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:300</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:386</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:304</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:390</note>
       </notes>
       <segment>
         <source>State</source>
@@ -6556,8 +6556,8 @@
     <unit id="ci.issuances.f.from">
       <notes>
         <note category="location">src/app/features/ci/issuance-list.ts:180</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:301</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:387</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:305</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:391</note>
       </notes>
       <segment>
         <source>Issued from</source>
@@ -6566,8 +6566,8 @@
     <unit id="ci.issuances.f.to">
       <notes>
         <note category="location">src/app/features/ci/issuance-list.ts:181</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:302</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:388</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:306</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:392</note>
       </notes>
       <segment>
         <source>Issued until</source>
@@ -6615,7 +6615,7 @@
     </unit>
     <unit id="ci.issuances.empty-none">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:289</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:293</note>
       </notes>
       <segment>
         <source>There is no CI token yet.</source>
@@ -6623,7 +6623,7 @@
     </unit>
     <unit id="ci.issuances.empty">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:290</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:294</note>
       </notes>
       <segment>
         <source>No CI token matches.</source>
@@ -6631,7 +6631,7 @@
     </unit>
     <unit id="ci.issuances.state.any">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:315</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:319</note>
       </notes>
       <segment>
         <source>Any</source>
@@ -6639,7 +6639,7 @@
     </unit>
     <unit id="ci.issuances.state.active">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:316</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:320</note>
       </notes>
       <segment>
         <source>Active</source>
@@ -6647,7 +6647,7 @@
     </unit>
     <unit id="ci.issuances.state.inactive">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:317</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:321</note>
       </notes>
       <segment>
         <source>Expired or revoked</source>
@@ -6655,7 +6655,7 @@
     </unit>
     <unit id="ci.issuances.caption">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:319</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:323</note>
       </notes>
       <segment>
         <source>Issued CI tokens</source>
@@ -6663,7 +6663,7 @@
     </unit>
     <unit id="ci.issuances.col.issued">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:321</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:325</note>
       </notes>
       <segment>
         <source>Issued</source>
@@ -6671,7 +6671,7 @@
     </unit>
     <unit id="ci.issuances.col.issuer">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:322</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:326</note>
       </notes>
       <segment>
         <source>Issuer</source>
@@ -6679,7 +6679,7 @@
     </unit>
     <unit id="ci.issuances.col.mappings">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:323</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:327</note>
       </notes>
       <segment>
         <source>Mappings</source>
@@ -6687,7 +6687,7 @@
     </unit>
     <unit id="ci.issuances.col.project">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:324</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:328</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -6695,7 +6695,7 @@
     </unit>
     <unit id="ci.issuances.col.job">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:325</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:329</note>
       </notes>
       <segment>
         <source>Pipeline / job</source>
@@ -6703,7 +6703,7 @@
     </unit>
     <unit id="ci.issuances.col.ref">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:326</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:330</note>
       </notes>
       <segment>
         <source>Ref</source>
@@ -6711,7 +6711,7 @@
     </unit>
     <unit id="ci.issuances.col.state">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:327</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:331</note>
       </notes>
       <segment>
         <source>State</source>
@@ -6719,7 +6719,7 @@
     </unit>
     <unit id="ci.issuances.col.actions">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:328</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:332</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -6727,7 +6727,7 @@
     </unit>
     <unit id="ci.issuances.none-to-revoke">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:440</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:444</note>
       </notes>
       <segment>
         <source>No active token matches the filters.</source>
@@ -6735,7 +6735,7 @@
     </unit>
     <unit id="ci.issuances.revoke-title">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:444</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:448</note>
       </notes>
       <segment>
         <source>Revoke <ph id="0" equiv="count" disp="count"/> tokens?</source>
@@ -6743,7 +6743,7 @@
     </unit>
     <unit id="ci.issuances.revoke-text">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:446</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:450</note>
       </notes>
       <segment>
         <source>The <ph id="0" equiv="count" disp="count"/> active tokens that match the applied filters stop working at once on every replica. Running jobs that use them fail. This cannot be undone.</source>
@@ -6751,7 +6751,7 @@
     </unit>
     <unit id="ci.issuances.revoke-confirm">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:448</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:452</note>
       </notes>
       <segment>
         <source>Revoke <ph id="0" equiv="count" disp="count"/> tokens</source>
@@ -6759,7 +6759,7 @@
     </unit>
     <unit id="ci.issuances.revoked">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:452</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:456</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="revoked"/> tokens revoked.</source>
