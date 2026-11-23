@@ -92,12 +92,29 @@ export function findingKindWord(kind: SignatureFindingKind): string {
     >
       @for (f of list.items(); track f.id) {
         <tr>
+          <!-- One form at 1,440 and 1,024 px (Q-UI-969): what the row is about under the artifact's name: its path, the reason, the
+               repositories that hold it; blocks only at 390 px. -->
           <th scope="row" class="wrap-name">
             <span class="icon-name-text">
-              <span class="finding-name" translate="no">{{ artifact(f) }}</span>
+              <!-- The name breaks after its dots and slashes, never inside a word (Q-UI-567): its longest word, not the whole name, is
+                   the column's least width, so a long package name does not turn the list into blocks (Q-UI-969). -->
+              <span class="finding-name" translate="no"
+                >@for (part of nameParts(artifact(f)); track $index) {<ng-container>{{ part }}</ng-container><wbr />}</span
+              >
               @if (artifactPath(f); as path) {
                 <span class="secondary finding-text" translate="no">{{ path }}</span>
               }
+              <span class="finding-reason finding-text">
+                @if (f.block; as b) {
+                  <span translate="no">{{ b.reason }}</span>
+                } @else {
+                  {{ reasonText(f.reason) }}
+                }
+              </span>
+              <span class="secondary finding-text"
+                ><a [routerLink]="repositoryLink(f.firstRepository)" translate="no">{{ f.firstRepository }}</a
+                >@if (f.repositoryCount > 1) {&ngsp;<span i18n="@@sig.findings.more-repositories">and {{ f.repositoryCount - 1 }} more</span>}</span
+              >
             </span>
           </th>
           <td>
@@ -114,20 +131,7 @@ export function findingKindWord(kind: SignatureFindingKind): string {
               <span class="secondary block" translate="no">{{ issuer }}</span>
             }
           </td>
-          <td class="finding-text">
-            @if (f.block; as b) {
-              <span translate="no">{{ b.reason }}</span>
-            } @else {
-              {{ reasonText(f.reason) }}
-            }
-          </td>
-          <td class="repositories">
-            <a [routerLink]="repositoryLink(f.firstRepository)" translate="no">{{ f.firstRepository }}</a>
-            @if (f.repositoryCount > 1) {
-              <span class="secondary block" i18n="@@sig.findings.more-repositories">and {{ f.repositoryCount - 1 }} more</span>
-            }
-          </td>
-          <td class="nowrap"><quader-time-ago [at]="f.foundAt" absolute="title" /></td>
+          <td><quader-time-ago [at]="f.foundAt" absolute="title" /></td>
         </tr>
       }
     </quader-data-table>
@@ -138,6 +142,13 @@ export function findingKindWord(kind: SignatureFindingKind): string {
     }
     .finding-text {
       overflow-wrap: anywhere;
+    }
+    .icon-name-text > .finding-text {
+      display: block;
+    }
+    .finding-reason {
+      margin-block-start: var(--quader-space-1);
+      font-weight: 400;
     }
     .findings-title {
       margin-block-start: var(--quader-space-6);
@@ -162,6 +173,10 @@ export class SignatureFindings {
   protected readonly staged = signal<Staged>({ kind: '', repository: '' });
   protected readonly kinds = SIGNATURE_FINDING_KINDS;
   protected readonly kindWord = findingKindWord;
+  /** A name in the pieces after which it may break: after a dot, a slash or an at sign. */
+  protected nameParts(name: string): string[] {
+    return name.split(/(?<=[./@])/);
+  }
   protected readonly reasonText = signatureReason;
   protected readonly promise = signaturePromise();
 
@@ -196,11 +211,9 @@ export class SignatureFindings {
   protected readonly emptyText = $localize`:@@sig.findings.empty:No invalid signatures.`;
   protected readonly emptyFiltered = $localize`:@@sig.findings.empty-filtered:No finding matches the filters.`;
   protected readonly columns: readonly TableColumn[] = [
-    { id: 'artifact', label: $localize`:@@sig.findings.col.artifact:Artifact`, width: '12rem', prefer: true },
-    { id: 'kind', label: $localize`:@@sig.findings.col.kind:Kind`, width: '10rem' },
-    { id: 'signer', label: $localize`:@@sig.findings.col.signer:Signer`, width: '12rem' },
-    { id: 'reason', label: $localize`:@@sig.findings.col.reason:Reason`, width: '9rem' },
-    { id: 'repositories', label: $localize`:@@sig.findings.col.repositories:Repositories`, width: '12rem' },
+    { id: 'artifact', label: $localize`:@@sig.findings.col.artifact:Artifact`, width: '10rem', prefer: true },
+    { id: 'kind', label: $localize`:@@sig.findings.col.kind:Kind`, width: '8rem' },
+    { id: 'signer', label: $localize`:@@sig.findings.col.signer:Signer`, width: '9rem' },
     { id: 'found', label: $localize`:@@sig.findings.col.found:Found` },
   ];
 

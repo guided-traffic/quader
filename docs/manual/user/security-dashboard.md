@@ -97,9 +97,10 @@ repository and why it refuses the artifact, and asks for a reason; the artifact 
 is withdrawn. A released row says by whom and when, and offers **Withdraw release**, which asks first. The closed section **Releases** lists
 the releases of one repository, the one the filter names or the one you choose there.
 
-Below, the view lists one row per signature that does not match its content or whose signer an administrator blocked, newest first: the artifact it covers (the package and version, or the file), the kind ("Invalid
-signature" or "Blocked signer") with the kind of signature, the signer as the signature claims it, the reason (why it does not match, or
-the block's reason), the first repository that holds it and how many more, and when it was found. Search by signer; **Filters** narrows by
+Below, the view lists one row per signature that does not match its content or whose signer an administrator blocked, newest first:
+the artifact it covers (the package and version, or the file) with, under it, its path, the reason (why it does not match, or the block's
+reason) and the first repository that holds it and how many more; the kind ("Invalid signature" or "Blocked signer") with the kind of
+signature; the signer as the signature claims it; and when it was found. Search by signer; **Filters** narrows by
 kind and repository. An empty list says "No invalid signatures."
 
 The repository filter is the view's: it narrows both lists. A holder of `security-settings:write` blocks a signer under **Admin area ›

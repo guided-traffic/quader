@@ -44554,15 +44554,6 @@
         <target>Signierer</target>
       </segment>
     </unit>
-    <unit id="sig.block.col.reason">
-      <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:137</note>
-      </notes>
-      <segment>
-        <source>Reason</source>
-        <target>Grund</target>
-      </segment>
-    </unit>
     <unit id="sig.anchor.col.signatures">
       <notes>
         <note category="location">src/app/features/settings/signature-settings.ts:138</note>
@@ -44827,24 +44818,6 @@
       <segment>
         <source>Signer</source>
         <target>Signierer</target>
-      </segment>
-    </unit>
-    <unit id="sig.findings.col.reason">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:193</note>
-      </notes>
-      <segment>
-        <source>Reason</source>
-        <target>Grund</target>
-      </segment>
-    </unit>
-    <unit id="sig.findings.col.repositories">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/signature-findings.ts:194</note>
-      </notes>
-      <segment>
-        <source>Repositories</source>
-        <target>Repositories</target>
       </segment>
     </unit>
     <unit id="sig.findings.col.found">
@@ -45170,33 +45143,6 @@
       <segment>
         <source>Trust anchor</source>
         <target>Vertrauensanker</target>
-      </segment>
-    </unit>
-    <unit id="sig.anchor.col.kind">
-      <notes>
-        <note category="location">src/app/shared/signatures/anchor-table.ts:115</note>
-      </notes>
-      <segment>
-        <source>Kind</source>
-        <target>Art</target>
-      </segment>
-    </unit>
-    <unit id="sig.anchor.col.project">
-      <notes>
-        <note category="location">src/app/shared/signatures/anchor-table.ts:117</note>
-      </notes>
-      <segment>
-        <source>Project</source>
-        <target>Projekt</target>
-      </segment>
-    </unit>
-    <unit id="sig.anchor.col.scope">
-      <notes>
-        <note category="location">src/app/shared/signatures/anchor-table.ts:118</note>
-      </notes>
-      <segment>
-        <source>Source</source>
-        <target>Quelle</target>
       </segment>
     </unit>
     <unit id="sig.anchor.col.expiry">

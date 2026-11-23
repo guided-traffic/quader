@@ -1506,6 +1506,11 @@ Priority: **P1** · Covers: quader-only
   `/admin/settings/signatures`, the fourth entry of the side bar's group Settings for the holder of `settings:read`; the four sections, the
   forms of **Add trust anchor** and **Block signer** as dialogs, the backlog under the anchors, and a link to the dashboard's view for the
   holder of `content:metadata-read`. Stage 2's section **Signing identity** stands first (R-SIG-056, built).
+- **The lists' form** ([api-and-ui.md](api-and-ui.md) [Q-UI-969](api-and-ui.md#q-ui-969--the-signatures-lists-keep-one-form-a-table-at-1440-and-1024-px-blocks-at-390-px)): a
+  list of anchors (here and in a project, R-SIG-037) has the columns **Trust anchor**, **Expires**, **Signatures**, **State** and the
+  row's action; the kind and the source (or the project) are a line under the anchor's name, the expiry a relative time with the date
+  as its title. **Blocked signers** has **Signer** (the reason under it), **Signatures**, **Blocked** and the row's action. Each list is
+  a table at 1,440 and 1,024 px and stands as blocks only at 390 px.
 
 Acceptance criteria:
 
@@ -1540,7 +1545,9 @@ dashboard.
   admin page. Stage 3 adds the refused downloads of gated repositories and their releases (R-SIG-070, R-SIG-074).
 
 - **Built** (package 4, [Q-SIG-130](#q-sig-130--the-security-dashboards-view-of-signatures)): `/security/signatures`, the third link of the
-  dashboard's views, with a search by signer and a drawer of kind and repository; filters live in the address.
+  dashboard's views, with a search by signer and a drawer of kind and repository; filters live in the address. Its columns are
+  **Artifact** (the path, the reason and the repositories that hold it under the name, which breaks after its dots and slashes),
+  **Kind**, **Signer** and **Found**: a table at 1,440 and 1,024 px, blocks only at 390 px (Q-UI-969).
 
 Acceptance criteria: web unit (Vitest, under a second): the empty list's text; a row of each kind.
 

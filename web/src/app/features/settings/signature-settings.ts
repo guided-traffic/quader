@@ -77,6 +77,9 @@ import { SigningIdentitySection } from './signing-identity';
       overflow-wrap: anywhere;
     }
     .block-reason {
+      display: block;
+      margin-block-start: var(--quader-space-1);
+      font-weight: 400;
       white-space: pre-line;
       overflow-wrap: anywhere;
     }
@@ -136,8 +139,7 @@ export class SignatureSettingsPage {
   protected readonly rootHeading = $localize`:@@sig.settings.root:Public Sigstore root`;
   protected readonly rootHint = $localize`:@@sig.settings.root-hint:Where the public Sigstore root and npm's registry keys in use come from.`;
   protected readonly blockColumns = computed<readonly TableColumn[]>(() => [
-    { id: 'value', label: $localize`:@@sig.block.col.signer:Signer`, width: '16rem', prefer: true },
-    { id: 'reason', label: $localize`:@@sig.block.col.reason:Reason`, width: '14rem' },
+    { id: 'value', label: $localize`:@@sig.block.col.signer:Signer`, width: '12rem', prefer: true },
     { id: 'signatures', label: $localize`:@@sig.anchor.col.signatures:Signatures`, numeric: true },
     { id: 'blocked', label: $localize`:@@sig.block.col.blocked:Blocked` },
     ...(this.canWrite() ? [{ id: 'actions', label: $localize`:@@sig.anchor.col.actions:Actions`, hideLabel: true }] : []),

@@ -64,8 +64,9 @@ the current identity." A retirement cannot be undone ([runbook](runbook.md#a-sig
 ## Trust anchors
 
 A signature reads **Verified · public** when an anchor shipped with Quader knows its signer, and **Verified · internal** when an anchor of
-this installation (or of the project, below) does. The section **Trust anchors** lists every anchor of the installation with its kind,
-where it comes from, the first expiry of its material, the number of signatures it knows and whether it applies.
+this installation (or of the project, below) does. The section **Trust anchors** lists every anchor of the installation: its title with
+what identifies its material and, on a line under it, its kind and where it comes from; when its material first expires (**in 2 years**,
+**last year**, with the date under the pointer); the number of signatures it knows; and whether it applies.
 
 | From | What you can do |
 |---|---|

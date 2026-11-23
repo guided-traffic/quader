@@ -127,9 +127,10 @@
                 <span class="secondary"
                   >{{ blockKind(b.kind) }}@if (b.issuer; as issuer) {<span translate="no">&ngsp;· {{ issuer }}</span>}</span
                 >
+                <!-- The reason under the signer it explains (Q-UI-969): as a column of its own the list stood as blocks at 1,024 px. -->
+                <span class="block-reason" translate="no">{{ b.reason }}</span>
               </span>
             </th>
-            <td class="block-reason wrap" translate="no">{{ b.reason }}</td>
             <td class="num">{{ b.signatures | number }}</td>
             <td class="nowrap">
               <quader-time-ago [at]="b.createdAt" absolute="title" />

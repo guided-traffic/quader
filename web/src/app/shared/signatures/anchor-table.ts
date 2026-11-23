@@ -1,9 +1,10 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { SignatureAnchor } from '../../api/signatures-api';
 import { DataTable, TableColumn } from '../ui/data-table';
 import { NoValue } from '../ui/no-value';
 import { Switch } from '../ui/switch';
+import { TimeAgo } from '../ui/time-ago';
 import { anchorKindWords, anchorScopeWords, shortFingerprint } from './signature-words';
 
 /** What a row of the table may offer: its switch, its removal, or nothing. */
@@ -17,12 +18,17 @@ export interface AnchorRowControls {
  * subject or fingerprint of its first certificate or key, a Sigstore identity's issuer), its kind, where it comes from, the first
  * expiry of its material, the signatures it knows in the installation's scope, and whether it applies. The page decides per row what
  * it offers (`controls`): a shipped anchor only its switch, an administrator's its switch and **Remove**, an anchor of the Helm
- * values nothing; a project anchor that no longer applies says why. `project` adds the column of the project that owns each anchor.
+ * values nothing; a project anchor that no longer applies says why. `project` names the project that owns each anchor instead of
+ * where it comes from.
+ *
+ * One form at every width but a phone's (Q-UI-969, the rule of the lists of 2026-11-23): a table whose columns fit at 1,440 and
+ * 1,024 px, the kind and the source (or the project) as a line under the anchor's name, the expiry as a relative time with the date
+ * as its title (Q-UI-431); its rows stand as blocks only where even those columns do not fit (390 px).
  */
 @Component({
   selector: 'quader-anchor-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTable, DatePipe, DecimalPipe, NoValue, Switch],
+  imports: [DataTable, DecimalPipe, NoValue, Switch, TimeAgo],
   template: `
     <quader-data-table [caption]="caption()" [columns]="columns()" [empty]="anchors().length === 0" [emptyText]="emptyText()">
       @for (a of anchors(); track a.id) {
@@ -34,20 +40,22 @@ export interface AnchorRowControls {
               @if (identifies(a); as id) {
                 <span class="secondary anchor-id" translate="no">{{ id }}</span>
               }
+              <span class="secondary" data-testid="anchor-kind"
+                >{{ kindWords(a.kind) }} ·
+                @if (project()) {
+                  <span translate="no">{{ a.project }}</span>
+                } @else {
+                  {{ scopeWords(a.scope) }}
+                }
+              </span>
               @if (a.scope === 'project' && !a.applied) {
                 <span class="secondary" data-testid="anchor-not-applied">{{ notApplied }}</span>
               }
             </span>
           </th>
-          <td>{{ kindWords(a.kind) }}</td>
-          @if (project()) {
-            <td translate="no">{{ a.project }}</td>
-          } @else {
-            <td>{{ scopeWords(a.scope) }}</td>
-          }
           <td>
             @if (expiry(a); as at) {
-              <time [attr.datetime]="at" [class.expired]="isPast(at)">{{ at | date: 'mediumDate' }}</time>
+              <quader-time-ago [class.expired]="isPast(at)" [at]="at" absolute="title" />
               @if (isPast(at)) {
                 <span class="secondary">{{ expiredWord }}</span>
               }
@@ -86,6 +94,9 @@ export interface AnchorRowControls {
     .anchor-id {
       overflow-wrap: anywhere;
     }
+    .icon-name-text > .secondary {
+      display: block;
+    }
     .expired {
       color: var(--quader-status-warn);
     }
@@ -111,11 +122,7 @@ export class AnchorTable {
 
   protected readonly anyRemove = computed(() => this.anchors().some((a) => this.controls()(a).remove));
   protected readonly columns = computed<readonly TableColumn[]>(() => [
-    { id: 'title', label: $localize`:@@sig.anchor.col.title:Trust anchor`, width: '16rem', prefer: true },
-    { id: 'kind', label: $localize`:@@sig.anchor.col.kind:Kind` },
-    this.project()
-      ? { id: 'project', label: $localize`:@@sig.anchor.col.project:Project` }
-      : { id: 'scope', label: $localize`:@@sig.anchor.col.scope:Source` },
+    { id: 'title', label: $localize`:@@sig.anchor.col.title:Trust anchor`, width: '10rem', prefer: true },
     { id: 'expiry', label: $localize`:@@sig.anchor.col.expiry:Expires` },
     {
       id: 'signatures',

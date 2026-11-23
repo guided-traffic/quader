@@ -22241,6 +22241,35 @@ development agent sees no case for revisiting this.
 [malware-finds.html](../../web/src/app/features/vulnerabilities/malware-finds.html),
 [signature-findings.ts](../../web/src/app/features/vulnerabilities/signature-findings.ts).
 
+### Q-UI-969 · The signatures' lists keep one form: a table at 1,440 and 1,024 px, blocks at 390 px
+
+Status: **Decided by the development agent** on 2026-11-23, closing the open finding "Three narrow lists of the signatures' screens
+stand as blocks even at 1,440 px", by the rule a builder set the same morning for the Bastions screen (on another branch, joined at its
+landing); the owner reviews it at the walkthrough.
+
+Context: measured on the renders' data: the security dashboard's view of signatures needed 1,171 px at its columns' least widths against
+1,113 at 1,440 px; a project's trust anchors 884 against 872; at 1,024 px every list of the signatures' screens, the admin page's
+installation anchors, project anchors and blocked signers too, needed 880 to 1,171 px against about 690. So a list turned into blocks by
+what it held, at a width where its neighbours were tables (R-UI-174 stacks where the columns do not fit).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One form per width whatever the list holds: a table whose columns fit at 1,440 and 1,024 px, the secondary facts as lines under the row's name where columns do not fit, blocks only at 390 px; a time in a list relative with the date as its title (Q-UI-431) (chosen) | Anchors: **Trust anchor** (the kind and the source or the project under it), **Expires**, **Signatures**, **State**, the action; blocked signers: **Signer** (the reason under it), **Signatures**, **Blocked**, the action; findings: **Artifact** (the path, the reason and the repositories under it; the name breaks after its dots and slashes), **Kind**, **Signer**, **Found** | A reader finds the same list at the same width; the least widths fit with room (602 to 682 px at 1,024) | The facts under a name are read, not scanned down a column |
+| (b) Stack where the columns do not fit, as before (R-UI-174) | — | Every fact a column where there is room | The form changes with the data: one long name turns a list into blocks at 1,440 px |
+| (c) A region that scrolls sideways | — | Every column kept | Refused from 1,024 px by the renders' checks |
+
+**Choice:** (a). The list keeps R-UI-174's measurement: it stands as blocks where even these columns do not fit, which on the renders'
+data is 390 px only.
+
+**Rationale:** the Bastions screen's rule, so that the screens of the admin area and the dashboard read alike. The development agent
+would revisit a list whose secondary line grows past three lines. At the landing the rule and this decision are joined with the
+Bastions screen's decision into one.
+
+**Applied in the spec:** [signatures.md](signatures.md) R-SIG-036, R-SIG-037, R-SIG-038. Code:
+[anchor-table.ts](../../web/src/app/shared/signatures/anchor-table.ts),
+[signature-settings.html](../../web/src/app/features/settings/signature-settings.html),
+[signature-findings.ts](../../web/src/app/features/vulnerabilities/signature-findings.ts).
+
 ### Q-UI-970 · npm's forwarding is offered on remote and virtual repositories only, by the schema
 
 Status: **Decided by the development agent** on 2026-11-23, closing the open finding "The creation form of a local npm repository offers
