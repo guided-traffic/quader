@@ -129,7 +129,9 @@ milliseconds, no data); `TestR_REPO_056_MirrorStatusDocument` and `TestR_REPO_05
 `TestR_CUR_004_ARuleRefusalReachesTheClientThroughABastionAndIsNotKept` (unit, `internal/bastion/engine`, milliseconds, one 1 kB tarball);
 `TestR_CUR_005_TheRowsOfTheProjectUpstream` (integration, area `repository`, about 0.5 s on one replica, rule rows only);
 `TestR_CUR_006_TheRulesAndTheModeNarrowedAfterARestorePointAreReplayed` (integration, area `backup`, about 1.2 s, about 100 rule rows);
-the web's unit tests of the forms and the status (Vitest, milliseconds each).
+the web's unit tests of the forms and the status (Vitest, milliseconds each); the subtest of `TestR_CUR_010_ADownloadAheadOfOneVersionAndOfAPackage`
+(area `npm`, about 0.1 s, one tarball) that holds R4's queue to the rules' decider: a reader may not start a version a rule blocks, a
+Maintainer may, and its row reads `blocked`.
 
 ## R3 · Upstream catalogue
 
@@ -167,7 +169,7 @@ Built on 2026-11-23 (R-CUR-010 to R-CUR-013, Q-CUR-80 to Q-CUR-85). No migration
 
 The run's end: a cancelled job ends its row `cancelled`; a job that reached its 30 minutes ends its attempt `bound` (Q-CUR-83); a job
 released at shutdown or whose lease was lost leaves its row `running` with its job, which runs again or which the dispatch finds orphaned.
-The delivery rules' decider is `remotecuration.DeliverAll` in the API's services until R2 wires its own: who may start a version and the
+The delivery rules' decider is `repository.Decider` over the replica's snapshot, wired with R2's landing (`remoteDownloadsAPI` in [wire_remote_downloads.go](../../internal/app/wire_remote_downloads.go)): who may start a version and the
 row's member `delivery` read it.
 
 Not built here, and why: a sub-section's bulk and the counts of a package's preview wait for the catalogue (R3, Q-CUR-80); the tab

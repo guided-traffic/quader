@@ -80,7 +80,7 @@ func Delivered() Decision {
 // fill, at the serve point, in the format's documents, by the mirror's pass and by the catalogue's rows, and reads no database: the
 // rules are in the snapshot (R-CUR-006). repoID is the repository's ID as the repository model spells it; name is the package name and
 // version the version, each in any form the format reads, which the decider folds by the format's rules (catalog.Names, the version
-// canon) before it compares. The rules package implements it (R2); until then [DeliverAll] answers.
+// canon) before it compares. repository.Decider implements it over the snapshot (R2); [DeliverAll] answers where none is wired.
 type Decider interface {
 	// Decide decides one version of a package: steps 1 to 3 of R-CUR-001.
 	Decide(ctx context.Context, repoID, name, version string) Decision

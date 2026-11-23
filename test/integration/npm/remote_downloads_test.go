@@ -113,6 +113,28 @@ func TestR_CUR_010_ADownloadAheadOfOneVersionAndOfAPackage(t *testing.T) {
 		}
 	})
 
+	// The decider of the queue's operations is the delivery rules' (R-CUR-005, R-CUR-010): a version a rule blocks is started by the
+	// holders of manage only, and its row reads delivery blocked. Data: one tarball of the stub's corpus.
+	t.Run("R-CUR-010 R-CUR-005 a version a rule blocks is started by manage only and its row says blocked", func(t *testing.T) {
+		// The oldest version, which alice stored above: the bulk below takes the two newest.
+		v := p.Versions[0].Version
+		key := testenv.DefaultProject + "/" + rRemote
+		r.st.MustPutDeliveryRule(rep, r.tokL, key, testenv.VersionRule(p.Name, v, "block"))
+		r.st.WaitDelivered(t, rep, r.tokL, key, p.Name, v, false)
+		body := map[string]any{"level": "version", "name": p.Name, "version": v}
+		if a := r.startDownload(rep, r.tokA, body); a.Status != http.StatusForbidden {
+			t.Fatalf("alice's download of a blocked version: %d %s, want 403", a.Status, a.Body)
+		}
+		// alice's second download above may still run: lead is admitted either way, and the answer names that row (409 already_queued).
+		a := r.startDownload(rep, r.tokL, body)
+		if a.Status != http.StatusAccepted && a.Status != http.StatusConflict {
+			t.Fatalf("lead's download of a blocked version: %d %s", a.Status, a.Body)
+		}
+		if row, _ := a.JSON(t)["download"].(map[string]any); row["delivery"] != "blocked" {
+			t.Errorf("the row of a blocked version: %v", row)
+		}
+	})
+
 	t.Run("every version of a package needs manage", func(t *testing.T) {
 		body := map[string]any{"level": "package", "name": p.Name, "maxVersions": 2}
 		if a := r.startDownload(rep, r.tokA, body); a.Status != http.StatusForbidden {

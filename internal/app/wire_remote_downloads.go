@@ -287,16 +287,19 @@ func (a *App) downloadHandler() jobs.Handler {
 	}
 }
 
-// remoteDownloadsAPI are the services of the download queue's operations (R-CUR-010, R-CUR-012). The delivery rules' decider is the
-// stub that delivers everything until the rules' package is wired (R2): a download ahead does not depend on the rules (R-CUR-014),
-// only who may start one and the member delivery of a row do.
+// remoteDownloadsAPI are the services of the download queue's operations (R-CUR-010, R-CUR-012). The decider is the delivery rules'
+// over the replica's snapshot (wire_delivery_rules.go): a download ahead does not depend on the rules (R-CUR-014), only who may start
+// one and each row's delivery do.
 func (a *App) remoteDownloadsAPI() v1.RemoteDownloadsServices {
 	svc, err := a.downloads()
 	if err != nil {
 		a.log.Warn("the download queue is not available; its operations answer 503", "error", err)
 		return v1.RemoteDownloadsServices{}
 	}
-	out := v1.RemoteDownloadsServices{Queue: svc, Limits: part[downloadLimitsArea](a.parts).engine, Settings: a.cfg.Proxy.Downloads}
+	out := v1.RemoteDownloadsServices{
+		Queue: svc, Limits: part[downloadLimitsArea](a.parts).engine, Settings: a.cfg.Proxy.Downloads,
+		Decider: part[deliveryRulesArea](a.parts).decider,
+	}
 	if p := part[identityArea](a.parts).principals; p != nil {
 		out.Principals = p
 	}
