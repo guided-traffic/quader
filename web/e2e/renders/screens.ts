@@ -105,6 +105,17 @@ function filtersOpen(fill?: (drawer: Locator) => Promise<void>): Screen['walk'] 
   };
 }
 
+/**
+ * A list with its first row's menu open (G5-20, R-UI-163): the menu of **Actions for <name>** over the list, which no other state shows,
+ * so that the layout checks see its entries and the row it stands beside. One state per list that has a row menu; nothing is chosen.
+ */
+async function* rowMenuOpen(page: Page): AsyncGenerator<string> {
+  const trigger = page.locator('main td.actions button[aria-haspopup="menu"]').first();
+  await trigger.click();
+  await expect(page.locator('.cdk-overlay-container [role="menu"]')).toBeVisible();
+  yield 'menu';
+}
+
 /** A list without a drawer: as it opens, then with a text in the search field of its head (Q-UI-421). */
 function searched(text: string): Screen['walk'] {
   return async function* (page) {
@@ -2410,6 +2421,9 @@ export const screens: readonly Screen[] = [
   // A list's error states (G5-20): the shared notice with Retry on its line (R-UI-175), with a request ID and Copy, and a refusal.
   { id: 'repositories-unavailable', path: `${P}/repositories`, kinds: ['plain'], walk: listUnavailable, expected: unavailable, notices: unavailableNotice },
   { id: 'repositories-long-keys', path: `${O}/repositories`, kinds: all, walk: filtersOpen() },
+  // The row menus of the lists that have one, open (G5-20): a project's repositories, the admin area's, a service account's technical
+  // tokens, the exposure rules of an endpoint and the registries of upstream.
+  { id: 'repositories-menu', path: `${P}/repositories`, kinds: ['power'], walk: rowMenuOpen },
   { id: 'repositories-empty-project', path: `/ui/projects/${emptyProject}/repositories`, kinds: admins },
   // The built-in project with the registries the seed switched on: the administrator sees its two system repositories in their
   // section (R-UI-192); the plain user reads the registries that are on and no system repository, so no section.
@@ -2643,6 +2657,7 @@ export const screens: readonly Screen[] = [
   { id: 'admin-dashboard', path: '/ui/admin/dashboard', kinds: admins, walk: dashboardStorage },
   { id: 'admin-projects', path: '/ui/admin/projects', kinds: admins, walk: searched('web') },
   { id: 'admin-repositories', path: '/ui/admin/repositories', kinds: admins, walk: filtersOpen(), widths: [1100, 1280] },
+  { id: 'admin-repositories-menu', path: '/ui/admin/repositories', kinds: ['admin'], walk: rowMenuOpen },
   // The rows of upstream: the system repositories with their badge and without the copy button (R-UI-193).
   { id: 'admin-repositories-upstream', path: '/ui/admin/repositories?project=upstream', kinds: admins, walk: systemRows },
   // The public registries Quader offers (R-UI-187, R-UI-188): the list grouped by format, and a Debian archive's page, the one with
@@ -2654,6 +2669,7 @@ export const screens: readonly Screen[] = [
   // the question before switching off, and off.
   { id: 'admin-upstream-clamav-row', path: '/ui/admin/upstream', kinds: admins, walk: clamavRow },
   { id: 'admin-upstream-registry', path: '/ui/admin/upstream/debian', kinds: admins },
+  { id: 'admin-upstream-menu', path: '/ui/admin/upstream', kinds: ['admin'], walk: rowMenuOpen },
   // The system repository of the image scanning's database: in use while the scanning reads through it (R-REPO-070, R-VULN-044).
   { id: 'admin-upstream-scanner-trivy', path: '/ui/admin/upstream/scanner-trivy', kinds: admins },
   // ClamAV definition updates on the page of clamav (R-UI-188, Q-UI-903, Q-UI-905): off, the question, on at Public with its fold and the
@@ -2679,6 +2695,7 @@ export const screens: readonly Screen[] = [
   { id: 'admin-group', path: `/ui/admin/groups/${group}`, kinds: admins, walk: principalSearch('Add a member', 'ad') },
   { id: 'admin-service-accounts', path: '/ui/admin/service-accounts', kinds: admins, walk: searched('release') },
   { id: 'admin-service-account', path: `/ui/admin/service-accounts/${serviceAccount}`, kinds: admins, walk: technicalTokens },
+  { id: 'admin-service-account-menu', path: `/ui/admin/service-accounts/${serviceAccount}`, kinds: ['admin'], walk: rowMenuOpen },
   { id: 'admin-permissions', path: '/ui/admin/permissions', kinds: admins, walk: filtersOpen() },
   { id: 'admin-permission-new', path: '/ui/admin/permissions/new', kinds: admins },
   { id: 'admin-roles', path: '/ui/admin/roles', kinds: admins, walk: principalSearch('Bind to', 'sa') },
@@ -2707,6 +2724,7 @@ export const screens: readonly Screen[] = [
   { id: 'admin-endpoints', path: '/ui/admin/endpoints', kinds: admins },
   // The endpoint every installation has (R-EP-001).
   { id: 'admin-endpoint', path: '/ui/admin/endpoints/default', kinds: admins },
+  { id: 'admin-endpoint-menu', path: '/ui/admin/endpoints/default', kinds: ['admin'], walk: rowMenuOpen },
   { id: 'admin-endpoint-rule-new', path: '/ui/admin/endpoints/default/rules/new', kinds: admins },
   { id: 'admin-endpoint-rule', path: `/ui/admin/endpoints/default/rules/${exposureRule}`, kinds: admins, walk: advancedOpen },
 
