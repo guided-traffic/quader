@@ -56,6 +56,10 @@ The backup pod holds no key ring and no Valkey credential. The CronJob's `concur
 
 **Keep the keys.** Keep a copy of `secrets.encryption` outside the cluster and away from the backup target. A backup holds sealed values only, and a restore stops before it loads anything when the key ring cannot open them. A rotated key stays in your copy for as long as a retained backup lists it; `quader backup list` names the key IDs of each backup.
 
+With an encrypted connection (`encrypted: true`, see the [configuration](configuration.md)) the key ring is also the key to your artifacts: without it every blob of every encrypted connection is lost, in the bucket and in every backup. Keep the export of the storage keys (`quader admin storage keys export`) beside your copy of the key ring, and export again after you add an encrypted connection, draw a new generation or rotate the key ring. A bucket and the key ring alone do not read a blob: the export, or a backup of the database, is the third part. A backup does not run yet while a connection is encrypted, and a restore does not write into an encrypted first connection: the backup of encrypted connections is not built.
+
+A copy of an encrypted bucket made by a tool that drops object metadata cannot be read: each object's key lies in its metadata. Copy such a bucket only with a tool that keeps metadata. An offline tool that reads a bucket without Quader is not built yet.
+
 **Run a backup now.** The Backups screen shows the command, or run it from a shell:
 
 ```shell

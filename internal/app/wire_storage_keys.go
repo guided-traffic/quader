@@ -7,16 +7,17 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/blobcrypt"
 	storagekeys "github.com/guided-traffic/quader/internal/blob/keys"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/secrets"
 )
 
-// The keys of encrypted stored content (storage.md R-STOR-083, R-STOR-084): package 2 of the encryption
+// The keys of encrypted stored content (storage.md R-STOR-083, R-STOR-084): packages 2 and 3 of the encryption
 // (docs/developer/stored-content-encryption.md). The blob area builds the replica's holder before the store, which reads the keys
 // through blob.WithStorageKeys, and fills it after the start checks; the infrastructure bundle lets it follow the change area
-// storage_keys, which exists only after the blob area; the task secrets-reencrypt walks the two sealed columns. Until encrypted: true
-// is accepted (package 3), no connection is encrypted and the holder stays empty.
+// storage_keys, which exists only after the blob area; the task secrets-reencrypt walks the two sealed columns. The upload sessions
+// seal their data keys with the key ring through sessionKeys (R-STOR-081).
 
 // newStorageKeys builds the replica's holder of the storage keys over the database and the key ring, and stops it with the replica,
 // which destroys every key it holds.
@@ -37,7 +38,7 @@ func (a *App) ensureStorageKeys(ctx context.Context, h *storagekeys.Holder, conn
 		if !c.Encrypted() {
 			continue
 		}
-		spec := storagekeys.Connection{ID: c.ID(), KeyedNames: keyedNames(c), Drain: c.Drain(), Prefix: c.Prefix(), Objects: c.Objects()}
+		spec := storagekeys.Connection{ID: c.ID(), KeyedNames: c.KeyedNames(), Drain: c.Drain(), Prefix: c.Prefix(), Objects: c.Objects()}
 		for delay := time.Second; ; delay = min(delay*2, 15*time.Second) {
 			err := h.Ensure(ctx, spec)
 			if err == nil {
@@ -55,9 +56,17 @@ func (a *App) ensureStorageKeys(ctx context.Context, h *storagekeys.Holder, conn
 	return nil
 }
 
-// keyedNames reports whether a connection's objects get keyed names (R-STOR-075, R-STOR-086): true on an encrypted connection, the
-// default of keyed_names, until the element carries the key (package 3 of the encryption).
-func keyedNames(c *blob.Connection) bool { return c.Encrypted() }
+// sessionKeys seals and opens the data key of an upload session on an encrypted connection with the replica's key ring
+// (upload_sessions.sealed_data_key, R-STOR-081): the seam uploads.SessionKeys.
+type sessionKeys struct{ ring storagekeys.Sealer }
+
+func (k sessionKeys) Seal(session string, dataKey blobcrypt.Key) (string, error) {
+	return storagekeys.SealSessionKey(k.ring, session, dataKey)
+}
+
+func (k sessionKeys) Open(session, sealed string) (blobcrypt.Key, error) {
+	return storagekeys.OpenSessionKey(k.ring, session, sealed)
+}
 
 // listenStorageKeys makes the replica's storage keys follow the change area storage_keys (R-STOR-083): the change log exists only after
 // the blob area, so the infrastructure bundle, which has both, adds the holder as a listener.

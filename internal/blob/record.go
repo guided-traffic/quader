@@ -22,7 +22,8 @@ type ConnectionAddedFunc func(ctx context.Context, tx meta.Tx, conn string) erro
 func WithConnectionAdded(f ConnectionAddedFunc) Option { return func(s *Store) { s.onAdded = f } }
 
 // RecordConnections records this replica's connections before the store commits (R-STOR-051): the first replica that starts
-// with a connection inserts its row with the properties that decide where and how its data lies (bucket, prefix, encrypted);
+// with a connection inserts its row with the properties that decide where and how its data lies (bucket, prefix, encrypted and,
+// on an encrypted connection, keyed_names, R-STOR-075);
 // a row that holds no copy takes the element's values; a row that holds a copy and differs in one of them refuses the start,
 // as a configuration that names a retired id does. The row the migration of the connections left for the blobs that existed
 // (an empty bucket, Q-STOR-250) is bound to the element of its id: its bucket and prefix become the element's and the prefix
@@ -42,7 +43,9 @@ func (s *Store) recordConnection(ctx context.Context, c *Connection) error {
 		if err != nil {
 			return err
 		}
-		inserted, err := qs.InsertStorageConnection(ctx, q.InsertStorageConnectionParams{ID: c.ID(), Bucket: c.Bucket(), Prefix: c.Prefix(), Encrypted: c.Encrypted()})
+		inserted, err := qs.InsertStorageConnection(ctx, q.InsertStorageConnectionParams{
+			ID: c.ID(), Bucket: c.Bucket(), Prefix: c.Prefix(), Encrypted: c.Encrypted(), KeyedNames: c.KeyedNames(),
+		})
 		if err != nil {
 			return err
 		}
@@ -63,7 +66,7 @@ func (s *Store) recordConnection(ctx context.Context, c *Connection) error {
 			return s.connectionAdded(ctx, tx, c.ID())
 		case r.Bucket == "":
 			return s.bindMigrated(ctx, tx, qs, c)
-		case r.Bucket == c.Bucket() && r.Prefix == c.Prefix() && r.Encrypted == c.Encrypted():
+		case r.Bucket == c.Bucket() && r.Prefix == c.Prefix() && r.Encrypted == c.Encrypted() && r.KeyedNames == c.KeyedNames():
 			return nil
 		}
 		holds, err := qs.StorageConnectionHoldsCopy(ctx, c.ID())
@@ -75,18 +78,22 @@ func (s *Store) recordConnection(ctx context.Context, c *Connection) error {
 			if err != nil {
 				return err
 			}
-			return refusal("%s bucket, prefix and encrypted are fixed: the connection holds %d copies in %s/%s. To move the data, add a connection with another id and set drain: true on this one (storage.md R-STOR-051)",
+			return refusal("%s bucket, prefix, encrypted and keyed_names are fixed: the connection holds %d copies in %s/%s. To move the data, add a connection with another id and set drain: true on this one (storage.md R-STOR-051, R-STOR-075)",
 				c.Element(), n, r.Bucket, r.Prefix)
 		}
 		s.log.Info("a connection without copies takes the bucket and prefix of its element", "connection", c.ID(),
 			"bucket", c.Bucket(), "prefix", c.Prefix(), "was_bucket", r.Bucket, "was_prefix", r.Prefix)
-		return qs.UpdateStorageConnectionLocation(ctx, q.UpdateStorageConnectionLocationParams{ID: c.ID(), Bucket: c.Bucket(), Prefix: c.Prefix(), Encrypted: c.Encrypted()})
+		return qs.UpdateStorageConnectionLocation(ctx, q.UpdateStorageConnectionLocationParams{
+			ID: c.ID(), Bucket: c.Bucket(), Prefix: c.Prefix(), Encrypted: c.Encrypted(), KeyedNames: c.KeyedNames(),
+		})
 	})
 }
 
 // bindMigrated binds the row of the migration of the connections to the element of its id (Q-STOR-250).
 func (s *Store) bindMigrated(ctx context.Context, tx meta.Tx, qs *q.Queries, c *Connection) error {
-	if err := qs.UpdateStorageConnectionLocation(ctx, q.UpdateStorageConnectionLocationParams{ID: c.ID(), Bucket: c.Bucket(), Prefix: c.Prefix(), Encrypted: c.Encrypted()}); err != nil {
+	if err := qs.UpdateStorageConnectionLocation(ctx, q.UpdateStorageConnectionLocationParams{
+		ID: c.ID(), Bucket: c.Bucket(), Prefix: c.Prefix(), Encrypted: c.Encrypted(), KeyedNames: c.KeyedNames(),
+	}); err != nil {
 		return err
 	}
 	var n int64

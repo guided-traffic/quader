@@ -2698,6 +2698,9 @@
                   },
                   "encrypted": {
                     "type": "boolean"
+                  },
+                  "keyed_names": {
+                    "type": "boolean"
                   }
                 },
                 "additionalProperties": false

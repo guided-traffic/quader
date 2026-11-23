@@ -179,6 +179,44 @@ func TestR_STOR_074_WhichConnectionsCanServeLinks(t *testing.T) {
 	})
 }
 
+// TestR_STOR_088_AnEncryptedConnectionsOnlyCopyIsStreamed: with links switched on, a blob whose only copy lies on an encrypted
+// connection gets no link and the download streams; the link check runs at the encrypted connection's start through the connection's
+// own client, which takes the plain probe, both parts pass, the probe is gone afterwards, and the connection's one reason is encrypted
+// (R-STOR-074, R-STOR-088, R-STOR-096).
+func TestR_STOR_088_AnEncryptedConnectionsOnlyCopyIsStreamed(t *testing.T) {
+	r := newRig(t, func(id string, c *config.StorageConnection) {
+		if id == "second" {
+			c.Encrypted = true
+		}
+	})
+	t.Run("R-STOR-074 R-STOR-096 the link check runs on the encrypted connection, passes and leaves nothing; the connection serves handovers and no link", func(t *testing.T) {
+		c, _ := r.conns.Get("second")
+		if lc := c.LinkCheck(); !lc.Ran || !lc.Works || !lc.Overrides {
+			t.Fatalf("the link check of the encrypted connection: %+v", lc)
+		}
+		if keys := r.stores["second"].Keys(""); len(keys) != 0 {
+			t.Errorf("the link check left %v", keys)
+		}
+		st, _ := r.links.State("second")
+		if st.Usable || reasons(st.Reasons) != ReasonEncrypted || !st.HandoverUsable {
+			t.Fatalf("%+v", st)
+		}
+	})
+	t.Run("R-STOR-088 a blob whose only copy lies on the encrypted connection is streamed, not linked", func(t *testing.T) {
+		it := r.item(t, 64)
+		it.Copies = it.Copies[1:] // the copy on the encrypted connection alone
+		if it.Copies[0].Connection != "second" {
+			t.Fatalf("copies %+v", it.Copies)
+		}
+		if link, declined := r.links.Sign(context.Background(), it, linkDisposition); declined != DeclinedConnection || link.URL != "" {
+			t.Fatalf("a blob on an encrypted connection only: %q %q", declined, link.URL)
+		}
+		if n := r.stores["second"].Count("presign"); n != 1 { // the link check's one link, none for the blob
+			t.Errorf("%d links signed on the encrypted connection, want the link check's alone", n)
+		}
+	})
+}
+
 // item is a stored file of the rig: its object on every connection.
 func (r *rig) item(t *testing.T, size int) items.Item {
 	t.Helper()

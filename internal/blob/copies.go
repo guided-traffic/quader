@@ -67,13 +67,15 @@ func DeriveContentStatus(copies []Copy) string {
 	return StatusMissing
 }
 
-// CopyWrite is the copy row of an object a commit wrote (R-STOR-053): the connection, the object's name, its stored size and
-// whether the write showed the whole object to be the blob.
+// CopyWrite is the copy row of an object a commit wrote (R-STOR-053): the connection, the object's name, its stored size,
+// whether the write showed the whole object to be the blob, and on an encrypted connection the storage key that wrapped its data
+// key (R-STOR-080; empty on a plain one).
 type CopyWrite struct {
-	Connection string
-	Key        string
-	StoredSize int64
-	Verified   bool
+	Connection   string
+	Key          string
+	StoredSize   int64
+	Verified     bool
+	StorageKeyID string
 }
 
 // copyWrite is an object a commit wrote on one connection, as its copy row records it.
@@ -81,6 +83,7 @@ type copyWrite struct {
 	conn       *Connection
 	key        string
 	storedSize int64
+	keyID      string // the storage key that wrapped the data key, on an encrypted connection
 	verified   bool
 	at         time.Time // the end of the write
 }
@@ -285,7 +288,7 @@ const VerifiedStampInterval = 24 * time.Hour
 func (s *Store) recordWrites(ctx context.Context, tx meta.Tx, d Digest, writes []copyWrite) error {
 	wrote := map[string]bool{}
 	for _, w := range writes {
-		if err := s.rows.PutCopy(ctx, tx, d, CopyWrite{Connection: w.conn.ID(), Key: w.key, StoredSize: w.storedSize, Verified: w.verified}); err != nil {
+		if err := s.rows.PutCopy(ctx, tx, d, CopyWrite{Connection: w.conn.ID(), Key: w.key, StoredSize: w.storedSize, Verified: w.verified, StorageKeyID: w.keyID}); err != nil {
 			return err
 		}
 		wrote[w.conn.ID()] = true

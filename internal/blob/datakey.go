@@ -9,14 +9,18 @@ import (
 	"github.com/guided-traffic/quader/internal/meta"
 )
 
-// StorageKeys is what the store asks of the replica's storage keys (internal/blob/keys, storage.md R-STOR-083): the lookup of the
+// StorageKeys is what the store asks of the replica's storage keys (internal/blob/keys, storage.md R-STOR-083): the active storage key a
+// write wraps its data key under (R-STOR-080), the name key of a connection with keyed names (R-STOR-086), and the lookup of the
 // storage key a record of an object on one connection names, which reads the connection's rows again once for an identifier the
-// replica does not hold.
+// replica does not hold (R-STOR-082). *keys.Holder implements it. The store never destroys a key it gets here: the holder owns them.
 type StorageKeys interface {
+	Active(ctx context.Context, connection string) (*blobcrypt.StorageKey, error)
+	NameKey(connection string) (blobcrypt.Key, error)
 	Lookup(ctx context.Context, connection string) blobcrypt.KeyLookup
 }
 
-// WithStorageKeys gives the store the replica's storage keys, which the composition root fills after the start checks.
+// WithStorageKeys gives the store the replica's storage keys, which the composition root fills after the start checks. The store
+// hands them to its encrypted connections, whose readers and naming function need them.
 func WithStorageKeys(k StorageKeys) Option { return func(s *Store) { s.keys = k } }
 
 // ErrNotEncrypted is CopyDataKey for a connection that is not encrypted: its objects have no data key.

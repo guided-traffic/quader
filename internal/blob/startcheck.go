@@ -88,6 +88,10 @@ func (o StartCheckOptions) log() *slog.Logger {
 	return o.Log
 }
 
+// ErrMetadataNotKept is the start check's refusal of an encrypted connection whose store does not keep an object's metadata
+// (R-STOR-075, Q-STOR-306): a configuration error, which stops the start.
+var ErrMetadataNotKept = errors.New("an encrypted connection needs a store that keeps object metadata")
+
 // CheckConnection runs the start check of one connection once (R-STOR-035): write, read back, compare and delete a probe
 // with the connection's payload checksum, list the blob prefix, the part-identity check, the marker, and the capabilities:
 // whether a wrong payload checksum is refused, DeleteObjects (when batch_delete is true), whether metadata survives a write and
@@ -132,6 +136,11 @@ func CheckConnection(ctx context.Context, c *Connection, peers []*Connection, o 
 		return caps, err
 	}
 	caps.Metadata, caps.CopyReplacesMetadata = kept, replaced
+	if c.Encrypted() && !kept {
+		// the record lives in the object's metadata (R-STOR-077); without the copy that replaces it the finalize streams (Q-STOR-306)
+		return caps, fmt.Errorf("%w: connection %s: the store did not keep the metadata of the probe object; an encrypted connection keeps each object's wrapped data key there (storage.md R-STOR-077)",
+			ErrMetadataNotKept, c.ID())
+	}
 	for _, p := range peers {
 		if p == c || p.Encrypted() || c.Encrypted() || !sameEndpoint(c, p) {
 			continue // stage 1 copies server-side only between two connections without encryption (R-STOR-062)

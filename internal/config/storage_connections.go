@@ -55,6 +55,7 @@ func (s *Storage) validateConnections(r *Report) {
 	for _, issue := range locationClashes(conns, false) {
 		r.Add(issue.key, "%s", issue.msg)
 	}
+	s.validateEncryptedPartSizes(r)
 }
 
 // validateConnection checks one element; raw is it as written, c with its defaults.
@@ -100,8 +101,35 @@ func validateConnection(r *Report, key string, raw, c StorageConnection) {
 	if c.ScrubBytesPerSecond < minScrubBytesPerSecond {
 		r.Add(key, "scrub_bytes_per_second (%s) must be at least %s (R-STOR-050)", c.ScrubBytesPerSecond, minScrubBytesPerSecond)
 	}
-	if c.Encrypted {
-		r.Add(key, "encrypted: true is not supported yet: the encryption of stored content is not built (storage.md R-STOR-050)")
+	if raw.KeyedNames != nil && !c.Encrypted {
+		r.Add(key, "keyed_names is a detail of an encrypted connection; on a connection that is not encrypted the content is readable anyway (R-STOR-075)")
+	}
+}
+
+// encryptedSegment is the plaintext of a segment of the stored format (storage.md R-STOR-076): while a connection is encrypted, a
+// part holds whole segments (R-STOR-075).
+const encryptedSegment = 64 * KiB
+
+// validateEncryptedPartSizes refuses a part size that is not a multiple of 64 KiB while an element is encrypted (R-STOR-075 rule 2):
+// storage.object_store.multipart.part_size cuts the parts of a write, storage.uploads.part_size those of an upload session.
+func (s *Storage) validateEncryptedPartSizes(r *Report) {
+	encrypted := ""
+	for i, c := range s.Connections {
+		if c.Encrypted {
+			encrypted = fmt.Sprintf("connections[%d] (%s)", i, c.WithDefaults().ID)
+			break
+		}
+	}
+	if encrypted == "" {
+		return
+	}
+	for _, p := range []struct {
+		key  string
+		size ByteSize
+	}{{"object_store.multipart.part_size", s.ObjectStore.Multipart.PartSize}, {"uploads.part_size", s.Uploads.PartSize}} {
+		if p.size%encryptedSegment != 0 {
+			r.Add(p.key, "(%s) must be a multiple of 64KiB while %s is encrypted, so that a part holds whole segments (R-STOR-075)", p.size, encrypted)
+		}
 	}
 }
 

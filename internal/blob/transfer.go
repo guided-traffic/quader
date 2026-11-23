@@ -11,6 +11,8 @@ import (
 	"slices"
 	"sync"
 	"time"
+
+	"github.com/guided-traffic/quader/internal/blob/blobcrypt"
 )
 
 const (
@@ -49,8 +51,8 @@ func (s *Store) writeTo(ctx context.Context, sp *Spooled, cands []*Connection, n
 		next++
 		inflight++
 		go func() {
-			err := s.putOn(wctx, c, sp)
-			results <- result{w: copyWrite{conn: c, key: c.ObjectKey(sp.SHA256), storedSize: sp.Size, verified: c.Verifies(), at: s.now()}, err: err}
+			w, err := s.putOn(wctx, c, sp)
+			results <- result{w: w, err: err}
 		}()
 	}
 	for inflight < need && next < len(cands) {
@@ -106,13 +108,21 @@ func (s *Store) notEnoughConnections(cause error) error {
 	return storeUnavailable(&circuitOpenError{retry: retryAfter})
 }
 
-// putOn writes the content of sp to its key on one connection (R-STOR-006).
-func (s *Store) putOn(ctx context.Context, c *Connection, sp *Spooled) error {
-	key := c.ObjectKey(sp.SHA256)
-	if sp.Size <= int64(s.cfg.ObjectStore.Multipart.Threshold) {
-		return c.Objects().Put(ctx, key, sp.Reader(), sp.Size, wholeChecksum(c, sp), nil)
+// putOn writes the content of sp to its key on one connection (R-STOR-006) and returns the copy row the write makes; an encrypted
+// connection gets the stored format with its record (R-STOR-080, putSealed).
+func (s *Store) putOn(ctx context.Context, c *Connection, sp *Spooled) (copyWrite, error) {
+	if c.Encrypted() {
+		return s.putSealed(ctx, c, sp)
 	}
-	return s.putMultipart(ctx, c, key, sp)
+	w := copyWrite{conn: c, key: c.ObjectKey(sp.SHA256), storedSize: sp.Size, verified: c.Verifies()}
+	var err error
+	if sp.Size <= int64(s.cfg.ObjectStore.Multipart.Threshold) {
+		err = c.Objects().Put(ctx, w.key, sp.Reader(), sp.Size, wholeChecksum(c, sp), nil)
+	} else {
+		err = s.putMultipart(ctx, c, w.key, sp, nil)
+	}
+	w.at = s.now()
+	return w, err
 }
 
 // mapStoreErr turns a store failure into the error a request answers with. The
@@ -154,7 +164,10 @@ func PartSize(size, configured int64) int64 {
 	return ps
 }
 
-func (s *Store) putMultipart(ctx context.Context, c *Connection, key string, sp *Spooled) (err error) {
+// putMultipart writes sp as a multipart upload from the spool file: in parts of the plaintext, each stored as it is (sl nil) or as its
+// segments under the write's data key, the last part with the final segment, and the record on the upload (R-STOR-080). The completed
+// object is confirmed with HeadObject: its size, and on an encrypted connection the storage key its record names.
+func (s *Store) putMultipart(ctx context.Context, c *Connection, key string, sp *Spooled, sl *sealing) (err error) {
 	objects := c.Objects()
 	algorithm := c.PayloadChecksum()
 	if algorithm == "none" {
@@ -162,8 +175,16 @@ func (s *Store) putMultipart(ctx context.Context, c *Connection, key string, sp 
 	}
 	partSize := PartSize(sp.Size, int64(s.cfg.ObjectStore.Multipart.PartSize))
 	n := int((sp.Size + partSize - 1) / partSize)
+	var md Metadata
+	want := sp.Size // stage 1 stores the blob's bytes, so the stored size is its size
+	if sl != nil {
+		if partSize%blobcrypt.SegmentSize != 0 {
+			return fmt.Errorf("connection %s: a part of %d bytes holds no whole segments (R-STOR-075)", c.ID(), partSize)
+		}
+		md, want = sl.md, sl.stored
+	}
 
-	id, err := objects.CreateMultipart(ctx, key, algorithm, nil)
+	id, err := objects.CreateMultipart(ctx, key, algorithm, md)
 	if err != nil {
 		return err
 	}
@@ -215,7 +236,7 @@ launch:
 		go func(i int, off, size int64) {
 			defer wg.Done()
 			defer func() { <-s.parts; <-local }()
-			p, perr := uploadPart(pctx, objects, key, id, i+1, sp, off, size, algorithm)
+			p, perr := uploadPart(pctx, objects, key, id, i+1, sp, off, size, algorithm, sl, i == n-1)
 			if perr != nil {
 				fail(perr)
 				return
@@ -237,33 +258,59 @@ launch:
 	if err != nil {
 		return err
 	}
-	if info.Size >= 0 && info.Size != sp.Size { // -1: the store did not say; stage 1 stores the blob's bytes, so the stored size is its size
+	if info.Size >= 0 && info.Size != want { // -1: the store did not say
 		// The completed object is not what was sent. It is not deleted here: a
 		// concurrent uploader may have written the right bytes to the same key.
-		return fmt.Errorf("object %s on connection %s has %d bytes after the multipart upload, expected %d", key, c.ID(), info.Size, sp.Size)
+		return fmt.Errorf("object %s on connection %s has %d bytes after the multipart upload, expected %d", key, c.ID(), info.Size, want)
+	}
+	if sl != nil && info.Metadata[blobcrypt.MetaKey] != sl.keyID {
+		// the record is not the one written (R-STOR-080): the commit falls over to the next connection, the object is the orphan sweep's
+		return fmt.Errorf("object %s on connection %s carries the record of storage key %q after the multipart upload, %s was written",
+			key, c.ID(), info.Metadata[blobcrypt.MetaKey], sl.keyID)
 	}
 	return nil
 }
 
-// uploadPart sends one part read directly from the spool file.
-func uploadPart(ctx context.Context, objects ObjectStore, key, id string, number int, sp *Spooled, off, size int64, algorithm string) (Part, error) {
-	var sum Checksum
-	if algorithm != "" {
-		var h hash.Hash
-		if algorithm == "sha256" {
-			h = sha256.New()
-		} else {
-			h = md5.New() //nolint:gosec // see imports
+// uploadPart sends one part read directly from the spool file: the plain bytes [off, off+size), or with sl their segments under the
+// write's data key, encrypted as they are read (the final segment after the last part's), with the payload checksum of what is sent.
+func uploadPart(ctx context.Context, objects ObjectStore, key, id string, number int, sp *Spooled, off, size int64, algorithm string, sl *sealing, last bool) (Part, error) {
+	body, n := sp.Section(off, size), size
+	if sl != nil {
+		sec, err := sl.section(readerAt(body), off, size, last)
+		if err != nil {
+			return Part{}, fmt.Errorf("seal part %d: %w", number, err)
 		}
-		if _, err := io.Copy(h, sp.Section(off, size)); err != nil {
-			return Part{}, fmt.Errorf("hash part %d: %w", number, err)
-		}
-		sum = Checksum{Algorithm: algorithm, Value: h.Sum(nil)}
+		body, n = sec, sec.Size()
 	}
-	p, err := objects.UploadPart(ctx, key, id, number, sp.Section(off, size), size, sum)
+	sum, err := sendChecksum(algorithm, body)
+	if err != nil {
+		return Part{}, fmt.Errorf("hash part %d: %w", number, err)
+	}
+	p, err := objects.UploadPart(ctx, key, id, number, body, n, sum)
 	if err != nil {
 		return Part{}, err
 	}
-	p.Number, p.Size, p.Checksum = number, size, sum
+	p.Number, p.Size, p.Checksum = number, n, sum
 	return p, nil
+}
+
+// sendChecksum is the payload checksum of the bytes body yields, in algorithm ("sha256", "md5" or none), taken in a first pass;
+// body is back at its start afterwards, for the request that sends it.
+func sendChecksum(algorithm string, body io.ReadSeeker) (Checksum, error) {
+	var h hash.Hash
+	switch algorithm {
+	case "sha256":
+		h = sha256.New()
+	case "md5":
+		h = md5.New() //nolint:gosec // see imports
+	default:
+		return Checksum{}, nil
+	}
+	if _, err := io.Copy(h, body); err != nil {
+		return Checksum{}, err
+	}
+	if _, err := body.Seek(0, io.SeekStart); err != nil {
+		return Checksum{}, err
+	}
+	return Checksum{Algorithm: algorithm, Value: h.Sum(nil)}, nil
 }

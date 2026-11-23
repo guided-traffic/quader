@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/blobcrypt"
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/meta"
 )
@@ -95,12 +96,16 @@ func (s *Service) closeOpen(ctx context.Context, r row, sc Scope, offset int64, 
 	}
 	st := &streamState{received: r.Received}
 	p, err := s.writable(ctx, &r, writer)
+	if err == nil {
+		p, err = s.withCrypt(p, r)
+	}
 	if err != nil {
 		held = !errors.Is(err, errLostClaim)
 		var rcv int64
 		rcv, err = s.failed(ctx, r, st, err)
 		return row{Received: rcv}, err
 	}
+	defer p.close()
 	var res streamed
 	res, err = s.stream(ctx, p, r, writer, last, limit, st)
 	if err != nil {
@@ -154,9 +159,16 @@ func (s *Service) closeOpen(ctx context.Context, r row, sc Scope, offset int64, 
 // be asked the finalize answers 503 and the session stays as it is.
 func (s *Service) complete(ctx context.Context, r row, commit CommitFunc) (Result, error) {
 	p, err := s.connection(r)
+	if err == nil {
+		p, err = s.withCrypt(p, r)
+	}
+	if errors.Is(err, errKindChanged) {
+		return Result{}, s.failSession(ctx, r, "the connection of the upload changed its encryption", err)
+	}
 	if err != nil {
 		return Result{}, err
 	}
+	defer p.close()
 	key, r, err := s.assemble(ctx, p, r)
 	if errors.Is(err, errDone) {
 		// another request of this finalize committed; a continuation that put objects after its cleanup (a merge of segments) removes them
@@ -181,11 +193,16 @@ func (s *Service) complete(ctx context.Context, r row, commit CommitFunc) (Resul
 		item = itemID
 		return s.rows.markDone(ctx, tx, r.ID, itemID)
 	}
-	switch err = commit(ctx, blob.Staged(p.conn.ID(), d, key), markDone); {
+	staged, err := s.staged(ctx, p, r, d, key)
+	if err == nil {
+		err = commit(ctx, staged, markDone)
+		_ = staged.Close()
+	}
+	switch {
 	case err == nil:
 	case errors.Is(err, errAborted):
 		return Result{}, unknown()
-	case errors.Is(err, blob.ErrStagingGone):
+	case errors.Is(err, blob.ErrStagingGone), errors.Is(err, errTailGone):
 		// The staging object is gone because another request of this finalize committed and cleaned up first; its blob is
 		// stored and the item recorded, so this one answers from the record. A session that was aborted is gone for good.
 		cur, found, gerr := s.rows.get(ctx, r.ID, s.cfg.SessionMaxAge)
@@ -214,8 +231,26 @@ func (s *Service) complete(ctx context.Context, r row, commit CommitFunc) (Resul
 	return Result{ItemID: item}, nil
 }
 
+// staged is what the commit of a finalize writes (R-STOR-011, R-STOR-081): the staging object at key on a plain connection; on an
+// encrypted one the staging object with the session's data key and its parts as stored, or, for a blob that never filled a part, its
+// tails decrypted into the spool, which the commit writes with a new data key. The caller closes it.
+func (s *Service) staged(ctx context.Context, p pin, r row, d blob.Digests, key string) (*blob.Spooled, error) {
+	if p.crypt == nil {
+		return blob.Staged(p.conn.ID(), d, key), nil
+	}
+	parts, err := s.rows.parts(ctx, r.ID)
+	if err != nil {
+		return nil, err
+	}
+	if len(parts) == 0 {
+		return s.tailsOnly(ctx, p, r, d)
+	}
+	return blob.StagedSealed(p.conn.ID(), d, key, p.crypt.key, stagedParts(parts)), nil
+}
+
 // assemble brings a completing session to assembled and returns the key of its staging object (step 2 of a finalize). An assembled
-// session already has one; a session that is done is errDone, with the row.
+// session already has one; a session that is done is errDone, with the row. A session on an encrypted connection that never sent a
+// part has none: its commit writes its tails (staged).
 func (s *Service) assemble(ctx context.Context, p pin, r row) (string, row, error) {
 	for range 3 {
 		if r.State == StateCompleting {
@@ -259,6 +294,9 @@ func (s *Service) assemble(ctx context.Context, p pin, r row) (string, row, erro
 		if err != nil {
 			return "", row{}, err
 		}
+		if len(parts) == 0 && p.crypt != nil {
+			return "", r, nil // a sealed blob of less than one part is written from its tails, not copied (R-STOR-081 step 4)
+		}
 		if len(parts) == 0 && len(r.Tails) == 1 {
 			return p.tailKey(r.ID, r.Tails[0].Writer), r, nil // a blob of less than one part is its single tail segment
 		}
@@ -269,7 +307,8 @@ func (s *Service) assemble(ctx context.Context, p pin, r row) (string, row, erro
 
 // completeUpload is the state completing: the tail becomes the last part and the multipart upload is completed; a blob of less
 // than one part has no multipart upload, and its single tail segment, or the merge of its segments, or an empty object, is the
-// staging object.
+// staging object. On an encrypted connection the last part carries the final segment, after the tail's data segments or alone when
+// the blob ends at a part boundary (R-STOR-081 finalize step 1), and a blob of less than one part assembles nothing.
 func (s *Service) completeUpload(ctx context.Context, p pin, r row) error {
 	if err := s.fault("finalize.completing"); err != nil {
 		return err
@@ -279,9 +318,12 @@ func (s *Service) completeUpload(ctx context.Context, p pin, r row) error {
 		return err
 	}
 	if len(parts) == 0 {
+		if p.crypt != nil {
+			return s.dropUnrecorded(ctx, p, r)
+		}
 		return s.completeSmall(ctx, p, r)
 	}
-	if r.TailSize > 0 {
+	if r.TailSize > 0 && (p.crypt == nil || !finalIn(r, parts)) {
 		if r, err = s.tailAsPart(ctx, p, r); err != nil {
 			return err
 		}
@@ -289,14 +331,32 @@ func (s *Service) completeUpload(ctx context.Context, p pin, r row) error {
 			return err
 		}
 	}
-	cp := make([]blob.Part, len(parts))
-	for i, pt := range parts {
-		cp[i] = blob.Part{Number: pt.Number, ETag: pt.ETag, Size: pt.Size}
-		if p.algorithm == "sha256" {
-			cp[i].Checksum = blob.Checksum{Algorithm: "sha256", Value: pt.SHA256}
-		}
+	if p.crypt != nil && !finalIn(r, parts) {
+		err = s.completeWithFinal(ctx, p, r)
+	} else {
+		err = s.completeParts(ctx, p, r, parts, nil)
 	}
-	err = p.objects().CompleteMultipart(ctx, p.dataKey(r.ID), r.UploadID, cp)
+	if err != nil {
+		return err
+	}
+	return s.confirmStaging(ctx, p, r)
+}
+
+// completeParts completes the multipart upload of the staging object with the recorded parts as sent and, when given, the part that
+// holds the final segment alone.
+func (s *Service) completeParts(ctx context.Context, p pin, r row, parts []part, final *blob.Part) error {
+	cp := make([]blob.Part, 0, len(parts)+1)
+	for _, pt := range parts {
+		bp := blob.Part{Number: pt.Number, ETag: pt.ETag, Size: pt.StoredSize}
+		if p.algorithm == "sha256" {
+			bp.Checksum = blob.Checksum{Algorithm: "sha256", Value: pt.StoredSHA256}
+		}
+		cp = append(cp, bp)
+	}
+	if final != nil {
+		cp = append(cp, *final)
+	}
+	err := p.objects().CompleteMultipart(ctx, p.dataKey(r.ID), r.UploadID, cp)
 	switch {
 	case err == nil:
 	case blob.IsNoSuchUpload(err):
@@ -316,6 +376,76 @@ func (s *Service) completeUpload(ctx context.Context, p pin, r row) error {
 	default:
 		return blob.MapStoreError(err)
 	}
+	return nil
+}
+
+// completeWithFinal completes the staging object of a sealed session that ends at a part boundary (R-STOR-081): the final segment goes
+// out as a part of its own, 68 bytes, and the upload is completed with it, under the short claim of the finalize so that one
+// continuation sends it. The part is not recorded: a continuation cut before the completion sends it again under its own seed.
+func (s *Service) completeWithFinal(ctx context.Context, p pin, r row) error {
+	writer := uuid.New().String()
+	rctx, cancel := recordCtx(ctx)
+	ok, err := s.rows.claimCompleting(rctx, r.ID, writer, s.cfg.WriterLease)
+	cancel()
+	if err != nil {
+		return err
+	}
+	if !ok {
+		cur, found, gerr := s.rows.get(ctx, r.ID, s.cfg.SessionMaxAge)
+		if gerr != nil {
+			return gerr
+		}
+		if !found || cur.State != StateCompleting {
+			return errStale
+		}
+		return errs.E(errs.Unavailable, errs.CodeUnavailable, "The upload is being completed by another request; retry.", errs.WithRetryAfter(time.Second))
+	}
+	defer s.release(ctx, r.ID, writer)
+	cur, found, err := s.rows.get(ctx, r.ID, s.cfg.SessionMaxAge)
+	if err != nil {
+		return err
+	}
+	if !found || cur.State != StateCompleting {
+		return errStale
+	}
+	parts, err := s.rows.parts(ctx, cur.ID)
+	if err != nil {
+		return err
+	}
+	if finalIn(cur, parts) || cur.TailSize > 0 || len(parts) == 0 {
+		return errStale
+	}
+	final := blobcrypt.Final{Size: cur.Received}
+	copy(final.Digest[:], cur.Digest)
+	number := parts[len(parts)-1].Number + 1
+	sent, _, err := s.sendPart(ctx, p, cur.ID, cur.UploadID, number, nil, cur.Received, &final, s.completingRenewer(cur.ID, writer))
+	if err != nil {
+		if errors.Is(err, errLostClaim) {
+			return errStale
+		}
+		return err
+	}
+	last := blob.Part{Number: number, ETag: sent.ETag, Size: sent.StoredSize}
+	if p.algorithm == "sha256" {
+		last.Checksum = blob.Checksum{Algorithm: "sha256", Value: sent.StoredSHA256}
+	}
+	return s.completeParts(ctx, p, cur, parts, &last)
+}
+
+// dropUnrecorded aborts a multipart upload of a session that recorded no part: it was created by a request that never recorded it.
+func (s *Service) dropUnrecorded(ctx context.Context, p pin, r row) error {
+	if r.UploadID == "" {
+		return nil
+	}
+	if err := p.objects().AbortMultipart(ctx, p.dataKey(r.ID), r.UploadID); err != nil && !blob.IsNoSuchUpload(err) {
+		return blob.MapStoreError(err)
+	}
+	return nil
+}
+
+// confirmStaging checks that the completed staging object exists with the session's size as stored: the bytes received, or S(L) of
+// them on an encrypted connection (R-STOR-081).
+func (s *Service) confirmStaging(ctx context.Context, p pin, r row) error {
 	info, err := p.objects().Head(ctx, p.dataKey(r.ID))
 	if err != nil {
 		if !errors.Is(err, blob.ErrNotFound) {
@@ -331,8 +461,14 @@ func (s *Service) completeUpload(ctx context.Context, p pin, r row) error {
 		}
 		return s.failSession(ctx, r, "the staging object does not exist after the multipart upload", err)
 	}
-	if info.Size >= 0 && info.Size != r.Received {
-		return s.failSession(ctx, r, fmt.Sprintf("the staging object has %d bytes, the session received %d", info.Size, r.Received), blob.ErrCorrupt)
+	want := r.Received
+	if p.crypt != nil {
+		if want, err = blobcrypt.StoredSize(r.Received); err != nil {
+			return err
+		}
+	}
+	if info.Size >= 0 && info.Size != want {
+		return s.failSession(ctx, r, fmt.Sprintf("the staging object has %d bytes, the session received %d stored in %d", info.Size, r.Received, want), blob.ErrCorrupt)
 	}
 	return nil
 }
@@ -340,11 +476,9 @@ func (s *Service) completeUpload(ctx context.Context, p pin, r row) error {
 // completeSmall prepares the staging object of a blob that has no part: nothing (one segment is the object), the merge of several
 // segments, or an empty object.
 func (s *Service) completeSmall(ctx context.Context, p pin, r row) error {
-	if r.UploadID != "" {
-		// an upload that was created and never recorded is not this session's; one that was recorded has a part
-		if err := p.objects().AbortMultipart(ctx, p.dataKey(r.ID), r.UploadID); err != nil && !blob.IsNoSuchUpload(err) {
-			return blob.MapStoreError(err)
-		}
+	// an upload that was created and never recorded is not this session's; one that was recorded has a part
+	if err := s.dropUnrecorded(ctx, p, r); err != nil {
+		return err
 	}
 	switch len(r.Tails) {
 	case 1:
@@ -434,7 +568,13 @@ func (s *Service) tailAsPart(ctx context.Context, p pin, r row) (row, error) {
 	if n := len(parts); n > 0 {
 		number = parts[n-1].Number + 1
 	}
-	sent, _, err := s.sendPart(ctx, p, cur.ID, cur.UploadID, number, joined, s.completingRenewer(cur.ID, writer))
+	var final *blobcrypt.Final
+	if p.crypt != nil {
+		f := blobcrypt.Final{Size: cur.Received}
+		copy(f.Digest[:], cur.Digest)
+		final = &f
+	}
+	sent, _, err := s.sendPart(ctx, p, cur.ID, cur.UploadID, number, joined, int64(number-1)*cur.PartSize, final, s.completingRenewer(cur.ID, writer))
 	if err != nil {
 		if errors.Is(err, errLostClaim) {
 			return row{}, errStale

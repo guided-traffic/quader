@@ -99,6 +99,16 @@ func (s *Store) SetMetadata(key string, md blob.Metadata) {
 	}
 }
 
+// MetadataOf returns a copy of an object's metadata without counting, nil when it has none or the object does not exist.
+func (s *Store) MetadataOf(key string) blob.Metadata {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if o, ok := s.objects[key]; ok {
+		return cloneMeta(o.meta)
+	}
+	return nil
+}
+
 // copied is the object a copy of o makes: its bytes, and its metadata unless md replaces it.
 func copied(o *object, md blob.Metadata, now time.Time) *object {
 	meta := o.meta

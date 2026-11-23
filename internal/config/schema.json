@@ -4112,7 +4112,7 @@
                 "type": "boolean"
               },
               "encrypted": {
-                "description": "The encryption of stored content; true is refused until it is built (R-STOR-050).",
+                "description": "Quader encrypts every blob of the connection in its own format and keeps the keys, so the provider sees ciphertext only (R-STOR-075); fixed once the connection holds data.",
                 "type": "boolean"
               },
               "endpoint": {
@@ -4130,6 +4130,10 @@
               "id": {
                 "description": "Names the connection for its whole life; default for at most one element, never changes, never reused.",
                 "type": "string"
+              },
+              "keyed_names": {
+                "description": "Default true on an encrypted connection: object names are a keyed MAC of the digest (R-STOR-086); refused on a connection that is not encrypted; fixed once the connection holds data.",
+                "type": "boolean"
               },
               "payload_checksum": {
                 "description": "sha256 (default), md5 or none.",

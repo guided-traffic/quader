@@ -1801,7 +1801,10 @@ Acceptance criteria:
 Priority: **P1** · Covers: quader-only
 
 What the backup and the restore do with the copies of an encrypted connection ([storage.md](storage.md) R-STOR-075 to R-STOR-091, stage 2 of
-the owner's topic of 2026-11-22). Specified, not built.
+the owner's topic of 2026-11-22). Specified, not built. Since encrypted connections are accepted (storage.md R-STOR-075, package 3), and until
+this is built, `quader backup create` refuses to run while a connection is encrypted and `quader backup restore` refuses when its first
+connection without drain is encrypted, each with a configuration error naming the connection
+([storage.md](storage.md#q-stor-384--until-the-jobs-read-the-stored-format-each-passes-over-or-refuses-an-encrypted-connection) Q-STOR-384).
 
 - **The pool keeps the copy as stored** ([Q-BAK-65](#q-bak-65--the-pool-keeps-an-encrypted-copy-as-stored-with-its-record-under-the-digests-name)):
   when R-BAK-030 picks a copy on an encrypted connection, the pool object `pool/sha256/<h0h1>/<h2h3>/<hex>.<key id>` is that copy's

@@ -72,29 +72,26 @@ func Staged(conn string, d Digests, key string) *Spooled {
 func (s *Spooled) StagedKey() string { return s.staged }
 
 // putStaged is the object write of a staged blob (R-STOR-054): the server-side copy on the session's connection, confirmed by
-// its size, recorded present and not verified (the scrub reads it first). With min_copies above 1 the content object is then
-// streamed through the replica's spool to the next writable connections, hashed against the session's digests; those copies
-// are verified where the connection enforces its payload checksum.
+// its size, recorded present and not verified (the scrub reads it first); on an encrypted connection the copy carries the record or
+// the staging object is streamed (finalizeSealed, R-STOR-081). With min_copies above 1 the content object is then read through the
+// connection's reader and streamed through the replica's spool to the next writable connections, hashed against the session's
+// digests; those copies are verified where the connection enforces its payload checksum, and an encrypted one gets its own data key.
 func (s *Store) putStaged(ctx context.Context, sp *Spooled) ([]copyWrite, error) {
 	c, ok := s.conns.Get(sp.stagedOn)
 	if !ok {
 		return nil, storeUnavailable(fmt.Errorf("the connection %q of the upload session is not configured on this replica", sp.stagedOn))
 	}
-	key := c.ObjectKey(sp.SHA256)
-	if err := c.Objects().Copy(ctx, sp.staged, key, sp.Size, nil); err != nil {
-		if errors.Is(err, ErrNotFound) {
-			return nil, fmt.Errorf("copy %s: %w", sp.staged, ErrStagingGone)
-		}
-		return nil, mapStoreErr(err)
+	var first copyWrite
+	var err error
+	if c.Encrypted() {
+		first, err = s.finalizeSealed(ctx, c, sp)
+	} else {
+		first, err = s.copyStaged(ctx, c, sp)
 	}
-	info, err := c.Objects().Head(ctx, key)
 	if err != nil {
-		return nil, mapStoreErr(err)
+		return nil, err
 	}
-	if info.Size >= 0 && info.Size != sp.Size { // -1: the store did not say; stage 1 stores the blob's bytes
-		return nil, fmt.Errorf("object %s on connection %s has %d bytes after the copy, expected %d", key, c.ID(), info.Size, sp.Size)
-	}
-	writes := []copyWrite{{conn: c, key: key, storedSize: sp.Size, at: s.now()}}
+	writes := []copyWrite{first}
 	need := s.minCopies() - 1
 	if need == 0 {
 		return writes, nil
@@ -108,7 +105,7 @@ func (s *Store) putStaged(ctx context.Context, sp *Spooled) ([]copyWrite, error)
 	if len(others) < need {
 		return writes, s.notEnoughConnections(nil)
 	}
-	body, _, err := c.Read(ctx, Copy{Connection: c.ID(), ObjectKey: key, StoredSize: sp.Size}, nil)
+	body, _, err := c.ReadBlob(ctx, sp.SHA256, sp.Size, Copy{Connection: c.ID(), ObjectKey: first.key, StoredSize: first.storedSize}, nil, false)
 	if err != nil {
 		return writes, mapStoreErr(err)
 	}
@@ -127,6 +124,25 @@ func (s *Store) putStaged(ctx context.Context, sp *Spooled) ([]copyWrite, error)
 	defer local.Close()
 	more, err := s.writeTo(ctx, local, others, need)
 	return append(writes, more...), err
+}
+
+// copyStaged is the server-side copy of a staged blob on a plain connection (R-STOR-054), confirmed by its size.
+func (s *Store) copyStaged(ctx context.Context, c *Connection, sp *Spooled) (copyWrite, error) {
+	key := c.ObjectKey(sp.SHA256)
+	if err := c.Objects().Copy(ctx, sp.staged, key, sp.Size, nil); err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return copyWrite{}, fmt.Errorf("copy %s: %w", sp.staged, ErrStagingGone)
+		}
+		return copyWrite{}, mapStoreErr(err)
+	}
+	info, err := c.Objects().Head(ctx, key)
+	if err != nil {
+		return copyWrite{}, mapStoreErr(err)
+	}
+	if info.Size >= 0 && info.Size != sp.Size { // -1: the store did not say; a plain connection stores the blob's bytes
+		return copyWrite{}, fmt.Errorf("object %s on connection %s has %d bytes after the copy, expected %d", key, c.ID(), info.Size, sp.Size)
+	}
+	return copyWrite{conn: c, key: key, storedSize: sp.Size, at: s.now()}, nil
 }
 
 // errNotReadable is what a reader of a staged blob returns: its bytes are in the bucket, not in the spool.

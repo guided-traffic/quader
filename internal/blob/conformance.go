@@ -226,6 +226,7 @@ func ConformanceChecks() []ConformanceCheck {
 		{Name: "an object's metadata survives its write", Optional: true, Capability: true, Run: checkMetadata},
 		{Name: "a copy onto itself replaces the metadata and keeps the object's bytes", Optional: true, Capability: true, Run: checkCopyReplacesMetadata},
 		{Name: "a server-side copy from each other connection on this endpoint", Optional: true, Capability: true, Run: checkPeerCopies},
+		{Name: "an object of the stored format keeps its record through a write, a whole and a ranged read and a copy that replaces it", Run: checkSealedObject},
 	}
 }
 

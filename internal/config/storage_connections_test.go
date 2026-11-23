@@ -72,10 +72,6 @@ func TestR_STOR_050_ConnectionsInTheConfiguration(t *testing.T) {
 			two("{id: one, bucket: a, endpoint: s3.example.com}", "{id: two, bucket: a, endpoint: \"https://S3.example.com/\", prefix: quader/a}"),
 			"storage.connections[1] (two): lies at the location of connections[0] (one)",
 		},
-		{
-			"encrypted: true", "storage:\n  connections:\n    - {bucket: a, encrypted: true}\n",
-			"storage.connections[0] (default): encrypted: true is not supported yet: the encryption of stored content is not built (storage.md R-STOR-050)",
-		},
 		{"drain: true on every element", two("{id: one, bucket: a, drain: true}", "{id: two, bucket: b, drain: true}"), "storage.connections every element has drain: true"},
 		{
 			"min_copies: 3 with two elements", two("{id: one, bucket: a}", "{id: two, bucket: b}") + "  replication:\n    min_copies: 3\n",

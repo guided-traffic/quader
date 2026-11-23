@@ -120,7 +120,16 @@ func restoreConnections(ctx context.Context, cfg *config.Config, out *outbound.F
 		return nil, err
 	}
 	res := make([]restore.Connection, 0, len(conns))
+	sink := true
 	for i, el := range conns {
+		if sink && !el.Drain {
+			sink = false
+			if el.Encrypted {
+				// the restore writes the pool's objects as they lie into the first connection without drain; into an encrypted one
+				// that would be the blobs in the clear, and its table and drawing of keys are not built (backup-and-restore.md R-BAK-031)
+				return nil, fmt.Errorf("storage.connections[%d] (%s): encrypted: a restore into an encrypted connection is not built yet; put a connection that is not encrypted first (backup-and-restore.md R-BAK-031)", i, el.ID)
+			}
+		}
 		cc := config.ClientConfig(i, el, cfg.Storage.ObjectStore)
 		client, err := s3.NewFromFactory(ctx, cc, out)
 		if err != nil {

@@ -83,7 +83,7 @@ func TestR_STOR_051_AConnectionsLifeAndItsFixedProperties(t *testing.T) {
 		}
 		_, err = memStore(t, p, moved, a, b)
 		var refused *blob.Refusal
-		if !errors.As(err, &refused) || !strings.Contains(err.Error(), "storage.connections[0] (primary): bucket, prefix and encrypted are fixed: the connection holds 1 copies in bucket-primary/quader") ||
+		if !errors.As(err, &refused) || !strings.Contains(err.Error(), "storage.connections[0] (primary): bucket, prefix, encrypted and keyed_names are fixed: the connection holds 1 copies in bucket-primary/quader") ||
 			!strings.Contains(err.Error(), "add a connection with another id and set drain: true on this one") {
 			t.Fatalf("got %v", err)
 		}

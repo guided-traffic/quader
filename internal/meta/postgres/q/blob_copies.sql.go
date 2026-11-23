@@ -124,25 +124,27 @@ func (q *Queries) DeleteConnectionQueue(ctx context.Context, id string) (int64, 
 }
 
 const insertStorageConnection = `-- name: InsertStorageConnection :execrows
-INSERT INTO storage_connections (id, bucket, prefix, encrypted)
-VALUES ($1::text, $2::text, $3::text, $4::boolean)
+INSERT INTO storage_connections (id, bucket, prefix, encrypted, keyed_names)
+VALUES ($1::text, $2::text, $3::text, $4::boolean, $5::boolean)
 ON CONFLICT (id) DO NOTHING
 `
 
 type InsertStorageConnectionParams struct {
-	ID        string
-	Bucket    string
-	Prefix    string
-	Encrypted bool
+	ID         string
+	Bucket     string
+	Prefix     string
+	Encrypted  bool
+	KeyedNames bool
 }
 
-// The first sight of a connection (R-STOR-051).
+// The first sight of a connection (R-STOR-051), with its fixed properties; keyed_names is the detail of an encrypted one (R-STOR-075).
 func (q *Queries) InsertStorageConnection(ctx context.Context, arg InsertStorageConnectionParams) (int64, error) {
 	result, err := q.db.Exec(ctx, insertStorageConnection,
 		arg.ID,
 		arg.Bucket,
 		arg.Prefix,
 		arg.Encrypted,
+		arg.KeyedNames,
 	)
 	if err != nil {
 		return 0, err
@@ -178,15 +180,16 @@ func (q *Queries) LockBlobForMark(ctx context.Context, sha256 []byte) ([]string,
 }
 
 const lockStorageConnection = `-- name: LockStorageConnection :many
-SELECT id, bucket, prefix, encrypted, retired_at FROM storage_connections WHERE id = $1::text FOR UPDATE
+SELECT id, bucket, prefix, encrypted, keyed_names, retired_at FROM storage_connections WHERE id = $1::text FOR UPDATE
 `
 
 type LockStorageConnectionRow struct {
-	ID        string
-	Bucket    string
-	Prefix    string
-	Encrypted bool
-	RetiredAt pgtype.Timestamptz
+	ID         string
+	Bucket     string
+	Prefix     string
+	Encrypted  bool
+	KeyedNames bool
+	RetiredAt  pgtype.Timestamptz
 }
 
 // The row of a connection while a replica compares its fixed properties with its element; the lock makes two replicas that
@@ -205,6 +208,7 @@ func (q *Queries) LockStorageConnection(ctx context.Context, id string) ([]LockS
 			&i.Bucket,
 			&i.Prefix,
 			&i.Encrypted,
+			&i.KeyedNames,
 			&i.RetiredAt,
 		); err != nil {
 			return nil, err
@@ -238,11 +242,11 @@ func (q *Queries) PrefixUnboundCopyKeys(ctx context.Context, arg PrefixUnboundCo
 }
 
 const putBlobCopy = `-- name: PutBlobCopy :exec
-INSERT INTO blob_copies (sha256, connection_id, object_key, stored_size, state, created_at, verified_at, checked_at, state_changed_at)
-VALUES ($1::bytea, $2::text, $3::text, $4::bigint, 'present',
-        now(), CASE WHEN $5::boolean THEN now() END, now(), now())
+INSERT INTO blob_copies (sha256, connection_id, object_key, stored_size, storage_key_id, state, created_at, verified_at, checked_at, state_changed_at)
+VALUES ($1::bytea, $2::text, $3::text, $4::bigint,
+        NULLIF($5::text, ''), 'present', now(), CASE WHEN $6::boolean THEN now() END, now(), now())
 ON CONFLICT (sha256, connection_id) DO UPDATE
-   SET object_key = EXCLUDED.object_key, stored_size = EXCLUDED.stored_size, storage_key_id = NULL, created_at = EXCLUDED.created_at,
+   SET object_key = EXCLUDED.object_key, stored_size = EXCLUDED.stored_size, storage_key_id = EXCLUDED.storage_key_id, created_at = EXCLUDED.created_at,
        verified_at = COALESCE(EXCLUDED.verified_at, CASE WHEN blob_copies.state = 'present' THEN blob_copies.verified_at END),
        checked_at = EXCLUDED.checked_at,
        state_changed_at = CASE WHEN blob_copies.state = 'present' THEN blob_copies.state_changed_at ELSE EXCLUDED.state_changed_at END,
@@ -255,17 +259,20 @@ type PutBlobCopyParams struct {
 	ConnectionID string
 	ObjectKey    string
 	StoredSize   int64
+	StorageKeyID string
 	Verified     bool
 }
 
 // The copy of an object a commit wrote (R-STOR-053): inserted present, or a missing, corrupt or present row overwritten; a copy
-// claimed for deletion is left to collection. verified_at is now when the write showed the whole object to be the blob.
+// claimed for deletion is left to collection. verified_at is now when the write showed the whole object to be the blob. On an
+// encrypted connection storage_key_id names the storage key that wrapped the object's data key (R-STOR-080); empty is NULL.
 func (q *Queries) PutBlobCopy(ctx context.Context, arg PutBlobCopyParams) error {
 	_, err := q.db.Exec(ctx, putBlobCopy,
 		arg.Sha256,
 		arg.ConnectionID,
 		arg.ObjectKey,
 		arg.StoredSize,
+		arg.StorageKeyID,
 		arg.Verified,
 	)
 	return err
@@ -473,23 +480,26 @@ func (q *Queries) StorageConnections(ctx context.Context) ([]StorageConnectionsR
 }
 
 const updateStorageConnectionLocation = `-- name: UpdateStorageConnectionLocation :exec
-UPDATE storage_connections SET bucket = $1::text, prefix = $2::text, encrypted = $3::boolean
- WHERE id = $4::text
+UPDATE storage_connections SET bucket = $1::text, prefix = $2::text, encrypted = $3::boolean,
+       keyed_names = $4::boolean
+ WHERE id = $5::text
 `
 
 type UpdateStorageConnectionLocationParams struct {
-	Bucket    string
-	Prefix    string
-	Encrypted bool
-	ID        string
+	Bucket     string
+	Prefix     string
+	Encrypted  bool
+	KeyedNames bool
+	ID         string
 }
 
-// A connection that holds no copy takes the bucket, prefix and encrypted of its element (R-STOR-051).
+// A connection that holds no copy takes the bucket, prefix, encrypted and keyed_names of its element (R-STOR-051, R-STOR-075).
 func (q *Queries) UpdateStorageConnectionLocation(ctx context.Context, arg UpdateStorageConnectionLocationParams) error {
 	_, err := q.db.Exec(ctx, updateStorageConnectionLocation,
 		arg.Bucket,
 		arg.Prefix,
 		arg.Encrypted,
+		arg.KeyedNames,
 		arg.ID,
 	)
 	return err

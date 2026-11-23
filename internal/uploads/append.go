@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/blobcrypt"
 	"github.com/guided-traffic/quader/internal/errs"
 )
 
@@ -71,10 +72,14 @@ func (s *Service) Append(ctx context.Context, id uuid.UUID, sc Scope, offset int
 
 	st := &streamState{received: r.Received}
 	p, err := s.writable(ctx, &r, writer)
+	if err == nil {
+		p, err = s.withCrypt(p, r)
+	}
 	if err != nil {
 		held = !errors.Is(err, errLostClaim)
 		return s.failed(ctx, r, st, err)
 	}
+	defer p.close()
 	res, err := s.stream(ctx, p, r, writer, body, limit, st)
 	if err != nil {
 		held = !errors.Is(err, errLostClaim)
@@ -118,6 +123,8 @@ func (s *Service) failed(ctx context.Context, r row, st *streamState, err error)
 	case errors.Is(err, errTooLarge):
 		s.abortAndClean(ctx, r, blob.SessionAborted)
 		return st.received, err
+	case errors.Is(err, errKindChanged):
+		return st.received, s.failSession(ctx, r, "the connection of the upload changed its encryption", err)
 	}
 	return st.received, err
 }
@@ -165,6 +172,11 @@ func (s *Service) claim(ctx context.Context, id uuid.UUID, sc Scope, offset int6
 	}
 	if cur.State != StateOpen {
 		return row{}, "", unknown()
+	}
+	if isExhausted(cur) && !cur.Claimed && (offset < 0 || offset == cur.Received) {
+		// the session would seal more segments under its data key than one key may: it is aborted (R-STOR-081, Q-STOR-318)
+		s.abortAndClean(ctx, cur, blob.SessionAborted)
+		return cur, "", exhausted()
 	}
 	if cur.Claimed {
 		return cur, "", outOfOrder("Another request holds the upload.")
@@ -257,7 +269,7 @@ func (s *Service) stream(ctx context.Context, p pin, r row, writer string, body 
 			}
 			part = joined
 		}
-		pt, created, serr := s.sendPart(ctx, p, r.ID, uploadID, number, part, s.renewer(r.ID, writer))
+		pt, created, serr := s.sendPart(ctx, p, r.ID, uploadID, number, part, int64(number-1)*r.PartSize, nil, s.renewer(r.ID, writer))
 		_ = part.Close()
 		if serr != nil {
 			return streamed{}, serr
@@ -325,10 +337,16 @@ func (s *Service) endOfBody(ctx context.Context, p pin, r row, writer string, h 
 				out.oldObjects = append(out.oldObjects, p.tailKey(r.ID, t.Writer))
 			}
 		}
-		if err := p.objects().Put(ctx, key, write.Reader(), write.Size, p.checksumOf(write), nil); err != nil {
+		// the tail object starts at the session offset h.n - write.Size: after the recorded tail, or where the merged tail starts
+		body, size, sum, sealed, terr := p.tailBody(write, h.n-write.Size)
+		if terr != nil {
+			return streamed{}, errs.E(errs.Internal, errs.CodeInternal, "", errs.WithCause(terr))
+		}
+		if err := p.objects().Put(ctx, key, body, size, sum, nil); err != nil {
 			return streamed{}, blob.MapStoreError(err)
 		}
 		out.newObjects = []string{key}
+		out.e.Segments = sealed
 		out.e.NewTail = &tailSeg{Seq: next, Writer: writer, Size: write.Size, SHA256: bytes.Clone(write.SHA256[:])}
 		if out.e.ReplaceTails {
 			out.e.TailSize = write.Size
@@ -353,7 +371,7 @@ func (s *Service) joinTails(ctx context.Context, p pin, r row, tails []tailSeg, 
 			return nil, err
 		}
 	}
-	src := &segReader{ctx: ctx, p: p, id: r.ID, tails: tails}
+	src := &segReader{ctx: ctx, p: p, id: r.ID, tails: tails, offset: r.Received - r.TailSize}
 	defer src.Close()
 	var body io.Reader
 	if extra != nil {
@@ -398,10 +416,11 @@ func extraSize(b *blob.Spooled) int64 {
 // part outlives the claim it was started under (a stale writer's part would otherwise land after the recorded one).
 func (s *Service) partDeadline() time.Duration { return s.cfg.WriterLease - s.cfg.WriterLease/4 }
 
-// sendPart sends a full segment as the part with the given number. The multipart upload is created here, with the first part, and its
-// id returned as created for the record. With renew the claim is extended right before the upload, and a request that lost it sends
-// nothing (errLostClaim); a finalize that took the short claim of its step has just done that.
-func (s *Service) sendPart(ctx context.Context, p pin, id uuid.UUID, uploadID string, number int, seg *blob.Spooled, renew func(context.Context) error) (sent part, created string, err error) {
+// sendPart sends a full segment as the part with the given number, whose plain bytes start at the session offset offset; on an
+// encrypted connection as its data segments, with the final segment after them when final is set (R-STOR-081). The multipart upload is
+// created here, with the first part, and its id returned as created for the record. With renew the claim is extended right before the
+// upload, and a request that lost it sends nothing (errLostClaim); a finalize that took the short claim of its step has just done that.
+func (s *Service) sendPart(ctx context.Context, p pin, id uuid.UUID, uploadID string, number int, seg *blob.Spooled, offset int64, final *blobcrypt.Final, renew func(context.Context) error) (sent part, created string, err error) {
 	// The claim is checked before anything is created: a request that lost it creates no upload that nobody would record or abort.
 	if renew != nil {
 		if err := renew(ctx); err != nil {
@@ -426,13 +445,21 @@ func (s *Service) sendPart(ctx context.Context, p pin, id uuid.UUID, uploadID st
 			}
 		}
 	}
+	body, size, sum, stored, sealed, err := p.partBody(seg, offset, final)
+	if err != nil {
+		return part{}, "", errs.E(errs.Internal, errs.CodeInternal, "", errs.WithCause(err))
+	}
 	pctx, cancel := context.WithTimeout(ctx, s.partDeadline())
 	defer cancel()
-	up, err := p.objects().UploadPart(pctx, p.dataKey(id), uploadID, number, seg.Reader(), seg.Size, p.checksumOf(seg))
+	up, err := p.objects().UploadPart(pctx, p.dataKey(id), uploadID, number, body, size, sum)
 	if err != nil {
 		return part{}, "", blob.MapStoreError(err)
 	}
-	return part{Number: number, Size: seg.Size, ETag: up.ETag, SHA256: bytes.Clone(seg.SHA256[:])}, created, nil
+	sent = part{Number: number, ETag: up.ETag, StoredSize: size, StoredSHA256: stored, Segments: sealed}
+	if seg != nil {
+		sent.Size, sent.SHA256 = seg.Size, bytes.Clone(seg.SHA256[:])
+	}
+	return sent, created, nil
 }
 
 // abortUpload aborts a multipart upload of the session that no record names, with a context of its own.
@@ -511,14 +538,17 @@ func (t *tailReader) Read(p []byte) (int, error) {
 	return n, err
 }
 
-// segReader reads the tail segments one after the other, opening each object when the one before it has ended.
+// segReader reads the tail segments one after the other, opening each object when the one before it has ended. offset is the
+// session offset of the next one: the tail objects lie one after the other from the end of the last part, and an encrypted one is
+// sealed at its offset (R-STOR-081).
 type segReader struct {
-	ctx   context.Context
-	p     pin
-	id    uuid.UUID
-	tails []tailSeg
-	cur   *tailReader
-	rc    io.Closer
+	ctx    context.Context
+	p      pin
+	id     uuid.UUID
+	tails  []tailSeg
+	offset int64
+	cur    *tailReader
+	rc     io.Closer
 }
 
 func (g *segReader) Read(p []byte) (int, error) {
@@ -529,7 +559,7 @@ func (g *segReader) Read(p []byte) (int, error) {
 			}
 			t := g.tails[0]
 			g.tails = g.tails[1:]
-			rc, _, err := g.p.objects().Get(g.ctx, g.p.tailKey(g.id, t.Writer), nil)
+			rc, info, err := g.p.objects().Get(g.ctx, g.p.tailKey(g.id, t.Writer), nil)
 			if err != nil {
 				if errors.Is(err, blob.ErrNotFound) {
 					return 0, errTailGone
@@ -537,7 +567,12 @@ func (g *segReader) Read(p []byte) (int, error) {
 				return 0, blob.MapStoreError(err)
 			}
 			g.rc = rc
-			g.cur = &tailReader{r: rc, h: sha256.New(), size: t.Size, want: t.SHA256}
+			plain, err := g.p.openTail(rc, g.offset, t, info.Size)
+			if err != nil {
+				return 0, err
+			}
+			g.offset += t.Size
+			g.cur = &tailReader{r: plain, h: sha256.New(), size: t.Size, want: t.SHA256}
 		}
 		n, err := g.cur.Read(p)
 		if errors.Is(err, io.EOF) {

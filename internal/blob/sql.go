@@ -194,7 +194,7 @@ func (pgRows) PutCopy(ctx context.Context, tx meta.Tx, d Digest, w CopyWrite) er
 		return err
 	}
 	return qs.PutBlobCopy(ctx, q.PutBlobCopyParams{
-		Sha256: d.Bytes(), ConnectionID: w.Connection, ObjectKey: w.Key, StoredSize: w.StoredSize, Verified: w.Verified,
+		Sha256: d.Bytes(), ConnectionID: w.Connection, ObjectKey: w.Key, StoredSize: w.StoredSize, StorageKeyID: w.StorageKeyID, Verified: w.Verified,
 	})
 }
 

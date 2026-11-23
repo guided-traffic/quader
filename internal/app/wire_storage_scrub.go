@@ -52,7 +52,7 @@ func (a *App) wireStorageScrub(_ context.Context, area blobArea) error {
 		return nil
 	}
 	log := a.log.With("component", "scrub")
-	conns := area.store.Connections()
+	conns := scrubbed(area.store.Connections(), log)
 	s, err := scrub.New(scrub.Options{
 		Connections: conns,
 		Ledger:      scrub.PGLedger{DB: db, Store: area.store, Log: log},
@@ -67,6 +67,19 @@ func (a *App) wireStorageScrub(_ context.Context, area blobArea) error {
 	a.scrub.set(s)
 	a.tele.metrics.DBGauges().Add(scrub.OverdueGauge(db, conns))
 	return nil
+}
+
+// scrubbed is the connections the scrub reads: every one but the encrypted ones, which it passes over until it reads the stored
+// format (package 4 of docs/developer/stored-content-encryption.md, R-STOR-087). Read through a connection's reader an encrypted copy
+// yields its plaintext, whose length is not the copy's stored size, so the stage-1 scrub would mark every such copy corrupt; it
+// neither reads, marks, repairs nor counts one as overdue, and says so once at the start.
+func scrubbed(conns *blob.Connections, log interface{ Warn(string, ...any) }) *blob.Connections {
+	return conns.Without(func(c *blob.Connection) bool {
+		if c.Encrypted() {
+			log.Warn("the scrub passes over an encrypted connection until it reads the stored format", "connection", c.ID())
+		}
+		return c.Encrypted()
+	})
 }
 
 // blobDamaged writes system.storage.blob_damaged when a detection (a read, the scrub, its recheck, the reconciliation's source)

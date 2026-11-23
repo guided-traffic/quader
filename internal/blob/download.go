@@ -9,6 +9,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/blob/blobcrypt"
 	"github.com/guided-traffic/quader/internal/meta"
 )
 
@@ -47,6 +48,10 @@ type OpenOptions struct {
 // or a body read to its end with another digest corrupt; the blob's content state follows from its copies (R-STOR-052), so a
 // copy's damage changes the blob only when no other copy is present. A transport error or an open circuit marks nothing.
 //
+// A copy on an encrypted connection is read through its reader (ReadBlob, R-STOR-082): the record opens before the first byte and
+// every segment authenticates as it is read. A refusal marks the copy corrupt unless its reason says otherwise (unknown_key marks
+// nothing, Q-STOR-311) and is counted by its reason; before the first byte the read falls over to the next copy.
+//
 // The reader is charged to the memory of the request of ctx (WithMemory) from
 // before the object store is asked until it is closed: DownloadCost of the
 // object, or RangeCost of the range.
@@ -81,7 +86,9 @@ func (s *Store) Open(ctx context.Context, d Digest, size int64, o OpenOptions) (
 			unavailable = &circuitOpenError{retry: after}
 			continue
 		}
-		body, info, err := c.Read(ctx, cp, o.Range)
+		verify := o.Range == nil && (s.cfg.Download.Verify || o.Verify)
+		body, info, err := c.ReadBlob(ctx, d, size, cp, o.Range, verify)
+		reason, refused := blobcrypt.ReasonOf(err)
 		switch {
 		case errors.Is(err, ErrNotFound):
 			s.metrics.fellOver(c.ID(), fallOverNotFound)
@@ -90,10 +97,24 @@ func (s *Store) Open(ctx context.Context, d Digest, size int64, o OpenOptions) (
 		case err != nil && (errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)) && ctx.Err() != nil:
 			undo()
 			return nil, err // the caller gave up
+		case refused:
+			// a check of the stored format refused the object before its first byte (R-STOR-082): evidence about the copy, which is
+			// marked, unless the reason is one that is not (unknown_key: the export's import can bring the key back, Q-STOR-311)
+			s.metrics.fellOver(c.ID(), fallOverRecord)
+			if reason.MarksCorrupt() {
+				s.markCopy(ctx, d, c.ID(), CopyCorrupt)
+				corrupt = fmt.Errorf("%w: connection %s: %w", ErrCorrupt, c.ID(), err)
+			} else {
+				unavailable = storeUnavailable(err)
+			}
+			continue
 		case err != nil:
 			s.metrics.fellOver(c.ID(), fallOverUnavailable)
 			unavailable = err
 			continue
+		}
+		if c.Encrypted() {
+			return &sealedDownload{body: body, store: s, ctx: ctx, digest: d, copy: cp, stamp: verify, undo: undo}, nil
 		}
 		if info.Size >= 0 && info.Size != cp.StoredSize { // -1: the response did not say; the digest check at the end decides
 			_ = body.Close()
@@ -102,7 +123,7 @@ func (s *Store) Open(ctx context.Context, d Digest, size int64, o OpenOptions) (
 			corrupt = fmt.Errorf("%w: the object on connection %s has %d bytes, its copy row says %d", ErrCorrupt, c.ID(), info.Size, cp.StoredSize)
 			continue
 		}
-		if o.Range != nil || (!s.cfg.Download.Verify && !o.Verify) {
+		if !verify {
 			return &chargedBody{ReadCloser: body, undo: undo}, nil
 		}
 		return &verifyReader{

@@ -34,6 +34,7 @@ type Metrics struct {
 	damaged         *prometheus.CounterVec
 	copiesDamaged   *prometheus.CounterVec
 	readsFallenOver *prometheus.CounterVec
+	sealedFailures  *prometheus.CounterVec
 
 	uploadSessions *prometheus.CounterVec
 }
@@ -62,6 +63,7 @@ func NewMetrics(m *observability.Metrics) *Metrics {
 		damaged:         m.NewCounterVec("quader_storage_blobs_damaged_total", "Blobs marked damaged by a detection, by new status.", "status"),
 		copiesDamaged:   m.NewCounterVec("quader_storage_copies_damaged_total", "Copies of blobs marked damaged by a detection, by connection and new status (R-STOR-055).", "connection", "status"),
 		readsFallenOver: m.NewCounterVec("quader_storage_reads_fallen_over_total", "Reads that left a copy for the next before their first byte, by connection and reason (R-STOR-055).", "connection", "reason"),
+		sealedFailures:  m.NewCounterVec("quader_storage_encrypted_read_failures_total", "Reads of a stored object refused by a check of the stored format, by connection and the step's reason (R-STOR-082).", "connection", "reason"),
 
 		uploadSessions: m.NewCounterVec("quader_storage_upload_sessions_total", "Multi-request upload sessions by how they ended: completed, aborted or expired (R-STOR-011).", "outcome"),
 	}
@@ -128,7 +130,15 @@ const (
 	fallOverNotFound    = "not_found"   // the connection answered "no such object"
 	fallOverUnavailable = "unavailable" // a transient error or an open circuit
 	fallOverSize        = "size"        // a Content-Length other than the copy's stored size
+	fallOverRecord      = "record"      // a check of the stored format refused the object before its first byte (R-STOR-082)
 )
+
+// encryptedReadFailure counts a read refused by a check of the stored format, by its reason (R-STOR-082).
+func (m *Metrics) encryptedReadFailure(conn, reason string) {
+	if m != nil {
+		m.sealedFailures.WithLabelValues(conn, reason).Inc()
+	}
+}
 
 // copyDamaged counts a copy marked missing or corrupt (R-STOR-055, R-STOR-027).
 func (m *Metrics) copyDamaged(conn, status string) {

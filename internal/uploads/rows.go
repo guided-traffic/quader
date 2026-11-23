@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/blobcrypt"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
@@ -53,6 +54,10 @@ type row struct {
 	Parts  int
 	// Conn is the id of the connection the session lives on (upload_sessions.connection_id, R-STOR-054).
 	Conn string
+	// SealedKey is the session's data key sealed with the key ring on an encrypted connection (upload_sessions.sealed_data_key,
+	// R-STOR-081), empty on a plain one; SealedSegments counts what its requests sealed and reserved (Q-STOR-318).
+	SealedKey      string
+	SealedSegments int64
 }
 
 // tailSeg is one recorded segment of the tail: the object tail-<Writer>, written by the request of that claim token (Q-STOR-174).
@@ -63,12 +68,16 @@ type tailSeg struct {
 	SHA256 []byte
 }
 
-// part is a recorded part of the multipart upload.
+// part is a recorded part of the multipart upload: its plain size and SHA-256, and its size and SHA-256 as sent (equal on a plain
+// connection, R-STOR-081). Segments is what it sealed on an encrypted connection, counted with its record and not stored.
 type part struct {
-	Number int
-	Size   int64
-	ETag   string
-	SHA256 []byte
+	Number       int
+	Size         int64
+	ETag         string
+	SHA256       []byte
+	StoredSize   int64
+	StoredSHA256 []byte
+	Segments     int64
 }
 
 // end is what a request records when its body has ended.
@@ -82,6 +91,8 @@ type end struct {
 	// Completing records the digest and moves the session to completing (a finalize whose digest matched).
 	Completing bool
 	Digest     []byte
+	// Segments is what the tail object of the request sealed on an encrypted connection (R-STOR-081).
+	Segments int64
 }
 
 // errLostClaim says that a conditional write found another writer's token: the request lost its claim.
@@ -122,9 +133,10 @@ type rows interface {
 	deleteCleaned(ctx context.Context, id uuid.UUID) error
 	// abort ends a live session; it reports whether it was live.
 	abort(ctx context.Context, id uuid.UUID) (live bool, uploadID string, err error)
-	// move records another connection for an open session that has written nothing, conditional on the writer token
-	// (R-STOR-054); errLostClaim if the request does not hold the claim any more or the session has written meanwhile.
-	move(ctx context.Context, id uuid.UUID, writer, conn string) error
+	// move records another connection for an open session that has written nothing, with the sealed data key it needs there (empty
+	// on a plain connection), conditional on the writer token (R-STOR-054, R-STOR-081); errLostClaim if the request does not hold
+	// the claim any more or the session has written meanwhile.
+	move(ctx context.Context, id uuid.UUID, writer, conn, sealedKey string) error
 }
 
 var errAborted = errors.New("the upload session was aborted")
@@ -169,6 +181,7 @@ func (p pgRows) insert(ctx context.Context, r row, maxOpen int) (started bool, e
 		n, err := qs.UploadInsertSession(ctx, q.UploadInsertSessionParams{
 			ID: r.ID.String(), RepoID: r.RepoID, AddressedRepoID: r.AddressedID, Binding: r.Binding, PrincipalID: r.Principal,
 			HashState: r.HashState, PartSize: r.PartSize, S3UploadID: r.UploadID, MaxOpen: int64(maxOpen), ConnectionID: r.Conn,
+			SealedDataKey: r.SealedKey,
 		})
 		started = n > 0
 		return err
@@ -185,6 +198,7 @@ func fromRow(g q.UploadGetSessionRow) (row, error) {
 		ID: id, RepoID: g.RepoID, AddressedID: g.AddressedRepoID, Binding: g.Binding, Principal: g.PrincipalID, Received: g.Received,
 		HashState: g.HashState, PartSize: g.PartSize, UploadID: g.S3UploadID, TailSize: g.TailSize, Writer: g.Writer, ItemID: g.ItemID,
 		Claimed: g.Claimed, Digest: g.Digest, State: State(g.State), TooOld: g.TooOld, Parts: int(g.Parts), Conn: g.ConnectionID,
+		SealedKey: g.SealedDataKey, SealedSegments: g.SealedSegments,
 	}, nil
 }
 
@@ -223,6 +237,7 @@ func (p pgRows) claim(ctx context.Context, id uuid.UUID, writer string, offset i
 	err = p.do(ctx, func(qs *q.Queries) error {
 		n, err := qs.UploadClaim(ctx, q.UploadClaimParams{
 			ID: id.String(), Writer: writer, ClaimOffset: offset, LeaseSeconds: lease.Seconds(), MaxAgeSeconds: maxAge.Seconds(),
+			MaxSegments: blobcrypt.MaxSegmentsPerKey,
 		})
 		if err != nil || n == 0 {
 			ok = false
@@ -238,6 +253,7 @@ func (p pgRows) recordPart(ctx context.Context, id uuid.UUID, writer string, rec
 	return p.do(ctx, func(qs *q.Queries) error {
 		n, err := qs.UploadRecordPart(ctx, q.UploadRecordPartParams{
 			ID: id.String(), Writer: writer, Received: received, HashState: hashState, LeaseSeconds: lease.Seconds(), UploadID: uploadID,
+			Segments: pt.Segments,
 		})
 		if err != nil {
 			return err
@@ -257,6 +273,7 @@ func (p pgRows) recordPart(ctx context.Context, id uuid.UUID, writer string, rec
 func insertPart(ctx context.Context, qs *q.Queries, id uuid.UUID, pt part) error {
 	n, err := qs.UploadInsertPart(ctx, q.UploadInsertPartParams{
 		SessionID: id.String(), PartNumber: int32(pt.Number), Size: pt.Size, Etag: pt.ETag, Sha256: pt.SHA256, //nolint:gosec // at most 10,000
+		StoredSize: pt.StoredSize, StoredSha256: pt.StoredSHA256,
 	})
 	if err != nil {
 		return err
@@ -306,7 +323,7 @@ func (p pgRows) recordEnd(ctx context.Context, id uuid.UUID, writer string, e en
 	return p.do(ctx, func(qs *q.Queries) error {
 		n, err := qs.UploadRecordEnd(ctx, q.UploadRecordEndParams{
 			ID: id.String(), Writer: writer, Received: e.Received, HashState: e.HashState, TailSize: e.TailSize,
-			Completing: e.Completing, Digest: e.Digest,
+			Completing: e.Completing, Digest: e.Digest, Segments: e.Segments,
 		})
 		if err != nil {
 			return err
@@ -342,7 +359,7 @@ func (p pgRows) parts(ctx context.Context, id uuid.UUID) (out []part, err error)
 		}
 		out = make([]part, len(rs))
 		for i, r := range rs {
-			out[i] = part{Number: int(r.PartNumber), Size: r.Size, ETag: r.Etag, SHA256: r.Sha256}
+			out[i] = part{Number: int(r.PartNumber), Size: r.Size, ETag: r.Etag, SHA256: r.Sha256, StoredSize: r.StoredSize, StoredSHA256: r.StoredSha256}
 		}
 		return nil
 	})
@@ -351,7 +368,7 @@ func (p pgRows) parts(ctx context.Context, id uuid.UUID) (out []part, err error)
 
 func (p pgRows) completeTail(ctx context.Context, id uuid.UUID, writer string, pt part) error {
 	return p.do(ctx, func(qs *q.Queries) error {
-		n, err := qs.UploadClearTail(ctx, q.UploadClearTailParams{ID: id.String(), Writer: writer})
+		n, err := qs.UploadClearTail(ctx, q.UploadClearTailParams{ID: id.String(), Writer: writer, Segments: pt.Segments})
 		if err != nil {
 			return err
 		}
@@ -398,9 +415,9 @@ func (p pgRows) deleteCleaned(ctx context.Context, id uuid.UUID) error {
 	})
 }
 
-func (p pgRows) move(ctx context.Context, id uuid.UUID, writer, conn string) error {
+func (p pgRows) move(ctx context.Context, id uuid.UUID, writer, conn, sealedKey string) error {
 	return p.do(ctx, func(qs *q.Queries) error {
-		n, err := qs.UploadMoveSession(ctx, q.UploadMoveSessionParams{ID: id.String(), Writer: writer, ConnectionID: conn})
+		n, err := qs.UploadMoveSession(ctx, q.UploadMoveSessionParams{ID: id.String(), Writer: writer, ConnectionID: conn, SealedDataKey: sealedKey})
 		if err != nil {
 			return err
 		}

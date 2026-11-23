@@ -6,6 +6,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -46,6 +47,19 @@ func TestConformance(t *testing.T) {
 			}
 		})
 	}
+	t.Run("R-STOR-091 the encrypted pass: an object of the stored format keeps its record through a write, a whole and a ranged read and the finalize's copy", func(t *testing.T) {
+		for _, c := range blob.ConformanceChecks() {
+			if !strings.HasPrefix(c.Name, "an object of the stored format") {
+				continue
+			}
+			// the store of the stack keeps metadata and replaces it on a copy: a skip or a note here is a finding, not a capability
+			if r := blob.RunCheck(ctx, e.raw, opts, c); !r.OK || r.Note != "" {
+				t.Fatalf("%s: %s%s", c.Name, r.Error, r.Note)
+			}
+			return
+		}
+		t.Fatal("no check of the stored format")
+	})
 	t.Run("R-STOR-035 the checks changed nothing outside _probe/", func(t *testing.T) {
 		for _, k := range e.keys(t) {
 			t.Errorf("object left behind: %s", k)

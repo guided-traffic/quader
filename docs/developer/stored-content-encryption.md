@@ -1,10 +1,11 @@
 # Encryption of stored content: the build plan
 
 Status: specified on 2026-11-22; package 1, the format and its tools, built on 2026-11-22 ([below](#package-1-the-format-as-built));
-package 2, the keys, built on 2026-11-22 ([below](#package-2-the-keys-as-built)); package 5, the Bastion's cache, built on 2026-11-22 on the
-format ([below](#package-5-the-bastions-cache-as-built)); no object of the main installation is written or read in the format yet, and no
-connection can be encrypted; packages 3, 4 and 6 not built; package 7, the destruction of a retired connection's keys, specified on
-2026-11-22, not built ([below](#package-7-destroying-a-retired-connections-keys-specified)) ([storage.md](../spec/storage.md#encryption-of-stored-content) R-STOR-048, R-STOR-075 to
+package 2, the keys, built on 2026-11-22 ([below](#package-2-the-keys-as-built)); package 3, the encrypted connections in the store and the
+sessions, built on 2026-11-22 ([below](#package-3-encrypted-connections-as-built)): `encrypted: true` is accepted by the configuration (the
+chart refuses it until package 6); package 5, the Bastion's cache, built on 2026-11-22 on the format
+([below](#package-5-the-bastions-cache-as-built)); packages 4 and 6 not built; package 7, the destruction of a retired connection's keys,
+specified on 2026-11-22, not built ([below](#package-7-destroying-a-retired-connections-keys-specified)) ([storage.md](../spec/storage.md#encryption-of-stored-content) R-STOR-048, R-STOR-075 to
 R-STOR-091, R-STOR-097 to R-STOR-103; [backup-and-restore.md](../spec/backup-and-restore.md) R-BAK-031, R-BAK-032; [bastion.md](../spec/bastion.md) R-BAS-061;
 [architecture.md](../spec/architecture.md) R-ARCH-021; [ha-and-helm.md](../spec/ha-and-helm.md) R-HA-072;
 [ADR-244](../decisions.md#adr-244--encrypted-connections-quaders-own-segment-format-bound-to-the-content-the-wrapped-key-once-at-the-object-a-storage-key-per-connection-under-the-key-ring),
@@ -45,7 +46,7 @@ at the same time are disjoint.
 |---|---|---|---|
 | **1 · The format and its tools** | nothing; it can start before stage 1 lands | The codec of R-STOR-076 to R-STOR-078: segments, the final segment, `S(L)` and its inverse, the range planner, the nonce derivation of R-STOR-080, the record (encode, decode, wrap, unwrap, commitment), the keyed name of R-STOR-086, the tail segments of R-STOR-081, a reader that runs the checks of R-STOR-077 in their order with named errors; the vector files and the independent check of R-STOR-079 (run once, the result recorded below); the five fuzz targets, the nightly job of R-STOR-091 and its Makefile target | `internal/blob/blobcrypt/` (new), `tools/blobvectors/` (new), the job `fuzz-stored-format` in `.github/workflows/performance.yml`, a Makefile block `fuzz-stored-format` |
 | **2 · The keys** (built, [below](#package-2-the-keys-as-built)) | stage 1's package A (the table `storage_connections`, the connection set, the marker and the start check) | The migration of R-STOR-083 (`storage_keys`, `storage_connections.keyed_names`, `upload_sessions.sealed_data_key` and `sealed_segments`, the stored columns of `upload_session_parts`); the two sealed columns registered; drawing keys at first sight with the refusal over a used location; holding them per replica, the change area `storage_keys` and the re-read for an unknown identifier; `quader admin storage keys export`, `import` and `new-generation` with their audit events (R-STOR-085); `CopyDataKey` and its architecture rule (R-STOR-083; the callers it allows are `internal/blob` and `internal/downloadlinks`, the handover's package, R-STOR-096 and [bastion-handover.md](bastion-handover.md)) | `internal/blob/keys/` (new), the stage's migration and `queries/storage_keys.sql` under `internal/meta/postgres/`, `cmd/quader/admin_storage_keys.go`, `internal/app/wire_storage_keys.go`, the change area in `internal/cluster/areas.go`, the rule in `internal/archtest` |
-| **3 · Encrypted connections in the store, and the sessions** | 1, 2, and stage 1's packages A and B | `encrypted: true` accepted with `keyed_names` and the part-size rule (R-STOR-075); the start check's requirement of `metadata`; the naming function for keyed names; the connection's encrypting writer and decrypting reader: the commit's writes with the record and `HeadObject`'s check, the copy row's `stored_size` and `storage_key_id` (R-STOR-080); whole and ranged reads, the marks, `unknown_key`, the metric (R-STOR-082); the sessions with the sealed data key, the tails, the counter and both finalize paths (R-STOR-081); the conformance pass with an encrypted connection; the integration case of a rotation (R-STOR-084) | `internal/config/storage.go` (stage 2's rules), `internal/blob` (all files but `gc*.go`, `sweep.go` and the packages `blobcrypt`, `keys`, `reconcile`, `scrub`, `verify`), `internal/blob/s3`, `internal/blob/blobtest`, `internal/uploads`, `internal/app/wire_blob.go`, `test/integration/blob/rotation_test.go`, the encrypted pass in `test/integration/blob/conformance_test.go` |
+| **3 · Encrypted connections in the store, and the sessions** (built, [below](#package-3-encrypted-connections-as-built)) | 1, 2, and stage 1's packages A and B | `encrypted: true` accepted with `keyed_names` and the part-size rule (R-STOR-075); the start check's requirement of `metadata`; the naming function for keyed names; the connection's encrypting writer and decrypting reader: the commit's writes with the record and `HeadObject`'s check, the copy row's `stored_size` and `storage_key_id` (R-STOR-080); whole and ranged reads, the marks, `unknown_key`, the metric (R-STOR-082); the sessions with the sealed data key, the tails, the counter and both finalize paths (R-STOR-081); the conformance pass with an encrypted connection; the integration case of a rotation (R-STOR-084) | `internal/config/storage.go` (stage 2's rules), `internal/blob` (all files but `gc*.go`, `sweep.go` and the packages `blobcrypt`, `keys`, `reconcile`, `scrub`, `verify`), `internal/blob/s3`, `internal/blob/blobtest`, `internal/uploads`, `internal/app/wire_blob.go`, `test/integration/blob/rotation_test.go`, the encrypted pass in `test/integration/blob/conformance_test.go` |
 | **4 · The jobs, the backup and the restore** | 3, and stage 1's packages B (orphan sweep), C (reconciliation), D (scrub, operator check) and E (backup, restore) | The reconciliation's four cases and the spool for streams into an encrypted connection, the scrub's marks and repair, the orphan sweep's reading of the record, the operator check's record (R-STOR-087); the pool with records, `verify --deep` with and without `--key-ring`, the restore's table and its drawing of keys (R-BAK-031); the pool's keys and the re-pool (R-BAK-032): pool names with the key's identifier, the blob list's pool column and its final write after the copies, pins with `pool` kept until the run's end, the manifest's `storageKeys` and its schema, `retained[].poolKeyIds` and `sealedKeyIds`, the re-pool, a draining connection's copies after every other (Q-BAK-76), and the sweep, `verify` and the restore by pool name; the integration cases of the jobs and of the backup | `internal/blob/reconcile/`, `internal/blob/scrub/`, `internal/blob/sweep.go`, `internal/blob/verify`, `internal/backup`, `internal/backup/format` (blob list, manifest, schema), `cmd/quader/backup_*.go`, a migration step for `backup_blob_pin.pool`, `test/integration/blob/encrypted_jobs_test.go`, `test/integration/backup/encrypted_test.go` |
 | **5 · The Bastion's cache** | 1 | R-BAS-061: the encrypted layout below the key's tree, the sealed entries, the audit spool in the format, the sweep of other trees; `bastion.cache.encryption_key_file`; `secrets.cacheKey` in the Bastion's chart and its render tests | `internal/bastion/cache`, `internal/config/bastion_role.go`, `deploy/helm/quader-bastion`, the Bastion's chart tests under `test/chart` |
 | **6 · Offline tool, chart, API and documentation** | 2 and 3, and stage 1's packages E (chart) and F (API, manual) | `quader admin storage offline` (R-STOR-089); the chart's acceptance of `encrypted`, the refusal of `keyed_names` alone and the rule of `QuaderStorageUnknownKey` (R-HA-072, R-HA-045, R-STOR-088); `keyedNames` and `storageKeys[]` in the connections' API (R-STOR-088, Q-API-405; built ahead with stage 1's package F, which leaves this package the acceptance case of an encrypted connection and `state: destroyed` with `destroyedAt`); `destroyed_key` in `offline list` (R-STOR-089, R-STOR-103); the README's and the manual's sentences of R-STOR-090; this page and the developer pages of the store brought to what runs | `cmd/quader/admin_storage_offline.go`, `deploy/helm/quader` (stage 2's lines), `test/chart` (the main chart's cases), the connections' handler file in `internal/api/v1` and its paths in `api/openapi.yaml`, `README.md`, `docs/manual`, `docs/developer` |
@@ -88,8 +89,8 @@ no reason, which marks nothing; a body longer than the object is `size`. A faile
 ## Package 2: the keys as built
 
 [R-STOR-083](../spec/storage.md#r-stor-083--the-storage-keys-and-the-name-keys) to R-STOR-085, with the builder's decisions Q-STOR-324 to
-Q-STOR-329. Nothing of it runs on an installation yet: `encrypted: true` is refused at start until package 3, so no replica draws or holds a
-key, and the holder of every replica stays empty. An installation with plain connections only gets the migration `00107_storage_keys` (an
+Q-STOR-329. It runs on an installation since package 3 accepts `encrypted: true`: a replica draws and holds the keys of each encrypted
+connection; with plain connections only the holder of every replica stays empty. An installation with plain connections only gets the migration `00107_storage_keys` (an
 empty table, four columns and one row of `cluster_epoch`), an empty holder in its blob area, two more columns that the task
 `secrets-reencrypt` walks (both empty) and three commands; its start and its downloads do nothing new.
 
@@ -123,7 +124,7 @@ kind: the unique constraints let the slower insert insert nothing, and it reads 
 its rows before it wraps anything under them, so its objects never look to another replica like those of an earlier database. A refusal
 (a used location, a key the ring cannot open) ends the start; a failure of the database or the store is retried. The infrastructure bundle
 then adds the holder as a listener of the change log ([wire_keys.go](../../internal/app/wire_keys.go)), which exists only after the blob area.
-Which encrypted connection gets keyed names is `keyedNames`, true with `encrypted: true` until the element carries `keyed_names` (package 3).
+Which encrypted connection gets keyed names is the element's `keyed_names` (`Connection.KeyedNames`, package 3).
 
 **While it runs:** a change of the area `storage_keys` (payload `{"connection": "<id>"}`) marks the connection, and the next `Active` reads its
 rows again; a record that names an identifier the replica does not hold makes `Lookup` read them again, at once after a change and otherwise
@@ -178,6 +179,115 @@ another, a changed value, a moved value); the import's check of another installa
 bound (`…a replica that missed the change reads the rows again …`); the change area's mark (the unit test and the integration case's change
 area subtest); `Close` destroying the keys (`…Close destroys every key`); the walk over `upload_sessions.sealed_data_key` (the unit and the
 integration walk).
+
+## Package 3: encrypted connections as built
+
+[R-STOR-075](../spec/storage.md#r-stor-075--an-encrypted-connection), R-STOR-080 to R-STOR-082, R-STOR-084's case with objects and R-STOR-086's
+naming, with the builder's decisions Q-STOR-380 to Q-STOR-385. `encrypted: true` and `keyed_names` are accepted by the configuration; the
+Helm chart still refuses `encrypted: true` (package 6). Nothing above `internal/blob` and `internal/uploads` learned of the encryption: a
+format, the scanners and every caller of `blob.Store.Open` see plaintext.
+
+| File | Responsibility |
+|---|---|
+| [storage.go](../../internal/config/storage.go), [storage_connections.go](../../internal/config/storage_connections.go) | `keyed_names` (a pointer, `true` by default on an encrypted element, `UsesKeyedNames`), the refusal of `keyed_names` on a plain element, the part sizes that hold whole segments while an element is encrypted |
+| [datakey.go](../../internal/blob/datakey.go) | `StorageKeys` with `Active`, `NameKey` and `Lookup` (`*keys.Holder` implements it) |
+| [connections.go](../../internal/blob/connections.go) | the binding of the replica's keys and metrics to each connection (`New` does it), `KeyedNames`, the naming function `Name` and `ObjectKey`, `Connections.Without` (the view of a job that passes over connections) |
+| [sealedonly.go](../../internal/blob/sealedonly.go) | the client of an encrypted connection: a write of a blob's object without a record, and any copy from another bucket into one, is refused before it is sent (Q-STOR-382, `ErrPlaintextRefused`) |
+| [sealedwrite.go](../../internal/blob/sealedwrite.go) | `sealing` (a data key, a seed and a record per write), `putSealed` (one request or the multipart of [transfer.go](../../internal/blob/transfer.go)), `StagedSealed` and the finalize of a session's staging object: the copy with the record, or the stream of the staging parts as stored (`streamStaged`) |
+| [sealedread.go](../../internal/blob/sealedread.go) | the reader of every connection: `Read` (for the stage-1 jobs, without the blob's digest), `ReadBlob` (with it), the refusal of a record on a plain connection (Q-STOR-383), `sealedBody`, and `sealedDownload` (the marks and the stamp of a download) |
+| [download.go](../../internal/blob/download.go) | `Store.Open` over `ReadBlob`: a refusal before the first byte marks the copy as its reason says and falls over; `unknown_key` marks nothing |
+| [startcheck.go](../../internal/blob/startcheck.go) | `ErrMetadataNotKept`: an encrypted connection on a store without metadata stops the start |
+| [conformance_sealed.go](../../internal/blob/conformance_sealed.go) | the conformance check of the stored format against a store: a write with the record, a whole and a ranged read, a copy that replaces the record |
+| [metrics.go](../../internal/blob/metrics.go) | `quader_storage_encrypted_read_failures_total{connection,reason}`, the fall-over reason `record` |
+| [uploads/sealed.go](../../internal/uploads/sealed.go) and the changes of [service.go](../../internal/uploads/service.go), [append.go](../../internal/uploads/append.go), [finalize.go](../../internal/uploads/finalize.go), [rows.go](../../internal/uploads/rows.go) | the sessions: `SessionKeys`, the data key drawn at the start or the move and sealed into the row, opened per request with a seed of its own (`withCrypt`), the parts as data segments, the tails as tail segments, the counter (Q-STOR-380), the last part with the final segment or the final segment alone (Q-STOR-381), a blob of tails only committed from its decrypted tails |
+| [uploads.sql](../../internal/meta/postgres/queries/uploads.sql), [blob_copies.sql](../../internal/meta/postgres/queries/blob_copies.sql) | the session's sealed key, counter and parts as stored; the copy row's `storage_key_id`; `keyed_names` written and compared with the connection's other fixed properties |
+| [wire_storage_keys.go](../../internal/app/wire_storage_keys.go), [wire_blob.go](../../internal/app/wire_blob.go), [wire_storage_scrub.go](../../internal/app/wire_storage_scrub.go) | the element's `keyed_names` for `Ensure`, `sessionKeys` over the key ring for the sessions, the scrub's view without encrypted connections |
+| [backup_create.go](../../cmd/quader/backup_create.go), [backup_restore.go](../../cmd/quader/backup_restore.go) | the refusals of Q-STOR-384 until package 4 |
+
+**A write** (`putOn`) to an encrypted connection asks the holder for the connection's active storage key, names the object with the
+connection's naming function (a keyed name below `keyed/` by default), draws a data key and a seed, wraps the key into the record, and sends
+`NewSection` over the spool: one `PutObject` of `S(L)` bytes with the record up to `multipart.threshold`, the multipart above it with the
+record on `CreateMultipartUpload`, each part's segments from `offset / 64 KiB` and the final segment after the last part's. The payload checksum
+is a first pass over the section, the SDK's retry a `Seek` to 0. After the multipart, `HeadObject` must answer `S(L)` and the record's storage
+key. The copy row records `S(L)`, the storage key and `verified` where the connection enforces payload checksums. With `min_copies` above 1 each
+encrypted connection gets its own data key.
+
+**A read** (`Store.Open`) takes the copies from the item lookup as before and calls `ReadBlob` with the blob's digest and size: a whole read is
+one `GetObject`, a ranged read one ranged `GetObject` of the window's segments (and the final segment with them when the window reaches the
+last data segment). The object size the store answers must be the copy's `stored_size`; then `blobcrypt.Open` runs steps 1 to 6 with the
+holder's lookup, and only then is a reader returned. A refusal before the first byte is counted, marks the copy `corrupt` unless its reason is
+`unknown_key`, and the read falls over; a refusal of the body marks and aborts the response. The reasons and which of them mark are
+`blobcrypt.Reason` and `Reason.MarksCorrupt`: a further reason (the `destroyed_key` of a later package) is a constant and a case there, and
+nothing here changes. A plain connection refuses an object that carries a record as `format`.
+
+**A session** on an encrypted connection seals a data key into `upload_sessions.sealed_data_key` at its start (or at its move to an encrypted
+connection before its first write); each request opens it with the key ring through `SessionKeys`, draws its own seed and destroys the key at
+its end. A part is the data segments of its plain bytes from the part's offset; a tail object the tail segments at its session offset, read back
+through `NewTailReader`, whose refusal fails the session like a tail of another checksum. The claim reserves `⌈part_size / 64 KiB⌉ + 2`
+segments and the records add what each part and tail sealed; past `2^31` the request answers `409 session_exhausted` and the session is aborted.
+The finalize sends the tail with the final segment as the last part (or the final segment alone, unrecorded, when the blob ends at a part
+boundary), completes the upload and checks `S(L)`; the commit copies the staging object to the content name with a record that wraps the
+session's data key (`copyReplacesMetadata`) or streams its parts as stored (without it), and a blob that never filled a part is written from its
+decrypted tails with a new data key. A copy to another connection (`min_copies` above 1) reads the content object through the connection's
+reader and writes it with a new data key.
+
+**The jobs of stage 1 on an encrypted connection, until package 4** ([Q-STOR-384](../spec/storage.md#q-stor-384--until-the-jobs-read-the-stored-format-each-passes-over-or-refuses-an-encrypted-connection),
+gaps H-1410 and H-1411 on [stored-content-format.md](../security/stored-content-format.md#what-this-does-not-cover)):
+
+| Job | What it does with an encrypted connection |
+|---|---|
+| Collection (`gc.go`) | works: it deletes by the copy row's `object_key`, which is the keyed name |
+| Orphan sweep (`sweep.go`) | passes over: with keyed names nothing lies below `sha256/` and `keyed/` is reported as a foreign key, never deleted; with `keyed_names: false` an unplaced object of a live blob is adopted `corrupt` (H-1411), its bytes untouched |
+| Reconciliation (`reconcile`) | works from an encrypted source to a plain target (the source is read through the connection's reader and hashed as before); a copy into an encrypted target is refused by the connection's client and retried after its back-off, so an encrypted connection is not filled |
+| Scrub (`scrub`) | passes over every encrypted connection (`scrubbed`, a warning at the start): read through the reader the plaintext's length is not the stored size, and the stage-1 scrub would mark every copy corrupt |
+| Backup (`quader backup create`) | refuses to run while a connection is encrypted |
+| Restore (`quader backup restore`) | refuses to run when its first connection without drain is encrypted; writing into a later encrypted connection is not its |
+| Operator check (`quader admin storage verify`) | works: it compares each `HeadObject`'s size with the stored size; the record is checked with package 4 |
+| `restore-versions` | works: it removes delete markers; the version keeps its record |
+| The revocation journal, the marker, the probes | stay plain (Q-STOR-315), which the connection's client lets pass |
+
+**What package 4 builds on.** Read an encrypted copy with `Connection.ReadBlob` where the blob's digest and size are known (the plain
+`Connection.Read` opens the record without them); write into an encrypted connection with the store's writer (`putSealed` through a spool, or
+a function package 4 adds beside it), never through `Connection.Objects()`, which refuses a blob's object without a record; take the
+connection's name from `Connection.Name`; drop the scrub's view (`scrubbed`) and the two refusals of the backup commands when their jobs read
+the format. **What package 6 builds on:** the counter `quader_storage_encrypted_read_failures_total` for `QuaderStorageUnknownKey`; the
+chart's render, which still refuses `encrypted: true`; the connections' API, built ahead with stage 1's package F, which shows
+`storage_connections.keyed_names` as `keyedNames` and counts `blob_copies.storage_key_id` per key in `storageKeys[].copies` through the storage
+summary, whose `presentBytes` sum `stored_size` (S(L) on an encrypted connection); `TestR_STOR_084`'s first subtest shows the three on an
+encrypted connection. **The signed links** (their second package, landed before this one): an encrypted connection's client wraps the guard
+(`sealedOnly`) and forwards `Presign` and `Fetcher`, so the link check runs on an encrypted connection with its plain probe (R-STOR-074,
+R-STOR-096) and passes where the store passes it; the connection serves no link, decided by `downloadlinks` on `Connection.Encrypted()`, and a
+blob whose only copy lies there streams (`TestR_STOR_088_AnEncryptedConnectionsOnlyCopyIsStreamed` in `internal/downloadlinks`).
+
+**Tests and their cost**, measured on 2026-11-22 in the unit job's mode (`go test -race -covermode=atomic -coverpkg=./...`) on the development
+machine, and the integration cases under the stack's lock:
+
+| Test | Tier | Data | Time |
+|---|---|---|---|
+| `TestR_STOR_080_WritingToAnEncryptedConnection` (1 KiB below `keyed/` with its record and copy row; 192 KiB in parts of 64 KiB with a part sent twice; the `HeadObject` check; two writes of one content; the client's refusals) | unit, `internal/blob`, two in-memory stores | up to 192 KiB | 0.18 s |
+| `TestR_STOR_082_ReadingFromAnEncryptedConnection` (whole and ranged reads and the segments asked for; five mutations of R-STOR-078 on a whole and a ranged read; `unknown_key`; `verify: false`; the refusal on a plain connection; the stage-1 reader) | unit, `internal/blob` | a blob of 196,609 bytes | 0.34 s |
+| `TestR_STOR_086_KeyedNamesDifferPerConnection`, `TestR_STOR_091_TheConformanceCheckOfTheStoredFormat` | unit, `internal/blob` | probe objects of 64 KiB and 100 bytes | 0.04 s |
+| `TestR_STOR_081_UploadSessionsOnAnEncryptedConnection` (three requests with the copy and with the stream, a blob that ends at a part boundary, tails only, a changed tail, the counter) | unit, `internal/uploads`, two in-memory stores | parts of 64 KiB, below 256 KiB | 0.24 s |
+| `TestR_STOR_075_AnEncryptedConnection`, `TestR_STOR_075_AnEncryptedConnectionNeedsMetadata` | unit, `internal/config`, `internal/app` | — | 0.09 s |
+| `TestR_STOR_088_AnEncryptedConnectionsOnlyCopyIsStreamed` (the link check on an encrypted connection; no link for a blob whose only copy lies there) | unit, `internal/downloadlinks`, two in-memory stores | probes of the link check, an object of 64 bytes | below 0.01 s |
+| `TestR_STOR_084_ARotationOfTheRootTouchesNoObject` (with the connections' list of the API over the same three blobs) | integration, area `blob`, PostgreSQL of the stack, an in-memory store | three blobs of 1 KiB | 0.9 s, most of it the migration of its database |
+| the encrypted pass of `TestConformance` | integration, area `blob` and the job `s3-conformance`, the stack's store | a probe of 64 KiB | 0.04 s against Silo (the check runs in the loop of the checks and once more for its own assertion) |
+| `TestR_STOR_081_ASessionOnAnEncryptedConnectionInPostgres` (the session's statements: the sealed key, the parts as stored, the counter, the claim's refusal) | integration, area `uploads`, the stack | one part of 5 MiB (the smallest S3 takes) and 10 KiB | 1.3 s |
+
+The unit job gains about 0.9 s of tests and no package (every touched package runs already); the integration shard that runs `blob` gains
+about 1 s, the one that runs `uploads` about 1.3 s, `s3-conformance` about 0.04 s; no chart test, end-to-end leg or nightly job
+is added. With 25 formats the cost is the same: no format sees a connection or a key.
+
+**Every defence taken out once**, one at a time, and the test that failed: the record's binding to the blob's digest in `ReadBlob` (the two
+cases of "the object and record of another blob under this name"); the `HeadObject` check of the record after a multipart write ("a multipart
+object whose HeadObject names another storage key fails the write"); the client's refusal of a plain object on an encrypted connection ("a write
+of a blob's object without a record is refused"); the refusal of an object of the format on a plain connection ("a plain connection refuses an
+object of the stored format"; with the copy row's size equal to the object's, so that the size check alone does not catch it); the session's
+counter, in the service and in the simulated claim ("a request whose session's counter would pass the bound answers 409"), and in the claim's
+statement of `uploads.sql` (the 409 case of `TestR_STOR_081_ASessionOnAnEncryptedConnectionInPostgres`); the keyed name (the 1 KiB case, the 192 KiB case, the `HeadObject` case, both session cases with a content object, and
+`TestR_STOR_086`); `unknown_key` marking nothing ("a record of a storage key the replica does not hold falls over …"); the client's
+forwarding of `Fetcher`, without which the link check of an encrypted connection has no client to fetch with ("an encrypted connection serves
+no link and can serve a handover" of `TestR_STOR_074_WhichConnectionsCanServeLinks`).
 
 ## Package 5: the Bastion's cache as built
 
@@ -326,10 +436,14 @@ last mark of a tail segment, the segment key's own label, and the refusal of a b
 
 ## Not verified
 
-- Nothing of this stage was run against an object store. Whether the owner's in-cluster object gateway (Ceph 19.2.3, read from his cluster on
-  2026-11-22) keeps user metadata on a write and replaces it on a copy is what the start check establishes there once the release runs; its
-  documentation was not read. The provider he has in mind documents a copy with new metadata only through the documentation of the software
-  behind it (research of 2026-11-22), not for itself.
+- Package 3 ran against the stack's store (Silo) only: the encrypted pass of the conformance check and the session case of the area `uploads`.
+  Whether the owner's in-cluster object gateway (Ceph 19.2.3, read from his cluster on 2026-11-22) keeps user metadata on a write and replaces
+  it on a copy is what the start check establishes there once a release runs with an encrypted connection; its documentation was not read. The
+  provider he has in mind documents a copy with new metadata only through the documentation of the software behind it (research of
+  2026-11-22), not for itself.
+- The SDK's retry of a part was simulated at the unit tier (a wrapper that reads a part's body twice); a retry by the AWS SDK against a store
+  that fails a request was not provoked.
+- A finalize that streams a staging object above a few megabytes, and the memory of its one part in flight on a replica, were not measured.
 - The throughput of encryption on Quader's hardware; the proxy's measurement (about 4.5 GB/s per core) is from an Apple M5 Pro. Package 1 did
   not measure `blobcrypt`'s throughput either.
 - The nightly job `fuzz-stored-format` has not run on GitHub yet: its 27 minutes are the sum of its fuzz times and an estimate of its setup,

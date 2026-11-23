@@ -18,12 +18,13 @@ SELECT state FROM blobs WHERE sha256 = sqlc.arg(sha256)::bytea FOR NO KEY UPDATE
 
 -- name: PutBlobCopy :exec
 -- The copy of an object a commit wrote (R-STOR-053): inserted present, or a missing, corrupt or present row overwritten; a copy
--- claimed for deletion is left to collection. verified_at is now when the write showed the whole object to be the blob.
-INSERT INTO blob_copies (sha256, connection_id, object_key, stored_size, state, created_at, verified_at, checked_at, state_changed_at)
-VALUES (sqlc.arg(sha256)::bytea, sqlc.arg(connection_id)::text, sqlc.arg(object_key)::text, sqlc.arg(stored_size)::bigint, 'present',
-        now(), CASE WHEN sqlc.arg(verified)::boolean THEN now() END, now(), now())
+-- claimed for deletion is left to collection. verified_at is now when the write showed the whole object to be the blob. On an
+-- encrypted connection storage_key_id names the storage key that wrapped the object's data key (R-STOR-080); empty is NULL.
+INSERT INTO blob_copies (sha256, connection_id, object_key, stored_size, storage_key_id, state, created_at, verified_at, checked_at, state_changed_at)
+VALUES (sqlc.arg(sha256)::bytea, sqlc.arg(connection_id)::text, sqlc.arg(object_key)::text, sqlc.arg(stored_size)::bigint,
+        NULLIF(sqlc.arg(storage_key_id)::text, ''), 'present', now(), CASE WHEN sqlc.arg(verified)::boolean THEN now() END, now(), now())
 ON CONFLICT (sha256, connection_id) DO UPDATE
-   SET object_key = EXCLUDED.object_key, stored_size = EXCLUDED.stored_size, storage_key_id = NULL, created_at = EXCLUDED.created_at,
+   SET object_key = EXCLUDED.object_key, stored_size = EXCLUDED.stored_size, storage_key_id = EXCLUDED.storage_key_id, created_at = EXCLUDED.created_at,
        verified_at = COALESCE(EXCLUDED.verified_at, CASE WHEN blob_copies.state = 'present' THEN blob_copies.verified_at END),
        checked_at = EXCLUDED.checked_at,
        state_changed_at = CASE WHEN blob_copies.state = 'present' THEN blob_copies.state_changed_at ELSE EXCLUDED.state_changed_at END,
@@ -61,15 +62,15 @@ SELECT id, bucket, prefix, encrypted, capabilities::text AS capabilities, first_
   FROM storage_connections ORDER BY id;
 
 -- name: InsertStorageConnection :execrows
--- The first sight of a connection (R-STOR-051).
-INSERT INTO storage_connections (id, bucket, prefix, encrypted)
-VALUES (sqlc.arg(id)::text, sqlc.arg(bucket)::text, sqlc.arg(prefix)::text, sqlc.arg(encrypted)::boolean)
+-- The first sight of a connection (R-STOR-051), with its fixed properties; keyed_names is the detail of an encrypted one (R-STOR-075).
+INSERT INTO storage_connections (id, bucket, prefix, encrypted, keyed_names)
+VALUES (sqlc.arg(id)::text, sqlc.arg(bucket)::text, sqlc.arg(prefix)::text, sqlc.arg(encrypted)::boolean, sqlc.arg(keyed_names)::boolean)
 ON CONFLICT (id) DO NOTHING;
 
 -- name: LockStorageConnection :many
 -- The row of a connection while a replica compares its fixed properties with its element; the lock makes two replicas that
 -- start at once compare one after the other.
-SELECT id, bucket, prefix, encrypted, retired_at FROM storage_connections WHERE id = sqlc.arg(id)::text FOR UPDATE;
+SELECT id, bucket, prefix, encrypted, keyed_names, retired_at FROM storage_connections WHERE id = sqlc.arg(id)::text FOR UPDATE;
 
 -- name: StorageConnectionCopies :one
 -- How many copies a connection holds, for the refusal of a changed fixed property (R-STOR-051).
@@ -79,8 +80,9 @@ SELECT count(*)::bigint FROM blob_copies WHERE connection_id = sqlc.arg(id)::tex
 SELECT EXISTS (SELECT 1 FROM blob_copies WHERE connection_id = sqlc.arg(id)::text)::boolean;
 
 -- name: UpdateStorageConnectionLocation :exec
--- A connection that holds no copy takes the bucket, prefix and encrypted of its element (R-STOR-051).
-UPDATE storage_connections SET bucket = sqlc.arg(bucket)::text, prefix = sqlc.arg(prefix)::text, encrypted = sqlc.arg(encrypted)::boolean
+-- A connection that holds no copy takes the bucket, prefix, encrypted and keyed_names of its element (R-STOR-051, R-STOR-075).
+UPDATE storage_connections SET bucket = sqlc.arg(bucket)::text, prefix = sqlc.arg(prefix)::text, encrypted = sqlc.arg(encrypted)::boolean,
+       keyed_names = sqlc.arg(keyed_names)::boolean
  WHERE id = sqlc.arg(id)::text;
 
 -- name: PrefixUnboundCopyKeys :execrows

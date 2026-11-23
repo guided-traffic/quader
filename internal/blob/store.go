@@ -31,7 +31,7 @@ type Store struct {
 	onAdded   ConnectionAddedFunc
 	spoolOpts []SpoolOption
 	memory    func(ctx context.Context, n int64) (undo func())
-	keys      StorageKeys            // the replica's storage keys (datakey.go); nil before stage 2 wires them
+	keys      StorageKeys            // the replica's storage keys (datakey.go); nil in a store without encrypted connections
 	gapSignal atomic.Pointer[func()] // SetGapSignal
 }
 
@@ -81,6 +81,9 @@ func New(cfg config.Storage, conns *Connections, db DB, opts ...Option) (*Store,
 	}
 	for _, o := range opts {
 		o(s)
+	}
+	for _, c := range conns.List() {
+		c.bind(s.keys, s.metrics) // the reader and the naming function of an encrypted connection need the keys (R-STOR-082, R-STOR-086)
 	}
 	spoolOpts := append([]SpoolOption{WithSpoolLogger(s.log), WithSpoolMetrics(s.metrics)}, s.spoolOpts...)
 	sp, err := NewSpool(cfg.Spool, spoolOpts...)

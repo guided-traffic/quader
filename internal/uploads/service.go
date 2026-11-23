@@ -64,6 +64,8 @@ type Options struct {
 	// Metrics counts the sessions by how they ended (quader_storage_upload_sessions_total); nil counts nothing.
 	Metrics *blob.Metrics
 	Log     *slog.Logger
+	// SessionKeys seals and opens the data key of a session on an encrypted connection (R-STOR-081); nil refuses such a session.
+	SessionKeys SessionKeys
 }
 
 // Service is the session service of one replica. It holds no state of a session: every call reads the row.
@@ -78,6 +80,7 @@ type Service struct {
 	retry   time.Duration
 	log     *slog.Logger
 	metrics *blob.Metrics
+	keys    SessionKeys
 
 	// Fault is a test hook called at named points of a request. A non-nil error ends the request at once as if the process had been
 	// killed there: no release of the claim, no clean-up. The error is returned wrapped in [blob.ErrFault]. A hook may also block,
@@ -101,7 +104,7 @@ func newService(r rows, o Options) *Service {
 	retry := max(5*time.Second, (o.Storage.ObjectStore.CircuitBreaker.OpenDuration+time.Second-1)/time.Second*time.Second)
 	return &Service{
 		rows: r, conns: o.Connections, spool: o.Spool, cfg: o.Storage.Uploads, maxSize: int64(o.Storage.Upload.MaxSize), retry: retry,
-		log: log, metrics: o.Metrics,
+		log: log, metrics: o.Metrics, keys: o.SessionKeys,
 	}
 }
 
@@ -109,7 +112,8 @@ func newService(r rows, o Options) *Service {
 // are there, because a multipart upload exists in one store only and a server-side copy stays inside one.
 type pin struct {
 	conn      *blob.Connection
-	algorithm string // the payload checksum of its writes, empty for none
+	algorithm string        // the payload checksum of its writes, empty for none
+	crypt     *sessionCrypt // the request's data key and seed on an encrypted connection (withCrypt), nil on a plain one
 }
 
 func pinOf(c *blob.Connection) pin {
@@ -181,14 +185,24 @@ func (s *Service) writable(ctx context.Context, r *row, writer string) (pin, err
 		}
 		return pin{}, err
 	}
+	// the session takes the data key its new connection needs: its own on an encrypted one, a new one if it has none, none on a plain one
+	sealed := ""
+	if next[0].Encrypted() {
+		if sealed = r.SealedKey; sealed == "" {
+			var serr error
+			if sealed, serr = s.newSealedKey(r.ID); serr != nil {
+				return pin{}, serr
+			}
+		}
+	}
 	rctx, cancel := recordCtx(ctx)
-	merr := s.rows.move(rctx, r.ID, writer, next[0].ID())
+	merr := s.rows.move(rctx, r.ID, writer, next[0].ID(), sealed)
 	cancel()
 	if merr != nil {
 		return pin{}, merr
 	}
 	s.log.Info("an upload session moves to another connection before its first write", "session", r.ID, "from", r.Conn, "to", next[0].ID())
-	r.Conn = next[0].ID()
+	r.Conn, r.SealedKey = next[0].ID(), sealed
 	return pinOf(next[0]), nil
 }
 
@@ -268,6 +282,12 @@ func (s *Service) Start(ctx context.Context, target int64, sc Scope) (Session, e
 	r := row{
 		ID: uuid.New(), RepoID: target, AddressedID: sc.Addressed, Binding: sc.Binding, Principal: principal, HashState: hs,
 		PartSize: s.PartSize(), State: StateOpen, Conn: s.startConnection(),
+	}
+	if c, ok := s.conns.Get(r.Conn); ok && c.Encrypted() {
+		// the data key is drawn when the session starts and sealed into its row (R-STOR-081)
+		if r.SealedKey, err = s.newSealedKey(r.ID); err != nil {
+			return Session{}, err
+		}
 	}
 	started, err := s.rows.insert(ctx, r, s.cfg.MaxOpenSessions)
 	if err != nil {

@@ -46,6 +46,11 @@ type Store struct {
 	// UnknownSize makes Get report ObjectInfo.Size -1, as a response without
 	// Content-Length does.
 	UnknownSize bool
+	// DropMetadata makes the store keep no object metadata, as a store without user metadata: a write with metadata succeeds and
+	// Head and Get answer none (the start check finds metadata: false, R-STOR-035).
+	DropMetadata bool
+	// CopyKeepsMetadata makes a copy keep its source's metadata when it is asked to replace it (copyReplacesMetadata: false).
+	CopyKeepsMetadata bool
 
 	mu      sync.Mutex
 	objects map[string]*object
@@ -188,9 +193,17 @@ func (s *Store) Put(_ context.Context, key string, body io.ReadSeeker, size int6
 		return err
 	}
 	s.mu.Lock()
-	s.objects[key] = &object{data: data, meta: cloneMeta(md), modified: s.Now()}
+	s.objects[key] = &object{data: data, meta: s.kept(md), modified: s.Now()}
 	s.mu.Unlock()
 	return nil
+}
+
+// kept is the metadata a write keeps: none with DropMetadata. The caller holds the lock or the field does not change.
+func (s *Store) kept(md blob.Metadata) blob.Metadata {
+	if s.DropMetadata {
+		return nil
+	}
+	return cloneMeta(md)
 }
 
 // CreateMultipart implements blob.ObjectStore.
@@ -202,7 +215,7 @@ func (s *Store) CreateMultipart(_ context.Context, key, _ string, md blob.Metada
 	defer s.mu.Unlock()
 	s.nextID++
 	id := "upload-" + strconv.Itoa(s.nextID)
-	s.uploads[id] = &upload{key: key, meta: cloneMeta(md), initiated: s.Now(), parts: map[int][]byte{}}
+	s.uploads[id] = &upload{key: key, meta: s.kept(md), initiated: s.Now(), parts: map[int][]byte{}}
 	return id, nil
 }
 
@@ -286,7 +299,12 @@ func (s *Store) Copy(_ context.Context, srcKey, dstKey string, size int64, md bl
 	if size >= 0 && int64(len(o.data)) != size {
 		return fmt.Errorf("copy of %s: the object has %d bytes, declared %d", srcKey, len(o.data), size)
 	}
-	s.objects[dstKey] = copied(o, md, s.Now())
+	if s.CopyKeepsMetadata {
+		md = nil
+	}
+	c := copied(o, md, s.Now())
+	c.meta = s.kept(c.meta)
+	s.objects[dstKey] = c
 	return nil
 }
 

@@ -91,10 +91,13 @@ func (m *memRows) claim(_ context.Context, id uuid.UUID, writer string, offset i
 	defer m.mu.Unlock()
 	s, ok := m.sessions[id]
 	if !ok || s.State != StateOpen || (offset >= 0 && s.Received != offset) ||
-		(s.Writer != "" && s.writerUntil.After(m.now)) || m.now.Sub(s.created) > maxAge {
+		(s.Writer != "" && s.writerUntil.After(m.now)) || m.now.Sub(s.created) > maxAge || isExhausted(s.row) {
 		return row{}, false, nil
 	}
 	s.Writer, s.writerUntil, s.activity = writer, m.now.Add(lease), m.now
+	if s.SealedKey != "" {
+		s.SealedSegments += reserve(s.PartSize)
+	}
 	return m.view(s, maxAge), true, nil
 }
 
@@ -115,6 +118,7 @@ func (m *memRows) recordPart(_ context.Context, id uuid.UUID, writer string, rec
 	}
 	s.Received, s.HashState = received, bytes.Clone(hashState)
 	s.TailSize, s.tails = 0, nil
+	s.SealedSegments += p.Segments
 	if s.UploadID == "" {
 		s.UploadID = uploadID
 	}
@@ -167,6 +171,7 @@ func (m *memRows) recordEnd(_ context.Context, id uuid.UUID, writer string, e en
 		return errLostClaim
 	}
 	s.Received, s.HashState, s.TailSize = e.Received, bytes.Clone(e.HashState), e.TailSize
+	s.SealedSegments += e.Segments
 	if e.ReplaceTails {
 		s.tails = nil
 	}
@@ -212,6 +217,7 @@ func (m *memRows) completeTail(_ context.Context, id uuid.UUID, writer string, p
 		return errLostClaim
 	}
 	s.TailSize, s.tails = 0, nil
+	s.SealedSegments += p.Segments
 	s.Writer, s.writerUntil, s.activity = "", time.Time{}, m.now
 	if _, dup := s.parts[p.Number]; dup {
 		return fmt.Errorf("part %d is recorded already", p.Number)
@@ -288,15 +294,29 @@ func (m *memRows) abort(_ context.Context, id uuid.UUID) (bool, string, error) {
 	return true, s.UploadID, nil
 }
 
-func (m *memRows) move(_ context.Context, id uuid.UUID, writer, conn string) error {
+func (m *memRows) move(_ context.Context, id uuid.UUID, writer, conn, sealedKey string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	s, ok := m.holder(id, writer)
 	if !ok || s.Received != 0 || s.UploadID != "" {
 		return errLostClaim
 	}
-	s.Conn, s.activity = conn, m.now
+	s.Conn, s.SealedKey, s.activity = conn, sealedKey, m.now
 	return nil
+}
+
+// setSegments sets the segment counter of a session, for a test that brings it near the bound.
+func (m *memRows) setSegments(id uuid.UUID, n int64) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.sessions[id].SealedSegments = n
+}
+
+// row is the stored row of a session, for assertions.
+func (m *memRows) row(id uuid.UUID) row {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.sessions[id].row
 }
 
 // conn is the recorded connection of a session, for assertions.

@@ -15,10 +15,27 @@ import (
 	"github.com/guided-traffic/quader/internal/config"
 )
 
-// heldKeys is the replica's storage keys of one connection as a map: the seam blob.StorageKeys.
+// heldKeys is the replica's storage keys of one connection as a map: the seam blob.StorageKeys. active names the storage key new
+// objects are wrapped under, name is the name key of a connection with keyed names.
 type heldKeys struct {
-	conn string
-	keys map[string]*blobcrypt.StorageKey
+	conn   string
+	keys   map[string]*blobcrypt.StorageKey
+	active string
+	name   *blobcrypt.Key
+}
+
+func (h heldKeys) Active(_ context.Context, connection string) (*blobcrypt.StorageKey, error) {
+	if sk := h.keys[h.active]; connection == h.conn && sk != nil {
+		return sk, nil
+	}
+	return nil, errors.New("the replica holds no active storage key of the connection")
+}
+
+func (h heldKeys) NameKey(connection string) (blobcrypt.Key, error) {
+	if connection != h.conn || h.name == nil {
+		return blobcrypt.Key{}, errors.New("the replica holds no name key of the connection")
+	}
+	return *h.name, nil
 }
 
 func (h heldKeys) Lookup(_ context.Context, connection string) blobcrypt.KeyLookup {

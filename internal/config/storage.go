@@ -200,7 +200,8 @@ type StorageConnection struct {
 	ScrubPeriod                time.Duration `yaml:"scrub_period" doc:"Default 720h: every copy is read whole once in this period (R-STOR-027); at least 24h."`
 	ScrubBytesPerSecond        ByteSize      `yaml:"scrub_bytes_per_second" doc:"Default 50MiB, per connection and run; at least 1MiB."`
 	Drain                      bool          `yaml:"drain" doc:"Takes the connection out: no upload goes to it, its blobs are copied to the others and then deleted here (R-STOR-051)."`
-	Encrypted                  bool          `yaml:"encrypted" doc:"The encryption of stored content; true is refused until it is built (R-STOR-050)."`
+	Encrypted                  bool          `yaml:"encrypted" doc:"Quader encrypts every blob of the connection in its own format and keeps the keys, so the provider sees ciphertext only (R-STOR-075); fixed once the connection holds data."`
+	KeyedNames                 *bool         `yaml:"keyed_names" doc:"Default true on an encrypted connection: object names are a keyed MAC of the digest (R-STOR-086); refused on a connection that is not encrypted; fixed once the connection holds data."`
 }
 
 // MaxConnections is the most connections a configuration holds (Q-STOR-247).
@@ -277,7 +278,17 @@ func (c StorageConnection) WithDefaults() StorageConnection {
 	if c.ScrubBytesPerSecond == 0 {
 		c.ScrubBytesPerSecond = defaultScrubBytesPerSec
 	}
+	if c.Encrypted && c.KeyedNames == nil {
+		t := true
+		c.KeyedNames = &t
+	}
 	return c
+}
+
+// UsesKeyedNames reports whether the connection's objects get keyed names (R-STOR-075, R-STOR-086): an encrypted connection whose
+// keyed_names is true or left out.
+func (c StorageConnection) UsesKeyedNames() bool {
+	return c.Encrypted && (c.KeyedNames == nil || *c.KeyedNames)
 }
 
 // KeyPrefix is the connection's prefix, quader when it was left out.

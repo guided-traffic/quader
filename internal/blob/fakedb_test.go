@@ -254,7 +254,7 @@ func (f *fakeDB) PutCopy(_ context.Context, _ meta.Tx, d blob.Digest, w blob.Cop
 	if old, ok := f.copies[d][w.Connection]; ok && old.State == blob.CopyDeleting {
 		return nil
 	}
-	cp := blob.Copy{Connection: w.Connection, ObjectKey: w.Key, StoredSize: w.StoredSize, State: blob.CopyPresent, CheckedAt: f.clock()}
+	cp := blob.Copy{Connection: w.Connection, ObjectKey: w.Key, StoredSize: w.StoredSize, StorageKeyID: w.StorageKeyID, State: blob.CopyPresent, CheckedAt: f.clock()}
 	if w.Verified {
 		cp.VerifiedAt = f.clock()
 	}

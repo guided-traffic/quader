@@ -650,6 +650,9 @@ const (
 	CodeOCIBlobUploadUnknown = "oci_blob_upload_unknown"
 	// CodeOCIBlobUploadInvalid: BLOB_UPLOAD_INVALID.
 	CodeOCIBlobUploadInvalid = "oci_blob_upload_invalid"
+	// CodeSessionExhausted: an upload session on an encrypted connection would seal more segments under its data key than one key
+	// may (storage.md R-STOR-081, Q-STOR-318); the session is aborted (409).
+	CodeSessionExhausted = "session_exhausted"
 	// CodeOCIManifestInvalid: MANIFEST_INVALID.
 	CodeOCIManifestInvalid = "oci_manifest_invalid"
 	// CodeOCIManifestBlobUnknown: MANIFEST_BLOB_UNKNOWN.
@@ -1104,6 +1107,7 @@ var registry = []CodeInfo{
 	{CodeOCIBlobUnknown, NotFound, "OCI blob unknown", "No blob with this digest is stored under this image name of the repository."},
 	{CodeOCIBlobUploadUnknown, NotFound, "OCI blob upload unknown", "The upload session does not exist, has expired, is finished, or belongs to another principal, repository or image name."},
 	{CodeOCIBlobUploadInvalid, RangeNotSatisfiable, "OCI blob upload out of order", "The chunk does not start at the number of bytes the session has received, or another request holds the session; the Range header names the bytes received."},
+	{CodeSessionExhausted, Conflict, "Upload session exhausted", "The upload session sealed as many segments under its data key as one key may; it is aborted. Start the upload again."},
 	{CodeOCIManifestInvalid, Invalid, "OCI manifest invalid", "The manifest is not one Quader accepts: it is not valid JSON of a supported media type, it is larger than 4 MiB, it uses a digest algorithm other than sha256, or its references break the rules of the repository."},
 	{CodeOCIManifestBlobUnknown, Invalid, "OCI manifest references an unknown blob", "The manifest names a config, a layer or a manifest that the repository does not hold under this image name."},
 	{CodeOCISizeInvalid, TooLarge, "OCI content too large", "The manifest, the blob or the repository's quota exceeds a size limit."},

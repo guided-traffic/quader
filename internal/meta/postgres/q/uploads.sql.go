@@ -49,11 +49,13 @@ func (q *Queries) UploadBumpActivity(ctx context.Context, id string) error {
 const uploadClaim = `-- name: UploadClaim :execrows
 UPDATE upload_sessions
    SET writer = $1::text::uuid, writer_until = now() + make_interval(secs => $2::float8),
-       last_activity_at = now()
+       last_activity_at = now(),
+       sealed_segments = sealed_segments + CASE WHEN sealed_data_key IS NULL THEN 0 ELSE (part_size + 65535) / 65536 + 2 END
  WHERE id = $3::text::uuid AND state = 'open'
    AND ($4::bigint < 0 OR received = $4::bigint)
    AND (writer IS NULL OR writer_until <= now())
    AND created_at >= now() - make_interval(secs => $5::float8)
+   AND (sealed_data_key IS NULL OR sealed_segments + (part_size + 65535) / 65536 + 2 <= $6::bigint)
 `
 
 type UploadClaimParams struct {
@@ -62,11 +64,14 @@ type UploadClaimParams struct {
 	ID            string
 	ClaimOffset   int64
 	MaxAgeSeconds float64
+	MaxSegments   int64
 }
 
 // The claim of R-STOR-011 step 2: one writer at a time, only on an open session that is not past its maximum age, and only when
-// the request's first byte is the received count (a negative offset means "where the session is"). Zero rows is a request the
-// session does not take; the caller reads the row to say which.
+// the request's first byte is the received count (a negative offset means "where the session is"). A session on an encrypted
+// connection reserves what a request may seal before a record counts it, one part and its final segment and one more
+// (⌈part_size / 65,536⌉ + 2), and is not taken past max_segments (R-STOR-081, Q-STOR-380). Zero rows is a request the session does
+// not take; the caller reads the row to say which.
 func (q *Queries) UploadClaim(ctx context.Context, arg UploadClaimParams) (int64, error) {
 	result, err := q.db.Exec(ctx, uploadClaim,
 		arg.Writer,
@@ -74,6 +79,7 @@ func (q *Queries) UploadClaim(ctx context.Context, arg UploadClaimParams) (int64
 		arg.ID,
 		arg.ClaimOffset,
 		arg.MaxAgeSeconds,
+		arg.MaxSegments,
 	)
 	if err != nil {
 		return 0, err
@@ -105,19 +111,22 @@ func (q *Queries) UploadClaimCompleting(ctx context.Context, arg UploadClaimComp
 }
 
 const uploadClearTail = `-- name: UploadClearTail :execrows
-UPDATE upload_sessions SET tail_size = 0, writer = NULL, writer_until = NULL, last_activity_at = now()
- WHERE id = $1::text::uuid AND state = 'completing' AND writer = $2::text::uuid
+UPDATE upload_sessions SET tail_size = 0, writer = NULL, writer_until = NULL, last_activity_at = now(),
+       sealed_segments = sealed_segments + $1::bigint
+ WHERE id = $2::text::uuid AND state = 'completing' AND writer = $3::text::uuid
 `
 
 type UploadClearTailParams struct {
-	ID     string
-	Writer string
+	Segments int64
+	ID       string
+	Writer   string
 }
 
 // The recorded tail has become the last part: it is not a tail any more, and the short claim of that step ends with it.
-// Conditional on the claim, so that a finalize that is repeated, or runs twice at once, clears it once.
+// Conditional on the claim, so that a finalize that is repeated, or runs twice at once, clears it once. The segments the last part
+// sealed are counted (R-STOR-081).
 func (q *Queries) UploadClearTail(ctx context.Context, arg UploadClearTailParams) (int64, error) {
-	result, err := q.db.Exec(ctx, uploadClearTail, arg.ID, arg.Writer)
+	result, err := q.db.Exec(ctx, uploadClearTail, arg.Segments, arg.ID, arg.Writer)
 	if err != nil {
 		return 0, err
 	}
@@ -236,7 +245,8 @@ SELECT id::text AS id, repo_id, addressed_repo_id, COALESCE(binding, '')::text A
        COALESCE(writer::text, '')::text AS writer, COALESCE(item_id, 0)::bigint AS item_id,
        (writer IS NOT NULL AND writer_until > now())::bool AS claimed, digest, state,
        (created_at < now() - make_interval(secs => $1::float8))::bool AS too_old,
-       (SELECT count(*) FROM upload_session_parts p WHERE p.session_id = s.id)::bigint AS parts, connection_id
+       (SELECT count(*) FROM upload_session_parts p WHERE p.session_id = s.id)::bigint AS parts, connection_id,
+       COALESCE(sealed_data_key, '')::text AS sealed_data_key, sealed_segments
 FROM upload_sessions s
 WHERE id = $2::text::uuid
 `
@@ -265,6 +275,8 @@ type UploadGetSessionRow struct {
 	TooOld          bool
 	Parts           int64
 	ConnectionID    string
+	SealedDataKey   string
+	SealedSegments  int64
 }
 
 // The row of a session as a request judges it: the scope columns, the recorded state and whether another request holds an
@@ -291,26 +303,32 @@ func (q *Queries) UploadGetSession(ctx context.Context, arg UploadGetSessionPara
 		&i.TooOld,
 		&i.Parts,
 		&i.ConnectionID,
+		&i.SealedDataKey,
+		&i.SealedSegments,
 	)
 	return i, err
 }
 
 const uploadInsertPart = `-- name: UploadInsertPart :execrows
-INSERT INTO upload_session_parts (session_id, part_number, size, etag, sha256)
-VALUES ($1::text::uuid, $2::int, $3::bigint, $4::text, $5::bytea)
+INSERT INTO upload_session_parts (session_id, part_number, size, etag, sha256, stored_size, stored_sha256)
+VALUES ($1::text::uuid, $2::int, $3::bigint, $4::text, $5::bytea,
+        $6::bigint, $7::bytea)
 ON CONFLICT (session_id, part_number) DO NOTHING
 `
 
 type UploadInsertPartParams struct {
-	SessionID  string
-	PartNumber int32
-	Size       int64
-	Etag       string
-	Sha256     []byte
+	SessionID    string
+	PartNumber   int32
+	Size         int64
+	Etag         string
+	Sha256       []byte
+	StoredSize   int64
+	StoredSha256 []byte
 }
 
-// The row of an uploaded part. A part number that is recorded already is the same part sent again (a finalize repeated on
-// another replica), never another one.
+// The row of an uploaded part: its plain size and SHA-256 and, as sent, its stored size and SHA-256 (R-STOR-081; on a plain connection
+// the same). A part number that is recorded already is the same part sent again (a finalize repeated on another replica), never
+// another one.
 func (q *Queries) UploadInsertPart(ctx context.Context, arg UploadInsertPartParams) (int64, error) {
 	result, err := q.db.Exec(ctx, uploadInsertPart,
 		arg.SessionID,
@@ -318,6 +336,8 @@ func (q *Queries) UploadInsertPart(ctx context.Context, arg UploadInsertPartPara
 		arg.Size,
 		arg.Etag,
 		arg.Sha256,
+		arg.StoredSize,
+		arg.StoredSha256,
 	)
 	if err != nil {
 		return 0, err
@@ -327,13 +347,14 @@ func (q *Queries) UploadInsertPart(ctx context.Context, arg UploadInsertPartPara
 
 const uploadInsertSession = `-- name: UploadInsertSession :execrows
 
-INSERT INTO upload_sessions (id, repo_id, addressed_repo_id, binding, principal_id, hash_state, part_size, s3_upload_id, state, connection_id)
+INSERT INTO upload_sessions (id, repo_id, addressed_repo_id, binding, principal_id, hash_state, part_size, s3_upload_id, state, connection_id,
+                             sealed_data_key)
 SELECT $1::text::uuid, $2::bigint, $3::bigint, $4::text,
         NULLIF($5::text, '')::uuid, $6::bytea, $7::bigint,
-        $8::text, 'open', $9::text
+        $8::text, 'open', $9::text, NULLIF($10::text, '')
 WHERE (SELECT count(*) FROM upload_sessions o
         WHERE o.repo_id = $2::bigint AND COALESCE(o.principal_id, '00000000-0000-0000-0000-000000000000'::uuid) = COALESCE(NULLIF($5::text, '')::uuid, '00000000-0000-0000-0000-000000000000'::uuid)
-          AND o.state IN ('open', 'completing', 'assembled')) < $10::bigint
+          AND o.state IN ('open', 'completing', 'assembled')) < $11::bigint
 `
 
 type UploadInsertSessionParams struct {
@@ -346,6 +367,7 @@ type UploadInsertSessionParams struct {
 	PartSize        int64
 	S3UploadID      string
 	ConnectionID    string
+	SealedDataKey   string
 	MaxOpen         int64
 }
 
@@ -357,7 +379,8 @@ type UploadInsertSessionParams struct {
 // while the principal holds fewer than max_open sessions on the repository: zero rows is a start the cap refuses (Q-STOR-176). The
 // count and the insert are one statement, and the caller holds the lock of the repository row (UploadLockRepository), so that two starts at
 // once cannot both count below the cap: the second one waits for the lock and then sees the first insert (READ COMMITTED takes a new
-// snapshot per statement). A principal that is none counts as the all-zero uuid, which the expression index on the count shares.
+// snapshot per statement). A principal that is none counts as the all-zero uuid, which the expression index on the count shares. A
+// session on an encrypted connection carries its data key sealed under its id (R-STOR-081); empty is NULL.
 func (q *Queries) UploadInsertSession(ctx context.Context, arg UploadInsertSessionParams) (int64, error) {
 	result, err := q.db.Exec(ctx, uploadInsertSession,
 		arg.ID,
@@ -369,6 +392,7 @@ func (q *Queries) UploadInsertSession(ctx context.Context, arg UploadInsertSessi
 		arg.PartSize,
 		arg.S3UploadID,
 		arg.ConnectionID,
+		arg.SealedDataKey,
 		arg.MaxOpen,
 	)
 	if err != nil {
@@ -538,15 +562,18 @@ func (q *Queries) UploadListDone(ctx context.Context, arg UploadListDoneParams) 
 }
 
 const uploadListParts = `-- name: UploadListParts :many
-SELECT part_number, size, etag, sha256 FROM upload_session_parts
+SELECT part_number, size, etag, sha256, COALESCE(stored_size, size)::bigint AS stored_size,
+       COALESCE(stored_sha256, sha256)::bytea AS stored_sha256 FROM upload_session_parts
  WHERE session_id = $1::text::uuid ORDER BY part_number
 `
 
 type UploadListPartsRow struct {
-	PartNumber int32
-	Size       int64
-	Etag       string
-	Sha256     []byte
+	PartNumber   int32
+	Size         int64
+	Etag         string
+	Sha256       []byte
+	StoredSize   int64
+	StoredSha256 []byte
 }
 
 func (q *Queries) UploadListParts(ctx context.Context, id string) ([]UploadListPartsRow, error) {
@@ -563,6 +590,8 @@ func (q *Queries) UploadListParts(ctx context.Context, id string) ([]UploadListP
 			&i.Size,
 			&i.Etag,
 			&i.Sha256,
+			&i.StoredSize,
+			&i.StoredSha256,
 		); err != nil {
 			return nil, err
 		}
@@ -666,20 +695,28 @@ func (q *Queries) UploadMarkDone(ctx context.Context, arg UploadMarkDoneParams) 
 }
 
 const uploadMoveSession = `-- name: UploadMoveSession :execrows
-UPDATE upload_sessions SET connection_id = $1::text, last_activity_at = now()
- WHERE id = $2::text::uuid AND state = 'open' AND writer = $3::text::uuid AND received = 0 AND s3_upload_id = ''
+UPDATE upload_sessions SET connection_id = $1::text, sealed_data_key = NULLIF($2::text, ''),
+       last_activity_at = now()
+ WHERE id = $3::text::uuid AND state = 'open' AND writer = $4::text::uuid AND received = 0 AND s3_upload_id = ''
 `
 
 type UploadMoveSessionParams struct {
-	ConnectionID string
-	ID           string
-	Writer       string
+	ConnectionID  string
+	SealedDataKey string
+	ID            string
+	Writer        string
 }
 
 // A session that has written nothing moves to another connection at its first write when its own is not writable (R-STOR-054),
-// under the claim of the request that writes. Zero rows is a request that lost its claim or a session that has written meanwhile.
+// under the claim of the request that writes, with the data key it needs there: sealed on an encrypted connection, none (empty) on
+// a plain one (R-STOR-081). Zero rows is a request that lost its claim or a session that has written meanwhile.
 func (q *Queries) UploadMoveSession(ctx context.Context, arg UploadMoveSessionParams) (int64, error) {
-	result, err := q.db.Exec(ctx, uploadMoveSession, arg.ConnectionID, arg.ID, arg.Writer)
+	result, err := q.db.Exec(ctx, uploadMoveSession,
+		arg.ConnectionID,
+		arg.SealedDataKey,
+		arg.ID,
+		arg.Writer,
+	)
 	if err != nil {
 		return 0, err
 	}
@@ -689,16 +726,18 @@ func (q *Queries) UploadMoveSession(ctx context.Context, arg UploadMoveSessionPa
 const uploadRecordEnd = `-- name: UploadRecordEnd :execrows
 UPDATE upload_sessions
    SET received = $1::bigint, hash_state = $2::bytea, tail_size = $3::bigint,
+       sealed_segments = sealed_segments + $4::bigint,
        writer = NULL, writer_until = NULL, last_activity_at = now(),
-       state = CASE WHEN $4::bool THEN 'completing' ELSE state END,
-       digest = CASE WHEN $4::bool THEN $5::bytea ELSE digest END
- WHERE id = $6::text::uuid AND state = 'open' AND writer = $7::text::uuid
+       state = CASE WHEN $5::bool THEN 'completing' ELSE state END,
+       digest = CASE WHEN $5::bool THEN $6::bytea ELSE digest END
+ WHERE id = $7::text::uuid AND state = 'open' AND writer = $8::text::uuid
 `
 
 type UploadRecordEndParams struct {
 	Received   int64
 	HashState  []byte
 	TailSize   int64
+	Segments   int64
 	Completing bool
 	Digest     []byte
 	ID         string
@@ -706,13 +745,15 @@ type UploadRecordEndParams struct {
 }
 
 // The end of a request's body: the received count, the hash state and the size of the tail after it (its segment rows are the
-// caller's, written in the same transaction), and the release of the claim, conditional on the writer token. A finalize that passed
-// the digest check sets the state completing and records the digest in the same statement.
+// caller's, written in the same transaction), the segments its tail object sealed (R-STOR-081), and the release of the claim,
+// conditional on the writer token. A finalize that passed the digest check sets the state completing and records the digest in the
+// same statement.
 func (q *Queries) UploadRecordEnd(ctx context.Context, arg UploadRecordEndParams) (int64, error) {
 	result, err := q.db.Exec(ctx, uploadRecordEnd,
 		arg.Received,
 		arg.HashState,
 		arg.TailSize,
+		arg.Segments,
 		arg.Completing,
 		arg.Digest,
 		arg.ID,
@@ -727,14 +768,16 @@ func (q *Queries) UploadRecordEnd(ctx context.Context, arg UploadRecordEndParams
 const uploadRecordPart = `-- name: UploadRecordPart :execrows
 UPDATE upload_sessions
    SET received = $1::bigint, hash_state = $2::bytea, tail_size = 0,
-       s3_upload_id = CASE WHEN s3_upload_id = '' THEN $3::text ELSE s3_upload_id END,
-       writer_until = now() + make_interval(secs => $4::float8), last_activity_at = now()
- WHERE id = $5::text::uuid AND state = 'open' AND writer = $6::text::uuid
+       sealed_segments = sealed_segments + $3::bigint,
+       s3_upload_id = CASE WHEN s3_upload_id = '' THEN $4::text ELSE s3_upload_id END,
+       writer_until = now() + make_interval(secs => $5::float8), last_activity_at = now()
+ WHERE id = $6::text::uuid AND state = 'open' AND writer = $7::text::uuid
 `
 
 type UploadRecordPartParams struct {
 	Received     int64
 	HashState    []byte
+	Segments     int64
 	UploadID     string
 	LeaseSeconds float64
 	ID           string
@@ -743,12 +786,13 @@ type UploadRecordPartParams struct {
 
 // A completed part: the new received count and hash state, no tail (its segments are inside the part; the caller deletes their
 // rows in the same transaction), a renewed lease, and the id of the multipart upload when this request created it (the upload is
-// created with the first part, and only the first record sets the id). Conditional on the request's writer token; zero rows is a
-// request that lost its claim.
+// created with the first part, and only the first record sets the id), and the segments the part sealed (R-STOR-081). Conditional on
+// the request's writer token; zero rows is a request that lost its claim.
 func (q *Queries) UploadRecordPart(ctx context.Context, arg UploadRecordPartParams) (int64, error) {
 	result, err := q.db.Exec(ctx, uploadRecordPart,
 		arg.Received,
 		arg.HashState,
+		arg.Segments,
 		arg.UploadID,
 		arg.LeaseSeconds,
 		arg.ID,

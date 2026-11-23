@@ -5,10 +5,11 @@ Status: specified on 2026-11-22 ([storage.md](../spec/storage.md) R-STOR-083 to 
 [bastion.md](../spec/bastion.md) R-BAS-061). The Bastion's cache key is built ([security/bastion.md](bastion.md#with-a-cache-key)). The
 keys of the main installation are built (package 2 of [stored-content-encryption.md](../developer/stored-content-encryption.md#package-2-the-keys-as-built),
 2026-11-22): the rows of `storage_keys` with their two sealed columns, the drawing with its refusal, the keys a replica holds, the export,
-the import, a new generation and `blob.Store.CopyDataKey`. Since `encrypted: true` is still refused at start, no connection is encrypted, no
-key is drawn on a running installation, and the key ring seals the upstream credentials and signing keys only, as
-[data-and-secret-flow.md](data-and-secret-flow.md) describes; every "live with `encrypted: true`" below starts with package 3. The
-destruction of a retired connection's keys ([storage.md](../spec/storage.md) R-STOR-097 to R-STOR-103, Q-STOR-309 (b),
+the import, a new generation and `blob.Store.CopyDataKey`. `encrypted: true` is accepted since package 3 (2026-11-22): a replica draws the
+keys of an encrypted connection at its first sight, wraps every object's data key under the active storage key, and seals an upload session's
+data key into its row with the key ring ([storage.md](../spec/storage.md) R-STOR-080, R-STOR-081). The Helm chart still refuses
+`encrypted: true` until package 6, so an installation of the chart has no encrypted connection yet. The destruction of a retired
+connection's keys ([storage.md](../spec/storage.md) R-STOR-097 to R-STOR-103, Q-STOR-309 (b),
 [ADR-255](../decisions.md#adr-255--the-storage-keys-of-a-retired-connection-can-be-destroyed-so-that-what-stays-at-a-provider-becomes-unreadable))
 is specified, not built (package 7, with the pool's part in package 4).
 
@@ -112,8 +113,8 @@ Component: the drawing of keys at a connection's first sight ([storage.md](../sp
 current. The listing that guards the drawing lists the current objects below `sha256/` and `keyed/`, one key each; a versioned bucket whose
 earlier objects were all deleted (only noncurrent versions remain) looks empty, and a replica draws new keys over it. A later
 `restore-versions` ([ha-and-helm.md](../spec/ha-and-helm.md) R-HA-025) makes such an object current again with a record that names a key the
-database lacks: reads fall over and mark nothing, `QuaderStorageUnknownKey` fires, until the export that holds the row is imported. Dormant
-until package 3 accepts `encrypted: true`; then live only where a database was lost without its export, over a versioned bucket whose objects
+database lacks: reads fall over and mark nothing (the alert `QuaderStorageUnknownKey` comes with package 6), until the export that holds the
+row is imported. Live only where a database was lost without its export, over a versioned bucket of an encrypted connection whose objects
 were deleted. Listing the versions as well would need `s3:ListBucketVersions`, which the runtime credential does not have
 ([privilege-footprint.md](privilege-footprint.md)).
 

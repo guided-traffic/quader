@@ -234,10 +234,19 @@ type blobRows struct {
 	live   map[blob.Digest]bool
 	copies map[string]bool // connection/digest
 	queue  map[string]bool // connection/digest
+	writes map[string]blob.CopyWrite
 }
 
 func newBlobRows() *blobRows {
-	return &blobRows{live: map[blob.Digest]bool{}, copies: map[string]bool{}, queue: map[string]bool{}}
+	return &blobRows{live: map[blob.Digest]bool{}, copies: map[string]bool{}, queue: map[string]bool{}, writes: map[string]blob.CopyWrite{}}
+}
+
+// write is the copy row a commit recorded for a blob on a connection.
+func (b *blobRows) write(conn string, d blob.Digest) (blob.CopyWrite, bool) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	w, ok := b.writes[ref(conn, d)]
+	return w, ok
 }
 
 type memTx struct{ meta.TxState }
@@ -350,6 +359,7 @@ func (b *blobRows) PutCopy(_ context.Context, _ meta.Tx, d blob.Digest, w blob.C
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.copies[ref(w.Connection, d)] = true
+	b.writes[ref(w.Connection, d)] = w
 	return nil
 }
 

@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"slices"
 	"sync"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/blob/blobcrypt"
 	"github.com/guided-traffic/quader/internal/config"
 )
 
@@ -23,12 +23,41 @@ type Connection struct {
 	mu   sync.RWMutex
 	caps Capabilities
 	link LinkCheck
+	// keys are the replica's storage keys and metrics the store's families, which the store gives its connections (bind): the
+	// reader and the naming function of an encrypted connection need the keys (R-STOR-082, R-STOR-086).
+	keys    StorageKeys
+	metrics *Metrics
 }
 
 // NewConnection builds the connection of one element. cfg should be resolved (config.ResolveConnections); its defaults are
-// applied here as well. objects is the connection's client, usually its [Guard].
+// applied here as well. objects is the connection's client, usually its [Guard]; on an encrypted connection it is wrapped so that a
+// write of a blob's object without the record of the stored format is refused before it is sent (sealedOnly, R-STOR-075).
 func NewConnection(cfg config.StorageConnection, objects ObjectStore) *Connection {
-	return &Connection{cfg: cfg.WithDefaults(), objects: objects}
+	cfg = cfg.WithDefaults()
+	if cfg.Encrypted {
+		objects = sealOnly(objects, cfg.KeyPrefix())
+	}
+	return &Connection{cfg: cfg, objects: objects}
+}
+
+// bind gives the connection the replica's storage keys and the store's metrics (New). A store without keys, or without metrics,
+// leaves what an earlier store gave.
+func (c *Connection) bind(keys StorageKeys, m *Metrics) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if keys != nil {
+		c.keys = keys
+	}
+	if m != nil {
+		c.metrics = m
+	}
+}
+
+// sealing is the binding of bind.
+func (c *Connection) sealing() (StorageKeys, *Metrics) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.keys, c.metrics
 }
 
 // ID is the connection's id.
@@ -55,16 +84,42 @@ func (c *Connection) Bucket() string { return c.cfg.Bucket }
 // Drain reports whether the connection is being taken out (drain: true): no upload goes to it (R-STOR-051).
 func (c *Connection) Drain() bool { return c.cfg.Drain }
 
-// Encrypted reports the connection's fixed property encrypted; always false in stage 1 (R-STOR-050, R-STOR-062).
+// Encrypted reports the connection's fixed property encrypted (R-STOR-075): every blob object it holds is in the stored format of
+// R-STOR-076 with its record, written and read through the connection's encrypting writer and decrypting reader.
 func (c *Connection) Encrypted() bool { return c.cfg.Encrypted }
 
-// Objects is the connection's client.
+// KeyedNames reports whether the connection's objects get keyed names (R-STOR-086): an encrypted connection with keyed_names true,
+// its default.
+func (c *Connection) KeyedNames() bool { return c.cfg.UsesKeyedNames() }
+
+// Objects is the connection's client; on an encrypted connection it refuses a write of a blob's object without a record.
 func (c *Connection) Objects() ObjectStore { return c.objects }
 
 // ObjectKey is the connection's naming function: the name of a blob's object on this connection when it is written
-// (R-STOR-062). Stage 1 names every object by its digest under the connection's prefix (R-STOR-001); every reader takes the
-// name from the copy row, never from this function.
-func (c *Connection) ObjectKey(d Digest) string { return Key(c.Prefix(), d) }
+// (R-STOR-062). A plain connection, and an encrypted one with keyed_names: false, name an object by its digest under the
+// connection's prefix (R-STOR-001); an encrypted one with keyed names by the keyed name of R-STOR-086, empty when the replica holds
+// no name key of it (a write to the empty name fails; [Connection.Name] says why). Every reader takes the name from the copy
+// row, never from this function.
+func (c *Connection) ObjectKey(d Digest) string {
+	name, _ := c.Name(d)
+	return name
+}
+
+// Name is ObjectKey with the reason a keyed name cannot be made: the replica holds no name key of the connection.
+func (c *Connection) Name(d Digest) (string, error) {
+	if !c.KeyedNames() {
+		return Key(c.Prefix(), d), nil
+	}
+	keys, _ := c.sealing()
+	if keys == nil {
+		return "", fmt.Errorf("blob: this replica holds no name key of connection %s", c.ID())
+	}
+	nk, err := keys.NameKey(c.ID())
+	if err != nil {
+		return "", fmt.Errorf("blob: the name key of connection %s: %w", c.ID(), err)
+	}
+	return blobcrypt.KeyedName(nk, c.Prefix(), d)
+}
 
 // PayloadChecksum is the payload checksum the connection's writes carry: sha256, md5 or none (R-STOR-006).
 func (c *Connection) PayloadChecksum() string { return c.cfg.PayloadChecksum }
@@ -141,13 +196,6 @@ func (c *Connection) Presign(ctx context.Context, key string, o PresignOptions) 
 // fetches with it (R-STOR-074).
 func (c *Connection) Fetcher() Fetcher { return FetcherOf(c.objects) }
 
-// Read returns the bytes of the blob that a copy on this connection holds, as one function per connection (R-STOR-062):
-// the stored bytes as they are in stage 1, the decrypted and authenticated ones in stage 2. A full read (rng nil) is not
-// checked here; the caller verifies the digest and the stored size, as the download, the scrub and the streamed copies do.
-func (c *Connection) Read(ctx context.Context, cp Copy, rng *ByteRange) (io.ReadCloser, ObjectInfo, error) {
-	return c.objects.Get(ctx, cp.ObjectKey, rng)
-}
-
 // Capabilities is what the start check found a connection to support (R-STOR-035, Q-STOR-248), as the column
 // storage_connections.capabilities stores it and the API shows it (R-STOR-061).
 type Capabilities struct {
@@ -206,6 +254,20 @@ func SingleConnection(prefix string, objects ObjectStore) *Connections {
 
 // List is the connections in list order.
 func (cs *Connections) List() []*Connection { return slices.Clone(cs.list) }
+
+// Without is the set without the connections drop reports, in list order and with their positions kept: the view of a job that
+// passes over some connections (the scrub over the encrypted ones until it reads the stored format, stored-content-encryption.md).
+// It may be empty.
+func (cs *Connections) Without(drop func(*Connection) bool) *Connections {
+	out := &Connections{byID: map[string]*Connection{}}
+	for _, c := range cs.list {
+		if !drop(c) {
+			out.list = append(out.list, c)
+			out.byID[c.ID()] = c
+		}
+	}
+	return out
+}
 
 // Get is the connection of an id, false when this replica does not configure it.
 func (cs *Connections) Get(id string) (*Connection, bool) {

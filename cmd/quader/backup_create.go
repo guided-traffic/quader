@@ -137,6 +137,12 @@ func backupSources(ctx context.Context, cfg *config.Config, out *outbound.Factor
 	var sources []backup.SourceConnection
 	var refs []format.ConnectionRef
 	for i, el := range conns {
+		if el.Encrypted {
+			// the backup copies objects as they lie and checks them against the digest; the pool of an encrypted connection's records
+			// is not built (backup-and-restore.md R-BAK-031, package 4 of docs/developer/stored-content-encryption.md), so a run refuses
+			// rather than record its blobs as damaged or copy ciphertext it cannot confirm
+			return nil, nil, fmt.Errorf("storage.connections[%d] (%s): encrypted: the backup of an encrypted connection is not built yet (backup-and-restore.md R-BAK-031)", i, el.ID)
+		}
 		cc := config.ClientConfig(i, el, cfg.Storage.ObjectStore)
 		if creds, ok := read[el.ID]; ok {
 			cc.Credentials = creds

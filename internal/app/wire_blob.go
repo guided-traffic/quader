@@ -111,6 +111,7 @@ func (a *App) wireBlob(ctx context.Context, keys keysArea, pg postgresArea, au a
 	// expires them. A session starts on the first writable connection and stays on it (R-STOR-054).
 	svc, err := uploads.New(uploads.Options{
 		DB: db, Connections: conns, Spool: store.Spool(), Storage: cfg, Metrics: bm, Log: a.log.With("component", "uploads"),
+		SessionKeys: sessionKeys{ring: keys.ring}, // a session on an encrypted connection seals its data key (R-STOR-081)
 	})
 	if err != nil {
 		return blobArea{}, err
