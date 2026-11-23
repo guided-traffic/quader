@@ -146,7 +146,7 @@ reports given, so a run that omits the e2e report drops the requirements only e2
 |---|---|---|
 | Every pull request | `go run ./internal/tools/coverage -check` | Rule violations, and generated files that the change did not regenerate. |
 | Every pull request | `go run ./internal/tools/coverage -links` | Broken relative links and anchors. |
-| After the test jobs and the kind legs (`coverage evidence`) | `go run ./internal/tools/coverage -claims -tests …` over the unit, Angular, chart and integration reports and the kind-leg reports of the run, and `-carried …` over the newest report of every kind leg that has none in this run | No requirement is claimed without a passing test; the record written from the reports is uploaded as `coverage-evidence` and committed by Semantic Release with the release. |
+| After the test jobs and the kind legs (`coverage evidence`) | `go run ./internal/tools/coverage -claims -tests …` over the unit, Angular, chart and integration reports and the kind-leg reports of the run, and `-carried …` over the newest report of every kind leg that has none in this run | No requirement is claimed without a passing test; the record written from the reports is uploaded as `coverage-evidence` (14 days). Since Q-ARCH-457 no release takes it ([below](#the-committed-record-since-the-minimal-gate)). |
 
 The kind legs are path-filtered per change and the long legs run in the nightly workflow, so a run holds only some of the end-to-end
 reports. [fetch-e2e-reports.sh](../../tools/fetch-e2e-reports.sh) fills the rest: it lists the last 40 completed runs of Test and Release and
@@ -161,9 +161,21 @@ report proves still does. To see the effect locally, download the reports of a r
 carried ones with `tools/fetch-e2e-reports.sh <dir of this run's e2e reports> <destination>` (it needs `GITHUB_TOKEN`, `GITHUB_REPOSITORY` and
 `GITHUB_RUN_ID`), then run the generator with the `-tests` and `-carried` flags.
 
-Nobody refreshes `implemented.txt` by hand or from a local run: CI writes it from the reports of every run on `main`, and
-Semantic Release commits it, `checklist.md` and the generated blocks of the coverage README with the release (the release
-commit is `[skip ci]`). Two things stay manual. A change to the catalog or the spec reruns `go run ./internal/tools/coverage`
+Nobody refreshes `implemented.txt` by hand or from a local run: CI writes it from the reports of every run on `main`.
+`go run ./internal/tools/coverage` without `-tests` keeps the IDs of the committed record and renders `checklist.md` and the
+generated blocks of the coverage README from them; it learns no new ID, because it reads no test report.
+
+### The committed record since the minimal gate
+
+Until [Q-ARCH-457](../spec/architecture.md#q-arch-457--until-the-first-stable-release-a-minimal-set-of-jobs-gates-semantic-release)
+(2026-11-10) Semantic Release took the record the run wrote and committed it, `checklist.md` and the generated blocks of the coverage
+README with the release (`chore(release): <version> [skip ci]`). Since then the job `coverage evidence` needs legs that no longer gate,
+Semantic Release does not wait for it, and no release commits the record: the last release commit that carried it is 0.34.1
+(d3cf8d660, 2026-11-10). The committed file moved since only by hand, against the rule above: eleven commits of 2026-11-19 to
+2026-11-22 added 38 IDs of what they had built and removed one. The record the pipeline wrote on 2026-11-23 (Test and Release
+45133371730) held 1,059 IDs against the 657 committed. How the record reaches `main` again while the gate stays minimal is open.
+
+Two things stay manual. A change to the catalog or the spec reruns `go run ./internal/tools/coverage`
 (`make coverage`), which needs no tests. A change that removes or renames the only test of a requirement on purpose takes
 the ID out of `implemented.txt` in the same change; otherwise `coverage evidence` fails with exit 3 and names it. The CI
 wiring is not part of the generator: the workflow calls the commands above.
@@ -177,6 +189,8 @@ Decided by the owner (2026-11-07), on the development agent's proposal.
 | The committed record must equal the reports of the run (`-check -tests`) | A push whose tests prove a requirement for the first time fails until the record is refreshed and pushed again | The record is exact on every commit | Every such push costs a second pipeline run, and the refresh needs every test tier locally (2.5 h on 2026-11-07, and still stale: the test binary was older than the last commit). 4 of 11 red runs of 2026-11-06/07 were this job |
 | **CI writes the record, Semantic Release commits it; the check fails only on an unproven claim (`-claims`)** | The record is written from the run that releases; a claim without a passing test fails the run | No local evidence run, no second pipeline run; the record never claims more than the tests prove | The record lags behind a push that makes no release, until the next release |
 | CI commits the record on every push | Exact after every push | — | A bot commit after every push, and a pipeline run for each |
+
+Since Q-ARCH-457 the second half of the chosen row does not hold: no release commits the record ([above](#the-committed-record-since-the-minimal-gate)).
 
 ## Format changes against the interim script
 
