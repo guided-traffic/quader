@@ -1527,6 +1527,33 @@
         <target>Für diese Zuordnung und diesen Client lässt sich kein Snippet erzeugen.</target>
       </segment>
     </unit>
+    <unit id="problem.not_retryable">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-downloads.ts:8</note>
+      </notes>
+      <segment>
+        <source>Only a failed or cancelled download can be retried. Load the list again to see its state.</source>
+        <target>Nur ein fehlgeschlagener oder abgebrochener Download kann wiederholt werden. Laden Sie die Liste neu, um seinen Status zu sehen.</target>
+      </segment>
+    </unit>
+    <unit id="problem.already_queued">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-downloads.ts:10</note>
+      </notes>
+      <segment>
+        <source>This version waits or runs in another download already.</source>
+        <target>Diese Version wartet oder läuft bereits in einem anderen Download.</target>
+      </segment>
+    </unit>
+    <unit id="problem.download_queue_full">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-downloads.ts:12</note>
+      </notes>
+      <segment>
+        <source>The queue of this repository is full. Try again when some of its downloads have run.</source>
+        <target>Die Warteschlange dieses Repositorys ist voll. Versuchen Sie es erneut, wenn einige ihrer Downloads gelaufen sind.</target>
+      </segment>
+    </unit>
     <unit id="problem.limit_above_maximum">
       <notes>
         <note category="location">src/app/core/http/problem-messages-limits.ts:19</note>
@@ -2053,7 +2080,7 @@
     </unit>
     <unit id="problem.unauthenticated">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:43</note>
+        <note category="location">src/app/core/http/problem-messages.ts:46</note>
       </notes>
       <segment>
         <source>You are not signed in, or your session has ended.</source>
@@ -2062,7 +2089,7 @@
     </unit>
     <unit id="problem.reauthentication_required">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:45</note>
+        <note category="location">src/app/core/http/problem-messages.ts:48</note>
       </notes>
       <segment>
         <source>This action needs a recent sign-in.</source>
@@ -2071,7 +2098,7 @@
     </unit>
     <unit id="problem.forbidden">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:47</note>
+        <note category="location">src/app/core/http/problem-messages.ts:50</note>
       </notes>
       <segment>
         <source>You do not have the permission for this.</source>
@@ -2080,7 +2107,7 @@
     </unit>
     <unit id="problem.csrf_failed">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:49</note>
+        <note category="location">src/app/core/http/problem-messages.ts:52</note>
       </notes>
       <segment>
         <source>The request was refused as a possible forgery. Reload the page and try again.</source>
@@ -2089,7 +2116,7 @@
     </unit>
     <unit id="problem.not_found">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:51</note>
+        <note category="location">src/app/core/http/problem-messages.ts:54</note>
       </notes>
       <segment>
         <source>This does not exist, or you may not see it.</source>
@@ -2098,7 +2125,7 @@
     </unit>
     <unit id="problem.already_exists">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:53</note>
+        <note category="location">src/app/core/http/problem-messages.ts:56</note>
       </notes>
       <segment>
         <source>An object with this key or name already exists.</source>
@@ -2107,7 +2134,7 @@
     </unit>
     <unit id="problem.conflict">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:55</note>
+        <note category="location">src/app/core/http/problem-messages.ts:58</note>
       </notes>
       <segment>
         <source>The request conflicts with the current state.</source>
@@ -2116,7 +2143,7 @@
     </unit>
     <unit id="problem.idempotency_in_progress">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:57</note>
+        <note category="location">src/app/core/http/problem-messages.ts:60</note>
       </notes>
       <segment>
         <source>The same request is still being processed. Try again in a moment.</source>
@@ -2125,7 +2152,7 @@
     </unit>
     <unit id="problem.idempotency_key_reused">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:59</note>
+        <note category="location">src/app/core/http/problem-messages.ts:62</note>
       </notes>
       <segment>
         <source>This form was already submitted with different content. Reopen it and try again.</source>
@@ -2134,7 +2161,7 @@
     </unit>
     <unit id="problem.token_already_issued">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:61</note>
+        <note category="location">src/app/core/http/problem-messages.ts:64</note>
       </notes>
       <segment>
         <source>A token was already issued for this request.</source>
@@ -2143,7 +2170,7 @@
     </unit>
     <unit id="problem.precondition_failed">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:63</note>
+        <note category="location">src/app/core/http/problem-messages.ts:66</note>
       </notes>
       <segment>
         <source>Changed by someone else since you opened it.</source>
@@ -2152,7 +2179,7 @@
     </unit>
     <unit id="problem.precondition_required">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:65</note>
+        <note category="location">src/app/core/http/problem-messages.ts:68</note>
       </notes>
       <segment>
         <source>The request did not say which version it changes. Reload the page and try again.</source>
@@ -2161,7 +2188,7 @@
     </unit>
     <unit id="problem.authz_epoch_unknown">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:67</note>
+        <note category="location">src/app/core/http/problem-messages.ts:70</note>
       </notes>
       <segment>
         <source>Your last change may not have been saved.</source>
@@ -2170,7 +2197,7 @@
     </unit>
     <unit id="problem.payload_too_large">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:69</note>
+        <note category="location">src/app/core/http/problem-messages.ts:72</note>
       </notes>
       <segment>
         <source>The request is too large.</source>
@@ -2179,7 +2206,7 @@
     </unit>
     <unit id="problem.validation_failed">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:71</note>
+        <note category="location">src/app/core/http/problem-messages.ts:74</note>
       </notes>
       <segment>
         <source>Some entries are not valid.</source>
@@ -2188,7 +2215,7 @@
     </unit>
     <unit id="problem.malformed_request">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:73</note>
+        <note category="location">src/app/core/http/problem-messages.ts:76</note>
       </notes>
       <segment>
         <source>The request could not be understood.</source>
@@ -2197,7 +2224,7 @@
     </unit>
     <unit id="problem.invalid_cursor">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:75</note>
+        <note category="location">src/app/core/http/problem-messages.ts:78</note>
       </notes>
       <segment>
         <source>The list changed while you were paging. Start again from the first page.</source>
@@ -2206,7 +2233,7 @@
     </unit>
     <unit id="problem.upstream_error">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:79</note>
+        <note category="location">src/app/core/http/problem-messages.ts:82</note>
       </notes>
       <segment>
         <source>An upstream service did not answer correctly.</source>
@@ -2215,7 +2242,7 @@
     </unit>
     <unit id="problem.unavailable">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:82</note>
+        <note category="location">src/app/core/http/problem-messages.ts:85</note>
       </notes>
       <segment>
         <source>The service is temporarily unavailable.</source>
@@ -2224,7 +2251,7 @@
     </unit>
     <unit id="problem.internal">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:84</note>
+        <note category="location">src/app/core/http/problem-messages.ts:87</note>
       </notes>
       <segment>
         <source>Something went wrong on the server.</source>
@@ -2233,7 +2260,7 @@
     </unit>
     <unit id="problem.repository_not_found">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:87</note>
+        <note category="location">src/app/core/http/problem-messages.ts:90</note>
       </notes>
       <segment>
         <source>This repository does not exist, or you may not see it.</source>
@@ -2242,7 +2269,7 @@
     </unit>
     <unit id="problem.repository_disabled">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:89</note>
+        <note category="location">src/app/core/http/problem-messages.ts:92</note>
       </notes>
       <segment>
         <source>This repository is disabled.</source>
@@ -2251,7 +2278,7 @@
     </unit>
     <unit id="problem.repository_referenced">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:91</note>
+        <note category="location">src/app/core/http/problem-messages.ts:94</note>
       </notes>
       <segment>
         <source>Other repositories still include this one.</source>
@@ -2260,7 +2287,7 @@
     </unit>
     <unit id="problem.invalid_key">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:93</note>
+        <note category="location">src/app/core/http/problem-messages.ts:96</note>
       </notes>
       <segment>
         <source>The key must have 2 to 64 characters: lower-case letters and digits, separated by a single dot or underscore, a double underscore or hyphens; it starts and ends with a letter or digit.</source>
@@ -2269,7 +2296,7 @@
     </unit>
     <unit id="problem.reserved_name">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:95</note>
+        <note category="location">src/app/core/http/problem-messages.ts:98</note>
       </notes>
       <segment>
         <source>This name is reserved.</source>
@@ -2278,7 +2305,7 @@
     </unit>
     <unit id="problem.invalid_pattern">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:97</note>
+        <note category="location">src/app/core/http/problem-messages.ts:100</note>
       </notes>
       <segment>
         <source>This pattern is not valid.</source>
@@ -2287,7 +2314,7 @@
     </unit>
     <unit id="problem.invalid_document">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:99</note>
+        <note category="location">src/app/core/http/problem-messages.ts:102</note>
       </notes>
       <segment>
         <source>The document contains a member that is unknown or misspelt.</source>
@@ -2296,7 +2323,7 @@
     </unit>
     <unit id="problem.immutable_field">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:101</note>
+        <note category="location">src/app/core/http/problem-messages.ts:104</note>
       </notes>
       <segment>
         <source>This field cannot be changed after creation.</source>
@@ -2305,7 +2332,7 @@
     </unit>
     <unit id="problem.not_applicable">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:103</note>
+        <note category="location">src/app/core/http/problem-messages.ts:106</note>
       </notes>
       <segment>
         <source>This setting does not apply to this class or format.</source>
@@ -2314,7 +2341,7 @@
     </unit>
     <unit id="problem.unsupported_class">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:105</note>
+        <note category="location">src/app/core/http/problem-messages.ts:108</note>
       </notes>
       <segment>
         <source>This format does not support the chosen class.</source>
@@ -2323,7 +2350,7 @@
     </unit>
     <unit id="problem.invalid_path">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:107</note>
+        <note category="location">src/app/core/http/problem-messages.ts:110</note>
       </notes>
       <segment>
         <source>The path is not valid: no empty, dot or double-dot segments, no backslash or control characters.</source>
@@ -2332,7 +2359,7 @@
     </unit>
     <unit id="problem.path_conflict">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:109</note>
+        <note category="location">src/app/core/http/problem-messages.ts:112</note>
       </notes>
       <segment>
         <source>A file and a folder cannot share a path.</source>
@@ -2341,7 +2368,7 @@
     </unit>
     <unit id="problem.not_admitted">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:111</note>
+        <note category="location">src/app/core/http/problem-messages.ts:114</note>
       </notes>
       <segment>
         <source>The include and exclude patterns of this repository do not admit this path.</source>
@@ -2350,7 +2377,7 @@
     </unit>
     <unit id="problem.content_unavailable">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:113</note>
+        <note category="location">src/app/core/http/problem-messages.ts:116</note>
       </notes>
       <segment>
         <source>The content is temporarily unavailable. Try again later.</source>
@@ -2359,7 +2386,7 @@
     </unit>
     <unit id="problem.endpoint_not_configured">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:115</note>
+        <note category="location">src/app/core/http/problem-messages.ts:118</note>
       </notes>
       <segment>
         <source>This endpoint is no longer configured, so its rules cannot be created or replaced.</source>
@@ -2368,7 +2395,7 @@
     </unit>
     <unit id="problem.exposure_rule_limit_reached">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:117</note>
+        <note category="location">src/app/core/http/problem-messages.ts:120</note>
       </notes>
       <segment>
         <source>This endpoint has reached the maximum number of exposure rules.</source>
@@ -2377,7 +2404,7 @@
     </unit>
     <unit id="problem.format_not_exposable">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:119</note>
+        <note category="location">src/app/core/http/problem-messages.ts:122</note>
       </notes>
       <segment>
         <source>Repositories of this format cannot be exposed through rules yet.</source>
@@ -2386,7 +2413,7 @@
     </unit>
     <unit id="problem.invalid_version_range">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:121</note>
+        <note category="location">src/app/core/http/problem-messages.ts:124</note>
       </notes>
       <segment>
         <source>The version range is not valid in the syntax of this format.</source>
@@ -2395,7 +2422,7 @@
     </unit>
     <unit id="problem.dimension_not_supported">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:123</note>
+        <note category="location">src/app/core/http/problem-messages.ts:126</note>
       </notes>
       <segment>
         <source>This format has no such filter.</source>
@@ -2404,7 +2431,7 @@
     </unit>
     <unit id="problem.invalid_audit_range">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:125</note>
+        <note category="location">src/app/core/http/problem-messages.ts:128</note>
       </notes>
       <segment>
         <source>The export needs a start and an end, at most 400 days apart.</source>
@@ -2413,7 +2440,7 @@
     </unit>
     <unit id="problem.key_ring_incompatible">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:127</note>
+        <note category="location">src/app/core/http/problem-messages.ts:130</note>
       </notes>
       <segment>
         <source>The replicas do not hold the same key IDs, so the secrets cannot be re-encrypted yet.</source>
@@ -2422,7 +2449,7 @@
     </unit>
     <unit id="problem.package_owned_by_other_owner">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:132</note>
+        <note category="location">src/app/core/http/problem-messages.ts:135</note>
       </notes>
       <segment>
         <source>This package name belongs to other owners. Ask one of them, or someone who manages the repository, to add you.</source>
@@ -2431,7 +2458,7 @@
     </unit>
     <unit id="problem.last_owner">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:134</note>
+        <note category="location">src/app/core/http/problem-messages.ts:137</note>
       </notes>
       <segment>
         <source>This is the only owner of the package. Add the new owner first, or release the name.</source>
@@ -2440,7 +2467,7 @@
     </unit>
     <unit id="problem.populate_not_permitted">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:136</note>
+        <note category="location">src/app/core/http/problem-messages.ts:139</note>
       </notes>
       <segment>
         <source>This content is not in the cache, and you may not fetch it from the upstream.</source>
@@ -2449,7 +2476,7 @@
     </unit>
     <unit id="problem.rate_limited">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:196</note>
+        <note category="location">src/app/core/http/problem-messages.ts:206</note>
       </notes>
       <segment>
         <source>Too many requests. Wait a moment and try again.</source>
@@ -2458,7 +2485,7 @@
     </unit>
     <unit id="problem.rate_limited_wait">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:197</note>
+        <note category="location">src/app/core/http/problem-messages.ts:207</note>
       </notes>
       <segment>
         <source>Too many requests. Try again in <ph id="0" equiv="seconds" disp="seconds"/> seconds.</source>
@@ -2467,7 +2494,7 @@
     </unit>
     <unit id="problem.network">
       <notes>
-        <note category="location">src/app/core/http/problem-messages.ts:203</note>
+        <note category="location">src/app/core/http/problem-messages.ts:213</note>
       </notes>
       <segment>
         <source>The server could not be reached. Check your connection and try again.</source>
@@ -5424,7 +5451,7 @@
         <note category="location">src/app/features/audit/audit-log.html:326,328</note>
         <note category="location">src/app/features/endpoints/endpoint-detail.html:15,16</note>
         <note category="location">src/app/features/endpoints/endpoint-detail.html:172,176</note>
-        <note category="location">src/app/features/repositories/content/repository-content.html:192,195</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:208,211</note>
         <note category="location">src/app/features/repositories/content/repository-file.ts:156,158</note>
         <note category="location">src/app/features/repositories/content/repository-file.ts:202,204</note>
         <note category="location">src/app/features/repositories/repository-create.html:219,221</note>
@@ -11971,7 +11998,7 @@
     <unit id="route.setup.title">
       <notes>
         <note category="location">src/app/features/guides/guides.routes.ts:46</note>
-        <note category="location">src/app/features/repositories/repositories.routes.ts:90</note>
+        <note category="location">src/app/features/repositories/repositories.routes.ts:98</note>
       </notes>
       <segment>
         <source>Set up client</source>
@@ -21581,6 +21608,33 @@
         <target>Ordner anlegen</target>
       </segment>
     </unit>
+    <unit id="repo.tabs">
+      <notes>
+        <note category="location">src/app/features/repositories/content/remote-tabs.ts:20</note>
+      </notes>
+      <segment>
+        <source>Views of the repository</source>
+        <target>Ansichten des Repositorys</target>
+      </segment>
+    </unit>
+    <unit id="repo.tab.downloads">
+      <notes>
+        <note category="location">src/app/features/repositories/content/remote-tabs.ts:23,24</note>
+      </notes>
+      <segment>
+        <source>Downloads</source>
+        <target>Downloads</target>
+      </segment>
+    </unit>
+    <unit id="repo.tab.downloads-failed">
+      <notes>
+        <note category="location">src/app/features/repositories/content/remote-tabs.ts:24,25</note>
+      </notes>
+      <segment>
+        <source>· <ph id="0" equiv="INTERPOLATION" disp="{{ n }}"/> failed</source>
+        <target>· <ph id="0" equiv="INTERPOLATION" disp="{{ n }}"/> fehlgeschlagen</target>
+      </segment>
+    </unit>
     <unit id="repo.badge.disabled">
       <notes>
         <note category="location">src/app/features/repositories/content/repository-content.html:15,18</note>
@@ -21623,7 +21677,7 @@
     </unit>
     <unit id="repo.content.oci-remote-note3">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:51,53</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:67,69</note>
       </notes>
       <segment>
         <source>Only the tags clients have pulled through this repository are listed here, those it downloaded after a client asked about them, and, in mirror mode, those a pass has fetched.</source>
@@ -21632,7 +21686,7 @@
     </unit>
     <unit id="repo.content.remote-note3">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:53,57</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:69,73</note>
       </notes>
       <segment>
         <source>Only what clients have fetched through this repository is listed here, what it downloaded after a client asked about a version, and, in mirror mode, what a pass has fetched.</source>
@@ -21641,7 +21695,7 @@
     </unit>
     <unit id="files.virtual-note">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:84,86</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:100,102</note>
       </notes>
       <segment>
         <source>A virtual repository stores only what it generates itself, such as an index; the files of its members are on their pages.</source>
@@ -21650,7 +21704,7 @@
     </unit>
     <unit id="files.raw-note">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:86,89</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:102,105</note>
       </notes>
       <segment>
         <source>The raw files of the repository, as Quader stores them.</source>
@@ -21659,7 +21713,7 @@
     </unit>
     <unit id="repo.content.folder-path">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:95,97</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:111,113</note>
       </notes>
       <segment>
         <source>Folder path</source>
@@ -21668,8 +21722,8 @@
     </unit>
     <unit id="files.root">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:99,100</note>
-        <note category="location">src/app/features/repositories/content/repository-content.html:101,103</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:115,116</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:117,119</note>
       </notes>
       <segment>
         <source>Files</source>
@@ -21678,7 +21732,7 @@
     </unit>
     <unit id="files.download">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:147,148</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:163,164</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -21687,7 +21741,7 @@
     </unit>
     <unit id="files.delete">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:153,154</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:169,170</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -21696,7 +21750,7 @@
     </unit>
     <unit id="repo.deleting">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:165,166</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:181,182</note>
         <note category="location">src/app/features/repositories/repository-detail.html:549,550</note>
         <note category="location">src/app/features/repositories/repository-list.html:247,248</note>
       </notes>
@@ -21707,7 +21761,7 @@
     </unit>
     <unit id="repo.content.upstream">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:208</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:224</note>
       </notes>
       <segment>
         <source>Caches</source>
@@ -21716,7 +21770,7 @@
     </unit>
     <unit id="repo.content.resolves-from">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:213,214</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:229,230</note>
       </notes>
       <segment>
         <source>Resolves from</source>
@@ -21725,7 +21779,7 @@
     </unit>
     <unit id="repo.content.sentence.remote">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:154</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:161</note>
       </notes>
       <segment>
         <source>A cache of another registry. It lists what clients have fetched through it.</source>
@@ -21734,7 +21788,7 @@
     </unit>
     <unit id="repo.content.sentence.virtual">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:156</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:163</note>
       </notes>
       <segment>
         <source>Combines other repositories behind one address. It lists what they resolve to.</source>
@@ -21743,7 +21797,7 @@
     </unit>
     <unit id="repo.content.sentence.local2">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:158</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:165</note>
       </notes>
       <segment>
         <source>Holds what is published to it.</source>
@@ -21752,7 +21806,7 @@
     </unit>
     <unit id="repo.content.files-address">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:196</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:218</note>
       </notes>
       <segment>
         <source>Address for downloads by path (curl, wget)</source>
@@ -21761,7 +21815,7 @@
     </unit>
     <unit id="repo.content.copy-files-address">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:197</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:219</note>
       </notes>
       <segment>
         <source>Copy address for downloads by path</source>
@@ -21770,7 +21824,7 @@
     </unit>
     <unit id="repo.content.more">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:210</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:232</note>
       </notes>
       <segment>
         <source>More actions</source>
@@ -21779,7 +21833,7 @@
     </unit>
     <unit id="repo.content.details">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:211</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:233</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -21788,7 +21842,7 @@
     </unit>
     <unit id="repo.content.details-text2">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:212</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:234</note>
       </notes>
       <segment>
         <source>Further addresses, and where this repository fetches from or what it resolves from.</source>
@@ -21797,7 +21851,7 @@
     </unit>
     <unit id="files.trail.between">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:258</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:281</note>
       </notes>
       <segment>
         <source>Show the folders in between</source>
@@ -21806,7 +21860,7 @@
     </unit>
     <unit id="files.delete.progress">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:315</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:338</note>
       </notes>
       <segment>
         <source>Deleting items</source>
@@ -21815,7 +21869,7 @@
     </unit>
     <unit id="files.copy-path">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:316</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:339</note>
       </notes>
       <segment>
         <source>Copy path</source>
@@ -21824,7 +21878,7 @@
     </unit>
     <unit id="files.delete.folder-many">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:371</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:401</note>
       </notes>
       <segment>
         <source>The folder holds more than <ph id="0" equiv="limit" disp="TYPE_TO_CONFIRM_ABOVE"/> items. They are deleted for good.</source>
@@ -21833,7 +21887,7 @@
     </unit>
     <unit id="files.delete.folder">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:372</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:402</note>
       </notes>
       <segment>
         <source>The folder holds <ph id="0" equiv="count" disp="count"/> items. They are deleted for good.</source>
@@ -21842,7 +21896,7 @@
     </unit>
     <unit id="files.delete.file">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:380</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:410</note>
       </notes>
       <segment>
         <source>The file is deleted for good.</source>
@@ -21851,7 +21905,7 @@
     </unit>
     <unit id="files.delete.title">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:383</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:413</note>
       </notes>
       <segment>
         <source>Delete <ph id="0" equiv="path" disp="path"/>?</source>
@@ -21860,7 +21914,7 @@
     </unit>
     <unit id="files.delete.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:385</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:415</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -21869,8 +21923,8 @@
     </unit>
     <unit id="files.deleted">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:393</note>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:403</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:423</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:433</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="path" disp="path"/> deleted.</source>
@@ -21879,7 +21933,7 @@
     </unit>
     <unit id="files.delete.failed">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:404</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:434</note>
       </notes>
       <segment>
         <source>The deletion failed. Some items may be gone.</source>
@@ -23457,6 +23511,934 @@
         <target>Fingerabdruck kopieren</target>
       </segment>
     </unit>
+    <unit id="downloads.state.waiting">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:13</note>
+      </notes>
+      <segment>
+        <source>Waiting</source>
+        <target>Wartet</target>
+      </segment>
+    </unit>
+    <unit id="downloads.state.running">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:15</note>
+      </notes>
+      <segment>
+        <source>Running</source>
+        <target>Läuft</target>
+      </segment>
+    </unit>
+    <unit id="downloads.state.done">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:17</note>
+      </notes>
+      <segment>
+        <source>Done</source>
+        <target>Fertig</target>
+      </segment>
+    </unit>
+    <unit id="downloads.state.failed">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:19</note>
+      </notes>
+      <segment>
+        <source>Failed</source>
+        <target>Fehlgeschlagen</target>
+      </segment>
+    </unit>
+    <unit id="downloads.state.cancelled">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:21</note>
+      </notes>
+      <segment>
+        <source>Cancelled</source>
+        <target>Abgebrochen</target>
+      </segment>
+    </unit>
+    <unit id="downloads.outcome.bounded">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:32</note>
+      </notes>
+      <segment>
+        <source>Stopped at a bound</source>
+        <target>An einer Grenze angehalten</target>
+      </segment>
+    </unit>
+    <unit id="downloads.outcome.refused">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:34</note>
+      </notes>
+      <segment>
+        <source>Every file was refused by a gate</source>
+        <target>Jede Datei wurde von einer Prüfung abgewiesen</target>
+      </segment>
+    </unit>
+    <unit id="downloads.outcome.skipped">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:36</note>
+      </notes>
+      <segment>
+        <source>Skipped: the repository is gone, disabled, offline or no longer remote</source>
+        <target>Übersprungen: Das Repository ist gelöscht, deaktiviert, offline oder nicht mehr remote</target>
+      </segment>
+    </unit>
+    <unit id="downloads.class.upstream-not-found">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:46</note>
+      </notes>
+      <segment>
+        <source>Not found upstream</source>
+        <target>Im Upstream nicht gefunden</target>
+      </segment>
+    </unit>
+    <unit id="downloads.class.upstream-auth">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:48</note>
+      </notes>
+      <segment>
+        <source>Refused by the upstream&apos;s authentication</source>
+        <target>Von der Authentifizierung des Upstreams abgewiesen</target>
+      </segment>
+    </unit>
+    <unit id="downloads.class.upstream-rate-limited">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:50</note>
+      </notes>
+      <segment>
+        <source>Rate limited by the upstream</source>
+        <target>Vom Upstream gedrosselt</target>
+      </segment>
+    </unit>
+    <unit id="downloads.class.upstream-error">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:52</note>
+      </notes>
+      <segment>
+        <source>Upstream error</source>
+        <target>Fehler des Upstreams</target>
+      </segment>
+    </unit>
+    <unit id="downloads.class.upstream-unexpected">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:54</note>
+      </notes>
+      <segment>
+        <source>Unexpected answer of the upstream</source>
+        <target>Unerwartete Antwort des Upstreams</target>
+      </segment>
+    </unit>
+    <unit id="downloads.class.network">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:56</note>
+      </notes>
+      <segment>
+        <source>Network</source>
+        <target>Netzwerk</target>
+      </segment>
+    </unit>
+    <unit id="downloads.class.tls">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:58</note>
+      </notes>
+      <segment>
+        <source>TLS</source>
+        <target>TLS</target>
+      </segment>
+    </unit>
+    <unit id="downloads.class.egress-denied">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:60</note>
+      </notes>
+      <segment>
+        <source>Address not allowed by this installation</source>
+        <target>Adresse von dieser Installation nicht erlaubt</target>
+      </segment>
+    </unit>
+    <unit id="downloads.class.integrity">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:62</note>
+      </notes>
+      <segment>
+        <source>Integrity check failed</source>
+        <target>Integritätsprüfung fehlgeschlagen</target>
+      </segment>
+    </unit>
+    <unit id="downloads.class.content-refused">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:64</note>
+      </notes>
+      <segment>
+        <source>Content refused</source>
+        <target>Inhalt abgewiesen</target>
+      </segment>
+    </unit>
+    <unit id="downloads.class.gate-refused">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:66</note>
+      </notes>
+      <segment>
+        <source>Refused by a gate</source>
+        <target>Von einer Prüfung abgewiesen</target>
+      </segment>
+    </unit>
+    <unit id="downloads.class.circuit-open">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:68</note>
+      </notes>
+      <segment>
+        <source>Upstream assumed offline</source>
+        <target>Upstream gilt als offline</target>
+      </segment>
+    </unit>
+    <unit id="downloads.class.bound">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:70</note>
+      </notes>
+      <segment>
+        <source>Bound reached</source>
+        <target>Grenze erreicht</target>
+      </segment>
+    </unit>
+    <unit id="downloads.class.storage">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:72</note>
+      </notes>
+      <segment>
+        <source>Storage</source>
+        <target>Speicher</target>
+      </segment>
+    </unit>
+    <unit id="downloads.class.internal">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:74</note>
+      </notes>
+      <segment>
+        <source>Internal error</source>
+        <target>Interner Fehler</target>
+      </segment>
+    </unit>
+    <unit id="downloads.step.plan">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:82</note>
+      </notes>
+      <segment>
+        <source>Reading the documents that name the files</source>
+        <target>Lesen der Dokumente, die die Dateien nennen</target>
+      </segment>
+    </unit>
+    <unit id="downloads.step.resolve">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:84</note>
+      </notes>
+      <segment>
+        <source>Resolving the host name</source>
+        <target>Auflösen des Hostnamens</target>
+      </segment>
+    </unit>
+    <unit id="downloads.step.connect">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:86</note>
+      </notes>
+      <segment>
+        <source>Connecting</source>
+        <target>Verbindungsaufbau</target>
+      </segment>
+    </unit>
+    <unit id="downloads.step.tls">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:88</note>
+      </notes>
+      <segment>
+        <source>TLS handshake or certificate check</source>
+        <target>TLS-Handshake oder Zertifikatsprüfung</target>
+      </segment>
+    </unit>
+    <unit id="downloads.step.request">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:90</note>
+      </notes>
+      <segment>
+        <source>Sending the request</source>
+        <target>Senden der Anfrage</target>
+      </segment>
+    </unit>
+    <unit id="downloads.step.status">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:92</note>
+      </notes>
+      <segment>
+        <source>The answer&apos;s status</source>
+        <target>Status der Antwort</target>
+      </segment>
+    </unit>
+    <unit id="downloads.step.body">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:94</note>
+      </notes>
+      <segment>
+        <source>Reading the body</source>
+        <target>Lesen des Inhalts</target>
+      </segment>
+    </unit>
+    <unit id="downloads.step.verify">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:96</note>
+      </notes>
+      <segment>
+        <source>Checking digest, size and media type</source>
+        <target>Prüfen von Digest, Größe und Medientyp</target>
+      </segment>
+    </unit>
+    <unit id="downloads.step.gate">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:98</note>
+      </notes>
+      <segment>
+        <source>Vulnerability check before the download</source>
+        <target>Schwachstellenprüfung vor dem Download</target>
+      </segment>
+    </unit>
+    <unit id="downloads.step.store">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:100</note>
+      </notes>
+      <segment>
+        <source>Storing</source>
+        <target>Speichern</target>
+      </segment>
+    </unit>
+    <unit id="downloads.note">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:1,3</note>
+      </notes>
+      <segment>
+        <source>What this repository downloads ahead of its clients, and the fetches of clients that failed, with the cause in the upstream&apos;s own words.</source>
+        <target>Was dieses Repository vor seinen Clients in den Cache lädt, und die fehlgeschlagenen Abrufe von Clients, mit der Ursache in den Worten des Upstreams.</target>
+      </segment>
+    </unit>
+    <unit id="downloads.filter.all">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:7,8</note>
+      </notes>
+      <segment>
+        <source>All</source>
+        <target>Alle</target>
+      </segment>
+    </unit>
+    <unit id="downloads.filter.failure">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:18,19</note>
+      </notes>
+      <segment>
+        <source>Failure</source>
+        <target>Fehler</target>
+      </segment>
+    </unit>
+    <unit id="downloads.filter.any-class">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:20,21</note>
+      </notes>
+      <segment>
+        <source>Any class</source>
+        <target>Jede Art</target>
+      </segment>
+    </unit>
+    <unit id="downloads.retry-all">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:28,30</note>
+      </notes>
+      <segment>
+        <source>Retry all failed</source>
+        <target>Alle fehlgeschlagenen wiederholen</target>
+      </segment>
+    </unit>
+    <unit id="downloads.resume">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:32,33</note>
+      </notes>
+      <segment>
+        <source>Resume automatic refresh</source>
+        <target>Automatische Aktualisierung fortsetzen</target>
+      </segment>
+    </unit>
+    <unit id="downloads.pause">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:34,36</note>
+      </notes>
+      <segment>
+        <source>Pause automatic refresh</source>
+        <target>Automatische Aktualisierung anhalten</target>
+      </segment>
+    </unit>
+    <unit id="downloads.bulk.cancel">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:53,55</note>
+      </notes>
+      <segment>
+        <source>Cancel bulk</source>
+        <target>Sammeldownload abbrechen</target>
+      </segment>
+    </unit>
+    <unit id="downloads.bulk.show-all">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:55,57</note>
+      </notes>
+      <segment>
+        <source>Show every download</source>
+        <target>Alle Downloads anzeigen</target>
+      </segment>
+    </unit>
+    <unit id="downloads.bulk.started-by">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:67</note>
+      </notes>
+      <segment>
+        <source>Started by <ph id="0" equiv="INTERPOLATION" disp="{{ who }}"/></source>
+        <target>Gestartet von <ph id="0" equiv="INTERPOLATION" disp="{{ who }}"/></target>
+      </segment>
+    </unit>
+    <unit id="downloads.bulk.loading">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:77,82</note>
+      </notes>
+      <segment>
+        <source>Loading the bulk download.</source>
+        <target>Der Sammeldownload wird geladen.</target>
+      </segment>
+    </unit>
+    <unit id="downloads.not-delivered">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:114,116</note>
+      </notes>
+      <segment>
+        <source>Not delivered here: stored for examination</source>
+        <target>Hier nicht ausgeliefert: zur Untersuchung gespeichert</target>
+      </segment>
+    </unit>
+    <unit id="downloads.occurrences">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:126</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ r.occurrences }}"/> times</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ r.occurrences }}"/>-mal</target>
+      </segment>
+    </unit>
+    <unit id="downloads.next-attempt">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:163</note>
+      </notes>
+      <segment>
+        <source>next</source>
+        <target>nächster</target>
+      </segment>
+    </unit>
+    <unit id="downloads.progress.refused">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:170</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ r.refused }}"/> refused by a gate</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ r.refused }}"/> von einer Prüfung abgewiesen</target>
+      </segment>
+    </unit>
+    <unit id="downloads.failure.title">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:205</note>
+      </notes>
+      <segment>
+        <source>Failure of attempt <ph id="0" equiv="INTERPOLATION" disp="{{ f.attempt }}"/></source>
+        <target>Fehler von Versuch <ph id="0" equiv="INTERPOLATION" disp="{{ f.attempt }}"/></target>
+      </segment>
+    </unit>
+    <unit id="downloads.failure.class">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:209,210</note>
+      </notes>
+      <segment>
+        <source>Class</source>
+        <target>Art</target>
+      </segment>
+    </unit>
+    <unit id="downloads.failure.step">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:211,212</note>
+      </notes>
+      <segment>
+        <source>Step</source>
+        <target>Schritt</target>
+      </segment>
+    </unit>
+    <unit id="downloads.failure.code">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:213,214</note>
+      </notes>
+      <segment>
+        <source>Code</source>
+        <target>Code</target>
+      </segment>
+    </unit>
+    <unit id="downloads.failure.file">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:216,217</note>
+      </notes>
+      <segment>
+        <source>File</source>
+        <target>Datei</target>
+      </segment>
+    </unit>
+    <unit id="downloads.failure.address">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:220,221</note>
+      </notes>
+      <segment>
+        <source>Address</source>
+        <target>Adresse</target>
+      </segment>
+    </unit>
+    <unit id="downloads.failure.query-removed">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:221,223</note>
+      </notes>
+      <segment>
+        <source>(shown without its query, which can carry a credential)</source>
+        <target>(ohne ihre Query angezeigt, die ein Zugangsdatum enthalten kann)</target>
+      </segment>
+    </unit>
+    <unit id="downloads.failure.status">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:224,225</note>
+      </notes>
+      <segment>
+        <source>Upstream status</source>
+        <target>Status des Upstreams</target>
+      </segment>
+    </unit>
+    <unit id="downloads.failure.retry-after">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:228,229</note>
+      </notes>
+      <segment>
+        <source>Retry-After</source>
+        <target>Retry-After</target>
+      </segment>
+    </unit>
+    <unit id="downloads.failure.seconds">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:229,230</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ f.retryAfter }}"/> s</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ f.retryAfter }}"/> s</target>
+      </segment>
+    </unit>
+    <unit id="downloads.failure.excerpt">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:233,234</note>
+      </notes>
+      <segment>
+        <source>The start of the upstream&apos;s answer</source>
+        <target>Der Anfang der Antwort des Upstreams</target>
+      </segment>
+    </unit>
+    <unit id="downloads.fact.started-by">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:239,240</note>
+      </notes>
+      <segment>
+        <source>Started by</source>
+        <target>Gestartet von</target>
+      </segment>
+    </unit>
+    <unit id="downloads.fact.queued">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:242,243</note>
+      </notes>
+      <segment>
+        <source>Queued</source>
+        <target>Eingereiht</target>
+      </segment>
+    </unit>
+    <unit id="downloads.fact.started">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:245,246</note>
+      </notes>
+      <segment>
+        <source>Started</source>
+        <target>Gestartet</target>
+      </segment>
+    </unit>
+    <unit id="downloads.fact.finished">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:249,250</note>
+      </notes>
+      <segment>
+        <source>Finished</source>
+        <target>Beendet</target>
+      </segment>
+    </unit>
+    <unit id="downloads.fact.files">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:253,254</note>
+      </notes>
+      <segment>
+        <source>Files</source>
+        <target>Dateien</target>
+      </segment>
+    </unit>
+    <unit id="downloads.fact.files-value">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:254,255</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ r.files }}"/> named, <ph id="1" equiv="INTERPOLATION_1" disp="{{ r.stored }}"/> stored, <ph id="2" equiv="INTERPOLATION_2" disp="{{ r.present }}"/> already stored, <ph id="3" equiv="INTERPOLATION_3" disp="{{ r.refused }}"/> refused</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ r.files }}"/> genannt, <ph id="1" equiv="INTERPOLATION_1" disp="{{ r.stored }}"/> gespeichert, <ph id="2" equiv="INTERPOLATION_2" disp="{{ r.present }}"/> schon gespeichert, <ph id="3" equiv="INTERPOLATION_3" disp="{{ r.refused }}"/> abgewiesen</target>
+      </segment>
+    </unit>
+    <unit id="downloads.fact.bytes">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:257,258</note>
+      </notes>
+      <segment>
+        <source>Stored</source>
+        <target>Gespeichert</target>
+      </segment>
+    </unit>
+    <unit id="downloads.caption">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:164</note>
+      </notes>
+      <segment>
+        <source>Downloads of this repository, running and waiting first</source>
+        <target>Downloads dieses Repositorys, laufende und wartende zuerst</target>
+      </segment>
+    </unit>
+    <unit id="downloads.empty">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:165</note>
+      </notes>
+      <segment>
+        <source>There is no download yet.</source>
+        <target>Es gibt noch keinen Download.</target>
+      </segment>
+    </unit>
+    <unit id="downloads.empty-filtered">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:166</note>
+      </notes>
+      <segment>
+        <source>No download matches.</source>
+        <target>Kein Download passt.</target>
+      </segment>
+    </unit>
+    <unit id="downloads.filter.state">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:167</note>
+      </notes>
+      <segment>
+        <source>State</source>
+        <target>Status</target>
+      </segment>
+    </unit>
+    <unit id="downloads.col.subject">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:176</note>
+      </notes>
+      <segment>
+        <source>Package</source>
+        <target>Paket</target>
+      </segment>
+    </unit>
+    <unit id="downloads.col.origin">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:177</note>
+      </notes>
+      <segment>
+        <source>Origin</source>
+        <target>Herkunft</target>
+      </segment>
+    </unit>
+    <unit id="downloads.col.state">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:178</note>
+      </notes>
+      <segment>
+        <source>State</source>
+        <target>Status</target>
+      </segment>
+    </unit>
+    <unit id="downloads.col.progress">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:179</note>
+      </notes>
+      <segment>
+        <source>Progress</source>
+        <target>Fortschritt</target>
+      </segment>
+    </unit>
+    <unit id="downloads.col.failure">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:180</note>
+      </notes>
+      <segment>
+        <source>Failure</source>
+        <target>Fehler</target>
+      </segment>
+    </unit>
+    <unit id="downloads.col.actions">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:181</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+        <target>Aktionen</target>
+      </segment>
+    </unit>
+    <unit id="downloads.row.open">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:301</note>
+      </notes>
+      <segment>
+        <source>Details of <ph id="0" equiv="subject" disp="downloadSubject(r)"/></source>
+        <target>Details zu <ph id="0" equiv="subject" disp="downloadSubject(r)"/></target>
+      </segment>
+    </unit>
+    <unit id="downloads.origin.you">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:309</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:328</note>
+      </notes>
+      <segment>
+        <source>You</source>
+        <target>Sie</target>
+      </segment>
+    </unit>
+    <unit id="downloads.origin.person">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:310</note>
+      </notes>
+      <segment>
+        <source>A person</source>
+        <target>Eine Person</target>
+      </segment>
+    </unit>
+    <unit id="downloads.origin.request">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:313</note>
+      </notes>
+      <segment>
+        <source>Request</source>
+        <target>Antrag</target>
+      </segment>
+    </unit>
+    <unit id="downloads.origin.allow">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:315</note>
+      </notes>
+      <segment>
+        <source>Allow</source>
+        <target>Erlaubnis</target>
+      </segment>
+    </unit>
+    <unit id="downloads.origin.bulk">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:317</note>
+      </notes>
+      <segment>
+        <source>Bulk</source>
+        <target>Sammeldownload</target>
+      </segment>
+    </unit>
+    <unit id="downloads.origin.probe">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:319</note>
+      </notes>
+      <segment>
+        <source>Probe</source>
+        <target>Abfrage</target>
+      </segment>
+    </unit>
+    <unit id="downloads.origin.client">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:321</note>
+      </notes>
+      <segment>
+        <source>Client</source>
+        <target>Client</target>
+      </segment>
+    </unit>
+    <unit id="downloads.attempt">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:335</note>
+      </notes>
+      <segment>
+        <source>Attempt <ph id="0" equiv="attempt" disp="r.attempts"/> of <ph id="1" equiv="max" disp="r.maxAttempts"/></source>
+        <target>Versuch <ph id="0" equiv="attempt" disp="r.attempts"/> von <ph id="1" equiv="max" disp="r.maxAttempts"/></target>
+      </segment>
+    </unit>
+    <unit id="downloads.progress.files">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:342</note>
+      </notes>
+      <segment>
+        <source>Files: <ph id="0" equiv="done" disp="done"/> of <ph id="1" equiv="files" disp="r.files"/></source>
+        <target>Dateien: <ph id="0" equiv="done" disp="done"/> von <ph id="1" equiv="files" disp="r.files"/></target>
+      </segment>
+    </unit>
+    <unit id="downloads.retried">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:375</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="subject" disp="downloadSubject(r)"/> waits for its download again.</source>
+        <target><ph id="0" equiv="subject" disp="downloadSubject(r)"/> wartet wieder auf seinen Download.</target>
+      </segment>
+    </unit>
+    <unit id="downloads.cancelled">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:376</note>
+      </notes>
+      <segment>
+        <source>The download of <ph id="0" equiv="subject" disp="downloadSubject(r)"/> is cancelled.</source>
+        <target>Der Download von <ph id="0" equiv="subject" disp="downloadSubject(r)"/> ist abgebrochen.</target>
+      </segment>
+    </unit>
+    <unit id="downloads.retry">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:391</note>
+      </notes>
+      <segment>
+        <source>Retry</source>
+        <target>Wiederholen</target>
+      </segment>
+    </unit>
+    <unit id="downloads.cancel">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:391</note>
+      </notes>
+      <segment>
+        <source>Cancel</source>
+        <target>Abbrechen</target>
+      </segment>
+    </unit>
+    <unit id="downloads.retried-all">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:409</note>
+      </notes>
+      <segment>
+        <source>Failed downloads that wait again: <ph id="0" equiv="count" disp="n"/>.</source>
+        <target>Fehlgeschlagene Downloads, die wieder warten: <ph id="0" equiv="count" disp="n"/>.</target>
+      </segment>
+    </unit>
+    <unit id="downloads.bulk.cancelled">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:430</note>
+      </notes>
+      <segment>
+        <source>The bulk download of <ph id="0" equiv="subject" disp="b.subject"/> is cancelled.</source>
+        <target>Der Sammeldownload von <ph id="0" equiv="subject" disp="b.subject"/> ist abgebrochen.</target>
+      </segment>
+    </unit>
+    <unit id="downloads.bulk.package">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:441</note>
+      </notes>
+      <segment>
+        <source>Every version of <ph id="0" equiv="subject" disp="b.subject"/></source>
+        <target>Jede Version von <ph id="0" equiv="subject" disp="b.subject"/></target>
+      </segment>
+    </unit>
+    <unit id="downloads.bulk.section">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:442</note>
+      </notes>
+      <segment>
+        <source>The sub-section <ph id="0" equiv="subject" disp="b.subject"/></source>
+        <target>Der Unterbereich <ph id="0" equiv="subject" disp="b.subject"/></target>
+      </segment>
+    </unit>
+    <unit id="downloads.bulk.state.expanding">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:448</note>
+      </notes>
+      <segment>
+        <source>Finding versions</source>
+        <target>Versionen werden gesucht</target>
+      </segment>
+    </unit>
+    <unit id="downloads.bulk.state.queued">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:450</note>
+      </notes>
+      <segment>
+        <source>Queued</source>
+        <target>Eingereiht</target>
+      </segment>
+    </unit>
+    <unit id="downloads.bulk.state.done">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:452</note>
+      </notes>
+      <segment>
+        <source>Done</source>
+        <target>Fertig</target>
+      </segment>
+    </unit>
+    <unit id="downloads.bulk.state.bounded">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:454</note>
+      </notes>
+      <segment>
+        <source>Stopped at a bound</source>
+        <target>An einer Grenze angehalten</target>
+      </segment>
+    </unit>
+    <unit id="downloads.bulk.state.cancelled">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:456</note>
+      </notes>
+      <segment>
+        <source>Cancelled</source>
+        <target>Abgebrochen</target>
+      </segment>
+    </unit>
+    <unit id="downloads.bulk.state.failed">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:458</note>
+      </notes>
+      <segment>
+        <source>Failed</source>
+        <target>Fehlgeschlagen</target>
+      </segment>
+    </unit>
+    <unit id="downloads.bulk.counts">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:463</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="queued" disp="b.versionsQueued"/> of <ph id="1" equiv="found" disp="b.versionsFound"/> versions found are queued</source>
+        <target><ph id="0" equiv="queued" disp="b.versionsQueued"/> von <ph id="1" equiv="found" disp="b.versionsFound"/> gefundenen Versionen sind eingereiht</target>
+      </segment>
+    </unit>
+    <unit id="downloads.bulk.bounds">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:469</note>
+      </notes>
+      <segment>
+        <source>At most <ph id="0" equiv="versions" disp="b.bounds.maxVersions"/> versions and <ph id="1" equiv="bytes" disp="bytes"/>, pre-releases included</source>
+        <target>Höchstens <ph id="0" equiv="versions" disp="b.bounds.maxVersions"/> Versionen und <ph id="1" equiv="bytes" disp="bytes"/>, Vorabversionen eingeschlossen</target>
+      </segment>
+    </unit>
+    <unit id="downloads.bulk.bounds-no-pre">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:470</note>
+      </notes>
+      <segment>
+        <source>At most <ph id="0" equiv="versions" disp="b.bounds.maxVersions"/> versions and <ph id="1" equiv="bytes" disp="bytes"/>, without pre-releases</source>
+        <target>Höchstens <ph id="0" equiv="versions" disp="b.bounds.maxVersions"/> Versionen und <ph id="1" equiv="bytes" disp="bytes"/>, ohne Vorabversionen</target>
+      </segment>
+    </unit>
     <unit id="repo.format.automatic">
       <notes>
         <note category="location">src/app/features/repositories/format-settings.ts:115,117</note>
@@ -24763,9 +25745,18 @@
         <target>Repository</target>
       </segment>
     </unit>
+    <unit id="route.repositories.downloads.title">
+      <notes>
+        <note category="location">src/app/features/repositories/repositories.routes.ts:91</note>
+      </notes>
+      <segment>
+        <source>Downloads</source>
+        <target>Downloads</target>
+      </segment>
+    </unit>
     <unit id="route.repositories.settings.title">
       <notes>
-        <note category="location">src/app/features/repositories/repositories.routes.ts:95</note>
+        <note category="location">src/app/features/repositories/repositories.routes.ts:103</note>
       </notes>
       <segment>
         <source>Settings</source>
@@ -24774,7 +25765,7 @@
     </unit>
     <unit id="route.service-accounts.detail.title">
       <notes>
-        <note category="location">src/app/features/repositories/repositories.routes.ts:102</note>
+        <note category="location">src/app/features/repositories/repositories.routes.ts:110</note>
         <note category="location">src/app/features/service-accounts/service-accounts.routes.ts:12</note>
         <note category="location">src/app/features/service-accounts/service-accounts.routes.ts:29</note>
       </notes>

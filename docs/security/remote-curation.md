@@ -60,7 +60,9 @@ who can make Quader download how much, and what is kept of content that no clien
 - A catalogue call stores nothing in the repository's cache, its rows or the negative cache: browsing never populates, so the rule that a
   session cookie never fills a cache (R-AUTHZ-008) holds for it unchanged.
 - A failure's excerpt in the download queue is the first 512 bytes of the upstream's answer as printable text, and the address is shown
-  without its query, because a CDN's signed address carries a credential in it (R-CUR-011)
+  without its query, because a CDN's signed address carries a credential in it (R-CUR-011). The tab **Downloads** shows the excerpt, the
+  address and the sentence as text (Angular's interpolation into a `pre` and a `code`), never as markup, so an upstream's error page
+  cannot put an element or a script into the screen (R-CUR-018)
   ([H-1728](#h-1728--the-excerpt-of-an-upstreams-error-answer-is-shown-to-every-reader-of-the-repository)).
 
 ## What a rule keeps from a client, and what it does not
@@ -179,7 +181,8 @@ makes it real: a malicious package fetched for examination whose malware no sign
 ### H-1728 · The excerpt of an upstream's error answer is shown to every reader of the repository
 
 Component: the download queue's failures (R-CUR-011). Subject: every reader of a remote's tab **Downloads**. Live since the download
-queue (R4) is built, through `GET …/downloads` (the tab comes with R5a); a client's failed fetch writes its excerpt as well (Q-CUR-19). The
+queue (R4) is built, through `GET …/downloads`, and shown on the tab **Downloads** since R5a, where an opened row shows the excerpt in a
+code block to every signed-in reader of the repository (R-CUR-018); a client's failed fetch writes its excerpt as well (Q-CUR-19). The
 first 512 bytes of an upstream's non-success answer are kept and shown as text; the address is shown without its query. An upstream whose
 error page names internal hosts, accounts or tokens shows them to every reader of the repository. What makes it real: a private
 registry or proxy behind the remote whose error pages carry internal details.

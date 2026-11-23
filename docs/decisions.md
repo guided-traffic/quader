@@ -10121,10 +10121,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-CUR
 
-37 questions on [spec/remote-curation.md](spec/remote-curation.md).
+41 questions on [spec/remote-curation.md](spec/remote-curation.md).
 
 <details>
-<summary>Q-CUR: 37 questions</summary>
+<summary>Q-CUR: 41 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10165,6 +10165,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-CUR-109](spec/remote-curation.md#q-cur-109--the-catalogues-browsing-calls-live-in-the-leaf-discover-and-registers-adapter-check-lands-with-the-adapters) | The catalogue's browsing calls live in the leaf discover, and Register's adapter check lands with the adapters | Decided by the development agent | (a) The browsing calls (`CatalogueCaps`, `Search`, `Children`, `Package`) and their types in `discover`; `formats.Catalogue` embeds them and adds `VersionProbe`, whose `Probe` is a type of the contract; `Register` refuses a missing adapter from the change that brings the five catalogues | [ADR-152](#adr-152--the-format-contract-gains-the-optional-mirror-lister) |
 | [Q-CUR-110](spec/remote-curation.md#q-cur-110--the-ports-of-the-domain-package-speak-in-a-repositorys-id-and-the-decider-reads-no-database) | The ports of the domain package speak in a repository's ID, and the decider reads no database | Decided by the development agent | (a) Ports at the root of `internal/remotecuration` in plain values: `Decider.Decide(ctx, repoID, name, version) Decision` and `Package(ctx, repoID, name)`, no error; `Queue.Active` and `Requests.Open` by repository ID, package and versions; stubs `DeliverAll`, `NoQueue`, `NoRequests` | — |
 | [Q-CUR-111](spec/remote-curation.md#q-cur-111--the-purge-of-a-retired-repository-removes-its-queue-and-examinations-and-keeps-its-rules-and-requests) | The purge of a retired repository removes its queue and examinations and keeps its rules and requests | Decided by the development agent | (a) The queue, its bulks and the examination rows are purged; the rules and the requests (with their askers) are kept | — |
+| [Q-CUR-130](spec/remote-curation.md#q-cur-130--until-the-catalogues-screens-land-the-strip-holds-the-content-and-downloads-and-a-visitor-sees-none) | Until the catalogue's screens land, the strip holds the content and Downloads, and a visitor sees none | Decided by the development agent | (a) The strip holds the content and **Downloads** until R5b adds **Upstream**; a visitor without a session sees no strip | — |
+| [Q-CUR-131](spec/remote-curation.md#q-cur-131--the-tabs-filters-are-the-states-as-pressed-buttons-with-their-counts-and-failure-as-a-select-in-the-address) | The tab's filters are the states as pressed buttons with their counts, and Failure as a select, in the address | Decided by the development agent | (a) **All**, **Waiting**, **Running**, **Failed**, **Done** as pressed buttons with their counts as badges; **Failure** a select beside them; the address `state`, `failure`, `bulk` | — |
+| [Q-CUR-132](spec/remote-curation.md#q-cur-132--a-row-offers-retry-or-cancel-by-its-state-to-whom-the-api-lets-change-it-and-a-bulks-line-stands-over-its-rows) | A row offers Retry or Cancel by its state to whom the API lets change it, and a bulk's line stands over its rows | Decided by the development agent | (a) One word per row by its state (**Retry** for failed and cancelled, **Cancel** for waiting and running), offered to the row's starter, to a holder of `manage` or the role `admin`, and for a probe's or a client's row that the rules deliver to a caller whose check of `read` and of the repository's `cacheFillAction` passes (a reader's view, which lacks it, asks `read`, the default); the opened row shows the failure without a second **Retry**; a bulk's line only where the address names the bulk | — |
+| [Q-CUR-133](spec/remote-curation.md#q-cur-133--the-tab-reads-the-queue-again-while-the-repository-has-a-row-that-waits-or-runs-keeping-what-is-shown) | The tab reads the queue again while the repository has a row that waits or runs, keeping what is shown | Decided by the development agent | (a) The timer runs while the answer's counts hold a waiting or running row of the repository, or the bulk shown expands or waits; a refresh reads the first page again with as many rows as are shown (at least 50, at most 500) and replaces them; a filter starts over | — |
 
 </details>
 

@@ -133,6 +133,36 @@ you are signed out, or when the installation does not scan.
 
 Debian packages are not scanned for vulnerabilities yet; the page says so and shows no vulnerability column for them.
 
+### The downloads of a remote repository
+
+When you are signed in, a remote repository's page has two tabs under its title: its content (**Packages**, **Images** or **Files**) and
+**Downloads**. **Downloads** lists the repository's download queue: what Quader downloads into the cache ahead of a client, and the
+fetches of clients that failed. When downloads have failed, the tab says how many, for example **Downloads · 2 failed**. Use it to follow
+a cache while it is being built and to find out why a client's fetch failed.
+
+- **All**, **Waiting**, **Running**, **Failed** and **Done**, each with its count, show the downloads in that state; **Failure** shows
+  only the failures of one kind, such as **TLS** or **Rate limited by the upstream**. The address keeps what you chose, so you can
+  share the link.
+- Each row names the package and version, where the download came from (**You**, a person's name if you may see it, **Request**,
+  **Allow**, **Bulk**, **Probe** for a download Quader started after a client asked about a version, **Client** for a client's fetch
+  that failed, with how often it failed), its state with the attempt ("Attempt 2 of 5 · next in 4 minutes"), the files and bytes stored,
+  and a failure in one line: its kind, the upstream's HTTP status (or Quader's error code where no answer came) and the upstream's host.
+- Open a row with its arrow to read the whole failure: Quader's sentence of what failed and what helps, the step it failed in (resolving
+  the host name, connecting, the TLS check, the answer's status, reading the body, checking the digest, storing), the error code, the
+  file, the address it asked (without its query, which can carry a credential), the upstream's status, how long the upstream asked to
+  wait, and the start of the upstream's answer. Everyone who may read the repository sees these details, the upstream's answer included.
+- **Retry** lets a failed or cancelled download wait again; **Cancel** stops one that waits or runs. You see them on the downloads you
+  started; on the downloads of clients and probes if you may fetch that version through the repository; and on every row if you are a
+  Maintainer or Owner of the project or an administrator, who also see **Retry all failed**, which retries every failed download of the
+  kind **Failure** shows.
+- **Bulk** opens the rows of one bulk download (every version of a package) with its line above them: how many versions it found and
+  queued, its rows by state, its bounds, and **Cancel bulk** for the person who started it and for Maintainers, Owners and
+  administrators. **Show every download** returns to the whole queue.
+- While something waits or runs, the tab reads the queue again every five seconds; **Pause automatic refresh** stops that until you
+  resume it.
+
+By default, finished and cancelled downloads leave the list a week after they ended, failed ones after 30 days.
+
 ## Repository settings
 
 **Settings** on the content page opens the settings of the repository at `…/settings`. Editing it needs a further permission and is described in [Managing repositories](../admin/repositories.md). If you may use the repository but not read its configuration, the page says **You may use this repository but not read or change its configuration.** and shows the facts instead of the form.

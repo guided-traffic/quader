@@ -1,6 +1,6 @@
 # Curating a remote repository: the work packages
 
-Status: specified on 2026-11-23; the contracts package (C) and the downloads ahead with their queue (R4) built on 2026-11-23, the rest not. The specification is [spec/remote-curation.md](../spec/remote-curation.md) with the format
+Status: specified on 2026-11-23; the contracts package (C) and the downloads ahead with their queue (R4) built on 2026-11-23, the tab strip and the tab Downloads (R5a) on 2026-11-24, the rest not. The specification is [spec/remote-curation.md](../spec/remote-curation.md) with the format
 pages' requirements (R-NPM-049, R-NUGET-035, R-OCI-038, R-DEB-036, R-ANS-047) and the changed sentences its section "Changes to other
 pages" lists; the security view is [security/remote-curation.md](../security/remote-curation.md). This page cuts the work into packages
 for builders, in the order they can land, each a whole feature that leaves `main` working, with the files and directories each owns so
@@ -170,8 +170,25 @@ Tests: integration, `TestR_CUR_014_…`, `TestR_CUR_015_…`, `TestR_CUR_016_…
 
 | Package | Files |
 |---|---|
-| R5a | `web/src/app/features/repositories/repositories.routes.ts` (the two addresses), the tab strip in the content page (`repository-content.*`), `web/src/app/features/repositories/downloads/`, `web/src/app/api/remote-downloads-api.ts`, the walk's screens in `web/e2e` |
+| R5a (built) | see the table below |
 | R5b | `web/src/app/features/repositories/upstream/` (search, levels, package, preview dialog, rule list, requests panel), `web/src/app/api/upstream-catalogue-api.ts`, `delivery-rules-api.ts`, `delivery-requests-api.ts`, the section **Delivery** of the settings page (`repository-detail.*`, `settings-sections.ts`), `web/src/locale/GLOSSARY.md` and the messages |
+
+R5a, built on 2026-11-24 (R-CUR-018, Q-CUR-130 to Q-CUR-133):
+
+| File | What |
+|---|---|
+| [repositories.routes.ts](../../web/src/app/features/repositories/repositories.routes.ts) | `…/repositories/{key}/downloads`: the content page with the route's `data.tab` `downloads`, titled **Downloads** |
+| [repository-content.ts](../../web/src/app/features/repositories/content/repository-content.ts), `.html` | the input `tab`; the strip on a remote's page for a signed-in caller (`remoteTabs`); the view `downloads`; the address of a local or virtual repository's tab Downloads leads to its content; the repository's `cacheFillAction` for the tab |
+| [remote-tabs.ts](../../web/src/app/features/repositories/content/remote-tabs.ts) | the strip: the content tab captioned as its list, **Downloads** with `· n failed`; it reads the counts once on the content tab, the tab Downloads passes its own |
+| [downloads/](../../web/src/app/features/repositories/downloads/remote-downloads.ts) | `remote-downloads.ts`, `.html`, `.scss`: the head (states, **Failure**, **Retry all failed**, the pause), the bulk's line, the table, the opened row, the refresh; `download-words.ts`: the words of the states, outcomes, classes and steps and the failure's one line |
+| [remote-downloads-api.ts](../../web/src/app/api/remote-downloads-api.ts) | `RemoteDownloadsApi` over R-CUR-012's operations (the start and the preview are R5b's), its provider in `providers.ts`, the fake in [fakes-remote-downloads.ts](../../web/src/app/api/testing/fakes-remote-downloads.ts) |
+| [problem-messages-downloads.ts](../../web/src/app/core/http/problem-messages-downloads.ts) | the words of `not_retryable`, `already_queued`, `download_queue_full` |
+| [downloads.ts](../../web/e2e/renders/downloads.ts), `screens.ts` | the renders: `repository-npm-remote-downloads` (the seed's queue, then a queue of every state answered in the browser, a failure opened, a bulk) and `repository-oci-probed-downloads` (a probe's row of the server's own) |
+
+Tests and what they cost: [remote-downloads.spec.ts](../../web/src/app/features/repositories/downloads/remote-downloads.spec.ts), web unit,
+twelve cases, about 0.7 s, rows of a few hundred bytes in memory; the renders gain two screens (the walk's four states as three users,
+one state as one user, at three widths and two schemes: about 45 s on the development machine). No Go, no integration or end-to-end case: the queue's API is R4's and
+held there.
 
 What is rendered before each lands (rule 11; both schemes, 1440 px and 375 px, as `sam`, `priya` and `ada`, realistic data, never committed):
 R5a, the strip on an npm and an OCI remote and its absence on a local one, the tab Downloads empty, with waiting and running rows, with a

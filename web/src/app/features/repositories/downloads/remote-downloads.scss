@@ -1,0 +1,186 @@
+// The tab Downloads of a remote repository (R-CUR-018): its head, the bulk it shows and the rows that open. Only Quader's tokens, so
+// both schemes follow; the table is the shared data table.
+
+:host {
+  display: block;
+}
+
+.downloads-note {
+  margin: 0 0 var(--quader-space-3);
+  color: var(--quader-text-muted);
+}
+
+// One row: the states with their counts, the failure's class, and the list's own actions at the row's end; it wraps where narrow.
+.downloads-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--quader-space-3) var(--quader-space-4);
+  margin-block-end: var(--quader-space-4);
+}
+
+// The states: buttons, the pressed one in the selection's fill, as the usage screens' period (R-UI-183).
+.state-filter {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--quader-space-1);
+
+  button[aria-pressed='true'] {
+    background: var(--quader-accent-container);
+    color: var(--quader-on-accent-container);
+  }
+
+  .badge {
+    margin-inline-start: var(--quader-space-1);
+  }
+}
+
+.failure-filter {
+  display: flex;
+  flex: 1 1 14rem;
+  max-inline-size: var(--quader-field-width-name);
+  flex-direction: column;
+  gap: var(--quader-space-1);
+  min-inline-size: 0;
+
+  select {
+    inline-size: 100%;
+  }
+}
+
+.head-end {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--quader-space-2);
+  margin-inline-start: auto;
+}
+
+// The bulk whose rows the list shows.
+.bulk {
+  margin-block-end: var(--quader-space-4);
+  padding-block-end: var(--quader-space-3);
+  border-block-end: 1px solid var(--quader-border);
+}
+
+// The bulk's state and its actions stand on the middle of the title's line (R-UI-175): the box's line is the title's.
+.bulk-head {
+  --quader-line: calc(var(--quader-heading-3) * 1.4);
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--quader-space-2) var(--quader-space-3);
+}
+
+.bulk-title {
+  margin: 0;
+  font-size: var(--quader-heading-3);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.bulk-actions {
+  --quader-line: calc(var(--quader-heading-3) * 1.4);
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--quader-space-2);
+  margin-inline-start: auto;
+}
+
+.bulk-facts,
+.bulk-failure {
+  margin-block: var(--quader-space-2) 0;
+}
+
+// Each line of facts is a line of its own (a line of facts is inline by itself).
+.bulk-facts {
+  display: flex;
+}
+
+// The first column: the chevron that opens the row, then the name and the version, which wrap inside themselves.
+.name-cell {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--quader-space-1);
+
+  > .btn {
+    flex: none;
+  }
+
+  > span {
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+.subject-name {
+  font-weight: 600;
+}
+
+// Origin, state and progress never break (Q-UI-563): the failure is the column that wraps.
+td.keep {
+  white-space: nowrap;
+}
+
+.failure-cell {
+  overflow-wrap: anywhere;
+
+  // "HTTP 503" is one value: never broken between its parts.
+  .status-code {
+    white-space: nowrap;
+  }
+}
+
+tr.expansion > td {
+  padding: 0;
+  border-block-end: 0;
+}
+
+.row-detail {
+  padding: var(--quader-space-2) var(--quader-space-4) var(--quader-space-4) var(--quader-space-8);
+
+  container: download-detail / inline-size;
+
+  // The failure's facts and the row's facts line up in one column of names.
+  dl.facts {
+    grid-template-columns: 11rem minmax(0, 1fr);
+  }
+}
+
+// Narrow, each fact's name stands above its value, so a value has the detail's width (as an audit event's facts, Q-UI-972).
+@container download-detail (max-width: 30rem) {
+  .row-detail dl.facts {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0;
+
+    dd + dt {
+      margin-block-start: var(--quader-space-2);
+    }
+  }
+}
+
+.detail-title {
+  margin: 0 0 var(--quader-space-1);
+  font-size: var(--quader-text-size);
+  font-weight: 600;
+}
+
+.failure-detail {
+  margin: 0 0 var(--quader-space-3);
+}
+
+.excerpt-label {
+  margin: var(--quader-space-3) 0 var(--quader-space-1);
+  font-weight: 600;
+}
+
+// The excerpt is read whole: it wraps inside itself instead of scrolling sideways at 390 px.
+.excerpt {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.row-facts {
+  margin-block-start: var(--quader-space-3);
+}

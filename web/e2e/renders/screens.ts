@@ -39,6 +39,7 @@ import { routeTooMany } from './suggestions';
 import { clamavDatabases, clamavRegistry, clamavRow, definitionsExpected, definitionsWith, switchState } from './clamav';
 import { damagedBlobs, noDamagedBlob, oneConnection, secondUnreachable, severalConnections, twoConnectionFacts } from './storage';
 import { auditDataKeys, bastionsHandover, bastionsRead, forbiddenLink } from './bastions';
+import { downloadsWalk } from './downloads';
 
 /**
  * Every screen of the app (web/src/app/app.routes.ts and the route files of the feature areas), with the parameters of the
@@ -2473,6 +2474,11 @@ export const screens: readonly Screen[] = [
   // Details stays open across a visit (Q-UI-319, Q-UI-967).
   { id: 'repository-details-remembered', path: `${P}/repositories/npmjs`, kinds: ['power'], walk: detailsRemembered },
   { id: 'repository-npm-remote', path: `${P}/repositories/npmjs`, kinds: all },
+  // The tab Downloads of a remote (R-CUR-018): its queue as the seed left it, then a queue of every state answered in the browser,
+  // a failed row opened to its whole failure, and a bulk's rows (downloads.ts). The OCI remote whose tag a probe downloaded has a
+  // row of the server's own.
+  { id: 'repository-npm-remote-downloads', path: `${P}/repositories/npmjs/downloads`, kinds: all, walk: downloadsWalk },
+  { id: 'repository-oci-probed-downloads', path: `${O}/repositories/${probedCache.key}/downloads`, kinds: ['power'] },
   { id: 'repository-npm-virtual', path: `${P}/repositories/npm`, kinds: all },
   { id: 'repository-long-key', path: `${P}/repositories/${longNpmKey}`, kinds: all },
   { id: 'repository-generic', path: `${P}/repositories/assets`, kinds: all },

@@ -1,6 +1,6 @@
 # Curating a remote repository
 
-Status: specified on 2026-11-23; its contracts (the tables, the types, the codes, the events, the keys) are built, and the downloads ahead with their queue (R-CUR-010 to R-CUR-013, package R4); the rest of its behaviour is not. The owner asked for it on 2026-11-23 (task T-24 of the
+Status: specified on 2026-11-23; its contracts (the tables, the types, the codes, the events, the keys) are built, the downloads ahead with their queue (R-CUR-010 to R-CUR-013, package R4), and of the screens (R-CUR-018) the tab strip and the tab **Downloads** (package R5a); the rest of its behaviour is not. The owner asked for it on 2026-11-23 (task T-24 of the
 [project plan](../projektplan/promt.md)), at 12:38:
 
 > In Repositories, die Remote sind, fehlt mir dafür ein Reiter um das Remote zu durchsuchen. Manche Varianten von
@@ -1044,8 +1044,10 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
 - **Tabs on a remote repository's page** (R-UI-052 changed, Q-CUR-1): under the header a tab strip (`tab-nav`, links with
   `aria-current="page"`, as the page **System status** has, R-UI-164) with **Packages** (**Images** for OCI; the content as today), **Upstream**
   and **Downloads**, each with its address: `…/repositories/{key}`, `…/repositories/{key}/upstream`, `…/repositories/{key}/downloads`;
-  the document title and the breadcrumb end with the tab. A local or virtual repository shows no tab strip. A tab's filters stay in its
-  address. The label **Upstream** carries the count of open requests for those who may set rules (`Upstream 3`); **Downloads** the count
+  the document title and the breadcrumb end with the tab. A local or virtual repository shows no tab strip, and the address of its
+  tab Downloads leads to its content. A tab's filters stay in its address. Until the tab **Upstream** is built (R5b) the strip holds the
+  content and **Downloads**; a visitor without a session, whom the queue does not answer, sees no strip, because one tab is no strip
+  ([Q-CUR-130](#q-cur-130--until-the-catalogues-screens-land-the-strip-holds-the-content-and-downloads-and-a-visitor-sees-none)). The label **Upstream** carries the count of open requests for those who may set rules (`Upstream 3`); **Downloads** the count
   of failed rows when there are any (`Downloads · 2 failed`).
 - **The tab Upstream** (`…/upstream`):
   - At the top, one line about the mode: "Delivers everything except what is blocked." or "Delivers only what is allowed.", with
@@ -1086,6 +1088,25 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
   **Retry**; **Retry all failed** (with the class filter) and **Cancel** for those who may. A bulk's line shows its counters and
   **Cancel bulk**. The tab refreshes every 5 s while something waits or runs, with **Pause automatic refresh** as the page System status
   has it.
+  - **As built (R5a).** One muted sentence says what the tab lists. The head: **All** and the four states as pressed buttons with their
+    counts, **Failure** as a select of the fifteen classes, and at the row's end **Retry all failed** and **Pause automatic refresh**;
+    the address carries `state`, `failure` (the class) and `bulk`
+    ([Q-CUR-131](#q-cur-131--the-tabs-filters-are-the-states-as-pressed-buttons-with-their-counts-and-failure-as-a-select-in-the-address)).
+    The table: **Package** (name and version, a row that fetches what the rules do not deliver marked "Not delivered here: stored for
+    examination"), **Origin**, **State** (the badge, a done row's outcome, "Attempt 2 of 5 · next in 4 minutes"), **Progress** ("2 of 3
+    files · 46.0 MiB", the files a gate refused), **Failure** (the class, the upstream's status or else the engine's code, the host:
+    "Upstream error · HTTP 503 · registry.npmjs.org"). A row opens in place to its whole failure (the sentence, the class and the step
+    each in words and as its value, the code, the file, the address "shown without its query, which can carry a credential", the
+    upstream's status, Retry-After, the start of the upstream's answer in a code block) and to its facts (who started it, where the API
+    names a person; queued, started, finished; the files named, stored, already stored and refused; the bytes). A row's one action is
+    **Retry** or **Cancel** by its state, in its action cell
+    ([Q-CUR-132](#q-cur-132--a-row-offers-retry-or-cancel-by-its-state-to-whom-the-api-lets-change-it-and-a-bulks-line-stands-over-its-rows)).
+    The origin **Bulk** links to `?bulk=<id>`, which shows the bulk's line over its rows: what it downloads, its state, "38 of 38
+    versions found are queued", its rows by state, its bounds, who started it, **Cancel bulk** and **Show every download**. The
+    refresh reads as many rows as are shown, so **Load more** and the opened rows stay
+    ([Q-CUR-133](#q-cur-133--the-tab-reads-the-queue-again-while-the-repository-has-a-row-that-waits-or-runs-keeping-what-is-shown)).
+    The excerpt is shown to every reader of the repository, as the API answers it
+    ([H-1728](../security/remote-curation.md#h-1728--the-excerpt-of-an-upstreams-error-answer-is-shown-to-every-reader-of-the-repository)).
 - **The settings page** (R-UI-087): a closed section **Delivery** (details on demand, R-UI-067) with the mode as two radio choices and
   their sentences, **Fetch for examination when someone asks** (on), **Remove what was examined and not allowed after [30] days**; for a
   mirror, `remote.mirror.include` joins the section Mirror as **Mirror only these packages**.
@@ -1177,7 +1198,9 @@ The tab Downloads, wide:
 Acceptance criteria:
 
 - Web unit (Vitest, milliseconds per component, `web/src/app/features/repositories/upstream/`, `…/downloads/`): the tab strip appears for
-  a remote only; each state's sentence; the actions by permission; the German texts of the glossary rows.
+  a remote only; each state's sentence; the actions by permission; the German texts of the glossary rows. Built for the strip and the tab
+  Downloads in [remote-downloads.spec.ts](../../web/src/app/features/repositories/downloads/remote-downloads.spec.ts) (twelve cases, about
+  0.7 s, rows of a few hundred bytes each); the renders gain two screens, about 45 s.
 - UI layout checks (`web/e2e`, the existing walk, about 20 more screens at three widths as the three users): the two tabs in both
   schemes with the states listed above.
 
@@ -1937,6 +1960,87 @@ development agent would revisit the requests if a retired repository's open requ
 
 **Applied in the spec:** R-CUR-021 ("A repository that goes away"); [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-067
 step 5 (a sentence); the function in [00114_remote_curation.sql](../../internal/meta/postgres/migrations/00114_remote_curation.sql).
+
+### Q-CUR-130 · Until the catalogue's screens land, the strip holds the content and Downloads, and a visitor sees none
+
+Status: **Decided by the development agent** — selected from the options below while building the tab strip and the tab Downloads (R5a);
+the owner reviews it at the walkthrough.
+
+Context: R-CUR-018 gives a remote's page three tabs, and the tab **Upstream** (search, levels, rules, requests) is R5b's, which needs the
+catalogue (R3) and the rules' screens. The specification says how **Upstream** looks once built, not before. The queue's API answers a
+signed-in reader only (`authenticated: true`, R-CUR-005); a public remote is read by visitors without a session.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The strip holds the content and **Downloads** until R5b adds **Upstream**; a visitor without a session sees no strip (chosen) | Two tabs now, three later | Every tab leads to a screen that does its job; no label promises what is not there; one tab is no strip, as on the page System status (Q-UI-652) | The strip changes when R5b lands |
+| (b) **Upstream** as a tab now, with a sentence that the upstream's search comes later | Three tabs now | The final shape at once | A tab that does nothing: a label that promises more than the thing does (the style guide's rule of text) |
+| (c) The strip for a visitor too, with **Downloads** answering 401 | One shape for everyone | Uniform | A tab that leads a visitor to a refusal |
+
+**Choice:** (a). **Rationale:** the specification has no placeholder state, and a screen that only says "later" is the kind of element
+that takes room without being the screen's job. The development agent would revisit (c) if the queue becomes readable without a session.
+
+**Applied in the spec:** R-CUR-018 (the tab strip's paragraph).
+
+### Q-CUR-131 · The tab's filters are the states as pressed buttons with their counts, and Failure as a select, in the address
+
+Status: **Decided by the development agent** — selected from the options below while building the tab Downloads (R5a); the owner reviews
+it at the walkthrough.
+
+Context: R-CUR-018 asks for "the counts by state as filters" and "the filter **Failure** by class". The head of other lists is
+`<quader-list-head>` with a drawer of filters and chips (R-UI-100); the usage screens choose their period with pressed buttons in the
+selection's fill (R-UI-183). The API's filter of a class is the query parameter `class`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **All**, **Waiting**, **Running**, **Failed**, **Done** as pressed buttons with their counts as badges; **Failure** a select beside them; the address `state`, `failure`, `bulk` (chosen) | The specification's drawing | The counts are what a person following a cache's build looks at, and each is one click; the control is one the app has (the period of the usage screens); a link opens the same view | A head that differs from the lists with a drawer |
+| (b) The list head with a drawer holding the state and the class, the counts in a line above | The head of every list | One head for every list | The counts and the filter apart; a filter of five values behind a drawer |
+| (c) The states as a second `tab-nav` under the repository's strip | The reference's state tabs of an issue list | Familiar from the reference | Two tab strips one over the other read as one navigation of two levels |
+
+**Choice:** (a). Cancelled rows, which the counts do not hold, are under **All**. The address names the filter by its label, `failure`,
+and the screen sends it as the API's `class`. **Rationale:** the development agent would revisit (b) if the tab gains more filters
+(origin, a package's name) than one row holds.
+
+**Applied in the spec:** R-CUR-018 (the tab Downloads, "As built").
+
+### Q-CUR-132 · A row offers Retry or Cancel by its state to whom the API lets change it, and a bulk's line stands over its rows
+
+Status: **Decided by the development agent** — selected from the options below while building the tab Downloads (R5a); the owner reviews
+it at the walkthrough.
+
+Context: R-CUR-005 lets the person who started a row, the holders of `manage` and the administrator retry or cancel it, and a row a probe
+or a client caused whoever may fill that version; the server decides each call. A row has no member that says what the caller may do,
+and the API lists no bulks, only one bulk by its ID. R-UI-163 gives a row with one action its word, a row with several a menu.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One word per row by its state (**Retry** for failed and cancelled, **Cancel** for waiting and running), offered to the row's starter, to a holder of `manage` or the role `admin`, and for a probe's or a client's row that the rules deliver to a caller whose check of `read` and of the repository's `cacheFillAction` passes (a reader's view, which lacks it, asks `read`, the default); the opened row shows the failure without a second **Retry**; a bulk's line only where the address names the bulk (chosen) | The row's one action | One way to each job (the action cell); no action shown that the server refuses in the normal case; a bulk is reached from its rows | The check of the fill is the repository's, not the version's: a grant on some packages only offers **Retry** that the server may refuse, with its problem in the notice |
+| (b) **Retry** and **Cancel** to every reader, the server's refusal in a notice | Simple | No check | An action offered that the server refuses for most readers |
+| (c) A list of the repository's bulks above the rows | Every bulk at a glance | A bulk without its rows | An API of its own (a list of bulks) that R-CUR-012 does not have |
+
+**Choice:** (a). **Rationale:** R-CUR-018's "and **Retry**" in the opened row and the action cell are one job; the action cell keeps it
+where every other list has it. The development agent would revisit the check of the fill if the API answers each row's actions, and (c)
+if bulks become many per repository.
+
+**Applied in the spec:** R-CUR-018 (the tab Downloads, "As built").
+
+### Q-CUR-133 · The tab reads the queue again while the repository has a row that waits or runs, keeping what is shown
+
+Status: **Decided by the development agent** — selected from the options below while building the tab Downloads (R5a); the owner reviews
+it at the walkthrough.
+
+Context: R-CUR-018 refreshes the tab every 5 s "while something waits or runs", with **Pause automatic refresh**. The jobs list starts its
+list again at every refresh (`PagedResource.start`), which drops what **Load more** added and closes nothing because it opens nothing.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The timer runs while the answer's counts hold a waiting or running row of the repository, or the bulk shown expands or waits; a refresh reads the first page again with as many rows as are shown (at least 50, at most 500) and replaces them; a filter starts over (chosen) | The repository's state decides | A filter of done rows still follows a build that goes on; the rows opened and loaded stay; no list empties between two reads | A page of 500 rows every 5 s for whoever loaded that many |
+| (b) The timer runs while a row shown waits or runs | The rows shown decide | Quiet under a filter of finished rows | The counts go stale while the cache is built |
+| (c) Restart the list at each refresh, as the jobs list | The existing pattern | One pattern | The opened failure closes under the reader every 5 s |
+
+**Choice:** (a). The pause is the tab's own, a pressed button at the head's end; it lasts while the tab is open. **Rationale:** the
+development agent would revisit the cap if a refresh of 500 rows shows in the API's figures.
+
+**Applied in the spec:** R-CUR-018 (the tab Downloads, "As built").
 
 ### Q-CUR-80 · A download of one version runs before the catalogue: the call that names its files is a contract interface of its own
 

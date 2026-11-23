@@ -3666,6 +3666,7 @@ selected tab live in query parameters; a version of a package is an object with 
 | `/projects/{project}/vulnerabilities` (`?repository=&severity=&status=&…`), `/projects/{project}/vulnerabilities/findings/{id}`, `/projects/{project}/vulnerabilities/advisories/{ecosystem}/{id}` | Vulnerability report of the project, finding, advisory (from M4b) | [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 |
 | `/projects/{project}/repositories`, `/projects/{project}/repositories/new`, `/projects/{project}/repositories/new/{format}` | Repositories of the project; a new repository: the format first, then the form of that format | R-UI-020, R-UI-021, R-UI-080 |
 | `/projects/{project}/repositories/{key}` (`?q=&sort=`) | Content of the repository; for a generic repository the root of its files | R-UI-052 |
+| `/projects/{project}/repositories/{key}/downloads` (`?state=&failure=&bulk=`) | The tab Downloads of a remote repository: its download queue; a local or virtual repository's address leads to its content | [remote-curation.md](remote-curation.md) R-CUR-018 |
 | `/projects/{project}/repositories/{key}/setup` (`?client=&bastion=`) | Set up client: the snippets and the guide of the repository | R-UI-120 |
 | `/projects/{project}/repositories/{key}/files/{path…}` | A folder or a file of the repository; `…/files` alone is the root | R-UI-010 |
 | `/projects/{project}/repositories/{key}/trash` | Trash can of the repository (P1, specified, not built) | R-UI-014 |
@@ -4042,7 +4043,8 @@ not a screen per format ([content-shape.ts](../../web/src/app/features/repositor
 - Where the content is narrow, the actions go under the heading, the sentence and the badges, on one line.
 - No tabs on a local or a virtual repository: the content (captioned Images, Packages or Files) follows the header. A remote
   repository has the tabs of [remote-curation.md](remote-curation.md) R-CUR-018 (the owner's word of 2026-11-23, Q-CUR-1): its content
-  (Packages or Images), **Upstream** and **Downloads**, each with its address. **Set up client** opens the repository's page
+  (Packages or Images), **Upstream** and **Downloads**, each with its address; until **Upstream** is built the strip holds the content
+  and **Downloads**, and a visitor without a session sees no strip ([Q-CUR-130](remote-curation.md#q-cur-130--until-the-catalogues-screens-land-the-strip-holds-the-content-and-downloads-and-a-visitor-sees-none)). **Set up client** opens the repository's page
   Set up client (`…/repositories/<key>/setup`, R-UI-120); it is the page's one way to the setup (Q-UI-321).
 - A package format (npm, NuGet, OCI, Debian, every format with a view adapter) lists its items from `GET /api/v1/packages` with
   `repository=<qualified name>` and `format=<format>`, the filter `q` (query, server-side, name and description; a field as wide as

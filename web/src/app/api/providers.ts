@@ -66,6 +66,9 @@ import { HttpSigningApi, SigningApi } from './signing-api';
 // >>> storage connections
 import { HttpStorageApi, StorageApi } from './storage-api';
 // <<< storage connections
+// >>> T-24 downloads
+import { HttpRemoteDownloadsApi, RemoteDownloadsApi } from './remote-downloads-api';
+// <<< T-24 downloads
 
 /**
  * Binds every service interface of `api/` to its HTTP implementation. Specs and component tests
@@ -143,5 +146,8 @@ export function provideApiServices(): Provider[] {
     // >>> storage connections
     { provide: StorageApi, useClass: HttpStorageApi },
     // <<< storage connections
+    // >>> T-24 downloads
+    { provide: RemoteDownloadsApi, useClass: HttpRemoteDownloadsApi },
+    // <<< T-24 downloads
   ];
 }

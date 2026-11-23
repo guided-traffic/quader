@@ -85,6 +85,14 @@ export const PROJECT_REPOSITORIES_ROUTES: Routes = [
         loadComponent: loadContent,
       },
       {
+        // The tab Downloads of a remote repository (remote-curation.md R-CUR-018, Q-CUR-1): the same page with the queue under its
+        // tab strip; the filters are query parameters. A local or virtual repository's address leads to its content.
+        path: 'downloads',
+        title: $localize`:@@route.repositories.downloads.title:Downloads`,
+        data: { tab: 'downloads' },
+        loadComponent: loadContent,
+      },
+      {
         // Set up client (R-UI-120): the snippets and the guide of this repository; the client is a query parameter.
         path: 'setup',
         title: $localize`:@@route.setup.title:Set up client`,

@@ -70,6 +70,9 @@ import { provideSigningFakes } from './fakes-signing';
 // >>> storage connections
 import { provideStorageFakes } from './fakes-storage';
 // <<< storage connections
+// >>> T-24 downloads
+import { provideRemoteDownloadsFakes } from './fakes-remote-downloads';
+// <<< T-24 downloads
 // >>> W-26 limits
 import { provideLimitsFakes } from './fakes-limits';
 // <<< W-26 limits
@@ -551,5 +554,8 @@ export function provideFakeApis(): Provider[] {
     // >>> storage connections
     ...provideStorageFakes(),
     // <<< storage connections
+    // >>> T-24 downloads
+    ...provideRemoteDownloadsFakes(),
+    // <<< T-24 downloads
   ];
 }

@@ -1,0 +1,268 @@
+<p class="downloads-note" i18n="@@downloads.note">What this repository downloads ahead of its clients, and the fetches of clients that failed, with the cause in the upstream's own words.</p>
+
+<!-- The head of the list (R-CUR-018): the counts by state are the filter, Failure filters by class; the list's own actions at the
+     row's end. Each filter is in the address, so a link opens the same view. -->
+<div class="downloads-head">
+  <div class="state-filter" role="group" [attr.aria-label]="stateGroupLabel">
+    <button class="btn btn-default" type="button" [attr.aria-pressed]="state() === null" (click)="setState(null)" i18n="@@downloads.filter.all">All</button>
+    @for (s of states; track s) {
+      <button class="btn btn-default" type="button" [attr.aria-pressed]="state() === s" (click)="setState(s)">
+        {{ stateText(s) }}
+        @if (countOf(s); as n) {
+          <span class="badge">{{ n }}</span>
+        }
+      </button>
+    }
+  </div>
+  <div class="failure-filter">
+    <label class="field-label" for="dl-failure" i18n="@@downloads.filter.failure">Failure</label>
+    <select id="dl-failure" class="select-input" (change)="setFailure($any($event.target).value)">
+      <option value="" [selected]="failure() === null" i18n="@@downloads.filter.any-class">Any class</option>
+      @for (c of classes; track c) {
+        <option [value]="c" [selected]="failure() === c">{{ classText(c) }}</option>
+      }
+    </select>
+  </div>
+  <div class="head-end">
+    @if (offersRetryAll()) {
+      <button class="btn btn-default" type="button" [disabled]="retryingAll()" (click)="retryAll()" i18n="@@downloads.retry-all">Retry all failed</button>
+    }
+    <button class="btn btn-default" type="button" [attr.aria-pressed]="paused()" (click)="paused.set(!paused())">
+      @if (paused()) {
+        <ng-container i18n="@@downloads.resume">Resume automatic refresh</ng-container>
+      } @else {
+        <ng-container i18n="@@downloads.pause">Pause automatic refresh</ng-container>
+      }
+    </button>
+  </div>
+</div>
+
+@if (bulkId()) {
+  <!-- The bulk whose rows the list shows (a row's origin Bulk leads here): its subject, state, counters, bounds and Cancel bulk. -->
+  <section class="bulk" aria-labelledby="dl-bulk-title" data-testid="download-bulk">
+    @if (bulkFailure(); as f) {
+      <quader-error-notice [error]="f" (retry)="bulkRead.reload()" />
+    } @else if (bulk(); as b) {
+      <div class="bulk-head">
+        <h2 id="dl-bulk-title" class="bulk-title">
+          {{ bulkTitle(b) }}
+        </h2>
+        <span class="badge">{{ bulkStateText(b) }}</span>
+        <span class="bulk-actions">
+          @if (offersCancelBulk()) {
+            <button class="btn btn-default on-line" type="button" (click)="cancelBulk()" i18n="@@downloads.bulk.cancel">Cancel bulk</button>
+          }
+          <button class="btn btn-tertiary on-line" type="button" (click)="clearBulk()" i18n="@@downloads.bulk.show-all">Show every download</button>
+        </span>
+      </div>
+      <p class="bulk-facts dot-separated">
+        <span>{{ bulkCounts(b) }}</span>
+        @for (x of bulkRows(b); track x.state) {
+          <span>{{ stateText(x.state) }} {{ x.n }}</span>
+        }
+      </p>
+      <p class="bulk-facts dot-separated muted">
+        <span>{{ bulkBounds(b) }}</span>
+        @if (starterText(b.startedBy); as who) {
+          <span><ng-container i18n="@@downloads.bulk.started-by">Started by {{ who }}</ng-container></span>
+        }
+        <span><quader-time-ago [at]="b.createdAt" absolute="title" /></span>
+      </p>
+      @if (b.failure; as f) {
+        <p class="bulk-failure">
+          <span class="bad"><span class="material-icons" aria-hidden="true">error</span>{{ classText(f.class) }}</span>&ngsp;<span>{{ f.detail }}</span>
+        </p>
+      }
+    } @else {
+      <p role="status" i18n="@@downloads.bulk.loading">Loading the bulk download.</p>
+    }
+  </section>
+}
+
+<quader-data-table
+  [caption]="caption"
+  [columns]="columns()"
+  [loaded]="loaded()"
+  [loading]="loading()"
+  [error]="listError()"
+  [empty]="rows().length === 0"
+  [emptyText]="filtered() ? emptyFiltered : emptyText"
+  [hasMore]="hasMore()"
+  (more)="more()"
+  (retry)="retryList()"
+>
+  @for (r of rows(); track r.id) {
+    <tr>
+      <th scope="row" class="wrap-name">
+        <div class="name-cell">
+          <button
+            type="button"
+            class="btn btn-tertiary btn-icon on-line"
+            [attr.aria-expanded]="isOpen(r)"
+            [attr.aria-controls]="'dl-' + r.id"
+            [attr.aria-label]="openLabel(r)"
+            (click)="toggle(r)"
+          >
+            <span class="material-icons expand-chevron" aria-hidden="true">expand_more</span>
+          </button>
+          <span>
+            <span class="subject-name" translate="no">{{ r.name }}</span>
+            @if (r.version) {
+              &ngsp;<span class="subject-version" translate="no">{{ r.version }}</span>
+            }
+            @if (r.delivery !== 'delivered') {
+              <span class="secondary" i18n="@@downloads.not-delivered">Not delivered here: stored for examination</span>
+            }
+          </span>
+        </div>
+      </th>
+      <td class="keep">
+        @if (r.origin === 'bulk' && r.bulk) {
+          <a [routerLink]="[]" [queryParams]="bulkLink(r.bulk)" queryParamsHandling="merge">{{ originText(r) }}</a>
+        } @else {
+          {{ originText(r) }}
+        }
+        @if (r.origin === 'client' && r.occurrences > 1) {
+          <span class="secondary"><ng-container i18n="@@downloads.occurrences">{{ r.occurrences }} times</ng-container></span>
+        }
+      </td>
+      <td class="keep">
+        @switch (r.state) {
+          @case ('done') {
+            @if (r.outcome === 'completed' || !r.outcome) {
+              <span class="ok"><span class="material-icons" aria-hidden="true">check_circle</span>{{ stateText(r.state) }}</span>
+            } @else {
+              <span class="badge"><span class="material-icons" aria-hidden="true">check</span>{{ stateText(r.state) }}</span>
+            }
+          }
+          @case ('failed') {
+            <span class="bad"><span class="material-icons" aria-hidden="true">error</span>{{ stateText(r.state) }}</span>
+          }
+          @case ('running') {
+            <span class="badge"><span class="material-icons" aria-hidden="true">sync</span>{{ stateText(r.state) }}</span>
+          }
+          @case ('cancelled') {
+            <span class="badge"><span class="material-icons" aria-hidden="true">cancel</span>{{ stateText(r.state) }}</span>
+          }
+          @default {
+            <span class="badge"><span class="material-icons" aria-hidden="true">hourglass_empty</span>{{ stateText(r.state) }}</span>
+          }
+        }
+      </td>
+      <!-- The progress, the attempt and a done row's outcome: the first of them on the row's line, the others under it. The state's
+           badge stands alone in its cell, so the cell's first line is the badge's (R-UI-172). -->
+      <td class="keep">
+        @let p = progressText(r);
+        @let a = attemptText(r);
+        @let o = outcomeText(r.outcome);
+        @if (p) {
+          <span>{{ p }}</span>
+        }
+        @if (a) {
+          <span [class.secondary]="!!p"
+            >{{ a }}@if (r.state === 'waiting' && r.nextAttemptAt; as next) {&ngsp;·&ngsp;<ng-container i18n="@@downloads.next-attempt">next</ng-container>&ngsp;<quader-time-ago [at]="next" absolute="title" />}</span
+          >
+        }
+        @if (o) {
+          <span [class.secondary]="!!p || !!a">{{ o }}</span>
+        }
+        @if (r.refused > 0) {
+          <span class="secondary"><ng-container i18n="@@downloads.progress.refused">{{ r.refused }} refused by a gate</ng-container></span>
+        }
+        @if (!p && !a && !o) {
+          <quader-no-value />
+        }
+      </td>
+      <td class="failure-cell">
+        @if (r.failure; as f) {
+          @let l = line(f);
+          <span class="failure-line"
+            >{{ l.label }}&ngsp;·&ngsp;@if (l.status) {<span class="status-code">{{ l.status }}</span>} @else {<code translate="no">{{ l.code }}</code>}@if (l.host) {&ngsp;·&ngsp;<span translate="no">{{ l.host }}</span>}</span
+          >
+        } @else {
+          <quader-no-value />
+        }
+      </td>
+      @if (hasActions()) {
+        <td class="actions">
+          @if (action(r); as kind) {
+            <button class="btn btn-tertiary" type="button" [disabled]="isBusy(r)" (click)="act(r)">
+              {{ actionLabel(r) }}<span class="visually-hidden" translate="no">&ngsp;{{ subject(r) }}</span>
+            </button>
+          }
+        </td>
+      }
+    </tr>
+    <tr class="expansion">
+      <td [attr.colspan]="columns().length">
+        <div [id]="'dl-' + r.id" class="collapse-region" [class.open]="isOpen(r)">
+          <div>
+            @if (isOpen(r)) {
+              <div class="row-detail">
+                @if (r.failure; as f) {
+                  <!-- The whole failure of the last attempt (R-CUR-011, Q-CUR-20): what a script filters on beside its words. -->
+                  <h3 class="detail-title">
+                    <ng-container i18n="@@downloads.failure.title">Failure of attempt {{ f.attempt }}</ng-container><span class="muted dot-before"><quader-time-ago [at]="f.at" absolute="title" /></span>
+                  </h3>
+                  <p class="failure-detail">{{ f.detail }}</p>
+                  <dl class="facts">
+                    <dt i18n="@@downloads.failure.class">Class</dt>
+                    <dd>{{ classText(f.class) }}&ngsp;<code translate="no">{{ f.class }}</code></dd>
+                    <dt i18n="@@downloads.failure.step">Step</dt>
+                    <dd>{{ stepText(f.step) }}&ngsp;<code translate="no">{{ f.step }}</code></dd>
+                    <dt i18n="@@downloads.failure.code">Code</dt>
+                    <dd><code translate="no">{{ f.code }}</code></dd>
+                    @if (f.file) {
+                      <dt i18n="@@downloads.failure.file">File</dt>
+                      <dd><code translate="no">{{ f.file }}</code></dd>
+                    }
+                    @if (f.address) {
+                      <dt i18n="@@downloads.failure.address">Address</dt>
+                      <dd><code translate="no">{{ f.address }}</code>&ngsp;<span class="muted" i18n="@@downloads.failure.query-removed">(shown without its query, which can carry a credential)</span></dd>
+                    }
+                    @if (f.status) {
+                      <dt i18n="@@downloads.failure.status">Upstream status</dt>
+                      <dd>HTTP {{ f.status }}</dd>
+                    }
+                    @if (f.retryAfter) {
+                      <dt i18n="@@downloads.failure.retry-after">Retry-After</dt>
+                      <dd i18n="@@downloads.failure.seconds">{{ f.retryAfter }} s</dd>
+                    }
+                  </dl>
+                  @if (f.excerpt) {
+                    <p class="excerpt-label" i18n="@@downloads.failure.excerpt">The start of the upstream's answer</p>
+                    <pre class="code-block excerpt" translate="no">{{ f.excerpt }}</pre>
+                  }
+                }
+                <dl class="facts row-facts">
+                  @if (starterText(r.startedBy); as who) {
+                    <dt i18n="@@downloads.fact.started-by">Started by</dt>
+                    <dd>{{ who }}</dd>
+                  }
+                  <dt i18n="@@downloads.fact.queued">Queued</dt>
+                  <dd><quader-time-ago [at]="r.createdAt" /></dd>
+                  @if (r.startedAt; as at) {
+                    <dt i18n="@@downloads.fact.started">Started</dt>
+                    <dd><quader-time-ago [at]="at" /></dd>
+                  }
+                  @if (r.finishedAt; as at) {
+                    <dt i18n="@@downloads.fact.finished">Finished</dt>
+                    <dd><quader-time-ago [at]="at" /></dd>
+                  }
+                  @if (r.files > 0) {
+                    <dt i18n="@@downloads.fact.files">Files</dt>
+                    <dd i18n="@@downloads.fact.files-value">{{ r.files }} named, {{ r.stored }} stored, {{ r.present }} already stored, {{ r.refused }} refused</dd>
+                  }
+                  @if (r.bytes > 0) {
+                    <dt i18n="@@downloads.fact.bytes">Stored</dt>
+                    <dd>{{ size(r.bytes) }}</dd>
+                  }
+                </dl>
+              </div>
+            }
+          </div>
+        </div>
+      </td>
+    </tr>
+  }
+</quader-data-table>

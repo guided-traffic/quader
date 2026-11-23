@@ -19,6 +19,9 @@ import { describeMalwareProblem } from './problem-messages-malware';
 // >>> signatures
 import { describeSignatureProblem } from './problem-messages-signatures';
 // <<< signatures
+// >>> T-24 downloads
+import { describeDownloadsProblem } from './problem-messages-downloads';
+// <<< T-24 downloads
 // <<< M4b vulnerabilities
 
 export interface ProblemText {
@@ -137,7 +140,7 @@ export function describeProblem(error: ApiError): ProblemText {
     // <<< M2 ownership
     default:
       // >>> M1 ui-b
-      return accessProblem(error) ?? ciProblem(error) ?? bastionProblem(error) ?? vulnerabilityProblem(error) ?? limitsProblem(error) ?? malwareProblem(error) ?? signatureProblem(error) ?? fallback(error);
+      return accessProblem(error) ?? ciProblem(error) ?? bastionProblem(error) ?? vulnerabilityProblem(error) ?? limitsProblem(error) ?? malwareProblem(error) ?? signatureProblem(error) ?? downloadsProblem(error) ?? fallback(error);
       // <<< M1 ui-b
   }
 }
@@ -190,6 +193,13 @@ function signatureProblem(error: ApiError): ProblemText | null {
   return text === null ? null : { text, known: true };
 }
 // <<< signatures
+
+// >>> T-24 downloads
+function downloadsProblem(error: ApiError): ProblemText | null {
+  const text = describeDownloadsProblem(error.code);
+  return text === null ? null : { text, known: true };
+}
+// <<< T-24 downloads
 
 function rateLimited(seconds: number | null): string {
   return seconds === null

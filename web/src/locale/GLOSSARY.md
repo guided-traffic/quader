@@ -93,6 +93,7 @@ Every German text addresses the reader formally, as "Sie" ("Geben Sie … ein", 
 | mirror state (off, paused, scheduled, running, waiting, bound reached, failing) | Aus, Pausiert, Geplant, Läuft, Wartet, Grenze erreicht, Fehlerhaft |
 | pause, resume (a mirror); run a pass now, run a full pass | pausieren, fortsetzen; Durchlauf jetzt starten, Vollständigen Durchlauf starten |
 | rate-limit wait, bound (of a mirror), discovery (of names) | Rate-Limit-Wartezeit, Grenze, Ermittlung |
+| download queue (of a remote repository), bulk download, download state (waiting, running, failed, done, cancelled), retry, attempt, probe (a client's question about a version that starts a download) | Download-Warteschlange, Sammeldownload, Wartet, Läuft, Fehlgeschlagen, Fertig, Abgebrochen, wiederholen, Versuch, Abfrage |
 | test connection, upstream URL, negative cache | Verbindung testen, Upstream-URL, negativer Cache |
 | licence (of the software the build bundles, its notices) | Lizenz (der eingebundenen Software, Hinweise) |
 | project switcher, start page of the projects ("Your work"), recently visited (projects) | Projektwechsler, "Ihre Arbeit", Zuletzt besucht |
