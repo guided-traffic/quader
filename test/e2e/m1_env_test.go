@@ -213,14 +213,17 @@ type api struct {
 	minEpoch string
 	// writes guards the write class of the token (withWriteBudget); nil guards nothing
 	writes *writeBudget
-	// paced makes a setup's client wait out the write class (withPacedWrites): a 429 of a request whose body can be sent
-	// again is sent again after its Retry-After, a few times. Never set on a client whose test asserts a 429.
+	// paced makes the client wait out the write class of its token (withPacedWrites): a 429 of the class `write` of R-API-016
+	// (its RateLimit-Policy names it) for a request whose body can be sent again is sent again after its Retry-After, a few times.
+	// Every other 429 is returned. Never set on a client whose test asserts the write class's 429.
 	paced bool
 }
 
-// withPacedWrites returns a copy of the client for an environment's setup, which sends its writes as fast as the host runs:
-// on an idle host of many cores the setup of the set vuln sent more than the burst of the write class (R-API-016: 50, then
-// 10 a second) and met a 429 that no test was about. The copy waits as the answer says instead.
+// withPacedWrites returns a copy of the client that waits out the write class of its token instead of meeting its 429: an
+// environment's setup sends its writes as fast as the host runs, and on an idle host of many cores the setup of the set vuln
+// sent more than the burst of the write class (R-API-016: 50, then 10 a second) and met a 429 that no test was about
+// (`create service account e2e-nuget: 429 rate_limited`, 2026-11-20). adminAPI's client is paced: the shared administrator
+// token's write class is the whole set's, and no test asserts its 429 (the tests of the class use tokens of their own, E1.8).
 func (a *api) withPacedWrites() *api {
 	b := *a
 	b.paced = true
@@ -415,12 +418,24 @@ func (a *api) send(method, path string, body any, h ...string) (reply, error) {
 	}
 	for attempt := 0; ; attempt++ {
 		r, err := a.sendOnce(method, path, body, h...)
-		if err != nil || r.Status != http.StatusTooManyRequests || attempt == 5 {
+		if err != nil || r.Status != http.StatusTooManyRequests || attempt == 5 || !writeClassRefusal(r.Header) {
 			return r, err
 		}
 		wait, _ := strconv.Atoi(r.Header.Get("Retry-After"))
 		time.Sleep(time.Duration(min(max(wait, 1), 10)) * time.Second)
 	}
+}
+
+// writeClassRefusal says whether a 429 is the write class's of R-API-016: its RateLimit-Policy names the member "write".
+func writeClassRefusal(h http.Header) bool {
+	for _, v := range h.Values("RateLimit-Policy") {
+		for member := range strings.SplitSeq(v, ",") {
+			if strings.HasPrefix(strings.TrimSpace(member), `"write";`) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (a *api) sendOnce(method, path string, body any, h ...string) (reply, error) {
@@ -771,7 +786,7 @@ func ensureE2EProject(t testing.TB, adm *api) {
 // so that the project's lists (R-REPO-012) do not answer 404 on a replica that has not built the index yet.
 func adminAPI(t testing.TB) *api {
 	t.Helper()
-	a := newAPI(t).withToken(adminToken(t))
+	a := newAPI(t).withToken(adminToken(t)).withPacedWrites()
 	ensureE2EProject(t, a)
 	projectMu.Lock()
 	a.minEpoch = projectEpoch

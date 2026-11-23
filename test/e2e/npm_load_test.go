@@ -264,23 +264,12 @@ func buildNPMHAFixture(t *testing.T, fx *npmFixture) *npmHAFixture {
 
 // pacedSATokens revokes the active tokens of a service account (an earlier run's) and mints n new ones. The
 // administrator's token has the write budget of R-API-016 (burst 50), which revoking and minting 18 tokens after the
-// fixture's other writes exceeds; a 429 is waited out for its Retry-After.
+// fixture's other writes exceeds; the client waits out the write class (withPacedWrites).
 func pacedSATokens(t testing.TB, adm *api, sa string, n, ttl int) []string {
 	t.Helper()
+	adm = adm.withPacedWrites()
 	send := func(method, path string, body any, want ...int) reply {
-		for range 30 {
-			r, err := adm.send(method, path, body)
-			if err != nil {
-				t.Fatalf("%s %s: %v", method, path, err)
-			}
-			if r.Status != http.StatusTooManyRequests {
-				return r.want(t, method+" "+path, want...)
-			}
-			wait, _ := strconv.Atoi(r.Header.Get("Retry-After"))
-			time.Sleep(time.Duration(max(wait, 1)) * time.Second)
-		}
-		t.Fatalf("%s %s: still rate limited after 30 attempts", method, path)
-		return reply{}
+		return adm.do(method, path, body).want(t, method+" "+path, want...)
 	}
 	var l struct {
 		Items []struct {

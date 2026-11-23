@@ -157,8 +157,8 @@ func buildVulnEnv(t testing.TB) (*vulnEnv, error) {
 	b := make([]byte, 3)
 	_, _ = rand.Read(b)
 	e := &vulnEnv{run: hex.EncodeToString(b), npmTri: map[string]string{}, nugetTri: map[string]string{}, advisoryOf: map[string]string{}}
-	// The setup sends its writes at the host's pace and waits out the write class where it meets it (withPacedWrites).
-	e.adm = adminAPI(t).withPacedWrites()
+	// The setup sends its writes at the host's pace and waits out the write class where it meets it (adminAPI is paced).
+	e.adm = adminAPI(t)
 
 	// The three upstreams start clean: the dataset of the advisory source back to its fixture, the counters and the
 	// modes of the npm and NuGet upstreams.
@@ -200,10 +200,9 @@ func buildVulnEnv(t testing.TB) (*vulnEnv, error) {
 	// earlier run on this cluster may have left a larger dataset behind (the drain run of the long set).
 	e.syncFull(t, true)
 	e.awaitComplete(t)
-	// The fixture sends many writes with the shared administrator token, and the write class admits 50 in a sliding window of 5 s
-	// (R-API-016): the first write of the test that follows was refused (429) in one local run. A window without a write is an
-	// empty one, whatever the pace of the fixture was.
-	time.Sleep(6 * time.Second)
+	// The fixture sends many writes with the shared administrator token, whose write class admits 50 in a sliding window of 5 s
+	// (R-API-016): the first write of a test that followed was refused (429) in one local run, and a fixed 6 s stood here for an
+	// empty window. Every client of that token is paced now (adminAPI), so a test's write waits out the class as the answer says.
 	return e, nil
 }
 
