@@ -4993,7 +4993,7 @@ image's equality on manifests, tag lists and referrers (run for blobs). **Its la
 with the areas `bastion`, `bastioniface`, `bastionreg`, `bastionshared`, `authz` and the query budget; it is
 pushed after the run of the two packages before it has finished its integration shards. **Those gates ended
 at 01:00, twenty-one of them, each exit 0. The links' second package is put on top of it** (no conflict,
-though both change the host of the formats), **and the gates of the two together run since 01:01:** the full
+though both change the host of the formats), **and the gates of the two together run since 01:00:** the full
 set with the unit run and the lint, and the areas of the query budget, overload, `blob`, `files`, `limits`,
 `api`, `upstream`, `signatures`, `backup`, `postgres`, `bastion` and `bastioniface`. The two builders'
 worktrees and branches are removed. **In work since
