@@ -2333,7 +2333,8 @@ async function* staleAdvisories(page: Page): AsyncGenerator<string> {
 /**
  * The audit log with one event opened (R-UI-037): its facts, the time on one line, the copy buttons of its IDs on their lines; then an
  * event of an action without a name of its own and a long key, on a long path, by a user's token, answered in the browser: the key
- * breaks after a dot or an underscore, the actor's kind stands under its name.
+ * breaks after a dot or an underscore, the actor's kind stands under its name; the event under it has an actor without a name, whose
+ * identifier is cut in its column.
  */
 async function* auditEvent(page: Page): AsyncGenerator<string> {
   await page.locator('main table.data tbody th[scope="row"] button.link').first().click();
@@ -2344,7 +2345,18 @@ async function* auditEvent(page: Page): AsyncGenerator<string> {
   await page.route(list, async (route) => {
     const res = await route.fetch();
     const body = (await res.json()) as { items: (Record<string, unknown> & { actor: Record<string, unknown> })[] };
-    const [first, ...rest] = body.items;
+    const [first, second, ...rest] = body.items;
+    // The import of advisory data as the job ui-layout met it among the seed's events: an actor without a name, only its identifier,
+    // and a target that is a kind and an identifier (vulnerability_source, osv:npm); the log fell to blocks at 1,440 and 1,024 px.
+    const nameless = second && {
+      ...second,
+      action: 'vulnerability.source.imported',
+      repository: null,
+      path: null,
+      project: null,
+      resource: { type: 'vulnerability_source', id: 'osv:npm' },
+      actor: { ...second.actor, name: null, id: '01a208c6-2bda-776d-a125-d83c6b9ca7ac', type: 'service_account', tokenId: null, authMethod: null },
+    };
     const long = first && {
       ...first,
       action: 'storage.object_lock.retention_extended',
@@ -2352,7 +2364,7 @@ async function* auditEvent(page: Page): AsyncGenerator<string> {
       path: 'releases/2026/11/customer-portal-installer-with-a-long-name-for-the-windows-build-agents.exe',
       actor: { ...first.actor, type: 'user', authMethod: 'bearer' },
     };
-    await route.fulfill({ response: res, json: { ...body, items: long ? [long, ...rest] : body.items } });
+    await route.fulfill({ response: res, json: { ...body, items: long && nameless ? [long, nameless, ...rest] : body.items } });
   });
   // The log anew, without the event of the address: the first row opens the long one.
   await page.goto('/ui/admin/audit');

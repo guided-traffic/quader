@@ -143,7 +143,14 @@
             <quader-time-ago [at]="e.occurredAt" absolute="title" [zone]="timeZone()" />
           </td>
           <td class="read-text actor">
-            <span translate="no">{{ actorName(e) }}</span>
+            <!-- An actor without a name (a system job's account) is its identifier, a UUID: one line, cut where the column ends, its full
+                 value the title, as a target's identifier (Q-UI-568); the event's panel shows it whole. Whole, its 36 characters made the
+                 column wider than the log's room at 1,440 px and the table fell to blocks (the job ui-layout, 2026-11-23). -->
+            @if (e.actor.name) {
+              <span translate="no">{{ e.actor.name }}</span>
+            } @else {
+              <span class="actor-id" translate="no" [attr.title]="actorName(e)">{{ actorName(e) }}</span>
+            }
             <!-- The address breaks only after its dots and colons: an IPv6 address on one line widened the column past 1,024 px. -->
             @if (e.source.ip; as ip) {
               <span class="secondary" translate="no"><quader-parts-text [value]="ip" [marks]="addressMarks" /></span>
@@ -176,7 +183,8 @@
                 <span class="read-text" translate="no">{{ name }}</span>
                 <span class="secondary target-id" translate="no" [attr.title]="e.resource.id">{{ kind }}</span>
               } @else {
-                <span translate="no">{{ kind }}</span>
+                <!-- A kind breaks after its underscores, as an action's key does (vulnerability_source). -->
+                <span translate="no">@for (part of keyParts(kind); track $index) {<ng-container>{{ part }}</ng-container><wbr />}</span>
                 @if (e.resource.id; as id) {
                   <span class="secondary target-id" translate="no" [attr.title]="id">{{ id }}</span>
                 }

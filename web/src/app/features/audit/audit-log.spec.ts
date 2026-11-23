@@ -228,6 +228,31 @@ describe('Audit log', () => {
     expect((utc.root.querySelector('#a-utc') as HTMLInputElement).checked).toBe(true);
   });
 
+  it('Q-UI-997 Q-UI-568 an actor without a name is its identifier on one line, cut in its column with the whole as its title, and a kind breaks after its underscore', async () => {
+    // The job ui-layout met such an event (vulnerability.source.imported by an account of a system job): its UUID whole made the log
+    // fall to blocks at 1,440 px.
+    const id = '01a208c6-2bda-776d-a125-d83c6b9ca7ac';
+    const nameless = sampleEvent({
+      id: 'nameless',
+      action: 'vulnerability.source.imported',
+      actor: { type: 'service_account', id, name: null, tokenId: null, authMethod: null },
+      resource: { type: 'vulnerability_source', id: 'osv:npm' },
+    });
+    const named = sampleEvent({ id: 'named', actor: { type: 'user', id: '0199f1c4-7e2b-7a10-9c3d-1b2e3f4a5b6c', name: 'ada', tokenId: null, authMethod: 'session' } });
+    const { root } = await open({}, (audit) => (audit.eventList = [nameless, named]));
+    const [first, second] = [...root.querySelectorAll<HTMLElement>('tbody tr td.actor')];
+    const cut = first!.querySelector('.actor-id')!;
+    expect(cut.textContent!.trim()).toBe(id);
+    expect(cut.getAttribute('title')).toBe(id);
+    // A name stands as it is, not cut.
+    expect(second!.querySelector('.actor-id')).toBeNull();
+    expect(text(second!)).toContain('ada');
+    // The target's kind breaks after its underscore, as an action's key does, so that it gives the column no least width of a word.
+    const kind = root.querySelector<HTMLElement>('tbody tr td.target')!;
+    expect(kind.querySelector('span wbr')).toBeTruthy();
+    expect(text(kind)).toContain('vulnerability_source');
+  });
+
   it('Q-UI-997 the log keeps five columns: the address stands under the actor, the project under the target', async () => {
     const { root } = await open();
     const heads = [...root.querySelectorAll('table thead th')].map((th) => text(th as HTMLElement));

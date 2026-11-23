@@ -118,8 +118,30 @@ td.read-text {
   overflow-wrap: break-word;
 }
 
+// An actor's identifier where the event names none: as wide as the column, cut where it ends (as `.target-id` below).
+td.actor .actor-id {
+  display: block;
+  inline-size: 0;
+  min-inline-size: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Where the rows stand as blocks (390 px) the identifier follows its column's name on its line and breaks at its hyphens: as a block
+// it started on a line of its own under the name (label-apart).
+.quader-data-table.stacked td.actor .actor-id {
+  display: inline;
+  inline-size: auto;
+  min-inline-size: 0;
+  white-space: normal;
+}
+
+// 6 rem: with 8 the log in long-key state needed 657 of its 682 px at 1,440 px beside an opened event, and the runner's Chromium, which
+// sets the same text a few per cent wider, made it fall to blocks (the job ui-layout, 2026-11-23). A target's identifier is cut where
+// the column ends and is whole in its title and in the event's panel.
 td.target {
-  min-inline-size: 8rem;
+  min-inline-size: 6rem;
 
   .read-text {
     overflow-wrap: anywhere;
