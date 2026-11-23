@@ -6,10 +6,17 @@
 #
 # The five Valkey processes share one network namespace (the `net` container),
 # and every port is published on the host under the same number. An address
-# such as 127.0.0.1:16379 therefore reaches the same process from inside the
+# such as 127.0.0.1:16379 (instance 1) therefore reaches the same process from inside the
 # stack (replication, Sentinel monitoring) and from the host (the tests), so the
 # addresses that Sentinel announces are valid for a client on the host and a
 # failover can be followed from there.
+#
+# Several instances of the stack run side by side: the container names (IT_PROJECT)
+# and the host ports (IT_*_PORT) are those of the instance up.sh starts, set by
+# test/integration/instance.sh, and up.sh passes the instance's compose project
+# (-p), so the volumes are the instance's too. Instance 1 resolves to the names and
+# ports this file had before instances existed, so its containers keep their
+# configuration hash and are not recreated.
 name: quader-it
 
 x-valkey: &valkey
@@ -23,7 +30,7 @@ x-valkey: &valkey
 services:
   postgres:
     image: ${POSTGRES_IMAGE:?set by test/integration/up.sh}
-    container_name: quader-it-postgres
+    container_name: ${IT_PROJECT:?set by test/integration/up.sh}-postgres
     environment:
       POSTGRES_USER: quader
       POSTGRES_PASSWORD: quader-it
@@ -53,7 +60,7 @@ services:
       - ./conf/postgres.sh:/conf/postgres.sh:ro
       - ./conf/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
     ports:
-      - "127.0.0.1:15432:5432"
+      - "127.0.0.1:${IT_PG_PORT:?set by test/integration/up.sh}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U quader -d quader -h /var/run/postgresql"]
       interval: 2s
@@ -64,7 +71,7 @@ services:
 
   pgbouncer:
     image: ${PGBOUNCER_IMAGE:?set by test/integration/up.sh}
-    container_name: quader-it-pgbouncer
+    container_name: ${IT_PROJECT:?set by test/integration/up.sh}-pgbouncer
     entrypoint: ["/usr/bin/pgbouncer", "/etc/pgbouncer/pgbouncer.ini"]
     volumes:
       - ./conf/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
@@ -74,7 +81,7 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "127.0.0.1:16432:6432"
+      - "127.0.0.1:${IT_PGBOUNCER_PORT:?set by test/integration/up.sh}:6432"
     healthcheck:
       test: ["CMD-SHELL", "nc -z 127.0.0.1 6432"]
       interval: 2s
@@ -83,39 +90,39 @@ services:
 
   net:
     image: ${TOOLS_IMAGE:?set by test/integration/up.sh}
-    container_name: quader-it-net
+    container_name: ${IT_PROJECT:?set by test/integration/up.sh}-net
     command: ["sleep", "infinity"]
     init: true
     ports:
-      - "127.0.0.1:16379:16379"
-      - "127.0.0.1:16380:16380"
-      - "127.0.0.1:26381:26381"
-      - "127.0.0.1:26382:26382"
-      - "127.0.0.1:26383:26383"
+      - "127.0.0.1:${IT_VALKEY_PRIMARY_PORT:?set by test/integration/up.sh}:${IT_VALKEY_PRIMARY_PORT}"
+      - "127.0.0.1:${IT_VALKEY_REPLICA_PORT:?set by test/integration/up.sh}:${IT_VALKEY_REPLICA_PORT}"
+      - "127.0.0.1:${IT_SENTINEL_1_PORT:?set by test/integration/up.sh}:${IT_SENTINEL_1_PORT}"
+      - "127.0.0.1:${IT_SENTINEL_2_PORT:?set by test/integration/up.sh}:${IT_SENTINEL_2_PORT}"
+      - "127.0.0.1:${IT_SENTINEL_3_PORT:?set by test/integration/up.sh}:${IT_SENTINEL_3_PORT}"
 
   valkey-primary:
     <<: *valkey
-    container_name: quader-it-valkey-primary
+    container_name: ${IT_PROJECT:?set by test/integration/up.sh}-valkey-primary
     entrypoint: ["/conf/node.sh"]
     environment:
-      NODE_PORT: "16379"
+      NODE_PORT: "${IT_VALKEY_PRIMARY_PORT}"
     volumes:
       - ${CERT_DIR}:/certs:ro
       - ./conf:/conf:ro
       - valkey-primary:/data
     healthcheck:
-      test: ["CMD-SHELL", "valkey-cli --tls --cacert /certs/ca.crt -h 127.0.0.1 -p 16379 --user ops --pass ops-valkey-it --no-auth-warning ping | grep -q PONG"]
+      test: ["CMD-SHELL", "valkey-cli --tls --cacert /certs/ca.crt -h 127.0.0.1 -p ${IT_VALKEY_PRIMARY_PORT} --user ops --pass ops-valkey-it --no-auth-warning ping | grep -q PONG"]
       interval: 2s
       timeout: 3s
       retries: 30
 
   valkey-replica:
     <<: *valkey
-    container_name: quader-it-valkey-replica
+    container_name: ${IT_PROJECT:?set by test/integration/up.sh}-valkey-replica
     entrypoint: ["/conf/node.sh"]
     environment:
-      NODE_PORT: "16380"
-      REPLICAOF: "127.0.0.1 16379"
+      NODE_PORT: "${IT_VALKEY_REPLICA_PORT}"
+      REPLICAOF: "127.0.0.1 ${IT_VALKEY_PRIMARY_PORT}"
     volumes:
       - ${CERT_DIR}:/certs:ro
       - ./conf:/conf:ro
@@ -126,17 +133,17 @@ services:
       valkey-primary:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "valkey-cli --tls --cacert /certs/ca.crt -h 127.0.0.1 -p 16380 --user ops --pass ops-valkey-it --no-auth-warning info replication | grep -q master_link_status:up"]
+      test: ["CMD-SHELL", "valkey-cli --tls --cacert /certs/ca.crt -h 127.0.0.1 -p ${IT_VALKEY_REPLICA_PORT} --user ops --pass ops-valkey-it --no-auth-warning info replication | grep -q master_link_status:up"]
       interval: 2s
       timeout: 3s
       retries: 30
 
   valkey-sentinel-1:
     <<: *valkey
-    container_name: quader-it-valkey-sentinel-1
+    container_name: ${IT_PROJECT:?set by test/integration/up.sh}-valkey-sentinel-1
     entrypoint: ["/conf/sentinel.sh"]
     environment:
-      SENTINEL_PORT: "26381"
+      SENTINEL_PORT: "${IT_SENTINEL_1_PORT}"
     volumes:
       - ${CERT_DIR}:/certs:ro
       - ./conf:/conf:ro
@@ -147,17 +154,17 @@ services:
       valkey-replica:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "valkey-cli --tls --cacert /certs/ca.crt -h 127.0.0.1 -p 26381 -a sentinel-valkey-it --no-auth-warning ping | grep -q PONG"]
+      test: ["CMD-SHELL", "valkey-cli --tls --cacert /certs/ca.crt -h 127.0.0.1 -p ${IT_SENTINEL_1_PORT} -a sentinel-valkey-it --no-auth-warning ping | grep -q PONG"]
       interval: 2s
       timeout: 3s
       retries: 30
 
   valkey-sentinel-2:
     <<: *valkey
-    container_name: quader-it-valkey-sentinel-2
+    container_name: ${IT_PROJECT:?set by test/integration/up.sh}-valkey-sentinel-2
     entrypoint: ["/conf/sentinel.sh"]
     environment:
-      SENTINEL_PORT: "26382"
+      SENTINEL_PORT: "${IT_SENTINEL_2_PORT}"
     volumes:
       - ${CERT_DIR}:/certs:ro
       - ./conf:/conf:ro
@@ -168,17 +175,17 @@ services:
       valkey-replica:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "valkey-cli --tls --cacert /certs/ca.crt -h 127.0.0.1 -p 26382 -a sentinel-valkey-it --no-auth-warning ping | grep -q PONG"]
+      test: ["CMD-SHELL", "valkey-cli --tls --cacert /certs/ca.crt -h 127.0.0.1 -p ${IT_SENTINEL_2_PORT} -a sentinel-valkey-it --no-auth-warning ping | grep -q PONG"]
       interval: 2s
       timeout: 3s
       retries: 30
 
   valkey-sentinel-3:
     <<: *valkey
-    container_name: quader-it-valkey-sentinel-3
+    container_name: ${IT_PROJECT:?set by test/integration/up.sh}-valkey-sentinel-3
     entrypoint: ["/conf/sentinel.sh"]
     environment:
-      SENTINEL_PORT: "26383"
+      SENTINEL_PORT: "${IT_SENTINEL_3_PORT}"
     volumes:
       - ${CERT_DIR}:/certs:ro
       - ./conf:/conf:ro
@@ -189,14 +196,14 @@ services:
       valkey-replica:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "valkey-cli --tls --cacert /certs/ca.crt -h 127.0.0.1 -p 26383 -a sentinel-valkey-it --no-auth-warning ping | grep -q PONG"]
+      test: ["CMD-SHELL", "valkey-cli --tls --cacert /certs/ca.crt -h 127.0.0.1 -p ${IT_SENTINEL_3_PORT} -a sentinel-valkey-it --no-auth-warning ping | grep -q PONG"]
       interval: 2s
       timeout: 3s
       retries: 30
 
   seaweedfs:
     image: ${SEAWEEDFS_IMAGE:?set by test/integration/up.sh}
-    container_name: quader-it-seaweedfs
+    container_name: ${IT_PROJECT:?set by test/integration/up.sh}-seaweedfs
     command:
       - server
       - -dir=/data
@@ -224,7 +231,7 @@ services:
       - ./conf/s3.json:/etc/seaweedfs/s3.json:ro
       - seaweedfs:/data
     ports:
-      - "127.0.0.1:18333:8333"
+      - "127.0.0.1:${IT_S3_PORT:?set by test/integration/up.sh}:8333"
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://127.0.0.1:9333/cluster/status >/dev/null && curl -s -o /dev/null --cacert /certs/ca.crt https://127.0.0.1:8333/"]
       interval: 3s

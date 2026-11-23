@@ -41,8 +41,9 @@ It also runs [check-pins.sh](../../tools/sbom-generator/check-pins.sh), which ke
 | `fmt` | the formatters of `.golangci.yml` (gofumpt, goimports) over `./...`; this rewrites files, so run it on your own working tree |
 | `versions-check` | the E0.2 checks listed above |
 | `test` | `go test -race ./...` with a coverage profile of the unit tier (`.out/coverage/unit.out`) and a limit of `UNIT_TIMEOUT` per test binary (default 20 minutes, below the unit job's own 30; see [The unit run's time](#the-unit-runs-time)); the `go test -json` stream goes to `.out/test-unit.json`, which the coverage generator reads. It runs without the host's AWS configuration (`UNIT_ENV` in the Makefile: no `AWS_*` region, profile or keys, no `~/.aws` files), as on the CI runner; a bare `go test` reads them and can pass where CI fails |
-| `integration-up`, `integration-down` | start and stop the integration stack, see below |
-| `test-integration` | `go test -tags integration ./test/integration/...` with the environment of the main checkout's `.dev/integration/env` (a worktree uses the stack the main checkout started; run it as `test/integration/locked.sh make test-integration`, see [Integration stack](#integration-stack)); the JSON stream goes to `.out/test-integration.json`, the profile to `.out/coverage/integration-<line>.out`; `SHARD=a\|b\|c\|d` runs one quarter of the packages (the four CI legs, by a rule on the area's name that places a new package without a list being edited, [Q-ARCH-565](../spec/architecture.md#q-arch-565--the-integration-tests-run-in-four-shards-the-fourth-takes-the-virtual-areas-and-the-security-checks); the suffix decides first: every `<format>local` in `a`, every `<format>remote` in `c`, every `<format>virtual` in `d`; then `a` the areas `coordination`, `mirror`, `npm`, `nuget` and `proxy`, `c` the areas `api`, `backup*`, `restore*`, `storage*`, `postgres`, `blob`, `valkey` and `bastion*`, `d` the security checks `ci`, `vuln*`, `malware*` and `sign*`, `b` everything else, every new platform area among them) and adds `-<shard>` to both names; `internal/tools/ciworkflows` checks that every package runs in exactly one shard of the workflow's matrix |
+| `integration-up`, `integration-down` | start and stop the integration stack, `INSTANCE=2..9` another instance beside instance 1, see [Instances and their ports](#instances-and-their-ports) |
+| `integration-run` | `ARGS='<packages and flags>'`: one `go test` run on whichever instance of the stack is free, under its lock ([run.sh](../../test/integration/run.sh), see [Integration stack](#integration-stack)) |
+| `test-integration` | `go test -tags integration ./test/integration/...` with the environment of the main checkout's `.dev/integration/env`, or of `.dev/integration-<n>/env` with `INSTANCE=<n>` (a worktree uses the stacks the main checkout started; the target takes no lock, so a builder runs it as `test/integration/locked.sh make test-integration`, which takes a free instance, see [Integration stack](#integration-stack)); the JSON stream goes to `.out/test-integration.json`, the profile to `.out/coverage/integration-<line>.out`; `SHARD=a\|b\|c\|d` runs one quarter of the packages (the four CI legs, by a rule on the area's name that places a new package without a list being edited, [Q-ARCH-565](../spec/architecture.md#q-arch-565--the-integration-tests-run-in-four-shards-the-fourth-takes-the-virtual-areas-and-the-security-checks); the suffix decides first: every `<format>local` in `a`, every `<format>remote` in `c`, every `<format>virtual` in `d`; then `a` the areas `coordination`, `mirror`, `npm`, `nuget` and `proxy`, `c` the areas `api`, `backup*`, `restore*`, `storage*`, `postgres`, `blob`, `valkey` and `bastion*`, `d` the security checks `ci`, `vuln*`, `malware*` and `sign*`, `b` everything else, every new platform area among them) and adds `-<shard>` to both names; `internal/tools/ciworkflows` checks that every package runs in exactly one shard of the workflow's matrix |
 | `test-performance` | the P-13 and P-14 latency tests of the integration tier, the Debian delay bound `TestR_DEB_010_DelayBound` (R-DEB-010, Q-DEB-59) and `TestR_EP_013_CeilingPerformance` of `internal/authz` and the takeover bound of `TestFlightLockWait` (R-ARCH-033) of `internal/cluster` and the decode time of the slowest accepted avatars (`TestR_API_055_TheWorstCaseInputsAreAccepted` and `TestR_API_055_TheSlowestAcceptedImagesDecodeInsideTheDeadline` of `internal/avatar`, Q-UI-173; both skip under `-race`, so only this target runs them) with `QUADER_PERF_GATE=1`, which enforces their p99 bounds (for the avatar tests only the least CPU time of seven decodes: the wall time of a decode on a shared runner is the runner's load, so it is logged and not judged) (with Valkey for the first; `test-integration` and `make test` log them only); the JSON stream goes to `.out/test-performance.json`. Run by the nightly workflow "HA and Performance (nightly)" ([releasing.md](releasing.md#ha-and-performance-nightly)) |
 | `silo-up`, `silo-down`, `s3-conformance` | Silo at `SILO_IMAGE`, served over TLS, and the conformance tests against it ([test/integration/silo.sh](../../test/integration/silo.sh)) |
 | `coverage-report` | merges `.out/coverage` into `coverage.txt`, `summary.md` and the badge `coverage.json` ([test/coverage/report.sh](../../test/coverage/report.sh)) |
@@ -79,7 +80,7 @@ on a checkout with an installed `node_modules` therefore picks them up; use `mak
 |---|---|---|---|
 | Unit | `*_test.go` next to the code | nothing | `make test` |
 | Architecture | [internal/archtest](../../internal/archtest) | `go` on `PATH` (it runs `go list -deps -json ./...` and loads the packages with type information) | part of `make test` |
-| Integration | [test/integration](../../test/integration), build tag `integration` | the stack below | `make integration-up && make test-integration` |
+| Integration | [test/integration](../../test/integration), build tag `integration` | the stack below | `make integration-up && make test-integration`; one area: `test/integration/run.sh ./test/integration/<area>/` |
 | Compatibility | [test/compat](../../test/compat), build tag `compat` | the git history and the release tags (`git fetch --tags`), oasdiff at its pin (the target builds it) | `make compat-check`; its CI job `compat` is switched off until the first stable release ([releasing.md](releasing.md#switched-off-until-the-first-stable-release), Q-ARCH-340) |
 | HA and Performance (nightly) | `make test-performance`: the latency tests of [test/integration/coordination](../../test/integration/coordination) and `TestR_EP_013_CeilingPerformance` with the p99 gate; on kind clusters the e2e sets `failover`, `npm-ha`, `npm-ha-soak` and `ci-ha` ([releasing.md](releasing.md#ha-and-performance-nightly)) | the stack below; a kind cluster for the e2e sets | `make integration-up && make test-performance`; `make dev-up && make e2e SET=failover` (or `npm-ha`, `npm-ha-soak`) |
 | End to end | `deploy/dev`, `test/e2e` | a kind cluster | `make dev-up && make e2e`; `SET=access` runs the access-core scenarios (`test/e2e/e1_*`, `m1_env_test.go`), `SET=npm` the npm tests and `SET=npm-ha` the drain and failovers under npm load ([e2e.md](e2e.md#drain-and-failover-under-npm-load)). CI runs `SET=push`, `access-long`, `npm`, `nuget` and `ci` per change (`SET=ci` is the GitLab CI reference pipeline, [e2e.md](e2e.md#the-ci-tests)); `failover`, `npm-ha` and `npm-ha-soak` run nightly and on dispatch (owner, 2026-11-01; [releasing.md](releasing.md#ha-and-performance-nightly)), and `npm-ha-crash` by hand only. `make dev-valkey-stop` and `make dev-valkey-start` hold a Valkey outage across a criterion of unknown length |
@@ -177,7 +178,8 @@ they are real Go modules, so `go list` and the type loader run on them unchanged
 
 ## Integration stack
 
-`make integration-up` runs [test/integration/up.sh](../../test/integration/up.sh), which
+`make integration-up` runs [test/integration/up.sh](../../test/integration/up.sh), which (for instance 1; another instance
+uses its own directory, names and ports, [Instances and their ports](#instances-and-their-ports))
 
 1. creates a throwaway CA and one server certificate per service in `.dev/integration/certs`
    ([certs.sh](../../test/integration/certs.sh); every certificate covers `localhost`, `127.0.0.1`, `::1`
@@ -186,28 +188,56 @@ they are real Go modules, so `go list` and the type loader run on them unchanged
 3. creates the buckets (`go run ./test/integration/cmd/seed`);
 4. writes `.dev/integration/env`.
 
-**One stack, shared, under one lock.** The stack runs once per machine, started in the main checkout; every worktree of the
-repository uses it. [locked.sh](../../test/integration/locked.sh) runs a command under the stack's lock and with its
-environment, from the main checkout and from any worktree alike (it finds the main checkout as the parent of
-`git rev-parse --git-common-dir`):
+**Several stacks, each under its own lock.** The stacks belong to the machine: they are started in the main checkout, and every
+worktree of the repository uses them. One stack takes one run at a time (see [Why one stack takes one run at a
+time](#why-one-stack-takes-one-run-at-a-time)), so several instances of it can run side by side, each with a lock of its own
+(see [Instances and their ports](#instances-and-their-ports)). [run.sh](../../test/integration/run.sh) is the one command for
+a run, from the main checkout and from any worktree alike: it tests the current directory's code against the main checkout's
+stacks.
 
 ```sh
-test/integration/locked.sh go test -count=1 -tags integration ./test/integration/coordination/                           # one area
-test/integration/locked.sh go test -count=1 -p 1 -tags integration ./test/integration/npm/ ./test/integration/nuget/      # several
-test/integration/locked.sh make test-integration                                                                           # all
+make integration-up                    # instance 1, in the main checkout (the pipeline's stack)
+make integration-up INSTANCE=2         # a second instance beside it
+
+test/integration/run.sh ./test/integration/coordination/                                  # one area
+test/integration/run.sh -run 'TestR_ARCH_027' ./test/integration/npm/ ./test/integration/nuget/   # several, with flags
+test/integration/run.sh -timeout 60m ./test/integration/backup/                           # a longer bound
+QUADER_TEST_INSTANCE=1 test/integration/run.sh ./test/integration/smoke/                  # pinned to instance 1
+make integration-run ARGS=./test/integration/smoke/                                       # the same through make
+test/integration/locked.sh make test-integration                                          # all, on a free instance
 ```
 
-It waits for the lock without a timeout and says so on stderr, with the time, when it starts waiting and when it holds the
-lock. The lock is an flock on `<main checkout>/.dev/integration.lock` (flock(1) on Linux, lockf(1) on the descriptor on
-macOS); the file is never removed. The command inherits the locked descriptor, so the lock is held until the command and
-every process that kept the descriptor (the test binaries and the quader processes they start) have ended, also when the wrapper is killed. A bare
-`lockf <file> <command>` is not a substitute: it removes the file when its command ends, so a process still waiting on the
-removed file and one that creates it anew both run, and a killed `lockf` leaves its command running without the lock.
-`make test-integration` reads the main checkout's `.dev/integration/env` by itself, also from a worktree, but takes no lock.
-The script's own variables carry the suite's prefix, because the tests start quader processes with the environment they
-inherited and a quader process refuses every other `QUADER_` variable that is not a setting: it exports
-`QUADER_TEST_LOCK_HELD` (the lock file, so that a command it runs can call it again without waiting on itself) and reads
-`QUADER_TEST_STACK_ROOT` (another checkout whose stack and lock to use instead of the main checkout's).
+`run.sh` runs `go test -count=1 -p 1 -tags integration -timeout 30m <arguments>` through
+[locked.sh](../../test/integration/locked.sh); `-timeout 30m` is left out when the arguments carry a `-timeout` of their own,
+and the exit code is `go test`'s. `locked.sh` runs any command the same way. It finds the main checkout as the parent of
+`git rev-parse --git-common-dir` and takes as candidates the instances whose env file exists there. It takes the first whose
+lock is free without waiting; when every one is taken it tries them all again every two seconds, so it takes whichever becomes
+free first, not a fixed one. `QUADER_TEST_INSTANCE=<n>` pins an instance, whose lock it then waits for without a timeout. It
+says on stderr which instance it took and how long it waited, for example:
+
+```text
+locked.sh: 2026-11-23 04:07:30 took instance 1 (quader-it) after waiting 0 s (pid 12548): go test -count=1 -p 1 -tags integration -timeout 30m ./internal/qname/
+locked.sh: 2026-11-23 04:07:32 waiting for a free instance of the integration stack (instances 1 2 are all taken)
+locked.sh: 2026-11-23 04:07:40 took instance 2 (quader-it2) after waiting 8 s (pid 12604): go test -count=1 -p 1 -tags integration -timeout 30m ./internal/qname/
+```
+
+Then it loads that instance's env file and runs the command in the current directory. An instance's lock is an flock on
+`<main checkout>/.dev/integration.lock` (instance 1) or `<main checkout>/.dev/integration-<n>.lock` (flock(1) on Linux,
+lockf(1) on the descriptor on macOS); the file is never removed. The command inherits the locked descriptor, so the lock is held
+until the command and every process that kept the descriptor (the test binaries and the quader processes they start) have
+ended, also when the wrapper is killed. A bare `lockf <file> <command>` is not a substitute: it removes the file when its command
+ends, so a process still waiting on the removed file and one that creates it anew both run, and a killed `lockf` leaves its
+command running without the lock. A candidate is an instance whose env file exists: `make integration-down` removes it, but a
+stack whose containers stopped some other way (a restart of Docker) keeps it and fails the run that takes it.
+
+`make test-integration` reads the env file of `INSTANCE` (default `QUADER_TEST_INSTANCE`, then 1) of the main checkout by
+itself, also from a worktree, but takes no lock: the pipeline starts one stack per job and runs it that way, unchanged.
+The scripts' own variables carry the suite's prefix, because the tests start quader processes with the environment they
+inherited and a quader process refuses every other `QUADER_` variable that is not a setting: `locked.sh` exports
+`QUADER_TEST_INSTANCE` (the instance it took, which `make test-integration` and `rotate-cert.sh` then use) and
+`QUADER_TEST_LOCK_HELD` (the lock file, so that a command it runs can call it again without waiting on itself), and reads
+`QUADER_TEST_STACK_ROOT` (another checkout whose stacks and locks to use instead of the main checkout's). Every env file
+carries `QUADER_TEST_INSTANCE` too, so a shell that sourced one by hand is pinned to that instance.
 
 **Every connection is TLS (INV-20, R-HA-063).** PostgreSQL runs with `ssl=on` and a
 [pg_hba.conf](../../test/integration/conf/pg_hba.conf) that has `hostssl` lines only, so a client without TLS is
@@ -232,7 +262,7 @@ fine for a test stack and not a model for production.
 `QUADER_TEST_VALKEY_LINE=9.0` or `9.1` (default `9.1`) selects the Valkey line. Switching the line recreates
 the stack, because Sentinel rewrote the configuration of the data nodes.
 
-| Service | Container | Host address | Notes |
+| Service | Container (instance 1) | Host address (instance 1) | Notes |
 |---|---|---|---|
 | PostgreSQL 18 (the version under test, Q-ARCH-219) | `quader-it-postgres` | `127.0.0.1:15432` | user `quader`, database `quader`, superuser; data on tmpfs (`PGDATA` set in the compose file); TLS only (`hostssl`) |
 | PgBouncer | `quader-it-pgbouncer` | `127.0.0.1:16432` | `pool_mode = transaction`, a catch-all database entry, `max_prepared_statements = 100`; the admin console is the database `pgbouncer`; TLS in (`require`) and out (`verify-full`) |
@@ -261,10 +291,12 @@ tests never skip.
 
 | Variable | Meaning |
 |---|---|
+| `QUADER_TEST_INSTANCE` | the instance the file describes, 1 to 9 |
 | `QUADER_TEST_CA_FILE` | absolute path of the stack's CA certificate (`.dev/integration/certs/ca.crt`) |
 | `QUADER_TEST_CERT_DIR` | the directory of the stack's certificates and keys |
 | `QUADER_TEST_PG_DSN`, `QUADER_TEST_PG_PGBOUNCER_DSN` | PostgreSQL direct and through PgBouncer, `sslmode=verify-full&sslrootcert=<CA>` |
 | `QUADER_TEST_PG_HOST`, `_PORT`, `_PGBOUNCER_PORT`, `_USER`, `_PASSWORD`, `_DATABASE` | the same, split up |
+| `QUADER_TEST_PG_CONTAINER` | the PostgreSQL container's name (`quader-it-postgres`), whose log the statement counts read (`testenv.StatementLogSince`); an env file written before this variable existed lacks it: `make integration-up` writes it again without recreating the containers |
 | `QUADER_TEST_VALKEY_LINE` | `9.0` or `9.1` |
 | `QUADER_TEST_VALKEY_SENTINELS`, `QUADER_TEST_VALKEY_NODES` | comma-separated `host:port` of the Sentinels and the data nodes |
 | `QUADER_TEST_VALKEY_PRIMARY_NAME` | the Sentinels' monitor name, `quader` |
@@ -307,7 +339,9 @@ the existing CA and makes the running service serve it: PostgreSQL by `pg_reload
 SIGHUP, Valkey by `CONFIG SET tls-cert-file` on all five processes, and the S3 gateway by a container restart
 (SeaweedFS reads the pair at start only; the script waits for health). The CA does not change, so clients
 keep verifying. Pass a short `days` to test expiry. A test shells out to the script from the repository
-root, as the Valkey tests do with `docker`.
+root, as the Valkey tests do with `docker`. The script acts on the instance `QUADER_TEST_INSTANCE` names (every env file
+carries it, and `locked.sh` exports it) and on the certificates of `QUADER_TEST_CERT_DIR`, so a test rotates the certificate of
+the stack it runs against.
 
 The smoke tests in [test/integration/smoke](../../test/integration/smoke) check one thing per
 dependency: PostgreSQL 18 direct (including a session advisory lock), PgBouncer in transaction mode,
@@ -319,9 +353,75 @@ stack to its original layout by failing over twice.
 Packages under `test/` may import pgx, valkey-go and the AWS SDK directly: the architecture test does not
 check them.
 
-`make integration-down` removes the containers, volumes and `.dev/integration/env`; the certificates
-stay. A stack created before the per-service certificates existed is recreated by `make integration-up`
+`make integration-down` removes the containers, volumes and `.dev/integration/env` (`INSTANCE=<n>`: those of instance
+`n` and `.dev/integration-<n>/env`); the certificates stay. A stack created before the per-service certificates existed is recreated by `make integration-up`
 (`certs.sh` sees the missing files and issues a new set).
+
+### Instances and their ports
+
+`make integration-up INSTANCE=<n>` (`test/integration/up.sh <n>`) starts instance `n` of 1 to 9; without the variable,
+instance 1. [instance.sh](../../test/integration/instance.sh) derives every name of an instance from its number:
+
+| | Instance 1 | Instance n (2 to 9) |
+|---|---|---|
+| Compose project, container prefix | `quader-it` (`quader-it-postgres`, ...) | `quader-it<n>` (`quader-it2-postgres`, ...) |
+| Volumes | `quader-it_<service>` | `quader-it<n>_<service>` |
+| State (certificates, env file, Valkey line) | `.dev/integration/` | `.dev/integration-<n>/` |
+| Env file | `.dev/integration/env` | `.dev/integration-<n>/env` |
+| Lock | `.dev/integration.lock` | `.dev/integration-<n>.lock` |
+| Host ports | the table below | instance 1's plus `(n - 1) * 100` |
+
+Instance 1 is the stack as it was before instances existed: its compose configuration resolves to the same values, so its
+containers keep their configuration hash and `make integration-up` does not recreate them. Each instance has its own CA. Start
+every instance in the main checkout: `run.sh` looks for env files there only, and a second checkout that starts the same
+instance number would take the same container names and ports.
+
+The ports of every local profile of the repository, and the instances' (all on `127.0.0.1` unless noted):
+
+| Profile | Service | Port |
+|---|---|---|
+| Integration stack, instance 1 | PostgreSQL, PgBouncer | 15432, 16432 |
+| | Valkey primary, replica | 16379, 16380 |
+| | Sentinels | 26381, 26382, 26383 |
+| | SeaweedFS S3 | 18333 |
+| Integration stack, instance 2 | PostgreSQL, PgBouncer, Valkey, Sentinels, S3 | 15532, 16532, 16479, 16480, 26481 to 26483, 18433 |
+| Integration stack, instance n | the same | 15432, 16432, 16379, 16380, 26381 to 26383, 18333, each plus `(n - 1) * 100` (instance 9: 16232, 17232, 17179, 17180, 27181 to 27183, 19133) |
+| UI development profile ([web-ui.md](web-ui.md#local-ui-development)) | Angular dev server, quader, ops listener, sign-in provider | 4200 (`localhost`), 19080, 19081, 19090 |
+| | PostgreSQL, Valkey, SeaweedFS S3 | 25432, 26390, 28333 |
+| Development profile on kind ([local-profile.md](local-profile.md)) | the edge (HTTPS NodePort 30443 of the kind node) | 8080 (`QUADER_DEV_HTTP_PORT`), and the kind API server on a port Docker picks |
+| S3 conformance (`make silo-up`) | Silo S3, console | 9000, 9001 |
+| In-process harness, e2e port-forwards, throwaway Valkey of the `valkey` area | every listener | a port the kernel picks (`:0`) |
+
+The step of 100 keeps the instances apart from each other and from every port above. Instance 10 would take instance 1's
+PgBouncer port (15432 + 900 + 100 = 16432), so the number stops at 9. All ports stay below 32768, under the ephemeral range of
+Linux (32768 to 60999) and of macOS (49152 to 65535). The Valkey processes listen inside their shared network namespace on the
+same numbers as on the host, so the addresses Sentinel announces stay valid on the host; a Sentinel derives the port of its
+instance's primary from its own port by the same step ([conf/sentinel.sh](../../test/integration/conf/sentinel.sh)).
+
+**What one instance takes.** Read with `docker stats --no-stream` on 2026-11-23 from instance 1 after two days up: SeaweedFS
+1.36 GiB, PostgreSQL 403 MiB (its data directory is a tmpfs and counts here), the two Valkey data nodes 15 and 16 MiB, each
+Sentinel 7 MiB, PgBouncer 3 MiB, about 1.8 GiB in all, idle CPU near zero. Docker Desktop's VM on the development machine has
+15.8 GiB, and the UI development profile and the kind clusters take their share of it.
+
+### Why one stack takes one run at a time
+
+What a test does to a stack as a whole, so that two runs on one stack act on each other (read in the areas on 2026-11-23):
+
+| Area, test | What it does to the whole stack |
+|---|---|
+| `valkey` (`TestFailover`, `TestFlightLockFailover`, `helpers_test.go`), `smoke` (`TestValkeyClientFollowsASentinelFailover`) | forces Sentinel failovers of the stack's one Valkey: every other run's clients lose the primary for seconds |
+| `valkey` (`breaker_test.go`, `flight_test.go`) | `CLIENT PAUSE 3500 WRITE` on the primary: every write of every run waits |
+| `valkey` (`failover_test.go`), `bastionshared`, `bastion` | `ACL SETUSER` on the Sentinels and data nodes; `smoke` resets the `ACL LOG` and expects it empty afterwards |
+| `querybudget`, `vulnblock` (`querycount_test.go`) | count statements from the PostgreSQL container's log; the log line names no database, so two counting runs on one stack cannot tell their statements apart (`testenv/statements.go`) |
+| `postgres` (`bookkeeping_test.go`), `audit` (`env_test.go`) | create and alter the server-wide role `quader_app` with a fixed name and password |
+| every suite with replicas (pools of up to 8 connections each, plus lease sessions) | share the one server's `max_connections` (200, `compose.yaml`); two runs' pools together can use them up, and the next connection is refused |
+| every suite | writes to the two buckets of the one SeaweedFS (each under its own prefix, removed at the end); the 100 volumes of SeaweedFS are shared, and a run that fills them fails every run after it |
+| the latency tests of `make test-performance` (`coordination`, `npm`, `api`, `deblocal`) | measure time on a stack whose containers another run would keep busy; the machine's CPU is shared by every instance, so an instance of its own does not take that away |
+
+None of this but the CPU reaches past its own stack: a test reaches a stack only through the variables of the env file. The PostgreSQL
+log is read from the container `QUADER_TEST_PG_CONTAINER`, a Valkey process through `QUADER_TEST_VALKEY_CONTAINERS`, the
+certificates from `QUADER_TEST_CERT_DIR`, and every address from the env file; the throwaway Valkey of the `valkey` area has a
+random name and port. So two instances take two runs at once.
 
 ## The in-process harness
 

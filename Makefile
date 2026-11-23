@@ -53,8 +53,11 @@ UI_BUNDLE_MARK ?=
 IMAGE_ARCH  ?= $(shell go env GOARCH)
 
 # The integration stack belongs to the checkout that started it; a worktree uses the main checkout's (the parent of git's common
-# directory), as test/integration/locked.sh does.
-INTEGRATION_ENV := $(abspath $(dir $(abspath $(shell git rev-parse --git-common-dir 2>/dev/null || echo .git))))/.dev/integration/env
+# directory), as test/integration/locked.sh does. INSTANCE picks one of the instances that run side by side (1 to 9,
+# test/integration/instance.sh): instance 1 is .dev/integration, the pipeline's, instance n .dev/integration-<n>. It defaults to
+# QUADER_TEST_INSTANCE, which every env file carries and locked.sh and run.sh export for the instance they took, and then to 1.
+INSTANCE ?= $(or $(QUADER_TEST_INSTANCE),1)
+INTEGRATION_ENV := $(abspath $(dir $(abspath $(shell git rev-parse --git-common-dir 2>/dev/null || echo .git))))/.dev/integration$(if $(filter-out 1,$(INSTANCE)),-$(INSTANCE))/env
 COVERAGE_DIR := .out/coverage
 
 # Cyclomatic complexity: no function of the module's own code above CYCLO_THRESHOLD. Tests and
@@ -336,12 +339,19 @@ test: ## Unit tests with the race detector, without the host's AWS configuration
 	$(UNIT_ENV) go test -count=1 -run 'TestR_ARCH_010' ./internal/formats/...
 
 .PHONY: integration-up
-integration-up: ## Start PostgreSQL, PgBouncer, Valkey with Sentinel (TLS) and SeaweedFS; write .dev/integration/env
-	test/integration/up.sh
+integration-up: ## Start PostgreSQL, PgBouncer, Valkey with Sentinel (TLS) and SeaweedFS; write .dev/integration/env (INSTANCE=2..9: another instance beside it, .dev/integration-<n>/env)
+	test/integration/up.sh $(INSTANCE)
 
 .PHONY: integration-down
-integration-down: ## Stop the integration stack and remove its volumes
-	test/integration/down.sh
+integration-down: ## Stop the integration stack and remove its volumes (INSTANCE=2..9: that instance)
+	test/integration/down.sh $(INSTANCE)
+
+# One run of integration tests on whichever instance of the stack is free (test/integration/run.sh): it holds that instance's lock
+# for the run, from the main checkout or a worktree. QUADER_TEST_INSTANCE=<n> pins an instance.
+.PHONY: integration-run
+integration-run: ## go test -count=1 -p 1 -tags integration -timeout 30m ARGS on a free instance of the stack, under its lock (test/integration/run.sh), e.g. ARGS=./test/integration/smoke/
+	@test -n "$(ARGS)" || { echo "ARGS is empty: name the packages and flags, e.g. make integration-run ARGS=./test/integration/smoke/"; exit 2; }
+	test/integration/run.sh $(ARGS)
 
 # SHARD=a|b|c|d splits the packages over the four CI jobs, each with its own stack, by a rule on the area's name that places a new
 # package without anyone editing it (Q-ARCH-544, Q-ARCH-565). A format's areas are <format>local, <format>remote and
@@ -387,8 +397,8 @@ endif
 # profiles of the matrix merge into one report. -p 1 serialises the build too, so the test binaries are
 # compiled in parallel first and the run takes them from the build cache.
 .PHONY: test-integration
-test-integration: ## Integration tests against the running stack (make integration-up), SHARD=a|b|c|d for one quarter; .out/test-integration[-<shard>].json and .out/coverage/integration-<line>[-<shard>].out
-	@test -f $(INTEGRATION_ENV) || { echo "$(INTEGRATION_ENV) is missing: run 'make integration-up' first"; exit 1; }
+test-integration: ## Integration tests against the running stack (make integration-up; INSTANCE=<n> another instance, without its lock: locked.sh make test-integration takes a free one), SHARD=a|b|c|d for one quarter; .out/test-integration[-<shard>].json and .out/coverage/integration-<line>[-<shard>].out
+	@test -f $(INTEGRATION_ENV) || { echo "$(INTEGRATION_ENV) is missing: run 'make integration-up INSTANCE=$(INSTANCE)' first"; exit 1; }
 	@mkdir -p .out $(COVERAGE_DIR)
 	go test -c -o .out/integration-bin/ -tags integration -covermode=atomic -coverpkg=./... $(INTEGRATION_PKGS) >/dev/null
 	@set -o pipefail; set -a; . $(INTEGRATION_ENV); set +a; \

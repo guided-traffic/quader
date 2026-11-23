@@ -39,10 +39,13 @@ func (s *Stack) LogStatements(t testing.TB) {
 // restart of the stack, which is not made here. The counting tests therefore run on a stack no other logging test shares.
 //
 // StatementLogSince returns the statements the database logged since an instant, with the instant of each, without the transaction
-// control. A count of the statements of a request reads them through PerRequest, never by a bare threshold.
+// control. A count of the statements of a request reads them through PerRequest, never by a bare threshold. The log is that of the
+// PostgreSQL container of the stack the environment names (QUADER_TEST_PG_CONTAINER), so a run on another instance of the stack
+// reads its own instance's log.
 func StatementLogSince(t testing.TB, at time.Time) []Statement {
 	t.Helper()
-	out, err := exec.CommandContext(t.Context(), "docker", "logs", "--since", at.UTC().Format(time.RFC3339Nano), "quader-it-postgres").CombinedOutput() //nolint:gosec // constant arguments and a formatted instant
+	container := Get(t, "QUADER_TEST_PG_CONTAINER")
+	out, err := exec.CommandContext(t.Context(), "docker", "logs", "--since", at.UTC().Format(time.RFC3339Nano), container).CombinedOutput() //nolint:gosec // the stack's container name from its env file and a formatted instant
 	if err != nil {
 		t.Fatalf("docker logs: %v\n%s", err, out)
 	}

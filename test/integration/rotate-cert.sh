@@ -13,39 +13,47 @@
 # days is the validity of the new certificate (default 365); a short value makes expiry observable.
 # The CA does not change, so a client that trusts it keeps verifying. The new certificate has a new
 # key and serial; the previous files are overwritten. Needs a stack from `make integration-up`.
+#
+# The instance is $QUADER_TEST_INSTANCE (default 1; locked.sh and run.sh export it for the instance they took), so a test
+# that shells out to the script rotates the certificate of the stack it runs against. The certificates are those of
+# $QUADER_TEST_CERT_DIR when the stack's env file is loaded, else those of the instance in this checkout.
 set -euo pipefail
 
 svc="${1:?usage: rotate-cert.sh <postgres|pgbouncer|valkey|s3> [days]}"
 days="${2:-365}"
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 root="$(cd "$here/../.." && pwd)"
-certs="$root/.dev/integration/certs"
+# shellcheck source=test/integration/instance.sh
+. "$here/instance.sh"
+it_instance "${QUADER_TEST_INSTANCE:-1}" "$root"
+certs="${QUADER_TEST_CERT_DIR:-$IT_STATE/certs}"
+p="$IT_PROJECT"
 [ -f "$certs/ca.crt" ] || { echo "rotate-cert.sh: no stack certificates in $certs; run make integration-up" >&2; exit 1; }
 
 case "$svc" in
   postgres)
     "$here/certs.sh" --issue postgres "$certs" "$days"
-    docker exec quader-it-postgres /conf/postgres.sh refresh
-    docker exec quader-it-postgres psql -U quader -d quader -qtAc "select pg_reload_conf()" >/dev/null
+    docker exec "$p-postgres" /conf/postgres.sh refresh
+    docker exec "$p-postgres" psql -U quader -d quader -qtAc "select pg_reload_conf()" >/dev/null
     ;;
   pgbouncer)
     "$here/certs.sh" --issue pgbouncer "$certs" "$days"
-    docker kill --signal=HUP quader-it-pgbouncer >/dev/null
+    docker kill --signal=HUP "$p-pgbouncer" >/dev/null
     ;;
   valkey)
     "$here/certs.sh" --issue server "$certs" "$days"
-    for port in 16379 16380 26381 26382 26383; do
+    for port in "$IT_VALKEY_PRIMARY_PORT" "$IT_VALKEY_REPLICA_PORT" "$IT_SENTINEL_1_PORT" "$IT_SENTINEL_2_PORT" "$IT_SENTINEL_3_PORT"; do
       auth=(--user ops --pass ops-valkey-it)
-      case "$port" in 263*) auth=(-a sentinel-valkey-it) ;; esac
-      docker exec quader-it-valkey-primary valkey-cli --tls --cacert /certs/ca.crt -h 127.0.0.1 -p "$port" "${auth[@]}" --no-auth-warning \
+      case "$port" in "$IT_SENTINEL_1_PORT" | "$IT_SENTINEL_2_PORT" | "$IT_SENTINEL_3_PORT") auth=(-a sentinel-valkey-it) ;; esac
+      docker exec "$p-valkey-primary" valkey-cli --tls --cacert /certs/ca.crt -h 127.0.0.1 -p "$port" "${auth[@]}" --no-auth-warning \
         CONFIG SET tls-cert-file /certs/server.crt tls-key-file /certs/server.key >/dev/null
     done
     ;;
   s3)
     "$here/certs.sh" --issue s3 "$certs" "$days"
-    docker restart quader-it-seaweedfs >/dev/null
+    docker restart "$p-seaweedfs" >/dev/null
     for _ in $(seq 1 60); do
-      [ "$(docker inspect -f '{{.State.Health.Status}}' quader-it-seaweedfs)" = healthy ] && exit 0
+      [ "$(docker inspect -f '{{.State.Health.Status}}' "$p-seaweedfs")" = healthy ] && exit 0
       sleep 2
     done
     echo "rotate-cert.sh: the S3 gateway did not become healthy after the restart" >&2

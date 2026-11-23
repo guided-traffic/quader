@@ -13,6 +13,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 func jsonLines(logs string) []map[string]any {
@@ -114,7 +116,9 @@ func TestReplicas(t *testing.T) {
 			len(info.ObjectStore.Connections) == 0 || info.ObjectStore.Connections[0].ID == "" || info.ObjectStore.Connections[0].Bucket == "" {
 			t.Errorf("info = %s", body)
 		}
-		if strings.Contains(strings.ToLower(body), "password") || strings.Contains(body, "26381") {
+		// The first Sentinel's port, read from the env file of the instance of the stack the run takes (26381 on instance 1).
+		_, sentinelPort, _ := net.SplitHostPort(strings.Split(testenv.Get(t, "QUADER_TEST_VALKEY_SENTINELS"), ",")[0])
+		if strings.Contains(strings.ToLower(body), "password") || strings.Contains(body, sentinelPort) {
 			t.Errorf("info leaks a secret or a Sentinel address: %s", body)
 		}
 	})
