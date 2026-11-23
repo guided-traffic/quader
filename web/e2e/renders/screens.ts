@@ -436,6 +436,19 @@ async function* systemScanners(page: Page): AsyncGenerator<string> {
   await expect(page.locator('main [data-testid="scanners-none-trivy"]')).toBeVisible();
   yield 'scanners-all';
   await page.unroute(url);
+  // Two replicas lost without draining (G4-08): the header's statement with their names and the moment of the last heartbeat, which
+  // the profile's one replica never shows.
+  const replicas = '**/api/v1/system/replicas';
+  const lostAt = new Date(Date.now() - 47 * 60_000).toISOString();
+  await answerWith(page, replicas, (b) => {
+    const items = (b['items'] as Record<string, unknown>[]) ?? [];
+    const first = items[0] ?? {};
+    const lost = (name: string): Record<string, unknown> => ({ ...first, name, lost: true, state: 'ready', heartbeatAt: lostAt });
+    return { ...b, items: [...items, lost('quader-worker-7f9c6d5b8-x2v4q'), lost('quader-api-6d8b9c7f5-k3m8n')] };
+  });
+  await expect(page.locator('main .condition').filter({ hasText: 'quader-worker-7f9c6d5b8-x2v4q' })).toBeVisible();
+  yield 'replicas-lost';
+  await page.unroute(replicas);
 }
 
 /**

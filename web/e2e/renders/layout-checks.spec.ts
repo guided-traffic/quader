@@ -131,6 +131,46 @@ test.describe('a label kept on one line (R-UI-171)', () => {
   });
 });
 
+test.describe('a fact\'s value broken inside a word (G4-10, R-UI-171)', () => {
+  // The System page's card Installation at 390 px (2026-11-23): the term's column as wide as its longest term, the value squeezed.
+  const facts = (css: string): string =>
+    `<style>dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; inline-size: 300px; margin: 0; } dd { margin: 0; overflow-wrap: anywhere; } ${css}</style>` +
+    '<dl><dt>Answered by</dt><dd>quader-all-7c9d</dd><dt>Licences of the bundled software</dt><dd><a href="x">3rdpartylicenses.txt</a></dd></dl>';
+
+  test('G4-10 a value broken inside its word beside a term that took the room is found, a long token too', async ({ page }) => {
+    expect(only(await check(page, facts('')), 'broken').length).toBeGreaterThan(0);
+  });
+
+  test('G4-10 the same facts with each term above its value pass', async ({ page }) => {
+    expect(only(await check(page, facts('dl { grid-template-columns: minmax(0, 1fr); }')), 'broken')).toEqual([]);
+  });
+});
+
+test.describe('a cell\'s content running into the next cell (R-UI-173)', () => {
+  // The System page's replicas at 1,280 px (2026-11-23): the checks' grid column had a least width of 0, the table made the State
+  // column narrower than "malwareUpdaterFreshclam" beside its icon, and the words ran under the heartbeat.
+  const replica = (columns: string, word = ''): string =>
+    `<table class="data" style="inline-size: 470px"><tbody><tr><td><div style="display: grid; grid-template-columns: ${columns}; column-gap: 12px">` +
+    '<span class="badge">Ready</span><div style="display: flex; gap: 4px"><span class="material-icons">warning</span>' +
+    `<span style="min-inline-size: 0; ${word}">malwareUpdaterFreshclam</span></div></div></td>` +
+    '<td style="inline-size: 300px">1:43:55 PM</td></tr></tbody></table>';
+
+  test('R-UI-173 a check whose column claims no least width runs into the next cell and is found', async ({ page }) => {
+    const found = only(await check(page, replica('auto minmax(0, 1fr)')), 'cell-overflow');
+    expect(found, describe(found)).toHaveLength(1);
+    expect(found[0]!.text).toBe('malwareUpdaterFreshclam');
+  });
+
+  test('R-UI-173 the column at least as wide as its longest word passes', async ({ page }) => {
+    expect(only(await check(page, replica('auto minmax(min-content, 1fr)')), 'cell-overflow')).toEqual([]);
+  });
+
+  test('R-UI-173 a text its own box cuts with an ellipsis is not counted here (the check clipped is its)', async ({ page }) => {
+    const cut = 'display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
+    expect(only(await check(page, replica('auto minmax(0, 1fr)', cut)), 'cell-overflow')).toEqual([]);
+  });
+});
+
 test.describe('a button joined to a field (R-UI-175)', () => {
   test('R-UI-175 a joined button that the line rule gave margins of -8 px is 48 px beside a field of 32 and is found', async ({ page }) => {
     const [html, css] = joinedField('margin-block: -8px;');

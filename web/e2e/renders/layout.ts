@@ -9,8 +9,8 @@
 /** One defect of the layout, as the render report and failures.txt name it. */
 export interface LayoutFinding {
   /**
-   * Which check found it: `icon-apart`, `broken`, `row-offset`, `row-actions`, `stacked-offset`, `label-apart`, `clipped`,
-   * `stacked-fits`, `sideways`, `empty-scroll`.
+   * Which check found it: `icon-apart`, `broken`, `row-offset`, `row-actions`, `stacked-offset`, `label-apart`, `cell-overflow`,
+   * `clipped`, `stacked-fits`, `sideways`, `empty-scroll`.
    */
   readonly check: string;
   /** The element, as a path of up to four tags with their first two classes. */
@@ -383,12 +383,26 @@ export function layoutFindings(): LayoutFinding[] {
     }
   }
 
-  // ---- broken-word: a short word of a list's cell broken inside itself (R-UI-171) -----------------------------------------
+  // ---- broken-word: a short word of a list's cell or of a card's fact broken inside itself (R-UI-171) ----------------------
   // A column narrower than a word of ten letters ("Platfor" / "m enginee" / "ring", a project in the audit log). A long token (an
   // identifier, a path, a hash) may break where it must when no column holds it (Q-UI-425): the run of characters without a space
-  // around the break is such a token when it is longer than 16 characters, and so is the text of `code`.
-  for (const cell of Array.from(document.querySelectorAll('table.data > tbody > tr > :is(td, th)'))) {
-    if (!shown(cell) || stackedTable(cell) || lineCount(textRects(cell)) < 2) continue;
+  // around the break is such a token when it is longer than 16 characters, and so is the text of `code`. A fact's value (`dl > dd`)
+  // is measured too (G4-10): there a long token broken is a defect as well where the term's column took more room than the value's,
+  // so that the value was squeezed beside a term that did not need the room ("3rdpartylicenses.txt" beside "Licences of the bundled
+  // software" on the System page at 390 px).
+  // The term of a fact's value: the `dt` before it, where the list lays them out side by side; null where it stands above.
+  const termOf = (dd: Element): Element | null => {
+    let el = dd.previousElementSibling;
+    while (el && el.tagName !== 'DT') el = el.previousElementSibling;
+    if (!el) return null;
+    const a = el.getBoundingClientRect();
+    const b = dd.getBoundingClientRect();
+    return a.right <= b.left + 1 && a.bottom > b.top ? el : null;
+  };
+  for (const cell of Array.from(document.querySelectorAll('table.data > tbody > tr > :is(td, th), dl > dd'))) {
+    if (!shown(cell) || (cell.matches('td, th') && stackedTable(cell)) || lineCount(textRects(cell)) < 2) continue;
+    const term = cell.matches('dd') ? termOf(cell) : null;
+    const squeezed = term !== null && term.getBoundingClientRect().width > cell.getBoundingClientRect().width + 1;
     const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
     const range = document.createRange();
     let broken: string | null = null;
@@ -405,7 +419,7 @@ export function layoutFindings(): LayoutFinding[] {
         if (top !== null && r.top > top + 2 && /[\p{L}\p{N}]/u.test(text[i - 1] ?? '') && /[\p{L}\p{N}]/u.test(text[i] ?? '')) {
           const before = /\S*$/u.exec(text.slice(0, i))?.[0] ?? '';
           const after = /^\S*/u.exec(text.slice(i))?.[0] ?? '';
-          if (before.length + after.length <= 16) broken = `${before}|${after}`;
+          if (before.length + after.length <= 16 || squeezed) broken = `${before}|${after}`;
         }
         top = r.top;
       }
@@ -592,6 +606,34 @@ export function layoutFindings(): LayoutFinding[] {
     measureLine();
   }
   nameStyle.remove();
+
+  // ---- cell-overflow: a cell's text or icon reaching past its cell into the next (R-UI-173) --------------------------------------
+  // A table lays its columns out by their least widths; content that claims a least width of 0 (a grid column of minmax(0, 1fr), a
+  // flex item of min-inline-size 0) lets the table make its column narrower than its longest word, and the word runs under the
+  // value of the next column (the System page's replicas at 1,280 px, 2026-11-23). A table that stands as blocks and content
+  // that a box inside the cell clips or scrolls are left out: what is cut is the check clipped's.
+  for (const cell of Array.from(document.querySelectorAll<HTMLElement>('main table td, main table th, [role="dialog"] table td, [role="dialog"] table th'))) {
+    if (cell.closest('.quader-data-table.stacked') || !shown(cell)) continue;
+    const edge = cell.getBoundingClientRect().right + 1;
+    const clips = (el: Element | null): boolean => {
+      for (let e = el; e && e !== cell; e = e.parentElement) {
+        if (getComputedStyle(e).overflowX !== 'visible' || getComputedStyle(e).position === 'absolute' || getComputedStyle(e).position === 'fixed') return true;
+      }
+      return false;
+    };
+    const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
+    let worst: { el: Element; past: number; text: string } | null = null;
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const text = n.textContent ?? '';
+      const el = n.parentElement;
+      if (!text.trim() || !el || !shown(el) || clips(el)) continue;
+      const range = document.createRange();
+      range.selectNodeContents(n);
+      const past = Math.max(...Array.from(range.getClientRects()).map((r) => r.right)) - edge;
+      if (past > 0 && (!worst || past > worst.past)) worst = { el: inIcon(el) ? el.closest(ICON)! : el, past, text };
+    }
+    if (worst) add('cell-overflow', worst.el, worst.text, `${Math.round(worst.past + 1)} px past the right edge of its cell`);
+  }
 
   // ---- clipped: a text cut although there is room beside it (R-UI-173) ----------------------------------------------------
   // An element cut with an ellipsis, or a read-only field's value cut (an address, a command), where the box that holds it has the

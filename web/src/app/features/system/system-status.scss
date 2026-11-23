@@ -28,6 +28,12 @@
   &.note {
     font-weight: 400;
   }
+
+  // A date and a time are one value (Q-UI-428): the moment of the last heartbeat of lost replicas broke between its date and its
+  // time at 1,024 and 390 px (G4-07).
+  time {
+    white-space: nowrap;
+  }
 }
 
 .cards {
@@ -37,6 +43,7 @@
 }
 
 .card {
+  container-type: inline-size;
   margin-block: var(--quader-space-4);
   padding: var(--quader-space-4);
   border: 1px solid var(--quader-border);
@@ -64,7 +71,20 @@ dt {
 
 dd {
   margin: 0;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+}
+
+// A narrow card puts each term above its value (G4-09): beside "Licences of the bundled software", as wide as its longest term,
+// "3rdpartylicenses.txt" and a replica's name broke inside their words at 390 px.
+@container (max-width: 26rem) {
+  dl {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0;
+  }
+
+  dd + dt {
+    margin-block-start: var(--quader-space-2);
+  }
 }
 
 .role {
@@ -136,9 +156,11 @@ td {
 
 // A replica's state: the status, and beside it the checks that fail, one under the other. The first check's words stand on the
 // line of the replica's name like every cell's first line (R-UI-172); the status stands on that line by its margins (R-UI-175).
+// The checks' column is at least as wide as their longest word beside its icon: with a least width of 0 the table made the State column
+// narrower than "warning malwareUpdaterFreshclam", and the checks ran under the heartbeat beside them (1,280 px).
 .state {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(min-content, 1fr);
   align-items: start;
   column-gap: var(--quader-space-3);
 }
@@ -147,6 +169,22 @@ td {
   display: grid;
   row-gap: var(--quader-space-1);
   max-inline-size: 36rem;
+}
+
+// A degraded check: its icon in a column of its own beside its words, so that a check's text whose first word ("malwareUpdaterFreshclam")
+// did not fit beside the icon no longer leaves the icon alone on a line (the renders at 1,280 px).
+.check:has(> .material-icons) {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--quader-space-1);
+
+  > .material-icons {
+    flex: none;
+  }
+
+  > span:not(.material-icons) {
+    overflow-wrap: break-word;
+  }
 }
 
 // In a row that stands as a block the column's name is the cell's first column, so the state starts on the name's line
