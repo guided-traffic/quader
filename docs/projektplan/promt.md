@@ -429,7 +429,7 @@ order is what a user or an operator meets first. The state is kept here.
 | Package | What it closes | State |
 |---|---|---|
 | Signatures with the real clients | the check of the repairs of 2026-11-21 with the real clients, and what it finds | landed at 09:39 |
-| Screens, first round | fourteen findings of screens (the entries of repository, version, vulnerability and audit pages, the npm form, the malware settings, the signatures' lists) | in work since 08:16 |
+| Screens, first round | fourteen findings of screens (the entries of repository, version, vulnerability and audit pages, the npm form, the malware settings, the signatures' lists) | built (seventeen commits); looked at and sent back at 10:33 with three points and for the rebase onto the stack at the gates |
 | W1 · Authorization answers the same in every format | the administrator flag shown to `tokens:read` alone (H-836); the global read policy and the default-scope token; the refusals that end a virtual read | built for every format; at the landing's gates since 10:29, stacked on the handover's data keys |
 | W3 · The download limits count what they promise | refused requests that still count (the upstream budget, an endpoint's rate class); seven paths without a test; three statements; the help text of waiting downloads | in work since 09:40 |
 | W2 · Scanning keeps its promises to an operator | a scan attempt lost when a repository is enabled again; the scanner's spool that `QuaderSpoolNearlyFull` does not see; layer writes without a flush; a removed scanner pod shown ready; two measurements | waits for a place |
@@ -439,7 +439,7 @@ order is what a user or an operator meets first. The state is kept here.
 | W4 · Go tests wait for what they stand for | fixed sleeps and paced setups in integration and unit tests; four convention checks that sit in a format's area; tests that depend on the machine; the harness's policy helper that writes an empty policy without a word | waits for a place |
 | W8 · Web and end-to-end tests wait for what they stand for | the fixed 320 ms of choosing a person; paced setups of the e2e environments; the fixed waits of three seconds in the limits' client cases and the load test's tokens (from W3, since they need the kind cluster); a code push during a nightly | after the screens' first round |
 | W7 · The development profiles run the image they are given | the image tag `:dev`; one image tag per checkout; instances of the UI profile, one per builder; `nuget-ha` cut to what NuGet's client adds; the drain variant that Q-VULN-128 said to fold into a pooler leg once one runs under npm's load, which two do now; the development profile's root CA that is issued twice at a start; the Valkey outage with a replaced pod, which only a set runs that nothing has run since 2026-11-18 | after W6 (it owns the Makefile) |
-| W9 · Screens show every state, second round | the system page; a technical token's description and removal; states the renders never show (an open row menu, the shared error notice); a failed test link's reason as a sentence of the page; the audit log's filter by a resource | after the screens' first round |
+| W9 · Screens show every state, second round | the system page; a technical token's description and removal; states the renders never show (an open row menu, the shared error notice); a failed test link's reason as a sentence of the page; the audit log's filter by a resource; the eleven points seen on the first round's renders | after the screens' first round |
 | W10a · Documents and the decisions' index | 1,050 of 3,425 decided questions without a row in the index (generated with a check from now); stale sentences in spec, developer pages, README and manual | waits for a place |
 | W10b · Translations and test names | the extraction check; names of tests that carry a decision's number; the German texts that say "du" | last |
 | W11 · Readings and statements (the development agent) | the stall family of the runs before 2026-11-18; pipeline artifacts to read before they expire (from 2026-12-02); entries that close by a reasoned statement | the statements landed at 09:39, the readings of runs are back and both are marked in the lists; left: two single sets to dispatch in the pipeline window, a count of a cold load's requests, a trace of the Bastion's answers by kind |
@@ -862,6 +862,18 @@ records the recorder that tells such a stall apart).
   `guided-traffic/container-images`; and the tag rule ("Option A"): the runners name the tag that does not move,
   `<runner version>-<build time>`. [releasing.md](../developer/releasing.md) describes both without the owner.
 
+- **Seen by the builder of the screens' first round on its renders (2026-11-23), for the second round
+  (W9):** (1) the audit log is a table or blocks at 1440 by what its rows hold (it needs 1,123 px and has
+  1,113) and blocks at 1280 and 1024; (2) at 390 an opened audit event stands below the whole list; (3)
+  the opened event's Details block scrolls sideways at 1280 and 1440; (4) the vulnerability findings, the
+  malware finds and the audit log stand as blocks at 1024 (they need 999, 1,045 and 1,122 px against 697);
+  (5) the project settings' list of download rules stacks at 1024 (708 against 688); (6) the trust
+  anchors' tables show a column of dashes for rows without Remove; (7) the OCI version page's Files table
+  of one row stands as blocks at 1024; (8) a repository's header says "disabled" where the manual says
+  **Disabled**; (9) a finding's and an advisory's page title say "Finding" and "Advisory" while the
+  heading names the advisory; (10) the screen `repository-settings-deb-remote` has a code block region
+  about 602,000 px wide at 1024 and 1440. And seen by the development agent on the same renders: (11) a
+  file's page says "by user:priya", a principal's syntax where a person's name belongs.
 - **A failed test link's reason is a developer's English sentence, in both languages (seen by the
   development agent on 2026-11-23 on the renders of the handover's data keys).** The storage settings and a
   Bastion's card put the server's detail into their sentence as it comes: "the link answered 403 with 0
@@ -6525,6 +6537,30 @@ the analyser's and ClamAV's images that gates nothing; the disk watcher of the k
 after it has settled whether the pipeline's record and the local tool write the same file by the same
 rule (if not, it stops there and says what each is for); the stale sentences. Builders with a test
 load: the screens' first round, W3, W5b, W6, the landing's gates.
+**10:31, the screens' first round is back** (seventeen `fix:` commits, one per finding, on the `main` of
+10:29; every gate it ran exit 0, a render run of 461 screens without a layout finding, three walks
+stopped at a load of 64 to 70 and passed alone, `admin-system-storage` among them, which is the walk
+that stopped in the pipeline an hour before). Every finding was still so except two parts of the audit
+log's entry that earlier commits had closed. What a user gets: a disabled repository's file offers no
+download, address or command and says why (the reader's view of a repository now says that it is
+disabled); the format's name in every header; the shared notice's buttons on its line; the
+vulnerability, malware and signature pages with the shared header; the notices of stale advisory data
+only for who can act, and for everyone else a closed section "About these counts"; a Details section
+that stays as the user left it; a local npm repository without the forwarding of the security audit
+(the schema names the classes a setting applies to, the server refuses the rest with 422); the German
+"Registrys"; the ClamAV guide's table as blocks where the page is narrow, and a certificate as a
+caller on the usage page; an opened audit event with each name above its value where it is narrow, keys
+that break at a dot or an underscore; the signature lists as tables at 1440 and 1024 with the second
+facts under the row's name (Q-UI-965 to 972). The renders gained a property `tables`: a list that
+stacks at 1024 or wider fails its screen. **Looked at by the development agent** (ten of the fourteen,
+English and German): accepted, and sent back at 10:33 for three points: the signer's identity and an
+artifact's version break inside a word at 1024 (one shared helper for the three local ones); a
+certificate's usage page says "Client certificate" twice; the version pages of a disabled repository,
+which it had entered as a gap, are repaired with the file page's rule. Then it rebases onto the stack
+at the gates, runs the integration areas of what it changed on the server (`repository`, `api`, `npm`,
+`limits`), which it had not, and the gates on the rebased tree. Its ten other defects and one of the
+development agent's are in section 8 for W9. Not verified by it: the vulnerability set's end-to-end
+specs, which it changed and which need the kind cluster; the push's own legs show them.
 **In work since 05:38: package 7 of the encryption, the destruction of a retired connection's keys**
 (R-STOR-097 to R-STOR-103 and the journal's replay; the development agent's answer of 2026-11-22 to the
 question of what stays readable at a provider). It stands on the handover's second package as it lands;
