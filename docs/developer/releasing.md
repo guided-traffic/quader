@@ -1018,8 +1018,8 @@ job checks out the tag.
 | Scan and attach the SBOM | same | the SPDX SBOM written by the image `SYFT_IMAGE` on the release tag (`docker run`, no download from GitHub, [Q-HA-204](../spec/ha-and-helm.md#q-ha-204--the-spdx-file-of-the-release-is-written-by-the-pinned-syft-image-from-the-registry-tag)), uploaded to the release; a Docker Scout CVE report |
 | Release Helm Chart to GitHub Pages | same | `deploy/helm/quader` and `deploy/helm/quader-bastion` with `version` and `appVersion` set to the release (and the image tag in the `values.yaml` of `quader`), packaged together with one `helm package`, added to the chart repository's `index.yaml` on the `gh-pages` branch in one push, and `quader-<version>.tgz`, `quader-bastion-<version>.tgz` and `index.yaml` attached to the release |
 
-**The Containerfile** has three stages. `web` runs `npm ci` and `npm run build:embed` on the Node.js of
-`web/.nvmrc`; `build` cross-compiles the binary for the target platform on the build platform
+**The Containerfile** has three stages. `web` runs `npm ci` (with `--loglevel=http`, so a package whose download failed is
+named in the build's log) and `npm run build:embed` on the Node.js of `web/.nvmrc`; `build` cross-compiles the binary for the target platform on the build platform
 (`CGO_ENABLED=0`), so neither architecture is emulated; the final stage is the distroless base of
 `RUNTIME_BASE_IMAGE`, the binary and nothing else, as UID 65532 (83.3 MB on arm64; 246.5 MB with the analyser it carried until
 2026-11-21, which the scanner pods now copy from `TRIVY_IMAGE`, R-HA-070). `make image` builds the same file for the host architecture.

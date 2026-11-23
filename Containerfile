@@ -28,7 +28,9 @@ WORKDIR /src
 COPY internal/webui/dist/ internal/webui/dist/
 COPY web/ web/
 WORKDIR /src/web
-RUN npm ci && QUADER_UI_BUNDLE_MARK="$UI_BUNDLE_MARK" npm run build:embed
+# --loglevel=http writes every fetch of npm ci into the build's log, so a package whose download failed is named there: an
+# optional platform package that npm skips leaves the build to fail later with "Cannot find native binding" and nothing else.
+RUN npm ci --loglevel=http && QUADER_UI_BUNDLE_MARK="$UI_BUNDLE_MARK" npm run build:embed
 
 FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-alpine AS build
 ARG TARGETOS
