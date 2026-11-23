@@ -351,6 +351,13 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    line rule without a stack, [Q-UI-725](../spec/api-and-ui.md#q-ui-725--the-guard-without-a-stack-renders-the-shared-patterns-with-the-global-stylesheet-and-a-lint-rule-refuses-the-off-line-declarations)).
    A new check, or a change of one, gets a fixture that fails without it. `make ui-renders` runs them before the screens.
 
+   **What the checks leave to the eye, on purpose** (the reading of 2026-11-23, G5-21, G5-24, G5-25). An offset of 1 px or less passes:
+   the threshold is R-UI-175's ("within 1 px"), which the fixtures hold from both sides (1.5 px fails, 0.5 px passes), not a blind spot.
+   A text cut at the start of a wrapped line and a stacked label that stands off its control have no check: no defect of either shape has
+   been seen on a render, and a check of every wrapped line's first glyph or of every label's distance would measure each text node of
+   every picture for a shape the look at the pictures that every UI change gets (rule 11) catches. A check is added when such a defect
+   is seen, with the fixture of that defect.
+
    A screen can add widths of its own (`widths` in `screens.ts`) where a list changes its form between the run's three: the
    start page's projects and a project's repositories at 1,100 px, the admin area's repositories at 1,100 and 1,280 px.
 
