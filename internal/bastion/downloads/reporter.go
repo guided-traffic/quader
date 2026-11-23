@@ -151,6 +151,15 @@ func (r *Reporter) SetEnabled(on bool) {
 	}
 }
 
+// Enabled reports whether the buffer records events: the handshake said recordDownloads and the link's watcher has
+// passed it on ([Reporter.SetEnabled]). The link marks itself handshaken before its watchers run, so an event added in
+// between is discarded, as one before the handshake is.
+func (r *Reporter) Enabled() bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.enable
+}
+
 // Run implements [Buffer]: it flushes every flush interval and when a batch is full, and looks at the spool.
 func (r *Reporter) Run(ctx context.Context) error {
 	var wg sync.WaitGroup

@@ -249,6 +249,17 @@ func TestR_BAS_043_TheDrainFlipsReadinessFirstAndTheClientListenerServesThroughT
 	}
 }
 
+// waitRecording waits until the replica's download buffer records events (downloads.Reporter.Enabled): the state an
+// event needs, which the link's Handshaken precedes by the time its watchers take.
+func waitRecording(t *testing.T, srv *Server) {
+	t.Helper()
+	r, ok := srv.deps.Downloads.(*downloads.Reporter)
+	if !ok {
+		t.Fatalf("the download buffer is a %T, not the reporter", srv.deps.Downloads)
+	}
+	eventually(t, 20*time.Second, "the download buffer recording (the handshake's recordDownloads passed on)", r.Enabled)
+}
+
 // TestR_BAS_039_TheDrainSpoolsTheBufferDuringAnOutageAndAnotherReplicaDeliversIt: a replica that is drained while
 // the main installation is down writes its events to the cache backend's audit spool; a second replica of the
 // same Bastion, with the main installation back, delivers them and deletes the file. With the main installation
@@ -258,7 +269,10 @@ func TestR_BAS_039_TheDrainSpoolsTheBufferDuringAnOutageAndAnotherReplicaDeliver
 	dir := t.TempDir()
 	srv, logs := newLinked(t, linkedConfig(main, dir, tokenFileFor(t, dir, main.NewToken()), ""), nil)
 	run(t, srv, logs)
-	eventually(t, 20*time.Second, "the handshake, which says recordDownloads", func() bool { return srv.link.State().Handshaken })
+	// The buffer records once the link's watcher has passed the handshake's recordDownloads on. The link reports itself
+	// handshaken before its watchers run, so the test waited for Handshaken and added its events in between on a loaded
+	// runner: the buffer discarded them, the gauge stayed 0 and the wait of 20 s ran out (Test and Release 45211254958).
+	waitRecording(t, srv)
 	// The outage begins before the events are added, so that no flush can deliver them before the drain: the
 	// reporter keeps what it cannot send (R-BAS-039), whenever its flush runs.
 	main.SetDown(true)
@@ -266,8 +280,11 @@ func TestR_BAS_039_TheDrainSpoolsTheBufferDuringAnOutageAndAnotherReplicaDeliver
 	for i := 0; i < 3; i++ {
 		srv.deps.Downloads.Add(iface.DownloadEvent{At: at.Add(time.Duration(i) * time.Second), Repository: "web/npm-all", Path: fmt.Sprintf("/api/npm/web/npm-all/p%d.tgz", i), ClientAddress: "203.0.113.7", Replica: "replica-a"})
 	}
-	// A flush that runs now holds the batch while it fails against the outage and then puts it back.
-	eventually(t, 20*time.Second, "the three events in the buffer", func() bool { return maintest.Value(srv.bm.AuditBuffer) == 3 })
+	// Add counts the buffer at once; a flush copies its batch and removes it only when the batch was sent, so a flush
+	// that fails against the outage leaves the count as it is.
+	if v := maintest.Value(srv.bm.AuditBuffer); v != 3 {
+		t.Fatalf("the buffer holds %v events, want the three added", v)
+	}
 	if err := srv.Shutdown(context.Background()); err != nil {
 		t.Fatalf("shutdown: %v", err)
 	}
@@ -309,6 +326,7 @@ func TestR_BAS_039_TheDrainSendsTheBufferWhenTheMainInstallationIsUp(t *testing.
 	srv, logs := newLinked(t, linkedConfig(main, dir, tokenFileFor(t, dir, main.NewToken()), ""), nil)
 	run(t, srv, logs)
 	eventually(t, 20*time.Second, "reachable", func() bool { return srv.link.State().Reachable })
+	waitRecording(t, srv)
 	for i := 0; i < 4; i++ {
 		srv.deps.Downloads.Add(iface.DownloadEvent{At: time.Now(), Repository: "web/npm-all", Path: "/x", ClientAddress: "203.0.113.7", Replica: "replica-a"})
 	}
