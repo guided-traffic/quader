@@ -239,7 +239,7 @@ run starts from it and from his word how the work goes on, not from the order of
 
 | What | State at 17:17 |
 |---|---|
-| T-24 · C · Contracts | built, with what the purge of a retired repository does with its tables (Q-CUR-111); at the landing's gates |
+| T-24 · C · Contracts | landed at 17:59 (two commits, migration 00114): tables, the domain package with its ports and stubs, the catalogue's declaration in the format contract (version 11), codes, events, keys; nothing calls them yet |
 | T-24 · R2 · Delivery rules | in work; told to end at a whole point and to list what of R-CUR-001 to 006 and 017 is built and what is not |
 | W9 · the rest of the screens' second round | landed at 17:53 (eighteen commits); the layout checks of its push's run show whether the audit log's table holds on the runner |
 | W4 · the rest of the Go tests' package | built (six commits, the Bastion unit test's repair among them); its builder rebases onto the contracts (the purge's lists moved) and drops a test the leftovers' package holds too; then the landing's gates. What it did not do is listed below |
@@ -707,12 +707,12 @@ records the recorder that tells such a stall apart).
   `signatures` on 2026-11-21; the evaluation itself allows, which a unit test now holds. A test that
   expects a refusal can pass for this reason alone. To do (W4): the helper fails when a selector resolves
   to no row, then every area is run once and each test that relied on it is repaired.
-- **Partly closed; open: (2) the newest report that `tools/fetch-e2e-reports.sh` takes by the artifact's
-  creation time, which can be an older commit's (with the evidence record's step).** Closed: (1), by d9e79a585
-  (2026-11-23): the Makefile reads `INTEGRATION_ALL`, the list of the integration packages, the first time a
-  recipe expands it, and the checkout's image tag the same way; held by
-  `TestMakeListsTheIntegrationPackagesOnlyWhenARecipeNeedsThem` (unit, `internal/tools/ciworkflows`, about
-  3 s), which holds that `make -n cyclo` runs no `go list` and no `git` and that
+- **Partly closed; open: what only a run shows of (2): the evidence job's summary with the lines `carried:`
+  and the commit each report was made for (the run of the push of 17:06 ended that job green; its summary is
+  not read yet).** Closed: (1), by d9e79a585 (2026-11-23): the Makefile reads `INTEGRATION_ALL`, the list of
+  the integration packages, the first time a recipe expands it, and the checkout's image tag the same way;
+  held by `TestMakeListsTheIntegrationPackagesOnlyWhenARecipeNeedsThem` (unit, `internal/tools/ciworkflows`,
+  about 3 s), which holds that `make -n cyclo` runs no `go list` and no `git` and that
   `make -n test-integration SHARD=a` lists the packages once; it passes. That the gating jobs without the
   module cache no longer download the module graph is to be read from the first run after d9e79a585. (3), by
   ff478f910 (2026-11-23, Q-ARCH-702): `TestR_MAL_014_APendingDownloadIsServedWhenItsVerdictArrives`
@@ -721,7 +721,10 @@ records the recorder that tells such a stall apart).
   for the signal to wake the download; its neighbours' bounds only tell an answer at once from the whole wait.
   The four `TestR_MAL_014_*` (unit, milliseconds) pass. The builder's proof: each repaired test passed with
   one core under the background scheduling class at a host load of 15 to 20 (run record, 15:37); the original
-  failure was not reproduced. As it stood:
+  failure was not reproduced. Closed too: (2), by 83ac0cbe7 (2026-11-23): the script chooses a leg's report by
+  the commit it was made for, this one or its nearest ancestor, at most a week old, not by the artifact's
+  creation time; held by `TestFetchE2EReportsChoosesByCommit` (unit, `internal/tools/ciworkflows`, about 3 s,
+  recorded answers), which fails when the reports are ordered by creation time. As it stood:
   **Seen by the builder of W6 on 2026-11-23, outside its package:** (1) the Makefile lists the integration
   packages with `go list` on every call of `make`, which downloads the modules in jobs without the module
   cache, the gating jobs `image`, `container-scan`, `malware-scan` and `release-tooling` among them (W7,
@@ -764,30 +767,6 @@ records the recorder that tells such a stall apart).
   walk on the development machine and on the runner must measure the same widths, or the check keeps
   a reserve). Its full render run with the layout checks is its gate from now. The layout checks take 42 to 50 minutes in a run, which
   is why three pushes went out before the first result was read (the job gates no release).
-- **`e2e (bastion)` is red since the push of 14:49 (2026-11-23; Test and Release 45187733127 and
-  45191858474, job 137755074185): `TestBastion_R_BAS_049_InterfaceMismatch` times out after six minutes
-  waiting for both replicas to report the interface mismatch.** Every other test of the leg passes; the
-  leg was green in the run of the push of 13:56. Between them lies d9e79a585, by which the profiles run
-  the image their checkout built. Not verified, the development agent's hypothesis: the profile's script
-  sets the checkout's image after the test's own `--set image.tag=`, so the main installation never runs
-  the image with the next interface version. **The cause, read by a research (back at 16:12) and shown
-  with the pinned Helm on the real charts:** Helm applies every `--set-json` first, then every `--set`,
-  then every `--set-string`, wherever each stands; since d9e79a585 the profiles' scripts give the image's
-  tag as `--set-string` (`image_values` of `deploy/dev/lib.sh`), so the test's `--set image.tag=` loses
-  although it comes last, the main installation never leaves the checkout's image, and the Bastion's own
-  upgrade further down had the same defect. The hypothesis' order was wrong, the image's name was not
-  the cause. The repair (a patch, applied by the development agent on the landing branch at 16:13 and
-  at the landing's gates): the scenario gives its image as `QUADER_IMAGE` to the main installation's
-  rollout and to the Bastion's upgrade, and `up.sh`, `bastion.sh` and `restore-ns.sh` refuse an image
-  among their extra Helm arguments with a sentence that names `QUADER_IMAGE`; Q-HA-489 says so, the
-  choice of Q-BAS-111 is corrected. Held at the unit tier by
-  `TestAnImageAmongTheExtraHelmArgumentsIsRefused` (five cases over the three scripts, which fail on
-  `main`) and `TestAProfileScriptRunsTheImageItsCallerGave` (`internal/tools/ciworkflows`, stand-ins on
-  the path, about 2 s). Every other caller that gives an image to the scripts was read (the upgrade
-  tests, the restore drill, the alerts' and the mirror's environments): none is affected. The repair
-  landed at 16:58. **Open until the leg is green in the run of that push;** also seen and left: the rollout's output and the
-  clean-up's write the same file `profile-bastion-upgrade.log`, so the artifact of a failed run holds
-  the clean-up's.
 - **The drain of the roles missed its latency criterion in the scheduled nightly of 2026-11-23 (HA and
   Performance 45158700734, job 137640102202; read on 2026-11-23 at 17:01).** Nothing failed in function:
   ten evictions in 3 min 18 s, 72,786 pings all 200, 5,723 transfers without a wrong checksum, 473 `npm
@@ -861,10 +840,6 @@ records the recorder that tells such a stall apart).
   helpers) and fail on a loaded machine; they passed alone each time (seen by three builders on 2026-11-21 at host loads
   of 60 to 120, left). A comment of the UI development profile still says the role `all` calls its own image scanner.
 - The coverage badge and the evidence record stand still until the first stable release (Q-ARCH-457).
-- On the System page at 1024 and 390 px the header's time wraps when two replicas are lost (the layout check's
-  "broken"; seen with an intercepted answer, no render case has that state), and at 390 px the Installation card
-  breaks "3rdpartylicenses.txt" and "Answered by" inside the word (the check does not look at links in a `dd`).
-  Seen on 2026-11-20, not fixed.
 - Under the nightly's npm load any hold of the database longer than about 3.3 s puts one of the load's tokens over
   the 50 parallel downloads of the built-in profile of a technical token, and its requests get 429 after the
   limit's wait of 10 s (seen in the drain leg on 2026-11-20). A switchover of PostgreSQL holds longer than that;
@@ -891,10 +866,6 @@ records the recorder that tells such a stall apart).
   one around those tests today, and CI sets none. The tests should start their processes with the variables they
   name; not fixed.
 
-- **About seven German texts address the reader with "du"; the other 370 or so with "Sie" (counted by the
-  development agent on 2026-11-23 in `web/src/locale/messages.de.xlf`).** Among them the Bastions page's
-  introduction and two of its dialogs, "Das bist du", a project's summary, a token's hint and the address
-  in use. To do (W10b): each gets the formal address, and the translation check refuses the informal one.
 - **Partly closed; open: whether a cheap check can name, for a changed API field, the areas that assert it
   (W4, with the convention checks).** Closed: the test's repair, by 849f5cd4a (2026-11-23):
   `TestR_REPO_009_to_013_RepositoryLifecycle` (integration, area `transfer`) no longer counts `disabled` among
@@ -1032,6 +1003,38 @@ the plan.
 
 **Of tests and tools:**
 
+- **Closed on 2026-11-23 by f14623988: the interface-mismatch scenario gives its image as `QUADER_IMAGE`, the
+  profile scripts refuse an image among their extra Helm arguments, and the leg is green.** Held by the leg
+  itself: `e2e (bastion)` is green in the run of the push of 16:58 (Test and Release 45211254958), the first
+  run of the repair, with every other leg of that run; and at the unit tier by
+  `TestAnImageAmongTheExtraHelmArgumentsIsRefused` and `TestAProfileScriptRunsTheImageItsCallerGave`
+  (`internal/tools/ciworkflows/devimage_test.go`). Left as it was: the rollout's output and the clean-up's
+  write the same file `profile-bastion-upgrade.log`, so the artifact of a failed run holds the clean-up's.
+  As it stood:
+  **`e2e (bastion)` is red since the push of 14:49 (2026-11-23; Test and Release 45187733127 and
+  45191858474, job 137755074185): `TestBastion_R_BAS_049_InterfaceMismatch` times out after six minutes
+  waiting for both replicas to report the interface mismatch.** Every other test of the leg passes; the
+  leg was green in the run of the push of 13:56. Between them lies d9e79a585, by which the profiles run
+  the image their checkout built. Not verified, the development agent's hypothesis: the profile's script
+  sets the checkout's image after the test's own `--set image.tag=`, so the main installation never runs
+  the image with the next interface version. **The cause, read by a research (back at 16:12) and shown
+  with the pinned Helm on the real charts:** Helm applies every `--set-json` first, then every `--set`,
+  then every `--set-string`, wherever each stands; since d9e79a585 the profiles' scripts give the image's
+  tag as `--set-string` (`image_values` of `deploy/dev/lib.sh`), so the test's `--set image.tag=` loses
+  although it comes last, the main installation never leaves the checkout's image, and the Bastion's own
+  upgrade further down had the same defect. The hypothesis' order was wrong, the image's name was not
+  the cause. The repair (a patch, applied by the development agent on the landing branch at 16:13 and
+  at the landing's gates): the scenario gives its image as `QUADER_IMAGE` to the main installation's
+  rollout and to the Bastion's upgrade, and `up.sh`, `bastion.sh` and `restore-ns.sh` refuse an image
+  among their extra Helm arguments with a sentence that names `QUADER_IMAGE`; Q-HA-489 says so, the
+  choice of Q-BAS-111 is corrected. Held at the unit tier by
+  `TestAnImageAmongTheExtraHelmArgumentsIsRefused` (five cases over the three scripts, which fail on
+  `main`) and `TestAProfileScriptRunsTheImageItsCallerGave` (`internal/tools/ciworkflows`, stand-ins on
+  the path, about 2 s). Every other caller that gives an image to the scripts was read (the upgrade
+  tests, the restore drill, the alerts' and the mirror's environments): none is affected. The repair
+  landed at 16:58. **Open until the leg is green in the run of that push;** also seen and left: the rollout's output and the
+  clean-up's write the same file `profile-bastion-upgrade.log`, so the artifact of a failed run holds
+  the clean-up's.
 - **Closed on 2026-11-23 by ff478f910 (Q-ARCH-702): each of the three waits for what it stands for.**
   `TestR_BAS_021_R_BAS_022_R_BAS_023_ColdAndWarmCache` raced a `metadata_revalidate_after` of 3 s of the real
   clock between its cold and its warm run, so a slow warm run revalidated; the period is the default minute
@@ -1639,6 +1642,29 @@ the plan.
 
 **Of the product:**
 
+- **Closed on 2026-11-23 by be5a1d404: the system page keeps a heartbeat's date and time together, a narrow
+  card puts each term above its value, and a check's icon stays beside its words.** The walk has the state of
+  two lost replicas now (`web/e2e/renders/screens.ts`), the layout check `broken` looks at links in a `dd`
+  too, and a new check `cell-overflow` has its fixtures (`web/e2e/renders/layout.ts`,
+  `layout-checks.spec.ts`). Held by the walk: the builder's full render run of 472 screens ended with no
+  failure and no layout finding (run record, 17:19), and the pictures of the page at 1,024 px with two
+  replicas lost and at 390 px were looked at by the development agent. Seen on those pictures and left: the
+  readiness check `malwareUpdaterFreshclam` stands by its key alone, without a sentence. As it stood:
+  On the System page at 1024 and 390 px the header's time wraps when two replicas are lost (the layout check's
+  "broken"; seen with an intercepted answer, no render case has that state), and at 390 px the Installation card
+  breaks "3rdpartylicenses.txt" and "Answered by" inside the word (the check does not look at links in a `dd`).
+  Seen on 2026-11-20, not fixed.
+- **Closed on 2026-11-23 by d7c1839d7: the German pages address the reader as Sie everywhere, and a unit test
+  refuses the informal address.** Thirteen texts were informal, not seven (the Bastions page, Set up client's
+  targets, a project's summary, a token's hint, the address in use); each has the formal address now, the
+  glossary says so (`web/src/locale/GLOSSARY.md`), and `web/src/app/shared/formal-german.spec.ts` fails on an
+  informal form in `messages.de.xlf` (the web's unit tier, milliseconds; it ran in the landing's gates). Left
+  by the builder, for the next round of the translations: "Token" is neuter in about 36 texts and masculine in
+  about 15. As it stood:
+  **About seven German texts address the reader with "du"; the other 370 or so with "Sie" (counted by the
+  development agent on 2026-11-23 in `web/src/locale/messages.de.xlf`).** Among them the Bastions page's
+  introduction and two of its dialogs, "Das bist du", a project's summary, a token's hint and the address
+  in use. To do (W10b): each gets the formal address, and the translation check refuses the informal one.
 - **Closed on 2026-11-23 by ff478f910 (Q-ARCH-702): the test's transaction treats a deadlock its own DELETE
   lost as a client does.** The test's DELETE closes a cycle with the deploy, and PostgreSQL aborts the
   deploy's session when the DELETE waits within `deadlock_timeout` of the deploy's wait, the DELETE's own
@@ -2735,7 +2761,7 @@ The work queue of T-24 (the planner's cut; the contracts and files of each packa
 |---|---|---|---|
 | T-24 · R0 · Three researches | the code's inventory, the upstream protocols, the scans on content that is stored and not served | — | done (12:58, 12:59, 13:10) |
 | T-24 · R1 · The specification | the pages named above | R0 | landed at 13:47 |
-| T-24 · C · Contracts | the migration, the domain package, the catalogue's interface, the canonical form of a version, contract version 11 with every format's declaration, the codes, events, configuration keys and the queue `downloads` | R1 | built (two commits, migration 00114; the second, back at 17:16, says what the purge of a retired repository does with its tables: the queue's rows, its bulks and the examinations go, rules and requests stay with the tombstone, Q-CUR-111); at the landing's gates since 17:16 |
+| T-24 · C · Contracts | the migration, the domain package, the catalogue's interface, the canonical form of a version, contract version 11 with every format's declaration, the codes, events, configuration keys and the queue `downloads` | R1 | built (two commits, migration 00114; the second, back at 17:16, says what the purge of a retired repository does with its tables: the queue's rows, its bulks and the examinations go, rules and requests stay with the tombstone, Q-CUR-111); landed at 17:59 |
 | T-24 · R2 · Delivery rules | the model and its API; the refusal before a fill, at the serve point and in the documents of the five formats (kit check 22); the virtual walk; the journal and the Bastion's feed; the marks in the listings; the mirror's scope | C | in work since 16:00, on the stack that carries C; told at 17:16 to end at a whole point; R3 and R4 are not begun (the owner's word of 17:15) |
 | T-24 · R3 · The upstream catalogue | the engine (stores nothing; budget, cache, bounds, second hosts); the five formats (kit check 21); Debian's descriptions; the API with the verdicts of versions that are not stored | C | after C; beside R2 and R4 |
 | T-24 · R4 · Downloads and the queue | the queue's store, dispatch, run and retries; failures in precise words; the probe as a row; bulks with their preview and bounds; the charge; the rows of clients' failed fetches | C | after C; beside R2 and R3 |
@@ -8906,6 +8932,25 @@ tests in three browsers, the journeys' type check, the lint with 0 issues, then 
 (run record above). It is a code push, this plan's commit lies under it, and **the layout checks of
 its run are the proof of the audit log's repair**, which the development machine could not show. The
 owner's UI backend is started again on it; the builder's render stack and worktree are removed.
+**17:54, the marking of what three landings closed is applied, written by the development agent** (no
+new writer after the owner's word): the Bastion's leg (green in the run of the push of 16:58), the
+system page's header and narrow cards, the German pages' formal address (thirteen texts, held by a
+unit test) move to the lists Closed; the reports chosen by commit close in their partly open entry.
+**Open now: 44 entries in section 8 and 19 in section 12** (107 and 24 in the lists Closed). The
+screens' builder removed its render stack (three containers, their volumes, its processes; the
+owner's stack untouched), and its worktree is gone.
+**17:59, the contracts of T-24 land** (two commits on the `main` of 17:53; after the rebase onto the
+screens' rest the build, the vet, the whole unit set, the documentation tool and the web's lint,
+tests, extraction and type check ran once more, each exit 0). The landing's gates ran with
+six cores from 17:16 to 17:54, every line exit 0: build, the three vets, the unit set, generate, the
+documentation tool's four steps, cyclo, `make cores`, the chart's lint and tests, the workflow
+files' check, the API client, the extraction, the web's lint and tests, the journeys' type check, the
+lint with 0 issues, then `upstream` 21 s (the purge's test that had failed), `postgres` 249 s,
+`repository` 76 s, `testenv` 21 s, `api` 215 s, `audit` 164 s, `backup` 845 s, `mirror` 374 s, `bastion`
+409 s, `querybudget` 31 s, at a load of 26 to 45 beside the screens' gates. It is a code push and this
+plan's commit lies under it. **From this commit `main` carries the tables, ports, codes, events and
+keys of the remote curation and no behaviour of it**; the delivery rules stand on it in their
+builder's worktree, the packages behind it are not begun (section 1).
 **13:10, the third research of T-24 is back** (what the scans do with content that is stored and not
 served). Every scan starts from the store's commit hook, the same for a client's fill, a mirror pass
 and a background download, so a fetch for examination needs no new trigger. npm and NuGet are matched
