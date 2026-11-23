@@ -76,7 +76,7 @@ entries. The journal lies plain on every connection: a provider reads which toke
 identifier, and when; a holder of a runtime credential can still overwrite an entry
 ([H-553](../spec/backup-and-restore.md#h-553--a-journal-object-can-be-overwritten-with-the-runtime-credential)). The marker names the
 installation and the connection; the probes are random. Live on every encrypted connection; the journal holds identifiers, no content. The
-destruction of a retired connection's keys is journaled ([storage.md](../spec/storage.md) R-STOR-099, specified, not built): its entry tells
+destruction of a retired connection's keys is journaled ([storage.md](../spec/storage.md) R-STOR-099, built with package 7): its entry tells
 every provider of a connection that does not drain which connection's keys were destroyed and when, by identifiers only.
 
 ### H-1317 · A plain connection beside an encrypted one keeps the content in the clear

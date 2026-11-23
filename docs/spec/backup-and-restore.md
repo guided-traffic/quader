@@ -1922,7 +1922,9 @@ connection's key in every backup for as long as the blob lives, and the destruct
    stored, `S(L)`), and `sealed` and `destroyed`, read from `storage_keys` inside the snapshot. The JSON Schema
    `internal/backup/format/manifest.schema.json` gains the block, required in every manifest written.
 6. **The run's result:** every `retained[]` entry gains `poolKeyIds` and `sealedKeyIds`, copied from that backup's manifest; a retained
-   manifest without `storageKeys` gives `null` (R-BAK-016).
+   manifest without `storageKeys` gives `null` (R-BAK-016). A manifest with `storageKeys` gives arrays, `[]` where it pools nothing under a
+   storage key or holds none sealed: the destruction's check (storage.md R-STOR-100, built with package 7 in
+   [backups.go](../../internal/blob/keys/backups.go)) reads `null` or a missing member as unknown and refuses.
 7. **Readers use the line's pool name:** the sweep's keep set is a set of pool names (R-BAK-017), `verify` checks each pool name
    (R-BAK-019), and the restore takes the key from the line (R-BAK-031).
 

@@ -125,7 +125,10 @@ func (r postRestoreRunner) PostRestore(ctx context.Context, opts backup.PostRest
 			if err != nil {
 				return nil, err
 			}
-			return replay.New(replay.Options{DB: db, Reader: reader, Recorder: rec, Notifier: changes, AdminBinding: authz.HasAdminBinding, Log: r.env.log}), nil
+			return replay.New(replay.Options{
+				DB: db, Reader: reader, Recorder: rec, Notifier: changes, StorageConnections: storageConnectionIDs(cfg),
+				AdminBinding: authz.HasAdminBinding, Log: r.env.log,
+			}), nil
 		},
 	})
 	return pr.PostRestore(ctx, opts)

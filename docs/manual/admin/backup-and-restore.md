@@ -62,6 +62,24 @@ A backup keeps each blob of an encrypted connection as the connection stores it,
 
 A copy of an encrypted bucket made by a tool that drops object metadata cannot be read: each object's key lies in its metadata. Copy such a bucket with `quader admin storage offline pull` ([below](#read-an-encrypted-bucket-without-quader)), or only with a tool that keeps metadata.
 
+**Leaving a provider.** When you leave a provider, drain its connection, remove it, and run `quader admin storage keys destroy`: Quader forgets that connection's storage keys, and what the provider still holds of it (objects nobody deleted, old versions, the provider's own copies) becomes ciphertext that neither the provider, nor whoever obtains it, nor Quader can read. It stays readable only to someone who has your key ring together with a copy of those keys made before the destruction: an export of the storage keys, a Quader backup, or a PostgreSQL backup or point-in-time archive that is still within its retention. Destroy those exports; the promise is complete once those backups have aged out, and the ciphertext itself stays at the provider until you empty the bucket. The steps, in this order:
+
+1. Set `drain: true` on the connection's element and wait until **System status › Storage** shows it **Drained**.
+2. Remove the element and roll out (or run `quader admin storage forget-connection <id>` for a connection that is gone). The reconciliation then retires the connection.
+3. Wait for, or delete with `quader backup delete <id>`, the retained backups the dry run names.
+4. Run `quader admin storage keys destroy --connection <id>` and read what it reports: what still holds the keys, and what stays able to open the provider's leftovers.
+5. Run it again with the `--confirm` value it printed.
+6. Destroy the exports of the storage keys made before.
+7. Empty the bucket at the provider.
+8. Export the storage keys again.
+
+```shell
+kubectl -n quader exec deploy/quader-worker -- quader admin storage keys destroy --connection archive                              # example: the dry run
+kubectl -n quader exec deploy/quader-worker -- quader admin storage keys destroy --connection archive --confirm archive-5c1e09ab   # example: the value the dry run printed
+```
+
+The destruction cannot be undone. The command needs no key ring; the value to confirm with is bound to the installation and to the keys, so it stops matching when a generation is drawn or imported in between, and a Job can carry it after a reviewed dry run (`--dry-run` with `--confirm` checks without destroying). It exits `5`, in a dry run as well, while a live replica has the connection in its configuration, while the connection is not retired, while it holds a copy, a queue row or an upload session, or while a retained backup's pool holds objects under its keys (the next backup copies such blobs again from a connection that stays, and they go once the older backups leave retention or `quader backup delete` removes them); it exits `2` for a value that does not match. A restore of a backup taken before the destruction, and a point-in-time restore to before it, destroy the keys again through the revocation journal, and the connection's id can never be used again.
+
 **Run a backup now.** The Backups screen shows the command, or run it from a shell:
 
 ```shell

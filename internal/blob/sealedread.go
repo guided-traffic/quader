@@ -117,7 +117,7 @@ func (c *Connection) readSealed(ctx context.Context, cp Copy, want blobcrypt.Wan
 	want.ObjectSize = size
 	dk, err := blobcrypt.Open(info.Metadata, keys.Lookup(ctx, c.ID()), want)
 	if err != nil {
-		return fail(err) // a failed lookup of the key carries no reason and is counted as nothing
+		return fail(err) // a failed lookup carries no reason and counts nothing; destroyed_key has its reason, counts and marks (R-STOR-101)
 	}
 	var r *blobcrypt.Reader
 	if rng == nil {

@@ -67,6 +67,9 @@ type Env struct {
 	// replay run beside a running installation) see them. It may be nil: a restore holds no Valkey credentials and no
 	// replica serves, so nothing is lost by leaving it out, and Notify then does nothing (R-AUTHZ-031).
 	Notifier Notifier
+	// StorageConnections are the ids of storage.connections of the configuration the restore or post-restore runs with. The replay
+	// of a destruction of storage keys destroys nothing of a connection it names, and nothing at all when it is empty (Q-HA-417).
+	StorageConnections []string
 }
 
 // Notify forwards to the notifier; without one it does nothing. Env itself therefore satisfies the Notifier interfaces

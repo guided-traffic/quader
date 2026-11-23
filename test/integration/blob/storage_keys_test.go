@@ -264,4 +264,6 @@ func TestR_STOR_083_TheStorageKeysInPostgreSQL(t *testing.T) {
 			t.Errorf("%d changes of the area name the connection, want 1", n)
 		}
 	})
+
+	destroyedKeysInPostgreSQL(t, p, ring) // package 7 (R-STOR-097 to R-STOR-103), storage_keys_destroy_test.go
 }

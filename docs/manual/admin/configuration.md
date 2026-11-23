@@ -162,6 +162,8 @@ The tables below list the keys an installation most often sets. Every key with i
 
 Every further key of a connection (the file variants of bucket, region and endpoint, the CA, checksums, `batch_delete`, `drain`, the scrub's period) and the client settings all connections share (`storage.object_store`: HTTP, retries, circuit breaker, multipart) are in the [full reference](https://github.com/guided-traffic/quader/blob/main/README.md#-full-reference).
 
+**Leaving the provider of an encrypted connection.** When you leave a provider, drain its connection, remove it, and run `quader admin storage keys destroy`: Quader forgets that connection's storage keys, and what the provider still holds of it (objects nobody deleted, old versions, the provider's own copies) becomes ciphertext that neither the provider, nor whoever obtains it, nor Quader can read. It stays readable only to someone who has your key ring together with a copy of those keys made before the destruction: an export of the storage keys, a Quader backup, or a PostgreSQL backup or point-in-time archive that is still within its retention. Destroy those exports; the promise is complete once those backups have aged out, and the ciphertext itself stays at the provider until you empty the bucket. The steps in their order (`drain: true` and **Drained**, remove the element, the retained backups the dry run names, the dry run, the run with `--confirm`, the old exports, the bucket, a new export) and what the command refuses are in [Backup and restore](backup-and-restore.md), "Leaving a provider". The connection's id is retired for good: a configuration that names it again stops the start.
+
 </details>
 
 <details>

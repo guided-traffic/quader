@@ -29,6 +29,9 @@ type Options struct {
 	Recorder audit.Recorder
 	// Notifier is handed to the handlers (journal.Env.Notifier); nil is the restore without Valkey and change log.
 	Notifier journal.Notifier
+	// StorageConnections are the ids of the restoring configuration's storage.connections (journal.Env.StorageConnections): the
+	// replay of a destruction of storage keys skips a connection they name, and every such entry when they are empty (Q-HA-417).
+	StorageConnections []string
 	// AdminBinding fills Summary.NoAdminBinding; nil leaves it false.
 	AdminBinding AdminBindingCheck
 	// Newest returns the time of the newest audit event of the restored database; ok is false when there is none or the
@@ -88,7 +91,7 @@ func (r *Replayer) Replay(ctx context.Context, opts journal.ReplayOptions) (*jou
 		sum.Counts[journal.Skipped]++
 		line(opts, fmt.Sprintf("unreadable %q skipped: %s", u.Key, u.Reason))
 	}
-	env := journal.Env{Now: r.o.Now(), RestoredTo: opts.RestoredTo, Notifier: r.o.Notifier}
+	env := journal.Env{Now: r.o.Now(), RestoredTo: opts.RestoredTo, Notifier: r.o.Notifier, StorageConnections: r.o.StorageConnections}
 	for _, o := range entries {
 		if o.Warning != "" {
 			sum.Warnings = append(sum.Warnings, o.ID+": "+o.Warning)

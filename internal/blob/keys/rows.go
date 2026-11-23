@@ -2,6 +2,7 @@ package keys
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -21,6 +22,8 @@ type Row struct {
 	CreatedAt  time.Time
 	// RetiredAt is zero while the row is active.
 	RetiredAt time.Time
+	// DestroyedAt is the time of the destruction of a destroyed row, whose Sealed is empty (R-STOR-097); zero otherwise.
+	DestroyedAt time.Time
 }
 
 // SessionKey is the sealed data key of an upload session: its id and the value of upload_sessions.sealed_data_key.
@@ -55,6 +58,49 @@ type Rows interface {
 	SessionKeysAfter(ctx context.Context, tx meta.Tx, after string, batch int) ([]SessionKey, error)
 	// UpdateSessionKey replaces a session's sealed data key.
 	UpdateSessionKey(ctx context.Context, tx meta.Tx, id, sealed string) error
+	// LockConnection locks and reads the rows of both kinds of a connection, so that a new generation, an import and a second
+	// destruction wait for the destruction (R-STOR-098).
+	LockConnection(ctx context.Context, tx meta.Tx, connection string) ([]Row, error)
+	// Destroy destroys every key of a connection that is not destroyed yet and returns their identifiers (R-STOR-099 step 4).
+	Destroy(ctx context.Context, tx meta.Tx, connection string) ([]string, error)
+	// DestroyKey destroys one key at the time at, and reports false when it was destroyed already or has no row (R-HA-054).
+	DestroyKey(ctx context.Context, tx meta.Tx, keyID string, at time.Time) (bool, error)
+	// RecordExport writes the row of storage_key_exports of an export that lists ids (R-STOR-103).
+	RecordExport(ctx context.Context, tx meta.Tx, instance string, ids []string) error
+	// Holders locks the connection's row of storage_connections, where one exists, and reads what still holds its keys and what the
+	// destruction reports (R-STOR-098, R-STOR-100). ids are the connection's identifiers.
+	Holders(ctx context.Context, tx meta.Tx, connection string, ids []string, staleAfter time.Duration) (Holders, error)
+}
+
+// Holders is what the destroying transaction reads besides the key rows (R-STOR-098, R-STOR-100).
+type Holders struct {
+	// Recorded is true when storage_connections has a row of the connection; the times are its filled_at, drained_at and retired_at.
+	Recorded                       bool
+	FilledAt, DrainedAt, RetiredAt time.Time
+	// LiveReplicas counts the replicas whose heartbeat is younger than the stale bound and that have the connection in their
+	// configuration.
+	LiveReplicas int64
+	// Copies counts the copy rows of the connection or under one of its keys, Queued its queue rows, Sessions its upload sessions.
+	Copies, Queued, Sessions int64
+	// Exports counts the rows of storage_key_exports that list one of the identifiers; LastExport is the newest one's time.
+	Exports    int64
+	LastExport time.Time
+	// HandedDataKeys counts the audit events bastion.data_key.handed of the connection within the audit trail's retention.
+	HandedDataKeys int64
+	// BackupRuns counts the create and delete runs of backup_run; BackupActive is true while a target-writing run is active.
+	BackupRuns   int64
+	BackupActive bool
+	// Listing is the newest finished create or delete run, nil when there is none.
+	Listing *Listing
+}
+
+// Listing is the newest finished create or delete run of backup_run: its target and its result as stored, which holds the retention
+// listing (R-STOR-100, backup-and-restore.md R-BAK-016, R-BAK-032).
+type Listing struct {
+	RunID      string
+	Target     string
+	FinishedAt time.Time
+	Result     json.RawMessage
 }
 
 // PG is the PostgreSQL implementation of Rows.
@@ -72,15 +118,20 @@ func queries(tx meta.Tx) (*q.Queries, error) {
 	return q.New(ptx), nil
 }
 
-func fromStorageKeys(list []q.StorageKey) []Row {
+// fromStorageKeys converts the rows of the three statements that read whole rows, whose row types sqlc generates apart.
+func fromStorageKeys[T q.StorageKeysOfConnectionRow | q.StorageKeysForExportRow | q.LockStorageKeysOfConnectionRow](list []T) []Row {
 	out := make([]Row, 0, len(list))
-	for _, r := range list {
+	for _, x := range list {
+		r := q.StorageKeysOfConnectionRow(x)
 		row := Row{
 			KeyID: r.KeyID, Connection: r.ConnectionID, Kind: r.Kind, Generation: int(r.Generation), Sealed: r.SealedKey,
 			State: r.State, CreatedAt: r.CreatedAt.Time.UTC(),
 		}
 		if r.RetiredAt.Valid {
 			row.RetiredAt = r.RetiredAt.Time.UTC()
+		}
+		if r.DestroyedAt.Valid {
+			row.DestroyedAt = r.DestroyedAt.Time.UTC()
 		}
 		out = append(out, row)
 	}
@@ -107,6 +158,98 @@ func (PG) ForExport(ctx context.Context, tx meta.Tx, connection string) ([]Row, 
 	return fromStorageKeys(list), err
 }
 
+// LockConnection implements Rows.
+func (PG) LockConnection(ctx context.Context, tx meta.Tx, connection string) ([]Row, error) {
+	qs, err := queries(tx)
+	if err != nil {
+		return nil, err
+	}
+	list, err := qs.LockStorageKeysOfConnection(ctx, connection)
+	return fromStorageKeys(list), err
+}
+
+// Destroy implements Rows.
+func (PG) Destroy(ctx context.Context, tx meta.Tx, connection string) ([]string, error) {
+	qs, err := queries(tx)
+	if err != nil {
+		return nil, err
+	}
+	return qs.DestroyStorageKeysOfConnection(ctx, connection)
+}
+
+// DestroyKey implements Rows.
+func (PG) DestroyKey(ctx context.Context, tx meta.Tx, keyID string, at time.Time) (bool, error) {
+	qs, err := queries(tx)
+	if err != nil {
+		return false, err
+	}
+	n, err := qs.DestroyStorageKey(ctx, q.DestroyStorageKeyParams{KeyID: keyID, DestroyedAt: at.UTC().Format(time.RFC3339Nano)})
+	return n == 1, err
+}
+
+// RecordExport implements Rows.
+func (PG) RecordExport(ctx context.Context, tx meta.Tx, instance string, ids []string) error {
+	qs, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	if ids == nil {
+		ids = []string{}
+	}
+	return qs.InsertStorageKeyExport(ctx, q.InsertStorageKeyExportParams{Instance: instance, KeyIds: ids})
+}
+
+// fromMicros is a time sent as microseconds since the epoch, 0 for none.
+func fromMicros(us int64) time.Time {
+	if us == 0 {
+		return time.Time{}
+	}
+	return time.UnixMicro(us).UTC()
+}
+
+// Holders implements Rows.
+func (PG) Holders(ctx context.Context, tx meta.Tx, connection string, ids []string, staleAfter time.Duration) (Holders, error) {
+	var h Holders
+	qs, err := queries(tx)
+	if err != nil {
+		return h, err
+	}
+	conn, err := qs.LockStorageConnectionForDestroy(ctx, connection)
+	if err != nil {
+		return h, err
+	}
+	if len(conn) == 1 {
+		h.Recorded = true
+		h.FilledAt, h.DrainedAt, h.RetiredAt = fromMicros(conn[0].FilledUs), fromMicros(conn[0].DrainedUs), fromMicros(conn[0].RetiredUs)
+	}
+	if h.LiveReplicas, err = qs.StorageKeysLiveReplicas(ctx, q.StorageKeysLiveReplicasParams{ID: connection, StaleSecs: staleAfter.Seconds()}); err != nil {
+		return h, err
+	}
+	if ids == nil {
+		ids = []string{}
+	}
+	held, err := qs.StorageKeysHolders(ctx, q.StorageKeysHoldersParams{ConnectionID: connection, KeyIds: ids})
+	if err != nil {
+		return h, err
+	}
+	h.Copies, h.Queued, h.Sessions = held.Copies, held.Queued, held.Sessions
+	h.Exports, h.LastExport, h.HandedDataKeys = held.Exports, fromMicros(held.LastExportUs), held.Handed
+	runs, err := qs.StorageKeysBackupRuns(ctx)
+	if err != nil {
+		return h, err
+	}
+	h.BackupRuns, h.BackupActive = runs.Runs, runs.Active > 0
+	listing, err := qs.StorageKeysNewestListing(ctx)
+	if err != nil {
+		return h, err
+	}
+	if len(listing) == 1 {
+		l := listing[0]
+		h.Listing = &Listing{RunID: l.ID, Target: l.Target, FinishedAt: fromMicros(l.FinishedUs), Result: l.Result}
+	}
+	return h, nil
+}
+
 // Insert implements Rows.
 func (PG) Insert(ctx context.Context, tx meta.Tx, r Row) (bool, error) {
 	qs, err := queries(tx)
@@ -121,6 +264,9 @@ func (PG) Insert(ctx context.Context, tx meta.Tx, r Row) (bool, error) {
 	if !r.RetiredAt.IsZero() {
 		p.RetiredAt = r.RetiredAt.UTC().Format(time.RFC3339Nano)
 	}
+	if !r.DestroyedAt.IsZero() {
+		p.DestroyedAt = r.DestroyedAt.UTC().Format(time.RFC3339Nano)
+	}
 	n, err := qs.InsertStorageKey(ctx, p)
 	return n == 1, err
 }
@@ -134,7 +280,10 @@ func (PG) LockKind(ctx context.Context, tx meta.Tx, connection, kind string) ([]
 	list, err := qs.LockStorageKeysOfKind(ctx, q.LockStorageKeysOfKindParams{ConnectionID: connection, Kind: kind})
 	out := make([]Row, 0, len(list))
 	for _, r := range list {
-		out = append(out, Row{KeyID: r.KeyID, Connection: connection, Kind: kind, Generation: int(r.Generation), State: r.State, Sealed: r.SealedKey})
+		out = append(out, Row{
+			KeyID: r.KeyID, Connection: connection, Kind: kind, Generation: int(r.Generation), State: r.State, Sealed: r.SealedKey,
+			DestroyedAt: fromMicros(r.DestroyedUs),
+		})
 	}
 	return out, err
 }

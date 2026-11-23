@@ -81,6 +81,21 @@ Every answer of Quader on a client listener carries `X-Request-Id`. A `503` with
 
 **When to escalate.** When no export holds the keys, the objects they wrapped on that connection cannot be read by Quader or by `quader admin storage offline`; what another connection holds is still served and the reconciliation copies it back to a new connection. To the maintainers when the import succeeds and the counter keeps growing.
 
+## A read that meets a destroyed storage key
+
+**What you see.** `quader_storage_encrypted_read_failures_total{reason="destroyed_key"}` grows for a connection, and the log has `a copy of a blob is damaged` with `status=corrupt` for that connection. Downloads keep working where another connection holds the blob. `QuaderStorageUnknownKey` does not fire: it counts only keys the database lacks.
+
+**What it means.** An object of an encrypted connection carries a record whose storage key was destroyed with `quader admin storage keys destroy` ([Backup and restore](backup-and-restore.md), "Keep the keys"). Nothing brings that key back, so the read fell over to the next copy, the copy is marked `corrupt` and the reconciliation writes it anew from another connection. It happens only where a replica still has the destroyed connection in its configuration (one that started before the destruction and missed it; the command refuses while a live replica has the connection), or where someone put an object of the retired connection into a live connection's bucket.
+
+**What to do.**
+
+1. Find who destroyed which keys: the audit event `system.storage.keys_destroyed` names the connection and the key identifiers; `quader admin storage keys export --connection <id>` lists them with `"state": "destroyed"`.
+2. Remove that connection's element from every replica's `storage.connections` and roll out. A replica that starts with the element stops with "the storage keys of connection … were destroyed on …; the id is retired for good; choose another id".
+3. Watch the reconciliation repair the marked copies (the tab Storage of System status). A blob that no other connection holds is lost on Quader's side: restore it from a backup that holds it, or upload it again.
+4. Do not import an older export to get the key back: the import skips every key of a connection whose keys were destroyed.
+
+**When to escalate.** To the maintainers when `destroyed_key` appears for a connection for which no `system.storage.keys_destroyed` was written and no restore replayed one: a destroyed row without that event means the database was changed by hand.
+
 ## A node drain, and a replica that does not stop in time
 
 **What you see.** `kubectl drain` waits with a message about a PodDisruptionBudget, or a pod stays in `Terminating`. A replica shows **draining** on **System status**, and the summary says **Replicas are being replaced**, which is no fault; **Not drain-safe** appears when a role has fewer than two ready replicas or all of them on one node. Clients see connection errors during drains, and long transfers are cut (`quader_http_transfers_cut_total`).

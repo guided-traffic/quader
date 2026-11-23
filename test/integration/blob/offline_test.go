@@ -62,7 +62,7 @@ func TestR_STOR_089_TheOfflineToolReadsTheStacksBucket(t *testing.T) {
 	small, large := memData(1024, 1), memData(2*65536+1, 2)
 	dSmall, dLarge := commit(t, s, small), commit(t, s, large)
 
-	doc, err := storagekeys.Export(ctx, p.db, nil, "it-offline", "", time.Now(), nil)
+	doc, err := storagekeys.Export(ctx, p.db, nil, "it-offline", "it-offline-pod", "", time.Now(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}

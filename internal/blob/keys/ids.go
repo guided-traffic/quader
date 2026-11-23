@@ -24,6 +24,9 @@ const (
 	StateActive = "active"
 	// StateRetired opens what it wrapped and wraps nothing new.
 	StateRetired = "retired"
+	// StateDestroyed is a key that is gone: its row keeps the identifier, the connection, the kind and the generation, its sealed
+	// value is NULL, and nothing opens it again (R-STOR-097).
+	StateDestroyed = "destroyed"
 )
 
 // MaxGeneration is the highest generation of a storage key the table holds.

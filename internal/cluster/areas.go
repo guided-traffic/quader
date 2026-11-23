@@ -168,7 +168,7 @@ func init() {
 	//
 	// The area of the keys of encrypted stored content (storage.md R-STOR-083). Its cluster_epoch row is seeded by 00107_storage_keys.
 	// >>> storage keys
-	RegisterArea(Area{Name: AreaStorageKeys, Owner: "R-STOR-083", Class: ChangeArea, PayloadVersion: 1})
+	RegisterArea(Area{Name: AreaStorageKeys, Owner: "R-STOR-083", Class: ChangeArea, PayloadVersion: 2})
 	// <<< storage keys
 }
 
@@ -330,7 +330,9 @@ const AreaSigningIdentities = "signing_identities"
 // AreaStorageKeys carries a write of storage_keys outside a replica's start (R-STOR-083): a new generation and an import. Every replica
 // that holds the keys of the connection reads its rows again before it wraps the next object, so a new generation wraps new objects
 // within the area's bound; a record that names a key the replica does not hold makes it read the rows itself as well. The payload is
-// {"connection": "<id>"}; it never carries a key or a sealed value.
+// {"connection": "<id>"} (version 1), and {"connection": "<id>", "destroyed": ["<key id>", …]} (version 2) for a destruction of the
+// connection's keys, on which every replica destroys the keys it holds of the connection at once (R-STOR-101); it never carries a key
+// or a sealed value.
 const AreaStorageKeys = "storage_keys"
 
 // <<< storage keys

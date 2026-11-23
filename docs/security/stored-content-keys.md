@@ -12,8 +12,9 @@ since package 6 (2026-11-23) and mounts nothing more for it, and `quader admin s
 the key ring, outside any installation ([storage.md](../spec/storage.md) R-STOR-089). The destruction of a retired
 connection's keys ([storage.md](../spec/storage.md) R-STOR-097 to R-STOR-103, Q-STOR-309 (b),
 [ADR-255](../decisions.md#adr-255--the-storage-keys-of-a-retired-connection-can-be-destroyed-so-that-what-stays-at-a-provider-becomes-unreadable))
-is specified, not built (package 7); its part in the backup, the storage key in each pool object's name and the manifest's `storageKeys`
-([backup-and-restore.md](../spec/backup-and-restore.md) R-BAK-032), is built with package 4 (2026-11-23). Since package 4 the restore Job
+is built (package 7, 2026-11-23); its part in the backup, the storage key in each pool object's name and the manifest's `storageKeys`
+([backup-and-restore.md](../spec/backup-and-restore.md) R-BAK-032), is built with package 4 (2026-11-23), so the destruction judges the
+retained backups by the keys their pools hold ([storage.md](../spec/storage.md) R-STOR-100). Since package 4 the restore Job
 opens every storage key a backup holds with the key ring before it writes, and draws the keys of an encrypted connection the backup holds
 none of (R-BAK-031).
 
@@ -77,24 +78,26 @@ to draw keys over a location that already holds objects.
 
 ## Destroying a retired connection's keys
 
-Specified, not built ([storage.md](../spec/storage.md) R-STOR-097 to R-STOR-103,
-[backup-and-restore.md](../spec/backup-and-restore.md) R-BAK-032, [ha-and-helm.md](../spec/ha-and-helm.md) R-HA-054). `quader admin storage
-keys destroy --connection <id>` destroys every key of a connection that is retired or unrecorded: every generation of its storage key and its
+Built on 2026-11-23 ([storage.md](../spec/storage.md) R-STOR-097 to R-STOR-103, [ha-and-helm.md](../spec/ha-and-helm.md) R-HA-054;
+[backup-and-restore.md](../spec/backup-and-restore.md) R-BAK-032, the backup's record of the pool's keys, built with package 4).
+`quader admin storage keys destroy --connection <id>` destroys every key of a connection that is retired or unrecorded: every generation of its storage key and its
 name key. The rows stay, `destroyed` and without their sealed values; a replica that still holds one of the keys destroys it at the change of
 the area `storage_keys`; a read that meets a record under a destroyed key answers `destroyed_key` and marks the copy. The command refuses
 while anything Quader still serves needs a key: a live replica that configures the connection, a copy, a queue row, an upload session, or a
 retained backup whose pool names a key. It reports, and does not refuse for, the holders it cannot remove: the exports made before, the
 retained backups whose database holds the keys sealed, PostgreSQL's own copies, and the data keys handed to a Bastion. A restore to a point
-before the destruction destroys the keys again through the revocation journal.
+before the destruction destroys the keys again through the revocation journal, unless the restoring configuration names the connection.
+The code: [destroy.go](../../internal/blob/keys/destroy.go) and [backups.go](../../internal/blob/keys/backups.go) (the transaction and the
+checks), [holder.go](../../internal/blob/keys/holder.go) (the forgetting and `destroyed_key`), [replay.go](../../internal/blob/keys/replay.go)
+(the journal's replay), [admin_storage_keys_destroy.go](../../cmd/quader/admin_storage_keys_destroy.go) (the command).
 
 **Who may run it.** Whoever may `kubectl exec` into a pod with the runtime database role: it needs no key ring and opens nothing. A writer of
 the database could already set `sealed_key` to NULL, so the command adds no power beyond that role; its refusals protect copies, sessions and
 retained backups. What remains is that such a user can destroy a retired connection's keys earlier than the operator wanted, cutting off a
 recovery through the offline tool. No operation of the API destroys a key ([Q-STOR-410](../spec/storage.md#q-stor-410--the-operator-runs-the-destruction-at-a-pod-without-the-key-ring-and-no-api-operation-does)).
 
-**The promise, in the operator's words.** This paragraph goes into the README's backup step and into the manual's section "Keep the keys" and
-its page of the connections when package 7 builds the command ([storage.md](../spec/storage.md) R-STOR-090); until then it describes what
-is specified, not what runs:
+**The promise, in the operator's words.** This paragraph stands in the README's backup step, in the manual's section "Keep the keys" and on
+its page of the connections ([storage.md](../spec/storage.md) R-STOR-090):
 
 > When you leave a provider, drain its connection, remove it, and run `quader admin storage keys destroy`: Quader forgets that connection's
 > storage keys, and what the provider still holds of it (objects nobody deleted, old versions, the provider's own copies) becomes ciphertext
@@ -173,7 +176,7 @@ destruction they are readable only to the holders of
 [H-1374](#h-1374--a-data-key-handed-to-a-bastion-outlives-its-storage-key). The objects, and what a lister learns of them (their count, sizes
 and times, [H-1312](stored-content-visibility.md#h-1312--the-stored-size-gives-away-the-exact-plaintext-size)), stay at the provider until
 the operator empties the bucket. Dormant until package 3 accepts `encrypted: true`; then live for every retired encrypted connection whose bucket
-still holds objects, until its keys are destroyed (package 7, specified, not built).
+still holds objects, until its keys are destroyed with `quader admin storage keys destroy`.
 
 ### H-1309 · A replica's memory holds the storage keys for its life, and Go cannot erase a key
 
@@ -233,8 +236,8 @@ Component: the export of the storage keys and the destruction ([storage.md](../s
 Subject: the objects a retired connection left at its provider. An export holds every key sealed as it lay; with the key ring that sealed it,
 the offline tool reads the connection's bucket without a database (R-STOR-089), whatever the database says about the key afterwards. Quader
 cannot see escrow or delete a file, so the destruction reports the exports it knows of (the table `storage_key_exports`, the last one's time)
-and never refuses for them. Live from the destruction until the operator destroys every export made before it, once package 7 is built;
-dormant until then, since no key can be destroyed.
+and never refuses for them. Live from the destruction until the operator destroys every export made before it; an export made by other
+means than the command (a copy of the database's rows) is not counted.
 
 ### H-1371 · A Quader backup taken before the destruction holds the keys sealed until it leaves retention
 
@@ -244,7 +247,7 @@ holds `storage_keys` with its keys sealed; its table file and the key ring open 
 which the journal's replay undoes ([ha-and-helm.md](../spec/ha-and-helm.md) R-HA-054) unless the restore skips the journal or a lifecycle
 rule removed the entry. The destruction reports these backups (`retained[].sealedKeyIds`) and does not refuse for them, since the newest
 backup always holds the keys and is never deleted. Live from the destruction until the last such backup leaves retention, or the operator
-deletes it, once package 7 is built.
+deletes it.
 
 ### H-1372 · PostgreSQL keeps the sealed value after the destruction
 
@@ -253,7 +256,16 @@ destroyed keys. PostgreSQL keeps the old row version until vacuum and the reuse 
 point-in-time archive, a standby and a volume snapshot for their own retention; a `DELETE` would leave the same. A point-in-time restore to
 before the destruction brings the keys back, and `admin post-restore`'s replay destroys them again. The command does not vacuum: migration
 00001 grants the runtime role no `MAINTAIN`, and vacuum erases no bytes of the log or an archive. Live from the destruction until the
-database's operator has vacuumed and the archive's retention has passed, once package 7 is built.
+database's operator has vacuumed and the archive's retention has passed.
+
+What was established once, on 2026-11-23, on the integration stack's PostgreSQL 18.6 (a measurement, not a test): after the `UPDATE` the old
+row version with the sealed value was still on the table's page (read with `pageinspect`'s `get_raw_page`); after a plain `VACUUM` of
+`storage_keys` it was no longer on the page; the write-ahead log written after a checkpoint held one block with the sealed value (a full-page
+image, read with `pg_walinspect`). The stack runs in single-role mode, where the runtime login owns the tables and may vacuum them (the
+`VACUUM` ran as that login without an error); in two-role mode the runtime role `quader_app` gets `SELECT`, `INSERT`, `UPDATE` and `DELETE`
+by the default privileges of migration 00001 and no `MAINTAIN`, so its `VACUUM` of the table is skipped with a warning (read from the
+grants, not run). Not established: whether `VACUUM` overwrites the freed space of a page in every case (here the remaining row was moved over
+it), what a standby, a point-in-time archive or a volume snapshot keeps, and how long the log segment stays before it is recycled.
 
 ### H-1373 · The check of the backups sees only the newest listing of the configured target
 
@@ -262,7 +274,7 @@ objects under the destroyed keys and that the check does not see: in another or 
 restored from the same backup), or made by other means. Their pool objects become unreadable with the destruction, and a restore of such a
 backup loses the blobs whose only pool object they are. The check trusts the newest retention listing of the configured target and refuses
 when that run's target differs from the configured one. Dormant while an installation backs up into one target; live when an operator moved
-the target, or keeps backups made by other means, and destroys a connection's keys, once package 7 is built.
+the target, or keeps backups made by other means, and destroys a connection's keys.
 
 ### H-1374 · A data key handed to a Bastion outlives its storage key
 
@@ -283,4 +295,4 @@ entry forged with the identifiers of a retired connection destroys its keys at t
 them the recovery of its leftovers through an export and the offline tool (R-STOR-089). What makes it real: a retired encrypted connection
 whose keys the operator keeps on purpose (to read the provider's leftovers once more), a holder of a runtime credential who writes such an
 entry, and a restore of a backup or a point-in-time restore after it. Nothing Quader serves is lost, since a retired connection holds no
-copy. Dormant until package 7 is built and a connection is encrypted.
+copy. Dormant while no connection is encrypted; live once a retired encrypted connection's keys are kept on purpose.

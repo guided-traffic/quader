@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/blob/blobcrypt"
@@ -34,6 +35,10 @@ type Connection struct {
 // Two replicas that draw at once insert one key of each kind: the table holds one row per connection, kind and generation and one
 // active row per connection and kind, the insert of the slower replica inserts nothing, and it reads the winner's rows in the same
 // transaction.
+//
+// A connection of which storage_keys holds a destroyed row is refused, drawing and loading nothing, whether it drains or not: its id is
+// retired for good (R-STOR-102). The restore Job draws keys in a path of its own and refuses such an id at its check 3 (internal/backup/
+// restore, backup-and-restore.md R-BAK-031).
 func (h *Holder) Ensure(ctx context.Context, c Connection) error {
 	if err := h.draw(ctx, c); err != nil {
 		return err
@@ -71,6 +76,9 @@ func (h *Holder) draw(ctx context.Context, c Connection) error {
 	}); err != nil {
 		return err
 	}
+	if err := retiredForGood(c.ID, rows); err != nil {
+		return err
+	}
 	if len(missing(rows, c.KeyedNames)) == 0 || c.Drain {
 		return nil
 	}
@@ -83,6 +91,9 @@ func (h *Holder) draw(ctx context.Context, c Connection) error {
 		drawn = nil
 		rows, err := h.rows.OfConnection(ctx, tx, c.ID)
 		if err != nil {
+			return err
+		}
+		if err := retiredForGood(c.ID, rows); err != nil {
 			return err
 		}
 		lack := missing(rows, c.KeyedNames)
@@ -154,6 +165,25 @@ func nextGeneration(rows []Row, kind string) int {
 		}
 	}
 	return g + 1
+}
+
+// retiredForGood refuses a connection of which storage_keys holds a destroyed row (R-STOR-102, Q-STOR-411): its id is retired for good,
+// so nothing is drawn or loaded for it, whatever its element says. It is the same sentence the start check gives.
+func retiredForGood(connection string, rows []Row) error {
+	var at time.Time
+	found := false
+	for _, r := range rows {
+		if r.State == StateDestroyed {
+			found = true
+			if r.DestroyedAt.After(at) {
+				at = r.DestroyedAt
+			}
+		}
+	}
+	if !found {
+		return nil
+	}
+	return &Refusal{msg: blob.RetiredForGood(connection, at)}
 }
 
 // usedRefusal is the refusal over a location that holds objects (R-STOR-083).

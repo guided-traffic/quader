@@ -46,6 +46,9 @@ func NewGeneration(ctx context.Context, db meta.Runner, rows Rows, ring Sealer, 
 		if err != nil {
 			return err
 		}
+		if err := retiredForGood(connection, list); err != nil {
+			return err
+		}
 		highest := 0
 		var active Row
 		for _, r := range list {

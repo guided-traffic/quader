@@ -154,7 +154,7 @@ func restoreJournal(cfg *config.Config, out *outbound.Factory, log *slog.Logger)
 		if err != nil {
 			return nil, err
 		}
-		return journalSource{reader: reader, Replayer: replay.New(replay.Options{DB: e.Runner, Reader: reader, Recorder: e.Recorder, AdminBinding: authz.HasAdminBinding, Log: log})}, nil
+		return journalSource{reader: reader, Replayer: replay.New(replay.Options{DB: e.Runner, Reader: reader, Recorder: e.Recorder, StorageConnections: storageConnectionIDs(cfg), AdminBinding: authz.HasAdminBinding, Log: log})}, nil
 	}
 }
 

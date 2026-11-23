@@ -6,9 +6,13 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/blob/blobcrypt"
 	storagekeys "github.com/guided-traffic/quader/internal/blob/keys"
+	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/journal"
+	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/secrets"
 )
@@ -85,4 +89,31 @@ func storageKeyColumns() []string {
 // step 3).
 func resealStorageKeys(ctx context.Context, d resealDeps) (storagekeys.ResealResult, error) {
 	return storagekeys.Reseal(ctx, d.db, nil, d.ring, 0)
+}
+
+// The replay of a destruction of storage keys (ha-and-helm.md R-HA-054, Q-HA-416, Q-HA-417): a restore to before the destruction
+// destroys the keys again, except for a connection the restoring configuration names. The handler is registered here because
+// internal/blob/keys lies in the infrastructure layer and may not import internal/journal, a domain package; it announces the area
+// storage_keys and writes no audit event.
+func init() {
+	journal.Register(journal.Handler{Domain: "storage_keys", Events: []string{audit.EventStorageKeysDestroyed}, Apply: replayKeysDestroyed})
+}
+
+func replayKeysDestroyed(ctx context.Context, tx meta.Tx, env journal.Env, o journal.Object) (journal.Result, error) {
+	var e storagekeys.DestroyedEntry
+	if !o.Into(&e) {
+		return o.Malformed("the entry is not {connection, keyIds, destroyedAt}"), nil
+	}
+	res, err := storagekeys.ReplayDestroyed(ctx, tx, nil, e, env.StorageConnections, env.Now, func(tx meta.Tx, connection string, ids []string) error {
+		return env.Notify(tx, cluster.AreaStorageKeys, storagekeys.DestroyedChangeVersion, storagekeys.DestroyedChange(connection, ids))
+	})
+	if err != nil {
+		return journal.Result{}, err
+	}
+	if res.Outcome == storagekeys.ReplayMalformed {
+		return o.Malformed(res.Note), nil
+	}
+	r := o.Result(journal.Outcome(res.Outcome), e.Connection)
+	r.Note = res.Note
+	return r, nil
 }

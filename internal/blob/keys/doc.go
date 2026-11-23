@@ -3,8 +3,9 @@
 // connection's first sight, refused over a location that already holds objects; the keys a replica holds in memory for its life,
 // by identifier, refreshed by the change area storage_keys and by a re-read for an identifier it does not hold; a further generation
 // on command; the export of the rows as they lie and their import; the walks of the task secrets-reencrypt over the two sealed
-// columns of the stage (storage_keys.sealed_key and upload_sessions.sealed_data_key, R-ARCH-021); and the seal of an upload
-// session's data key (R-STOR-081).
+// columns of the stage (storage_keys.sealed_key and upload_sessions.sealed_data_key, R-ARCH-021); the seal of an upload
+// session's data key (R-STOR-081); and the destruction of a retired connection's keys with its checks and the journal's replay of it
+// (R-STOR-097 to R-STOR-103, R-HA-054): a destroyed key keeps its row without its sealed value, and a replica forgets it.
 //
 // Nothing here logs, returns in an error or puts in a metric's label a key or a sealed value: a key lives in a blobcrypt.Key, whose
 // String and LogValue render nothing, and is destroyed by Holder.Close; a key drawn to be sealed is destroyed as soon as its seal is

@@ -3901,20 +3901,29 @@ to this mechanism. At least these events are flagged:
 | `npm.unpublish` | [formats/npm.md](formats/npm.md) R-NPM-017, R-NPM-047 | Withhold the version: tombstone it and apply the dist-tag rule, leaving its items stored and unserved, when the restored repository holds it live with the journaled integrity (`applied`); `already in effect` when it is tombstoned; otherwise `subject unknown`. Nothing is deleted; `quader admin npm reinstate` reverses it |
 | `oci.manifest.deleted` | [formats/oci.md](formats/oci.md) R-OCI-033 | Withhold the manifest: write its mark in `oci_tombstones` and increment `packages.rev_seq` when the restored repository holds the manifest under the name (`applied`), leaving its items and bytes stored and unserved; `already in effect` when the mark exists; otherwise `subject unknown`. Nothing is deleted; `quader admin oci reinstate` reverses it |
 | `vulnerability.finding.status_changed`, `vulnerability.finding.reopened` when the change sets a download block (`block: set`) | [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-012, R-VULN-013, R-VULN-026, Q-VULN-48 | Written by a triage, a reopen and every evaluation change that sets a block ([Q-VULN-130](vulnerability-scanning.md#q-vuln-130--every-change-of-the-evaluation-that-sets-a-download-block-records-vulnerabilityfindingstatus_changed-with-block-set-its-cause-and-the-journal-entry)). Block the finding of the journaled ID when it has the entry's repository, package version and advisory, else the finding of the entry's repository, package version and advisory, else a finding the replay creates; `subject unknown` when the restored database holds no such repository of the entry's ecosystem. A stored version's finding is set `blocked` whatever its status; the finding of a version the repository does not store becomes `resolved` with `version_removed` while `blocked`, which the remote miss and a commit count until the ecosystem has synced since the restore; `already in effect` when the finding has that shape ([Q-VULN-114](vulnerability-scanning.md#q-vuln-114--a-replayed-block-sets-blocked-on-the-restored-finding-whatever-its-status-so-a-block-lifted-after-the-restore-point-comes-back), [Q-VULN-115](vulnerability-scanning.md#q-vuln-115--a-replayed-block-names-its-finding-by-id-and-by-its-immutable-package-version-and-writes-the-findings-own-history), [Q-VULN-131](vulnerability-scanning.md#q-vuln-131--a-replayed-block-names-its-repository-and-package-version-creates-the-finding-the-restored-database-lacks-and-leaves-the-shape-both-download-gates-read), [Q-VULN-132](vulnerability-scanning.md#q-vuln-132--a-blocked-finding-whose-version-is-gone-counts-until-its-ecosystem-has-synced-since-the-restore-at-the-remote-miss-and-at-a-commit)). The entry is optional: a change that lifts a block or sets none is not journaled |
+| `system.storage.keys_destroyed` | [storage.md](storage.md) R-STOR-097, R-STOR-099 | Destroy the keys again, per identifier of the entry `{connection, keyIds, destroyedAt}`, unless the restoring configuration names the connection (`skipped` with its note); the rule below the table ([Q-HA-416](#q-ha-416--a-destruction-of-storage-keys-is-journaled-and-replayed-after-a-restore), [Q-HA-417](#q-ha-417--the-replay-destroys-the-keys-only-of-a-connection-the-restoring-configuration-does-not-name)) |
 | `package.published`, `package.deleted` (from P1 also the copy and move events of R-STOR-019) of local NuGet repositories | [formats/nuget.md](formats/nuget.md) R-NUGET-033 | Addition of an absent version: write a `reserved` tombstone for the journaled SHA-512; an addition that meets a `reserved` tombstone for other bytes turns it into `removed` and warns ([Q-NUGET-112](formats/nuget.md#q-nuget-112--two-replayed-additions-of-one-version-that-name-different-bytes-leave-its-number-refusing-every-package)). Removal: an absent version's tombstone becomes or is written as `removed`; a present version with the journaled SHA-512 is reported `revived`; never delete |
 
-**Specified, not built: the destruction of storage keys.** `system.storage.keys_destroyed` ([storage.md](storage.md) R-STOR-097,
-R-STOR-099) joins the table above in the change of package 7 that registers the event (the table's events are held to the event registry
-by `TestR_HA_054_EveryListedEventIsFlaggedAndEntryRequired`). Its replay, per identifier of the entry `{connection, keyIds, destroyedAt}`:
+**The destruction of storage keys** (built with package 7 of the encryption; `ReplayDestroyed` in
+[internal/blob/keys/replay.go](../../internal/blob/keys/replay.go), registered from
+[wire_storage_keys.go](../../internal/app/wire_storage_keys.go)). `system.storage.keys_destroyed` ([storage.md](storage.md) R-STOR-097,
+R-STOR-099) is in the table above. Its replay, per identifier of the entry `{connection, keyIds, destroyedAt}`:
 an entry whose connection the restoring installation's configuration names is `skipped` and changes nothing: a configured connection is not
 retired, so the entry is forged or stale; its reason ("connection archive is in this installation's configuration; its keys are not
 destroyed") is the entry's note, which the replay prints as a warning line and lists among its warnings, and the restore goes on
-([Q-HA-417](#q-ha-417--the-replay-destroys-the-keys-only-of-a-connection-the-restoring-configuration-does-not-name)). Otherwise: a sealed row is destroyed (`applied`); a destroyed row is
-`already in effect`; no row: a destroyed row is inserted from the identifier with `created_at` = `destroyedAt` (`applied`), so that no later
-import or reuse of the connection id brings the key back; the area `storage_keys` is announced, no audit event is written
-([Q-HA-416](#q-ha-416--a-destruction-of-storage-keys-is-journaled-and-replayed-after-a-restore)). Acceptance criterion (unit, the
-handler): four cases: `applied` on a sealed row, `already in effect` on a destroyed row, `applied` with an inserted destroyed row, and an
-entry for a connection of the configuration `skipped` with its note, its keys still sealed.
+([Q-HA-417](#q-ha-417--the-replay-destroys-the-keys-only-of-a-connection-the-restoring-configuration-does-not-name)). The restore and
+`quader admin post-restore` hand the replay the ids of their configuration's `storage.connections`; a replay that was handed none skips
+every such entry with the note "the restore did not name the connections of its configuration" and destroys nothing
+([Q-HA-425](#q-ha-425--the-replay-of-a-destruction-that-knows-no-configured-connection-destroys-nothing)). Otherwise: a sealed row is
+destroyed at the entry's time, or now when that lies in the future (`applied`); a destroyed row is `already in effect`; no row: a destroyed
+row is inserted from the identifier with `created_at` = `destroyedAt` (`applied`), so that no later import or reuse of the connection id
+brings the key back, unless the database holds that kind and generation of the connection under another identifier, which is left; when no
+identifier changes and none was destroyed already, the outcome is `subject unknown`. An entry whose connection is no connection id or that
+names a key of another connection is malformed and `skipped`. The area `storage_keys` is announced with the payload's version 2, no audit
+event is written ([Q-HA-416](#q-ha-416--a-destruction-of-storage-keys-is-journaled-and-replayed-after-a-restore)). Acceptance criterion
+(unit, the handler): four cases: `applied` on a sealed row, `already in effect` on a destroyed row, `applied` with an inserted destroyed row,
+and an entry for a connection of the configuration `skipped` with its note, its keys still sealed
+(`TestR_HA_054_TheReplayOfADestruction` in `internal/blob/keys`; the registration and the mapping of the outcomes in `internal/app`).
 
 **Dispatch.** An entry of a format event is dispatched to that format's replay handler, which the
 format page specifies (the two rows above). An entry of a format without a replay handler is
@@ -12928,6 +12937,24 @@ retired, and the command refuses such a connection ([storage.md](storage.md) R-S
 **Choice:** (a). `skipped` is the replay's word for an entry it does not apply (R-HA-054 "Replay run"); the entry's note carries the
 reason, which the replay prints as a warning line and lists among the summary's warnings. **Applied in the spec:** R-HA-054;
 [storage.md](storage.md) R-STOR-099; [security/stored-content-keys.md](../security/stored-content-keys.md) H-1375.
+
+### Q-HA-425 · The replay of a destruction that knows no configured connection destroys nothing
+
+Status: **Decided by the development agent** (package 7 of the encryption, at its build) — selected from the options below; the owner sees
+it when it is built.
+
+Context: Q-HA-417 skips an entry whose connection the restoring configuration names. The handlers of the journal get what they may depend on
+through `journal.Env` (now, the restore point, the change log), which held no configuration; the two callers of the replay, `quader backup
+restore` and `quader admin post-restore`, each hold their configuration. A caller that forgot to pass the connections would hand the handler
+an empty list, and every entry would look like one of a connection that is not configured.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `journal.Env.StorageConnections`, filled by both callers from `storage.connections`; an empty list skips every destruction with a note (chosen) | Fail closed | A caller that passes nothing destroys no key; a configuration always has at least one connection, so an empty list is never a real configuration | A field of the journal's environment that one handler reads |
+| (b) The same field, an empty list taken as "nothing configured" | Fail open | — | A caller that forgot the field destroys the keys of every connection a forged entry names |
+| (c) The handler reads the configuration itself | No new field | — | `internal/blob/keys` and the handler hold no configuration; the restore's configuration is the caller's |
+
+**Choice:** (a). **Applied in the spec:** R-HA-054.
 
 ## What this does not cover
 

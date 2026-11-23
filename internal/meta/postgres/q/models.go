@@ -1590,10 +1590,18 @@ type StorageKey struct {
 	ConnectionID string
 	Kind         string
 	Generation   int32
-	SealedKey    string
+	SealedKey    pgtype.Text
 	State        string
 	CreatedAt    pgtype.Timestamptz
 	RetiredAt    pgtype.Timestamptz
+	DestroyedAt  pgtype.Timestamptz
+}
+
+type StorageKeyExport struct {
+	ID         int64
+	ExportedAt pgtype.Timestamptz
+	Instance   string
+	KeyIds     []string
 }
 
 type StorageSummary struct {

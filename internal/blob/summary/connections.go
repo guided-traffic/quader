@@ -95,6 +95,7 @@ func Rows(ctx context.Context, db *postgres.DB, staleAfter time.Duration) ([]Row
 	for _, k := range keys {
 		byConn[k.ConnectionID] = append(byConn[k.ConnectionID], StorageKey{
 			ID: k.KeyID, Generation: int(k.Generation), State: k.State, CreatedAt: time.UnixMicro(k.CreatedUs).UTC(),
+			DestroyedAt: micros(k.DestroyedUs),
 		})
 	}
 	out := make([]Row, 0, len(list))

@@ -29140,6 +29140,15 @@
         <target>Neue Generation eines Speicherschlüssels erzeugt</target>
       </segment>
     </unit>
+    <unit id="audit.action.system.storage.keys_destroyed">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:383</note>
+      </notes>
+      <segment>
+        <source>Storage keys of a retired connection destroyed</source>
+        <target>Speicherschlüssel einer stillgelegten Verbindung vernichtet</target>
+      </segment>
+    </unit>
     <unit id="audit.action.system.storage.keys_exported">
       <notes>
         <note category="location">src/app/features/audit/audit-labels.ts:371</note>

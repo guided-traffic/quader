@@ -43,9 +43,11 @@ type Options struct {
 // Holder is the storage keys and name keys of one replica's encrypted connections, by identifier (R-STOR-083): opened from their
 // rows at start and kept for the replica's life. A new generation reaches it through the change area storage_keys (ApplyChange marks
 // the connection, and the next Active reads its rows again) or through a record that names an identifier it does not hold (Lookup
-// reads the rows again, at most once per RereadEvery per connection). Rows are never deleted, so a key once held is never dropped,
-// and a reader that holds one is never left with a destroyed key while the replica runs. Close destroys every key. A Holder is safe
-// for concurrent use.
+// reads the rows again, at most once per RereadEvery per connection). Rows are never deleted, and a held key is dropped only when its
+// connection's keys are destroyed (R-STOR-101): a change that says so destroys every key the holder holds of the connection at once,
+// and a load drops a held key whose row is destroyed and never opens one; a read in flight that holds such a key then fails with
+// blobcrypt's refusal of a destroyed key. A record that names a destroyed identifier answers destroyed_key. Close destroys every key. A
+// Holder is safe for concurrent use.
 type Holder struct {
 	o    Options
 	rows Rows
@@ -64,8 +66,11 @@ type held struct {
 	storage map[string]*blobcrypt.StorageKey // every generation, by identifier
 	active  *blobcrypt.StorageKey
 	name    *blobcrypt.StorageKey
-	stale   bool
-	readAt  time.Time
+	// destroyed are the identifiers of the connection's destroyed rows with the time of their destruction, as the last load read
+	// them (R-STOR-101).
+	destroyed map[string]time.Time
+	stale     bool
+	readAt    time.Time
 }
 
 // New returns an empty holder; Ensure and Load fill it.
@@ -104,7 +109,8 @@ func (h *Holder) entry(connection string) *held {
 }
 
 // Load reads the rows of a connection, opens those the replica does not hold yet with its key ring and makes the active storage
-// key the row's that says so. A key the ring cannot open is a Refusal that names the identifier and the root key.
+// key the row's that says so. A destroyed row is never opened: its identifier is recorded, and a held key of it is destroyed and
+// dropped (R-STOR-101). A key the ring cannot open is a Refusal that names the identifier and the root key.
 func (h *Holder) Load(ctx context.Context, connection string) error {
 	e := h.entry(connection)
 	e.reread.Lock()
@@ -124,7 +130,7 @@ func (h *Holder) load(ctx context.Context, connection string, e *held) error {
 	readAt := h.o.Now()
 	opened := map[string]*blobcrypt.StorageKey{}
 	for _, r := range rows {
-		if h.holds(e, r.KeyID) {
+		if r.State == StateDestroyed || h.holds(e, r.KeyID) {
 			continue
 		}
 		if id, ok := ParseID(r.KeyID); !ok || id.Connection != connection || id.Kind != r.Kind || id.Generation != r.Generation {
@@ -145,7 +151,13 @@ func (h *Holder) load(ctx context.Context, connection string, e *held) error {
 		return errors.New("storage keys: the holder is closed")
 	}
 	var active *blobcrypt.StorageKey
+	destroyed := map[string]time.Time{}
 	for _, r := range rows {
+		if r.State == StateDestroyed {
+			destroyed[r.KeyID] = r.DestroyedAt
+			e.drop(r.KeyID)
+			continue
+		}
 		k := opened[r.KeyID]
 		switch {
 		case r.Kind == KindName && k != nil:
@@ -161,8 +173,32 @@ func (h *Holder) load(ctx context.Context, connection string, e *held) error {
 			active = e.storage[r.KeyID]
 		}
 	}
-	e.active, e.stale, e.readAt = active, false, readAt
+	e.active, e.destroyed, e.stale, e.readAt = active, destroyed, false, readAt
 	return nil
+}
+
+// drop destroys and forgets the key of an identifier the entry holds; the caller holds Holder.mu.
+func (e *held) drop(id string) {
+	if k := e.storage[id]; k != nil {
+		k.Key.Destroy()
+		delete(e.storage, id)
+		if e.active == k {
+			e.active = nil
+		}
+	}
+	if e.name != nil && e.name.ID == id {
+		e.name.Key.Destroy()
+		e.name = nil
+	}
+}
+
+// forget destroys and forgets every key the entry holds; the caller holds Holder.mu.
+func (e *held) forget() {
+	destroyAll(e.storage)
+	if e.name != nil {
+		e.name.Key.Destroy()
+	}
+	e.storage, e.active, e.name = map[string]*blobcrypt.StorageKey{}, nil, nil
 }
 
 // holds reports whether the entry holds the key of an identifier.
@@ -216,17 +252,19 @@ func (h *Holder) NameKey(connection string) (blobcrypt.Key, error) {
 // Lookup returns the lookup of the storage key a record of an object on the connection names (step 2 of R-STOR-077): a key the
 // replica holds at once; for any other identifier the connection's rows are read again, at most once per RereadEvery, and the key is
 // returned if they hold it; after a change of the area storage_keys the rows are read at once. nil without an error is an identifier
-// the connection does not hold (unknown_key); a failed read is returned as it is and marks nothing.
+// the connection does not hold (unknown_key); an identifier whose row is destroyed is an error that wraps blobcrypt.ErrDestroyedKey
+// (destroyed_key, R-STOR-101), which marks the copy; a failed read is returned as it is and marks nothing.
 func (h *Holder) Lookup(ctx context.Context, connection string) blobcrypt.KeyLookup {
 	return func(id string) (*blobcrypt.StorageKey, error) {
 		e := h.entry(connection)
-		if k := h.storageKey(e, id); k != nil {
-			return k, nil
+		h.refresh(ctx, connection, e)
+		if k, err := h.storageKey(e, connection, id); k != nil || err != nil {
+			return k, err
 		}
 		e.reread.Lock()
 		defer e.reread.Unlock()
-		if k := h.storageKey(e, id); k != nil {
-			return k, nil
+		if k, err := h.storageKey(e, connection, id); k != nil || err != nil {
+			return k, err
 		}
 		h.mu.Lock()
 		recent := !e.stale && !e.readAt.IsZero() && h.o.Now().Sub(e.readAt) < h.o.RereadEvery
@@ -237,14 +275,45 @@ func (h *Holder) Lookup(ctx context.Context, connection string) blobcrypt.KeyLoo
 		if err := h.load(ctx, connection, e); err != nil {
 			return nil, err
 		}
-		return h.storageKey(e, id), nil
+		return h.storageKey(e, connection, id)
 	}
 }
 
-func (h *Holder) storageKey(e *held, id string) *blobcrypt.StorageKey {
+// refresh reads a connection's rows again once after a change of the area storage_keys or a flush marked it, before a held key is
+// handed out: a replica that missed a destruction's change catches up at its next poll or flush (R-STOR-101). A failed read keeps
+// the keys the replica holds, as Active does, and the next lookup tries again.
+func (h *Holder) refresh(ctx context.Context, connection string, e *held) {
+	h.mu.Lock()
+	stale := e.stale
+	h.mu.Unlock()
+	if !stale {
+		return
+	}
+	e.reread.Lock()
+	defer e.reread.Unlock()
+	h.mu.Lock()
+	stale = e.stale
+	h.mu.Unlock()
+	if !stale {
+		return
+	}
+	if err := h.load(ctx, connection, e); err != nil {
+		h.o.Log.Warn("the storage keys of a connection could not be read again after a change; the held keys open on", "connection", connection, "error", err)
+	}
+}
+
+// storageKey is the held key of an identifier, the refusal of a destroyed one, or neither.
+func (h *Holder) storageKey(e *held, connection, id string) (*blobcrypt.StorageKey, error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	return e.storage[id]
+	if k := e.storage[id]; k != nil {
+		return k, nil
+	}
+	if at, gone := e.destroyed[id]; gone {
+		return nil, fmt.Errorf("%w: the storage key %s of connection %s was destroyed on %s (storage.md R-STOR-101)",
+			blobcrypt.ErrDestroyedKey, id, connection, at.UTC().Format(time.DateOnly))
+	}
+	return nil, nil
 }
 
 // Held lists the identifiers of the keys the replica holds for a connection: the storage keys of every generation and the name key.
@@ -268,22 +337,32 @@ func (h *Holder) Held(connection string) (storage []string, active, name string)
 }
 
 // ApplyChange implements cluster.Listener for the change area storage_keys: the connection the payload names is read again before
-// its next wrap. Other areas, and a connection the replica does not hold, change nothing.
+// its next wrap. A payload of version 2 that carries destroyed says that the connection's keys were destroyed (R-STOR-101,
+// Q-STOR-407): the holder destroys and drops every key it holds of the connection at once, whatever identifiers the list names (a
+// destruction is of a whole connection, and the list is cut to the change log's bound, Q-STOR-462), and the next use reads the rows,
+// which say destroyed. Other areas, and a connection the replica does not hold, change nothing.
 func (h *Holder) ApplyChange(area string, _ int, payload json.RawMessage) {
 	if area != ChangeArea {
 		return
 	}
-	var p struct {
-		Connection string `json:"connection"`
-	}
+	var p destroyedChange
 	if json.Unmarshal(payload, &p) != nil || p.Connection == "" {
 		h.FlushArea(area, "unknown_payload")
 		return
 	}
 	h.mu.Lock()
-	defer h.mu.Unlock()
-	if e := h.conns[p.Connection]; e != nil {
+	e := h.conns[p.Connection]
+	forgot := e != nil && p.Destroyed != nil
+	if e != nil {
 		e.stale = true
+		if forgot {
+			e.forget()
+		}
+	}
+	h.mu.Unlock()
+	if forgot {
+		h.o.Log.Info("the storage keys of a connection were destroyed; this replica destroyed the keys it held of it",
+			"connection", p.Connection, "key_ids", p.Destroyed)
 	}
 }
 
@@ -306,10 +385,6 @@ func (h *Holder) Close() {
 	defer h.mu.Unlock()
 	h.closed = true
 	for _, e := range h.conns {
-		destroyAll(e.storage)
-		if e.name != nil {
-			e.name.Key.Destroy()
-		}
-		e.storage, e.active, e.name = map[string]*blobcrypt.StorageKey{}, nil, nil
+		e.forget()
 	}
 }

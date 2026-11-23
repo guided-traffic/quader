@@ -293,6 +293,10 @@ func TestR_BAK_031_EncryptedConnectionsBackedUpAndRestored(t *testing.T) {
 			t.Fatalf("storageKeys = %+v", sk)
 		}
 		validateManifest(t, mustEncode(t, m))
+		// R-STOR-089 the offline tool reads the pool of this backup with the export and the key ring (packages 4 and 6 joined)
+		if tot := offlinePool(t, in, r); tot.Objects != 3 || tot.OK != 3 {
+			t.Fatalf("offline list over the backup's target: %+v", tot)
+		}
 	})
 
 	t.Run("R-BAK-031 Q-BAK-66 verify --deep counts the encrypted pool objects as not authenticated; with --key-ring it reads them, and a flipped bit is digest_mismatch", func(t *testing.T) {
@@ -401,6 +405,11 @@ func TestR_BAK_031_EncryptedConnectionsBackedUpAndRestored(t *testing.T) {
 		if m2 := manifestOf(t, r.tgt, r.cfg, second.BackupID); len(m2.StorageKeys.Pool) != 0 {
 			t.Fatalf("the second backup's pool names %+v", m2.StorageKeys.Pool)
 		}
+		// R-STOR-100 the destruction of archive's keys is refused while a retained backup's pool names its key (package 7 joined)
+		if f := backupRefusals(t, in, r); len(f) != 1 || f[0].Holder != storagekeys.HolderBackup || !strings.Contains(f[0].Say, "backup "+first.BackupID) ||
+			!strings.Contains(f[0].Say, keyID) {
+			t.Fatalf("the backups' check with the first backup retained: %+v", f)
+		}
 		r.mutate = pruneWith(r, 1, in.sources(true))
 		third, err := in.run(ctx, r, backup.CreateOptions{})
 		if err != nil {
@@ -413,6 +422,10 @@ func TestR_BAK_031_EncryptedConnectionsBackedUpAndRestored(t *testing.T) {
 			if strings.Contains(name, keyID) {
 				t.Fatalf("the pool keeps %s", name)
 			}
+		}
+		// R-STOR-100 after the re-pool and the prune no retained backup names the key: the backups' check passes
+		if f := backupRefusals(t, in, r); len(f) != 0 {
+			t.Fatalf("the backups' check after keep_last 1: %+v", f)
 		}
 	})
 }

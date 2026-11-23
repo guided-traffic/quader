@@ -25,14 +25,14 @@ const storageUsage = `usage: quader admin storage verify [--connection <id>] [--
        quader admin storage restore-versions --before <RFC 3339 time> [--connection <id>] [--credentials-file <path>] [--dry-run] [--concurrency N] [--json] [--config <file>]
        quader admin storage check [--connection <id>] [--json] [--config <file>]
        quader admin storage forget-connection <id> [--json] [--config <file>]
-       quader admin storage keys export|import|new-generation ... (quader admin storage keys for its usage)
+       quader admin storage keys export|import|new-generation|destroy ... (quader admin storage keys for its usage)
        quader admin storage offline list|get|verify|pull ... (quader admin storage offline for its usage)
 
 verify             ask the store of each connection, or of the one named, for the object of every present copy of a live blob; list the missing copies and the items of each blob none of whose copies is there (R-STOR-058, R-HA-024, R-HA-025)
 restore-versions   remove the delete markers younger than t from the keys of the copies that have no object, on each connection or the one named, so that a point-in-time restore of the database finds its objects again (R-HA-025 step 5)
 check              run the conformance check and the capabilities on every object-store connection, or the one named (R-STOR-035); exit 5 when a check that is not optional failed
 forget-connection  give up a connection that is gone for good: its copy and queue rows go, its id is retired, no object is deleted (R-STOR-051); exit 2 while a live replica has it
-keys               export, import and draw a new generation of the storage keys of the encrypted connections (R-STOR-083, R-STOR-085)
+keys               export, import and draw a new generation of the storage keys of the encrypted connections, and destroy the keys of a retired connection (R-STOR-083, R-STOR-085, R-STOR-099)
 offline            list, read and verify the objects of an encrypted connection's bucket with the export of the storage keys and the key ring, without a database (R-STOR-089)
 
 exit codes: 0 no blob is lost (missing copies are listed; the reconciliation and the scrub repair them), 1 failed, 2 usage or configuration, 5 a blob is lost, or with --connection a copy on that connection is missing or of another size, 75 temporary (the database or a store could not be reached or answered)`

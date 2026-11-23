@@ -1,7 +1,7 @@
 // Package keystest simulates the tables of internal/blob/keys for the unit tests of the package and of the commands that use it:
-// storage_keys with its identifier rule and its three unique constraints, and upload_sessions.sealed_data_key. Transactions are
-// serialized and roll back whole; the integration tier runs the same code against PostgreSQL, which is where two replicas that write
-// at once are shown.
+// storage_keys with its identifier rule, its state CHECKs and its three unique constraints, upload_sessions.sealed_data_key,
+// storage_key_exports, and what the destruction reads besides the keys (Holders, set by the test). Transactions are serialized and roll
+// back whole; the integration tier runs the same code against PostgreSQL, which is where two replicas that write at once are shown.
 package keystest
 
 import (
@@ -22,7 +22,15 @@ type DB struct {
 	mu       sync.Mutex
 	rows     map[string]keys.Row
 	sessions map[string]string
+	exports  []Export
 	txs      int
+	// Held is what Holders answers for every connection: the state of storage_connections, the replicas, the copy, queue and session
+	// rows, the exports' counts and the backup runs. HeldOf, when it names the connection, answers instead. Exports and LastExport are
+	// counted from the recorded exports when Held leaves them zero.
+	Held   keys.Holders
+	HeldOf map[string]keys.Holders
+	// Writes counts the statements that changed a row of storage_keys or storage_key_exports.
+	Writes int
 	// BeforeInsert runs inside a transaction, before an insert is checked, with the database held: a test that calls Put there
 	// simulates another writer whose row committed between a read and the insert.
 	BeforeInsert func(r keys.Row)
@@ -37,9 +45,16 @@ var (
 	_ keys.Rows   = (*DB)(nil)
 )
 
+// Export is a row of storage_key_exports.
+type Export struct {
+	At       time.Time
+	Instance string
+	KeyIDs   []string
+}
+
 // New returns an empty database.
 func New() *DB {
-	return &DB{rows: map[string]keys.Row{}, sessions: map[string]string{}, FailTx: map[int]error{}}
+	return &DB{rows: map[string]keys.Row{}, sessions: map[string]string{}, FailTx: map[int]error{}, HeldOf: map[string]keys.Holders{}}
 }
 
 type tx struct{ meta.TxState }
@@ -52,14 +67,14 @@ func (d *DB) InTx(ctx context.Context, fn func(meta.Tx) error) error {
 	if err := d.FailTx[d.txs]; err != nil {
 		return err
 	}
-	rows, sessions := maps.Clone(d.rows), maps.Clone(d.sessions)
+	rows, sessions, exports, writes := maps.Clone(d.rows), maps.Clone(d.sessions), slices.Clone(d.exports), d.Writes
 	t := &tx{}
 	err := fn(t)
 	if err == nil {
 		err = t.RunBefore(ctx, t)
 	}
 	if err != nil {
-		d.rows, d.sessions = rows, sessions
+		d.rows, d.sessions, d.exports, d.Writes = rows, sessions, exports, writes
 		t.RunRollback()
 		return err
 	}
@@ -75,6 +90,13 @@ func (d *DB) Rows() []keys.Row {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	return sorted(slices.Collect(maps.Values(d.rows)))
+}
+
+// Exports returns the rows of storage_key_exports. Call it outside a transaction.
+func (d *DB) Exports() []Export {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return slices.Clone(d.exports)
 }
 
 // SetSession writes a session's sealed data key. Call it outside a transaction.
@@ -139,8 +161,7 @@ func (d *DB) Insert(_ context.Context, _ meta.Tx, r keys.Row) (bool, error) {
 		d.BeforeInsert(r)
 	}
 	id, ok := keys.ParseID(r.KeyID)
-	if !ok || id.Kind != r.Kind || id.Connection != r.Connection || id.Generation != r.Generation ||
-		(r.State != keys.StateActive && r.State != keys.StateRetired) || (r.State == keys.StateRetired) == r.RetiredAt.IsZero() {
+	if !ok || id.Kind != r.Kind || id.Connection != r.Connection || id.Generation != r.Generation || !checked(r) {
 		return false, errCheck
 	}
 	for _, o := range d.rows {
@@ -153,7 +174,17 @@ func (d *DB) Insert(_ context.Context, _ meta.Tx, r keys.Row) (bool, error) {
 		r.CreatedAt = time.Now().UTC()
 	}
 	d.rows[r.KeyID] = r
+	d.Writes++
 	return true, nil
+}
+
+// checked holds a row to the state CHECKs of storage_keys (00107, 00112): a state of the three, retired_at set unless active, and a
+// destroyed row without its sealed value and with destroyed_at, every other row with its sealed value and without.
+func checked(r keys.Row) bool {
+	destroyed := r.State == keys.StateDestroyed
+	return (r.State == keys.StateActive || r.State == keys.StateRetired || destroyed) &&
+		(r.State == keys.StateActive) == r.RetiredAt.IsZero() &&
+		destroyed == (r.Sealed == "") && destroyed == !r.DestroyedAt.IsZero()
 }
 
 // LockKind implements keys.Rows; the transaction holds the database already.
@@ -175,6 +206,7 @@ func (d *DB) Retire(_ context.Context, _ meta.Tx, keyID string) (bool, error) {
 	}
 	r.State, r.RetiredAt = keys.StateRetired, time.Now().UTC()
 	d.rows[keyID] = r
+	d.Writes++
 	return true, nil
 }
 
@@ -191,6 +223,7 @@ func (d *DB) Activate(_ context.Context, _ meta.Tx, keyID string) (bool, error) 
 	}
 	r.State, r.RetiredAt = keys.StateActive, time.Time{}
 	d.rows[keyID] = r
+	d.Writes++
 	return true, nil
 }
 
@@ -199,7 +232,7 @@ func (d *DB) SealedAfter(_ context.Context, _ meta.Tx, after string, batch int) 
 	ids := slices.Sorted(maps.Keys(d.rows))
 	var out []keys.Row
 	for _, id := range ids {
-		if id > after && len(out) < batch {
+		if id > after && len(out) < batch && d.rows[id].Sealed != "" {
 			out = append(out, d.rows[id])
 		}
 	}
@@ -208,9 +241,10 @@ func (d *DB) SealedAfter(_ context.Context, _ meta.Tx, after string, batch int) 
 
 // UpdateSealed implements keys.Rows.
 func (d *DB) UpdateSealed(_ context.Context, _ meta.Tx, keyID, sealed string) error {
-	if r, ok := d.rows[keyID]; ok {
+	if r, ok := d.rows[keyID]; ok && r.State != keys.StateDestroyed {
 		r.Sealed = sealed
 		d.rows[keyID] = r
+		d.Writes++
 	}
 	return nil
 }
@@ -233,4 +267,67 @@ func (d *DB) UpdateSessionKey(_ context.Context, _ meta.Tx, id, sealed string) e
 		d.sessions[id] = sealed
 	}
 	return nil
+}
+
+// LockConnection implements keys.Rows; the transaction holds the database already.
+func (d *DB) LockConnection(_ context.Context, _ meta.Tx, connection string) ([]keys.Row, error) {
+	return d.of(connection), nil
+}
+
+// Destroy implements keys.Rows: the UPDATE of R-STOR-099 step 4.
+func (d *DB) Destroy(_ context.Context, _ meta.Tx, connection string) ([]string, error) {
+	var out []string
+	now := time.Now().UTC()
+	for _, r := range d.of(connection) {
+		if r.State == keys.StateDestroyed {
+			continue
+		}
+		d.rows[r.KeyID] = destroyed(r, now)
+		out = append(out, r.KeyID)
+		d.Writes++
+	}
+	return out, nil
+}
+
+// DestroyKey implements keys.Rows.
+func (d *DB) DestroyKey(_ context.Context, _ meta.Tx, keyID string, at time.Time) (bool, error) {
+	r, ok := d.rows[keyID]
+	if !ok || r.State == keys.StateDestroyed {
+		return false, nil
+	}
+	d.rows[keyID] = destroyed(r, at.UTC())
+	d.Writes++
+	return true, nil
+}
+
+func destroyed(r keys.Row, at time.Time) keys.Row {
+	r.State, r.Sealed, r.DestroyedAt = keys.StateDestroyed, "", at
+	if r.RetiredAt.IsZero() {
+		r.RetiredAt = at
+	}
+	return r
+}
+
+// RecordExport implements keys.Rows.
+func (d *DB) RecordExport(_ context.Context, _ meta.Tx, instance string, ids []string) error {
+	d.exports = append(d.exports, Export{At: time.Now().UTC(), Instance: instance, KeyIDs: slices.Clone(ids)})
+	d.Writes++
+	return nil
+}
+
+// Holders implements keys.Rows with Held or HeldOf; the exports are counted from the recorded ones when the answer leaves them zero.
+func (d *DB) Holders(_ context.Context, _ meta.Tx, connection string, ids []string, _ time.Duration) (keys.Holders, error) {
+	h, ok := d.HeldOf[connection]
+	if !ok {
+		h = d.Held
+	}
+	if h.Exports == 0 {
+		for _, e := range d.exports {
+			if slices.ContainsFunc(e.KeyIDs, func(id string) bool { return slices.Contains(ids, id) }) {
+				h.Exports++
+				h.LastExport = e.At
+			}
+		}
+	}
+	return h, nil
 }

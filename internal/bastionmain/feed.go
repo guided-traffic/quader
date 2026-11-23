@@ -93,6 +93,8 @@ func noFeedEntry() map[string]string {
 		audit.EventStorageDownloadLinksChanged: "switches how the main installation hands its clients a download, never what it serves: a Bastion's forward is never answered with a link (R-STOR-070 step 2)",
 		// The handover per blob (R-BAS-071): bastion.handover.enabled is not journaled, so the feed never reads it (Q-BAS-285).
 		audit.EventBastionHandoverDisabled: "switches how the main installation answers a Bastion's forward, never what the caller may read: the main installation decides each forward from its snapshot, and a Bastion learns the member at its next handshake (R-BAS-071)",
+		// The destruction of a retired connection's keys (storage.md R-STOR-097 to R-STOR-099).
+		audit.EventStorageKeysDestroyed: "destroys the keys of a retired connection, which holds no copy and no replica configures: no download is served from it, so no grant and no byte a Bastion keeps changes (R-STOR-098)",
 	}
 }
 

@@ -11,7 +11,8 @@ import (
 )
 
 // The connections' records in PostgreSQL (R-STOR-051, R-STOR-052): the first sight of a connection, its fixed properties,
-// the retired ids, the capabilities of its start check, and forget-connection. These statements run against PostgreSQL only;
+// the retired ids (with the ids whose storage keys were destroyed, R-STOR-102), the capabilities of its start check, and
+// forget-connection. These statements run against PostgreSQL only;
 // the unit tests' simulation of the blob rows does not reach them.
 
 // ConnectionAddedFunc is called in the transaction that recorded the first sight of a connection: the audit event
@@ -42,6 +43,15 @@ func (s *Store) recordConnection(ctx context.Context, c *Connection) error {
 		qs, err := queries(tx)
 		if err != nil {
 			return err
+		}
+		// an id with a destroyed storage key is retired for good, plain or encrypted, also after a restore emptied
+		// storage_connections (R-STOR-102)
+		destroyed, err := qs.StorageConnectionDestroyedUs(ctx, c.ID())
+		if err != nil {
+			return err
+		}
+		if destroyed != 0 {
+			return refusal("%s %s", c.Element(), RetiredForGood(c.ID(), time.UnixMicro(destroyed)))
 		}
 		inserted, err := qs.InsertStorageConnection(ctx, q.InsertStorageConnectionParams{
 			ID: c.ID(), Bucket: c.Bucket(), Prefix: c.Prefix(), Encrypted: c.Encrypted(), KeyedNames: c.KeyedNames(),
@@ -273,8 +283,15 @@ func forgetCopy(ctx context.Context, tx meta.Tx, d Digest, conn string) (bool, e
 	return changed && status != StatusOK, err
 }
 
+// RetiredForGood is the sentence of a connection id of which storage_keys holds a destroyed key (storage.md R-STOR-102): the start
+// refuses it with the element in front, and the drawing of keys (keys.Holder.Ensure) refuses it the same way.
+func RetiredForGood(connection string, destroyedAt time.Time) string {
+	return fmt.Sprintf("the storage keys of connection %s were destroyed on %s; the id is retired for good; choose another id (storage.md R-STOR-102)",
+		connection, destroyedAt.UTC().Format(time.DateOnly))
+}
+
 // Refusal is a configuration that the records of the connections refuse (R-STOR-051): a changed fixed property of a
-// connection that holds copies, or a retired id. The start stops on it; any other error of RecordConnections is the
+// connection that holds copies, a retired id, or an id whose storage keys were destroyed (R-STOR-102). The start stops on it; any other error of RecordConnections is the
 // database's and is retried.
 type Refusal struct{ msg string }
 

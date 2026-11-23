@@ -779,7 +779,7 @@ follows 00104_signature_releases.
 
 [00107_storage_keys](../../internal/meta/postgres/migrations/00107_storage_keys.sql) is an expand step of package 2 of the encryption of
 stored content ([stored-content-encryption.md](stored-content-encryption.md#package-2-the-keys-as-built), [spec](../spec/storage.md)
-R-STOR-083): `storage_keys`, a row per storage key or name key ever drawn or imported, never deleted (a later step of package 7, specified, not built, lets a destroyed key keep its row without its sealed value, R-STOR-097), with the key sealed by the key ring under
+R-STOR-083): `storage_keys`, a row per storage key or name key ever drawn or imported, never deleted (00112 lets a destroyed key keep its row without its sealed value, R-STOR-097, [below](#destroyed-storage-keys-00112)), with the key sealed by the key ring under
 its `key_id` (the sealed column `keys.Column()`); CHECKs that the identifier names the row's kind, connection and generation (Q-STOR-324), a
 unique key per connection, kind and generation and a partial unique index of the active key per connection and kind, which decides two
 replicas that draw at once; no foreign key, since `storage_connections` is transient in a backup and a key outlives its connection. Export
@@ -788,6 +788,20 @@ class `data` ([tables_storage_keys.go](../../internal/meta/postgres/tables_stora
 `stored_sha256`, which package 3 writes, and the row `storage_keys` of `cluster_epoch`. The statements are in
 [storage_keys.sql](../../internal/meta/postgres/queries/storage_keys.sql). No column is a revision. The number 00107 follows
 00106_object_store_connections.
+
+## Destroyed storage keys (00112)
+
+[00112_storage_keys_destroyed](../../internal/meta/postgres/migrations/00112_storage_keys_destroyed.sql) is an expand step of package 7 of
+the encryption ([stored-content-encryption.md](stored-content-encryption.md#package-7-destroying-a-retired-connections-keys-as-built),
+[spec](../spec/storage.md) R-STOR-097, R-STOR-103): `storage_keys.sealed_key` becomes nullable and `destroyed_at` joins it; the state's
+CHECKs of 00107 (the column CHECK `storage_keys_state_check` and the third table CHECK, which PostgreSQL named `storage_keys_check2`) are
+replaced by four named ones: the state is `active`, `retired` or `destroyed`, `retired_at` is set unless the row is active, and a destroyed
+row, and only it, has no sealed value and a `destroyed_at`. `storage_key_exports` records every export (when, the pod, the identifiers it
+listed), export class `data` ([tables_storage_keys.go](../../internal/meta/postgres/tables_storage_keys.go)), so that a destruction reports the
+exports made before it, also after a restore. A destroyed key's sealed value is NULL, never a marker, so the sealed-column registry, the
+backup's `secrets.keyIds` and the walk of `secrets-reencrypt` skip it (the walk's statement reads `sealed_key IS NOT NULL`). The number 00112
+follows package 4's 00111 (`backup_blob_pin.pool`), which another worktree builds: the runner refuses a gap, so 00112 lands after 00111, or
+is renamed when it lands first.
 
 ## The storage summary (00109)
 

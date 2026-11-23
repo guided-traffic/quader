@@ -49,7 +49,9 @@ func TestR_STOR_089_TheOfflineReader(t *testing.T) {
 		putSealed(t, s, na, storageKey(t, "sk-archive-1-0a1b2c3d", gen1), a)
 		putSealed(t, s, nb, storageKey(t, "sk-archive-2-1b2c3d4e", gen2), b)
 		putSealed(t, s, nc, storageKey(t, "sk-archive-3-2c3d4e5f", gen3), c)
-		export := writeExport(t, ring, entry{id: "sk-archive-1-0a1b2c3d"}, entry{id: "sk-archive-2-1b2c3d4e", raw: gen2}, entry{id: "nk-archive-71be04d9", raw: name})
+		// the export as keys.Export writes it after the destruction of generation 1 (R-STOR-103), not an entry the test spells
+		export := keysExport(t, ring, []entry{{id: "sk-archive-1-0a1b2c3d", raw: gen1}, {id: "sk-archive-2-1b2c3d4e", raw: gen2}, {id: "nk-archive-71be04d9", raw: name}},
+			"sk-archive-1-0a1b2c3d")
 		ks, err := offline.LoadKeys(export, ringDir)
 		if err != nil {
 			t.Fatal(err)

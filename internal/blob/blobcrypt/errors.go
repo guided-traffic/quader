@@ -13,6 +13,10 @@ const (
 	// ReasonUnknownKey: quader-key names a storage key this connection does not hold (step 2). It is no evidence about the
 	// object: the export's import can bring the key back (Q-STOR-311).
 	ReasonUnknownKey Reason = "unknown_key"
+	// ReasonDestroyedKey: quader-key names a storage key of this connection whose row is destroyed (step 2, R-STOR-101). Unlike
+	// unknown_key it is evidence about the copy: nothing brings that key back, so the copy is marked and repaired (Q-STOR-406). A key
+	// lookup returns it, wrapped, and Open passes it through.
+	ReasonDestroyedKey Reason = "destroyed_key"
 	// ReasonRecord: the record is incomplete, its wrap does not open under the storage key it names, or the digest and size
 	// the wrap carries are not the copy's (steps 2 to 4).
 	ReasonRecord Reason = "record"
@@ -30,7 +34,7 @@ const (
 )
 
 // MarksCorrupt says whether a failure for this reason is evidence about the object, so that the copy is marked corrupt
-// (R-STOR-082): every reason but unknown_key.
+// (R-STOR-082): every reason but unknown_key, destroyed_key included (R-STOR-101).
 func (r Reason) MarksCorrupt() bool { return r != ReasonUnknownKey }
 
 // Error is the refusal of a stored object with its reason. Its message carries the step and positions, never a key, a nonce
@@ -65,6 +69,9 @@ var (
 	ErrFinal      error = &Error{Reason: ReasonFinal}
 	ErrDigest     error = &Error{Reason: ReasonDigest}
 )
+
+// ErrDestroyedKey is what a key lookup wraps for an identifier whose row is destroyed (R-STOR-101).
+var ErrDestroyedKey error = &Error{Reason: ReasonDestroyedKey}
 
 // ReasonOf returns the reason of a refusal anywhere in err's chain; ok is false for any other error (a transport error, a
 // failed key lookup, a misuse of the package), which marks nothing.

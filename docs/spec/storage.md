@@ -4418,7 +4418,7 @@ The order of the packages is on the developer page
 at a provider becomes unreadable (R-STOR-097 to R-STOR-103,
 [Q-STOR-309](#q-stor-309--a-storage-key-is-a-row-with-an-identifier-of-its-own-drawn-at-the-connections-first-start-never-deleted) (b),
 [ADR-255](../decisions.md#adr-255--the-storage-keys-of-a-retired-connection-can-be-destroyed-so-that-what-stays-at-a-provider-becomes-unreadable)),
-is specified, not built (package 7; its part in the backup, the pool's keys of R-BAK-032, is built with package 4). Its security pages are [stored-content-format.md](../security/stored-content-format.md) (the format and what it withstands),
+is built (package 7, 2026-11-23); its part in the backup, the pool's keys of R-BAK-032, is built with package 4. Its security pages are [stored-content-format.md](../security/stored-content-format.md) (the format and what it withstands),
 [stored-content-keys.md](../security/stored-content-keys.md) (the keys and who holds them) and
 [stored-content-visibility.md](../security/stored-content-visibility.md) (what stays visible to a provider).
 
@@ -5146,7 +5146,7 @@ Priority: **P1** · Covers: STOR-022
 
 **Built**: the links and the handover with package 3 and the links' packages; the API with stage 1's package F and, for its acceptance case
 and `state: destroyed` with `destroyedAt`, package 6 ([storage_connections_api.go](../../internal/api/v1/storage_connections_api.go); the
-statement reads `destroyed_at` once package 7's migration adds the column, until then every `destroyedAt` is `null`); the alert with
+statement reads `destroyed_at`, the column of package 7's migration, and a destroyed key shows its time); the alert with
 package 6 ([_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl), on 2026-11-23).
 
 - **Signed links** (R-STOR-014, R-STOR-070 step 12, R-STOR-074): an encrypted connection never serves a link, because a link would hand out
@@ -5280,7 +5280,7 @@ Priority: **P1** · Covers: STOR-022
   7. empty the bucket at the provider;
   8. export the storage keys again.
 - These edits land with the build of the feature (the documentation rule of the repository: a page describes what runs), not before; the
-  sentences about leaving a provider land with package 7, which builds the command. The others landed with package 3, which makes
+  sentences about leaving a provider landed with package 7 on 2026-11-23, which builds the command. The others landed with package 3, which makes
   `encrypted: true` accepted; the offline tool they name, its section in the manual's backup page, the installation page's paragraph on an
   encrypted connection and the runbook's entry of `QuaderStorageUnknownKey` landed with package 6 (2026-11-23).
 
@@ -5293,13 +5293,17 @@ Acceptance criteria:
 ### R-STOR-097 · A destroyed key
 Priority: **P1** · Covers: STOR-022
 
-Specified, not built (package 7 of [stored-content-encryption.md](../developer/stored-content-encryption.md)). The working paper promised that
+**Built** on 2026-11-23 (package 7 of [stored-content-encryption.md](../developer/stored-content-encryption.md#package-7-destroying-a-retired-connections-keys-as-built):
+the migration step [00112_storage_keys_destroyed](../../internal/meta/postgres/migrations/00112_storage_keys_destroyed.sql), the
+destruction in [internal/blob/keys](../../internal/blob/keys/destroy.go)). The working paper promised that
 whoever leaves a provider destroys its storage key, so that what stays there becomes unreadable;
 [Q-STOR-309](#q-stor-309--a-storage-key-is-a-row-with-an-identifier-of-its-own-drawn-at-the-connections-first-start-never-deleted) (b)
 builds it: the operator destroys every key of a retired connection on command (R-STOR-098 to R-STOR-100), and the row of each key stays as a
 mark that the key is gone ([Q-STOR-402](#q-stor-402--a-destroyed-key-keeps-its-row-loses-its-sealed-value-and-names-its-time)).
 
-A migration step of package 7 (its number is taken when it lands, behind the steps other packages hold):
+The migration step of package 7, `00112` behind package 4's `00111` (the step names the CHECKs it adds `storage_keys_state_check`,
+`storage_keys_retired_check`, `storage_keys_destroyed_sealed_check` and `storage_keys_destroyed_at_check`, and drops the two of 00107 they
+replace):
 
 ```sql
 ALTER TABLE storage_keys ALTER COLUMN sealed_key DROP NOT NULL,
@@ -5331,7 +5335,8 @@ CREATE TABLE storage_key_exports (                         -- export class data 
   retention, as a `DELETE` would ([Q-STOR-412](#q-stor-412--postgresqls-remnants-are-documented-not-vacuumed-by-the-command),
   [H-1372](../security/stored-content-keys.md#h-1372--postgresql-keeps-the-sealed-value-after-the-destruction)).
 
-Acceptance criteria (integration, `test/integration/blob`, PostgreSQL of the stack, the database of the keys' case):
+Acceptance criteria (integration, `test/integration/blob`, PostgreSQL of the stack, the database of the keys' case; the subtests `R-STOR-097 …`
+of `TestR_STOR_083_TheStorageKeysInPostgreSQL`, written in [storage_keys_destroy_test.go](../../test/integration/blob/storage_keys_destroy_test.go)):
 
 - A `destroyed` row with a sealed value, a `destroyed` row without `destroyed_at`, and an `active` row with NULL are each refused by a CHECK.
 - With one destroyed row beside sealed ones, the walk of `secrets-reencrypt` skips it and ends with `failed: 0`, and `CountSealed` of
@@ -5340,7 +5345,8 @@ Acceptance criteria (integration, `test/integration/blob`, PostgreSQL of the sta
 ### R-STOR-098 · When a connection's keys may be destroyed
 Priority: **P1** · Covers: STOR-022
 
-Specified, not built (package 7). Only a whole connection is destroyed, never one generation: one run destroys every row of the connection
+**Built** on 2026-11-23 (package 7; `keys.Destroy` and the holders' read `keys.PG.Holders`). Only a whole connection is destroyed, never one
+generation: one run destroys every row of the connection
 that is not destroyed yet, every generation of its storage key and its name key
 ([Q-STOR-400](#q-stor-400--only-a-whole-retired-connection-is-destroyed-every-generation-and-the-name-key)). A retired generation of a live
 connection is never destroyed: no job wraps its objects again, and `restore-versions` would bring objects under it back into service.
@@ -5352,8 +5358,8 @@ exists), then reads each of these:
 | Holder | Needs the key because | How the command knows | Rule |
 |---|---|---|---|
 | The command's own configuration | It would load the keys | `storage.connections` of the command | The connection is in it: exit `2`, as `forget-connection` refuses |
-| A live replica that configures the connection | It holds the keys in memory and reads or writes with them | the replica registry's object-store view (`StorageConnectionConfiguredLive`, heartbeats younger than `system.heartbeat_stale_after`), which reads no `storage_connections` row | refused (exit `5`) |
-| The connection's state | Filling, active, draining, or drained and still configured: reads and writes are allowed. Detached: putting the element back must restore everything (Q-STOR-225) | `storage_connections.retired_at`; no row at all (after a restore of a backup, which records only the restoring configuration's connections, backup-and-restore.md R-BAK-030) counts as unrecorded | allowed only when `retired_at` is set or no row exists; otherwise refused, naming the state and the next step |
+| A live replica that configures the connection | It holds the keys in memory and reads or writes with them | the replica registry's object-store view (`StorageKeysLiveReplicas`, the count of the rows `StorageConnectionConfiguredLive` reads, heartbeats younger than `system.heartbeat_stale_after`), which reads no `storage_connections` row | refused (exit `5`) |
+| The connection's state | Filling, active, draining, or drained and still configured: reads and writes are allowed. Detached: putting the element back must restore everything (Q-STOR-225) | `storage_connections.retired_at`; no row at all (after a restore of a backup, which records only the restoring configuration's connections, backup-and-restore.md R-BAK-030) counts as unrecorded | allowed only when `retired_at` is set or no row exists; otherwise refused, naming the state and the next step: `drained` (drained_at set, not retired yet), `configured` (a live replica has it, not drained: filling, active or draining) or `detached` (neither) |
 | Copy rows | Their objects are read with these keys | `blob_copies` where `connection_id` is the connection (any state) or `storage_key_id` is one of its identifiers | refused while one exists (none for a retired connection: a safety net) |
 | Queue rows | The connection is not settled | `blob_copy_queue` where `connection_id` is the connection | refused while one exists |
 | Upload sessions | A finalize wraps under the active key (R-STOR-081) | `upload_sessions.connection_id` is the connection | refused; the report names `storage.uploads.session_max_age` |
@@ -5375,17 +5381,18 @@ exists), then reads each of these:
 | Data keys handed to a Bastion | the audit events `bastion.data_key.handed` within retention | a handed key was never wrapped again ([H-1374](../security/stored-content-keys.md#h-1374--a-data-key-handed-to-a-bastion-outlives-its-storage-key)) |
 | Directories written by `offline pull` | not knowable | they need an export and the key ring |
 
-Acceptance criteria (unit, `internal/blob/keys` with keystest):
+Acceptance criteria (unit, `internal/blob/keys` with keystest; the exit code `5` is the command's mapping of the refusal, shown once in
+`cmd/quader`):
 
-- Each of these refuses with exit `5` and its sentence and writes nothing: the connection configured on a live replica; the connection
-  draining; the connection detached; one copy row; one queue row; one upload session.
+- Each of these refuses with its sentence and writes nothing: the connection configured on a live replica; the connection
+  draining; the connection detached; one copy row; one queue row; one upload session (`TestR_STOR_098_EachHolderRefusesAndNothingIsWritten`).
 - A retired connection without holders, and an unrecorded connection whose keys exist, both pass; a second run reports "nothing to do" and
-  exits `0`.
+  exits `0` (`TestR_STOR_099_TheDestructionOfARetiredConnection`).
 
 ### R-STOR-099 · `quader admin storage keys destroy`
 Priority: **P1** · Covers: STOR-022
 
-Specified, not built (package 7).
+**Built** on 2026-11-23 (package 7; [admin_storage_keys_destroy.go](../../cmd/quader/admin_storage_keys_destroy.go) over `keys.Destroy`).
 
 ```text
 quader admin storage keys destroy --connection <id> [--confirm <token>] [--dry-run] [--json] [--config <file>]
@@ -5447,28 +5454,50 @@ ciphertext; export the storage keys again: quader admin storage keys export". `-
 keys[], refusals[{holder, count, say}], remaining{exports, backups, database, handedDataKeys}, confirm, dryRun, destroyed}`; it holds no
 sealed value.
 
-Acceptance criteria (unit, `cmd/quader` with keystest):
+*As built:* `keys[]` are `{keyId, kind, generation, state}`, the storage keys by generation, then the name key; `destroyed` is the list of
+the identifiers this run destroyed (empty in a dry run); the report adds `drainedAt` and, for a connection whose keys are all destroyed,
+`destroyedAt` and `state: destroyed`. `remaining.exports` is `{count, lastAt}`, `remaining.backups` is `{recorded, count, target, runId,
+listedAt, leaveNotBefore}` (`count` is null while a retained backup records no `sealedKeyIds`), `remaining.database` the sentence of the
+text. A holder's refusal prints the report with a line `refused by:` and one line per holder (`  copies: 1 copy rows lie on connection
+archive …`) and ends with "refused: nothing was destroyed; run the command again once the holders above are gone", without a
+confirmation; `--dry-run` with `--confirm` ends with "dry run: the confirmation matches and every check passes; nothing was destroyed. To
+destroy, run: …". Where a value is not known the text says so: "exports made before: none recorded", "retained backups whose database
+holds these keys sealed: none, no backup recorded in this database" or "… not known on s3://… (the listing of run … records no
+sealedKeyIds)", "data keys handed to a Bastion: 0 (audit trail, last 365 days)" (with `audit.retention_days`). The change is the payload
+version 2 of R-STOR-101 (`keys.DestroyedChange`).
+
+Acceptance criteria (unit, `cmd/quader` with keystest; `TestR_STOR_099_TheDestroyCommand`):
 
 - Without `--confirm` the command prints the confirmation, changes nothing and exits `0`.
 - A confirmation computed for another installation id, or before a generation was added, exits `2`.
 - The right confirmation destroys every key of every generation and the name key in one transaction, together with one
-  `system.storage.keys_destroyed`, one outbox row and one change of the area; `--json` holds no sealed value.
+  `system.storage.keys_destroyed`, one outbox row and one change of the area; `--json` holds no sealed value. At the unit tier the event's
+  journal entry stands for the outbox row, which the audit writer inserts; the outbox row itself is shown in PostgreSQL by the subtest
+  `R-STOR-099 a destruction in PostgreSQL …` of the keys' integration case.
 
 ### R-STOR-100 · What the backups hold decides as well
 Priority: **P1** · Covers: STOR-022
 
-Specified, not built (package 7; the record it reads is package 4's, backup-and-restore.md R-BAK-032). The command reads no pool and holds no
+**Built** on 2026-11-23 (package 7, [backups.go](../../internal/blob/keys/backups.go); the record it reads is package 4's,
+backup-and-restore.md R-BAK-032, built the same day: every backup since writes `storageKeys` into its manifest and every retention listing
+`retained[].poolKeyIds` and `sealedKeyIds`, arrays, `[]` where empty; a retained backup older than that gives `null`, and the check refuses
+for it, which fails closed). The keys' integration case reads hand-written runs; the backup's encrypted case
+(`TestR_BAK_031_EncryptedConnectionsBackedUpAndRestored`) reads the runs a real backup records: refused while the first backup's pool names
+the key, passing after the re-pool and `keep_last: 1`. The command reads no pool and holds no
 credential of the backup's target; it judges the backups by the newest retention listing in `backup_run.result` and the key identifiers each
 retained backup recorded ([Q-STOR-403](#q-stor-403--the-backups-are-judged-by-the-newest-retention-listing-and-the-key-identifiers-each-backup-recorded)).
 
-1. **No backup known.** `backup.enabled` is false in the command's configuration and `backup_run` holds no `create` or `delete` run: the check
-   passes and the report says "no backup recorded in this database".
+1. **No backup known.** The command's configuration names no backup target (`backup.target.bucket` empty; the chart's `backup.enabled` is
+   not a key of the configuration, and the chart requires the bucket with it) and `backup_run` holds no `create` or `delete` run: the check
+   passes and the report says "no backup recorded in this database"
+   ([Q-STOR-461](#q-stor-461--no-backup-known-is-a-configuration-without-a-backup-target-and-a-runs-target-is-compared-by-bucket-and-prefix)).
 2. **Otherwise** all of these must hold, or the command refuses with exit `5` and names the reason:
    - no target-writing run is active (the row of `backup_run_one_active`);
    - the newest finished `create` or `delete` run carries `result.retention`; a later `create --no-prune` fails this, and the command says to
      run `quader backup prune` (a `prune` records a `delete` run with `result.retention`, as a `delete` does:
      [retention/runner.go](../../internal/backup/retention/runner.go));
-   - that run's `target` equals the configured target; otherwise the command refuses and says that backups in the other target are not seen
+   - that run's `target` equals the configured target, compared as `s3://<bucket>/<prefix>` (a create records the endpoint after it, a delete
+     or a prune does not, Q-STOR-461); otherwise the command refuses and says that backups in the other target are not seen
      ([H-1373](../security/stored-content-keys.md#h-1373--the-check-of-the-backups-sees-only-the-newest-listing-of-the-configured-target));
    - every `retained[].poolKeyIds` is present (a retained backup whose manifest has no `storageKeys` gives null, which counts as unknown);
    - no `retained[].poolKeyIds` holds one of the connection's identifiers.
@@ -5478,21 +5507,27 @@ retained backup recorded ([Q-STOR-403](#q-stor-403--the-backups-are-judged-by-th
 3. **No race with a run that starts after the check.** The connection has no copies, so a new run cannot pool anything under its keys; and it
    cannot inherit one either, because the previous backup is always retained and the listing just showed that it names none of them.
 
-Acceptance criteria (unit, `internal/blob/keys` with keystest and `backup_run` rows):
+Acceptance criteria (unit, `internal/blob/keys` with keystest and `backup_run` rows; `TestR_STOR_100_TheBackupsDecideAsWell`, and in
+PostgreSQL the refusal by a retained backup's pool in the keys' integration case):
 
 - A listing whose retained entry names `sk-archive-1-…` refuses and names the backup.
 - An active run, a newer `create --no-prune`, a null `poolKeyIds` and another target each refuse.
-- With `backup.enabled: false` and no run, the check passes with the report's line.
+- Without a backup target and without a run, the check passes with the report's line.
 
 ### R-STOR-101 · Replicas forget destroyed keys, and reads answer `destroyed_key`
 Priority: **P1** · Covers: STOR-022
 
-Specified, not built (package 7).
+**Built** on 2026-11-23 (package 7: [holder.go](../../internal/blob/keys/holder.go), `ReasonDestroyedKey` in
+[errors.go](../../internal/blob/blobcrypt/errors.go), the case of the scrub's whole read in
+[scrub/read.go](../../internal/blob/scrub/read.go)).
 
 - **At the change** ([Q-STOR-407](#q-stor-407--replicas-forget-destroyed-keys-at-the-change-and-a-load-skips-them)). A holder whose
   payload names destroyed identifiers destroys those keys at once (`Key.Destroy`) and drops them, with the connection's active key and name
   key; within one `cluster.epoch_poll_interval` (1 s by default), at once through Valkey. A replica that missed the change catches up at its
-  next poll or through `FlushArea`.
+  next poll or through `FlushArea`. *As built* ([Q-STOR-462](#q-stor-462--a-destructions-change-makes-a-replica-forget-every-key-of-the-connection)):
+  a payload of version 2 that carries `destroyed` makes the holder destroy every key it holds of the connection, whatever the list names, and
+  the command cuts the list from its end to fit the change log's 1 KiB bound (an empty list included); a flush marks every connection, and the
+  next `Lookup` or `Active` of a marked connection reads its rows before it hands out a held key.
 - **Loading.** A load never opens a destroyed row and drops a held key whose row is now destroyed; it no longer refuses a row whose sealed
   value is NULL, and records the identifier in a set of destroyed identifiers per connection.
 - **A read in flight** fails with `blobcrypt`'s error of a destroyed key (`errDestroyed` in
@@ -5506,40 +5541,53 @@ Specified, not built (package 7).
   [errors.go](../../internal/blob/blobcrypt/errors.go) whose `MarksCorrupt` is true): the read falls over to the next copy, the copy is
   marked `corrupt` and its repair queued, and `quader_storage_encrypted_read_failures_total{reason="destroyed_key"}` counts it.
   `QuaderStorageUnknownKey` does not fire (R-STOR-088). The scrub does the same (R-STOR-087), and the orphan sweep reports such an object as
-  foreign and never deletes it (Q-STOR-314).
+  foreign and never deletes it (Q-STOR-314). *As built:* the lookup returns an error that wraps `blobcrypt.ErrDestroyedKey`, which
+  `blobcrypt.Open` passes through and the store's reader counts and marks by its reason, with no change to the reader but a comment. The
+  scrub judges a refusal by `Reason.MarksCorrupt` (package 4), so `destroyed_key` marks the copy and queues its repair without a case of its
+  own; the orphan sweep's reading of a record (package 4, Q-STOR-441) treats any refusal, `destroyed_key` included, as a record that does not
+  open: reported as foreign, never adopted, never deleted.
 - The offline tool's `list` prints `destroyed_key` when the export lists the key as destroyed (R-STOR-089, R-STOR-103); built with package 6, it
-  reads an export entry of R-STOR-103's form.
+  reads the entry package 7's export writes.
 
 Acceptance criteria:
 
 - After the change, `Held` lists none of the identifiers and the key objects refuse use; a load skips destroyed rows without a refusal (unit,
-  `internal/blob/keys`).
+  `internal/blob/keys`; `TestR_STOR_101_ReplicasForgetDestroyedKeysAndReadsAnswerDestroyedKey`).
 - A read of a copy whose record names a destroyed identifier falls over to the second copy, marks the first `corrupt` and counts
-  `destroyed_key` (unit, `internal/blob`, the in-memory store).
-- The rule test of `QuaderStorageUnknownKey` stays silent on `destroyed_key` (chart tests).
+  `destroyed_key` (unit, `internal/blob`, the in-memory store; `TestR_STOR_101_AReadThatMeetsADestroyedKeyFallsOverAndMarksTheCopy`).
+- The rule test of `QuaderStorageUnknownKey` stays silent on `destroyed_key` (chart tests, package 6).
 
 ### R-STOR-102 · A connection id with destroyed keys is retired for good
 Priority: **P1** · Covers: STOR-022
 
-Specified, not built (package 7;
+**Built** on 2026-11-23 (package 7: the start check in [record.go](../../internal/blob/record.go), `blob.RetiredForGood`, and the refusal in
+`Holder.Ensure` and `NewGeneration`;
 [Q-STOR-411](#q-stor-411--a-connection-id-with-destroyed-keys-is-retired-for-good)).
 
 - A start whose `storage.connections` names an id, plain or encrypted, of which `storage_keys` holds a destroyed row is a configuration
   error: "storage.connections[1] (archive): the storage keys of connection archive were destroyed on 2027-04-02; the id is retired for good;
   choose another id (storage.md R-STOR-102)". `retired_at` alone would not do: a restore of a backup empties `storage_connections`
   (R-STOR-051).
-- `Ensure`, and the restore Job's drawing of keys (backup-and-restore.md R-BAK-031), refuse the same way.
+- `Ensure`, and the restore Job's drawing of keys (backup-and-restore.md R-BAK-031), refuse the same way. *As built:* `Ensure` refuses
+  before it lists the location and again in the drawing transaction, whether the connection drains or not, and a new generation of such a
+  connection is refused too. The restore Job draws the keys of a new encrypted connection in a path of its own (`drawKeys`, Q-BAK-82); its
+  check 3 refuses every connection of the restoring configuration, plain or encrypted, whose id the backup holds destroyed keys of, before
+  anything is drawn or written (`TestR_STOR_102_TheRestoreRefusesAConnectionIDWithDestroyedKeys`). The element in front of the sentence is the
+  replica's `storage.connections[<index>] (<id>):`, counted from 0.
 
-Acceptance criteria (unit):
+Acceptance criteria (the start check runs against PostgreSQL only, like every record of the connections, so it is shown in the keys'
+integration case, `R-STOR-102 a start whose configuration names the id is refused …`; `Ensure` at the unit tier,
+`TestR_STOR_102_AnIDWithDestroyedKeysIsRetiredForGood`):
 
 - The start check and `Ensure` both refuse with this sentence.
 
 ### R-STOR-103 · Export and import know destroyed keys
 Priority: **P1** · Covers: STOR-022
 
-Specified, not built (package 7;
+**Built** on 2026-11-23 (package 7, [export.go](../../internal/blob/keys/export.go);
 [Q-STOR-408](#q-stor-408--every-export-is-a-row-of-storage_key_exports-and-names-its-keys),
-[Q-STOR-409](#q-stor-409--an-import-skips-a-destroyed-key-reports-it-and-inserts-the-destroyed-rows-the-database-lacks)).
+[Q-STOR-409](#q-stor-409--an-import-skips-a-destroyed-key-reports-it-and-inserts-the-destroyed-rows-the-database-lacks),
+[Q-STOR-460](#q-stor-460--an-import-changes-nothing-of-a-connection-whose-keys-the-file-and-the-database-disagree-on-destroyed)).
 
 - **The export** lists a destroyed key as `{"keyId", "connection", "kind", "generation", "state": "destroyed", "createdAt", "retiredAt",
   "destroyedAt"}`, without `sealed`. It writes one row of `storage_key_exports` in its transaction and puts `keyIds` into
@@ -5550,8 +5598,14 @@ Specified, not built (package 7;
   offline tool stays the way to read with an older export (R-STOR-089).
 - `activateHighest` and `checkKeys` ignore destroyed rows: the highest generation that is not destroyed is active (Q-STOR-325), and a
   connection whose keys are all destroyed has none.
+- *As built* (Q-STOR-460): a connection of which the database holds a destroyed row gets nothing back, also a sealed row of the file whose
+  identifier the database lacks; its sealed values are not opened either, so an export sealed under a root key the ring no longer has still
+  imports the other connections. A destroyed row of the file is never applied to a key the database holds sealed, nor inserted beside the
+  sealed keys of its connection: the import reports it as `stillSealed` (text, JSON and the event) and leaves it, since an import never
+  destroys a key and a destroyed row would retire a live connection's id (R-STOR-102). `checkKeys` accepts a destroyed row only without a
+  sealed value and with `retiredAt` and `destroyedAt`.
 
-Acceptance criteria (unit, `cmd/quader` with keystest):
+Acceptance criteria (unit, `cmd/quader` with keystest; `TestR_STOR_103_ExportAndImportKnowDestroyedKeys`):
 
 - An export after a destruction prints the destroyed rows without `sealed`, and a row of `storage_key_exports`.
 - An import of an older export inserts nothing for the destroyed connection, reports its identifiers, and imports the other connections'
@@ -5580,7 +5634,7 @@ kilobytes.
 | Backup of an encrypted connection, deep verification without and with the ring, restore into the same and into another connection (backup-and-restore.md R-BAK-031) | integration, `test/integration/backup`, one case | three objects of 1 KiB | 8 s |
 | One pass of the conformance checks with an encrypted connection against a real store: a write with the record, a whole and a ranged read, the finalize's copy with the record, the metadata kept by `HeadObject` | the job `s3-conformance` against Silo; the same checks against the in-memory store in the unit tier | probe objects | 3 s added to the job |
 | Fuzz targets of R-STOR-079 | the nightly (`performance.yml`), a job "fuzz the stored format's readers", five minutes per target | generated | about 27 min of one runner, nightly only |
-| Destroying a retired connection's keys (R-STOR-097 to R-STOR-103): the holders, the command, the backups' check, forgetting, `destroyed_key`, the retired id, export and import, the journal's replay | unit, `internal/blob/keys`, `cmd/quader`, `internal/blob`; integration, `test/integration/blob` (the keys' case) | rows, three keys, objects of 1 KiB | 0.16 s unit, 0.5 s integration |
+| Destroying a retired connection's keys (R-STOR-097 to R-STOR-103): the holders, the command, the backups' check, forgetting, `destroyed_key`, the retired id, export and import, the journal's replay | unit, `internal/blob/keys`, `cmd/quader`, `internal/blob`, `internal/blob/scrub`, `internal/app`; integration, `test/integration/blob` (the keys' case) | rows, three keys, objects of 1 KiB | 0.16 s unit, 0.5 s integration (measured on 2026-11-23: 0.24 s unit in the unit job's mode, 0.08 s in the keys' integration case) |
 | The pool's keys and the re-pool (backup-and-restore.md R-BAK-032) | unit, `internal/backup/format` and `create`; integration, `test/integration/backup` (R-BAK-031's case extended) | lists of tens of lines; three objects of 1 KiB | 0.1 s unit, 3 s integration |
 
 What each pipeline job gains (estimates): the unit job about 2.9 s; the chart test about 0.5 s; the integration shard that runs `blob` about
@@ -10126,6 +10180,64 @@ Status: **Decided by the development agent** — selected from the options below
 | (c) Everything in package 6 | With the documentation | — | Package 6 owns no code of the keys |
 
 **Choice:** (a). **Applied in the spec:** [stored-content-encryption.md](../developer/stored-content-encryption.md).
+
+### Q-STOR-460 · An import changes nothing of a connection whose keys the file and the database disagree on destroyed
+
+Status: **Decided by the development agent** (package 7, at its build) — selected from the options below; the owner sees it when it is
+built.
+
+Context: Q-STOR-409 skips a sealed row whose identifier the database holds destroyed and inserts the destroyed rows the database lacks. The
+build met two cases it does not name: a sealed row of the file whose connection the database holds destroyed but whose identifier it lacks
+(an export taken after a generation the restored database never drew), and a destroyed row of the file for a connection whose keys the
+database holds sealed (a database restored to before the destruction, or a file someone wrote: a destroyed row carries no sealed value, so
+anybody can write one).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A connection the database holds destroyed gets no sealed row back; a destroyed row of the file is never applied to, or inserted beside, keys the database holds sealed, and is reported `stillSealed` (chosen) | The destroyed mark wins where the database has it, and an import never destroys | No key of a destroyed connection comes back, by identifier or by generation; a written file cannot retire a live connection's id or destroy its keys | A database restored to before a destruction keeps the keys until the journal's replay or the command destroys them |
+| (b) Only the identifier decides, as Q-STOR-409 reads | Literal | Simplest | A key of a destroyed connection can come back under a new identifier; a destroyed row next to sealed ones makes the start refuse a live connection (R-STOR-102) |
+| (c) The import also destroys the keys the file lists destroyed | The file as the record | One step | Any file, which needs no key ring for a destroyed row, would destroy a live connection's keys |
+
+**Choice:** (a). The sealed values of a connection the database holds destroyed are not opened either, so an old export whose root key the
+ring no longer has still restores the other connections. **Applied in the spec:** R-STOR-103.
+
+### Q-STOR-461 · No backup known is a configuration without a backup target, and a run's target is compared by bucket and prefix
+
+Status: **Decided by the development agent** (package 7, at its build) — selected from the options below; the owner sees it when it is
+built.
+
+Context: R-STOR-100's first case reads "`backup.enabled` is false in the command's configuration". `backup.enabled` is a value of the chart
+(it renders the CronJob), not a key of Quader's configuration; the chart requires `config.backup.target.bucket` with it, and every backup
+command needs the bucket. The runs record their target in two forms: a create `s3://<bucket>/<prefix> (<endpoint or aws>)`, a delete and a
+prune `s3://<bucket>/<prefix>` without a slash at either end of the prefix.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No backup known: `backup.target.bucket` is empty and no create or delete run is recorded; the newest listing's target and the configured one are compared as `s3://<bucket>/<prefix>` (chosen) | The configuration's own key, and the part both forms share | Reads what the command has; one rule for both forms | Two targets of the same bucket and prefix at different endpoints are taken for one |
+| (b) A new key `backup.enabled` in the configuration | The specification's wording | Literal | A second switch beside the bucket that can disagree with it |
+| (c) Compare the target strings as recorded | Exact | No parsing | A delete's listing never equals a create's configured target, so a prune would not satisfy the check |
+
+**Choice:** (a). The endpoint stays out of the comparison because a delete does not record it; that two installations back up into the
+same bucket and prefix at two endpoints is outside what the check sees, as H-1373 says of other targets. **Applied in the spec:** R-STOR-100.
+
+### Q-STOR-462 · A destruction's change makes a replica forget every key of the connection
+
+Status: **Decided by the development agent** (package 7, at its build) — selected from the options below; the owner sees it when it is
+built.
+
+Context: R-STOR-101 has a holder destroy the keys whose identifiers the change's payload names. A change's payload is bounded at 1 KiB less
+its envelope ([changelog_notify.go](../../internal/cluster/changelog_notify.go)); a connection id of 32 characters makes an identifier of up
+to 52, so the list fits only about fifteen keys, and a connection with more generations would not fit. A destruction is always of a whole
+connection (Q-STOR-400).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A payload of version 2 with `destroyed` makes the holder destroy every key it holds of the connection; the command cuts the list from its end to fit, down to an empty list (chosen) | The list is a record, the connection decides | Any number of generations; the replica forgets everything at once | A change written by a database writer drops a live connection's keys from memory until the next use reads them again from their sealed rows |
+| (b) Drop only the identifiers listed, refuse a destruction whose list does not fit | Literal | The payload says exactly what goes | A connection with many generations cannot be destroyed |
+| (c) Several changes, one per part of the list | Every identifier announced | Literal | Several changes for one transaction, each a partial state |
+
+**Choice:** (a). A holder never takes a key for destroyed from the payload alone: `destroyed_key` comes only from rows the holder read as
+destroyed, so a forged change costs a re-read, never a copy marked corrupt. **Applied in the spec:** R-STOR-101.
 
 ### Q-STOR-350 · A gate passed on a decided state at its first decision; a download that waited streams
 

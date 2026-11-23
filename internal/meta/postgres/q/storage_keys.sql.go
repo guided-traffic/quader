@@ -7,6 +7,9 @@ package q
 
 import (
 	"context"
+	"encoding/json"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const activateStorageKey = `-- name: ActivateStorageKey :execrows
@@ -14,7 +17,7 @@ UPDATE storage_keys SET state = 'active', retired_at = NULL
  WHERE key_id = $1::text AND state = 'retired'
 `
 
-// A retired key becomes active again: the import's highest generation of a connection (Q-STOR-325).
+// A retired key becomes active again: the import's highest generation of a connection (Q-STOR-325). A destroyed key never does.
 func (q *Queries) ActivateStorageKey(ctx context.Context, keyID string) (int64, error) {
 	result, err := q.db.Exec(ctx, activateStorageKey, keyID)
 	if err != nil {
@@ -23,11 +26,60 @@ func (q *Queries) ActivateStorageKey(ctx context.Context, keyID string) (int64, 
 	return result.RowsAffected(), nil
 }
 
+const destroyStorageKey = `-- name: DestroyStorageKey :execrows
+UPDATE storage_keys
+   SET state = 'destroyed', sealed_key = NULL, destroyed_at = $1::text::timestamptz,
+       retired_at = COALESCE(retired_at, $1::text::timestamptz)
+ WHERE key_id = $2::text AND state <> 'destroyed'
+`
+
+type DestroyStorageKeyParams struct {
+	DestroyedAt string
+	KeyID       string
+}
+
+// The destruction of one key by the journal's replay (R-HA-054, Q-HA-416), at the time it carries (RFC 3339 text).
+func (q *Queries) DestroyStorageKey(ctx context.Context, arg DestroyStorageKeyParams) (int64, error) {
+	result, err := q.db.Exec(ctx, destroyStorageKey, arg.DestroyedAt, arg.KeyID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const destroyStorageKeysOfConnection = `-- name: DestroyStorageKeysOfConnection :many
+UPDATE storage_keys
+   SET state = 'destroyed', sealed_key = NULL, destroyed_at = now(), retired_at = COALESCE(retired_at, now())
+ WHERE connection_id = $1::text AND state <> 'destroyed'
+RETURNING key_id
+`
+
+// The destruction of every key of a connection that is not destroyed yet (R-STOR-099 step 4): the sealed value goes, the row stays.
+func (q *Queries) DestroyStorageKeysOfConnection(ctx context.Context, connectionID string) ([]string, error) {
+	rows, err := q.db.Query(ctx, destroyStorageKeysOfConnection, connectionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var key_id string
+		if err := rows.Scan(&key_id); err != nil {
+			return nil, err
+		}
+		items = append(items, key_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const insertStorageKey = `-- name: InsertStorageKey :execrows
-INSERT INTO storage_keys (key_id, connection_id, kind, generation, sealed_key, state, created_at, retired_at)
+INSERT INTO storage_keys (key_id, connection_id, kind, generation, sealed_key, state, created_at, retired_at, destroyed_at)
 VALUES ($1::text, $2::text, $3::text, $4::integer,
-        $5::text, $6::text, COALESCE(NULLIF($7::text, '')::timestamptz, now()),
-        NULLIF($8::text, '')::timestamptz)
+        NULLIF($5::text, ''), $6::text, COALESCE(NULLIF($7::text, '')::timestamptz, now()),
+        NULLIF($8::text, '')::timestamptz, NULLIF($9::text, '')::timestamptz)
 ON CONFLICT DO NOTHING
 `
 
@@ -40,11 +92,13 @@ type InsertStorageKeyParams struct {
 	State        string
 	CreatedAt    string
 	RetiredAt    string
+	DestroyedAt  string
 }
 
-// A key drawn or imported; created_at and retired_at are RFC 3339 text, empty for now() and for NULL. A row that a unique
-// constraint already holds (the identifier, the connection's generation of the kind, or its active key of the kind) wins: the
-// statement inserts nothing, and the caller reads the winner's (R-STOR-083).
+// A key drawn or imported, or a destroyed row an import or the journal's replay inserts (R-STOR-103, R-HA-054); created_at, retired_at
+// and destroyed_at are RFC 3339 text, empty for now() and for NULL, and an empty sealed value is NULL. A row that a unique constraint
+// already holds (the identifier, the connection's generation of the kind, or its active key of the kind) wins: the statement inserts
+// nothing, and the caller reads the winner's (R-STOR-083).
 func (q *Queries) InsertStorageKey(ctx context.Context, arg InsertStorageKeyParams) (int64, error) {
 	result, err := q.db.Exec(ctx, insertStorageKey,
 		arg.KeyID,
@@ -55,6 +109,7 @@ func (q *Queries) InsertStorageKey(ctx context.Context, arg InsertStorageKeyPara
 		arg.State,
 		arg.CreatedAt,
 		arg.RetiredAt,
+		arg.DestroyedAt,
 	)
 	if err != nil {
 		return 0, err
@@ -62,8 +117,113 @@ func (q *Queries) InsertStorageKey(ctx context.Context, arg InsertStorageKeyPara
 	return result.RowsAffected(), nil
 }
 
+const insertStorageKeyExport = `-- name: InsertStorageKeyExport :exec
+INSERT INTO storage_key_exports (instance, key_ids) VALUES ($1::text, $2::text[])
+`
+
+type InsertStorageKeyExportParams struct {
+	Instance string
+	KeyIds   []string
+}
+
+// The record of an export (R-STOR-103, Q-STOR-408), written in the export's transaction.
+func (q *Queries) InsertStorageKeyExport(ctx context.Context, arg InsertStorageKeyExportParams) error {
+	_, err := q.db.Exec(ctx, insertStorageKeyExport, arg.Instance, arg.KeyIds)
+	return err
+}
+
+const lockStorageConnectionForDestroy = `-- name: LockStorageConnectionForDestroy :many
+SELECT COALESCE((EXTRACT(EPOCH FROM filled_at) * 1000000)::bigint, 0)::bigint AS filled_us,
+       COALESCE((EXTRACT(EPOCH FROM drained_at) * 1000000)::bigint, 0)::bigint AS drained_us,
+       COALESCE((EXTRACT(EPOCH FROM retired_at) * 1000000)::bigint, 0)::bigint AS retired_us
+  FROM storage_connections
+ WHERE id = $1::text
+   FOR UPDATE
+`
+
+type LockStorageConnectionForDestroyRow struct {
+	FilledUs  int64
+	DrainedUs int64
+	RetiredUs int64
+}
+
+// The row of a connection, locked, with the times its state is read from (R-STOR-098): none after a restore of a backup, which records
+// only the restoring configuration's connections.
+func (q *Queries) LockStorageConnectionForDestroy(ctx context.Context, id string) ([]LockStorageConnectionForDestroyRow, error) {
+	rows, err := q.db.Query(ctx, lockStorageConnectionForDestroy, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LockStorageConnectionForDestroyRow{}
+	for rows.Next() {
+		var i LockStorageConnectionForDestroyRow
+		if err := rows.Scan(&i.FilledUs, &i.DrainedUs, &i.RetiredUs); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const lockStorageKeysOfConnection = `-- name: LockStorageKeysOfConnection :many
+SELECT key_id, connection_id, kind, generation, COALESCE(sealed_key, '')::text AS sealed_key, state, created_at, retired_at, destroyed_at
+  FROM storage_keys
+ WHERE connection_id = $1::text
+ ORDER BY kind, generation
+   FOR UPDATE
+`
+
+type LockStorageKeysOfConnectionRow struct {
+	KeyID        string
+	ConnectionID string
+	Kind         string
+	Generation   int32
+	SealedKey    string
+	State        string
+	CreatedAt    pgtype.Timestamptz
+	RetiredAt    pgtype.Timestamptz
+	DestroyedAt  pgtype.Timestamptz
+}
+
+// The rows of both kinds of a connection, locked, for the destruction (R-STOR-098, R-STOR-099): a new generation, an import and a second
+// destruction of the connection wait for it.
+func (q *Queries) LockStorageKeysOfConnection(ctx context.Context, connectionID string) ([]LockStorageKeysOfConnectionRow, error) {
+	rows, err := q.db.Query(ctx, lockStorageKeysOfConnection, connectionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LockStorageKeysOfConnectionRow{}
+	for rows.Next() {
+		var i LockStorageKeysOfConnectionRow
+		if err := rows.Scan(
+			&i.KeyID,
+			&i.ConnectionID,
+			&i.Kind,
+			&i.Generation,
+			&i.SealedKey,
+			&i.State,
+			&i.CreatedAt,
+			&i.RetiredAt,
+			&i.DestroyedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockStorageKeysOfKind = `-- name: LockStorageKeysOfKind :many
-SELECT key_id, generation, state, sealed_key
+SELECT key_id, generation, state, COALESCE(sealed_key, '')::text AS sealed_key,
+       COALESCE((EXTRACT(EPOCH FROM destroyed_at) * 1000000)::bigint, 0)::bigint AS destroyed_us
   FROM storage_keys
  WHERE connection_id = $1::text AND kind = $2::text
  ORDER BY generation
@@ -76,10 +236,11 @@ type LockStorageKeysOfKindParams struct {
 }
 
 type LockStorageKeysOfKindRow struct {
-	KeyID      string
-	Generation int32
-	State      string
-	SealedKey  string
+	KeyID       string
+	Generation  int32
+	State       string
+	SealedKey   string
+	DestroyedUs int64
 }
 
 // The rows of one kind of a connection, locked, for a new generation (R-STOR-083) and the import's change of the active key: two such
@@ -98,6 +259,7 @@ func (q *Queries) LockStorageKeysOfKind(ctx context.Context, arg LockStorageKeys
 			&i.Generation,
 			&i.State,
 			&i.SealedKey,
+			&i.DestroyedUs,
 		); err != nil {
 			return nil, err
 		}
@@ -164,23 +326,71 @@ func (q *Queries) SessionDataKeysSealedAfter(ctx context.Context, arg SessionDat
 	return items, nil
 }
 
+const storageConnectionDestroyedUs = `-- name: StorageConnectionDestroyedUs :one
+SELECT COALESCE((EXTRACT(EPOCH FROM max(destroyed_at)) * 1000000)::bigint, 0)::bigint AS destroyed_us
+  FROM storage_keys
+ WHERE connection_id = $1::text AND state = 'destroyed'
+`
+
+// When the storage keys of a connection id were destroyed, in microseconds since the epoch, or 0 when none was (R-STOR-102): the start
+// refuses an id with a destroyed key, also after a restore emptied storage_connections.
+func (q *Queries) StorageConnectionDestroyedUs(ctx context.Context, connectionID string) (int64, error) {
+	row := q.db.QueryRow(ctx, storageConnectionDestroyedUs, connectionID)
+	var destroyed_us int64
+	err := row.Scan(&destroyed_us)
+	return destroyed_us, err
+}
+
+const storageKeysBackupRuns = `-- name: StorageKeysBackupRuns :one
+SELECT count(*) FILTER (WHERE operation IN ('create', 'delete'))::bigint AS runs,
+       count(*) FILTER (WHERE operation IN ('create', 'delete')
+                          AND state IN ('starting', 'snapshot', 'copying', 'finalizing', 'pruning'))::bigint AS active
+  FROM backup_run
+`
+
+type StorageKeysBackupRunsRow struct {
+	Runs   int64
+	Active int64
+}
+
+// The backup runs the check of R-STOR-100 reads: how many create and delete runs the database records and whether a target-writing run is
+// active (the rows of backup_run_one_active).
+func (q *Queries) StorageKeysBackupRuns(ctx context.Context) (StorageKeysBackupRunsRow, error) {
+	row := q.db.QueryRow(ctx, storageKeysBackupRuns)
+	var i StorageKeysBackupRunsRow
+	err := row.Scan(&i.Runs, &i.Active)
+	return i, err
+}
+
 const storageKeysForExport = `-- name: StorageKeysForExport :many
-SELECT key_id, connection_id, kind, generation, sealed_key, state, created_at, retired_at
+SELECT key_id, connection_id, kind, generation, COALESCE(sealed_key, '')::text AS sealed_key, state, created_at, retired_at, destroyed_at
   FROM storage_keys
  WHERE $1::text = '' OR connection_id = $1::text
  ORDER BY connection_id, kind, generation
 `
 
-// The rows of every connection, or of the one named, for the export and the import (R-STOR-085).
-func (q *Queries) StorageKeysForExport(ctx context.Context, connectionID string) ([]StorageKey, error) {
+type StorageKeysForExportRow struct {
+	KeyID        string
+	ConnectionID string
+	Kind         string
+	Generation   int32
+	SealedKey    string
+	State        string
+	CreatedAt    pgtype.Timestamptz
+	RetiredAt    pgtype.Timestamptz
+	DestroyedAt  pgtype.Timestamptz
+}
+
+// The rows of every connection, or of the one named, for the export and the import (R-STOR-085, R-STOR-103).
+func (q *Queries) StorageKeysForExport(ctx context.Context, connectionID string) ([]StorageKeysForExportRow, error) {
 	rows, err := q.db.Query(ctx, storageKeysForExport, connectionID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []StorageKey{}
+	items := []StorageKeysForExportRow{}
 	for rows.Next() {
-		var i StorageKey
+		var i StorageKeysForExportRow
 		if err := rows.Scan(
 			&i.KeyID,
 			&i.ConnectionID,
@@ -190,6 +400,112 @@ func (q *Queries) StorageKeysForExport(ctx context.Context, connectionID string)
 			&i.State,
 			&i.CreatedAt,
 			&i.RetiredAt,
+			&i.DestroyedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const storageKeysHolders = `-- name: StorageKeysHolders :one
+SELECT (SELECT count(*) FROM blob_copies c
+         WHERE c.connection_id = $1::text OR c.storage_key_id = ANY ($2::text[]))::bigint AS copies,
+       (SELECT count(*) FROM blob_copy_queue q WHERE q.connection_id = $1::text)::bigint AS queued,
+       (SELECT count(*) FROM upload_sessions s WHERE s.connection_id = $1::text)::bigint AS sessions,
+       (SELECT count(*) FROM storage_key_exports e WHERE e.key_ids && $2::text[])::bigint AS exports,
+       COALESCE((SELECT (EXTRACT(EPOCH FROM max(e.exported_at)) * 1000000)::bigint FROM storage_key_exports e
+                  WHERE e.key_ids && $2::text[]), 0)::bigint AS last_export_us,
+       (SELECT count(*) FROM audit_event a
+         WHERE a.action = 'bastion.data_key.handed' AND a.details ->> 'connection' = $1::text)::bigint AS handed
+`
+
+type StorageKeysHoldersParams struct {
+	ConnectionID string
+	KeyIds       []string
+}
+
+type StorageKeysHoldersRow struct {
+	Copies       int64
+	Queued       int64
+	Sessions     int64
+	Exports      int64
+	LastExportUs int64
+	Handed       int64
+}
+
+// What still holds a connection's keys (R-STOR-098): copy rows of the connection or under one of its keys, queue rows, upload sessions;
+// and what the destruction reports: the exports that listed one of its keys and the data keys of its objects handed to a Bastion within
+// the audit trail's retention.
+func (q *Queries) StorageKeysHolders(ctx context.Context, arg StorageKeysHoldersParams) (StorageKeysHoldersRow, error) {
+	row := q.db.QueryRow(ctx, storageKeysHolders, arg.ConnectionID, arg.KeyIds)
+	var i StorageKeysHoldersRow
+	err := row.Scan(
+		&i.Copies,
+		&i.Queued,
+		&i.Sessions,
+		&i.Exports,
+		&i.LastExportUs,
+		&i.Handed,
+	)
+	return i, err
+}
+
+const storageKeysLiveReplicas = `-- name: StorageKeysLiveReplicas :one
+SELECT count(*)::bigint AS replicas
+  FROM replica r, jsonb_array_elements(COALESCE(r.object_store -> 'connections', '[]'::jsonb)) c
+ WHERE c ->> 'id' = $1::text AND r.heartbeat_at >= now() - make_interval(secs => $2::float8)
+`
+
+type StorageKeysLiveReplicasParams struct {
+	ID        string
+	StaleSecs float64
+}
+
+// How many live replicas have the connection in their configuration (R-STOR-098): the replica registry's object-store view, rows whose
+// heartbeat is younger than stale_secs, as StorageConnectionConfiguredLive reads it.
+func (q *Queries) StorageKeysLiveReplicas(ctx context.Context, arg StorageKeysLiveReplicasParams) (int64, error) {
+	row := q.db.QueryRow(ctx, storageKeysLiveReplicas, arg.ID, arg.StaleSecs)
+	var replicas int64
+	err := row.Scan(&replicas)
+	return replicas, err
+}
+
+const storageKeysNewestListing = `-- name: StorageKeysNewestListing :many
+SELECT id::text AS id, target, COALESCE(result, 'null'::jsonb) AS result,
+       COALESCE((EXTRACT(EPOCH FROM finished_at) * 1000000)::bigint, 0)::bigint AS finished_us
+  FROM backup_run
+ WHERE operation IN ('create', 'delete') AND finished_at IS NOT NULL
+ ORDER BY finished_at DESC, id DESC
+ LIMIT 1
+`
+
+type StorageKeysNewestListingRow struct {
+	ID         string
+	Target     string
+	Result     json.RawMessage
+	FinishedUs int64
+}
+
+// The newest finished create or delete run and its result (R-STOR-100, Q-STOR-403): its retention listing decides.
+func (q *Queries) StorageKeysNewestListing(ctx context.Context) ([]StorageKeysNewestListingRow, error) {
+	rows, err := q.db.Query(ctx, storageKeysNewestListing)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []StorageKeysNewestListingRow{}
+	for rows.Next() {
+		var i StorageKeysNewestListingRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Target,
+			&i.Result,
+			&i.FinishedUs,
 		); err != nil {
 			return nil, err
 		}
@@ -203,24 +519,37 @@ func (q *Queries) StorageKeysForExport(ctx context.Context, connectionID string)
 
 const storageKeysOfConnection = `-- name: StorageKeysOfConnection :many
 
-SELECT key_id, connection_id, kind, generation, sealed_key, state, created_at, retired_at
+SELECT key_id, connection_id, kind, generation, COALESCE(sealed_key, '')::text AS sealed_key, state, created_at, retired_at, destroyed_at
   FROM storage_keys
  WHERE connection_id = $1::text
  ORDER BY kind, generation
 `
 
-// The keys of encrypted stored content (storage.md R-STOR-083 to R-STOR-085): the statements of internal/blob/keys. A sealed value
-// is read and written as it lies; nothing here opens one.
+type StorageKeysOfConnectionRow struct {
+	KeyID        string
+	ConnectionID string
+	Kind         string
+	Generation   int32
+	SealedKey    string
+	State        string
+	CreatedAt    pgtype.Timestamptz
+	RetiredAt    pgtype.Timestamptz
+	DestroyedAt  pgtype.Timestamptz
+}
+
+// The keys of encrypted stored content (storage.md R-STOR-083 to R-STOR-085, R-STOR-097 to R-STOR-103): the statements of
+// internal/blob/keys. A sealed value is read and written as it lies; nothing here opens one. A destroyed key's sealed value is NULL and
+// is read as the empty string.
 // The rows of one connection, for a replica that holds its keys (R-STOR-083) and for the drawing at first sight.
-func (q *Queries) StorageKeysOfConnection(ctx context.Context, connectionID string) ([]StorageKey, error) {
+func (q *Queries) StorageKeysOfConnection(ctx context.Context, connectionID string) ([]StorageKeysOfConnectionRow, error) {
 	rows, err := q.db.Query(ctx, storageKeysOfConnection, connectionID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []StorageKey{}
+	items := []StorageKeysOfConnectionRow{}
 	for rows.Next() {
-		var i StorageKey
+		var i StorageKeysOfConnectionRow
 		if err := rows.Scan(
 			&i.KeyID,
 			&i.ConnectionID,
@@ -230,6 +559,7 @@ func (q *Queries) StorageKeysOfConnection(ctx context.Context, connectionID stri
 			&i.State,
 			&i.CreatedAt,
 			&i.RetiredAt,
+			&i.DestroyedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -242,9 +572,9 @@ func (q *Queries) StorageKeysOfConnection(ctx context.Context, connectionID stri
 }
 
 const storageKeysSealedAfter = `-- name: StorageKeysSealedAfter :many
-SELECT key_id, sealed_key
+SELECT key_id, COALESCE(sealed_key, '')::text AS sealed_key
   FROM storage_keys
- WHERE key_id > $1::text
+ WHERE key_id > $1::text AND sealed_key IS NOT NULL
  ORDER BY key_id
  LIMIT $2::bigint
    FOR UPDATE
@@ -260,7 +590,8 @@ type StorageKeysSealedAfterRow struct {
 	SealedKey string
 }
 
-// The re-encryption walk over storage_keys.sealed_key (R-ARCH-021, R-STOR-084): a batch after the identifier, locked.
+// The re-encryption walk over storage_keys.sealed_key (R-ARCH-021, R-STOR-084): a batch after the identifier, locked. A destroyed key has
+// no sealed value and is not walked (R-STOR-097).
 func (q *Queries) StorageKeysSealedAfter(ctx context.Context, arg StorageKeysSealedAfterParams) ([]StorageKeysSealedAfterRow, error) {
 	rows, err := q.db.Query(ctx, storageKeysSealedAfter, arg.AfterID, arg.Batch)
 	if err != nil {
@@ -297,7 +628,7 @@ func (q *Queries) UpdateSessionDataKeySealed(ctx context.Context, arg UpdateSess
 }
 
 const updateStorageKeySealed = `-- name: UpdateStorageKeySealed :exec
-UPDATE storage_keys SET sealed_key = $1::text WHERE key_id = $2::text
+UPDATE storage_keys SET sealed_key = $1::text WHERE key_id = $2::text AND state <> 'destroyed'
 `
 
 type UpdateStorageKeySealedParams struct {

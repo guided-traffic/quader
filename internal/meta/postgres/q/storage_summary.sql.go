@@ -11,7 +11,8 @@ import (
 )
 
 const storageConnectionKeys = `-- name: StorageConnectionKeys :many
-SELECT k.key_id, k.connection_id, k.generation, k.state, (EXTRACT(EPOCH FROM k.created_at) * 1000000)::bigint AS created_us
+SELECT k.key_id, k.connection_id, k.generation, k.state, (EXTRACT(EPOCH FROM k.created_at) * 1000000)::bigint AS created_us,
+       COALESCE((EXTRACT(EPOCH FROM k.destroyed_at) * 1000000)::bigint, 0)::bigint AS destroyed_us
   FROM storage_keys k
  WHERE k.kind = 'storage'
  ORDER BY k.connection_id, k.generation
@@ -23,10 +24,11 @@ type StorageConnectionKeysRow struct {
 	Generation   int32
 	State        string
 	CreatedUs    int64
+	DestroyedUs  int64
 }
 
-// The storage keys of every connection by identifier, generation and state (R-STOR-088, Q-API-405); never the sealed value. The time of
-// creation travels as microseconds since the epoch.
+// The storage keys of every connection by identifier, generation and state (R-STOR-088, Q-API-405); never the sealed value. The times of
+// creation and of a destroyed key's destruction (R-STOR-097, 0 for any other) travel as microseconds since the epoch.
 func (q *Queries) StorageConnectionKeys(ctx context.Context) ([]StorageConnectionKeysRow, error) {
 	rows, err := q.db.Query(ctx, storageConnectionKeys)
 	if err != nil {
@@ -42,6 +44,7 @@ func (q *Queries) StorageConnectionKeys(ctx context.Context) ([]StorageConnectio
 			&i.Generation,
 			&i.State,
 			&i.CreatedUs,
+			&i.DestroyedUs,
 		); err != nil {
 			return nil, err
 		}

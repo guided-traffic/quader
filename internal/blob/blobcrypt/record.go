@@ -90,7 +90,7 @@ func Wrap(sk *StorageKey, dk DataKey, random io.Reader) (Record, error) {
 
 // KeyLookup returns the storage key a record names, or nil when the connection holds no key of that identifier after the
 // replica read the rows again (R-STOR-083). An error is passed through as it is: a failed lookup is no finding about the
-// object and marks nothing.
+// object and marks nothing, unless it wraps ErrDestroyedKey, the identifier of a destroyed row (R-STOR-101).
 type KeyLookup func(id string) (*StorageKey, error)
 
 // Want is what a reader knows of a copy before it opens the record.
