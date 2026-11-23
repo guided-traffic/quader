@@ -11555,10 +11555,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-SIG
 
-217 questions on [spec/signatures.md](spec/signatures.md).
+218 questions on [spec/signatures.md](spec/signatures.md).
 
 <details>
-<summary>Q-SIG: 217 questions</summary>
+<summary>Q-SIG: 218 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11779,6 +11779,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-SIG-239](spec/signatures.md#q-sig-239--a-retired-identitys-entries-say-what-follows-and-a-retired-receipt-offers-no-download) | A retired identity's entries say what follows, and a retired receipt offers no download | Decided by the development agent | (a) The entry's sentence says that an administrator retired the identity, that it is no longer served, and that Quader signs again with the current identity; the receipt shows no **Download attestation** | — |
 | [Q-SIG-240](spec/signatures.md#q-sig-240--a-writers-head-and-get-of-one-manifest-within-a-minute-are-one-event) | A writer's HEAD and GET of one manifest within a minute are one event | Decided by the development agent when the owner's trace of Q-SIG-211 was built (2026-11-22) | (a) One event a minute per repository, path, caller and client address on each replica; the metric counts every download | [ADR-237](#adr-237--the-signature-declaration-says-whether-a-writer-reads-to-sign-and-how-the-gate-names-an-artifact) |
 | [Q-SIG-241](spec/signatures.md#q-sig-241--what-a-client-is-shown-where-it-prints-no-body-of-the-artifacts-refusal) | What a client is shown where it prints no body of the artifact's refusal | Decided by the development agent after the measurement with real clients of 2026-11-23 (defect 5 of [developer/signatures.md](developer/signatures.md#defects-found)), under the owner's rule of 2026-11-22 that open questions are decided and written down | (a) Each client where it reads text: NuGet's answers of the three download checks carry their text in `X-NuGet-Warning`; Ansible Galaxy's version document answers what the archive's download would (the three checks of the stored archive, without serving it); OCI's pending answer stays as it is, and what Docker, Podman and the kubelet show is said per client | [ADR-256](#adr-256--a-format-asks-the-checks-of-an-artifacts-download-at-the-document-its-client-reads-first) |
+| [Q-SIG-422](spec/signatures.md#q-sig-422--a-writers-head-through-the-gate-is-not-a-read-it-is-served-and-neither-counted-nor-written) | A writer's HEAD through the gate is not a read: it is served and neither counted nor written | Decided by the development agent | (a) A writer's `HEAD` is decided and served as before, and `WriterRead` records nothing for it; a `GET` (and a `Range` of it) is counted and written as before | — |
 
 </details>
 

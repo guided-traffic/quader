@@ -794,7 +794,8 @@ stays as a gap ([H-1540](../spec/signatures.md#h-1540--docker-podman-and-the-kub
    the owner's (a) with a trace, Q-SIG-240): a principal that may write reads through the signature gate where OCI's signing tools read.
    Did not reproduce on 2026-11-23: the pusher's `cosign sign --key` (3.1.4) by digest and by tag and `notation sign` (1.3.2) by digest and
    by tag of unsigned images in the gated `oci-local` each exit 0; a reader's `docker pull` (29.9.3) is refused before and served after, and
-   `cosign verify --key` by tag passes; the reads are counted in `quader_signatures_downloads_by_writer_total{reason="missing"}`.
+   `cosign verify --key` by tag passes; the reads are counted in `quader_signatures_downloads_by_writer_total{reason="missing"}`, since
+   Q-SIG-422 the `GET`s alone (a writer's `HEAD`, a push's check whether a manifest exists and a tool's resolution, is no read).
    **Held by** `TestR_SIG_064_AWriterReadsToSignAndTheAnswersNameTheArtifactAsItsClient` and
    `TestR_SIG_064_AWritersReadIsAuditedAndCounted` (unit, `internal/signatures/gate`), `TestR_SIG_070_…` (integration, area `signatures`) and
    `TestOCIGate_R_SIG_064_ThePusherSignsWithCosignAndAReaderPullsOnlyThen` (`e2e (oci)`); `notation sign` is shown by the measurement only.

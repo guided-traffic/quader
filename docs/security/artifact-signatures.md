@@ -448,7 +448,9 @@ because their signatures are made before the upload. The owner kept the read on 
 `signature.download_by_writer` (outcome `warning`, the caller, the repository, the artifact in its client's words and the reason a reader is
 refused for, once a minute per repository, path, caller and client address on each replica,
 [Q-SIG-240](../spec/signatures.md#q-sig-240--a-writers-head-and-get-of-one-manifest-within-a-minute-are-one-event)) and counted in
-`quader_signatures_downloads_by_writer_total`. What remains open is the read itself: the trace tells who pulled an unverified image, it does
+`quader_signatures_downloads_by_writer_total`. A writer's `HEAD` passes the same way and is neither audited nor counted
+([Q-SIG-422](../spec/signatures.md#q-sig-422--a-writers-head-through-the-gate-is-not-a-read-it-is-served-and-neither-counted-nor-written)):
+it answers the manifest's digest, size and media type, none of its content, and a push asks it for every manifest it puts. What remains open is the read itself: the trace tells who pulled an unverified image, it does
 not stop the pull, and an event the full buffer drops is in the log stream only (R-OPS-015). What makes it real: a deploy token used also to
 pull into a cluster, or a CI job that pushes and runs images with one credential.
 

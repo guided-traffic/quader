@@ -51,8 +51,10 @@ func writerEvents(rec *recorder) []audit.Event {
 }
 
 // TestR_SIG_064_AWritersReadIsAuditedAndCounted: a download the gate passes only because the caller may write (Q-SIG-211) is served and
-// leaves one signature.download_by_writer a minute per repository, path, caller and client address (Q-SIG-240): the HEAD and the GET of
-// one manifest are one event, counted twice; another caller is an event of its own. The event names the repository, the artifact in its
+// leaves one signature.download_by_writer a minute per repository, path, caller and client address (Q-SIG-240): two GETs of one
+// manifest are one event, counted twice; a HEAD, served and decided as a GET, is neither counted nor recorded, because it reads no
+// content (a push's check whether the manifest exists, a signing tool's resolution of the tag, Q-SIG-422); another caller is an event of
+// its own. The event names the repository, the artifact in its
 // client's words, the caller and the reason a reader is refused for, pending included; the remote tag's Check records it as the serve
 // point does. A verified pass, a reader's refusal and a writer's pass that the malware gate then refuses record none, and the verified
 // pass reads no more than one statement of rows. Unit, milliseconds, no payload.
@@ -85,9 +87,20 @@ func TestR_SIG_064_AWritersReadIsAuditedAndCounted(t *testing.T) {
 	}
 	clean := malware.Verdict{Known: true, State: malware.StateClean}
 
-	t.Run("a writer's HEAD and GET are one event and two counts", func(t *testing.T) {
+	t.Run("R-SIG-064 a writer's HEAD is served and recorded nowhere, two GETs are one event and two counts", func(t *testing.T) {
 		_, rec, reg, g := setup()
 		d := download(true)
+		head := d
+		head.Head = true
+		if err := serve(g, head, clean).Run(ctx); err != nil {
+			t.Fatalf("the writer's HEAD: %v", err)
+		}
+		if err := g.Check(ctx, head); err != nil {
+			t.Fatalf("the writer's HEAD of a remote's tag: %v", err)
+		}
+		if evs := writerEvents(rec); len(evs) != 0 || byWriter(t, reg, "missing") != 0 {
+			t.Fatalf("a HEAD reads no content and records nothing (Q-SIG-422): %d events, %v counted", len(evs), byWriter(t, reg, "missing"))
+		}
 		for range 2 {
 			if err := serve(g, d, clean).Run(ctx); err != nil {
 				t.Fatalf("the writer's read: %v", err)

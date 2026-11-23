@@ -69,8 +69,8 @@ const signedTrust = `SELECT count(*)::text FROM signature_trust t JOIN signature
 // and 2 passing, 1 not_chosen and 1 missing with only the second key's anchor (R-SIG-072; the specification's company CA is a second
 // OpenPGP key here). The refused downloads list one row per artifact with its count for an administrator and an auditor, none for a
 // caller without a grant, 401 anonymously; the items answer and the file's signatures answer carry refused and gate; the releases list
-// answers the auditor (R-SIG-073). The pusher of an image reads it in a gated OCI repository to sign it, a reader is refused with the
-// image's name (R-SIG-064, Q-SIG-211, Q-SIG-213). Integration, about 6 s, files and an image of a few bytes to a kilobyte.
+// answers the auditor (R-SIG-073). The pusher of an image reads it in a gated OCI repository to sign it, its HEAD counted nowhere and its
+// GET once as a writer's read, a reader is refused with the image's name (R-SIG-064, Q-SIG-211, Q-SIG-213, Q-SIG-422). Integration, about 6 s, files and an image of a few bytes to a kilobyte.
 func TestR_SIG_070_ReleasesPreviewImpactAndTheAPI(t *testing.T) {
 	e, u := newReleasesEnv(t)
 	k1, k2 := newReleaseKey(t), newReleaseKey(t)
@@ -241,9 +241,18 @@ func TestR_SIG_070_ReleasesPreviewImpactAndTheAPI(t *testing.T) {
 			t.Fatalf("manifest: %d %s", a.Status, a.Body)
 		}
 		byDigest := v2 + "/manifests/" + digest(manifest)
-		for _, method := range []string{"HEAD", "GET"} {
-			if a := e.st.Do(e.r, method, byDigest, e.tokRita, nil); a.Status != http.StatusOK {
-				t.Fatalf("the writer's %s to sign: %d %s", method, a.Status, a.Body)
+		const byWriter = `quader_signatures_downloads_by_writer_total{reason="missing"}`
+		// A HEAD (a push's check whether the manifest exists, a signing tool's resolution) reads no content and is counted nowhere; the
+		// GET is (Q-SIG-422).
+		for _, step := range []struct {
+			method string
+			want   float64 // -1: no series yet
+		}{{"HEAD", -1}, {"GET", 1}} {
+			if a := e.st.Do(e.r, step.method, byDigest, e.tokRita, nil); a.Status != http.StatusOK {
+				t.Fatalf("the writer's %s to sign: %d %s", step.method, a.Status, a.Body)
+			}
+			if got := testenv.MetricValue(e.r.Metrics(t), byWriter); got != step.want {
+				t.Fatalf("after the writer's %s %s = %v, want %v", step.method, byWriter, got, step.want)
 			}
 		}
 		a := e.st.Do(e.r, "GET", v2+"/manifests/1.0", u.tokRex, nil)

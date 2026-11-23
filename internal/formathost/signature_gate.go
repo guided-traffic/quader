@@ -2,6 +2,7 @@ package formathost
 
 import (
 	"context"
+	"net/http"
 	"strconv"
 
 	"github.com/guided-traffic/quader/internal/api/edge"
@@ -127,6 +128,7 @@ func (h *Host) gateDownload(ctx context.Context, rq *formats.Request, holder for
 	d := sgate.Download{
 		Addressed: ar, Holder: hr, Path: path, Blob: blob, Generated: generated, Arrived: httpserver.InfoFrom(ctx).Received,
 		Actor: edge.ActorFrom(httpserver.PrincipalFrom(ctx)), Source: httpserver.SourceFrom(ctx), Endpoint: rq.Subject.Endpoint,
+		Head: rq.Request != nil && rq.Method == http.MethodHead,
 	}
 	if addressed.Class == repository.Virtual && ar.Setting.OnlyVerified {
 		d.Members = h.readableMembers(ctx, rq, addressed, path)

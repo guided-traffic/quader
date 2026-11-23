@@ -245,6 +245,10 @@ type Download struct {
 	// format whose signing tools read it before they push its signature (OCI) through the gate (Q-SIG-211). It is asked only where the
 	// gate would refuse or hold the download, never on the pass path.
 	MayWrite func(context.Context) (bool, error)
+	// Head says the request is a HEAD: it reads the item's headers and digest, none of its content. The gate decides it as a GET, and a
+	// writer's pass of it is served and not recorded by [Gate.WriterRead]: no content the gate holds back from a reader left the
+	// repository (Q-SIG-422).
+	Head bool
 }
 
 // view is one gate that applies: its repository, the repositories whose attachments it reads, and the anchors it accepts.
@@ -318,10 +322,12 @@ const reasonPending Reason = "pending"
 
 // WriterRead records a served download that passed the gate only because the caller may write to the repository (Q-SIG-211, Q-SIG-240):
 // the metric for each such download, and the event signature.download_by_writer at most once a minute per repository, path, caller and
-// client address on each replica, so that a client's HEAD and GET of one manifest are one event. A verdict without the writer's pass
-// records nothing. The event is asynchronous, as the refusal's: no statement within the request.
+// client address on each replica, so that a client's repeated GETs of one manifest are one event. A verdict without the writer's pass
+// records nothing, and neither does a HEAD (Download.Head): a push's check whether a manifest exists and a signing tool's resolution of a
+// tag to its digest read no content the gate holds back (Q-SIG-422). The event is asynchronous, as the refusal's: no statement within the
+// request.
 func (g *Gate) WriterRead(ctx context.Context, v *Verdict) {
-	if g == nil || v == nil || !v.Writer {
+	if g == nil || v == nil || !v.Writer || v.d.Head {
 		return
 	}
 	d := v.d

@@ -174,6 +174,7 @@ The audit log records every anchor created, changed and removed, every change of
 signature found invalid, every refused download and every release granted and withdrawn (`signature.*`). An image without an accepted
 signature that a repository serving only verified artifacts hands out to someone who may push to it, so that cosign or Notation can sign it,
 is in the audit log as `signature.download_by_writer`, with who read it, from which repository and the image's name, once a minute per
-person, image and address. The metrics `quader_signatures_*` and the alerts `QuaderSignatureInvalid`,
+person, image and address. A push that only asks whether an image is there, and a signing tool that only looks up an image's digest, read
+none of it and are not recorded. The metrics `quader_signatures_*` and the alerts `QuaderSignatureInvalid`,
 `QuaderSignatureBacklog` and `QuaderSignatureTrustRootStale` are described in [Monitoring and operations](operations.md). The
 configuration keys under `signatures` are in [Configuration](configuration.md).

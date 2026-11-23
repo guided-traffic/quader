@@ -2988,7 +2988,10 @@ Priority: **P1** · Covers: BEYOND-019
   and each such read leaves a trace: a served download that passed only for the writer is counted in
   `quader_signatures_downloads_by_writer_total` and written as `signature.download_by_writer` (R-SIG-075), which names the repository, the
   artifact in its client's words, the caller and the reason a reader is refused for, at most once a minute per repository, path, caller and
-  client address on each replica ([Q-SIG-240](#q-sig-240--a-writers-head-and-get-of-one-manifest-within-a-minute-are-one-event)).
+  client address on each replica ([Q-SIG-240](#q-sig-240--a-writers-head-and-get-of-one-manifest-within-a-minute-are-one-event)). A
+  writer's `HEAD`, which reads no content (a push's check whether a manifest exists, a signing tool's resolution of a tag), is decided and
+  served as a `GET` and neither counted nor written
+  ([Q-SIG-422](#q-sig-422--a-writers-head-through-the-gate-is-not-a-read-it-is-served-and-neither-counted-nor-written)).
 - **Not asked:** while no gate that applies to the request is on (R-SIG-065), which the replica reads from its snapshot of the repositories'
   settings without a statement, so the download is unchanged; for the reads of system subjects (the image scanner's pull, the malware
   scanner's read, the worker's reads); for an item of a system repository of `upstream`
@@ -3025,11 +3028,12 @@ Acceptance criteria:
   (`TestR_SIG_064_AWriterReadsToSignAndTheAnswersNameTheArtifactAsItsClient`).
 - Unit (`internal/signatures/gate`, milliseconds, no payload): a writer's served read through `Serve.Run` and through `Check` leaves one
   `signature.download_by_writer` (outcome `warning`, the caller as actor, `repository`, `path`, `artifact` in the client's words, `sha256`,
-  `reason`, `pending` included) and counts `quader_signatures_downloads_by_writer_total{reason}`; its `HEAD` and `GET` within the minute are
-  one event and two counts, another caller is an event of its own; a verified pass, a reader's refusal and a writer's pass that the malware
+  `reason`, `pending` included) and counts `quader_signatures_downloads_by_writer_total{reason}`; its two `GET`s within the minute are
+  one event and two counts, its `HEAD` neither (Q-SIG-422), another caller is an event of its own; a verified pass, a reader's refusal and a writer's pass that the malware
   gate then refuses write none, and the verified pass reads one statement of rows (`TestR_SIG_064_AWritersReadIsAuditedAndCounted`).
 - Integration (area `signatures`, in `TestR_SIG_070_…`, under a second): an image pushed into a gated OCI repository is read by the pusher
-  by digest with `HEAD` and `GET` (200) and refused to a reader with the text that names `app:1.0`.
+  by digest with `HEAD` and `GET` (200), the `HEAD` counted nowhere and the `GET` once in the replica's
+  `quader_signatures_downloads_by_writer_total{reason="missing"}`, and refused to a reader with the text that names `app:1.0`.
 - End to end (the set `e2e (oci)`, `TestOCIGate_R_SIG_064_ThePusherSignsWithCosignAndAReaderPullsOnlyThen`, an image of a few hundred
   bytes, a key pair cosign makes in the pod and its anchor): Docker pushes an unsigned image into `oci-e2e-gated` (`onlyVerified`); a
   reader's `docker pull` is refused with the gate's text; the pusher's `cosign sign --key --signing-config nolog.json` by digest exits 0;
@@ -3587,7 +3591,7 @@ The setting is recorded as every repository setting: `repository.updated`, with 
 | Metric | Type | Labels |
 |---|---|---|
 | `quader_signatures_downloads_refused_total` | counter | `reason` (R-SIG-068) |
-| `quader_signatures_downloads_by_writer_total` | counter | `reason` (R-SIG-068, and `pending`): what a reader would have been answered; each served download that passed only for the writer |
+| `quader_signatures_downloads_by_writer_total` | counter | `reason` (R-SIG-068, and `pending`): what a reader would have been answered; each served download that passed only for the writer, a `HEAD` not (Q-SIG-422) |
 | `quader_signatures_download_wait_seconds` | histogram | `outcome`: `served`, `refused`, `pending` |
 
 **Alerts** (rendered with the chart's rules, [ha-and-helm.md](ha-and-helm.md) R-HA-045), the one the gate needs beside stage 1's
@@ -6650,6 +6654,34 @@ archive's checks in every class (local, remote, virtual); an archive no reposito
 pending answer is [H-1540](#h-1540--docker-podman-and-the-kubelet-show-no-text-while-a-signature-is-being-checked). **Applied in the spec:**
 R-SIG-064, R-SIG-068, R-SIG-078; [formats/nuget.md](formats/nuget.md) R-NUGET-002; [formats/ansible.md](formats/ansible.md) R-ANS-004;
 [architecture.md](architecture.md) R-ARCH-008 (ADR-256).
+
+### Q-SIG-422 · A writer's HEAD through the gate is not a read: it is served and neither counted nor written
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It replaces the
+part of [Q-SIG-240](#q-sig-240--a-writers-head-and-get-of-one-manifest-within-a-minute-are-one-event) that counted a `HEAD`. Found by the
+builder of the signatures with the real clients on 2026-11-23: after a few pushes and signings with Docker, cosign and Notation the
+counter stood at 29. Read in the code the same day: the serve point decides the gate for `GET` and `HEAD` alike
+(`serveChecks` in [signature_gate.go](../../internal/formathost/signature_gate.go)), and `Gate.WriterRead` counted and wrote every served
+pass of a writer. A push asks whether each manifest it is about to put exists with a `HEAD` by digest, so every push of an image the
+repository holds already (a second tag, a retried push, each platform of an index) was a "download by writer"; a signing tool resolves a
+tag to its digest with a `HEAD`, which `notation sign` does instead of a `GET`. A `HEAD` answers the digest, the size and the media type,
+none of the content the gate holds back from a reader. A blob (a layer, a config) is no artifact of the gate (R-SIG-063), so a push's
+`HEAD`s of its blobs never reached the count.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A writer's `HEAD` is decided and served as before, and `WriterRead` records nothing for it; a `GET` (and a `Range` of it) is counted and written as before (chosen) | The trace is the content that left | The event says what its name says: an artifact without an accepted signature taken out of a gated repository; a push leaves none | `notation sign`, which only resolves, leaves no trace; it reads no content either |
+| (b) Count a `HEAD` and leave it out of the event | | The metric shows every pass | The metric then says "downloads" of what was not downloaded, and the push's count stays |
+| (c) Ask the push's `HEAD` apart from the signing tool's | | — | Nothing in a `HEAD` tells a push from a tool's resolution |
+
+**Choice:** (a). A conditional `GET` answered `304` is still counted, since the gate decides before the condition is read; neither signing
+tool nor a push sends one for a manifest. **Applied in the spec:** R-SIG-064, R-SIG-075, the metric of R-SIG-075's table;
+[artifact-signatures.md](../security/artifact-signatures.md) H-1229. Code: `Download.Head` and `Gate.WriterRead` in
+[gate.go](../../internal/signatures/gate/gate.go), set by `gateDownload` in [signature_gate.go](../../internal/formathost/signature_gate.go)
+from the request's method; `serve.go` is unchanged. Tests: `TestR_SIG_064_AWritersReadIsAuditedAndCounted` (unit,
+`internal/signatures/gate`: a writer's `HEAD` through `Serve.Run` and through `Check` records nothing, two `GET`s one event and two counts),
+and the pusher's read in `TestR_SIG_070_ReleasesPreviewImpactAndTheAPI` (integration, area `signatures`: after the `HEAD` the replica's
+`quader_signatures_downloads_by_writer_total{reason="missing"}` has no series, after the `GET` it is 1).
 
 ## What this does not cover
 
