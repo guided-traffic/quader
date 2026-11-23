@@ -13116,6 +13116,15 @@ started from a worktree (`quader-w7`) without `QUADER_IMAGE` loaded `guidedtraff
 the release itself did not start); `TestMakeListsTheIntegrationPackagesOnlyWhenARecipeNeedsThem` holds that a make of another
 target runs no git for the tag, `TestTheE2EImageBuildsRemoveTheUntaggedImagesTheyLeft` the label and the prune of the e2e images.
 
+The image a script runs is `QUADER_IMAGE` and nothing else. Its tag reaches helm as `--set-string`, and helm applies every `--set-json`,
+then every `--set`, then every `--set-string`, whatever their order on the command line, so an image among the extra arguments
+(`QUADER_HELM_EXTRA`, `QUADER_BASTION_HELM_EXTRA`, `QUADER_RESTORE_HELM_EXTRA`) lost to the script's own tag without a word: the
+interface-mismatch scenario (Q-BAS-111) passed `--set image.tag=iface`, both installations kept the checkout's image, and
+`TestBastion_R_BAS_049_InterfaceMismatch` timed out waiting for the mismatch (Test and Release 45187733127 and 45191858474, the first
+runs after this change). The scripts refuse an `image`, `image.registry`, `image.repository`, `image.tag` or `image.digest` among their
+extra arguments and name `QUADER_IMAGE` (`refuse_image_extra` of [lib.sh](../../deploy/dev/lib.sh)), and the scenario gives its image
+as `QUADER_IMAGE`; `TestAnImageAmongTheExtraHelmArgumentsIsRefused` and `TestAProfileScriptRunsTheImageItsCallerGave` hold both.
+
 **Applied in the spec:** none (development tooling). Code: [dev-tag.sh](../../deploy/dev/dev-tag.sh), `image_values` and
 `release_values` of [lib.sh](../../deploy/dev/lib.sh), [up.sh](../../deploy/dev/up.sh), [bastion.sh](../../deploy/dev/bastion.sh),
 [restore-ns.sh](../../deploy/dev/restore-ns.sh), [e2e.sh](../../deploy/dev/e2e.sh), the stubs' manifests, the build scripts of the

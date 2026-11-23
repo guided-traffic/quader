@@ -5,7 +5,8 @@ package e2e
 // The interface mismatch (R-BAS-028, R-BAS-049): the main installation is upgraded to a build with InterfaceVersion + 1.
 // There is no build seam for the version: it is a constant. The build here is the release binary compiled with go build
 // -overlay, which replaces internal/bastion/iface/version.go by a copy that says InterfaceVersion + 1 (nothing in the tree changes), put into
-// the release image as the tag guidedtraffic/quader:iface (Q-BAS-111).
+// the release image as the tag guidedtraffic/quader:iface (Q-BAS-111). Both installations are given that image as QUADER_IMAGE, the
+// image a profile script runs (Q-HA-489); the scripts refuse an image among their extra helm arguments, which helm would drop.
 
 import (
 	"encoding/json"
@@ -21,7 +22,10 @@ import (
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 )
 
-const basIfaceTag = "iface"
+const (
+	basIfaceTag   = "iface"
+	basIfaceImage = "guidedtraffic/quader:" + basIfaceTag
+)
 
 // buildIfaceImage builds guidedtraffic/quader:iface from the release image with the binary of the overlay and loads it into the
 // kind cluster.
@@ -75,15 +79,16 @@ func buildIfaceImage(t testing.TB) {
 	if err := os.WriteFile(filepath.Join(ctx, "Dockerfile"), []byte("FROM "+upImage()+"\nCOPY quader /usr/local/bin/quader\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	run(nil, "docker", "build", "-t", "guidedtraffic/quader:"+basIfaceTag, ctx)
-	run(nil, "kind", "load", "docker-image", "guidedtraffic/quader:"+basIfaceTag, "--name", strings.TrimPrefix(cfg.kubeContext, "kind-"))
+	run(nil, "docker", "build", "-t", basIfaceImage, ctx)
+	run(nil, "kind", "load", "docker-image", basIfaceImage, "--name", strings.TrimPrefix(cfg.kubeContext, "kind-"))
 }
 
-// upMainTry runs up.sh in the bastion profile with extra helm arguments for the main release; it returns when the rollout is done.
-func upMainTry(extra string) error {
+// upMainTry runs up.sh in the bastion profile with more environment (QUADER_HELM_EXTRA, or QUADER_IMAGE for another image); it
+// returns when the rollout is done.
+func upMainTry(env ...string) error {
 	cmd := exec.Command(filepath.Join(os.Getenv("QUADER_E2E_DEV_DIR"), "up.sh"))
 	cmd.Dir = cfg.repo
-	cmd.Env = append(os.Environ(), "QUADER_PROFILE=bastion", "QUADER_HELM_EXTRA="+extra)
+	cmd.Env = append(append(os.Environ(), "QUADER_PROFILE=bastion", "QUADER_HELM_EXTRA="), env...)
 	out, err := cmd.CombinedOutput()
 	_ = os.WriteFile(filepath.Join(cfg.out, "profile-bastion-upgrade.log"), out, 0o644)
 	if err != nil {
@@ -93,9 +98,9 @@ func upMainTry(extra string) error {
 }
 
 // upMain is upMainTry for a test, followed by the wait until the api and packages pods have settled.
-func upMain(t testing.TB, extra string) {
+func upMain(t testing.TB, env ...string) {
 	t.Helper()
-	if err := upMainTry(extra); err != nil {
+	if err := upMainTry(env...); err != nil {
 		t.Fatal(err)
 	}
 	waitServingSettled(t)
@@ -126,7 +131,7 @@ func TestBastion_R_BAS_049_InterfaceMismatch(t *testing.T) {
 	dir := env.basNPMProject(t, c, setN, "mismatch", site)
 
 	t.Cleanup(func() {
-		upMain(t, "")
+		upMain(t)
 		if out, err := basScriptTry("install", site.variant); err != nil {
 			t.Errorf("restoring the Bastion: %v\n%s", err, tail(out, 1000))
 		}
@@ -164,7 +169,7 @@ func TestBastion_R_BAS_049_InterfaceMismatch(t *testing.T) {
 		}
 	}()
 	rollout := make(chan error, 1)
-	go func() { rollout <- upMainTry("--set image.tag=" + basIfaceTag) }()
+	go func() { rollout <- upMainTry("QUADER_IMAGE=" + basIfaceImage) }()
 	// the moment both replicas report the mismatch, the answers the loop obtained a moment ago are the ones the grace period extends
 	waitFor(t, "both replicas to report the interface mismatch", 6*time.Minute, time.Second, func() bool {
 		m, v := basMismatch(t, site)
@@ -224,7 +229,7 @@ func TestBastion_R_BAS_049_InterfaceMismatch(t *testing.T) {
 	})
 
 	// the Bastion is upgraded as well
-	out, err := basScriptTryEnv([]string{"QUADER_BASTION_HELM_EXTRA=--set image.tag=" + basIfaceTag}, "install", site.variant)
+	out, err := basScriptTryEnv([]string{"QUADER_IMAGE=" + basIfaceImage}, "install", site.variant)
 	if err != nil {
 		t.Fatalf("upgrading the Bastion: %v\n%s", err, tail(out, 1500))
 	}

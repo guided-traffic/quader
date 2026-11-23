@@ -56,7 +56,8 @@
 #                          built by `make image`). It must be present in the local Docker.
 #   QUADER_DEV_HTTP_PORT=n the host port of the edge, default 8080 (https://localhost:8080). Set it when
 #                          8080 is taken; the chart's base_url follows. Fixed when the cluster is created.
-#   QUADER_HELM_EXTRA=...  extra arguments for the helm upgrade of the quader release.
+#   QUADER_HELM_EXTRA=...  extra arguments for the helm upgrade of the quader release. They may not set the image (refused: helm
+#                          applies them before the image this script sets from QUADER_IMAGE); another image is QUADER_IMAGE.
 set -euo pipefail
 # shellcheck source=deploy/dev/lib.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
@@ -67,6 +68,7 @@ PITR="${QUADER_PITR:-0}"
 PROFILE="${QUADER_PROFILE:-default}"
 case "$PROFILE" in default|scatter|bastion|oci|vuln|backup|edge|alerts|drain) ;; *) die "QUADER_PROFILE must be default, scatter, bastion, oci, vuln, backup, edge, alerts or drain, not '$PROFILE'" ;; esac
 IMAGE="${QUADER_IMAGE:-$DEV_IMAGE}"
+refuse_image_extra QUADER_HELM_EXTRA
 LOGS="$STATE_DIR/logs"
 START="$(date +%s)"
 

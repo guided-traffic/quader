@@ -22,13 +22,15 @@
 #   bastion.sh down               uninstall the releases and delete the namespace
 #
 # Environment: QUADER_E2E_BASTION_NAMESPACE (default quader-bastion), QUADER_IMAGE (default guidedtraffic/quader:dev, as up.sh),
-# QUADER_BASTION_HELM_EXTRA (extra arguments of the helm upgrade, the mismatch scenario sets the image tag), QUADER_DEV_HTTP_PORT.
+# QUADER_BASTION_HELM_EXTRA (extra arguments of the helm upgrade; they may not set the image, which is QUADER_IMAGE's: the interface-
+# mismatch scenario installs its image as QUADER_IMAGE), QUADER_DEV_HTTP_PORT.
 set -euo pipefail
 # shellcheck source=deploy/dev/lib.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 
 BNS="${QUADER_E2E_BASTION_NAMESPACE:-quader-bastion}"
 IMAGE="${QUADER_IMAGE:-$DEV_IMAGE}"
+refuse_image_extra QUADER_BASTION_HELM_EXTRA
 EDGE_PORT="$(docker port "${CLUSTER}-control-plane" 30443/tcp 2>/dev/null | head -1 | sed 's/.*://' || true)"
 EDGE_PORT="${EDGE_PORT:-$DEV_HTTP_PORT}"
 bn() { kubectl --context "$CTX" -n "$BNS" "$@"; }
@@ -115,8 +117,7 @@ install() {
   probe="$probe]"
   # The image keeps its tag while the image behind it changes (kind load): the ID as a pod annotation rolls the pods exactly then.
   local image_id; image_id="$(docker image inspect -f '{{.Id}}' "$IMAGE")"
-  # The chart runs $IMAGE, the checkout's tag, not the tag of bastion-chart-common.yaml (F-077); the interface-mismatch scenario's
-  # QUADER_BASTION_HELM_EXTRA comes after and sets its own.
+  # The chart runs $IMAGE, the checkout's tag or the caller's QUADER_IMAGE, not the tag of bastion-chart-common.yaml (F-077).
   RELEASE_VALUES=(); image_values image "$IMAGE"
   log "helm upgrade --install bastion-$variant ($BNS)"
   # shellcheck disable=SC2086

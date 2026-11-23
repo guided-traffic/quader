@@ -6698,8 +6698,10 @@ checkout must not change for a test.
 | (b) A build tag or an environment variable that raises the version | A seam in the binary | Faster | A way to run a Bastion at a wrong version in production |
 | (c) The integration tier only | No cluster | Cheap | The rolling upgrade of the main installation and the Bastion's upgrade are not shown |
 
-**Choice:** (a). The scenario upgrades the main installation to the `iface` image (`up.sh` with `QUADER_HELM_EXTRA`), waits for both replicas to report `quader_bastion_interface_mismatch 1`
-with the main installation's version 2, serves warm content, upgrades the Bastion to the same image, and waits for the mismatch to clear; its cleanup returns both to `dev`.
+**Choice:** (a). The scenario upgrades the main installation to the `iface` image (`up.sh` with `QUADER_IMAGE`), waits for both replicas to report `quader_bastion_interface_mismatch 1`
+with the main installation's version 2, serves warm content, upgrades the Bastion to the same image (`bastion.sh install` with `QUADER_IMAGE`), and waits for the mismatch to clear; its cleanup returns both to the checkout's image. The image is
+never an extra helm argument: the scripts set it from `QUADER_IMAGE` with `--set-string`, which helm applies after every `--set`, and a `--set image.tag=iface` there left
+both installations at the checkout's image ([Q-HA-489](ha-and-helm.md#q-ha-489--every-image-of-the-development-profiles-carries-the-checkouts-tag-and-the-charts-run-the-image-they-were-given)).
 
 **Rationale:** the property is that two real builds refuse each other and recover when both move. The development agent would revisit the choice if the version becomes a variable.
 

@@ -15,7 +15,8 @@
 #   restore-ns.sh down                   uninstall the release and delete the namespace
 #
 # Environment: QUADER_E2E_RESTORE_NAMESPACE (default quader-restore), QUADER_IMAGE (default guidedtraffic/quader:dev),
-# QUADER_RESTORE_HELM_EXTRA (extra helm arguments for install and serve; a word-split string),
+# QUADER_RESTORE_HELM_EXTRA (extra helm arguments for install and serve; a word-split string that may not set the image, which is
+# QUADER_IMAGE's),
 # QUADER_RESTORE_PROFILE (unset or empty: the base values of values-restore.yaml; `vuln`: also values-restore-vuln.yaml, the scanning
 # reading the test advisory source and two packages replicas, Q-VULN-127 and docs/developer/e2e.md#the-vulnerability-tests).
 # Install and serve set server.base_url to the edge port of the source (the cluster's published port 30443, as release-values.sh reads it),
@@ -26,6 +27,7 @@ set -euo pipefail
 
 RNS="${QUADER_E2E_RESTORE_NAMESPACE:-quader-restore}"
 IMAGE="${QUADER_IMAGE:-$DEV_IMAGE}"
+refuse_image_extra QUADER_RESTORE_HELM_EXTRA
 case "${QUADER_RESTORE_PROFILE:-}" in "" | vuln) ;; *) die "QUADER_RESTORE_PROFILE must be empty or vuln, not '${QUADER_RESTORE_PROFILE}'" ;; esac
 rn() { kubectl --context "$CTX" -n "$RNS" "$@"; }
 

@@ -45,6 +45,24 @@ image_values() {
   RELEASE_VALUES+=(--set "$prefix.registry=$registry" --set "$prefix.repository=$repo" --set-string "$prefix.tag=$tag" --set "$prefix.digest=")
 }
 
+# refuse_image_extra NAME refuses the extra helm arguments in the variable NAME (QUADER_HELM_EXTRA, QUADER_BASTION_HELM_EXTRA,
+# QUADER_RESTORE_HELM_EXTRA) when they set the chart's image (image, image.registry, image.repository, image.tag, image.digest). The
+# script sets those from QUADER_IMAGE (image_values), and helm applies every --set-json, then every --set, then every --set-string,
+# whatever their order on the command line: a `--set image.tag=x` after the script's `--set-string image.tag=dev` lost to it without
+# a word, and the interface-mismatch scenario's main installation kept the checkout's image (2026-11-23). Another image is QUADER_IMAGE.
+refuse_image_extra() {
+  local name="$1" value words w
+  value="${!name:-}"
+  # a --set takes a comma-separated list of key=value pairs
+  read -r -a words <<<"${value//,/ }"
+  for w in "${words[@]}"; do
+    case "${w#--set*=}" in
+      image=* | image.registry=* | image.repository=* | image.tag=* | image.digest=*)
+        die "$name sets the chart's image ($w): helm would drop it for the image the script sets from QUADER_IMAGE; give the image as QUADER_IMAGE=<repository>:<tag>" ;;
+    esac
+  done
+}
+
 # Every helm upgrade of the profile keeps two revisions of its release, not helm's ten: each revision is a Secret of up to a
 # megabyte, and the internal-secrets-operator caches every Secret of the cluster (after a few dozen runs of dev-up, 78 release
 # Secrets of 23 MB in all OOM-killed it at its start, F-127).

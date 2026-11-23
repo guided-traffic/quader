@@ -131,7 +131,7 @@ func TestBastionLong_R_BAS_049_RollingUpgradeMain(t *testing.T) {
 			name: "R-HA-052 R-HA-020 R-BAS-028 helm upgrade of the main installation with a changed value that rolls api and packages",
 			run: func() {
 				tag := basRollTag(env, "main")
-				upMain(t, "--set-string api.podAnnotations.e2e-roll="+tag+" --set-string packages.podAnnotations.e2e-roll="+tag)
+				upMain(t, "QUADER_HELM_EXTRA=--set-string api.podAnnotations.e2e-roll="+tag+" --set-string packages.podAnnotations.e2e-roll="+tag)
 			},
 		},
 	})
