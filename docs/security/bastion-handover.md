@@ -14,8 +14,12 @@ the fallback, the continuation, the cooldown and the alert; a Bastion offers onl
 and its client of the main installation refuses a handover answer to a forward that did not offer. So a link of a plain copy leaves the main
 installation only after an administrator has switched the handover on for a Bastion's registration; the switch is off for every registration
 until then. The gaps of a data key (H-1340, H-1341) stay dormant until package 4; the others are dormant until an administrator switches the
-handover on for a registration. The two sides were built apart, each against a double of the other; the integration case that joins them is
-not built yet.
+handover on for a registration. The two sides were built apart, each against a double of the other; the integration case that joins them
+(`TestR_BAS_070_ALargeFileIsReadFromTheObjectStore`, 2026-11-23) runs the real main installation, a Bastion and the stack's object store
+together: the value, the hosts' check, the `ETag`, the empty answer and the package headers meet, a continuation is answered by the real
+serve point, a fallback is counted again as H-1342 says, and no log line of either side holds a usable link. Joining them showed that H-1342's
+bound did not hold for a value the Bastion refuses (a link on a refused host, an expired link), which fell back at every miss without the
+cooldown; it does now ([Q-BAS-293](../spec/bastion.md#q-bas-293--a-value-the-bastion-refuses-starts-the-cooldown)).
 
 The perspective of this page is what changes in the trust between the main installation, a Bastion in the DMZ and the object store when a
 Bastion reads a blob from the store by a link the main installation hands it: what leaves the main installation and how long it is worth
@@ -192,8 +196,10 @@ reads. The main installation counts and charges a handover when it issues it. A 
 a forward that the main installation counts and charges again: two downloads in the statistics and the audit, twice the size in the caller's
 byte windows. One that fails after it continues with a ranged forward from the spooled length, which counts no second download but charges its
 bytes again. For an encrypted copy the trail of the data key holds a key that left although its read failed. What bounds it: the cooldown of a
-replica after a failure of the network or the store (60 s), so a Bastion that cannot reach the store causes at most one such double count per
-replica and minute, and the alert `QuaderBastionHandoverFailing` reports it. What makes it real: a Bastion whose network does not reach a
+replica after a failure of the network or the store, or after a value it refuses (60 s; the refused value since 2026-11-23,
+[Q-BAS-293](../spec/bastion.md#q-bas-293--a-value-the-bastion-refuses-starts-the-cooldown)), so a Bastion that cannot reach the store, or
+that is handed links it refuses, causes at most one such double count per replica and minute, and the alert `QuaderBastionHandoverFailing`
+reports it. What makes it real: a Bastion whose network does not reach a
 connection's public address, or a store that cuts transfers.
 
 ### H-1343 · The object store's log shows the Bastion's address and which objects it reads

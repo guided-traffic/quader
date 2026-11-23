@@ -505,7 +505,10 @@ func TestR_BAS_075_ADirectReadThatFails(t *testing.T) {
 			}
 		})
 	}
-	t.Run("a value R-BAS-073 refuses falls back without a read and without the cooldown", func(t *testing.T) {
+	// A value the Bastion refuses comes from the main installation's configuration, clock or code and would be refused at every
+	// miss: it starts the cooldown, so the double count of H-1342 stays bounded (Q-BAS-293). The stack of the integration suite has
+	// one such case of its own: without a public address the links name the store's endpoint on 127.0.0.1, the front's host.
+	t.Run("a value R-BAS-073 refuses falls back without a read and starts the cooldown", func(t *testing.T) {
 		for name, mutate := range map[string]func(*iface.Handover){
 			"an expired link": func(h *iface.Handover) { h.ExpiresAt = epoch.Add(-time.Second) },
 			"a blob above the offer": func(h *iface.Handover) {
@@ -530,8 +533,12 @@ func TestR_BAS_075_ADirectReadThatFails(t *testing.T) {
 				}
 				fw := x.forwards()
 				if len(fw) != 2 || fw[1].Offer.MaxSize != 0 || len(x.store.Requests()) != 0 || x.handovers(metrics.HandoverFallback) != 1 ||
-					readCounter(x.m.HandoverCooldown) != 0 || x.client.KeysHeld() != 0 || x.keysLeft() != 0 {
+					readCounter(x.m.HandoverCooldown) != 1 || x.client.KeysHeld() != 0 || x.keysLeft() != 0 {
 					t.Fatalf("forwards %+v, %d reads of the store, fallback %v, cooldown %v", fw, len(x.store.Requests()), x.handovers(metrics.HandoverFallback), readCounter(x.m.HandoverCooldown))
+				}
+				x.hand(t, hoTgz2, payload(8<<10), true)
+				if x.get(hoTgz2, "Authorization", bearer(x.full)); x.lastForward(t).Offer.MaxSize != 0 || x.handovers(metrics.HandoverFallback) != 1 {
+					t.Fatal("the next miss offered again: every miss would cost a second forward and a second download")
 				}
 			})
 		}

@@ -3215,9 +3215,11 @@ built (package 2, 2026-11-23: the registration's switch, the serve point's decis
 [Q-BAS-285](#q-bas-285--only-the-journaled-switch-off-is-listed-as-yielding-no-feed-entry)); the Bastion's side is built (package 3,
 2026-11-23: the offer, the direct read of a plain and of an encrypted copy, its failures, the metrics, the alert,
 [Q-BAS-290](#q-bas-290--a-handover-counts-one-outcome-by-the-path-it-took) to
-[Q-BAS-292](#q-bas-292--the-forward-that-replaces-a-handover-counts-no-second-miss-and-a-core-route-carries-no-offer)). A plain copy is
-handed over once an administrator has switched a registration's handover on; the integration case that joins the two sides is not built
-yet, and an encrypted copy is never handed over before package 4. It builds on specifications whose code is not on `main`: the serve point and
+[Q-BAS-293](#q-bas-293--a-value-the-bastion-refuses-starts-the-cooldown)). A plain copy is
+handed over once an administrator has switched a registration's handover on; the integration case that joins the two sides is built
+(2026-11-23, `TestR_BAS_070_ALargeFileIsReadFromTheObjectStore`): the two sides meet as each expected the other, and the look at the hosts'
+check against what the main installation signs found that a refused value did not start the cooldown, which the Bastion's side now does
+(Q-BAS-293). An encrypted copy is never handed over before package 4. It builds on specifications whose code is not on `main`: the serve point and
 the domain package of the signed links ([storage.md](storage.md) R-STOR-070 to R-STOR-074, package 2 of
 [developer/download-links.md](../developer/download-links.md)), the copies a read would try now (`blob.Store.Servable`, R-STOR-062, stage
 1's package A), and for an encrypted connection the storage keys and `blob.Store.CopyDataKey` (R-STOR-083, packages 2 and 3 of
@@ -3307,7 +3309,25 @@ case of the area `bastion` sends the forward itself, as the Bastion will, to the
 of 64 KiB below `/files/` with `Quader-Bastion-Handover: accept; max-size=1048576` is streamed while the registration's switch is off, and
 once it is on answered with the file's `200` without its bytes, the class `handover` and a value whose link a client without a credential
 reads the file from at the stack's object store; the request log's line has `delivery` `handover` and `response_bytes` 0
-(`TestR_STOR_095_AForwardThatOfferedIsHandedOverFromTheStacksStore`). `TestR_BAS_070_ALargeFileIsReadFromTheObjectStore` is package 3's.
+(`TestR_STOR_095_AForwardThatOfferedIsHandedOverFromTheStacksStore`, removed on 2026-11-23 with the case below, which shows all of it).
+
+*As built on 2026-11-23, the case that joins the two sides:* `TestR_BAS_070_ALargeFileIsReadFromTheObjectStore` in
+[handover_test.go](../../test/integration/bastion/handover_test.go) runs the suite's main installation, with the switch on for its
+registration through the API, the links' `minSize` 0 and the default connection's public address on a relay to the stack's store (on
+`localhost`, which is not the host of the Bastion's `bastion.main.url`), and the Bastion role, which trusts the stack's CA in one bundle of
+`bastion.main.ca_file`. It shows the criterion and what only the join shows: the caller gets the file's bytes and the representation
+headers the main installation serves; the main installation answered the class `handover` with `Content-Length: 0` and no body, wrote
+`delivery` `handover` and `response_bytes` 0, and counted the handover in its metric; the Bastion counts `read` and 65,536 bytes from the
+store and names the outcome in its request log; the download is counted once at the main installation, and the hit that follows asks it
+nothing and is reported once by the Bastion; an npm tarball of a partial reader is handed over and kept with the package its handover answer
+named (R-BAS-082); a read cut after its first segment is continued with the Bastion's own `Range` and `If-Range`, which the real serve point
+answers `206` with the same `ETag`, counting no second download; a link the store refuses falls back to the bytes through the main
+installation, which counts the download again (H-1342 as specified); an ordinary request that sends the offer gets the file and no marking;
+with the switch off the main installation streams an offered forward within its snapshot, the handshake tells the Bastion, and its read comes
+as bytes from the main installation; no log line of either side holds a usable link. The look at the hosts' check against what the main
+installation signs (the stack's endpoint without a public address is the front's host) found that a refused value fell back at every miss
+without the cooldown ([Q-BAS-293](#q-bas-293--a-value-the-bastion-refuses-starts-the-cooldown)). The two halves the sides were built with were removed
+with it, since it shows everything they showed ([the build plan](../developer/bastion-handover.md#tests-and-what-they-cost)).
 
 ### R-BAS-071 · The switch: per registration at the main installation, off by default
 Priority: **P1** · Covers: quader-only
@@ -3559,9 +3579,9 @@ the marking's package, counting and repository), checks the spool's room, opens 
 has one. Tests: `TestR_BAS_074_TheLinkClientSendsNothingOfQuaders`, `TestR_BAS_074_TheLinkClientsRefusals`,
 `TestR_BAS_074_ThePlainAndTheEncryptedRead`, `TestR_BAS_074_TheTrustIsReadAgain` (`internal/bastion/handover`, against the TLS store of
 `maintest.Store`); `TestR_BAS_074_TheDirectReadAndItsVerification` (`internal/bastion/engine`, plain and encrypted blobs of 192 KiB, a follower, the
-handover answer's body closed while the read runs, the entry's package, a cache with a key); the Bastion's half of R-BAS-070's integration case,
-`TestR_BAS_074_ABastionReadsAHandedFileFromTheObjectStore` (area `bastion`: the role against `maintest` and the stack's object store, the stack's
-CA and `maintest`'s certificate in one bundle of `bastion.main.ca_file`). `TestR_BAS_070_ALargeFileIsReadFromTheObjectStore` joins with package 2.
+handover answer's body closed while the read runs, the entry's package, a cache with a key); at the integration tier the case that joins the two
+sides, `TestR_BAS_070_ALargeFileIsReadFromTheObjectStore` (R-BAS-070's as-built note), which replaced the Bastion's half against `maintest`
+(`TestR_BAS_074_ABastionReadsAHandedFileFromTheObjectStore`, removed on 2026-11-23).
 
 ### R-BAS-075 · A direct read that fails
 Priority: **P1** · Covers: quader-only
@@ -3586,7 +3606,8 @@ Every failure of the direct read ends in the bytes through the main installation
 - **The cooldown** ([Q-BAS-236](#q-bas-236--a-replica-that-cannot-read-the-store-offers-no-handover-for-a-minute)). After a failure before the
   first byte whose cause is the network or the store (connect, name, TLS, timeout, a `403` or `5xx` of the store, another length), the
   replica sends no offer for 60 s, so a Bastion whose network does not reach the store costs one more forward per replica and minute, not
-  one per miss.
+  one per miss. *Amended on 2026-11-23 ([Q-BAS-293](#q-bas-293--a-value-the-bastion-refuses-starts-the-cooldown)):* a value the Bastion
+  refuses before the read starts the cooldown as well.
 - **Metrics** (the builder adds them to R-BAS-040's table with the code, which a test holds to it): `quader_bastion_handovers_total{outcome}`
   with `read` (read from the store and committed), `fallback` (failed before the first byte), `continued` (finished through the main
   installation), `refused` (the bytes failed verification); `quader_bastion_fill_bytes_total{source}` with `main` and `store`; the gauges
@@ -3608,9 +3629,10 @@ Acceptance criteria:
 
 *As built on 2026-11-23, the Bastion's side (package 3):* `fallback` in [engine/handover.go](../../internal/bastion/engine/handover.go) sends
 the forward without the offer for every failure before the first verified bytes (a value the engine or the interface refuses, a fill the cache
-cannot start, a spool without room, and every `handover.Error` of `Open`); the cooldown starts only for a `handover.Error` whose cause is the
-network or the store (`Cooldown()`: connect, name, TLS, a timeout, a body that broke off before its first byte, `403`, `5xx`, another length) and
-is the engine's field `handoverCooldown`. After the first byte `fillRun.run` asks `turnToMain`: the plain digest and the encrypted plaintext's
+cannot start, a spool without room, and every `handover.Error` of `Open`); the cooldown starts for a `handover.Error` whose cause is the
+network or the store (`Cooldown()`: connect, name, TLS, a timeout, a body that broke off before its first byte, `403`, `5xx`, another length)
+and, since the joined integration case of 2026-11-23, for a value the interface or the checks of `checkHandover` refuse
+([Q-BAS-293](#q-bas-293--a-value-the-bastion-refuses-starts-the-cooldown)), and is the engine's field `handoverCooldown`. After the first byte `fillRun.run` asks `turnToMain`: the plain digest and the encrypted plaintext's
 digest (`handover.ErrDigest`) fail the fill and mark the key; any other break (a cut, the stall bound, which ends only the direct read, a later
 segment or the final segment that does not open) closes the read and continues the spool from the main installation with `Range` and `If-Range`
 (`mainclient.Forward.RangeFrom`, `IfRange`), and `continues` accepts only a `206` of the rest with the fill's `ETag`. A commit whose SHA-256
@@ -3620,8 +3642,8 @@ fails after a direct read marks the key too. The four outcomes count once per ha
 ([Q-BAS-292](#q-bas-292--the-forward-that-replaces-a-handover-counts-no-second-miss-and-a-core-route-carries-no-offer)). The alert's expression
 is `(sum(increase(…{outcome=~"fallback|continued|refused"}[15m])) > 0) and (sum(increase(…{outcome="read"}[15m])) == 0)`, scoped to the
 release. Besides the criteria above, `TestR_BAS_075_ADirectReadThatFails` shows that an expired link, a blob above the offer, a digest that is
-not the `ETag`'s and a link on a host of the Bastion or of the main installation fall back without a read and without the cooldown, and that a
-continuation answered `200`, or `206` with another `ETag`, fails the fill.
+not the `ETag`'s and a link on a host of the Bastion or of the main installation fall back without a read and start the cooldown, so that the
+next miss offers nothing (Q-BAS-293), and that a continuation answered `200`, or `206` with another `ETag`, fails the fill.
 
 ### R-BAS-076 · The data key at the Bastion: held for one read, written nowhere
 Priority: **P1** · Covers: quader-only
@@ -8403,7 +8425,8 @@ Status: **Decided by the planner in the owner's absence** — selected from the 
 | (c) No pause | | | Every miss waits for a connect timeout first |
 
 **Choice:** (a); the 60 s are a field of the engine, which a test shortens, not a value of the chart. **Rationale:** a store unreachable from
-the DMZ is a configuration fault that the alert of R-BAS-075 reports; the pause only keeps its cost low until it is fixed.
+the DMZ is a configuration fault that the alert of R-BAS-075 reports; the pause only keeps its cost low until it is fixed. *Amended on
+2026-11-23:* a value the Bastion refuses starts it too ([Q-BAS-293](#q-bas-293--a-value-the-bastion-refuses-starts-the-cooldown)).
 
 **Applied in the spec:** R-BAS-075.
 
@@ -8856,6 +8879,32 @@ journaled (R-BAS-071: switching on widens).
 
 **Choice:** (a). **Rationale:** what the sentence wants, that the feed is classified for both events, holds for the switch-on by
 construction. **Applied in the spec:** R-BAS-071's as-built note; code: `noFeedEntry` in [feed.go](../../internal/bastionmain/feed.go).
+
+### Q-BAS-293 · A value the Bastion refuses starts the cooldown
+
+Status: **Decided by the development agent** while it joined the two sides in one integration case (2026-11-23) — selected from the options
+below; the owner sees it when it is built.
+
+Context: Q-BAS-236 starts the cooldown after a failure of the network or the store before the first byte, and H-1342 rests its bound on it:
+"a Bastion that cannot reach the store causes at most one such double count per replica and minute". As built by package 3 a value the
+Bastion refuses (a link on a host of the Bastion or of the main installation, an expiry its clock has passed, a blob above the offer, a
+digest that is not the `ETag`'s, a value the interface cannot decode) fell back without the cooldown. Each of those comes from the main
+installation's configuration, its clock or its code, not from one blob, so it is refused at every miss, and every miss then cost a second
+forward and a second counted download, unbounded. The integration stack shows the first case by itself: without a public address the
+links name the store's endpoint on `127.0.0.1`, which is the host of the Bastion's `bastion.main.url` (the front), and the check refuses
+every one of them by name (Q-BAS-281).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A value refused before the read starts the cooldown like a failure of the network or the store; a fill the cache cannot start, a spool without room, a file whose `Vary` the Bastion cannot key on and a first segment that does not open do not (chosen) | The cooldown covers every refusal that would repeat at the next miss | H-1342's bound holds for every cause; a misconfigured public address or a skewed clock costs one more forward per replica and minute; the alert still fires | One refusal of a defect pauses the handovers of the replica for a minute |
+| (b) The main installation refuses to hand over when its link's host is one of the Bastion's hosts | The cause at its source | No round trip for a refused link | The main installation does not know the host of a Bastion's `bastion.main.url` (a Service name, a front); clock and code defects stay unbounded |
+| (c) As built | | | H-1342's bound is false for a refused value |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-075 (amended, as built), H-1342's bound
+([security/bastion-handover.md](../security/bastion-handover.md#h-1342--a-handover-whose-direct-read-fails-is-counted-or-charged-again));
+code: `onHandover` and `checkHandover` in [engine/handover.go](../../internal/bastion/engine/handover.go); test:
+`TestR_BAS_075_ADirectReadThatFails`, "a value R-BAS-073 refuses falls back without a read and starts the cooldown", which fails without the
+change.
 
 ### Q-BAS-290 · A handover counts one outcome, by the path it took
 

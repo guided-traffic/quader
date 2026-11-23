@@ -596,7 +596,7 @@ SHA-256, the entry with the marking's package and counting.
 | Offer | `offerFor`, called by `send` in [forward.go](../../internal/bastion/engine/forward.go) | `Quader-Bastion-Handover: accept; max-size=<n>` on a `GET` forwarded on a miss or as the Bastion's own conditional request, while `link.State().Handover`, not cooling down and the key not marked; `n = min(max_object_bytes, Cache.SpoolRoom())`. Never on a `HEAD`, a probe, a core route of `/v2/`, a follower's conditional request (`bl.run`), a continuation, or the forward that replaces a failed handover (`rq.noOffer`) |
 | Answer | `process` → `onHandover` | the class `handover` is never passed on: its empty body is closed at once (the budget slot is free), the value checked (`checkHandover`: `iface.Handover.Check` with the engine's clock, the offer, the `ETag`, `refusedHosts`, and a `Vary` the Bastion can key on), the fill prepared and the spool's room checked |
 | Direct read | `handover.Client.Open` with the hold's detached context, then `runFill` | the link client's one `GET`, checked up to the first 64 KiB of verified plaintext (Q-BAS-291); the fill reads the rest at the store's speed, `quader_bastion_fill_bytes_total{source="store"}` |
-| Before the first byte | `fallback` | the forward without the offer through `send` (no second miss of the guard, Q-BAS-292); the cooldown (`handoverCooldown`, 60 s) only for a failure of the network or the store (`handover.Error.Cooldown`) |
+| Before the first byte | `fallback` | the forward without the offer through `send` (no second miss of the guard, Q-BAS-292); the cooldown (`handoverCooldown`, 60 s) for a failure of the network or the store (`handover.Error.Cooldown`) and for a value the Bastion refuses (`checkHandover`'s `refused`, Q-BAS-293), not for a cache or spool of its own that cannot take the fill |
 | After the first byte | `fillRun.run` → `turnToMain` | a digest that differs (`handover.ErrDigest`) fails the fill and marks the key (`markNoOffer`, for `artifact_revalidate_after`); any other break closes the read and continues the spool with `mainclient.Forward{RangeFrom, IfRange}`; `continues` accepts only the `206` of the rest with the fill's `ETag`. The stall bound ends the direct read first (`fillRun.stall`), the request to the main installation after the turn |
 | Outcome | `directFill.finish`, `fillRun.committed` | one count of `quader_bastion_handovers_total` per handover by the path it took, and the request log's `bastion_handover` (`read`, `fallback`, `continued`, `refused`, or `reading` for a caller that left while the read ran), Q-BAS-290 |
 
@@ -609,8 +609,9 @@ cache keeps the plaintext (sealed under its own key where it has one).
 **Tests.** `internal/bastion/handover` against `maintest.Store` (the link client's headers and refusals, the two readers, the trust re-read, the
 key at every end); `internal/bastion/engine` `handover_test.go` over the site double, whose main installation hands over the paths a test names
 (`hoRig`); the mainclient's `TestR_BAS_073_TheClientTakesAHandoverOnlyWhenTheForwardOffered`; the promtool cases of
-`QuaderBastionHandoverFailing`; the Bastion's half of the integration case in
-[handover_bastion_test.go](../../test/integration/bastion/handover_bastion_test.go).
+`QuaderBastionHandoverFailing`; the integration case that joins the main installation and a Bastion,
+`TestR_BAS_070_ALargeFileIsReadFromTheObjectStore` in [handover_test.go](../../test/integration/bastion/handover_test.go), over a relay that
+stands for the store's public address (`storeRelay`: it counts the bytes the store sends and can refuse an object or cut its body).
 
 ## The engine's side of every format
 
@@ -1046,6 +1047,7 @@ The tests, by requirement (the file is the one to read; every name carries the I
 | `TestR_BAS_057_ABoundHostThroughABastion` | the default endpoint's `host_roots` binds the Bastion's host: `/v2/<name>/…` is the bound repository at both sides; the world puts the Bastion's address into `bastions.trusted_proxies` (1.9 s) |
 | `TestR_BAS_059_AHitIsReportedWhenTheMainInstallationCountedItsFill` | a warm read by tag reports the tag, two blobs and an npm tarball, nothing for a `HEAD` and no package document (5.6 s, 2 s of it waiting for nothing more to arrive) |
 | `TestR_BAS_055_DebianThroughABastion` ([debian_test.go](../../test/integration/bastion/debian_test.go)) | the role `all` builds the index: `InRelease` verified with the key read through the Bastion, by-hash `Packages.gz` and the pool file cold and warm, the first generation's by-hash file after a second build, a deleted package file refused within 5 s (6.0 s, packages of 1 KiB) |
+| `TestR_BAS_070_ALargeFileIsReadFromTheObjectStore` ([handover_test.go](../../test/integration/bastion/handover_test.go)) | the handover per blob with both sides joined: the switch through the API, the links' settings and a relay as the store's public address (`storeRelay`), the Bastion with the stack's CA in its bundle (`bastionOptions.CAFile`); a handed read, its hit, a tarball kept with its package, a continuation at the real serve point, a fallback counted again, the switch off (8.1 s, files of 64 KiB and one of 160 KiB) |
 | `TestR_BAS_056_TheClamAVDefinitionsThroughABastion` ([clamav_test.go](../../test/integration/bastion/clamav_test.go)) | freshclam's requests through the Bastion with a container of a few hundred bytes (`206`, `200`, `304` without a request), the Bastion's own rate limit `503` on the ClamAV definitions and `429` on npm (4.7 s) |
 
 **Run it.** `make integration-up`, then `make test-integration` (the package is in shard `c`) or alone with the stack's environment sourced:

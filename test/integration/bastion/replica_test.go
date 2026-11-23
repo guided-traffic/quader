@@ -80,6 +80,9 @@ type bastionOptions struct {
 	Main string
 	// MainSettings are lines below `bastion.main:` (indented by four spaces).
 	MainSettings string
+	// CAFile overrides bastion.main.ca_file (default: the front's CA), for a bundle that also trusts the object store a
+	// handover's link names (R-BAS-074, Q-BAS-237).
+	CAFile string
 }
 
 // bastion is a Bastion: its replicas.
@@ -180,11 +183,15 @@ func (b *bastion) start(t *testing.T, dir string, o bastionOptions, i int) *repl
 	if mainURL == "" {
 		mainURL = b.w.front.URL()
 	}
+	caFile := b.w.front.caFile
+	if o.CAFile != "" {
+		caFile = o.CAFile
+	}
 	var y strings.Builder
 	fmt.Fprintf(&y, "server:\n  listen: 127.0.0.1:0\n  ops_listen: localhost:0\n  base_url: %s\n  trusted_proxies: [\"127.0.0.1/32\"]\n%s", base, o.Server)
 	fmt.Fprintf(&y, "bastion:\n  replicas: %d\n  signing_key_file: %s\n", o.Replicas, b.sh.keyFile)
 	fmt.Fprintf(&y, "  main:\n    url: %s\n    token_file: %s\n    ca_file: %s\n    handshake_interval: 5s\n    unreachable_after: 3s\n    connect_timeout: 1s\n    response_header_timeout: 10s\n    token_reload_interval: 1s\n%s",
-		mainURL, b.tokenFil, b.w.front.caFile, o.MainSettings)
+		mainURL, b.tokenFil, caFile, o.MainSettings)
 	y.WriteString("  feed:\n    poll_interval: 1s\n  audit:\n    flush_interval: 1s\n")
 	if o.Backend == "bucket" {
 		y.WriteString(b.sh.bucketYML)

@@ -1875,8 +1875,9 @@ counts `switch_off`, `not_artifact`, `gate` (and a content state that is not `ok
 `TestR_STOR_095_TheConditionsOfAHandover` and `TestR_STOR_095_WhatAHandoverCounts` (`internal/formathost`, the in-memory store; each
 condition taken away alone, the link's life bounded by a credential that ends in 20 s, a speed figure no condition),
 `TestR_STOR_095_AFileOfFilesIsHandedOver` (`internal/api/rawfiles`), `TestR_STOR_096_TheCopyOfAHandover` (`internal/downloadlinks`); the
-integration cases `TestR_STOR_095_AForwardThatOfferedIsHandedOverFromTheStacksStore` (area `bastion`) and the query budget's handed-over
-OCI blob (area `querybudget`, one statement, R-ARCH-027).
+integration cases `TestR_BAS_070_ALargeFileIsReadFromTheObjectStore` (area `bastion`: the main installation and a Bastion joined; it replaced
+the main installation's half, `TestR_STOR_095_AForwardThatOfferedIsHandedOverFromTheStacksStore`, on 2026-11-23,
+[bastion.md](bastion.md) R-BAS-070) and the query budget's handed-over OCI blob (area `querybudget`, one statement, R-ARCH-027).
 
 ### R-STOR-096 · The connection a handover names, its link check and the trace of a data key
 Priority: **P1** · Covers: quader-only

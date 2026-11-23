@@ -111,12 +111,14 @@ func (e *engine) onHandover(q *rq, resp *mainclient.Response, sent time.Time) {
 	resp.Handover = nil
 	_ = resp.Body.Close()
 	if h == nil {
-		e.fallback(q, resp.HandoverErr, false)
+		// A value the interface refuses comes from this main installation's way of handing over, not from one blob: it would
+		// be refused at the next miss again (Q-BAS-293).
+		e.fallback(q, resp.HandoverErr, true)
 		return
 	}
 	defer h.DataKey.Destroy()
-	if err := e.checkHandover(q, resp, *h); err != nil {
-		e.fallback(q, err, false)
+	if refused, err := e.checkHandover(q, resp, *h); err != nil {
+		e.fallback(q, err, refused)
 		return
 	}
 	e.putURL(q, sent, true, nil)
@@ -151,21 +153,24 @@ func (e *engine) onHandover(q *rq, resp *mainclient.Response, sent time.Time) {
 	e.runFill(q, r, rd, func() { readCancel(); end() })
 }
 
-// checkHandover holds a handover to R-BAS-073's checks before the read, and to what the fill needs of the answer.
-func (e *engine) checkHandover(q *rq, resp *mainclient.Response, h iface.Handover) error {
+// checkHandover holds a handover to R-BAS-073's checks before the read, and to what the fill needs of the answer. refused is
+// true for a value the checks refuse: a link on a host of the Bastion or of the main installation, an expiry the Bastion's clock
+// has passed, a blob above the offer, a digest that is not the ETag's. Each comes from the main installation's configuration,
+// clock or code and would be refused at every miss, so it starts the cooldown like a store that cannot be read (Q-BAS-293).
+func (e *engine) checkHandover(q *rq, resp *mainclient.Response, h iface.Handover) (refused bool, err error) {
 	switch {
 	case e.d.Handover == nil || q.offer.MaxSize < 1:
-		return errors.New("a handover answers a forward that offered none")
+		return true, errors.New("a handover answers a forward that offered none")
 	case resp.Status != http.StatusOK || q.r.Method != http.MethodGet:
-		return fmt.Errorf("a handover with status %d to a %s", resp.Status, q.r.Method)
+		return true, fmt.Errorf("a handover with status %d to a %s", resp.Status, q.r.Method)
 	}
 	if err := h.Check(iface.HandoverCheck{Now: e.now(), Offer: q.offer, ETag: resp.Header.Get("Etag"), RefusedHosts: e.refusedHosts}); err != nil {
-		return err
+		return true, err
 	}
 	if _, keep := varyNames(resp.Header); !keep {
-		return errors.New("the handed file varies by what the Bastion cannot key on")
+		return false, errors.New("the handed file varies by what the Bastion cannot key on")
 	}
-	return nil
+	return false, nil
 }
 
 // fallback replaces a handover that failed before its first byte by the forward without the offer (R-BAS-075): the
