@@ -2442,6 +2442,13 @@ runs are in `git log`; this section holds the current state.
   encryption's package 3, the handover's package 1, the kit move's package 1 and the repair of the four
   tests are active within three minutes; none has reported since the landing. Two runs wait at the stack's
   lock; the load is 7. His installation and its Bastion run the release before this push, ready.
+- **The timer's check at 03:44:** the run of the push of 03:14 has no failed job, its four integration shards,
+  the layout checks and two end-to-end legs run; his installation and its Bastion run its release, ready.
+  The landing's gates of the handover's first package exit 0 up to the second of six integration areas, the
+  unit run and the lint among them. **Five runs wait at the integration stack's one lock,** the kit move's
+  first package among them for most of an hour; the load is 7. The encryption's package 3, the kit move's
+  package 1, the repair of the four tests and the handover's package 2 are active within two minutes; none
+  has reported.
 - **In work since 18:44: package 2 of the encryption, the keys** (the table of the storage keys and the sealed
   columns, drawing a key at a connection's first sight with the refusal over a used location, holding the
   keys per replica with a change area, the operator's commands to export, import and renew a key with their
