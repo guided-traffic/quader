@@ -786,8 +786,9 @@ defer run.Close()
 [deploy/dev/ocistub.yaml](../../deploy/dev/ocistub.yaml): the Services `ocistub` (registry), `ocistub-auth` (realm) and `ocistub-cdn` (blob CDN) on 443
 in front of one pod (the counters are in memory), a certificate of the dev CA for the three names, the control token in Secret `quader-ocistub` (key
 `control-token`), TCP probes (an HTTP probe would be counted). The remote repository under test names `ocistub-auth.<ns>.svc` in `extraHosts` (with
-`sendCredentials` when it pulls with credentials) and `ocistub-cdn.<ns>.svc` without. `make oci-stub-image` builds the image; loading it into kind and applying the manifest is
-not wired into `deploy/dev/e2e.sh` yet (the e2e work package adds the marker and the `QUADER_E2E_OCISTUB` switch, as the other stubs have).
+`sendCredentials` when it pulls with credentials) and `ocistub-cdn.<ns>.svc` without. `make oci-stub-image` builds the image;
+`deploy/dev/e2e.sh` builds it, loads it into kind and applies the
+manifest when `QUADER_E2E_OCISTUB=1` is set, as the sets `oci`, `oci-closing` and `oci-long` do.
 
 ### Not covered by the stub
 
@@ -832,10 +833,11 @@ discovery through a virtual one), the counting stub registry, and the end-to-end
 [e2e.md](e2e.md#the-oci-tests)).
 
 Not built: an exposure adapter
-of the format (an endpoint with exposure rules serves no container images, Q-OCI-23); the presigned redirect of blob downloads (H-601); retention of untagged manifests (H-580).
+of the format (an endpoint with exposure rules serves no container images, Q-OCI-23); retention of untagged manifests (H-580). The
+redirect of a blob download to a signed link of the object store is built at the core's serve point ([download-links.md](download-links.md)).
 
 ## What this page does not cover
 
 A mirror's pass asks for the signatures of each kept tag (above, R-SIG-025); the platforms' own signatures stay pull-through (Q-SIG-33). The
 trash's case of an attachment that follows its image waits for the trash can (R-STOR-022). The children of an index inside an index are not read. The end-to-end rows with real clients on several replicas are described
-in [e2e.md](e2e.md) once they exist.
+in [e2e.md](e2e.md#the-oci-tests).

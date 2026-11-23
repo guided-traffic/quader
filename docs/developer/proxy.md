@@ -234,7 +234,7 @@ step 8, before the listener opens, and a failing load stops the start-up.
 A prefix or scope that is invalid answers `422 validation_failed` with the pointer. A repository whose
 lifecycle is not `active` is `404 repository_not_found`. The audit record is part of the transaction: a
 failing recorder rolls the row and the epoch back (R-OPS-015). The operation is allowed in read-only mode;
-the mode itself is not built yet, so nothing in this code consults it.
+the API document declares it so (`x-quader-maintenance: allowed`, R-OPS-024), and nothing in this code consults the mode.
 
 ### Reaching the other replicas
 

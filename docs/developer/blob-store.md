@@ -424,7 +424,8 @@ The statement-level triggers of migration 00003 append to `storage_usage_deltas`
 - No metric: the specification names none. A failure shows in the log; the backlog is `SELECT count(*) FROM storage_usage_deltas`.
 - Readers that must be exact add the unfolded deltas to the folded rows in one statement (`pgEnv.exact` in
   [usagefold_test.go](../../test/integration/blob/usagefold_test.go) is the pattern); quota admission and the storage summary read
-  the folded rows and lag by one interval plus one iteration. `storage_usage_recount()` of R-STOR-047 is not built.
+  the folded rows and lag by one interval plus one iteration. `storage_usage_recount()` of R-STOR-047 (migration 00046) is run by the
+  restore's fix-up ([storage_usage.go](../../internal/backup/fixup/storage_usage.go)).
 
 ### The figure of a project (R-STOR-049, Q-STOR-158)
 

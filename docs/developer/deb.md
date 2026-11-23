@@ -676,5 +676,5 @@ Not built, or not proven:
   its own would add a kind cluster per format for that, which the rule that a format adds a constant leaves out
   ([CLAUDE.md](../../CLAUDE.md)).
 - What the spec defers ([Deferred](../spec/formats/debian.md#deferred)): source package uploads, snapshots, `.udeb`, `dput`, debug symbols, `Valid-Until`
-  on Quader's own releases, an external key service, vulnerability matching, copy and move, endpoints with exposure rules, the Bastion and nested
+  on Quader's own releases, an external key service, vulnerability matching, copy and move, endpoints with exposure rules and nested
   virtual repositories.

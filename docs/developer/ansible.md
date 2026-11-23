@@ -64,7 +64,7 @@ internal/app/wire_ansible.go   # the blob reads, the reindex handler, the manage
 test/integration/ansiblelocal/ # the local class over HTTP on the stack
 internal/auth/                 # stage.go, auth.go: the scheme Token (galaxy_token_test.go)
 internal/api/dispatch/         # TokenSchemeRoute beside APIKeyRoute
-internal/api/v1/ansible_*.go   # the management operations (501 until the local class)
+internal/api/v1/ansible_*.go   # the management operations (tasks, tombstones, signatures, the documentation)
 internal/config/ansible.go     # the ansible: section
 ```
 

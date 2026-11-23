@@ -369,7 +369,7 @@ and objects to `RemoveOrphans`; `artifact_origins` goes with the items it remove
 - **Package 4** (the screens): built, [web-ui.md](web-ui.md#the-signatures-screens). It added to the API the format descriptor's
   `signatureKinds` (the kinds of each format's declaration, Q-SIG-127) and made `signatures` a member an administrator sets on a well-known
   repository of `upstream` (Q-SIG-128, [upstream_managed.go](../../internal/repository/upstream_managed.go)).
-- **Stage 2:** packages 1, 2 and 3 built, below, and of package 4 the section Signing identity; the rest of 4 is not.
+- **Stage 2:** all four packages built, below.
 - **Stage 3:** packages 1, 2 and 3 built, above; the screens of R-SIG-074 call the operations listed in
   [What the screens of package 3 call](#what-the-screens-of-package-3-call).
 

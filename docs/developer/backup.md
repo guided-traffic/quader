@@ -2,8 +2,8 @@
 
 Status: the contracts of the lane are built (phase 7, first step): the schema, the on-target format, the ports, the run record with
 its lease, the configuration, the command tree, the API operations, the metric families, the audit events and the registries.
-`create`, `list`, `verify`, `delete` and `prune` are built; the other operations answer "not built yet" (exit 1) until their work
-packages replace the constructors. The
+`create`, `list`, `verify`, `delete`, `prune`, `restore` and `admin post-restore` are built, and no constructor returns `backup.NotBuilt`
+any more; the P1 parts the specification's status names (R-BAK-025, R-BAK-027) are not. The
 specification is [backup-and-restore.md](../spec/backup-and-restore.md); the decisions behind the cut are
 [ADR-157](../decisions.md#adr-157--the-backup-lane-is-cut-into-ports-formats-and-registries-that-its-work-packages-fill-in-files-of-their-own)
 and [ADR-158](../decisions.md#adr-158--a-journal-object-is-an-envelope-around-the-producers-entry-and-replay-is-a-registry-of-handlers).
@@ -301,8 +301,8 @@ further was deleted.
 [test/integration/backup/target_ops_test.go](../../test/integration/backup/target_ops_test.go) runs retention, sweep, list, verify and
 delete through the real adapter against the stack's S3 store (encryption mode `none`: the stack's store rejects SSE-S3).
 
-Not built: a Facts implementation for the delete runs reads `installation_id`, `incarnation` and the `restore_in_progress` key in
-[backup_targetops.go](../../cmd/quader/backup_targetops.go) and does not check the schema step; the create package's `Facts` replaces it.
+The delete runs of [backup_targetops.go](../../cmd/quader/backup_targetops.go) read their facts through the create pipeline's
+`backup.PGFacts` ([pgfacts.go](../../internal/backup/pgfacts.go), `SystemFacts`), the schema step included.
 R-BAK-027 (client-side encryption) is P1 and left: `quader backup list` prints the field when a manifest carries it.
 
 ## The read side: API, info block and gauges

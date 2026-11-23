@@ -5,7 +5,8 @@ role) and the role is built: package 1 (registrations and the `bst` token), pack
 interface](#package-2-the-main-installations-interface)), package 3 ([marking, the write probe and the read
 shape](#marking-the-write-probe-and-the-read-shape-package-3)), package 4 ([the link to the main installation](#the-link-to-the-main-installation-package-4a),
 [the engine](#the-engine-package-4b) and [how the role is wired](#how-the-role-is-wired-package-4c)), package 5 ([the cache backends](#the-cache-backends-package-5)),
-package 6 ([shared state and guard](#shared-state-and-the-guard)) and package 8 (the screen, client setup and the manual); the end-to-end suite of R-BAS-049 on kind
+package 6 ([shared state and guard](#shared-state-and-the-guard)), package 7 (the alert rules' metric inputs,
+[_rules.tpl](../../deploy/helm/quader-bastion/templates/_rules.tpl)) and package 8 (the screen, client setup and the manual); the end-to-end suite of R-BAS-049 on kind
 is described in [e2e.md](e2e.md#the-bastion-tests), the client case of R-BAS-060 in [the set oci](e2e.md#the-bastion-case-of-the-set-oci). The specification is
 [spec/bastion.md](../spec/bastion.md) (R-BAS-001 to R-BAS-049, decisions Q-BAS-1 onward), its security perspective [security/bastion.md](../security/bastion.md), the plan
 [projektplan/BETA.md](../projektplan/BETA.md#phase-5b--quader-bastion-m13).
@@ -82,7 +83,7 @@ request by the Recognize stage) whether the serve point may hand a forward over;
 [downloadlinks/handover.go](../../internal/downloadlinks/handover.go)'s, the value reaches the marking through `bastionmain.NoteHandover`,
 and the marking stage writes the class `handover` and `Quader-Bastion-Handover` ([mark.go](../../internal/api/bastionmark/mark.go)).
 
-**Read shapes per package (specified, not built).** The development agent's decision of 2026-11-22 on Q-BAS-167, option (b): a registry token
+**Read shapes per package (built).** The development agent's decision of 2026-11-22 on Q-BAS-167, option (b): a registry token
 and every reader narrowed by package can be `full` on one package, so a warm image pull costs the main installation its token request and one
 check instead of a request per manifest and blob ([Read shapes per package](../spec/bastion.md#read-shapes-per-package), R-BAS-080 to
 R-BAS-088). Its four packages, what each owns and their order are on [bastion-package-shapes.md](bastion-package-shapes.md); it raises the

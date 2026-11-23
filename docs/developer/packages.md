@@ -138,7 +138,8 @@ and the generated server), then `view.Package`/`VersionDetail`, the statement, t
 
 - The README cache table of R-API-029 (Q-API-167, [H-298](../security/api-edge.md#h-298--a-readme-is-rendered-on-every-request-without-a-tag-and-a-rendering-that-runs-over-its-time-limit-is-not-stopped)).
 - Images of files embedded in a package (P1, R-ARCH-029).
-- Publish and CI snippets for npm: the npm templates are configure and install only; the API renders a publish template where a format supplies one.
+- CI snippets: no format supplies one; the npm templates are configure, install and publish, and the API renders the publish template only
+  for a caller who may publish.
 - A decision per row inside the statement: the rows of a narrowed repository are decided in Go ([H-299](../security/permissions.md#h-299--the-cost-of-a-package-list-for-a-caller-with-row-level-grants-depends-on-versions-the-caller-cannot-read)).
 - Verified in the integration area: the visibility of six callers, the sorts, filters, cursors, tags and setup answers of npm. Not verified: another format, a virtual
   repository with remote members holding cached versions, and a list above the bound of 200 000 rows decided in Go (a unit test checks the refusal's building blocks only).

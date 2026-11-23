@@ -632,5 +632,5 @@ environment.
 `/api/v1/storage/gc-runs` (the domain view of runs) is not built: Q-API-9 chose one path per function, the job list filters by
 `kind` and carries each run's result, and no M1 screen needs more (Q-API-20). The audit event types are registered in
 [events_api.go](../../internal/audit/events_api.go); the recorder is the audit area's, and the composition root passes
-`audit.Nop` until it is merged (`auditRecorder` in `wire_api.go`). Response compression (R-API-017) and the 30 s bound on a
+`audit.Nop` only in a shell without infrastructure (`auditRecorder` in `wire_api.go`). Response compression (R-API-017) and the 30 s bound on a
 synchronous handler are not implemented; the server-wide timeouts of R-ARCH-005 apply.

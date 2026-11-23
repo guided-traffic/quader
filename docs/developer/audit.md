@@ -219,7 +219,6 @@ Run: `set -a; . .dev/integration/env; set +a; go test -count=1 -tags integration
 
 ## Not built here
 
-The `audit-retention` task registration (jobs area); resuming an export on the server side (the client resumes with an inclusive `from`);
-the journal writer that ships `revocation_outbox` (M5); the registration of the catalog events other than `audit.exported` (each area, R-OPS-016);
-the check that every event listed in R-HA-054 is registered, flagged and required, which needs every area's registry file and therefore runs
-after the merge.
+Resuming an export on the server side (the client resumes with an inclusive `from`). The `audit-retention` task is registered by the
+composition root (`registerAuditJobs` in [wire_audit.go](../../internal/app/wire_audit.go)), and the journal writer that ships
+`revocation_outbox` is [internal/journal/ship](../../internal/journal/ship).

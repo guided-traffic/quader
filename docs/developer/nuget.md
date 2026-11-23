@@ -79,8 +79,8 @@ classes that serve them.
 ### Data port and tables
 
 The port is `nuget.Store`; the implementation is [internal/formatdata/nuget](../../internal/formatdata/nuget/store.go) (the statements are in
-[nuget_local.sql](../../internal/meta/postgres/queries/nuget_local.sql)); its `Search` answers `nuget_not_implemented` until the search package replaces
-[search.go](../../internal/formatdata/nuget/search.go). The package also registers the four tables of migration 00017 with the
+[nuget_local.sql](../../internal/meta/postgres/queries/nuget_local.sql)); its `Search` is the search read of
+[search.go](../../internal/formatdata/nuget/search.go) (R-NUGET-010). The package also registers the four tables of migration 00017 with the
 backup ([tables.go](../../internal/formatdata/nuget/tables.go)); [cmd/quader/registry.go](../../cmd/quader/registry.go) links it for `quader migrate`. The reads the document and
 search packages need are typed in [rows/read.go](../../internal/formats/nuget/rows/read.go). The reads of the package screens are typed in [rows/view.go](../../internal/formats/nuget/rows/view.go).
 
@@ -243,10 +243,10 @@ package row first and removes the version's files through `RemoveIn`. The item s
 another transaction holds is removed after the commit ([sweep.go](../../internal/items/sweep.go), Q-NUGET-88), so the two cannot wait for each other in a circle.
 `TestR_NUGET_007_APushAndAHardDeleteOfAnotherVersionNeverDeadlock` arranges the circle with a held row and reads `pg_stat_database.deadlocks` at the end.
 
-The authentication stage reads `Authorization` on a push; `X-NuGet-ApiKey` is read once the API-key stage is in the build (R-NUGET-012). The integration tests send a Bearer token.
+The authentication stage reads `Authorization` on a push, and `X-NuGet-ApiKey` on the routes that declare the API key (R-NUGET-012). The integration tests send a Bearer token.
 
-Not built here: the upload of the management API, copy and move (they reach `OnCommit` without a push payload and answer 501), the restore replay of the journal entries
-(R-NUGET-033; the entries are written and flagged, nothing reads them yet), the trash can (P1), and the remote and virtual classes.
+Not built here: the upload of the management API, copy and move (they reach `OnCommit` without a push payload and answer 501) and the trash can (P1). The
+restore replays the journal entries (R-NUGET-033, [journal_replay.go](../../internal/formatdata/nuget/journal_replay.go)).
 
 Tests: `go test ./internal/formats/nuget/ ./internal/formats/nuget/nugettest/ ./internal/formatdata/nuget/` (push, unlist, delete, hooks and the kit's checks 6 and 9 with the twin),
 and [test/integration/nuget](../../test/integration/nuget) `push_test.go` against PostgreSQL and the object store (the rows, the events, the outbox, the replica counter, two replicas,

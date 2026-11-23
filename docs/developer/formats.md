@@ -298,7 +298,7 @@ The mechanism is in [bastion.md](bastion.md#marking-the-write-probe-and-the-read
 
 A Bastion serves every format through these rules alone, and a format adds no decision of its own about it
 ([R-BAS-058](../spec/bastion.md#r-bas-058--what-a-format-owes-a-bastion-and-kit-check-19), the owner's decision of 2026-11-22). Three
-duties join the four above, and kit check 19 holds them with the first (the Bastion's side that relies on them is not built yet):
+duties join the four above, and kit check 19 holds them with the first:
 
 | The Bastion relies on | So |
 |---|---|
@@ -346,8 +346,8 @@ With the installation's switch on, a download may be answered `307` to a signed 
 ([R-STOR-070](../spec/storage.md#r-stor-070--the-conditions-of-one-download-in-the-order-of-the-serve-point), the owner's decision of
 2026-11-22), but only on a route that declares `ClientDigest{Checks: true, Against, Evidence}`
 ([R-STOR-071](../spec/storage.md#r-stor-071--the-format-declares-whether-its-clients-check-a-digest)): every client family the format
-supports compares the whole body with a digest it knew before the request. The declaration, its checks and the three declarations are
-built; the serve point that reads it is not yet ([download-links.md](download-links.md)), so today every download streams.
+supports compares the whole body with a digest it knew before the request. The declaration, its checks, the three declarations and the
+serve point that reads them are built ([download-links.md](download-links.md)).
 
 | Rule | Where |
 |---|---|
@@ -671,6 +671,6 @@ the item store, [oci.md](oci.md#upload-sessions-r-stor-011); the in-memory host 
   behaves like the in-memory one is tested by the integration tests of `test/integration/files`, not by the kit.
 - The remote engine, package ownership, the namespace auto claim and the virtual engine are built and bound by the composition root ([wire_formats.go](../../internal/app/wire_formats.go)). The virtual engine exists ([virtual.md](virtual.md)) and the Host takes it as `Options.Resolver`
   through `formathost.NewResolver`; `MemberDocument.Restricted` and `ShadowOutcome.Refusal`/`Shadowed` are the two fields it added to the contract.
-- What the contract still lacks for NuGet (a hook on a remote fill, discovery documents, a pass-through for volatile requests, validation of remote settings, an `Inspect` on the raw routes) is a work package of
-  roadmap M3, "Contract additions before the freeze" ([roadmap.md](../coverage/roadmap.md)). Until it lands, a format must not approximate it over `rq.Repo.Members()` and the stores: that skips the per-member read check (R-AUTHZ-009 rule 2) and the pin and claim rules.
+- What the contract lacked for NuGet (a hook on a remote fill, discovery documents, a pass-through for volatile requests, validation of remote settings, an `Inspect` on the raw routes) was the work package of
+  roadmap M3, "Contract additions before the freeze" ([roadmap.md](../coverage/roadmap.md)), whose every row is built or decided. A format never approximates such a seam over `rq.Repo.Members()` and the stores: that skips the per-member read check (R-AUTHZ-009 rule 2) and the pin and claim rules.
 - The dormant methods that could not be implemented as frozen (`IndexBuilder.Rebuild`, `RemoveVersion`, `VersionGroup`, `Enqueue`, the `RepositoryIndex` descriptor field) are not in the frozen contract, and `OnItemsRestored` is an optional interface (Q-ARCH-256); they join it by the rule below.

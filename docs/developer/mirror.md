@@ -247,8 +247,8 @@ database.
 - Quota and capacity bounds ([H-506](../spec/repositories-and-proxy.md)): `maxBytes` is the only bound.
 - The byte bound reads the counter that the usage fold writes ([blob-store.md](blob-store.md#usage-fold-r-stor-003)), so it holds across
   passes; it lags by one fold interval plus the artifacts in flight ([H-527](../security/mirror.md)).
-- **The restore of R-REPO-058** is `PGStore.ClearAfterRestore`; phase 7's restore job calls it (no post-restore hook mechanism exists:
-  the vulnerability scanning's restore is tested as the state it leaves, Q-VULN-58). Phase 7 owns that call.
+- **The restore of R-REPO-058** is the restore's fix-up `mirror-state` ([backup/fixup/mirror_state.go](../../internal/backup/fixup/mirror_state.go));
+  `PGStore.ClearAfterRestore` is called only by tests.
 
 ## The integration suite
 

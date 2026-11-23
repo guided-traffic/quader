@@ -16,7 +16,7 @@ connection is named `quader:<instance>:<class>` (`application_name`, cut to 63 b
 | `main` control connection | `Control(ctx)`, `ControlPool()` | web, worker, all | control endpoint (`control_host/port/name`, else host) | pool of size 1; change-log poll, readiness, heartbeats only |
 | `lease` | `LeasePool()` | worker, all (nil on web) | session host (`session_host/port`, else host) | `lease_pool_size` connections held with their session locks; no lifetime |
 | `migrate` | `Migrate`, `Status` | `quader migrate` | session host | one connection, `statement_timeout` 0 |
-| `backup` | not yet | `quader backup` | session host | M5 |
+| `backup` | `Main()` and `Control(ctx)` (one pool of size 1), `OpenBackupSnapshot` | `quader backup` | session host | the run row, heartbeat and pins on the one pooled connection; the snapshot and `backup.database.parallel` export connections on top (R-BAK-005, [backup_snapshot.go](../../internal/meta/postgres/backup_snapshot.go)) |
 
 Behind `database.pooler.mode: transaction` the main and control pools send only `application_name` and
 `TimeZone` as startup parameters and use pgx `QueryExecModeExec` (unnamed extended-protocol statements, no
@@ -288,7 +288,9 @@ Last, still under the migration lock and on the same connection, the runner call
 (R-AUTHZ-010, [authorization.md](authorization.md#role-bindings-from-the-configuration)). Its error fails the run with exit
 status 1; nil skips it.
 
-Not implemented yet: the `database.backup_role` grants and the grants check (no backup tables), and the restore mode of the runner (M5).
+The run gives `database.backup_role` its grants after the steps (`grantBackupRole`,
+[backup_grants.go](../../internal/meta/postgres/backup_grants.go), R-BAK-015), and `quader backup create` checks them at start; the
+restore mode of the runner is `OpenRestoreSession` ([migrate_restore.go](../../internal/meta/postgres/migrate_restore.go)).
 The CI checks of the migration files, against the latest release and against the history of `main`, are in place and
 switched off until the first stable release with the job `compat` ([Compatibility](releasing.md#compatibility), Q-ARCH-340);
 `make compat-check` runs them by hand.

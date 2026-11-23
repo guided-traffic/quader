@@ -12,8 +12,8 @@ pinned from 1024 CSS px with folding groups, collapsible, and a drawer below, th
 cross-cutting UI mechanism are in place, so the screens are content. Built: sign-in, signed out, the system status
 screen with its jobs screen, the repository list, the format chooser, the creation form and the settings page with the format settings rendered from the format's schema (see
 [The repository settings form](#the-repository-settings-form-rendered-from-the-formats-schema)), the files of a repository on its page, the endpoint screens with the exposure rule editor and
-the audit log (see [Screens of the catalog area](#screens-of-the-catalog-area)), and the package screens: the list, the page of a package and the page of a version with the install panel (see [Package screens and client setup](#package-screens-and-client-setup)), and the page **Set up client** of a repository with its guide and the guides area (see [Set up client and the guides](#set-up-client-and-the-guides)), the help area with the manual (see [manual.md](manual.md)), the Bastions screen (see [The Bastions screen](#the-bastions-screen)), and the vulnerability screens with the package page's tab (see [The vulnerability screens](#the-vulnerability-screens)); the other routed M1 screens are placeholders with their final
-path and title until their work package replaces them. Requirements: [R-UI-002 to R-UI-005](../spec/api-and-ui.md),
+the audit log (see [Screens of the catalog area](#screens-of-the-catalog-area)), and the package screens: the list, the page of a package and the page of a version with the install panel (see [Package screens and client setup](#package-screens-and-client-setup)), and the page **Set up client** of a repository with its guide and the guides area (see [Set up client and the guides](#set-up-client-and-the-guides)), the help area with the manual (see [manual.md](manual.md)), the Bastions screen (see [The Bastions screen](#the-bastions-screen)), and the vulnerability screens with the package page's tab (see [The vulnerability screens](#the-vulnerability-screens)); the other routed screens are built too, and no route
+leads to the placeholder screen any more. Requirements: [R-UI-002 to R-UI-005](../spec/api-and-ui.md),
 [R-UI-010, R-UI-011](../spec/api-and-ui.md), [R-UI-020, R-UI-021](../spec/api-and-ui.md), [R-UI-037, R-UI-038](../spec/api-and-ui.md),
 [R-UI-042 to R-UI-047](../spec/api-and-ui.md), [R-EP-017](../spec/endpoints.md); decisions Q-UI-10 to Q-UI-19 and Q-UI-68 (shell and list layout) on the same page.
 
@@ -1599,7 +1599,7 @@ a holder of `settings:write`.
 - npm 11 prints `allow-scripts` warnings for the install scripts of `esbuild`, `lmdb`,
   `msgpackr-extract` and `@parcel/watcher`. Build, test and lint pass without running them; if a
   later npm turns the warning into an error, approve the scripts in the workspace configuration.
-- Packages and client setup: the NuGet clients (.NET CLI, NuGet CLI, Visual Studio, `nuget.config`) wait for the NuGet format; the Owners and Builds tabs of the package page (P1), the native-exchange GitLab variant (R-NPM-022, P1) and the Playwright journey with a real `npm install` (R-UI-016) are not built. The version combobox is a native input with a `datalist`, not an ARIA combobox.
+- Packages and client setup: the Owners and Builds tabs of the package page (P1), the native-exchange GitLab variant (R-NPM-022, P1) and the Playwright journey with a real `npm install` (R-UI-016) are not built. The version combobox is a native input with a `datalist`, not an ARIA combobox.
 
 ## NuGet in the UI
 

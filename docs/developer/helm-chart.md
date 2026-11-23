@@ -716,7 +716,7 @@ backup restore runs the clean-up itself), `static` needs the `journalReader` of 
 
 The values block of [R-HA-031](../spec/ha-and-helm.md) is the reference; `TestR_HA_031_ValuesReference` ([values_reference_test.go](../../test/chart/values_reference_test.go))
 holds it to [values.yaml](../../deploy/helm/quader/values.yaml): every key of values.yaml is in the block with the same default, every key of the
-block is in values.yaml unless the feature that owns it is not rendered yet (`unbuiltPrefixes` in the test: the post-restore Job, the chart-created
+block is in values.yaml unless the feature that owns it is not rendered yet (`unbuiltPrefixes` in the test: the chart-created
 Gateway, `contentOrigin`, `bootstrap`, Service tuning, the extension points, and the keys under `config`), and
 [values.schema.json](../../deploy/helm/quader/values.schema.json) declares every key. A value added to the chart is added to the block in the
 same change; a feature that arrives takes its prefix out of `unbuiltPrefixes`.

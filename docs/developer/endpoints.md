@@ -8,8 +8,8 @@ decision point, the rate-limit class, and the endpoint and exposure-rule operati
 on an endpoint ([R-EP-018, R-EP-019](#package-formats-on-an-endpoint-r-ep-018-r-ep-019)): the exposure view in the request's
 endpoint facts, npm's exposure adapter and the filter of its local documents, member names on endpoints with rules, and
 the cache-fill refusal in the remote and the virtual engine. The endpoint screen (`web/src/app/features/endpoints`) and the filter of
-npm's remote and virtual documents are built too (they call npm's own `filterDocument`; the contract has none, Q-ARCH-257). Not built yet: the stored versions in the dry
-run, and the replay of the journaled exposure changes (R-EP-020, M5; the events carry their journal entries from now on).
+npm's remote and virtual documents are built too (they call npm's own `filterDocument`; the contract has none, Q-ARCH-257). So are the stored versions in the dry
+run (`StoredPackages`, Q-EP-61) and the replay of the journaled exposure changes (R-EP-020).
 The security view is [security/endpoints-and-exposure.md](../security/endpoints-and-exposure.md).
 
 ## What to have in your head

@@ -7,8 +7,10 @@ adds the populate check and `MemberUsable` ([below](#the-populate-check-and-memb
 and the claim in a writer's commit transaction, the owner operations of R-AUTHZ-019 with their HTTP operations, the
 deletion hook ([below](#package-ownership)). The callers are the remote engine's populate check, through
 [formathost/remote.go](../../internal/formathost/remote.go), the virtual engine's `MemberUsableOn` ([virtual/engine.go](../../internal/virtual/engine.go)),
-and the format writers' ownership check in their commit ([formathost/writer.go](../../internal/formathost/writer.go)). Phase 5a adds projects ([below](#projects)). Not built yet:
-CI inline grants and the CI project owner, delegated managers of single policies (R-AUTHZ-025), and the effective-permissions and explain operations of R-AUTHZ-024,
+and the format writers' ownership check in their commit ([formathost/writer.go](../../internal/formathost/writer.go)). Phase 5a adds
+projects ([below](#projects)), phase 5 the CI inline grants and the CI project owner
+([ci.go](../../internal/authz/ci.go), [ownership_ci.go](../../internal/authz/ownership_ci.go)). Not built yet: delegated managers of single
+policies (R-AUTHZ-025), and the effective-permissions and explain operations of R-AUTHZ-024,
 which are P1 (Q-AUTHZ-27).
 
 The specification is [authorization.md](../spec/authorization.md); this page says where each rule lives in the code. The
