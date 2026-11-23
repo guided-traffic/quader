@@ -21,15 +21,15 @@ func downloadStatements(t *testing.T, e *env, r *testenv.Replica, path string, n
 		t.Fatalf("warm-up %s: %d %s", path, a.Status, a.Body)
 	}
 	time.Sleep(time.Second)
-	start := time.Now()
+	starts := make([]time.Time, 0, n)
 	for range n {
+		starts = append(starts, time.Now())
 		if a := e.do(r, "GET", path, e.tokReader); a.Status != 200 {
 			t.Fatalf("%s: %d", path, a.Status)
 		}
 	}
-	loop := time.Since(start)
 	time.Sleep(300 * time.Millisecond)
-	stmts := testenv.StatementLogSince(t, start.Add(-100*time.Millisecond))
+	stmts := testenv.StatementLogSince(t, starts[0].Add(-100*time.Millisecond))
 	counts = map[string]int{}
 	for _, s := range stmts {
 		name := testenv.StatementName(s.Text)
@@ -38,7 +38,7 @@ func downloadStatements(t *testing.T, e *env, r *testenv.Replica, path string, n
 			t.Errorf("a statement of the scanning's tables runs on a download: %s", name)
 		}
 	}
-	return counts, testenv.PerRequest(stmts, n, loop, background)
+	return counts, testenv.PerRequest(stmts, starts, background)
 }
 
 func describe(c map[string]int) string {

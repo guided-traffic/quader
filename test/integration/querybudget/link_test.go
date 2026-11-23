@@ -63,15 +63,15 @@ func linkBudget(t *testing.T, e *env) {
 	// for it on its replica of the role all).
 	testenv.WaitFor(t, "the first link", 10*time.Second, func() bool { return get() == http.StatusTemporaryRedirect })
 	time.Sleep(time.Second)
-	start := time.Now()
+	starts := make([]time.Time, 0, requests)
 	for range requests {
+		starts = append(starts, time.Now())
 		if code := get(); code != http.StatusTemporaryRedirect {
 			t.Fatalf("%s: %d, want 307", path, code)
 		}
 	}
-	loop := time.Since(start)
 	time.Sleep(300 * time.Millisecond)
-	got := testenv.PerRequest(testenv.StatementLogSince(t, start.Add(-100*time.Millisecond)), requests, loop, background)
+	got := testenv.PerRequest(testenv.StatementLogSince(t, starts[0].Add(-100*time.Millisecond)), starts, background)
 	total := 0
 	for _, v := range got {
 		total += v

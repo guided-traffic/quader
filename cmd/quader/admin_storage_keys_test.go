@@ -227,6 +227,20 @@ func TestR_STOR_085_TheExportAndTheImportRoundTrip(t *testing.T) {
 	})
 }
 
+// changedSealed returns the envelope v1:<root key>:<base64> with one byte of its payload changed and encoded again, so the result is
+// always a well-formed envelope of other bytes and meets the authentication check, not the check of the form. Flipping a bit of a
+// character of the encoding instead gives a character outside the alphabet for some draws ('A' becomes '@', 'a' becomes '`').
+func changedSealed(t *testing.T, sealed string) string {
+	t.Helper()
+	i := strings.LastIndex(sealed, ":")
+	payload, err := base64.StdEncoding.DecodeString(sealed[i+1:])
+	if i < 0 || err != nil || len(payload) == 0 {
+		t.Fatalf("not an envelope of the form v1:<root key>:<base64>: %v", err)
+	}
+	payload[len(payload)-1] ^= 1
+	return sealed[:i+1] + base64.StdEncoding.EncodeToString(payload)
+}
+
 func TestR_STOR_085_AnImportThatDoesNotFitExitsTwoAndWritesNothing(t *testing.T) {
 	ring := keysRing(t, "k1", map[string]byte{"k1": 1})
 	src := newKeysFixture(ring, installation)
@@ -268,9 +282,7 @@ func TestR_STOR_085_AnImportThatDoesNotFitExitsTwoAndWritesNothing(t *testing.T)
 			want: `does not open with the root key "k1" of this key ring`,
 		},
 		{name: "a sealed value changed", file: edited(func(d *keys.Document) {
-			s := []byte(d.Keys[0].Sealed)
-			s[len(s)-3] ^= 1
-			d.Keys[0].Sealed = string(s)
+			d.Keys[0].Sealed = changedSealed(t, d.Keys[0].Sealed)
 		}), want: `does not open with the root key "k1" of this key ring: the value was changed, or it was sealed for another identifier`},
 		{
 			name: "a sealed value moved to another key", file: edited(func(d *keys.Document) { d.Keys[0].Sealed, d.Keys[1].Sealed = d.Keys[1].Sealed, d.Keys[0].Sealed }),

@@ -70,17 +70,21 @@ func parseStatements(log string) []Statement {
 	return stmts
 }
 
-// PerRequest returns the statements of a window of n requests by name, per request (R-ARCH-027, Q-MAL-92). A statement is the
-// requests' when it ran for at least nine requests in ten and its runs spread over at least half of loop, the time the n requests
-// took: a statement of the request runs once in each of them, while a background burst of the same count (the scheduler's tick,
-// which offers every task's slot at once, one InsertJob per task) runs within milliseconds. The log is read from a container that
-// other writers share, so a line can be lost where two writers meet: nine in ten suffice, and the number per request is the
-// nearest whole one. Names in background are the replica's own (probes, registration) and never count.
-func PerRequest(stmts []Statement, n int, loop time.Duration, background map[string]bool) map[string]int {
+// PerRequest returns the statements of a window of requests by name, per request (R-ARCH-027, Q-MAL-92); starts holds the instant
+// each request began, in order, one per request. A statement is the requests' when it ran for at least nine requests in ten and
+// its runs spread over at least half of the requests' span (requestSpan): a statement of the request runs once in each of them,
+// while a background burst of the same count (the scheduler's tick, which offers every task's slot at once, one InsertJob per
+// task) runs within milliseconds. The log is read from a container that other writers share, so a line can be lost where two
+// writers meet: nine in ten suffice, and the number per request is the nearest whole one. Names in background are the replica's
+// own (probes, registration) and never count. A steady rhythm of a background loop that runs through the whole window (a
+// scheduled task's first run, which a replica of the role all starts at its first tick) passes the rule like a statement of the
+// requests; no rule on the instants of the log tells the two apart, so a test waits for such a run to end before its window.
+func PerRequest(stmts []Statement, starts []time.Time, background map[string]bool) map[string]int {
 	type runs struct {
 		count       int
 		first, last time.Time
 	}
+	n := len(starts)
 	by := map[string]*runs{}
 	for _, s := range stmts {
 		name := StatementName(s.Text)
@@ -97,14 +101,29 @@ func PerRequest(stmts []Statement, n int, loop time.Duration, background map[str
 			r.last = s.At
 		}
 	}
+	span := requestSpan(starts)
 	out := map[string]int{}
 	for name, r := range by {
-		if background[name] || r.count*10 < n*9 || r.last.Sub(r.first) < loop/2 {
+		if n == 0 || background[name] || r.count*10 < n*9 || r.last.Sub(r.first) < span/2 {
 			continue
 		}
 		out[name] = (r.count + n/2) / n
 	}
 	return out
+}
+
+// requestSpan is what the spread of a statement's runs is measured against: the time from the second request's start to the last
+// one's. A statement that runs in the first and in the last request spreads at least over that, however slow any request was and
+// wherever in a request it runs: its run in the first request ended before the second began, and its run in the last began at the
+// last start. The time the requests took in all would not do: one slow request at the end made it long and the spread short, and a
+// statement that ran sixty times in thirty requests was not counted (seen twice under load, on 2026-11-22 and 2026-11-23). A burst
+// of the scheduler counts only when it lasts half of the span of the requests between, which are many milliseconds where its runs
+// fall within a few.
+func requestSpan(starts []time.Time) time.Duration {
+	if len(starts) < 2 {
+		return 0
+	}
+	return starts[len(starts)-1].Sub(starts[1])
 }
 
 // StatementName is the sqlc name of a statement ("-- name: GetLiveItem :many"), or its first words.

@@ -80,24 +80,101 @@ func TestSizeLimit(t *testing.T) {
 	})
 }
 
-// concurrency tracks how many requests the upstream serves at once.
-type concurrency struct{ cur, peak atomic.Int64 }
+// concurrency tracks how many requests the upstream serves at once. With a target set (expect), a request that enters waits until
+// the target is in the upstream at once, so that a peak the slots allow is reached however slowly the machine brings the requests
+// there; slotsBound ends the wait of a hung test.
+type concurrency struct {
+	cur, peak atomic.Int64
+	mu        sync.Mutex
+	target    int64
+	reached   chan struct{}
+	deadline  time.Time
+}
+
+// slotsBound is the upper bound of every wait of TestFetchSlots: it only ends a hung test. The replicas' queue timeout and the
+// upstream's read timeout of the test are longer, so that neither ends a request the test still waits for.
+const slotsBound = 60 * time.Second
+
+// expect makes the requests that enter from now on wait until n of them are in the upstream at once; 0 lets them through.
+func (c *concurrency) expect(n int64) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.target, c.reached, c.deadline = n, make(chan struct{}), time.Now().Add(slotsBound)
+	if n <= 0 {
+		close(c.reached)
+	}
+}
 
 func (c *concurrency) enter() {
 	n := c.cur.Add(1)
 	for {
 		p := c.peak.Load()
 		if n <= p || c.peak.CompareAndSwap(p, n) {
-			return
+			break
 		}
+	}
+	c.mu.Lock()
+	reached, deadline := c.reached, c.deadline
+	if reached != nil && c.target > 0 && n >= c.target {
+		select {
+		case <-reached:
+		default:
+			close(reached)
+		}
+	}
+	c.mu.Unlock()
+	if reached == nil {
+		return
+	}
+	select {
+	case <-reached:
+	case <-time.After(time.Until(deadline)):
 	}
 }
 
 func (c *concurrency) leave() { c.cur.Add(-1) }
 
+// gate holds the upstream's answers of a route until the test opens it, or the request ends; held counts the requests it holds.
+type gate struct {
+	open chan struct{}
+	once sync.Once
+	held atomic.Int64
+}
+
+func newGate(t *testing.T) *gate {
+	g := &gate{open: make(chan struct{})}
+	t.Cleanup(g.release)
+	return g
+}
+
+func (g *gate) release() { g.once.Do(func() { close(g.open) }) }
+
+// route answers "x" once the gate is open.
+func (g *gate) route() proxytest.Route {
+	return proxytest.Route{Handler: func(w http.ResponseWriter, r *http.Request) {
+		g.held.Add(1)
+		defer g.held.Add(-1)
+		select {
+		case <-g.open:
+		case <-r.Context().Done():
+			return
+		}
+		w.Header().Set("Content-Type", "application/octet-stream")
+		_, _ = w.Write([]byte("x"))
+	}}
+}
+
+// patientRead is the upstream's read timeout of the remotes of TestFetchSlots, longer than slotsBound.
+var patientRead = 2 * int(slotsBound/time.Millisecond)
+
+// patient is the replicas' queue timeout of TestFetchSlots, longer than slotsBound.
+func patient(p *config.Proxy) { p.QueueTimeoutSeconds = 2 * int(slotsBound/time.Second) }
+
 // TestFetchSlots is R-REPO-040: the budget of limits.maxConcurrentFetches is shared out
 // per replica as ceil(budget / n), and a waiter for another replica's flight takes no
-// slot.
+// slot. No wait of it is a guess about the machine's speed: a peak the slots allow is
+// waited for (concurrency.expect), a slow upstream is a gate the test opens, and the
+// replicas' queue timeout and the upstream's read timeout are longer than slotsBound.
 func TestFetchSlots(t *testing.T) {
 	setup := func(t *testing.T, budget int) (*env, *proxytest.Upstream, proxy.Remote, *concurrency) {
 		e := newEnv(t)
@@ -107,12 +184,15 @@ func TestFetchSlots(t *testing.T) {
 			up.Set("/pkg/s/-/s-"+strconv.Itoa(i)+".tgz", proxytest.Route{Handler: func(w http.ResponseWriter, r *http.Request) {
 				c.enter()
 				defer c.leave()
+				// The hold in which a connection above the share would be seen beside the others.
 				time.Sleep(400 * time.Millisecond)
 				w.Header().Set("Content-Type", "application/octet-stream")
 				_, _ = w.Write([]byte("x"))
 			}})
 		}
-		rem := e.remote("slots", up, func(s *repository.RemoteSettings) { s.Limits.MaxConcurrentFetches = budget })
+		rem := e.remote("slots", up, func(s *repository.RemoteSettings) {
+			s.Limits.MaxConcurrentFetches, s.ReadTimeoutMs = budget, patientRead
+		})
 		return e, up, rem, c
 	}
 	run := func(reps []*replica, rem proxy.Remote, n int) {
@@ -132,14 +212,16 @@ func TestFetchSlots(t *testing.T) {
 	t.Run("R-REPO-040 a budget of 4 on two replicas keeps at most 4 connections open and 2 per replica", func(t *testing.T) {
 		e, _, rem, c := setup(t, 4)
 		two := func() int { return 2 }
-		a, b := e.newReplica("a", replicaOpts{replicas: two}), e.newReplica("b", replicaOpts{replicas: two})
+		a, b := e.newReplica("a", replicaOpts{replicas: two, proxy: patient}), e.newReplica("b", replicaOpts{replicas: two, proxy: patient})
+		c.expect(0)
 		run([]*replica{a}, rem, 10) // one replica alone: its share is 2
 		if p := c.peak.Load(); p > 2 {
 			t.Fatalf("one replica held %d connections open, its share is ceil(4 / 2) = 2", p)
 		}
 		c.peak.Store(0)
+		c.expect(4) // the first requests wait at the upstream until both replicas' shares of 2 are in it at once
 		run([]*replica{a, b}, rem, 20)
-		if p := c.peak.Load(); p > 4 || p < 3 {
+		if p := c.peak.Load(); p != 4 {
 			t.Fatalf("two replicas held %d connections open, want the budget of 4", p)
 		}
 	})
@@ -148,8 +230,10 @@ func TestFetchSlots(t *testing.T) {
 		n := atomic.Int64{}
 		n.Store(2)
 		count := func() int { return int(n.Load()) }
-		a, b, d := e.newReplica("a", replicaOpts{replicas: count}), e.newReplica("b", replicaOpts{replicas: count}), e.newReplica("c", replicaOpts{replicas: count})
+		a, b := e.newReplica("a", replicaOpts{replicas: count, proxy: patient}), e.newReplica("b", replicaOpts{replicas: count, proxy: patient})
+		d := e.newReplica("c", replicaOpts{replicas: count, proxy: patient})
 		n.Store(3)
+		c.expect(0)
 		run([]*replica{a, b, d}, rem, 20)
 		if p := c.peak.Load(); p > 6 {
 			t.Fatalf("three replicas held %d connections open, at most 3 * 2 = 6", p)
@@ -163,34 +247,55 @@ func TestFetchSlots(t *testing.T) {
 	t.Run("R-REPO-040 a replica that waits for another replica's flights fetches other items at once", func(t *testing.T) {
 		e := newEnv(t)
 		up := e.upstream()
+		// a's two flights are held at the upstream until b's own fetches have reached it; each of b's own fetches records how
+		// many of a's flights were still held when it arrived.
+		slow := newGate(t)
+		var mu sync.Mutex
+		var heldAtOwn []int64
 		for i := range 4 {
-			up.Set("/pkg/w/-/w-"+strconv.Itoa(i)+".tgz", proxytest.Route{Body: []byte("x"), Type: "application/octet-stream", Delay: 3 * time.Second})
+			path := "/pkg/w/-/w-" + strconv.Itoa(i) + ".tgz"
+			if i < 2 {
+				up.Set(path, slow.route())
+				continue
+			}
+			up.Set(path, proxytest.Route{Handler: func(w http.ResponseWriter, _ *http.Request) {
+				mu.Lock()
+				heldAtOwn = append(heldAtOwn, slow.held.Load())
+				mu.Unlock()
+				w.Header().Set("Content-Type", "application/octet-stream")
+				_, _ = w.Write([]byte("x"))
+			}})
 		}
-		rem := e.remote("slots-wait", up, func(s *repository.RemoteSettings) { s.Limits.MaxConcurrentFetches = 4 })
+		rem := e.remote("slots-wait", up, func(s *repository.RemoteSettings) { s.Limits.MaxConcurrentFetches, s.ReadTimeoutMs = 4, patientRead })
 		two := func() int { return 2 }
-		a, b := e.newReplica("a", replicaOpts{replicas: two}), e.newReplica("b", replicaOpts{replicas: two})
+		a, b := e.newReplica("a", replicaOpts{replicas: two, proxy: patient}), e.newReplica("b", replicaOpts{replicas: two, proxy: patient})
 		for i := range 2 {
 			go a.artifact(rem, "pkg/w/-/w-"+strconv.Itoa(i)+".tgz")
 		}
-		waitFor(t, "a to lead two slow fetches", 5*time.Second, func() bool { return up.Total() == 2 })
-		start := time.Now()
+		waitFor(t, "a to lead two slow fetches", slotsBound, func() bool { return slow.held.Load() == 2 })
 		for i := range 4 { // b waits on a's two flights and fetches two others
 			go b.artifact(rem, "pkg/w/-/w-"+strconv.Itoa(i)+".tgz")
 		}
-		waitFor(t, "b to fetch the two other items while it waits for a's flights", 2*time.Second, func() bool { return up.Total() == 4 })
-		if took := time.Since(start); took > 2*time.Second {
-			t.Fatalf("b needed %s to start its own fetches: the waiters took its slots", took)
+		waitFor(t, "b to fetch the two other items", slotsBound, func() bool {
+			mu.Lock()
+			defer mu.Unlock()
+			return len(heldAtOwn) == 2
+		})
+		slow.release()
+		if heldAtOwn[0] != 2 || heldAtOwn[1] != 2 {
+			t.Fatalf("b's own fetches reached the upstream while %v of a's two flights were held, want 2 each: the waiters took its slots", heldAtOwn)
 		}
 	})
 	t.Run("R-REPO-040 a fetch that finds no free slot answers 503 with Retry-After 5 after the queue timeout", func(t *testing.T) {
 		e := newEnv(t)
 		up := e.upstream()
-		up.Set("/pkg/q/-/q-0.tgz", proxytest.Route{Body: []byte("x"), Type: "application/octet-stream", Delay: 3 * time.Second})
+		slow := newGate(t) // the one slot stays taken until the subtest ends
+		up.Set("/pkg/q/-/q-0.tgz", slow.route())
 		up.Set("/pkg/q/-/q-1.tgz", proxytest.Route{Body: []byte("x"), Type: "application/octet-stream"})
-		rem := e.remote("slots-queue", up, func(s *repository.RemoteSettings) { s.Limits.MaxConcurrentFetches = 1 })
+		rem := e.remote("slots-queue", up, func(s *repository.RemoteSettings) { s.Limits.MaxConcurrentFetches, s.ReadTimeoutMs = 1, patientRead })
 		a := e.newReplica("a", replicaOpts{proxy: func(p *config.Proxy) { p.QueueTimeoutSeconds = 1 }})
 		go a.artifact(rem, "pkg/q/-/q-0.tgz")
-		waitFor(t, "the slot to be taken", 5*time.Second, func() bool { return up.Total() == 1 })
+		waitFor(t, "the slot to be taken", slotsBound, func() bool { return slow.held.Load() == 1 })
 		s := a.artifact(rem, "pkg/q/-/q-1.tgz")
 		if s.status != 503 || s.header.Get("Retry-After") != "5" || !strings.Contains(string(s.body), "fetch_queue_timeout") {
 			t.Fatalf("%d %v %s", s.status, s.header, s.body)

@@ -126,6 +126,9 @@ func waitDone(t *testing.T, done <-chan bool) bool {
 	return false
 }
 
+// largeBound ends a wait of TestR_BAS_054_LargeArtifacts for a state the fill reaches; it only ends a hung test.
+const largeBound = 30 * time.Second
+
 // TestR_BAS_054_LargeArtifacts: a ranged miss streams from the spool with the range's last 64 KiB withheld until the commit;
 // a second caller of the running fill, with a credential of its own that reads part of the repository, is served the whole
 // blob from the spool after one conditional request, without a second transfer; a fill that fails its digest cuts both.
@@ -149,15 +152,19 @@ func TestR_BAS_054_LargeArtifacts(t *testing.T) {
 			}
 			return r, err
 		}
-		// The first caller asks for the first 128 KiB.
+		// The first caller asks for the first 128 KiB. Each wait below is for a state the fill reaches while the test holds
+		// its body; the bound only ends a hung test.
 		a, aDone := serveAsync(s.harness, big, "Authorization", bearer(s.full), "Range", "bytes=0-131071")
 		body.release(1)
-		eventuallyTrue(t, 5*time.Second, "the ranged caller's first byte before the fill ends", func() bool { _, b := a.got(); return len(b) > 0 })
+		eventuallyTrue(t, largeBound, "the ranged caller's first byte before the fill ends", func() bool { _, b := a.got(); return len(b) > 0 })
 		// The second caller reads part of the repository: it gets its own permission first.
 		b, bDone := serveAsync(s.harness, big, "Authorization", bearer(s.part))
-		eventuallyTrue(t, 5*time.Second, "the second caller's conditional request", func() bool { return s.main.count(mainclient.KindConditional) == 1 })
-		body.release(11) // 192 KiB written
-		eventuallyTrue(t, 5*time.Second, "the second caller to follow the spool", func() bool { _, got := b.got(); return len(got) >= 128<<10 })
+		eventuallyTrue(t, largeBound, "the second caller's conditional request", func() bool { return s.main.count(mainclient.KindConditional) == 1 })
+		body.release(11) // 192 KiB written; the fill waits for the next step, so nothing is committed before the test releases it
+		eventuallyTrue(t, largeBound, "the second caller to follow the spool", func() bool { _, got := b.got(); return len(got) >= 128<<10 })
+		// The ranged caller streams at its own pace: the second caller's progress says nothing about how far it has come, so
+		// the test waits until it holds the 64 KiB the spool allows it, and then that it holds no more.
+		eventuallyTrue(t, largeBound, "the ranged caller to stream the first 64 KiB of its range", func() bool { _, got := a.got(); return len(got) >= 64<<10 })
 		if _, got := a.got(); len(got) != 64<<10 {
 			t.Fatalf("the ranged caller holds %d bytes while the fill runs, want 64 KiB: its last 64 KiB wait for the commit", len(got))
 		}

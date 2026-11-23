@@ -42,18 +42,19 @@ func perRequestAs(t *testing.T, e *env, r *testenv.Replica, path, token string) 
 		t.Fatalf("warm-up %s: %d %.200s", path, a.Status, a.Body)
 	}
 	time.Sleep(time.Second)
-	start := time.Now()
+	starts := make([]time.Time, 0, requests)
 	for range requests {
+		starts = append(starts, time.Now())
 		if a := e.st.Do(r, "GET", path, token, nil); a.Status != 200 {
 			t.Fatalf("%s: %d", path, a.Status)
 		}
 	}
-	loop := time.Since(start)
 	time.Sleep(300 * time.Millisecond)
 	// A statement of the request runs once per download and across the downloads; the scheduler's tick, which offers every
-	// task's slot at once, does not count however many tasks there are (testenv.PerRequest, Q-MAL-92).
-	stmts := testenv.StatementLogSince(t, start.Add(-100*time.Millisecond))
-	out := testenv.PerRequest(stmts, requests, loop, background)
+	// task's slot at once, does not count however many tasks there are, and one slow download does not hide the downloads'
+	// statements (testenv.PerRequest, Q-MAL-92).
+	stmts := testenv.StatementLogSince(t, starts[0].Add(-100*time.Millisecond))
+	out := testenv.PerRequest(stmts, starts, background)
 	if len(out) == 0 {
 		counts := map[string]int{}
 		for _, s := range stmts {

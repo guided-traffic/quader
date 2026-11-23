@@ -5489,9 +5489,9 @@ the replica's cache answers costs none.
 
 Measurement:
 - The budget tests of `test/integration/querybudget` and `test/integration/vulnblock` count a statement as a request's when it ran for nine requests in ten of a window
-  and its runs spread over at least half of it (`testenv.PerRequest`): the scheduler's tick offers every task's slot at once, one
-  `InsertJob` per task, and is no statement of a download however many tasks there are
-  ([malware-scanning.md](malware-scanning.md) Q-MAL-92).
+  and its runs spread over at least half of the time from the second request's start to the last one's (`testenv.PerRequest`): the
+  scheduler's tick offers every task's slot at once, one `InsertJob` per task, and is no statement of a download however many tasks
+  there are, and one slow request does not hide the requests' statements ([malware-scanning.md](malware-scanning.md) Q-MAL-92).
 - `perf/` holds k6 scripts and a Go driver for P-12. The full run of Test and Release on the commit that closes the phase runs them on a staging cluster
   sized like the reference, and runs P-16 with the `web` Deployment scaled from 3 to 6 replicas.
 - Pull requests run Go micro-benchmarks for `Match`, `Rewrite`, `Merge` and `authz.Decide`. A
