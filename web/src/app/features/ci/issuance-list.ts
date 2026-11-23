@@ -252,6 +252,10 @@ function dayStart(value: string, plusDays = 0): string | undefined {
     td.wrap {
       overflow-wrap: anywhere;
     }
+    /* A date and a time are one value (Q-UI-428): "Nov 23, 2026, 10:58:22 AM" broke after its year at 1,280 px. */
+    th time {
+      white-space: nowrap;
+    }
   `,
 })
 export class IssuanceList {
