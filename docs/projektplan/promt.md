@@ -441,7 +441,7 @@ order is what a user or an operator meets first. The state is kept here.
 | Screens, first round | fourteen findings of screens (the entries of repository, version, vulnerability and audit pages, the npm form, the malware settings, the signatures' lists) | landed at 11:51 (twenty-two commits, the storage walk's race among them) |
 | W1 · Authorization answers the same in every format | the administrator flag shown to `tokens:read` alone (H-836); the global read policy and the default-scope token; the refusals that end a virtual read | landed at 10:49 |
 | W3 · The download limits count what they promise | refused requests that still count (the upstream budget, an endpoint's rate class); seven paths without a test; three statements; the help text of waiting downloads | landed at 11:37 |
-| W2 · Scanning keeps its promises to an operator | a scan attempt lost when a repository is enabled again; the scanner's spool that `QuaderSpoolNearlyFull` does not see; layer writes without a flush; a removed scanner pod shown ready; two measurements | landed at 12:45 (six commits); the second step is built (six commits, back at 13:58) and sent back once: a single read of a request must not become a transaction, a rebase, four more rows of the audit events' table; it holds the request's statement timeout, the spools' flushes, the scanner's full disk, the command `quader admin secrets status`, the malware rows of the audit events' table |
+| W2 · Scanning keeps its promises to an operator | a scan attempt lost when a repository is enabled again; the scanner's spool that `QuaderSpoolNearlyFull` does not see; layer writes without a flush; a removed scanner pod shown ready; two measurements | landed at 12:45 (six commits); the second step landed at 15:13 (seven commits): the request's statement bound without a round trip more for a single read, the spools' flushes, the scanner's full disk, the command `quader admin secrets status`, the malware rows of the audit events' table. Left open: a cancel through poolers that are not peers (H-1662, section 8) |
 | W6 · The pipeline loses nothing and scans every image it runs | a push that cancels the run before it; the analyser's and ClamAV's images never scanned; the evidence record and the badge that stand still; a `unit` target with the emptied AWS environment; the lint's limit and serial runs; fuzz names; the pins of the e2e legs; a partial dispatch; the disk watcher; the key of the clients' image cache, which changes with every commit, so a push never hits it | landed at 11:50 (fourteen commits; the disk watcher not built, see With the owner); its first runs are read against what each item must show; the evidence record with the release follows as a step of its own |
 | W5a · NuGet and OCI | NuGet's README route that answers 501; the challenge of an upstream token; what the two formats' pages count and the code does not; the tag listing's measurement with 100,000 tags | landed at 13:18 (five commits and the repair of a stale test): NuGet serves the icon, the license file and the README a package embeds; an upstream's token requests are counted; the kit holds every format's challenge; the tag listing measured with 100,000 tags. A second step is in work since 13:19: the version list that reads every row for every page, in every format; the shadowing check that OCI and Debian do not record |
 | W5b · Debian and Ansible Galaxy | `member_expired` and a member's recorded `Date` without an integration case; the wiki's cases; the requirements no test names; the check against the public Galaxy; first the Debian test that made `main` red for the third time | the Debian remote's repair landed at 11:37, the rest at 12:45 (two commits); the second step landed at 13:47 (three commits): collections with symbolic links, a stale `InRelease` after a key change, a requirement's numbers, the formats' log lines without the replica's fields |
@@ -469,37 +469,6 @@ records the recorder that tells such a stall apart).
   Principal"; `project-screens.spec.ts`, "Service account of web"): both failed one `make web-test` on 2026-11-20 at a
   host load of 53 and passed when their files ran alone. A fixed wait measures the host; the tests should wait for the
   lookup's answer.
-- **F-141 · `e2e (ci)` was red once for a certificate the test did not trust** (2026-11-18, Test and Release 44346085826, the
-  run of 1785aff2): `GET /api/v1/authz/me` of the fixture of `TestCIPipeline` answered "tls: failed to verify certificate:
-  x509: certificate signed by unknown authority (possibly because of "x509: ECDSA verification failure" …)"; `TestCITokens`
-  and `TestCITasks` failed with it. Nothing of that push touches certificates or the edge. Cause not read; to be read if it
-  shows again (compare F-127).
-  Read on 2026-11-23 from the pipeline's runs (artifact `e2e-ci-artifacts-ci` of 44346085826, kept until
-  2026-12-02), cause found and not repaired: cert-manager issued the root `quader-dev-ca` twice at the
-  profile's start (CertificateRequests `quader-dev-ca-1` at 16:28:35.29 and `quader-dev-ca-2` at 16:28:35.60
-  UTC, the second because its cache did not see the first Secret yet), and signed `quader-edge-tls`,
-  `quader-tls`, `quader-s3-tls`, `quader-customers-tls` and `quader-customers-wildcard-tls` in between with
-  the first key, so the edge's certificate does not verify against the `ca.crt` the tests trust; the secrets
-  operator ran without a restart and no Secret changed during the run. To repair: `task_pki` of
-  `deploy/dev/up.sh` applies the root and its leaves of `deploy/dev/pki.yaml` in one apply; the self-signed
-  Issuer and the root go first, and the leaves after `certificate/quader-dev-ca` is Ready (about 15 lines, one
-  start of the profile). Not seen again in 692 starts of the profile in CI since.
-- **Partly closed; open: the CI legs' cause, the root CA issued twice at the profile's start, whose repair
-  F-141's entry names.** Closed: the local cause, the secrets operator OOM-killed at its limit of 128 MiB, by
-  f98e80b4a (2026-11-12): the profile gives it 512 MiB (`deploy/dev/up.sh`) and helm keeps two revisions per
-  release (`HELM_MAX_HISTORY` in `deploy/dev/lib.sh`); (2) whether the CI legs had the same cause: they had
-  not. The run's kept cluster state (artifact `e2e-cluster-state-push` of 43022311289, kept until 2026-11-25)
-  shows the secrets operator 21 minutes up without a restart and cert-manager issuing the root `trove-dev-ca`
-  twice (`trove-dev-ca-1` and `-2`), as in F-141; the migration Job's refused password is the one
-  `TestE04MigrationFailure` sets on purpose (`quader-e2e-db-wrong`). As it stood:
-  **F-127 · `e2e (push)` failed with a certificate the job's own CA did not verify** (Test and Release 43022311289, 9220e777, green
-  on its first re-run): about four minutes after `up.sh`'s ping check, `x509: ECDSA verification failure` against the job's own
-  `quader dev CA` on every request through the edge and `password authentication failed for user "quader"` in the migration Job of
-  `TestE04MigrationFailure`; both are secrets the in-cluster generator writes. **Cause found locally on 2026-11-12:** the
-  internal-secrets-operator of the local kind cluster was OOM-killed at every start (limit 128 MiB, 78 helm release Secrets of 23 MB
-  in its cache, amd64 emulation on the arm64 host); the dev profile now gives it 512 MiB and keeps two helm revisions per release.
-  Not verified: whether the CI legs had the same cause (CI runs a fresh cluster on amd64). The operator's log is kept in the e2e
-  evidence (`kept-pod-logs/`) and not yet read.
 - **F-126 · `TestConcurrentWritersOnOnePath` R-STOR-003 refused one of the PUTs or DELETEs of six writers on one folder once**
   (Test and Release 43013671879, shard b); the status was not logged. **Read in the night of 2026-11-18, cause not established:** a
   delete never waits on a folder lock (`SKIP LOCKED`), other deadlocks are retried three times; a deploy's link step gives up with
@@ -570,9 +539,6 @@ records the recorder that tells such a stall apart).
 - `messages.xlf` has drifted from `npm run extract-i18n`: 687 location notes and the unit order differ. No gate checks it.
 - Many existing web specs carry decision IDs in their test names (`app.projects.spec.ts`, `app.routes.spec.ts`, `app.spec.ts`), where
   the convention is requirement IDs.
-- UI development profile: the volumes of `deploy/ui-dev` are shared by the whole machine, but the key ring in `.dev/ui-dev` belongs to
-  each checkout, so a second checkout writes a new key into the same database. [web-ui.md](../developer/web-ui.md) describes the
-  workaround.
 - A disk watcher in the jobs, so that a lost runner can be read, was proposed and not built.
 - **Partly closed; open: whether a browser that restores many tabs at once reaches the default read limit (not
   measured).** Closed: the renders' 429s, by 8bcfe103a (2026-11-12): the UI development profile raises the
@@ -659,38 +625,23 @@ records the recorder that tells such a stall apart).
   `signatures` on 2026-11-21; the evaluation itself allows, which a unit test now holds. A test that
   expects a refusal can pass for this reason alone. To do (W4): the helper fails when a selector resolves
   to no row, then every area is run once and each test that relied on it is repaired.
-- **Seen by the builder of W6 on 2026-11-23, outside its package** ((1) closed by package W7 the same day: the list is
-  read once, when a recipe needs it, and `TestMakeListsTheIntegrationPackagesOnlyWhenARecipeNeedsThem` holds that `make -n
-  cyclo` runs no `go list`): (1) the Makefile lists the integration
+- **Partly closed; open: (2) the newest report that `tools/fetch-e2e-reports.sh` takes by the artifact's
+  creation time, which can be an older commit's (with the evidence record's step), and (3)
+  `TestR_MAL_014_APendingDownloadIsServedWhenItsVerdictArrives` under load (W4).** Closed: (1), by d9e79a585
+  (2026-11-23): the Makefile reads `INTEGRATION_ALL`, the list of the integration packages, the first time a
+  recipe expands it, and the checkout's image tag the same way; held by
+  `TestMakeListsTheIntegrationPackagesOnlyWhenARecipeNeedsThem` (unit, `internal/tools/ciworkflows`, about
+  3 s), which holds that `make -n cyclo` runs no `go list` and no `git` and that
+  `make -n test-integration SHARD=a` lists the packages once; it passes. That the gating jobs without the
+  module cache no longer download the module graph is to be read from the first run after d9e79a585.
+  As it stood:
+  **Seen by the builder of W6 on 2026-11-23, outside its package:** (1) the Makefile lists the integration
   packages with `go list` on every call of `make`, which downloads the modules in jobs without the module
   cache, the gating jobs `image`, `container-scan`, `malware-scan` and `release-tooling` among them (W7,
   which takes the Makefile next); (2) with runs of `main` side by side, `tools/fetch-e2e-reports.sh` takes
   the newest report by the artifact's creation time, which can be an older commit's (with the evidence
   record's step); (3) `TestR_MAL_014_APendingDownloadIsServedWhenItsVerdictArrives` failed once at a load
   of about 100 (5.01 s against the gate's wait of 5 s; alone it passed) (W4).
-- **Partly closed; open: the five sideways, whose repair is the decision at the end of the entry (the stored
-  document of a Debian remote repository shortened with its length, and a bound for the exemption of code
-  blocks; package W9).** Closed: the stop, by c4f078e75 (2026-11-23): the walk of `admin-system-storage` in
-  `web/e2e/renders/screens.ts` takes the page's two toggles by their place, checks that there are two and
-  waits for each to open and stand still; that the layout checks pass the screen in the pipeline is to be read
-  from the first runs of the push of 11:51. As it stood:
-  **The layout checks stopped once at the admin area's Storage page (Test and Release 45140417183 of
-  2026-11-23, a push without a change under `web/`; the run before it was green):** `admin-system-storage`
-  "stopped at 390 px: locator.click: Timeout 15000ms exceeded", waiting for the second closed disclosure of
-  the page; the report also counts "5 sideways", which fail nothing. **The cause, read by a research from
-  the reports and the code (10:26 to 10:36, no browser run):** the walk clicks through a list that shrinks
-  as it clicks (`web/e2e/renders/screens.ts`, the two closed disclosures selected by their closed state, so
-  after the first click there is no second match if the page has rendered in between); a race the walk
-  usually wins. It stopped the same way once before, in the cancelled run 45104983204, and in a builder's
-  local run under load. No state is remembered and no data differs. The repair (select the toggles by
-  something a click does not change, wait for each to open) went to the builder of the screens' first
-  round at 10:37 as a commit of its own. **The five sideways** are the same five in every report since
-  2026-11-20: four are the stored document of a Debian remote repository, one line of about 77,000
-  characters (the archive's keyring in the preset, shipped that day) in a code block half a million pixels
-  wide, which the check's exemption of every code block hides; one is a table of 8 px in the manual's
-  page, allowed as a document's table. **Decided by the development agent (W9):** the stored document
-  shows a long string shortened with its length and copies whole, and the exemption of code blocks gets a
-  bound, so that the next such block fails its screen.
 - **Two more tests failed on a starved machine on 2026-11-23, about 10:10 to 10:17, at a load of 45 to 75
   (seen by the builder of W1, not repeated by it):** the web's `ci-editor-screens.spec.ts`, "the groups of
   a system mapping are chosen from the search" (no match for `web-leads`; alone the file passed 41 of 41),
@@ -761,7 +712,14 @@ records the recorder that tells such a stall apart).
   the 50 parallel downloads of the built-in profile of a technical token, and its requests get 429 after the
   limit's wait of 10 s (seen in the drain leg on 2026-11-20). A switchover of PostgreSQL holds longer than that;
   the switchover legs were green on 2026-11-19 with the limit enforced, and why was not looked at.
-- The nightly's legs record the pods' memory but not the primary's connections by application, the memory of a
+- **Partly closed; open: the memory of a connection and each pool's size (the replicas' metric
+  `quader_db_pool_max_connections`, which the record does not read).** Closed: the primary's connections by
+  application, by d9e79a585 (2026-11-23, F-169): the evidence recorder samples `pg_stat_activity` of the
+  primary of `quader-db` every 5 s by `application_name` and state into `db-connections.csv` (`db_sampler` of
+  `deploy/dev/e2e-evidence.sh`, described in `docs/developer/e2e.md`), and every connection names its replica
+  and pool in `application_name` (`internal/meta/postgres/connect.go`). No test holds the sampler; its first
+  file comes from the next kind leg that records evidence. As it stood:
+  The nightly's legs record the pods' memory but not the primary's connections by application, the memory of a
   connection or each pool's size, so a growth of the database's memory between two runs cannot be assigned
   (2026-11-20).
 - `TestJobs`, the case of 100 coalesced enqueues (integration, area `coordination`), made three executions where
@@ -778,54 +736,11 @@ records the recorder that tells such a stall apart).
   `QUADER_PERF_GATE`, `QUADER_IT_NO_DOCKER` and `QUADER_DEB_PROOF_DIR`. Dormant: nothing in the repository exports
   one around those tests today, and CI sets none. The tests should start their processes with the variables they
   name; not fixed.
-- **Partly closed; open: what Settings › Malware scanning shows on the UI stack, where the scanning is on and
-  no updater is configured (not looked at).** Closed: the task's error, by 4a22f8fd4 (2026-11-21, Q-MAL-98):
-  with no updater configured a run imports and records nothing, and before a first set a missing source is
-  waiting, logged at most once an hour, with no failure and no event (`internal/malware/database/task.go`; the
-  case "Q-MAL-98 before a first set an incomplete set is no failure" of
-  `test/integration/malware/database_test.go`). As it stood:
-  **The task `malware-sync-db` fails every 30 minutes where the scanning is on and nothing fetches a database**
-  (seen on 2026-11-21 at the start of the UI development backend: "job failed … database_missing: no [main daily]
-  container: the set needs main and daily", at the level of an error). A start without a scanner keeps the scan
-  job idle and says so in a check that does not gate (Q-MAL-60); the database's task has no such state, so the
-  UI stack and any start outside the chart that keeps the defaults (the scanning on, the task every 30 minutes)
-  log an error at every tick and record a failed run. An installation of the chart has `freshclam` beside its
-  worker and is touched once: on the owner's installation the task's first run came two seconds before `freshclam`
-  began its first update, failed with that error and an audit event `malware.database.failed`, and the next
-  run 16 s later imported the database. Not looked at: what **Settings › Malware scanning** shows for it on the UI stack.
-  Not fixed: either the task is idle while its directory was never filled and no scanner is
-  named, or the UI profile switches the scanning's database task off as it does for the image database
-  (Q-VULN-195).
 
-- **Seen by the builder of the screens' first round on its renders (2026-11-23), for the second round
-  (W9):** (1) the audit log is a table or blocks at 1440 by what its rows hold (it needs 1,123 px and has
-  1,113) and blocks at 1280 and 1024; (2) at 390 an opened audit event stands below the whole list; (3)
-  the opened event's Details block scrolls sideways at 1280 and 1440; (4) the vulnerability findings, the
-  malware finds and the audit log stand as blocks at 1024 (they need 999, 1,045 and 1,122 px against 697);
-  (5) the project settings' list of download rules stacks at 1024 (708 against 688); (6) the trust
-  anchors' tables show a column of dashes for rows without Remove; (7) the OCI version page's Files table
-  of one row stands as blocks at 1024; (8) a repository's header says "disabled" where the manual says
-  **Disabled**; (9) a finding's and an advisory's page title say "Finding" and "Advisory" while the
-  heading names the advisory; (10) the screen `repository-settings-deb-remote` has a code block region
-  about 602,000 px wide at 1024 and 1440 (its cause and decision are in the entry of the layout checks
-  above). And seen by the development agent on the same renders: (11) a
-  file's page says "by user:priya", a principal's syntax where a person's name belongs.
-- **A failed test link's reason is a developer's English sentence, in both languages (seen by the
-  development agent on 2026-11-23 on the renders of the handover's data keys).** The storage settings and a
-  Bastion's card put the server's detail into their sentence as it comes: "the link answered 403 with 0
-  bytes, want 200 with the probe's 2048", also inside a German sentence. To do (W9): the page builds the
-  sentence from the answer's fields (the status and the bytes received against those expected) with a
-  German unit, and the answer carries them as fields if it does not yet.
 - **About seven German texts address the reader with "du"; the other 370 or so with "Sie" (counted by the
   development agent on 2026-11-23 in `web/src/locale/messages.de.xlf`).** Among them the Bastions page's
   introduction and two of its dialogs, "Das bist du", a project's summary, a token's hint and the address
   in use. To do (W10b): each gets the formal address, and the translation check refuses the informal one.
-- **The audit log's page cannot filter by a resource (said by the builder of the handover's data keys on
-  2026-11-23).** The keys handed to one Bastion are the events `bastion.data_key.handed` whose resource is
-  that registration; the page filters them by the action alone, and the manual sends an administrator with
-  several Bastions to the API (`resourceType`, `resourceId`). To do (W9): read what the filter of the page
-  offers and give it the resource in the form its other fields have, if a field of the answer is all it
-  needs.
 - **`quader admin secrets status` does not exist (found on 2026-11-23 by the builder of W10a behind a
   sentence).** R-ARCH-021 requires the command, the evidence record lists the requirement as implemented,
   and four pages send an operator to it (`docs/security/deb-signing.md`, `docs/spec/storage.md`,
@@ -880,7 +795,17 @@ records the recorder that tells such a stall apart).
   field or code, and every area that names it is in the landing's gate. To do (W4, with the
   convention checks): whether a cheap check can name, for a changed API field, the areas that assert
   it.
-- **The journey of an exposure rule is red in every run since the screens' first round (2026-11-23, five
+- **Partly closed; open: that the repaired journey passes, which the first run of `e2e (access-long)` after
+  ddb4d860a shows (and for the security dashboard's journey the first run of `e2e (vuln)`), and whether the
+  journeys' texts can come from the source the pages take them from (W8).** Closed: the repair, by ddb4d860a
+  (2026-11-23): `web/e2e/tests/05-exposure.spec.ts` chooses the repository's option by the format's name that
+  `GET /api/v1/formats` answers (`formatName` of `web/e2e/support.ts`), the source the page reads, and the
+  security dashboard's journey (`web/e2e/vuln/16-security-dashboard.spec.ts`) finds a repository under its
+  package, the second break of the same kind, which the search found; the search of the journeys, their
+  support code and the Go end-to-end tests for the texts the two rounds changed found nothing else (run
+  record, 14:41). Type-checked and linted, not run. The rule for every change of a visible text is decided, in
+  the entry's text. As it stood:
+  **The journey of an exposure rule is red in every run since the screens' first round (2026-11-23, five
   runs from 11:52 on; `e2e (access-long)`, `05-exposure.spec.ts:39`).** The first round made a format's
   name what a page shows instead of its key (68253fbd9), the rule editor's option of a repository ends
   in that name, and the journey still selects the option by "(generic)". The journeys had been
@@ -891,6 +816,21 @@ records the recorder that tells such a stall apart).
   the development agent for every change of a visible text from now:** the journeys and the Go
   end-to-end tests are searched for the old text in the same commit, and the builder's report says
   so. To do (W8): whether the journeys' texts can come from the source the pages take them from.
+- **Two checkouts still collide on the kind cluster's name and the edge port (2026-11-23, seen by the
+  builder of W7 and said in Q-HA-489).** The image tag is per checkout now; the cluster a profile starts
+  and the port it publishes are not, so a builder's worktree and the main checkout cannot run a
+  profile at the same time, and a builder who needs a journey on a cluster waits for another. To do
+  (W8, which needs the cluster for the journeys): a cluster name and ports per checkout, in the shape
+  of the integration stack's and the UI profile's instances.
+- **A cancel of a statement may not reach the database through the development profile's poolers (gap
+  H-1662, 2026-11-23, from the second step of W2).** A single read of a request is bounded by a deadline
+  with which the driver cancels the statement; the profile runs two pooler instances behind one
+  Service that are not configured as peers, and a cancel that reaches the instance not holding the
+  client is dropped: the request answers 503 at its bound and the statement runs on until the
+  session's 30 s. Read from the pooler's documentation, not run. To do: run it on the profile once
+  (a statement held by a lock, the server's activity read after the 503); if it holds, make the
+  profile's poolers peers and say in the chart's page what an operator's own pooler needs; the
+  owner's installation uses his database operator's pooler, which is read the same way.
 - **The check against the default logger covers the formats' tree only (2026-11-23, seen by the writer of
   the marking).** `TestR_OPS_009_NoFormatLogsThroughTheDefaultLogger` stops at `internal/formats`; outside
   it `slog.Default()` stands 68 times (`internal/repository`, `internal/cluster`, `internal/vuln`,
@@ -917,7 +857,16 @@ records the recorder that tells such a stall apart).
   on the packages and the worker pods with limits of 1 to 2 GiB; (3) the scanner's `writeAnalysis`
   (`internal/vuln/scanner/detect.go`) reports a failed write or flush to its disk as `malformed_request`
   ("not gzip"), which sends an operator to the wrong place. To do: the second step of W2.
-- **The malware settings before the first signature set are not rendered (the reading's row of the ClamAV
+- **Partly closed; open: a render state of it, looked at: the walk's state `none` of `malwareSettings`
+  (`web/e2e/renders/screens.ts`) takes the database's version away but keeps the scanners' answer of the
+  render seed, which holds a ready updater (`web/e2e/renders/scanners.ts`), so the page's sentence for a
+  missing updater is in no render.** Closed: what the page says in that state, by 8a473bf5a (2026-11-23,
+  Q-UI-1003): the updater's line names it an updater with `malware.updater.url`, and before a first set the
+  section says that no database arrives until an updater is configured and that the task records no failure;
+  held by the component test "Q-UI-1003 before a first set with no updater configured, …"
+  (`web/src/app/features/settings/malware-settings.spec.ts`), which passes. The entry of the UI stack's page
+  in the list Closed points here. As it stood:
+  **The malware settings before the first signature set are not rendered (the reading's row of the ClamAV
   definitions' setup; checked by reading on 2026-11-23 by the builder of W2, who may not start a UI
   stack).** By the code the page shows the badge "None yet" with a sentence and no error banner. To do
   (W9): a render state of it, looked at.
@@ -939,6 +888,96 @@ the plan.
 
 **Of tests and tools:**
 
+- **Closed on 2026-11-23 by d9e79a585 (Q-HA-490): the development profile's root CA is Ready before a leaf is
+  requested, so every leaf is signed by the root that stays.** `task_pki` of `deploy/dev/up.sh` applies the
+  three objects of `deploy/dev/pki.yaml` labelled `quader-dev/pki=root` (the self-signed Issuer, the root and
+  the CA Issuer), waits until `certificate/quader-dev-ca` and `issuer/quader-dev-ca` are Ready, and only then
+  applies the file with its leaves, the repair the entry names. No test holds the order; on the development
+  machine a start issued the root once (one CertificateRequest `quader-dev-ca-1`) and every leaf after it
+  (Q-HA-490 of `docs/spec/ha-and-helm.md`). No pipeline run can show the repair: the double root was seen in
+  single runs and not again in 692 starts before it, so only a recurrence would say that it is not repaired.
+  As it stood:
+  **F-141 · `e2e (ci)` was red once for a certificate the test did not trust** (2026-11-18, Test and Release 44346085826, the
+  run of 1785aff2): `GET /api/v1/authz/me` of the fixture of `TestCIPipeline` answered "tls: failed to verify certificate:
+  x509: certificate signed by unknown authority (possibly because of "x509: ECDSA verification failure" …)"; `TestCITokens`
+  and `TestCITasks` failed with it. Nothing of that push touches certificates or the edge. Cause not read; to be read if it
+  shows again (compare F-127).
+  Read on 2026-11-23 from the pipeline's runs (artifact `e2e-ci-artifacts-ci` of 44346085826, kept until
+  2026-12-02), cause found and not repaired: cert-manager issued the root `quader-dev-ca` twice at the
+  profile's start (CertificateRequests `quader-dev-ca-1` at 16:28:35.29 and `quader-dev-ca-2` at 16:28:35.60
+  UTC, the second because its cache did not see the first Secret yet), and signed `quader-edge-tls`,
+  `quader-tls`, `quader-s3-tls`, `quader-customers-tls` and `quader-customers-wildcard-tls` in between with
+  the first key, so the edge's certificate does not verify against the `ca.crt` the tests trust; the secrets
+  operator ran without a restart and no Secret changed during the run. To repair: `task_pki` of
+  `deploy/dev/up.sh` applies the root and its leaves of `deploy/dev/pki.yaml` in one apply; the self-signed
+  Issuer and the root go first, and the leaves after `certificate/quader-dev-ca` is Ready (about 15 lines, one
+  start of the profile). Not seen again in 692 starts of the profile in CI since.
+- **Closed on 2026-11-23 by d9e79a585 (Q-HA-490): the CI legs' cause, the root CA issued twice at the
+  profile's start, is repaired.** The root and its Issuer are applied first and are Ready before a leaf is
+  requested (`task_pki` of `deploy/dev/up.sh`), held as the entry F-141 in this list says. Open until now: the
+  CI legs' cause, the root CA issued twice at the profile's start, whose repair F-141's entry names. Closed
+  before: the local cause, the secrets operator OOM-killed at its limit of 128 MiB, by f98e80b4a (2026-11-12):
+  the profile gives it 512 MiB (`deploy/dev/up.sh`) and helm keeps two revisions per release
+  (`HELM_MAX_HISTORY` in `deploy/dev/lib.sh`); (2) whether the CI legs had the same cause: they had not. The
+  run's kept cluster state (artifact `e2e-cluster-state-push` of 43022311289, kept until 2026-11-25) shows the
+  secrets operator 21 minutes up without a restart and cert-manager issuing the root `trove-dev-ca` twice
+  (`trove-dev-ca-1` and `-2`), as in F-141; the migration Job's refused password is the one
+  `TestE04MigrationFailure` sets on purpose (`quader-e2e-db-wrong`). As it stood:
+  **F-127 · `e2e (push)` failed with a certificate the job's own CA did not verify** (Test and Release 43022311289, 9220e777, green
+  on its first re-run): about four minutes after `up.sh`'s ping check, `x509: ECDSA verification failure` against the job's own
+  `quader dev CA` on every request through the edge and `password authentication failed for user "quader"` in the migration Job of
+  `TestE04MigrationFailure`; both are secrets the in-cluster generator writes. **Cause found locally on 2026-11-12:** the
+  internal-secrets-operator of the local kind cluster was OOM-killed at every start (limit 128 MiB, 78 helm release Secrets of 23 MB
+  in its cache, amd64 emulation on the arm64 host); the dev profile now gives it 512 MiB and keeps two helm revisions per release.
+  Not verified: whether the CI legs had the same cause (CI runs a fresh cluster on amd64). The operator's log is kept in the e2e
+  evidence (`kept-pod-logs/`) and not yet read.
+- **Closed on 2026-11-23 by d9e79a585 (Q-UI-1031): a builder's checkout runs an instance of the UI profile
+  with volumes and a key ring of its own.** `deploy/ui-dev/instance.sh` gives instance n (2 to 8) the compose
+  project `quader-ui-dev<n>`, and with it the volumes `quader-ui-dev<n>_<service>`, the state directory
+  `.dev/ui-dev-<n>` with its key ring and every port plus (n - 1) * 100, and refuses instance 1, the main
+  checkout's, in a git worktree; the workaround is gone from `docs/developer/web-ui.md` ("Instances, one per
+  builder"). No test holds the scripts; instance 2 came up from the worktree of W7, was seeded, rendered four
+  screens and was purged while the owner's three containers and four ports stayed as they were (run record,
+  14:30). Not held: a second clone that is no worktree is not refused instance 1 and would share its volumes
+  as before; the builders work in worktrees. As it stood:
+  UI development profile: the volumes of `deploy/ui-dev` are shared by the whole machine, but the key ring in `.dev/ui-dev` belongs to
+  each checkout, so a second checkout writes a new key into the same database. [web-ui.md](../developer/web-ui.md) describes the
+  workaround.
+- **Closed on 2026-11-23 by f7c533c3c (Q-UI-995): a stored document shortens a long value with its length, and
+  a code block wider than 4,000 px fails its screen.** `quader-document-block`
+  (`web/src/app/shared/document-block.ts`) shows a string longer than 200 characters as its first 64
+  characters and its length and copies the whole text, on a repository's stored document, the creation form's
+  request, a file's description and a backup run's result; the layout check allows a code block to scroll
+  sideways up to `CODE_BLOCK_SCROLL`, 4,000 px (`web/e2e/renders/layout.ts`), held by "Q-UI-995 a code block
+  that scrolls a long line is allowed, and one wider than a few screens fails its screen"
+  (`web/e2e/renders/layout-checks.spec.ts`, in the job `UI layout checks`), which fails the block of
+  602,311 px. The fifth sideways, the manual's table of 8 px, stays allowed as a document's table. No unit
+  test holds the shortening itself; the screen `repository-settings-deb-remote` of the render walk fails where
+  it is not shortened. What the first run of `UI layout checks` after the push of 14:34 still has to show:
+  that screen passes, and the four sideways of the Debian remote's document are gone from the report. Open
+  until now: the five sideways, whose repair is the decision at the end of the entry (the stored document of a
+  Debian remote repository shortened with its length, and a bound for the exemption of code blocks; package
+  W9). Closed before: the stop, by c4f078e75 (2026-11-23): the walk of `admin-system-storage` in
+  `web/e2e/renders/screens.ts` takes the page's two toggles by their place, checks that there are two and
+  waits for each to open and stand still; that the layout checks pass the screen in the pipeline is to be read
+  from the first runs of the push of 11:51. As it stood:
+  **The layout checks stopped once at the admin area's Storage page (Test and Release 45140417183 of
+  2026-11-23, a push without a change under `web/`; the run before it was green):** `admin-system-storage`
+  "stopped at 390 px: locator.click: Timeout 15000ms exceeded", waiting for the second closed disclosure of
+  the page; the report also counts "5 sideways", which fail nothing. **The cause, read by a research from
+  the reports and the code (10:26 to 10:36, no browser run):** the walk clicks through a list that shrinks
+  as it clicks (`web/e2e/renders/screens.ts`, the two closed disclosures selected by their closed state, so
+  after the first click there is no second match if the page has rendered in between); a race the walk
+  usually wins. It stopped the same way once before, in the cancelled run 45104983204, and in a builder's
+  local run under load. No state is remembered and no data differs. The repair (select the toggles by
+  something a click does not change, wait for each to open) went to the builder of the screens' first
+  round at 10:37 as a commit of its own. **The five sideways** are the same five in every report since
+  2026-11-20: four are the stored document of a Debian remote repository, one line of about 77,000
+  characters (the archive's keyring in the preset, shipped that day) in a code block half a million pixels
+  wide, which the check's exemption of every code block hides; one is a table of 8 px in the manual's
+  page, allowed as a document's table. **Decided by the development agent (W9):** the stored document
+  shows a long string shortened with its length and copies whole, and the exemption of code blocks gets a
+  bound, so that the next such block fails its screen.
 - **Closed on 2026-11-23 by package W7: `valkey-failover.sh` asks a Sentinel that knows a healthy replica and reads its answer
   (F-040).** Before the failover it waits, at most 60 s, until a Sentinel lists a replica that is neither down nor disconnected,
   asks that one, takes `OK` and otherwise prints the answer and asks the next; without an `OK` it fails with every answer instead
@@ -947,31 +986,6 @@ the plan.
   variant B restarted is the reading; the new message names it on a recurrence). As it stood:
   `alerts`, `MaintenanceStaysQuiet` in nightly 42793416589: `valkey-failover.sh` reported "the primary did not move within 60 s" right
   after drain variant B; not found, possibly the Sentinel that variant B restarted had not rebuilt its view (9.6 s locally).
-- **Closed on 2026-11-23 by package W7: the restore drill runs no malware scanning (F-110).** `deploy/dev/values-restore.yaml`
-  sets `config.malware.enabled: false`, as `values-dev.yaml` does; the drill's `vuln` layer leaves it off. Not verified on a
-  cluster (the next drill shows no ClamAV pod). As it stood:
-  **Partly closed; open: the restore drill's values (`deploy/dev/values-restore.yaml`) still leave malware
-  scanning on by the chart's default, against Q-MAL-90.** Closed: the leg of the two pins, by 14a890d00
-  (2026-11-23, Q-ARCH-542): `e2e-legs.sh` gives `TRIVY_IMAGE` and `CLAMAV_IMAGE` to the leg `vuln`, which
-  loads both images, held by two cases of `internal/tools/ciworkflows/e2elegs_test.go`. As it stood:
-  The script that picks the end-to-end legs of a change (`e2e-legs.sh`) starts the npm leg for a change of the analyser's or
-  ClamAV's image pin, which loads neither image, and not the leg `vuln`, which loads both. The restore drill's values
-  (`deploy/dev/values-restore.yaml`) leave malware scanning on by the chart's default, so the drills run ClamAV and its
-  updater, which reaches ClamAV's network, against Q-MAL-90. (Both found on 2026-11-21 by the builder of package 3 of the
-  analyser's move, left.)
-- **Closed on 2026-11-23 by package W7: the charts of the development profile run the image they are given (F-058, F-077,
-  F-160; Q-HA-489).** `release_values` (up.sh, release-values.sh), `bastion.sh` and `restore-ns.sh` set `image.registry`,
-  `image.repository` and `image.tag` from `QUADER_IMAGE`, whose default is the checkout's tag. Verified on a cluster of a worktree
-  (`quader-w7`): the migration Job ran `docker.io/guidedtraffic/quader:dev-agent-ad1e31c7c074a10f7` (an older build retagged for
-  the check; the release itself did not start on it). As it stood:
-  **Partly closed; open: `QUADER_IMAGE` alone does not change what the pods of `make dev-up` run (the values
-  keep `guidedtraffic/quader:dev`).** Closed: the reliance of `TestE12Valkey` on NetworkPolicy is stated at
-  the case (`test/e2e/e12_valkey_test.go`), and `TestE07NetworkPolicy` fails on a cluster whose CNI does not
-  enforce the policies. As it stood:
-  The development profile's chart values pin the image tag `dev`, so `QUADER_IMAGE` alone does not change what the
-  pods of `make dev-up` run; a builder with a cluster of its own has to tag its image `dev` inside its kind nodes
-  (seen on 2026-11-20). The case of `TestE12Valkey` with every Sentinel unreachable relies since that day on the
-  cluster's CNI enforcing NetworkPolicy, as the cases of the policies do.
 
 - **Closed on 2026-11-23 by package W7 (item 1): every fetch of an image build has a bound and a retry of its own, a run
   builds each set of clients images once, and a leg without its images fails with a sentence.** The clients images' Dockerfiles
@@ -1375,6 +1389,124 @@ the plan.
 
 **Of the product:**
 
+- **Closed on 2026-11-23 by 8a473bf5a (Q-UI-1003): what the page says where the scanning is on, no updater is
+  configured and no set has arrived is decided and held; the look at it is the open point of the entry "The
+  malware settings before the first signature set are not rendered", which keeps it.** The updater's line
+  names it an updater with its setting ("no freshclam updater is configured (`malware.updater.url` is
+  empty)"), and before a first set the section says that no database arrives until an updater is configured
+  and that the database task records no failure (`web/src/app/features/settings/malware-settings.html`,
+  `web/src/app/shared/scanner/scanner-replicas.ts`; Q-UI-1003 of `docs/spec/api-and-ui.md`); held by the
+  component test "Q-UI-1003 before a first set with no updater configured, the updater is named as the updater
+  with its setting and the database says why none arrives"
+  (`web/src/app/features/settings/malware-settings.spec.ts`), which passes. The two entries asked the same
+  question; one stays open for it. Open until now: what Settings › Malware scanning shows on the UI stack,
+  where the scanning is on and no updater is configured (not looked at). Closed before: the task's error, by
+  4a22f8fd4 (2026-11-21, Q-MAL-98): with no updater configured a run imports and records nothing, and before a
+  first set a missing source is waiting, logged at most once an hour, with no failure and no event
+  (`internal/malware/database/task.go`; the case "Q-MAL-98 before a first set an incomplete set is no failure"
+  of `test/integration/malware/database_test.go`). As it stood:
+  **The task `malware-sync-db` fails every 30 minutes where the scanning is on and nothing fetches a database**
+  (seen on 2026-11-21 at the start of the UI development backend: "job failed … database_missing: no [main daily]
+  container: the set needs main and daily", at the level of an error). A start without a scanner keeps the scan
+  job idle and says so in a check that does not gate (Q-MAL-60); the database's task has no such state, so the
+  UI stack and any start outside the chart that keeps the defaults (the scanning on, the task every 30 minutes)
+  log an error at every tick and record a failed run. An installation of the chart has `freshclam` beside its
+  worker and is touched once: on the owner's installation the task's first run came two seconds before `freshclam`
+  began its first update, failed with that error and an audit event `malware.database.failed`, and the next
+  run 16 s later imported the database. Not looked at: what **Settings › Malware scanning** shows for it on the UI stack.
+  Not fixed: either the task is idle while its directory was never filled and no scanner is
+  named, or the UI profile switches the scanning's database task off as it does for the image database
+  (Q-VULN-195).
+- **Closed on 2026-11-23 by the first group of the screens' second round (f7c533c3c to 77f264fa2, landed at
+  14:34): each of the eleven points is repaired.** (1), (4), (5) and (7): the audit log in five columns
+  (27db7e6cb, Q-UI-997), the vulnerability findings (f85fd8cb6, Q-UI-999), the malware finds (85d662b08,
+  Q-UI-1000), the download rules (8be671e76, Q-UI-1001) and a version's files (4bbfef26d, Q-UI-1002) keep
+  their table at 1,024 px and wider, held by the render walk, whose check `stacked` fails a list named in a
+  screen's `tables` that stands as blocks at 1,024 px or wider (`web/e2e/renders/render.spec.ts`; the screens
+  `admin-audit`, `vulnerabilities`, `security`, `security-malware`, `project-settings-limits`,
+  `package-version-oci` and others of `web/e2e/renders/screens.ts`). (2) and (3): an opened event stands above
+  the log at the log's width below 68 rem of content and beside it from 1,440 px, and its details wrap and
+  shorten a long value (`web/src/app/features/audit/audit-log.scss`, 27db7e6cb), seen on the renders that the
+  development agent looked at before the landing; no test holds the place. (6): a trust anchor without Remove
+  leaves its action cell empty (`web/src/app/shared/signatures/anchor-table.ts`, 4bbfef26d). (8): every
+  badge's word starts with a capital, held by the rule Q-UI-564 of `web/scripts/check-rules.mjs` in the web's
+  lint (04e9f9b1c), which passes. (9): held by "Q-UI-968 a finding's page is titled by its advisory and an
+  advisory's by its identifier, …" (`web/src/app/features/vulnerabilities/vulnerability-pages.spec.ts`,
+  375d2046f). (10): by f7c533c3c, as the entry of the layout checks' five sideways in the list of tests and
+  tools says. (11): the file's page names the person, held in
+  `web/src/app/features/repositories/content/repository-files.spec.ts` (77f264fa2, Q-UI-1004). The component
+  tests of the audit log, the version page, the routes, the finding pages and the file page pass on `main` at
+  ddb4d860a. What the first run of `UI layout checks` after the push of 14:34 still has to show: no screen
+  with a `tables` list stacked. As it stood:
+  **Seen by the builder of the screens' first round on its renders (2026-11-23), for the second round
+  (W9):** (1) the audit log is a table or blocks at 1440 by what its rows hold (it needs 1,123 px and has
+  1,113) and blocks at 1280 and 1024; (2) at 390 an opened audit event stands below the whole list; (3)
+  the opened event's Details block scrolls sideways at 1280 and 1440; (4) the vulnerability findings, the
+  malware finds and the audit log stand as blocks at 1024 (they need 999, 1,045 and 1,122 px against 697);
+  (5) the project settings' list of download rules stacks at 1024 (708 against 688); (6) the trust
+  anchors' tables show a column of dashes for rows without Remove; (7) the OCI version page's Files table
+  of one row stands as blocks at 1024; (8) a repository's header says "disabled" where the manual says
+  **Disabled**; (9) a finding's and an advisory's page title say "Finding" and "Advisory" while the
+  heading names the advisory; (10) the screen `repository-settings-deb-remote` has a code block region
+  about 602,000 px wide at 1024 and 1440 (its cause and decision are in the entry of the layout checks
+  above). And seen by the development agent on the same renders: (11) a
+  file's page says "by user:priya", a principal's syntax where a person's name belongs.
+- **Closed on 2026-11-23 by 3975f0133 (Q-UI-996): the page builds the sentence from the answer's fields, in
+  the reader's language.** The settings' answer carries what the link check saw as fields (`check` of a reason
+  `link_check_failed`: the outcome, the status and the bytes received against those expected, or the header
+  whose override the store ignored; `DownloadLinkCheck` in `api/openapi.yaml`), and the storage settings and a
+  Bastion's card word the clause from them (`linkCheckClause` of `web/src/app/shared/link-check.ts`), "mit
+  Status 403 und 0 Bytes statt mit Status 200 und 2.048 Bytes" in German. Held by
+  `TestQ_UI_996_TheLinkChecksFields` and `TestR_STOR_074_TheConnectionAndItsAddress` (unit, `internal/api/v1`)
+  and `TestR_STOR_074_TheLinkCheck` (unit, `internal/blob`), each under a second, and by the component tests
+  of `web/src/app/features/settings/storage-settings.spec.ts` and
+  `web/src/app/features/bastions/bastions.spec.ts`; all pass. The German sentence is in `messages.de.xlf`, and
+  no test renders it. As it stood:
+  **A failed test link's reason is a developer's English sentence, in both languages (seen by the
+  development agent on 2026-11-23 on the renders of the handover's data keys).** The storage settings and a
+  Bastion's card put the server's detail into their sentence as it comes: "the link answered 403 with 0
+  bytes, want 200 with the probe's 2048", also inside a German sentence. To do (W9): the page builds the
+  sentence from the answer's fields (the status and the bytes received against those expected) with a
+  German unit, and the answer carries them as fields if it does not yet.
+- **Closed on 2026-11-23 by 5d8f502e9 (Q-UI-998): the audit log filters by the resource an event is about, its
+  kind and its identifier.** The drawer has Resource kind and Resource ID, which the page sends as
+  `resourceType` and `resourceId`, a set filter stands as a chip, and an opened event copies its resource's
+  identifier (`web/src/app/features/audit/audit-log.ts`); the manual's pages of the Bastion and of operations
+  name the filter (`docs/manual/admin/bastion.md`, `docs/manual/admin/operations.md`). Held by "Q-UI-998 the
+  resource, its kind and its identifier, is a filter of the drawer, a chip, and reaches the API"
+  (`web/src/app/features/audit/audit-log.spec.ts`), which passes, and rendered in the screen `admin-audit`
+  with the filter set (`auditResource` of `web/e2e/renders/screens.ts`). As it stood:
+  **The audit log's page cannot filter by a resource (said by the builder of the handover's data keys on
+  2026-11-23).** The keys handed to one Bastion are the events `bastion.data_key.handed` whose resource is
+  that registration; the page filters them by the action alone, and the manual sends an administrator with
+  several Bastions to the API (`resourceType`, `resourceId`). To do (W9): read what the filter of the page
+  offers and give it the resource in the form its other fields have, if a field of the answer is all it
+  needs.
+- **Closed on 2026-11-23 by package W7: the restore drill runs no malware scanning (F-110).**
+  `deploy/dev/values-restore.yaml` sets `config.malware.enabled: false`, as `values-dev.yaml` does; the
+  drill's `vuln` layer leaves it off. Not verified on a cluster (the next drill shows no ClamAV pod). Open
+  until now: the restore drill's values (`deploy/dev/values-restore.yaml`) still leave malware scanning on by
+  the chart's default, against Q-MAL-90. Closed before: the leg of the two pins, by 14a890d00 (2026-11-23,
+  Q-ARCH-542): `e2e-legs.sh` gives `TRIVY_IMAGE` and `CLAMAV_IMAGE` to the leg `vuln`, which loads both
+  images, held by two cases of `internal/tools/ciworkflows/e2elegs_test.go`. As it stood:
+  The script that picks the end-to-end legs of a change (`e2e-legs.sh`) starts the npm leg for a change of the analyser's or
+  ClamAV's image pin, which loads neither image, and not the leg `vuln`, which loads both. The restore drill's values
+  (`deploy/dev/values-restore.yaml`) leave malware scanning on by the chart's default, so the drills run ClamAV and its
+  updater, which reaches ClamAV's network, against Q-MAL-90. (Both found on 2026-11-21 by the builder of package 3 of the
+  analyser's move, left.)
+- **Closed on 2026-11-23 by package W7: the charts of the development profile run the image they are given
+  (F-058, F-077, F-160; Q-HA-489).** `release_values` (up.sh, release-values.sh), `bastion.sh` and
+  `restore-ns.sh` set `image.registry`, `image.repository` and `image.tag` from `QUADER_IMAGE`, whose default
+  is the checkout's tag. Verified on a cluster of a worktree (`quader-w7`): the migration Job ran
+  `docker.io/guidedtraffic/quader:dev-agent-ad1e31c7c074a10f7` (an older build retagged for the check; the
+  release itself did not start on it). Open until now: `QUADER_IMAGE` alone does not change what the pods of
+  `make dev-up` run (the values keep `guidedtraffic/quader:dev`). Closed before: the reliance of
+  `TestE12Valkey` on NetworkPolicy is stated at the case (`test/e2e/e12_valkey_test.go`), and
+  `TestE07NetworkPolicy` fails on a cluster whose CNI does not enforce the policies. As it stood:
+  The development profile's chart values pin the image tag `dev`, so `QUADER_IMAGE` alone does not change what the
+  pods of `make dev-up` run; a builder with a cluster of its own has to tag its image `dev` inside its kind nodes
+  (seen on 2026-11-20). The case of `TestE12Valkey` with every Sentinel unreachable relies since that day on the
+  cluster's CNI enforcing NetworkPolicy, as the cases of the policies do.
 - **Closed on 2026-11-23 by ccd238f67: a collection whose symbolic links stay inside it is published, fetched
   through a remote and served unchanged.** The core's tar reader admits, under the option `ContainedSymlinks`
   that only the Ansible Galaxy format switches on, a link whose target, resolved against the link's own
@@ -2151,7 +2283,7 @@ The work queue of T-24 (the planner's cut; the contracts and files of each packa
 |---|---|---|---|
 | T-24 · R0 · Three researches | the code's inventory, the upstream protocols, the scans on content that is stored and not served | — | done (12:58, 12:59, 13:10) |
 | T-24 · R1 · The specification | the pages named above | R0 | landed at 13:47 |
-| T-24 · C · Contracts | the migration, the domain package, the catalogue's interface, the canonical form of a version, contract version 8 with every format's declaration, the codes, events, configuration keys and the queue `downloads` | R1 | waits for a place (about half a day) |
+| T-24 · C · Contracts | the migration, the domain package, the catalogue's interface, the canonical form of a version, contract version 8 with every format's declaration, the codes, events, configuration keys and the queue `downloads` | R1 | in work since 14:53 |
 | T-24 · R2 · Delivery rules | the model and its API; the refusal before a fill, at the serve point and in the documents of the five formats (kit check 22); the virtual walk; the journal and the Bastion's feed; the marks in the listings; the mirror's scope | C | after C; beside R3 and R4 |
 | T-24 · R3 · The upstream catalogue | the engine (stores nothing; budget, cache, bounds, second hosts); the five formats (kit check 21); Debian's descriptions; the API with the verdicts of versions that are not stored | C | after C; beside R2 and R4 |
 | T-24 · R4 · Downloads and the queue | the queue's store, dispatch, run and retries; failures in precise words; the probe as a row; bulks with their preview and bounds; the charge; the rows of clients' failed fetches | C | after C; beside R2 and R3 |
@@ -7871,6 +8003,55 @@ syntax, the workflows' tests, the whole unit set, generate, the documentation to
 with 0 issues). **14:48, landed and pushed** with the journey's repair on top and this plan commit
 under it. The owner's installation was read at 14:44 on the release of 14:12 (both of its releases
 upgraded, twenty pods ready, no restart).
+**14:50, the owner's UI backend is started again with the profiles' new scripts** from the main
+checkout, to see what the package had shown only for a second instance: ready, the same three
+containers (up three days) and the same four ports as before. A writer marks what the landings of
+14:34 and 14:49 closed and checks the closings the profiles' builder wrote into the plan itself.
+**14:52, the second step of W2 is back as asked** (seven commits on the `main` of 13:56, every gate
+exit 0: `postgres` 144 s, `api` 116 s, `querybudget` alone 93 s, `repository` 161 s, `uploads` 53 s,
+`blob` 251 s, `malware` 84 s, `vulnimage` 75 s, `restoreversions` 23 s, `bastioncache` 26 s; the lint 0
+issues). A single read of a request stays one statement: a deadline of
+`database.request_statement_timeout` on its context, with which the driver cancels it at the server;
+a transaction sets the bound in the query that opens it; both answer `503 database_timeout`
+(Q-ARCH-650). The test of both shapes caught a defect of the first form on the way (a deadline that
+passed after its statement had ended turned a finished upload into a 503). **All eighteen counts of
+the query budgets are the same as on `main`.** New gap H-1662: the development profile's two pooler
+instances are not peers, so a cancel that reaches the other instance is dropped; the request still
+answers at the bound and the statement runs on until the session's bound (from the pooler's
+documentation, not run; section 8). The four rows of signing and the signature gate were already
+true on `main`. Not verified: a cancel through the poolers, a stall of the network, a request near
+five seconds of data, the flushes under a memory limit. Picked onto the landing branch (two
+documents' conflicts: two decision blocks added at one place, both kept; the index regenerated); at
+the landing's gates since 14:53 with six cores, the areas `api`, `postgres`, `uploads`, `querybudget`,
+`blob`, `malware` after the lint.
+**14:53, the contracts' package of T-24 starts** in the place W2 left (a worktree of its own): the
+migration, the domain package's ports with their stubs, the catalogue's interface, contract version
+8 with every remote format's declaration, the codes, events, keys and the queue; it builds no
+behaviour and is the ground of the three packages that follow side by side.
+**15:02, the marking of what the landings of 14:34 and 14:49 closed is applied** (a writer's script; six
+Go tests and 257 of the web's unit tests it names were run, the layout walk and the end-to-end legs
+were not): nine entries move to the lists Closed (the root CA issued twice with the leg it had made
+red, the UI profile's volumes, the document that grew a page sideways, the eleven points of the first
+round's renders, the test link's reason, the audit log's filter, two entries of section 12 about
+rendering from a worktree) and seven are partly closed. **Five of the closings the profiles' builder
+had written into the plan itself were corrected in form** (two product entries stood in the wrong
+group, two entries of section 12 stood closed in their open list, two had the closing inside the old
+text); their claims were checked against the code and hold. **Open now: 50 entries in section 8 and
+19 in section 12** (91 and 24 in the lists Closed), with one new entry (two checkouts on one kind
+cluster). What a first layout run and the legs of the push of 14:49 still have to show is named in
+each closing. A builder does not edit this plan from now: it says in its report what closes.
+**15:13, the second step of W2 lands** (seven commits on the `main` of 14:49). The landing's gates ran
+with six cores and ended at 15:11, every line exit 0: build, vet with the integration and the
+performance tags, the whole unit set, the generated files, the coverage tool with its links, check
+and count, the complexity bound, the chart's lint and tests, the API client, the journeys' type
+check, the lint with 0 issues (eight minutes), then the areas `querybudget` 88 s, `api` 106 s, `blob`
+140 s, `postgres` 132 s, `uploads` 29 s and `malware` 53 s at a host load of 12 to 20. It is a code
+push, and this plan's commit lies under it. A writer marks what the landing closes; the builder's
+worktree is removed. **The release of the pushes of 14:34 and 14:49 was cut at 15:05 by the run at
+the tip** (the second round's first group of the screens, the two entries under Security audit, the
+profiles' rest, the journeys' repair); its image and chart were published at 15:11. The run of the
+push of 14:34 still had `e2e (access-long)` red, as expected: the journey's repair came with the
+push of 14:49, whose run was not through when this was written.
 **13:10, the third research of T-24 is back** (what the scans do with content that is stored and not
 served). Every scan starts from the store's commit hook, the same for a client's fill, a mirror pass
 and a background download, so a fetch for examination needs no new trigger. npm and NuGet are matched
@@ -9322,11 +9503,18 @@ the walk items and the run record); what the code holds beyond the plan has not 
   per push and about 1,244 per nightly (computed from the mean of the five, not measured). **The nearest limit:** integration
   shard b runs 40.9 of its 45 minutes, and an average format adds 6.0. Not measured: a push that touches one format only (both
   pushes touched shared code), the unit tests per format, a second nightly.
-- **Partly closed; open: items (1) to (7), each a measured cost with nothing designed; (1), (3), the kit
-  move's half of (4), (5) and (7) wait for the owner's go for new formats (his words of 2026-11-23 in
-  section 0), since their only use is room for more formats.** Closed: (8), by 08d6f014b (2026-11-20):
-  `e2e (bastion)` is skipped and takes no runner unless the change touches the Bastion (the job's condition on
-  `e2e-scope` in `.github/workflows/release.yml`). As it stood:
+- **Partly closed; open: items (1), (2) but for the repeat in `nuget-ha`, (3) to (5), (6) but for the fold of
+  `vuln-pooler`, and (7), each a measured cost with nothing designed; (1), (3), the kit move's half of (4),
+  (5) and (7) wait for the owner's go for new formats (his words of 2026-11-23 in section 0), since their only
+  use is room for more formats.** Closed: (8), by 08d6f014b (2026-11-20): `e2e (bastion)` is skipped and takes
+  no runner unless the change touches the Bastion (the job's condition on `e2e-scope` in
+  `.github/workflows/release.yml`). (2)'s repeat, by d9e79a585 (2026-11-23, Q-HA-488): `TestNuGetHA` keeps
+  drain variant A under the npm and the NuGet load and leaves the PostgreSQL switchover and the Valkey
+  failover to `TestNPMHA` of the same night (`test/e2e/nuget_ha_test.go`), about ten minutes less a night,
+  computed, while the Valkey outage with a replaced pod adds about seven to `npm-ha` (Q-HA-487); the next
+  nightly shows both. (6)'s fold of `vuln-pooler`, by decision: Q-VULN-267 of
+  `docs/spec/vulnerability-scanning.md` keeps the probe of variant D in its own set, since no pooler leg under
+  load runs the profile `vuln` and the fold would be a new test environment. As it stood:
   **Where the minutes are, ranked** (the measured minutes of what would move; what a cheaper tier saves is not measured, and
   nothing is designed): (1) the fixed cost of every kind leg, 95.1 of the 172.6 e2e minutes of a push and 240.6 of 658.1 of a
   nightly, `make dev-up` alone 154 to 186 s per leg; (2) drain, switchover, failover and pod crash under a client's load,
@@ -9339,17 +9527,6 @@ the walk items and the run record); what the code holds beyond the plan has not 
   a large cost: the three integration stacks (3.0 minutes per push). **Cut first, by the owner's decision of 2026-11-20:** a
   format's leg runs on a push only when its own code changed (built; a push of shared code alone is about 308 runner
   minutes instead of 396, about 508 instead of 939 with 25 formats, computed). The rest is not decided.
-- **Closed on 2026-11-23 by package W7 (Q-UI-1031): the UI development profile runs in instances, `UI_INSTANCE=2..8` beside the
-  main checkout's instance 1, which a worktree may not start; instance 2 was rendered from a worktree while instance 1 stayed
-  untouched (web-ui.md, "Instances, one per builder").** As it stood: **A builder in a worktree cannot run `make ui-renders`** without replacing the running containers of the UI development
-  profile ([web-ui.md](../developer/web-ui.md), found on 2026-11-20): two builders rendered by hand with a dev server of
-  their own. Nothing automates it.
-- **Closed on 2026-11-23 by package W7 (Q-UI-1031): a new instance of the UI profile is a new database, and `make ui-dev-down
-  UI_INSTANCE=<n> PURGE=1` gives a builder another.** As it stood: **A builder cannot render on a new UI database**, which CI always has: three landings in one night passed on a filled
-  database and stopped on a new one (2026-11-19/20: a migration's checksum, the write budget, a lookup right after a pull;
-  a builder may not purge the database, and the development agent's full render set on a new one before the landing found
-  each of them). Either builders get a database of their own, or the
-  seed is made independent of what the database holds.
 - **A code push during a nightly costs the nightly its numbers** (F-164: ten kind legs of Test and Release beside a load leg
   made it six to nine times slower). The latency conditions of the load legs are only as good as the runner is quiet; either
   the nightly holds the runners, or its latency conditions compare against a measurement of the same run.
@@ -9401,11 +9578,14 @@ the walk items and the run record); what the code holds beyond the plan has not 
 - **The colour scale of the severities:** rendered in Chromium only, not in Firefox or Safari; the seed holds one day of
   findings, so the trend was judged on fed data; no finding rated None is in the seed, so its badge was not rendered.
 - **Partly closed; open: no real Sentinel failover during a start was run (the 30 s are computed); and the
-  Valkey outage with a replaced packages pod has not run since 2026-11-18; since package W7 (2026-11-23, Q-HA-487) it is a
-  case of `TestNPMHA`, the nightly's `npm-ha`, so the next night runs it.** Closed: the drain variant that holds a primary lost, `TestDrainLoad` variant B,
-  passed in the nightlies 44828435420 and 45008950010 (642.6 and 643.9 s); the clone without Sentinels, the
-  case of `TestE12Valkey` whose replica reaches no Sentinel, passed in each of 47 runs of `e2e (push)` from
-  the evening of 2026-11-20 to 2026-11-23 (22.3 s in 45133371730). As it stood:
+  Valkey outage with a replaced packages pod has not run since 2026-11-18, which the next nightly's `npm-ha`
+  runs.** Closed: the drain variant that holds a primary lost, `TestDrainLoad` variant B, passed in the
+  nightlies 44828435420 and 45008950010 (642.6 and 643.9 s); the clone without Sentinels, the case of
+  `TestE12Valkey` whose replica reaches no Sentinel, passed in each of 47 runs of `e2e (push)` from the
+  evening of 2026-11-20 to 2026-11-23 (22.3 s in 45133371730). The outage's place, by d9e79a585 (2026-11-23,
+  Q-HA-487): it is a subtest of `TestNPMHA` (`test/e2e/npm_ha_test.go`), which the nightly's set `npm-ha`
+  selects (`^TestNPMHA($|_)` in `deploy/dev/e2e.sh`), and no longer of `TestNPMHAClosing`, which only a
+  dispatch with `closing` ran; about seven minutes more of the nightly's first lane. As it stood:
   **The first readiness and Valkey:** no real Sentinel failover during a start was run; the 30 s are computed from the
   Sentinel settings and the measured failovers. The nightly shows the cases its builder read (the drain variant that holds a
   primary lost, the outage with a replaced pod, the clone without Sentinels).
@@ -9512,6 +9692,31 @@ Nothing is open here since 2026-11-23; the entries are in the list Closed.
 Entries of this section that are closed, each with what closed it and what holds it; nothing is deleted from
 the plan.
 
+- **A · Closed on 2026-11-23 by package W7 (Q-UI-1031): the UI development profile runs in instances,
+  `UI_INSTANCE=2..8` beside the main checkout's instance 1, which a worktree may not start; instance 2 was
+  rendered from a worktree while instance 1 stayed untouched (web-ui.md, "Instances, one per builder").** By
+  d9e79a585: `deploy/ui-dev/instance.sh` derives the compose project, the containers, the volumes, the state
+  directory and every port from `UI_INSTANCE`, every script of the profile and every `make ui-*` target reads
+  it, and `renders.sh` points the renders at the instance's dev server, state and PostgreSQL. No test holds
+  the scripts; the run record has the run from W7's worktree at 14:30 (instance 2 up, seeded, four screens
+  rendered, purged; the owner's three containers and four ports the same before and after) and the owner's
+  instance 1 started again from the main checkout with the new scripts on its old containers and ports at
+  14:50. As it stood:
+  **A builder in a worktree cannot run `make ui-renders`** without replacing the running containers of the UI development
+  profile ([web-ui.md](../developer/web-ui.md), found on 2026-11-20): two builders rendered by hand with a dev server of
+  their own. Nothing automates it.
+- **A · Closed on 2026-11-23 by package W7 (Q-UI-1031): a new instance of the UI profile is a new database,
+  and `make ui-dev-down UI_INSTANCE=<n> PURGE=1` gives a builder another.** By d9e79a585: a builder's instance
+  has volumes of its own, so its database is new until the builder purges it, which it may do for its own
+  instance (`make ui-dev-down UI_INSTANCE=<n> PURGE=1` removes that instance's containers, volumes and state
+  and nothing of another), and `make ui-renders UI_INSTANCE=<n>` seeds it from scratch, as the job
+  `UI layout checks` does on a new database. The entry's first way is taken: the seed itself still depends on
+  what a database holds, and a builder renders on a new one now, as the pipeline does. As it stood:
+  **A builder cannot render on a new UI database**, which CI always has: three landings in one night passed on a filled
+  database and stopped on a new one (2026-11-19/20: a migration's checksum, the write budget, a lookup right after a pull;
+  a builder may not purge the database, and the development agent's full render set on a new one before the landing found
+  each of them). Either builders get a database of their own, or the
+  seed is made independent of what the database holds.
 - **F · Closed on 2026-11-23 by 2aee8d1eb: each point is held by a test that names its requirement or by a
   statement at the cheaper tier.**
   `TestR_ANS_041_AMemberWhoseWikiTheCallerMayNotReadIsSkippedForTheDocumentation` (integration, area
