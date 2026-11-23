@@ -92,7 +92,7 @@ func TestQ_VULN_200_APushedImageIsDetectedBeforeTheRedetections(t *testing.T) {
 	})
 	f.setDB(dbDigest(2))
 	f.push("pushed", "1.0", variant(t, 9))
-	f.runScan()
+	f.runFreshScan()
 	testenv.WaitFor(t, "every image detected under the second database", 60*time.Second, func() bool {
 		return f.st.Number(`SELECT count(*) FROM vuln_image_scan WHERE state = 'scanned' AND db_digest = $1`, dbDigest(2)) == 6
 	})

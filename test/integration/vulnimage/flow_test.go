@@ -340,6 +340,19 @@ func (f *flow) runScan() {
 	}
 }
 
+// runFreshScan starts a run of the scan task that begins after the call: a run still in progress answers 409 and would not see what the
+// test changed since it began (a new image, a new database), so the start is repeated until the task accepts a new run.
+func (f *flow) runFreshScan() {
+	f.t.Helper()
+	testenv.WaitFor(f.t, "a new run of the scan task accepted", 30*time.Second, func() bool {
+		a := f.st.Do(f.api, "POST", "/api/v1/system/tasks/vuln-image-scan/run", f.adm, nil)
+		if a.Status != http.StatusAccepted && a.Status != http.StatusConflict {
+			f.t.Fatalf("start the scan: %d %s", a.Status, a.Body)
+		}
+		return a.Status == http.StatusAccepted
+	})
+}
+
 type versionReport struct {
 	Repositories []struct {
 		Evaluation string `json:"evaluation"`
