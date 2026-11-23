@@ -50,6 +50,8 @@ export interface Screen {
   readonly kinds: readonly Kind[];
   /** Answers of the app's own API calls that are the screen's normal state, not a failure, each with its reason. */
   readonly expected?: readonly { readonly match: RegExp; readonly why: string }[];
+  /** Error notices that are the state the walk renders (it answered the failure in the browser), each with its reason. */
+  readonly notices?: readonly { readonly match: RegExp; readonly why: string }[];
   /**
    * A flow through the screen: each value it yields names a state that is rendered, after the actions before it ran. Without a
    * walk the screen is rendered as it opens and with each of its tabs.
@@ -2135,6 +2137,33 @@ async function* gateSetup(page: Page): AsyncGenerator<string> {
   await page.unroute(doc);
 }
 
+// ---- States the seed does not hold, answered in the browser ----
+
+/**
+ * A list whose read the server refuses for a moment (503): the shared error notice with **Retry**, which stands on the line of the
+ * notice's text (R-UI-175). The answer is the browser's; the list's own state is the data table's.
+ */
+async function* listUnavailable(page: Page): AsyncGenerator<string> {
+  const list = (url: URL): boolean => url.pathname === '/api/v1/repositories';
+  await page.route(list, (route) =>
+    route.request().method() === 'GET'
+      ? route.fulfill({
+          status: 503,
+          contentType: 'application/problem+json',
+          body: JSON.stringify({ type: 'about:blank', title: 'Service Unavailable', status: 503, code: 'database_unavailable', detail: 'The database is not reachable.' }),
+        })
+      : route.fallback(),
+  );
+  await page.reload();
+  await expect(page.locator('main quader-error-notice button', { hasText: 'Retry' })).toBeVisible();
+  yield '';
+  await page.unroute(list);
+}
+
+/** The answer of the walk's 503 and its notice: the error state is what the screen renders. */
+const unavailable = [{ match: /^GET \/api\/v1\/repositories\?.* answered 503$/, why: 'the walk answers the list 503 to render its error state' }];
+const unavailableNotice = [{ match: /Retry/, why: 'the error state of the list, which the walk renders' }];
+
 const all: readonly Kind[] = ['plain', 'power', 'admin'];
 /** A signed-out visitor's page asks who is signed in and is told nobody. */
 const noSession = [{ match: /^GET \/api\/v1\/auth\/whoami answered 401$/, why: 'an anonymous visitor has no session' }];
@@ -2174,6 +2203,8 @@ export const screens: readonly Screen[] = [
   { id: 'search-results-none', path: '/ui/search?q=zzqx', kinds: ['plain'] },
   { id: 'search-results-kind-package', path: '/ui/search?q=acme&kind=package', kinds: all },
   { id: 'repositories', path: `${P}/repositories`, kinds: all, walk: filtersOpen(repositoryChips), widths: [1100] },
+  // A list's error state: the shared notice with Retry on its line (R-UI-175).
+  { id: 'repositories-unavailable', path: `${P}/repositories`, kinds: ['plain'], walk: listUnavailable, expected: unavailable, notices: unavailableNotice },
   { id: 'repositories-long-keys', path: `${O}/repositories`, kinds: all, walk: filtersOpen() },
   { id: 'repositories-empty-project', path: `/ui/projects/${emptyProject}/repositories`, kinds: admins },
   // The built-in project with the registries the seed switched on: the administrator sees its two system repositories in their

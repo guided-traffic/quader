@@ -19,15 +19,16 @@ import { describeProblem } from '../core/http/problem-messages';
           <p class="request">
             <span i18n="@@error.request-id">Request ID</span>:
             <code translate="no">{{ error().requestId }}</code>
-            <button class="btn btn-tertiary" type="button" (click)="copyRequestId()" i18n="@@error.copy">
+            <button class="btn btn-tertiary on-line" type="button" (click)="copyRequestId()" i18n="@@error.copy">
               Copy
             </button>
           </p>
           <p class="hint" i18n="@@error.hint">Give this ID to your administrator.</p>
         }
       </div>
+      <!-- Retry stands on the middle of the message's first line (R-UI-175, on-line): at the row's top it stood 5.5 px under it. -->
       @if (retryable()) {
-        <button class="btn btn-tertiary" type="button" (click)="retry.emit()" i18n="@@error.retry">Retry</button>
+        <button class="btn btn-tertiary on-line" type="button" (click)="retry.emit()" i18n="@@error.retry">Retry</button>
       }
     </div>
   `,

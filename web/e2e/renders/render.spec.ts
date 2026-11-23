@@ -77,7 +77,7 @@ for (const screen of screens) {
                 shots.push(await shoot(page, kind, screen, state || null, scheme, width));
               }
               await page.emulateMedia({ colorScheme: 'light' });
-              failures.notices.push(...(await errorNotices(page, width, state || null)));
+              failures.notices.push(...(await errorNotices(page, screen, width, state || null)));
             }
             continue;
           }
@@ -95,7 +95,7 @@ for (const screen of screens) {
               shots.push(await shoot(page, kind, screen, tab, scheme, width));
             }
             await page.emulateMedia({ colorScheme: 'light' });
-            failures.notices.push(...(await errorNotices(page, width, tab)));
+            failures.notices.push(...(await errorNotices(page, screen, width, tab)));
           }
         }
       } catch (e) {
@@ -335,11 +335,17 @@ function watch(page: Page, screen: Screen): { notices: string[]; list(): string[
   return { notices, list: () => [...new Set([...seen, ...notices])] };
 }
 
-/** An error notice on the screen is a failure, whatever caused it. */
-async function errorNotices(page: Page, width: number, tab: string | null): Promise<string[]> {
+/**
+ * An error notice on the screen is a failure, whatever caused it, unless the screen's walk answered the failure in the browser to
+ * render the error state and names the notice in `notices`.
+ */
+async function errorNotices(page: Page, screen: Screen, width: number, tab: string | null): Promise<string[]> {
   const texts = await page.locator('main quader-error-notice').allTextContents();
   const where = `${tab ? `tab ${tab}, ` : ''}${width} px`;
-  return texts.map((t) => `error notice (${where}): ${t.replace(/\s+/g, ' ').trim().slice(0, 200)}`);
+  return texts
+    .map((t) => t.replace(/\s+/g, ' ').trim())
+    .filter((t) => !screen.notices?.some((n) => n.match.test(t)))
+    .map((t) => `error notice (${where}): ${t.slice(0, 200)}`);
 }
 
 function record(kind: Kind, screen: Screen, shots: readonly Shot[], failures: readonly string[]): void {

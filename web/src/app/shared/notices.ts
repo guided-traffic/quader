@@ -16,11 +16,11 @@ import { Notifier } from '../core/notifier';
           <div class="notice">
             <span>{{ n.text }}</span>
             @if (n.action; as action) {
-              <button class="btn btn-tertiary" type="button" (click)="action.run(); notifier.dismiss(n.id)">
+              <button class="btn btn-tertiary on-line" type="button" (click)="action.run(); notifier.dismiss(n.id)">
                 {{ action.label }}
               </button>
             }
-            <button class="btn btn-tertiary" type="button" (click)="notifier.dismiss(n.id)" i18n="@@notice.dismiss">
+            <button class="btn btn-tertiary on-line" type="button" (click)="notifier.dismiss(n.id)" i18n="@@notice.dismiss">
               Dismiss
             </button>
           </div>
@@ -31,11 +31,11 @@ import { Notifier } from '../core/notifier';
           <div class="notice alert">
             <span>{{ n.text }}</span>
             @if (n.action; as action) {
-              <button class="btn btn-tertiary" type="button" (click)="action.run(); notifier.dismiss(n.id)">
+              <button class="btn btn-tertiary on-line" type="button" (click)="action.run(); notifier.dismiss(n.id)">
                 {{ action.label }}
               </button>
             }
-            <button class="btn btn-tertiary" type="button" (click)="notifier.dismiss(n.id)" i18n="@@notice.dismiss-alert">
+            <button class="btn btn-tertiary on-line" type="button" (click)="notifier.dismiss(n.id)" i18n="@@notice.dismiss-alert">
               Dismiss
             </button>
           </div>
@@ -54,9 +54,10 @@ import { Notifier } from '../core/notifier';
       gap: var(--quader-space-2);
       max-inline-size: min(40rem, calc(100vw - 2 * var(--quader-space-4)));
     }
+    /* A text of two lines keeps its buttons on the middle of its first line (R-UI-175, on-line), as the error notice does. */
     .notice {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: var(--quader-space-2);
       padding: var(--quader-space-2) var(--quader-space-4);
       border-radius: var(--quader-radius-m);
@@ -68,6 +69,7 @@ import { Notifier } from '../core/notifier';
       color: var(--quader-on-error-container);
     }
     .notice button {
+      flex: none;
       color: inherit;
     }
   `,
