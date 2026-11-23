@@ -10369,10 +10369,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-HA
 
-258 questions on [spec/ha-and-helm.md](spec/ha-and-helm.md).
+259 questions on [spec/ha-and-helm.md](spec/ha-and-helm.md).
 
 <details>
-<summary>Q-HA: 258 questions</summary>
+<summary>Q-HA: 259 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10634,6 +10634,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-HA-488](spec/ha-and-helm.md#q-ha-488--nuget-ha-keeps-the-drain-under-the-nuget-load-and-leaves-the-switchover-and-the-valkey-failover-to-npm-ha) | nuget-ha keeps the drain under the NuGet load and leaves the switchover and the Valkey failover to npm-ha | Decided by the development agent on 2026-11-23 | (a) `nuget-ha` runs the drain alone | — |
 | [Q-HA-489](spec/ha-and-helm.md#q-ha-489--every-image-of-the-development-profiles-carries-the-checkouts-tag-and-the-charts-run-the-image-they-were-given) | Every image of the development profiles carries the checkout's tag, and the charts run the image they were given | Decided by the development agent on 2026-11-23 | (a) A tag per checkout, `DEV_TAG` (`dev` in a main checkout, `dev-<worktree directory>` in a git worktree, `QUADER_DEV_TAG` overrides), on every image the profiles build and run, and the charts' `image.registry`, `image.repository` and `image.tag` set from the image the script was given | — |
 | [Q-HA-490](spec/ha-and-helm.md#q-ha-490--the-development-profiles-root-ca-is-ready-before-a-leaf-is-requested) | The development profile's root CA is Ready before a leaf is requested | Decided by the development agent on 2026-11-23 | (a) The root first: apply the objects labelled `quader-dev/pki=root`, wait until the root's Certificate and the CA Issuer are Ready, then apply the file | — |
+| [Q-HA-491](spec/ha-and-helm.md#q-ha-491--a-worktrees-kind-cluster-its-edge-port-and-its-kubeconfig-are-its-own) | A worktree's kind cluster, its edge port and its kubeconfig are its own | Decided by the development agent on 2026-11-23 | (a) Derived from the checkout: `quader-<worktree>` (`dev-tag.sh --cluster`), the port picked free by kind at creation (`hostPort` 0) and read back from the node, the kubeconfig `.dev/kubeconfig` of the worktree; the main checkout keeps `quader`, 8080 and the caller's kubeconfig | — |
 
 </details>
 
@@ -12016,10 +12017,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-513 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+514 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 513 questions</summary>
+<summary>Q-UI: 514 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12536,6 +12537,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1041](spec/api-and-ui.md#q-ui-1041--the-owners-and-the-storage-are-columns-on-demand-of-the-start-page-for-the-holder-of-projectsread) | The Owners and the storage are columns on demand of the start page, for the holder of projects:read | Decided by the development agent | (a) A check box **Show Owners and storage** at the end of the list's head, beside **Your projects**, for the holder of `projects:read`; the choice kept for the viewer in the browser as an opened Details section is (Q-UI-967) | — |
 | [Q-UI-1042](spec/api-and-ui.md#q-ui-1042--the-repositories-of-every-project-are-the-project-lists-columns-with-the-project-and-no-new-repository) | The repositories of every project are the project list's columns with the project, and no New repository | Decided by the development agent | (a) A project's list's columns (the visibility icon before the key, format, class, **Set up client** and the menu) with **Project** after the repository; **Last activity** for the holder of `repositories:write-config` while a row has one; no copy button; the project filter a choice of the projects the caller sees, by display name; no **New repository**, the line under the heading saying where a repository is created | — |
 | [Q-UI-1043](spec/api-and-ui.md#q-ui-1043--admin-without-the-dashboard-starts-at-the-first-entry-of-the-admin-side-bar-or-on-the-start-page) | `/admin` without the dashboard starts at the first entry of the admin side bar, or on the start page | Decided by the development agent | (a) The dashboard for `settings:read`, else the first entry of the admin side bar the caller has, in its order; with none, the start page | — |
+| [Q-UI-1044](spec/api-and-ui.md#q-ui-1044--an-instance-of-the-ui-development-profile-is-claimed-not-chosen) | An instance of the UI development profile is claimed, not chosen | Decided by the development agent on 2026-11-23 | (a) A claim per instance, the file `<main>/.dev/ui-dev-claims/<n>` with the claiming checkout's path, read and written under an flock(2) lock; a worktree without `UI_INSTANCE` takes the instance it claims or the first free one; a number another existing checkout claims is refused; a claim whose checkout is gone is taken over after its compose project's containers and volumes are removed; `make ui-dev-down PURGE=1` ends it | — |
 
 </details>
 

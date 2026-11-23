@@ -468,8 +468,8 @@ The ports of every local profile of the repository, and the instances' (all on `
 | Integration stack, instance n | the same | 15432, 16432, 16379, 16380, 26381 to 26383, 18333, each plus `(n - 1) * 100` (instance 9: 16232, 17232, 17179, 17180, 27181 to 27183, 19133) |
 | UI development profile, instance 1 ([web-ui.md](web-ui.md#local-ui-development)) | Angular dev server, quader, ops listener, sign-in provider | 4200 (`localhost`), 19080, 19081, 19090 |
 | | PostgreSQL, Valkey, SeaweedFS S3 | 25432, 26390, 28333 |
-| UI development profile, instance n (2 to 8, `UI_INSTANCE`, [web-ui.md](web-ui.md#instances-one-per-builder)) | the same | each plus `(n - 1) * 100` (instance 2: 4300, 19180, 19181, 19190, 25532, 26490, 28433; instance 8: 4900, 19780, 19781, 19790, 26132, 27090, 29033) |
-| Development profile on kind ([local-profile.md](local-profile.md)) | the edge (HTTPS NodePort 30443 of the kind node) | 8080 (`QUADER_DEV_HTTP_PORT`), and the kind API server on a port Docker picks |
+| UI development profile, instance n (2 to 8, claimed by a checkout or named by `UI_INSTANCE`, [web-ui.md](web-ui.md#instances-one-per-builder)) | the same | each plus `(n - 1) * 100` (instance 2: 4300, 19180, 19181, 19190, 25532, 26490, 28433; instance 8: 4900, 19780, 19781, 19790, 26132, 27090, 29033) |
+| Development profile on kind ([local-profile.md](local-profile.md)) | the edge (HTTPS NodePort 30443 of the kind node) | 8080 (`QUADER_DEV_HTTP_PORT`) in the main checkout, a port kind picks in a worktree ([local-profile.md](local-profile.md#one-cluster-port-and-kubeconfig-per-checkout)), and the kind API server on a port Docker picks |
 | S3 conformance (`make silo-up`) | Silo S3, console | 9000, 9001 |
 | In-process harness, e2e port-forwards, throwaway Valkey of the `valkey` area | every listener | a port the kernel picks (`:0`) |
 

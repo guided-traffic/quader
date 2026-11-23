@@ -22834,6 +22834,28 @@ configuration hashes of instance 1 equal those of the former file.
 [Makefile](../../Makefile). Elsewhere: [web-ui.md](../developer/web-ui.md#instances-one-per-builder),
 [build-and-test.md](../developer/build-and-test.md#instances-and-their-ports).
 
+
+### Q-UI-1044 · An instance of the UI development profile is claimed, not chosen
+
+Status: **Decided by the development agent on 2026-11-23** — selected from the options below; the owner reviews it at the walkthrough.
+Amends [Q-UI-1031](#q-ui-1031--the-ui-development-profile-runs-in-instances-one-per-builder-and-instance-1-is-the-main-checkouts).
+
+Context: under Q-UI-1031 a builder named its instance. On 2026-11-23 two builders chose instance 6 a minute apart, and the second
+started its containers with its own certificates over the first's.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A claim per instance, the file `<main>/.dev/ui-dev-claims/<n>` with the claiming checkout's path, read and written under an flock(2) lock; a worktree without `UI_INSTANCE` takes the instance it claims or the first free one; a number another existing checkout claims is refused; a claim whose checkout is gone is taken over after its compose project's containers and volumes are removed; `make ui-dev-down PURGE=1` ends it (chosen) | [instance.sh](../../deploy/ui-dev/instance.sh) | Nobody chooses, so two cannot choose alike; a removed worktree frees its instance | A claim outlives a worktree that is removed while its stack runs, until the next claim finds it gone |
+| (b) A lock held for as long as a process runs, as the integration stack's | — | Released by the kernel | The stack outlives every process of the profile; `up.sh` ends while its containers run |
+| (c) An instance derived from the worktree's name | — | No file | Eight instances and any number of worktrees: two names map to one number |
+
+**Choice:** (a). **Rationale:** the stack is state that outlives a process, so its owner is written down; the lock only makes the
+reading and writing of that note one step. The development agent would revisit it if builders ever run on more than one machine
+against one Docker daemon.
+
+**Applied in the spec:** none (development tooling). Code: [instance.sh](../../deploy/ui-dev/instance.sh), [down.sh](../../deploy/ui-dev/down.sh);
+held by `TestUIDevInstancesAreClaimedNotChosen` ([checkoutprofiles_test.go](../../internal/tools/ciworkflows/checkoutprofiles_test.go)).
+Elsewhere: [web-ui.md](../developer/web-ui.md#instances-one-per-builder).
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 
 Status: **Decided by the owner, 2026-11-23** (T-25, 19:30, whole: "Ich finde Projects und Repositories haben im Admin-Mneü nichts

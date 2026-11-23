@@ -13157,6 +13157,31 @@ profile issues the root once (one CertificateRequest `quader-dev-ca-1`) and ever
 
 ## What this does not cover
 
+
+### Q-HA-491 · A worktree's kind cluster, its edge port and its kubeconfig are its own
+
+Status: **Decided by the development agent on 2026-11-23** — selected from the options below; the owner reviews it at the walkthrough.
+Extends [Q-HA-489](#q-ha-489--every-image-of-the-development-profiles-carries-the-checkouts-tag-and-the-charts-run-the-image-they-were-given)
+from the image to the cluster.
+
+Context: the image tag was the checkout's since Q-HA-489, the cluster `quader`, the edge port 8080 and the kubeconfig were not, so a
+builder's worktree and the main checkout could not run a profile at once, and no builder ran the journey or end-to-end test it had
+changed before it reported: a journey's new line made `e2e (vuln)` red on 2026-11-23 that only the pipeline could show.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Derived from the checkout: `quader-<worktree>` (`dev-tag.sh --cluster`), the port picked free by kind at creation (`hostPort` 0) and read back from the node, the kubeconfig `.dev/kubeconfig` of the worktree; the main checkout keeps `quader`, 8080 and the caller's kubeconfig (chosen) | `lib.sh`, `up.sh`, `cluster-logs.sh` | Unique by construction, nothing to claim or to give back; every script already read the port back from the node; the owner's and the pipeline's names stay | A worktree's port differs per cluster (the scripts print it) |
+| (b) Numbered instances with a claim, as the UI profile's | A table of names and ports | Fixed ports per instance | A cluster outlives every process, so the claim is a file to clean up; a name derived from the checkout needs none |
+| (c) Builders set the three variables by hand | Nothing to build | — | Two builders chose the same UI instance a minute apart on 2026-11-23; a default that collides is what made them meet |
+
+**Choice:** (a). **Rationale:** a worktree's name is already unique on the machine and is what the image tag is made of; a port the kernel
+picks cannot collide with another listener. The development agent would revisit it if a tool needs the edge on a known port in a
+worktree, which `QUADER_DEV_HTTP_PORT` then sets.
+
+**Applied in the spec:** none (development tooling). Code: [lib.sh](../../deploy/dev/lib.sh), [dev-tag.sh](../../deploy/dev/dev-tag.sh)
+`--cluster`, [up.sh](../../deploy/dev/up.sh), [cluster-logs.sh](../../deploy/dev/cluster-logs.sh); held by
+`TestDevProfileClusterPortAndKubeconfigArePerCheckout` ([checkoutprofiles_test.go](../../internal/tools/ciworkflows/checkoutprofiles_test.go)).
+Elsewhere: [local-profile.md](../developer/local-profile.md#one-cluster-port-and-kubeconfig-per-checkout).
 ### H-37 · A database restore revives revoked credentials and removed grants
 
 Restoring PostgreSQL to time *t*, from the platform layer (R-HA-025) or from a Quader backup taken at

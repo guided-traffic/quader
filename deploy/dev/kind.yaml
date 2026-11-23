@@ -4,7 +4,7 @@
 # place that pins it.
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
-name: quader
+name: quader                      # up.sh names the cluster with --name (lib.sh: quader-<worktree> in a worktree)
 networking:
   podSubnet: 10.244.0.0/16        # config.server.trusted_proxies in values-dev.yaml names this range
 # The kubelet rotates a container's log at 10Mi by default and `kubectl logs` reads only the current file, so the logs of
@@ -27,8 +27,9 @@ nodes:
       # The edge's HTTPS NodePort (HAProxy Ingress, 30443) answers on https://localhost:8080 with the dev
       # CA's certificate (base_url of values-dev.yaml). Loopback only, so the dev ingress is not exposed on
       # the network. The plain NodePort 30080 is not mapped. up.sh substitutes DEV_HTTP_PORT
-      # (QUADER_DEV_HTTP_PORT, default 8080), for hosts where 8080 is taken, and then also sets
-      # config.server.base_url to match.
+      # (QUADER_DEV_HTTP_PORT, default 8080 in the main checkout and 0 in a worktree, lib.sh), for hosts where
+      # 8080 is taken, and then also sets config.server.base_url to match; with 0 kind picks a free port, which
+      # the scripts read back from the node.
       - containerPort: 30443
         hostPort: ${DEV_HTTP_PORT}
         listenAddress: 127.0.0.1

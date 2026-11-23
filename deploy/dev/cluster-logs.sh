@@ -16,10 +16,11 @@
 # (deploy/dev/haproxy-values.yaml). Every log is compressed: the artifact is bounded by the size of the logs, which compress
 # about tenfold, and is kept 14 days like the rest of the cluster state.
 #
-# Environment: QUADER_DEV_CLUSTER (default quader), as in lib.sh; the script needs only kubectl and gzip.
+# Environment: QUADER_DEV_CLUSTER (default the checkout's cluster, dev-tag.sh --cluster), as in lib.sh; the script needs only kubectl,
+# gzip and git.
 set -u
 dir="${1:?usage: cluster-logs.sh <dir>}"
-ctx="kind-${QUADER_DEV_CLUSTER:-quader}"
+ctx="kind-${QUADER_DEV_CLUSTER:-$("$(dirname "${BASH_SOURCE[0]}")/dev-tag.sh" --cluster)}"
 mkdir -p "$dir"
 for ns in quader ingress-controller; do
   for p in $(kubectl --context "$ctx" -n "$ns" get pods -o name 2>/dev/null); do

@@ -142,7 +142,7 @@ web: web-ci web-embed ## web-ci, then web-embed (what a local build of the UI ne
 
 # UI development profile (docs/developer/web-ui.md#local-ui-development): its own containers, volumes and
 # ports, so it runs next to the integration stack and the kind cluster without touching either. UI_INSTANCE=2..8 picks another
-# instance beside instance 1, one per builder (deploy/ui-dev/instance.sh); a worktree has to name one.
+# instance beside instance 1, one per builder (deploy/ui-dev/instance.sh); a worktree claims a free one when it names none.
 .PHONY: ui-dev-up
 ui-dev-up: ## PostgreSQL, Valkey and SeaweedFS (TLS) for UI work; writes .dev/ui-dev (deploy/ui-dev/up.sh)
 	deploy/ui-dev/up.sh

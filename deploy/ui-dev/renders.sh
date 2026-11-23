@@ -6,8 +6,9 @@
 # (up.sh, always: it is idempotent), quader with the profile's sign-in provider (serve.sh) and the Angular dev server.
 # The seed and the pictures are web/e2e/playwright.renders.config.ts; arguments go to Playwright (--grep <screen>).
 # Locally, and in the job ui-layout of Test and Release on every push (Q-ARCH-510), where the profile is the job's own.
-# UI_INSTANCE=2..8 renders against an instance of its own (deploy/ui-dev/instance.sh): its containers, its quader and sign-in
-# provider, its dev server, its database for the seed; a worktree has to name one, instance 1 is the main checkout's.
+# Instances 2 to 8 render against an instance of their own (deploy/ui-dev/instance.sh): its containers, its quader and sign-in
+# provider, its dev server, its database for the seed; a worktree claims a free one when UI_INSTANCE is unset, instance 1 is the
+# main checkout's.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"

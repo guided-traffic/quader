@@ -178,16 +178,24 @@ shape of the integration stack's instances, [build-and-test.md](build-and-test.m
 | PostgreSQL, Valkey, S3 | 25432, 26390, 28333 | each plus `(n - 1) * 100` |
 
 ```shell
-make ui-dev-up UI_INSTANCE=3            # the containers and .dev/ui-dev-3 of the worktree
-make ui-renders UI_INSTANCE=3 GREP=...  # starts the instance's quader, provider and dev server, seeds its database, renders
-make ui-dev-down UI_INSTANCE=3 PURGE=1  # removes the instance's containers, volumes and state, nothing of another
+make ui-dev-up                 # in a worktree: claims a free instance of 2 to 8 (or the one it claims), its containers and .dev/ui-dev-<n>
+make ui-renders GREP=...       # the claimed instance's quader, provider and dev server, seeds its database, renders
+make ui-dev-down PURGE=1       # removes the instance's containers, volumes and state, nothing of another, and ends the claim
+make ui-dev-up UI_INSTANCE=3   # a number of its own: refused while another checkout that still exists claims it
 ```
+
+**An instance is claimed, not chosen** ([Q-UI-1044](../spec/api-and-ui.md#q-ui-1044--an-instance-of-the-ui-development-profile-is-claimed-not-chosen)):
+on 2026-11-23 two builders chose instance 6 a minute apart, and the second recreated the first's containers with its own
+certificates. A claim is the file `.dev/ui-dev-claims/<n>` of the main checkout, holding the claiming checkout's path; every script
+of the profile reads and writes the claims under a lock on `.dev/ui-dev-claims.lock`. A claim stays through `make ui-dev-down` (the
+data is the checkout's) and ends with `PURGE=1`; a claim whose checkout no longer exists is taken over by the next worktree, which
+first removes that instance's containers and volumes. Instance 1 has no claim: it is the main checkout's.
 
 Instance 1 is the profile as it was before instances existed: its compose configuration resolves to the same values (the same
 configuration hash), so a running stack is not recreated, and the pipeline's job `ui-layout` runs it unchanged. **Instance 1 is
 refused in a git worktree**: its names and ports belong to the main checkout's stack, and before instances existed a worktree's
 `make ui-renders` recreated that stack's containers with the worktree's certificates under whoever was looking at it (2026-11-20).
-A worktree names its instance; a new instance is a new database, so `make ui-renders` seeds it from scratch. The number stops at 8:
+A worktree claims its instance; a new instance is a new database, so `make ui-renders` seeds it from scratch. The number stops at 8:
 instance 9 would put the dev server on port 5000, which macOS's AirPlay receiver holds. `renders.sh` sets `UI_RENDERS_EDGE`,
 `UI_RENDERS_STATE` and `UI_RENDERS_POSTGRES` of the render configuration to the instance's dev server, state directory and
 PostgreSQL container, so the seed's SQL writes the instance's database.

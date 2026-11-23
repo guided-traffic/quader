@@ -8,12 +8,26 @@ DEV_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$DEV_DIR/../.." && pwd)"
 export REPO_ROOT DEV_DIR
 
-CLUSTER="${QUADER_DEV_CLUSTER:-quader}"
-CTX="kind-${CLUSTER}"
 NS="${QUADER_DEV_NAMESPACE:-quader}"
 STATE_DIR="$REPO_ROOT/.dev"
-# The host port of the dev edge (HAProxy Ingress, HTTPS). base_url of values-dev.yaml names 8080.
-DEV_HTTP_PORT="${QUADER_DEV_HTTP_PORT:-8080}"
+# The kind cluster, its edge port and its kubeconfig are the checkout's (Q-HA-491), as the image tag is (DEV_TAG below): in the main
+# checkout the cluster `quader` on port 8080 in the caller's kubeconfig, the owner's and the pipeline's names; in a git worktree the
+# cluster quader-<worktree> (deploy/dev/dev-tag.sh --cluster), an edge port that kind picks free when it creates the cluster
+# (hostPort 0; every script reads the port back from the node) and the kubeconfig .dev/kubeconfig of the worktree, so two checkouts
+# and two builders never meet on a cluster's name, a port or a kubeconfig. QUADER_DEV_CLUSTER, QUADER_DEV_HTTP_PORT and
+# QUADER_DEV_KUBECONFIG set each one; the pipeline sets the first two.
+default_cluster="$("$DEV_DIR/dev-tag.sh" --cluster)"
+CLUSTER="${QUADER_DEV_CLUSTER:-$default_cluster}"
+if [ "$default_cluster" = quader ]; then
+  # The host port of the dev edge (HAProxy Ingress, HTTPS). base_url of values-dev.yaml names 8080.
+  DEV_HTTP_PORT="${QUADER_DEV_HTTP_PORT:-8080}"
+  if [ -n "${QUADER_DEV_KUBECONFIG:-}" ]; then export KUBECONFIG="$QUADER_DEV_KUBECONFIG"; fi
+else
+  DEV_HTTP_PORT="${QUADER_DEV_HTTP_PORT:-0}"
+  export KUBECONFIG="${QUADER_DEV_KUBECONFIG:-$STATE_DIR/kubeconfig}"
+fi
+unset default_cluster
+CTX="kind-${CLUSTER}"
 
 # One version per tool: every pin comes from tools/versions.env.
 set -a

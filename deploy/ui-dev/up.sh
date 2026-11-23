@@ -3,7 +3,8 @@
 # buckets, and writes everything quader needs into .dev/ui-dev: the certificates, the secret files, the key
 # ring, the break-glass password and, through config.sh, quader.yaml. Safe to run again: running containers, the data and
 # every generated secret are kept. deploy/ui-dev/serve.sh starts quader against it. UI_INSTANCE=2..8 starts another instance
-# beside instance 1, with its own containers, ports and state (deploy/ui-dev/instance.sh); in a worktree it is required.
+# beside instance 1, with its own containers, ports and state (deploy/ui-dev/instance.sh); a worktree claims
+# a free one when it names none, and a number another checkout claims is refused.
 # docs/developer/web-ui.md#local-ui-development
 set -euo pipefail
 

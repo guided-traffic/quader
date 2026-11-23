@@ -54,8 +54,11 @@
 #   QUADER_IMAGE=<ref>     the quader image to load into the cluster and run (default guidedtraffic/quader:<DEV_TAG>, `dev` in the
 #                          main checkout and dev-<worktree> in a worktree, deploy/dev/dev-tag.sh;
 #                          built by `make image`). It must be present in the local Docker.
-#   QUADER_DEV_HTTP_PORT=n the host port of the edge, default 8080 (https://localhost:8080). Set it when
-#                          8080 is taken; the chart's base_url follows. Fixed when the cluster is created.
+#   QUADER_DEV_HTTP_PORT=n the host port of the edge, default 8080 (https://localhost:8080) in the main checkout and a free port
+#                          kind picks (0) in a worktree (lib.sh, Q-HA-491). Set it when 8080 is taken; the chart's base_url
+#                          follows. Fixed when the cluster is created.
+#   QUADER_DEV_CLUSTER     the kind cluster, default `quader` in the main checkout and quader-<worktree> in a worktree, whose
+#                          kubeconfig is then the worktree's .dev/kubeconfig (QUADER_DEV_KUBECONFIG sets another).
 #   QUADER_HELM_EXTRA=...  extra arguments for the helm upgrade of the quader release. They may not set the image (refused: helm
 #                          applies them before the image this script sets from QUADER_IMAGE); another image is QUADER_IMAGE.
 set -euo pipefail
@@ -79,10 +82,11 @@ mkdir -p "$LOGS"
 if kind get clusters 2>/dev/null | grep -qx "$CLUSTER"; then
   log "kind cluster '$CLUSTER' exists, reusing it"
 else
-  if (exec 3<>"/dev/tcp/127.0.0.1/$DEV_HTTP_PORT") 2>/dev/null; then
+  # Port 0 (a worktree's default, lib.sh) lets kind pick a free port; the port it took is read back below.
+  if [ "$DEV_HTTP_PORT" != 0 ] && (exec 3<>"/dev/tcp/127.0.0.1/$DEV_HTTP_PORT") 2>/dev/null; then
     die "port $DEV_HTTP_PORT on localhost is in use; free it or set QUADER_DEV_HTTP_PORT=<other port> (base_url follows)"
   fi
-  log "creating the kind cluster '$CLUSTER' (1 control-plane, 3 workers in 3 zones, edge on localhost:$DEV_HTTP_PORT)"
+  log "creating the kind cluster '$CLUSTER' (1 control-plane, 3 workers in 3 zones, edge on localhost:$([ "$DEV_HTTP_PORT" = 0 ] && echo "a free port" || echo "$DEV_HTTP_PORT"), kubeconfig ${KUBECONFIG:-the default})"
   sed "s|\${DEV_HTTP_PORT}|$DEV_HTTP_PORT|g" "$DEV_DIR/kind.yaml" \
     | kind create cluster --name "$CLUSTER" --config - --image "$DEV_KIND_NODE_IMAGE" --wait 180s \
     > "$LOGS/kind.log" 2>&1 || { tail -30 "$LOGS/kind.log" >&2; die "kind create cluster failed (log: $LOGS/kind.log)"; }
