@@ -430,8 +430,8 @@ order is what a user or an operator meets first. The state is kept here.
 |---|---|---|
 | Signatures with the real clients | the check of the repairs of 2026-11-21 with the real clients, and what it finds | landed at 09:39 |
 | Screens, first round | fourteen findings of screens (the entries of repository, version, vulnerability and audit pages, the npm form, the malware settings, the signatures' lists) | built (seventeen commits); looked at and sent back at 10:33 with three points and for the rebase onto the stack at the gates |
-| W1 · Authorization answers the same in every format | the administrator flag shown to `tokens:read` alone (H-836); the global read policy and the default-scope token; the refusals that end a virtual read | built for every format; at the landing's gates since 10:29, stacked on the handover's data keys |
-| W3 · The download limits count what they promise | refused requests that still count (the upstream budget, an endpoint's rate class); seven paths without a test; three statements; the help text of waiting downloads | in work since 09:40 |
+| W1 · Authorization answers the same in every format | the administrator flag shown to `tokens:read` alone (H-836); the global read policy and the default-scope token; the refusals that end a virtual read | landed at 10:49 |
+| W3 · The download limits count what they promise | refused requests that still count (the upstream budget, an endpoint's rate class); seven paths without a test; three statements; the help text of waiting downloads | built (two commits); at the landing's gates next, with the Debian repair |
 | W2 · Scanning keeps its promises to an operator | a scan attempt lost when a repository is enabled again; the scanner's spool that `QuaderSpoolNearlyFull` does not see; layer writes without a flush; a removed scanner pod shown ready; two measurements | waits for a place |
 | W6 · The pipeline loses nothing and scans every image it runs | a push that cancels the run before it; the analyser's and ClamAV's images never scanned; the evidence record and the badge that stand still; a `unit` target with the emptied AWS environment; the lint's limit and serial runs; fuzz names; the pins of the e2e legs; a partial dispatch; the disk watcher; the key of the clients' image cache, which changes with every commit, so a push never hits it | in work since 10:30 |
 | W5a · NuGet and OCI | NuGet's README route that answers 501; the challenge of an upstream token; what the two formats' pages count and the code does not | waits for a place |
@@ -903,6 +903,10 @@ records the recorder that tells such a stall apart).
   several Bastions to the API (`resourceType`, `resourceId`). To do (W9): read what the filter of the page
   offers and give it the resource in the form its other fields have, if a field of the answer is all it
   needs.
+- **A refusal's text and its `Retry-After` can name two different times (seen by the builder of W3 on
+  2026-11-23, not looked into).** The detail of a 429 of an hour's window can read "Try again in 30
+  minutes" while `Retry-After` says one hour, and a `rate_limited` answer can say "113 minutes" for a
+  window of one hour. To do: one source for both, and a unit test of the pair.
 - **The count of a writer's reads through the signature gate may count pushes (seen on 2026-11-23 by the
   builder of the signatures with the real clients, not looked into).** After a few pushes and signings with
   Docker, cosign and Notation the counter stood at 29, so a `docker push`'s own reads probably count as a
@@ -6574,6 +6578,41 @@ at the gates, runs the integration areas of what it changed on the server (`repo
 `limits`), which it had not, and the gates on the rebased tree. Its ten other defects and one of the
 development agent's are in section 8 for W9. Not verified by it: the vulnerability set's end-to-end
 specs, which it changed and which need the kind cluster; the push's own legs show them.
+**By 10:38 the builder of W5b had found the cause of the red Debian test, and most of it is in the product:**
+a Debian remote could record a release as verified by an upstream key that had just been removed. A
+fetch of `InRelease` checks the signature against the keys the request read when it began; if the
+change of the keys commits while the upstream is still answering, the fill stored the release
+afterwards as verified by the removed key, and the virtual repository merged it. Reproduced on the old
+code without a loop (the stub held its answer for two seconds while the keys changed: the release
+signed only by the removed key was stored as verified and the client got 200); the logs of two of the
+three red runs fit it. The repair: the fill reads the keys again inside its own transaction under a
+share lock of the repository's row and checks the document again if they differ; the re-verification
+records only a signer still in the set (Q-DEB-133). The test's own wait was the smaller half: it takes
+its mark after the change answers and waits until every build queued before it has ended (Q-DEB-134).
+A second commit repairs a neighbour test that counted a background build's revalidation as a read of
+the upstream. Both wait to land ahead of the rest of the package; its builder goes on with the rest.
+**By 10:47 W3 was back** (two commits, every gate exit 0 but one test of the area `ci` under load, green
+alone). The repair: the upstream budget decides and counts in one step with the script the request
+windows use, and what the parallel lease then refuses is given back; a request the request check
+refuses is given back to the endpoint's rate class; on a replica without Valkey the class's own token
+is given back too; the usage's overview no longer shows upstream requests that never happened
+(Q-LIM-110). Left as a written gap: a fetch the budget admitted that the remote engine then does not
+send (a full queue, an open circuit) stays counted, so a client retrying against an offline upstream
+uses up its budget (H-1600). Seven paths have their test at the tier named; one statement of the
+reading did not hold (the one integration case of the patterns never reached the per-file check, which
+no test covered) and got a unit test instead. Seen beside it, entered in section 8: a 429's text can
+say "Try again in 30 minutes" beside a `Retry-After` of an hour.
+**10:49, landed in one push: the handover's data keys and W1** (six commits, the head a `fix:`). The gates,
+10:29 to 10:47, each exit 0: build, both vets, the unit run under an emptied AWS environment, generate,
+the coverage tool's four steps, cyclo, the API client and the translation source unchanged by their
+generators, the web's lint and tests, the end-to-end tree's vet and types, the pinned lint (before the
+areas, at a load of 30 to 45), then `bastion` 205 s, `authz` 80 s, `apikey` 7 s, `identity` 101 s,
+`files` 124 s, `ocivirtual` 25 s, `oci` 20 s, `signatures` 28 s, `virtual` 13 s, `npm` 215 s, `nuget`
+98 s, `ansiblevirtual` 13 s; `blob` and `backup` passed at 10:18 and 10:29 on the data keys' three
+commits, the areas `bastioniface`, `bastionreg`, `audit`, `querybudget`, `ci`, `api` at 09:58 to 10:05 on
+its first two. The run before had ended at 10:26, so the push cut nothing off. With it the storage
+topic's last package is on `main`: a Bastion reads the files of an encrypted connection from the store
+with each file's key, and every key it receives is in the audit log.
 **In work since 05:38: package 7 of the encryption, the destruction of a retired connection's keys**
 (R-STOR-097 to R-STOR-103 and the journal's replay; the development agent's answer of 2026-11-22 to the
 question of what stays readable at a provider). It stands on the handover's second package as it lands;
