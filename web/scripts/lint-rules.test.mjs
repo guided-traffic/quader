@@ -10,6 +10,7 @@ import { bareIconsInCells } from './status-rule.mjs';
 import { wordActionsSideBySide } from './row-actions-rule.mjs';
 import { offTheLine } from './line-rule.mjs';
 import { compare, rewrite } from './i18n-check.mjs';
+import { journeyTextFindings } from './journey-texts-rule.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const eslint = new ESLint({ cwd: root });
@@ -244,4 +245,35 @@ test('R-UI-175 vertical-align: middle and align-items: last baseline fail the ch
     '// at `vertical-align: middle` they stood 1.5 px under it.\n.x { vertical-align: top; }',
   ];
   for (const css of good) assert.deepEqual(offTheLine(css), [], css);
+});
+
+test("Q-UI-1046 a journey's text named by its ID must be a plain unit of the translation files and the code's words", () => {
+  const en =
+    '<unit id="nav.a">\n<segment>\n<source>Security dashboard</source>\n</segment>\n</unit>\n' +
+    '<unit id="nav.b">\n<segment>\n<source>Malware</source>\n</segment>\n</unit>\n' +
+    '<unit id="nav.c">\n<segment>\n<source>Found <ph id="0"/> items</source>\n</segment>\n</unit>\n' +
+    '<unit id="nav.d">\n<segment>\n<source>Signatures &amp; keys</source>\n</segment>\n</unit>\n';
+  const de = '<unit id="nav.a">\n<segment>\n<source>Security dashboard</source>\n<target>Sicherheits-Dashboard</target>\n</segment>\n</unit>\n';
+  const code = ["label: $localize`:@@nav.a:Security dashboard`,", "label: $localize`:@@nav.b:Malware scan`,", '<h2 i18n="@@nav.d">Signatures &amp; keys</h2>'];
+  const journey = [
+    "await nav.getByRole('link', { name: ui('nav.a') }).click();",
+    "await expect(x).toHaveAccessibleName(ui('nav.a', 'de'));",
+    "await nav.getByRole('link', { name: ui('nav.b') }).click();",
+    "await nav.getByRole('link', { name: ui('nav.c') }).click();",
+    "await nav.getByRole('link', { name: ui('nav.gone') }).click();",
+    "await nav.getByRole('link', { name: ui('nav.b', 'de') }).click();",
+  ].join('\n');
+  const found = journeyTextFindings(journey, en, de, code);
+  assert.deepEqual(
+    found.map((f) => [f.line, f.id]),
+    [
+      [3, 'nav.b'],
+      [4, 'nav.c'],
+      [5, 'nav.gone'],
+      [6, 'nav.b'],
+    ],
+  );
+  assert.match(found[0].problem, /the code says "Malware scan" and messages.xlf "Malware"/);
+  assert.match(found[1].problem, /no plain source/);
+  assert.match(found[3].problem, /no plain German target/);
 });

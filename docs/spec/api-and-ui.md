@@ -22894,6 +22894,30 @@ then needs a Linux browser on the development machine too.
 **Applied in the spec:** R-UI-176. Code: [layout.ts](../../web/e2e/renders/layout.ts) (`label-apart`),
 [playwright.layout.config.ts](../../web/e2e/playwright.layout.config.ts), [playwright.renders.config.ts](../../web/e2e/playwright.renders.config.ts),
 [paths.ts](../../web/e2e/renders/paths.ts), the job `ui-layout` of [release.yml](../../.github/workflows/release.yml).
+
+### Q-UI-1046 · A journey takes a page's words by their message ID, and the lint holds the ID and the words
+
+Status: **Decided by the development agent on 2026-11-23** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the screens' rounds of 2026-11-23 changed visible words twice in a way only the pipeline's kind legs showed: a journey
+chose an option by "(generic)" after the option ended in the format's name, and the security dashboard's journey compared a link's
+text after the link's text had taken its icon's ligature. The rule decided that day was a search of the journeys for the old words in
+the same commit. The open question was whether the journeys' words can come from the source the pages take them from.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `ui('<ID>')` reads the unit's source of `messages.xlf` (the German target with `'de'`); a lint rule fails an ID without a plain text and an ID whose words in the code (`$localize` with `:@@ID:`, an element's `i18n="@@ID"`) differ from `messages.xlf`; journeys move to it when they are next changed (chosen) | `ui` in [support.ts](../../web/e2e/support.ts), [journey-texts-rule.mjs](../../web/scripts/journey-texts-rule.mjs) in `npm run lint` | A change of words reaches the journeys by itself; a removed ID, or words changed and not extracted, fail the landing's lint in seconds, not the kind leg | A journey reads less plainly (`ui('nav.security-dashboard')`); a text with a placeholder stays written out |
+| (b) Import the compiled `$localize` messages into the journeys | — | The exact words of the build | The journeys run in Node against the deployed build, not in the app's bundle; a second build of the messages |
+| (c) The search of the journeys for old words, per commit | — | Nothing to build | A rule a builder must remember; it was forgotten once |
+
+**Choice:** (a). **Rationale:** the translation file is already the one list of every visible word by ID, which the German build
+reads; reading it in the journeys adds no second source. What the rule cannot see (a text built at run time) stays written out and
+under the search of the decision of 2026-11-23. The development agent would revisit it once the extraction check of the translation
+file exists, which makes the words check of this rule a part of it.
+
+**Applied in the spec:** none (test tooling). Code: `ui` in [support.ts](../../web/e2e/support.ts), the rule and its test in
+[lint-rules.test.mjs](../../web/scripts/lint-rules.test.mjs), the journey [16-security-dashboard.spec.ts](../../web/e2e/vuln/16-security-dashboard.spec.ts).
+Elsewhere: [e2e.md](../developer/e2e.md#what-a-journey-is).
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 
 Status: **Decided by the owner, 2026-11-23** (T-25, 19:30, whole: "Ich finde Projects und Repositories haben im Admin-Mneü nichts

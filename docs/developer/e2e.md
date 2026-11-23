@@ -915,6 +915,15 @@ its data through the API with the administrator token (INV-17: `beforeAll` creat
 deletes them) and does through the UI only what it tests. Every name carries a base-36 timestamp, so a rerun needs no
 cleanup first.
 
+**A journey takes a page's words from where the page takes them** ([Q-UI-1046](../spec/api-and-ui.md#q-ui-1046--a-journey-takes-a-pages-words-by-their-message-id-and-the-lint-holds-the-id-and-the-words)):
+`ui('<message ID>')` of [support.ts](../../web/e2e/support.ts) is the source of that unit of `messages.xlf`, `ui('<ID>', 'de')` its
+German target, and a format's name is `formatName`, the answer of `GET /api/v1/formats`. `npm run lint` fails an ID the
+translation files do not hold as a plain text and one whose words in the code differ from `messages.xlf`
+([journey-texts-rule.mjs](../../web/scripts/journey-texts-rule.mjs)), so a change of the words is followed by the journeys, and a
+change that was not extracted is named before a cluster runs. A text with a placeholder, and a value the journey made itself (a
+repository's key, an advisory's ID), stays written out. Converted so far: the security dashboard's journey, the one a change of
+words broke on 2026-11-23; every other journey still writes its words, and its texts move to `ui()` when it is next changed.
+
 ### The break-glass rotation hold
 
 The dev cluster is long-lived, and the internal-secrets-operator rotates `quader-break-glass` every 24 h

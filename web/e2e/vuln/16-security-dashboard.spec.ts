@@ -13,6 +13,7 @@ import {
   signInLocal,
   signInWithKeycloak,
   test,
+  ui,
   unique,
 } from '../support';
 
@@ -89,20 +90,20 @@ test('R-UI-159 the dashboard searches every project by alias and text in its one
 
     await test.step('the dashboard is the entry Security dashboard under Security audit and shows the findings of both projects', async () => {
       await page.goto('/ui/en/projects');
-      const nav = page.getByRole('navigation', { name: 'Main navigation' });
-      await nav.getByRole('link', { name: 'Security dashboard' }).click();
+      const nav = page.getByRole('navigation', { name: ui('shell.nav') });
+      await nav.getByRole('link', { name: ui('nav.security-dashboard') }).click();
       await expect(page).toHaveURL(/\/ui\/en\/security$/);
-      await expect(page.getByRole('heading', { name: 'Security dashboard', level: 1 })).toBeVisible();
+      await expect(page.getByRole('heading', { name: ui('security.heading'), level: 1 })).toBeVisible();
       // A second context title of the side bar, not a folding group (R-UI-168): the block is a group named by its title.
-      await expect(nav.getByRole('group', { name: 'Security audit', exact: true }).getByRole('link', { name: 'Security dashboard' })).toBeVisible();
+      await expect(nav.getByRole('group', { name: ui('nav.section.security-audit'), exact: true }).getByRole('link', { name: ui('nav.security-dashboard') })).toBeVisible();
       // Malware and Signatures are entries of their own beside it (Q-UI-1005), the dashboard has no strip of views.
-      const audit = nav.getByRole('group', { name: 'Security audit', exact: true });
+      const audit = nav.getByRole('group', { name: ui('nav.section.security-audit'), exact: true });
       // By their accessible names: a link's text holds its icon's ligature ("bug_reportMalware"); the icon is aria-hidden.
       const entries = audit.getByRole('link');
       await expect(entries).toHaveCount(3);
-      for (const [i, name] of ['Security dashboard', 'Malware', 'Signatures'].entries()) await expect(entries.nth(i)).toHaveAccessibleName(name);
+      for (const [i, name] of [ui('nav.security-dashboard'), ui('nav.security-malware'), ui('nav.security-signatures')].entries()) await expect(entries.nth(i)).toHaveAccessibleName(name);
       await expect(page.locator('main nav.tab-nav')).toHaveCount(0);
-      await expect(nav.getByRole('button', { name: 'Security audit' })).toHaveCount(0);
+      await expect(nav.getByRole('button', { name: ui('nav.section.security-audit') })).toHaveCount(0);
       await expect(page.getByText('The counts and the trend cover every project.')).toBeVisible();
       await page.goto('/ui/en/security?package=quader-test-alias');
       const rows = page.locator('quader-data-table tbody tr').filter({ hasText: 'quader-test-alias' });
@@ -169,7 +170,7 @@ test('R-UI-159 the dashboard searches every project by alias and text in its one
       await expect(page).toHaveURL(/\/ui\/en\/security\/findings\//);
       // The advisory names the page; the way back is the breadcrumb (Q-UI-968).
       await expect(page.getByRole('heading', { name: 'GHSA-aaaa-bbbb-cccc', level: 1 })).toBeVisible();
-      await expect(page.getByRole('navigation', { name: 'Breadcrumb' }).getByRole('link', { name: 'Security dashboard' })).toHaveAttribute('href', /\/security$/);
+      await expect(page.getByRole('navigation', { name: 'Breadcrumb' }).getByRole('link', { name: ui('route.security.title') })).toHaveAttribute('href', /\/security$/);
       await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).not.toContainText('Admin area');
       await expectAccessible(page, 'a finding opened from the dashboard');
     });
@@ -206,8 +207,8 @@ test('R-UI-158 R-VULN-013 an auditor who is a member of no project finds the das
 
     await test.step('Security audit in his side bar of Your work leads to the dashboard, which lists the project he is no member of', async () => {
       await bob.goto('/ui/en/projects');
-      await bob.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Security dashboard' }).click();
-      await expect(bob.getByRole('heading', { name: 'Security dashboard', level: 1 })).toBeVisible();
+      await bob.getByRole('navigation', { name: ui('shell.nav') }).getByRole('link', { name: ui('nav.security-dashboard') }).click();
+      await expect(bob.getByRole('heading', { name: ui('security.heading'), level: 1 })).toBeVisible();
       await bob.goto(`/ui/en/security?project=${shop}`);
       const rows = bob.locator('quader-data-table tbody tr');
       await expect(rows).toHaveCount(1);

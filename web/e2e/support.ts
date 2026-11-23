@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
 import { APIRequestContext, Locator, expect, Page, Request, request, test as base } from '@playwright/test';
 
@@ -50,6 +52,28 @@ export async function formatName(api: APIRequestContext, key: string): Promise<s
   expect(answer.ok(), `GET /api/v1/formats: ${answer.status()}`).toBeTruthy();
   const formats = ((await answer.json()) as { formats?: { name: string; displayName: string }[] }).formats ?? [];
   return formats.find((f) => f.name === key)?.displayName ?? key;
+}
+
+const xlf: Record<'en' | 'de', string | null> = { en: null, de: null };
+const ENTITIES: Record<string, string> = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&apos;': "'" };
+
+/**
+ * A text of the pages by its message ID, from the source the pages take it from (Q-UI-1046): the source of the unit in
+ * `src/locale/messages.xlf`, or with `'de'` its target in `messages.de.xlf`. A journey that names a link, a heading or a button this
+ * way follows a change of the words without a search, which the screens' rounds of 2026-11-23 needed twice. `npm run lint` fails an
+ * ID the files do not hold as a plain text, and one whose words in the code differ from messages.xlf (scripts/journey-texts-rule.mjs),
+ * so the journey and the page say the same once the source is extracted. A text with a placeholder is not offered: the journey
+ * writes its words.
+ */
+export function ui(id: string, locale: 'en' | 'de' = 'en'): string {
+  const file = (xlf[locale] ??= readFileSync(join(__dirname, '..', 'src', 'locale', locale === 'de' ? 'messages.de.xlf' : 'messages.xlf'), 'utf8'));
+  const start = file.indexOf(`<unit id="${id}">`);
+  if (start < 0) throw new Error(`ui('${id}'): no unit of that ID in the ${locale} translation file`);
+  const unit = file.slice(start, file.indexOf('</unit>', start));
+  const part = locale === 'de' ? 'target' : 'source';
+  const m = new RegExp(`<${part}>([\\s\\S]*?)</${part}>`).exec(unit);
+  if (!m || m[1]!.includes('<')) throw new Error(`ui('${id}'): the ${part} is no plain text`);
+  return m[1]!.replace(/&(amp|lt|gt|quot|apos);/g, (e) => ENTITIES[e]!);
 }
 
 /** A name that no earlier run used, so a rerun needs no cleanup to start. */

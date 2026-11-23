@@ -13,6 +13,8 @@
 //  - Q-UI-564: the word of a badge or a status starts with a capital (**Disabled**, not "disabled"), as the manual writes it.
 //  - R-UI-175: no `vertical-align: middle` and no `align-items: last baseline` in a style: a box beside a text stands on the
 //    line's middle by the line rule of _controls.scss (line-rule.mjs).
+//  - Q-UI-1046: every text a journey names by its message ID (`ui('…')` of e2e/support.ts) is a plain unit of the translation files,
+//    and the code's words for it are messages.xlf's (journey-texts-rule.mjs).
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,6 +23,7 @@ import { linksToRemovedRoutes } from './removed-routes-rule.mjs';
 import { bareIconsInCells } from './status-rule.mjs';
 import { wordActionsSideBySide } from './row-actions-rule.mjs';
 import { offTheLine } from './line-rule.mjs';
+import { journeyTextFindings } from './journey-texts-rule.mjs';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 
@@ -126,6 +129,19 @@ for (const file of sources.filter((p) => /\.(ts|scss|css)$/.test(p) && !p.endsWi
   for (const { line, text } of offTheLine(readFileSync(file, 'utf8'))) {
     failed = true;
     console.error(`R-UI-175: ${relative(root, file)}:${line}: a box placed off the line of its text; use the line rule of _controls.scss (vertical-align: top and margins from --quader-line): ${text}`);
+  }
+}
+
+// A journey takes a page's text from the source the page takes it from, by its ID (Q-UI-1046).
+{
+  const en = readFileSync(join(root, 'src/locale/messages.xlf'), 'utf8');
+  const de = readFileSync(join(root, 'src/locale/messages.de.xlf'), 'utf8');
+  const code = sources.filter((p) => /\.(ts|html)$/.test(p) && !p.endsWith('.spec.ts')).map((p) => readFileSync(p, 'utf8'));
+  for (const file of [...walk(join(root, 'e2e'))].filter((p) => p.endsWith('.ts'))) {
+    for (const { line, id, problem } of journeyTextFindings(readFileSync(file, 'utf8'), en, de, code)) {
+      failed = true;
+      console.error(`Q-UI-1046: ${relative(root, file)}:${line}: ui('${id}'): ${problem}`);
+    }
   }
 }
 

@@ -12018,10 +12018,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-515 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+516 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 515 questions</summary>
+<summary>Q-UI: 516 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12540,6 +12540,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1043](spec/api-and-ui.md#q-ui-1043--admin-without-the-dashboard-starts-at-the-first-entry-of-the-admin-side-bar-or-on-the-start-page) | `/admin` without the dashboard starts at the first entry of the admin side bar, or on the start page | Decided by the development agent | (a) The dashboard for `settings:read`, else the first entry of the admin side bar the caller has, in its order; with none, the start page | — |
 | [Q-UI-1044](spec/api-and-ui.md#q-ui-1044--an-instance-of-the-ui-development-profile-is-claimed-not-chosen) | An instance of the UI development profile is claimed, not chosen | Decided by the development agent on 2026-11-23 | (a) A claim per instance, the file `<main>/.dev/ui-dev-claims/<n>` with the claiming checkout's path, read and written under an flock(2) lock; a worktree without `UI_INSTANCE` takes the instance it claims or the first free one; a number another existing checkout claims is refused; a claim whose checkout is gone is taken over after its compose project's containers and volumes are removed; `make ui-dev-down PURGE=1` ends it | — |
 | [Q-UI-1045](spec/api-and-ui.md#q-ui-1045--the-layout-checks-fixtures-run-in-three-engines-and-chromium-sets-text-without-hinting) | The layout checks' fixtures run in three engines, and Chromium sets text without hinting | Decided by the development agent on 2026-11-23 | (a) The checks measure what they name in a way that holds in every engine (`label-apart`: the value's middle below the name's bottom), the fixtures run in Chromium, Firefox and WebKit with no mark for one engine, and Chromium runs with `--font-render-hinting=none` in the fixtures and the renders | — |
+| [Q-UI-1046](spec/api-and-ui.md#q-ui-1046--a-journey-takes-a-pages-words-by-their-message-id-and-the-lint-holds-the-id-and-the-words) | A journey takes a page's words by their message ID, and the lint holds the ID and the words | Decided by the development agent on 2026-11-23 | (a) `ui('<ID>')` reads the unit's source of `messages.xlf` (the German target with `'de'`); a lint rule fails an ID without a plain text and an ID whose words in the code (`$localize` with `:@@ID:`, an element's `i18n="@@ID"`) differ from `messages.xlf`; journeys move to it when they are next changed | — |
 
 </details>
 
