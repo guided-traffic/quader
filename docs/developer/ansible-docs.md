@@ -70,9 +70,21 @@ answers `formattest.StandInMarkup`, which escapes: a unit test that uses it prov
 |---|---|
 | `TestR_ANS_034_*` in [docgen](../../internal/formats/ansible/docgen) | the generator over crafted sources, the bounds, the determinism, `FuzzR_ANS_034_Generator` |
 | `TestR_ANS_039_TheMarkupTableHasACasePerMacro`, `FuzzR_ANS_039_RenderMarkup` | the converter |
-| `test/integration/ansiblelocal/docs_test.go` | publish, the operations, the route, the reindex, the warnings |
-| `test/integration/ansibleremote/docs_test.go` | the fetch once, the sanitized serving, the states, the setting, a foreign `href` |
+| `test/integration/ansiblelocal/docs_test.go` | publish, the operations, the route, the reindex (rows that are missing and rows of an older generator, R-ANS-044), the warnings, the metrics of the generation and the reads (R-ANS-045) |
+| `test/integration/ansibleremote/docs_test.go` | the fetch once, the sanitized serving, the states, the setting, a foreign `href`, the stored document evicted while its rows stay (R-ANS-043), the metrics of the fill (R-ANS-045) |
 | `test/integration/ansiblevirtual/docs_test.go` | the first member that has documentation |
+| `test/integration/ansiblevirtual/wiki_test.go` | a caller who reads the artifacts and not the wiki of the local member: the virtual repository serves the remote member's documentation, the local member's route answers 404, its version document 200 |
+| `TestR_ANS_021_APassOfTheCollectionIndexStoresTheCollectionsThePatternsSelect` in [mirror/ansible_test.go](../../test/integration/mirror/ansible_test.go) | a mirror pass queues the documentation fetch of every version it keeps (R-ANS-040) |
+
+Held at the unit tier and not repeated at the integration tier (the rule of [CLAUDE.md](../../CLAUDE.md): once, at the cheapest tier):
+
+- **A collection of 6,000 files.** The bound of 5,000 entries and `truncated` is a rule of the generator, which a publish runs in its one pass:
+  `TestR_ANS_034_R_ANS_043_TheBoundsOfAVersionKeepTheListAndDropTheRest`. An integration case would publish an archive of 6,000 members
+  to show the same function's answer.
+- **A local repository's gate for a caller who may not read the wiki.** The route is declared `Wiki` and the dispatcher refuses the caller
+  before the handler runs (`TestR_AUTHZ_034_ARouteThatServesOnlyWikiContentIsDecidedWithThePartWiki`), every surface asks `wikiReadable`
+  (`TestR_ANS_037_EverySurfaceAsksTheWikiGate`), and check 15 of the kit serves every content case to such a caller. With the real decision
+  point the refusal is part of `wiki_test.go`, at the local member's own route.
 | `TestR_ANS_033_TheTwinReportsTheStatesOfTheDocumentation`, `TestR_ANS_036_TheTwinsTreeKeepsTheCountsWhileASearchFilters` | the rules the twin shares with the SQL store |
 | `TestR_ANS_034_TheTapSeesTheFirstBytesOfAWantedMember` | the tap sees the capped bytes of the members it wants and changes nothing else |
 | `TestR_ANS_035_TheDocsBlobDocumentIsMetadataOfItsVersion`, `TestR_ANS_003_TheRouteTable` | the route and the canonical path of the stored document |

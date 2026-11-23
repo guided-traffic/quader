@@ -268,9 +268,10 @@ func TestR_ANS_034_ABoundOrARefusalDropsThePartAndWarns(t *testing.T) {
 	}
 }
 
-// TestR_ANS_034_TheBoundsOfAVersionKeepTheListAndDropTheRest: 6,000 plugin files keep 5,000 entries and set truncated, a source past the budget is
-// listed without documentation, and more than 64 files of docs/ keep 64.
-func TestR_ANS_034_TheBoundsOfAVersionKeepTheListAndDropTheRest(t *testing.T) {
+// TestR_ANS_034_R_ANS_043_TheBoundsOfAVersionKeepTheListAndDropTheRest: 6,000 plugin files keep 5,000 entries and set truncated (the bound of
+// R-ANS-043, applied by the generator of a publish), a source past the budget is listed without documentation, and more than 64 files of
+// docs/ keep 64.
+func TestR_ANS_034_R_ANS_043_TheBoundsOfAVersionKeepTheListAndDropTheRest(t *testing.T) {
 	members := map[string]string{}
 	for i := range 6000 {
 		members[fmt.Sprintf("plugins/filter/f%05d.py", i)] = "x = 1\n"

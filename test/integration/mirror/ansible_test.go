@@ -61,6 +61,13 @@ func TestR_ANS_021_APassOfTheCollectionIndexStoresTheCollectionsThePatternsSelec
 		}
 	})
 
+	t.Run("R-ANS-040 the pass queues the documentation fetch of every version it keeps, one job each", func(t *testing.T) {
+		// ansible.fetchDocumentation is on by default; the fill of each version document the pass reads queues the job (R-ANS-042).
+		if n := r.st.Number(`SELECT count(DISTINCT dedup_key) FROM job WHERE kind = 'ansible-docs-fill' AND dedup_key LIKE 'ansible-docs:' || $1::bigint::text || ':%'`, r.repoN); n != 7 {
+			t.Errorf("%d documentation fetches queued for the 7 versions the pass kept", n)
+		}
+	})
+
 	t.Run("R-ANS-021 the index is read by offset, 100 entries a request, to its end", func(t *testing.T) {
 		// 125 collections: the five of the corpus and the 120 fillers, two index pages.
 		if n := stub.Counts().Requests(http.MethodGet, "/api/v3/collections/"); n != 2 {

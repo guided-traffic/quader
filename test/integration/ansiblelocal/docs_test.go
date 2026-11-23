@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/guided-traffic/quader/internal/formats/ansible/docgen"
 )
 
 // docsSpecBytes is a collection with documentation: 8 modules, 8 filters and 16 module_utils files, a README with a heading, a file of docs/
@@ -136,11 +138,29 @@ func TestR_ANS_036_ThePublishedDocumentationIsServedByTheOperationsAndTheRoute(t
 	if unknown := e.get(e.tokC, "v3/collections/acme/tools/versions/9.9.9/docs-blob/"); unknown.Status != 404 {
 		t.Errorf("an unknown version: %d", unknown.Status)
 	}
+
+	// R-ANS-045: the generation of the publish and the reads of the route are counted by outcome, and no series names the collection.
+	m := e.r.Metrics(t)
+	for _, series := range []string{
+		`quader_ansible_docs_generated_total{outcome="completed"}`,
+		`quader_ansible_docs_read_total{operation="docs_blob",outcome="ok"}`,
+		`quader_ansible_docs_read_total{operation="docs_blob",outcome="not_found"}`,
+	} {
+		if !strings.Contains(m, series) {
+			t.Errorf("the metrics lack %s", series)
+		}
+	}
+	for _, l := range strings.Split(m, "\n") {
+		if strings.HasPrefix(l, "quader_ansible_docs_") && (strings.Contains(l, "acme") || strings.Contains(l, "tools")) {
+			t.Errorf("a series names the user's data: %s", l)
+		}
+	}
 }
 
-// TestR_ANS_033_ADeletedVersionLeavesNoDocumentationAndAReindexRebuildsIt: the removal of the version removes its rows; the reindex generates
-// the rows of a version that has none from the archive and raises the revision.
-func TestR_ANS_033_ADeletedVersionLeavesNoDocumentationAndAReindexRebuildsIt(t *testing.T) {
+// TestR_ANS_033_R_ANS_044_ADeletedVersionLeavesNoDocumentationAndAReindexRebuildsIt: the removal of the version removes its rows; the reindex
+// generates the rows of a version that has none from the archive and raises the revision; rows of an older generator are rebuilt once, and a
+// second reindex rebuilds none (R-ANS-044).
+func TestR_ANS_033_R_ANS_044_ADeletedVersionLeavesNoDocumentationAndAReindexRebuildsIt(t *testing.T) {
 	e := newEnv(t)
 	for _, v := range []string{"1.0.0", "1.1.0"} {
 		if a := e.publish(e.tokA, docsSpecBytes(v), true); a.Status != 202 {
@@ -164,14 +184,18 @@ func TestR_ANS_033_ADeletedVersionLeavesNoDocumentationAndAReindexRebuildsIt(t *
 
 	e.st.Exec(`DELETE FROM ansible_version_docs WHERE repo_id = $1`, id)
 	before := e.st.Number(`SELECT rev_seq FROM packages WHERE repo_id = $1 AND name = 'acme.tools'`, id)
-	a := e.st.Do(e.r, "POST", "/api/v1/projects/"+project+"/repositories/"+repo+"/reindex", e.tokAdmin, nil)
-	if a.Status != 202 {
-		t.Fatalf("reindex: %d %s", a.Status, a.Body)
+	reindex := func() {
+		t.Helper()
+		a := e.st.Do(e.r, "POST", "/api/v1/projects/"+project+"/repositories/"+repo+"/reindex", e.tokAdmin, nil)
+		if a.Status != 202 {
+			t.Fatalf("reindex: %d %s", a.Status, a.Body)
+		}
+		jobID, _ := a.JSON(t)["job"].(map[string]any)["id"].(string)
+		waitFor(t, "the reindex job", 60*time.Second, func() bool {
+			return e.st.Text(`SELECT state FROM job WHERE id = $1::uuid`, jobID) == "succeeded"
+		})
 	}
-	jobID, _ := a.JSON(t)["job"].(map[string]any)["id"].(string)
-	waitFor(t, "the reindex job", 60*time.Second, func() bool {
-		return e.st.Text(`SELECT state FROM job WHERE id = $1::uuid`, jobID) == "succeeded"
-	})
+	reindex()
 	if got := e.st.Number(`SELECT count(*) FROM ansible_version_docs WHERE repo_id = $1 AND version = '1.1.0' AND source = 'generated'`, id); got != 1 {
 		t.Errorf("the reindex rebuilt %d rows of the version", got)
 	}
@@ -180,6 +204,22 @@ func TestR_ANS_033_ADeletedVersionLeavesNoDocumentationAndAReindexRebuildsIt(t *
 	}
 	if blob := e.get(e.tokC, "v3/collections/acme/tools/versions/1.1.0/docs-blob/"); blob.Status != 200 {
 		t.Errorf("docs-blob after the reindex: %d", blob.Status)
+	}
+
+	// R-ANS-044: rows an older generator wrote are rebuilt by the next reindex, once; the one after rebuilds none.
+	built := func() string {
+		return e.st.Text(`SELECT generator || ' ' || built_at::text FROM ansible_version_docs WHERE repo_id = $1 AND version = '1.1.0'`, id)
+	}
+	e.st.Exec(`UPDATE ansible_version_docs SET generator = $2, built_at = built_at - interval '1 hour' WHERE repo_id = $1`, id, docgen.Version-1)
+	older := built()
+	reindex()
+	rebuilt := built()
+	if rebuilt == older || !strings.HasPrefix(rebuilt, fmt.Sprintf("%d ", docgen.Version)) {
+		t.Errorf("rows of generator %d were not rebuilt by the reindex: %s, then %s", docgen.Version-1, older, rebuilt)
+	}
+	reindex()
+	if again := built(); again != rebuilt {
+		t.Errorf("a second reindex rebuilt the rows of the current generator: %s, then %s", rebuilt, again)
 	}
 }
 

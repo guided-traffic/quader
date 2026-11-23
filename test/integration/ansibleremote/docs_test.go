@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/formats/ansible"
 	"github.com/guided-traffic/quader/test/ansiblestub"
 	"github.com/guided-traffic/quader/test/integration/testenv"
 )
@@ -64,6 +65,37 @@ func TestR_ANS_035_TheUpstreamsDocumentationIsServedSanitizedAndFetchedOnce(t *t
 	if got := e.st.Number(`SELECT count(*) FROM ansible_doc_entries WHERE repo_id = $1 AND content_type = 'role' AND readme_html LIKE '%<script>%'`, e.repoID(repo)); got != 1 {
 		t.Errorf("the role README is stored as received: %d", got)
 	}
+
+	t.Run("R-ANS-045 the fill and the reads are counted by outcome, and no series names the collection", func(t *testing.T) {
+		m := r.Metrics(t)
+		for _, series := range []string{
+			`quader_ansible_docs_fill_total{outcome="available"}`,
+			`quader_ansible_docs_read_total{operation="docs_blob",outcome="ok"}`,
+		} {
+			if !strings.Contains(m, series) {
+				t.Errorf("the metrics lack %s", series)
+			}
+		}
+		for _, l := range strings.Split(m, "\n") {
+			if strings.HasPrefix(l, "quader_ansible_docs_") && (strings.Contains(l, "acme") || strings.Contains(l, repo)) {
+				t.Errorf("a series names the user's data: %s", l)
+			}
+		}
+	})
+
+	t.Run("R-ANS-043 the stored document goes as a cache entry does, its rows stay, and the route fetches it again", func(t *testing.T) {
+		// The eviction of R-REPO-032 deletes the cache entry of the document; the rows are what the screens read.
+		e.st.Exec(`DELETE FROM remote_cache_entries WHERE repo_id = $1 AND path = $2`, e.repoID(repo), ansible.DocsDocumentPath("acme", "tools", "1.0.0"))
+		if got := e.docsState(repo); got != "available" {
+			t.Errorf("the rows after the eviction: %s", got)
+		}
+		if a := e.get(r, repo, docsPath); a.Status != http.StatusOK {
+			t.Fatalf("the route after the eviction: %d %s", a.Status, a.Body)
+		}
+		if n := e.docsRequests(); n != 2 {
+			t.Errorf("the stub saw %d documentation requests, want the first and one after the eviction", n)
+		}
+	})
 }
 
 // TestR_ANS_042_TheVersionDocumentQueuesTheFetchAndTheJobFillsTheRows: filling the version document queues one job, which fetches the document

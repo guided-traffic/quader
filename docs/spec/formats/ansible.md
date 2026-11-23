@@ -1634,9 +1634,10 @@ Acceptance criteria: each series moves in the integration test of its path and n
 Priority: **P1** · Covers: quader-only
 
 Real clients found three defects in F0 that integration missed, so the set `ansible` (kind, `make e2e`) gets a row per class, each with the real client for the
-protocol and a browser journey for the screen. The source tree of the collection is checked in under `test/e2e/testdata/ansible_docs/` (a namespace with two modules
-with full `DOCUMENTATION`, `EXAMPLES` and `RETURN`, a filter, a role with a README, a README and one `docs/` file); the collection is built with `ansible-galaxy
-collection build` in the client pod.
+protocol and a browser journey for the screen. The source tree of the collection is written into the client pod by the test itself (`docsCollection` and
+`docsModule` in `test/e2e/ansible_docs_test.go`, no directory of test data): a README, one `docs/` file and one module, `ping_host`, with full `DOCUMENTATION`
+(an option with a suboption), `EXAMPLES` and `RETURN`; the collection is built with `ansible-galaxy collection build` in the client pod. A role with a README is in
+the remote row, from the stub's collection (`webserver`).
 
 | Row | What the real client does | What the browser journey checks |
 |---|---|---|
@@ -2608,7 +2609,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Decode a `file` part that says `Content-Transfer-Encoding: base64` while it streams into the spool (chosen) | `base64.NewDecoder` over the part; the digest, the size limit and the inspection see the decoded bytes | It is what the real client sends: `prepare_multipart` of ansible-core 2.17 and 2.21 encodes the archive as base64 in lines of 76 characters (the first run of the e2e set against the local class answered 400 `sha256_mismatch` for every `ansible-galaxy collection publish`, because the digest was that of the encoded text); streaming, no buffering | A body is a third larger on the wire than the archive; `ansible.max_archive_bytes` bounds the decoded bytes, the system upload limit the encoded ones |
+| (a) Decode a `file` part that says `Content-Transfer-Encoding: base64` while it streams into the spool (chosen) | `base64.NewDecoder` over the part; the digest, the size limit and the inspection see the decoded bytes | It is what the real client sends: `prepare_multipart` of ansible-core 2.17 and 2.21 encodes the archive as base64 in lines of 76 characters (the first run of the e2e set against the local class answered 400 `sha256_mismatch` for every `ansible-galaxy collection publish`, because the digest was that of the encoded text); streaming, no buffering | A body is a third larger on the wire than the archive. `ansible.max_archive_bytes` and the repository's upload limit (R-STOR-004) are one limit of the spool, the smaller of the two, and both count the decoded bytes; the encoded text is bounded through the decoder (verified in `Ingest.Spool` of `internal/formathost/ingest.go` on 2026-11-23; test `TestQ_ANS_53_TheArchiveLimitCountsTheDecodedBytesOfABase64Part`) |
 | (b) Accept only raw parts | | Nothing to build | No real client can publish |
 | (c) Ask the client to change | | | Not in our hands |
 
@@ -3035,6 +3036,16 @@ archive, and a `HEAD` of a role's archive the probe of the member its id names (
 
 ## What this does not cover
 
+### H-1620 · A collection whose archive holds a symbolic link is refused, also through a remote
+
+The archive reader refuses every entry that is no regular file or directory (R-ANS-010, R-ARCH-028), so a collection whose archive holds a
+symbolic link is refused at publish and in the fill of a remote, which answers 502 `upstream_failed` for its archive. Live, and real today:
+`ansible.posix` 2.2.2 on the public Galaxy carries ten links below `tests/utils/shippable/` and cannot be installed through a remote
+repository (read on 2026-11-23, [ansible-remote.md](../../developer/ansible-remote.md#a-read-of-the-public-galaxy-2026-11-23-a-measurement)).
+The links of that archive point at files beside them, inside the collection; which links the client's own build writes was not checked.
+Whether Quader admits links whose target stays inside the collection, and how the reader then keeps two readers from resolving them
+differently (R-ARCH-028), is not decided.
+
 ### H-839 · A remote's signatures are verified and shown, and refuse nothing
 
 A remote version document's `signatures[]` reach the client unchanged (R-ANS-013). Today Quader does not verify them; once
@@ -3103,7 +3114,11 @@ use, would refuse the second replica; neither was observed, because the service 
 
 The archive reader runs under the core's bounds, 10,000 entries and 2 GiB inflated (R-ANS-031, Q-ANS-30), and a format cannot raise them. A
 collection with more files or more expanded bytes is refused at publish, in a fill and by the reindex, with a failed task that names the bound.
-Dormant: the collections of the public Galaxy are far below both; real for an internal collection that vendors a large tree.
+Dormant: the collections of the public Galaxy are far below both; real for an internal collection that vendors a large tree. The bounds
+are kept by design and are no defect of the format: they are the core's for every format that reads an archive (R-ARCH-028), and
+`untrusted.Limits.Tighten` lowers a bound and never raises one (`TestR_ARCH_028_DefaultLimitsAndTighten`), so an operator who meets
+it learns it from the task and has no setting to change; raising them for one format would be a decision of R-ARCH-028, not of this
+page (checked on 2026-11-23).
 
 ### H-852 · The restore of a version from the trash is not served
 
@@ -3188,7 +3203,12 @@ for the host; the guide and the manual say so, and no check of Quader can see it
 the default `local.autoClaim`), so the end-to-end set never has one name with versions in a local and in a remote member at once, and nothing
 runs with the real clients that the merged list of such a name is the union, first tier winning per version (R-ANS-022, Q-ANS-18). The kit and
 the integration area `ansiblevirtual` prove the merge; the clients' view of it, and of a conflict of digests, is not run. Live for a virtual
-repository whose local member has the claim switched off.
+repository whose local member has the claim switched off. No case with the clients is added for it (checked on 2026-11-23): the union and the
+first tier per version are properties of the documents the virtual repository answers, held where they are cheapest
+(`TestR_ANS_022_TheVersionListIsTheUnionOfTheMembersNewestFirstAndPagedAfterTheMerge`,
+`TestR_ANS_022_AVersionBothMembersHoldIsServedFromTheLocalMemberAndTheConflictIsCounted`, with the requests `ansible-galaxy` sends), and
+the client reads a virtual repository's version list and version document as it reads any other (`TestAnsibleVirtual` installs through
+one with `ansible-galaxy`). A case with the clients follows only if a client is found to treat such a list differently.
 
 ### H-890 · The size of the documentation of a full mirror and of many local versions is not measured
 

@@ -87,6 +87,26 @@ shows that the offline token never reached the upstream (`Rejected == 0`).
 | Kit | `conformance_test.go`, `remote_fixture_test.go` | `Rewrite` (deterministic, idempotent, no upstream address left), the discovery documents of check 6, the name `role/16` |
 | Integration | `test/integration/ansibleremote`, `test/integration/mirror/ansible_test.go` | against the stub through the slot wrapper (`hub_test.go` for the realm); the role routes of the kit's content check are listed in `NoContent` because the kit's host is a local repository |
 
+## A read of the public Galaxy (2026-11-23, a measurement)
+
+The read-only check of the format's first plan, run once and kept as this record, not as a test: a remote repository with the address
+`https://galaxy.ansible.com/api/`, anonymous, the client's `User-Agent` the Go default, no header of its own, on a replica of the integration
+stack with the format as it stood on `main` at `66ecdd123` (no change of this package touches the remote read), on 2026-11-23 at 10:05 UTC. What was read through the remote, in the order of `ansible-galaxy
+collection install ansible.posix`:
+
+| Read | Answer through the remote |
+|---|---|
+| `GET /` (the discovery document) | 200, `available_versions` `v3` and `v1` |
+| `GET v3/collections/ansible/posix/` | 200, `highest_version` 2.2.2, links rewritten to the repository |
+| `GET v3/collections/ansible/posix/versions/?limit=5` | 200, `meta.count` 79, the first page newest first, `links` rewritten |
+| `GET v3/collections/ansible/posix/versions/2.2.2/` | 200, `requires_ansible` `>=2.16.0`, `artifact` `ansible-posix-2.2.2.tar.gz`, 166,545 bytes, SHA-256 `00a58c5d…3b82b`, `download_url` the repository's own address |
+| `GET v3/artifacts/collections/ansible-posix-2.2.2.tar.gz` | **502** `upstream_failed`: the upstream answered 200, and the archive reader refused it: `entry "tests/utils/shippable/aix.sh" is a link` |
+
+The documents read as the shapes recorded on 2026-11-10 say. The archive did not install: ansible.posix 2.2.2 carries ten symbolic links
+below `tests/utils/shippable/` (read with `tar -tvz` from the same file fetched directly, whose SHA-256 is the announced one), and the reader
+refuses every link entry (R-ANS-010). That is the gap
+[H-1620](../spec/formats/ansible.md#h-1620--a-collection-whose-archive-holds-a-symbolic-link-is-refused-also-through-a-remote).
+
 ## The counting stub
 
 `test/ansiblestub` is a stub Galaxy in the style of [`test/debstub`](../../test/debstub) and `test/npmstub`: a Go package for

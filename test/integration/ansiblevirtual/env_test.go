@@ -56,6 +56,9 @@ type venv struct {
 type options struct {
 	// claim claims the pattern for ans-local (R-REPO-023).
 	claim string
+	// levels sets the visibility of repositories before the replica starts: the artifacts level and the wiki level by key (R-AUTHZ-033);
+	// the project is internal then.
+	levels map[string][2]string
 }
 
 func newEnv(t *testing.T, o options) *venv {
@@ -110,6 +113,12 @@ func newEnv(t *testing.T, o options) *venv {
 	e.st.Policy("ans-writers-read", []string{"read"}, []string{rGalaxy}, writer)
 	e.st.Policy("ans-plain", []string{"read", "deploy"}, []string{rLocal, rVirtual, rReverse, rLocalV}, plain)
 	e.st.Policy("ans-plain-read", []string{"read"}, []string{rGalaxy}, plain)
+	if len(o.levels) > 0 {
+		e.st.Exec(`UPDATE project SET visibility = 'internal' WHERE key = $1`, testenv.DefaultProject)
+		for key, l := range o.levels {
+			e.st.Exec(`UPDATE repositories SET visibility_artifacts = $2, visibility_wiki = $3 WHERE key = $1`, key, l[0], l[1])
+		}
+	}
 	e.rep = e.st.Start(t, testenv.ReplicaOptions{Name: "web-1", DialOverride: e.run.DialOverride()})
 	return e
 }
