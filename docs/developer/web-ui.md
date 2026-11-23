@@ -161,6 +161,14 @@ through the dev server works only against a Quader whose base URL is `https://lo
 - A database that applied a migration which has changed since is refused by `migrate up` ("a changed migration needs a new
   database"): `make ui-dev-down PURGE=1` and `make ui-dev-up`, with the instance's `UI_INSTANCE`.
 
+**What a cold load asks of the read class** (measured once on 2026-11-23 on instance 2 of the profile with the render seed, `UI_RENDERS_COUNT=1
+make ui-renders GREP=…`): Home and Projects 8 GETs of the API (9 as the administrator), Repositories of a project 9 (10), all repositories
+10 (13), a generic repository 11 (12), Profile 10 (11), an npm package 13 (14), the administrator's dashboard 14, the security dashboard 14
+as the auditor and 15 as the administrator. Against the default class `read` of R-API-016 (50 a second, burst 200, per token or session)
+a browser that restores tabs at once stays within the burst up to about 13 tabs of the heaviest screen and 25 of the lightest; past
+that the class refills 50 a second, about three tabs, and a tab beyond it meets a `429` for a moment. Not measured: a browser that
+restores tabs, and whether the screens retry such a `429`.
+
 ### Instances, one per builder
 
 `UI_INSTANCE=<n>` (2 to 8) starts another instance of the profile beside instance 1, with its own containers, volumes, ports and
@@ -390,7 +398,8 @@ of each state to render (an empty name is the screen as it opens). The seed writ
 migration that renames or removes a column is followed by a search of `web/e2e/renders/` for it and by a render run (on 2026-11-21
 the signatures' seed still wrote `signature_trust.epoch` after migration 00100 had renamed it, and the job `ui-layout` failed in its
 setup). `UI_RENDERS_WIDTHS=1440,1280,1024,390` adds a width, `UI_RENDERS_WORKERS` sets the browsers at a time
-(3), `UI_RENDERS_DEBUG=1` prints the time of each step, `UI_RENDERS_EDGE` names another dev server and `UI_RENDERS_POSTGRES` another PostgreSQL container for the seed's SQL ([Local UI development](#local-ui-development)). The variables do not start with `QUADER_`: Quader refuses an unknown
+(3), `UI_RENDERS_DEBUG=1` prints the time of each step, `UI_RENDERS_COUNT=1` prints the GETs of the API of each screen's cold load
+(its first width, a new browser context; a measurement, not a check), `UI_RENDERS_EDGE` names another dev server and `UI_RENDERS_POSTGRES` another PostgreSQL container for the seed's SQL ([Local UI development](#local-ui-development)). The variables do not start with `QUADER_`: Quader refuses an unknown
 `QUADER_` variable, and the backend that `make ui-renders` starts inherits the environment.
 
 **How to look.** Open the contact sheet; for each changed screen open the light and the dark picture at 1440 px and the one at

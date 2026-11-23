@@ -76,6 +76,11 @@ for (const screen of screens) {
           }
           if (process.env['UI_RENDERS_DEBUG']) console.log(`goto: ${Date.now() - t0} ms`);
           await settle(page);
+          // A measurement, not a check (UI_RENDERS_COUNT=1): the calls of the app's API a screen's load sends, the first width's
+          // being a cold load of a new browser context, set against the read class of R-API-016 (50 a second, burst 200).
+          if (process.env['UI_RENDERS_COUNT'] && width === widths[0]) {
+            console.log(`cold load: ${screen.id} as ${kind}: ${gets.get(page) ?? 0} GETs of the API`);
+          }
           if (screen.walk) {
             // A flow: one picture of each state it names; an empty name is the screen as it opens.
             for await (const state of screen.walk(page)) {
@@ -130,6 +135,8 @@ async function tabNames(page: Page): Promise<string[]> {
 
 /** The calls of the app's API that are open, per page: `settle` waits until there are none. */
 const open = new WeakMap<Page, Set<unknown>>();
+/** The GETs of the app's API since the page's last document (UI_RENDERS_COUNT). */
+const gets = new WeakMap<Page, number>();
 
 function trackRequests(page: Page): void {
   const pending = new Set<unknown>();
@@ -139,8 +146,12 @@ function trackRequests(page: Page): void {
     // A new document: the calls of the one before it are no longer the screen's. Chromium cancels them, but a call it cancels
     // while the server still works on it got no "failed" here, and kept `settle` waiting its 15 s on every later state of a walk
     // that passed through a slow page.
-    if (r.isNavigationRequest() && r.frame() === page.mainFrame()) pending.clear();
+    if (r.isNavigationRequest() && r.frame() === page.mainFrame()) {
+      pending.clear();
+      gets.set(page, 0);
+    }
     if (api(r.url())) pending.add(r);
+    if (api(r.url()) && r.method() === 'GET') gets.set(page, (gets.get(page) ?? 0) + 1);
   });
   page.on('requestfinished', (r) => pending.delete(r));
   page.on('requestfailed', (r) => pending.delete(r));
