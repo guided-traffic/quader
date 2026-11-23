@@ -330,6 +330,7 @@ export async function seedProjectsAndRepositories(admin: Api): Promise<void> {
     if (r.includePatterns) body['includePatterns'] = r.includePatterns;
     if (r.class === 'remote' && r.url) body['remote'] = { url: r.url };
     if (r.class === 'remote' && r.downloadOnProbe !== undefined) body['remote'] = { ...(body['remote'] as object), downloadOnProbe: r.downloadOnProbe };
+    if (publicRemotes.includes(r)) body['remote'] = { ...(body['remote'] as object | undefined), availability: { mode: 'offline' } };
     if (r.vulnerabilities) body['vulnerabilities'] = r.vulnerabilities;
     if (r.class === 'virtual') {
       const target = r.members?.find((m) => repositories.find((x) => x.key === m)?.class === 'local');
@@ -342,7 +343,27 @@ export async function seedProjectsAndRepositories(admin: Api): Promise<void> {
       const set = await admin.patch(`/api/v1/projects/${r.project}/repositories/${r.key}`, { remote: { downloadOnProbe: r.downloadOnProbe } }, { 'If-Match': '*' });
       await expectStatus(set, [200], `downloadOnProbe of ${r.project}/${r.key}`);
     }
+    if (res.status() === 409 && publicRemotes.includes(r)) await setAvailability(admin, r, 'offline');
   }
+}
+
+/**
+ * The remotes whose upstream is a public registry: no `url`, so the format's well-known upstream. The seed never reaches the
+ * internet through them: they are offline from their creation until `publicRemotesOnline` at the end of the seed. A publish into a
+ * local repository that a virtual repository shares with one of them asks it whether it already serves the name (R-REPO-048); an
+ * offline remote answers "not served" without an upstream request, where an online one asked the public registry, and a registry
+ * that did not answer in time made the publish a 503 `shadow_check_unavailable` and failed the seed (layout job of 2026-11-23, 18:19).
+ */
+export const publicRemotes: readonly RepoSeed[] = repositories.filter((r) => r.class === 'remote' && !r.url);
+
+async function setAvailability(admin: Api, r: RepoSeed, mode: 'online' | 'offline'): Promise<void> {
+  const res = await admin.patch(`/api/v1/projects/${r.project}/repositories/${r.key}`, { remote: { availability: { mode } } }, { 'If-Match': '*' });
+  await expectStatus(res, [200], `${r.project}/${r.key} ${mode}`);
+}
+
+/** Puts the public registries' remotes online once nothing of the seed publishes any more: the screens show them as configured. */
+export async function publicRemotesOnline(admin: Api): Promise<void> {
+  for (const r of publicRemotes) await setAvailability(admin, r, 'online');
 }
 
 function rank(c: RepoSeed['class']): number {

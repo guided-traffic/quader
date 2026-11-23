@@ -6,6 +6,7 @@ import {
   expectStatus,
   kinds,
   mainProject,
+  publicRemotesOnline,
   seedAuditMode,
   seedContent,
   seedGrants,
@@ -62,6 +63,8 @@ export default async function setup(): Promise<void> {
     await seedSignatureSettings(admin);
     await syncAdvisories(admin);
     seedSignatures();
+    // The remotes of public registries were offline through the seed, which so reached no public registry.
+    await publicRemotesOnline(admin);
     for (const kind of ['plain', 'power', 'admin'] as const) await openRecent(browser, kind);
   } finally {
     await browser.close();
