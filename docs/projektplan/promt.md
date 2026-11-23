@@ -632,8 +632,20 @@ records the recorder that tells such a stall apart).
 - **The layout checks stopped once at the admin area's Storage page (Test and Release 45140417183 of
   2026-11-23, a push without a change under `web/`; the run before it was green):** `admin-system-storage`
   "stopped at 390 px: locator.click: Timeout 15000ms exceeded", waiting for the second closed disclosure of
-  the page; the report also counts "5 sideways", which fail nothing. A research reads the cause and what
-  the five are since 10:26 (read-only).
+  the page; the report also counts "5 sideways", which fail nothing. **The cause, read by a research from
+  the reports and the code (10:26 to 10:36, no browser run):** the walk clicks through a list that shrinks
+  as it clicks (`web/e2e/renders/screens.ts`, the two closed disclosures selected by their closed state, so
+  after the first click there is no second match if the page has rendered in between); a race the walk
+  usually wins. It stopped the same way once before, in the cancelled run 45104983204, and in a builder's
+  local run under load. No state is remembered and no data differs. The repair (select the toggles by
+  something a click does not change, wait for each to open) went to the builder of the screens' first
+  round at 10:37 as a commit of its own. **The five sideways** are the same five in every report since
+  2026-11-20: four are the stored document of a Debian remote repository, one line of about 77,000
+  characters (the archive's keyring in the preset, shipped that day) in a code block half a million pixels
+  wide, which the check's exemption of every code block hides; one is a table of 8 px in the manual's
+  page, allowed as a document's table. **Decided by the development agent (W9):** the stored document
+  shows a long string shortened with its length and copies whole, and the exemption of code blocks gets a
+  bound, so that the next such block fails its screen.
 - **Two more tests failed on a starved machine on 2026-11-23, about 10:10 to 10:17, at a load of 45 to 75
   (seen by the builder of W1, not repeated by it):** the web's `ci-editor-screens.spec.ts`, "the groups of
   a system mapping are chosen from the search" (no match for `web-leads`; alone the file passed 41 of 41),
@@ -872,7 +884,8 @@ records the recorder that tells such a stall apart).
   of one row stands as blocks at 1024; (8) a repository's header says "disabled" where the manual says
   **Disabled**; (9) a finding's and an advisory's page title say "Finding" and "Advisory" while the
   heading names the advisory; (10) the screen `repository-settings-deb-remote` has a code block region
-  about 602,000 px wide at 1024 and 1440. And seen by the development agent on the same renders: (11) a
+  about 602,000 px wide at 1024 and 1440 (its cause and decision are in the entry of the layout checks
+  above). And seen by the development agent on the same renders: (11) a
   file's page says "by user:priya", a principal's syntax where a person's name belongs.
 - **A failed test link's reason is a developer's English sentence, in both languages (seen by the
   development agent on 2026-11-23 on the renders of the handover's data keys).** The storage settings and a
