@@ -10,6 +10,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/guided-traffic/quader/internal/syncwrite"
 )
 
 // PullTotals count what a pull copied.
@@ -124,7 +126,12 @@ func writeNew(p string, fill func(io.Writer) (int64, error)) error {
 		}
 		return err
 	}
-	_, err = fill(f)
+	// Flushed every 32 MiB (Q-STOR-486): the tool may run as a Job with a memory limit, and an object may be gigabytes.
+	w := syncwrite.NewWriter(f, syncwrite.Every)
+	_, err = fill(w)
+	if err == nil {
+		err = w.Sync()
+	}
 	if cerr := f.Close(); err == nil {
 		err = cerr
 	}

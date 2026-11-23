@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/syncwrite"
 )
 
 const (
@@ -43,6 +44,10 @@ type Spool struct {
 	log          *slog.Logger
 	metrics      *Metrics
 	room         *SpoolMetrics
+	// syncEvery is how many bytes of a spool file are written between two flushes (syncwrite.Every, Q-STOR-486); wrapFile, when set,
+	// stands between the spool file and the flushing writer: the tests record the flushes with it.
+	syncEvery int64
+	wrapFile  func(syncwrite.File) syncwrite.File
 
 	mu       sync.Mutex
 	reserved int64
@@ -88,7 +93,7 @@ func NewSpool(cfg config.StorageSpool, opts ...SpoolOption) (*Spool, error) {
 	s := &Spool{
 		dir: cfg.Dir, max: int64(cfg.MaxBytes), minFree: int64(cfg.MinFreeBytes),
 		memThreshold: int64(cfg.MemoryThreshold), warnPercent: cfg.WarnPercent,
-		free: freeBytes, log: slog.Default(),
+		free: freeBytes, log: slog.Default(), syncEvery: syncwrite.Every,
 	}
 	for _, o := range opts {
 		o(s)
@@ -479,6 +484,14 @@ func (s *Spool) copyHashed(ctx context.Context, body io.Reader, f *os.File, h *h
 	bp := copyBuffers.Get().(*[]byte)
 	defer copyBuffers.Put(bp)
 	buf := *bp
+	// The file is flushed every syncEvery bytes while the body arrives (Q-STOR-486): the kernel charges the dirty pages of the write
+	// to the replica's memory, and an upload of gigabytes would otherwise hold them until the write-back at the machine's thresholds.
+	// What arrives after the last flush stays for the page cache; the file is scratch.
+	var file syncwrite.File = f
+	if s.wrapFile != nil {
+		file = s.wrapFile(f)
+	}
+	dst := syncwrite.NewWriter(file, s.syncEvery)
 	for {
 		if err := ctx.Err(); err != nil {
 			return err
@@ -508,7 +521,7 @@ func (s *Spool) copyHashed(ctx context.Context, body io.Reader, f *os.File, h *h
 				}
 				out.reserved += step
 			}
-			if _, werr := f.Write(buf[:n]); werr != nil {
+			if _, werr := dst.Write(buf[:n]); werr != nil {
 				return fmt.Errorf("write spool file: %w", werr)
 			}
 			h.write(buf[:n])

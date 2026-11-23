@@ -15,6 +15,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/blob/blobcrypt"
+	"github.com/guided-traffic/quader/internal/syncwrite"
 )
 
 // The statuses of an object that are not a reason of blobcrypt (format, unknown_key, record, size, commitment, segment, final and
@@ -389,7 +390,12 @@ func (r *Reader) Get(ctx context.Context, name, out string) (Result, error) {
 		}
 		_ = os.Remove(tmp.Name())
 	}()
-	if err := r.readBody(ctx, name, op, tmp); err != nil {
+	w := syncwrite.NewWriter(tmp, syncwrite.Every) // flushed every 32 MiB (Q-STOR-486)
+	err = r.readBody(ctx, name, op, w)
+	if err == nil {
+		err = w.Sync()
+	}
+	if err != nil {
 		var f *finding
 		if errors.As(err, &f) {
 			res.Status, res.Detail = f.status, f.detail

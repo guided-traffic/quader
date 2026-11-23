@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/syncwrite"
 )
 
 // Fill is a fill in progress (R-BAS-021): the bytes of a response are written to it while they are streamed to
@@ -25,6 +26,7 @@ type Fill struct {
 	mu   sync.Mutex
 	keep bool
 	f    *os.File
+	w    *syncwrite.Writer // over f: flushes every 32 MiB
 	name string
 	h    hash.Hash
 	n    int64
@@ -49,7 +51,9 @@ func (c *Cache) NewFill(kind EntryKind) (*Fill, error) {
 	if err != nil {
 		return nil, c.back.fail(metrics.OpPut, err)
 	}
-	return &Fill{c: c, kind: kind, limit: limit, f: f, name: f.Name(), h: sha256.New()}, nil
+	// The fill is flushed every 32 MiB while it arrives (Q-STOR-486): an object of up to 2 GiB would otherwise leave its dirty pages in
+	// the Bastion's memory until the machine's write-back.
+	return &Fill{c: c, kind: kind, limit: limit, f: f, w: syncwrite.NewWriter(f, syncwrite.Every), name: f.Name(), h: sha256.New()}, nil
 }
 
 // Keep makes the temporary file outlive [Fill.Commit], so that a caller can still answer from it when the
@@ -89,7 +93,7 @@ func (f *Fill) Write(p []byte) (int, error) {
 		return 0, ErrSpoolFull
 	}
 	f.reserved += int64(len(p))
-	n, err := f.f.Write(p)
+	n, err := f.w.Write(p)
 	if short := int64(len(p) - n); short > 0 {
 		f.c.spool.release(short)
 		f.reserved -= short

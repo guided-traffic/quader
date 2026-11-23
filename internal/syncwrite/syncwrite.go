@@ -1,11 +1,13 @@
-// Package syncwrite is the one way the scanning units write a large file to a local volume: it flushes the file to the disk every
-// [Every] bytes, so the dirty pages of the write never pile up in the writer's memory (vulnerability-scanning.md Q-VULN-225).
+// Package syncwrite is the one way a process of Quader writes a large file to a local volume: it flushes the file to the disk every
+// [Every] bytes, so the dirty pages of the write never pile up in the writer's memory (vulnerability-scanning.md Q-VULN-225,
+// storage.md Q-STOR-486).
 //
 // The kernel charges the dirty pages of a write to the memory cgroup of the writer, and on a node whose file system does not write them
 // back per cgroup it starts the write-back only at the machine's thresholds: the loader of the image scanner's database, a container of
 // 256 MiB, was killed with 233 MB of dirty pages and none under write-back while it unpacked a database of 1.8 GB (measured on the kind
 // cluster on 2026-11-21, vulnerability-scanning.md Q-VULN-212). A flush every 32 MiB bounds them. The image scanner's layers, its
-// analyses, the image scanner's database and the malware scanning's signature files are written through [Copy].
+// analyses, the image scanner's database and the malware scanning's signature files are written through [Copy]; the upload spool, the
+// Bastion's fills, the offline tool and the importer through [Writer].
 //
 // Standard library only: a leaf every layer may import.
 package syncwrite
@@ -31,20 +33,56 @@ func Copy(dst File, src io.Reader, every int64) (int64, error) {
 	if every <= 0 {
 		return 0, errors.New("syncwrite: the flush interval must be positive")
 	}
-	var n int64
-	for {
-		c, err := io.CopyN(dst, src, every)
-		n += c
-		if c > 0 {
-			if serr := dst.Sync(); serr != nil {
-				return n, serr
-			}
-		}
-		if errors.Is(err, io.EOF) {
-			return n, nil
-		}
+	w := NewWriter(dst, every)
+	n, err := io.Copy(w, src)
+	if err != nil {
+		return n, err
+	}
+	return n, w.Sync()
+}
+
+// Writer is the same flush for a write that arrives in pieces (the upload spool, the Bastion's fills): it writes to its file and
+// flushes it whenever `every` bytes have been written since the last flush, at exactly those offsets. What is written after the last
+// such point stays dirty until [Writer.Sync] or the file's end; that is at most `every` bytes.
+type Writer struct {
+	f            File
+	every, dirty int64
+}
+
+// NewWriter returns a Writer over f that flushes every `every` bytes; zero or less is [Every].
+func NewWriter(f File, every int64) *Writer {
+	if every <= 0 {
+		every = Every
+	}
+	return &Writer{f: f, every: every}
+}
+
+// Write implements io.Writer.
+func (w *Writer) Write(p []byte) (int, error) {
+	n := 0
+	for len(p) > 0 {
+		k := min(int64(len(p)), w.every-w.dirty)
+		m, err := w.f.Write(p[:k])
+		n += m
+		w.dirty += int64(m)
 		if err != nil {
 			return n, err
 		}
+		p = p[k:]
+		if w.dirty >= w.every {
+			if err := w.Sync(); err != nil {
+				return n, err
+			}
+		}
 	}
+	return n, nil
+}
+
+// Sync flushes what was written since the last flush; it does nothing when nothing was.
+func (w *Writer) Sync() error {
+	if w.dirty == 0 {
+		return nil
+	}
+	w.dirty = 0
+	return w.f.Sync()
 }

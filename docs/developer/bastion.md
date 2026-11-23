@@ -787,6 +787,8 @@ the bucket backend's `tmp` volume, or the `tmp` directory of the cache volume. A
 (`Commit`, `Abort`); a refusal counts in `quader_bastion_cache_errors_total{op="spool"}`. The chart sizes `tmp.sizeLimit` from it (spool plus 256 MiB with the bucket
 backend) and refuses a volume that cannot hold it ([helm-chart.md](helm-chart.md#the-bastion-chart)); what is left open is
 [H-450](../spec/bastion.md#h-450--a-fill-that-does-not-fit-the-spool-is-passed-through-unkept-and-a-request-answered-from-the-spool-fails).
+A fill's file, the spool of a stored object and a sealed object are written through `internal/syncwrite`, flushed to the disk every 32 MiB, so
+an object of 2 GiB never leaves its dirty pages in the pod's memory at once ([storage.md](../spec/storage.md) Q-STOR-486).
 
 **The sweep.** The limits are `max_bytes − documents_max_bytes` for artifacts and `documents_max_bytes` for documents
 ([Q-BAS-88](../spec/bastion.md#q-bas-88--documents-have-a-reserved-share-and-entries-are-removed-when-read)); `quader_bastion_cache_capacity_bytes{area}`

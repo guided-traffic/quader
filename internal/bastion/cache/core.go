@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/bastion/metrics"
+	"github.com/guided-traffic/quader/internal/syncwrite"
 )
 
 // store is the keyed object storage a [Backend] is built on: the volume (a directory) and the bucket (S3 with
@@ -150,7 +151,7 @@ func (b *backend) spool(r io.Reader, size int64) (name string, sum [32]byte, n i
 		return "", sum, 0, err
 	}
 	h := sha256.New()
-	n, err = io.Copy(io.MultiWriter(f, h), io.LimitReader(r, size+1))
+	n, err = syncwrite.Copy(f, io.TeeReader(io.LimitReader(r, size+1), h), syncwrite.Every) // flushed every 32 MiB (Q-STOR-486)
 	if cerr := f.Close(); err == nil {
 		err = cerr
 	}

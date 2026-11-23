@@ -27,6 +27,8 @@ const bastionRoot = "internal/bastion"
 //     handed over with its data key (R-BAS-074, Q-BAS-234), for internal/bastion/handover and below (scoped). It is a
 //     leaf of the standard library (its own test holds that), so it brings nothing of the main installation into the
 //     role.
+//   - internal/syncwrite: the write of a large local file flushed every 32 MiB (storage.md Q-STOR-486), which the cache's
+//     fills use as the main installation's spool does; a leaf of the standard library.
 //
 // The match is the exact package, so a package that did not exist when the rule was written is refused by
 // default. A new entry names the requirement that justifies it.
@@ -39,6 +41,7 @@ func bastionAllowed() []string {
 		"internal/observability", "internal/observability/health",
 		"internal/tlsfiles", "internal/outbound",
 		"internal/httpserver", "internal/httpserver/content",
+		"internal/syncwrite",
 	}
 }
 

@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/internal/syncwrite"
 )
 
 // Retry is the retry policy of a client (R-IMP-008): a transport failure, 429, 502, 503 and 504 are tried again with a
@@ -369,7 +370,7 @@ func (c *SourceClient) Download(ctx context.Context, raw, dir string, limit int6
 		return nil, err
 	}
 	hs := newHashes()
-	ws := []io.Writer{f}
+	ws := []io.Writer{syncwrite.NewWriter(f, syncwrite.Every)} // flushed every 32 MiB (Q-STOR-486)
 	for _, h := range hs {
 		ws = append(ws, h)
 	}

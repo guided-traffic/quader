@@ -512,7 +512,9 @@ request ─▶ authorize (deploy, overwrite) ─▶ admission ─▶ spool + has
    generic ephemeral volume (one ReadWriteOnce or ReadWriteOncePod claim per pod, deleted with
    it), never shared between pods and never persistent (INV-13, [ha-and-helm.md](ha-and-helm.md)
    R-HA-035, R-HA-061). It holds data of the running request or job only and never holds
-   acknowledged data. `web` and `worker` pods each have one (R-STOR-046).
+   acknowledged data. `web` and `worker` pods each have one (R-STOR-046). The file is flushed to the
+   disk every 32 MiB while the body arrives, so the dirty pages of a large upload never count against
+   the pod's memory at once ([Q-STOR-486](#q-stor-486--a-spool-file-is-flushed-every-32-mib-while-the-body-arrives-as-every-large-local-write-is)).
 3. **Hash.** While spooling, SHA-256, SHA-1, MD5 and SHA-512 MUST be computed in the same pass
    (one read of the stream, fanned out to the four hash states) and the byte count recorded.
 4. **Verify.** After the body ends the pipeline MUST compare the byte count with
@@ -10946,6 +10948,42 @@ recorded". The events are those of the connection or under one of its storage ke
 the spec:** R-STOR-098 (the holders' table), R-STOR-099 (the text and `--json`); code: `StorageKeysHolders` of
 [storage_keys.sql](../../internal/meta/postgres/queries/storage_keys.sql), `handedLine` of
 [admin_storage_keys_destroy.go](../../cmd/quader/admin_storage_keys_destroy.go).
+
+### Q-STOR-486 · A spool file is flushed every 32 MiB while the body arrives, as every large local write is
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Found on
+2026-11-23 beside [vulnerability-scanning.md](vulnerability-scanning.md#q-vuln-225--every-large-write-of-the-scanning-units-is-flushed-every-32-mib-by-the-loaders-mechanism)
+Q-VULN-225: the spool's hashing pass (R-STOR-004) wrote an upload of up to `storage.upload.max_size` (10 GiB by default) with no flush,
+the cause for which the loader of the image scanner's database had been killed for dirty pages (Q-VULN-212). Reproduced by
+`TestQ_STOR_486_TheSpoolFlushesAnUploadWhileItArrives` before the change: no flush.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The spool writes through `syncwrite.Writer`, which flushes at every 32 MiB written, whatever the size of the reads; the rest of a body after the last flush is left to the page cache (chosen) | At most 32 MiB of dirty pages per upload in flight | The mechanism of Q-VULN-225, written once (`syncwrite.Copy` is built on the same writer); a body below 32 MiB costs no flush | One flush per 32 MiB of a large upload |
+| (b) A flush at the end of every spool file | Fewer flushes | Simple | The pages of the whole body are dirty until the end, which is the cause |
+| (c) No change: the containers of `packages` and `worker` have 1 to 2 GiB | Nothing | — | An upload of 10 GiB and two in flight pass any such limit |
+
+**Choice:** (a). **Every other write of more than a few megabytes to a local volume, checked the same day:**
+
+| Place | Process | What it writes | Now |
+|---|---|---|---|
+| the spool's hashing pass, `internal/blob/spool.go` | `packages`, `worker`, `api`, `web`, `all` | an upload, a remote's fill, a mirror's artifact, an advisory archive | flushed (this decision) |
+| the image scanner's layers and analyses, both loaders of a database, the ClamAV updater's seed | the scanner units | layers, analyses, database files | flushed (Q-VULN-225) |
+| the Bastion's fill, `internal/bastion/cache/fill.go`; the spool of a stored object, `core.go`; a sealed object, `volume.go` (`putStream`) | the Bastion (2 GiB limit) | objects up to `bastion.cache.max_object_bytes` (2 GiB) | flushed (this decision) |
+| `volume.go` `putBytes` | the Bastion | bytes held in memory already (entries, the audit spool's lines) | bounded small: the bytes are in the process before the write |
+| the offline tool's pull (`internal/blob/offline/pull.go`) and its read of one object (`read.go`) | `quader admin storage offline`, a Job or a workstation | objects of the store | flushed (this decision) |
+| the importer's download, `internal/importer/client.go` | `quader admin import` | one artifact of the source registry | flushed (this decision) |
+| the importer's journal, `internal/importer/journal.go` | `quader admin import` | one line per artifact | flushes after every line already |
+| the backup and the restore | `quader backup`, `quader restore` | nothing local: they stream to and from the backup target | not a local write |
+| the report of the importer, `cmd/quader/admin_import.go` | `quader admin import` | one JSON document | bounded small |
+
+**Applied in the spec:** R-STOR-004. Code: [syncwrite.go](../../internal/syncwrite/syncwrite.go) (`Writer`),
+[spool.go](../../internal/blob/spool.go) (`copyHashed`), [fill.go](../../internal/bastion/cache/fill.go),
+[core.go](../../internal/bastion/cache/core.go), [volume.go](../../internal/bastion/cache/volume.go),
+[pull.go](../../internal/blob/offline/pull.go), [read.go](../../internal/blob/offline/read.go),
+[client.go](../../internal/importer/client.go); the Bastion's allow-list gains the leaf `internal/syncwrite`
+([bastion.go](../../internal/archtest/bastion.go), R-BAS-001). Tests: `TestQ_STOR_486_TheSpoolFlushesAnUploadWhileItArrives` (unit,
+`internal/blob`, a body of 10 bytes with a threshold of 4, under a second); the case Q-STOR-486 of `TestCopy` (unit, `internal/syncwrite`).
 
 ## What this does not cover
 

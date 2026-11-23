@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/guided-traffic/quader/internal/syncwrite"
 )
 
 // staleSpool is how old a leftover of an interrupted fill must be before it is removed at start.
@@ -124,7 +126,7 @@ func (v *volumeStore) putStream(ctx context.Context, key string, rs io.ReadSeeke
 	if err != nil {
 		return err
 	}
-	n, err := io.Copy(f, rs)
+	n, err := syncwrite.Copy(f, rs, syncwrite.Every) // flushed every 32 MiB (Q-STOR-486)
 	if cerr := f.Close(); err == nil {
 		err = cerr
 	}
