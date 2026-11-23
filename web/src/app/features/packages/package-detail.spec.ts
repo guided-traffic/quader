@@ -75,7 +75,7 @@ describe('The package page: its versions (R-UI-110)', () => {
     const r = await open();
     const row = (v: string) => rows(r).find((tr) => text(tr.querySelector('th a')!) === v)!;
     expect([...row('1.4.0').querySelectorAll('th .badge')].map((b) => text(b))).toEqual(['latest']);
-    expect([...row('1.5.0-beta.1').querySelectorAll('th .badge')].map((b) => text(b))).toEqual(['next', 'pre-release']);
+    expect([...row('1.5.0-beta.1').querySelectorAll('th .badge')].map((b) => text(b))).toEqual(['next', 'Pre-release']);
     expect(row('1.3.0').querySelectorAll('th .badge')).toHaveLength(0);
     expect(text(r.root.querySelector('.pkg-versions')!)).not.toMatch(/sha256:/);
   });

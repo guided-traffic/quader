@@ -2813,8 +2813,8 @@
         <note category="location">src/app/features/repositories/repository-list.html:121,123</note>
       </notes>
       <segment>
-        <source>disabled</source>
-        <target>deaktiviert</target>
+        <source>Disabled</source>
+        <target>Deaktiviert</target>
       </segment>
     </unit>
     <unit id="shell.sign-in">
@@ -15127,7 +15127,7 @@
         <note category="location">src/app/features/packages/package-list.html:97,99</note>
       </notes>
       <segment>
-        <source>default</source>
+        <source>Default</source>
         <target>Standard</target>
       </segment>
     </unit>
@@ -17869,7 +17869,7 @@
         <note category="location">src/app/features/packages/package-detail.html:334,335</note>
       </notes>
       <segment>
-        <source>pre-release</source>
+        <source>Pre-release</source>
         <target>Vorabversion</target>
       </segment>
     </unit>
@@ -21401,7 +21401,7 @@
         <note category="location">src/app/features/repositories/content/repository-item-versions.ts:61,64</note>
       </notes>
       <segment>
-        <source>pre-release</source>
+        <source>Pre-release</source>
         <target>Vorabversion</target>
       </segment>
     </unit>
@@ -21455,8 +21455,8 @@
         <note category="location">src/app/features/packages/ansible-doc-entry.html:104,106</note>
       </notes>
       <segment>
-        <source>required</source>
-        <target>erforderlich</target>
+        <source>Required</source>
+        <target>Erforderlich</target>
       </segment>
     </unit>
     <unit id="ci.keys.none">
@@ -22827,7 +22827,7 @@
         <note category="location">src/app/features/ci/issuer-list.ts:75,76</note>
       </notes>
       <segment>
-        <source>configuration</source>
+        <source>Configuration</source>
         <target>Konfiguration</target>
       </segment>
     </unit>
@@ -24449,8 +24449,8 @@
         <note category="location">src/app/features/endpoints/endpoint-list.ts:42,44</note>
       </notes>
       <segment>
-        <source>not configured</source>
-        <target>nicht konfiguriert</target>
+        <source>Not configured</source>
+        <target>Nicht konfiguriert</target>
       </segment>
     </unit>
     <unit id="repo.detail.advanced">
@@ -25231,8 +25231,8 @@
         <note category="location">src/app/features/repositories/repository-list.html:124,126</note>
       </notes>
       <segment>
-        <source>being deleted</source>
-        <target>wird gelöscht</target>
+        <source>Being deleted</source>
+        <target>Wird gelöscht</target>
       </segment>
     </unit>
     <unit id="docs.copy-name">
@@ -31322,7 +31322,7 @@
         <note category="location">src/app/features/ci/issuer-list.ts:77,78</note>
       </notes>
       <segment>
-        <source>api</source>
+        <source>API</source>
         <target>API</target>
       </segment>
     </unit>
@@ -34980,8 +34980,8 @@
         <note category="location">src/app/features/guides/guide-format.ts:53,55</note>
       </notes>
       <segment>
-        <source>recommended</source>
-        <target>empfohlen</target>
+        <source>Recommended</source>
+        <target>Empfohlen</target>
       </segment>
     </unit>
     <unit id="guides.format.classes">

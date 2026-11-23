@@ -410,7 +410,7 @@ describe('Repository content page', () => {
   it('R-UI-052 a disabled repository offers no Set up client and says that it is disabled', async () => {
     const r = await open({ ...NPM_REPO, disabled: true });
     expect([...r.root.querySelectorAll('quader-page-header a')].map((a) => text(a))).not.toContain('Set up client');
-    expect(text(r.root.querySelector('quader-page-header')!)).toContain('disabled');
+    expect(text(r.root.querySelector('quader-page-header')!)).toContain('Disabled');
     await expectAccessible(r.root);
   });
 

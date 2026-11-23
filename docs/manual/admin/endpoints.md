@@ -189,7 +189,7 @@ Pattern syntax for names: `*` matches any run of characters except `/`, `**` any
 
 ## The Endpoints screen
 
-Open **Admin area › Endpoints** (capability `endpoints:read`, held by the roles `admin`, `security-admin`, `auditor` and `repository-admin`). The list shows each endpoint with **Base URL**, **Hosts**, **Surface**, **Exposure**, **Rules (enabled)** and **Pool**. An endpoint in mode `all` is marked "all (rules have no effect)". A name that is no longer configured but still has rules is marked **not configured**: its rules have no effect and can only be read and deleted.
+Open **Admin area › Endpoints** (capability `endpoints:read`, held by the roles `admin`, `security-admin`, `auditor` and `repository-admin`). The list shows each endpoint with **Base URL**, **Hosts**, **Surface**, **Exposure**, **Rules (enabled)** and **Pool**. An endpoint in mode `all` is marked "all (rules have no effect)". A name that is no longer configured but still has rules is marked **Not configured**: its rules have no effect and can only be read and deleted.
 
 Select an endpoint to see its read-only **Configuration** (including **Accepted credentials** and **Rate limit**) and its **Exposure rules**. The rule list shows each rule with its description, **Repository**, **Packages and paths**, **Versions**, **Pre-releases** and an **Enabled** switch; in a narrower window **Versions** and **Pre-releases** are left out, and on a phone each rule is a block. At the end of each row the copy button copies the **client address** of the repository on this endpoint (point at it to read the address), and the menu offers **Edit**, **Copy client address** and **Delete**. A crossed-out link in place of the copy button means "This endpoint does not serve this address.": the endpoint's surface lacks the route family of that repository's format.
 
@@ -245,7 +245,7 @@ Rules live in PostgreSQL. A created, changed or deleted rule reaches every repli
 
 ## Things to keep in mind
 
-- **Rules belong to an endpoint name.** If you remove an endpoint and later configure another one under the same name, the old rules apply to it at once. Review or delete the rules of an endpoint marked **not configured**; Quader also logs a warning at start for them.
+- **Rules belong to an endpoint name.** If you remove an endpoint and later configure another one under the same name, the old rules apply to it at once. Review or delete the rules of an endpoint marked **Not configured**; Quader also logs a warning at start for them.
 - **Virtual repositories.** A rule on a virtual repository applies to whatever its members hold. A member added later can expose new packages that match the rule's patterns, if the endpoint's callers may read that member. Prefer exact package names and grant customer service accounts read on specific repositories.
 - **Traffic on the wrong port.** Requests that reach port 8080 have the default endpoint's rules, which by default expose everything the caller may read. Route each external host only to its endpoint's Service, keep the chart's default host list, and restrict port 8080 with `networkPolicy.ingress.http.from`.
 

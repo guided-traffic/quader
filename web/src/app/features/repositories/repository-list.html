@@ -157,10 +157,10 @@
           @if (wellKnownBadge(row); as b) {
             <span class="badge">{{ b }}</span>
           } @else if (row.disabled) {
-            <span class="badge" i18n="@@repo.badge.disabled">disabled</span>
+            <span class="badge" i18n="@@repo.badge.disabled">Disabled</span>
           }
           @if (row.lifecycle === 'deleting') {
-            <span class="badge" i18n="@@repo.badge.deleting">being deleted</span>
+            <span class="badge" i18n="@@repo.badge.deleting">Being deleted</span>
           }
           @if (row.description) {
             <span class="secondary">{{ row.description }}</span>

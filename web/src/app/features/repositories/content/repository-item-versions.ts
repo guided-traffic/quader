@@ -64,7 +64,7 @@ const VERSIONS_PAGE = 20;
           <th scope="row">
             <a [routerLink]="versionLink(v.version)" translate="no">{{ v.version }}</a>
             @if (v.prerelease) {
-              <span class="badge" i18n="@@repo.content.prerelease">pre-release</span>
+              <span class="badge" i18n="@@repo.content.prerelease">Pre-release</span>
             }
           </th>
           @if (shape().digest) {

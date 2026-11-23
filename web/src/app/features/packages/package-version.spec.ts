@@ -68,7 +68,7 @@ describe('The page of a version (R-UI-111)', () => {
 
   it('R-UI-111 a pre-release carries its mark; a version nobody may read is the not-found error', async () => {
     const r = await open({ version: '1.5.0-beta.1' });
-    expect([...r.root.querySelectorAll('.pkg-meta .badge')].map((b) => text(b))).toEqual(['next', 'pre-release']);
+    expect([...r.root.querySelectorAll('.pkg-meta .badge')].map((b) => text(b))).toEqual(['next', 'Pre-release']);
     const gone = await open({ version: '9.9.9' });
     expect(text(gone.root)).toContain('does not exist');
   });

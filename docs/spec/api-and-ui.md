@@ -3877,7 +3877,7 @@ The owner's walk of 2026-11-18 (W-7): a package's page is its versions. A versio
 Acceptance criteria:
 
 - For `@team-a/ui` with versions `1.3.0`, `1.4.0` and `1.5.0-beta.1`, the page lists all three, `1.5.0-beta.1` first with the
-  marks `next` and **pre-release**, `1.4.0` with `latest`; the header's latest version is `1.4.0`.
+  marks `next` and **Pre-release**, `1.4.0` with `latest`; the header's latest version is `1.4.0`.
 - The README of `1.4.0` follows the table; `left-pad`, whose version has none, shows none and requests none.
 - A package whose `homepage` is `javascript:alert(1)` shows the value as text on its version's page, and no `a` element carries it.
 
@@ -4000,7 +4000,7 @@ its settings moved to `…/settings`. One shell serves every format; what differ
 not a screen per format ([content-shape.ts](../../web/src/app/features/repositories/content/content-shape.ts)).
 
 - Header (the shared page header of R-UI-067): the key (the `h1`), one muted sentence (the repository's description, else what
-  the class means), the format and the class as badges (and **disabled** for a disabled repository); no address field: the client
+  the class means), the format and the class as badges (and **Disabled** for a disabled repository); no address field: the client
   address is Set up client's (R-UI-169, [Q-UI-664](#q-ui-664--the-repositorys-header-leads-to-set-up-client-and-holds-no-address)).
   At the right, the page's actions: **Set up client** (R-UI-126; not for a disabled repository), **Settings** for a
   caller who can read the configuration (`repositories:read-config`, or the Owner of the project) and a `more_vert` menu with
@@ -7084,7 +7084,7 @@ owner's reference screen's; its look is Quader's own.
   the package report (`GET …/vulnerabilities`, R-VULN-039) and the distribution tags of the latest version's details.
 - **Columns, in the owner's order** ([Q-UI-450](#q-ui-450--a-row-of-the-versions-table-is-the-version-its-size-its-vulnerabilities-and-two-times)):
   **Version** (a link to the version's page, R-UI-111; after it its distribution tags as badges, `latest`, `next`, and the mark
-  **pre-release**), **Size** (R-API-080: a size that is not known is the shared no-value with a title that says why, a partial size has **≥** before it and a title that says what it counts), **Vulnerabilities** (R-UI-112; only when the answer carries a grade other than N/A: a format that is not scanned and a package of internal names are N/A in every row, Q-UI-377), **Published**,
+  **Pre-release**), **Size** (R-API-080: a size that is not known is the shared no-value with a title that says why, a partial size has **≥** before it and a title that says what it counts), **Vulnerabilities** (R-UI-112; only when the answer carries a grade other than N/A: a format that is not scanned and a package of internal names are N/A in every row, Q-UI-377), **Published**,
   **Last download** (R-API-065, R-API-079; "Never" for a version no client downloaded, with a help text and a title, Q-API-342), and
   **Repositories** only when the versions differ in the
   repositories that hold them ([Q-UI-457](#q-ui-457--the-column-repositories-appears-only-when-the-versions-are-held-by-different-repositories)).
@@ -7124,7 +7124,7 @@ page's width. Not chosen by the owner: a row that opens inside the table, and a 
   Packages › the package (a link to its page) › the version. Every link to a version leads here: the versions table, the repository
   content page (R-UI-052), the finding and the advisory pages and the report (R-VULN-022).
 - **Header**: the package name and the version as the `h1` ("image-convert-tools 4.0.1"), the format, the distribution tags that
-  point at the version and the mark **pre-release**, the package's description.
+  point at the version and the mark **Pre-release**, the package's description.
 - **Facts**, one line with the style guide's separator: the grade with the total and the fixable findings (R-UI-112), a link to
   the tab Vulnerabilities; when it was published; its size (R-API-080); when a client last downloaded it (R-API-065, "never"); its downloads; its
   licences. Below them the banners **Unlisted.**, **Blocked in <repository>** and **Deprecated.**
@@ -7302,7 +7302,7 @@ Priority: **MVP** · Covers: quader-only
   2026-11-18). A signed-out visitor sees it while `publicContent` is true.
 - **`/guides/{format}`** (Q-UI-481): the trail **Guides / <display name>** and the title the display name, never the key
   ([Q-UI-553](#q-ui-553--the-guides-trail-names-a-format-as-people-read-it)); the heading "<display name> repositories", a sentence, and the repositories of that format
-  the reader may read and that are not disabled, virtual first (marked **recommended**), then by name. The list is built from the
+  the reader may read and that are not disabled, virtual first (marked **Recommended**), then by name. The list is built from the
   parts of every repository list ([Q-UI-430](#q-ui-430--the-searchs-repository-rows-are-built-from-the-parts-of-the-repository-list),
   Q-UI-425, Q-UI-426): **Repository** (the visibility icon, the key as a link to the repository, the description as its muted second
   line), **Project** (its mark and its name, R-UI-102), **Class** (icon and name), and at the row's end **Set up client** in the
@@ -18234,7 +18234,11 @@ Context: the audit log wrote its outcome "success", "failure", "denied", the job
 | (b) Lower case everywhere | One unit | Fewer units | Against the badges the app already has |
 
 **Choice:** (a). `jobStatusText` ([job-table.ts](../../web/src/app/features/system/job-table.ts)) is a job's badge word,
-`jobStateText` the word in a sentence. **Rationale:** a badge is a label, and labels are sentence case. The development agent
+`jobStateText` the word in a sentence. *Amended on 2026-11-23* (point 8 of the open finding "Seen by the builder of the screens' first
+round on its renders"): the repository's header and list wrote **disabled** and **being deleted** where the manual writes **Disabled**;
+every badge of the app with a lower-case word took its capital (**Not configured**, **Pre-release**, **Recommended**, **Required**,
+**Default**, a CI issuer's source **Configuration** and **API**), and `check-rules.mjs` refuses a badge or a status whose word starts
+lower-case in a template. **Rationale:** a badge is a label, and labels are sentence case. The development agent
 revisits nothing here.
 
 **Applied in the spec:** R-UI-145, R-UI-037.

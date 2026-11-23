@@ -54,7 +54,7 @@ describe('An entry page of the documentation', () => {
     const host = r.rows()[0]!;
     expect(text(host)).toContain('host');
     expect(text(host)).toContain('aliases: hostname');
-    expect(host.querySelector('.badge')?.textContent?.trim()).toBe('required');
+    expect(host.querySelector('.badge')?.textContent?.trim()).toBe('Required');
     // A default of 1000 is shown as 1000, the choices one by one.
     const port = r.rows()[1]!;
     expect(text(port.cells[3]!)).toBe('22');

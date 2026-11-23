@@ -30,7 +30,7 @@ describe('Endpoint list', () => {
     expect(t).toContain('ep-customers');
     expect(t).toContain('1 (1)');
     expect(t).toContain('all (rules have no effect)');
-    expect(t).toContain('not configured');
+    expect(t).toContain('Not configured');
     expect(t).toContain('No longer configured: 3 rules without effect.');
     await expectAccessible(root);
   });

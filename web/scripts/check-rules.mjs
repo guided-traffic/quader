@@ -9,6 +9,7 @@
 //  - Q-UI-552: no bare <details> in a template: every fold is <quader-disclosure>, with the app's one chevron.
 //  - Q-UI-560: no icon stands directly in a table cell: it is one element with its word (status-rule.mjs).
 //  - R-UI-163: no row shows two word actions at once: several actions are the row's menu (row-actions-rule.mjs).
+//  - Q-UI-564: the word of a badge or a status starts with a capital (**Disabled**, not "disabled"), as the manual writes it.
 //  - R-UI-175: no `vertical-align: middle` and no `align-items: last baseline` in a style: a box beside a text stands on the
 //    line's middle by the line rule of _controls.scss (line-rule.mjs).
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -37,6 +38,11 @@ const rules = [
   {
     id: 'Q-UI-552',
     re: /<details[\s>]/,
+    files: sources.filter((p) => /\.(ts|html)$/.test(p) && !p.endsWith('.spec.ts')),
+  },
+  {
+    id: 'Q-UI-564',
+    re: /class="(badge|ok|warn|bad)( [^"]*)?"[^>]*>(<ng-container[^>]*>)?[a-z]/,
     files: sources.filter((p) => /\.(ts|html)$/.test(p) && !p.endsWith('.spec.ts')),
   },
   {

@@ -36,7 +36,7 @@ describe('Guides', () => {
     expect(rows[0]!.querySelector('th .icon-name > quader-visibility-icon')).not.toBeNull();
     expect(rows[0]!.querySelector('td.project-cell quader-project-link')).not.toBeNull();
     expect(text(rows[0]!.querySelector('td.class-cell')!)).toContain('Virtual');
-    expect(text(rows[0]!.querySelector('th')!)).toContain('recommended');
+    expect(text(rows[0]!.querySelector('th')!)).toContain('Recommended');
     // The row's action in the form of a row (Q-UI-487): quiet, its name ending with the key.
     const setup = rows[0]!.querySelector<HTMLAnchorElement>('td.actions a.btn');
     expect(text(setup!)).toBe('Set up client npm-all');

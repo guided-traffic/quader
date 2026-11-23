@@ -35,9 +35,9 @@ describe('The CI issuer list (R-UI-035)', () => {
     expect(audiences.querySelectorAll(':scope > br').length).toBe(1);
     expect(text(root.querySelectorAll('tbody tr')[1]!.querySelectorAll('td')[3]!)).toBe('1');
     expect(gitlab).toContain('2 usable');
-    expect(gitlab).toContain('api');
+    expect(gitlab).toContain('API');
     // The issuer of the Helm values says so, and its failed fetch shows with its error, as text and not as colour alone.
-    expect(corp).toContain('configuration');
+    expect(corp).toContain('Configuration');
     expect(corp).toContain('Fetch failed');
     expect(corp).toContain('HTTP 502 from git.corp.example.com');
     expect(root.querySelector('a[href="/admin/ci/gitlab-com"]')).toBeTruthy();

@@ -345,7 +345,7 @@ describe('Packages list', () => {
 
       await chooseFor(r, 'Newest npm', 'Make default');
       expect(memory.defaultView()?.name).toBe('Newest npm');
-      expect(text(r.root)).toContain('default');
+      expect(text(r.root)).toContain('Default');
       await chooseFor(r, 'Newest npm', 'Remove default');
       expect(memory.defaultView()).toBeNull();
 

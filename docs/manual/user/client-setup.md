@@ -78,7 +78,7 @@ A pasted token is checked in the browser for its prefix, its length of 57 charac
 
 ## Guides without a repository
 
-**Guides** shows the package types as tiles. A tile lists the repositories of that type you may use, virtual ones first and marked **recommended**, each with its class, its description and **Set up client**. Below the list, **Without a repository** has the guide of each kind of repository (local, remote, virtual) of the type: the same page, whose addresses show `<project>` and `<repository>` where the key of your project and of your repository go. Use it to read about a kind of repository before you have one; it creates no token.
+**Guides** shows the package types as tiles. A tile lists the repositories of that type you may use, virtual ones first and marked **Recommended**, each with its class, its description and **Set up client**. Below the list, **Without a repository** has the guide of each kind of repository (local, remote, virtual) of the type: the same page, whose addresses show `<project>` and `<repository>` where the key of your project and of your repository go. Use it to read about a kind of repository before you have one; it creates no token.
 
 ## Configure an npm client
 

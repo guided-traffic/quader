@@ -94,7 +94,7 @@
             } @else {
               <a [routerLink]="listLink()" [queryParams]="v.query">{{ v.name }}</a>
               @if (memory.defaultView()?.id === v.id) {
-                <span class="badge" i18n="@@pkg.views.default">default</span>
+                <span class="badge" i18n="@@pkg.views.default">Default</span>
               }
               <!-- A view's three actions are its menu at the row's end (R-UI-163, Q-UI-643). -->
               <button

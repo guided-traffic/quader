@@ -37,7 +37,7 @@ import { PageHeader } from '../../shared/ui/page-header';
           <th scope="row">
             <a [routerLink]="['/admin/endpoints', e.name]" translate="no">{{ e.name }}</a>
             @if (e.inert) {
-              <span class="badge warn" i18n="@@ep.badge.inert">not configured</span>
+              <span class="badge warn" i18n="@@ep.badge.inert">Not configured</span>
             }
           </th>
           @if (e.configuration; as c) {

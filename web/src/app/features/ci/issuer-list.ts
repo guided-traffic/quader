@@ -77,9 +77,9 @@ import { PageHeader } from '../../shared/ui/page-header';
           </td>
           <td>
             @if (i.source === 'configuration') {
-              <span class="badge"><span class="material-icons" aria-hidden="true">lock</span><ng-container i18n="@@ci.source.configuration">configuration</ng-container></span>
+              <span class="badge"><span class="material-icons" aria-hidden="true">lock</span><ng-container i18n="@@ci.source.configuration">Configuration</ng-container></span>
             } @else {
-              <span class="badge"><ng-container i18n="@@ci.source.api">api</ng-container></span>
+              <span class="badge"><ng-container i18n="@@ci.source.api">API</ng-container></span>
             }
           </td>
         </tr>

@@ -51,7 +51,7 @@ import { classIcon, classLabel } from '../repositories/repository-class';
                 <span class="icon-name-text">
                   <a [routerLink]="repositoryLink(r)" translate="no">{{ r.key }}</a>
                   @if (r.class === 'virtual') {
-                    <span class="badge" i18n="@@guides.format.recommended">recommended</span>
+                    <span class="badge" i18n="@@guides.format.recommended">Recommended</span>
                   }
                   @if (r.description) {
                     <span class="secondary">{{ r.description }}</span>
