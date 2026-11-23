@@ -2587,8 +2587,8 @@ export const screens: readonly Screen[] = [
   { id: 'admin-ci-new', path: '/ui/admin/ci/new', kinds: admins },
   { id: 'admin-ci-issuances', path: '/ui/admin/ci/issuances', kinds: admins, walk: filtersOpen() },
   // The direct reads from the object store on a registration's card (R-BAS-071), answered in the browser (bastions.ts).
-  { id: 'admin-bastions', path: '/ui/admin/bastions', kinds: admins, walk: bastionsHandover },
-  { id: 'admin-bastions-read', path: '/ui/admin/bastions', kinds: ['auditor'], walk: bastionsRead },
+  { id: 'admin-bastions', path: '/ui/admin/bastions', kinds: admins, walk: bastionsHandover, tables: 'quader-bastion-card quader-data-table' },
+  { id: 'admin-bastions-read', path: '/ui/admin/bastions', kinds: ['auditor'], walk: bastionsRead, tables: 'quader-bastion-card quader-data-table' },
   { id: 'admin-endpoints', path: '/ui/admin/endpoints', kinds: admins },
   // The endpoint every installation has (R-EP-001).
   { id: 'admin-endpoint', path: '/ui/admin/endpoints/default', kinds: admins },

@@ -22246,8 +22246,9 @@ development agent sees no case for revisiting this.
 ### Q-UI-969 · The signatures' lists keep one form: a table at 1,440 and 1,024 px, blocks at 390 px
 
 Status: **Decided by the development agent** on 2026-11-23, closing the open finding "Three narrow lists of the signatures' screens
-stand as blocks even at 1,440 px", by the rule a builder set the same morning for the Bastions screen (on another branch, joined at its
-landing); the owner reviews it at the walkthrough.
+stand as blocks even at 1,440 px", by the rule of the Bastion cards' tables
+([Q-UI-959](#q-ui-959--a-bastion-cards-tables-keep-one-form-at-the-wide-and-the-middle-width-what-most-rows-share-stands-under-the-rows-name)),
+which this decision applies to the signatures' lists; the owner reviews it at the walkthrough.
 
 Context: measured on the renders' data: the security dashboard's view of signatures needed 1,171 px at its columns' least widths against
 1,113 at 1,440 px; a project's trust anchors 884 against 872; at 1,024 px every list of the signatures' screens, the admin page's
@@ -22264,8 +22265,8 @@ what it held, at a width where its neighbours were tables (R-UI-174 stacks where
 data is 390 px only.
 
 **Rationale:** the Bastions screen's rule, so that the screens of the admin area and the dashboard read alike. The development agent
-would revisit a list whose secondary line grows past three lines. At the landing the rule and this decision are joined with the
-Bastions screen's decision into one.
+would revisit a list whose secondary line grows past three lines. The rule is Q-UI-959's; the renders hold a screen's lists to it
+where the screen names them in `tables` (the signatures' screens; the Bastion cards are measured by their own walk).
 
 **Applied in the spec:** [signatures.md](signatures.md) R-SIG-036, R-SIG-037, R-SIG-038. Code:
 [anchor-table.ts](../../web/src/app/shared/signatures/anchor-table.ts),
