@@ -444,10 +444,10 @@ order is what a user or an operator meets first. The state is kept here.
 | W2 · Scanning keeps its promises to an operator | a scan attempt lost when a repository is enabled again; the scanner's spool that `QuaderSpoolNearlyFull` does not see; layer writes without a flush; a removed scanner pod shown ready; two measurements | landed at 12:45 (six commits); a second step is in work: the request's statement timeout that no request uses, the upload spool's unflushed copy, a write failure reported as a malformed request, the command `quader admin secrets status`, the malware rows of the audit events' table |
 | W6 · The pipeline loses nothing and scans every image it runs | a push that cancels the run before it; the analyser's and ClamAV's images never scanned; the evidence record and the badge that stand still; a `unit` target with the emptied AWS environment; the lint's limit and serial runs; fuzz names; the pins of the e2e legs; a partial dispatch; the disk watcher; the key of the clients' image cache, which changes with every commit, so a push never hits it | landed at 11:50 (fourteen commits; the disk watcher not built, see With the owner); its first runs are read against what each item must show; the evidence record with the release follows as a step of its own |
 | W5a · NuGet and OCI | NuGet's README route that answers 501; the challenge of an upstream token; what the two formats' pages count and the code does not; the tag listing's measurement with 100,000 tags | landed at 13:18 (five commits and the repair of a stale test): NuGet serves the icon, the license file and the README a package embeds; an upstream's token requests are counted; the kit holds every format's challenge; the tag listing measured with 100,000 tags. A second step is in work since 13:19: the version list that reads every row for every page, in every format; the shadowing check that OCI and Debian do not record |
-| W5b · Debian and Ansible Galaxy | `member_expired` and a member's recorded `Date` without an integration case; the wiki's cases; the requirements no test names; the check against the public Galaxy; first the Debian test that made `main` red for the third time | the Debian remote's repair landed at 11:37, the rest at 12:45 (two commits); a second step is in work since 11:58: collections with symbolic links, a stale `InRelease` after a key change, a requirement's numbers, the formats' log lines without the replica's fields |
+| W5b · Debian and Ansible Galaxy | `member_expired` and a member's recorded `Date` without an integration case; the wiki's cases; the requirements no test names; the check against the public Galaxy; first the Debian test that made `main` red for the third time | the Debian remote's repair landed at 11:37, the rest at 12:45 (two commits); the second step landed at 13:47 (three commits): collections with symbolic links, a stale `InRelease` after a key change, a requirement's numbers, the formats' log lines without the replica's fields |
 | W4 · Go tests wait for what they stand for | fixed sleeps and paced setups in integration and unit tests; four convention checks that sit in a format's area; tests that depend on the machine; the harness's policy helper that writes an empty policy without a word | waits for a place |
 | W8 · Web and end-to-end tests wait for what they stand for | the fixed 320 ms of choosing a person; paced setups of the e2e environments; the fixed waits of three seconds in the limits' client cases and the load test's tokens (from W3, since they need the kind cluster); a code push during a nightly | after the screens' first round |
-| W7 · The development profiles run the image they are given | the image tag `:dev`; one image tag per checkout; instances of the UI profile, one per builder; `nuget-ha` cut to what NuGet's client adds; the drain variant that Q-VULN-128 said to fold into a pooler leg once one runs under npm's load, which two do now; the development profile's root CA that is issued twice at a start; the Valkey outage with a replaced pod, which only a set runs that nothing has run since 2026-11-18 | after W6 (it owns the Makefile) |
+| W7 · The development profiles run the image they are given | the image tag `:dev`; one image tag per checkout; instances of the UI profile, one per builder; `nuget-ha` cut to what NuGet's client adds; the drain variant that Q-VULN-128 said to fold into a pooler leg once one runs under npm's load, which two do now; the development profile's root CA that is issued twice at a start; the Valkey outage with a replaced pod, which only a set runs that nothing has run since 2026-11-18 | in work since 13:21; first the bound and the retry of the fetches in the clients' image builds and one build of an image per run, reported and landed ahead of the rest |
 | W9 · Screens show every state, second round | the system page; a technical token's description and removal; states the renders never show (an open row menu, the shared error notice); a failed test link's reason as a sentence of the page; the audit log's filter by a resource; the eleven points seen on the first round's renders; the malware settings before the first signature set | in work since 11:55; what a person meets on a page first, to land ahead |
 | W10a · Documents and the decisions' index | 1,050 of 3,425 decided questions without a row in the index (generated with a check from now); stale sentences in spec, developer pages, README and manual | landed at 12:45 (two commits): the index is generated and held by the documentation check, 3,480 rows, one per decided question; what its builder saw and left was built by a writer and landed at 13:18 |
 | W10b · Translations and test names | the extraction check; names of tests that carry a decision's number; the German texts that say "du" | last |
@@ -593,7 +593,18 @@ records the recorder that tells such a stall apart).
   requests at a host load of about 41 and passes at 7; **the query budget's harness failed a second time,**
   on the Debian case in a builder's run, and passed on the next run (the entry above); npm and pnpm take 71 s
   and 141 s to refuse an altered tarball, by their retries.
-- **Seen by the builder of the kit move's first package on 2026-11-23 and left for the batch:** the rule
+- **Partly closed; open: the unit test of a removal refused whole, the engine test of a cache miss's first
+  answer and the token API's unit test of an upper-case path pattern (each waits for the owner's go for new
+  formats), the evidence record that holds no requirement of Ansible Galaxy (not looked into), and the virtual
+  NuGet repository that the query budget's environment creates and no case asks.** Closed: the undetermined
+  shadowing check of NuGet's and Ansible Galaxy's data ports, by 916e4cc52 (2026-11-23): the data ports of
+  npm, NuGet and Ansible Galaxy write `claim` and `shadowCheck` through the one function `audit.PublishGuards`
+  (`internal/audit/publish_guards.go`), held by `TestR_REPO_048_APublishRecordsAnUndeterminedShadowingCheck`
+  (unit, `internal/audit`, milliseconds), which holds the two keys and that `npm.publish` and
+  `package.published` declare them; npm's integration case holds the function's wiring, and the one call of
+  NuGet's and of Ansible Galaxy's port (`internal/formatdata/nuget/store.go`,
+  `internal/formatdata/ansible/local_store.go`) is run by no test of its own. As it stood:
+  **Seen by the builder of the kit move's first package on 2026-11-23 and left for the batch:** the rule
   that a removal is refused whole when one of its files may not be deleted has no unit test (two integration
   tests of npm and NuGet hold it); the headers of the first answer of a cache miss have no test at the
   engine, NuGet's integration test alone catches the recorded defect; NuGet's and Ansible Galaxy's data
@@ -746,26 +757,6 @@ records the recorder that tells such a stall apart).
 - The UI's tests that choose a person wait a fixed 320 ms for the search's debounce (`choosePrincipal` of the test
   helpers) and fail on a loaded machine; they passed alone each time (seen by three builders on 2026-11-21 at host loads
   of 60 to 120, left). A comment of the UI development profile still says the role `all` calls its own image scanner.
-- The NuGet README route is still the P1 stub (R-NUGET-024): it answers 501 behind the wiki gate.
-- **Partly closed; open: the challenge of the formats built on `formats.Base` without a credential, which the
-  kit's case of every format's challenge holds in package W5a, not on `main`.** Closed: Debian, by 039f8fa2b
-  (2026-11-23): `TestR_DEB_027_TheGateAndTheMemberPaths` (integration, area `debvirtual`) asserts 401 with
-  `WWW-Authenticate: Basic realm="quader"` for an anonymous request to a private Debian repository, and
-  `docs/developer/deb.md` ("What is built and what is not") says why no real apt client is run without a
-  credential: the set `deb` runs `apt-get` with an `auth.conf.d` file, and the answer a client without one
-  gets is the one asserted. As it stood:
-  No integration test checks the 401 challenge of Debian or of the `formats.Base` formats without a credential, and no real apt
-  client was run against it.
-- **Partly closed; open: `quader_oci_upstream_token_requests_total` (R-OCI-034), which package W5a counts in
-  commits not on `main`; `docs/developer/oci.md` still says so.** Closed: Debian's, by 039f8fa2b (2026-11-23):
-  each run of `deb-remote-parse` counts `parsed`, `skipped` or `failed` in `quader_deb_remote_parse_total`
-  through `RemoteJobs.CountParse` (`internal/formatdata/deb/remote_parse.go`), registered in
-  `internal/app/wire_deb_remote.go`; held by
-  `TestR_DEB_023_TheRowsOfAnIndexAreParsedAfterAnUpdateAndReplacedWhenItChanges` (the metric after a parse)
-  and `TestR_DEB_023_AnIndexOverTheBoundFailsItsRunAndTheEarlierRowsStay` (skipped, then failed), both
-  integration, area `debremote`; `docs/developer/deb.md` no longer lists the metric as not built. As it stood:
-  No code counts the metrics `quader_deb_remote_parse_total` (R-DEB-033) and `quader_oci_upstream_token_requests_total`
-  (R-OCI-034); [deb.md](../developer/deb.md) and [oci.md](../developer/oci.md) say so.
 - The coverage badge and the evidence record stand still until the first stable release (Q-ARCH-457).
 - `TestR_STOR_017_ADeployHoldsEveryAncestorOfItsPath` (integration, area `files`) failed once under host load with
   "deadlock detected (SQLSTATE 40P01)" and passed alone (2026-11-20): it deadlocks on purpose and passes only when
@@ -875,7 +866,18 @@ records the recorder that tells such a stall apart).
   and four pages send an operator to it (`docs/security/deb-signing.md`, `docs/spec/storage.md`,
   `docs/developer/http-api.md`, `docs/spec/formats/debian.md`). To do: the second step of W2, which has
   the secrets' and the scanners' wiring in its head: the command as the requirement says, with its test.
-- **Seen by the builder of W10a on 2026-11-23 and left for its second step:** the five malware rows of the
+- **Partly closed; open: the five malware rows of the operations requirement's table of audit events, which
+  still say "Specified, not built" (`docs/spec/operations-and-observability.md`; the second step of W2).**
+  Closed: the rest, by 80d68e8d5 (2026-11-23): the block Q-UI-349 has its status line, superseded by Q-UI-335
+  (`docs/spec/api-and-ui.md`); the 26 blocks that are tables of several decisions or state their choice in
+  prose have a choice line, so their rows of the index say what was chosen, and the six rows still without one
+  are superseded or reversed questions whose status names the successor (3,484 rows on 849f5cd4a;
+  `TestDecisionsIndexOfTheRealDocs`, unit, `internal/tools/coverage`, passes); the README and
+  `docs/developer/helm-chart.md` count the 55 alerts of `_rules.tpl`, 37 of them always, held by
+  `TestR_HA_045_TheDocumentsCountTheAlerts` (chart tier, `test/chart`, run by `make chart-test`,
+  milliseconds); the comment of the background fetch's counter in `internal/signatures/job/metrics.go` names
+  the two results the code reports, `ok` and `error`. As it stood:
+  **Seen by the builder of W10a on 2026-11-23 and left for its second step:** the five malware rows of the
   operations requirement's table of audit events still say "Specified, not built" although the code
   records all eight events; the block Q-UI-349 has no status line; 32 rows of the generated index show no
   choice (superseded questions and blocks that are tables of several decisions); the README gives two
@@ -893,7 +895,16 @@ records the recorder that tells such a stall apart).
   every row (Q-OCI-256); H-829 stays open with these numbers, which are in `docs/developer/oci.md`. To
   do (the second step of W5a): the keyset statement of the version list, for every format; then the
   lookup by id; then the list's estimate; the measurement again after each.
-- **A landing's gate missed the area whose test held the answer the landing changed (2026-11-23, 13:08;
+- **Partly closed; open: whether a cheap check can name, for a changed API field, the areas that assert it
+  (W4, with the convention checks).** Closed: the test's repair, by 849f5cd4a (2026-11-23):
+  `TestR_REPO_009_to_013_RepositoryLifecycle` (integration, area `transfer`) no longer counts `disabled` among
+  the keys a reader must not see and asserts it `false` in a reader's consumer view of an enabled repository,
+  and `TestR_GENERIC_007_Patterns` (the same area) asserts it `true`, without the administrator's notes, in a
+  reader's view of the repository its R-REPO-004 case disables, as R-REPO-010 of
+  `docs/spec/repositories-and-proxy.md` lists it; the package vets with the tag `integration`, and that
+  `integration (shard b)` passes again is to be read from its first run after 849f5cd4a. The rule for every
+  landing is decided, in the entry below. As it stood:
+  **A landing's gate missed the area whose test held the answer the landing changed (2026-11-23, 13:08;
   Test and Release 45168001439, `integration (shard b)`).** `TestR_REPO_009_to_013_RepositoryLifecycle`
   of the area `transfer` failed with "the consumer view has disabled": the screens' first round had put
   `disabled` into the consumer view of a repository and into the specification (6b8eae484) and the
@@ -1309,6 +1320,51 @@ the plan.
 
 **Of the product:**
 
+- **Closed on 2026-11-23 by a3df9a128: NuGet serves the icon, the license file and the README a package
+  embeds, from local, remote and virtual repositories.** `GET` and `HEAD` of
+  `v3/flatcontainer/{id}/{version}/icon`, `…/license` and `…/readme` read the file out of the stored `.nupkg`
+  (`internal/formats/nuget/handlers_embedded.go`); the README route stays behind the wiki gate
+  (`internal/formats/nuget/routes.go`), and `handlers_stub.go` keeps only autocomplete and the symbol server.
+  Held by the seven cases `TestR_NUGET_024_*`, `TestQ_NUGET_136_*` and `TestQ_NUGET_137_*` (unit,
+  `internal/formats/nuget`, milliseconds), the kit's content cases of the embedded files and
+  `TestR_NUGET_024_TheEmbeddedFilesThroughTheDataPort` (integration, area `nuget`, about a second). What it
+  leaves is written as the gaps H-1680, H-1681 and H-1682 of `docs/spec/formats/nuget.md`, the last that no
+  client that asks for the routes was run. As it stood:
+  The NuGet README route is still the P1 stub (R-NUGET-024): it answers 501 behind the wiki gate.
+- **Closed on 2026-11-23 by 49355076b: kit check 7 holds the 401 and its challenge of every format with
+  routes.** `challenge` of `internal/formats/formattest/checks.go` has each format's `WriteError` render a
+  refusal without a credential that carries a Basic and a Bearer challenge, and asks for 401 with
+  `WWW-Authenticate`; the test format's defect `DropsChallenge` fails it (`TestR_ARCH_010_Defects`, unit,
+  `internal/formats/formattest/testformat`), and the kit runs `TestR_ARCH_010_Conformance` of Debian, ClamAV,
+  npm, NuGet, OCI and Ansible Galaxy pass it (unit, each in seconds). The generic format has no routes and
+  skips the check; its `/files/` refusal without a credential is held with its challenge by
+  `TestR_AUTHZ_016_HiddenExistence` (integration, area `transfer`). Open until now: the challenge of the
+  formats built on `formats.Base` without a credential, which the kit's case of every format's challenge holds
+  in package W5a, not on `main`. Closed before: Debian, by 039f8fa2b (2026-11-23):
+  `TestR_DEB_027_TheGateAndTheMemberPaths` (integration, area `debvirtual`) asserts 401 with
+  `WWW-Authenticate: Basic realm="quader"` for an anonymous request to a private Debian repository, and
+  `docs/developer/deb.md` ("What is built and what is not") says why no real apt client is run without a
+  credential: the set `deb` runs `apt-get` with an `auth.conf.d` file, and the answer a client without one
+  gets is the one asserted. As it stood:
+  No integration test checks the 401 challenge of Debian or of the `formats.Base` formats without a credential, and no real apt
+  client was run against it.
+- **Closed on 2026-11-23 by cbbf4fb47: a remote OCI repository counts every request of its token handshake in
+  `quader_oci_upstream_token_requests_total`.** `Engine.token` counts each request to an upstream's token
+  service under the repository and `ok`, `denied` (the service's 401 or 403) or `failed` (`tokenOutcome` in
+  `internal/proxy/authenticator.go`, the family in `internal/proxy/metrics.go`); a token the replica holds
+  counts nothing. Held by `TestR_OCI_034_TheTokenRequestsOfAHandshakeAreCountedByOutcome` (unit,
+  `internal/proxy`, 0.01 s); `docs/developer/oci.md` no longer lists the metric as not built, and
+  `docs/developer/proxy.md` and `docs/manual/admin/container-repositories.md` name it. Open until now:
+  `quader_oci_upstream_token_requests_total` (R-OCI-034), which package W5a counts in commits not on `main`;
+  `docs/developer/oci.md` still says so. Closed before: Debian's, by 039f8fa2b (2026-11-23): each run of
+  `deb-remote-parse` counts `parsed`, `skipped` or `failed` in `quader_deb_remote_parse_total` through
+  `RemoteJobs.CountParse` (`internal/formatdata/deb/remote_parse.go`), registered in
+  `internal/app/wire_deb_remote.go`; held by
+  `TestR_DEB_023_TheRowsOfAnIndexAreParsedAfterAnUpdateAndReplacedWhenItChanges` (the metric after a parse)
+  and `TestR_DEB_023_AnIndexOverTheBoundFailsItsRunAndTheEarlierRowsStay` (skipped, then failed), both
+  integration, area `debremote`; `docs/developer/deb.md` no longer lists the metric as not built. As it stood:
+  No code counts the metrics `quader_deb_remote_parse_total` (R-DEB-033) and `quader_oci_upstream_token_requests_total`
+  (R-OCI-034); [deb.md](../developer/deb.md) and [oci.md](../developer/oci.md) say so.
 - **Closed on 2026-11-23 by a9b6cbafd: an image of a repository just enabled is put off a minute and loses no
   scan attempt.** The scan listener's refusal that the switch alone causes names `repository_disabled`
   (`internal/authz/errors.go`, `system.go`), the scanner answers it 409 `repository_disabled`
@@ -1926,19 +1982,75 @@ development agent's reading of his words, as what the specification has to settl
    a virtual repository and through a Bastion; the formats that come later bring their own answers to items 1
    and 2 through the format contract, at a constant cost.
 
-The work queue of T-24, a first cut; the planner's cut replaces it when the specification is written:
+**The specification is written (2026-11-23, 13:45; one commit of the planner, read by the development agent
+against the owner's words and the three researches, landed like code):** the page
+[remote-curation.md](../spec/remote-curation.md) with R-CUR-001 to R-CUR-023 and the decision blocks Q-CUR-1 to
+Q-CUR-28 (ADR-277 names the topic as the owner's decision and the design as the development agent's), one
+requirement on each of the five formats' pages (R-NPM-049, R-NUGET-035, R-OCI-038, R-DEB-036, R-ANS-047), the
+security page with the gaps H-1720 to H-1729, the developer page with the packages, and the sentences of other
+pages that his words change. What it settles, in short:
 
-| Package | What it delivers | State |
-|---|---|---|
-| T-24 · R0 · Three researches (done) | what the code has today near the wishes (the model of a remote, the pull-through path of each format, patterns and disabling, mirrors, the job system, the tabs, the roles); what each format's upstream protocol allows for search, enumeration, levels, versions, sizes ahead of a download, and the limits a bulk download meets, from primary sources and single live requests; what the scans do with an item that is stored and not served | back at 12:58, 12:59 and 13:10; their substance is with the planner |
-| T-24 · R1 · The specification | requirements and decision blocks for the delivery rules, the upstream catalogue, the downloads ahead of a client, the queue and the two tabs; the contracts (the format contract's new port, the management API, the schema); the cut into packages with what each costs in tests | in work since 13:01 (a planner in a worktree of its own, with the development agent's sixteen decisions on the owner's words); landed like code |
-| T-24 · R2 · Delivery rules | the two modes, rules on a package, on chosen versions and on a sub-section, future versions; evaluated at one point for every format, honoured by virtual repositories and Bastions; the audit events; the API | after R1 |
-| T-24 · R2b · Requests for a release | a user asks for a package or a version in a repository that delivers only what was released; the list of requests for those who may release, with what the rules refused to clients; release or decline with a reason; a release starts the download (R4) | after R2 |
-| T-24 · R3 · The upstream catalogue | the format contract's port for search, levels and versions with its capabilities, implemented for npm, NuGet, OCI (the distribution protocol and what the well-known registries add), Debian and Ansible Galaxy; the kit's checks | after R1 |
-| T-24 · R4b · Fetched for examination | a version or every version of a package stored and scanned without being delivered; the verdicts beside the action that allows; the fetch a request starts; what gates, retention and the usage records do with it | after R4; the planner says whether it is a package of its own |
-| T-24 · R4 · Downloads ahead of a client and their queue | a download per version as a job, the expansion of a bulk request into them, the upstream budget and the gates they meet; the queue of one repository with states, the failure's own words and the restart | after R1 |
-| T-24 · R5 · The two tabs | browse and search with the actions of R2 and R4 on a version, a package and a sub-section; the queue; shown by class and by what the format can do; renders in both schemes, wide and narrow | after R2 to R4 |
-| T-24 · R6 · Clients and documents | one small end-to-end case per format for a rule that refuses and a download ahead; the manual and the developer pages | with R5 |
+- **Words.** A rule's effect is `allow` or `block`; the modes are `allExceptBlocked` (the default) and
+  `onlyAllowed`. "Release" stays the word of a gate's exception. In German: erlauben, sperren, beantragen; the
+  owner's "freigeben" already names two other things in the screens.
+- **Rules.** A subject is a sub-section (a name pattern), a package (every version, future ones included) or one
+  exact version; the narrowest kind decides, a block wins at equal width, the mode decides without a rule. A
+  remote's include and exclude patterns become rules and lose their hiding: what is blocked is shown as blocked,
+  with its verdicts. The refusal is a delivery gate (before a fill, at the serve point, in the documents a
+  client resolves from), `403 not_allowed_in_repository`, a miss for a virtual repository.
+- **Who.** The holders of `manage` (Maintainer, Owner) and the administrator set rules and answer requests; the
+  mode is configuration; a gate's exception stays with the triage holders, and the page says which of the two
+  holds a version back. A signed-in reader browses; in `onlyAllowed` a reader sees what is delivered and looks a
+  package up by its exact name to ask for it.
+- **The catalogue** is a port of the format contract that every format with a remote class declares (contract
+  version 8): search by the upstream, search by Quader over an index it holds, levels, lookup by exact name,
+  versions. It stores nothing, has a budget of its own, and a second host comes from a preset only.
+- **Downloads ahead and the queue.** A table of its own, one row per version, run by one-attempt jobs; a bulk is
+  expanded after a preview and is bounded system work; one version is charged to the person; a failure is kept
+  as class, step, code, address without its query, the upstream's status and an excerpt; a client's failed
+  fetch is a row of the same table, aggregated and bounded; a probe's download becomes a row and waits instead
+  of being refused.
+- **Examination and requests.** A download ahead does not depend on the rules; what is stored and not delivered
+  is scanned and shown with each verdict beside the decision; npm and NuGet show the vulnerability verdict of a
+  version without a fetch; a request is one entry per subject and starts the examination at once (of the newest
+  version when a whole package is asked for); what was examined and never allowed is discarded on a decision or
+  after 30 days.
+- **Screens.** A tab strip on a remote repository's page: the content as today, **Upstream**, **Downloads**.
+
+**What the protocols and his earlier choices limit (named to him at 13:5x in one message):** PyPI is not built,
+and its design row says a package is found by its exact name, a text search only over names; ghcr.io and GitLab
+offer no search (lookup by full name); Docker Hub's search is an interface its operator does not document (used
+with a fallback); APT has no server search (Quader searches the indexes it has read, by words); APT's indexes are
+signed by the upstream and pass unchanged, so `apt` lists everything and gets 403 on a refused file, and the
+filtered view is a virtual repository over the remote (Q-CUR-9); a version rule is exact, never a range; with
+only some tags of an image allowed, a layer of a refused tag can still be fetched by its digest (H-1724);
+Debian and Ansible Galaxy have no vulnerability verdict; a bulk on Docker Hub can use up the anonymous pull
+limit of the whole installation; a remote that had patterns delivers everything until its rules are set (no
+migration, by the rule of the stage). FULL.md is not edited: its unit "Upstream curation" is partly taken by
+this task (rules, requests, audit; not condition policies), which is recorded here until he lifts the lock.
+
+**The order beside the findings (decided by the development agent):** a builder's place that frees goes by turns
+to a package of the findings and to a package of T-24, the findings first, so that neither waits for the other
+to end; at most four builders at a time as before.
+
+The work queue of T-24 (the planner's cut; the contracts and files of each package are on the
+[developer page](../developer/remote-curation.md)):
+
+| Package | What it delivers | Stands on | State |
+|---|---|---|---|
+| T-24 · R0 · Three researches | the code's inventory, the upstream protocols, the scans on content that is stored and not served | — | done (12:58, 12:59, 13:10) |
+| T-24 · R1 · The specification | the pages named above | R0 | landed at 13:47 |
+| T-24 · C · Contracts | the migration, the domain package, the catalogue's interface, the canonical form of a version, contract version 8 with every format's declaration, the codes, events, configuration keys and the queue `downloads` | R1 | waits for a place (about half a day) |
+| T-24 · R2 · Delivery rules | the model and its API; the refusal before a fill, at the serve point and in the documents of the five formats (kit check 22); the virtual walk; the journal and the Bastion's feed; the marks in the listings; the mirror's scope | C | after C; beside R3 and R4 |
+| T-24 · R3 · The upstream catalogue | the engine (stores nothing; budget, cache, bounds, second hosts); the five formats (kit check 21); Debian's descriptions; the API with the verdicts of versions that are not stored | C | after C; beside R2 and R4 |
+| T-24 · R4 · Downloads and the queue | the queue's store, dispatch, run and retries; failures in precise words; the probe as a row; bulks with their preview and bounds; the charge; the rows of clients' failed fetches | C | after C; beside R2 and R3 |
+| T-24 · R2b · Requests and examination | requests; the examination a request starts; allow and decline; discard; the retention task; the journal | R2, R4 | after them; beside R5a |
+| T-24 · R5a · The tab strip and the tab Downloads | the three addresses; the queue's states, failures and retry | R4 | beside R2b |
+| T-24 · R5b · The tab Upstream and the settings | search, levels, versions, rules, requests, the bulk's preview, the settings' section, the glossary's rows; renders in both schemes, wide and narrow | R2, R3, R2b, R5a | after them |
+| T-24 · R6 · Clients and documents | one end-to-end case per format in that format's own leg; the manual and the developer pages | R5b | last |
+
+What the tests cost by the specification: a format adds about 4 s of integration and 10 s in its own end-to-end
+leg and nothing in another format's leg; the layout walk gains about twenty screens.
 
 ### Owner walk of 2026-11-18: the frontend
 
@@ -7435,7 +7547,69 @@ one; a search of the test tree, the kit and the UI's specs found no second place
 area `transfer` 82 s and its lint exit 0 in the landing worktree. **13:18, landed and pushed** (seven
 commits: W5a's five, the writer's one, the test's repair), with this plan commit under it. The
 format's end-to-end leg of this push is the first run of the case that expects a client-packed
-README to be served. What the landing closes in the lists is marked by a writer next.
+README to be served. What the landing closes in the lists is marked by a writer next (started 13:19).
+**13:24, that marking is applied:** three entries of section 8 move to the list Closed (NuGet's README
+route, the challenge of every format, the counter of an upstream's token requests) and four are partly
+closed (the undetermined shadowing check, W10a's leftovers, the gate that missed an area, H-829 with
+its numbers). **Open now: 59 entries in section 8 and 21 in section 12** (77 and 22 in the lists
+Closed). The writer found two numbers of the measurement that disagree between the developer page
+and the gap's text (which statement has the row estimate of 1; the times of the two lookups by id);
+the builder of W5a settles both in its second step, where it measures again.
+**13:19, the second step of W5b is back** (three commits on the `main` of 12:45, every gate exit 0
+there: `debvirtual` 237 s, `deblocal` 180 s, `debremote` 102 s, `debkeys` 11 s, `ansiblelocal` 27 s,
+`ansibleremote` 26 s, `ansiblevirtual` 11 s, the mirror's Ansible cases 22 s; the lint 0 issues).
+**Collections with symbolic links are admitted (Q-ANS-91; H-1620 is closed and removed from its
+page):** the builder read the client's build and install in two releases of ansible-core inside the
+repository's client images; the core's reader of untrusted archives has an option a format switches
+on, with which a link whose target stays inside the archive is handed out as a name and a target,
+never read through, and counted; an absolute, escaping or empty target and every hard link are
+refused by the entry's name; a link reached through a link and an entry below a link are refused
+too, stricter than the client and never written by its build. Every read of a collection's content
+takes regular entries only, a link's digest in `FILES.json` is held to its target's, a role's links
+stay inside the role, and the stored archive is served byte for byte. The read of the public Galaxy
+was made again: `ansible.posix` 2.2.2 answered 502 before and 200 with the announced digest after.
+For every other format the builder says whether Quader's reader meets links (npm's own reader
+already admits contained links; NuGet's reader ignores an entry's mode; Debian's data archive and an
+image's layers are never opened; generic stores files as they are): no change there. **A Debian
+remote no longer answers `InRelease` with 200 when no current key verifies it** (reproduced first;
+502 `deb_upstream_signature_invalid` for all three release documents, fresh or stale; R-DEB-020 names
+all three). **R-ANS-046's row of the local class was wrong, not the test data** (one module, two
+documents; the journey and the test assert that and passed in the last nightly). **The line a format
+writes for a failed request goes to the request's logger**, with the replica, role, component and
+request ID, for every format's error writer; an architecture test refuses the default logger in the
+formats' tree (about 3.5 s in the unit job). Not verified by the builder: what `apt-get update` prints
+in either case, what NuGet's packers do with links, the ansible-core releases between the two read.
+Picked onto the landing branch without a conflict; since it meets W5a's commits in the formats'
+error writers, the landing's gate runs the areas of both (`nuget`, the four of OCI, `npm`, the three
+of Ansible, `debremote`), the lint before the streams.
+**13:21, W7 starts** in the place W5b left (a worktree of its own): first the clients' image builds
+(a bound and a retry per fetch, one build of an image per run, a failure that names the fetch), to be
+reported and landed ahead of the rest; then the profiles' image tags, instances of the UI profile so
+that a builder renders without touching the owner's stack, the root CA issued twice, `nuget-ha`, the
+drain variant, the Valkey outage case into `npm-ha`, the Makefile's eager package list.
+**13:32, the push of 13:18 is released**; image and chart at 13:37; **the owner's installation runs it
+since 13:39** (read at 13:43: both of its releases upgraded, twenty pods ready, no restart, the Bastion
+answers 401 over a valid certificate).
+**13:45, the planner of T-24 is back** (one commit: the specification's page, the five formats'
+requirements, a security page and a developer page, the changed sentences of other pages; its gates
+exit 0). The development agent read the page against the owner's words: the rules, the refusal, who
+may do what, the screens with their layouts and states, the package cut (section 10 has the summary,
+what limits his wishes, and the queue). Seven points narrow or leave a decision of the development
+agent, each with its reason in a block: a remote's patterns become rules and lose their hiding; the
+mirror's scope becomes a member of its own that only administrators set, so that an allow of
+everything cannot unbound a mirror of a public registry; browsing needs a signed-in reader; nothing
+is refused because other rows run, only the waiting rows are bounded; the removal after 30 days
+covers what was fetched for examination only; a fill no client asked for that the vulnerability gate
+refuses is no refused download any more; a request for a whole package examines its newest version.
+**13:46, the landing's gates of W5b's second step are green** (since 13:20: build, vet, the whole unit
+set, generate, the documentation tool, cyclo, the lint with 0 issues before the streams; `nuget` 99 s,
+the three of Ansible 23 s, 24 s and 13 s, `oci` 178 s, `ociremote` 118 s, `ocilocal` 72 s,
+`ocivirtual` 19 s, `npm` 585 s, `debremote`). The specification's commit is picked on top without a
+conflict; the index regenerates without a change and the documentation tool's tests pass.
+**13:47, landed and pushed** (four commits: W5b's three and the specification of T-24), with this plan
+commit under it. **The order from now:** a place that frees goes by turns to a package of the findings
+and to a package of T-24, the findings first: the next place is W4's, the one after it the contracts'
+package of T-24.
 **13:10, the third research of T-24 is back** (what the scans do with content that is stored and not
 served). Every scan starts from the store's commit hook, the same for a client's fill, a mirror pass
 and a background download, so a fetch for examination needs no new trigger. npm and NuGet are matched
@@ -9033,7 +9207,18 @@ the walk items and the run record); what the code holds beyond the plan has not 
   **On the owner's installation:** the newest release (not reachable from the development machine); an image scan (none seen
   there yet; not run: a push through the whole app with the real binary, a drain or worker loss in a cluster, the release
   image and chart in a cluster).
-- **H-829:** the listing of a remote OCI repository matches a regular expression on every tag entry without an index and was
+- **Partly closed; open: the remedy: the keyset statement of the version list for every format, then the
+  lookup by the view's id, then the list's estimate, each measured again (the entry "The version list of a
+  package reads every version" of section 8, the second step of W5a).** Closed: the measurement, by 0e1384485
+  (2026-11-23): with 100,000 tag entries of one image in a remote's cache on the integration stack, a page of
+  the package list took 11 s and a page of 50 tags 16.6 s, the first and a middle page alike, against
+  R-API-010's one keyset query per page, since `PackageViewVersions` returns all 100,001 rows for every page.
+  The numbers and the plans are in `docs/developer/oci.md` ("The listing of a remote with very many tags
+  (H-829), measured"), H-829 of `docs/spec/formats/oci.md` holds them with the order of the remedies, and
+  Q-OCI-256 says why no index was built. A measurement, not a test, by the rule "Tests stay runnable"; not
+  measured: tags that point at 100,000 different manifests, and a local package with as many versions.
+  As it stood:
+  **H-829:** the listing of a remote OCI repository matches a regular expression on every tag entry without an index and was
   never measured on a cache with very many tags. W-25 adds rows to that view.
 - **Partly closed; open: H-842, the hub exchange tested against the stub realm only.** Closed: H-868, by
   2aee8d1eb (2026-11-23): its gap in `docs/spec/formats/ansible.md` says why no case with the clients is
