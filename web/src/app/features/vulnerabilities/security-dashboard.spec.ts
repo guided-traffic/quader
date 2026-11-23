@@ -278,11 +278,17 @@ describe('The security dashboard (Q-UI-130, R-VULN-022, R-UI-158, R-UI-159)', ()
 describe('Where the security dashboard lives and who sees it (R-UI-158, Q-AUTHZ-295)', () => {
   const homeSection = () => TestBed.inject(Navigation).area('home')?.sections.find((s) => s.id === 'security-audit');
 
-  it('R-UI-158 R-UI-168 the block Security audit, a second context title after Your work, holds Security dashboard for a holder of content:metadata-read, the auditor and the administrator', async () => {
+  it('R-UI-158 R-UI-168 Q-UI-1005 the block Security audit, a second context title after Your work, holds Security dashboard, Malware and Signatures for a holder of content:metadata-read, the auditor and the administrator', async () => {
     await renderScreen(VulnerabilityReport, { capabilities: AUDITOR });
     expect(TestBed.inject(Navigation).area('home')?.sections.map((s) => s.label)).toEqual(['Your work', 'Security audit']);
     const section = homeSection();
-    expect(section?.entries.map((e) => [e.kind, e.label, e.kind === 'item' ? e.route : ''])).toEqual([['item', 'Security dashboard', '/security']]);
+    expect(section?.entries.map((e) => [e.kind, e.label, e.kind === 'item' ? e.route : ''])).toEqual([
+      ['item', 'Security dashboard', '/security'],
+      ['item', 'Malware', '/security/malware'],
+      ['item', 'Signatures', '/security/signatures'],
+    ]);
+    // Whoever saw the views sees the entries: the dashboard's capability, nothing else (Q-UI-1005).
+    for (const e of section?.entries ?? []) expect(e.kind === 'item' && e.capability).toBe(SECURITY_DASHBOARD_CAPABILITY);
     expect(SECURITY_DASHBOARD_CAPABILITY).toBe('content:metadata-read');
   });
 
@@ -312,8 +318,10 @@ describe('Where the security dashboard lives and who sees it (R-UI-158, Q-AUTHZ-
   it('R-UI-158 the "?" opens the manual page of the dashboard in the user guide, and the routes keep the screens below /security', () => {
     expect(helpFor('/security')).toEqual(['/help', 'user', 'security-dashboard']);
     expect(helpFor('/security/findings/abc')).toEqual(['/help', 'user', 'security-dashboard']);
+    // Malware and Signatures beside the dashboard, whose finding and advisory stand under it (Q-UI-1005).
     const inner = SECURITY_ROUTES[0]!.children!;
-    expect(inner.map((c) => c.path ?? 'matcher')).toEqual(['', 'malware', 'signatures', 'findings/:id', 'matcher']);
+    expect(inner.map((c) => c.path ?? 'matcher')).toEqual(['malware', 'signatures', '']);
+    expect(inner[2]!.children!.map((c) => c.path ?? 'matcher')).toEqual(['', 'findings/:id', 'matcher']);
     expect(SECURITY_ROUTES[0]!.providers).toEqual([{ provide: VULN_CONTEXT, useValue: SECURITY_CONTEXT }]);
   });
 });

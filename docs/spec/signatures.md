@@ -43,7 +43,7 @@ This page covers:
   administrator's switch for project Owners, blocked signers, the permissions;
 - the formats: the obligation in the format contract and the kit's case, and what OCI, npm, NuGet, Debian, Ansible Galaxy and generic
   repositories detect, verify, show and serve; the fetch of a remote's signatures in the background; virtual repositories and the Bastion;
-- the API, the badge and the details, the admin page, a project's anchors, the security dashboard's view, audit events, metrics, alerts,
+- the API, the badge and the details, the admin page, a project's anchors, the page Signatures under Security audit, audit events, metrics, alerts,
   the configuration, backups and replicas, and the tests with their cost;
 - stage 2: what Quader signs per format; the signing identity, its two ways (the Helm values, an upload in the admin area), its states,
   its rotation and where it is used; npm's registry signatures of local packages and the keys endpoint; the receipt attestation, its
@@ -883,7 +883,7 @@ identity), which acts at once on all its signatures.
 - It raises the anchor epoch; the trust job sets `blocked` on every trust row of a matching signature in every scope, whatever anchors know
   it (R-SIG-012); the badge falls to **Signed · signer not trusted** and the details say "Blocked by an administrator on <date>: <reason>".
 - A block holds in every scope: no project anchor lifts it. Lifting a block recomputes.
-- Blocked signatures stand in the security dashboard's view (R-SIG-038).
+- Blocked signatures stand on the page Signatures under Security audit (R-SIG-038).
 
 Acceptance criteria: those of R-SIG-012; and integration (area `signatures`, about 1 s): an Owner's block answers 403.
 
@@ -899,7 +899,7 @@ Priority: **P1** · Covers: quader-only
 | Write an anchor of the installation, switch a shipped one, block a signer, change the switch | `security-settings:write`: `admin`, `security-admin`; the switch with a recent authentication |
 | List every project's anchors and remove one | read: `settings:read`; remove: `security-settings:write` |
 | A project's anchors | read: the project's members (their names and fingerprints are what a member sees at a signature); write: the project's Owner while the switch is on, and a holder of `security-settings:write` |
-| The security dashboard's view | `content:metadata-read` (the dashboard's rule, [api-and-ui.md](api-and-ui.md) R-UI-158) |
+| The page Signatures under Security audit | `content:metadata-read` (the dashboard's rule, [api-and-ui.md](api-and-ui.md) R-UI-158) |
 | Attach a signature to a local Ansible version (R-SIG-031) | `deploy` on the version's path and its ownership, as a publish |
 
 - A token exercises these only within its scope (R-AUTHZ-013); a CI token holds none of the management capabilities (R-CI-013).
@@ -1530,14 +1530,15 @@ Priority: **P1** · Covers: quader-only
 
 Acceptance criteria: web unit (Vitest, under a second): the section is hidden with the switch off and no anchors; read-only for a member.
 
-### R-SIG-038 · The security dashboard's view of signatures
+### R-SIG-038 · The page Signatures under Security audit
 Priority: **P1** · Covers: quader-only
 
 The owner's decision ([Q-SIG-9](#q-sig-9--display-or-gate)): stage 1 shows and alarms; "Invalid signature" is an entry of the security
 dashboard.
 
-- **Where.** A third view **Signatures** (`/security/signatures`) beside **Vulnerabilities** and **Malware**
-  ([api-and-ui.md](api-and-ui.md) R-UI-158, [malware-scanning.md](malware-scanning.md) R-MAL-025), for the holder of `content:metadata-read`.
+- **Where.** The entry **Signatures** (`/security/signatures`) of the side bar's **Security audit**, after **Security dashboard** and
+  **Malware**, a page of its own with the heading **Signatures** and the trail "Security audit / Signatures" ([api-and-ui.md](api-and-ui.md)
+  R-UI-158, [Q-UI-1005](api-and-ui.md#q-ui-1005--malware-and-signatures-are-entries-of-their-own-under-security-audit); until 2026-11-23 a view of the dashboard), for the holder of `content:metadata-read`.
 - **The list** (`GET /api/v1/signatures/findings`): one row per signature that is `invalid` or `blocked`, with the artifact (repository,
   path, package and version), the kind, the signer as it claims, the reason, when it was found, and the number of repositories that hold it;
   filters kind and repository; newest first. An empty list says "No invalid signatures."

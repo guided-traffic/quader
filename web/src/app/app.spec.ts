@@ -2,7 +2,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
-import { App } from './app';
+import { App, currentRouteOf } from './app';
+import { Navigation } from './core/navigation';
 import { routes } from './app.routes';
 import { FakeSessionApi, FakeSystemApi, provideFakeApis } from './api/testing/fakes';
 import { SystemApi } from './api/system-api';
@@ -115,14 +116,22 @@ describe('App shell', () => {
     // Each block is a group of the navigation, named by its title.
     const groups = [...sidebar.querySelectorAll<HTMLElement>('nav [role="group"]')];
     expect(groups.map((g) => root.querySelector(`#${g.getAttribute('aria-labelledby')}`)?.textContent?.trim())).toEqual(['Your work', 'Security audit']);
-    expect([...groups[1]!.querySelectorAll('a .nav-label')].map((a) => a.textContent?.trim())).toEqual(['Security dashboard']);
-    // Security dashboard is a plain entry: no folding group, no chevron, in the home side bar.
+    expect([...groups[1]!.querySelectorAll('a .nav-label')].map((a) => a.textContent?.trim())).toEqual(['Security dashboard', 'Malware', 'Signatures']);
+    // The entries are plain entries: no folding group, no chevron, in the home side bar.
     expect(sidebar.querySelector('button.group-toggle')).toBeNull();
     expect(sidebar.querySelector('.expand-chevron')).toBeNull();
     const entry = sidebar.querySelector<HTMLAnchorElement>('a[href="/security"]')!;
     expect(entry.textContent).toContain('Security dashboard');
     expect(entry.getAttribute('aria-current')).toBe('page');
-    expect([...sidebar.querySelectorAll('nav a .nav-label')].map((a) => a.textContent?.trim())).toEqual(['Projects', 'Guides', 'Security dashboard']);
+    expect([...sidebar.querySelectorAll('nav a .nav-label')].map((a) => a.textContent?.trim())).toEqual(['Projects', 'Guides', 'Security dashboard', 'Malware', 'Signatures']);
+    // Only the dashboard is current on its page: the entry of the longest route the page's path starts with (Q-UI-1005).
+    expect(sidebar.querySelectorAll('a[aria-current="page"]')).toHaveLength(1);
+    const sections = TestBed.inject(Navigation).area('home')!.sections;
+    expect(currentRouteOf('/security', sections)).toBe('/security');
+    expect(currentRouteOf('/security/malware?state=infected', sections)).toBe('/security/malware');
+    expect(currentRouteOf('/security/signatures', sections)).toBe('/security/signatures');
+    expect(currentRouteOf('/security/findings/abc', sections)).toBe('/security');
+    expect(currentRouteOf('/securityx', sections)).toBeNull();
     // The auditor holds pages of the admin area (the audit log, the users): the Admin button stays, not current here.
     const button = root.querySelector<HTMLAnchorElement>('header a.admin-button')!;
     expect(button.getAttribute('aria-current')).toBeNull();

@@ -1438,12 +1438,12 @@ item's answer in the browser), the search's results for `upstream` (`search-syst
 
 ## The malware screens
 
-The settings page of the malware scanning in the admin area (R-MAL-023), the dashboard's view **Malware** with the release
+The settings page of the malware scanning in the admin area (R-MAL-023), the page **Malware** under Security audit (`/security/malware`, Q-UI-1005) with the release
 (R-MAL-025), the fact of a file and the banner of a version (R-MAL-024) and a repository's section **Malware scan** (R-MAL-020). The
 files, the decisions and the tests are on [malware.md](malware.md#the-screens-package-4). Two things the rest of the app does with
 them: the side bar's entry and the repository's section read `getMalwareSwitch` once per page load through `MalwareSwitchStore` and
-are hidden until it answers that the scanning is on (Q-UI-874), and the security dashboard's report and the malware view each put
-`<quader-security-views>` under their own header (Q-UI-873). The settings page reads the scanner replicas through `SystemApi.scanners()` and
+are hidden until it answers that the scanning is on (Q-UI-874), and the malware finds are a page of their own under the side bar's
+**Security audit**, beside the security dashboard and the signatures (Q-UI-1005). The settings page reads the scanner replicas through `SystemApi.scanners()` and
 shows the rows of `malware-scanner-clamav` with the shared `<quader-scanner-replicas kind="clamav">` under the worker's summary
 ([shared/scanner](../../web/src/app/shared/scanner/scanner-replicas.ts), R-OPS-048, Q-UI-897).
 
@@ -1477,7 +1477,7 @@ stage 3's gate (R-SIG-074; Q-SIG-223 to Q-SIG-232, [developer/signatures.md](sig
 | **Admin area › Settings › Signatures**, the anchors' table and the dialogs **Add trust anchor** and **Block signer** | [signature-settings.ts](../../web/src/app/features/settings/signature-settings.ts), [anchor-table.ts](../../web/src/app/shared/signatures/anchor-table.ts), [anchor-dialog.ts](../../web/src/app/shared/signatures/anchor-dialog.ts), [block-dialog.ts](../../web/src/app/shared/signatures/block-dialog.ts) |
 | The section **Signing identity** of that page (stage 2, R-SIG-056): its states, the dialogs of the key request, the certificate and the import, and the words of R-SIG-045's checks; its API is `SigningApi` ([signing-api.ts](../../web/src/app/api/signing-api.ts)) | [signing-identity.ts](../../web/src/app/features/settings/signing-identity.ts), [signing-dialogs.ts](../../web/src/app/features/settings/signing-dialogs.ts), [signing-words.ts](../../web/src/app/shared/signatures/signing-words.ts); [developer/signatures.md](signatures.md#package-4-the-section-signing-identity-built) |
 | A project's section **Trust anchors** | [project-signature-anchors.ts](../../web/src/app/features/projects/project-signature-anchors.ts) |
-| The dashboard's view **Signatures** (`/security/signatures`) | [signature-findings.ts](../../web/src/app/features/vulnerabilities/signature-findings.ts) |
+| The page **Signatures** under Security audit (`/security/signatures`, Q-UI-1005) | [signature-findings.ts](../../web/src/app/features/vulnerabilities/signature-findings.ts) |
 | A repository's section **Signatures**: the gate (`signatures.onlyVerified`, `signatures.anchors`) with its preview and its question, and a remote's fetch (`signatures.fetch`) | [repository-signatures.ts](../../web/src/app/features/repositories/repository-signatures.ts), [signature-gate-order.ts](../../web/src/app/features/repositories/signature-gate-order.ts) |
 | The gate's block above a repository's signatures, the banner of a refused version, "Refused here", **Release for this repository** and **Withdraw release** | [signature-gate.ts](../../web/src/app/shared/signatures/signature-gate.ts), [gate-release-dialog.ts](../../web/src/app/shared/signatures/gate-release-dialog.ts), [gate-releases.ts](../../web/src/app/shared/signatures/gate-releases.ts), [gate-words.ts](../../web/src/app/shared/signatures/gate-words.ts) |
 | The dashboard's **Refused downloads** and **Releases** | [signature-refusals.ts](../../web/src/app/features/vulnerabilities/signature-refusals.ts) |

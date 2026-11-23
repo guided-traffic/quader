@@ -75,9 +75,7 @@ export const routes: Routes = [
       {
         path: 'security',
         canActivate: [capabilityGuard(SECURITY_DASHBOARD_CAPABILITY)],
-        data: {
-          crumbs: [area.securityAudit, { label: $localize`:@@route.security.title:Security dashboard`, link: true }] satisfies CrumbSpec[],
-        },
+        data: { crumbs: [area.securityAudit] satisfies CrumbSpec[] },
         loadChildren: () => import('./features/vulnerabilities/security.routes').then((m) => m.SECURITY_ROUTES),
       },
       // <<< T-9 security dashboard

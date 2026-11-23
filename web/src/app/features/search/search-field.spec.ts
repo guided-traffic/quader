@@ -178,7 +178,8 @@ describe('What the opened field offers (R-UI-096)', () => {
     };
     const { root, fixture } = await render('sam', { setup: auditor });
     await open(fixture, root);
-    expect(said(options(root))).toEqual(['Projects', 'Guides', 'Profile', 'Personal tokens', 'Security dashboard', 'View all my projects']);
+    // The entries of Security audit are places as every entry of the side bar is (Q-UI-1005).
+    expect(said(options(root))).toEqual(['Projects', 'Guides', 'Profile', 'Personal tokens', 'Security dashboard', 'Malware', 'Signatures', 'View all my projects']);
     typeText(root, 'security');
     await sleep(fixture, 300);
     expect(groupNames(root)).toEqual(['Pages']);

@@ -19,7 +19,6 @@ import {
   NavigationError,
   Router,
   RouterLink,
-  RouterLinkActive,
   RouterOutlet,
 } from '@angular/router';
 import { filter, map } from 'rxjs';
@@ -28,7 +27,7 @@ import { Breadcrumbs } from './core/breadcrumbs';
 import { FocusOnNavigation } from './core/focus-on-navigation';
 import { helpFor } from './core/help-topics';
 import { Layout } from './core/layout';
-import { NavGroup, Navigation, YOUR_WORK_SECTION } from './core/navigation';
+import { NavGroup, NavSection, Navigation, YOUR_WORK_SECTION } from './core/navigation';
 import { NavState } from './core/nav-state';
 import { RecentRepositories } from './core/recent-repositories';
 import { ProjectMark } from './shared/ui/project-mark';
@@ -72,7 +71,6 @@ function isBare(route: ActivatedRouteSnapshot | null): boolean {
   imports: [
     RouterOutlet,
     RouterLink,
-    RouterLinkActive,
     CdkMenu,
     CdkMenuItem,
     CdkMenuItemRadio,
@@ -152,6 +150,12 @@ export class App {
   /** The area of the current route: its sidebar shows, and the Admin button is pressed in the admin area. */
   protected readonly area = computed(() => Navigation.areaOf(this.url()));
   protected readonly sidebarArea = computed(() => this.navigation.area(this.area()));
+  /**
+   * The entry of the side bar that is current: the one whose route is the longest that the page's path starts with (Q-UI-1005). So
+   * **Security dashboard** (`/security`) is not current beside **Malware** (`/security/malware`), and a finding of the dashboard
+   * (`/security/findings/…`) keeps it current.
+   */
+  protected readonly currentRoute = computed(() => currentRouteOf(this.url(), this.sidebarArea()?.sections ?? []));
   protected readonly themes: readonly { value: UiTheme | null; label: string; icon: string }[] = [
     { value: null, label: $localize`:@@shell.theme.system:Follow the system`, icon: 'brightness_auto' },
     { value: 'light', label: $localize`:@@shell.theme.light:Light`, icon: 'light_mode' },
@@ -266,4 +270,18 @@ export class App {
   protected retrySession(): void {
     void this.session.reload();
   }
+}
+
+/** The route of the side bar's entry that is current for a URL: the longest route the URL's path is or lies below; null for none. */
+export function currentRouteOf(url: string, sections: readonly NavSection[]): string | null {
+  const path = url.split(/[?#]/)[0] ?? '';
+  let best: string | null = null;
+  for (const s of sections) {
+    for (const e of s.entries) {
+      for (const route of e.kind === 'item' ? [e.route] : e.items.map((i) => i.route)) {
+        if ((path === route || path.startsWith(route + '/')) && route.length > (best?.length ?? -1)) best = route;
+      }
+    }
+  }
+  return best;
 }

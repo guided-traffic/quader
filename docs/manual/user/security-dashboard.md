@@ -1,12 +1,12 @@
 # Security dashboard
 
-The security dashboard is the instance-wide view of the vulnerability findings and of the malware scan's finds, for the auditors and the administrators of the installation. It shows the counts and the trend over every project, finds a finding by its advisory identifier or any alias of it, lists the findings with the project of each, and lets the people who may triage change their status; its second view lists the malware finds and releases one, and its third lists the invalid signatures and the signatures of blocked signers.
+The security dashboard is the instance-wide view of the vulnerability findings and of the malware scan's finds, for the auditors and the administrators of the installation. It shows the counts and the trend over every project, finds a finding by its advisory identifier or any alias of it, lists the findings with the project of each, and lets the people who may triage change their status. Beside it, under the same title of the side bar, Malware lists the malware finds and releases one, and Signatures lists the refused downloads, the invalid signatures and the signatures of blocked signers; this page describes all three.
 
 A project's **Vulnerabilities** screen is the same report for that project; this page covers what differs. For what a finding is and what the triage statuses mean, see [Vulnerabilities](vulnerabilities.md).
 
 ## Who sees it
 
-The side bar outside a project (the projects, the guides, your profile) has, under **Your work**, a second title **Security audit**, and under it **Security dashboard**, which opens `/ui/<locale>/security`. The title and the entry are shown to whoever holds the capability `content:metadata-read`: the roles `auditor` and `admin`. Without it neither is there, and the address answers **Page not found**.
+The side bar outside a project (the projects, the guides, your profile) has, under **Your work**, a second title **Security audit**, and under it **Security dashboard**, which opens `/ui/<locale>/security`, **Malware** and **Signatures**. The title and the entries are shown to whoever holds the capability `content:metadata-read`: the roles `auditor` and `admin`. Without it neither is there, and the address answers **Page not found**.
 
 | Capability | Held by | What it allows on the dashboard |
 |---|---|---|
@@ -52,8 +52,7 @@ A restore to an earlier point replays every block that was set after it, whether
 
 ## Malware
 
-The dashboard has two views, **Vulnerabilities** and **Malware**, as two links under its title; **Malware** opens
-`/ui/<locale>/security/malware`. It lists what the malware scan found or could not check: one row per content, because the scan judges the
+**Security audit › Malware** opens `/ui/<locale>/security/malware`. It lists what the malware scan found or could not check: one row per content, because the scan judges the
 bytes, and the same bytes in thirty repositories are one row.
 
 Above the list stands what the scan promises and what it does not: it compares every artifact with ClamAV's signatures of known malware
@@ -86,7 +85,7 @@ under **Settings › Malware scanning** ([Monitoring and operations](../admin/op
 
 ## Signatures
 
-The third view, **Signatures** (`/ui/<locale>/security/signatures`), starts with **Refused downloads**: one row per repository and artifact
+**Security audit › Signatures** (`/ui/<locale>/security/signatures`) starts with **Refused downloads**: one row per repository and artifact
 that a repository serving only verified artifacts refused, the newest refusal first, with the artifact, the repository, the reason ("No
 publisher's signature", "Signer not accepted", "Anchor not accepted", "Invalid signature", "Signer blocked", "Signature not checked"), the last
 refusal and how often it was refused; **Filters** narrows by repository and reason, and an empty list says "No refused downloads." A holder

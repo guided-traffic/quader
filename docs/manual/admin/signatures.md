@@ -126,7 +126,7 @@ Quader asks no revocation list. When a signing key or certificate is compromised
 signers** takes its kind (a certificate's or an OpenPGP key's fingerprint, an issuer and a serial, npm's or a raw key's ID, or a Sigstore
 identity with its issuer), the value and a reason. The block acts at once on every signature of that signer in every project: the badge
 falls to **Signed · signer not trusted**, and the details say who blocked it, when and why. **Lift block** undoes it. Signatures of
-blocked signers stand in the security dashboard's view **Signatures**.
+blocked signers stand under **Security audit › Signatures**.
 
 ## Public Sigstore root
 
@@ -150,7 +150,7 @@ accepts in `signatures.anchors`, set in the repository's **Settings › Signatur
 of the user guide) or through the API of the repository document. The section shows how many artifacts pass, and asks with the numbers before
 a change refuses anything. On this page, removing or switching off an anchor, blocking a signer and switching project anchors off ask with the
 number of artifacts the change makes refused in such repositories, and in which, when it is not 0; a project's Owner is asked the same
-before removing a project anchor. Releases and refused downloads are in the security dashboard's view **Signatures**
+before removing a project anchor. Releases and refused downloads are under **Security audit › Signatures**
 ([Security dashboard](../user/security-dashboard.md#signatures)). The operations behind the screens, for scripts:
 
 - **Preview:** `GET /api/v1/projects/<project>/repositories/<repository>/signatures/preview` answers how many of the repository's stored

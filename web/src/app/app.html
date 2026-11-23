@@ -174,8 +174,8 @@
                       <a
                         class="nav-link"
                         [routerLink]="entry.route"
-                        routerLinkActive="active"
-                        ariaCurrentWhenActive="page"
+                        [class.active]="entry.route === currentRoute()"
+                        [attr.aria-current]="entry.route === currentRoute() ? 'page' : null"
                         (click)="closeDrawer()"
                       >
                         <span class="material-icons nav-icon" aria-hidden="true">{{ entry.icon }}</span>
@@ -203,8 +203,8 @@
                             <a
                               class="nav-link"
                               [routerLink]="item.route"
-                              routerLinkActive="active"
-                              ariaCurrentWhenActive="page"
+                              [class.active]="item.route === currentRoute()"
+                              [attr.aria-current]="item.route === currentRoute() ? 'page' : null"
                               (click)="closeDrawer()"
                             >
                               <span class="material-icons nav-icon" aria-hidden="true">{{ item.icon }}</span>

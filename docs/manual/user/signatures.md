@@ -142,8 +142,8 @@ only add, and a project cannot switch off an anchor of the installation. The sec
 project's ("Also trusted in this project"), so you see the whole scope; members read the list. While project anchors are switched off,
 the section is not shown, and a project that holds anchors shows them to its Owner as "Not applied".
 
-## In the security dashboard
+## Under Security audit
 
-The security dashboard's third view, **Signatures**, lists the downloads that repositories refused because of a signature and their
+**Security audit › Signatures**, beside the security dashboard, lists the downloads that repositories refused because of a signature and their
 releases, then every invalid signature and every signature of a blocked signer, newest first, with the artifact it covers, the signer as it
 claims, the reason, when it was found and the repositories that hold it. See [Security dashboard](security-dashboard.md).

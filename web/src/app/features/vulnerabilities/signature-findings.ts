@@ -11,7 +11,6 @@ import { FilterCategory, FilterPanel } from '../../shared/ui/filter-panel';
 import { ListChip, ListHead } from '../../shared/ui/list-head';
 import { TimeAgo } from '../../shared/ui/time-ago';
 import { PageHeader } from '../../shared/ui/page-header';
-import { SecurityViews } from './security-views';
 import { SignatureRefusals } from './signature-refusals';
 import { IDENTITY_MARKS, PartsText } from '../../shared/break-parts';
 
@@ -32,7 +31,7 @@ export function findingKindWord(kind: SignatureFindingKind): string {
 }
 
 /**
- * The signatures view of the security dashboard (R-SIG-038, R-SIG-074, Q-SIG-9): first the downloads the repositories' gates refused
+ * The page Signatures under Security audit (R-SIG-038, R-SIG-074, Q-SIG-9, Q-UI-1005): first the downloads the repositories' gates refused
  * and their releases (`SignatureRefusals`); then one row per signature that is invalid or whose signer an administrator blocked, newest
  * first, with the artifact it covers and the repository that holds it, the kind, the signer as it claims, the reason, when it was found
  * and how many repositories hold it. The head searches a signer, the drawer filters by kind and repository; the repository is the view's
@@ -41,10 +40,10 @@ export function findingKindWord(kind: SignatureFindingKind): string {
  */
 @Component({
   selector: 'quader-signature-findings',
-  imports: [DataTable, FilterCategory, FilterPanel, ListHead, PageHeader, PartsText, RouterLink, SecurityViews, SignatureRefusals, TimeAgo],
+  imports: [DataTable, FilterCategory, FilterPanel, ListHead, PageHeader, PartsText, RouterLink, SignatureRefusals, TimeAgo],
   template: `
-    <quader-page-header i18n-heading="@@security.heading" heading="Security dashboard" />
-    <quader-security-views />
+    <!-- An entry of its own under Security audit (Q-UI-1005), the page named as its entry. -->
+    <quader-page-header i18n-heading="@@security.signatures.heading" heading="Signatures" />
     <p class="hint" role="note" data-testid="signature-promise">{{ promise }}</p>
 
     <!-- The downloads the repositories' gates refused, and their releases (R-SIG-074): first, since a release is an action. -->

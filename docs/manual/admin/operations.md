@@ -366,7 +366,7 @@ refused always while the scanning is on (`malware.enabled`, on by default).
 **The page.** **Admin area › Settings › Malware scanning** (`/admin/settings/malware`) is shown to whoever holds `settings:read` while
 the scanning is on; changing the switch and **Scan everything again** need `settings:write`. An auditor reads the page; the switch is
 then a sentence, not a check box. The page holds the settings and the state of the scanning, and no find: the finds are the instance
-auditor's, in the security dashboard's view **Malware** ([Security dashboard](../user/security-dashboard.md#malware)), and the page links
+auditor's, under **Security audit › Malware** ([Security dashboard](../user/security-dashboard.md#malware)), and the page links
 there for whoever may open it. With `malware.enabled: false` the side bar has no entry, and the page says that the scanning is off.
 
 | Section | What it shows |
@@ -439,7 +439,7 @@ the blocked signers are set under **Admin area › Settings › Signatures** ([S
 
 | Signal | Meaning | What to do |
 |---|---|---|
-| `QuaderSignatureInvalid` | a check found a signature that does not match its content within the last hour | The security dashboard's view **Signatures** (`GET /api/v1/signatures/findings`): which repository holds it, the reason, the signer it claims. An invalid signature beside a valid one lowers no badge; one alone reads **Invalid signature**. If the signer is one to stop trusting, block it |
+| `QuaderSignatureInvalid` | a check found a signature that does not match its content within the last hour | **Security audit › Signatures** (`GET /api/v1/signatures/findings`): which repository holds it, the reason, the signer it claims. An invalid signature beside a valid one lowers no badge; one alone reads **Invalid signature**. If the signer is one to stop trusting, block it |
 | `QuaderSignatureBacklog` | the oldest due signature has waited over an hour | A worker claims the queue `signatures`; the jobs `signature-verify` on the Jobs screen and their errors; `quader_signatures_backlog` by priority |
 | `QuaderSignatureTrustRootStale` | the public Sigstore root in use is older than 14 days (the refresh's time, or the release's build) | The task `signature-trust-root`'s last error (`GET /api/v1/signatures/settings`, `trustRoot.lastError`) and the egress to `tuf-repo-cdn.sigstore.dev`; without internet set `signatures.trust_root.url` to a TUF mirror of your own, or leave out the alert by name and follow the releases |
 | `QuaderSignatureGatePending` | downloads from a repository whose setting **Only artifacts with a verified signature** is on got `503` because the checks of their signatures, or a remote's fetch of them, did not decide within `signatures.gate.download_wait` | That a worker claims the queues `signatures` and `index`, `QuaderSignatureBacklog`, and the remote's upstream; Docker and `ansible-galaxy` show the `503`, npm and NuGet retry |

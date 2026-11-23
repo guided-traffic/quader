@@ -2455,9 +2455,9 @@ export const screens: readonly Screen[] = [
   { id: 'security', path: '/ui/security', kinds: auditors, walk: filtersOpen(securityChips), tables: 'quader-vulnerability-report > quader-data-table' },
   { id: 'security-search', path: '/ui/security', kinds: ['auditor'], walk: searched('DEMO-2026-00001') },
   { id: 'security-project', path: `/ui/security?project=${mainProject}`, kinds: ['auditor'], tables: 'quader-vulnerability-report > quader-data-table' },
-  // The dashboard's malware view (R-MAL-025): what the auditor assesses and releases; an administrator sees the same.
+  // The page Malware under Security audit (R-MAL-025, Q-UI-1005): what the auditor assesses and releases; an administrator sees the same.
   { id: 'security-malware', path: '/ui/security/malware', kinds: ['auditor'], walk: malwareFinds, tables: 'quader-malware-finds > quader-data-table' },
-  // The dashboard's signatures view (R-SIG-038): invalid signatures and blocked signers; an administrator sees the same.
+  // The page Signatures under Security audit (R-SIG-038, Q-UI-1005): invalid signatures and blocked signers; an administrator sees the same.
   { id: 'security-signatures', path: '/ui/security/signatures', kinds: ['auditor'], walk: signatureFindings, tables: 'quader-signature-findings > quader-data-table' },
   // The refused downloads and the releases of the gates (R-SIG-074), with the release's dialog for both who triage.
   { id: 'security-signature-refusals', path: '/ui/security/signatures', kinds: auditors, walk: refusalsWalk },

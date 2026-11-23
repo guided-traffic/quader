@@ -179,6 +179,14 @@ describe('route map', () => {
     const finding = await open('/security/findings/0193a000-0000-7000-8000-000000000001', auditor);
     expect(finding.querySelector('main h1')?.textContent?.trim()).toBe('GHSA-aaaa-aaaa-0001');
     expect(TestBed.inject(Breadcrumbs).trail().map((c) => c.label)).toEqual(['Security audit', 'Security dashboard', 'GHSA-aaaa-aaaa-0001']);
+
+    // Malware and Signatures are entries of their own (Q-UI-1005): their trail does not pass the dashboard.
+    for (const [url, title] of [['/security/malware', 'Malware'], ['/security/signatures', 'Signatures']] as const) {
+      const page = await open(url, auditor);
+      expect(page.querySelector('main h1')?.textContent?.trim()).toBe(title);
+      expect(document.title).toBe(`${title} – Quader`);
+      expect(TestBed.inject(Breadcrumbs).trail().map((c) => c.label)).toEqual(['Security audit', title]);
+    }
   });
 
   it('R-UI-158 Q-UI-622 /security is Page not found for a caller without content:metadata-read, a security administrator included', async () => {

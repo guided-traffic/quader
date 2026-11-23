@@ -95,6 +95,10 @@ test('R-UI-159 the dashboard searches every project by alias and text in its one
       await expect(page.getByRole('heading', { name: 'Security dashboard', level: 1 })).toBeVisible();
       // A second context title of the side bar, not a folding group (R-UI-168): the block is a group named by its title.
       await expect(nav.getByRole('group', { name: 'Security audit', exact: true }).getByRole('link', { name: 'Security dashboard' })).toBeVisible();
+      // Malware and Signatures are entries of their own beside it (Q-UI-1005), the dashboard has no strip of views.
+      const audit = nav.getByRole('group', { name: 'Security audit', exact: true });
+      await expect(audit.getByRole('link')).toHaveText(['Security dashboard', 'Malware', 'Signatures']);
+      await expect(page.locator('main nav.tab-nav')).toHaveCount(0);
       await expect(nav.getByRole('button', { name: 'Security audit' })).toHaveCount(0);
       await expect(page.getByText('The counts and the trend cover every project.')).toBeVisible();
       await page.goto('/ui/en/security?package=quader-test-alias');

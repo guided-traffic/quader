@@ -1433,33 +1433,6 @@
         <target>365 Tage</target>
       </segment>
     </unit>
-    <unit id="security.views">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/security-views.ts:14</note>
-      </notes>
-      <segment>
-        <source>Security dashboard views</source>
-        <target>Ansichten des Sicherheits-Dashboards</target>
-      </segment>
-    </unit>
-    <unit id="security.view.vulnerabilities">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/security-views.ts:16,18</note>
-      </notes>
-      <segment>
-        <source>Vulnerabilities</source>
-        <target>Schwachstellen</target>
-      </segment>
-    </unit>
-    <unit id="security.view.malware">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/security-views.ts:19,23</note>
-      </notes>
-      <segment>
-        <source>Malware</source>
-        <target>Malware</target>
-      </segment>
-    </unit>
     <unit id="route.security.malware.title">
       <notes>
         <note category="location">src/app/features/vulnerabilities/security.routes.ts:25</note>
@@ -3374,8 +3347,8 @@
         <note category="location">src/app/features/settings/malware-settings.html:40,43</note>
       </notes>
       <segment>
-        <source> Artifacts that are not checked yet wait for their scan; artifacts that could not be checked are refused until an instance auditor releases them in the security dashboard. </source>
-        <target> Artefakte, die noch nicht geprüft sind, warten auf ihre Prüfung; Artefakte, die nicht geprüft werden konnten, werden abgelehnt, bis ein Instanz-Auditor sie im Sicherheits-Dashboard zulässt. </target>
+        <source> Artifacts that are not checked yet wait for their scan; artifacts that could not be checked are refused until an instance auditor releases them under Security audit › Malware. </source>
+        <target> Artefakte, die noch nicht geprüft sind, warten auf ihre Prüfung; Artefakte, die nicht geprüft werden konnten, werden abgelehnt, bis ein Instanz-Auditor sie unter Sicherheitsaudit › Malware zulässt. </target>
       </segment>
     </unit>
     <unit id="malware.settings.changed-by">
@@ -3510,8 +3483,8 @@
         <note category="location">src/app/features/settings/malware-settings.html:99,102</note>
       </notes>
       <segment>
-        <source>Finds are in the security dashboard</source>
-        <target>Die Malware-Befunde stehen im Sicherheits-Dashboard</target>
+        <source>Finds are under Security audit › Malware</source>
+        <target>Die Malware-Befunde stehen unter Sicherheitsaudit › Malware</target>
       </segment>
     </unit>
     <unit id="malware.settings.database">
@@ -37067,8 +37040,8 @@
         <note category="location">src/app/core/http/problem-messages-malware.ts:8</note>
       </notes>
       <segment>
-        <source>Quader&apos;s malware scan found malware in this file, so it cannot be downloaded. An instance auditor can release it in the security dashboard.</source>
-        <target>Die Malware-Prüfung von Quader hat in dieser Datei Malware gefunden, daher kann sie nicht heruntergeladen werden. Ein Instanz-Auditor kann sie im Sicherheits-Dashboard zum Download zulassen.</target>
+        <source>Quader&apos;s malware scan found malware in this file, so it cannot be downloaded. An instance auditor can release it under Security audit › Malware.</source>
+        <target>Die Malware-Prüfung von Quader hat in dieser Datei Malware gefunden, daher kann sie nicht heruntergeladen werden. Ein Instanz-Auditor kann sie unter Sicherheitsaudit › Malware zum Download zulassen.</target>
       </segment>
     </unit>
     <unit id="problem.malware_not_checked">
@@ -37076,8 +37049,8 @@
         <note category="location">src/app/core/http/problem-messages-malware.ts:10</note>
       </notes>
       <segment>
-        <source>The malware scan could not check this file, and only checked artifacts can be downloaded here. An instance auditor can release it in the security dashboard.</source>
-        <target>Die Malware-Prüfung konnte diese Datei nicht prüfen, und hier können nur geprüfte Artefakte heruntergeladen werden. Ein Instanz-Auditor kann sie im Sicherheits-Dashboard zum Download zulassen.</target>
+        <source>The malware scan could not check this file, and only checked artifacts can be downloaded here. An instance auditor can release it under Security audit › Malware.</source>
+        <target>Die Malware-Prüfung konnte diese Datei nicht prüfen, und hier können nur geprüfte Artefakte heruntergeladen werden. Ein Instanz-Auditor kann sie unter Sicherheitsaudit › Malware zum Download zulassen.</target>
       </segment>
     </unit>
     <unit id="problem.malware_check_pending">
@@ -44205,8 +44178,8 @@
         <note category="location">src/app/features/settings/signature-settings.html:54,58</note>
       </notes>
       <segment>
-        <source>Invalid signatures are in the security dashboard</source>
-        <target>Ungültige Signaturen stehen im Sicherheits-Dashboard</target>
+        <source>Invalid signatures are under Security audit › Signatures</source>
+        <target>Ungültige Signaturen stehen unter Sicherheitsaudit › Signaturen</target>
       </segment>
     </unit>
     <unit id="sig.settings.project">
@@ -44606,15 +44579,6 @@
       <segment>
         <source>Block lifted.</source>
         <target>Sperre aufgehoben.</target>
-      </segment>
-    </unit>
-    <unit id="security.view.signatures">
-      <notes>
-        <note category="location">src/app/features/vulnerabilities/security-views.ts:23,27</note>
-      </notes>
-      <segment>
-        <source>Signatures</source>
-        <target>Signaturen</target>
       </segment>
     </unit>
     <unit id="route.security.signatures.title">
@@ -50099,6 +50063,30 @@
       <segment>
         <source>This installation runs no <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc> pod: no <ph id="2" equiv="INTERPOLATION_1" disp="{{ g.tool }}"/> updater is configured (<pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_2" disp="{{ urlKey() }}"/></pc> is empty).</source>
         <target>Diese Installation betreibt keinen Pod <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ g.deployment }}"/></pc>: Kein <ph id="2" equiv="INTERPOLATION_1" disp="{{ g.tool }}"/>-Updater ist konfiguriert (<pc id="3" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="4" equiv="INTERPOLATION_2" disp="{{ urlKey() }}"/></pc> ist leer).</target>
+      </segment>
+    </unit>
+    <unit id="nav.security-malware">
+      <segment>
+        <source>Malware</source>
+        <target>Malware</target>
+      </segment>
+    </unit>
+    <unit id="nav.security-signatures">
+      <segment>
+        <source>Signatures</source>
+        <target>Signaturen</target>
+      </segment>
+    </unit>
+    <unit id="security.malware.heading">
+      <segment>
+        <source>Malware</source>
+        <target>Malware</target>
+      </segment>
+    </unit>
+    <unit id="security.signatures.heading">
+      <segment>
+        <source>Signatures</source>
+        <target>Signaturen</target>
       </segment>
     </unit>
   </file>

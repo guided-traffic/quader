@@ -3659,7 +3659,7 @@ selected tab live in query parameters; a version of a package is an object with 
 | `/projects/{project}/ci`, `/projects/{project}/ci/test`, `/projects/{project}/ci/mappings/{mapping}` | CI identity of the project | R-UI-035, R-UI-036 |
 | `/search` (`?q=&kind=`) | Search results of the main area | R-UI-098 |
 | `/security` (`?q=&advisory=&project=&severity=&…`), `/security/findings/{id}`, `/security/advisories/{ecosystem}/{id}` | The security dashboard over every project, its finding and advisory; for the holder of `content:metadata-read`, else not found | R-UI-158, R-UI-159, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 |
-| `/security/malware` | The malware view of the security dashboard: the blobs the malware scanning refuses, their repositories, the release ([malware-scanning.md](malware-scanning.md) R-MAL-025, [Q-UI-871](#q-ui-871--the-security-dashboard-has-two-views-vulnerabilities-and-malware)) | R-MAL-025 |
+| `/security/malware` | **Malware** under Security audit: the blobs the malware scanning refuses, their repositories, the release ([malware-scanning.md](malware-scanning.md) R-MAL-025, [Q-UI-1005](#q-ui-1005--malware-and-signatures-are-entries-of-their-own-under-security-audit)) | R-MAL-025 |
 | `/admin/trash` | Trash can of the installation, for administrators (P1, not built) | R-UI-014 |
 | `/builds`, `/builds/{build}`, `/builds/{build}/{number}` | Builds (P1) | R-UI-040 |
 | `/guides`, `/guides/{format}` | Guides: the formats as tiles, the repositories of one format | R-UI-124 |
@@ -7634,8 +7634,11 @@ Instanz-Administratoren."
 - **Place** ([Q-UI-620](#q-ui-620--the-security-dashboard-is-security-of-the-main-area-under-the-second-context-title-security-audit)). The
   dashboard is `/security` of the main area, its finding `/security/findings/{id}` and its advisory
   `/security/advisories/{ecosystem}/{id}`. The start side bar has, after the block **Your work**, a second context title **Security
-  audit**, written and placed as **Your work**, with the one plain entry **Security dashboard** (R-UI-168; the owner's correction of
-  the same evening: "Security-Audit hatte ich eigentlich als weiteren context-title erwartet"). The trail reads "Security audit /
+  audit**, written and placed as **Your work**, with the plain entries **Security dashboard**, **Malware** (`/security/malware`) and
+  **Signatures** (`/security/signatures`) (R-UI-168; the owner's correction of
+  the same evening: "Security-Audit hatte ich eigentlich als weiteren context-title erwartet"; the two later entries by his word of
+  2026-11-23, [Q-UI-1005](#q-ui-1005--malware-and-signatures-are-entries-of-their-own-under-security-audit)). The entry of the page shown
+  is the one whose address is the longest the page's address starts with. The trail reads "Security audit /
   Security dashboard" (the title a name without a link, R-UI-002's breadcrumbs), the page's title "Security dashboard". The admin area has no entry and no route for it: `/admin/security` is not found (R-UI-003). **Advisory sources** stays
   in the admin area's group System, because the sources are the installation's configuration.
 - **Who** ([Q-AUTHZ-295](authorization.md#q-authz-295--the-security-dashboard-opens-for-the-holder-of-contentmetadata-read)). The
@@ -7644,12 +7647,11 @@ Instanz-Administratoren."
   answers **Page not found** ([Q-UI-622](#q-ui-622--a-caller-without-the-capability-gets-page-not-found-at-security)). The role
   `security-admin` holds `vulnerabilities:triage` without `content:metadata-read` and has no dashboard: it triages on the screens of
   the projects whose repositories it may read.
-- **Two views** ([Q-UI-871](#q-ui-871--the-security-dashboard-has-two-views-vulnerabilities-and-malware); a third, **Signatures**
-  (`/security/signatures`), is specified in [signatures.md](signatures.md) R-SIG-038, with the refused downloads of gated repositories and
-  their releases of R-SIG-074, and not built): **Vulnerabilities**
-  (`/security`) and **Malware** (`/security/malware`, [malware-scanning.md](malware-scanning.md) R-MAL-025), as two links under the page's
-  title, which each view places under its own header ([Q-UI-873](#q-ui-873--the-dashboards-two-views-are-a-strip-of-links-that-each-view-places-under-its-own-header));
-  the side bar keeps its one entry.
+- **Three pages** ([Q-UI-1005](#q-ui-1005--malware-and-signatures-are-entries-of-their-own-under-security-audit), the owner's decision,
+  superseding Q-UI-871 and Q-UI-873): **Security dashboard** (`/security`) holds the vulnerability findings, without a strip of views;
+  **Malware** (`/security/malware`, [malware-scanning.md](malware-scanning.md) R-MAL-025) and **Signatures** (`/security/signatures`,
+  [signatures.md](signatures.md) R-SIG-038, with the refused downloads of gated repositories and their releases of R-SIG-074) are pages of
+  their own, each with its heading, title and trail ("Security audit / Malware"). Who sees an entry is who opens the dashboard.
 - **On the page** (R-UI-005): the selection, **Change status** and the finding's status buttons for the holder of
   `vulnerabilities:triage`; **Advisory sources** for the holder of `settings:read`; nothing else leads into the admin area; a
   package opens in its project.
@@ -21573,7 +21575,9 @@ true before and is now. **Applied in the spec:** R-UI-200 (its texts); code: `fi
 ### Q-UI-871 · The security dashboard has two views, Vulnerabilities and Malware
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The owner: "Funde
-gehen in Security-Dashboard" ([malware-scanning.md](malware-scanning.md) Q-MAL-5).
+gehen in Security-Dashboard" ([malware-scanning.md](malware-scanning.md) Q-MAL-5). **Superseded by
+[Q-UI-1005](#q-ui-1005--malware-and-signatures-are-entries-of-their-own-under-security-audit)** (the owner, 2026-11-23): option (b), an
+entry of its own under Security audit.
 
 Its entry in the decision log: [ADR-220](../decisions.md#adr-220--every-downloaded-artifact-is-scanned-for-malware-and-one-switch-lets-only-checked-artifacts-through).
 
@@ -21599,7 +21603,8 @@ Status: **Decided by the development agent** — selected from the options below
 ### Q-UI-873 · The dashboard's two views are a strip of links that each view places under its own header
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It builds
-Q-UI-871.
+Q-UI-871. **Superseded by [Q-UI-1005](#q-ui-1005--malware-and-signatures-are-entries-of-their-own-under-security-audit)** (the owner,
+2026-11-23): the strip of views is gone.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -21607,8 +21612,8 @@ Q-UI-871.
 | (b) A frame page with one header and the views as its outlet, as System status (Q-UI-650) | One header | The title once | The report's header actions belong to one view only and would have to move into the frame; the project's report has no frame |
 | (c) Tabs that switch in place | No route | — | Two lists of different shapes would share one address and one set of query parameters |
 
-**Choice:** (a). **Applied in the spec:** R-UI-158; [malware-scanning.md](malware-scanning.md) R-MAL-025. Code:
-[security-views.ts](../../web/src/app/features/vulnerabilities/security-views.ts).
+**Choice:** (a). **Applied in the spec:** R-UI-158; [malware-scanning.md](malware-scanning.md) R-MAL-025. Code: `security-views.ts`,
+removed with the strip by Q-UI-1005.
 
 ### Q-UI-874 · The screens outside the settings page read the switch once per page load
 
@@ -22661,6 +22666,33 @@ from answers that carry both; an item's answer carries the reference alone (`Sta
 
 **Applied in the spec:** R-UI-010. Code: `person` of
 [repository-file.ts](../../web/src/app/features/repositories/content/repository-file.ts).
+
+
+### Q-UI-1005 · Malware and Signatures are entries of their own under Security audit
+
+Status: **Decided by the owner on 2026-11-23.** Supersedes [Q-UI-871](#q-ui-871--the-security-dashboard-has-two-views-vulnerabilities-and-malware)
+and [Q-UI-873](#q-ui-873--the-dashboards-two-views-are-a-strip-of-links-that-each-view-places-under-its-own-header). The owner, at 12:38:
+"Mir ist noch aufgefallen, dass du malware und Signatures auf das Security-Dashbaord als Reiter gebracht hast. Ich hätte es lieber als
+seperate Menüpunkte unter Security Audit."
+
+Context: the security dashboard had three views, **Vulnerabilities** (`/security`), **Malware** (`/security/malware`) and **Signatures**
+(`/security/signatures`), as a strip of links under the page's title (Q-UI-873); the side bar's **Security audit** had the one entry
+**Security dashboard**.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The side bar's **Security audit** has three entries, **Security dashboard**, **Malware** and **Signatures**; each page has its own heading, title and trail ("Security audit / Malware"); the dashboard holds the vulnerability findings without a strip of one link; the pages keep their addresses, which were each view's own already, so no address goes and none redirects (chosen by the owner) | Q-UI-620's context title | What the owner asked for; each list is a page of its own, as Q-UI-871 (b) weighed | The side bar grows by two entries for whoever holds the dashboard's capability |
+| (b) The strip of views stays | Q-UI-873 | — | Against the owner's word |
+
+**Choice:** (a). Who sees an entry is who saw the view: the holder of `content:metadata-read` (Q-AUTHZ-295); nothing about permissions
+changes, and an entry the caller may not open is not shown. The entry of the page shown is the one whose address is the longest that the
+page's address starts with, so **Security dashboard** is not marked current on **Malware**, and a finding (`/security/findings/…`) keeps
+**Security dashboard** current. The search offers the two pages as places as it offers every entry of the side bar (R-UI-096); the
+settings of the malware scanning and of the signatures lead to them by their names.
+
+**Applied in the spec:** R-UI-158, the route table; [malware-scanning.md](malware-scanning.md) R-MAL-025; [signatures.md](signatures.md)
+R-SIG-038. Code: `security-audit` of [navigation.ts](../../web/src/app/core/navigation.ts),
+[security.routes.ts](../../web/src/app/features/vulnerabilities/security.routes.ts), `currentRoute` of [app.ts](../../web/src/app/app.ts).
 
 ## What this does not cover
 

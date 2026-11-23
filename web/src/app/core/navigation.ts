@@ -84,8 +84,9 @@ export const NAV_AREAS: readonly NavArea[] = [
           { kind: 'item', route: '/guides', icon: 'menu_book', label: $localize`:@@nav.guides:Guides` },
         ],
       },
-      // The auditor's page, not the administrator's (R-UI-158, Q-UI-620): a second context title, shown to whoever reads the
-      // findings of every project.
+      // The auditor's pages, not the administrator's (R-UI-158, Q-UI-620): a second context title, shown to whoever reads the
+      // findings of every project. The owner's word of 2026-11-23 (Q-UI-1005): the malware finds and the signatures are entries of their
+      // own, no longer views of the dashboard; whoever saw the views sees the entries.
       {
         id: 'security-audit',
         label: $localize`:@@nav.section.security-audit:Security audit`,
@@ -95,6 +96,20 @@ export const NAV_AREAS: readonly NavArea[] = [
             route: '/security',
             icon: 'security',
             label: $localize`:@@nav.security-dashboard:Security dashboard`,
+            capability: SECURITY_DASHBOARD_CAPABILITY,
+          },
+          {
+            kind: 'item',
+            route: '/security/malware',
+            icon: 'bug_report',
+            label: $localize`:@@nav.security-malware:Malware`,
+            capability: SECURITY_DASHBOARD_CAPABILITY,
+          },
+          {
+            kind: 'item',
+            route: '/security/signatures',
+            icon: 'verified',
+            label: $localize`:@@nav.security-signatures:Signatures`,
             capability: SECURITY_DASHBOARD_CAPABILITY,
           },
         ],
