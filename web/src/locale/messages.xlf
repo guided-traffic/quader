@@ -2903,6 +2903,14 @@
         <source>Bastion registered</source>
       </segment>
     </unit>
+    <unit id="audit.action.bastion.data_key.handed">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:95</note>
+      </notes>
+      <segment>
+        <source>Data key of a file handed to a Bastion</source>
+      </segment>
+    </unit>
     <unit id="audit.action.bastion.deleted">
       <notes>
         <note category="location">src/app/features/audit/audit-labels.ts:95</note>

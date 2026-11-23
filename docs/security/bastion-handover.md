@@ -1,27 +1,33 @@
 # The handover per blob to a Bastion
 
-Status: specified on 2026-11-22; the wire, the main installation's side for plain copies and the Bastion's side built on 2026-11-23
-([bastion.md](../spec/bastion.md#the-handover-per-blob) R-BAS-070 to R-BAS-079;
+Status: specified on 2026-11-22; the wire, the main installation's side for plain and for encrypted copies and the Bastion's side built on
+2026-11-23 ([bastion.md](../spec/bastion.md#the-handover-per-blob) R-BAS-070 to R-BAS-079;
 [storage.md](../spec/storage.md) R-STOR-095, R-STOR-096;
 [ADR-250](../decisions.md#adr-250--the-handover-per-blob-to-a-bastion-a-link-and-the-data-key-of-one-released-blob-in-the-answer-to-its-forward)).
 The wire (interface version 6, [handover.go](../../internal/bastion/iface/handover.go)) holds the value's checks, a data key type that
 renders `[REDACTED]` in every form, and the redaction of `Quader-Bastion-Handover` in logs, spans and support bundles. The main installation
-answers a recognized forward that offered with a link of a **plain** copy while the registration's switch is on and every condition of
-R-STOR-095 holds ([downloadlinks/handover.go](../../internal/downloadlinks/handover.go)); it hands out no data key: an encrypted copy is never
-named, and `blob.Store.CopyDataKey` still has no caller (package 4). The Bastion's side: the offer, the link client of
+answers a recognized forward that offered with a link of a plain copy while the registration's switch is on and every condition of
+R-STOR-095 holds ([downloadlinks/handover.go](../../internal/downloadlinks/handover.go)), and, where no plain copy can serve, with a link of a
+copy on an **encrypted** connection and that copy's data key, after it has committed the key's trace `bastion.data_key.handed`
+([the data key at the main installation](#the-data-key-at-the-main-installation), package 4). The Bastion's side: the offer, the link client of
 [internal/bastion/handover](../../internal/bastion/handover) with the refusals and checks below, the key's destruction at every end of a read,
 the fallback, the continuation, the cooldown and the alert; a Bastion offers only while its handshake says the registration's handover is on,
-and its client of the main installation refuses a handover answer to a forward that did not offer. So a link of a plain copy leaves the main
-installation only after an administrator has switched the handover on for a Bastion's registration, with **Direct reads from the object
-store** on its card or through the API (`endpoints:write`); the switch is off for every registration until then. What an administrator takes
-on by switching it on is said in plain words in the manual's
-[Direct reads from the object store](../manual/admin/bastion.md#direct-reads-from-the-object-store). The gaps of a data key (H-1340, H-1341) stay dormant until package 4; the others are dormant until an administrator switches the
-handover on for a registration. The two sides were built apart, each against a double of the other; the integration case that joins them
+and its client of the main installation refuses a handover answer to a forward that did not offer. So a link, and for an encrypted copy its
+data key, leaves the main installation only after an administrator has switched the handover on for a Bastion's registration, with **Direct
+reads from the object store** on its card or through the API (`endpoints:write`); the switch is off for every registration until then. What
+an administrator takes on by switching it on is said in plain words in the manual's
+[Direct reads from the object store](../manual/admin/bastion.md#direct-reads-from-the-object-store). Every gap of this page is dormant until
+an administrator switches the handover on for a registration; the gaps of a data key (H-1340, H-1341, H-1490) are then live wherever an
+encrypted connection holds blobs read through that Bastion. The two sides were built apart, each against a double of the other; the
+integration case that joins them
 (`TestR_BAS_070_ALargeFileIsReadFromTheObjectStore`, 2026-11-23) runs the real main installation, a Bastion and the stack's object store
 together: the value, the hosts' check, the `ETag`, the empty answer and the package headers meet, a continuation is answered by the real
 serve point, a fallback is counted again as H-1342 says, and no log line of either side holds a usable link. Joining them showed that H-1342's
 bound did not hold for a value the Bastion refuses (a link on a refused host, an expired link), which fell back at every miss without the
-cooldown; it does now ([Q-BAS-293](../spec/bastion.md#q-bas-293--a-value-the-bastion-refuses-starts-the-cooldown)).
+cooldown; it does now ([Q-BAS-293](../spec/bastion.md#q-bas-293--a-value-the-bastion-refuses-starts-the-cooldown)). Its twin on an
+encrypted connection (`TestR_BAS_070_AnEncryptedFileIsReadFromTheObjectStoreWithItsDataKey`, package 4) shows the key handed, its trace with
+its members and without the key or the link, the store sending the stored size, the Bastion holding no key after the read, a body under
+another key falling back, and no log line of either side holding the key or a usable link.
 
 The perspective of this page is what changes in the trust between the main installation, a Bastion in the DMZ and the object store when a
 Bastion reads a blob from the store by a link the main installation hands it: what leaves the main installation and how long it is worth
@@ -70,6 +76,33 @@ offered and strips every `Quader-Bastion-*` header a handler set. An ordinary ca
 header, and a forward whose answer the marking stage would not mark is streamed rather than answered with an empty `200`
 ([recognize.go](../../internal/bastionmain/recognize.go), [absence.go](../../internal/bastionmain/absence.go),
 [mark.go](../../internal/api/bastionmark/mark.go)).
+
+## The data key at the main installation
+
+The one place where a key leaves the main installation is `Links.handover` in
+[downloadlinks/handover.go](../../internal/downloadlinks/handover.go), and only `internal/blob` and `internal/downloadlinks` may name
+`blob.Store.CopyDataKey` (the architecture rule `CheckDataKeyCallers`, R-STOR-096). For one download, in this order:
+
+1. Every condition of R-STOR-095 that guards a plain handover holds first: a recognized forward that offered, whose answer the marking stage
+   marks, of a registration whose switch is on in the replica's snapshot; an artifact; its content and gates; the size; `Admit`. A forward
+   that fails one of them takes no key.
+2. The copy: a plain one wherever one can serve, an encrypted one only without (Q-STOR-341), whose row names the stored size `S(size)`.
+3. The link is signed; a credential that expires or a signing error streams before any key is taken (Q-STOR-471).
+4. `CopyDataKey` opens that copy's own record (one `HeadObject`, steps 1 to 6 of R-STOR-077) and returns its data key; the key is copied into
+   the value's `iface.HandoverKey` and the format's key destroyed at once. A key the replica does not hold, a record that does not bind the
+   blob or a store error streams with the reason `key`.
+5. The value is encoded and the `HandoverKey` destroyed. A refused value streams.
+6. `bastion.data_key.handed` is committed in a transaction of its own; a failed insert streams with the reason `trace` (Q-STOR-344,
+   Q-STOR-472).
+7. Only then is the value noted for the marking stage, which writes it into the answer.
+
+A deferred destroy covers every path, a panic's included, and `Links.KeysHeld` is 0 whenever no handover is being decided. Neither key
+renders: `blobcrypt.Key` and `DataKey` render a redaction, `iface.HandoverKey` writes `[REDACTED]` in every form and `iface.Handover` leaves
+out the link and the key, so the log lines of a declined handover (`"handover", h`) and of a failed trace hold neither. The trace names the
+storage key's identifier, never the key, the wrap or the link; the request log keeps no header (R-OPS-010), and the header is redacted like
+`Authorization` (R-OPS-013). The unit tests watch the moment of the insert (the answer not yet noted, no key held, the format's key
+destroyed) and every path that streams after a key was taken; the integration case searches both sides' logs for the handed key in
+hexadecimal, base64 and base64url. What no code can erase is the encoded value, a Go string (H-1490).
 
 ## Integrity: the Bastion's check
 
@@ -166,7 +199,8 @@ R-STOR-095. A speed figure does not stop a handover (Q-STOR-343). Every data key
 
 Component: the handover of a data key ([bastion.md](../spec/bastion.md) R-BAS-073, R-BAS-076; [storage.md](../spec/storage.md) R-STOR-095).
 Subject: every blob of an encrypted connection that a caller fetched cold through the Bastion while its registration's handover was on.
-Dormant: live once the handover is on for a registration and an encrypted connection holds blobs read through it. A Bastion holds a data key
+Live since package 4 (2026-11-23) wherever the handover is on for a registration and an encrypted connection holds blobs read through it;
+dormant while no registration's handover is on, which is every registration's default. A Bastion holds a data key
 for the length of one read and writes it nowhere; a process that took over a Bastion pod can keep every key it is handed from then on, and
 read the keys of the current reads out of the pod's memory. A kept key opens its object's ciphertext wherever it lies, for as long as it
 lies there: the connection's bucket, its noncurrent versions, a backup's pool; neither a rotation of the root, nor a new generation of the
@@ -181,8 +215,8 @@ noncurrent versions or backups' pools
 ### H-1341 · A handed data key and write access to the bucket make segments of that object that a ranged read accepts
 
 Component: the segments of the stored format under a data key that left the main installation ([storage.md](../spec/storage.md) R-STOR-076,
-R-STOR-082). Subject: the one object whose data key is held. Dormant: live only when a kept data key (H-1340) meets write access to the
-connection's bucket. A segment authenticates under its object's data key, its index and its mark; whoever holds the key can seal other
+R-STOR-082). Subject: the one object whose data key is held. Live since package 4 (2026-11-23) wherever H-1340 is, and real only when a kept
+data key meets write access to the connection's bucket. A segment authenticates under its object's data key, its index and its mark; whoever holds the key can seal other
 plaintext of the same length into segments that pass. A whole read refuses such an object at its end, because the final segment or the
 plaintext's SHA-256 does not match the digest, and the last bytes are held back (R-STOR-013); a ranged read that does not reach the final
 segment cannot hash what it does not read, and serves the forged window: a resumed download, the internal ranges of NuGet's reader, the
@@ -235,3 +269,17 @@ the SHA-256 differs, keeps nothing, and marks the cache key so that its next fil
 marks the copy and falls over to another. The callers of that one fill see a cut transfer, as the callers of a forwarded fill of a damaged
 object do today, and the main installation learns of the damage only from the next fill, not from the Bastion. What makes it real: a principal
 who can write a plain connection's bucket (H-11), or a store that damages an object.
+
+### H-1490 · The encoded value keeps a handed data key in the main installation's memory until the collector reclaims it
+
+Component: the handover of a data key at the main installation ([storage.md](../spec/storage.md) R-STOR-095 steps 8 to 11,
+[downloadlinks/handover.go](../../internal/downloadlinks/handover.go)). Subject: the data keys of the encrypted copies handed over by a
+replica. Live since package 4 (2026-11-23) wherever H-1340 is. The format's key and the value's `HandoverKey` are overwritten as soon as
+the value is encoded, but the encoded value is a Go string, which no code can overwrite: it holds the key in base64url, and the answer's
+header and the TLS writer's buffers hold copies of it, until the answer is written and the garbage collector reuses the memory. A process
+that can read a replica's memory (a core dump, a debugger, a taken-over pod) can find the keys of the handovers of the last moments; it is
+the replica that also holds every storage key of its connections for its life
+([stored-content-keys.md](stored-content-keys.md#h-1309--a-replicas-memory-holds-the-storage-keys-for-its-life-and-go-cannot-erase-a-key)
+H-1309), which open far more than one object, so the value adds nothing such a process lacks. What makes it real: read access to a
+replica's memory, which H-1309 makes real already; what bounds it: the keys of the blobs handed over in the moments before the read, each
+named by its trace.

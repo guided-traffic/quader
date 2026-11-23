@@ -1790,7 +1790,7 @@ Priority: **P1** · Covers: quader-only
 The owner's decision 12 (b) of 2026-11-22 ([bastion.md](bastion.md) R-BAS-070): for a forward of a Bastion, the main installation may
 answer a download with a link of the object store and, for a copy on an encrypted connection, the copy's data key, instead of the bytes;
 the Bastion reads the object itself. Built for plain copies (package 2 of
-[developer/bastion-handover.md](../developer/bastion-handover.md), as built below); steps 8 and 10 are not. The decision is made at the serve point of R-STOR-070 (`edge.ServeItem`, through
+[developer/bastion-handover.md](../developer/bastion-handover.md)) and for encrypted ones, steps 8 and 10 (package 4), as built below. The decision is made at the serve point of R-STOR-070 (`edge.ServeItem`, through
 `itemStore.Serve` for a format's routes and through `/files/`), in `internal/downloadlinks` beside the links'
 ([Q-STOR-340](#q-stor-340--the-handover-is-decided-in-the-package-of-the-links-the-one-caller-of-copydatakey-besides-the-store));
 `edge.ServeItem` takes it as `ServeOptions.Handover`, which it calls after `Admit` and only for a `GET` that would carry the whole body.
@@ -1815,12 +1815,16 @@ the download as today; the steps that answer by themselves say so.
    a connection that is not encrypted, else the first on an encrypted one
    ([Q-STOR-341](#q-stor-341--a-plain-copy-is-handed-before-an-encrypted-one)). None: the download streams.
 8. **The data key**, for a copy on an encrypted connection: `blob.Store.CopyDataKey` opens its record (one `HeadObject`, steps 1 to 6 of
-   R-STOR-077, R-STOR-083); a failure streams, and the stream's read meets the copy and marks it as R-STOR-082 says.
+   R-STOR-077, R-STOR-083); a failure streams, and the stream's read meets the copy and marks it as R-STOR-082 says. *Amended on
+   2026-11-23 ([Q-STOR-471](#q-stor-471--the-link-is-signed-before-the-data-key-is-taken)):* it runs after step 9, so a download that
+   streams for its credential or its signature takes no key and sends no `HeadObject`.
 9. **The credential and the signature**, as R-STOR-070 step 13: the signing credential lives at least 5 seconds more, and the link is signed
    for `GET` of the copy's `object_key` against the connection's public address, with no override, for `linkLifeSeconds` bounded by the
    credential (R-STOR-072); a failure streams.
 10. **The trace of a data key**, for a copy on an encrypted connection: `bastion.data_key.handed` is written in a transaction of its own
-    (R-STOR-096); a failure streams, and the data key is destroyed.
+    (R-STOR-096); a failure streams, and the data key is destroyed. *Amended on 2026-11-23
+    ([Q-STOR-472](#q-stor-472--the-value-is-encoded-before-the-trace-and-the-key-destroyed-before-the-insert)):* it is written after the
+    value is encoded and the key destroyed, and before the answer is noted for the marking.
 11. **Issue** the answer of [bastion.md](bastion.md) R-BAS-073: the file's own `200` without its bytes, the class `handover` and the value
     in `Quader-Bastion-Handover`.
 
@@ -1860,8 +1864,8 @@ the `Recognition`, which the recognition stage alone fills, and the registration
 [download_links.go](../../internal/formathost/download_links.go): a route of the kind `Download`, not a system read, the gates decided)
 and [handler.go](../../internal/api/rawfiles/handler.go) (every file, the gates of `files.Service.Stat`, which now reports whether they
 passed on a decided state) set. The route's `ClientDigest` is no condition, nor are the switch of the clients' links and a repository's
-`storage.downloadLinks` (Q-STOR-345). Step 7 names no copy on an encrypted connection: steps 8 and 10 are package 4's, so a blob whose
-servable copies are all encrypted is streamed with the reason `connection`; a plain copy whose `stored_size` is not the blob's size is
+`storage.downloadLinks` (Q-STOR-345). Step 7 named no copy on an encrypted connection until package 4 (below), so a blob whose
+servable copies were all encrypted was streamed with the reason `connection`; a plain copy whose `stored_size` is not the blob's size is
 skipped. The answer is the file's `200` through the format's own writers with `Content-Length: 0`; the value is noted for the marking
 stage, which writes the class and the header (R-BAS-073's as-built note), and a refusal of `iface.EncodeHandover` streams. Counted at the
 issue as a link is: `Charge.ChargeLink` (the size as cached bytes, the request log's `bytes_cached`), `items.Store.Served` with
@@ -1874,10 +1878,37 @@ counts `switch_off`, `not_artifact`, `gate` (and a content state that is not `ok
 `sgate.Serve.RunDecided` before the decision, whether it is then handed over, linked or streamed. Tests:
 `TestR_STOR_095_TheConditionsOfAHandover` and `TestR_STOR_095_WhatAHandoverCounts` (`internal/formathost`, the in-memory store; each
 condition taken away alone, the link's life bounded by a credential that ends in 20 s, a speed figure no condition),
-`TestR_STOR_095_AFileOfFilesIsHandedOver` (`internal/api/rawfiles`), `TestR_STOR_096_TheCopyOfAHandover` (`internal/downloadlinks`); the
+`TestR_STOR_095_AFileOfFilesIsHandedOver` (`internal/api/rawfiles`), `TestR_STOR_096_TheCopyOfAHandover` (`internal/downloadlinks`, since
+package 4 `TestR_STOR_096_ThePlainCopyFirstAndTheTraceOfAKey`); the
 integration cases `TestR_BAS_070_ALargeFileIsReadFromTheObjectStore` (area `bastion`: the main installation and a Bastion joined; it replaced
 the main installation's half, `TestR_STOR_095_AForwardThatOfferedIsHandedOverFromTheStacksStore`, on 2026-11-23,
 [bastion.md](bastion.md) R-BAS-070) and the query budget's handed-over OCI blob (area `querybudget`, one statement, R-ARCH-027).
+
+*As built on 2026-11-23 (package 4, data keys):* [handover.go](../../internal/downloadlinks/handover.go) holds steps 8 and 10 and the
+encrypted half of 7. Step 7 is two passes over the copies `ServableOf` lists (`handoverCopy`): the first on a connection that can serve a
+handover and is not encrypted, and only without one the first such copy on an encrypted connection whose row names the stored size
+`S(size)` (a copy of another stored size is passed over, as a plain copy of another length is). Step 9 signs the link; then step 8 calls
+`Options.DataKeys.CopyDataKey` (the blob store, wired in [wire_downloadlinks.go](../../internal/app/wire_downloadlinks.go)) for that one
+copy, with the copy row and the blob's size the item lookup read: one `HeadObject` and no statement
+([Q-STOR-470](#q-stor-470--copydatakey-opens-the-copy-the-requests-lookup-read-and-reads-no-row)); its bytes go into the value's
+`iface.HandoverKey` and the format's key is destroyed at once. The value names `encrypted: true`, `storedSize` `S(size)` and the
+`dataKey`; it is encoded, the key destroyed (`Links.destroy`; `Links.KeysHeld` counts the keys held and is 0 whenever no handover is being
+decided), then step 10 writes `bastion.data_key.handed` in a transaction of its own through `Options.Runner` and `Options.Audit` (the main
+pool and the audit's recorder), and only then is the value noted for the marking stage
+([Q-STOR-472](#q-stor-472--the-value-is-encoded-before-the-trace-and-the-key-destroyed-before-the-insert)). A failure of step 8 (a key the
+replica does not hold, a record that does not bind the blob, the store's answer to the `HeadObject`) streams with the reason `key`; a failed
+insert streams with `trace`; a value the encoding refuses after the key was taken streams with `signing`, as for a plain copy; every path
+destroys the key, a panic's included (a deferred destroy). The metric's kind is `link_and_key` for an encrypted copy, and
+`artifact.downloaded` carries `encrypted: true`. `HandoverDownload` gained the forward's caller (`Actor`, `Source`, `Endpoint`), which the
+serve points of `itemStore` and `/files/` fill and the trace and the served download name. A handover of an encrypted copy costs two
+statements, the item lookup and the trace's insert (`GetLiveItem`, `InsertAuditEvents`, measured once on 2026-11-23 against the stack;
+[architecture.md](architecture.md) R-ARCH-027's budget line). Tests: `TestR_STOR_096_ThePlainCopyFirstAndTheTraceOfAKey`
+(`internal/downloadlinks`: the plain copy first, the named copy's own key with `S(size)`, the trace after the key's destruction and before
+the answer with its members, a failed insert, a panic, a refused value, an unknown key, the credential and the signature before the key),
+`TestR_STOR_095_TheConditionsOfAHandover` (`internal/formathost`: every condition once more on an encrypted connection, where a download
+that streams takes no key and writes no trace, and the value with its key and trace when every condition holds),
+`TestR_STOR_095_WhatAHandoverCounts` (the kind `link_and_key`), `TestR_STOR_083_CopyDataKeyOpensTheRecordOfTheCopy` (`internal/blob`), and
+the integration case `TestR_BAS_070_AnEncryptedFileIsReadFromTheObjectStoreWithItsDataKey` ([bastion.md](bastion.md) R-BAS-070).
 
 ### R-STOR-096 · The connection a handover names, its link check and the trace of a data key
 Priority: **P1** · Covers: quader-only
@@ -1915,7 +1946,16 @@ Acceptance criteria:
   and no key is handed; with the encrypted copy alone, the handed data key is the copy's (it opens the object), `bastion.data_key.handed` is
   written before the answer with its details and without the key, and a failing insert streams the download
   (`TestR_STOR_096_ThePlainCopyFirstAndTheTraceOfAKey`). *As built on 2026-11-23 (package 2):* the plain copy first and an encrypted copy
-  alone streamed (`TestR_STOR_096_TheCopyOfAHandover`); the handed key and its trace are package 4's.
+  alone streamed (`TestR_STOR_096_TheCopyOfAHandover`); the handed key and its trace are package 4's. *As built on 2026-11-23 (package 4):*
+  the test of that name replaces it and holds the criterion; besides, the trace is written after the key is destroyed and before the
+  answer is noted, and a refused value, a panic of the trail and a key the replica does not hold leave no key held.
+- *As built on 2026-11-23 (package 4), the trace:* `bastion.data_key.handed` is registered in
+  [events_bastion_datakey.go](../../internal/audit/events_bastion_datakey.go) (category `content`, transactional, no journal flag, no
+  webhook) and written by `Links.trace`. Its row: `actor_*` the forward's caller (`anonymous` without a credential), `source_ip` the caller's
+  address, `endpoint` the forward's, `resource_type` `bastion` and `resource_id` the registration's principal ID (so the audit query's
+  resource filter lists every key one Bastion received), `repository`, `project` and `path` the item's; `details` exactly `bastion`,
+  `replica` (empty when the forward named none), `sha256`, `connection`, `storageKeyId` and `linkExpiresAt` (RFC 3339, UTC), which its data
+  schema declares as the only members. The resource is the build's addition: the requirement names none.
 - Unit (`internal/blob`): a store fake that ignores `response-content-disposition` passes the first part of the link check and fails the
   second, so its connection can serve a handover and no link (`TestR_STOR_096_TheLinkCheckHasTwoParts`). Built with the links' package 2,
   which records the two parts and decides `HandoverUsable` with its reasons, and offers the test link for an encrypted connection;
@@ -4934,9 +4974,12 @@ INSERT INTO cluster_epoch (area) VALUES ('storage_keys');                       
   of a running pod holds the keys of its current transfers and its storage keys
   ([H-1309](../security/stored-content-keys.md#h-1309--a-replicas-memory-holds-the-storage-keys-for-its-life-and-go-cannot-erase-a-key)).
 - **The room for the handover** of decision 12 (b) ([Q-STOR-320](#q-stor-320--the-handovers-room-is-one-function-of-the-store-that-nothing-calls-in-this-stage)):
-  `blob.Store.CopyDataKey(ctx, digest, connectionID) (blobcrypt.DataKey, error)` opens the record of the present copy on that connection
-  (one `HeadObject`) and returns the copy's data key with its plaintext size and commitment, after steps 1 to 6 of R-STOR-077. Nothing calls it
-  yet (its caller is package 4 of the handover); an architecture test (`internal/archtest`, `CheckDataKeyCallers`) allows calls from
+  `blob.Store.CopyDataKey(ctx, digest, size, copy) (blobcrypt.DataKey, error)` opens the record of that copy (one `HeadObject`) and returns
+  the copy's data key with its plaintext size and commitment, after steps 1 to 6 of R-STOR-077 against the copy row and the blob's digest and
+  size its caller read; it reads no row (*amended on 2026-11-23*,
+  [Q-STOR-470](#q-stor-470--copydatakey-opens-the-copy-the-requests-lookup-read-and-reads-no-row): it read the blob row and the copies again
+  in a transaction of its own and took the connection's identifier). Its one caller is the handover of package 4
+  (`internal/downloadlinks`, R-STOR-095 step 8); an architecture test (`internal/archtest`, `CheckDataKeyCallers`) allows calls from
   `internal/blob` and from the handover's package only, which is `internal/downloadlinks` (R-STOR-096, Q-STOR-340, [Q-STOR-327](#q-stor-327--the-rule-of-copydatakey-reads-the-syntax-of-every-package-and-reserves-the-methods-name)). `DataKey`
   renders nothing of the key when logged.
 
@@ -10637,6 +10680,55 @@ name is the name key's MAC of the digest (R-STOR-086).
 
 **Choice:** (a). An export narrowed with `--connection` holds only that connection's keys. **Applied in the spec:** R-STOR-089; code:
 `LoadKeys`, `lookup` and `checkName` of [internal/blob/offline](../../internal/blob/offline/keys.go).
+
+### Q-STOR-470 · CopyDataKey opens the copy the request's lookup read, and reads no row
+
+Status: **Decided by the builder** (package 4 of the handover) — selected from the options below; the owner reviews it.
+
+Context: R-STOR-095 says that step 8 is one `HeadObject` and that a handover of an encrypted copy costs, besides the item lookup, the
+trace's insert (step 10). `blob.Store.CopyDataKey(ctx, digest, connectionID)`, built with the keys (Q-STOR-320), read the blob row and the
+copies again in a transaction of its own before its `HeadObject`: two statements and a transaction more per handover of an encrypted copy.
+The item lookup of the download has read the copies and the blob's size in the same request (Q-STOR-275), and a download's reader opens an
+encrypted copy with exactly those (`Connection.ReadBlob`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `CopyDataKey(ctx, digest, size, copy)`: the copy row and the size the caller read, one `HeadObject`, steps 1 to 6 of R-STOR-077 against them; no statement (chosen) | The handover decides on the request's rows, as the stream does | Two statements per handover of an encrypted copy, the lookup and the trace's insert, as R-STOR-095 counts; the key is that object's own, bound by its record to the digest and the sizes | A copy marked damaged between the lookup and the handover is still named; the Bastion's read of it fails at its first segment and falls back, and the main installation's read marks it (R-BAS-075) |
+| (b) As built with the keys: the rows read again in a transaction of its own | A fresher copy row | A copy marked a moment before is not named | Four statements and two transactions per handover of an encrypted copy; the stream and the handover decide on different rows of one request |
+
+**Choice:** (a). The name stays, so the architecture rule of its callers (Q-STOR-327) holds unchanged. **Applied in the spec:** R-STOR-083,
+R-STOR-095; [architecture.md](architecture.md) R-ARCH-027's budget line; code: [datakey.go](../../internal/blob/datakey.go),
+`dataKey` of [handover.go](../../internal/downloadlinks/handover.go).
+
+### Q-STOR-471 · The link is signed before the data key is taken
+
+Status: **Decided by the builder** (package 4 of the handover) — selected from the options below; the owner reviews it.
+
+Context: R-STOR-095 numbers the data key (step 8) before the credential and the signature (step 9). Both must hold, so the order changes
+only which reason a download that fails both counts, how long the key lives, and whether a download that streams for its signature took a
+key and sent a `HeadObject`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Step 9, then step 8 (chosen) | The key is taken last, right before the value is encoded | No key is taken and no `HeadObject` sent for a download that streams for its credential or its signature; the key lives the shortest time | A copy whose record does not open and whose credential expires counts `credential`, not `key` |
+| (b) The numbered order | As written | The reasons in the order of the list | A key taken and destroyed again for every download whose link cannot be signed |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-095 step 8; code: `handover` of [handover.go](../../internal/downloadlinks/handover.go).
+
+### Q-STOR-472 · The value is encoded before the trace, and the key destroyed before the insert
+
+Status: **Decided by the builder** (package 4 of the handover) — selected from the options below; the owner reviews it.
+
+Context: R-STOR-095 puts the trace (step 10) before the issue (step 11), and R-STOR-096 wants the trace committed before the answer leaves and
+the key destroyed once its bytes are in the answer. Between them lie the encoding of the value, which can refuse it (a link above 8 KiB,
+R-BAS-073), and the insert, a round trip to the database.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Encode, destroy the key, write the trace, note the value for the marking (chosen) | The trace is the last step before the answer | The trail names no key whose value was never sent; the key is destroyed before the database round trip; no key without its trace | The encoded value, a string, holds the key in base64url until the answer is written and the collector reclaims it ([security/bastion-handover.md](../security/bastion-handover.md) H-1490) |
+| (b) Trace, then encode | The numbered order read literally | | A refused encoding leaves a trace of a key that never left; the key lives across the insert |
+
+**Choice:** (a). **Applied in the spec:** R-STOR-095 step 10; code: `HandoverOptions` of [handover.go](../../internal/downloadlinks/handover.go).
 
 ## What this does not cover
 

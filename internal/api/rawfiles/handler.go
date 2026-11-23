@@ -297,7 +297,7 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request, caller files.Calle
 		// A Bastion's forward that offered to take a handover per blob may get one (storage.md R-STOR-095): every file of /files/
 		// is an artifact (step 2), and Stat decided the gates (step 3).
 		o.Handover, o.HandedOver = h.dlinks.HandoverOptions(r.Context(), downloadlinks.HandoverDownload{
-			Item: res.Item, Artifact: true, Decided: res.Decided,
+			Item: res.Item, Artifact: true, Decided: res.Decided, Actor: caller.Actor, Source: caller.Source, Endpoint: caller.Subject.Endpoint,
 			Record: func(e items.ServedEvent) { h.svc.HandedOver(r.Context(), caller, e, stats) },
 		})
 	}

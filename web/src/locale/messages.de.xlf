@@ -11676,6 +11676,15 @@
         <target>Bastion registriert</target>
       </segment>
     </unit>
+    <unit id="audit.action.bastion.data_key.handed">
+      <notes>
+        <note category="location">src/app/features/audit/audit-labels.ts:95</note>
+      </notes>
+      <segment>
+        <source>Data key of a file handed to a Bastion</source>
+        <target>Datenschlüssel einer Datei an eine Bastion übergeben</target>
+      </segment>
+    </unit>
     <unit id="bastions.loading">
       <notes>
         <note category="location">src/app/features/bastions/bastion-list.ts:40,42</note>

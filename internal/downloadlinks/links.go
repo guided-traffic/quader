@@ -11,9 +11,11 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/blob"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/items"
+	"github.com/guided-traffic/quader/internal/meta"
 )
 
 // The codes of the reasons a connection cannot serve links (R-STOR-074) or a handover (R-STOR-096), as the settings' answer names
@@ -60,6 +62,12 @@ type Options struct {
 	// Handovers is the replica's snapshot of the Bastion registrations whose handover per blob is on (R-BAS-071); nil hands
 	// nothing over.
 	Handovers HandoverSwitch
+	// DataKeys opens the data key of an encrypted copy for a handover (R-STOR-095 step 8): the blob store. Runner and Audit write
+	// the trace of a handed key in a transaction of its own (step 10, R-STOR-096): the main pool and the audit's recorder. Without
+	// any of the three no encrypted copy is handed over.
+	DataKeys DataKeys
+	Runner   meta.Runner
+	Audit    audit.Recorder
 	// Replica names the probe objects of the link check.
 	Replica string
 	Metrics *Metrics
@@ -77,6 +85,9 @@ type Links struct {
 	logged  map[string]string
 	loaded  bool
 	checkMu sync.Mutex // one link check run at a time
+
+	// keysHeld counts the data keys of handovers that are taken and not yet destroyed (KeysHeld, handover.go).
+	keysHeld atomic.Int64
 
 	// afterFunc schedules the deletion of a test link's probe (testlink.go); nil is time.AfterFunc.
 	afterFunc func(time.Duration, func())

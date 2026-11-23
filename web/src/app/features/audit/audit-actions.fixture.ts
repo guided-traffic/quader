@@ -47,6 +47,7 @@ export const REGISTERED_AUDIT_ACTIONS: readonly string[] = [
   'authz.write.allowed',
   'bastion.contact',
   'bastion.created',
+  'bastion.data_key.handed',
   'bastion.deleted',
   'bastion.disabled',
   'bastion.downloads.dropped',

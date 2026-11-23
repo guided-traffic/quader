@@ -83,6 +83,8 @@ type bastionOptions struct {
 	// CAFile overrides bastion.main.ca_file (default: the front's CA), for a bundle that also trusts the object store a
 	// handover's link names (R-BAS-074, Q-BAS-237).
 	CAFile string
+	// Deps sees each replica's engine dependencies after the server built them (the link client of a handover among them).
+	Deps func(*engine.Deps)
 }
 
 // bastion is a Bastion: its replicas.
@@ -211,7 +213,12 @@ func (b *bastion) start(t *testing.T, dir string, o bastionOptions, i int) *repl
 	logs := &syncBuf{}
 	srv, err := server.New(server.Options{
 		Loaded: loaded, Environ: []string{"QUADER_POD_NAME=" + name}, LogWriter: logs, DrainDelay: 10 * time.Millisecond,
-		Deps: func(d *engine.Deps) { d.Now = b.clk.Now },
+		Deps: func(d *engine.Deps) {
+			d.Now = b.clk.Now
+			if o.Deps != nil {
+				o.Deps(d)
+			}
+		},
 	})
 	if err != nil {
 		t.Fatalf("server: %v\n%s", err, logs)

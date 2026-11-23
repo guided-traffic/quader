@@ -92,6 +92,8 @@ type worldOptions struct {
 	// Seed adds repositories, principals and policies before the main replica starts, because its grant index is built
 	// from what exists then.
 	Seed func(w *world)
+	// MainEnv is further environment of the main replica alone, made after Seed (an encrypted connection on the stack's prefix).
+	MainEnv func(w *world) []string
 }
 
 func newWorld(t *testing.T, o worldOptions) *world {
@@ -170,8 +172,12 @@ func newWorld(t *testing.T, o worldOptions) *world {
 	if o.Seed != nil {
 		o.Seed(w)
 	}
+	var mainEnv []string
+	if o.MainEnv != nil {
+		mainEnv = o.MainEnv(w)
+	}
 
-	w.main = st.Start(t, testenv.ReplicaOptions{Name: "web-1", Endpoints: o.Endpoints, Role: o.Role})
+	w.main = st.Start(t, testenv.ReplicaOptions{Name: "web-1", Endpoints: o.Endpoints, Role: o.Role, Env: mainEnv})
 	w.front = newFront(t, dir, w.main.Addr("default"))
 
 	w.registerBastion("partners")

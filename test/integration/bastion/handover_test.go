@@ -8,7 +8,9 @@ import (
 	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -27,7 +29,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/bastion/engine"
+	"github.com/guided-traffic/quader/internal/bastion/handover"
 	"github.com/guided-traffic/quader/internal/bastion/iface"
+	"github.com/guided-traffic/quader/internal/blob/blobcrypt"
 	"github.com/guided-traffic/quader/internal/tlsfiles/tlstest"
 	"github.com/guided-traffic/quader/test/integration/testenv"
 )
@@ -41,9 +46,12 @@ type storeRelay struct {
 	srv *httptest.Server
 
 	mu     sync.Mutex
-	sent   map[string]int64 // bytes sent per object, by the digest its key ends with
+	sent   map[string]int64 // bytes sent per object, by the digest (or the keyed name) its key ends with
 	refuse map[string]int   // a status for an object
 	cut    map[string]int64 // break the body of an object after n bytes
+	// swap answers an object with other bytes, 200 with their length, as a store whose object was replaced would: the body of
+	// another object of the same stored size, which a handed data key does not open.
+	swap map[string][]byte
 }
 
 func newStoreRelay(t *testing.T) *storeRelay {
@@ -60,7 +68,7 @@ func newStoreRelay(t *testing.T) *storeRelay {
 	pool.AppendCertsFromPEM(caPEM)
 	ca := tlstest.LoadCA(t, testenv.CAFile(t), filepath.Join(testenv.CertDir(t), "ca.key"))
 	leaf := ca.Issue(t, tlstest.Options{DNSNames: []string{"localhost"}, IPs: []net.IP{net.IPv4(127, 0, 0, 1)}, NotAfter: time.Now().Add(6 * time.Hour)})
-	r := &storeRelay{sent: map[string]int64{}, refuse: map[string]int{}, cut: map[string]int64{}}
+	r := &storeRelay{sent: map[string]int64{}, refuse: map[string]int{}, cut: map[string]int64{}, swap: map[string][]byte{}}
 	proxy := &httputil.ReverseProxy{
 		Rewrite: func(pr *httputil.ProxyRequest) {
 			pr.SetURL(target)
@@ -80,14 +88,23 @@ func newStoreRelay(t *testing.T) *storeRelay {
 		ErrorLog:      log.New(io.Discard, "", 0), // a cut is what the test asks for
 	}
 	r.srv = httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		key := r.keyOf(req.URL.Path)
 		r.mu.Lock()
-		status := r.refuse[r.keyOf(req.URL.Path)]
+		status, other := r.refuse[key], r.swap[key]
 		r.mu.Unlock()
-		if status != 0 {
+		switch {
+		case status != 0:
 			w.WriteHeader(status)
-			return
+		case other != nil:
+			w.Header().Set("Content-Length", strconv.Itoa(len(other)))
+			w.WriteHeader(http.StatusOK)
+			n, _ := w.Write(other)
+			r.mu.Lock()
+			r.sent[key] += int64(n)
+			r.mu.Unlock()
+		default:
+			proxy.ServeHTTP(w, req)
 		}
-		proxy.ServeHTTP(w, req)
 	}))
 	r.srv.TLS = tlsServerConfig(leaf)
 	r.srv.StartTLS()
@@ -468,6 +485,235 @@ func TestR_BAS_070_ALargeFileIsReadFromTheObjectStore(t *testing.T) {
 			for _, f := range []handedFile{handed, continued, refused} {
 				if strings.Contains(text, f.sum+"?X-Amz-") {
 					t.Errorf("a log line of %s holds the link of %s", who, f.path)
+				}
+			}
+		}
+	})
+}
+
+// encryptedDefault is QUADER_STORAGE_CONNECTIONS of the main replica with the stack's one connection, default, encrypted (R-STOR-075,
+// keyed names by default), below the stack's prefix: its first start draws the storage key and the name key, sealed with the stack's
+// key ring (R-STOR-083).
+func encryptedDefault(w *world) []string {
+	w.t.Helper()
+	c := testenv.Connection(w.t, w.dir, w.st.ObjectPrefix())
+	b, err := json.Marshal([]map[string]any{{
+		"id": c.ID, "endpoint": c.Endpoint, "region": c.Region, "bucket": c.Bucket, "prefix": w.st.ObjectPrefix(), "force_path_style": c.ForcePathStyle,
+		"ca_file": c.CAFile, "credentials_source": c.CredentialsSource, "access_key_id_file": c.AccessKeyIDFile,
+		"secret_access_key_file": c.SecretAccessKeyFile, "encrypted": true,
+	}})
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	return []string{"QUADER_STORAGE_CONNECTIONS=" + string(b)}
+}
+
+// TestR_BAS_070_AnEncryptedFileIsReadFromTheObjectStoreWithItsDataKey is the joined case on an encrypted connection (storage.md
+// R-STOR-095 steps 8 and 10, R-STOR-096; R-BAS-073, R-BAS-074, R-BAS-076): the suite's main installation with its one connection
+// encrypted, the registration's handover on through the API, the links' minSize 0 and the connection's public address on the relay,
+// and the Bastion role with the stack's CA in its bundle. A cold read of an encrypted file is answered with the file's 200 without its
+// bytes and a value that carries the copy's data key and its stored size S(size); the main installation wrote
+// bastion.data_key.handed with its members and without the key or the link; the store sent the stored size through its public
+// address; the Bastion opened the segments with the handed key, served the plaintext and holds no key afterwards. A second file of
+// the same size whose object the relay answers with the first one's body, under another data key, falls back to the bytes through the
+// main installation without the cooldown, and its trace names a key whose read fell back (H-1342). No log line of either side holds
+// a key or a usable link. Two files of one segment and 1 KiB, so that a read crosses a segment's boundary.
+func TestR_BAS_070_AnEncryptedFileIsReadFromTheObjectStoreWithItsDataKey(t *testing.T) {
+	const repo = "generic-sealed"
+	relay := newStoreRelay(t)
+	w := newWorld(t, worldOptions{
+		Seed: func(w *world) {
+			w.st.Repository(repo, "local", "generic", `{}`)
+			w.st.Exec(`UPDATE download_link_settings SET min_size = 0, public_addresses = jsonb_build_object('default', $1::text), version = version + 1`,
+				relay.address())
+		},
+		MainEnv: encryptedDefault,
+	})
+	const size = 64<<10 + 1<<10
+	type sealedFile struct {
+		path, name, sum, object, keyID string
+		data                           []byte
+	}
+	file := func(name string) sealedFile {
+		t.Helper()
+		f := sealedFile{path: "/files/" + testenv.DefaultProject + "/" + repo + "/dist/" + name, name: name, data: make([]byte, size)}
+		if _, err := rand.Read(f.data); err != nil {
+			t.Fatal(err)
+		}
+		s := sha256.Sum256(f.data)
+		f.sum = hex.EncodeToString(s[:])
+		w.mustAPI("PUT", f.path, http.StatusCreated, f.data, "Content-Type", "application/octet-stream")
+		w.st.Exec(`INSERT INTO malware_scan (sha256, state, holder_repo_id, size, due, scanned_at)
+			SELECT i.blob_sha256, 'clean', i.repo_id, i.size, false, now() FROM items i JOIN repositories r ON r.id = i.repo_id
+			 WHERE r.key = $1 AND i.path = $2
+			ON CONFLICT (sha256) DO UPDATE SET state = 'clean', due = false, scanned_at = now()`, repo, "dist/"+name)
+		f.object = w.st.Text(`SELECT object_key FROM blob_copies WHERE sha256 = decode($1, 'hex') AND connection_id = 'default'`, f.sum)
+		f.keyID = w.st.Text(`SELECT coalesce(storage_key_id, '') FROM blob_copies WHERE sha256 = decode($1, 'hex') AND connection_id = 'default'`, f.sum)
+		if !strings.Contains(f.object, "/keyed/") || f.keyID == "" {
+			t.Fatalf("the copy of %s is not an encrypted object with keyed names: %q, key %q", name, f.object, f.keyID)
+		}
+		return f
+	}
+	sealedA, sealedB := file("sealed.bin"), file("other.bin")
+	stored, err := blobcrypt.StoredSize(size)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var (
+		amu    sync.Mutex
+		values = map[string][]string{} // the handover values the main installation answered, by path
+	)
+	w.front.SetHold(func(req *http.Request, res *http.Response) {
+		if v := res.Header.Get(iface.HeaderHandover); v != "" {
+			amu.Lock()
+			values[req.URL.Path] = append(values[req.URL.Path], v)
+			amu.Unlock()
+		}
+	})
+	valuesOf := func(p string) []string { amu.Lock(); defer amu.Unlock(); return append([]string(nil), values[p]...) }
+
+	w.mustAPI("PATCH", "/api/v1/bastions/partners", http.StatusOK, map[string]any{"handover": true},
+		"Content-Type", "application/merge-patch+json", "If-Match", "*")
+	bundle := filepath.Join(w.dir, "bastion-ca-bundle.pem")
+	front, err := os.ReadFile(w.front.caFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stack, err := os.ReadFile(testenv.CAFile(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(bundle, append(append(front, '\n'), stack...), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var links *handover.Client
+	b := w.newBastion(t, bastionOptions{CAFile: bundle, Deps: func(d *engine.Deps) { links = d.Handover }}).wait()
+	r := b.reps[0]
+	testWait(t, "the Bastion told the handover is on", func() bool {
+		return metricValue(t, r.metrics(t), "quader_bastion_handover_enabled") == 1
+	})
+	const addr = "203.0.113.71"
+	call := callOpts{token: w.admin, addr: addr}
+	traces := func(f sealedFile) int64 {
+		return w.st.Number(`SELECT count(*) FROM audit_event WHERE action = 'bastion.data_key.handed' AND path = $1`, "dist/"+f.name)
+	}
+	bastionMetric := func(series string) float64 { return metricValue(t, r.metrics(t), series) }
+	var handed []byte // the data key the first read was handed, for the search of the logs
+
+	t.Run("R-STOR-095 R-BAS-074 a cold read of an encrypted file is handed over with its data key, traced, and read from the store", func(t *testing.T) {
+		got := r.do(t, "GET", sealedA.path, call)
+		if got.Status != http.StatusOK || !bytes.Equal(got.Body, sealedA.data) {
+			t.Fatalf("%d, %d bytes\n%s", got.Status, len(got.Body), testenv.Tail(r.logs.String(), 20))
+		}
+		vs := valuesOf(sealedA.path)
+		if len(vs) != 1 {
+			t.Fatalf("%d handover values for the file, want one\n%s", len(vs), testenv.Tail(w.main.Logs.String(), 20))
+		}
+		v, err := iface.DecodeHandover(vs[0])
+		if err != nil {
+			t.Fatal(err)
+		}
+		handed = v.DataKey.Bytes()
+		if !v.Encrypted || !v.DataKey.Present() || v.StoredSize != stored || v.Size != size || v.SHA256 != sealedA.sum || v.Connection != "default" {
+			t.Fatalf("the value %v", v)
+		}
+		for _, rc := range w.front.Records() {
+			if rc.Path == sealedA.path && rc.Bytes != 0 {
+				t.Fatalf("the main installation's answer to the handed forward carried %d bytes", rc.Bytes)
+			}
+		}
+		object := sealedA.object[strings.LastIndexByte(sealedA.object, '/')+1:]
+		if n := relay.sentFor(object); n != stored {
+			t.Fatalf("the store sent %d bytes through its public address, want the stored size %d", n, stored)
+		}
+		if got := metricValue(t, w.main.Metrics(t), `quader_storage_download_handovers_total{bastion="partners",kind="link_and_key"}`); got != 1 {
+			t.Fatalf("quader_storage_download_handovers_total{kind=link_and_key} = %v", got)
+		}
+		if n := traces(sealedA); n != 1 {
+			t.Fatalf("%d traces of the data key, want one", n)
+		}
+		row := w.st.Text(`SELECT concat_ws('|', resource_type, resource_id::text, actor_name, host(source_ip), repository, project, endpoint,
+				details->>'bastion', details->>'replica', details->>'sha256', details->>'connection', details->>'storageKeyId',
+				(details->>'linkExpiresAt')::timestamptz = $2::timestamptz, details::text)
+			FROM audit_event WHERE action = 'bastion.data_key.handed' AND path = $1`, "dist/"+sealedA.name, v.ExpiresAt.UTC().Format(time.RFC3339))
+		want := []string{
+			"bastion", w.st.Text(`SELECT id::text FROM principal WHERE name = 'partners'`), "ops", addr, testenv.DefaultProject + "/" + repo,
+			testenv.DefaultProject, "default", "partners", r.name, sealedA.sum, "default", sealedA.keyID, "t",
+		}
+		if parts := strings.SplitN(row, "|", len(want)+1); len(parts) != len(want)+1 || strings.Join(parts[:len(want)], "|") != strings.Join(want, "|") {
+			t.Fatalf("the trace %q, want %q", row, strings.Join(want, "|"))
+		}
+		for _, form := range []string{hex.EncodeToString(handed), base64.RawURLEncoding.EncodeToString(handed), base64.StdEncoding.EncodeToString(handed), "X-Amz-"} {
+			if strings.Contains(row, form) {
+				t.Fatalf("the trace holds the key or the link (%.8s…)", form)
+			}
+		}
+		if bastionMetric(`quader_bastion_handovers_total{outcome="read"}`) != 1 || bastionMetric(`quader_bastion_fill_bytes_total{source="main"}`) != 0 {
+			t.Fatalf("the Bastion's counts:\n%s", grepLines(r.metrics(t), "quader_bastion_handovers_total", "quader_bastion_fill_bytes_total"))
+		}
+		if links == nil || links.KeysHeld() != 0 {
+			t.Fatal("the Bastion holds a data key after the read")
+		}
+		testWait(t, "the main installation's request line", func() bool {
+			for _, line := range strings.Split(w.main.Logs.String(), "\n") {
+				if strings.Contains(line, `"request completed"`) && strings.Contains(line, sealedA.path) && strings.Contains(line, `"delivery":"handover"`) &&
+					strings.Contains(line, `"response_bytes":0`) {
+					return true
+				}
+			}
+			return false
+		})
+	})
+
+	t.Run("R-BAS-075 R-BAS-076 a body under another data key falls back to the bytes through the main installation, and the key was traced", func(t *testing.T) {
+		// The relay answers the second file's object with the first file's stored bytes: the same length, sealed under another key.
+		c, _ := w.st.ObjectClient(t)
+		body, _, err := c.Get(t.Context(), sealedA.object, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		other, err := io.ReadAll(body)
+		_ = body.Close()
+		if err != nil || int64(len(other)) != stored {
+			t.Fatalf("the first file's object: %d bytes, %v", len(other), err)
+		}
+		relay.mu.Lock()
+		relay.swap[sealedB.object[strings.LastIndexByte(sealedB.object, '/')+1:]] = other
+		relay.mu.Unlock()
+		got := r.do(t, "GET", sealedB.path, call)
+		if got.Status != http.StatusOK || !bytes.Equal(got.Body, sealedB.data) {
+			t.Fatalf("%d, %d bytes\n%s", got.Status, len(got.Body), testenv.Tail(r.logs.String(), 20))
+		}
+		if vs := valuesOf(sealedB.path); len(vs) != 1 {
+			t.Fatalf("%d handover values, want the one before the fallback", len(vs))
+		}
+		if bastionMetric(`quader_bastion_handovers_total{outcome="fallback"}`) != 1 || bastionMetric(`quader_bastion_fill_bytes_total{source="main"}`) != size ||
+			bastionMetric("quader_bastion_handover_cooldown") != 0 {
+			t.Fatalf("the Bastion's counts:\n%s", grepLines(r.metrics(t), "quader_bastion_handover", "quader_bastion_fill_bytes_total"))
+		}
+		if n := traces(sealedB); n != 1 {
+			t.Fatalf("%d traces of the second file's key, want one: the trail names a key whose read fell back", n)
+		}
+		if links.KeysHeld() != 0 {
+			t.Fatal("the Bastion holds a data key after a read that fell back")
+		}
+	})
+
+	t.Run("R-BAS-076 R-STOR-096 no log line of either side holds a handed key or a usable link", func(t *testing.T) {
+		if len(handed) != 32 {
+			t.Skip("no key was handed")
+		}
+		secret := regexp.MustCompile(`X-Amz-(Signature|Credential|Security-Token)=([^&"\s\\]*)`)
+		for who, text := range map[string]string{"the Bastion": r.logs.String(), "the main installation": w.main.Logs.String()} {
+			for _, form := range []string{hex.EncodeToString(handed), base64.RawURLEncoding.EncodeToString(handed), base64.StdEncoding.EncodeToString(handed)} {
+				if strings.Contains(text, form) {
+					t.Errorf("a log line of %s holds the handed data key", who)
+				}
+			}
+			for _, m := range secret.FindAllStringSubmatch(text, -1) {
+				if m[2] != "[REDACTED]" && m[2] != "%5BREDACTED%5D" {
+					t.Errorf("a log line of %s holds X-Amz-%s unredacted", who, m[1])
 				}
 			}
 		}

@@ -135,8 +135,9 @@ rows again; a record that names an identifier the replica does not hold makes `L
 at most once per 10 seconds, and returns nil (`unknown_key`) when they do not hold it. Rows are never deleted, so a held key is never replaced
 or dropped; `Close` destroys every key when the replica stops. (Package 7 changed this: a change of payload version 2 destroys and drops every
 key of its connection, and a load that finds a destroyed row destroys and drops the held key, R-STOR-101,
-[below](#package-7-destroying-a-retired-connections-keys-as-built).) `CopyDataKey` finds the present copy on the connection and the blob's size,
-sends one `HeadObject` and runs `blobcrypt.Open` with the holder's `Lookup`; it marks nothing.
+[below](#package-7-destroying-a-retired-connections-keys-as-built).) `CopyDataKey` takes the copy row and the blob's size its caller read
+(since the handover's package 4, Q-STOR-470: it read them again before), sends one `HeadObject` and runs `blobcrypt.Open` with the holder's
+`Lookup`; it reads no row and marks nothing. Its caller is the handover to a Bastion ([bastion-handover.md](bastion-handover.md)).
 
 **The commands** (with the runtime database role, like `storage verify`): `export [--connection <id>]` reads the rows and writes
 `system.storage.keys_exported` in one transaction, then prints the document (Q-STOR-329); it needs no key ring. `import <file>
@@ -162,7 +163,7 @@ machine, and the integration case under the stack's lock:
 | Test | Tier | Data | Time |
 |---|---|---|---|
 | `TestR_STOR_083_TheFirstReplicaDrawsTheKeysAndOthersReadThem`, `…AUsedLocationWithoutKeysRefusesTheStart`, `…ANewGenerationReachesEveryReplica`, `…NoKeyLeavesTheHolder`, `…AKeyTheRingCannotOpenStopsTheStart`, `…TheSealedColumnsAreRegistered`, `…TheHolderFollowsTheRegisteredChangeArea`, `TestR_STOR_084_TheWalkResealsBothColumnsAndChangesNoKey`, `TestKeyIdentifiers` | unit, `internal/blob/keys` (keystest, blobtest) | keys of 32 bytes, objects of a few bytes | 0.04 s |
-| `TestR_STOR_083_CopyDataKeyOpensTheRecordOfThePresentCopy` | unit, `internal/blob` (the fake database, two in-memory stores) | objects of up to 1,200 bytes | 0.02 s |
+| `TestR_STOR_083_CopyDataKeyOpensTheRecordOfTheCopy` (renamed by the handover's package 4, which added each copy's own key and that no row is read) | unit, `internal/blob` (the fake database, three in-memory stores) | objects of up to 1,200 bytes | 0.02 s |
 | `TestR_STOR_085_TheExportAndTheImportRoundTrip`, `TestR_STOR_085_AnImportThatDoesNotFitExitsTwoAndWritesNothing`, `TestR_STOR_083_NewGenerationIsAuditedAndAnnounced` | unit, `cmd/quader` (keystest) | three keys, files of about 2 KB | 0.03 s |
 | `TestR_STOR_096_CopyDataKeyHasTwoCallers` | unit, `internal/archtest` (a fixture and the tree's syntax) | ten small files | 0.1 s besides the `go list` of the tree the package's other tests run anyway |
 | `TestR_STOR_083_TheStorageKeysInPostgreSQL` (the migration's rules, two replicas drawing at the same moment, the re-encryption of both columns at a rotation of the root, a new generation through the change area) | integration, `test/integration/blob` | a database of its own, eight rows | 0.8 s, most of it the migration of the database |

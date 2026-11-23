@@ -38,9 +38,11 @@ func (a *App) wireDownloadLinks(ctx context.Context, in infra, bl blobArea) (dow
 		m = downloadlinks.NewMetrics(a.tele.metrics)
 	}
 	handovers := bastionmain.NewHandoverSwitches(in.db, in.caches, a.log.With("component", "bastion"))
+	// The handover of an encrypted copy takes its data key from the blob store (the one caller of its method besides the store,
+	// R-STOR-096) and writes the key's trace through the main pool and the audit's recorder before the answer (R-STOR-095 step 10).
 	links := downloadlinks.New(downloadlinks.Options{
 		Connections: bl.store.Connections(), Copies: bl.store.Copies, Rule: downloadlinks.NewHostRule(a.cfg.Server),
-		Handovers: handovers, Replica: a.id.Instance, Metrics: m, Log: log,
+		Handovers: handovers, DataKeys: bl.store, Runner: in.db, Audit: in.rec, Replica: a.id.Instance, Metrics: m, Log: log,
 	})
 	snap := downloadlinks.NewSnapshot(links, store, in.caches)
 	if err := a.startComponent(ctx, snap); err != nil {

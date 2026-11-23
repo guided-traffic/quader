@@ -99,10 +99,8 @@ func (s itemStore) handoverOptions(ctx context.Context, rq *formats.Request, row
 	}
 	o.Handover, o.HandedOver = links.HandoverOptions(ctx, downloadlinks.HandoverDownload{
 		Item: row, Artifact: rq.Route != nil && rq.Route.Kind == formats.Download && !systemRead(rq), Decided: decided,
-		Record: func(e items.ServedEvent) {
-			e.Actor, e.Source, e.Endpoint = edge.ActorFrom(httpserver.PrincipalFrom(ctx)), httpserver.SourceFrom(ctx), rq.Subject.Endpoint
-			s.h.o.Items.Served(ctx, e)
-		},
+		Actor: edge.ActorFrom(httpserver.PrincipalFrom(ctx)), Source: httpserver.SourceFrom(ctx), Endpoint: rq.Subject.Endpoint,
+		Record: func(e items.ServedEvent) { s.h.o.Items.Served(ctx, e) },
 	})
 }
 

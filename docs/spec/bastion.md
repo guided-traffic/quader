@@ -3228,7 +3228,9 @@ built (package 2, 2026-11-23: the registration's switch, the serve point's decis
 handed over once an administrator has switched a registration's handover on; the integration case that joins the two sides is built
 (2026-11-23, `TestR_BAS_070_ALargeFileIsReadFromTheObjectStore`): the two sides meet as each expected the other, and the look at the hosts'
 check against what the main installation signs found that a refused value did not start the cooldown, which the Bastion's side now does
-(Q-BAS-293). An encrypted copy is never handed over before package 4. It builds on specifications whose code is not on `main`: the serve point and
+(Q-BAS-293). The data keys are built (package 4, 2026-11-23: a copy on an encrypted connection is handed over with its own data key where no
+plain copy can serve, after its trace `bastion.data_key.handed`, [storage.md](storage.md) R-STOR-095's as-built note; the joined case on an
+encrypted connection, `TestR_BAS_070_AnEncryptedFileIsReadFromTheObjectStoreWithItsDataKey`). It builds on specifications whose code is not on `main`: the serve point and
 the domain package of the signed links ([storage.md](storage.md) R-STOR-070 to R-STOR-074, package 2 of
 [developer/download-links.md](../developer/download-links.md)), the copies a read would try now (`blob.Store.Servable`, R-STOR-062, stage
 1's package A), and for an encrypted connection the storage keys and `blob.Store.CopyDataKey` (R-STOR-083, packages 2 and 3 of
@@ -3337,6 +3339,20 @@ as bytes from the main installation; no log line of either side holds a usable l
 installation signs (the stack's endpoint without a public address is the front's host) found that a refused value fell back at every miss
 without the cooldown ([Q-BAS-293](#q-bas-293--a-value-the-bastion-refuses-starts-the-cooldown)). The two halves the sides were built with were removed
 with it, since it shows everything they showed ([the build plan](../developer/bastion-handover.md#tests-and-what-they-cost)).
+
+*As built on 2026-11-23, the same case on an encrypted connection (package 4):*
+`TestR_BAS_070_AnEncryptedFileIsReadFromTheObjectStoreWithItsDataKey` beside it runs the suite's main installation with its one connection
+encrypted (keyed names; the storage key drawn at its first start under the stack's key ring), the switch on, the links' `minSize` 0 and the
+relay as the public address, and the Bastion role with the bundle. A cold read of a file of 65 KiB (one segment and 1 KiB, so the read
+crosses a segment's boundary) returns its plaintext; the main installation answered the class `handover` with no body and a value with
+`encrypted: true`, `storedSize` `S(size)` and the `dataKey`, counted `kind="link_and_key"`, wrote `delivery` `handover` and
+`bastion.data_key.handed` with its members (the caller, the caller's address, the registration as the resource, the item, and in `details`
+the registration, the Bastion replica, the digest, the connection, the storage key's identifier and the link's expiry) and without the key or
+the link; the store sent exactly the stored size through its public address; the Bastion counted `read` and holds no key afterwards
+(`handover.Client.KeysHeld`). A second file of the same size, whose object the relay answers with the first one's stored bytes, under another
+data key, falls back before the first byte to the bytes through the main installation, without the cooldown, and its trace stands: the trail
+names a key whose read fell back (H-1342). No log line of either side holds the handed key in hexadecimal, base64 or base64url, or a usable
+link.
 
 ### R-BAS-071 · The switch: per registration at the main installation, off by default
 Priority: **P1** · Covers: quader-only
@@ -3551,6 +3567,11 @@ on another status than `200`, which the engine replaces by the forward without t
 value on an answer of another class, stay bad answers (`TestR_BAS_073_TheClientTakesAHandoverOnlyWhenTheForwardOffered`,
 `TestR_BAS_073_TheClientAndTheFakeSpeakVersion6`). The engine calls `Handover.Check` with its clock, the offer it sent, the answer's `ETag` and
 the hosts of `server.base_url`, `bastion.main.url` and `bastion.main.packages_url` before it opens anything. The marking stage is package 2's.
+
+*As built on 2026-11-23, the value of an encrypted copy (package 4):* the main installation writes `"encrypted": true`, `storedSize` as
+`blobcrypt.StoredSize(size)` and `dataKey` as the copy's own data key, which `iface.EncodeHandover` carries in base64url; the key enters the
+value as an `iface.HandoverKey` copied from the format's key (destroyed at once) and is destroyed right after the encoding
+([storage.md](storage.md) R-STOR-095's as-built note, Q-STOR-472). Nothing of the wire changed.
 
 ### R-BAS-074 · The direct read and its verification
 Priority: **P1** · Covers: quader-only
@@ -3808,6 +3829,11 @@ format. The run times are the planner's estimates; the builder records the measu
 Acceptance criteria:
 
 - The tests named in R-BAS-070 to R-BAS-078 and in [storage.md](storage.md) R-STOR-095 and R-STOR-096 pass in their tiers.
+
+*As built on 2026-11-23 (package 4):* the data key's unit tests run 0.65 s under the race detector with atomic coverage, of which 0.31 s are
+new in the conditions' table (each condition once more on an encrypted connection); the integration case with an encrypted connection runs
+3.0 s in the area `bastion`, two files of 65 KiB; the measured numbers and what each leg gains are on
+[the build plan](../developer/bastion-handover.md#tests-and-what-they-cost).
 
 ## Read shapes per package
 

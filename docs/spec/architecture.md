@@ -5462,6 +5462,10 @@ Database budget per request, used to size P-1 to P-8:
   transaction that asks for the scan (its row and the job's wake) and one read of the verdict per wake-up; it is the wait's cost, not
   a served download's. A route that is no download (an index by its suite's path, a manifest by tag) and a generated item never
   reach the malware gate (Q-MAL-22, Q-MAL-51);
+- a download handed over to a Bastion with the data key of a copy on an encrypted connection ([storage.md](storage.md) R-STOR-095): the
+  lookup and the insert of the key's trace `bastion.data_key.handed` in a transaction of its own (R-STOR-096), 2; the data key costs a
+  `HeadObject` and no statement (Q-STOR-470). Measured once on 2026-11-23 (`GetLiveItem`, `InsertAuditEvents`) and held at the unit tier,
+  where `CopyDataKey` runs no transaction and the trace is one; a handover of a plain copy, like a link, costs the lookup alone;
 - remote hit: 1 query, the same lookup, which also reads whether the artifact's cache entry exists and, for npm, the facts
   of the remote version (Q-ARCH-291) that the artifact gate (R-NPM-025, R-NPM-026, Q-NPM-13) and the serve check decide on; a hit
   of a package whose document is expired or was validated before a restore revalidates the document first and costs the

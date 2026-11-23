@@ -224,7 +224,7 @@ and without the digest's check. Live on every interrupted `get`; the file is the
 Component: the data key of one object ([storage.md](../spec/storage.md) R-STOR-076, R-STOR-083). Subject: that object's content. No command
 writes one blob again with a new data key on the same connection; a leaked data key leaves that object readable to a holder of read access to
 the bucket until the connection is replaced. Dormant while no Bastion registration has the handover on; then live for every blob of an encrypted
-connection handed to a Bastion (decision 12 (b), [storage.md](../spec/storage.md) R-STOR-095, R-STOR-096, specified, not built), whose
+connection handed to a Bastion (decision 12 (b), [storage.md](../spec/storage.md) R-STOR-095, R-STOR-096, built on 2026-11-23), whose
 collection by a taken-over Bastion is [bastion-handover.md](bastion-handover.md#h-1340--a-taken-over-bastion-collects-the-data-keys-of-the-encrypted-blobs-filled-through-it)
 H-1340. Its planner decided on 2026-11-22 that no rewrite of one blob is built (Q-STOR-347): a rewrite would leave the noncurrent versions and
 the backups' pools under the old key, and the trail `bastion.data_key.handed` names every key that left, so a later rewrite can take exactly

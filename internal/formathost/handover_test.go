@@ -3,6 +3,8 @@ package formathost
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
 	"errors"
 	"io"
 	"net/http"
@@ -13,11 +15,13 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/api/edge"
+	"github.com/guided-traffic/quader/internal/audit"
 	"github.com/guided-traffic/quader/internal/auth/principal"
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/bastion/iface"
 	"github.com/guided-traffic/quader/internal/bastionmain"
 	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/blob/blobcrypt"
 	"github.com/guided-traffic/quader/internal/blob/blobtest"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/downloadlinks"
@@ -26,6 +30,7 @@ import (
 	"github.com/guided-traffic/quader/internal/limits"
 	"github.com/guided-traffic/quader/internal/malware"
 	"github.com/guided-traffic/quader/internal/malware/gate"
+	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/observability"
 	"github.com/guided-traffic/quader/internal/repository"
 )
@@ -48,6 +53,116 @@ type handoverServe struct {
 	marked  bool                     // the marking stage installed its record (bastionmain.WithAbsence)
 	absence *bastionmain.Absence
 	charge  *limits.Charge
+
+	// The encrypted pass (R-STOR-095 steps 8 and 10): enc makes the connection encrypted and its object a sealed one under a data key
+	// of its own (encrypt); keys is the blob store's CopyDataKey with what it handed out, trail the audit's recorder of the trace.
+	enc   bool
+	sk    *blobcrypt.StorageKey
+	dk    blobcrypt.DataKey
+	keys  *takenKeys
+	trail *traceTrail
+}
+
+// takenKeys is the blob store's CopyDataKey with every call counted and every key kept, so that a case can see that a download that
+// streams took none, and that a handed one was destroyed.
+type takenKeys struct {
+	store *blob.Store
+	n     int
+	taken []blobcrypt.DataKey
+}
+
+func (k *takenKeys) CopyDataKey(ctx context.Context, d blob.Digest, size int64, cp blob.Copy) (blobcrypt.DataKey, error) {
+	k.n++
+	dk, err := k.store.CopyDataKey(ctx, d, size, cp)
+	if err == nil {
+		k.taken = append(k.taken, dk)
+	}
+	return dk, err
+}
+
+// traceTrail keeps the transactional events of the case; traceRunner runs their transaction.
+type traceTrail struct{ events []audit.Event }
+
+func (r *traceTrail) RecordTx(_ context.Context, _ meta.Tx, ev audit.Event) error {
+	r.events = append(r.events, ev)
+	return nil
+}
+
+func (r *traceTrail) Record(context.Context, audit.Event) {}
+
+type traceRunner struct{}
+
+func (traceRunner) InTx(_ context.Context, fn func(meta.Tx) error) error { return fn(traceTx{}) }
+
+type traceTx struct{}
+
+func (traceTx) Before(func(context.Context, meta.Tx) error) {}
+func (traceTx) After(func())                                {}
+func (traceTx) OnRollback(func())                           {}
+func (traceTx) Value(any) any                               { return nil }
+func (traceTx) SetValue(any, any)                           {}
+
+// oneStorageKey is the replica's storage key of the connection default.
+type oneStorageKey struct{ sk *blobcrypt.StorageKey }
+
+func (o oneStorageKey) Active(context.Context, string) (*blobcrypt.StorageKey, error) {
+	return o.sk, nil
+}
+
+func (oneStorageKey) NameKey(string) (blobcrypt.Key, error) {
+	return blobcrypt.Key{}, errors.New("no name key")
+}
+
+func (o oneStorageKey) Lookup(context.Context, string) blobcrypt.KeyLookup {
+	return func(id string) (*blobcrypt.StorageKey, error) {
+		if id == o.sk.ID {
+			return o.sk, nil
+		}
+		return nil, nil
+	}
+}
+
+// encrypt puts the item's bytes on the connection as an encrypted object, sealed under a data key of its own and wrapped under the
+// replica's storage key, with the row's digest and stored size its, and builds the replica's side again over an encrypted connection.
+func (h *handoverServe) encrypt(t *testing.T) {
+	t.Helper()
+	raw := make([]byte, 32)
+	_, _ = rand.Read(raw)
+	sk, err := blobcrypt.NewStorageKey("sk-default-1-0a1b2c3d", raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	key, err := blobcrypt.NewKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	seed, _ := blobcrypt.NewSeed(rand.Reader)
+	dk := blobcrypt.DataKey{Key: key, Digest: sha256.Sum256(h.items.body), Size: int64(len(h.items.body))}
+	sec, err := blobcrypt.NewSection(key, seed, bytes.NewReader(h.items.body), 0, dk.Size, &blobcrypt.Final{Size: dk.Size, Digest: dk.Digest})
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := io.ReadAll(sec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rec, err := blobcrypt.Wrap(sk, dk, rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := blob.Digest(dk.Digest)
+	obj := blob.Key("quader", d)
+	if err := h.store.Put(context.Background(), obj, bytes.NewReader(body), int64(len(body)), blob.Checksum{}, rec.Metadata()); err != nil {
+		t.Fatal(err)
+	}
+	stored, err := blobcrypt.StoredSize(dk.Size)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h.row.Digest = d
+	h.row.Copies = []blob.Copy{{Connection: "default", ObjectKey: obj, StoredSize: stored, StorageKeyID: sk.ID, State: blob.CopyPresent}}
+	h.enc, h.sk, h.dk = true, sk, dk
+	h.relink(t, nil)
 }
 
 func newHandoverServe(t *testing.T, mutate func(*config.StorageConnection)) *handoverServe {
@@ -72,15 +187,25 @@ func (h *handoverServe) relink(t *testing.T, mutate func(*config.StorageConnecti
 	if mutate != nil {
 		mutate(&el)
 	}
+	el.Encrypted = el.Encrypted || h.enc
 	conns, err := blob.NewConnections(blob.NewConnection(el, blob.NewGuard(h.store, config.StorageS3Breaker{FailureThreshold: 1, OpenDuration: time.Minute})))
 	if err != nil {
 		t.Fatal(err)
 	}
-	h.conns, h.met = conns, observability.NewMetrics("web")
-	h.links = downloadlinks.New(downloadlinks.Options{
+	h.conns, h.met, h.trail = conns, observability.NewMetrics("web"), &traceTrail{}
+	o := downloadlinks.Options{
 		Connections: conns, Rule: downloadlinks.HostRuleOf([]string{"quader.example.com"}), Handovers: h.sw, Replica: "r1",
-		Metrics: downloadlinks.NewMetrics(h.met),
-	})
+		Runner: traceRunner{}, Audit: h.trail, Metrics: downloadlinks.NewMetrics(h.met),
+	}
+	if h.enc {
+		store, err := blob.New(blobtest.Storage(t, t.TempDir()), conns, nopRunner{}, blob.WithStorageKeys(oneStorageKey{h.sk}))
+		if err != nil {
+			t.Fatal(err)
+		}
+		h.keys = &takenKeys{store: store}
+		o.DataKeys = h.keys
+	}
+	h.links = downloadlinks.New(o)
 	s := downloadlinks.Defaults()
 	s.MinSize = 0
 	h.links.SetSettings(s)
@@ -167,6 +292,52 @@ func TestR_STOR_095_TheConditionsOfAHandover(t *testing.T) {
 		if resp.StatusCode != http.StatusOK || !bytes.Equal(got, h.items.body) {
 			t.Fatalf("the link answered %d %q", resp.StatusCode, got)
 		}
+		if len(h.trail.events) != 0 {
+			t.Fatalf("a plain copy's handover wrote %d traces of a data key", len(h.trail.events))
+		}
+	})
+	t.Run("R-STOR-095 R-STOR-096 every condition met on an encrypted connection: the value carries the copy's data key and S(size), after its trace", func(t *testing.T) {
+		h := newHandoverServe(t, nil)
+		h.encrypt(t)
+		rec := h.serve()
+		if rec.Code != http.StatusOK || rec.Body.Len() != 0 || rec.Header().Get("Content-Length") != "0" || h.items.opened != 0 {
+			t.Fatalf("%d, %d bytes, opened %d", rec.Code, rec.Body.Len(), h.items.opened)
+		}
+		v, err := iface.DecodeHandover(h.absence.Handover())
+		if err != nil {
+			t.Fatalf("the noted value: %v", err)
+		}
+		if err := v.Check(iface.HandoverCheck{Now: time.Now(), Offer: iface.HandoverOffer{MaxSize: 1 << 20}, ETag: rec.Header().Get("ETag")}); err != nil {
+			t.Fatalf("the Bastion would refuse the value: %v", err)
+		}
+		if stored, _ := blobcrypt.StoredSize(h.row.Size); !v.Encrypted || v.StoredSize != stored || !v.DataKey.Present() {
+			t.Fatalf("value %v", v)
+		}
+		resp, err := h.store.Do(httptest.NewRequest(http.MethodGet, v.Link, nil))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		k, _ := blobcrypt.KeyFromBytes(v.DataKey.Bytes())
+		rd, err := blobcrypt.NewReader(resp.Body, blobcrypt.DataKey{Key: k, Digest: h.dk.Digest, Size: h.dk.Size}, true)
+		if err != nil {
+			t.Fatalf("the handed key does not open the object at the link: %v", err)
+		}
+		if got, err := io.ReadAll(rd); err != nil || !bytes.Equal(got, h.items.body) {
+			t.Fatalf("the object read with the handed key: %v", err)
+		}
+		if len(h.trail.events) != 1 || h.trail.events[0].Type != audit.EventBastionDataKeyHanded || h.trail.events[0].Actor.Kind != "anonymous" ||
+			h.trail.events[0].Endpoint != "default" || h.trail.events[0].Repository != linkHolder.String() {
+			t.Fatalf("the trace: %+v", h.trail.events)
+		}
+		if h.keys.n != 1 || h.links.KeysHeld() != 0 {
+			t.Fatalf("%d keys taken, %d held after the answer", h.keys.n, h.links.KeysHeld())
+		}
+		for _, dk := range h.keys.taken {
+			if _, err := dk.Key.Bytes(); err == nil {
+				t.Fatal("the format's key outlived the handover")
+			}
+		}
 	})
 	for _, tc := range []struct {
 		name, reason string // reason: the declined offers' label it counts, "" for none
@@ -211,9 +382,6 @@ func TestR_STOR_095_TheConditionsOfAHandover(t *testing.T) {
 			s.PublicAddresses = map[string]string{"default": "https://s3.quader.example.com"}
 			h.links.SetSettings(s)
 		}},
-		{"an encrypted connection (its data key is not built)", downloadlinks.HandoverDeclinedConnection, func(t *testing.T, h *handoverServe) {
-			h.relink(t, func(c *config.StorageConnection) { c.Encrypted = true })
-		}},
 		{"a copy on a connection the replica does not configure", downloadlinks.HandoverDeclinedConnection, func(_ *testing.T, h *handoverServe) {
 			h.row.Copies[0].Connection = "detached"
 		}},
@@ -229,20 +397,34 @@ func TestR_STOR_095_TheConditionsOfAHandover(t *testing.T) {
 			})
 		}},
 	} {
-		t.Run("R-STOR-095 "+tc.name+" streams the bytes", func(t *testing.T) {
-			h := newHandoverServe(t, nil)
-			tc.mod(t, h)
-			h.streamed(t, h.serve())
-			for _, r := range downloadlinks.HandoverDeclinedReasons() {
-				want := 0.0
-				if r == tc.reason {
-					want = 1
-				}
-				if got := h.handoverDeclined(t, r); got != want {
-					t.Errorf("declined for %s: %v, want %v", r, got, want)
-				}
+		// Each condition taken away alone, on a plain connection and on an encrypted one: a condition that guards a plain handover
+		// guards the data key as well, so a forward that streams takes no key, sends no HeadObject for one and writes no trace.
+		for _, enc := range []bool{false, true} {
+			name := "R-STOR-095 " + tc.name + " streams the bytes"
+			if enc {
+				name = "R-STOR-095 R-STOR-096 on an encrypted connection, " + tc.name + " streams the bytes and takes no data key"
 			}
-		})
+			t.Run(name, func(t *testing.T) {
+				h := newHandoverServe(t, nil)
+				if enc {
+					h.encrypt(t)
+				}
+				tc.mod(t, h)
+				h.streamed(t, h.serve())
+				for _, r := range downloadlinks.HandoverDeclinedReasons() {
+					want := 0.0
+					if r == tc.reason {
+						want = 1
+					}
+					if got := h.handoverDeclined(t, r); got != want {
+						t.Errorf("declined for %s: %v, want %v", r, got, want)
+					}
+				}
+				if enc && (h.keys.n != 0 || len(h.trail.events) != 0 || h.links.KeysHeld() != 0) {
+					t.Fatalf("a download that streams took %d data keys and wrote %d traces", h.keys.n, len(h.trail.events))
+				}
+			})
+		}
 	}
 	for _, tc := range []struct {
 		name string
@@ -341,45 +523,56 @@ func TestR_STOR_095_TheConditionsOfAHandover(t *testing.T) {
 }
 
 // TestR_STOR_095_WhatAHandoverCounts: one handover adds one download to the statistics with the delivery handover, the registration,
-// the connection and the link's expiry for the audit event, the item's size to the charge's cached bytes, and one to the handovers of
-// the registration of the kind link (R-STOR-095 step 11).
+// the connection, whether it is encrypted and the link's expiry for the audit event, the item's size to the charge's cached bytes,
+// and one to the handovers of the registration of the kind link, or link_and_key for an encrypted copy (R-STOR-095 step 11).
 func TestR_STOR_095_WhatAHandoverCounts(t *testing.T) {
-	h := newHandoverServe(t, nil)
-	if rec := h.serve(); rec.Code != http.StatusOK || rec.Body.Len() != 0 {
-		t.Fatalf("%d", rec.Code)
-	}
-	if len(h.items.served) != 1 {
-		t.Fatalf("served %+v", h.items.served)
-	}
-	e := h.items.served[0]
-	if e.Delivery != items.DeliveryHandover || e.Bastion != "dmz" || e.Connection != "default" || e.Encrypted || e.LinkExpiresAt.IsZero() || !e.CountStats ||
-		e.Endpoint != "default" {
-		t.Fatalf("served %+v", e)
-	}
-	if cached, _ := h.charge.Totals(); cached != h.row.Size {
-		t.Fatalf("the charge holds %d cached bytes, want %d", cached, h.row.Size)
-	}
-	mfs, err := h.met.Registry().Gather()
-	if err != nil {
-		t.Fatal(err)
-	}
-	found := false
-	for _, mf := range mfs {
-		if mf.GetName() != "quader_storage_download_handovers_total" {
-			continue
+	for _, enc := range []bool{false, true} {
+		kind := downloadlinks.HandoverKindLink
+		if enc {
+			kind = downloadlinks.HandoverKindLinkAndKey
 		}
-		for _, s := range mf.GetMetric() {
-			labels := map[string]string{}
-			for _, l := range s.GetLabel() {
-				labels[l.GetName()] = l.GetValue()
+		t.Run("R-STOR-095 a handover of the kind "+kind, func(t *testing.T) {
+			h := newHandoverServe(t, nil)
+			if enc {
+				h.encrypt(t)
 			}
-			found = labels["bastion"] == "dmz" && labels["kind"] == downloadlinks.HandoverKindLink && s.GetCounter().GetValue() == 1
-		}
-	}
-	if !found {
-		t.Fatal("quader_storage_download_handovers_total{bastion=\"dmz\",kind=\"link\"} is not 1")
-	}
-	if errs := observability.CheckFamilies(mfs); len(errs) > 0 {
-		t.Fatalf("the families break R-OPS-007: %v", errs)
+			if rec := h.serve(); rec.Code != http.StatusOK || rec.Body.Len() != 0 {
+				t.Fatalf("%d", rec.Code)
+			}
+			if len(h.items.served) != 1 {
+				t.Fatalf("served %+v", h.items.served)
+			}
+			e := h.items.served[0]
+			if e.Delivery != items.DeliveryHandover || e.Bastion != "dmz" || e.Connection != "default" || e.Encrypted != enc || e.LinkExpiresAt.IsZero() ||
+				!e.CountStats || e.Endpoint != "default" || e.Actor.Kind != "anonymous" {
+				t.Fatalf("served %+v", e)
+			}
+			if cached, _ := h.charge.Totals(); cached != h.row.Size {
+				t.Fatalf("the charge holds %d cached bytes, want %d", cached, h.row.Size)
+			}
+			mfs, err := h.met.Registry().Gather()
+			if err != nil {
+				t.Fatal(err)
+			}
+			found := false
+			for _, mf := range mfs {
+				if mf.GetName() != "quader_storage_download_handovers_total" {
+					continue
+				}
+				for _, s := range mf.GetMetric() {
+					labels := map[string]string{}
+					for _, l := range s.GetLabel() {
+						labels[l.GetName()] = l.GetValue()
+					}
+					found = labels["bastion"] == "dmz" && labels["kind"] == kind && s.GetCounter().GetValue() == 1
+				}
+			}
+			if !found {
+				t.Fatalf("quader_storage_download_handovers_total{bastion=\"dmz\",kind=%q} is not 1", kind)
+			}
+			if errs := observability.CheckFamilies(mfs); len(errs) > 0 {
+				t.Fatalf("the families break R-OPS-007: %v", errs)
+			}
+		})
 	}
 }
