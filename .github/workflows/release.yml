@@ -3262,8 +3262,9 @@ jobs:
 
   # The evidence record (docs/developer/coverage.md#how-ci-feeds-it): the generator writes implemented.txt and the pages
   # rendered from it from the test reports of this run, and fails only when the committed list claims a requirement the
-  # reports do not prove. Requirements proven for the first time are listed in the job summary; the written files go to
-  # Semantic Release, which commits them with the release, so nobody refreshes them by hand. The reports are those of every
+  # reports do not prove. Requirements proven for the first time are listed in the job summary; the written files are the artifact
+  # coverage-evidence, which no release takes since Q-ARCH-457 (docs/developer/coverage.md#the-committed-record-since-the-minimal-gate).
+  # The reports are those of every
   # tier: unit, Angular, chart, integration and the kind legs of this run, and for each kind leg without a report here the newest
   # one of that leg on main, from this workflow or from the nightly (Q-ROAD-11). The job waits for the kind legs, so it ends
   # when they do. A leg the change does not start (job e2e-scope) is a skipped job; the condition lets the job run past it, as it
@@ -3372,8 +3373,8 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  # The unit and integration profiles merged (make coverage-report): the job summary, and the README's
-  # badge, which Semantic Release commits with the release.
+  # The unit and integration profiles merged (make coverage-report): the job summary, and the README's badge as the artifact
+  # coverage-badge, which no release commits since Q-ARCH-457.
   coverage-report:
     name: Combined Coverage Report
     needs: [unit, integration]
