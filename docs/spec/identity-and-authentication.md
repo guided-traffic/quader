@@ -2456,9 +2456,11 @@ used for monitoring and audit tokens:
 | `limits:read` | Read profiles, rules, ceilings, the mode, project maxima and blocks ([usage-and-limits.md](usage-and-limits.md) R-LIM-031 to R-LIM-035) |
 
 **Declaring items.** Every administration operation declares the item that admits it, in the
-OpenAPI document as `x-quader-system-scope`. Operations without a declared item need
-`admin: true`. Pages that add administrative operations extend this list through review of this
-page.
+OpenAPI document as the member `permission` of its `x-quader-permission` (`{"permission": "identities:read"}`,
+[api-and-ui.md](api-and-ui.md) R-API-002): the item is the capability the shared authorization step checks, for a role and a token
+alike ([Q-AUTH-609](#q-auth-609--a-system-scope-item-is-declared-as-the-permission-of-x-quader-permission-not-in-an-extension-of-its-own)).
+Operations that declare `{"role": "admin"}` instead need `admin: true`. Pages that add administrative operations extend this list
+through review of this page.
 
 Acceptance criteria:
 
@@ -6727,6 +6729,26 @@ an alert or a webhook that pages for some of them and not for others: that needs
 detail schema of `auth.breakglass.login` also named a `username` that no producer wrote; it now names `usernameMatched`, which
 they write. Code: [events_login.go](../../internal/audit/events_login.go), `Unlock`, `recordFailure` and `audit` in
 [breakglass.go](../../internal/auth/oidc/breakglass.go); the API's description of `POST /api/v1/users/{username}/unlock`.
+
+### Q-AUTH-609 · A system scope item is declared as the permission of `x-quader-permission`, not in an extension of its own
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Found by the
+reading of the findings on 2026-11-23: R-AUTH-025 and the extension table of R-API-002 named `x-quader-system-scope` as the declaration
+of the scope item that admits an administration operation; the API document declares no operation that way, and 241 of its 370
+operations declare `x-quader-permission: {permission: <capability>}`. The shared authorization step
+(`parseRequirement` in [authorize.go](../../internal/api/v1/authorize.go)) refuses an operation without that declaration at start, and
+`Engine.Require` ([decide.go](../../internal/authz/decide.go)) checks the capability against the roles and, for a token, against the
+items of its scope (`capabilities`: a role's capability counts only when the scope names it, or the scope is `admin` and the owner holds
+the role `admin`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The item is the `permission` of `x-quader-permission`; the specification drops `x-quader-system-scope` (chosen) | One declaration per operation, which the step enforces | The item list of R-AUTH-025 is the capability table of R-AUTHZ-010, so the capability and the item are one name; one place to read and to check | — |
+| (b) Add `x-quader-system-scope` beside it | Two declarations | As the specification said | The same name twice on every operation; a second table that can disagree with the first, and an operation whose two declarations differ has no defined meaning |
+
+**Choice:** (a). The code is the better side: an item and the capability it names cannot differ when they are one value.
+**Applied in the spec:** R-AUTH-025 (**Declaring items**), [api-and-ui.md](api-and-ui.md) R-API-002 (the table of declarations, the
+authorization declarations). Code: unchanged.
 
 ## What this does not cover
 

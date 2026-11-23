@@ -1789,19 +1789,21 @@ audit:
   record_anonymous_denials: false       # default
   record_downloads: false               # default
 maintenance:
-  tasks:                                # default: the built-in tasks and their five-field cron schedules (UTC)
+  tasks:                                # default: the built-in tasks and their five-field cron schedules (UTC); a name of no task stops the start
     gc:               {enabled: true, schedule: "*/30 * * * *"}
     gc-full:          {enabled: true, schedule: "0 2 * * 0"}
     orphan-sweep:     {enabled: true, schedule: "0 5 * * 6"}
     scrub:            {enabled: true, schedule: "7 * * * *"}      # reads the due copies of every connection whole and replaces a damaged one (R-STOR-027)
     storage-reconcile: {enabled: true, schedule: "* * * * *"}     # the reconciliation between the connections
     storage-summary:  {enabled: true, schedule: "17 * * * *"}     # the storage summary with the figures per connection (R-STOR-028)
-    remote-cache-cleanup: {enabled: true, schedule: "0 3 * * *"}
     backup-check:         {enabled: true, schedule: "40 5 * * *"}     # the declared platform protection (backup.recovery_window, backup.object_versioning)
     vuln-sync-osv:        {enabled: true, schedule: "*/15 * * * *"}   # incremental OSV sync (M4b)
     vuln-sync-osv-full:   {enabled: true, schedule: "17 3 * * 0"}     # full OSV sync
     vuln-sync-kev:        {enabled: true, schedule: "41 */6 * * *"}   # CISA KEV catalog
     vuln-findings-retention: {enabled: true, schedule: "50 3 * * *"}
+    vuln-image-scan:      {enabled: true, schedule: "*/5 * * * *"}    # finds the images whose scan is due (R-VULN-033)
+    vuln-sync-trivy-db:   {enabled: true, schedule: "23 */6 * * *"}   # the image analyser's database through its repository (R-VULN-044)
+    limits-cleanup:       {enabled: true, schedule: "25 3 * * *"}     # folds and deletes the download limits' usage rows (R-LIM-028)
     oci-sweep:            {enabled: true, schedule: "0 * * * *"}      # removes the blob items of an image name that no manifest references after oci.unreferenced_blob_grace (R-OCI-019)
     deb-index-refresh:    {enabled: true, schedule: "* * * * *"}      # enqueues the index builds, checks and housekeeping that are due (R-DEB-010, Q-DEB-33); deletes nothing itself
 proxy:

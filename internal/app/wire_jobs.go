@@ -4,8 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
+	"sort"
+	"strings"
 
 	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/jobs"
 )
 
@@ -58,8 +62,49 @@ func (a *App) jobRegistry() (*jobs.Registry, error) {
 	if err := jobs.ValidateSchedules(a.cfg.Maintenance); err != nil {
 		return nil, err
 	}
+	if err := checkTaskNames(r, a.cfg.Maintenance); err != nil {
+		return nil, err
+	}
 	r.Freeze()
 	return r, nil
+}
+
+// tasksNotBuilt are the tasks of R-OPS-019 that the specification names and whose schedules the configuration's default carries
+// ahead of the code that registers them (remote-curation.md R-CUR-020): the two tasks of a remote repository's download queue
+// (R-CUR-011, R-CUR-016), whose registration is being built. A key of maintenance.tasks that names one is accepted and has no effect
+// until the task is registered (Q-OPS-418); a name leaves this list in the change that registers its task. A function, not a package
+// variable (R-ARCH-032); the names are written out, so that the list does not depend on the curation's package.
+func tasksNotBuilt() []string {
+	return []string{"remote-downloads-dispatch", "remote-examination-cleanup"}
+}
+
+// checkTaskNames refuses a configuration that schedules a task this version does not have (R-OPS-019, Q-OPS-418): a key of
+// maintenance.tasks that names no registered task, a misspelt name or one of another version, would otherwise be ignored, and the
+// operator would believe a task switched off or rescheduled that runs on its default. Every role that builds the registry builds the
+// same one, so every such replica refuses the same configuration at its start; the role scanner builds none (it runs no job and reads
+// no task) and does not check the key.
+func checkTaskNames(r *jobs.Registry, m config.Maintenance) error {
+	registered := r.Tasks()
+	var unknown []string
+	for name := range m.Tasks {
+		if _, ok := registered[name]; !ok && !slices.Contains(tasksNotBuilt(), name) {
+			unknown = append(unknown, name)
+		}
+	}
+	if len(unknown) == 0 {
+		return nil
+	}
+	sort.Strings(unknown)
+	known := make([]string, 0, len(registered))
+	for name := range registered {
+		known = append(known, name)
+	}
+	sort.Strings(known)
+	problems := make([]error, 0, len(unknown))
+	for _, name := range unknown {
+		problems = append(problems, fmt.Errorf("maintenance.tasks.%s: this version has no task %q; its tasks are %s", name, name, strings.Join(known, ", ")))
+	}
+	return errors.Join(problems...)
 }
 
 // registerGC registers the kinds gc and gc-full and their tasks (R-STOR-025):

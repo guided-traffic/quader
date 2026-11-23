@@ -126,7 +126,14 @@ The task name is also its kind (override with `TaskSpec.Kind`), and its dedup ke
 `TaskSpec.DedupKey` says otherwise (`gc` and `gc-full` share one). `maintenance.tasks.<name>` in the configuration overrides
 `enabled` and `schedule`. `Worker.Start` fails naming `maintenance.tasks.<name>.schedule` for a schedule the parser rejects;
 every role can call `jobs.ValidateSchedules(cfg.Maintenance)` at configuration load. A task registered in code but absent from the
-configuration uses its default; a configured task nobody registered is ignored.
+configuration uses its default. A configured task nobody registered stops the start: `checkTaskNames` of
+[wire_jobs.go](../../internal/app/wire_jobs.go) names the key and lists the tasks, unless the name is in `tasksNotBuilt` (a task the
+specification names whose schedule the configuration's default carries before it is registered; Q-OPS-418).
+
+A new task also gets its row in the task table of R-OPS-019 with its default schedule, in the same change:
+`TestR_OPS_019_TheTaskTableIsTheRegistry` ([task_table_test.go](../../internal/app/task_table_test.go)) fails for a registered task
+without a row, for a row that still says "specified, not built" of a registered task, and for a schedule that differs from the code's.
+A task that leaves `tasksNotBuilt` loses those words in its row in the same change.
 
 Schedules that live in PostgreSQL (cleanup policies) implement `jobs.ScheduleSource` and go into `WorkerOptions.Sources`.
 

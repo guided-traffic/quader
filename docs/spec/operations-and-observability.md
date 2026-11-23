@@ -2407,15 +2407,19 @@ shared key is offered again on the next scheduler tick, so it is postponed, neve
 | `storage-reconcile` | [storage.md](storage.md) R-STOR-056: copies to the connections that lack a blob, fills, drains | `* * * * *` (every minute, storage.md) |
 | `storage-summary` | R-OPS-023 | `17 * * * *` |
 | `audit-retention` | R-OPS-015 and R-OPS-017: calls `audit_maintain_partitions()`, which creates partitions ahead and drops expired ones | `30 3 * * *` |
-| `webhook-retention` | R-OPS-044 and the outbox of R-OPS-035 | `*/15 * * * *` (proposed) |
-| `support-bundle-expiry` | R-OPS-027 | `0 4 * * *` (proposed) |
+| `webhook-retention` | R-OPS-044 and the outbox of R-OPS-035; specified, not built | `*/15 * * * *` (proposed) |
+| `support-bundle-expiry` | R-OPS-027; specified, not built | `0 4 * * *` (proposed) |
 | `replica-registry-prune` | R-OPS-003 | `*/10 * * * *` |
 | `oci-sweep` | [formats/oci.md](formats/oci.md) R-OCI-019: removes the blob items of an image name that no manifest of the name references after `oci.unreferenced_blob_grace`; queue `maintenance`, exclusive | `0 * * * *` (formats/oci.md) |
 | `ansible-import-task-sweep` | [formats/ansible.md](formats/ansible.md) R-ANS-009: deletes the import tasks of publishes older than `ansible.import_task_keep` and keeps the versions; queue `maintenance`, exclusive; the job kind `ansible-reindex` (queue `index`, coalesce) is enqueued by the reindex endpoint | `17 3 * * *` (formats/ansible.md) |
-| `remote-cache-cleanup` | [storage.md](storage.md) R-STOR-045; the per-repository expiry setting belongs to [repositories-and-proxy.md](repositories-and-proxy.md) (RET-036, RMT-021) | `0 3 * * *` (proposed, storage.md) |
+| `deb-index-refresh` | [formats/debian.md](formats/debian.md) R-DEB-010: enqueues a `deb-index` job for a repository whose retention is due, a virtual repository whose check is due and a remote repository's housekeeping, and deletes nothing itself (Q-DEB-33); queue `maintenance`, exclusive | `* * * * *` (formats/debian.md) |
+| `mirror-dispatch` | [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-053: starts the passes of the remote repositories in mode `mirror` that are due; queue `maintenance` (Q-ARCH-321), exclusive | `* * * * *` (repositories-and-proxy.md) |
+| `remote-downloads-dispatch` | [remote-curation.md](remote-curation.md) R-CUR-011: starts the rows of a remote repository's download queue whose next attempt came and removes finished rows after their retention; specified, not built | `* * * * *` (remote-curation.md) |
+| `remote-examination-cleanup` | [remote-curation.md](remote-curation.md) R-CUR-016: removes what was fetched for examination and not delivered after the repository's `remote.delivery.examinedRetentionDays`; specified, not built | `0 4 * * *` (remote-curation.md) |
+| `remote-cache-cleanup` | [storage.md](storage.md) R-STOR-045; the per-repository expiry setting belongs to [repositories-and-proxy.md](repositories-and-proxy.md) (RET-036, RMT-021); specified, not built | `0 3 * * *` (proposed, storage.md) |
 | `token-cleanup`, `session-cleanup` | [identity-and-authentication.md](identity-and-authentication.md) R-AUTH-043 (R-AUTH-023; R-AUTH-005, R-AUTH-010, R-AUTH-034) | `40 3 * * *` and `*/10 * * * *` (identity-and-authentication.md) |
 | `token-expiry-notice` | [identity-and-authentication.md](identity-and-authentication.md) R-AUTH-043, R-AUTH-032: writes `token.expiring` for tokens entering the notice period | `0 6 * * *` (identity-and-authentication.md) |
-| `user-dormancy` (P1) | [identity-and-authentication.md](identity-and-authentication.md) R-AUTH-043, R-AUTH-021: disables dormant users and emits the dormancy warnings | `30 4 * * *` (proposed, identity-and-authentication.md) |
+| `user-dormancy` (P1) | [identity-and-authentication.md](identity-and-authentication.md) R-AUTH-043, R-AUTH-021: disables dormant users and emits the dormancy warnings; specified, not built | `30 4 * * *` (proposed, identity-and-authentication.md) |
 | `idempotency-cleanup` | [api-and-ui.md](api-and-ui.md) R-API-014: deletes the expired rows of `api_idempotency_keys` | `13 * * * *` |
 | `ci-keys-refresh` | [gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-030, R-CI-003 | `*/5 * * * *` (gitlab-ci-oidc.md) |
 | `ci-replay-cleanup` | [gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-030, R-CI-018 | `7 * * * *` (gitlab-ci-oidc.md) |
@@ -2427,18 +2431,32 @@ shared key is offered again on the next scheduler tick, so it is postponed, neve
 | `vuln-sync-osv` | From M4b, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-004, R-VULN-005: incremental advisory sync per ecosystem, full when the state requires it; dedup key `vuln-sync-osv`; task parameter `{"acceptShrink": true}` for a manual run | `*/15 * * * *` (vulnerability-scanning.md) |
 | `vuln-sync-osv-full` | From M4b, R-VULN-004: full advisory sync, which also removes records the source no longer has; shares the dedup key `vuln-sync-osv` | `17 3 * * 0` (vulnerability-scanning.md) |
 | `vuln-sync-kev` | From M4b, R-VULN-008: the known-exploited catalog | `41 */6 * * *` (vulnerability-scanning.md) |
+| `vuln-sync-trivy-db` | [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-035, R-VULN-044: resolves the image analyser's database through its repository and records the layer in use; queue `vuln`, exclusive | `23 */6 * * *` (vulnerability-scanning.md) |
+| `vuln-image-scan` | [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-033: finds a manifest whose wake-up was lost, one stored before the image scanning was switched on and those of a restored installation; queue `vuln`, coalesce | `*/5 * * * *` (vulnerability-scanning.md) |
 | `limits-cleanup` | [usage-and-limits.md](usage-and-limits.md) R-LIM-028: folds hourly usage rows older than 30 days into the daily sums, deletes expired usage rows, sums and blocks, and the rules and usage of deleted users, groups and technical tokens | `25 3 * * *` (usage-and-limits.md) |
 | `vuln-findings-retention` | From M4b, R-VULN-014: deletes findings resolved longer than `vulnerabilities.findings.resolved_retention` ago | `50 3 * * *` (vulnerability-scanning.md) |
 | `malware-scan` | [malware-scanning.md](malware-scanning.md) R-MAL-004: discovery of blobs without a verdict, orphans, the cycle's marks; enqueues the job of the same name on the queue `malware` | `*/5 * * * *` (malware-scanning.md) |
 | `malware-sync-db` | [malware-scanning.md](malware-scanning.md) R-MAL-010: asks the updater `malware-updater-freshclam` for a new set of ClamAV's database and stores it in `upstream/clamav`, or reads it from the repository an installation names | `*/30 * * * *` (malware-scanning.md) |
+| `signature-verify` | [signatures.md](signatures.md) R-SIG-011: the discovery of the job of the same name, which asks the formats for the signatures of items in batches from a cursor; queue `signatures`, coalesce | `*/5 * * * *` (signatures.md) |
+| `signature-trust-root` | [signatures.md](signatures.md) R-SIG-017: fetches the public Sigstore root through the outbound client and stores a newer one; queue `signatures`, exclusive | `17 4 * * *` (signatures.md) |
+| `signing` | [signatures.md](signatures.md) R-SIG-049: the discovery of the job of the same name, the npm versions without a served signature and the attestation subjects without an attestation of the current identity | `*/10 * * * *` (signatures.md) |
 
 Retention policies ([storage.md](storage.md)) carry their own schedules and appear in the job list,
 not in the task list.
 
+**The table is the registry.** Every task a replica registers is a row of the table, with the schedule it runs when its key is
+absent, and a row that says "specified, not built" names a task no replica registers yet. The unit test
+`TestR_OPS_019_TheTaskTableIsTheRegistry` (`internal/app`) reads the table and holds both ways: a registered task without a row, a row
+of no registered task that does not say so, a row that says so of a registered task, and a default schedule that differs from the
+code's fail it ([Q-OPS-418](#q-ops-418--a-maintenance-task-the-version-does-not-have-stops-the-start-and-the-task-table-is-held-to-the-registry)).
+
 **Schedules are configuration.** They live in `maintenance.tasks.<name>`, not in the database. The
 API shows them and can trigger a run, but it cannot edit them. A task's default schedule applies
 when its key is absent; the owning page of a task sets that default, and the table above repeats
-it.
+it. A key that names a task the version does not have stops startup with an error that names the key and lists the tasks
+there are (Q-OPS-418): a misspelt name would otherwise be ignored, and the task it meant would run on its default. The one exception
+is a task the specification puts into the configuration's default before a replica registers it (`remote-downloads-dispatch` and
+`remote-examination-cleanup`, R-CUR-020): its key is accepted and has no effect until the task is registered.
 
 API:
 
@@ -2476,18 +2494,14 @@ maintenance:
     orphan-sweep: {enabled: true, schedule: "0 5 * * 6"}           # default (proposed); owned by storage.md R-STOR-026 (P1)
     scrub: {enabled: true, schedule: "7 * * * *"}                  # default; owned by storage.md R-STOR-027 (P1)
     storage-reconcile: {enabled: true, schedule: "* * * * *"}      # default; owned by storage.md R-STOR-056 (P1)
-    remote-cache-cleanup: {enabled: true, schedule: "0 3 * * *"}   # default (proposed); owned by storage.md R-STOR-045 (P1)
     storage-summary: {enabled: true, schedule: "17 * * * *"}       # default (proposed)
     audit-retention: {enabled: true, schedule: "30 3 * * *"}       # default (proposed)
-    webhook-retention: {enabled: true, schedule: "*/15 * * * *"}   # default (proposed)
-    support-bundle-expiry: {enabled: true, schedule: "0 4 * * *"}  # default (proposed)
     replica-registry-prune: {enabled: true, schedule: "*/10 * * * *"}  # default (proposed)
     cluster-change-prune: {enabled: true, schedule: "*/10 * * * *"}    # default (proposed); owned by architecture.md R-ARCH-018
     backup-check: {enabled: true, schedule: "40 5 * * *"}              # default (proposed); owned by ha-and-helm.md R-HA-023
     session-cleanup: {enabled: true, schedule: "*/10 * * * *"}         # default (proposed); owned by identity-and-authentication.md R-AUTH-043
     token-cleanup: {enabled: true, schedule: "40 3 * * *"}             # default (proposed); owned by identity-and-authentication.md R-AUTH-043
     token-expiry-notice: {enabled: true, schedule: "0 6 * * *"}        # default (proposed); owned by identity-and-authentication.md R-AUTH-043
-    user-dormancy: {enabled: true, schedule: "30 4 * * *"}             # default (proposed); owned by identity-and-authentication.md R-AUTH-043 (P1)
     idempotency-cleanup: {enabled: true, schedule: "13 * * * *"}      # default (proposed); owned by api-and-ui.md R-API-014
     ci-keys-refresh: {enabled: true, schedule: "*/5 * * * *"}          # default (proposed); owned by gitlab-ci-oidc.md R-CI-030
     ci-replay-cleanup: {enabled: true, schedule: "7 * * * *"}          # default (proposed); owned by gitlab-ci-oidc.md R-CI-030
@@ -2497,6 +2511,8 @@ maintenance:
     vuln-sync-kev: {enabled: true, schedule: "41 */6 * * *"}           # default (proposed); from M4b, owned by vulnerability-scanning.md R-VULN-025
     vuln-findings-retention: {enabled: true, schedule: "50 3 * * *"}   # default (proposed); from M4b, owned by vulnerability-scanning.md R-VULN-025
     # secrets-reencrypt is manual-only: no entry; one here stops startup
+    # remote-cache-cleanup, webhook-retention, support-bundle-expiry and user-dormancy are specified, not built: until a replica
+    # registers them, a key here stops startup as any name of no task does (Q-OPS-418)
 ```
 
 **Acceptance criteria:**
@@ -2511,6 +2527,8 @@ maintenance:
   that names the key. While `quader_secrets_key_rings_compatible` is `0`,
   `POST …/tasks/secrets-reencrypt/run` answers `409` with code `key_ring_incompatible` and no job is
   enqueued.
+- Setting `maintenance.tasks.gc_full` (a misspelt `gc-full`) stops startup with an error that names `maintenance.tasks.gc_full`
+  and lists the tasks there are.
 - Deleting the pod that holds the `scheduler` lease moves `quader_lease_held{name="scheduler"}`
   to another `worker` replica within `cluster.lease_retry_interval` plus 1 s, with no duplicate
   runs.
@@ -6693,6 +6711,40 @@ Code: [wire_scanner.go](../../internal/app/wire_scanner.go), [metrics.go](../../
 scanner's start in `TestR_ARCH_036_AScannerStartsWithoutTheInfrastructureAndServesItsOneRoute` reads both gauges from its `/metrics`
 (unit, `internal/app`); `TestSpoolGauges` (unit, `internal/blob`); the promtool case of `QuaderSpoolNearlyFull` fires for a pod of
 `vuln-scanner-trivy` as an alert of its own ([rules_test.yaml](../../deploy/helm/quader/tests/rules_test.yaml)).
+
+### Q-OPS-418 · A maintenance task the version does not have stops the start, and the task table is held to the registry
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Found by the
+reading of the findings on 2026-11-23: the default of `maintenance.tasks` named `remote-cache-cleanup`, which no code registers; a replica
+read every key, checked its schedule and ignored a name it did not know, so a misspelt key (`gc_full`) left the task it meant on its
+default without a word. The table of R-OPS-019 named four tasks no code registers as if they ran, and missed seven that run
+(`deb-index-refresh`, `mirror-dispatch`, `signature-verify`, `signature-trust-root`, `signing`, `vuln-image-scan`, `vuln-sync-trivy-db`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A key that names no registered task stops the start, naming the key and listing the tasks; the default names only registered tasks; a unit test holds the table to the registry both ways (chosen) | The configuration says what runs, or the replica does not start | A typo is found at the deploy, not weeks later in a full bucket; the table cannot drift again | A configuration written for a newer version stops an older one; before the first stable release nothing has to keep working across versions |
+| (b) The replica starts and logs a warning per unknown key | Lenient | A configuration of a newer version starts | Nobody reads a warning at the start of 20 replicas; the misspelt task runs on its default |
+| (c) As now: ignored | Nothing to build | — | The finding stands |
+
+**Choice:** (a). The check runs where a role builds its job registry (`checkTaskNames` in
+[wire_jobs.go](../../internal/app/wire_jobs.go)), after every task is registered and before the registry freezes; every role but the
+scanner builds it and registers the same tasks, so every replica of those roles refuses the same configuration. The scanner runs no job,
+reads no task and does not check the key. **One exception, and why:** R-CUR-020 ([remote-curation.md](remote-curation.md))
+puts the schedules of `remote-downloads-dispatch` and `remote-examination-cleanup` into the configuration's default, in the curation's
+first package, before their registration is built; refusing them would then stop every start with the default. They are accepted and have no effect until registered
+(`tasksNotBuilt`), and a name leaves that list in the change that registers its task. The other four tasks the table marks "specified,
+not built" have no default, so a key of theirs is refused like any other.
+
+**How the test treats a row.** `TestR_OPS_019_TheTaskTableIsTheRegistry` reads the table's first column (each backquoted name; one row
+may name two tasks), the words "specified, not built" anywhere in the row, and the third column's backquoted schedules (by position, one
+per name) or "manual only". A registered task needs a row; a row of a task no replica registers needs the words, and a row with the
+words whose task is registered fails until the words go, so the curation's builder strikes them in the change that registers the two
+tasks; a row's schedule must be the one the registry resolves with the default configuration, and for a row with the words it must be
+the configuration's default where that has one.
+
+**Applied in the spec:** R-OPS-019 (the table, the paragraph "The table is the registry", the configuration block, an acceptance
+criterion). Code: [wire_jobs.go](../../internal/app/wire_jobs.go), [maintenance.go](../../internal/config/maintenance.go). Tests:
+`TestR_OPS_019_TheTaskTableIsTheRegistry` and `TestR_OPS_019_AKeyOfNoTaskStopsTheStart` (unit, `internal/app`).
 
 ## What this does not cover
 

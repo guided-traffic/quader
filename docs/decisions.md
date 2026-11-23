@@ -9412,10 +9412,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-AUTH
 
-105 questions on [spec/identity-and-authentication.md](spec/identity-and-authentication.md).
+106 questions on [spec/identity-and-authentication.md](spec/identity-and-authentication.md).
 
 <details>
-<summary>Q-AUTH: 105 questions</summary>
+<summary>Q-AUTH: 106 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9524,6 +9524,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-AUTH-422](spec/identity-and-authentication.md#q-auth-422--a-skipped-result-of-a-group-rule-is-an-event-of-its-own-recorded-when-the-identitys-set-of-them-changes) | A skipped result of a group rule is an event of its own, recorded when the identity's set of them changes | Decided by the development agent | (a) A new type `user.groups.result_skipped`, outcome `warning`, recorded when the identity's stored set of skipped results changes to another set that is not empty | — |
 | [Q-AUTH-423](spec/identity-and-authentication.md#q-auth-423--the-break-glass-events-are-warnings-the-audit-model-has-no-severity) | The break-glass events are warnings; the audit model has no severity | Decided by the development agent | (a) The specification follows the model: none of the three events is a `success`; a sign-in, a lock and an unlock have the outcome `warning`, a refused sign-in keeps `failure`; the constant detail goes | — |
 | [Q-AUTH-428](spec/identity-and-authentication.md#q-auth-428--the-administrator-role-of-a-token-owner-or-a-service-account-is-shown-only-to-a-holder-of-identitiesread-and-to-the-owner-itself) | The administrator role of a token owner or a service account is shown only to a holder of `identities:read` and to the owner itself | Decided by the development agent | (a) Both fields only for a holder of `identities:read`; `ownerIsAdmin` also on the caller's own tokens | — |
+| [Q-AUTH-609](spec/identity-and-authentication.md#q-auth-609--a-system-scope-item-is-declared-as-the-permission-of-x-quader-permission-not-in-an-extension-of-its-own) | A system scope item is declared as the permission of `x-quader-permission`, not in an extension of its own | Decided by the development agent | (a) The item is the `permission` of `x-quader-permission`; the specification drops `x-quader-system-scope` | — |
 
 </details>
 
@@ -11175,10 +11176,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-OPS
 
-96 questions on [spec/operations-and-observability.md](spec/operations-and-observability.md).
+97 questions on [spec/operations-and-observability.md](spec/operations-and-observability.md).
 
 <details>
-<summary>Q-OPS: 96 questions</summary>
+<summary>Q-OPS: 97 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11278,6 +11279,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-OPS-225](spec/operations-and-observability.md#q-ops-225--an-image-scanner-reports-the-database-it-detects-with) | An image scanner reports the database it detects with | Decided by the development agent | (a) The trivy scanner's report carries the newest database of its pod, its digest's hex and its build time, as ClamAV's does | [ADR-229](#adr-229--the-scanner-unit-detects-as-well-and-the-analyser-comes-from-its-own-image) |
 | [Q-OPS-226](spec/operations-and-observability.md#q-ops-226--the-updaters-report-carries-its-dailys-build-time-in-a-column-of-its-own-and-no-slots) | The updater's report carries its daily's build time in a column of its own, and no slots | Decided by the development agent | (a) The report's member `databaseBuiltAt`, from the kind `freshclam` only, kept in a column `db_built_at`; the list shows it before the join; the updater reports the slots `{0, 0}`, which the table admits for its kind only (migration 00095) | — |
 | [Q-OPS-237](spec/operations-and-observability.md#q-ops-237--the-image-scanners-spool-exports-the-two-spool-gauges-and-quaderspoolnearlyfull-fires-per-unit) | The image scanner's spool exports the two spool gauges, and `QuaderSpoolNearlyFull` fires per unit | Decided by the development agent | (a) The scanner's spool exports the same two gauges on the scanner's registry; the unit is the scrape's label `role`, which the chart's ServiceMonitor sets from the pod's component (`vuln-scanner-trivy`); the alert groups by it | — |
+| [Q-OPS-418](spec/operations-and-observability.md#q-ops-418--a-maintenance-task-the-version-does-not-have-stops-the-start-and-the-task-table-is-held-to-the-registry) | A maintenance task the version does not have stops the start, and the task table is held to the registry | Decided by the development agent | (a) A key that names no registered task stops the start, naming the key and listing the tasks; the default names only registered tasks; a unit test holds the table to the registry both ways | — |
 
 </details>
 

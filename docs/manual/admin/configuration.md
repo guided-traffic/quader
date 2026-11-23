@@ -35,7 +35,7 @@ Keys that hold a secret end in `_file` and take a file path only, never the secr
 
 ## Validation at start-up
 
-Every command (`serve`, `migrate`, `admin`) validates the file and the environment before it does anything else, and reports every problem in one pass: an unknown key (with its line and the closest valid key), an unknown `QUADER_` variable, a value of the wrong type or outside its range, and rules across keys, such as a TLS client certificate without its key. `serve` additionally requires a role, the Valkey addresses, the bucket and the encryption keys. A replica with an invalid configuration does not start.
+Every command (`serve`, `migrate`, `admin`) validates the file and the environment before it does anything else, and reports every problem in one pass: an unknown key (with its line and the closest valid key), an unknown `QUADER_` variable, a value of the wrong type or outside its range, and rules across keys, such as a TLS client certificate without its key. `serve` additionally requires a role, the Valkey addresses, the bucket and the encryption keys. A replica with an invalid configuration does not start. Under `maintenance.tasks` a name that is no task of the version (a misspelt `gc_full` for `gc-full`) also stops the start, with the key and the list of tasks there are: the task you meant would otherwise run on its default schedule.
 
 Check a configuration without starting anything:
 

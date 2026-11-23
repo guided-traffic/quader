@@ -132,8 +132,7 @@ Every operation MUST declare:
 | `operationId` | lowerCamelCase verb + noun (`createRepository`), stable for the life of v1; generated clients and audit events use it |
 | `tags` | The resource family of Part B |
 | `security` | The accepted credential kinds of R-API-005 |
-| `x-quader-permission` | The repository action or role that admits the caller, machine-readable, e.g. `{"action": "deploy", "repository": "query.repository", "path": "query.path"}` or `{"role": "admin"}`; R-API-008 enforces from it |
-| `x-quader-system-scope` | The token system scope item that admits the caller instead of a role, where one exists (R-AUTH-025) |
+| `x-quader-permission` | The repository action, capability or role that admits the caller, machine-readable, e.g. `{"action": "deploy", "repository": "query.repository", "path": "query.path"}`, `{"permission": "identities:read"}` or `{"role": "admin"}`; R-API-008 enforces from it. A `permission` is a capability of R-AUTHZ-010 and, for a token, the system scope item that admits it (R-AUTH-025, [Q-AUTH-609](identity-and-authentication.md#q-auth-609--a-system-scope-item-is-declared-as-the-permission-of-x-quader-permission-not-in-an-extension-of-its-own)) |
 | `x-quader-recent-auth` | `true` for operations that require recent authentication through a session (R-API-007) |
 | `x-quader-owner-rights` | `required` on every `authenticated: true` operation that changes the caller's own account, or exposes it beyond the user record (profile, preferences, sessions, the revocation of all own tokens): a token must inherit its owner's rights, a session may (R-API-021, Q-API-214) |
 | `x-quader-idempotency-key` | `optional` on creating and job-starting POSTs and on DELETEs that answer 202 with a job (R-API-014) |
@@ -157,7 +156,7 @@ document spec-first (Q-API-1):
   in `web/src/app/api/` build `HttpClient` calls and `httpResource()` request descriptors with them
   (R-UI-046). No generated Angular service layer is used.
 - **Authorization declarations.** At start-up the server reads `x-quader-permission`,
-  `x-quader-system-scope`, `x-quader-recent-auth`, `x-quader-owner-rights` and `x-quader-if-match` from the embedded document
+  `x-quader-recent-auth`, `x-quader-owner-rights` and `x-quader-if-match` from the embedded document
   into a table keyed by route pattern. The shared step of R-API-008 looks up the matched pattern
   (`http.Request.Pattern`) there. A registered `/api/v1/` route without an entry stops start-up, so
   no operation can run without a declared permission.
@@ -1432,7 +1431,7 @@ of their owners:
 
 | Method | Path | Purpose | Permission | Priority | Owner |
 |---|---|---|---|---|---|
-| POST | `/api/v1/projects/{projectKey}/repositories/{repoKey}/reindex` | Rebuild the format's index and metadata from stored packages (npm package documents, NuGet indexes; later Maven metadata, PyPI simple index, Helm `index.yaml`); 202 with a job; 409 when the format has no index | `manage` | P1 | R-OPS-022, format pages |
+| POST | `/api/v1/projects/{projectKey}/repositories/{repoKey}/reindex` | Rebuild the format's index and metadata from stored packages (npm package documents, NuGet indexes; later Maven metadata, PyPI simple index, Helm `index.yaml`); 202 with a job; 409 `reindex_running` naming the job of a reindex that waits or runs; 405 `not_applicable` for a format or a class without a job-built index (a remote repository's index is the upstream's), as [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-016 states | `manage` | P1 | R-OPS-022, format pages |
 | POST | `/api/v1/projects/{projectKey}/repositories/{repoKey}/cache/invalidate` | Mark cached metadata (`scope` `metadata`), cached misses (`negative`) or both (`all`) of a remote or virtual repository under a path prefix as stale, on every replica within `cluster.epoch_poll_interval` plus 1 s, with or without Valkey; binaries stay cached (INV-11); `400` on a local repository | `manage`, or `admin` | MVP | R-OPS-021, [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-045 |
 | GET | `/api/v1/projects/{projectKey}/repositories/{repoKey}/cache/entries` | Cached metadata entries for diagnosis | `repositories:read-config` or `manage` | MVP | [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-032 |
 | POST | `/api/v1/projects/{projectKey}/repositories/{repoKey}/vulnerabilities/rescan` | Re-evaluate every stored version of the repository against the advisory data; 202 with the `vuln-rescan` job, 409 with the running one | `manage`, or `settings:write` | MVP (M4b) | [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-011, R-VULN-019 |
@@ -3650,7 +3649,7 @@ Every screen and every object has a bookmarkable URL under `/ui/{locale}`. Filte
 selected tab live in query parameters; a version of a package is an object with a path of its own (R-UI-111).
 
 <details>
-<summary>Route table (47)</summary>
+<summary>Route table (59)</summary>
 
 | Route | Screen | Requirement |
 |---|---|---|
@@ -3661,51 +3660,67 @@ selected tab live in query parameters; a version of a package is an object with 
 | `/projects/{project}/packages/{format}/{name…}` (`?q=&sort=`) | A package: its versions | R-UI-007, R-UI-110 |
 | `/projects/{project}/packages/{format}/{name…}@{version}` (`?tab=&severity=&doc=&q=`) | A version | R-UI-111 |
 | `/projects/{project}/vulnerabilities` (`?repository=&severity=&status=&…`), `/projects/{project}/vulnerabilities/findings/{id}`, `/projects/{project}/vulnerabilities/advisories/{ecosystem}/{id}` | Vulnerability report of the project, finding, advisory (from M4b) | [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 |
-| `/projects/{project}/repositories`, `/projects/{project}/repositories/new` | Repositories of the project | R-UI-020, R-UI-021 |
+| `/projects/{project}/repositories`, `/projects/{project}/repositories/new`, `/projects/{project}/repositories/new/{format}` | Repositories of the project; a new repository: the format first, then the form of that format | R-UI-020, R-UI-021, R-UI-080 |
 | `/projects/{project}/repositories/{key}` (`?q=&sort=`) | Content of the repository; for a generic repository the root of its files | R-UI-052 |
 | `/projects/{project}/repositories/{key}/setup` (`?client=&bastion=`) | Set up client: the snippets and the guide of the repository | R-UI-120 |
 | `/projects/{project}/repositories/{key}/files/{path…}` | A folder or a file of the repository; `…/files` alone is the root | R-UI-010 |
-| `/projects/{project}/repositories/{key}/trash` | Trash can of the repository (P1, not built) | R-UI-014 |
+| `/projects/{project}/repositories/{key}/trash` | Trash can of the repository (P1, specified, not built) | R-UI-014 |
 | `/projects/{project}/repositories/{key}/settings` | Settings of the repository | R-UI-020 |
+| `/projects/{project}/repositories/{key}/service-accounts/{name}` | A service account of the repository: the page of every service account, with the repository ([identity-and-authentication.md](identity-and-authentication.md) R-AUTH-046) | R-UI-181 |
 | `/projects/{project}/members`, `/projects/{project}/settings` | Members and roles, settings of the project | R-UI-041 |
 | `/projects/{project}/policies`, `/projects/{project}/policies/new`, `/projects/{project}/policies/{name}` | Permission policies of the project | R-UI-027 |
 | `/projects/{project}/service-accounts`, `/projects/{project}/service-accounts/{name}` | Service accounts of the project | R-UI-026 |
-| `/projects/{project}/ci`, `/projects/{project}/ci/test`, `/projects/{project}/ci/mappings/{mapping}` | CI identity of the project | R-UI-035, R-UI-036 |
+| `/projects/{project}/usage`, `/projects/{project}/usage/{kind}/{id}` | The usage of the project and one caller's usage in it, for its Owner and the holder of `usage:read` | R-UI-183, R-UI-184 |
+| `/projects/{project}/ci`, `/projects/{project}/ci/test`, `/projects/{project}/ci/mappings/new`, `/projects/{project}/ci/mappings/{mapping}` | CI identity of the project | R-UI-035, R-UI-036 |
 | `/search` (`?q=&kind=`) | Search results of the main area | R-UI-098 |
 | `/security` (`?q=&advisory=&project=&severity=&…`), `/security/findings/{id}`, `/security/advisories/{ecosystem}/{id}` | The security dashboard over every project, its finding and advisory; for the holder of `content:metadata-read`, else not found | R-UI-158, R-UI-159, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 |
 | `/security/malware` | **Malware** under Security audit: the blobs the malware scanning refuses, their repositories, the release ([malware-scanning.md](malware-scanning.md) R-MAL-025, [Q-UI-1005](#q-ui-1005--malware-and-signatures-are-entries-of-their-own-under-security-audit)) | R-MAL-025 |
-| `/admin/trash` | Trash can of the installation, for administrators (P1, not built) | R-UI-014 |
-| `/builds`, `/builds/{build}`, `/builds/{build}/{number}` | Builds (P1) | R-UI-040 |
+| `/security/signatures` | **Signatures** under Security audit: the invalid signatures and those of blocked signers ([signatures.md](signatures.md) R-SIG-038, Q-UI-1005) | R-UI-168, R-SIG-038 |
+| `/admin/trash` | Trash can of the installation, for administrators (P1, specified, not built) | R-UI-014 |
+| `/builds`, `/builds/{build}`, `/builds/{build}/{number}` | Builds (P1, specified, not built) | R-UI-040 |
 | `/guides`, `/guides/{format}` | Guides: the formats as tiles, the repositories of one format | R-UI-124 |
 | `/guides/{format}/{class}` (`?client=`) | The guide of a class without a repository | R-UI-124 |
-| `/profile`, `/profile/tokens`, `/profile/sessions` | Profile, personal tokens, sessions | R-UI-029 |
-| `/integrations/webhooks`, `/integrations/webhooks/{key}` | Webhooks (P1) | R-UI-039 |
-| `/admin/repositories`, `/admin/repositories/new` | Repositories of every project, each row naming its project | R-UI-020, R-UI-021 |
-| `/admin/repositories/quick-setup` | Quick setup (P1) | R-UI-023 |
+| `/help`, `/help/{section}/{page}` | The manual: the overview of both guides, a page | R-UI-050 |
+| `/profile`, `/profile/tokens`, `/profile/sessions`, `/profile/usage` | Profile, personal tokens, sessions, the caller's own usage | R-UI-029, R-UI-185 |
+| `/integrations/webhooks`, `/integrations/webhooks/{key}` | Webhooks (P1, specified, not built) | R-UI-039 |
+| `/admin`, `/admin/dashboard` | The admin area starts at the dashboard for the holder of `settings:read`, else at its first screen the caller may use | R-UI-038 (Q-OPS-175) |
+| `/admin/repositories`, `/admin/repositories/new`, `/admin/repositories/new/{format}` | Repositories of every project, each row naming its project; a new repository | R-UI-020, R-UI-021, R-UI-080 |
+| `/admin/repositories/quick-setup` | Quick setup (P1, specified, not built) | R-UI-023 |
 | `/admin/upstream` (`?q=`) | Upstream registries: the well-known repositories of the project `upstream`, switched on and off | R-UI-187 |
 | `/admin/upstream/{key}` | One well-known repository: its state, level, address and account | R-UI-188 |
 | `/admin/users`, `/admin/users/{username}` | Users | R-UI-024 |
 | `/admin/groups`, `/admin/groups/{name}` | Groups | R-UI-025 |
 | `/admin/service-accounts`, `/admin/service-accounts/{name}` (an account of no project) | Service accounts of every project, with a project column | R-UI-026 |
 | `/admin/permissions`, `/admin/permissions/new`, `/admin/permissions/{name}` (a policy of no project) | Permission policies of every project, with a project column | R-UI-027 |
-| `/admin/permissions/explain` (`?principal=&action=&repository=&path=&package=`) | Explainer (P1) | R-UI-028 |
+| `/admin/permissions/explain` (`?principal=&action=&repository=&path=&package=`) | Explainer (P1, specified, not built) | R-UI-028 |
 | `/admin/roles` | System role bindings | R-UI-024 |
 | `/admin/tokens` | Tokens | R-UI-030 |
-| `/admin/ci`, `/admin/ci/{issuer}`, `/admin/ci/{issuer}/mappings/{mapping}`, `/admin/ci/{issuer}/test` | CI identity, claim tester | R-UI-035, R-UI-036 |
+| `/admin/usage`, `/admin/usage/{kind}/{id}` | The usage of the instance and one caller's usage | R-UI-183, R-UI-184 |
+| `/admin/limits`, `/admin/limits/profiles`, `/admin/limits/profiles/new`, `/admin/limits/profiles/{key}`, `/admin/limits/projects`, `/admin/limits/blocks` | Download limits: rules, profiles and a profile's editor, the projects' maxima, blocks | R-UI-177, R-UI-178 |
+| `/admin/ci`, `/admin/ci/new`, `/admin/ci/issuances`, `/admin/ci/{issuer}`, `/admin/ci/{issuer}/mappings/new`, `/admin/ci/{issuer}/mappings/{mapping}`, `/admin/ci/{issuer}/test` | CI identity: issuers, a new issuer, the issuances, an issuer and its mappings, the claim tester (Q-UI-99) | R-UI-035, R-UI-036 |
+| `/admin/bastions` | Bastions: one page with a card per registration ([bastion.md](bastion.md) Q-BAS-95) | [bastion.md](bastion.md) R-BAS-007 |
 | `/admin/audit` | Audit log, with a project column | R-UI-037 |
 | `/admin/advisory-sources` | Advisory sources of the vulnerability data | [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022 |
 | `/admin/endpoints`, `/admin/endpoints/{endpoint}`, `/admin/endpoints/{endpoint}/rules/new`, `/admin/endpoints/{endpoint}/rules/{name}` | Endpoints and exposure rules | [endpoints.md](endpoints.md) R-EP-017 |
-| `/admin/system`, `/admin/system/jobs`, `/admin/system/backups` | System status, jobs, backups | R-UI-038, R-UI-048 |
-| `/admin/settings` (leads to `general`), `/admin/settings/general`, `/admin/settings/auth`, `/admin/settings/sign-in` (P1), `/admin/settings/storage` (P1) | The group Settings: General, Authentication (Q-UI-326); Storage, built first with its section **Download links** (built on 2026-11-23: R-UI-200, Q-UI-950) | R-UI-031 to R-UI-034, R-UI-200 |
+| `/admin/system`, `/admin/system/jobs`, `/admin/system/backups`, `/admin/system/storage` | System status and its tabs: jobs, backups, the object-store connections | R-UI-038, R-UI-048, R-UI-164, R-UI-196 |
+| `/admin/settings` (leads to `general`), `/admin/settings/general`, `/admin/settings/auth`, `/admin/settings/storage` | The group Settings: General, Authentication (Q-UI-326); Storage, built first with its section **Download links** (built on 2026-11-23: R-UI-200, Q-UI-950) | R-UI-031 to R-UI-034, R-UI-200 |
+| `/admin/settings/sign-in` | The group Settings: Sign-in (P1, specified, not built) | R-UI-031 to R-UI-034 |
 | `/admin/settings/malware` | The group Settings: Malware scanning, the switch **Only checked artifacts can be downloaded**, the backlog, the scanners and the signature database ([malware-scanning.md](malware-scanning.md) R-MAL-023) | R-MAL-023 |
+| `/admin/settings/signatures` | The group Settings: Signatures, the trust anchors of the installation and of the projects, the blocked signers and the public Sigstore root ([signatures.md](signatures.md) R-SIG-036) | R-SIG-036 |
 | `/admin/projects` | Every project, to create and edit them | R-UI-041 |
 | `/login` (`?auto_sign_in=false`), `/logged-out` | Sign-in, signed out | R-UI-004 |
-| `/cli-login/{publicId}` | Command-line login approval of `npm login` (P1; R-AUTH-034) | R-UI-004 |
-| `/device` (`?code=`) | Device-code login approval for other command-line tools (P1; R-AUTH-036) | R-UI-004 |
+| `/cli-login/{publicId}` | Command-line login approval of `npm login` (P1, specified, not built; R-AUTH-034) | R-UI-004 |
+| `/device` (`?code=`) | Device-code login approval for other command-line tools (P1, specified, not built; R-AUTH-036) | R-UI-004 |
 | anything else | Not found, with a search field | — |
 
 </details>
 
+- **The table is the router's.** Every route the router opens a page on (a component, a redirect, or a guard that decides where a
+  path leads) is a row, written with `{name}` for the router's `:name` and with the segments its matcher captures; a row that says
+  "not built" names a route the router does not have. The UI's unit test "R-UI-003 every route of the router is a row of the route
+  table, every row a route, and a row that says "not built" no route" ([app.route-table.spec.ts](../../web/src/app/app.route-table.spec.ts))
+  loads every lazy area of the router and reads this table, and fails both ways; a route added to the router adds its row in the same
+  change.
 - Routes with slash-containing parameters (npm scoped names, file paths) use a router `UrlMatcher`
   that captures the remaining segments.
 - A repository is named in a route by the project of the route and its key, and in a query parameter (`?repository=`)

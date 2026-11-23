@@ -1204,6 +1204,7 @@ How the pieces fit:
   [project-screens.spec.ts](../../web/src/app/features/projects/project-screens.spec.ts) (policy editor, service account, the creation form's project, session helpers, messages),
   [app.projects.spec.ts](../../web/src/app/app.projects.spec.ts) (start page, project sidebar, switcher, admin lists),
   [app.recent.spec.ts](../../web/src/app/app.recent.spec.ts) (the side bar's **Recently opened**), [app.routes.spec.ts](../../web/src/app/app.routes.spec.ts) (the route map and the old routes that are gone),
+  [app.route-table.spec.ts](../../web/src/app/app.route-table.spec.ts) (the router's routes against the route table of R-UI-003),
   [breadcrumbs.spec.ts](../../web/src/app/core/breadcrumbs.spec.ts). The browser journey is
   [12-projects.spec.ts](../../web/e2e/tests/12-projects.spec.ts) ([e2e.md](e2e.md#browser-journeys)); the journeys create their data in the project `e2e` that `global-setup.ts` creates
   (`e2eProject`, `repositories()`, `repositoryApi()`, `qualified()` in [support.ts](../../web/e2e/support.ts)); they need the deployed backend and are not run by the component tier.
@@ -1588,7 +1589,10 @@ a holder of `settings:write`.
 6. Mark every text with `i18n`/`$localize`, run `npm run extract-i18n`, add the German `<target>`s to `messages.de.xlf`, extend the glossary.
 7. Write specs next to the code with the requirement ID in the test name, add the route to `SCREENS` in `app.routes.spec.ts` (heading, title and the axe check come with it),
    run `npm run lint` and `npm test`.
-8. If the area changes the route table of R-UI-003, update the spec in the same change.
+8. Every new route is a row of the route table of R-UI-003 in the same change: [app.route-table.spec.ts](../../web/src/app/app.route-table.spec.ts)
+   loads every lazy area of the router, reads the table from `docs/spec/api-and-ui.md` (the builder's `text` loader) and fails for a route
+   without a row, a row that is no route, and a row that says "not built" of a route the router has. A route of a new `UrlMatcher` is
+   written in the test's `MATCHERS` as the table writes the segments it captures.
 
 ## What is not done yet
 
