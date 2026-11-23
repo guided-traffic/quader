@@ -1930,7 +1930,9 @@ Priority: **P1** · Covers: quader-only
 - **The trace of a data key** ([Q-STOR-344](#q-stor-344--every-data-key-handed-out-is-an-audit-event-written-before-it-leaves)):
   `bastion.data_key.handed`, a transactional event (R-OPS-015) written in a transaction of its own before the answer leaves, whatever
   `audit.record_downloads` says: actor the forward's caller (or `anonymous`), `source_ip` the caller's address (bastion.md R-BAS-017),
-  `repository` and `project`, `path`, and in `details` the registration (`bastion`), the replica (`Quader-Bastion-Replica`), `sha256`,
+  the resource the registration (`resource_type` `bastion`, `resource_id` its principal ID, as every event about a registration names it,
+  R-OPS-016; *amended on 2026-11-23 by the build, which named it*), `repository` and `project`, `path`, and in `details` the registration
+  (`bastion`), the replica (`Quader-Bastion-Replica`), `sha256`,
   `connection`, `storageKeyId` (the identifier of the storage key that wrapped the data key) and `linkExpiresAt`; never the key, the wrap or the
   link. It is not journaled. The audit trail therefore lists every data key a Bastion has received, which bounds what a taken-over Bastion
   holds ([security/bastion-handover.md](../security/bastion-handover.md) H-1340). A handover of a plain copy writes none: its trace is
@@ -1955,7 +1957,7 @@ Acceptance criteria:
   address, `endpoint` the forward's, `resource_type` `bastion` and `resource_id` the registration's principal ID (so the audit query's
   resource filter lists every key one Bastion received), `repository`, `project` and `path` the item's; `details` exactly `bastion`,
   `replica` (empty when the forward named none), `sha256`, `connection`, `storageKeyId` and `linkExpiresAt` (RFC 3339, UTC), which its data
-  schema declares as the only members. The resource is the build's addition: the requirement names none.
+  schema declares as the only members. The resource was the build's addition; the requirement above names it since the join with the surface.
 - Unit (`internal/blob`): a store fake that ignores `response-content-disposition` passes the first part of the link check and fails the
   second, so its connection can serve a handover and no link (`TestR_STOR_096_TheLinkCheckHasTwoParts`). Built with the links' package 2,
   which records the two parts and decides `HandoverUsable` with its reasons, and offers the test link for an encrypted connection;

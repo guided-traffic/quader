@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -55,6 +56,8 @@ type sealed struct {
 	item  items.Item
 	// dataKeys are the data keys of the copies on encrypted connections, by connection.
 	dataKeys map[string]blobcrypt.DataKey
+	// sks are the replica's storage keys, which a case can destroy.
+	sks *storageKeys
 }
 
 // newSealed builds the case; storageKeys are the storage keys the replica holds, by connection (a connection missing from it holds
@@ -67,7 +70,8 @@ func newSealed(t *testing.T, encrypted map[string]bool, held map[string]bool) *s
 	d := blob.Digest(sha256.Sum256(s.plain))
 	key := blob.Key("quader", d)
 	stored := mustSealedSize(t, len(s.plain))
-	sks := storageKeys{}
+	sks := &storageKeys{keys: map[string]*blobcrypt.StorageKey{}, destroyed: map[string]string{}}
+	s.sks = sks
 	var copies []blob.Copy
 	for _, id := range []string{"plain", "second"} {
 		if !encrypted[id] {
@@ -82,7 +86,7 @@ func newSealed(t *testing.T, encrypted map[string]bool, held map[string]bool) *s
 			t.Fatal(err)
 		}
 		if held[id] {
-			sks[id] = sk
+			sks.keys[id] = sk
 		}
 		body, rec, dk := sealObject(t, sk, s.plain)
 		if err := r.stores[id].Put(context.Background(), key, bytes.NewReader(body), int64(len(body)), blob.Checksum{}, rec.Metadata()); err != nil {
@@ -162,6 +166,7 @@ type keySource struct {
 	mu    sync.Mutex
 	taken []blobcrypt.DataKey
 	from  []blob.Copy
+	errs  []error
 }
 
 func (k *keySource) CopyDataKey(ctx context.Context, d blob.Digest, size int64, cp blob.Copy) (blobcrypt.DataKey, error) {
@@ -171,6 +176,8 @@ func (k *keySource) CopyDataKey(ctx context.Context, d blob.Digest, size int64, 
 	k.from = append(k.from, cp)
 	if err == nil {
 		k.taken = append(k.taken, dk)
+	} else {
+		k.errs = append(k.errs, err)
 	}
 	return dk, err
 }
@@ -239,27 +246,42 @@ func (n noStatements) InTx(context.Context, func(meta.Tx) error) error {
 	return errors.New("no statements")
 }
 
-// storageKeys are the replica's storage keys by connection: the seam blob.StorageKeys.
-type storageKeys map[string]*blobcrypt.StorageKey
+// storageKeys are the replica's storage keys by connection: the seam blob.StorageKeys. A connection in destroyed answers its key's
+// identifier as the holder answers a destroyed row (blobcrypt.ErrDestroyedKey, R-STOR-101).
+type storageKeys struct {
+	keys      map[string]*blobcrypt.StorageKey
+	destroyed map[string]string // connection -> the identifier of its destroyed storage key
+}
 
-func (s storageKeys) Active(_ context.Context, connection string) (*blobcrypt.StorageKey, error) {
-	if sk := s[connection]; sk != nil {
+func (s *storageKeys) Active(_ context.Context, connection string) (*blobcrypt.StorageKey, error) {
+	if sk := s.keys[connection]; sk != nil {
 		return sk, nil
 	}
 	return nil, errors.New("no storage key")
 }
 
-func (storageKeys) NameKey(string) (blobcrypt.Key, error) {
+func (*storageKeys) NameKey(string) (blobcrypt.Key, error) {
 	return blobcrypt.Key{}, errors.New("no name key")
 }
 
-func (s storageKeys) Lookup(_ context.Context, connection string) blobcrypt.KeyLookup {
+func (s *storageKeys) Lookup(_ context.Context, connection string) blobcrypt.KeyLookup {
 	return func(id string) (*blobcrypt.StorageKey, error) {
-		if sk := s[connection]; sk != nil && sk.ID == id {
+		if s.destroyed[connection] == id {
+			return nil, fmt.Errorf("storage key %s: %w", id, blobcrypt.ErrDestroyedKey)
+		}
+		if sk := s.keys[connection]; sk != nil && sk.ID == id {
 			return sk, nil
 		}
 		return nil, nil
 	}
+}
+
+// destroy makes a connection's storage key one whose row is destroyed: the replica holds it no more, and its identifier answers
+// destroyed_key (the key destruction of R-STOR-097 to R-STOR-101).
+func (s *sealed) destroy(connection string) {
+	sk := s.sks.keys[connection]
+	delete(s.sks.keys, connection)
+	s.sks.destroyed[connection] = sk.ID
 }
 
 // sealObject seals plain under a new data key, wraps it under sk and returns the stored bytes, the record and the data key.
@@ -514,6 +536,24 @@ func TestR_STOR_096_ThePlainCopyFirstAndTheTraceOfAKey(t *testing.T) {
 		ok, abs, _ := s.offer(t)
 		if ok || abs.Handover() != "" || s.declined(t, HandoverDeclinedKey) != 1 || len(s.trail.events) != 0 || s.links.KeysHeld() != 0 {
 			t.Fatalf("handed over %v, declined for key %v", ok, s.declined(t, HandoverDeclinedKey))
+		}
+	})
+	t.Run("R-STOR-095 step 8 R-STOR-101 a destroyed storage key fails CopyDataKey with destroyed_key: the forward streams with the reason key, and nothing is traced", func(t *testing.T) {
+		s := newSealed(t, map[string]bool{"plain": true, "second": true}, map[string]bool{"plain": true, "second": true})
+		s.destroy("plain")
+		ok, abs, served := s.offer(t)
+		if ok || abs.Handover() != "" || len(served) != 0 || s.declined(t, HandoverDeclinedKey) != 1 {
+			t.Fatalf("handed over %v, declined for key %v", ok, s.declined(t, HandoverDeclinedKey))
+		}
+		if len(s.keys.errs) != 1 {
+			t.Fatalf("%d failed openings of a data key, want one", len(s.keys.errs))
+		}
+		if r, _ := blobcrypt.ReasonOf(s.keys.errs[0]); r != blobcrypt.ReasonDestroyedKey {
+			t.Fatalf("CopyDataKey: %v, want destroyed_key", s.keys.errs[0])
+		}
+		if len(s.trail.events) != 0 || s.tx.n != 0 || s.links.KeysHeld() != 0 || s.stores["second"].Count("head") != 0 {
+			t.Fatalf("%d traces, %d transactions, %d keys held; the next copy was asked: the forward must stream, not fall to another key",
+				len(s.trail.events), s.tx.n, s.links.KeysHeld())
 		}
 	})
 	t.Run("R-STOR-095 Q-STOR-471 a credential that expires and a signing error stream without taking a key", func(t *testing.T) {

@@ -131,9 +131,28 @@ func destroyedKeysInPostgreSQL(t *testing.T, p *pgEnv, ring *secrets.KeyRing) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		// The traces of data keys handed to a Bastion as the handover writes them (R-STOR-096, the connection in their details): the
+		// report counts those of its connection, not another's (R-STOR-098's holder "data keys handed to a Bastion").
+		for _, conn := range []string{"gone", "gone", "other"} {
+			handed, _ := json.Marshal(map[string]string{
+				"bastion": "partners", "replica": "bastion-1", "sha256": strings.Repeat("ab", 32), "connection": conn, "storageKeyId": sk,
+				"linkExpiresAt": time.Now().UTC().Format(time.RFC3339),
+			})
+			if err := p.db.InTx(ctx, func(tx meta.Tx) error {
+				return rec.RecordTx(ctx, tx, audit.Event{
+					Type: audit.EventBastionDataKeyHanded, Outcome: audit.Success, Actor: audit.Actor{Kind: "anonymous"},
+					Subject: audit.Subject{Kind: "bastion", Name: "partners"}, Repository: "it/generic", Project: "it", Path: "dist/a.bin", Details: handed,
+				})
+			}); err != nil {
+				t.Fatal(err)
+			}
+		}
 		dry, err := storagekeys.Destroy(ctx, p.db, nil, opts, nil)
 		if err != nil || dry.Confirm != storagekeys.Confirmation(opts.Installation, "gone", ids) {
 			t.Fatalf("dry run: %v %+v", err, dry)
+		}
+		if dry.Remaining.HandedDataKeys != 2 {
+			t.Errorf("the dry run counts %d data keys handed to a Bastion, want the 2 traces of connection gone", dry.Remaining.HandedDataKeys)
 		}
 		o := opts
 		o.Confirm = dry.Confirm

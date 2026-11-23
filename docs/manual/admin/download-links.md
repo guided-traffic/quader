@@ -33,7 +33,7 @@ The section **Download links** shows:
 |---|---|---|
 | **Minimum size in MiB** | `1` | Smaller files are always delivered by Quader. 0 to 1,048,576 |
 | **Link valid for, in seconds** | `60` | How long a link works. 10 to 3,600. A link can be passed on while it is valid; a short life is safer |
-| **Public address of** a connection | the connection's endpoint | The `https` origin your clients reach the object store at, such as `https://objects.example.com`; no path. Left as the endpoint (or emptied), it is not saved and links follow the endpoint. A Bastion's [direct reads](bastion.md#direct-reads-from-the-object-store) use the same address. An encrypted connection has the field too: it serves no client, its address is where a Bastion will read, and for now a Bastion gets its files through the main installation |
+| **Public address of** a connection | the connection's endpoint | The `https` origin your clients reach the object store at, such as `https://objects.example.com`; no path. Left as the endpoint (or emptied), it is not saved and links follow the endpoint. A Bastion's [direct reads](bastion.md#direct-reads-from-the-object-store) use the same address. An encrypted connection has the field too: it serves no client, and its address is where a Bastion with direct reads on reads its files, each with a link and that file's key. Under its field stand that it is encrypted and why a Bastion cannot read it, where one cannot |
 
 **Save changes** sends only what changed. Values outside their ranges and an address that is not an `https` origin are refused at the field before anything is sent; an address under a host name of Quader is refused by the server at the field. A change is recorded as `storage.download_links.changed` in the audit log with the values before and after, and every replica follows within two seconds. Switching off is part of the restore journal, so a restore to an earlier point keeps links off.
 
@@ -44,7 +44,7 @@ The section **Download links** shows:
 - **Speed limits do not slow a link.** A download handed to a link is not slowed by the caller's speed limit; its size is charged to the caller's hourly and daily budgets when the link is issued ([Download limits and usage](download-limits.md)). To bound a caller's volume, use those budgets.
 - **Quader counts at the issue.** The download, its size and the audit event `artifact.downloaded` (with the delivery `link`) are recorded when the link is handed out; Quader does not learn whether the client fetched it.
 - **The object store's own limits apply.** The store's request and bandwidth limits of your provider or account count the clients' fetches as well.
-- **An encrypted connection never serves a link**: Quader decrypts and streams its content.
+- **An encrypted connection never serves a client's link**: Quader decrypts and streams its content to clients. Only a Bastion with [direct reads](bastion.md#direct-reads-from-the-object-store) on gets a link to such a file, with that file's key.
 
 ## Clients behind a proxy or a firewall
 
@@ -63,7 +63,7 @@ Each connection is checked at every start of a replica and when the switch goes 
 
 | Reason | What to do |
 |---|---|
-| The connection is encrypted | Nothing: Quader delivers its content itself |
+| The connection is encrypted | Nothing: Quader delivers its content to clients itself; a Bastion's direct reads are not affected |
 | The address does not use https | Set an `https` public address in **Details** |
 | The address lies under a host of Quader | Choose an address outside Quader's host names |
 | The object store did not answer a test link as expected | The store refused the link, or ignored the content type or the file name it asked for; check the store's signature support and the address, then restart a replica or switch the delivery off and on to check again |

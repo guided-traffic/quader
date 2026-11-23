@@ -3,8 +3,8 @@ import { Page, expect } from '@playwright/test';
 /**
  * The Bastions screen's direct reads from the object store (bastion.md R-BAS-071), answered in the browser: the render profile has no
  * registration and one plain connection, so two registrations with their replicas and tokens, the switch off and on, and connections a
- * Bastion cannot read (a failed link check, an http address, an encrypted one) are answers of the walks. Nothing is saved: the switch
- * is never sent.
+ * Bastion cannot read (a failed link check, an http address, an encrypted one under a host of Quader) beside an encrypted one it reads
+ * with each file's key are answers of the walks. Nothing is saved: the switch is never sent.
  */
 
 type Json = Record<string, unknown>;
@@ -66,7 +66,10 @@ function connection(name: string, endpoint: string, over: Json = {}): Json {
 /** One connection, which a Bastion can read: the card shows the switch and its sentence alone. */
 const readable = [connection('default', 'https://object.storage.eu01.onstackit.cloud', { publicAddress: 'https://objects.example.com' })];
 
-/** A connection a Bastion can read, one whose link check failed, one on an in-cluster http address and an encrypted one. */
+/**
+ * A connection a Bastion can read, one whose link check failed, one on an in-cluster http address, an encrypted one a Bastion reads with
+ * each file's key (no line) and an encrypted one whose address lies under a host of Quader (Q-BAS-300).
+ */
 const blocked = [
   ...readable,
   connection('eu-backup-frankfurt', 'https://s3.backup.eu-central-2.example.net', {
@@ -82,6 +85,13 @@ const blocked = [
     handoverReasons: [{ code: 'not_https', detail: null }],
   }),
   connection('archive', 'https://objects.archive.internal.example.com', { encrypted: true, usable: false, reasons: [{ code: 'encrypted', detail: null }] }),
+  connection('vault-eu-west', 'https://vault.s3.quader.example.com', {
+    encrypted: true,
+    usable: false,
+    reasons: [{ code: 'encrypted', detail: null }, { code: 'quader_host', detail: 'quader.example.com' }],
+    handoverUsable: false,
+    handoverReasons: [{ code: 'quader_host', detail: 'quader.example.com' }],
+  }),
 ];
 
 /** The registrations and the connections' states as the walk wants them, then the page loaded again. */
@@ -103,8 +113,8 @@ async function answer(page: Page, frankfurtOn: boolean, connections: readonly Js
 /**
  * **Admin area › Bastions** (R-BAS-007, R-BAS-071): as the stack answers (no registration); two registrations with their replicas and
  * tokens, `partners` with the direct reads off and `dmz-frankfurt-edge` with them on while every connection can be read (the switch
- * and its sentence alone); the same with three connections a Bastion cannot read, each line with its reason, and the link to the
- * storage settings.
+ * and its sentence alone); the same with three connections a Bastion cannot read, an encrypted one among them, each line with its reason,
+ * and the link to the storage settings, while the encrypted one it reads with each file's key has no line.
  */
 export async function* bastionsHandover(page: Page): AsyncGenerator<string> {
   await expect(page.getByRole('heading', { name: 'Bastions', level: 1 })).toBeVisible();
@@ -126,4 +136,73 @@ export async function* bastionsRead(page: Page): AsyncGenerator<string> {
   yield 'reasons';
   await page.unroute('**/api/v1/bastions');
   await page.unroute('**/api/v1/download-links/settings');
+}
+
+/** The traces of data keys handed to a Bastion (storage.md R-STOR-096) as the main installation writes them, with the files' paths. */
+function handed(id: string, minutesAgo: number, path: string, sha256: string, replica: string): Json {
+  return {
+    id,
+    occurredAt: at(-minutesAgo / 1440),
+    action: 'bastion.data_key.handed',
+    category: 'content',
+    outcome: 'success',
+    actor: { type: 'user', id: '0192f0b1-2c3d-7e4f-8a5b-6c7d8e9f0a11', name: 'priya', tokenId: '0192f0b1-2c3d-7e4f-8a5b-6c7d8e9f0a12', authMethod: 'bearer' },
+    source: { ip: '2001:db8:85a3::8a2e:370:7334', userAgent: 'quader-bastion/0.42.0' },
+    traceId: '4317e1747b20e23b669f9b71ee8b4cc5',
+    replica: 'quader-packages-7f6d9c8b5-x2k4q',
+    endpoint: 'default',
+    resource: { type: 'bastion', id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a40' },
+    repository: 'web-frontend/images',
+    path,
+    reason: null,
+    details: {
+      bastion: 'dmz-frankfurt-edge',
+      replica,
+      sha256,
+      connection: 'archive',
+      storageKeyId: 'sk-archive-2-9b1d77e0',
+      linkExpiresAt: at(-minutesAgo / 1440 + 60 / 86_400),
+    },
+  };
+}
+
+/**
+ * **Admin area › System › Audit log** with the traces of data keys handed to a Bastion (R-STOR-096), answered in the browser: the render
+ * profile has no encrypted connection and no Bastion. The list with two such events beside a switch of the direct reads: the label "Data
+ * key of a file handed to a Bastion" and the file. The opened event is not a state of the walk: at 390 px the page's facts break its time
+ * over two lines, a defect of the audit log at that width that is not this event's (reported with the join of the handover's data keys),
+ * which the walk would put into every run of the job ui-layout; the opened event was looked at by hand.
+ */
+export async function* auditDataKeys(page: Page): AsyncGenerator<string> {
+  const first = handed(
+    '01a2072f-9651-714c-a946-b356166142b7', 2, 'portal/api/_blobs/sha256:8bd5b2fc80a85cae4f043abaf3c194acdd15788099478c26cf1df6ac40e4dfc3',
+    '8bd5b2fc80a85cae4f043abaf3c194acdd15788099478c26cf1df6ac40e4dfc3', 'quader-bastion-dmz-frankfurt-edge-partners-eu1-6f8b9c7d4f-x2k4q',
+  );
+  const items = [
+    first,
+    handed(
+      '01a2072f-9674-73ab-bc4b-abf89fa119e8', 3, 'portal/web/_blobs/sha256:08e0c1f337c4349064ac7608662d853bfdfbc4ae09e5f56efeb51b4ed0c53a93',
+      '08e0c1f337c4349064ac7608662d853bfdfbc4ae09e5f56efeb51b4ed0c53a93', 'quader-bastion-dmz-frankfurt-edge-partners-eu1-6f8b9c7d4f-m8v2j',
+    ),
+    {
+      ...first,
+      id: '01a2072f-960a-77b9-85fb-2c5df71a485e',
+      occurredAt: at(-30 / 1440),
+      action: 'bastion.handover.enabled',
+      category: 'identity',
+      source: { ip: '198.51.100.21', userAgent: 'Mozilla/5.0' },
+      repository: null,
+      path: null,
+      details: {},
+    },
+  ];
+  const isList = (url: URL): boolean => url.pathname.endsWith('/api/v1/audit/events');
+  await page.route(isList, (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items, nextCursor: null }) }),
+  );
+  await page.reload();
+  await page.waitForLoadState('networkidle');
+  await expect(page.getByRole('button', { name: 'Data key of a file handed to a Bastion' }).first()).toBeVisible();
+  yield '';
+  await page.unroute(isList);
 }

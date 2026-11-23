@@ -140,7 +140,7 @@
             </div>
 
             <!-- Every connection's address and test link; an encrypted connection serves no client, its address is for a Bastion's
-                 direct reads (Q-UI-958). -->
+                 direct reads, each file with its key (Q-UI-958, Q-UI-990). -->
             @for (c of connections(); track c.name) {
               <div class="link-address" [attr.data-testid]="'links-address-' + c.name">
                 <div class="field">
@@ -160,8 +160,9 @@
                   />
                   @if (c.encrypted) {
                     <p class="hint" [id]="'links-address-hint-' + c.name" i18n="@@links.address.hint-encrypted">
-                      The address a Bastion reaches the object store at. It must not be an address of Quader. For now a Bastion gets the
-                      files of an encrypted connection through the main installation.
+                      The address a Bastion reaches the object store at. It must not be an address of Quader. No client gets a link to an
+                      encrypted connection; a Bastion whose direct reads from the object store are on reads each file there with a link and
+                      that file's key.
                     </p>
                   } @else {
                     <p class="hint" [id]="'links-address-hint-' + c.name" i18n="@@links.address.hint">

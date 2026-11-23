@@ -34459,15 +34459,6 @@
         <target>ihre Adresse liegt unter <ph id="0" equiv="host" disp="detail"/>, einer Adresse von Quader</target>
       </segment>
     </unit>
-    <unit id="bastion.handover.reason.encrypted">
-      <notes>
-        <note category="location">src/app/features/bastions/bastion-handover.ts:21</note>
-      </notes>
-      <segment>
-        <source>the connection is encrypted</source>
-        <target>die Verbindung ist verschlüsselt</target>
-      </segment>
-    </unit>
     <unit id="bastion.handover.reason.link-check">
       <notes>
         <note category="location">src/app/features/bastions/bastion-handover.ts:23</note>
@@ -34506,11 +34497,11 @@
     </unit>
     <unit id="bastion.handover.note">
       <notes>
-        <note category="location">src/app/features/bastions/bastion-handover.ts:82,85</note>
+        <note category="location">src/app/features/bastions/bastion-handover.ts:85,88</note>
       </notes>
       <segment>
-        <source> Large files go from the object store to this Bastion by a link per file; the main installation decides and counts every download as before. </source>
-        <target> Große Dateien kommen über einen Link pro Datei aus dem Objektspeicher zu dieser Bastion; die Hauptinstallation entscheidet und zählt jeden Download wie bisher. </target>
+        <source> Large files go from the object store to this Bastion by a link per file, and for an encrypted store with that file&apos;s key; the main installation decides and counts every download as before. </source>
+        <target> Große Dateien kommen über einen Link pro Datei aus dem Objektspeicher zu dieser Bastion, bei einem verschlüsselten Speicher mit dem Schlüssel dieser Datei; die Hauptinstallation entscheidet und zählt jeden Download wie bisher. </target>
       </segment>
     </unit>
     <unit id="bastion.handover.settings">
@@ -35400,11 +35391,11 @@
     </unit>
     <unit id="links.address.hint-encrypted">
       <notes>
-        <note category="location">src/app/features/settings/storage-settings.html:163,164</note>
+        <note category="location">src/app/features/settings/storage-settings.html:163,165</note>
       </notes>
       <segment>
-        <source> The address a Bastion reaches the object store at. It must not be an address of Quader. For now a Bastion gets the files of an encrypted connection through the main installation. </source>
-        <target> Die Adresse, unter der eine Bastion den Objektspeicher erreicht. Sie darf keine Adresse von Quader sein. Vorerst erhält eine Bastion die Dateien einer verschlüsselten Verbindung über die Hauptinstallation. </target>
+        <source> The address a Bastion reaches the object store at. It must not be an address of Quader. No client gets a link to an encrypted connection; a Bastion whose direct reads from the object store are on reads each file there with a link and that file&apos;s key. </source>
+        <target> Die Adresse, unter der eine Bastion den Objektspeicher erreicht. Sie darf keine Adresse von Quader sein. Kein Client erhält einen Link auf eine verschlüsselte Verbindung; eine Bastion, deren direkte Lesezugriffe auf den Objektspeicher eingeschaltet sind, liest dort jede Datei mit einem Link und dem Schlüssel dieser Datei. </target>
       </segment>
     </unit>
     <unit id="links.test">
@@ -35511,8 +35502,8 @@
         <note category="location">src/app/features/settings/storage-settings.ts:41</note>
       </notes>
       <segment>
-        <source>The connection <ph id="0" equiv="name" disp="name"/> is encrypted. Quader delivers its content itself.</source>
-        <target>Die Verbindung <ph id="0" equiv="name" disp="name"/> ist verschlüsselt. Quader liefert ihre Inhalte selbst aus.</target>
+        <source>The connection <ph id="0" equiv="name" disp="name"/> is encrypted. Quader delivers its content to clients itself.</source>
+        <target>Die Verbindung <ph id="0" equiv="name" disp="name"/> ist verschlüsselt. Quader liefert ihre Inhalte an Clients selbst aus.</target>
       </segment>
     </unit>
     <unit id="links.reason.not-https">
@@ -35531,6 +35522,15 @@
       <segment>
         <source>The address of <ph id="0" equiv="name" disp="name"/> lies under <ph id="1" equiv="host" disp="detail"/>, an address of Quader. Image clients would send their credentials to it, and the object store refuses such a link.</source>
         <target>Die Adresse von <ph id="0" equiv="name" disp="name"/> liegt unter <ph id="1" equiv="host" disp="detail"/>, einer Adresse von Quader. Image-Clients würden ihre Zugangsdaten mitsenden, und der Objektspeicher lehnt einen solchen Link ab.</target>
+      </segment>
+    </unit>
+    <unit id="links.reason.quader-host-bastion">
+      <notes>
+        <note category="location">src/app/features/settings/storage-settings.ts:59</note>
+      </notes>
+      <segment>
+        <source>The address of <ph id="0" equiv="name" disp="name"/> lies under <ph id="1" equiv="host" disp="detail"/>, an address of Quader. A Bastion refuses a link there.</source>
+        <target>Die Adresse von <ph id="0" equiv="name" disp="name"/> liegt unter <ph id="1" equiv="host" disp="detail"/>, einer Adresse von Quader. Eine Bastion lehnt einen Link dorthin ab.</target>
       </segment>
     </unit>
     <unit id="links.reason.link-check">

@@ -9,7 +9,11 @@ import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError } from '../../shared/paged-resource';
 import { Switch } from '../../shared/ui/switch';
 
-/** Why a Bastion cannot read a connection's files from the object store, as the clause of its line (storage.md R-STOR-096). */
+/**
+ * Why a Bastion cannot read a connection's files from the object store, as the clause of its line (storage.md R-STOR-096): the
+ * reasons of `handoverReasons`, which never name `encrypted`, since an encrypted connection's files are read with each file's key
+ * (R-STOR-095, Q-BAS-300).
+ */
 export function handoverReasonText(reason: DownloadLinkReason): string {
   const detail = reason.detail ?? '';
   switch (reason.code) {
@@ -17,19 +21,15 @@ export function handoverReasonText(reason: DownloadLinkReason): string {
       return $localize`:@@bastion.handover.reason.not-https:its address does not use https`;
     case 'quader_host':
       return $localize`:@@bastion.handover.reason.quader-host:its address lies under ${detail}:host:, an address of Quader`;
-    case 'encrypted':
-      return $localize`:@@bastion.handover.reason.encrypted:the connection is encrypted`;
     default:
       return $localize`:@@bastion.handover.reason.link-check:its object store did not answer a test link as expected (${detail}:detail:)`;
   }
 }
 
-/** One connection whose files a Bastion gets through the main installation, and whether the storage settings can change that. */
+/** One connection whose files a Bastion gets through the main installation, with the reasons of its line. */
 export interface HandoverLine {
   readonly connection: string;
   readonly text: string;
-  /** An address or a link check the administrator can set right in the storage settings; an encrypted connection is not. */
-  readonly fixable: boolean;
 }
 
 function lineOf(name: string, reasons: readonly string[]): string {
@@ -42,19 +42,13 @@ function lineOf(name: string, reasons: readonly string[]): string {
 
 /**
  * The connections whose files a Bastion does not read from the object store, each with its line, in the order of the answer; empty
- * when every connection can serve a handover (Q-BAS-295). An encrypted connection's files are streamed by the main installation until
- * its data keys are handed over (package 4 of docs/developer/bastion-handover.md, Q-BAS-296), whatever its link check says.
+ * when every connection can serve a handover (Q-BAS-295). A plain and an encrypted connection are judged alike, by `handoverUsable`
+ * and `handoverReasons`: an encrypted connection's files are read with each file's key (R-STOR-095, Q-BAS-300).
  */
 export function handoverLines(connections: readonly DownloadLinkConnection[]): HandoverLine[] {
-  const out: HandoverLine[] = [];
-  for (const c of connections) {
-    if (c.encrypted) {
-      out.push({ connection: c.name, text: lineOf(c.name, [handoverReasonText({ code: 'encrypted', detail: null })]), fixable: false });
-    } else if (!c.handoverUsable) {
-      out.push({ connection: c.name, text: lineOf(c.name, c.handoverReasons.map(handoverReasonText)), fixable: true });
-    }
-  }
-  return out;
+  return connections
+    .filter((c) => !c.handoverUsable)
+    .map((c) => ({ connection: c.name, text: lineOf(c.name, c.handoverReasons.map(handoverReasonText)) }));
 }
 
 /**
@@ -64,7 +58,8 @@ export function handoverLines(connections: readonly DownloadLinkConnection[]): H
  * included, stands under the sentence and the switch keeps the state the server has. Who may only read gets the state as a sentence,
  * "**Direct reads from the object store** are on.", as the settings pages give a switch to an auditor (Q-UI-960).
  * While it is on, and only where it helps, a line per connection whose files a Bastion gets through the main installation says why,
- * with one link to the storage settings where an address can change that (Q-BAS-295); `connections` is the answer of
+ * with one link to the storage settings, where its address and test link stand, a plain or an encrypted connection's alike (Q-BAS-295,
+ * Q-BAS-300); `connections` is the answer of
  * `GET /api/v1/download-links/settings`, null where the viewer may not read it, so nothing is shown.
  */
 @Component({
@@ -87,8 +82,8 @@ export function handoverLines(connections: readonly DownloadLinkConnection[]): H
       </p>
     }
     <p class="hint note" [id]="noteId()" i18n="@@bastion.handover.note">
-      Large files go from the object store to this Bastion by a link per file; the main installation decides and counts every download as
-      before.
+      Large files go from the object store to this Bastion by a link per file, and for an encrypted store with that file's key; the main
+      installation decides and counts every download as before.
     </p>
     @if (error(); as e) {
       <quader-error-notice [error]="e" />
@@ -96,19 +91,11 @@ export function handoverLines(connections: readonly DownloadLinkConnection[]): H
     @if (lines().length > 0) {
       <div class="reasons" data-testid="bastion-handover-reasons">
         @for (l of lines(); track l.connection) {
-          <p class="hint reason">
-            @if (l.fixable) {
-              <span class="material-icons inline warn" aria-hidden="true">warning</span>
-            } @else {
-              <span class="material-icons inline" aria-hidden="true">lock</span>
-            }{{ l.text }}
-          </p>
+          <p class="hint reason"><span class="material-icons inline warn" aria-hidden="true">warning</span>{{ l.text }}</p>
         }
-        @if (fixable()) {
-          <p class="hint">
-            <a routerLink="/admin/settings/storage" fragment="details" i18n="@@bastion.handover.settings">Public addresses in the storage settings</a>
-          </p>
-        }
+        <p class="hint">
+          <a routerLink="/admin/settings/storage" fragment="details" i18n="@@bastion.handover.settings">Public addresses in the storage settings</a>
+        </p>
       </div>
     }
   `,
@@ -162,7 +149,6 @@ export class BastionHandover {
     const connections = this.connections();
     return this.on() && connections ? handoverLines(connections) : [];
   });
-  protected readonly fixable = computed(() => this.lines().some((l) => l.fixable));
 
   protected async set(handover: boolean): Promise<void> {
     if (this.busy()) return;

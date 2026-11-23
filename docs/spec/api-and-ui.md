@@ -5007,11 +5007,13 @@ default, the minimum size, the link's life and the public host behind a disclosu
      the field width `name`), "The address your clients reach the object store at. It must not be an address of Quader.", its reasons
      under it, and the button **Test link** under the field
      ([Q-UI-952](#q-ui-952--the-test-is-a-link-the-administrator-opens-from-a-client-of-his-network)); an encrypted connection's field
-     says instead "The address a Bastion reaches the object store at. It must not be an address of Quader. For now a Bastion gets the
-     files of an encrypted connection through the main installation.", and only its sentence of `encrypted` stands under it
+     says instead "The address a Bastion reaches the object store at. It must not be an address of Quader. No client gets a link to an
+     encrypted connection; a Bastion whose direct reads from the object store are on reads each file there with a link and that file's
+     key.", and under it stand its sentence of `encrypted` and the sentence of each of its `handoverReasons`, why a Bastion cannot read it
      ([Q-UI-958](#q-ui-958--an-encrypted-connection-has-its-address-and-its-test-link-for-a-bastion-and-says-what-it-serves-today);
      *changed on 2026-11-23 by package 5 of the handover: before, an encrypted connection had no field and its sentence stood after the
-     fields*). Then **Downloads that can go by link**: "Only downloads whose clients all check the bytes against a
+     fields*; *changed again the same day by package 4, the data keys*,
+     [Q-UI-990](#q-ui-990--with-the-data-keys-handed-an-encrypted-connections-field-says-how-a-bastion-reads-it-and-why-it-cannot)). Then **Downloads that can go by link**: "Only downloads whose clients all check the bytes against a
      digest themselves; every other download is delivered by Quader.", and per route of `routes` the format's display name and the route.
   5. **Save changes**, sending only the changed members as a merge patch with `If-Match`; a field left as the connection's endpoint, or
      emptied, sends `null` where an address is saved and nothing where none is (Q-UI-951); a `412` opens the conflict dialog of R-UI-042.
@@ -5025,10 +5027,11 @@ default, the minimum size, the link's life and the public host behind a disclosu
 
   | Reason | English | German |
   |---|---|---|
-  | `encrypted` | The connection <name> is encrypted. Quader delivers its content itself. | Die Verbindung <name> ist verschlüsselt. Quader liefert ihre Inhalte selbst aus. |
+  | `encrypted` | The connection <name> is encrypted. Quader delivers its content to clients itself. | Die Verbindung <name> ist verschlüsselt. Quader liefert ihre Inhalte an Clients selbst aus. |
   | `not_https` | The address of <name> does not use https. Links need https. | Die Adresse von <name> verwendet kein https. Links brauchen https. |
   | `quader_host` | The address of <name> lies under <host>, an address of Quader. Image clients would send their credentials to it, and the object store refuses such a link. | Die Adresse von <name> liegt unter <host>, einer Adresse von Quader. Image-Clients würden ihre Zugangsdaten mitsenden, und der Objektspeicher lehnt einen solchen Link ab. |
   | `link_check_failed` | The object store of <name> did not answer a test link as expected: <detail>. Quader delivers its content itself. | Der Objektspeicher von <name> hat einen Testlink nicht wie erwartet beantwortet: <detail>. Quader liefert seine Inhalte selbst aus. |
+  | `quader_host` among an encrypted connection's `handoverReasons` (Q-UI-990) | The address of <name> lies under <host>, an address of Quader. A Bastion refuses a link there. | Die Adresse von <name> liegt unter <host>, einer Adresse von Quader. Eine Bastion lehnt einen Link dorthin ab. |
 
 - **The test link.** **Test link** sends the connection and the address as typed (`POST /api/v1/download-links/test`, R-STOR-074), or the
   endpoint where the field is empty, and shows under the button: the link **Open test link** (a new tab), the command in an address field
@@ -5064,7 +5067,7 @@ default, the minimum size, the link's life and the public host behind a disclosu
   | A link can be passed on while it is valid. | Solange ein Link gültig ist, kann er weitergegeben werden. |
   | Public address of <connection> | Öffentliche Adresse von <connection> |
   | The address your clients reach the object store at. It must not be an address of Quader. | Die Adresse, unter der Ihre Clients den Objektspeicher erreichen. Sie darf keine Adresse von Quader sein. |
-  | The address a Bastion reaches the object store at. It must not be an address of Quader. For now a Bastion gets the files of an encrypted connection through the main installation. | Die Adresse, unter der eine Bastion den Objektspeicher erreicht. Sie darf keine Adresse von Quader sein. Vorerst erhält eine Bastion die Dateien einer verschlüsselten Verbindung über die Hauptinstallation. |
+  | The address a Bastion reaches the object store at. It must not be an address of Quader. No client gets a link to an encrypted connection; a Bastion whose direct reads from the object store are on reads each file there with a link and that file's key. | Die Adresse, unter der eine Bastion den Objektspeicher erreicht. Sie darf keine Adresse von Quader sein. Kein Client erhält einen Link auf eine verschlüsselte Verbindung; eine Bastion, deren direkte Lesezugriffe auf den Objektspeicher eingeschaltet sind, liest dort jede Datei mit einem Link und dem Schlüssel dieser Datei. |
   | Test link | Link testen |
   | Open test link | Testlink öffnen |
   | Valid for 60 seconds. When your network reaches the object store, the file quader-link-test.txt reads 'Quader download link test: this link works.' Run the command on a machine of your clients or of a Bastion's network to test that network. | 60 Sekunden gültig. Erreicht Ihr Netz den Objektspeicher, steht in der Datei quader-link-test.txt „Quader download link test: this link works.“. Führen Sie den Befehl auf einem Rechner Ihrer Clients oder im Netz einer Bastion aus, um dieses Netz zu prüfen. |
@@ -21394,6 +21397,8 @@ which it never serves, so they are not shown under its field; an address a save 
 package 4 lands, the field's last sentence ("For now a Bastion gets the files of an encrypted connection through the main installation.")
 goes. **Applied in the spec:** R-UI-200 (changed); code: `connections` and `fieldReasons` of
 [storage-settings.ts](../../web/src/app/features/settings/storage-settings.ts), [storage-settings.html](../../web/src/app/features/settings/storage-settings.html).
+*Amended on 2026-11-23 by [Q-UI-990](#q-ui-990--with-the-data-keys-handed-an-encrypted-connections-field-says-how-a-bastion-reads-it-and-why-it-cannot)*,
+when package 4 landed: the field says how a Bastion reads such a connection, and why a Bastion cannot stands under it.
 
 ### Q-UI-959 · A Bastion card's tables keep one form at the wide and the middle width; what most rows share stands under the row's name
 
@@ -21439,6 +21444,30 @@ table's cell under its column **State** (the upstream registries, the trust anch
 
 **Choice:** (a). **Applied in the spec:** [bastion.md](bastion.md) R-BAS-071 (as built); the style guide's switch
 ([ui-style-guide.md](../developer/ui-style-guide.md#forms)); code: [bastion-handover.ts](../../web/src/app/features/bastions/bastion-handover.ts).
+
+### Q-UI-990 · With the data keys handed, an encrypted connection's field says how a Bastion reads it and why it cannot
+
+Status: **Decided by the builder** in the join of the handover's data keys (package 4 of
+[developer/bastion-handover.md](../developer/bastion-handover.md)) with its surface (package 5) — selected from the options below; the owner
+sees it when it is built. It amends [Q-UI-958](#q-ui-958--an-encrypted-connection-has-its-address-and-its-test-link-for-a-bastion-and-says-what-it-serves-today),
+whose field said that "for now" a Bastion gets such files through the main installation and showed only the sentence `encrypted` under it.
+
+Context: since package 4 a Bastion whose direct reads are on reads a file of an encrypted connection from the object store with a link and
+that file's key ([storage.md](storage.md) R-STOR-095), where no plain copy can serve. No client ever gets a link to an encrypted connection
+(R-STOR-088), so the reasons of its clients' links (`reasons`, a store that ignores an override among them) still say nothing about it;
+why a Bastion cannot read it is its `handoverReasons` (R-STOR-096: the address, the first part of the link check), as for a plain
+connection on the Bastions screen ([bastion.md](bastion.md) Q-BAS-300).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The field says that no client gets a link to it and that a Bastion with direct reads reads each file there with a link and that file's key; under it the sentence `encrypted`, now "… Quader delivers its content to clients itself.", and the sentence of each of its `handoverReasons`, an address under a host of Quader in words of a Bastion ("A Bastion refuses a link there.") (chosen) | What stays true beside what is new | The Bastions screen's link leads to the field that says why its line stands; nothing tells an administrator that the files of a usable encrypted connection still pass the main installation | One sentence more to translate |
+| (b) Only the field's last sentence goes, as Q-UI-958 said | The smallest change | | An encrypted connection a Bastion cannot read shows no reason where the card sends the administrator |
+| (c) Its clients' `reasons` as a plain connection's | One rule | | A store that ignores an override would stand under a connection whose Bastion reads it, and `quader_host` would speak of image clients, which never get its link |
+
+**Choice:** (a). The test link's sentence of an encrypted connection ("… on a machine of a Bastion's network …") stays as it is: it was
+true before and is now. **Applied in the spec:** R-UI-200 (its texts); code: `fieldReasons`, `reasonText` and `bastionReasonText` of
+[storage-settings.ts](../../web/src/app/features/settings/storage-settings.ts), `@@links.address.hint-encrypted` in
+[storage-settings.html](../../web/src/app/features/settings/storage-settings.html).
 
 ### Q-UI-871 · The security dashboard has two views, Vulnerabilities and Malware
 

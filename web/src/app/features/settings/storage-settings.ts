@@ -38,7 +38,7 @@ export function linkReasonText(name: string, reason: DownloadLinkReason): string
   const detail = reason.detail ?? '';
   switch (reason.code) {
     case 'encrypted':
-      return $localize`:@@links.reason.encrypted:The connection ${name}:name: is encrypted. Quader delivers its content itself.`;
+      return $localize`:@@links.reason.encrypted:The connection ${name}:name: is encrypted. Quader delivers its content to clients itself.`;
     case 'not_https':
       return $localize`:@@links.reason.not-https:The address of ${name}:name: does not use https. Links need https.`;
     case 'quader_host':
@@ -46,6 +46,19 @@ export function linkReasonText(name: string, reason: DownloadLinkReason): string
     default:
       return $localize`:@@links.reason.link-check:The object store of ${name}:name: did not answer a test link as expected: ${detail}:detail:. Quader delivers its content itself.`;
   }
+}
+
+/**
+ * The sentence of a reason a Bastion cannot read an encrypted connection's files from the object store (its `handoverReasons`,
+ * storage.md R-STOR-096), under that connection's field (Q-UI-990). An address under a host of Quader is refused by the Bastion; image
+ * clients never get a link to an encrypted connection.
+ */
+export function bastionReasonText(name: string, reason: DownloadLinkReason): string {
+  if (reason.code === 'quader_host') {
+    const detail = reason.detail ?? '';
+    return $localize`:@@links.reason.quader-host-bastion:The address of ${name}:name: lies under ${detail}:host:, an address of Quader. A Bastion refuses a link there.`;
+  }
+  return linkReasonText(name, reason);
 }
 
 /** Whether a typed address is an https origin without a path, a query or user information (R-STOR-074), as a save checks it. */
@@ -88,7 +101,8 @@ interface TestOutcome {
  * **Admin area › Settings › Storage** (R-UI-200, Q-UI-950): the section **Download links**, the installation's switch of the delivery
  * by signed links of the object store (storage.md R-STOR-014). The plain path is the status, which connections serve links, and the
  * switch with what it means; the minimum size, the link's life, each connection's public address with its test link and reason (an
- * encrypted connection's too, for a Bastion's direct reads, Q-UI-958), and the downloads the switch reaches are details on demand
+ * encrypted connection's too: no client gets a link to it, a Bastion's direct reads read its files with each file's key, Q-UI-958,
+ * Q-UI-990), and the downloads the switch reaches are details on demand
  * behind **Details**, which the fragment `details` opens. The formats the status names are the settings'
  * `routes`, so a format that declares later appears without a change of this page. A holder of `settings:read` without
  * `settings:write` (the auditor) reads the state as text and is offered no action.
@@ -168,7 +182,8 @@ export class StorageSettingsPage {
   protected readonly canWrite = computed(() => this.session.has('settings:write'));
   /**
    * Every connection has its public address and its test link (R-UI-200, Q-UI-958): a plain one's is where clients' links and a
-   * Bastion's direct reads go, an encrypted one's serves no client and is where a Bastion's direct reads will go (R-STOR-096).
+   * Bastion's direct reads go, an encrypted one's serves no client and is where a Bastion's direct reads go, each file with its key
+   * (R-STOR-095, R-STOR-096).
    */
   protected readonly connections = computed(() => this.settings()?.connections ?? []);
   protected readonly usable = computed(() => (this.settings()?.connections ?? []).filter((c) => c.usable));
@@ -299,15 +314,15 @@ export class StorageSettingsPage {
   }
 
   /**
-   * The reasons under a connection's field: all of a plain one's; of an encrypted one only that it is encrypted, since its other
-   * reasons are about clients' links, which it never serves (Q-UI-958).
+   * The reasons under a connection's field: all of a plain one's; of an encrypted one that it is encrypted and why a Bastion cannot
+   * read its files (`handoverReasons`), since its other reasons are about clients' links, which it never serves (Q-UI-958, Q-UI-990).
    */
   protected fieldReasons(c: DownloadLinkConnection): readonly DownloadLinkReason[] {
-    return c.encrypted ? c.reasons.filter((r) => r.code === 'encrypted') : c.reasons;
+    return c.encrypted ? [...c.reasons.filter((r) => r.code === 'encrypted'), ...c.handoverReasons] : c.reasons;
   }
 
   protected reasonText(c: DownloadLinkConnection, r: DownloadLinkReason): string {
-    return linkReasonText(c.name, r);
+    return c.encrypted ? bastionReasonText(c.name, r) : linkReasonText(c.name, r);
   }
 
   /** A failed save whose problems all stand at their fields shows no notice besides them. */

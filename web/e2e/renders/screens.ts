@@ -36,7 +36,7 @@ import { withVerify } from './verify';
 import { routeTooMany } from './suggestions';
 import { clamavDatabases, clamavRegistry, clamavRow, definitionsExpected, definitionsWith, switchState } from './clamav';
 import { damagedBlobs, noDamagedBlob, oneConnection, secondUnreachable, severalConnections, twoConnectionFacts } from './storage';
-import { bastionsHandover, bastionsRead } from './bastions';
+import { auditDataKeys, bastionsHandover, bastionsRead } from './bastions';
 
 /**
  * Every screen of the app (web/src/app/app.routes.ts and the route files of the feature areas), with the parameters of the
@@ -946,8 +946,9 @@ async function openHeaded(page: Page, heading: string): Promise<void> {
 
 /**
  * **Settings › Storage** (R-UI-200): as the stack answers (the switch off, the profile's one connection); Details open; a test link of
- * the connection's endpoint from the server; the switch on with that connection; three connections of which one is encrypted and one
- * failed its link check, Details open; the encrypted one's test link (Q-UI-958); no connection that can serve a link (an address under
+ * the connection's endpoint from the server; the switch on with that connection; four connections of which one failed its link check and
+ * two are encrypted, one a Bastion reads and one under a host of Quader it cannot (Q-UI-990), Details open; the encrypted one's test link
+ * (Q-UI-958); no connection that can serve a link (an address under
  * a host of Quader and an encrypted one);
  * a link life and an address the page refuses at their fields before it sends. Nothing is saved.
  */
@@ -979,6 +980,12 @@ async function* storageSettings(page: Page): AsyncGenerator<string> {
         usable: false, handoverUsable: false,
         reasons: [{ code: 'link_check_failed', detail: "the link answered 403 with 0 bytes, want 200 with the probe's 2048" }],
         handoverReasons: [{ code: 'link_check_failed', detail: "the link answered 403 with 0 bytes, want 200 with the probe's 2048" }],
+      }),
+      // An encrypted connection a Bastion cannot read: its sentence and why a Bastion cannot stand under its field (Q-UI-990).
+      plain('vault-eu-west', 'https://vault.s3.quader.example.com', {
+        encrypted: true, usable: false, handoverUsable: false,
+        reasons: [{ code: 'encrypted', detail: null }, { code: 'quader_host', detail: 'quader.example.com' }],
+        handoverReasons: [{ code: 'quader_host', detail: 'quader.example.com' }],
       }),
     ],
   }));
@@ -2459,6 +2466,8 @@ export const screens: readonly Screen[] = [
   // The upstream of a remote where it is entered: the presets, the credentials, Test connection, the details (R-UI-082).
   ...upstreams,
   { id: 'admin-audit', path: '/ui/admin/audit', kinds: admins, walk: filtersOpen() },
+  // The traces of data keys handed to a Bastion (storage.md R-STOR-096), answered in the browser: the list and one opened.
+  { id: 'admin-audit-data-keys', path: '/ui/admin/audit', kinds: admins, walk: auditDataKeys },
   { id: 'admin-advisory-sources', path: '/ui/admin/advisory-sources', kinds: admins, walk: databaseCommandsOpen },
   // The auditor reads the sources and the image scanners (settings:read, R-OPS-048).
   { id: 'admin-advisory-sources-read', path: '/ui/admin/advisory-sources', kinds: ['auditor'] },

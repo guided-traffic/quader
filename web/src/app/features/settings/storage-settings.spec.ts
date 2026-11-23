@@ -104,7 +104,7 @@ describe('Admin area › Settings › Storage: Download links (R-UI-200)', () =>
       'archive and eu-backup (Details says why)',
     ]);
     expect(root.querySelector('[data-testid="links-none"]')).toBeNull();
-    expect(words(root.querySelector('[data-testid="links-reason-archive"]')!)).toBe('The connection archive is encrypted. Quader delivers its content itself.');
+    expect(words(root.querySelector('[data-testid="links-reason-archive"]')!)).toBe('The connection archive is encrypted. Quader delivers its content to clients itself.');
     expect(words(root.querySelector('[data-testid="links-reason-eu-backup"]')!)).toBe(
       "The object store of eu-backup did not answer a test link as expected: the link answered 403 with 0 bytes, want 200 with the probe's 2048. Quader delivers its content itself.",
     );
@@ -123,7 +123,7 @@ describe('Admin area › Settings › Storage: Download links (R-UI-200)', () =>
     expect(status(root)).toBe('On, but no link is issued No connection can serve a link; the reasons are below.');
     expect([...root.querySelectorAll('[data-testid="links-none"] p')].map(text)).toEqual([
       'The address of default lies under quader.example.com, an address of Quader. Image clients would send their credentials to it, and the object store refuses such a link.',
-      'The connection archive is encrypted. Quader delivers its content itself.',
+      'The connection archive is encrypted. Quader delivers its content to clients itself.',
     ]);
     expect(box(root)?.disabled).toBe(false);
   });
@@ -199,25 +199,34 @@ describe('Admin area › Settings › Storage: Download links (R-UI-200)', () =>
     expect(text(result)).toContain('Valid for 60 seconds.');
   });
 
-  it('R-STOR-096 Q-UI-958 an encrypted connection has its address and its test link for a Bastion, says it serves no client, and saves its address', async () => {
+  it('R-STOR-096 Q-UI-958 Q-UI-990 an encrypted connection has its address and its test link for a Bastion, says no client gets a link and a Bastion reads with each file\'s key, and saves its address', async () => {
     const { fixture, root, api } = await render(ADMIN, (fake) => {
       mixed(fake);
-      // An encrypted connection whose address is also no https origin: only that it is encrypted stands under its field.
+      // A store that ignores the overrides fails a client's link, which an encrypted connection never serves: that reason does not stand
+      // under its field; why a Bastion cannot read it does (its handoverReasons).
       fake.current = {
         ...fake.current,
         connections: fake.current.connections.map((c) =>
-          c.name === 'archive' ? { ...c, reasons: [{ code: 'encrypted', detail: null }, { code: 'link_check_failed', detail: 'the store ignored the overrides' }] } : c,
+          c.name === 'archive'
+            ? {
+                ...c,
+                reasons: [{ code: 'encrypted', detail: null }, { code: 'link_check_failed', detail: 'the store ignored the overrides' }],
+                handoverUsable: false,
+                handoverReasons: [{ code: 'quader_host', detail: 'quader.example.com' }],
+              }
+            : c,
         ),
       };
     });
     const archive = root.querySelector('[data-testid="links-address-archive"]')!;
     expect(field(root, 'links-address-archive').value).toBe('https://s3.eu-central-1.example.com');
     expect(text(archive)).toContain(
-      'The address a Bastion reaches the object store at. It must not be an address of Quader. For now a Bastion gets the files of an encrypted connection through the main installation.',
+      "The address a Bastion reaches the object store at. It must not be an address of Quader. No client gets a link to an encrypted connection; a Bastion whose direct reads from the object store are on reads each file there with a link and that file's key.",
     );
     expect(text(archive)).not.toContain('your clients');
     expect([...archive.querySelectorAll('[data-testid="links-reason-archive"]')].map(words)).toEqual([
-      'The connection archive is encrypted. Quader delivers its content itself.',
+      'The connection archive is encrypted. Quader delivers its content to clients itself.',
+      'The address of archive lies under quader.example.com, an address of Quader. A Bastion refuses a link there.',
     ]);
     type(field(root, 'links-address-archive'), 'https://archive.objects.example.com');
     await settle(fixture);

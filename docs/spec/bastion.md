@@ -3382,6 +3382,10 @@ Priority: **P1** · Covers: quader-only
   ([Q-BAS-295](#q-bas-295--the-card-names-the-connections-a-bastion-cannot-read-and-only-those)). Until the data keys are handed
   (package 4) the sentence names no key, and an encrypted connection has its line
   ([Q-BAS-296](#q-bas-296--until-the-data-keys-are-handed-the-cards-sentence-names-no-key-and-an-encrypted-connection-has-its-line)).
+  *Amended again on 2026-11-23, when package 4 landed
+  ([Q-BAS-300](#q-bas-300--with-the-data-keys-handed-the-cards-sentence-names-the-key-and-an-encrypted-connection-is-judged-as-a-plain-one)):*
+  the sentence is the one above, with the key, and an encrypted connection is judged by its `handoverUsable` and `handoverReasons` like a
+  plain one.
 
 Acceptance criteria:
 
@@ -3432,6 +3436,17 @@ cannot show, whether a Bastion's network reaches the store, is
 criterion is `bastions.spec.ts`, "Direct reads from the object store on a Bastion card (R-BAS-071)": the switch off for a new
 registration, on with a connection's `not_https` and an encrypted connection's line and the link, every clause, the `412` and a refusal,
 the reader's sentence, no read without `settings:read`, and a read that fails.
+
+*As built on 2026-11-23, the join of the data keys (package 4) with the screen (Q-BAS-300):* the sentence is "Large files go from the
+object store to this Bastion by a link per file, and for an encrypted store with that file's key; the main installation decides and counts
+every download as before." (German: "Große Dateien kommen über einen Link pro Datei aus dem Objektspeicher zu dieser Bastion, bei
+einem verschlüsselten Speicher mit dem Schlüssel dieser Datei; die Hauptinstallation entscheidet und zählt jeden Download wie bisher."); a line
+stands for every connection whose `handoverUsable` is false, plain or encrypted, with the clauses of its `handoverReasons`, and the link
+**Public addresses in the storage settings** stands with every line, since an encrypted connection's address and test link are on that
+page too ([api-and-ui.md](api-and-ui.md) Q-UI-958). The clause "the connection is encrypted" is gone: the settings' answer never names
+`encrypted` among `handoverReasons` (R-STOR-096; `decide` in [links.go](../../internal/downloadlinks/links.go), checked on the joined tree).
+The Vitest cases: an encrypted connection a Bastion can read has no line, one it cannot names its reason with the link
+(`bastions.spec.ts`, "Q-BAS-300 an encrypted connection is judged by its handover reasons like a plain one").
 
 ### R-BAS-072 · The Bastion offers to take a handover on a miss
 Priority: **P1** · Covers: quader-only
@@ -9084,6 +9099,34 @@ connection's line is its `handoverReasons` like a plain connection's (the branch
 **Applied in the spec:** R-BAS-071 (amended, as built); code: `handoverLines` in
 [bastion-handover.ts](../../web/src/app/features/bastions/bastion-handover.ts); the build plan's
 [What package 5 left](../developer/bastion-handover.md#what-package-5-left).
+*Ended on 2026-11-23 by
+[Q-BAS-300](#q-bas-300--with-the-data-keys-handed-the-cards-sentence-names-the-key-and-an-encrypted-connection-is-judged-as-a-plain-one),
+when package 4 landed.*
+
+### Q-BAS-300 · With the data keys handed, the card's sentence names the key and an encrypted connection is judged as a plain one
+
+Status: **Decided by the builder** in the join of the handover's data keys (package 4 of
+[developer/bastion-handover.md](../developer/bastion-handover.md)) with its surface (package 5) — selected from the options below; the owner
+sees it when it is built. It ends
+[Q-BAS-296](#q-bas-296--until-the-data-keys-are-handed-the-cards-sentence-names-no-key-and-an-encrypted-connection-has-its-line).
+
+Context: since package 4 the main installation hands a Bastion a copy on an encrypted connection with that copy's data key, where no plain
+copy can serve and the connection can serve a handover ([storage.md](storage.md) R-STOR-095, R-STOR-096). The settings' answer decides
+`handoverUsable` of an encrypted connection by its address and the first part of its link check, as for a plain one, and never names
+`encrypted` among its `handoverReasons` (verified on the joined tree: `decide` in [links.go](../../internal/downloadlinks/links.go) puts
+`encrypted` into the clients' `reasons` alone, and `TestR_STOR_074_WhichConnectionsCanServeLinks` holds it). Q-BAS-296 said what changes
+then; one more thing follows: the link to the storage settings, which Q-BAS-295 offered only for a plain connection's line, helps an
+encrypted one's as well, since its address and test link are on that page (api-and-ui.md Q-UI-958).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) R-BAS-071's sentence with the key; a line for every connection whose `handoverUsable` is false, its clauses from `handoverReasons`, and the link with every line; the clause "the connection is encrypted" goes (chosen) | What Q-BAS-296 named, and the link where it now helps | The card says what the main installation does; an encrypted connection a Bastion cannot read is named with its cause and the page where it is fixed | — |
+| (b) As (a), the link still only for a plain connection's line | Q-BAS-296's words alone | | The line of an encrypted connection with a wrong address names the cause and not where to fix it |
+| (c) Keep a line "the connection is encrypted" for an encrypted connection a Bastion can read, as information | | An administrator sees which files carry a key | A line on every card that is on, of a fact nobody acts on, against Q-BAS-295; the manual says what a key costs |
+
+**Choice:** (a). **Applied in the spec:** R-BAS-071 (amended, as built); code: `handoverLines` and the template of
+[bastion-handover.ts](../../web/src/app/features/bastions/bastion-handover.ts); the manual's
+[Direct reads from the object store](../manual/admin/bastion.md#direct-reads-from-the-object-store) says what a key per file costs.
 
 ## What this does not cover
 

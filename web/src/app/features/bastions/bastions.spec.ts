@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { BastionsApi } from '../../api/bastions-api';
-import { DownloadLinksApi } from '../../api/download-links-api';
+import { DownloadLinkConnection, DownloadLinksApi } from '../../api/download-links-api';
 import { ApiError } from '../../api/problem';
 import { FakeDownloadLinksApi, downloadLinkSettings, linkConnection } from '../../api/testing/fakes-download-links';
 import {
@@ -418,7 +418,7 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
     expect(sw.getAttribute('aria-checked')).toBe('false');
     expect(sw.getAttribute('aria-label')).toBe('Direct reads from the object store for partners');
     expect(text(card(root, 'partners'))).toContain(
-      'Large files go from the object store to this Bastion by a link per file; the main installation decides and counts every download as before.',
+      "Large files go from the object store to this Bastion by a link per file, and for an encrypted store with that file's key; the main installation decides and counts every download as before.",
     );
     expect(reasons(root, 'partners')).toBeNull();
     // Nothing is on, so the connections' states are not read.
@@ -436,10 +436,8 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
     expect(api.ifMatch).toEqual(['"1"']);
     expect(toggle(root, 'partners')!.getAttribute('aria-checked')).toBe('true');
     const why = reasons(root, 'partners')!;
-    expect(lines(why)).toEqual([
-      'A Bastion gets the files of eu-backup through the main installation: its address does not use https.',
-      'A Bastion gets the files of archive through the main installation: the connection is encrypted.',
-    ]);
+    // archive is encrypted and its address and link check let a Bastion read it with each file's key: no line (Q-BAS-300).
+    expect(lines(why)).toEqual(['A Bastion gets the files of eu-backup through the main installation: its address does not use https.']);
     const link = why.querySelector<HTMLAnchorElement>('a')!;
     expect(text(link)).toBe('Public addresses in the storage settings');
     expect(link.getAttribute('href')).toBe('/admin/settings/storage#details');
@@ -463,18 +461,29 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
     expect(reasons(root, 'partners')).toBeNull();
   });
 
-  it('R-BAS-071 an encrypted connection alone names that a Bastion gets its files through the main installation, with no link', async () => {
+  it('R-BAS-071 Q-BAS-300 an encrypted connection is judged by its handover reasons like a plain one: one a Bastion can read shows nothing, one it cannot names its reason and the link', async () => {
+    const encrypted = (name: string, over: Partial<DownloadLinkConnection> = {}): DownloadLinkConnection =>
+      linkConnection({ name, encrypted: true, usable: false, reasons: [{ code: 'encrypted', detail: null }], ...over });
     const { root } = await renderScreen(BastionList, {
       setup: (g) => {
         (g(BastionsApi) as FakeBastionsApi).bastions = [sampleBastion({ handover: true })];
         (g(DownloadLinksApi) as FakeDownloadLinksApi).current = downloadLinkSettings({
-          connections: [linkConnection(), linkConnection({ name: 'archive', encrypted: true, usable: false, reasons: [{ code: 'encrypted', detail: null }] })],
+          connections: [
+            linkConnection(),
+            encrypted('archive'),
+            encrypted('vault', {
+              handoverUsable: false,
+              handoverReasons: [{ code: 'link_check_failed', detail: 'the link answered 403 with 0 bytes' }],
+            }),
+          ],
         });
       },
     });
     const why = reasons(root, 'partners')!;
-    expect(lines(why)).toEqual(['A Bastion gets the files of archive through the main installation: the connection is encrypted.']);
-    expect(why.querySelector('a')).toBeNull();
+    expect(lines(why)).toEqual([
+      'A Bastion gets the files of vault through the main installation: its object store did not answer a test link as expected (the link answered 403 with 0 bytes).',
+    ]);
+    expect(why.querySelector<HTMLAnchorElement>('a')!.getAttribute('href')).toBe('/admin/settings/storage#details');
   });
 
   it('R-BAS-071 each reason of R-STOR-096 has its clause, and the reasons of one connection share its line', () => {
@@ -534,7 +543,8 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
     expect(text(card(root, 'partners').querySelector('[data-testid="bastion-handover-state"]')!)).toBe('Direct reads from the object store are on.');
     expect(card(root, 'partners').querySelector('[data-testid="bastion-handover-state"] strong')).toBeTruthy();
     expect(text(card(root, 'standby').querySelector('[data-testid="bastion-handover-state"]')!)).toBe('Direct reads from the object store are off.');
-    expect(lines(reasons(root, 'partners')!)).toHaveLength(2);
+    // eu-backup's address; the encrypted archive can be read with each file's key and has no line (Q-BAS-300).
+    expect(lines(reasons(root, 'partners')!)).toHaveLength(1);
     expect(await seriousViolations(root)).toEqual([]);
   });
 
