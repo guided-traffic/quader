@@ -431,11 +431,11 @@ order is what a user or an operator meets first. The state is kept here.
 | Signatures with the real clients | the check of the repairs of 2026-11-21 with the real clients, and what it finds | landed at 09:39 |
 | Screens, first round | fourteen findings of screens (the entries of repository, version, vulnerability and audit pages, the npm form, the malware settings, the signatures' lists) | built and reworked (twenty-two commits, the storage walk's race among them); looked at twice; at the landing's gates since 11:33 |
 | W1 · Authorization answers the same in every format | the administrator flag shown to `tokens:read` alone (H-836); the global read policy and the default-scope token; the refusals that end a virtual read | landed at 10:49 |
-| W3 · The download limits count what they promise | refused requests that still count (the upstream budget, an endpoint's rate class); seven paths without a test; three statements; the help text of waiting downloads | landed at 11:35 |
+| W3 · The download limits count what they promise | refused requests that still count (the upstream budget, an endpoint's rate class); seven paths without a test; three statements; the help text of waiting downloads | landed at 11:37 |
 | W2 · Scanning keeps its promises to an operator | a scan attempt lost when a repository is enabled again; the scanner's spool that `QuaderSpoolNearlyFull` does not see; layer writes without a flush; a removed scanner pod shown ready; two measurements | in work since 10:51 |
-| W6 · The pipeline loses nothing and scans every image it runs | a push that cancels the run before it; the analyser's and ClamAV's images never scanned; the evidence record and the badge that stand still; a `unit` target with the emptied AWS environment; the lint's limit and serial runs; fuzz names; the pins of the e2e legs; a partial dispatch; the disk watcher; the key of the clients' image cache, which changes with every commit, so a push never hits it | built (fourteen commits; the disk watcher and the evidence record not built, each for a reason); at the landing's gates since 11:19; the evidence record with the release follows as a step of its own when the first run has shown the rest |
+| W6 · The pipeline loses nothing and scans every image it runs | a push that cancels the run before it; the analyser's and ClamAV's images never scanned; the evidence record and the badge that stand still; a `unit` target with the emptied AWS environment; the lint's limit and serial runs; fuzz names; the pins of the e2e legs; a partial dispatch; the disk watcher; the key of the clients' image cache, which changes with every commit, so a push never hits it | landed at 11:50 (fourteen commits; the disk watcher not built, see With the owner); its first runs are read against what each item must show; the evidence record with the release follows as a step of its own |
 | W5a · NuGet and OCI | NuGet's README route that answers 501; the challenge of an upstream token; what the two formats' pages count and the code does not; the tag listing's measurement with 100,000 tags | in work since 11:21 |
-| W5b · Debian and Ansible Galaxy | `member_expired` and a member's recorded `Date` without an integration case; the wiki's cases; the requirements no test names; the check against the public Galaxy; first the Debian test that made `main` red for the third time | the Debian remote's repair landed at 11:35; the rest in work |
+| W5b · Debian and Ansible Galaxy | `member_expired` and a member's recorded `Date` without an integration case; the wiki's cases; the requirements no test names; the check against the public Galaxy; first the Debian test that made `main` red for the third time | the Debian remote's repair landed at 11:37; the rest in work |
 | W4 · Go tests wait for what they stand for | fixed sleeps and paced setups in integration and unit tests; four convention checks that sit in a format's area; tests that depend on the machine; the harness's policy helper that writes an empty policy without a word | waits for a place |
 | W8 · Web and end-to-end tests wait for what they stand for | the fixed 320 ms of choosing a person; paced setups of the e2e environments; the fixed waits of three seconds in the limits' client cases and the load test's tokens (from W3, since they need the kind cluster); a code push during a nightly | after the screens' first round |
 | W7 · The development profiles run the image they are given | the image tag `:dev`; one image tag per checkout; instances of the UI profile, one per builder; `nuget-ha` cut to what NuGet's client adds; the drain variant that Q-VULN-128 said to fold into a pooler leg once one runs under npm's load, which two do now; the development profile's root CA that is issued twice at a start; the Valkey outage with a replaced pod, which only a set runs that nothing has run since 2026-11-18 | after W6 (it owns the Makefile) |
@@ -6697,13 +6697,15 @@ before it; a push without a run (a `[skip ci]` commit) between a code push and i
 still costs that release, since the older run then finds `main` moved and no newer run exists.
 **11:19, W6's fourteen commits are at their gates** on a second landing stack, on top of the Debian repair
 and W3 (no conflict; no integration area, since nothing of the product changed).
-**11:35, landed in one push: the Debian remote's repair and W3** (four commits, the head a `test:` over two
+**11:37, landed in one push: the Debian remote's repair and W3** (four commits, the head a `test:` over two
 `fix:`). The gates, 10:50 to 11:18, each exit 0: build, both vets, the unit run under an emptied AWS
 environment, generate, the coverage tool's four steps, cyclo, the end-to-end tree's vet, the pinned lint
 (nine minutes at a load of 45 to 65), then `debvirtual` 242 s, `debremote` 56 s, `deblocal` 181 s,
 `debkeys` 18 s, `endpoints` 22 s, `limits` 108 s, `valkey` 137 s, `ociremote` 91 s, `ci` 214 s, `npm`
-456 s, `oci` 24 s. Pushed when the end-to-end legs of the run of 10:49 had ended; its layout checks were
-still running and are cut by this push, the last time a push cuts a run.
+456 s, `oci` 24 s. Pushed when the end-to-end legs of the run of 10:49 had ended; that run ended in the
+same minute with every job green, the layout checks among them (they carry the web changes of the data
+keys' surface and of the token table), so nothing was cut. The owner's development backend runs on the
+landed tree since 11:38; W3's worktree is removed; the builder of W5b rebases its rest onto `main`.
 **11:21, the builder of W5a started** (NuGet's route of a package's embedded files instead of its 501; the
 kit's check of an upstream's challenge; the tag listing of a remote OCI repository measured with
 100,000 tags before anything is built). **11:25, the marking of what the landings of 09:39 and 10:49
@@ -6726,6 +6728,23 @@ the spec pages' blocks and held by the documentation tool's check; the sentences
 true). The three stacks land one after the other: this one now, W6 when this one's release is out (so
 that a fault of the changed workflow cannot hold the repairs' release), the screens after it.
 Builders with a test load: W5b, W2, W5a, W10a, the landing's gates.
+**11:49, the release of the push of 11:37 is out** (a `fix:`). **11:49, the screens' first round passed its
+gates**, each exit 0: the basics, the unit run under an emptied AWS environment, the API client and the
+translation source unchanged by their generators, the web's lint and tests, the fixture layout tests,
+the chart's lint, the pinned lint, then `packages` 127 s, `repository` 135 s, `api` 88 s, `npm` 306 s,
+`limits` 102 s, `audit` 40 s.
+**11:50, landed: W6, the pipeline's package** (fourteen commits of the types `ci:`, `build:`, `test:` and
+`docs:`, none of which releases by itself). Its gates of 11:19 to 11:21, each exit 0: build, the three
+vets, the tools' tests with the checks of the workflows, `make unit` itself, generate, the coverage
+tool's four steps, cyclo, the chart's lint, the pinned lint, the scripts' syntax; after the rebase onto
+`main` the build, the links, the check and the workflows' tests again. Pushed after the release of the
+push before it, so that a fault of the changed workflow cannot hold a repair's release. **What its
+first runs must show, read by the development agent:** this push's run starts with every job of the
+workflow (the file parses); the job of the two upstream images' scan ends green with its summary and
+two warnings; the clients' image cache misses once (the script changed) and hits from the second push
+on; with the screens' push right after it the older run is not cancelled and its Semantic Release ends
+without releasing ("the local branch main is behind the remote one"), and the newer run releases.
+Each item is one commit and can be taken back alone.
 **In work since 05:38: package 7 of the encryption, the destruction of a retired connection's keys**
 (R-STOR-097 to R-STOR-103 and the journal's replay; the development agent's answer of 2026-11-22 to the
 question of what stays readable at a provider). It stands on the handover's second package as it lands;
