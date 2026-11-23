@@ -2266,7 +2266,13 @@ runs are in `git log`; this section holds the current state.
   **Storage** with the storage summary; and signed links are reachable, by an administrator's switch on the
   page of the storage settings and a repository's section, for OCI and Ansible Galaxy. His UI's backend is
   started again on this state (ready at 03:15). The three builders' worktrees and branches are removed.
-  Released at 03:27; the plan's commits of the minutes between waited for it.
+  Released at 03:27; the plan's commits of the minutes between waited for it. **His installation runs the
+  release since 03:35** (read at 03:40: both releases ready, every pod on the new image without a restart;
+  the storage summary's first run was scheduled at 03:34; both Bastion replicas reached the main
+  installation within 50 ms of their start, the interface unchanged by this release; from outside the
+  Bastion answers with its certificate checked; the connections' API answers 401 without a credential,
+  which says the operation exists). Not looked at on his installation: the tab and the settings page
+  themselves, which need a session.
 - **In work since 03:16: the repair of four tests that failed without a defect of the product** (the
   findings of section 8 that can stop a landing or the release's unit job: the key commands' case that
   flips a character of a sealed value, the query budget's harness with one slow request in its window, the
