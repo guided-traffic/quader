@@ -33,8 +33,8 @@ import (
 
 // checkStorageKeys is the part of check 3 that concerns the storage keys (R-BAK-031): the backup's storage_keys is read and every key
 // that is not destroyed opened with the key ring; the pool must name no storage key the backup's database lacks or holds destroyed
-// (the restored database could not open its objects); and no encrypted connection of the restoring configuration may have an id the
-// backup holds destroyed keys of (storage.md R-STOR-102).
+// (the restored database could not open its objects); and no connection of the restoring configuration, plain or encrypted, may have an
+// id the backup holds destroyed keys of (storage.md R-STOR-102): the restored installation's start would refuse it.
 func (r *Restorer) checkStorageKeys(ctx context.Context, st *state) error {
 	rows, err := backup.ReadBackupKeys(ctx, r.d.Target, r.d.Layout, st.m)
 	if err != nil {
@@ -49,9 +49,6 @@ func (r *Restorer) checkStorageKeys(ctx context.Context, st *state) error {
 		}
 	}
 	for _, c := range r.d.Connections {
-		if !c.Encrypted {
-			continue
-		}
 		for id, row := range rows {
 			if row.Connection == c.ID && row.Destroyed() {
 				return checkFailure(3, "storage keys", backup.CodeKeyRingMismatch,

@@ -1345,9 +1345,9 @@ but check 7's probe object, MUST check, and exit `6` naming the first failed che
    canary row of the backup's `secret_key_canary` file (read and decrypted before any load). The
    message is `key ring does not match backup: missing key <id>`, as R-ARCH-021's start-up check
    words it. It opens every storage key of the backup's `storage_keys` file that is not destroyed, and
-   refuses a manifest whose `storageKeys.pool` names a key that file lacks or holds destroyed, and an
-   encrypted connection of the restoring configuration whose id the backup holds destroyed keys of
-   (R-BAK-031, storage.md R-STOR-102).
+   refuses a manifest whose `storageKeys.pool` names a key that file lacks or holds destroyed, and a
+   connection of the restoring configuration, plain or encrypted, whose id the backup holds destroyed keys of
+   (R-BAK-031, storage.md R-STOR-102: the restored installation's start would refuse that id).
 4. The database is empty: schema `database.schema` exists (R-HA-014; a missing schema fails this check) and contains no relation.
    **Resumption:** a schema that carries the restore anchor of the same backup ID (R-BAK-021
    step 2) is accepted whatever it contains. An anchor of another backup ID refuses and names both
@@ -1858,8 +1858,9 @@ two commands that stood in for it until then (storage.md Q-STOR-384) are gone.
   naming function, with S(L) and the key of the object's record) and every connection's `encrypted` and `keyed_names`; a connection of the
   restoring configuration that is encrypted and has no key in the backup gets its keys drawn by the restore Job before the first write
   (storage.md R-STOR-083's rule; its location is empty by check 5), kept sealed in the restore's marker until the fix-up inserts them into the
-  loaded `storage_keys` ([Q-BAK-82](#q-bak-82--the-keys-a-restore-draws-lie-sealed-in-its-marker-until-the-fix-up-inserts-them)), and one
-  whose id the backup holds destroyed keys of is refused by check 3 (storage.md R-STOR-102). Check 3 also opens every key of the backup that
+  loaded `storage_keys` ([Q-BAK-82](#q-bak-82--the-keys-a-restore-draws-lie-sealed-in-its-marker-until-the-fix-up-inserts-them)), and any
+  connection of the restoring configuration, plain or encrypted, whose id the backup holds destroyed keys of is refused by check 3
+  (storage.md R-STOR-102). Check 3 also opens every key of the backup that
   is not destroyed with the key ring and refuses a backup whose manifest's pool names a key its `storage_keys` lacks; step 3 refuses each
   line whose key the backup's database does not hold (exit `1`, as a missing pool object). A resumed restore keeps an object of the encrypted
   sink whose record opens with the sink's keys and binds the blob, and writes every other again. The restored installation's operator exports the storage keys again (storage.md R-STOR-090).

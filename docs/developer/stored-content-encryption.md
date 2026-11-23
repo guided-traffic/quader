@@ -365,8 +365,9 @@ formats the cost is the same: no format sees a connection, a key or the pool.
 
 **What packages 6 and 7 build on.** Package 7's `destroyed_key` is a reason that marks: the scrub's `judge` and the reconciliation's
 `sourceFailure` follow `Reason.MarksCorrupt`, the sweep reports every refused record as foreign, the operator check every refusal as a
-finding `record`, so none of them changes; the restore's check 3 already refuses a destroyed key the pool names and an encrypted connection
-of an id whose keys the backup holds destroyed (`SealedKey.Destroyed` reads the state `destroyed` or an empty sealed value). Every backup
+finding `record`, so none of them changes; the restore's check 3 already refuses a destroyed key the pool names and a connection of the
+restoring configuration, plain or encrypted, of an id whose keys the backup holds destroyed (`SealedKey.Destroyed` reads the state
+`destroyed` or an empty sealed value; the plain connection since package 7's join). Every backup
 since this package writes `storageKeys` into its manifest and `retained[].poolKeyIds` and `sealedKeyIds` into its result (never omitted),
 which R-STOR-100's check reads; a retained manifest without `storageKeys` gives `null` there, which that check counts as unknown. Package 6 finds the counter of `unknown_key` copies in `quader_storage_scrub_copies_total` beside
 `quader_storage_encrypted_read_failures_total`, and `OpenRecord` and `CheckRecordForm` for its offline tool; `quader backup verify --deep
