@@ -18535,7 +18535,7 @@ one column with much text: its columns take their widths from their content (Q-U
 **Customer portal release engineering and delivery** stands on one line beside its mark (computed from the columns' contents,
 not looked at by the builder). **Rationale:** the owner's: the role decides nothing in the admin area.
 
-**Applied in the spec:** R-UI-041. Code: [project-list.ts](../../web/src/app/features/projects/project-list.ts).
+**Applied in the spec:** R-UI-041. Code: [projects-home.ts](../../web/src/app/features/projects/projects-home.ts), where the list of projects is since Q-UI-1040.
 
 ### Q-UI-600 · A replica that drains or starts informs: the header says that replicas are being replaced
 
