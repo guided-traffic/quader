@@ -26078,9 +26078,49 @@
         <source>Instance</source>
       </segment>
     </unit>
+    <unit id="tt-desc.title">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-description-dialog.ts:22,23</note>
+      </notes>
+      <segment>
+        <source>Edit description</source>
+      </segment>
+    </unit>
+    <unit id="tt-desc.of">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-description-dialog.ts:25</note>
+      </notes>
+      <segment>
+        <source>Of the technical token</source>
+      </segment>
+    </unit>
+    <unit id="tt-desc.label">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-description-dialog.ts:28,30</note>
+      </notes>
+      <segment>
+        <source>Description (optional)</source>
+      </segment>
+    </unit>
+    <unit id="tt-desc.cancel">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-description-dialog.ts:44,45</note>
+      </notes>
+      <segment>
+        <source>Cancel</source>
+      </segment>
+    </unit>
+    <unit id="tt-desc.save">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-description-dialog.ts:45,48</note>
+      </notes>
+      <segment>
+        <source>Save changes</source>
+      </segment>
+    </unit>
     <unit id="tt-table.expires-line">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:58,59</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:59,60</note>
       </notes>
       <segment>
         <source>expires <pc id="0" equivStart="START_TAG_QUADER_TIME_AGO" equivEnd="CLOSE_TAG_QUADER_TIME_AGO" type="other" dispStart="&lt;quader-time-ago [at]=&quot;s.expiresAt&quot; absolute=&quot;title&quot; /&gt;" dispEnd="&lt;quader-time-ago [at]=&quot;s.expiresAt&quot; absolute=&quot;title&quot; /&gt;"></pc></source>
@@ -26088,7 +26128,7 @@
     </unit>
     <unit id="tt-table.never-expires">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:60,62</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:61,63</note>
       </notes>
       <segment>
         <source>never expires</source>
@@ -26096,7 +26136,7 @@
     </unit>
     <unit id="tt-table.soon">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:67,68</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:68,69</note>
       </notes>
       <segment>
         <source>Expires soon</source>
@@ -26104,7 +26144,7 @@
     </unit>
     <unit id="tt-table.expired">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:99,100</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:100,101</note>
       </notes>
       <segment>
         <source>Expired</source>
@@ -26112,7 +26152,7 @@
     </unit>
     <unit id="tt-table.revoked">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:101,102</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:102,103</note>
       </notes>
       <segment>
         <source>Revoked</source>
@@ -26120,7 +26160,7 @@
     </unit>
     <unit id="tt-table.not-used">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:109,111</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:110,112</note>
       </notes>
       <segment>
         <source>Not used yet</source>
@@ -26128,7 +26168,7 @@
     </unit>
     <unit id="tt-table.rotate">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:116,117</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:117,118</note>
       </notes>
       <segment>
         <source>Rotate</source>
@@ -26136,7 +26176,7 @@
     </unit>
     <unit id="tt-table.revoke">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:122,123</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:123,124</note>
       </notes>
       <segment>
         <source>Revoke</source>
@@ -26144,15 +26184,31 @@
     </unit>
     <unit id="tt-table.renew">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:129,130</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:130,131</note>
       </notes>
       <segment>
         <source>Issue new secret</source>
       </segment>
     </unit>
+    <unit id="tt-table.edit-description">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:155,157</note>
+      </notes>
+      <segment>
+        <source> Edit description </source>
+      </segment>
+    </unit>
+    <unit id="tt-table.delete">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:157,159</note>
+      </notes>
+      <segment>
+        <source>Delete</source>
+      </segment>
+    </unit>
     <unit id="tt-table.caption">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:166</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:188</note>
       </notes>
       <segment>
         <source>Technical tokens</source>
@@ -26160,15 +26216,23 @@
     </unit>
     <unit id="tt-table.empty">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:167</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:189</note>
       </notes>
       <segment>
         <source>This account has no technical token yet.</source>
       </segment>
     </unit>
+    <unit id="tt-table.actions-for">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:199</note>
+      </notes>
+      <segment>
+        <source>Actions for <ph id="0" equiv="name" disp="t.name"/></source>
+      </segment>
+    </unit>
     <unit id="tt-table.set-limit">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:182</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:211</note>
       </notes>
       <segment>
         <source>Set limit</source>
@@ -26176,7 +26240,7 @@
     </unit>
     <unit id="tt-table.change-limit">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:183</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:212</note>
       </notes>
       <segment>
         <source>Change limit</source>
@@ -26184,7 +26248,7 @@
     </unit>
     <unit id="tt-table.rotate-tip">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:184</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:213</note>
       </notes>
       <segment>
         <source>Rotate: a new secret now, the old one ends after the overlap you choose. The token keeps its name and its limit.</source>
@@ -26192,7 +26256,7 @@
     </unit>
     <unit id="tt-table.token">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:190</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:219</note>
       </notes>
       <segment>
         <source>Token</source>
@@ -26200,7 +26264,7 @@
     </unit>
     <unit id="tt-table.limit">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:195</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:224</note>
       </notes>
       <segment>
         <source>Limit</source>
@@ -26208,7 +26272,7 @@
     </unit>
     <unit id="tt-table.help.limit-day">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:197</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:226</note>
       </notes>
       <segment>
         <source>The download limit of this token: its own rule at the account&apos;s place, or the default of technical tokens. Below it, what the token downloaded in the last 24 hours.</source>
@@ -26216,7 +26280,7 @@
     </unit>
     <unit id="tt-table.help.limit">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:198</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:227</note>
       </notes>
       <segment>
         <source>The download limit of this token: its own rule at the account&apos;s place, or the default of technical tokens.</source>
@@ -26224,7 +26288,7 @@
     </unit>
     <unit id="tt-table.ended">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:202</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:231</note>
       </notes>
       <segment>
         <source>Ended</source>
@@ -26232,7 +26296,7 @@
     </unit>
     <unit id="tt-table.last-used">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:205</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:234</note>
       </notes>
       <segment>
         <source>Last used</source>
@@ -26240,7 +26304,7 @@
     </unit>
     <unit id="tt-table.help.last-used">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:206</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:235</note>
       </notes>
       <segment>
         <source>The last time a secret of the token authenticated a request. Not every use is recorded immediately.</source>
@@ -26248,7 +26312,7 @@
     </unit>
     <unit id="tt-table.actions">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:208</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:237</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -26256,7 +26320,7 @@
     </unit>
     <unit id="tt.create">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:40,42</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:41,43</note>
       </notes>
       <segment>
         <source>New technical token</source>
@@ -26264,7 +26328,7 @@
     </unit>
     <unit id="tt.form-heading">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:51,53</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:52,54</note>
       </notes>
       <segment>
         <source>New technical token</source>
@@ -26272,7 +26336,7 @@
     </unit>
     <unit id="tt.secret-heading">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:53,55</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:54,56</note>
       </notes>
       <segment>
         <source>New secret for <ph id="0" equiv="INTERPOLATION" disp="{{ f.name }}"/></source>
@@ -26280,7 +26344,7 @@
     </unit>
     <unit id="tt.ended-heading">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:91,92</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:95,96</note>
       </notes>
       <segment>
         <source>Expired and revoked</source>
@@ -26288,7 +26352,7 @@
     </unit>
     <unit id="tt.loading">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:101,104</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:108,111</note>
       </notes>
       <segment>
         <source>Loading technical tokens.</source>
@@ -26296,7 +26360,7 @@
     </unit>
     <unit id="tt.empty">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:133</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:140</note>
       </notes>
       <segment>
         <source>This account has no technical token yet.</source>
@@ -26304,7 +26368,7 @@
     </unit>
     <unit id="tt.empty-active">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:134</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:141</note>
       </notes>
       <segment>
         <source>No technical token of this account has a live secret.</source>
@@ -26312,7 +26376,7 @@
     </unit>
     <unit id="tt.ended-caption">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:135</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:142</note>
       </notes>
       <segment>
         <source>Expired and revoked technical tokens</source>
@@ -26320,7 +26384,7 @@
     </unit>
     <unit id="tt.create-submit">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:144</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:151</note>
       </notes>
       <segment>
         <source>Create technical token</source>
@@ -26328,7 +26392,7 @@
     </unit>
     <unit id="tt.renew-submit">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:145</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:152</note>
       </notes>
       <segment>
         <source>Issue new secret</source>
@@ -26336,7 +26400,7 @@
     </unit>
     <unit id="tt.limit-removed">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:209</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:218</note>
       </notes>
       <segment>
         <source>Limit removed.</source>
@@ -26344,7 +26408,7 @@
     </unit>
     <unit id="tt.limit-saved">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:210</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:219</note>
       </notes>
       <segment>
         <source>Limit saved.</source>
@@ -26352,7 +26416,7 @@
     </unit>
     <unit id="tt.revoke-title">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:281</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:290</note>
       </notes>
       <segment>
         <source>Revoke this technical token?</source>
@@ -26360,7 +26424,7 @@
     </unit>
     <unit id="tt.revoke-text">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:283</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:292</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="name" disp="t.name"/> stops working at once on every replica. It keeps its name and its limit, and can get a new secret later.</source>
@@ -26368,7 +26432,7 @@
     </unit>
     <unit id="tt.revoke-confirm">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:285</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:294</note>
       </notes>
       <segment>
         <source>Revoke</source>
@@ -26376,10 +26440,50 @@
     </unit>
     <unit id="tt.revoked">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-tokens.ts:290</note>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:299</note>
       </notes>
       <segment>
         <source>Technical token revoked.</source>
+      </segment>
+    </unit>
+    <unit id="tt.description-saved">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:310</note>
+      </notes>
+      <segment>
+        <source>Description saved.</source>
+      </segment>
+    </unit>
+    <unit id="tt.delete-title">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:317</note>
+      </notes>
+      <segment>
+        <source>Delete this technical token?</source>
+      </segment>
+    </unit>
+    <unit id="tt.delete-text">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:318</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="name" disp="t.name"/> and its secrets are removed: it stops working at once on every replica. This cannot be undone.</source>
+      </segment>
+    </unit>
+    <unit id="tt.delete-confirm">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:319</note>
+      </notes>
+      <segment>
+        <source>Delete</source>
+      </segment>
+    </unit>
+    <unit id="tt.deleted">
+      <notes>
+        <note category="location">src/app/features/service-accounts/technical-tokens.ts:324</note>
+      </notes>
+      <segment>
+        <source>Technical token deleted.</source>
       </segment>
     </unit>
     <unit id="auth-settings.heading">
@@ -37555,7 +37659,7 @@
     </unit>
     <unit id="malware.more-repositories">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:89,90</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:90,91</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {and 1 more} other {and <ph id="0" equiv="INTERPOLATION"/> more}}</source>
@@ -37563,7 +37667,6 @@
     </unit>
     <unit id="malware.found-at">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:92</note>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:95</note>
       </notes>
       <segment>
@@ -37572,7 +37675,7 @@
     </unit>
     <unit id="malware.database-of">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:112</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:111</note>
         <note category="location">src/app/shared/malware/malware-status.ts:55</note>
       </notes>
       <segment>
@@ -37581,7 +37684,7 @@
     </unit>
     <unit id="malware.state.released">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:122,124</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:121,123</note>
         <note category="location">src/app/shared/malware/malware-status.ts:109</note>
       </notes>
       <segment>
@@ -37590,7 +37693,7 @@
     </unit>
     <unit id="malware.released-by">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:125</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:124</note>
         <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:110</note>
         <note category="location">src/app/shared/malware/malware-status.ts:42,43</note>
       </notes>
@@ -37600,7 +37703,7 @@
     </unit>
     <unit id="malware.release.reason-label">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:146,147</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:145,146</note>
       </notes>
       <segment>
         <source>Reason of the release:</source>
@@ -37608,7 +37711,7 @@
     </unit>
     <unit id="malware.items.caption">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:150,151</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:149,150</note>
       </notes>
       <segment>
         <source>Files that hold these bytes</source>
@@ -37616,7 +37719,7 @@
     </unit>
     <unit id="malware.items.more">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:162,163</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:161,162</note>
       </notes>
       <segment>
         <source>More files hold these bytes than the list shows: <ph id="0" equiv="INTERPOLATION" disp="{{ f.itemCount }}"/> in <ph id="1" equiv="INTERPOLATION_1" disp="{{ f.repositoryCount }}"/> repositories.</source>
@@ -37624,7 +37727,7 @@
     </unit>
     <unit id="malware.items.digest">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:165</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:164</note>
       </notes>
       <segment>
         <source>SHA-256</source>
@@ -37680,7 +37783,7 @@
     </unit>
     <unit id="malware.col.verdict">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:215</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:217</note>
       </notes>
       <segment>
         <source>Verdict</source>
@@ -37688,7 +37791,7 @@
     </unit>
     <unit id="malware.col.actions">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:216</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:218</note>
         <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:278</note>
         <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:303</note>
       </notes>
@@ -37698,7 +37801,7 @@
     </unit>
     <unit id="malware.row.open">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:244</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:246</note>
       </notes>
       <segment>
         <source>Every file of <ph id="0" equiv="file" disp="findName(f)"/></source>
@@ -37706,8 +37809,8 @@
     </unit>
     <unit id="malware.withdraw">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:267</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:332</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:269</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:334</note>
       </notes>
       <segment>
         <source>Withdraw release</source>
@@ -37715,7 +37818,7 @@
     </unit>
     <unit id="malware.release">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:267</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:269</note>
       </notes>
       <segment>
         <source>Release</source>
@@ -37723,7 +37826,7 @@
     </unit>
     <unit id="malware.released">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:323</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:325</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="file" disp="findName(f)"/> is released in every repository that holds it.</source>
@@ -37731,7 +37834,7 @@
     </unit>
     <unit id="malware.withdraw.title">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:329</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:331</note>
       </notes>
       <segment>
         <source>Withdraw the release of <ph id="0" equiv="file" disp="findName(f)"/>?</source>
@@ -37739,7 +37842,7 @@
     </unit>
     <unit id="malware.withdraw.text">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:330</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:332</note>
       </notes>
       <segment>
         <source>Every repository that holds these bytes refuses them again from the next download.</source>
@@ -37747,7 +37850,7 @@
     </unit>
     <unit id="malware.withdrawn">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:337</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:339</note>
       </notes>
       <segment>
         <source>The release of <ph id="0" equiv="file" disp="findName(f)"/> is withdrawn.</source>
@@ -39578,7 +39681,7 @@
     </unit>
     <unit id="vuln.list.clear">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:254,257</note>
+        <note category="location">src/app/features/vulnerabilities/vulnerability-report.html:255,258</note>
       </notes>
       <segment>
         <source>Clear all filters</source>
