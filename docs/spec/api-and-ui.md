@@ -22587,7 +22587,8 @@ Context: the report's findings needed 1,005 px at their least widths against 697
 | (b) The status a column, the package under the identifier | — | Sort by status | Sort by package is lost, and the package is what a reader decides on |
 | (c) Stack as before | R-UI-174 | Every fact a column | Blocks at 1,024 px |
 
-**Choice:** (a). **Rationale:** severity and status are the finding's state and are read together; the status filters in the drawer.
+**Choice:** (a). The version and the repository under the package are one line of facts (`.dot-separated`): where it wraps, no line
+starts with the dot. **Rationale:** severity and status are the finding's state and are read together; the status filters in the drawer.
 The development agent would revisit a sort by status if triagers ask for it.
 
 **Applied in the spec:** [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-022. Code:
@@ -22606,7 +22607,10 @@ rem, **Found**, the action).
 | (a) **File** (12 rem) with its hash, the repositories that hold it and "found 1 hour ago" under its name; **Verdict**; the action: 653 px (chosen) | Q-UI-969's rule | A table at 1,440 and 1,024 px | Where it is and when are read under the name |
 | (b) Narrower columns, the five kept | — | Every fact a column | About 730 px even at 11 rem: blocks at 1,024 px |
 
-**Choice:** (a). **Applied in the spec:** R-MAL-025 of [malware-scanning.md](malware-scanning.md). Code:
+**Choice:** (a). *Amended on 2026-11-23* (the coordinator's look at the pictures): the file and the verdict share the room beyond their least
+widths by what they hold, so a file name of 23 characters no longer breaks beside an empty verdict at 1,440 px (the verdict had preferred
+the room); the repositories and the time found stand each on a line of their own, so no separating dot starts a line. **Applied in the
+spec:** R-MAL-025 of [malware-scanning.md](malware-scanning.md). Code:
 [malware-finds.html](../../web/src/app/features/vulnerabilities/malware-finds.html).
 
 ### Q-UI-1001 · A download rule's note stands under whom it applies to
