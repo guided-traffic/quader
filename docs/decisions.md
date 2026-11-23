@@ -12009,10 +12009,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-510 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+509 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 510 questions</summary>
+<summary>Q-UI: 509 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12524,7 +12524,6 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1005](spec/api-and-ui.md#q-ui-1005--malware-and-signatures-are-entries-of-their-own-under-security-audit) | Malware and Signatures are entries of their own under Security audit | Decided by the owner on 2026-11-23 | (a) The side bar's **Security audit** has three entries, **Security dashboard**, **Malware** and **Signatures**; each page has its own heading, title and trail ("Security audit / Malware"); the dashboard holds the vulnerability findings without a strip of one link; the pages keep their addresses, which were each view's own already, so no address goes and none redirects (chosen by the owner) | — |
 | [Q-UI-1006](spec/api-and-ui.md#q-ui-1006--every-page-names-a-principal-by-the-username-and-every-other-kind-with-its-kind-as-a-word) | Every page names a principal by the username, and every other kind with its kind as a word | Decided by the development agent on 2026-11-23, settling option (a) of [Q-UI-1004](spec/api-and-ui.md#q-ui-1004--a-page-names-a-person-without-a-principals-syntax) that waited | (c) One helper for every page: a user by the username without the kind ("by priya"), a service account, a group, a Bastion and a CI job with their kind as a word ("service account ci-build", "Servicekonto ci-build"); the reference stays the title | — |
 | [Q-UI-1007](spec/api-and-ui.md#q-ui-1007--a-technical-tokens-description-is-edited-and-the-token-deleted-from-its-rows-menu) | A technical token's description is edited and the token deleted from its row's menu | Decided by the development agent on 2026-11-23 as the coordinator of the screens' second round decided it (G5-51) | (a) A menu **Actions for <token>** at the row's end, beside the words, with **Edit description** (a dialog of the one field, read with the token's `ETag` as it opens and saved with it) and **Delete** (the confirmation every removal uses, "Delete this technical token?") | — |
-| [Q-UI-1008](spec/api-and-ui.md#q-ui-1008--the-layout-checks-fixtures-run-in-chromium-firefox-and-webkit-the-screens-in-chromium) | The layout checks' fixtures run in Chromium, Firefox and WebKit; the screens in Chromium | Decided by the development agent on 2026-11-23 as the coordinator of the screens' second round decided it (G5-53) | (a) The fixtures (`make ui-layout-test`, seconds) in all three engines, which the job installs as it installs Chromium (`playwright-install.sh`, its system libraries only where missing); the screens in Chromium | — |
 | [Q-UI-1031](spec/api-and-ui.md#q-ui-1031--the-ui-development-profile-runs-in-instances-one-per-builder-and-instance-1-is-the-main-checkouts) | The UI development profile runs in instances, one per builder, and instance 1 is the main checkout's | Decided by the development agent on 2026-11-23 | (a) Instances `UI_INSTANCE=1..8`: project `quader-ui-dev<n>`, state `.dev/ui-dev-<n>`, every port plus `(n - 1) * 100`; instance 1 exactly the former names and ports, and refused in a git worktree | — |
 
 </details>

@@ -8102,10 +8102,8 @@ its pictures.
   `icon-apart` (one that shares no height with its line), `row-offset` (a table's row; R-UI-172), `joined` (a button joined to
   a field, an address or a command with its copy button, is as high as the field and is no control beside a text); each names
   the element, its text and the distance in px ([web-ui.md](../developer/web-ui.md#renders-of-every-screen)).
-- The checks are tested on fixture pages of their own in Chromium, Firefox and WebKit with the app's fonts, without the UI stack
-  (`make ui-layout-test`, [Q-UI-723](#q-ui-723--the-checks-are-tested-on-fixture-pages-in-the-playwright-chromium-not-in-the-angular-test-runner),
-  [Q-UI-1008](#q-ui-1008--the-layout-checks-fixtures-run-in-chromium-firefox-and-webkit-the-screens-in-chromium); the screens are
-  rendered in Chromium): the
+- The checks are tested on fixture pages of their own in Chromium with the app's fonts, without the UI stack (`make ui-layout-test`,
+  [Q-UI-723](#q-ui-723--the-checks-are-tested-on-fixture-pages-in-the-playwright-chromium-not-in-the-angular-test-runner)): the
   owner's row must fail with the 8 px he saw, each exception of R-UI-175 must pass, and an offset of 1.5 px must fail. `make
   ui-renders` runs them before the screens.
 - The shared patterns of the style guide are rendered with the app's own global stylesheet on the same pages and must pass, so the
@@ -19586,8 +19584,7 @@ test logs the largest distance on every run).
 
 ### Q-UI-723 · The checks are tested on fixture pages in the Playwright Chromium, not in the Angular test runner
 
-Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The
-fixtures run in Firefox and WebKit too since [Q-UI-1008](#q-ui-1008--the-layout-checks-fixtures-run-in-chromium-firefox-and-webkit-the-screens-in-chromium).
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
 
 Context: [layout.ts](../../web/e2e/renders/layout.ts) had no test of its own; a check was proven only by a full render run, which
 needs the stack and takes about 20 minutes, and the run that passed the owner's row proved nothing about it.
@@ -22766,25 +22763,6 @@ the frequent actions of its secret stay its words. The development agent sees no
 
 **Applied in the spec:** R-UI-181. Code: [technical-token-table.ts](../../web/src/app/features/service-accounts/technical-token-table.ts),
 [technical-token-description-dialog.ts](../../web/src/app/features/service-accounts/technical-token-description-dialog.ts).
-
-### Q-UI-1008 · The layout checks' fixtures run in Chromium, Firefox and WebKit; the screens in Chromium
-
-Status: **Decided by the development agent** on 2026-11-23 as the coordinator of the screens' second round decided it (G5-53); the
-owner reviews it at the walkthrough. Amends [Q-UI-723](#q-ui-723--the-checks-are-tested-on-fixture-pages-in-the-playwright-chromium-not-in-the-angular-test-runner).
-
-Context: the renders and the checks' fixtures ran in Chromium only, so a check that measures differently in another engine, and a
-shared pattern that lays out differently there, went unseen. The screens' renders are the pipeline's longest job (46 minutes).
-
-| Option | What it means | For | Against |
-|---|---|---|---|
-| (a) The fixtures (`make ui-layout-test`, seconds) in all three engines, which the job installs as it installs Chromium (`playwright-install.sh`, its system libraries only where missing); the screens in Chromium (chosen) | Three projects of `playwright.layout.config.ts` | Each check and the shared patterns proven in every engine a reader uses; the 150 fixture tests of three engines took 12.4 s with six workers on a workstation (the two browsers' download in the job is not measured yet) | A screen's own layout in Firefox and Safari is seen only by eye |
-| (b) The screens in all three | — | Every screen in every engine | The longest job three times as long |
-| (c) A one-off look in Firefox and Safari, written down | — | Nothing standing | Seen once, not held |
-
-**Choice:** (a). What it found at once: `label-apart` finds no value under its name in Firefox in two fixtures (Firefox lays the value
-beside the name); the two tests carry `test.fail` for Firefox, so the run fails when that changes, and the screens, rendered in
-Chromium, do not meet it. **Applied in the spec:** R-UI-176. Code: [playwright.layout.config.ts](../../web/e2e/playwright.layout.config.ts),
-the job `ui-layout` of [release.yml](../../.github/workflows/release.yml).
 
 ### Q-UI-1031 · The UI development profile runs in instances, one per builder, and instance 1 is the main checkout's
 
