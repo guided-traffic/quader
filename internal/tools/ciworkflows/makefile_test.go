@@ -100,7 +100,10 @@ func TestTheUnitTargetRunsWithTheRunnersEnvironment(t *testing.T) {
 			t.Errorf("make unit runs %q; it lacks %q", unit, want)
 		}
 	}
-	envOf := func(line string) string { before, _, _ := strings.Cut(line, "go test "); return strings.TrimSpace(before) }
+	envOf := func(line string) string {
+		before, _, _ := strings.Cut(line, "go test ")
+		return strings.TrimSpace(before)
+	}
 	if envOf(unit) == "" || !strings.HasSuffix(envOf(full), envOf(unit)) {
 		t.Errorf("make unit runs with %q, make test with %q; both read UNIT_ENV", envOf(unit), envOf(full))
 	}
