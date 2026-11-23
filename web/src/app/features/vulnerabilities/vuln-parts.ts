@@ -14,7 +14,7 @@ import { blockReasonLabel, severityClass, severityIcon, severityLabel, statusLab
       <span class="material-icons" aria-hidden="true">{{ icon() }}</span>
       <span>{{ label() }}</span>
       @if (score() !== null) {
-        {{ ' ' }}<span class="sev-score">{{ score() }}</span>
+        {{ ' ' }}<span class="sev-score">{{ scoreText() }}</span>
       }
     </span>
   `,
@@ -23,6 +23,8 @@ export class SeverityBadge {
   readonly severity = input.required<VulnerabilitySeverity>();
   readonly score = input<number | null>(null);
 
+  /** A CVSS base score as CVSS writes it, with one decimal: a finding rated None showed "None 0", a 9.0 "9" (the render of G5-55). */
+  protected readonly scoreText = computed(() => this.score()?.toFixed(1) ?? '');
   protected readonly label = computed(() => severityLabel(this.severity()));
   protected readonly icon = computed(() => severityIcon(this.severity()));
   protected readonly cls = computed(() => `sev ${severityClass(this.severity())}`);

@@ -11,7 +11,7 @@ import { crc32, deflateRawSync } from 'node:zlib';
 /** The generic repository the profile's OSV source reads (`vulnerabilities.sources.osv.repository` in up.sh). */
 export const advisoryMirror = { project: 'platform', key: 'advisory-mirror' } as const;
 
-type Counts = Partial<Record<'critical' | 'high' | 'medium' | 'low' | 'unknown', number>>;
+type Counts = Partial<Record<'critical' | 'high' | 'medium' | 'low' | 'none' | 'unknown', number>>;
 
 /** A vendored version, the open findings its grade needs, and how many of them name a fixed version (R-VULN-040). */
 export interface VendorVersion {
@@ -35,7 +35,8 @@ export interface VendorVersion {
  */
 export const vendorPackages: readonly VendorVersion[] = [
   { repo: 'npm-vendor', name: 'date-format-lite', version: '2.1.0', counts: {}, grade: 'S' },
-  { repo: 'npm-vendor', name: 'tiny-colors', version: '1.2.0', counts: { low: 2 }, grade: 'A' },
+  // One finding rated None (G5-55): an advisory whose CVSS vector scores 0.0, so that the badge of None is rendered.
+  { repo: 'npm-vendor', name: 'tiny-colors', version: '1.2.0', counts: { low: 2, none: 1 }, grade: 'A' },
   { repo: 'npm-vendor', name: 'yaml-loader-compat', version: '3.0.0', counts: { medium: 6, low: 4 }, grade: 'B' },
   { repo: 'npm-vendor', name: 'xml-stream-parser', version: '0.9.2', counts: { high: 3, medium: 5, unknown: 2 }, grade: 'C', fixable: 8, fixedIn: '1.0.0' },
   { repo: 'npm-vendor', name: 'xml-stream-parser', version: '1.0.0', counts: {}, grade: 'S' },
@@ -92,8 +93,10 @@ export const manyVersionPackages: readonly VendorVersion[] = manyVersions();
 /** The versions of the many-version package that the seed fetches once, so that the column Last download has times (R-API-065). */
 export const fetchedVersions: readonly string[] = ['3.9.0', '3.7.0', '2.9.0'];
 
-const LEVEL: Record<keyof Counts, string | null> = { critical: 'CRITICAL', high: 'HIGH', medium: 'MODERATE', low: 'LOW', unknown: null };
-const SEVERITY_ORDER: readonly (keyof Counts)[] = ['critical', 'high', 'medium', 'low', 'unknown'];
+const LEVEL: Record<keyof Counts, string | null> = { critical: 'CRITICAL', high: 'HIGH', medium: 'MODERATE', low: 'LOW', none: null, unknown: null };
+const SEVERITY_ORDER: readonly (keyof Counts)[] = ['critical', 'high', 'medium', 'low', 'none', 'unknown'];
+/** A CVSS 3.1 vector without any impact: its score is 0.0, the level None (R-VULN-007); a record's qualitative level cannot say None. */
+const NO_IMPACT = 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N';
 
 /**
  * One OSV record per finding a vendored version needs; the severity is the qualitative one of R-VULN-007 rule 4. A fixable finding
@@ -126,6 +129,7 @@ function records(): { id: string; body: string }[] {
             details: 'Made up by the seed of make ui-renders, so that the screens show every grade. It describes no real vulnerability.',
             affected: [affected],
             ...(severity ? { database_specific: { severity } } : {}),
+            ...(level === 'none' ? { severity: [{ type: 'CVSS_V3', score: NO_IMPACT }] } : {}),
           }),
         });
       }

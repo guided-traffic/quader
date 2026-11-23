@@ -2418,6 +2418,8 @@ export const screens: readonly Screen[] = [
   { id: 'package-version-npm-graded', path: ver(P, gradedPackage, gradedPackage.version), kinds: all },
   { id: 'package-version-npm-many', path: ver(P, manyVersionsPackage, '3.7.0'), kinds: ['plain'] },
   { id: 'package-version-npm-fixed', path: ver(P, { format: 'npm', name: 'xml-stream-parser' }, '0.9.2'), kinds: ['plain'] },
+  // A finding rated None (G5-55): its badge on the version's tab of findings.
+  { id: 'package-version-npm-none', path: `${ver(P, { format: 'npm', name: 'tiny-colors' }, '1.2.0')}?tab=vulnerabilities`, kinds: ['plain'] },
   { id: 'package-version-npm-long-name', path: ver(P, longNamePackage, '0.4.0'), kinds: ['plain'] },
   // Its repositories disabled: no command, no Download, one sentence (Q-UI-965), as the file of a disabled repository.
   { id: 'package-version-disabled', path: ver(P, npmPackage, '1.1.0'), kinds: ['plain'], walk: disabledVersion },

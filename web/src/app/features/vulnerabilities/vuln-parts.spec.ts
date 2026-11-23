@@ -53,6 +53,12 @@ describe('Severity badge (R-VULN-022)', () => {
       return text(copy);
     };
     expect(badges.map(words)).toEqual(['Critical 9.8', 'High', 'Medium', 'Low', 'None', 'Unknown']);
+    // A score is written as CVSS writes it, with one decimal: a whole score and a score of 0 keep it (G5-55: "None 0").
+    for (const [score, shown] of [[9, 'Critical 9.0'], [0, 'Critical 0.0'], [10, 'Critical 10.0']] as const) {
+      fixture.componentInstance.score.set(score);
+      await settle(fixture);
+      expect(words(root.querySelector('quader-severity > .sev')!)).toBe(shown);
+    }
     // Only the icon is coloured: the word and the score carry no class of their own that could tint them.
     for (const b of badges) {
       const word = b.querySelector('.material-icons + span')!;
