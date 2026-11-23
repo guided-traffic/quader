@@ -12732,20 +12732,20 @@ Closes H-1662 of this page.
 Context: a read outside a transaction that passes the request's bound is ended by the driver with a cancel request to the address it
 connected to and a close of its connection (Q-ARCH-650, Q-ARCH-498). Through a pooler with several instances behind one Service the
 cancel request can reach an instance that does not hold the client, which drops it: PgBouncer forwards a cancel only for a client it
-holds, unless its instances are configured as peers. Measured on 2026-11-24 with the integration stack's PgBouncer 1.25 behind a proxy
+holds, unless its instances are configured as peers. Measured on 2026-11-24 with the integration stack's PgBouncer 1.26.1 behind a proxy
 whose new connections reach "another instance" that forwards nothing (the replica's own connections reach PgBouncer): a `pg_sleep(20)`
 read with a bound of 300 ms answered `database_timeout`, its cancel request was dropped, and the statement still ran 3 s later, as it
 would have to its end or to the session's `statement_timeout` (30 s), holding a server connection of the pooler. What did end it was
 not the cancel: PgBouncer closes the server connection of a client that leaves in the middle of a statement, and the server notices a
 gone client during a statement only with `client_connection_check_interval` above 0, which is 0 by default. With 1 s as a role default
-the same statement ended 0.7 s after the bound. The development profile and the owner's installation were read the same day: the
-profile's two `Pooler` instances per endpoint are not peers; the owner's installation reaches PostgreSQL without a pooler (its
-`database.host` is the database's read-write Service), so the cancel reaches the server there and H-1662 was dormant.
+the same statement ended 0.7 s after the bound. The development profile's two `Pooler` instances per endpoint are not peers
+([pooler.yaml](../../deploy/dev/pooler.yaml) sets no `peer_id`); an installation without a pooler sends the cancel to the server
+itself, where the gap was dormant.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
 | (a) `database.session.client_connection_check_interval` (1 s by default), sent as a startup parameter on direct connections and a role default through a transaction-mode pooler, verified by preflight like the other session settings (chosen) | The server ends a statement within the interval once its client is gone, whoever dropped the cancel | Works with any pooler that closes a server connection whose client left mid-statement (PgBouncer does), any number of instances, no configuration of the pooler; it also ends a statement whose cancel was lost on a direct connection | One more role default an operator of a pooler sets; a timer at the server during a running statement, a `poll` per interval |
-| (b) PgBouncer's peers (`peer_id` and `[peers]` on every instance) | The instance that receives a cancel forwards it to the one that holds the client | The cancel itself arrives | Every instance needs a stable address the others list: a StatefulSet with a headless Service instead of the operator's Deployment; CloudNativePG's `Pooler` does not configure peers; an operator's own pooler is not ours to configure |
+| (b) PgBouncer's peers (`peer_id` and `[peers]` on every instance) | The instance that receives a cancel forwards it to the one that holds the client | The cancel itself arrives | Every instance needs a stable address the others list: a StatefulSet with a headless Service instead of the operator's Deployment; the profile's CloudNativePG `Pooler` configures none; an operator's own pooler is not ours to configure |
 | (c) Run `DB.Read` in a transaction with `SET LOCAL statement_timeout` | The server ends the statement at the bound without a cancel | No cancel at all | A `BEGIN` and a `COMMIT` more for every read of a request, the round trips Q-ARCH-650 (b) rejected on the download path |
 | (d) Leave the gap: the session's `statement_timeout` ends it within 30 s | Nothing to build | — | A server connection per statement that passes its bound, for up to 30 s, under the load that makes statements pass it |
 
