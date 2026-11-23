@@ -24,6 +24,7 @@ const (
 	readBurst   = 200
 	readRate    = 50
 	writeBurst  = 50
+	writeRate   = 10
 	startsBurst = 30
 	failBurst   = 300
 )
@@ -88,17 +89,11 @@ func TestE1_08RateLimits(t *testing.T) {
 	t.Run("R-API-016 E1.8 the write class answers 429 with Retry-After after its burst and is separate from the read class", func(t *testing.T) {
 		a := newToken(t, adm, "e2e-rl")
 		check := map[string]any{"checks": []map[string]string{{"repository": qn("generic-local"), "action": "read"}}}
-		rs, dur := blast(a, 120, 16, func(int) (string, string, any, []string) {
+		// until the class refuses: 120 writes with 16 workers took 8.2 s on a loaded host, and the class refilled them all
+		rs, dur := burstUntilRefused(a, 1000, 64, time.Minute, func(int) (string, string, any, []string) {
 			return http.MethodPost, "/api/v1/authz/check", check, nil
 		})
-		st := countStatus(rs)
-		t.Logf("120 writes with one token in %s: %v", dur.Round(time.Millisecond), st)
-		if st[429] == 0 {
-			t.Fatalf("no 429 after 120 writes: %v", st)
-		}
-		if st[200] > admittedBound(writeBurst, 10, dur) {
-			t.Errorf("%d writes admitted in %s, more than burst %d plus the decay", st[200], dur, writeBurst)
-		}
+		classBurst(t, "writes with one token", rs, dur, writeBurst, writeRate)
 		for _, r := range rs {
 			if r.Status == 429 {
 				if r.Header.Get("Retry-After") == "" || !strings.Contains(r.Header.Get("RateLimit-Policy"), `"write"`) {
