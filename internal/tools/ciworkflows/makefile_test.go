@@ -133,3 +133,27 @@ func TestEveryFuzzRunBoundsTheShrinkingOfAnInput(t *testing.T) {
 		t.Errorf("%d fuzz runs found in the Makefile; fuzz-npm, fuzz-nuget and fuzz-stored-format are three", runs)
 	}
 }
+
+// make image labels what it builds and removes the untagged images of its earlier builds, and only those (G2-07): a build under a
+// tag an earlier build holds leaves that one untagged, and nothing removed them. The prune may fail without failing the build,
+// which the gating job image runs.
+func TestTheImageTargetRemovesTheUntaggedImagesItLeft(t *testing.T) {
+	t.Parallel()
+	out := makeDryRun(t, "image", "IMAGE=ciworkflows:probe", "VERSION=dev")
+	label := ""
+	for _, l := range strings.Split(out, "\n") {
+		if i := strings.Index(l, "--label "); i >= 0 {
+			label = strings.Fields(l[i+len("--label "):])[0]
+		}
+	}
+	if label == "" {
+		t.Fatalf("make image labels nothing it builds:\n%s", out)
+	}
+	prune := "docker image prune --force --filter dangling=true --filter label=" + label
+	if !strings.Contains(out, prune) {
+		t.Errorf("make image does not run %q:\n%s", prune, out)
+	}
+	if !strings.Contains(readRepoFile(t, "Makefile"), "\t-docker image prune --force --filter dangling=true --filter label=$(IMAGE_BUILD_LABEL)") {
+		t.Error("the prune of make image can fail the build; it is a recipe line with a leading '-'")
+	}
+}

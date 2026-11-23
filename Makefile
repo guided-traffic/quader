@@ -134,8 +134,13 @@ ui-renders: ## Render every screen as the three kinds of user, light and dark, a
 
 # The release image builds the Angular bundle itself (Containerfile, stage web); no Node.js is
 # needed on the host. The build arguments read the same pins as the rest of the repository.
+# Every image make image builds carries this label (the release pipeline, build.yml, builds without it). A build that takes the
+# tag of an earlier one leaves that one untagged; the prune after the build removes the untagged images that carry the label and
+# no other image of the machine, and none a container still uses. A prune that fails is reported and does not fail the build.
+IMAGE_BUILD_LABEL := quader.build=make-image
+
 .PHONY: image
-image: ## Build the release image (IMAGE, VERSION, IMAGE_ARCH) for linux/IMAGE_ARCH with the Containerfile, loaded into the local Docker
+image: ## Build the release image (IMAGE, VERSION, IMAGE_ARCH) for linux/IMAGE_ARCH with the Containerfile, loaded into the local Docker; removes the untagged images earlier builds of this target left
 	docker buildx build --load --platform linux/$(IMAGE_ARCH) \
 		--build-arg NODE_VERSION=$(NODE_VERSION) \
 		--build-arg GO_VERSION=$(GO_MOD_GO) \
@@ -144,7 +149,9 @@ image: ## Build the release image (IMAGE, VERSION, IMAGE_ARCH) for linux/IMAGE_A
 		--build-arg COMMIT=$(COMMIT) \
 		--build-arg DATE=$(DATE) \
 		--build-arg UI_BUNDLE_MARK=$(UI_BUNDLE_MARK) \
+		--label $(IMAGE_BUILD_LABEL) \
 		-f Containerfile -t $(IMAGE) .
+	-docker image prune --force --filter dangling=true --filter label=$(IMAGE_BUILD_LABEL)
 
 .PHONY: image-marked
 image-marked: ## Build IMAGE_MARKED: make image with the second UI bundle (UI_BUNDLE_MARK=1), the same code under other hashed names, for the upgrade test across two bundles
