@@ -229,18 +229,19 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
 
 ### State at the stop of 2026-11-23
 
-Read this first. By the owner's words of 17:15 (section 0) nothing new is begun; this list is what was
-in work then and what remains, kept current until the last package of the evening has landed. The next
-run starts from it and from his word how the work goes on, not from the order of the items below it.
+Read this first. By the owner's words of 17:15 (section 0) nothing new was begun; this list is what was
+in work then and what remains, as it stood when the evening ended at 19:55: every builder had reported,
+five packages had landed, the delivery rules waited as a branch, and no agent was running. The next run
+starts from it and from his word how the work goes on, not from the order of the items below it.
 
 **In work at 17:15 and brought to its end** (each row's state is kept in the packages' table of
 [section 8](#8--open-findings) and the queue of T-24 in
 [section 10](#10--owner-tasks-of-2026-11-07-the-next-registries)):
 
-| What | State at 18:40 |
+| What | State at 19:55, the end of the evening |
 |---|---|
 | T-24 · C · Contracts | landed at 17:59 (two commits, migration 00114): tables, the domain package with its ports and stubs, the catalogue's declaration in the format contract (version 11), codes, events, keys; nothing calls them yet |
-| T-24 · R2 · Delivery rules | the last work in progress: by its builder's word of 18:40 all of R-CUR-001 to 006 and 017 is built and committed in its worktree (two commits, unit tests, a kit check, integration cases in twelve areas); its own gates take about an hour from about 18:55, the landing's gates follow |
+| T-24 · R2 · Delivery rules | **built and not landed** (two commits on the branch `t24-r2-delivery-rules`, reported at 19:52): three conditions stand before its landing (section 10, "The delivery rules are built and wait"): a mirror must not lose its bound, the screens must not offer a remote's pattern fields any more, and the landing's gates run whole |
 | W9 · the rest of the screens' second round | landed at 17:53 (eighteen commits); one of them reverted at 18:19 (the fixtures in three browsers, which made the layout job red on the runner); the layout checks of that push's run show whether the audit log's table holds |
 | W4 · the rest of the Go tests' package | landed at 18:39 (six commits, the Bastion unit test's repair among them). What it did not do is listed below |
 | W12 · the leftovers no package took | landed at 18:27 (six commits, all six items) |
@@ -248,6 +249,9 @@ run starts from it and from his word how the work goes on, not from the order of
 
 **Not begun, each waiting for the owner's word:**
 
+- **T-24 · R2, the delivery rules, built and not landed** (section 10, "The delivery rules are built and wait"):
+  the branch `t24-r2-delivery-rules`, and three conditions before its landing (a mirror's bound at a pass, the
+  remote's pattern fields out of the screens, the landing's gates whole).
 - **T-24, the packages behind the contracts** (the queue of section 10; the cut, the files and the tests
   of each are on the [developer page](../developer/remote-curation.md), the contracts' exported names in
   the code and in Q-CUR-109 to Q-CUR-111): R3, the upstream catalogue (it also turns on the
@@ -836,9 +840,12 @@ records the recorder that tells such a stall apart).
   job's dump holds only the replicas' last lines), whether the pools of three replicas with fifty
   uploads fit the test stack's connections on a starved runner, and whether the harness's change of
   the children's environment (6c1062fd7) takes a setting from the replicas that the pipeline had given
-  them (the workflow sets no `QUADER_` variable for the shards, as far as read). To do: the shard is
-  run again once after the run has ended; a second failure of the same test is the harness's or the
-  product's and is read at its cause, a pass leaves it with the tests that wait for the host's speed.
+  them (the workflow sets no `QUADER_` variable for the shards, as far as read). **Run again at 19:33,
+  the shard is green** (job 137920683691, read at 19:54), so it was the runner at that minute and not
+  the changed harness. To do, with what W4 left (section 1): fifty parallel uploads through three
+  replicas must not depend on the runner's free connections; read what the two refused uploads waited
+  for, and either the test's stack gives the pools their room or the test retries a 503 as a client
+  does.
 - **`e2e (push)` was red once, in the run of the push of 18:27 (2026-11-23; Test and Release 45227959384,
   job 137882199385; read at 19:08).** `TestE1_14Exposure`, the case of R-EP-015 (an endpoint's rate-limit
   class): "400 reads on customers with one token in 7.46s: map[200:400], want a 429 after the burst of
@@ -2920,7 +2927,7 @@ The work queue of T-24 (the planner's cut; the contracts and files of each packa
 | T-24 · R0 · Three researches | the code's inventory, the upstream protocols, the scans on content that is stored and not served | — | done (12:58, 12:59, 13:10) |
 | T-24 · R1 · The specification | the pages named above | R0 | landed at 13:47 |
 | T-24 · C · Contracts | the migration, the domain package, the catalogue's interface, the canonical form of a version, contract version 11 with every format's declaration, the codes, events, configuration keys and the queue `downloads` | R1 | built (two commits, migration 00114; the second, back at 17:16, says what the purge of a retired repository does with its tables: the queue's rows, its bulks and the examinations go, rules and requests stay with the tombstone, Q-CUR-111); landed at 17:59 |
-| T-24 · R2 · Delivery rules | the model and its API; the refusal before a fill, at the serve point and in the documents of the five formats (kit check 22); the virtual walk; the journal and the Bastion's feed; the marks in the listings; the mirror's scope | C | in work since 16:00; built by its builder's word of 18:40 (R-CUR-001 to 006 and 017, two commits), at its own gates for about an hour, then the landing's; R3 and R4 are not begun (the owner's word of 17:15) |
+| T-24 · R2 · Delivery rules | the model and its API; the refusal before a fill, at the serve point and in the documents of the five formats (kit check 22); the virtual walk; the journal and the Bastion's feed; the marks in the listings; the mirror's scope | C | built and not landed (two commits on the branch `t24-r2-delivery-rules`, reported at 19:52; "The delivery rules are built and wait", below the table); R3 and R4 are not begun (the owner's word of 17:15) |
 | T-24 · R3 · The upstream catalogue | the engine (stores nothing; budget, cache, bounds, second hosts); the five formats (kit check 21); Debian's descriptions; the API with the verdicts of versions that are not stored | C | after C; beside R2 and R4 |
 | T-24 · R4 · Downloads and the queue | the queue's store, dispatch, run and retries; failures in precise words; the probe as a row; bulks with their preview and bounds; the charge; the rows of clients' failed fetches | C | after C; beside R2 and R3 |
 | T-24 · R2b · Requests and examination | requests; the examination a request starts; allow and decline; discard; the retention task; the journal | R2, R4 | after them; beside R5a |
@@ -2930,6 +2937,57 @@ The work queue of T-24 (the planner's cut; the contracts and files of each packa
 
 What the tests cost by the specification: a format adds about 4 s of integration and 10 s in its own end-to-end
 leg and nothing in another format's leg; the layout walk gains about twenty screens.
+
+**The delivery rules are built and wait (R2, 2026-11-23, 19:52; decided by the development agent not to land them
+that evening, and told to the owner at 19:54).** Two commits on the branch `t24-r2-delivery-rules` (pushed, on the
+`main` of 19:46): `78a9de517` (a change of the contracts: the package `internal/remotecuration` and its `rules` are
+leaves, the code `invalid_name` is registered) and `718a2b8c6` (the feature). **Built and held by its builder's
+report:** R-CUR-001 (`TestR_CUR_001_TheDecisionTable`, `…ThePackagesDecision`); R-CUR-002 (`TestR_CUR_002_…`: a
+remote has no patterns, a blocked package stays listed and marked, the search's guard, both spellings of a Docker
+Hub name); R-CUR-003 (kit check 23 and one case in `npm`, `nuget`, `ociremote`, `debvirtual`, `ansibleremote`);
+R-CUR-004 (kit check 23, the virtual walk past a refusing member, the refusal's text); R-CUR-005
+(`TestR_CUR_005_WhoReadsWritesAndChecksTheRules`); R-CUR-006 (written, checked and propagated; the journal's part
+`deliveryMode`); R-CUR-017 (the mirror admits what its scope and the rules both admit). The API: `GET`/`POST
+…/delivery-rules`, `DELETE …/delivery-rules/{ruleId}`, `POST …/delivery-rules/check`; a remote's document has
+`remote.delivery` and `remote.mirror.include` and no `includePatterns`/`excludePatterns`; a stored version the rules
+do not deliver reads `available: false` with `unavailableReason`. **Where it changed the contracts and the
+specification** (Q-CUR-40 to Q-CUR-42): the delivery check is kit check 23 (21 was taken), so the catalogue's
+becomes 22; a refusal's count is summed on each replica and written every 5 s (gap H-1800: up to 5 s of counts are
+lost at a crash); OCI filters its tags list itself, since the host's path filter would refuse the second spelling of
+a Docker Hub name; `upstream/scanner-trivy` is in mode `onlyAllowed` with one product rule. **Not built, by its
+report:** a test of the rows of the project `upstream` and of the 409 `managed_by_product` of a rule's write on a
+system repository; a test of the replay of the parts `rules` and `deliveryMode` after a restore; a case of a
+refusal through a Bastion; every screen and the manual's sentences (R5b, R6). **Not verified, by its report:** the
+whole lint after its last repair (it linted the touched packages); 21 of its 28 integration areas ran before a
+last repair that changes the order of a remote's fetch (the refusal now stands before the format's gate reads a
+document) and were not run again; no end-to-end test. Debian: a plain `apt` against the remote itself lists a
+refused package from the upstream's index and fails the download with a bare `403 Forbidden` (R-DEB-036, gap
+H-1726 marked live).
+
+**Three conditions before it lands, found by the development agent when it read the commits:**
+
+1. **A mirror must not lose its bound.** A mirror's scope moves from the repository's `includePatterns` to
+   `remote.mirror.include`, and a stored remote's patterns are ignored from this commit on (no migration, by the
+   stage's rule). A stored mirror of a public registry whose bound was its patterns therefore has no scope after
+   the upgrade, and its next pass stores everything the upstream offers: the bound of R-REPO-052 is checked when a
+   mirror is saved (`checkMirrorBound`, `internal/repository/validate_mirror.go`), not when a pass runs
+   (`internal/mirror/pass.go` takes `rs.Mirror.Include`, empty means everything). To do before the landing: a pass
+   applies the same bound and does not run a mirror that would not be saved today, saying so in its state and on
+   the mirror's page; whether the owner's installation holds such a mirror could not be read (no credential is
+   taken for it), so the guard is what protects it.
+2. **No screen offers a field that answers 422.** The remote's settings still show the include and exclude
+   patterns behind the advanced settings, and the mirror form still takes its bound from them
+   (`web/src/app/features/repositories/mirror-settings.ts`, `repository-create.ts`, `repository-detail.ts`); with
+   the rules a remote refuses both, and the mirror's scope cannot be set from the browser. To do with the landing
+   or as the commit right behind it: the pattern fields leave a remote's forms, the mirror form gets its scope
+   (`remote.mirror.include`), rendered and looked at (rule 11). It is a part of R5b cut forward.
+3. **The landing's gates run whole**: the lint over the whole tree, every area of the remote, virtual, mirror and
+   Bastion paths on the final commits (the 21 areas among them), the areas the tool for a changed answer names
+   where they name `includePatterns`, `excludePatterns` or `available`, and the web's checks.
+
+What the later packages take over from it: R3 wires `repository.Decider` (the port's implementation exists in the
+application's area `delivery rules`), takes kit check 22 and turns on the registration's check; R2b writes an
+allow through `rules/store.PutTx`; R5b builds the screens of the rules.
 
 **T-25 · Projects and Repositories leave the admin area's menu** (owner, 2026-11-23, 19:30, whole: "Ich finde
 Projects und Repositories haben im Admin-Mneü nichts zusuchen. Sind da falsch plaziert. Ein Admin schaut nicht im
@@ -9251,6 +9309,29 @@ the changed harness; its result goes into the shard's entry of section 8.
 created from the main area's list by those who may; the administrator's columns stand there on
 demand; an entry Repositories under "Your work" lists every repository the caller can see. It stays
 not begun.
+**19:52, the delivery rules' builder reports: built, two commits, its gates green but for two gaps it
+names** (the whole lint after its last repair; 21 of 28 areas before that repair). **The development
+agent reads the commits before the landing and does not land them this evening** (told to the owner at
+19:54, since it had named a landing for about 21:00): a stored mirror whose bound was its patterns would
+mirror without a bound after the upgrade, since the bound is checked at a save and not at a pass; the
+screens would still offer a remote's pattern fields, which answer 422 from this commit on, and could not
+set a mirror's scope; and the builder's gates have the two gaps. Each is small; together and at night
+they are no landing that holds what the owner asked for this morning. The work is kept whole: the
+branch `t24-r2-delivery-rules` is pushed (a push of a branch starts no pipeline), the builder's worktree
+is removed, and section 10 says what is built, what is not, and the three conditions before it lands.
+**With this every builder that ran at 17:15 has reported; five have landed, one waits as a branch.**
+**19:55, the evening ends.** On `main`: the code of the push of 18:39 and this plan. Released at 18:55 and
+running on the owner's installation since 19:04 (both releases upgraded, twenty pods). Read from the
+pipeline of the last code push (Test and Release 45229955480): its gating jobs green, the release cut,
+the layout job green, all four shards green (shard a on its second run), and all nine legs of the kind
+cluster green, `e2e (oci)`, `e2e (bastion)`, `e2e (vuln)` and `e2e (push)` among them.
+Not read: the summary of the evidence job (the first two of the six points of 17:06). **Open: 39
+entries in section 8 and 18 in section 12** (118 and 25 in the lists Closed; 110 and 43 were open at
+08:16, and about forty were added during the day). What remains is section 1's list: the delivery
+rules' three conditions, T-24 from the catalogue on, T-25, W8, W10b, the second round of the documents,
+the repair of the record's publish, the fixtures in three browsers, three single sets of the nightly,
+what W4 did not do, and the single entries. No agent runs; the timer is deleted; the two landing
+worktrees stand on `main` (the second is removed).
 **13:10, the third research of T-24 is back** (what the scans do with content that is stored and not
 served). Every scan starts from the store's commit hook, the same for a client's fill, a mirror pass
 and a background download, so a fetch for examination needs no new trigger. npm and NuGet are matched
