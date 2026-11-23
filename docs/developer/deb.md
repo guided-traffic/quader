@@ -348,6 +348,8 @@ lock of the directory. `RecordRelease` is the single place that decides the floo
 `index`, coalesced per repository, directory and index path) reads the hash the stored release names, fetches the index through
 `Host.BackgroundUpstream` (by hash when the release has `Acquire-By-Hash`), and replaces the rows in one transaction (bounds 1 GiB and 1,000,000
 paragraphs, `too_many_entries`); an empty path fetches the release of a directory (recording an absent suite) and enqueues the parses of its scope.
+Each run is counted in `quader_deb_remote_parse_total{outcome}` through `RemoteJobs.CountParse`, which `startDebRemote`
+([wire_deb_remote.go](../../internal/app/wire_deb_remote.go)) registers.
 `deb-index` of a remote (`RunIndex`) re-verifies the unverified releases from the cache and forgets what `deb.by_hash_keep` has passed; the remote part
 of `deb-index-refresh` enqueues it. The runtime is `RemoteJobs`; the composition root wires it as a late value on a replica that claims jobs
 ([wire_deb_remote.go](../../internal/app/wire_deb_remote.go), ADR-187) and implements `Background` over the mirror host.
@@ -650,9 +652,21 @@ and its CI job `e2e-deb` (WP10), the UI (WP11), the documentation (WP12) and the
 Not built, or not proven:
 
 - The virtual class has no trigger on a change of claims (Q-DEB-65, [H-725](../security/deb-virtual.md#h-725--a-change-of-claims-reaches-the-merged-index-at-the-next-check-not-at-once))
-  and enqueues its build after a member's publication has committed, not in it (H-726); `member_expired` and the dropping of a member's recorded `Date`
-  are unit rules, not integration cases.
-- The Debian pass beside clients and under a drain in the e2e sets.
+  and enqueues its build after a member's publication has committed, not in it (H-726). `member_expired` and the dropping of a member's recorded
+  `Date` are integration cases of `debvirtual` besides their unit rules: a member whose stored copy was evicted and whose upstream serves a
+  release past its `Valid-Until` fails the build (`TestR_DEB_025_TheEarliestValidUntilIsCarriedOver`; while a verified copy is stored, a
+  refused refresh leaves that copy the member's release, Q-DEB-64), and a member taken out and put back has its older release merged after the rollback
+  was refused (`TestR_DEB_025_AReleaseOlderThanTheRecordedDateIsNotMerged`).
+- No real apt client is run without a credential against a private repository, and none is to be: the set `deb` runs `apt-get` with an
+  `auth.conf.d` file against private repositories, so apt's credentials are accepted, and the answer a client without one gets, 401 with
+  `WWW-Authenticate: Basic realm="quader"`, is asserted for a Debian repository at the integration tier
+  (`TestR_DEB_027_TheGateAndTheMemberPaths`). Whether apt sends the credential of `auth.conf` before the challenge or after it is apt's
+  behaviour and was not checked; what apt prints for a 401 is the client's.
+- No Debian rows in the e2e sets `mirror` and `mirror-long`, and none is to be built: no sets of those names exist any more
+  ([e2e.sh](../../deploy/dev/e2e.sh) and the workflows name none); the set `deb` runs a mirror repository with `apt-get update` and `apt-get install`
+  (`TestDebMirror`), and a drain under a client's load is behaviour of the drain, the same for every format, held once by the legs of npm and NuGet
+  (`npm-ha`: drain variant A under the npm load; `drain-load-b`, `-c`, `-e`: variants B, C and E under the npm and NuGet load). A Debian pass under a
+  drain would add a kind leg for what those show ([CLAUDE.md](../../CLAUDE.md), a format adds a constant).
 - No nightly set `deb-long`, by the development agent's decision of 2026-11-23: what it was to run is held at cheaper tiers. The delay
   bound of R-DEB-010 under load runs in `make test-performance` (Q-DEB-59, `TestR_DEB_010_DelayBound`), the bound of R-DEB-026 with
   `compression: ["xz"]` is an integration case of `debvirtual` (`TestR_DEB_026_TheDelayOfAVirtualBuildOverALargeIndexStaysWithinItsBound`),
@@ -661,7 +675,6 @@ Not built, or not proven:
   the release of a running job at a drain, which is the job worker's for every kind and runs in the drain legs of the nightly. A leg of
   its own would add a kind cluster per format for that, which the rule that a format adds a constant leaves out
   ([CLAUDE.md](../../CLAUDE.md)).
-- The metric `quader_deb_remote_parse_total` of R-DEB-033.
 - What the spec defers ([Deferred](../spec/formats/debian.md#deferred)): source package uploads, snapshots, `.udeb`, `dput`, debug symbols, `Valid-Until`
   on Quader's own releases, an external key service, vulnerability matching, copy and move, endpoints with exposure rules, the Bastion and nested
   virtual repositories.

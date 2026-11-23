@@ -39,8 +39,11 @@ func (a *App) startDebRemote(ports map[formats.ID]any) error {
 	if !ok {
 		return fmt.Errorf("formats: the Debian data port is not the PostgreSQL store")
 	}
+	parses := a.tele.metrics.NewCounterVec("quader_deb_remote_parse_total",
+		"Runs of the job deb-remote-parse by outcome: parsed, skipped or failed (R-DEB-033).", "outcome")
 	a.debRemote.set(&debdata.RemoteJobs{
 		Store: st, Background: debBackground{a}, ByHashKeep: a.cfg.Deb.ByHashKeep, Log: a.log.With("component", "deb-remote"),
+		CountParse: func(outcome string) { parses.WithLabelValues(outcome).Inc() },
 		Items: func() debdata.Remover {
 			if s, ok := a.itemStore.get(); ok {
 				return s

@@ -55,8 +55,9 @@ func TestR_DEB_027_TheGateAndTheMemberPaths(t *testing.T) {
 				t.Errorf("%s as %s: %d %s", p, name, a.Status, codeOf(a))
 			}
 		}
-		if a := e.get(rApt, p, ""); a.Status != 401 {
-			t.Errorf("%s anonymous: %d", p, a.Status)
+		// The answer a client without a credential meets carries the challenge (R-AUTH-001).
+		if a := e.get(rApt, p, ""); a.Status != 401 || a.Header.Get("WWW-Authenticate") != `Basic realm="quader"` {
+			t.Errorf("%s anonymous: %d %q", p, a.Status, a.Header.Get("WWW-Authenticate"))
 		}
 	}
 
@@ -281,6 +282,33 @@ func TestR_DEB_025_AReleaseOlderThanTheRecordedDateIsNotMerged(t *testing.T) {
 	e.st.Exec(`DELETE FROM deb_remote_releases WHERE repo_id = (SELECT id FROM repositories WHERE key = $1)`, rRemote)
 	e.rebuild()
 	e.failedWith("member_rollback", before, e.mark())
+
+	// Q-DEB-43: the recorded Date goes with the member. Taken out of the virtual repository, the member is in no record; put back, the
+	// older release has no floor and is merged, which is the deliberate way to accept it. Each change enqueues the build at once.
+	e.members(rApt, rLocal)
+	e.buildsEnded(rApt, e.mark())
+	if s := mustSuite(t, e, rApt); s.State != "current" {
+		t.Fatalf("without the remote member the suite is %s %q; the builds:\n%s", s.State, s.Reason, e.builds(rApt))
+	}
+	e.members(rApt, rLocal, rRemote)
+	e.buildsEnded(rApt, e.mark())
+	if s := mustSuite(t, e, rApt); s.State != "current" || s.Generation <= before.Generation {
+		t.Fatalf("the member put back left the suite %s %q at generation %d (before %d); the builds:\n%s",
+			s.State, s.Reason, s.Generation, before.Generation, e.builds(rApt))
+	}
+	if _, ok := find(e.packages(rApt, "stable", e.admin), "quader-hello", ""); !ok {
+		t.Error("the older release of the member put back is not merged")
+	}
+}
+
+// members replaces the members of a virtual repository through the management API.
+func (e *venv) members(virtual string, members ...string) {
+	e.t.Helper()
+	a := e.st.Do(e.r, http.MethodPatch, "/api/v1/projects/"+project+"/repositories/"+virtual, e.admin,
+		map[string]any{"virtual": map[string]any{"members": members}}, "Content-Type", "application/merge-patch+json", "If-Match", "*")
+	if a.Status != 200 {
+		e.t.Fatalf("the members of %s = %d %s", virtual, a.Status, a.Body)
+	}
 }
 
 // R-DEB-025: the earliest Valid-Until of the members' releases is the one of the merged release.
@@ -308,6 +336,20 @@ func TestR_DEB_025_TheEarliestValidUntilIsCarriedOver(t *testing.T) {
 	if d := time.Until(until); d < 5*24*time.Hour || d > 7*24*time.Hour {
 		t.Errorf("Valid-Until %s is %s away, want about six days", v, d)
 	}
+
+	// R-DEB-025: a member's release whose Valid-Until has passed is not merged (member_expired), and the last generation stays served. While
+	// the remote holds a verified copy, a refused refresh leaves that copy the member's release (Q-DEB-64), so the copy goes the way an
+	// eviction takes it (R-REPO-032): the next build asks the upstream, whose release has expired.
+	carried := mustSuite(t, e, rApt)
+	if err := e.stub.SetMode(debstub.Mode{ValidUntil: debstub.ValidUntilPassed}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.stub.NewGeneration("stable"); err != nil {
+		t.Fatal(err)
+	}
+	e.st.Exec(`DELETE FROM remote_cache_entries c USING repositories r WHERE r.id = c.repo_id AND r.key = $1 AND c.path LIKE 'dists/stable/%Release%'`, rRemote)
+	e.rebuild()
+	e.failedWith("member_expired", carried, e.mark())
 }
 
 // R-DEB-025: a suite the members do not have contributes nothing and is no failure; the inputs that did not change publish nothing new.

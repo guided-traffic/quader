@@ -75,6 +75,21 @@ func TestR_DEB_023_TheRowsOfAnIndexAreParsedAfterAnUpdateAndReplacedWhenItChange
 	eventually(t, 10*time.Second, "the rows to follow the new release", func() bool {
 		return e.st.Number(`SELECT count(*) FROM deb_remote_entries WHERE repo_id = $1 AND index_path = $2`, id, packages) == int64(want+1)
 	})
+	// R-DEB-033: the runs of deb-remote-parse that replaced the rows are counted.
+	if m := e.r.Metrics(t); !strings.Contains(m, `quader_deb_remote_parse_total{outcome="parsed"}`) {
+		t.Errorf("no parsed run of deb-remote-parse is counted:\n%s", grepLines(m, "quader_deb_remote_parse_total"))
+	}
+}
+
+// grepLines returns the lines of text that contain s.
+func grepLines(text, s string) string {
+	var out []string
+	for _, l := range strings.Split(text, "\n") {
+		if strings.Contains(l, s) {
+			out = append(out, l)
+		}
+	}
+	return strings.Join(out, "\n")
 }
 
 func TestR_DEB_022_APackageFileIsVerifiedAgainstTheDigestOfTheParsedIndex(t *testing.T) {
@@ -207,8 +222,16 @@ func TestR_DEB_023_AnIndexOverTheBoundFailsItsRunAndTheEarlierRowsStay(t *testin
 		t.Fatalf("the data port is %T", h.FormatData(debformat.ID))
 	}
 	base, _ := url.Parse(e.srv.URL + "/debian/")
-	j := &debdata.RemoteJobs{Store: port, Background: backgroundOf{base: base}, MaxParagraphs: 1000}
+	var outcomes []string
+	j := &debdata.RemoteJobs{
+		Store: port, Background: backgroundOf{base: base}, MaxParagraphs: 1000,
+		CountParse: func(outcome string) { outcomes = append(outcomes, outcome) },
+	}
 	args, _ := json.Marshal(debdata.ParseArgs{RepoID: id, Dir: "dists/bulk", Path: "main/binary-amd64/Packages"})
+	// R-DEB-033: a run whose rows match the release parses nothing and counts skipped.
+	if err := j.RunParse(context.Background(), &jobs.Run{Job: jobs.Job{ID: "it", Args: args}}); err != nil {
+		t.Fatalf("a run over parsed rows: %v", err)
+	}
 	// The index is parsed already; a parse runs when the hash it recorded is not the one the release lists, so the recorded hash is changed.
 	e.st.Exec(`UPDATE deb_remote_indexes SET sha256 = decode(repeat('00', 32), 'hex') WHERE repo_id = $1`, id)
 	err := j.RunParse(context.Background(), &jobs.Run{Job: jobs.Job{ID: "it", Args: args}})
@@ -217,6 +240,9 @@ func TestR_DEB_023_AnIndexOverTheBoundFailsItsRunAndTheEarlierRowsStay(t *testin
 	}
 	if after := e.rows("deb_remote_entries", repo); after != before {
 		t.Errorf("the rows are %d after the failed run, were %d", after, before)
+	}
+	if strings.Join(outcomes, " ") != debdata.ParseSkipped+" "+debdata.ParseFailed {
+		t.Errorf("the runs counted %v, want skipped then failed", outcomes)
 	}
 }
 

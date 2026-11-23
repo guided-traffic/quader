@@ -1541,7 +1541,7 @@ Priority: **P2** · Covers: quader-only
 | `quader_deb_upstream_signature_failures_total` | counter | `repo`, `reason` | R-DEB-020 |
 | `quader_deb_release_rollbacks_total` | counter | `repo` | Older release documents kept out (R-DEB-019) |
 | `quader_deb_unverified_fills_total` | counter | `repo` | Package files stored without an announced digest (R-DEB-022) |
-| `quader_deb_remote_parse_total` | counter | `outcome` (`parsed`, `skipped`, `failed`) | Runs of `deb-remote-parse` |
+| `quader_deb_remote_parse_total` | counter | `outcome` (`parsed`, `skipped`, `failed`) | Runs of `deb-remote-parse`: `parsed` replaced or removed the rows of an index, `skipped` had nothing to parse (the rows match the release, no usable release, the repository gone, or a run of a directory's scope, which enqueues the parses), `failed` ended with an error; an attempt the queue retries counts again |
 
 Acceptance criteria:
 

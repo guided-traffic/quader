@@ -157,7 +157,7 @@ func (j *RemoteJobs) mirrorIndexes(ctx context.Context, up discover.Upstream, in
 			continue
 		}
 		if w.parse {
-			if err := j.parseIndex(ctx, up, info, ParseArgs{RepoID: sc.RepoID, Dir: dir, Path: w.base}); err != nil {
+			if _, err := j.parseIndex(ctx, up, info, ParseArgs{RepoID: sc.RepoID, Dir: dir, Path: w.base}); err != nil {
 				return nil, err
 			}
 		}

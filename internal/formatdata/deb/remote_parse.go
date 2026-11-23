@@ -62,7 +62,19 @@ type RemoteJobs struct {
 	Now func() time.Time
 	// MaxParagraphs bounds the paragraphs of one index; 0 is the bound of R-DEB-034, 1,000,000. A test lowers it.
 	MaxParagraphs int
+	// CountParse counts a run of deb-remote-parse by its outcome, ParseParsed, ParseSkipped or ParseFailed
+	// (quader_deb_remote_parse_total, R-DEB-033); nil counts nothing.
+	CountParse func(outcome string)
 }
+
+// The outcomes of a run of deb-remote-parse (R-DEB-033): the rows of an index were replaced or removed; the run had nothing to parse
+// (the rows match the release, no usable release is stored, the repository is gone or no remote, or the run fetched a directory's
+// release and enqueued the parses of its scope); the attempt ended with an error, which the queue may retry.
+const (
+	ParseParsed  = "parsed"
+	ParseSkipped = "skipped"
+	ParseFailed  = "failed"
+)
 
 func (j *RemoteJobs) now() time.Time {
 	if j.Now != nil {
@@ -144,23 +156,39 @@ func join(dir, name string) string {
 // transaction. A job with an empty path fetches the release documents of its directory first (and records an absent suite) and
 // enqueues the parse of the indexes of its scope that lack rows. It is registered with RegisterJobs.
 func (j *RemoteJobs) RunParse(ctx context.Context, run *jobs.Run) error {
+	parsed, err := j.runParse(ctx, run)
+	if j.CountParse != nil {
+		switch {
+		case err != nil:
+			j.CountParse(ParseFailed)
+		case parsed:
+			j.CountParse(ParseParsed)
+		default:
+			j.CountParse(ParseSkipped)
+		}
+	}
+	return err
+}
+
+// runParse is one run of deb-remote-parse; parsed says whether it replaced or removed the rows of an index.
+func (j *RemoteJobs) runParse(ctx context.Context, run *jobs.Run) (parsed bool, err error) {
 	var a ParseArgs
 	if err := json.Unmarshal(run.Args, &a); err != nil {
-		return jobs.Permanent(fmt.Errorf("deb-remote-parse: the arguments do not read: %w", err))
+		return false, jobs.Permanent(fmt.Errorf("deb-remote-parse: the arguments do not read: %w", err))
 	}
 	info, ok, err := j.repo(ctx, a.RepoID)
 	if err != nil || !ok {
-		return err // a repository that was deleted has nothing to parse
+		return false, err // a repository that was deleted has nothing to parse
 	}
 	if info.Class != "remote" || info.Format != "deb" {
-		return nil
+		return false, nil
 	}
 	up, err := j.Background.Upstream(ctx, a.RepoID, run.ID)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if a.Path == "" {
-		return j.fetchScope(ctx, up, info, a)
+		return false, j.fetchScope(ctx, up, info, a)
 	}
 	return j.parseIndex(ctx, up, info, a)
 }
@@ -267,20 +295,23 @@ func (j *RemoteJobs) verifyPair(ctx context.Context, up discover.Upstream, info 
 	return err
 }
 
-// parseIndex parses one index into rows.
-func (j *RemoteJobs) parseIndex(ctx context.Context, up discover.Upstream, info repoInfo, a ParseArgs) error {
+// parseIndex parses one index into rows; parsed says whether it replaced or removed them.
+func (j *RemoteJobs) parseIndex(ctx context.Context, up discover.Upstream, info repoInfo, a ParseArgs) (parsed bool, err error) {
 	rel, ok, err := j.usableRelease(ctx, up, info, a.RepoID, a.Dir)
 	if err != nil || !ok {
-		return err
+		return false, err
 	}
 	files, err := j.Store.Files(ctx, a.RepoID, a.Dir)
 	if err != nil {
-		return err
+		return false, err
 	}
 	i := slices.IndexFunc(rows.PreferredIndexes(files, true), func(r rows.IndexRef) bool { return r.Path == a.Path })
 	if i < 0 {
 		// The release does not list the index any more: its rows go.
-		return j.dropIndex(ctx, a)
+		if err := j.dropIndex(ctx, a); err != nil {
+			return false, err
+		}
+		return true, nil
 	}
 	ref := rows.PreferredIndexes(files, true)[i]
 	var have []byte
@@ -292,19 +323,22 @@ func (j *RemoteJobs) parseIndex(ctx context.Context, up discover.Upstream, info 
 		}
 		return err
 	}); err != nil {
-		return err
+		return false, err
 	}
 	if sum32(have) == ref.SHA256 && len(have) == 32 {
-		return nil
+		return false, nil
 	}
 	body, err := j.fetchIndex(ctx, up, rel, a.Dir, ref)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if sha256.Sum256(body) != ref.SHA256 {
-		return errors.New("the index the upstream served is not the file its release names; the next attempt reads the release again")
+		return false, errors.New("the index the upstream served is not the file its release names; the next attempt reads the release again")
 	}
-	return j.replaceRows(ctx, a, ref, body)
+	if err := j.replaceRows(ctx, a, ref, body); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func (j *RemoteJobs) dropIndex(ctx context.Context, a ParseArgs) error {

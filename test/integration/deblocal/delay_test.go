@@ -128,7 +128,10 @@ func TestR_DEB_010_DelayBound(t *testing.T) {
 					a := e.st.Do(up, "PUT", uploadPath(name+"_1.0-1_amd64.deb", []string{suite}), e.tokA, build(t, name, "1.0-1", nil), "Content-Type", debMedia)
 					answered := time.Now()
 					if a.Status != 201 {
-						t.Errorf("upload %s = %d %s", name, a.Status, a.Body)
+						// The replica's lines of this request say which wait ran out (a pooled connection, a retry of the database), so a
+						// recurrence of the 503 database_unavailable of nightly 42677190569 tells pool exhaustion from a database fault.
+						t.Errorf("upload %s = %d %s; the lines of request %s on %s:\n%s", name, a.Status, a.Body, a.Header.Get("X-Request-Id"),
+							up.Name, linesOf(up.Logs.String(), a.Header.Get("X-Request-Id")))
 						return
 					}
 					seq := seqOf(e, a.JSON(t), suite)
@@ -198,4 +201,21 @@ func (e *env) waitIndexOn(r *testenv.Replica, suite string, seq int64) suiteStat
 	}
 	e.t.Fatalf("suite %s did not publish change %d", suite, seq)
 	return suiteState{}
+}
+
+// linesOf returns the lines of a replica's log that name a request ID, or a note when it has none.
+func linesOf(log, id string) string {
+	if id == "" {
+		return "(the answer carried no X-Request-Id)"
+	}
+	var out []string
+	for _, l := range strings.Split(log, "\n") {
+		if strings.Contains(l, id) {
+			out = append(out, l)
+		}
+	}
+	if len(out) == 0 {
+		return "(no line of the replica's log names it)"
+	}
+	return strings.Join(out, "\n")
 }
