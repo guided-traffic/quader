@@ -680,18 +680,31 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- **The missing-data notice of an image names the wrong cause (seen by the gate's builder on 2026-11-24, 10:20):** a
+  refused pull of an unscanned image says "no advisory data has been imported for this ecosystem yet", where the cause is
+  that the image has not been scanned yet. Given to a builder at 10:24.
+
 - **A stacked row breaks a word in the middle at 390 px (seen by the development agent on 2026-11-24, 10:30, in the
   renders of the pull menu):** on a Debian repository's versions at 390 px the label "Veröffentlicht" reads
   "Veröffentli" / "cht"; the stacked rows' label column lets a long German word break inside itself. Together with the
   token list that stacks at 1,024 px on a reused UI instance as its "Created" age grows (the layout package's leftover),
   given to a builder at 10:35.
 
-- **With `onMissingData: block`, a pull of an image index is refused (seen in the code by the image scan's builder on
+### Closed
+
+- **Closed on 2026-11-24, 10:30, by the gate's package (Q-VULN-271, R-VULN-015):** with `onMissingData: block`, the gate
+  of a pull asked for the scan row of every manifest it gated, and an index or Docker's attestation manifest never gets
+  one, so `docker pull` of a multi-platform image was refused at the index; on a remote the refusal came before the tag's
+  probe, so the platform images were never fetched. The gate's statement `VulnImageVerdict` now applies the discovery's
+  selection to the manifest's row: an index, an attachment, a referrer, a signature and an artifact that is no container
+  image pass the missing-data rule (a blocking finding still refuses them); the platform image is refused until its
+  detection has finished. Held by one integration case in `vulnimage` (about 3 s, bytes), which failed before the fix with
+  the index by tag refused. The malware gate has no such defect (it decides per blob), and no other format gates a listing
+  document. Left, one line under Tests and tools: `TestR_VULN_050_R_MAL_035_…` waited 60 s for "evaluated" once at a load
+  of 28–33 and passed alone in 6 s. As it stood: **With `onMissingData: block`, a pull of an image index is refused (seen in the code by the image scan's builder on
   2026-11-24, 09:19; not run):** `GateImage` asks for a scan row of every manifest, an index never has one, so
   `Detected` stays false, against its own comment "a manifest list passes". Dormant: the default is `allow`. Given to a
   builder at 09:55, once the image scan's package (which touches the same statements) was on main.
-
-### Closed
 
 - **Closed on 2026-11-24, 10:12, by the pull menu's package (Q-UI-1066, Q-UI-1067):** the box "Pull-Befehl" and the
   link "Befehl anzeigen" are gone from the repository page of every format. Beside each version, and beside each package
