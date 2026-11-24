@@ -107,7 +107,7 @@ export interface TokenLimitsView {
             @if (used(t); as at) {
               <quader-time-ago [at]="at" absolute="title" />
             } @else {
-              <span class="muted" i18n="@@tt-table.not-used">Not used yet</span>
+              <span class="muted no-time" i18n="@@tt-table.not-used">Not used yet</span>
             }
           </td>
           <td class="actions">

@@ -65,10 +65,9 @@
   --quader-border: light-dark(#dcdcde, #4c4b51);
   --quader-border-strong: light-dark(#89888d, #737278);
   --quader-text-muted: light-dark(#626168, #bfbfc3);
-  --quader-inverse-surface: light-dark(#28272d, #ececef);
-  --quader-on-inverse-surface: light-dark(#ececef, #28272d);
-  // The reference's strong feedback, the fill of its toast (R-UI-042, Q-UI-1063): one dark grey with white text in both schemes
-  // (its neutral 800 and 0); the action is its blue 300 (#63a6e9, 4.49:1 on the grey) a hair lighter, as the accent is, for 4.5:1.
+  // The reference's strong feedback, the fill of its toast and its tooltip (R-UI-042, Q-UI-1063, Q-UI-1065): one dark grey with
+  // white text in both schemes (its neutral 800 and 0); the action is its blue 300 (#63a6e9, 4.49:1 on the grey) a hair lighter, as
+  // the accent is, for 4.5:1.
   --quader-feedback-strong-bg: #3a383f;
   --quader-feedback-strong-fg: #ffffff;
   --quader-feedback-strong-link: #66a8ea;

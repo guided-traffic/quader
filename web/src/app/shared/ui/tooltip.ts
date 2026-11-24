@@ -12,28 +12,74 @@ import {
   signal,
 } from '@angular/core';
 
-/** The bubble of a tooltip: the reference's small dark label (`--quader-inverse-surface`). */
+/**
+ * The bubble of a tooltip, the reference's (its design system's tooltip, Q-UI-1065): the strong feedback grey of its toast with white
+ * text in both schemes, 12 px on a 16 px line, 8 by 12 px of padding, 4 px round, at most 200 px wide with the text centred, and an
+ * arrow of 8 by 4 px that points at the element from the 4 px between them. `placement` is the side of the element it stands on;
+ * `arrowAt` is where the element's middle is, from the bubble's left edge, so that the arrow keeps pointing at it where the window's
+ * edge pushed the bubble off centre.
+ */
 @Component({
   selector: 'quader-tooltip',
   // Hidden from assistive technology: the element's description (below) carries the text once.
-  host: { 'aria-hidden': 'true' },
-  template: `{{ text() }}`,
+  host: { 'aria-hidden': 'true', '[attr.data-placement]': 'placement()', '[style.--quader-tooltip-arrow]': 'arrowAt()' },
+  template: `<span class="arrow"></span><span class="inner">{{ text() }}</span>`,
   styles: `
     :host {
       display: block;
+      position: relative;
       box-sizing: border-box;
-      max-inline-size: 20rem;
-      padding: var(--quader-space-1) var(--quader-space-2);
-      border-radius: var(--quader-radius-m);
-      background: var(--quader-inverse-surface);
-      color: var(--quader-on-inverse-surface);
+      padding: var(--quader-space-1);
+    }
+    .inner {
+      display: block;
+      box-sizing: border-box;
+      // The reference's 200 px, its tooltip's largest width.
+      max-inline-size: 12.5rem;
+      padding: var(--quader-space-2) var(--quader-space-3);
+      border-radius: var(--quader-radius-s);
+      background: var(--quader-feedback-strong-bg);
+      color: var(--quader-feedback-strong-fg);
+      box-shadow: var(--quader-elevation-2);
       font: var(--quader-type-body-small);
-      overflow-wrap: anywhere;
+      text-align: center;
+      overflow-wrap: break-word;
+    }
+    .arrow {
+      position: absolute;
+      left: var(--quader-tooltip-arrow, 50%);
+      inline-size: var(--quader-space-2);
+      block-size: var(--quader-space-1);
+      transform: translateX(-50%);
+    }
+    .arrow::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      border: var(--quader-space-1) solid transparent;
+    }
+    :host([data-placement='top']) .arrow {
+      bottom: 0;
+    }
+    :host([data-placement='top']) .arrow::before {
+      top: 0;
+      border-bottom-width: 0;
+      border-top-color: var(--quader-feedback-strong-bg);
+    }
+    :host([data-placement='bottom']) .arrow {
+      top: 0;
+    }
+    :host([data-placement='bottom']) .arrow::before {
+      bottom: 0;
+      border-top-width: 0;
+      border-bottom-color: var(--quader-feedback-strong-bg);
     }
   `,
 })
 export class TooltipBubble {
   readonly text = signal('');
+  readonly placement = signal<'top' | 'bottom'>('top');
+  readonly arrowAt = signal<string | null>(null);
 }
 
 /**
@@ -58,6 +104,7 @@ export class Tooltip implements OnDestroy {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly describer = inject(AriaDescriber);
   private ref: OverlayRef | null = null;
+  private placed: MutationObserver | null = null;
   private timer: ReturnType<typeof setTimeout> | undefined;
   private described: string | null = null;
 
@@ -76,23 +123,49 @@ export class Tooltip implements OnDestroy {
   protected show(): void {
     clearTimeout(this.timer);
     if (this.ref) return;
-    const ref = this.overlay.create({
-      positionStrategy: this.overlay
-        .position()
-        .flexibleConnectedTo(this.host)
-        .withPositions([
-          { originX: 'center', originY: 'bottom', overlayX: 'center', overlayY: 'top', offsetY: 4 },
-          { originX: 'center', originY: 'top', overlayX: 'center', overlayY: 'bottom', offsetY: -4 },
-        ])
-        .withPush(true),
-      scrollStrategy: this.overlay.scrollStrategies.close(),
-    });
+    // Above the element, and under it where the window has no room above, as the reference places its tooltip; the arrow fills
+    // the 4 px between the bubble and the element.
+    const position = this.overlay
+      .position()
+      .flexibleConnectedTo(this.host)
+      .withPositions([
+        { originX: 'center', originY: 'top', overlayX: 'center', overlayY: 'bottom' },
+        { originX: 'center', originY: 'bottom', overlayX: 'center', overlayY: 'top' },
+      ])
+      .withPush(true);
+    // A scroll moves the bubble with its element, as the reference's does, rather than closing it.
+    const ref = this.overlay.create({ positionStrategy: position, scrollStrategy: this.overlay.scrollStrategies.reposition() });
+    this.ref = ref;
     const bubble = ref.attach(new ComponentPortal(TooltipBubble)).instance;
     bubble.text.set(this.quaderTooltip());
+    // The side and the arrow are read from where the bubble stands: the overlay sets the styles of its pane and of the pane's box
+    // whenever it places the bubble (on opening, on a window that changes its size), and a push off centre is no change of position
+    // that it reports.
+    this.placed = new MutationObserver(() => this.pointArrow(ref, bubble));
+    for (const el of [ref.overlayElement, ref.overlayElement.parentElement]) {
+      if (el) this.placed.observe(el, { attributes: true, attributeFilter: ['style'] });
+    }
+    this.pointArrow(ref, bubble);
     // Hoverable: moving from the element onto the tooltip keeps it open.
     ref.overlayElement.addEventListener('mouseenter', () => clearTimeout(this.timer));
     ref.overlayElement.addEventListener('mouseleave', () => this.hideSoon());
-    this.ref = ref;
+  }
+
+  /**
+   * Sets the side the bubble stands on and points its arrow at the element's middle, at least 8 px inside its corners, once the
+   * bubble stands where its position put it.
+   */
+  private pointArrow(ref: OverlayRef, bubble: TooltipBubble): void {
+    requestAnimationFrame(() => {
+      if (this.ref !== ref) return;
+      const origin = this.host.nativeElement.getBoundingClientRect();
+      const box = ref.overlayElement.getBoundingClientRect();
+      if (box.width === 0) return;
+      bubble.placement.set(box.top >= origin.top + origin.height / 2 ? 'bottom' : 'top');
+      const inset = 8;
+      const at = Math.min(Math.max(origin.left + origin.width / 2 - box.left, inset), box.width - inset);
+      bubble.arrowAt.set(`${Math.round(at)}px`);
+    });
   }
 
   protected hideSoon(): void {
@@ -102,6 +175,8 @@ export class Tooltip implements OnDestroy {
 
   protected hide(): void {
     clearTimeout(this.timer);
+    this.placed?.disconnect();
+    this.placed = null;
     this.ref?.dispose();
     this.ref = null;
   }

@@ -124,6 +124,8 @@ side bar (**Tokens**). The description is one sentence, the header's `descriptio
   its client ([Q-UI-426](../spec/api-and-ui.md#q-ui-426--a-projects-repository-list-has-no-client-address-its-row-offers-set-up-client)). Judge a render by that first, and only then by widths and scrolling.
 - **A column is as wide as its content** ([Q-UI-563](../spec/api-and-ui.md#q-ui-563--a-column-is-as-wide-as-its-content-what-never-breaks-declares-no-width-and-the-columns-that-wrap-share-the-room)):
   a column whose values never break (a format, a class, a level, a time, a status, an identifier, the actions) declares no `width`;
+  a time with its badge is one such value, and so is a word in a time's place (`.no-time`: **Never**, **Not used yet**,
+  [Q-UI-1064](../spec/api-and-ui.md#q-ui-1064--an-age-and-its-badge-are-one-value-that-never-breaks));
   a column whose values wrap (a name, a description, a project, a scope) declares its least, and those share the rest by their
   content. Only a list with one wrapping column lets it `prefer`. A row's header that is an identifier carries `translate="no"`
   and stays on one line; a value longer than any column (a UUID) is cut on one line with its whole value as its `title`, a hash

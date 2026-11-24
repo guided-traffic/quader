@@ -506,11 +506,13 @@ td.class-cell .material-icons {
 
     // Keys, names and identifiers are never broken at a hyphen; a status keeps icon and label on one line. A list may let
     // the name of its first column wrap after a hyphen (`th.wrap-name`, Q-UI-303); a name beside its icon breaks inside itself
-    // (`.icon-name`, Q-UI-425).
+    // (`.icon-name`, Q-UI-425). A word that stands in a time's place (`.no-time`: Never, Not used yet) never breaks as the time does
+    // (Q-UI-563, Q-UI-1064): "Noch nicht verwendet" stood in two lines beside a token's column with 74 px to spare.
     th[scope='row']:not(.wrap-name) a,
     th[scope='row'][translate='no']:not(.wrap-name),
     td[translate='no']:not(.wrap),
     td time,
+    td .no-time,
     td > .ok,
     td > .bad,
     td > .warn {

@@ -166,7 +166,7 @@ export function tokenExpiry(token: Pick<BastionTokenSummary, 'expiresAt'>, now: 
               @if (t.lastUsedAt; as at) {
                 <quader-time-ago [at]="at" absolute="title" />
               } @else {
-                <span class="muted" i18n="@@bastion.token.unused">Not used yet</span>
+                <span class="muted no-time" i18n="@@bastion.token.unused">Not used yet</span>
               }
             </td>
             <td class="actions">

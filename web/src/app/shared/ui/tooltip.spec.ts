@@ -30,6 +30,10 @@ describe('Quader tooltip', () => {
     button.dispatchEvent(new Event('focus'));
     await settle(fixture);
     expect(bubble()?.textContent).toBe('Counts the files');
+    // The reference's tooltip (Q-UI-1065): above the element first, its text in the box beside an arrow that names nothing.
+    expect(bubble()?.getAttribute('data-placement')).toBe('top');
+    expect(bubble()?.querySelector('.inner')?.textContent).toBe('Counts the files');
+    expect(bubble()?.querySelector('.arrow')?.textContent).toBe('');
 
     button.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     await settle(fixture);

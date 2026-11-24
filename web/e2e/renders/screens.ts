@@ -131,6 +131,17 @@ async function* rowMenuOpen(page: Page): AsyncGenerator<string> {
   yield 'menu';
 }
 
+/**
+ * A tooltip open (Q-UI-1065): the first row's **Rotate**, focused as the keyboard focuses it, so that the bubble, its arrow over the
+ * button and its colours are in the picture of each scheme; at 390 px the window's edge pushes the bubble off the button's middle and
+ * the arrow keeps pointing at it. Found by its place, so the German pass takes it too. Nothing is chosen.
+ */
+async function* tooltipOpen(page: Page): AsyncGenerator<string> {
+  await page.locator('main td.actions button[aria-describedby]').first().focus();
+  await expect(page.locator('.cdk-overlay-container quader-tooltip')).toBeVisible();
+  yield 'tooltip';
+}
+
 /** A list without a drawer: as it opens, then with a text in the search field of its head (Q-UI-421). */
 function searched(text: string): Screen['walk'] {
   return async function* (page) {
@@ -323,7 +334,8 @@ const systemFile = 'main/63/main.cvd';
  */
 async function* systemFileView(page: Page): AsyncGenerator<string> {
   const base = '**/api/v1/projects/upstream/repositories/clamav';
-  const at = '2026-11-21T06:30:12Z';
+  // Relative to the render's clock: the page says how long ago, and a fixed date grew from "3 days ago" to months with the calendar.
+  const at = new Date(Date.now() - 3 * 86_400_000).toISOString().replace(/\.\d{3}Z$/, 'Z');
   const item = {
     repository: 'upstream/clamav',
     path: systemFile,
@@ -2857,6 +2869,8 @@ export const screens: readonly Screen[] = [
   { id: 'profile-tokens', path: '/ui/profile/tokens', kinds: all },
   // The plain user holds a token (setup.ts): its revoke-all, last on the page behind Advanced.
   { id: 'profile-tokens-advanced', path: '/ui/profile/tokens', kinds: ['plain'], walk: advancedOpen },
+  // A tooltip open over the token's Rotate (Q-UI-1065): the one screen that shows the bubble.
+  { id: 'profile-tokens-tooltip', path: '/ui/profile/tokens', kinds: ['plain'], walk: tooltipOpen, de: true },
   { id: 'profile-sessions', path: '/ui/profile/sessions', kinds: all },
   // A user's own usage and limits (R-UI-185).
   { id: 'profile-usage', path: '/ui/profile/usage', kinds: all, walk: usageDetailWalk },

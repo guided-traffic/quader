@@ -189,8 +189,8 @@ const surfaces: Record<string, string | readonly [string, string]> = {
   'filled field': '--quader-surface-variant',
   'selected row': '--quader-accent-container',
   'primary-container': '--quader-accent-container',
-  'inverse surface': '--quader-inverse-surface',
-  // The toast (R-UI-042, Q-UI-1063): the reference's strong feedback, and its close button under the pointer.
+  // The toast (R-UI-042, Q-UI-1063) and the tooltip (Q-UI-1065): the reference's strong feedback, and the toast's close button under
+  // the pointer.
   'strong feedback': '--quader-feedback-strong-bg',
   'strong feedback hover': ['--quader-btn-tertiary-bg-hover', '--quader-feedback-strong-bg'],
   'error container': '--quader-error-container',
@@ -283,7 +283,6 @@ const textPairs: readonly (readonly [string, string])[] = [
   ['--quader-on-surface', 'selected row'],
   ['--quader-text-muted', 'selected row'],
   ['--quader-on-accent-container', 'primary-container'],
-  ['--quader-on-inverse-surface', 'inverse surface'],
   ['--quader-feedback-strong-fg', 'strong feedback'],
   ['--quader-feedback-strong-link', 'strong feedback'],
   ['--quader-feedback-strong-fg', 'strong feedback hover'],

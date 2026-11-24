@@ -113,14 +113,14 @@ export function expiresSoon(token: Pick<Token, 'state' | 'expiresAt'>, now: numb
                 >
               }
             } @else {
-              <ng-container i18n="@@token-table.never">Never</ng-container>
+              <span class="no-time" i18n="@@token-table.never">Never</span>
             }
           </td>
           <td>
             @if (t.lastUsedAt; as at) {
               <quader-time-ago [at]="at" absolute="title" />
             } @else {
-              <span class="muted" i18n="@@token-table.not-used">Not used yet</span>
+              <span class="muted no-time" i18n="@@token-table.not-used">Not used yet</span>
             }
           </td>
           @if (!showOwner()) {

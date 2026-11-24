@@ -8830,7 +8830,8 @@ The owner's words of 2026-11-21: "wir ziehen alle verfügbaren Metadaten aus dem
 - **The list**: three rows, `bytecode`, `daily`, `main`, each with the version in use, its build time and its age ("under a day", "1 day",
   "8 days"); a `daily` built more than 7 days ago carries the `warn` badge **Outdated** with "ClamAV warns about a database older than 7
   days." in its tooltip and as the row's note, and `main` and `bytecode`, which ClamAV rebuilds rarely, show their age without a badge
-  and without the sentence ([Q-UI-912](#q-ui-912--only-daily-is-outdated-by-its-age-as-clamav-warns-only-about-daily)). Above
+  and without the sentence ([Q-UI-912](#q-ui-912--only-daily-is-outdated-by-its-age-as-clamav-warns-only-about-daily)); the age and
+  its badge are one line that never breaks ([Q-UI-1064](#q-ui-1064--an-age-and-its-badge-are-one-value-that-never-breaks)). Above
   the list one muted line names the set in use (`main-63.daily-28190.bytecode-339`) and, where it differs, the set before it. The rows are
   read with the versions' state (`include=state`) and the details of the one version in use of each database
   ([Q-UI-910](#q-ui-910--the-databases-and-their-versions-read-the-state-from-the-version-list-and-the-build-time-from-the-version-in-use)).
@@ -23190,6 +23191,69 @@ that stops, the close button named **Close**), [palette.spec.ts](../../web/src/s
 `admin-upstream-toasts` (one toast, a replaced one, three kinds side by side), in English and German. Docs:
 [design-language.md](../developer/design-language.md) (the controls' table, the palette), [ui-style-guide.md](../developer/ui-style-guide.md#lists),
 [web-ui.md](../developer/web-ui.md).
+
+### Q-UI-1064 · An age and its badge are one value that never breaks
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the layout checks of Test and Release (run 45340888441) failed on the databases of `upstream/clamav` at 1,024 px with the
+`daily` built 8 days ago: the column **Age** held "8 days" over **Outdated** in two lines while the column **Database** had 26 px that
+no row used, 25 px were missing for one line (R-UI-173). The finding came and went by the day: the render's build times count from its
+clock, so the column **Built** shows that day's dates and hours ("Nov 16, 2026, 7:12:03 AM" is wider or narrower than the day before),
+and the table's own layout shares the room by those widths.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The age and its badge on one line that never breaks, as a time and a status each never break (Q-UI-563); the column declares no width and is as wide as both (chosen) | `white-space: nowrap` on the cell | The cell reads as one value on every day; the table takes the room from the columns that wrap (the database's sentence) | The column is about 150 px wide in the row that is outdated |
+| (b) The badge on a line of its own under the age, by design | A block under the age | The column stays as narrow as the badge | Two lines where one fits; the token lists put a badge under a time only where the time is a sentence of its own |
+| (c) A declared width for the column | A number | Small change | A guess for one language and one font; Q-UI-563 dropped such widths |
+
+**Choice:** (a), and the same for a word that stands in a time's place (`.no-time`: **Never**, **Not used yet** of the token lists
+and a Bastion's tokens): the German pass of the renders found "Noch nicht verwendet" in two lines at 1,440 px beside the token's
+column with 74 px to spare. The scanner list's database already holds its badge and its age so (Q-UI-915). The other cells that show a time and
+a badge in a table put the badge under the time by their layout (the token lists, a Bastion's tokens, an issuer's keys), which the
+check reads as layout and no day changes. **Rationale:** a value that does not depend on its neighbours' widths cannot flip with the
+calendar. The development agent revisits it if the column pushes the table into stacked rows at a width where it fitted before.
+
+Two fixed dates of the render set changed with the calendar as well and count from its clock now: the file of `upstream/clamav`
+(`files-system`, its times are "… ago") and the Notation certificate of the signatures (it would read "expired on …" from
+2027-04-30 on).
+
+**Applied in the spec:** R-UI-194. Code: [clamav-databases.ts](../../web/src/app/features/repositories/content/clamav-databases.ts)
+(the cell without an age shows the dash too), `.no-time` in [_list-screens.scss](../../web/src/styles/_list-screens.scss) with
+[token-table.ts](../../web/src/app/shared/access/token-table.ts),
+[technical-token-table.ts](../../web/src/app/features/service-accounts/technical-token-table.ts) and
+[bastion-card.ts](../../web/src/app/features/bastions/bastion-card.ts), [screens.ts](../../web/e2e/renders/screens.ts) `systemFileView`,
+[signatures.ts](../../web/e2e/renders/signatures.ts) `notationLeaf`. Rendered: `clamav-databases` (both states, every width) with no
+finding; the token lists and the Bastions page with none.
+
+### Q-UI-1065 · The tooltip is the reference's: the toast's grey, above the element, with an arrow
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the tooltip was a bubble of Quader's inverse surface (`#28272d` in the light scheme, the pale `#ececef` in the dark one), 8 px
+round, under the element. The reference's tooltip (its design system's tooltip, read from its source: `tooltip.scss` on Bootstrap's
+tooltip) is its "strong feedback" fill in both schemes, the same `#3a383f` with white text as its toast (Q-UI-1063): 12 px text at
+weight 400 on a 16 px line, 8 by 12 px of padding, 4 px round, a medium shadow, at most 200 px wide with the text centred, above the
+element by default, and an arrow of 8 by 4 px in the 4 px between the bubble and the element.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The reference's tooltip whole: the strong feedback pair, its measures, its arrow, above first and under where the window has no room above (chosen) | Colour, shape and place as the source sets them | Toast and tooltip one grey in both schemes, as in the reference; the arrow says which element the text belongs to | The bubble covers what stands above the element, where it covered what stood below |
+| (b) Only the colours | The two tokens | Smallest change | Shape and place still Quader's own, against the rule to copy the reference |
+| (c) Keep the inverse surface and darken it in the dark scheme | Another pair | — | A second grey for the same kind of thing |
+
+**Choice:** (a). The shadow is `--quader-elevation-2`, as for the toast, not a shadow token of its own (the style guide adds none).
+The arrow points at the element's middle, read from where the bubble stands, also where the window's edge pushed the bubble aside
+(at 390 px). A scroll moves the bubble with its element, as the reference's does, where it used to close it. The inverse surface tokens had no other use and are gone. **Rationale:** the owner's direction is to copy the reference
+and add no styling of one's own; the pale bubble in the dark scheme was the visible defect. The development agent revisits the
+place above the element if a tooltip is found to cover the control the user needs next.
+
+**Applied in the spec:** none (R-UI-044's tooltip rule is unchanged). Code: [tooltip.ts](../../web/src/app/shared/ui/tooltip.ts),
+[_tokens.scss](../../web/src/styles/_tokens.scss). Tests: [tooltip.spec.ts](../../web/src/app/shared/ui/tooltip.spec.ts) (above
+first, the text in its box beside the arrow), [palette.spec.ts](../../web/src/styles/palette.spec.ts) (the strong feedback pair, which
+the tooltip now reads). Rendered: `profile-tokens-tooltip` (the token's **Rotate** focused), in English and German. Docs:
+[design-language.md](../developer/design-language.md) (the controls' table, the palette), [web-ui.md](../developer/web-ui.md).
 
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 

@@ -205,8 +205,9 @@ const notationLeaf = (cn: string, hours: number) => ({
   subject: `CN=${cn}, OU=Web team, O=Example GmbH, C=DE`,
   issuer: 'CN=Example Code Signing CA, O=Example GmbH, C=DE',
   serial: '4f2a9c71e03b5d88',
-  certificateNotBefore: '2026-01-15T00:00:00Z',
-  certificateNotAfter: '2027-04-30T00:00:00Z',
+  // Relative to the render's clock, so that the leaf reads "valid until …" on every day, not "expired on …" after a fixed date.
+  certificateNotBefore: iso(at(300 * 24)),
+  certificateNotAfter: iso(at(-160 * 24)),
   chain: [`CN=${cn}, OU=Web team, O=Example GmbH, C=DE`, 'CN=Example Code Signing CA, O=Example GmbH, C=DE', 'CN=Example Root CA, O=Example GmbH, C=DE'],
   signingScheme: 'notary.x509',
   signingAgent: 'notation-go/1.3.2',

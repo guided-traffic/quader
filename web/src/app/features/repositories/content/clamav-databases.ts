@@ -82,9 +82,11 @@ export interface DatabaseRow {
               <span class="muted">–</span>
             }
           </td>
-          <td>
+          <td class="age-cell">
             @if (age(r); as a) {
               <span class="age">{{ a }}</span>
+            } @else {
+              <span class="muted">–</span>
             }
             @if (outdated(r)) {
               <span class="badge warn" [attr.title]="outdatedText"
@@ -105,6 +107,11 @@ export interface DatabaseRow {
     }
     .sets code {
       overflow-wrap: anywhere;
+    }
+    // The age and its badge are one value that never breaks (Q-UI-563, Q-UI-1064): beside a name's column with room to spare,
+    // "8 days" stood over **Outdated** at 1,024 px on the days whose dates of the column Built were a few pixels wider.
+    td.age-cell {
+      white-space: nowrap;
     }
     .age {
       margin-inline-end: var(--quader-space-2);
