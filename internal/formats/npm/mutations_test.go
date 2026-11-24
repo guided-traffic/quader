@@ -3,6 +3,7 @@ package npm
 import (
 	"context"
 	"net/http"
+	"slices"
 	"strings"
 	"testing"
 
@@ -429,6 +430,41 @@ func TestR_NPM_017_Unpublish(t *testing.T) {
 			t.Fatal("a package row was created")
 		}
 	})
+}
+
+// TestR_AUTHZ_005_AnNpmRemovalIsRefusedWholeWhenTheCallerMayNotDeleteOneOfItsFiles: an unpublish is decided on every file it removes,
+// the tarball and the provenance bundle of each removed version, whether or not a bundle is there; the first the caller may not delete
+// refuses the whole request with 403, the PUT without the version and the DELETE of the package alike, and the package keeps every
+// version (Q-NPM-83, R-NPM-017).
+func TestR_AUTHZ_005_AnNpmRemovalIsRefusedWholeWhenTheCallerMayNotDeleteOneOfItsFiles(t *testing.T) {
+	for _, refused := range []string{"guard/-/guard-1.1.0.tgz", "guard/-/guard-1.1.0" + sigstoreSuffix} {
+		t.Run(refused, func(t *testing.T) {
+			rf := newRepo(t, func(o *formattest.HostOptions) {
+				o.Allow = func(tg formats.Target) error {
+					if tg.Path == refused && slices.Contains(tg.Actions, formats.ActionDelete) {
+						return errs.E(errs.Forbidden, errs.CodeForbidden, "the caller may not delete "+refused)
+					}
+					return nil
+				}
+			})
+			rf.publish("guard", "1.0.0")
+			rf.publish("guard", "1.1.0")
+			if r := rf.do(http.MethodPut, "guard/-rev/"+rf.rev("guard"), `{"versions":{"1.0.0":{}}}`); r.Code != http.StatusForbidden {
+				t.Errorf("the PUT without 1.1.0: %d, want 403: %s", r.Code, r.Body.String())
+			}
+			if r := rf.do(http.MethodDelete, "guard/-rev/"+rf.rev("guard"), ""); r.Code != http.StatusForbidden {
+				t.Errorf("the DELETE of the package: %d, want 403: %s", r.Code, r.Body.String())
+			}
+			if got := versionsOf(jsonOf(t, rf.get("guard"))); len(got) != 2 || len(rf.st.Tombstones) != 0 {
+				t.Fatalf("after the refused removals the package lists %v with %d tombstones, want both versions and none", got, len(rf.st.Tombstones))
+			}
+			for _, v := range []string{"1.0.0", "1.1.0"} {
+				if r := rf.get("guard/-/guard-" + v + ".tgz"); r.Code != http.StatusOK {
+					t.Errorf("the tarball of %s after the refused removals: %d, want 200", v, r.Code)
+				}
+			}
+		})
+	}
 }
 
 // TestR_NPM_017_RawDeleteOfATarballUnpublishesTheVersion: a delete of the tarball's item

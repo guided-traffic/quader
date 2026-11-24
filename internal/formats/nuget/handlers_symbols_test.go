@@ -5,9 +5,11 @@ import (
 	"bytes"
 	"context"
 	"net/http"
+	"slices"
 	"strings"
 	"testing"
 
+	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/formattest"
 )
@@ -262,6 +264,53 @@ func TestR_NUGET_020_ASymbolPackageGoesWithItsVersion(t *testing.T) {
 	}
 	if h.hasItem(t, acmeSnupkg) || h.hasItem(t, acmePath) {
 		t.Error("the delete left the symbol package or the package")
+	}
+}
+
+// TestR_NUGET_013_ADeleteThatWouldRemoveAFileTheCallerMayNotDeleteIsRefusedWhole: in delete mode the removal of a version is decided on
+// every file it takes, the package, the .nuspec and the symbol package, whether or not the file is there; the first the caller may not
+// delete refuses the whole delete with 403 and the version keeps every file (Q-NUGET-121, R-AUTHZ-005).
+func TestR_NUGET_013_ADeleteThatWouldRemoveAFileTheCallerMayNotDeleteIsRefusedWhole(t *testing.T) {
+	refuse := func(path string) formattest.HostOptions {
+		return formattest.HostOptions{Allow: func(tg formats.Target) error {
+			if tg.Path == path && slices.Contains(tg.Actions, formats.ActionDelete) {
+				return errs.E(errs.Forbidden, errs.CodeForbidden, "the caller may not delete "+path)
+			}
+			return nil
+		}}
+	}
+	for _, tc := range []struct {
+		name, refused string
+		symbols       bool
+	}{
+		{"the .nuspec", acmeNuspec, false},
+		{"the symbol package that is stored", acmeSnupkg, true},
+		{"the symbol package that was never pushed", acmeSnupkg, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := newWriteHost(t, refuse(tc.refused))
+			h.mustPush(t, "Acme.Widgets", "1.2.3")
+			if tc.symbols {
+				if r := h.pushSymbols(t, defaultSnupkg(t, "1.2.3")); r.Code != http.StatusCreated {
+					t.Fatalf("symbol push: status %d: %s", r.Code, r.Body.String())
+				}
+			}
+			h.deleteMode("delete")
+			if r := h.do(t, http.MethodDelete, "v3/package/acme.widgets/1.2.3"); r.Code != http.StatusForbidden {
+				t.Fatalf("delete: status %d, want 403: %s", r.Code, r.Body.String())
+			}
+			for _, p := range []string{acmePath, acmeNuspec} {
+				if !h.hasItem(t, p) {
+					t.Errorf("the refused delete removed %s", p)
+				}
+			}
+			if tc.symbols && !h.hasItem(t, acmeSnupkg) {
+				t.Error("the refused delete removed the symbol package")
+			}
+			if _, found, _ := h.st.VersionFacts(context.Background(), h.Ref().ID, "acme.widgets", "1.2.3"); !found || len(h.st.Tombstones) != 0 {
+				t.Errorf("after the refused delete the version is found %v with %d tombstones, want found and none", found, len(h.st.Tombstones))
+			}
+		})
 	}
 }
 

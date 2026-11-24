@@ -5083,7 +5083,7 @@ withholds bundles from `delete` proves common.
 
 **Applied in the spec:** R-NPM-017, [authorization.md](../authorization.md) R-AUTHZ-007. Code: [publish.go](../../../internal/formats/npm/publish.go),
 [handlers_unpublish.go](../../../internal/formats/npm/handlers_unpublish.go) (`mayDelete`), [paths.go](../../../internal/formats/npm/paths.go)
-(`sigstoreTarget`). Test: `TestR_AUTHZ_005_AnNPMWriteIsDecidedOnEveryFileItWritesOrRemoves`.
+(`sigstoreTarget`). Tests: `TestR_AUTHZ_005_AnNPMWriteIsDecidedOnEveryFileItWritesOrRemoves` (integration, a policy with a path pattern); the removal refused whole on a tarball and on an absent provenance bundle, by the PUT and the DELETE, in the unit test `TestR_AUTHZ_005_AnNpmRemovalIsRefusedWholeWhenTheCallerMayNotDeleteOneOfItsFiles` ([mutations_test.go](../../../internal/formats/npm/mutations_test.go)).
 
 ### Q-NPM-84 · Every npm write treats a version the caller may not read as one the package does not hold, and a tag at such a version is not the caller's to move
 

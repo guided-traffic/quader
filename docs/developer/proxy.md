@@ -590,6 +590,7 @@ virtual request records its allowed populate event with the grant reason of the 
 | Tier | Where | Proves |
 |---|---|---|
 | unit | [proxy_test.go](../../internal/proxy/proxy_test.go) | the URL builder (`%2e%2e`, `a b`), the `Cache-Status` forms, digest policies, the withheld tail, the size limit, the idle timeout, slot shares, the classification table, the negative readers, `withStatus` |
+| unit | [held_test.go](../../internal/proxy/held_test.go) | R-REPO-041, Q-NUGET-86: `fillHeld`, a body within the withheld tail is answered from the stored entry and not streamed, a longer one streams unless the format inspects it or the host holds the fill |
 | unit | [remote_test.go](../../internal/formathost/remote_test.go) | mode, settings member, currency of the bridge |
 | unit | [slots_exchange_test.go](../../internal/proxy/slots_exchange_test.go) | R-REPO-040, R-REPO-055 (Q-REPO-235): the repository's share returns when the exchange ends and the replica's slot when the fetch ends, a background fetch past its exchange is not pre-empted by a client or the signal, the counters' invariants through the parts, a hold pre-empted before its exchange changes nothing afterwards |
 | unit | [slotwait_test.go](../../internal/outbound/slotwait_test.go) | R-OPS-011: `slot_wait_ms` is a remote record's field (a wait, 0, null) and absent from other purposes |

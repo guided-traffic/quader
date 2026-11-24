@@ -4858,7 +4858,7 @@ Context: the request that fetches an artifact streams the upstream's body to its
 
 **Rationale:** the withheld tail already decides when the first byte leaves; making the threshold of streaming the same number removes the only case in which streaming bought nothing and cost the headers. The validators of a longer body need the body. The development agent revisits this when a client needs a validator on the first answer of a large artifact (then the leader waits for the commit as a waiter does, and Q-REPO-94 is reopened).
 
-**Applied in the spec:** [repositories-and-proxy.md](../repositories-and-proxy.md) R-REPO-041 (the withheld tail). Code: [proxy/artifact.go](../../../internal/proxy/artifact.go), [proxy/integrity.go](../../../internal/proxy/integrity.go), [proxy/types.go](../../../internal/proxy/types.go) `Request.Headers`, [formathost/remote.go](../../../internal/formathost/remote.go). Tests: the integration test `TestR_NUGET_015_TheFirstAnswerOfACacheMissCarriesTheHeadersOfAStoredAnswer` (directly and through a virtual repository), and the proxy and npm integration packages, which pass unchanged.
+**Applied in the spec:** [repositories-and-proxy.md](../repositories-and-proxy.md) R-REPO-041 (the withheld tail). Code: [proxy/artifact.go](../../../internal/proxy/artifact.go), [proxy/integrity.go](../../../internal/proxy/integrity.go), [proxy/types.go](../../../internal/proxy/types.go) `Request.Headers`, [formathost/remote.go](../../../internal/formathost/remote.go). Tests: the integration test `TestR_NUGET_015_TheFirstAnswerOfACacheMissCarriesTheHeadersOfAStoredAnswer` (directly and through a virtual repository), the engine's decision that holds such a body (`fillHeld`) in the unit test `TestR_REPO_041_TheFirstAnswerOfASmallMissComesFromTheStoredEntry` ([held_test.go](../../../internal/proxy/held_test.go)), and the proxy and npm integration packages, which pass unchanged.
 
 ### Q-NUGET-87 · On an endpoint with rules the validator of a local or virtual document follows its filtered bytes, and a virtual validator names the ID
 
@@ -5587,7 +5587,7 @@ generated `.nuspec`; a delete in mode delete was decided on the `.nupkg` and rem
 
 **Applied in the spec:** R-NUGET-013, [authorization.md](../authorization.md) R-AUTHZ-007. Code:
 [handlers_publish.go](../../../internal/formats/nuget/handlers_publish.go), [handlers_delete.go](../../../internal/formats/nuget/handlers_delete.go).
-Test: `TestR_AUTHZ_005_ANuGetWriteIsDecidedOnEveryFileItWritesOrRemoves`.
+Tests: `TestR_AUTHZ_005_ANuGetWriteIsDecidedOnEveryFileItWritesOrRemoves` (integration, a policy with a path pattern); the delete refused whole on the .nuspec, a stored and an absent symbol package in the unit test `TestR_NUGET_013_ADeleteThatWouldRemoveAFileTheCallerMayNotDeleteIsRefusedWhole` ([handlers_symbols_test.go](../../../internal/formats/nuget/handlers_symbols_test.go)).
 
 ### Q-NUGET-122 · A repository that is not public challenges, and the README route is a wiki route
 

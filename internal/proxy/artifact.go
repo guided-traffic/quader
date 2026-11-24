@@ -412,18 +412,7 @@ func (f *fetcher) artifact(ctx context.Context, resp *http.Response, idle *atomi
 	// The leader's own client gets the body while it arrives only when the upstream
 	// announced its length: a body of unknown length can cross the size limit after
 	// the status line is out, and R-REPO-040 owes the client a 502, not a cut transfer.
-	//
-	// An artifact that the format inspects before it is stored (the fill hook) reaches no
-	// client before the hook ran: the leader is served from the stored entry like every
-	// request that waited, so a refusal answers 502 to all of them (WP3.0a).
-	//
-	// Nor does a body that fits in the withheld tail: no byte of it would leave before the
-	// commit, so streaming it gains nothing, and the stored entry answers it with every
-	// header of a stored answer, the validators included (Q-NUGET-86).
-	//
-	// Nor does a fill the host holds because the malware gate is strict: the stored item is
-	// scanned before its first byte leaves, through the gate of the host's Serve (R-MAL-015).
-	held := rq.Adapter.InspectsFill(rq.Path) || resp.ContentLength <= withheldTail || rq.HoldFill
+	held := fillHeld(rq, resp.ContentLength)
 	var tee *stream
 	if f.st.stream != nil && resp.ContentLength >= 0 && !held {
 		tee = f.begin(resp)
@@ -487,6 +476,21 @@ func (f *fetcher) artifact(ctx context.Context, resp *http.Response, idle *atomi
 	}
 	f.box.set(CacheStatus{Forwarded: "uri-miss", FwdStatus: resp.StatusCode, Stored: true}.Header())
 	return flightResult{stored: true, status: resp.StatusCode}
+}
+
+// fillHeld says that the leader's own client gets no byte of a fetched artifact while it arrives and is served from the stored entry
+// once it is committed, as every request that waited is.
+//
+// An artifact that the format inspects before it is stored (the fill hook) reaches no client before the hook ran, so a refusal answers
+// 502 to all of them (WP3.0a).
+//
+// Nor does a body that fits in the withheld tail: no byte of it would leave before the commit, so streaming it gains nothing, and the
+// stored entry answers it with every header of a stored answer, the validators included (Q-NUGET-86).
+//
+// Nor does a fill the host holds because the malware gate is strict: the stored item is scanned before its first byte leaves, through the
+// gate of the host's Serve (R-MAL-015).
+func fillHeld(rq Request, contentLength int64) bool {
+	return rq.Adapter.InspectsFill(rq.Path) || contentLength <= withheldTail || rq.HoldFill
 }
 
 // fillRefused ends a fetch whose fill hook refused the artifact: nothing is stored, no
