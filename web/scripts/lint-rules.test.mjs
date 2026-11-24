@@ -11,6 +11,7 @@ import { wordActionsSideBySide } from './row-actions-rule.mjs';
 import { offTheLine } from './line-rule.mjs';
 import { compare, rewrite } from './i18n-check.mjs';
 import { journeyTextFindings } from './journey-texts-rule.mjs';
+import { decisionNumbersInTestNames } from './test-names-rule.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const eslint = new ESLint({ cwd: root });
@@ -247,7 +248,7 @@ test('R-UI-175 vertical-align: middle and align-items: last baseline fail the ch
   for (const css of good) assert.deepEqual(offTheLine(css), [], css);
 });
 
-test("Q-UI-1046 a journey's text named by its ID must be a plain unit of the translation files and the code's words", () => {
+test("a journey's text named by its ID must be a plain unit of the translation files and the code's words", () => {
   const en =
     '<unit id="nav.a">\n<segment>\n<source>Security dashboard</source>\n</segment>\n</unit>\n' +
     '<unit id="nav.b">\n<segment>\n<source>Malware</source>\n</segment>\n</unit>\n' +
@@ -276,4 +277,33 @@ test("Q-UI-1046 a journey's text named by its ID must be a plain unit of the tra
   assert.match(found[0].problem, /the code says "Malware scan" and messages.xlf "Malware"/);
   assert.match(found[1].problem, /no plain source/);
   assert.match(found[3].problem, /no plain German target/);
+});
+
+test("a test name that carries a decision's number fails the check, one that carries a requirement ID passes", () => {
+  const spec = [
+    "describe('The list (Q-UI-420, R-UI-100)', () => {",
+    "  it('R-UI-100 a chip removes only its filter', () => {});",
+    "  it('ADR-203 the old route answers Page not found', () => {});",
+    '  it(',
+    "    'a title on its own line ' +",
+    "      'that goes on with Q-AUTH-6',",
+    '    () => {},',
+    '  );',
+    '  test.describe(`a template ${kind} with Q-CI-26`, () => {});',
+    "  it.each([['a'], ['b']])('a row %s of Q-UI-700', () => {});",
+    "  test.step('Q-UI-1046 a step of a journey', async () => {});",
+    "  it('names the decision only in its comment', () => {}); // Q-UI-422",
+    "  it('reads a word like Q-X or QUI-1 as no number', () => {});",
+    "  test.beforeAll('Q-UI-1 a hook has no title to check', () => {});",
+    "  expect(/Q-UI-1/.test('Q-UI-1')).toBe(true);",
+    "  expect(/it\\('Q-UI-2/.test(source)).toBe(true);",
+    `  const fixture = "it('Q-UI-3 the source of another test is no test of this file')";`,
+    '});',
+  ].join('\n');
+  const found = decisionNumbersInTestNames(spec);
+  assert.deepEqual(
+    found.map((f) => f.line),
+    [1, 3, 5, 9, 10, 11],
+  );
+  assert.equal(found[2].title, 'a title on its own line that goes on with Q-AUTH-6');
 });

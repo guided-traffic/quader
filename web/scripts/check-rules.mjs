@@ -15,6 +15,8 @@
 //    line's middle by the line rule of _controls.scss (line-rule.mjs).
 //  - Q-UI-1046: every text a journey names by its message ID (`ui('…')` of e2e/support.ts) is a plain unit of the translation files,
 //    and the code's words for it are messages.xlf's (journey-texts-rule.mjs).
+//  - a test's name carries a requirement ID, never a decision's number: no `describe`, `it` or `test` title of a spec, a journey or
+//    a script's test names a `Q-…` or an `ADR-…` (test-names-rule.mjs).
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -24,6 +26,7 @@ import { bareIconsInCells } from './status-rule.mjs';
 import { wordActionsSideBySide } from './row-actions-rule.mjs';
 import { offTheLine } from './line-rule.mjs';
 import { journeyTextFindings } from './journey-texts-rule.mjs';
+import { decisionNumbersInTestNames } from './test-names-rule.mjs';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 
@@ -141,6 +144,21 @@ for (const file of sources.filter((p) => /\.(ts|scss|css)$/.test(p) && !p.endsWi
     for (const { line, id, problem } of journeyTextFindings(readFileSync(file, 'utf8'), en, de, code)) {
       failed = true;
       console.error(`Q-UI-1046: ${relative(root, file)}:${line}: ui('${id}'): ${problem}`);
+    }
+  }
+}
+
+// A test's name carries the requirement it holds, never a decision's number: the evidence record reads the IDs from the names.
+{
+  const tests = [
+    ...[...walk(join(root, 'src'))].filter((p) => p.endsWith('.spec.ts')),
+    ...[...walk(join(root, 'e2e'))].filter((p) => p.endsWith('.ts')),
+    ...readdirSync(join(root, 'scripts')).filter((n) => n.endsWith('.test.mjs')).map((n) => join(root, 'scripts', n)),
+  ];
+  for (const file of tests) {
+    for (const { line, title } of decisionNumbersInTestNames(readFileSync(file, 'utf8'))) {
+      failed = true;
+      console.error(`test names: ${relative(root, file)}:${line}: a test name with a decision's number; name the requirement it holds: ${title}`);
     }
   }
 }
