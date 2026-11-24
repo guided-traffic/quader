@@ -245,7 +245,12 @@ since it wires R2's decider). R4 landed at 00:18 (one commit; section 10). Start
 tab Downloads, on R4's API). R5a landed at 00:53 (one commit; section 10). **R2 landed at 01:45; the screens' render findings, W15 and W14 at 01:50** (one, two and two commits; R3 and the renames of the Go tests started at 01:50; R2b and the renames of the web's test names at 01:55). **The web's test names landed at 02:06** (four commits: 436 titles in
 121 files carry a requirement's number or the behaviour alone, no R-ID lost, four R-IDs newly named by web
 titles as the builder's judgement — R-API-022, R-API-047, R-API-077, R-SIG-063 —, and the rule
-`web/scripts/test-names-rule.mjs` in the web lint refuses a decision's number in a title).
+`web/scripts/test-names-rule.mjs` in the web lint refuses a decision's number in a title). Started at 02:08 in its place: **the screens' third round** (a mirror without
+its bound offers no run, the trend's axis numbers at 390 px, the layout check `cramped` with a full render run,
+a walk in mirror mode for OCI and Debian). **The Go tests' names landed at 02:30** (six commits: 736 names, 157 functions,
+carry a requirement's number or the behaviour alone, no R-ID lost, R-API-083 newly named and so counted by the
+next record; `TestGoTestNamesCarryARequirementNeverADecision` holds it, about 1 to 2 s of the unit job; three
+tests that docs still name no longer exist under any name, left as found).
 **W13 landed at 01:03** (ten commits; H-1662, the Bastion's gauge, R-ARCH-034's count, the limits'
 flush waits by `quader_limits_flushes_total`, E1.14's burst, `search-field.spec.ts`, an offline render seed).
 Started at 00:57 in its place: **W14**, the shape of the test suite and
@@ -840,6 +845,15 @@ records the recorder that tells such a stall apart).
   stack).** By the code the page shows the badge "None yet" with a sentence and no error banner. To do
   (W9): a render state of it, looked at.
 ### Closed
+
+- **Closed on 2026-11-24, 02:30: a worker panicked when a late claim started its job during the shutdown's wait
+  (`integration (shard d)` of Test and Release 45300439644, area `vulnimage`, read at 02:15).** "sync: WaitGroup is
+  reused before previous Wait has returned" in `internal/jobs/worker.go` (`Settle` and `Quiesce`): a claim in flight
+  when the drain began called `Add(1)` from zero while a waiter returned from `Wait`, which a WaitGroup refuses with a
+  panic, a crash of the process at a shutdown. The running attempts are counted under a mutex with a channel that
+  closes when none runs (`runCount`), held by `TestR_ARCH_024_AJobStartedWhileTheShutdownWaitsDoesNotPanic` (unit,
+  milliseconds, 20,000 starts beside four waiters); the area `vulnimage` passed once after it. One local run of that
+  area before it failed in 110 s and its output was not kept, so what failed there is not known.
 
 - **Closed on 2026-11-24, 01:50, by the same package: "Your role" shows the dash for no role** (R-UI-146), and the layout check `empty-cell` refuses a list cell that shows nothing (it found two more, fixed); German "das Token" throughout (Q-UI-1052, glossary, `formal-german.spec.ts`); the signature column at 1,024 px holds as a table, the file's path being its download (Q-UI-1051). As it stood: **The column "Your role" of the projects list is empty where the caller has no role (seen the same evening,
   `projects-details-details-dark-1440.png`, as `ada`).** Every other column of the same rows shows "–" for no
