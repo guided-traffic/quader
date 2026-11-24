@@ -88,6 +88,12 @@ auth:
   # The sign-in screen offers the provider and the break-glass form instead of leaving for the provider at once.
   login_page:
     auto_redirect: false
+  # A session through the provider lasts 8 h idle and 24 h absolute instead of 1 h and 12 h. make ui-renders signs its kinds of
+  # user in once, in its setup, and the auditor's screens come last: in a run longer than an hour its session had ended unused, and
+  # every auditor screen answered 401 (Test and Release 45378983191 and 45383627038, 2026-11-24).
+  sessions:
+    idle_timeout: 8h
+    absolute_timeout: 24h
   break_glass:
     password_file: "$secrets/break-glass-password"
     show_on_login_page: true

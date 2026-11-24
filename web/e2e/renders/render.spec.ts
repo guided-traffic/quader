@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { Page, expect, test } from '@playwright/test';
 import { LayoutFinding, emptyScroll, findingLine, judge, layoutFindings } from './layout';
 import { locale, manifestDir, outDir } from './paths';
+import { awaitAnswersOnUnroute } from './routes';
 import { Kind } from './seed';
 import { KEEP_OPEN, Screen, screens } from './screens';
 
@@ -53,6 +54,9 @@ for (const screen of locale === 'de' ? screens.filter((s) => s.de) : screens) {
       forget(kind, screen);
       const failures = watch(page, screen);
       trackRequests(page);
+      // A walk's answers changed in the browser end with their own calls: a view's read of itself in flight when the walk unroutes
+      // is answered before the handler goes (routes.ts).
+      awaitAnswersOnUnroute(page);
       // Every width shows the screen as a first visit: the Details a walk opened at the width before are not reopened from the
       // browser's memory (Q-UI-967), unless the walk asks to keep them for its next load (KEEP_OPEN).
       await page.addInitScript((keep) => {

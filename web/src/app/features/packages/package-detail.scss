@@ -55,12 +55,20 @@
   margin: 0;
 }
 
-// The version, its tags and the pre-release mark stay on one line where the column allows, and wrap as a whole.
+// The version, its tags and the pre-release mark stay on one line where the column allows, and wrap as a whole. Each item stands
+// at the top of its line, so the version's line is the row's first line (R-UI-172).
 .version-cell {
   display: inline-flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--quader-space-1) var(--quader-space-2);
+
+  // The signatures' badge hands its badge and its words to the cell: "signer not trusted" after an untrusted signer's **Signed** is
+  // the cell's second line, under the version (Q-UI-1076). As one box of two lines beside the version, centred, it put the version
+  // 8 px below the row's other cells, and the tags beside it measured against its second line.
+  > quader-signature-badge {
+    display: contents;
+  }
 }
 
 // A size keeps its number and unit together, a time its words.

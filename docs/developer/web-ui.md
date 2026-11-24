@@ -131,8 +131,10 @@ through the dev server works only against a Quader whose base URL is `https://lo
   here and check German with `make web` and the embedded build.
 - No Content Security Policy. The dev server sends `index.html` without Quader's CSP header and leaves the nonce
   placeholder in place, so a CSP or Trusted Types violation shows only in the embedded build.
-- Break-glass sessions last 8 h idle and 24 h absolute instead of 15 min and 1 h, so the session-expiry dialogs
-  do not appear during a normal working session. The only OpenID provider is the profile's own, which asks for no
+- Break-glass sessions last 8 h idle and 24 h absolute instead of 15 min and 1 h, and sessions through the provider the same
+  instead of 1 h and 12 h, so the session-expiry dialogs do not appear during a normal working session, and the session
+  `make ui-renders` signs the auditor in with at its start still holds when the auditor's screens come last, more than an
+  hour later. The only OpenID provider is the profile's own, which asks for no
   password; the sign-in screen offers it beside the local form (`auth.login_page.auto_redirect: false`).
 - A sign-in through the provider returns under the page's own base href, `/ui/` on the dev server, which builds one locale
   there (UI-A-49).
@@ -427,7 +429,11 @@ running and stops only what it started: Quader with the sign-in provider (`serve
 
 **Add a screen.** A new route gets a line in `screens.ts` with the kinds that reach it from the navigation and the seed's
 parameters; data the screen needs goes into `seed.ts`, idempotent and through the API; a flow gets a `walk` that yields the name
-of each state to render (an empty name is the screen as it opens). The seed writes some rows by SQL (`psql` of `seed.ts`, used by
+of each state to render (an empty name is the screen as it opens). A walk that changes an answer in the browser uses `page.route`
+and ends with `page.unroute`; in a render the page's `unroute` waits for the handler's calls in flight before it removes it
+([renders/routes.ts](../../web/e2e/renders/routes.ts)), because a live view's read of itself (R-UI-213) can arrive as the walk ends,
+and Playwright's own `unroute` let such a call go to the network and then failed the screen with "Route is already handled!" when
+the handler fulfilled it. The seed writes some rows by SQL (`psql` of `seed.ts`, used by
 `seed.ts`, `malware.ts`, `scanners.ts` and `signatures.ts`), which no compiler and no unit test checks against the schema, so a
 migration that renames or removes a column is followed by a search of `web/e2e/renders/` for it and by a render run (on 2026-11-21
 the signatures' seed still wrote `signature_trust.epoch` after migration 00100 had renamed it, and the job `ui-layout` failed in its

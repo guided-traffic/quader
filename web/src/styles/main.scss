@@ -34,6 +34,13 @@ body {
   font-feature-settings: var(--quader-font-features);
 }
 
+// A date, a time or both are one value: a line breaks before or after it, never inside it (R-UI-171). A list's cell held this
+// already (`td time`); a fact's "ClamAV database of Nov 24, 2026" broke between "Nov" and "24" at 390 px on the days whose date
+// reached the line's end.
+time {
+  white-space: nowrap;
+}
+
 h1 {
   margin-block: 0 var(--quader-space-4);
   color: var(--quader-heading);

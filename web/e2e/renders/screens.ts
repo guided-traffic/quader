@@ -2231,11 +2231,6 @@ async function withGate(page: Page, url: string, gate: Record<string, unknown>):
 }
 
 /**
- * A version a repository's gate refuses (R-SIG-074): the banner and the Files tab's "Refused here" without Download; its tab
- * **Signatures** with the gate's decision; for the holder of the triage right the release's dialog, and the version released, by whom,
- * when and why. The member `refused` and the gate are the profile's real answers changed in the browser.
- */
-/**
  * A version's files with the badge of a signer no anchor trusts (R-SIG-035): the state the screen stands for, waited for by the badge's
  * state and not its words, so the German pass renders it too (Q-UI-1076: the badge **Signed** and "signer not trusted" after it).
  */
@@ -2244,6 +2239,11 @@ async function* untrustedFiles(page: Page): AsyncGenerator<string> {
   yield '';
 }
 
+/**
+ * A version a repository's gate refuses (R-SIG-074): the banner and the Files tab's "Refused here" without Download; its tab
+ * **Signatures** with the gate's decision; for the holder of the triage right the release's dialog, and the version released, by whom,
+ * when and why. The member `refused` and the gate are the profile's real answers changed in the browser.
+ */
 async function* refusedVersionWalk(page: Page): AsyncGenerator<string> {
   const details = `**/api/v1/packages/*/versions/${signedVersions.none}`;
   const report = `**/api/v1/packages/*/versions/${signedVersions.none}/signatures`;

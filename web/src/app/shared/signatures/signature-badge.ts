@@ -10,7 +10,8 @@ import { signatureBadge } from './signature-words';
  * draw nothing: the details say which. `stale` adds that the trust is being recomputed after a change of anchors (R-SIG-012), as
  * the badge's title and for assistive technology. The untrusted state's badge says **Signed** and the words "signer not trusted" follow
  * it as muted text (Q-UI-1076): as one pill, its German words were wider than a file's cell at 390 px, and a badge does not break
- * (R-UI-171). In a list's cell the words are the cell's second line (`.secondary`, as a refused file's reason under **Refused here**),
+ * (R-UI-171). In a list's cell the words are the cell's second line (`.secondary`, as a refused file's reason under **Refused here**;
+ * in a version's cell of the list of versions, which shows the host as `display: contents`, the line under the version),
  * elsewhere (a header's facts, a fact, the details) they follow the badge on its line; either way they wrap between their words.
  * `data-state` names the state whatever the language (the renders' walks find it by it).
  */
@@ -39,6 +40,10 @@ import { signatureBadge } from './signature-words';
     .note {
       color: var(--quader-text-muted);
       font-weight: 400;
+    }
+    /* Where the host hands its boxes to a wrapping row (a version's cell in the list of versions), the words take a line of their own. */
+    .note.secondary {
+      flex-basis: 100%;
     }
   `,
 })

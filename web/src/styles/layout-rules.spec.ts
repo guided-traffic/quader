@@ -5,6 +5,8 @@ import catalogScss from './_catalog-screens.scss' with { loader: 'text' };
 import controlsScss from './_controls.scss' with { loader: 'text' };
 import listScss from './_list-screens.scss' with { loader: 'text' };
 import policyEditorScss from '../app/features/permissions/policy-editor.scss' with { loader: 'text' };
+import mainScss from './main.scss' with { loader: 'text' };
+import packageDetailScss from '../app/features/packages/package-detail.scss' with { loader: 'text' };
 
 /** The declarations of the first rule whose selector line matches, without comments. */
 function block(scss: string, selector: RegExp): string {
@@ -37,6 +39,15 @@ describe('Shared layout rules (R-UI-145)', () => {
     const at = listScss.indexOf("th[scope='row'][translate='no']:not(.wrap-name),");
     expect(at).toBeGreaterThan(-1);
     expect(listScss.slice(at, listScss.indexOf('}', at))).toContain('white-space: nowrap');
+  });
+
+  it('R-UI-171 a date or a time never breaks inside itself, in a fact or a sentence as in a list\'s cell', () => {
+    expect(block(mainScss, /^time \{/m)).toContain('white-space: nowrap');
+  });
+
+  it('R-UI-172 the items of a version\'s cell stand at the top of their line, and an untrusted signer\'s words are the cell\'s second line', () => {
+    expect(block(packageDetailScss, /^\.version-cell \{/m)).toContain('align-items: flex-start');
+    expect(block(packageDetailScss, /> quader-signature-badge \{/)).toContain('display: contents');
   });
 
   it('R-UI-145 a visibility level in a cell of its own keeps its icon and its word on one line', () => {

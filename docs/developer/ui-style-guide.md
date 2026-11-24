@@ -200,6 +200,8 @@ side bar (**Tokens**). The description is one sentence, the header's `descriptio
 - **A time in a list is relative**, its date and time the title: `<quader-time-ago [at] absolute="title" />` ("4 minutes ago",
   "in 4 weeks"). A log (the audit log, the issued CI tokens) writes the date and the time; a card or a page's facts the relative
   time with the absolute in brackets ([Q-UI-431](../spec/api-and-ui.md#q-ui-431--a-time-in-a-list-is-relative-with-the-absolute-time-as-its-title-a-log-writes-the-moment)).
+  Every `<time>` is one value that never breaks inside itself (`main.scss`): a line breaks before or after "Nov 24, 2026", in a
+  fact or a sentence as in a list's cell, whatever the date's length.
 - An inline control in a row (the role select, a level, a switch) has no visible label and an `aria-label` that names the row. It
   shows the current value, and a change is saved at once, with the status message of the `Notifier`: a toast at the window's bottom
   right, one at a time, so a row of such changes shows the last one ([Q-UI-1063](../spec/api-and-ui.md#q-ui-1063--feedback-outside-forms-is-the-references-toast-at-the-bottom-right-one-confirmation-at-a-time)).
