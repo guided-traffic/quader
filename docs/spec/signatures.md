@@ -1448,7 +1448,12 @@ default, details on demand" ([CLAUDE.md](../../CLAUDE.md)): the plain user sees 
 - **The badge** stands beside the version in the version list, in the version page's header and beside a file on its page and in the Files
   tab: a shield mark with the words **Verified · public**, **Verified · internal**, **Signed · signer not trusted** or **Invalid signature**
   ([Q-SIG-44](#q-sig-44--the-api-and-the-screens)). Green is used only for the two verified states (the owner's rule: green only for a
-  positive status); "Signed · signer not trusted" is neutral; "Invalid signature" is red. Without a badge nothing is drawn.
+  positive status); "Signed · signer not trusted" is neutral; "Invalid signature" is red. Without a badge nothing is drawn. The untrusted
+  state's badge says **Signed** and "signer not trusted" follows it as muted text (in a list's cell on the cell's second line) that wraps
+  between its words, since its words as one pill were
+  wider than a file's cell at 390 px in German and a badge does not break
+  ([Q-UI-1076](api-and-ui.md#q-ui-1076--a-status-too-long-for-a-pill-puts-its-verdict-on-the-badge-and-the-rest-after-it)); a fact or a
+  sentence names the state with its whole words.
 - **The details** (a section **Signatures** of the version page, of the file page, and at an OCI image) list each signature: the kind in
   plain words ("Publisher signature · Sigstore, keyless", "Origin confirmed by registry", "Provenance attestation"), the signer, the issuer,
   when it was signed and what proves it ("proven by the transparency log", "proven by a timestamp", "received by Quader"), the trust anchor

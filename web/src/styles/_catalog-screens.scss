@@ -134,6 +134,8 @@ table.data {
   }
 }
 
+// A value breaks inside itself only where it is longer than the whole line (`overflow-wrap: anywhere`, the last resort for an
+// address, a path or a key without spaces); where the facts are narrow, the terms stand above their values (below).
 dl.facts {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
@@ -147,6 +149,31 @@ dl.facts {
   dd {
     margin: 0;
     overflow-wrap: anywhere;
+  }
+}
+
+// Below 36 rem of content (a phone) each fact's term stands above its value, so the value has the line's whole width: beside a
+// German term as wide as "Suites und Komponenten" a Debian maintainer's address had 164 px and broke inside itself
+// ("<platform@example.inv" / "alid>", Q-UI-1077). The audit log's event (Q-UI-972) and a download's detail do the same in their
+// own boxes. A dialog stands outside the content panel and is as narrow as the window on a phone, so the window's width decides there.
+@mixin facts-stacked {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 0;
+
+  dd + dt {
+    margin-block-start: var(--quader-space-2);
+  }
+}
+
+@container content (max-width: 36rem) {
+  dl.facts {
+    @include facts-stacked;
+  }
+}
+
+@media (max-width: 36rem) {
+  .quader-dialog dl.facts {
+    @include facts-stacked;
   }
 }
 

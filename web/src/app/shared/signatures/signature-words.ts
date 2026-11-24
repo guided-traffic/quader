@@ -19,9 +19,15 @@ import { malwareStateWord } from '../malware/malware-words';
 /** The tone of a badge: green for the two verified states only (Q-UI-96), neutral for an untrusted signer, red for an invalid one. */
 export type SignatureTone = 'ok' | 'neutral' | 'bad';
 
-/** A badge of R-SIG-035: its word, its icon (a shield of the icon font) and its tone; never told by colour alone. */
+/**
+ * A badge of R-SIG-035: its word, its icon (a shield of the icon font) and its tone; never told by colour alone. A state whose words
+ * are too long for a pill (Q-UI-1076) puts its verdict on the badge and the rest after it as muted text (`note`), which wraps between words
+ * where the badge's cell is narrow: a badge itself never breaks (R-UI-171). `words` are the state's whole words, as a fact says them.
+ */
 export interface SignatureBadgeLook {
   readonly word: string;
+  readonly note: string | null;
+  readonly words: string;
   readonly icon: string;
   readonly tone: SignatureTone;
 }
@@ -35,16 +41,28 @@ export function signaturePromise(): string {
 export function signatureBadge(state: SignatureBadgeState | null | undefined): SignatureBadgeLook | null {
   switch (state) {
     case 'verified_public':
-      return { word: $localize`:@@sig.badge.verified-public:Verified · public`, icon: 'gpp_good', tone: 'ok' };
+      return whole($localize`:@@sig.badge.verified-public:Verified · public`, 'gpp_good', 'ok');
     case 'verified_internal':
-      return { word: $localize`:@@sig.badge.verified-internal:Verified · internal`, icon: 'gpp_good', tone: 'ok' };
+      return whole($localize`:@@sig.badge.verified-internal:Verified · internal`, 'gpp_good', 'ok');
     case 'untrusted':
-      return { word: $localize`:@@sig.badge.untrusted:Signed · signer not trusted`, icon: 'shield', tone: 'neutral' };
+      // "Signiert · Signierer nicht vertrauenswürdig" is 269 px as one pill, wider than a file's cell at 390 px (Q-UI-1076).
+      return {
+        word: $localize`:@@sig.badge.untrusted-word:Signed`,
+        note: $localize`:@@sig.badge.untrusted-note:signer not trusted`,
+        words: $localize`:@@sig.badge.untrusted:Signed · signer not trusted`,
+        icon: 'shield',
+        tone: 'neutral',
+      };
     case 'invalid':
-      return { word: $localize`:@@sig.badge.invalid:Invalid signature`, icon: 'gpp_bad', tone: 'bad' };
+      return whole($localize`:@@sig.badge.invalid:Invalid signature`, 'gpp_bad', 'bad');
     default:
       return null;
   }
+}
+
+/** A badge whose words all stand on the pill. */
+function whole(word: string, icon: string, tone: SignatureTone): SignatureBadgeLook {
+  return { word, note: null, words: word, icon, tone };
 }
 
 /** Whether a member `signatures` carries a badge. */
@@ -55,7 +73,7 @@ export function hasSignatureBadge(status: SignatureStatus | null | undefined): s
 /** The word of a state without a badge, as the details and a file's fact say it (R-SIG-009 rule 5). */
 export function signatureStateWord(state: SignatureBadgeState): string {
   const badge = signatureBadge(state);
-  if (badge) return badge.word;
+  if (badge) return badge.words;
   switch (state) {
     case 'not_checked':
       return $localize`:@@sig.state.not-checked:Not checked yet`;

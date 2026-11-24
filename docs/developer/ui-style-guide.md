@@ -82,6 +82,15 @@ side bar (**Tokens**). The description is one sentence, the header's `descriptio
   600 on the first line and the `@username` or its kind muted on the second.
 - **A status is a badge** with an icon and a word, never colour alone: `<span class="ok|warn|bad|badge"><span class="material-icons">…</span>Word</span>`,
   one element that never breaks, its word with a capital (**Succeeded**, **Denied**). `ok` is green and means a positive status only.
+  A status whose words are too long for a pill in a narrow cell puts its verdict on the badge and the rest after it as muted text
+  that wraps between its words, in a list's cell as the cell's second line (`.secondary`, as a refused file's reason under
+  **Refused here**): the signatures' **Signed** with "signer not trusted" after it
+  ([Q-UI-1076](../spec/api-and-ui.md#q-ui-1076--a-status-too-long-for-a-pill-puts-its-verdict-on-the-badge-and-the-rest-after-it)).
+- **A list of facts** is `<dl class="facts">`: the terms in a column as wide as the longest, each value beside its term. Below 36 rem
+  of content (a phone) each term stands above its value, so a value has the whole line and breaks inside itself only where it is
+  longer than that line (`overflow-wrap: anywhere`, the last resort for an address or a path;
+  [Q-UI-1077](../spec/api-and-ui.md#q-ui-1077--below-36-rem-of-content-a-facts-term-stands-above-its-value)). A page does not give
+  its facts a grid of its own.
   An icon never stands directly in a table cell: a status is the badge, an icon before a text that may wrap is `.icon-name`
   (`status-rule.mjs` fails the lint otherwise; [Q-UI-560](../spec/api-and-ui.md#q-ui-560--an-icon-in-a-table-cell-is-one-element-with-its-word),
   [Q-UI-564](../spec/api-and-ui.md#q-ui-564--a-status-word-starts-with-a-capital)).

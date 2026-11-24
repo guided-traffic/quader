@@ -6,7 +6,7 @@ import { issuedNpmEntry, issuedReceiptEntry, repositoryReport, sigstoreEntry } f
 import { expectAccessible, renderScreen, text } from '../../testing/screen';
 import { SignatureBadge } from './signature-badge';
 import { SignatureReport, SignatureReportView } from './signature-report';
-import { certificateWords, entryBadgeState, knownKindsSentence, originWords, schemeWords, signatureBadge } from './signature-words';
+import { certificateWords, entryBadgeState, knownKindsSentence, originWords, schemeWords, signatureBadge, signatureStateWord } from './signature-words';
 
 @Component({
   selector: 'quader-badge-host',
@@ -52,17 +52,29 @@ async function report(view: SignatureReportView, format = 'oci') {
 
 describe('The badge of the signatures (R-SIG-009, R-SIG-035)', () => {
   it('R-SIG-035 each of the four states renders its words and its shield; green only for the verified ones, red for an invalid one', async () => {
-    const cases: [SignatureBadgeState, string, string, string][] = [
-      ['verified_public', 'Verified · public', 'gpp_good', 'badge ok'],
-      ['verified_internal', 'Verified · internal', 'gpp_good', 'badge ok'],
-      ['untrusted', 'Signed · signer not trusted', 'shield', 'badge'],
-      ['invalid', 'Invalid signature', 'gpp_bad', 'badge bad'],
+    const cases: [SignatureBadgeState, string, string | null, string, string][] = [
+      ['verified_public', 'Verified · public', null, 'gpp_good', 'badge ok'],
+      ['verified_internal', 'Verified · internal', null, 'gpp_good', 'badge ok'],
+      ['untrusted', 'Signed', 'signer not trusted', 'shield', 'badge'],
+      ['invalid', 'Invalid signature', null, 'gpp_bad', 'badge bad'],
     ];
-    for (const [state, word, icon, cls] of cases) {
+    for (const [state, word, note, icon, cls] of cases) {
       const b = await badge(state);
       expect(text(b!)).toBe(`${icon}${word}`);
       expect([...b!.classList].sort().join(' ')).toBe(cls.split(' ').sort().join(' '));
+      expect(b!.getAttribute('data-state')).toBe(state);
+      const after = b!.parentElement!.querySelector('[data-testid="signature-note"]');
+      expect(after ? text(after) : null).toBe(note);
     }
+  });
+
+  it('R-SIG-035 R-UI-171 the untrusted state keeps its badge short and says the rest after it, as text that may wrap; a fact says the whole words', () => {
+    const look = signatureBadge('untrusted')!;
+    expect(look.word).toBe('Signed');
+    expect(look.note).toBe('signer not trusted');
+    expect(look.words).toBe('Signed · signer not trusted');
+    expect(signatureStateWord('untrusted')).toBe('Signed · signer not trusted');
+    expect(signatureStateWord('verified_public')).toBe('Verified · public');
   });
 
   it('R-SIG-009 the three states without a badge draw nothing', async () => {
@@ -107,9 +119,12 @@ describe('The details of the signatures (R-SIG-035)', () => {
     });
     const root = await report(repositoryReport({ state: 'untrusted', signatures: [blocked] }));
     expect(text(root.querySelector('[data-testid="signature-block"]')!)).toContain('Blocked by an administrator on Nov 21, 2026: The key was copied.');
-    expect(text(root.querySelector('[data-testid="signature-entry"]')!)).toContain('Signed · signer not trusted');
-    // The badge's sentence names the block that decides it, not that no anchor knows the signer.
+    expect(text(root.querySelector('[data-testid="signature-entry"] [data-testid="signature-badge"]')!)).toContain('Signed');
+    expect(text(root.querySelector('[data-testid="signature-entry"] [data-testid="signature-note"]')!)).toBe('signer not trusted');
+    // The badge's sentence names the block that decides it, not that no anchor knows the signer; the words after the badge end with a
+    // full stop before it.
     const state = text(root.querySelector('[data-testid="signature-state"]')!);
+    expect(text(root.querySelector('[data-testid="signature-state"] [data-testid="signature-note"]')!)).toBe('signer not trusted.');
     expect(state).toContain('The signature matches the content, but an administrator blocked its signer on Nov 21, 2026: The key was copied.');
     expect(state).not.toContain('No trust anchor knows this signer');
   });

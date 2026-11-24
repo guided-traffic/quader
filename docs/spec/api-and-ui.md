@@ -8080,7 +8080,11 @@ that is a section's heading wraps as the heading does (Q-UI-810). Not covered: a
 
 A word of a list's cell does not break inside itself: a column that wraps declares a least width that holds its words (the
 audit log's project broke into "Platfor" / "m enginee" / "ring" beside a target that took the room). A token longer than any
-column (an identifier, a path, a hash) may still break where it must (Q-UI-425).
+column (an identifier, a path, a hash) may still break where it must (Q-UI-425). A status whose words are too long for a pill in a
+narrow cell puts its verdict on the badge and the rest after it as muted text that wraps between its words, in a list's cell as
+the cell's second line (the signatures' **Signed**
+with "signer not trusted", Q-UI-1076). A list of facts (`dl.facts`) puts each term above its value below 36 rem of content, so a
+value has the whole line and breaks inside itself only where it is longer than that line (Q-UI-1077).
 
 Acceptance criteria:
 
@@ -23821,6 +23825,73 @@ an event stream to the browser.
 
 **Applied in the spec:** R-UI-213; R-UI-021's status read (every 30 s while no pass runs). Code:
 [live-refresh.ts](../../web/src/app/core/live-refresh.ts), [paged-resource.ts](../../web/src/app/shared/paged-resource.ts).
+
+### Q-UI-1076 · A status too long for a pill puts its verdict on the badge and the rest after it
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: in the German renders at 390 px (2026-11-24, 11:40 and 12:00) a version's files showed the signature badge
+"Signiert · Signierer nicht vertrauenswürdig" in a stacked row: 269 px as one pill, 41 px wider than the cell's column of values, so
+the page scrolled sideways (`package-version-oci`, `package-version-signatures-files`). The English "Signed · signer not trusted" is
+180 px and had already cost the files' table its column **Download** at 1,024 px (Q-UI-1051). A badge does not break (R-UI-171).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The badge carries the verdict, **Signed**, and the words "signer not trusted" follow it as muted text that wraps between its words: in a list's cell the cell's second line, as a refused file's reason stands under **Refused here** (R-SIG-074); in a header's facts, a fact and the details on the badge's line (chosen) | GitLab's way of a status with a qualifier: a short badge and a sentence beside it | Fits every cell in every language; the badge keeps its one line and its 20 px; the words stay the state's words, nothing is hidden | The pill no longer holds the whole state; the four badges are not built alike |
+| (b) A badge may wrap between its words | A pill of two lines where its cell is narrow | Every long badge at once | Breaks R-UI-171 for every status, and a pill of two lines is no badge of the design language |
+| (c) The badge cut with an ellipsis, the whole words in its title | One line | Short | A state is its words (Q-UI-128); a title is not read on a phone |
+| (d) A shorter German text ("Signiert · nicht vertrauenswürdig") | A translation | Smallest change | 18 px from the edge at 390 px, it tells that the signature, not its signer, is not trusted, and the next language meets the same wall |
+
+**Choice:** (a), for the untrusted state only. **Verified · public**, **Verified · internal** and **Invalid signature** are short enough
+for a pill in every cell (the widest, "Verifiziert · öffentlich", is about 150 px). The whole words stay the state's name wherever a
+fact or a sentence names it ("Signed · signer not trusted", `signatureStateWord`); where the badge opens the details' state line,
+its words end with a full stop before the sentence. The badge carries `data-state`, so a walk of the
+renders finds the state in every language. **Rationale:** the verdict is what a reader looks for in a column of badges, and the
+qualifier is a short sentence about it; a pill that never breaks keeps every list's rows on one line. The development agent revisits
+it if a verified state's words grow (a third scope), and then splits them the same way.
+
+**Applied in the spec:** R-UI-171, R-SIG-035 ([signatures.md](signatures.md)). Code:
+[signature-words.ts](../../web/src/app/shared/signatures/signature-words.ts) (`note`, `words`),
+[signature-badge.ts](../../web/src/app/shared/signatures/signature-badge.ts). Tests: "R-SIG-035 each of the four states renders its
+words and its shield; green only for the verified ones, red for an invalid one" and "R-SIG-035 R-UI-171 the untrusted state keeps its
+badge short and says the rest after it, as text that may wrap; a fact says the whole words" in
+[signatures.spec.ts](../../web/src/app/shared/signatures/signatures.spec.ts); the render state
+`package-version-signatures-untrusted-files` joins the German pass. Rendered: that screen and `package-version-signatures-files`,
+`package-version-oci`, in English and German, both schemes, 1,440, 1,024 and 390 px, and every screen of the signatures in English.
+At 1,024 px the files' table keeps its form in German with the state's words on the cell's second line, where the pill of 269 px
+had left it a few pixels from blocks (Q-UI-1051).
+
+### Q-UI-1077 · Below 36 rem of content a fact's term stands above its value
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: in the German renders at 390 px (2026-11-24) a Debian version's **Details** showed the maintainer
+"Platform engineering &lt;platform@example.invalid&gt;" broken inside the address ("&lt;platform@example.inv" / "alid&gt;"), and an
+Ansible collection's links broke inside their addresses: the term's column was as wide as its longest term, and German terms
+("Suites und Komponenten", "Dokumentations-Website") left the value 162 to 164 px. Five screens had already stacked their own facts below a
+width of their own (an audit event, Q-UI-972; a download's detail; the storage page; a signing identity; a limit's explanation).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Every `dl.facts` puts each term above its value below 36 rem of the content panel, and a dialog's below 36 rem of the window (chosen) | GitLab's sidebar and its pages on a phone: a label over its value | One rule for every list of facts; the value gets the whole line, so an address breaks only where it is longer than the line | A phone's facts take two lines each, also short ones ("Sektion admin") |
+| (b) The term's column capped (`fit-content(40%)`), a term wraps between its words | Two columns kept | Short facts stay on one line | A one-word German term ("Abhängigkeiten") cannot wrap; the value keeps 60 % at best, about 180 px at 390 px, as wide as the maintainer's address alone |
+| (c) Break points in the value (`<wbr>` after `@`, `.`, `/`) | A pipe for addresses | Breaks where a reader expects | Every template that shows an address changes; a value of 164 px still breaks, only at nicer places |
+
+**Choice:** (a). `overflow-wrap: anywhere` stays the last resort for a value wider than the whole line (a long path or key without
+spaces). The 36 rem is the content panel's width the page header and the list search already switch at (Q-UI-554). The shared
+stylesheet's copy of the facts in [access.scss](../../web/src/app/shared/access/access.scss), which overrode the global one for the
+settings pages and kept their two columns at every width, is gone. **Rationale:** a value broken inside itself beside a term that took the room is the defect;
+putting the term above the value removes the competition for the line instead of tuning it per language. The development agent
+revisits (b) if a page of short facts reads too long on a phone.
+
+The render run's `broken` check finds a fact's value broken inside a word beside a wide term (G4-10); the German pass at 390 px of every
+screen without a walk found none after the change.
+
+**Applied in the spec:** R-UI-171. Code: [_catalog-screens.scss](../../web/src/styles/_catalog-screens.scss) (`facts-stacked`).
+Tests: "R-UI-171 a fact list below 36 rem of content puts each term above its value, and its long value does not break inside itself"
+in [layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts) (Chromium, Firefox, WebKit). Rendered: `package-version-deb`,
+`package-version-ansible`, `package-version-oci` in English and German, both schemes, 1,440, 1,024 and 390 px; every screen without a
+walk in German at 390 px.
 
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 

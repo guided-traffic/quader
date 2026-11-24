@@ -133,7 +133,7 @@ refuses a masculine "Token" in a target.
 | scanner replica, image scanner, tool (that a scanner runs), slots (of a scanner), scan listener, state changed | Scanner-Replikat, Image-Scanner, Werkzeug, Slots, Scan-Listener, Zustand geändert |
 | signature (of an artifact), signer, sign, invalid signature | Signatur, Signierer, signieren, ungültige Signatur |
 | trust anchor, project trust anchor, trust root (of a Sigstore), public Sigstore root | Vertrauensanker, Projekt-Vertrauensanker, Vertrauensbasis, öffentliche Sigstore-Vertrauensbasis |
-| Verified · public, Verified · internal, Signed · signer not trusted (the badges of a signature) | Verifiziert · öffentlich, Verifiziert · intern, Signiert · Signierer nicht vertrauenswürdig |
+| Verified · public, Verified · internal, Signed · signer not trusted (the badges of a signature; the last one is the badge **Signed** with "signer not trusted" after it, Q-UI-1076) | Verifiziert · öffentlich, Verifiziert · intern, Signiert · Signierer nicht vertrauenswürdig (Badge **Signiert**, danach „Signierer nicht vertrauenswürdig“) |
 | publisher signature, author signature, provenance attestation, attestation, SBOM, origin confirmed by registry | Herausgebersignatur, Autorensignatur, Provenienz-Attestierung, Attestierung, SBOM, Herkunft von der Registry bestätigt |
 | block a signer, blocked signer, transparency log, timestamp, keyless | Signierer sperren, gesperrter Signierer, Transparenzprotokoll, Zeitstempel, schlüssellos |
 | origin (of an upload), uploaded by, fetched from, badge (of a signature) | Herkunft, hochgeladen von, geholt von, Abzeichen |

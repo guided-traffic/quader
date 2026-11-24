@@ -657,6 +657,25 @@ test.describe("the shared patterns with the app's stylesheet (R-UI-176)", () => 
         <td class="meter-cell" data-label="Now"><span style="display:flex;flex-direction:column;gap:2px"><span style="display:flex;align-items:flex-start;gap:8px"><span style="flex:1 1 4rem;max-inline-size:8rem;block-size:6px;margin-block:calc((var(--quader-line) - 6px) / 2);background:#888"></span><span>22%</span></span><span class="badge warn" style="align-self:flex-start"><span class="material-icons" aria-hidden="true">warning</span>Close to the limit</span></span></td>
         <td class="actions"><button type="button" class="btn btn-tertiary">Issue new secret</button></td>
       </tr></tbody></table></div></div></div>`;
+  // A Debian version's Details in German (2026-11-24): beside the term "Suites und Komponenten" the maintainer's address had 164 px at 390 px
+  // and broke inside itself. With the app's stylesheet the terms stand above their values below 36 rem of content (Q-UI-1077) and
+  // beside them above it.
+  const debianFacts = (px: number): string =>
+    `<div style="container: content / inline-size; inline-size: ${px}px"><dl class="facts">
+       <dt>Suites und Komponenten</dt><dd>stable/main</dd>
+       <dt>Maintainer</dt><dd>Platform engineering &lt;platform@example.invalid&gt;</dd>
+     </dl></div>`;
+  test('R-UI-171 a fact list below 36 rem of content puts each term above its value, and its long value does not break inside itself', async ({ page }) => {
+    const narrow = await check(page, debianFacts(326), '', true);
+    expect(only(narrow, 'broken'), describe(narrow)).toEqual([]);
+    const tops = (): Promise<number[]> => page.evaluate(() => ['dt', 'dd'].map((t) => Math.round(document.querySelector(`dl.facts > ${t}`)!.getBoundingClientRect().top)));
+    const [dt, dd] = await tops();
+    expect(dd).toBeGreaterThan(dt!);
+    await check(page, debianFacts(700), '', true);
+    const [wideDt, wideDd] = await tops();
+    expect(wideDd).toBe(wideDt);
+  });
+
   test("R-UI-174 a stacked row's facts with the app's stylesheet: names on one line, the meter on its name's line", async ({ page }) => {
     const found = (await check(page, stackedFacts, '', true)).filter((f) => f.check !== 'stacked-fits');
     expect(found, describe(found)).toEqual([]);
@@ -890,5 +909,14 @@ test.describe('the bound of an allowed finding', () => {
     // The Debian remote's stored document of 2026-11-20 to 2026-11-23: a keyring of 77,000 characters on one line.
     expect(judge('repository-settings-deb-remote', [region('602311')]).defects).toHaveLength(1);
     expect(judge('repository-settings-deb-remote', [region('4,001')]).defects).toHaveLength(1);
+  });
+
+  test('an allowed finding is matched by its place in every language, and the same words elsewhere stay a defect', () => {
+    const key = 'release-candidates-for-the-customer-portal-delivery';
+    const button = (what: string, text: string): LayoutFinding => ({ check: 'broken', what, text, detail: 'a button in 2 lines, 326 px wide', count: 1 });
+    const inGroup = 'section > div.selector-buttons > button.btn.btn-default';
+    expect(judge('policy-new', [button(inGroup, `Add selector ${key}`)]).defects).toEqual([]);
+    expect(judge('policy-new', [button(inGroup, `Selektor hinzufügen ${key}`)]).defects).toEqual([]);
+    expect(judge('policy-new', [button('div.save-bar > button.btn.btn-confirm', `Add selector ${key}`)]).defects).toHaveLength(1);
   });
 });

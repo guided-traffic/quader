@@ -971,7 +971,8 @@ export const CODE_BLOCK_SCROLL = 4_000;
 /**
  * Findings that are right as they are, each with its reason. A finding matches when its check is the same and every pattern
  * given matches (`screen` the screen's id, `what` the element's path, `text` its text, `detail` what was measured). Keep this
- * list short and exact: an entry that allows a whole check, or a whole screen, hides the next defect of its kind.
+ * list short and exact: an entry that allows a whole check, or a whole screen, hides the next defect of its kind. An entry names
+ * the element by its place (`what`), not by the words it shows: the German pass renders the same screens in another language.
  */
 export const allowed: readonly {
   readonly check: string;
@@ -1002,10 +1003,11 @@ export const allowed: readonly {
     why: 'in the section of the system repositories, upstream/clamav has Set up client while ClamAV definition updates is on, and scanner-trivy, which answers no client, has the menu alone (Q-UI-908)',
   },
   {
+    // Matched by its place, never by its words: the label is translated ("Add selector", "Selektor hinzufügen"), and a rule that
+    // matched the English words reported the German pass's button as a defect.
     check: 'broken',
     screen: /policy-new$/,
-    what: /div\.selector-buttons > button/,
-    text: /^Add selector /,
+    what: /div\.selector-buttons > button\.btn\.btn-default$/,
     why: "a button that appends a repository's key names the key, and a key longer than a phone's line breaks inside the button rather than push the page sideways (policy-editor.scss)",
   },
   {

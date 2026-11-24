@@ -2,7 +2,7 @@
 <div class="sig-report">
   <p class="sig-state" data-testid="signature-state">
     @if (r.state === 'verified_public' || r.state === 'verified_internal' || r.state === 'untrusted' || r.state === 'invalid') {
-      <quader-signature-badge [state]="r.state" [stale]="r.stale" />&ngsp;
+      <quader-signature-badge [state]="r.state" [stale]="r.stale" [sentence]="true" />&ngsp;
     } @else {
       <strong>{{ stateWord() }}.</strong>&ngsp;
     }

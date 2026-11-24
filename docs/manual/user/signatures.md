@@ -20,7 +20,7 @@ signature or a provenance attestation.
 |---|---|
 | **Verified · public** (green) | The signature matches the content, and a public trust anchor shipped with Quader knows the signer: the public Sigstore, npm's registry keys, the archive keys of Debian and Ubuntu, nuget.org's certificates |
 | **Verified · internal** (green) | The signature matches the content, and a trust anchor your administrator or your project's Owner added knows the signer: your company's CA, your company's Sigstore, a release key |
-| **Signed · signer not trusted** (neutral) | The artifact is signed, but no trust anchor knows the signer, or no key of the signer is known yet, or an administrator blocked the signer |
+| **Signed** (neutral), followed by "signer not trusted" | The artifact is signed, but no trust anchor knows the signer, or no key of the signer is known yet, or an administrator blocked the signer. The details and a file's facts call it **Signed · signer not trusted** |
 | **Invalid signature** (red) | The only signatures do not match the content: the content changed after it was signed, or the signature names other content |
 
 Three states carry no badge; the details name them: **Not checked yet** (the check runs in the background, usually within seconds),

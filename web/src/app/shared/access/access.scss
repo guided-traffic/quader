@@ -66,22 +66,6 @@ table.data {
   }
 }
 
-dl.facts {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: var(--quader-space-1) var(--quader-space-4);
-  margin: 0;
-
-  dt {
-    font-weight: 600;
-  }
-
-  dd {
-    margin: 0;
-    overflow-wrap: anywhere;
-  }
-}
-
 fieldset.form-grid {
   margin: 0;
   padding: 0;

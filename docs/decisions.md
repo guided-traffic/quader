@@ -12157,10 +12157,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-538 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+540 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 538 questions</summary>
+<summary>Q-UI: 540 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12702,6 +12702,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1073](spec/api-and-ui.md#q-ui-1073--the-panel-refreshes-by-polling-while-it-is-seen-and-announces-nothing) | The panel refreshes by polling while it is seen, and announces nothing | Decided by the development agent on 2026-11-24 | (a) The full list every `pollSeconds` (2 s) while open and visible; the summary every 10 s while closed and visible; no live region; closing stops it | [ADR-279](#adr-279--administrators-see-the-downloads-from-upstreams-live-and-the-last-100-finished) |
 | [Q-UI-1074](spec/api-and-ui.md#q-ui-1074--a-tab-strip-wider-than-its-place-scrolls-without-a-scrollbar-with-a-fade-and-a-chevron-at-the-edge) | A tab strip wider than its place scrolls without a scrollbar, with a fade and a chevron at the edge | Decided by the development agent on 2026-11-24 | (a) As GitLab: no scrollbar, a fade with a chevron at an edge beyond which tabs lie, a click on it scrolls by a page; the strip still scrolls by a swipe, Shift and the wheel, and the keyboard; the current tab and a focused tab are scrolled clear of the fades | — |
 | [Q-UI-1075](spec/api-and-ui.md#q-ui-1075--a-view-is-live-by-one-shared-poll-that-reads-in-place-and-only-while-it-is-seen) | A view is live by one shared poll that reads in place, and only while it is seen | Decided by the development agent on 2026-11-24 | (a) One helper `live()`: a view names its interval (fast while something runs, slow while nothing does); the helper reads while the window is seen and the view shown, at once on return, with back-off; the reads replace in place (`PagedResource.refresh`, `refreshResource`) | — |
+| [Q-UI-1076](spec/api-and-ui.md#q-ui-1076--a-status-too-long-for-a-pill-puts-its-verdict-on-the-badge-and-the-rest-after-it) | A status too long for a pill puts its verdict on the badge and the rest after it | Decided by the development agent on 2026-11-24 | (a), for the untrusted state only. | — |
+| [Q-UI-1077](spec/api-and-ui.md#q-ui-1077--below-36-rem-of-content-a-facts-term-stands-above-its-value) | Below 36 rem of content a fact's term stands above its value | Decided by the development agent on 2026-11-24 | (a) Every `dl.facts` puts each term above its value below 36 rem of the content panel, and a dialog's below 36 rem of the window | — |
 
 </details>
 

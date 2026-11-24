@@ -244,7 +244,7 @@ make ui-dev-down                  # when done (keeps the data)
 ```
 
 **German and other engines.** `UI_RENDERS_LOCALE=de` renders the screens marked `de: true` in `screens.ts` (Set up client, the
-tabs Details, Downloads and Upstream, the command menus, a tooltip, the toasts and an image's missing-data notice and the top bar's downloads panel so far) against a dev server that builds the German locale (`UI_LOCALE=de` of [web.sh](../../deploy/ui-dev/web.sh),
+tabs Details, Downloads and Upstream, the command menus, a tooltip, the toasts, an image's missing-data notice, the top bar's downloads panel and a version's files with the widest signature state so far) against a dev server that builds the German locale (`UI_LOCALE=de` of [web.sh](../../deploy/ui-dev/web.sh),
 the configurations `de` of [angular.json](../../web/angular.json)) on the instance's port; `renders.sh` starts it, and refuses a dev
 server that runs already in the other language (stop it first). A screen joins the German pass with the flag once its walk finds
 its controls by their place (a selector, a test ID, an `aria-controls`), never by an English word
@@ -365,7 +365,9 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    `failures.txt` and in `report.json` (`findings` of each shot). A finding that is right as it is goes into `allowed` of
    `layout.ts` with its reason (`allowedFindings` in the report), matched by its check and by patterns of the screen, the element, its text
    and what was measured (`detail`: the list of every project's repositories may build its action cells two ways, a system
-   repository's row having no **Set up client**, Q-UI-896, and no third); a check is never switched off.
+   repository's row having no **Set up client**, Q-UI-896, and no third); a check is never switched off. An allowed finding names its
+   element by its place (the screen and the path of `what`), never by the words it shows: the German pass renders the same screens,
+   and the exception of `policy-new` that matched "Add selector" reported "Selektor hinzufügen" as a defect.
 
    <details>
    <summary>The checks, what each catches, and what it does not see</summary>

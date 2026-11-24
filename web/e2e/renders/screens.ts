@@ -2235,9 +2235,12 @@ async function withGate(page: Page, url: string, gate: Record<string, unknown>):
  * **Signatures** with the gate's decision; for the holder of the triage right the release's dialog, and the version released, by whom,
  * when and why. The member `refused` and the gate are the profile's real answers changed in the browser.
  */
-/** A version's files with the badge of a signer no anchor trusts (R-SIG-035): the state the screen stands for, waited for. */
+/**
+ * A version's files with the badge of a signer no anchor trusts (R-SIG-035): the state the screen stands for, waited for by the badge's
+ * state and not its words, so the German pass renders it too (Q-UI-1076: the badge **Signed** and "signer not trusted" after it).
+ */
 async function* untrustedFiles(page: Page): AsyncGenerator<string> {
-  await expect(page.locator('main quader-data-table.version-files [data-testid="signature-badge"]').first()).toHaveText(/Signed · signer not trusted/);
+  await expect(page.locator('main quader-data-table.version-files [data-testid="signature-badge"][data-state="untrusted"]').first()).toBeVisible();
   yield '';
 }
 
@@ -2892,14 +2895,16 @@ export const screens: readonly Screen[] = [
   // The signatures at a version, an image and a file (R-SIG-035, R-SIG-024, R-SIG-010): what a plain user meets; the same for every kind.
   { id: 'package-version-signatures', path: `${ver(P, manyVersionsPackage, signedVersions.public)}?tab=signatures`, kinds: ['plain'], walk: signatureVersions },
   { id: 'package-version-signatures-files', path: `${ver(P, manyVersionsPackage, signedVersions.public)}?tab=files`, kinds: ['plain'], tables: 'quader-data-table.version-files' },
-  // The widest badge in the files' table, **Signed · signer not trusted** (a blocked signer), beside the malware scan's state and the
-  // download: the table keeps its form at 1,024 px (Q-UI-969, Q-UI-1002).
+  // The widest signature state in the files' table, **Signed** with "signer not trusted" after it (a blocked signer), beside the malware
+  // scan's state and the download: the table keeps its form at 1,024 px (Q-UI-969, Q-UI-1002), and in German at 390 px the words
+  // stay inside the cell (Q-UI-1076).
   {
     id: 'package-version-signatures-untrusted-files',
     path: `${ver(P, manyVersionsPackage, signedVersions.blocked)}?tab=files`,
     kinds: ['plain'],
     walk: untrustedFiles,
     tables: 'quader-data-table.version-files',
+    de: true,
   },
   { id: 'package-version-signatures-oci', path: `${ver(P, ociPackage, signedImage.tag)}?tab=signatures`, kinds: ['plain'], walk: signatureImages },
   // A repository's gate at a version, an image and a file (R-SIG-074): what a plain user meets, and the release for an administrator.
