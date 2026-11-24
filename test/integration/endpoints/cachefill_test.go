@@ -102,6 +102,38 @@ func (relayFormat) WriteError(w http.ResponseWriter, r *http.Request, err error)
 // relayRemote fetches a path below the upstream URL.
 type relayRemote struct{ formats.RemoteBase }
 
+// The relay's catalogue is the floor R-CUR-007 asks of every format with the class remote (Q-CUR-109): it searches nothing, lists
+// no levels and knows no package, since the endpoint tests fetch only what they name.
+var _ formats.Catalogue = relayRemote{}
+
+// CatalogueCaps implements discover.Catalogue.
+func (relayRemote) CatalogueCaps(context.Context, discover.Upstream) (discover.CatalogueCaps, error) {
+	return discover.CatalogueCaps{
+		Search: discover.SearchNone, SearchReason: "a format of the endpoint tests",
+		LevelsReason: "a format of the endpoint tests", Sizes: "unknown",
+	}, nil
+}
+
+// Search implements discover.Catalogue.
+func (relayRemote) Search(context.Context, discover.Upstream, discover.SearchQuery) (discover.SearchPage, error) {
+	return discover.SearchPage{}, discover.ErrNotOffered
+}
+
+// Children implements discover.Catalogue.
+func (relayRemote) Children(context.Context, discover.Upstream, discover.LevelRequest) (discover.LevelPage, error) {
+	return discover.LevelPage{}, discover.ErrNotOffered
+}
+
+// Package implements discover.Catalogue: the endpoint tests look no package up.
+func (relayRemote) Package(_ context.Context, _ discover.Upstream, name string, _ discover.VersionsRequest) (discover.PackageInfo, error) {
+	return discover.PackageInfo{Name: name}, nil
+}
+
+// VersionProbe implements formats.VersionProber: the endpoint tests download nothing ahead.
+func (relayRemote) VersionProbe(context.Context, discover.Upstream, string, string) (formats.Probe, bool, error) {
+	return formats.Probe{}, false, nil
+}
+
 // ProbeContent implements formats.RemoteAdapter: the files of the probe.
 func (relayRemote) ProbeContent(_ context.Context, _ discover.Upstream, p formats.Probe) ([]discover.Item, error) {
 	return formats.ProbeFiles(p), nil
