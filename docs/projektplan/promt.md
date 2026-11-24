@@ -254,8 +254,14 @@ What was red at 19:49 (Test and Release on 928e2a6e7 and every run since 08:32; 
   staleness bound with a test engine that never polled (the fixture's poll confirms the index now); `TestR_VULN_041_…` cancelled after
   a fixed 50 ms, before the TLS handshake ended (cancels once the scanner holds the call); `TestShutdownBudgetEndToEnd` measured the
   runner's stalls as overrun (the bounds add the measured stalls of the process; a real 600 ms overrun still fails).
-- **UI layout checks** — three render findings (the untrusted signer's badge offsets the row at 1440 px, the malware cell's date in two
-  lines at 390 px, the signature gate's fixture route answered twice); a builder fixes them with renders.
+- **UI layout checks** (landed at 21:15, a full render run passed locally in English, 501 screens, and German, 63): the untrusted
+  signer's note made the badge two lines tall in a centred cell (the cell starts at the top, the badge is `display: contents`, the note
+  the cell's second line); a `<time>` outside a table could break inside itself on a day whose date reached the line's end (a global
+  `time { white-space: nowrap }`); Playwright's `unroute` does not wait for a handler in flight, so a `live()` re-read at a walk's end
+  threw "Route is already handled!" (the renders' routes wait for their handlers, `web/e2e/renders/routes.ts`); and the auditor's
+  screens, which run last, answered 401 once a run passed an hour, the dev profile's sign-in sessions ending after one hour idle
+  (8 h idle, 24 h absolute in `deploy/ui-dev/config.sh`). Not reproduced and left: `package-version-ansible` hit the 300 s timeout once,
+  `package-version-signature-refused` got `ERR_ABORTED` once.
 - **Nightly** (read to the causes, landed at 20:50): npm-ha and drain-roles have no product cause: the scheduled nightly ran at
   12:25 UTC beside six push runs (12 kind legs), the node at 31.5 of 32 cores; tarballs slowed to ~23 s, the technical profile's 50
   parallel downloads per token filled and the rest waited 10 s for a 429 (R-LIM-024); the last green npm-ha used the same ~14 cores
