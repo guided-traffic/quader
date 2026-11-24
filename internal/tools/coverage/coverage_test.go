@@ -112,8 +112,8 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// repository (R-CUR-001 to R-CUR-023, R-NPM-049, R-NUGET-035, R-OCI-038, R-DEB-036, R-ANS-047, 28 P1 requirements). 1264 since
 		// the scans after any fill (R-VULN-050, R-MAL-035, two P1 requirements). 1268 since the downloads from upstreams (R-OPS-049 to
 		// R-OPS-052, four P1 requirements).
-		if len(m.Reqs) != 1268 || count[prioMVP] != 718 || count[prioP1] != 511 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1268 (718, 511, 39)",
+		if len(m.Reqs) != 1271 || count[prioMVP] != 718 || count[prioP1] != 514 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1271 (718, 514, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

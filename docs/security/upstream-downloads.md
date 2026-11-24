@@ -1,8 +1,8 @@
 # The downloads from upstreams
 
-Status: specified on 2026-11-24 ([operations-and-observability.md](../spec/operations-and-observability.md) R-OPS-049 to R-OPS-052);
-the tracker, the publication, the two tables and the API are built (T-26 package A), the top bar's button and its panel are the UI's
-package. The perspective of this page is what the overview shows and keeps, and to whom. The code is described in
+Status: specified on 2026-11-24 ([operations-and-observability.md](../spec/operations-and-observability.md) R-OPS-049 to R-OPS-052,
+[api-and-ui.md](../spec/api-and-ui.md) R-UI-210 to R-UI-212); the tracker, the publication, the two tables and the API are built (T-26
+package A), and the top bar's button and its panel (T-26 package B). The perspective of this page is what the overview shows and keeps, and to whom. The code is described in
 [developer/upstream-downloads.md](../developer/upstream-downloads.md).
 
 ## What it shows and to whom

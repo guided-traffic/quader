@@ -95,18 +95,6 @@ export function phaseText(phase: string | undefined): string {
   }
 }
 
-/** A length of time as `1 d 4 h`, `2 h 5 min`, `7 min` or `12 s`; the units are abbreviations that need no translation. */
-export function durationText(seconds: number): string {
-  const s = Math.max(0, Math.round(seconds));
-  const d = Math.floor(s / 86_400);
-  const h = Math.floor((s % 86_400) / 3_600);
-  const m = Math.floor((s % 3_600) / 60);
-  if (d > 0) return h > 0 ? `${d} d ${h} h` : `${d} d`;
-  if (h > 0) return m > 0 ? `${h} h ${m} min` : `${h} h`;
-  if (m > 0) return `${m} min`;
-  return `${s} s`;
-}
-
 /** The seconds a run took: to its end, or to `now` while it runs; `null` for a timestamp that does not parse. */
 export function runSeconds(run: BackupRun, now: number): number | null {
   const start = Date.parse(run.startedAt);

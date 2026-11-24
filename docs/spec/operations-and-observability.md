@@ -935,8 +935,8 @@ abgebildet zu sammen mit ihrer Download-Dauer und der durchschnittlichen Geschwi
 [ADR-279](../decisions.md#adr-279--administrators-see-the-downloads-from-upstreams-live-and-the-last-100-finished). The security view
 is [security/upstream-downloads.md](../security/upstream-downloads.md); the code is described in
 [developer/upstream-downloads.md](../developer/upstream-downloads.md). Status: specified on 2026-11-24; the tracker, the publication,
-the tables and the API are built (T-26 package A); the top bar's button and its panel are the UI's package (T-26 package B), whose
-requirements stand in [api-and-ui.md](api-and-ui.md) once it is built.
+the tables and the API are built (T-26 package A); the top bar's button and its panel are built (T-26 package B), with their
+requirements in [api-and-ui.md](api-and-ui.md) R-UI-210 to R-UI-212.
 
 ### R-OPS-049 · What a download from an upstream is
 Priority: **P1** · Covers: quader-only
@@ -7106,7 +7106,7 @@ Context: the owner said "als Admin". The list names packages of every remote rep
 
 **Choice:** (a). (d) is deferred: the panel stays the installation's.
 
-**Applied in the spec:** R-OPS-052; the top bar's button shows itself to the same holders (T-26 package B).
+**Applied in the spec:** R-OPS-052; [api-and-ui.md](api-and-ui.md) R-UI-210 (the top bar's button shows itself to the same holders).
 
 ### Q-OPS-424 · One key, the publication interval; the list holds 100
 

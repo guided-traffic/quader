@@ -40,6 +40,7 @@ import { clamavDatabases, clamavRegistry, clamavRow, definitionsExpected, defini
 import { damagedBlobs, noDamagedBlob, oneConnection, secondUnreachable, severalConnections, twoConnectionFacts } from './storage';
 import { auditDataKeys, bastionsHandover, bastionsRead, forbiddenLink, seededBastion } from './bastions';
 import { downloadsWalk } from './downloads';
+import { downloadsButtonWalk, downloadsExpected, downloadsPanelWalk } from './upstream-downloads';
 import {
   upstreamDebWalk,
   upstreamExpected,
@@ -2986,6 +2987,13 @@ export const screens: readonly Screen[] = [
   { id: 'repository-settings-ansible-virtual', path: `${O}/repositories/ansible/settings`, kinds: admins, walk: allSections },
   { id: 'help-admin-page', path: '/ui/help/admin/repositories', kinds: admins },
   { id: 'admin-dashboard', path: '/ui/admin/dashboard', kinds: admins, walk: dashboardStorage },
+  // The top bar's Downloads (R-UI-210 to R-UI-212), answered in the browser (upstream-downloads.ts): the button with nothing running,
+  // with 3 and with 140 in the main and in the admin area; the panel with five running and 100 finished, the filter set, everything
+  // hidden, a refresh that failed and both sections empty; a plain user and a project's Owner get no button.
+  { id: 'topbar-downloads', path: '/ui/projects', kinds: auditors, walk: downloadsButtonWalk },
+  { id: 'topbar-downloads-admin-area', path: '/ui/admin/dashboard', kinds: admins, walk: downloadsButtonWalk },
+  { id: 'topbar-downloads-panel', path: '/ui/projects', kinds: auditors, walk: downloadsPanelWalk, expected: downloadsExpected, de: true },
+  { id: 'topbar-downloads-none', path: '/ui/projects', kinds: ['plain', 'power'] },
   // The admin area's side bar without Projects and Repositories (Q-UI-1040), in the drawer at 390 px.
   { id: 'sidebar-admin', path: '/ui/admin/dashboard', kinds: admins, walk: adminSidebarShown },
   // The public registries Quader offers (R-UI-187, R-UI-188): the list grouped by format, and a Debian archive's page, the one with

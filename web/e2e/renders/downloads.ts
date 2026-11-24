@@ -179,16 +179,18 @@ const bulkUrl = (url: URL): boolean => /^\/api\/v1\/projects\/[^/]+\/repositorie
 
 /**
  * The tab as it opens (the seed's own queue: in a fresh database the empty state), then with the queue of a cache that is being
- * built, a failed row opened to its whole failure, and a bulk's rows under its line.
+ * built, a failed row opened to its whole failure, a bulk's rows under its line, and the rows of one package (`?name=`).
  */
 export async function* downloadsWalk(p: Page): AsyncGenerator<string> {
   await expect(p.locator('main quader-remote-downloads quader-data-table')).toBeVisible();
   yield '';
   await p.route(listUrl, (route) => {
     if (route.request().method() !== 'GET') return route.fallback();
-    const bulkOnly = new URL(route.request().url()).searchParams.get('bulk');
-    const items = queueRows().filter((r) => !bulkOnly || r['bulk'] === bulkOnly);
-    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(page(items, !bulkOnly)) });
+    const params = new URL(route.request().url()).searchParams;
+    const bulkOnly = params.get('bulk');
+    const nameOnly = params.get('name');
+    const items = queueRows().filter((r) => (!bulkOnly || r['bulk'] === bulkOnly) && (!nameOnly || r['name'] === nameOnly));
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(page(items, !bulkOnly && !nameOnly)) });
   });
   await p.route(bulkUrl, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(bulk) }));
   await p.reload();
@@ -202,6 +204,11 @@ export async function* downloadsWalk(p: Page): AsyncGenerator<string> {
   await expect(p.locator('main [data-testid="download-bulk"] h2')).toBeVisible();
   await expect(p.locator('main quader-remote-downloads tbody tr:not(.expansion)')).toHaveCount(3);
   yield 'bulk';
+  // The rows of one package, as the link Show in queue of the top bar's downloads panel opens the tab (R-UI-211).
+  await p.goto(`${new URL(p.url()).pathname}?name=${encodeURIComponent('typescript')}`);
+  await expect(p.locator('main [data-testid="download-name-filter"]')).toBeVisible();
+  await expect(p.locator('main quader-remote-downloads tbody tr:not(.expansion)')).toHaveCount(1);
+  yield 'name';
   await p.unroute(listUrl);
   await p.unroute(bulkUrl);
 }

@@ -1,6 +1,7 @@
 import {
   RemoteDownload,
   RemoteDownloadFailure,
+  RemoteDownloadOrigin,
   RemoteDownloadFailureClass,
   RemoteDownloadFailureStep,
   RemoteDownloadState,
@@ -19,6 +20,27 @@ export function downloadStateText(state: RemoteDownloadState): string {
       return $localize`:@@downloads.state.failed:Failed`;
     case 'cancelled':
       return $localize`:@@downloads.state.cancelled:Cancelled`;
+  }
+}
+
+/**
+ * Who or what put a row into the queue, in the queue's words (R-CUR-018): a person who is not named reads as **A person**. The
+ * downloads panel of the top bar uses the same words for the queue's origins (api-and-ui.md R-UI-211).
+ */
+export function queueOriginText(origin: RemoteDownloadOrigin): string {
+  switch (origin) {
+    case 'person':
+      return $localize`:@@downloads.origin.person:A person`;
+    case 'request':
+      return $localize`:@@downloads.origin.request:Request`;
+    case 'allow':
+      return $localize`:@@downloads.origin.allow:Allow`;
+    case 'bulk':
+      return $localize`:@@downloads.origin.bulk:Bulk`;
+    case 'probe':
+      return $localize`:@@downloads.origin.probe:Probe`;
+    case 'client':
+      return $localize`:@@downloads.origin.client:Client`;
   }
 }
 

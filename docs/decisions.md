@@ -2626,8 +2626,10 @@ package's versions in the list, still read every version (H-1683).
 **Status:** Decided by the owner on 2026-11-24 (task T-26: the wish, the place at the top right, the running downloads with their progress
 and speed, the last 100 with their duration and average speed); the design decided by the development agent
 ([Q-OPS-419](spec/operations-and-observability.md#q-ops-419--a-download-is-the-body-of-an-artifact-from-a-remote-repositorys-upstream-whatever-caused-it)
-to [Q-OPS-424](spec/operations-and-observability.md#q-ops-424--one-key-the-publication-interval-the-list-holds-100)). The backend and the
-API are built (T-26 package A, 2026-11-24); the top bar's button and its panel are the UI's package.
+to [Q-OPS-424](spec/operations-and-observability.md#q-ops-424--one-key-the-publication-interval-the-list-holds-100),
+[Q-UI-1070](spec/api-and-ui.md#q-ui-1070--the-downloads-button-stands-between-documentation-and-the-theme-and-counts-what-runs) to
+[Q-UI-1073](spec/api-and-ui.md#q-ui-1073--the-panel-refreshes-by-polling-while-it-is-seen-and-announces-nothing)). The backend and the
+API are built (T-26 package A, 2026-11-24), and the top bar's button and its panel (T-26 package B, 2026-11-24).
 
 **Context.** The owner, 2026-11-24, 08:20: "Ich will als Admin oben Rechts eine Downlaod Übersicht haben wie aus dem Screenshot. Dort
 werden alle laufenden Downloads, ihr Forschritt, Download-Geschwindigkeit abgebildet. Es werden nur Downloads von Upstream Repos
@@ -2644,7 +2646,8 @@ queue of one remote repository showed its own rows, and a client's miss or a mir
 - The last 100 are a table trimmed to 100, not backed up; a stopped replica's downloads end `interrupted` (R-OPS-051).
 - Two operations under `content:metadata-read`: the administrator and the auditor (R-OPS-052).
 
-**Consequences.** R-API-038, R-ARCH-030, R-BAK-004, R-REPO-025 and R-CUR-011's page changed. The security view is
+**Consequences.** R-API-038, R-ARCH-030, R-BAK-004, R-REPO-025 and R-CUR-011's page changed; R-UI-002 names the button, R-UI-210 to
+R-UI-212 the button and its panel, and R-CUR-018's tab Downloads takes a package's name from its address. The security view is
 [security/upstream-downloads.md](security/upstream-downloads.md); the code is described in
 [developer/upstream-downloads.md](developer/upstream-downloads.md).
 
@@ -12152,10 +12155,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-530 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+534 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 530 questions</summary>
+<summary>Q-UI: 534 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12689,6 +12692,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1065](spec/api-and-ui.md#q-ui-1065--the-tooltip-is-the-references-the-toasts-grey-above-the-element-with-an-arrow) | The tooltip is the reference's: the toast's grey, above the element, with an arrow | Decided by the development agent on 2026-11-24 | (a) The reference's tooltip whole: the strong feedback pair, its measures, its arrow, above first and under where the window has no room above | — |
 | [Q-UI-1066](spec/api-and-ui.md#q-ui-1066--a-versions-commands-are-a-menu-hung-from-a-button-with-the-formats-client-verb) | A version's commands are a menu hung from a button with the format's client verb | Decided by the development agent on 2026-11-24 | (c), the panel (a), the button in both rows. | — |
 | [Q-UI-1067](spec/api-and-ui.md#q-ui-1067--details-is-the-last-tab-of-a-repositorys-page-not-a-section-under-its-list) | Details is the last tab of a repository's page, not a section under its list | Decided by the development agent on 2026-11-24 | (a) **Details** a tab with its address (`…/details`), always the last, on every repository of every format and class that has details for its reader; a page that would have only its content keeps no strip, and its address `…/details` leads to the content | — |
+| [Q-UI-1070](spec/api-and-ui.md#q-ui-1070--the-downloads-button-stands-between-documentation-and-the-theme-and-counts-what-runs) | The Downloads button stands between Documentation and the theme, and counts what runs | Decided by the development agent on 2026-11-24 | (a) An icon button between **Documentation** and the theme button, a count badge while downloads run | [ADR-279](#adr-279--administrators-see-the-downloads-from-upstreams-live-and-the-last-100-finished) |
+| [Q-UI-1071](spec/api-and-ui.md#q-ui-1071--the-downloads-open-in-the-drawer-from-the-right) | The downloads open in the drawer from the right | Decided by the development agent on 2026-11-24 | (a) Quader's drawer (Q-UI-420), 30rem wide, with its head, close button, filter and two sections | — |
+| [Q-UI-1072](spec/api-and-ui.md#q-ui-1072--a-row-says-what-what-it-took-and-who-caused-it-a-queued-one-links-the-queue) | A row says what, what it took and who caused it; a queued one links the queue | Decided by the development agent on 2026-11-24 | (a) The name and version (else the file), the bar where the total is known, size and speed and time, the format's name, the repository, the origin in words; **Show in queue** for a queue row; no actions | — |
+| [Q-UI-1073](spec/api-and-ui.md#q-ui-1073--the-panel-refreshes-by-polling-while-it-is-seen-and-announces-nothing) | The panel refreshes by polling while it is seen, and announces nothing | Decided by the development agent on 2026-11-24 | (a) The full list every `pollSeconds` (2 s) while open and visible; the summary every 10 s while closed and visible; no live region; closing stops it | [ADR-279](#adr-279--administrators-see-the-downloads-from-upstreams-live-and-the-last-100-finished) |
 
 </details>
 

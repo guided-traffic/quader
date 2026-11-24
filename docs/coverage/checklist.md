@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 805 specified, 1,434 open. 1,268 spec requirements:
-787 cover catalog features, 481 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 805 specified, 1,434 open. 1,271 spec requirements:
+787 cover catalog features, 484 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>481 requirements</summary>
+<summary>484 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3092,6 +3092,9 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-UI-195 | The registries of this installation in the admin area | MVP | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-196 | The object-store connections on the tab Storage of System status | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-UI-197 | The object store on the dashboard, one line per connection | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-210 | The Downloads button in the top bar | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-211 | The Downloads panel: what runs | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
+| R-UI-212 | The Downloads panel: what finished, and Hide all | P1 | [api-and-ui.md](../spec/api-and-ui.md) |
 | R-ARCH-037 | The scan listener of `packages` | P1 | [architecture.md](../spec/architecture.md) |
 | R-ARCH-003 | Go module and package layout | MVP | [architecture.md](../spec/architecture.md) |
 | R-ARCH-004 | Angular workspace layout | MVP | [architecture.md](../spec/architecture.md) |

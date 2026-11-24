@@ -18,7 +18,8 @@ import { Router } from '@angular/router';
 import { applyFilters, button, chipTexts, expectAccessible, openFilters, renderScreen, settle, text, type } from '../../../testing/screen';
 import { REFRESH_INTERVAL_MS } from '../system-status';
 import { BackupsPage } from './backups-page';
-import { JOB_NAME_MAX, durationText, manualRunCommand, stateView } from './backups-model';
+import { JOB_NAME_MAX, manualRunCommand, stateView } from './backups-model';
+import { durationText } from '../../../shared/duration-text';
 import { SystemRefresh } from '../system-refresh';
 
 function fake(get: <A>(token: abstract new (...args: never[]) => A) => A): FakeBackupsApi {

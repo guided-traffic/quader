@@ -55,6 +55,20 @@
   margin-inline-start: auto;
 }
 
+// The package whose rows the list shows (`name` in the address): its name may be long and breaks inside itself.
+.name-filter {
+  margin: 0 0 var(--quader-space-4);
+  overflow-wrap: anywhere;
+
+  .btn-sm {
+    vertical-align: baseline;
+  }
+}
+
+.name-filter-name {
+  font-weight: 600;
+}
+
 // The bulk whose rows the list shows.
 .bulk {
   margin-block-end: var(--quader-space-4);

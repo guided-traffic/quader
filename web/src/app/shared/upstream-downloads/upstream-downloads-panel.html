@@ -1,0 +1,153 @@
+<quader-drawer [(open)]="open" [heading]="heading" [closeLabel]="closeLabel" [drawerId]="panelId()" width="min(30rem, 100vw)">
+  <div class="dl-body">
+    <p class="dl-intro" i18n="@@upstream-downloads.intro">
+      What Quader is loading from the upstreams of remote repositories, and the last 100 finished downloads.
+    </p>
+
+    <!-- One filter for both sections, in the browser (R-UI-211). -->
+    <div class="dl-filter">
+      <label class="field-label" [for]="filterId" i18n="@@upstream-downloads.filter">Filter downloads</label>
+      <input
+        class="text-input"
+        type="search"
+        autocomplete="off"
+        [id]="filterId"
+        [value]="filter()"
+        (input)="setFilter($any($event.target).value)"
+      />
+    </div>
+
+    @if (refreshFailed()) {
+      <p class="dl-refresh-failed" data-testid="upstream-downloads-refresh-failed">
+        <span class="material-icons" aria-hidden="true">warning</span>
+        <span i18n="@@upstream-downloads.refresh-failed">The list could not be refreshed; Quader tries again.</span>
+      </p>
+    }
+
+    @if (list() === null) {
+      @if (!refreshFailed()) {
+        <p class="dl-empty" role="status" i18n="@@upstream-downloads.loading">Loading the downloads.</p>
+      }
+    } @else {
+      <section class="dl-section" aria-labelledby="upstream-downloads-running" data-testid="upstream-downloads-running">
+        <div class="dl-section-head">
+          <h3 id="upstream-downloads-running" class="dl-section-title">{{ runningHeading() }}</h3>
+        </div>
+        @if (runningShown().length > 0) {
+          <ul class="dl-rows">
+            @for (d of runningShown(); track d.id) {
+              @let s = subjectOf(d);
+              <li class="dl-row">
+                <div class="dl-subject" [attr.title]="d.path">
+                  <span class="dl-icon"><quader-format-icon [format]="d.repository.format" /></span>
+                  <span class="dl-subject-text"
+                    ><span class="dl-name" translate="no">{{ s.name }}</span>
+                    @if (s.detail !== '') {
+                      &ngsp;<span class="dl-detail" translate="no">{{ s.detail }}</span>
+                    }
+                  </span>
+                </div>
+                @if (d.total !== null) {
+                  <progress class="dl-progress" [value]="d.bytes" [max]="d.total" [attr.aria-label]="progressLabel(d)"></progress>
+                }
+                <p class="dl-facts dot-separated">
+                  @for (f of runningFigures(d); track $index) {
+                    <span>{{ f }}</span>
+                  }
+                </p>
+                <ng-container *ngTemplateOutlet="where; context: { $implicit: d }" />
+              </li>
+            }
+          </ul>
+        } @else if (filtering() && running().length > 0) {
+          <p class="dl-empty" i18n="@@upstream-downloads.no-match">No download matches the filter.</p>
+        }
+        @if (runningLeftOut() > 0) {
+          <p class="dl-more">{{ moreText(runningLeftOut()) }}</p>
+        } @else if (running().length === 0) {
+          <p class="dl-empty" i18n="@@upstream-downloads.running-empty">No download from an upstream is running.</p>
+        }
+      </section>
+
+      <section class="dl-section" aria-labelledby="upstream-downloads-finished" data-testid="upstream-downloads-finished">
+        <div class="dl-section-head">
+          <h3 id="upstream-downloads-finished" class="dl-section-title">{{ finishedHeading() }}</h3>
+          @if (canHide && finished().length > 0) {
+            <button type="button" class="btn btn-tertiary btn-sm" (click)="hideAll()" i18n="@@upstream-downloads.hide-all">Hide all</button>
+          }
+        </div>
+        @if (hiddenCount() > 0) {
+          <p class="dl-hidden">
+            {{ hiddenText(hiddenCount()) }}&ngsp;<button
+              type="button"
+              class="btn btn-tertiary btn-sm"
+              (click)="showAgain()"
+              i18n="@@upstream-downloads.show-again"
+            >Show again</button>
+          </p>
+        }
+        @if (finishedShown().length > 0) {
+          <ul class="dl-rows">
+            @for (d of finishedShown(); track d.id) {
+              @let s = subjectOf(d);
+              @let badge = outcomeBadge(d);
+              <li class="dl-row">
+                <div class="dl-subject" [attr.title]="d.path">
+                  <span class="dl-icon"><quader-format-icon [format]="d.repository.format" /></span>
+                  <span class="dl-subject-text"
+                    ><span class="dl-name" translate="no">{{ s.name }}</span>
+                    @if (s.detail !== '') {
+                      &ngsp;<span class="dl-detail" translate="no">{{ s.detail }}</span>
+                    }
+                    @if (badge) {
+                      &ngsp;<span class="badge dl-badge" [class.bad]="badge.tone === 'bad'" [class.warn]="badge.tone === 'warn'" [attr.title]="badge.title"
+                        >@if (badge.icon) {<span class="material-icons" aria-hidden="true">{{ badge.icon }}</span>}{{ badge.text }}</span
+                      >
+                    }
+                  </span>
+                </div>
+                <p class="dl-facts dot-separated">
+                  @for (f of finishedFigures(d); track $index) {
+                    <span>{{ f }}</span>
+                  }
+                </p>
+                <ng-container *ngTemplateOutlet="where; context: { $implicit: d }" />
+              </li>
+            }
+          </ul>
+        } @else if (filtering() && finished().length > 0) {
+          <p class="dl-empty" i18n="@@upstream-downloads.no-match">No download matches the filter.</p>
+        } @else if ((list()?.finished?.length ?? 0) === 0) {
+          <p class="dl-empty" i18n="@@upstream-downloads.finished-empty">No download has finished yet.</p>
+        }
+      </section>
+    }
+
+    <p class="dl-foot">
+      <a routerLink="/help/admin/operations" fragment="downloads-from-upstreams" (click)="close()" i18n="@@upstream-downloads.about"
+        >About this list</a
+      >
+    </p>
+  </div>
+</quader-drawer>
+
+<!-- The last line of a row: the format's name, the repository, the origin, the end of a finished one, and the queue of a queued one. -->
+<ng-template #where let-d>
+  <p class="dl-facts dot-separated">
+    <span>{{ formatLabel(d.repository.format) }}</span>
+    <span
+      ><a [routerLink]="repositoryLink(d)" (click)="close()" translate="no">{{ d.repository.project }}/{{ d.repository.key }}</a></span
+    >
+    <span>{{ originText(d) }}</span>
+    @if (isFinished(d)) {
+      <span><quader-time-ago [at]="d.finishedAt" absolute="title" /></span>
+    }
+    @if (d.origin === 'queue') {
+      <span
+        ><a [routerLink]="queueLink(d)" [queryParams]="{ name: d.name }" (click)="close()" i18n="@@upstream-downloads.show-in-queue"
+          >Show in queue</a
+        ></span
+      >
+    }
+  </p>
+</ng-template>

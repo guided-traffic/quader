@@ -1196,7 +1196,10 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
   - **As built (R5a).** One muted sentence says what the tab lists. The head: **All** and the four states as pressed buttons with their
     counts, **Failure** as a select of the fifteen classes, and at the row's end **Retry all failed** and **Pause automatic refresh**;
     the address carries `state`, `failure` (the class) and `bulk`
-    ([Q-CUR-131](#q-cur-131--the-tabs-filters-are-the-states-as-pressed-buttons-with-their-counts-and-failure-as-a-select-in-the-address)).
+    ([Q-CUR-131](#q-cur-131--the-tabs-filters-are-the-states-as-pressed-buttons-with-their-counts-and-failure-as-a-select-in-the-address)),
+    and `name`, the rows of one package, which the link **Show in queue** of the top bar's downloads panel opens
+    ([api-and-ui.md](api-and-ui.md) R-UI-211): a line "Only the downloads of <name>." with **Show every download** stands above the
+    rows until it is cleared.
     The table: **Package** (name and version, a row that fetches what the rules do not deliver marked "Not delivered here: stored for
     examination"), **Origin**, **State** (the badge, a done row's outcome, "Attempt 2 of 5 · next in 4 minutes"), **Progress** ("2 of 3
     files · 46.0 MiB", the files a gate refused), **Failure** (the class, the upstream's status or else the engine's code, the host:

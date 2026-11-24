@@ -74,6 +74,9 @@ import { DeliveryRequestsApi, HttpDeliveryRequestsApi } from './delivery-request
 import { DeliveryRulesApi, HttpDeliveryRulesApi } from './delivery-rules-api';
 import { HttpUpstreamCatalogueApi, UpstreamCatalogueApi } from './upstream-catalogue-api';
 // <<< T-24 upstream
+// >>> T-26 upstream downloads
+import { HttpUpstreamDownloadsApi, UpstreamDownloadsApi } from './upstream-downloads-api';
+// <<< T-26 upstream downloads
 
 /**
  * Binds every service interface of `api/` to its HTTP implementation. Specs and component tests
@@ -159,5 +162,8 @@ export function provideApiServices(): Provider[] {
     { provide: DeliveryRulesApi, useClass: HttpDeliveryRulesApi },
     { provide: DeliveryRequestsApi, useClass: HttpDeliveryRequestsApi },
     // <<< T-24 upstream
+    // >>> T-26 upstream downloads
+    { provide: UpstreamDownloadsApi, useClass: HttpUpstreamDownloadsApi },
+    // <<< T-26 upstream downloads
   ];
 }

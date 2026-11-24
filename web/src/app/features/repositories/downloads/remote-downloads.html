@@ -37,6 +37,18 @@
   </div>
 </div>
 
+@if (name(); as n) {
+  <!-- The rows of one package (the link Show in queue of the top bar's downloads panel, R-UI-211), until the filter is cleared. -->
+  <p class="name-filter" data-testid="download-name-filter">
+    <span i18n="@@downloads.name-filter">Only the downloads of <span class="name-filter-name" translate="no">{{ n }}</span>.</span>&ngsp;<button
+      class="btn btn-tertiary btn-sm"
+      type="button"
+      (click)="clearName()"
+      i18n="@@downloads.bulk.show-all"
+    >Show every download</button>
+  </p>
+}
+
 @if (bulkId()) {
   <!-- The bulk whose rows the list shows (a row's origin Bulk leads here): its subject, state, counters, bounds and Cancel bulk. -->
   <section class="bulk" aria-labelledby="dl-bulk-title" data-testid="download-bulk">

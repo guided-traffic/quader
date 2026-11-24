@@ -116,6 +116,26 @@ quader-root {
     }
   }
 
+  // The button Downloads of a holder of content:metadata-read (R-UI-210) takes 40 px more: below 440 px such a bar (an administrator's
+  // needs 433 px with the name) gives up the name and half of its actions' gaps, as the bar below 360 px does for everybody. A bar
+  // without the button keeps its name.
+  @media (max-width: 27.49rem) {
+    &:has(.downloads-button) {
+      .product-name {
+        position: absolute;
+        inline-size: 1px;
+        block-size: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
+
+      .topbar-actions {
+        gap: var(--quader-space-1);
+      }
+    }
+  }
+
   .user-button {
     display: inline-flex;
     padding: 0;

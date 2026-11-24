@@ -3538,7 +3538,7 @@ Priority: **MVP** · Covers: UI-001, UI-004
   mark and the product name, the search field of R-UI-095 in the middle (below 36 rem a search button,
   [Q-UI-403](#q-ui-403--below-36-rem-a-search-button-opens-the-field-as-a-sheet)), the **Admin** button (shown
   to a caller who has the admin area; it leads into it and looks the same inside it), the **Documentation** link, the
-  theme button and the user menu. The search field is shown to every signed-in caller, and to an anonymous one while something
+  **Downloads** button (R-UI-210, shown to a holder of `content:metadata-read`), the theme button and the user menu. The search field is shown to every signed-in caller, and to an anonymous one while something
   is `public` (R-UI-095); it offers suggestions before and while typing (R-UI-096, R-UI-097), and Enter without a picked
   suggestion opens the results page `/search?q=<text>` of the main area (R-UI-098). A search never leads into the admin area
   except by an instance administrator's choice of a suggestion marked **Admin area** (R-UI-099,
@@ -9052,6 +9052,130 @@ Priority: **P1** · Covers: quader-only
 
 Acceptance criteria (Vitest, the dashboard's spec, about 0.3 s more): two connections render two lines; one of them unreachable on every
 replica makes the overall state the warning above.
+
+### R-UI-210 · The Downloads button in the top bar
+Priority: **P1** · Covers: quader-only
+
+The owner, 2026-11-24, 08:20 (task T-26; his picture of a desktop application's download panel, taken as the pattern only): a button with
+a download icon at the top right opens the downloads. What a download from an upstream is, and the API behind the button, are
+[operations-and-observability.md](operations-and-observability.md) R-OPS-049 to R-OPS-052.
+
+*Built* (T-26 package B): [upstream-downloads-button.ts](../../web/src/app/shared/upstream-downloads/upstream-downloads-button.ts) in
+[app.html](../../web/src/app/app.html), the client [upstream-downloads-api.ts](../../web/src/app/api/upstream-downloads-api.ts), the window's
+visibility [page-visibility.ts](../../web/src/app/core/page-visibility.ts).
+
+- **Who sees it** ([Q-OPS-423](operations-and-observability.md#q-ops-423--the-holders-of-contentmetadata-read-see-the-downloads-of-every-repository-and-nobody-else)):
+  a signed-in caller who holds `content:metadata-read` (`session.has(...)`), the administrator and the auditor, in the main area and in
+  the admin area alike. Nobody else sees the button, nothing of it is rendered for them, and nothing is asked for them.
+- **Where** ([Q-UI-1070](#q-ui-1070--the-downloads-button-stands-between-documentation-and-the-theme-and-counts-what-runs)): in the
+  top bar's actions, between **Documentation** and the theme button; an icon button (`btn btn-icon topbar-icon`), the icon `download`.
+- **The indicator.** While downloads run, a small badge on the icon's upper end corner carries their number (`running`; "99+" above
+  99), in the information colour of the badges (`--quader-badge-info-bg`, `-fg`), readable in both schemes. No motion. With nothing
+  running, there is no badge.
+- **Its name.** "Downloads" when nothing runs, "Downloads, 3 running" while some run (German "Downloads" and "Downloads, 3 laufen"), as
+  its accessible name and its title; `aria-haspopup="dialog"`, `aria-expanded` while the panel is open, `aria-controls` the panel's id.
+  The badge is hidden from assistive technology: the name carries the count.
+- **The refresh while the panel is closed:** `GET /api/v1/system/upstream-downloads/summary` at once, then every 10 s, only while the
+  window is visible (`document.visibilityState`), and at once when it becomes visible again or the panel closes. While the panel is open,
+  its list sets the count. A `403` hides the button until another principal signs in; any other failure keeps the last count and the
+  next tick reads again. No announcement to assistive technology
+  ([Q-UI-1073](#q-ui-1073--the-panel-refreshes-by-polling-while-it-is-seen-and-announces-nothing)).
+- **Narrow screens:** the button keeps its place; the top bar's labels already drop below 48 rem, and this button has none.
+
+Acceptance criteria (Vitest, [upstream-downloads-button.spec.ts](../../web/src/app/shared/upstream-downloads/upstream-downloads-button.spec.ts),
+about 0.1 s): a session without `content:metadata-read` renders no button and asks nothing; with it, a count of 0 shows no badge and the
+name "Downloads"; 3 shows "3" and "Downloads, 3 running"; 140 shows "99+"; the count is read every 10 s while the window is seen, not
+while it is hidden, and at once when it is seen again; a failed read keeps the count, a `403` hides the button.
+
+### R-UI-211 · The Downloads panel: what runs
+Priority: **P1** · Covers: quader-only
+
+*Built* (T-26 package B): [upstream-downloads-panel.ts](../../web/src/app/shared/upstream-downloads/upstream-downloads-panel.ts) with its
+template, its words in [download-words.ts](../../web/src/app/shared/upstream-downloads/download-words.ts), the drawer's input `width`
+([drawer.ts](../../web/src/app/shared/ui/drawer.ts)), the times in [duration-text.ts](../../web/src/app/shared/duration-text.ts).
+
+- **The panel** ([Q-UI-1071](#q-ui-1071--the-downloads-open-in-the-drawer-from-the-right)): the button opens Quader's drawer from the
+  right (Q-UI-420), `min(30rem, 100vw)` wide, titled **Downloads**, with its close button named **Close downloads**; under the title one
+  muted sentence: "What Quader is loading from the upstreams of remote repositories, and the last 100 finished downloads." Escape, the
+  close button and a click beside it close it; the focus returns to the button. A link inside it (a repository, **Show in queue**,
+  **About this list**) closes it as it leads away.
+- **The filter.** A field **Filter downloads** (as wide as a name, R-UI-085) filters both sections at once, in the browser, by name,
+  version, path and repository `project/key` (case-insensitive, part of the text). A section's heading says "Running (1 of 145)" while
+  the filter is set, and a section with rows of which none matches says "No download matches the filter."
+- **The section Running (n)** (`runningCount`), first. One row per running download, the oldest first, as the API orders them; the
+  rows keep their place across refreshes (tracked by `id`):
+  - Line 1: the format's icon (`<quader-format-icon>`) on the middle of the name's first line (R-UI-175), the **name** (wrapping inside
+    itself, R-UI-145) and the version muted beside it. Without a version, the file in the version's place: the last path segment, a
+    digest cut to its algorithm and 12 hex digits (`sha256:1a2b3c4d5e6f`); without a name, the file as the name. The whole path is the
+    line's title.
+  - Line 2, with a total: a progress bar across the row (`<progress>` named "Progress of <name> <version>", value and max in bytes).
+    Without a total: no bar.
+  - Line 3, muted and small: "128.4 MiB of 286.9 MiB · 12.3 MiB/s · 42 s" (`formatSize`; the speed in the same unit per second; the
+    time as `elapsedText`: "< 1 s", "42 s", "1 min 12 s", "1 h 5 min"). Without a total: "128.4 MiB · 12.3 MiB/s · 42 s". Without a speed
+    yet (the first second): the en dash in its place.
+  - Line 4, muted and small: the format's name (R-UI-006), the repository `project/key` as a link to the repository's page, and the
+    origin in words ([Q-UI-1072](#q-ui-1072--a-row-says-what-what-it-took-and-who-caused-it-a-queued-one-links-the-queue)):
+    - **Client · sam**, or **Client** when `by` is null;
+    - for the queue: the person (**priya**, else **A person**), **Bulk**, **Probe**, **Request**, **Allow** (the queue's words,
+      R-CUR-018);
+    - **Mirror pass**;
+    - **Vulnerability database**.
+
+    A queued row ends with the link **Show in queue** to the repository's tab Downloads, filtered by the name
+    (`…/repositories/{key}/downloads?name=<name>`; the tab reads `name` from its address, [remote-curation.md](remote-curation.md)
+    R-CUR-018).
+  - More than the API listed: one line under the rows, "and 140 more running", with no link.
+- **Empty:** "No download from an upstream is running." Before the first answer: "Loading the downloads."
+- **Refresh while open:** the whole list at once, then every `pollSeconds` (2 s) while the panel is open and the window visible; closing
+  the panel stops it, and is how a reader stops the moving content (WCAG 2.2.2). A failed refresh shows one line, "The list could not be
+  refreshed; Quader tries again.", over the sections and keeps the last rows; a `403` closes the panel and hides the button.
+
+Acceptance criteria (Vitest, [upstream-downloads-panel.spec.ts](../../web/src/app/shared/upstream-downloads/upstream-downloads-panel.spec.ts),
+about 0.5 s with R-UI-212's cases): a running download with a total shows the bar and "of"; one without a total shows no bar and its
+bytes; a version-less OCI blob shows `sha256:` and 12 digits; each origin shows its words; a queued row links its queue with `?name=`;
+the filter narrows both sections and says "1 of 5"; `runningCount` above the listed rows shows "and n more running"; the poll is 2 s while
+open, keeps the rows when it fails, and stops when the panel closes. The tab Downloads' spec: `?name=` filters the queue and **Show every
+download** clears it.
+
+### R-UI-212 · The Downloads panel: what finished, and Hide all
+Priority: **P1** · Covers: quader-only
+
+*Built* (T-26 package B): the same files as R-UI-211; the manual's section
+[Downloads from upstreams](../manual/admin/operations.md#downloads-from-upstreams).
+
+- **The section Finished (n)**, under Running, newest first, at most 100. Each row:
+  - Line 1: as a running row; with an outcome other than `completed`, a badge after the name: **Failed** (error, with its icon) with
+    the failure's class in the queue's words (R-CUR-011; "Failed: Network") and the failure's code as its title, **Cancelled** (neutral),
+    **Interrupted** (warning, with its icon; its title says "The replica stopped while this download ran.").
+  - Line 2, muted and small: "286.9 MiB · 1 min 12 s · 4.0 MiB/s": the size, the duration and the average. A duration below one second
+    reads "< 1 s", and the average is left out then.
+  - Line 3, muted and small: the format's name, the repository link, the origin as in R-UI-211, and the end as
+    `<quader-time-ago absolute="title">` ("4 minutes ago", R-UI-103). A queued row links its queue as in R-UI-211.
+- **Hide all** ([Q-UI-1072](#q-ui-1072--a-row-says-what-what-it-took-and-who-caused-it-a-queued-one-links-the-queue)):
+  - A small quiet button **Hide all** in the section's heading hides, on this device only, the finished downloads listed at that moment:
+    it keeps the newest `finishedAt` of the list in the browser's local storage (`BrowserStorage`, key
+    `quader.upstream-downloads.hidden-before`).
+  - The section then shows the downloads that end later, and one line: "Hidden on this device: 100. **Show again**". **Show again**
+    removes the mark.
+  - Where local storage cannot be written, the button is not shown. Nothing is removed on the server, and nothing is audited.
+- **Empty:** "No download has finished yet." When everything is hidden: the line above only.
+- **The foot of the panel:** a link **About this list** to the manual's page (`/help/admin/operations#downloads-from-upstreams`).
+- **Words** (German build, formal): Laufend, Abgeschlossen, Downloads filtern, Alle ausblenden, "Auf diesem Gerät ausgeblendet: 100.",
+  Wieder anzeigen, In der Warteschlange ansehen, Fehlgeschlagen, Abgebrochen, Unterbrochen, Mirror-Durchlauf, Schwachstellendatenbank,
+  Über diese Liste, "und 140 weitere laufen", "Kein Download aus einem Upstream läuft.", "Noch kein Download ist abgeschlossen.",
+  "Kein Download passt zum Filter.", "Die Liste konnte nicht aktualisiert werden; Quader versucht es erneut.". The queue's existing words
+  are reused.
+- **Rendered** under rule 11 of promt.md (`topbar-downloads`, `topbar-downloads-admin-area`, `topbar-downloads-panel` in English and
+  German, `topbar-downloads-none`; [upstream-downloads.ts](../../web/e2e/renders/upstream-downloads.ts) answers both endpoints in the
+  browser): light and dark, 1,440, 1,024 and 390 px; the button with no download, with 3 and with 140; the panel with five running rows
+  (one with a total, one without, one version-less OCI blob, a 120-character npm scope name, a person's queue row, a mirror's pass and the
+  scanner database) and "and 140 more running", a finished list of 100 with every outcome, the filter set, everything hidden, the refresh
+  error, both sections empty.
+
+Acceptance criteria (Vitest, in [upstream-downloads-panel.spec.ts](../../web/src/app/shared/upstream-downloads/upstream-downloads-panel.spec.ts)):
+each outcome shows its badge and words; a duration of 0.4 s reads "< 1 s" without an average; **Hide all** stores the newest end and
+hides those rows, a later download shows, **Show again** brings them back; without storage there is no **Hide all**; the empty states
+read as above and the foot links the manual.
 
 ## Deferred
 
@@ -23377,6 +23501,78 @@ remote repository, the tab's facts, the address of a repository without details)
 [remote-upstream.spec.ts](../../web/src/app/features/repositories/upstream/remote-upstream.spec.ts) (the remote's strip ends with
 **Details**). Rendered: `repository-npm-local-details`, `repository-oci-remote-details`, `repository-npm-virtual-details`. Docs:
 [repositories.md](../manual/user/repositories.md#the-content-of-a-repository), [web-ui.md](../developer/web-ui.md).
+### Q-UI-1070 · The Downloads button stands between Documentation and the theme, and counts what runs
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+The place at the top right is the owner's (T-26, 2026-11-24, 08:20: "Ich will als Admin oben Rechts eine Downlaod Übersicht haben").
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An icon button between **Documentation** and the theme button, a count badge while downloads run (chosen) | The order: Admin, Documentation, Downloads, theme, avatar | At the top right, where the owner's picture has it; a count is the one fact worth a glance; no motion | One more icon in the bar |
+| (b) Inside the **Admin** button's area or the admin side bar | No new place | No change to the bar | Not at the top right; not seen outside the admin area |
+| (c) As (a) with a moving icon while downloads run | Activity at a glance | Noticed | Motion that runs for hours; reduced-motion users get nothing more |
+
+**Choice:** (a). The closed panel polls the summary every 10 s while the window is visible. The badge takes the information colour of
+the badges, not the accent of a list's filter count: it reports a state of the installation, not a choice of the viewer.
+
+**Rationale:** the owner named the place; the count answers "is something loading" without opening anything. The development agent would
+revisit (c) if the owner wants activity shown without a number.
+
+**Applied in the spec:** R-UI-002, R-UI-210. Code: [upstream-downloads-button.ts](../../web/src/app/shared/upstream-downloads/upstream-downloads-button.ts).
+Docs: [design-language.md](../developer/design-language.md) (the count on an icon button).
+
+### Q-UI-1071 · The downloads open in the drawer from the right
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's picture shows a panel that hangs from the button with a title, a close button, a filter, sections and rows.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Quader's drawer (Q-UI-420), 30rem wide, with its head, close button, filter and two sections (chosen) | One panel type of the app | The same head, close, focus and Escape as every panel; full height for 100 rows; full width on a phone without a second layout | It covers the window's height, not just a box below the button |
+| (b) A popover hung from the button (an overlay at the button) | As in the picture | Closest to the picture | A second kind of panel with its own focus rules, height and phone layout |
+
+**Choice:** (a). The drawer gains an input for its width (default `min(24rem, 100vw)`). **Rationale:** a list of up to 100 finished
+and 200 running rows needs the window's height, and the drawer brings the focus, Escape and phone rules the app already holds. The
+development agent would build (b) if the owner asks for the panel hung from the button.
+
+**Applied in the spec:** R-UI-211. Code: [drawer.ts](../../web/src/app/shared/ui/drawer.ts),
+[upstream-downloads-panel.ts](../../web/src/app/shared/upstream-downloads/upstream-downloads-panel.ts).
+
+### Q-UI-1072 · A row says what, what it took and who caused it; a queued one links the queue
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The name and version (else the file), the bar where the total is known, size and speed and time, the format's name, the repository, the origin in words; **Show in queue** for a queue row; no actions (chosen) | Three or four short lines | Every fact the owner named, the icon with its format's name (R-UI-006), the way to the queue's details | The replica and the path stay in the API (the path is the line's title) |
+| (b) As (a), and per row a menu with Cancel and Copy path | Actions as in the picture | Control | Cancelling a client's fill is no act Quader has; the queue's cancel is on its tab |
+| (c) A table with columns | Dense | Sortable | Does not fit 30rem or a phone |
+
+**Choice:** (a). **Hide all** hides on one device only and says so; no operation clears the list for every administrator. The queue's
+tab reads the package from its address (`?name=`), so the link lands on that package's rows.
+
+**Rationale:** the owner asked to see progress, speed, duration and average, not to steer the downloads; the queue's actions stay where
+the queue is. The development agent would revisit (b) if a cancel of a running fill becomes an act of the engine.
+
+**Applied in the spec:** R-UI-211, R-UI-212; [remote-curation.md](remote-curation.md) R-CUR-018 (the address `name`). Code:
+[download-words.ts](../../web/src/app/shared/upstream-downloads/download-words.ts),
+[remote-downloads.ts](../../web/src/app/features/repositories/downloads/remote-downloads.ts).
+
+### Q-UI-1073 · The panel refreshes by polling while it is seen, and announces nothing
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The full list every `pollSeconds` (2 s) while open and visible; the summary every 10 s while closed and visible; no live region; closing stops it (chosen) | Polling, as the tab Downloads and System status do | No stream infrastructure (the app has none); costs nothing in a hidden tab; a screen reader is not flooded by progress | Up to 4 s behind the body (publication plus poll) |
+| (b) A server-sent event stream | Push | Fresher | A stream per administrator through the edge and every replica; nothing like it exists |
+| (c) A polite announcement of each end | Spoken ends | Hears what finished | A chatty region during an `npm install` |
+
+**Choice:** (a). The button's accessible name carries the count. **Rationale:** the only option that needs nothing new on the server and
+stays quiet for assistive technology. The development agent would revisit (b) if the app gains an event stream to the browser.
+
+**Applied in the spec:** R-UI-210, R-UI-211. Code: [page-visibility.ts](../../web/src/app/core/page-visibility.ts).
 
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 

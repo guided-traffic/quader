@@ -4,7 +4,8 @@ The overview of what Quader loads from the upstreams of its remote repositories:
 and the last 100 finished with their duration and average speed ([operations-and-observability.md](../spec/operations-and-observability.md)
 R-OPS-049 to R-OPS-052, [ADR-279](../decisions.md#adr-279--administrators-see-the-downloads-from-upstreams-live-and-the-last-100-finished)).
 The security view is [security/upstream-downloads.md](../security/upstream-downloads.md). Status: the backend and the API are built (T-26
-package A); the top bar's button and its panel are the UI's package (T-26 package B), which builds against the schemas named below.
+package A), and so are the top bar's button and its panel (T-26 package B, [api-and-ui.md](../spec/api-and-ui.md) R-UI-210 to
+R-UI-212), which read the schemas named below through `web/src/app/api/upstream-downloads-api.ts`.
 
 ## What has to be in your head first
 

@@ -42,6 +42,7 @@ import { QuaderAvatar } from './shared/ui/avatar';
 import { AvatarStore } from './core/avatar-store';
 import { ProjectSwitcher } from './features/projects/project-switcher';
 import { SearchField } from './features/search/search-field';
+import { UpstreamDownloadsButton } from './shared/upstream-downloads/upstream-downloads-button';
 
 /** Whether a key typed at `target` is text: a text field, a text area, a select or an editable element. */
 function isTextTarget(target: EventTarget | null): boolean {
@@ -61,7 +62,7 @@ function isBare(route: ActivatedRouteSnapshot | null): boolean {
 
 /**
  * Root component (R-UI-002, Q-UI-68, Q-UI-127, Q-UI-129): skip link, the top bar (mark, the search of R-UI-095,
- * Admin button, help, theme, user menu), the sidebar of the current area (the start, a project with its
+ * Admin button, help, the downloads of R-UI-210, theme, user menu), the sidebar of the current area (the start, a project with its
  * switcher, or the admin area behind the Admin button) with folding groups, collapsible where it is pinned and a drawer
  * below, and the content panel with the breadcrumb trail, banner area and router outlet. A screen whose route carries `data: { bare: true }`
  * (sign-in and signed out, Q-UI-125) stands alone: none of the shell renders around it.
@@ -82,6 +83,7 @@ function isBare(route: ActivatedRouteSnapshot | null): boolean {
     QuaderAvatar,
     ProjectSwitcher,
     SearchField,
+    UpstreamDownloadsButton,
     Banner,
     ErrorNotice,
     Notices,

@@ -33,6 +33,7 @@ import {
   failureClassText,
   failureLine,
   failureStepText,
+  queueOriginText,
 } from './download-words';
 
 /** How often the tab reads the queue again while a row waits or runs (R-CUR-018; WCAG 2.2.2: with a pause control). */
@@ -45,7 +46,7 @@ type FilterState = (typeof FILTER_STATES)[number];
 /**
  * The tab **Downloads** of a remote repository (remote-curation.md R-CUR-018, `…/repositories/{key}/downloads`): the repository's
  * download queue (R-CUR-011, R-CUR-012). The counts by state are the filter, with **Failure** by class; the filters and a bulk live
- * in the address (`state`, `failure`, `bulk`). A row names its subject, its origin, its state with the attempt, its progress and its
+ * in the address (`state`, `failure`, `bulk`, `name`). A row names its subject, its origin, its state with the attempt, its progress and its
  * failure in one line, and opens in place to the whole failure: the step, the code, the address without its query, the upstream's
  * status, the excerpt of its answer and Quader's sentence. A row offers **Retry** or **Cancel** to whoever may (R-CUR-005); a
  * holder of `manage` retries every failed row that matches. The list reads itself again every five seconds while a row waits or
@@ -74,9 +75,10 @@ export class RemoteDownloads {
   /** The queue's counts after every answer, for the tab's label in the strip (`Downloads · 2 failed`). */
   readonly countsChange = output<RemoteDownloadCounts>();
 
-  private readonly query = toSignal(this.route.queryParamMap.pipe(map((q) => ({ state: q.get('state'), failure: q.get('failure'), bulk: q.get('bulk') }))), {
-    initialValue: { state: null, failure: null, bulk: null },
-  });
+  private readonly query = toSignal(
+    this.route.queryParamMap.pipe(map((q) => ({ state: q.get('state'), failure: q.get('failure'), bulk: q.get('bulk'), name: q.get('name') }))),
+    { initialValue: { state: null, failure: null, bulk: null, name: null } },
+  );
 
   /** The state the list shows; none shows every row. */
   protected readonly state = computed<FilterState | null>(() => {
@@ -90,12 +92,15 @@ export class RemoteDownloads {
   });
   /** The bulk whose rows the list shows (the link of a row's origin **Bulk**). */
   protected readonly bulkId = computed(() => this.query().bulk || null);
+  /** The package whose rows the list shows (the link **Show in queue** of the top bar's downloads panel, api-and-ui.md R-UI-211). */
+  protected readonly name = computed(() => this.query().name || null);
   private readonly filters = computed<RemoteDownloadFilters>(() => ({
     state: this.state() ?? undefined,
     class: this.failure() ?? undefined,
     bulk: this.bulkId() ?? undefined,
+    name: this.name() ?? undefined,
   }));
-  protected readonly filtered = computed(() => this.state() !== null || this.failure() !== null);
+  protected readonly filtered = computed(() => this.state() !== null || this.failure() !== null || this.name() !== null);
 
   protected readonly rows = signal<readonly RemoteDownload[]>([]);
   protected readonly counts = signal<RemoteDownloadCounts | null>(null);
@@ -273,6 +278,10 @@ export class RemoteDownloads {
     this.navigate({ bulk: null });
   }
 
+  protected clearName(): void {
+    this.navigate({ name: null });
+  }
+
   private navigate(change: Readonly<Record<string, string | null>>): void {
     void this.router.navigate([], { relativeTo: this.route, queryParams: change, queryParamsHandling: 'merge', replaceUrl: true });
   }
@@ -303,23 +312,10 @@ export class RemoteDownloads {
 
   /** Who or what put the row into the queue (R-CUR-018); a person's name only to whom the API names it (R-CUR-012). */
   protected originText(r: RemoteDownload): string {
-    switch (r.origin) {
-      case 'person': {
-        const by = r.startedBy;
-        if (by?.id && by.id === this.self()) return $localize`:@@downloads.origin.you:You`;
-        return by?.name ?? $localize`:@@downloads.origin.person:A person`;
-      }
-      case 'request':
-        return $localize`:@@downloads.origin.request:Request`;
-      case 'allow':
-        return $localize`:@@downloads.origin.allow:Allow`;
-      case 'bulk':
-        return $localize`:@@downloads.origin.bulk:Bulk`;
-      case 'probe':
-        return $localize`:@@downloads.origin.probe:Probe`;
-      case 'client':
-        return $localize`:@@downloads.origin.client:Client`;
-    }
+    if (r.origin !== 'person') return queueOriginText(r.origin);
+    const by = r.startedBy;
+    if (by?.id && by.id === this.self()) return $localize`:@@downloads.origin.you:You`;
+    return by?.name ?? queueOriginText('person');
   }
 
   /** The person who started a row or a bulk, where the API names them: **You**, their name, or nobody (`null`). */

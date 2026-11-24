@@ -181,6 +181,19 @@ describe('The tab Downloads of a remote repository', () => {
     await expectAccessible(root);
   });
 
+  it('R-CUR-018 R-UI-211 the name of the address shows the rows of that package, and Show every download clears it', async () => {
+    const { root, fixture, fake } = await open({ url: '/projects/web/repositories/npmjs/downloads?name=left-pad' });
+    expect(fake.listCalls.at(-1)?.filters).toMatchObject({ name: 'left-pad' });
+    const line = root.querySelector<HTMLElement>('[data-testid="download-name-filter"]')!;
+    expect(text(line)).toContain('Only the downloads of left-pad.');
+    line.querySelector<HTMLButtonElement>('button')!.click();
+    await settle(fixture);
+    await settle(fixture);
+    expect(TestBed.inject(Router).url).toBe('/projects/web/repositories/npmjs/downloads');
+    expect(fake.listCalls.at(-1)?.filters.name).toBeUndefined();
+    expect(root.querySelector('[data-testid="download-name-filter"]')).toBeNull();
+  });
+
   it('R-CUR-018 the empty queue says so, and a filter that matches nothing says that nothing matches', async () => {
     const { root, fixture } = await open({ rows: (f) => (f.rows = []) });
     expect(text(root)).toContain('There is no download yet.');

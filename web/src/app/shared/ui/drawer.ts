@@ -43,6 +43,8 @@ export class QuaderDrawer {
   readonly closeLabel = input($localize`:@@drawer.close:Close`);
   /** The id of the dialog, for an `aria-controls` that points at it. */
   readonly drawerId = input<string | null>(null);
+  /** The drawer's width, a CSS length; never wider than the window (the downloads of the top bar take `min(30rem, 100vw)`). */
+  readonly width = input('min(24rem, 100vw)');
   /** Emitted once the drawer has closed: by its button, Escape, a click beside it, or `open` set to false. */
   readonly closed = output<void>();
 
@@ -81,7 +83,7 @@ export class QuaderDrawer {
     config.hasBackdrop = true;
     config.panelClass = 'quader-drawer';
     config.backdropClass = 'quader-drawer-backdrop';
-    config.width = 'min(24rem, 100vw)';
+    config.width = this.width();
     config.height = '100dvh';
     config.positionStrategy = this.overlay.position().global().top('0').right('0');
     config.scrollStrategy = this.overlay.scrollStrategies.block();

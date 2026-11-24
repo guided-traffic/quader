@@ -20,8 +20,8 @@ import { PagedResource, asApiError, valueOf } from '../../../shared/paged-resour
 import { formatSize } from '../../packages/format-size';
 import { REFRESH_INTERVAL_MS } from '../system-status';
 import { BackupState } from './backup-state';
+import { durationText } from '../../../shared/duration-text';
 import {
-  durationText,
   errorCode,
   operationText,
   phaseText,

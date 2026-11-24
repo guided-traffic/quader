@@ -205,6 +205,29 @@ config:
       publish_interval: 2s   # default; 1s to 30s
 ```
 
+### The button Downloads and its panel
+
+The button **Downloads** (a download arrow) in the top bar, between **Documentation** and the theme, is shown to the same holders, in
+the main area and in the admin area. While downloads run, a small number on it counts them (**99+** above 99); it reads that number
+every 10 seconds while the window is in view. On a phone below 440 px the bar drops the product name beside the mark to make room for it.
+
+The button opens a panel from the right:
+
+- **Running**, the oldest first: the package and its version (an image layer without a version shows its digest's first 12 digits), a
+  bar where the upstream announced the size, the bytes so far of the size, the speed (a dash in the first second), the time since it
+  began, the format, the repository, and what caused it: **Client** with the person who asked, the person who started a queue row (or
+  **Bulk**, **Probe**, **Request**, **Allow**), **Mirror pass**, **Vulnerability database**. A queued download links **Show in queue**:
+  the repository's tab **Downloads** with that package's rows. With more running than the replicas list (200 each), a line says how
+  many more.
+- **Finished**, the newest first: the size, the duration, the average speed (none below one second, which reads **< 1 s**) and when it
+  ended. A download that did not complete carries **Failed** with the failure's class (**Failed: Network**; pointing at it shows the
+  code), **Cancelled** or **Interrupted**.
+- **Filter downloads** narrows both lists by name, version, path or repository, in the browser.
+- **Hide all** hides the finished downloads listed now **on this device only** (the browser keeps the time of the newest one); a
+  download that ends later shows again, and **Show again** brings the hidden ones back. Nothing is removed for other administrators.
+- The open panel refreshes every `publish_interval` while the window is in view; closing it stops that. A refresh that fails keeps the
+  last rows and says so. **About this list** leads here.
+
 ## Banner and maintenance mode
 
 **Admin area › Settings › General** (capability `settings:read`; changing needs `settings:write`) shows the **Public base URL** (a read-only field, with a line below it that says where it comes from) and two sections that are closed until you open them: **Banner** and **Maintenance mode**. Each section has its own **Save changes** button, which stays disabled until you change something in that section. The **Maintenance mode** section opens by itself while the mode is on.

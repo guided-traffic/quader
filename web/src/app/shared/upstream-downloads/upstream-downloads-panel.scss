@@ -1,0 +1,179 @@
+// The downloads panel of the top bar (R-UI-211, R-UI-212) inside Quader's drawer: the drawer's head stays, the body scrolls. Only
+// Quader's tokens, so both schemes follow.
+
+// The body takes the drawer's height under its head and scrolls; the filter and the sections stand one under the other.
+.dl-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--quader-space-4);
+  min-block-size: 0;
+  padding: var(--quader-space-4) var(--quader-space-6) var(--quader-space-6);
+  overflow: auto;
+}
+
+.dl-intro {
+  margin: 0;
+  color: var(--quader-text-muted);
+}
+
+.dl-filter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quader-space-1);
+  max-inline-size: var(--quader-field-width-name);
+
+  .text-input {
+    box-sizing: border-box;
+    inline-size: 100%;
+  }
+}
+
+// The one line of a refresh that failed, over the sections: the last rows stay below it.
+.dl-refresh-failed {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--quader-space-2);
+  margin: 0;
+  color: var(--quader-on-surface);
+
+  // A 16 px glyph on the middle of the sentence's first line (R-UI-175).
+  .material-icons {
+    display: block;
+    flex: none;
+    block-size: 1rem;
+    margin-block: calc((var(--quader-text-size) * var(--quader-text-line) - 1rem) / 2);
+    font-size: 1rem;
+    line-height: 1;
+    color: var(--quader-status-warn);
+  }
+}
+
+.dl-section {
+  display: flex;
+  flex-direction: column;
+}
+
+// The section's heading and **Hide all** on one line, the button at its end, on the middle of the heading's line.
+.dl-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--quader-space-2);
+  padding-block-end: var(--quader-space-2);
+  border-block-end: 1px solid var(--quader-border);
+}
+
+.dl-section-title {
+  margin: 0;
+  color: var(--quader-heading);
+  font-size: var(--quader-text-size);
+  font-weight: var(--quader-heading-weight);
+  line-height: 2rem;
+}
+
+.dl-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+// One download: what it is, its bar, its figures, where it fills and what caused it; a hairline under it.
+.dl-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quader-space-1);
+  padding-block: var(--quader-space-3);
+  border-block-end: 1px solid var(--quader-border);
+}
+
+// The format's icon in a column of its own, centred on the first line of the name; the name breaks inside itself (R-UI-145,
+// R-UI-175), the version or the file muted beside it.
+.dl-subject {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  column-gap: var(--quader-space-2);
+}
+
+.dl-icon {
+  display: flex;
+  align-items: center;
+  block-size: calc(var(--quader-text-size) * var(--quader-text-line));
+  font-size: 1rem;
+}
+
+.dl-subject-text {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.dl-name {
+  font-weight: 600;
+}
+
+.dl-detail {
+  color: var(--quader-text-muted);
+}
+
+.dl-badge {
+  vertical-align: top;
+}
+
+// The bar across the row, in the accent; a thin track on the border's tone.
+.dl-progress {
+  display: block;
+  inline-size: 100%;
+  block-size: 0.5rem;
+  border: 0;
+  border-radius: var(--quader-radius-full);
+  background: var(--quader-border);
+  overflow: hidden;
+  appearance: none;
+  accent-color: var(--quader-tab-indicator);
+
+  &::-webkit-progress-bar {
+    border-radius: var(--quader-radius-full);
+    background: var(--quader-border);
+  }
+
+  &::-webkit-progress-value {
+    border-radius: var(--quader-radius-full);
+    background: var(--quader-tab-indicator);
+  }
+
+  &::-moz-progress-bar {
+    border-radius: var(--quader-radius-full);
+    background: var(--quader-tab-indicator);
+  }
+}
+
+// The figures and the place: muted and small, the parts separated by dots; a part wraps as a whole.
+.dl-facts {
+  display: flex;
+  margin-block: 0;
+  color: var(--quader-text-muted);
+  font-size: var(--quader-text-muted-size);
+  line-height: 1.5;
+}
+
+.dl-more,
+.dl-empty,
+.dl-hidden {
+  margin: 0;
+  padding-block: var(--quader-space-3);
+  color: var(--quader-text-muted);
+}
+
+.dl-hidden {
+  border-block-end: 1px solid var(--quader-border);
+
+  .btn-sm {
+    vertical-align: baseline;
+  }
+}
+
+.dl-foot {
+  margin: 0;
+}
