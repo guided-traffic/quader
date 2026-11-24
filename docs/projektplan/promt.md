@@ -337,16 +337,17 @@ starts from it and from his word how the work goes on, not from the order of the
 - **Single open entries without a package**, each in section 8 with its "To do": the cancel through
   poolers that are not peers (H-1662); the trace of the Bastion's answers by kind;
   `TestConcurrentWritersOnOnePath` (F-126, a recurrence to read); and every other entry of sections 8 and 12 that names no package.
-- **The branch `w17-version-sort-key` does not land as built: its migration 00116 breaks every upgrade.** The
-  owner agreed at 07:40 to a fresh database; it was made through his deployment repository (40d0ffd of
-  `wds18-flux-apps`: the database `quader2`, the blob prefix `quader2`, the Valkey key prefix `quader2:`; Helm
-  upgrade v99 at 07:46, every Deployment ready). Seconds after the start the malware updater stored the three ClamAV
-  definitions as versions (`main` 63, `daily` 28192, `bytecode` 339), so `quader2` holds version rows too, as every
-  running installation does: 00116, which refuses any version row, would refuse every upgrade (R-HA-020, the set
-  `upgrade-release`), not only his. To do: the sort key written for existing rows by the product (a background
-  migration or a column the reads tolerate empty until it is filled), so that an upgrade with data passes; the
-  branch's measurements and tests stand. The Bastion's token belonged to the database before: the owner issues a
-  new one in the installation (his act).
+- **The index of the versions' order landed upgradable (2026-11-24, 09:31).** The held branch `w17-version-sort-key`
+  refused every database with version rows, and every running installation holds them within seconds (the malware
+  updater stores the scanner's definitions as versions), so R-HA-020 and the set `upgrade-release` would have failed.
+  Reworked from 07:52 by a builder: the columns are nullable; the background migration `version_sort_key` fills them
+  through each format's code in resumable batches and records its completion only after a pass that leaves no row
+  without a key (Q-HA-492: the data show when the old writers are gone, no release number in the code); until then the
+  reads give a row without a key the key its format gives it (Q-API-430). Verified: six integration areas, two new tests
+  (the step on a database of the previous release; pages and the latest version before and after the fill, a reopen), and
+  `upgrade-release` from v0.122.3 green on a worktree cluster (436 s; the fill succeeded; the rollback served the
+  migrated schema). The owner's fresh database `quader2` of 07:46 stays; the old database `quader` and the objects under
+  `quader-blobs/quader/` go only on his word, and the Bastion's token is his act (a new one in the installation).
 - **With the owner** (the list of that name in section 8 and his walk): the decisions the development
   agent took today, each a decision block on its page and listed in the run record; the README's badge
   on the branch `coverage` instead of `main`, told to him at 16:11.
@@ -699,10 +700,15 @@ records the recorder that tells such a stall apart).
   aggregate, the 25 days of a permanent failure, and his requirement written into the specification and held per
   path (a client's fill, a mirror pass, a download ahead from the browser, an examination).
 
+- **With `onMissingData: block`, a pull of an image index is refused (seen in the code by the image scan's builder on
+  2026-11-24, 09:19; not run):** `GateImage` asks for a scan row of every manifest, an index never has one, so
+  `Detected` stays false, against its own comment "a manifest list passes". Dormant: the default is `allow`. Given to a
+  builder after the image scan's package lands, which touches the same statements.
+
 - **The upstream search's hint is English in the German build (seen by the development agent on 2026-11-24, 09:10, in
   the renders of the unknown level):** under "Upstream durchsuchen" the OCI remote reads "Docker Hub's repository search,
   which its operator does not document; an official image is library/<name>." The text comes from the format, not from
-  the UI's translations, and it speaks to an operator, not to a user who wants an image. Waiting for a builder's place.
+  the UI's translations, and it speaks to an operator, not to a user who wants an image. Given to a builder at 09:15.
 
 ### Closed
 
@@ -11315,7 +11321,7 @@ the walk items and the run record); what the code holds beyond the plan has not 
   average 19); held by the two cases of R-API-010 the entry of section 8 names in its list Closed ("The
   version list of a package reads every version"). As it stood:
   **H-829:** the listing of a remote OCI repository matches a regular expression on every tag entry without an index and was
-  never measured on a cache with very many tags. W-25 adds rows to that view. **Built on 2026-11-24 by W17 and held back (the branch `w17-version-sort-key`, d71cc13fc; Q-API-429, ADR-278, contract version 12, migration 00116):** the order of versions and the latest version read by an index over a sort key each format's code gives (100,000 versions of a local npm package: list 663→190 ms, a page by version 404→29 ms; a remote image with 100,000 tags of different manifests: list 1.24→0.41 s, a page by tag 581→23 ms), held by the two R-API-010 keyset tests. Open (H-829, H-1683): the list counts every visible version; a package several repositories hold, in the order of publication, reads every name (211 ms). **Why it waits:** migration 00116 refuses a database that holds version rows (the key is the format's code's, and the stage allows no data migration); the owner's installation holds four (read at 04:58), so its upgrade would fail until its database is started afresh, which his rule of 2026-11-21 has named to him first.
+  never measured on a cache with very many tags. W-25 adds rows to that view. **Built on 2026-11-24 by W17, landed at 09:31 after a rework that lets an installation with data upgrade (Q-API-429, Q-API-430, Q-HA-492, ADR-278, contract version 12, migration 00116):** the order of versions and the latest version read by an index over a sort key each format's code gives (100,000 versions of a local npm package: list 663→190 ms, a page by version 404→29 ms; a remote image with 100,000 tags of different manifests: list 1.24→0.41 s, a page by tag 581→23 ms), held by the two R-API-010 keyset tests. Open (H-829, H-1683): the list counts every visible version; a package several repositories hold, in the order of publication, reads every name (211 ms). **Why it waits:** migration 00116 refuses a database that holds version rows (the key is the format's code's, and the stage allows no data migration); the owner's installation holds four (read at 04:58), so its upgrade would fail until its database is started afresh, which his rule of 2026-11-21 has named to him first.
 - **Partly closed; open: H-842, the hub exchange tested against the stub realm only.** Closed: H-868, by
   2aee8d1eb (2026-11-23): its gap in `docs/spec/formats/ansible.md` says why no case with the clients is
   added: the union and the first tier per version are properties of the documents a virtual repository
