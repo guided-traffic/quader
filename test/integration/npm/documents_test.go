@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -374,11 +375,16 @@ func TestR_NPM_010_ThousandVersions(t *testing.T) {
 	a := e.replica("web-a")
 	e.mustPublish(a, "npm-local", e.tokA, pkg{Name: "big", Version: "1.0.0"})
 	// 999 more versions straight into the rows: a publish each would take minutes
+	versions := make([]string, 999)
+	for i := range versions {
+		versions[i] = "1." + strconv.Itoa(i+1) + ".0"
+	}
+	keys, pres := testenv.VersionKeys(t, "npm", versions)
 	e.st.Exec(`
 		WITH p AS (SELECT id FROM packages WHERE name = 'big'),
 		     v AS (
-		        INSERT INTO package_versions (package_id, version, display_version)
-		        SELECT p.id, '1.' || g || '.0', '1.' || g || '.0' FROM p, generate_series(1, 999) g
+		        INSERT INTO package_versions (package_id, version, display_version, sort_key, prerelease)
+		        SELECT p.id, x.v, x.v, x.k, x.pre FROM p, unnest($1::text[], $2::bytea[], $3::boolean[]) AS x(v, k, pre)
 		        RETURNING id, version)
 		INSERT INTO npm_versions (version_id, manifest, integrity, shasum, file_count, unpacked_size, has_install_script, has_shrinkwrap, publish_tag, published_at)
 		SELECT v.id,
@@ -387,7 +393,7 @@ func TestR_NPM_010_ThousandVersions(t *testing.T) {
 		         'dist', jsonb_build_object('integrity', 'sha512-AAAA', 'shasum', repeat('a', 40), 'fileCount', 3, 'unpackedSize', 1200),
 		         '_npmUser', jsonb_build_object('name', 'alice')),
 		       'sha512-AAAA', repeat('a', 40), 3, 1200, false, false, 'latest', now()
-		FROM v`)
+		FROM v`, versions, keys, pres)
 	url := "big"
 	timed := func(hdr ...string) (time.Duration, int) {
 		start := time.Now()

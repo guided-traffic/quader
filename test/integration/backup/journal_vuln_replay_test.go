@@ -13,6 +13,7 @@ import (
 	"github.com/guided-traffic/quader/internal/journal"
 	"github.com/guided-traffic/quader/internal/vuln"
 	_ "github.com/guided-traffic/quader/internal/vuln/triage" // the replay handler of the download blocks
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // R-VULN-013, R-VULN-026, R-HA-054: the download blocks of the revocation journal replayed into a restored database. The entries
@@ -36,8 +37,9 @@ func (s *twinSide) seedFinding(pkg, status, extraCols, extraVals string) string 
 func (s *twinSide) storeVersion(pkg string) {
 	s.t.Helper()
 	s.exec(`INSERT INTO packages (repo_id, name, display_name) SELECT id, $1, $1 FROM repositories WHERE key = 'npm-remote'`, pkg)
-	s.exec(`INSERT INTO package_versions (package_id, version, display_version)
-		SELECT p.id, '1.0.0', '1.0.0' FROM packages p JOIN repositories r ON r.id = p.repo_id WHERE r.key = 'npm-remote' AND p.name = $1`, pkg)
+	key, _ := testenv.VersionKey(s.t, "npm", "1.0.0")
+	s.exec(`INSERT INTO package_versions (package_id, version, display_version, sort_key, prerelease)
+		SELECT p.id, '1.0.0', '1.0.0', $2, false FROM packages p JOIN repositories r ON r.id = p.repo_id WHERE r.key = 'npm-remote' AND p.name = $1`, pkg, key)
 }
 
 // vulnBlockEntry is the entry of a block of the finding pkg@1.0.0 in the repository with the ID, in the producers' shape.

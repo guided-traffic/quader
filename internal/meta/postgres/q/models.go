@@ -1094,6 +1094,7 @@ type OciRemoteTag struct {
 	Version        string
 	CreatedAt      pgtype.Timestamptz
 	ManifestSha256 []byte
+	SortKey        []byte
 }
 
 type OciTombstone struct {
@@ -1162,6 +1163,8 @@ type PackageVersion struct {
 	CreatedAt      pgtype.Timestamptz
 	CreatedBy      pgtype.UUID
 	TrashedAt      pgtype.Timestamptz
+	SortKey        []byte
+	Prerelease     bool
 }
 
 type PackageVersionListing struct {
@@ -1172,6 +1175,8 @@ type PackageVersionListing struct {
 	LeadItemID     pgtype.Int8
 	TrashedAt      pgtype.Timestamptz
 	DocumentSha256 []byte
+	SortKey        []byte
+	Prerelease     bool
 }
 
 type Principal struct {
@@ -1231,6 +1236,7 @@ type RemoteCacheEntry struct {
 	BackgroundSha256     []byte
 	TagName              pgtype.Text
 	Tag                  pgtype.Text
+	TagSortKey           []byte
 }
 
 type RemoteCacheInvalidation struct {

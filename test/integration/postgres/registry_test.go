@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/guided-traffic/quader/internal/backup/tables"
+	"github.com/guided-traffic/quader/internal/formats/versionkey"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
@@ -335,7 +336,8 @@ func TestStorageSchema(t *testing.T) {
 			t.Fatal("rev_seq must start at 1")
 		}
 		pkg := scalar[int64](t, admin, `SELECT id FROM quader.packages WHERE name = 'left-pad'`)
-		exec(`INSERT INTO quader.package_versions (package_id, version, display_version) VALUES ($1, '1.0.0', '1.0.0')`, pkg)
+		exec(`INSERT INTO quader.package_versions (package_id, version, display_version, sort_key, prerelease) VALUES ($1, '1.0.0', '1.0.0', $2, false)`,
+			pkg, versionkey.Of(nil, false, "1.0.0"))
 		ver := scalar[int64](t, admin, `SELECT id FROM quader.package_versions WHERE package_id = $1`, pkg)
 		file("pkg/left-pad-1.0.0.tgz", live2(t, blob, 9), 5)
 		item := scalar[int64](t, admin, `SELECT id FROM quader.items WHERE path = 'pkg/left-pad-1.0.0.tgz'`)

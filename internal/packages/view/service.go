@@ -1,6 +1,7 @@
 package view
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"math"
@@ -472,10 +473,12 @@ func (s *Service) packages(ctx context.Context, sc Scope, p q.PackageViewListPar
 		}
 		keys[i] = r.Format + "\x1f" + r.Name
 	}
-	vrows, err := s.versionNames(ctx, sc, keys, withheld, hasRepos, repos)
+	vrows, err := s.latestCandidates(ctx, sc, keys, withheld, hasRepos, repos)
 	if err != nil {
 		return nil, err
 	}
+	// The candidates of each package row: its highest release, its highest pre-release and a remote OCI repository's highest tag
+	// (PackageViewLatest); a row with a candidate is a repository that holds a visible version.
 	byPkg := map[string][]q.PackageViewVersionsRow{}
 	for _, v := range vrows {
 		k := v.Format + "\x1f" + v.Name
@@ -592,6 +595,20 @@ func (s *Service) versionRows(ctx context.Context, sc Scope, pkgIDs []int64, ver
 	return rows, err
 }
 
+// latestCandidates reads, for each package row of the given packages ("<format>\x1f<name>") in the scope, the candidates of its latest
+// visible version by the format's stored sort key (PackageViewLatest, Q-API-429): one index walk each, no row per version.
+func (s *Service) latestCandidates(ctx context.Context, sc Scope, pkgs []string, withheld []int64, hasRepos bool, repos []int64) ([]q.PackageViewLatestRow, error) {
+	var rows []q.PackageViewLatestRow
+	err := s.read(ctx, func(qs *q.Queries) (err error) {
+		rows, err = qs.PackageViewLatest(ctx, q.PackageViewLatestParams{
+			Withheld: ids(withheld), Whole: ids(sc.whole), Rows: keys(sc.rows), Packages: pkgs, Scope: ids(sc.Repos()),
+			HasRepos: hasRepos, Repos: ids(repos),
+		})
+		return err
+	})
+	return rows, err
+}
+
 // versionNames reads the visible versions of the given packages ("<format>\x1f<name>") without the per-row size and downloads, one
 // cheap row per version per repository, oldest first.
 func (s *Service) versionNames(ctx context.Context, sc Scope, pkgs []string, withheld []int64, hasRepos bool, repos []int64) ([]q.PackageViewVersionNamesRow, error) {
@@ -702,10 +719,12 @@ func (o VersionOrder) VersionKey(v VersionSummary) []string {
 	return []string{v.PublishedAt.UTC().Format(time.RFC3339Nano), v.Version}
 }
 
-// pageKey is a version of a page of the version list, with the time it is ordered by: its oldest visible row's.
+// pageKey is a version of a page of the version list, with what it is ordered by: the time of its oldest visible row in the order
+// of publication, the format's stored sort key in the order of the versions.
 type pageKey struct {
 	version   string
 	published time.Time
+	key       []byte
 }
 
 // keysetBatch is the least number of versions one statement of a keyset page asks for: a filter the statement cannot apply (the
@@ -713,10 +732,11 @@ type pageKey struct {
 const keysetBatch = 64
 
 // Versions returns at most limit+1 versions after the cursor values, found false when the scope holds no version of the package
-// (R-API-029, R-API-010). A package that one repository of the scope holds, listed in the order of publication, is read a page at a time
-// by a keyset query (keysetPage, Q-API-417); a package several repositories hold, whose version is one entry over their rows, and the
-// order of the format's versions, which no statement can sort, read the versions' names and sort them here (sortedPage). Either way only
-// the rows of the page's versions are read with their sizes and downloads.
+// (R-API-029, R-API-010). The order of the format's versions is read a page at a time by keyset queries on the stored sort key, for
+// one repository or several (keyPage, Q-API-429); a package that one repository of the scope holds, listed in the order of publication,
+// by a keyset query on the creation time (keysetPage, Q-API-417); a package several repositories hold, listed in the order of
+// publication, whose version is ordered by its oldest row, reads the versions' names and sorts them here (sortedPage, H-1683). Either
+// way only the rows of the page's versions are read with their sizes and downloads.
 func (s *Service) Versions(ctx context.Context, sc Scope, format, name string, f VersionFilter, o VersionOrder, after []string, limit int) ([]VersionSummary, bool, error) {
 	a, ok := s.adapters.For(format)
 	if !ok {
@@ -736,9 +756,12 @@ func (s *Service) Versions(ctx context.Context, sc Scope, format, name string, f
 	}
 	var page []pageKey
 	var found bool
-	if len(hs) == 1 && o.Sort != "version" {
+	switch {
+	case o.Sort == "version":
+		page, found, err = s.keyPage(ctx, sc, a, hs, name, withheld, f, only, o, after, limit)
+	case len(hs) == 1:
 		page, found, err = s.keysetPage(ctx, sc, a, hs[0], name, withheld, f, only, o, after, limit)
-	} else {
+	default:
 		page, found, err = s.sortedPage(ctx, sc, a, format, name, withheld, f, only, o, after, limit)
 	}
 	if err != nil || !found {
@@ -767,7 +790,7 @@ func (s *Service) Versions(ctx context.Context, sc Scope, format, name string, f
 		}
 		files := g.primary().SizeBytes
 		out = append(out, VersionSummary{
-			Version: k.version, Prerelease: a.Prerelease(k.version), PublishedAt: k.published,
+			Version: k.version, Prerelease: a.Prerelease(k.version), PublishedAt: g.published,
 			SizeBytes: &files, Repositories: sc.topo.Names(sc.holders(g.repoIDs())), DownloadCount: g.downloads(),
 			LastDownloadedAt: g.lastDownload(),
 		})
@@ -819,24 +842,8 @@ func (s *Service) keysetPage(ctx context.Context, sc Scope, a Adapter, h q.Packa
 		}
 		at, cur = stamp(&k.published), k.version
 	}
-	whole := slices.Contains(sc.whole, h.RepoID)
-	var allowed []string
-	if !whole {
-		prefix := strconv.FormatInt(h.RepoID, 10) + "\x1f" + name + "\x1f"
-		for _, r := range sc.rows {
-			if v, ok := strings.CutPrefix(r, prefix); ok {
-				allowed = append(allowed, v)
-			}
-		}
-	}
 	batch := max(limit+1, keysetBatch)
-	// A local repository's versions are its rows of package_versions, a remote OCI repository's tags its cache entries (R-OCI-036);
-	// a repository of another class has neither, and the two ordered lists of one batch are merged (keysetBatchOf).
-	class, _ := sc.topo.Class(h.RepoID)
-	k := keysetQuery{
-		holder: h, name: name, desc: o.Desc, remote: class == repository.Remote, withheld: ids(withheld), whole: whole,
-		allowed: keys(allowed),
-	}
+	k := keysetQueryOf(sc, h, name, withheld, o)
 	fetch := func(at, cur string, n int) ([]pageKey, error) { return s.keysetBatchOf(ctx, k, at, cur, n) }
 	var page []pageKey
 	if !f.HasRepositories || slices.Contains(only, h.RepoID) {
@@ -866,6 +873,27 @@ func (s *Service) keysetPage(ctx context.Context, sc Scope, a Adapter, h q.Packa
 	// An empty first page under a filter: the package is found when it has a version at all.
 	any, err := fetch(startOf(o), "", 1)
 	return page, len(any) > 0, err
+}
+
+// keysetQueryOf is what the batches of a keyset page ask of the statements for one holder: a local repository's versions are its rows
+// of package_versions, a remote OCI repository's tags its cache entries (R-OCI-036), and a remote repository's two ordered lists of
+// one batch are merged; the scope is the whole repository or the versions the caller may read of it.
+func keysetQueryOf(sc Scope, h q.PackageViewHoldersRow, name string, withheld []int64, o VersionOrder) keysetQuery {
+	whole := slices.Contains(sc.whole, h.RepoID)
+	var allowed []string
+	if !whole {
+		prefix := strconv.FormatInt(h.RepoID, 10) + "\x1f" + name + "\x1f"
+		for _, r := range sc.rows {
+			if v, ok := strings.CutPrefix(r, prefix); ok {
+				allowed = append(allowed, v)
+			}
+		}
+	}
+	class, _ := sc.topo.Class(h.RepoID)
+	return keysetQuery{
+		holder: h, name: name, desc: o.Desc, remote: class == repository.Remote, withheld: ids(withheld), whole: whole,
+		allowed: keys(allowed),
+	}
 }
 
 // keysetQuery is what every batch of a keyset page asks of the statements.
@@ -950,9 +978,159 @@ func keysetTags(ctx context.Context, qs *q.Queries, k keysetQuery, at, cur strin
 	return out, err
 }
 
+// keyPage reads a page in the order of the format's versions by keyset statements on the stored sort key (Q-API-429): of every holder
+// the repository filter admits, its version rows and, for a remote repository, its OCI tags after the cursor's key, at least keysetBatch
+// each, merged by the key (keyBatch). A version that several holders hold has one key, so its rows meet in the merge and it is taken
+// once. Batches follow until limit+1 versions passed the pre-release filter or none is left. The cursor is the version; its key is the
+// format's (Adapter.SortKey), the one the version's rows store. found is false when the first page of the package without its filters
+// is empty.
+func (s *Service) keyPage(ctx context.Context, sc Scope, a Adapter, hs []q.PackageViewHoldersRow, name string, withheld []int64, f VersionFilter,
+	only []int64, o VersionOrder, after []string, limit int,
+) ([]pageKey, bool, error) {
+	at := keyStart(o)
+	if after != nil {
+		if len(after) != 1 {
+			return nil, true, errBadCursor
+		}
+		at = a.SortKey(after[0])
+	}
+	var all, admitted []keysetQuery
+	for _, h := range hs {
+		k := keysetQueryOf(sc, h, name, withheld, o)
+		all = append(all, k)
+		if !f.HasRepositories || slices.Contains(only, h.RepoID) {
+			admitted = append(admitted, k)
+		}
+	}
+	batch := max(limit+1, keysetBatch)
+	var page []pageKey
+	for len(admitted) > 0 && len(page) < limit+1 {
+		got, more, err := s.keyBatch(ctx, admitted, at, batch)
+		if err != nil {
+			return nil, true, err
+		}
+		for _, k := range got {
+			if f.Prerelease == nil || *f.Prerelease == a.Prerelease(k.version) {
+				page = append(page, k)
+			}
+		}
+		if !more || len(got) == 0 {
+			break
+		}
+		at = got[len(got)-1].key
+	}
+	if len(page) > limit+1 {
+		page = page[:limit+1]
+	}
+	if len(page) > 0 || after != nil || (f.Prerelease == nil && !f.HasRepositories) {
+		return page, len(page) > 0 || after != nil, nil
+	}
+	// An empty first page under a filter: the package is found when it has a version at all.
+	any, _, err := s.keyBatch(ctx, all, keyStart(o), 1)
+	return page, len(any) > 0, err
+}
+
+// keyStart is the cursor's key of a first page: every key is above the empty one and below 0x02 (a key starts with its class, 0x00 or
+// 0x01, internal/formats/versionkey).
+func keyStart(o VersionOrder) []byte {
+	if o.Desc {
+		return []byte{0x02}
+	}
+	return []byte{}
+}
+
+// keyBatch reads at most n versions of every holder after the key at, in the order of the keys, merges them and takes each version
+// once. Of the merged list the first n distinct versions are complete: a version among them is preceded in its holder's list only by
+// versions among them. more says that a holder had more than it gave, so the list is cut after n versions; when no holder had more,
+// every version after at is in the list.
+func (s *Service) keyBatch(ctx context.Context, ks []keysetQuery, at []byte, n int) ([]pageKey, bool, error) {
+	var out []pageKey
+	more := false
+	err := s.read(ctx, func(qs *q.Queries) error {
+		out, more = out[:0], false
+		for _, k := range ks {
+			before := len(out)
+			var err error
+			if out, err = keyRows(ctx, qs, k, at, n, out); err != nil {
+				return err
+			}
+			more = more || len(out)-before >= n
+			if !k.remote {
+				continue
+			}
+			before = len(out)
+			if out, err = keyTags(ctx, qs, k, at, n, out); err != nil {
+				return err
+			}
+			more = more || len(out)-before >= n
+		}
+		return nil
+	})
+	if err != nil || len(out) == 0 {
+		return nil, false, err
+	}
+	desc := ks[0].desc
+	slices.SortStableFunc(out, func(x, y pageKey) int {
+		if desc {
+			return bytes.Compare(y.key, x.key)
+		}
+		return bytes.Compare(x.key, y.key)
+	})
+	distinct := out[:1]
+	for _, k := range out[1:] {
+		if !bytes.Equal(k.key, distinct[len(distinct)-1].key) {
+			distinct = append(distinct, k)
+		}
+	}
+	if more && len(distinct) > n {
+		distinct = distinct[:n]
+	}
+	return distinct, more, nil
+}
+
+// keyRows appends a batch of the package's version rows after the key at, in the order of the keys, to out.
+func keyRows(ctx context.Context, qs *q.Queries, k keysetQuery, at []byte, n int, out []pageKey) ([]pageKey, error) {
+	if k.desc {
+		rs, err := qs.PackageViewVersionKeyDesc(ctx, q.PackageViewVersionKeyDescParams{
+			PackageID: k.holder.PackageID, AfterKey: at, Withheld: k.withheld, Whole: k.whole, Allowed: k.allowed, MaxRows: rows32(n),
+		})
+		for _, r := range rs {
+			out = append(out, pageKey{version: r.Version, published: r.CreatedAt.Time, key: r.SortKey})
+		}
+		return out, err
+	}
+	rs, err := qs.PackageViewVersionKeyAsc(ctx, q.PackageViewVersionKeyAscParams{
+		PackageID: k.holder.PackageID, AfterKey: at, Withheld: k.withheld, Whole: k.whole, Allowed: k.allowed, MaxRows: rows32(n),
+	})
+	for _, r := range rs {
+		out = append(out, pageKey{version: r.Version, published: r.CreatedAt.Time, key: r.SortKey})
+	}
+	return out, err
+}
+
+// keyTags appends a batch of a remote OCI repository's tags of the name after the key at, in the order of the keys, to out.
+func keyTags(ctx context.Context, qs *q.Queries, k keysetQuery, at []byte, n int, out []pageKey) ([]pageKey, error) {
+	if k.desc {
+		rs, err := qs.PackageViewTagKeyDesc(ctx, q.PackageViewTagKeyDescParams{
+			RepoID: k.holder.RepoID, Name: k.name, AfterKey: at, Withheld: k.withheld, Whole: k.whole, Allowed: k.allowed, MaxRows: rows32(n),
+		})
+		for _, r := range rs {
+			out = append(out, pageKey{version: r.Version, published: r.CreatedAt.Time, key: r.SortKey})
+		}
+		return out, err
+	}
+	rs, err := qs.PackageViewTagKeyAsc(ctx, q.PackageViewTagKeyAscParams{
+		RepoID: k.holder.RepoID, Name: k.name, AfterKey: at, Withheld: k.withheld, Whole: k.whole, Allowed: k.allowed, MaxRows: rows32(n),
+	})
+	for _, r := range rs {
+		out = append(out, pageKey{version: r.Version, published: r.CreatedAt.Time, key: r.SortKey})
+	}
+	return out, err
+}
+
 // sortedPage reads the names of every visible version of the package, one cheap row per version per repository, groups them, filters
-// and sorts them in the format's order or by publication and cuts the page after the cursor. It is the way for a package that several
-// repositories of the scope hold and for the order of the format's versions (H-1683).
+// and sorts them by publication (a version by its oldest row) and cuts the page after the cursor. It is the way for a package that
+// several repositories of the scope hold, listed in the order of publication (H-1683).
 func (s *Service) sortedPage(ctx context.Context, sc Scope, a Adapter, format, name string, withheld []int64, f VersionFilter,
 	only []int64, o VersionOrder, after []string, limit int,
 ) ([]pageKey, bool, error) {
@@ -983,12 +1161,7 @@ func (s *Service) sortedPage(ctx context.Context, sc Scope, a Adapter, format, n
 		out = append(out, k)
 	}
 	cmp := func(x, y pageKey) int {
-		var c int
-		if o.Sort == "version" {
-			c = a.Compare(x.version, y.version)
-		} else {
-			c = x.published.Compare(y.published)
-		}
+		c := x.published.Compare(y.published)
 		if c == 0 {
 			c = strings.Compare(x.version, y.version)
 		}
@@ -999,16 +1172,9 @@ func (s *Service) sortedPage(ctx context.Context, sc Scope, a Adapter, format, n
 	}
 	slices.SortFunc(out, cmp)
 	if after != nil {
-		var pos pageKey
-		switch {
-		case o.Sort == "version" && len(after) == 1:
-			pos.version = after[0]
-		case o.Sort != "version":
-			if pos, err = keyCursor(after); err != nil {
-				return nil, true, err
-			}
-		default:
-			return nil, true, errBadCursor
+		pos, err := keyCursor(after)
+		if err != nil {
+			return nil, true, err
 		}
 		i := sort.Search(len(out), func(i int) bool { return cmp(out[i], pos) > 0 })
 		out = out[i:]

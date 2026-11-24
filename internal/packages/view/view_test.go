@@ -156,6 +156,10 @@ func pad(v string) string {
 	return strings.Join(parts, ".")
 }
 func (fakeAdapter) Prerelease(v string) bool { return strings.HasSuffix(v, "-pre") }
+func (fakeAdapter) SortKey(v string) []byte {
+	return []byte(pad(strings.TrimSuffix(v, "-pre")) + "\x00" + v)
+}
+
 func (fakeAdapter) Describe(context.Context, []Version, Fields, func(string) bool) (map[int64]Data, error) {
 	return nil, nil
 }

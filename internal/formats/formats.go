@@ -40,9 +40,10 @@ import (
 // attests (AttestationSubjects), its declaration says what it attests or why nothing (Attests, AttestsNone), and NoSignatures takes both
 // reasons. Version 11 is the upstream catalogue's (remote-curation.md R-CUR-006, R-CUR-007, Q-CUR-12, ADR-277): a format with the class
 // remote declares its catalogue ([Descriptor.Catalogue], the lookup by exact name at least) and its version canon
-// ([Descriptor.VersionCanon]). A format declares the literal it was written against in [Descriptor.ContractVersion], and Register
-// panics on a mismatch.
-const ContractVersion = 11
+// ([Descriptor.VersionCanon]). Version 12 is the stored sort key's (api-and-ui.md R-API-029, Q-API-429, ADR-278): a format's
+// [ViewAdapter] gives the key of its order of versions (SortKey), which the host stores with every version row. A format declares
+// the literal it was written against in [Descriptor.ContractVersion], and Register panics on a mismatch.
+const ContractVersion = 12
 
 // The types of other packages under the names a format spells them: one type
 // each, no mirrors (Q-ARCH-188, Q-ARCH-189). A format imports this package and

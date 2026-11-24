@@ -11,7 +11,7 @@ import (
 type layer int
 
 const (
-	layerLeaf   layer = iota // config, errs, buildinfo, qname, observability, cache, meta, backup/tables, backup/target, tlsfiles, formats/catalog, wellknown, formats/untrusted, servefacts, formats/nuget/{id,version,nupkg,nuspec}, formats/deb/{control,debfile,version,index,archivekeys}, formats/<id>/rows, auth/scope, ci/{reason,claims,subject}, auth/jws, vuln/{advisory,match,osv,metrics}, mirror/discover, docs/manual: usable from every layer
+	layerLeaf   layer = iota // config, errs, buildinfo, qname, observability, cache, meta, backup/tables, backup/target, tlsfiles, formats/catalog, wellknown, formats/untrusted, formats/versionkey, servefacts, formats/nuget/{id,version,nupkg,nuspec}, formats/deb/{control,debfile,version,index,archivekeys}, formats/<id>/rows, auth/scope, ci/{reason,claims,subject}, auth/jws, vuln/{advisory,match,osv,metrics}, mirror/discover, docs/manual: usable from every layer
 	layerInfra               // meta/postgres, blob, cluster, outbound, secrets
 	layerDomain              // repository, proxy, virtual, formatdata, authz, project, auth, jobs, audit, backup, manual, mirror, remotecuration/{rules/store,catalogue,queue,requests,retention}
 	layerEdge                // httpserver, api/v1, webui, formats
@@ -85,6 +85,9 @@ func layerTable() []layerRule {
 		// the vulnerability scanning (Q-VULN-23): the OSV decoder (internal/vuln/osv, a leaf like the other pure parsers)
 		// reads the advisory archives through them, and a leaf may not import an edge package.
 		{"internal/formats/untrusted", layerLeaf},
+		// The encoding of a version's stored sort key imports only the standard library: a leaf so that the formats, their rule
+		// libraries (the Debian version order, the image tag order) and the host's package writer spell one encoding (Q-API-429).
+		{"internal/formats/versionkey", layerLeaf},
 		// The NuGet rule libraries import only errs, the standard library and each other. They are leaves so that
 		// the format (edge), its data port (domain) and the jobs that reindex can all use one parser (R-NUGET-003, R-NUGET-005).
 		{"internal/formats/nuget/id", layerLeaf},

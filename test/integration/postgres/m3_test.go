@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/guided-traffic/quader/internal/backup/tables"
+	"github.com/guided-traffic/quader/internal/formats/nuget"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
@@ -89,7 +90,8 @@ func TestM3Migrations(t *testing.T) {
 	mustExec(t, admin, `INSERT INTO packages (repo_id, name, display_name) VALUES ($1, 'acme.widgets', 'Acme.Widgets')`, repo)
 	pkg := scalar[int64](t, admin, "SELECT id FROM packages WHERE repo_id = $1 AND name = 'acme.widgets'", repo)
 	version := func(v string) (versionID, itemID int64) {
-		mustExec(t, admin, `INSERT INTO package_versions (package_id, version, display_version) VALUES ($1, $2, $2)`, pkg, v)
+		mustExec(t, admin, `INSERT INTO package_versions (package_id, version, display_version, sort_key, prerelease) VALUES ($1, $2, $2, $3, false)`,
+			pkg, v, nuget.New().View().SortKey(v))
 		versionID = scalar[int64](t, admin, "SELECT id FROM package_versions WHERE package_id = $1 AND version = $2", pkg, v)
 		itemID = f.item(repo, "acme.widgets/"+v+"/acme.widgets."+v+".nupkg", lead)
 		mustExec(t, admin, "UPDATE package_versions SET lead_item_id = $1 WHERE id = $2", itemID, versionID)

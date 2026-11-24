@@ -2,6 +2,7 @@ package clamav
 
 import (
 	"context"
+	"encoding/binary"
 	"strconv"
 	"strings"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/clamav/cvd"
 	"github.com/guided-traffic/quader/internal/formats/clamav/rows"
+	"github.com/guided-traffic/quader/internal/formats/versionkey"
 )
 
 // View is the format's part of the package screens (R-CLAMAV-007): the versions order as integers, a version shows every piece of
@@ -36,6 +38,16 @@ func (viewAdapter) Compare(a, b string) int {
 		return 1
 	}
 	return strings.Compare(a, b)
+}
+
+// SortKey is the stored key of Compare's order (Q-API-429): the integer as eight bytes, big-endian with the sign bit flipped so that a
+// negative number sorts first, then the string itself.
+func (viewAdapter) SortKey(v string) []byte {
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return versionkey.Of(nil, false, v)
+	}
+	return versionkey.Of(binary.BigEndian.AppendUint64(nil, uint64(n)^(1<<63)), true, v) //nolint:gosec // the bits of the integer, reordered
 }
 
 // Stored lists the versions of a database the repository holds: the stored ones newest first, then the history rows without files.

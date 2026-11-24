@@ -19,7 +19,8 @@ func TestR_API_029_NuGetPackagesAreListedAndDescribed(t *testing.T) {
 	          "projectUrl": "https://acme.example/widgets", "license": {"type": "expression", "value": "MIT"}, "readme": "README.md",
 	          "dependencyGroups": [{"targetFramework": "net8.0", "dependencies": [{"id": "Newtonsoft.Json", "range": "[13.0.1, )"}]}]}`
 	for i, v := range []string{"1.0.0", "1.10.0", "1.2.0", "2.0.0-rc.1"} {
-		id := e.st.Number(`INSERT INTO package_versions (package_id, version, display_version) VALUES ($1, $2, $2) RETURNING id`, pkgID, v)
+		key, pre := e.st.VersionKey("nuget", v)
+		id := e.st.Number(`INSERT INTO package_versions (package_id, version, display_version, sort_key, prerelease) VALUES ($1, $2, $2, $3, $4) RETURNING id`, pkgID, v, key, pre)
 		e.st.Exec(`INSERT INTO nuget_version (version_id, repository_id, lower_id, declared_id, original_version, sort_key, is_prerelease, is_semver2, listed, published_at, metadata, search_doc, origin)
 		           VALUES ($1, $2, 'acme.widgets', 'Acme.Widgets', $3, '\x01', $4, false, $5, $6, $7::jsonb, to_tsvector('simple', 'acme widgets'), 'push')`,
 			id, repoID, v, v == "2.0.0-rc.1", v != "1.2.0", time.Date(2026, 5, 1, i, 0, 0, 0, time.UTC), meta)

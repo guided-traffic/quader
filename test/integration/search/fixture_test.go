@@ -102,7 +102,8 @@ func (f *fixture) pkg(repo, name string) {
 	project, key, _ := strings.Cut(repo, "/")
 	id := f.st.Number(`INSERT INTO packages (repo_id, name, display_name)
 		SELECT r.id, $3, $3 FROM repositories r JOIN project p ON p.id = r.project_id WHERE p.key = $1 AND r.key = $2 RETURNING id`, project, key, name)
-	f.st.Exec(`INSERT INTO package_versions (package_id, version, display_version) VALUES ($1, '1.0.0', '1.0.0')`, id)
+	vkey, pre := f.st.VersionKey(f.st.Text(`SELECT format FROM repositories WHERE id = (SELECT repo_id FROM packages WHERE id = $1)`, id), "1.0.0")
+	f.st.Exec(`INSERT INTO package_versions (package_id, version, display_version, sort_key, prerelease) VALUES ($1, '1.0.0', '1.0.0', $2, $3)`, id, vkey, pre)
 }
 
 // narrowed grants read on a repository of web for the packages matching one include pattern: a repository read in part.

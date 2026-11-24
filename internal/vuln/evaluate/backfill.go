@@ -19,6 +19,9 @@ type ArtifactClassifier interface {
 	// ArtifactVersion returns the normalized package name and version of the artifact at the path, false for a path that is no
 	// artifact of a package version.
 	ArtifactVersion(path string) (name, version string, ok bool)
+	// ArtifactOrder returns what the host stores with a version row besides the version: the sort key of the format's order and
+	// whether the format calls the version a pre-release (api-and-ui.md R-API-029, Q-API-429).
+	ArtifactOrder(version string) (key []byte, prerelease bool)
 }
 
 // backfillBatch is the number of cached files one transaction of the backfill looks at.
@@ -65,7 +68,7 @@ func (s *Service) backfillVersions(ctx context.Context, eco Ecosystem) (int, err
 				if !ok {
 					continue
 				}
-				if err := linkArtifact(ctx, w, it, name, version); err != nil {
+				if err := linkArtifact(ctx, w, it, name, version, cl); err != nil {
 					return err
 				}
 				n++
@@ -83,7 +86,7 @@ func (s *Service) backfillVersions(ctx context.Context, eco Ecosystem) (int, err
 }
 
 // linkArtifact makes the item the lead item of the version of the package, as the format's fill does.
-func linkArtifact(ctx context.Context, w *packages.Writer, it store.UnversionedItem, name, version string) error {
+func linkArtifact(ctx context.Context, w *packages.Writer, it store.UnversionedItem, name, version string, cl ArtifactClassifier) error {
 	pkg, _, err := w.EnsureLocked(ctx, it.RepoID, name, name)
 	if err != nil {
 		return err
@@ -97,7 +100,10 @@ func linkArtifact(ctx context.Context, w *packages.Writer, it store.UnversionedI
 			return w.LinkItem(ctx, it.ItemID, v.ID, true)
 		}
 	}
-	if _, err := w.InsertVersion(ctx, pkg, packages.NewVersion{Version: version, DisplayVersion: version, LeadItem: it.ItemID}); err != nil {
+	key, pre := cl.ArtifactOrder(version)
+	if _, err := w.InsertVersion(ctx, pkg, packages.NewVersion{
+		Version: version, DisplayVersion: version, LeadItem: it.ItemID, SortKey: key, Prerelease: pre,
+	}); err != nil {
 		return err
 	}
 	_, _, err = w.BumpRevision(ctx, pkg)

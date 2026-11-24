@@ -1662,8 +1662,11 @@ remain as their owners define them.)
   that one repository of the caller's scope holds, in the order of publication (`sort` `-publishedAt` or `publishedAt`), is read a page at
   a time by one keyset query on the version's creation time and its name compared bytewise, which reads no version past the page's limit
   ([Q-API-417](#q-api-417--the-version-list-of-a-package-is-read-a-page-at-a-time-by-a-keyset-query-in-the-order-of-publication)); the
-  order of the format's versions, and a package several repositories hold, read every visible version's name and sort them in the
-  service ([H-1683](#h-1683--the-version-list-in-the-order-of-the-formats-versions-and-of-a-package-several-repositories-hold-reads-every-version)).
+  order of the format's versions (`sort` `version` or `-version`) by keyset queries on the format's sort key stored with every version, for
+  one repository or several, and the latest version of a listed package by the first entry of an index of its releases, else of its
+  pre-releases ([Q-API-429](#q-api-429--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row)); a package several
+  repositories hold, in the order of publication, reads every visible version's name and sorts them in the service
+  ([H-1683](#h-1683--the-version-list-of-a-package-several-repositories-hold-in-the-order-of-publication-reads-every-version-and-the-package-list-counts-every-version)).
   Remote repositories contribute their cached versions only,
   and a version the format withholds (npm: a tombstoned one, R-NPM-047) is not counted anywhere.
 - What the generic rows do not hold - description, keywords, licenses, the README and the `metadata` - comes from
@@ -23339,7 +23342,9 @@ SemVer, OCI's tag order (R-OCI-031), generic files without versions.
 | (c) Keep reading every row, cache the grouped list per package revision | A replica's cache | Repeated pages are cheap | The first page of every revision reads every row; a remote's tags change with every fill |
 
 **Choice:** (a). The cursor of the order of publication is `[publishedAt, version]`, of the order of versions `[version]`; both are the
-service's, unchanged for a client. **Applied in the spec:** R-API-029. Code: `Versions`, `keysetPage`, `sortedPage` in
+service's, unchanged for a client. **Revised on 2026-11-24** by [Q-API-429](#q-api-429--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row):
+option (b) is built for the order of the format's versions and the latest version of a package, after the measurement of a local package
+with 100,000 versions; the order of publication stays as chosen here. **Applied in the spec:** R-API-029. Code: `Versions`, `keysetPage`, `sortedPage` in
 [service.go](../../internal/packages/view/service.go); `PackageViewVersionPage*`, `PackageViewTagPage*`, `PackageViewHolders`,
 `PackageViewVersionNames`, `PackageViewVersions` (by package ids and versions) in [package_view.sql](../../internal/meta/postgres/queries/package_view.sql);
 migration [00113](../../internal/meta/postgres/migrations/00113_version_list_keyset.sql). Tests:
@@ -23363,18 +23368,61 @@ Context: the plans of the measurement of H-829 (2026-11-23) showed PostgreSQL's 
 
 **Choice:** (a). **Applied in the spec:** R-API-029 (above). Code: `Service.read` in [service.go](../../internal/packages/view/service.go).
 
+### Q-API-429 · The order of a format's versions is a sort key stored with every version row
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough
+([ADR-278](../decisions.md#adr-278--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row)). It revises
+[Q-API-417](#q-api-417--the-version-list-of-a-package-is-read-a-page-at-a-time-by-a-keyset-query-in-the-order-of-publication), which had
+left H-1683 open.
+
+Context: the measurement of 2026-11-24 ([packages.md](../developer/packages.md#a-package-with-100000-versions-h-1683-measured),
+[oci.md](../developer/oci.md#the-listing-of-a-remote-with-very-many-tags-h-829-measured)). With 100,000 versions of one local npm package
+a page of its versions in the order of the versions took 0.40 s, the package list 0.66 s and the package's page 0.59 s; with 100,000 tags
+of a remote image that point at 100,000 different manifests, the page in the order of the tags 0.58 s and the package list 1.24 s
+(load average 19 to 23 on 20 cores). Each read every version's name and ordered it in the service by the format's `Compare`, the order
+for a page and the latest version for the list; the list's statement ran a subplan for the downloads of every version of the scope.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A sort key of the format's order stored with every version row (chosen) | The format's view adapter gives the key (`ViewAdapter.SortKey`, contract version 12); the host's package writer stores it and the format's pre-release answer with every row; a remote OCI repository's tag entries derive the same key in PostgreSQL from the stored tag (`oci_tag_sort_key`, a generated column) | A page in the order of the versions is one keyset statement per holder on an index; the latest version is the first entry of an index of releases, else of pre-releases; the format's order stays in the format's code, next to `Compare`, and kit check 11 holds the two to one order | A column every version row carries; the tags' key is written twice, in Go and in SQL, and a test compares them byte for byte; a stored version keeps the key it was written with |
+| (b) Keep ordering in the service (Q-API-417) | Every visible version's name per page and per listed package | Nothing stored | 0.4 to 1.2 s with 100,000 versions, for every page |
+| (c) The key computed by PostgreSQL for every format | A function per format and a trigger on the version rows | Every writer, a test's SQL included, writes the right key; a migration can fill the stored rows | Every format's order written a second time, in SQL; the twenty formats to come each need one, tested only against a database |
+
+**Choice:** (a). A key is a class byte (0x00 for a string that is no version, 0x01 for a version), the format's self-delimiting encoding
+and the version's bytes ([versionkey](../../internal/formats/versionkey/versionkey.go)), so two strings have two keys and the cursor stays
+`[version]`: the service asks the format for its key. The package list now reads, per listed package row, its latest release, its latest
+pre-release when it has no release, and a remote image's latest tag (`PackageViewLatest`), each the first visible entry of an index, and
+sums the downloads of the page's packages alone, by joins and not a subplan per version. The rows stored before the key existed cannot
+carry it: migration 00116 refuses a database that holds version rows, which is started afresh (pre-alpha, Q-ARCH-340). **Rationale:** the
+order of versions is the format's knowledge; a key computed where `Compare` lives is tested at the cheapest tier for every format, and the
+one place it is written twice (the tags of a remote, which are cache entries the engine writes) is a rule of a few lines that one
+integration test compares over a table of tags. The development agent would revisit this if a format's order cannot be encoded as bytes,
+or when the count of a package's versions, still read whole (H-1683), is kept by the commit and the fill. **Applied in the spec:**
+R-API-029, H-1683, [formats/oci.md](formats/oci.md) H-829, [architecture.md](architecture.md) R-ARCH-008 (contract version 12). Code:
+`keyPage`, `keyBatch`, `latestCandidates` in [service.go](../../internal/packages/view/service.go); `PackageViewVersionKey*`,
+`PackageViewTagKey*`, `PackageViewLatest`, `PackageViewList` in [package_view.sql](../../internal/meta/postgres/queries/package_view.sql);
+the writer's `versionOrder` in [hooks.go](../../internal/formathost/hooks.go); migration
+[00116](../../internal/meta/postgres/migrations/00116_version_sort_key.sql). Tests: `TestR_API_010_APageOfVersionsReadsNoVersionPastItsLimit`
+([packages](../../test/integration/packages/versions_keyset_test.go)), `TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit`
+([ociremote](../../test/integration/ociremote/listing_keyset_test.go)), kit check 11 (`viewSortKey` in
+[checks_view.go](../../internal/formats/formattest/checks_view.go)) and the key tests of npm, Debian and the tag order.
+
 ## What this does not cover
 
-### H-1683 · The version list in the order of the format's versions, and of a package several repositories hold, reads every version
+### H-1683 · The version list of a package several repositories hold, in the order of publication, reads every version, and the package list counts every version
 
-The version list reads a page by a keyset query only for a package that one repository of the caller's scope holds, in the order of
-publication (Q-API-417). In the order of the format's versions (`sort=version`, `-version`), and for a package that several repositories
-hold (a name in a local repository and in a remote's cache, a virtual repository's members), it reads the name and the creation time of
-every visible version, one cheap row each with no size and no downloads, and sorts them in the service; the rows with sizes and downloads
-are read for the page's versions alone. The package list reads every version of a listed package to count them and to find the latest
-by the format's order (H-829 of [formats/oci.md](formats/oci.md)). Live today; real for a package with tens of thousands of versions:
-measured for 100,000 tags, the package list took 0.99 s (load average 19). A sort key of the format's order stored with each version, and counts kept by the
-commit and the fill, are the remedies; neither is built.
+The version list reads a page by keyset queries in the order of the format's versions, for one repository or several, and in the order
+of publication for a package that one repository of the caller's scope holds (Q-API-417, Q-API-429). For a package that several
+repositories hold (a name in a local repository and in a remote's cache, a virtual repository's members), in the order of publication
+(the default `-publishedAt`), it reads the name and the creation time of every visible version, one cheap row each, and sorts them in the
+service: a version's place is its oldest visible row, which a keyset over each holder cannot see without a lookup per row. The package
+list reads one cheap row per visible version of the caller's scope to count the versions of each package and to find its first and last
+creation; the latest version and the downloads are read for the page's packages alone (Q-API-429). Live today; real for a package with
+tens of thousands of versions: measured on 2026-11-24 with 100,000 versions, a page of a package two repositories hold took 0.21 s in the
+order of publication (0.03 s in the order of the versions), the package list 0.19 s, and with 100,000 tags of a remote image 0.41 s
+([packages.md](../developer/packages.md#a-package-with-100000-versions-h-1683-measured)). Counts kept by the commit and the fill would end
+the second part; they would have to follow every rule of what a caller may see (the scope's rows, withheld versions, a remote's listing
+rules that change with a download), and none is built.
 
 
 ### H-43 · General API rate limits are per replica

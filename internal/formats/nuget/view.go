@@ -9,6 +9,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/nuget/rows"
 	"github.com/guided-traffic/quader/internal/formats/nuget/version"
+	"github.com/guided-traffic/quader/internal/formats/versionkey"
 )
 
 // viewPort is the part of the data port the package view reads (R-API-029, R-EP-016): the
@@ -67,6 +68,16 @@ func (viewAdapter) Compare(a, b string) int {
 		return c
 	}
 	return strings.Compare(a, b)
+}
+
+// SortKey is the stored key of Compare's order (Q-API-429): the precedence key of the version package (R-NUGET-003), the labels
+// lower-cased, then the string itself.
+func (viewAdapter) SortKey(v string) []byte {
+	nv, err := version.Parse(v)
+	if err != nil {
+		return versionkey.Of(nil, false, v)
+	}
+	return versionkey.Of(nv.SortKey(), true, v)
 }
 
 // Stored lists what the repository serves of the package (R-EP-016, Q-EP-61): every version

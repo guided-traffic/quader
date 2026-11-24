@@ -13,7 +13,9 @@ the client setup page of the admin UI ([web-ui.md](web-ui.md#package-screens-and
 - **Every aggregate counts only what the caller may read, and the filter is in the statement that counts** (Q-API-165). The decision point classifies each
   repository for the request; the statements take the result as arrays.
 - **The core knows no format.** What the generic rows do not hold (description, keywords, licenses, metadata, README) and the order of versions come from the
-  format's `ViewAdapter` over its data port (Q-API-166).
+  format's `ViewAdapter` over its data port (Q-API-166). The order is also stored: every version row carries the format's sort key
+  (`ViewAdapter.SortKey`, bytewise the order of `Compare`) and its pre-release answer, which the host's package writer writes, so that
+  PostgreSQL orders the versions by an index ([Q-API-429](../spec/api-and-ui.md#q-api-429--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row)).
 - **The server never builds an address from the `Host` of a request**, and never puts a token into a snippet (Q-API-168).
 - **A hidden thing and a missing thing look the same**: `404`, the same problem body.
 
@@ -43,10 +45,15 @@ the client setup page of the admin UI ([web-ui.md](web-ui.md#package-screens-and
 3. `Scope` takes the repositories that are `ReadAll` and have no include or exclude patterns (`Repository.Restricts`, R-REPO-005) as a list of repository IDs (`Topology.Physical` is keyed by ID; the statements compare `packages.repo_id`, see [Repositories as IDs in the statements](vulnerabilities.md#repositories-as-ids-in-the-statements-r-vuln-028)). For every other repository that is not `ReadNone` it reads their version triples (`PackageViewCandidates`, which returns `repo_id`,
    at most 200 000, narrowed by format and name prefix), keeps the ones the repository's patterns admit (`Topology.Admits`) and the caller may read (`ReadScope.MayRead` with `Topology.Name(id)`, a map lookup; skipped for a `ReadAll` repository) as `repositoryId US name US version` strings (`rowKey`).
 4. `Service.List` asks the adapters for the versions that match `q` and `keyword` (`Find`) and for the withheld versions (`Withheld`), then runs
-   `PackageViewList`: the CTE `vis` holds the versions that are live, not withheld, in the scope and inside the filters; `grouped` aggregates per format and
-   name; the keyset condition and the order depend on the sort. Names are compared with collation `C`.
-5. For the packages of the page it reads their visible versions without sizes and downloads (`PackageViewVersionNames`, one cheap row per version per
-   repository), takes the latest version by the adapter's order, and asks the adapter for the description and keywords of that version.
+   `PackageViewList`: the CTE `vis` holds the versions that are live, not withheld, in the scope and inside the filters, one cheap row each; `grouped`
+   counts and dates them per format and name; `page` applies the keyset condition and the order of the sort and the limit; `dl` sums the downloads of the
+   page's packages alone (the lead file or any file of a visible version by a join with `item_download_stats`; the document of an OCI version from the
+   package's downloaded files, each counted once per visible version or tag that holds its bytes). Names are compared with collation `C`.
+5. For the packages of the page it reads the candidates of their latest version (`PackageViewLatest`, Q-API-429): per package row its highest visible release
+   by the stored sort key, its highest pre-release when it has no visible release, and a remote OCI repository's highest tag, each the first visible entry of
+   an index (`package_versions_latest_release`, `package_versions_latest_prerelease`, `remote_cache_entries_tag_key`). It takes the latest among them by the
+   adapter's order (a release before a pre-release), names the repositories whose rows gave a candidate, and asks the adapter for the description and
+   keywords of that version.
 
 Every transaction of the service runs with the server's JIT compilation off (`Service.read`, Q-API-428).
 
@@ -56,8 +63,13 @@ publication, `keysetPage` reads a page by keyset: `PackageViewVersionPageDesc`/`
 remote repository, `PackageViewTagPageDesc`/`Asc` over its OCI tag entries (index `remote_cache_entries_tag_time`, Q-OCI-267); the two ordered lists of a
 batch are merged, the pre-release filter (the format's rule) is applied in the service and the next batch starts after the last version read until the
 page holds `limit + 1`. The cursor is `[publishedAt, version]`: the version's creation time and its name, compared bytewise, the statements' order. A
-package several repositories hold, and the order of the format's versions (`sort=version`), go through `sortedPage`: every visible version's name and
-creation time (`PackageViewVersionNames`), grouped, filtered and sorted in the service (H-1683). Either way `PackageViewVersions` then reads the rows of the
+package several repositories hold, in the order of publication, goes through `sortedPage`: every visible version's name and creation time
+(`PackageViewVersionNames`), grouped, filtered and sorted in the service (H-1683). The order of the format's versions (`sort=version`, `-version`) goes
+through `keyPage` for one holder or several (Q-API-429): `PackageViewVersionKeyDesc`/`Asc` over `package_versions` (index `package_versions_by_key`) and, for
+a remote repository, `PackageViewTagKeyDesc`/`Asc` over its tag entries (index `remote_cache_entries_tag_key`), at least 64 versions of each holder after the
+cursor's key, merged by the key (`keyBatch`: a version two holders hold has one key, so its rows meet and it is taken once; the first `n` distinct versions
+of the merge are complete). The cursor is `[version]`; its key is `Adapter.SortKey(version)`, the bytes the rows store. A version's `publishedAt` is its
+oldest visible row's in every order. Either way `PackageViewVersions` then reads the rows of the
 page's versions alone, by the holders' package ids and the versions, with sizes and downloads. Each row carries the downloads and the `last_download_at` of the items that are a fetch of the version by its format's rule
 (`Descriptor.VersionFetch`: the lead file, any file of the version, or an image's manifest by tag and by digest), read from `item_download_stats` in a
 lateral subquery of `PackageViewVersions`; a version's `DownloadCount` sums its rows and its `LastDownloadedAt` is the latest of them (`versionGroup.lastDownload`,
@@ -128,7 +140,7 @@ which npm's `npm.npmrc.configure` template turns into `replace-registry-host=alw
 | Unit | [view_test.go](../../internal/formats/npm/view_test.go), [view_test.go](../../internal/formathost/view_test.go), [ui_test.go](../../internal/config/ui_test.go) | npm's metadata members, the bridge, the configuration |
 | Unit | [bastion_setup_test.go](../../internal/api/v1/bastion_setup_test.go), [setup_test.go](../../internal/formats/npm/setup_test.go) | `TestR_BAS_007_…`: the Bastion's address and no publish snippet, the switch for npm only, the `404`, `409` and `503` answers, a lookup that fails |
 | Integration | [test/integration/bastionsetup](../../test/integration/bastionsetup) | `TestR_BAS_007_ClientSetupForABastionThroughTheStack`: registrations and contacts in PostgreSQL, a replica with `server.additional_base_urls`, the four answers |
-| Integration | [test/integration/packages](../../test/integration/packages) | The in-process harness with npm publishes as data: list, filters, every sort walked by cursor, visibility for six callers, a repository with exclude patterns, versions, details, tags, README, setup, an endpoint with rules |
+| Integration | [test/integration/packages](../../test/integration/packages) | The in-process harness with npm publishes as data: list, filters, every sort walked by cursor, visibility for six callers, a repository with exclude patterns, versions, details, tags, README, setup, an endpoint with rules; `TestR_API_010_APageOfVersionsReadsNoVersionPastItsLimit` bounds the rows a page reads in both orders and the latest version's rows by the plan, and the list's subplans, over 2,000 version rows written by SQL (`env.versions` writes them with the format's key, `testenv.VersionKey`) |
 | Web | `server-address.spec.ts`, `package-readme.spec.ts` | The base URL from the formats answer; the heading corpus |
 
 Run the area with `make test-integration` or, for this one area, the invocation of [build-and-test.md](build-and-test.md) with `./test/integration/packages/...`.
@@ -144,12 +156,43 @@ the clients in the UI table (`web/src/app/features/setup/clients.ts`) under the 
 **A field is added to a package or version answer.** Edit the schema in `api/openapi.yaml` (both copies: `make generate` refreshes `internal/api/v1/openapi.yaml`
 and the generated server), then `view.Package`/`VersionDetail`, the statement, the handler mapping, `npm run generate:api`, the UI fake and the specs.
 
+## A package with 100,000 versions (H-1683), measured
+
+Measured on 2026-11-24, a measurement and not a test (it is not in the repository): the integration stack (instance 1), one replica, the
+installation of [test/integration/packages](../../test/integration/packages) after `seed`, and 100,000 more versions of `left-pad` in `npm-local`
+(`0.<g/1000>.<g%1000>`, every tenth `-rc.1`, one second apart) written by SQL with the format's key, then `ANALYZE`; "two holders" is the same
+after a publish of `left-pad@1.0.0` into `npm-team`. As `erin`, who reads both repositories; the median of three requests. The machine has 20 cores
+and runs other builders beside it; the load average stands beside each set. The numbers of a remote image with 100,000 tags are in
+[oci.md](oci.md#the-listing-of-a-remote-with-very-many-tags-h-829-measured).
+
+| Request (`GET`) | Before (03:05, load 19 to 22) | After Q-API-429 (03:52, load 11 to 16) |
+|---|---|---|
+| `/api/v1/packages?limit=50&repository=it/npm-local` (the package list) | 663 ms | 190 ms |
+| `/api/v1/packages?limit=50&sort=-updatedAt` | 630 ms | 189 ms |
+| `/api/v1/packages/{id}` (the package) | 594 ms | 152 ms |
+| `/api/v1/packages/{id}/versions?limit=50` (first page, one holder) | 27 ms | 23 ms |
+| the same with the cursor of the 50,000th version | 24 ms | 24 ms |
+| `…&sort=version`, `…&sort=-version` | 404 ms, 387 ms | 29 ms, 27 ms |
+| `…&sort=version`, two holders | 376 ms | 27 ms |
+| `…&limit=50`, two holders (order of publication, `sortedPage`) | 157 ms | 211 ms (unchanged code; load) |
+| `/api/v1/packages/{id}/versions/0.50.1` (one version) | 24 ms | 23 ms |
+
+The plans of `PackageViewList` (`EXPLAIN (ANALYZE, BUFFERS)` with JIT off, as the service runs it): before, 441 ms, of which about 200 ms were the
+downloads' subplan once per version of the scope (100,004 loops) and 146 ms the sort for `count(DISTINCT version)` (an external merge of 8.8 MB);
+after, 236 ms, the sort for the count still the most of it, and the downloads a join that reads the statistics of the page's packages. The
+package list's `PackageViewVersionNames` (61 ms and every version to the service) is replaced by `PackageViewLatest`, which reads at most two
+version rows of a package (the bound `TestR_API_010_APageOfVersionsReadsNoVersionPastItsLimit` holds; 0.1 ms for a remote image's latest tag).
+The version list in the order of the versions reads 51 rows a page (`PackageViewVersionKeyDesc`) instead of every name and a sort in the service.
+What is left is H-1683: the count over every visible version of the scope, and a package several repositories hold in the order of publication.
+
 ## What is not built
 
 - The README cache table of R-API-029 (Q-API-167, [H-298](../security/api-edge.md#h-298--a-readme-is-rendered-on-every-request-without-a-tag-and-a-rendering-that-runs-over-its-time-limit-is-not-stopped)).
 - Images of files embedded in a package (P1, R-ARCH-029).
 - CI snippets: no format supplies one; the npm templates are configure, install and publish, and the API renders the publish template only
   for a caller who may publish.
+- A count of a package's versions kept by the commit and the fill: the list counts every visible version of the scope, and a package several repositories
+  hold is listed in the order of publication by reading every visible version's name ([H-1683](../spec/api-and-ui.md#h-1683--the-version-list-of-a-package-several-repositories-hold-in-the-order-of-publication-reads-every-version-and-the-package-list-counts-every-version)).
 - A decision per row inside the statement: the rows of a narrowed repository are decided in Go ([H-299](../security/permissions.md#h-299--the-cost-of-a-package-list-for-a-caller-with-row-level-grants-depends-on-versions-the-caller-cannot-read)).
 - Verified in the integration area: the visibility of six callers, the sorts, filters, cursors, tags and setup answers of npm. Not verified: another format, a virtual
   repository with remote members holding cached versions, and a list above the bound of 200 000 rows decided in Go (a unit test checks the refusal's building blocks only).

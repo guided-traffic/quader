@@ -8,6 +8,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/deb/rows"
 	"github.com/guided-traffic/quader/internal/formats/deb/version"
+	"github.com/guided-traffic/quader/internal/formats/versionkey"
 )
 
 // viewAdapter is the format's part of the package screens (R-DEB-030): the versions in dpkg order and, from the rows of the stored
@@ -30,6 +31,11 @@ func (viewAdapter) Compare(a, b string) int {
 		return 1
 	}
 	return version.Compare(a, b)
+}
+
+// SortKey is the stored key of Compare's order (Q-API-429): the dpkg key of the version package, then the string itself.
+func (viewAdapter) SortKey(v string) []byte {
+	return versionkey.Of(version.SortKey(v), ValidVersion(v), v)
 }
 
 func viewStoreOf(ports formats.DataPorts) (Store, error) { return storeOf(ports.FormatData(ID)) }

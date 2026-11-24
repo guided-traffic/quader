@@ -4,12 +4,14 @@ package postgres
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/cluster"
 	"github.com/guided-traffic/quader/internal/config"
+	"github.com/guided-traffic/quader/internal/formats/npm"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
@@ -91,8 +93,10 @@ func TestR_OPS_004_OverviewStatements(t *testing.T) {
 		"INSERT INTO quader.repositories (key, format, class, project_id) VALUES ('ov-local', 'npm', 'local', (SELECT id FROM quader.project WHERE key = 'it')), ('ov-remote', 'npm', 'remote', (SELECT id FROM quader.project WHERE key = 'it')), ('ov-virtual', 'npm', 'virtual', (SELECT id FROM quader.project WHERE key = 'it'))",
 		"UPDATE quader.repositories SET lifecycle = 'deleting' WHERE key = 'ov-virtual'",
 		"INSERT INTO quader.packages (repo_id, name, display_name) SELECT id, 'left-pad', 'left-pad' FROM quader.repositories WHERE key = 'ov-local'",
-		"INSERT INTO quader.package_versions (package_id, version, display_version) SELECT id, '1.0.0', '1.0.0' FROM quader.packages WHERE name = 'left-pad'",
-		"INSERT INTO quader.package_versions (package_id, version, display_version, trashed_at) SELECT id, '0.9.0', '0.9.0', now() FROM quader.packages WHERE name = 'left-pad'",
+		"INSERT INTO quader.package_versions (package_id, version, display_version, sort_key, prerelease) SELECT id, '1.0.0', '1.0.0', " +
+			keyLiteral(npm.New().View().SortKey("1.0.0")) + ", false FROM quader.packages WHERE name = 'left-pad'",
+		"INSERT INTO quader.package_versions (package_id, version, display_version, trashed_at, sort_key, prerelease) SELECT id, '0.9.0', '0.9.0', now(), " +
+			keyLiteral(npm.New().View().SortKey("0.9.0")) + ", false FROM quader.packages WHERE name = 'left-pad'",
 		"INSERT INTO quader.principal (id, kind, name) VALUES ('0c000000-0000-0000-0000-000000000001', 'user', 'ov-alice')",
 		"INSERT INTO quader.principal (id, kind, name, status) VALUES ('0c000000-0000-0000-0000-000000000002', 'user', 'ov-bob', 'disabled')",
 		"INSERT INTO quader.principal (id, kind, name) VALUES ('0c000000-0000-0000-0000-000000000003', 'group', 'ov-group')",
@@ -198,3 +202,6 @@ func TestR_OPS_003_ReplicaRuntimeColumn(t *testing.T) {
 		t.Errorf("database check: %+v", got.Checks["database"])
 	}
 }
+
+// keyLiteral is a stored sort key as an SQL literal (Q-API-429).
+func keyLiteral(k []byte) string { return fmt.Sprintf(`'\x%x'::bytea`, k) }

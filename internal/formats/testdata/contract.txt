@@ -1,4 +1,4 @@
-contract version 11
+contract version 12
 formats.Action: alias authz.Action
 formats.AttestationItem: field Blob [32]byte
 formats.AttestationItem: field Path string
@@ -632,6 +632,7 @@ formats.VersionView: method Version(string) bool
 formats.ViewAdapter: method Compare(string, string) int
 formats.ViewAdapter: method Describe(context.Context, DataPorts, []ViewVersion, ViewFields, func(string) bool) (map[VersionID]ViewData, error)
 formats.ViewAdapter: method Find(context.Context, DataPorts, ViewFind, int) ([]VersionID, error)
+formats.ViewAdapter: method SortKey(string) []byte
 formats.ViewAdapter: method Stored(context.Context, DataPorts, StoredQuery) (Stored, error)
 formats.ViewAdapter: method Withheld(context.Context, DataPorts, []string) ([]VersionID, error)
 formats.ViewData: field Description string
@@ -731,7 +732,7 @@ formats.ActionRead: value = authz.Read
 formats.Admin: value = (repeated, place 5 of its group)
 formats.Computed: value = (repeated, place 2 of its group)
 formats.Content: value PathKind = iota + 1 (place 0 of its group)
-formats.ContractVersion: value = 11
+formats.ContractVersion: value = 12
 formats.Current: value Currency = iota + 1 (place 0 of its group)
 formats.Delete: value = (repeated, place 4 of its group)
 formats.Download: value RouteKind = iota + 1 (place 0 of its group)

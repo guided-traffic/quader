@@ -12,6 +12,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/backup/tables"
 	"github.com/guided-traffic/quader/internal/cluster"
+	"github.com/guided-traffic/quader/internal/formats/npm"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 )
@@ -414,7 +415,8 @@ func TestM2Migrations(t *testing.T) {
 		repo := f.repo("npm-versions", "npm", "local")
 		mustExec(t, admin, "INSERT INTO quader.packages (repo_id, name, display_name) VALUES ($1, 'v', 'v')", repo)
 		pid := scalar[int64](t, admin, "SELECT id FROM quader.packages WHERE repo_id = $1", repo)
-		mustExec(t, admin, "INSERT INTO quader.package_versions (package_id, version, display_version) VALUES ($1, '1.0.0', '1.0.0')", pid)
+		mustExec(t, admin, "INSERT INTO quader.package_versions (package_id, version, display_version, sort_key, prerelease) VALUES ($1, '1.0.0', '1.0.0', $2, false)",
+			pid, npm.New().View().SortKey("1.0.0"))
 		vid := scalar[int64](t, admin, "SELECT id FROM quader.package_versions WHERE package_id = $1", pid)
 		const ins = `INSERT INTO quader.npm_versions (version_id, manifest, integrity, shasum, deprecated, file_count, unpacked_size, has_install_script, has_shrinkwrap, readme, publish_tag, published_at)
 			VALUES ($1, '{}', 'sha512-AAAA', $2, $3, $4, $5, false, false, $6, 'latest', now())`
@@ -435,7 +437,8 @@ func TestM2Migrations(t *testing.T) {
 		repo := f.repo("npm-tomb", "npm", "local")
 		mustExec(t, admin, "INSERT INTO quader.packages (repo_id, name, display_name) VALUES ($1, 'gone', 'gone')", repo)
 		pid := scalar[int64](t, admin, "SELECT id FROM quader.packages WHERE repo_id = $1", repo)
-		mustExec(t, admin, "INSERT INTO quader.package_versions (package_id, version, display_version) VALUES ($1, '1.0.0', '1.0.0')", pid)
+		mustExec(t, admin, "INSERT INTO quader.package_versions (package_id, version, display_version, sort_key, prerelease) VALUES ($1, '1.0.0', '1.0.0', $2, false)",
+			pid, npm.New().View().SortKey("1.0.0"))
 		const tomb = `INSERT INTO quader.npm_tombstones (repo_id, name, version, integrity, source, unpublished_at, unpublished_by)
 			VALUES ($1, 'gone', '1.0.0', 'sha512-AAAA', $2, now(), $3)`
 		mustExec(t, admin, tomb, repo, "unpublish", m2Alice)

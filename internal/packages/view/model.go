@@ -12,6 +12,9 @@ import (
 type Adapter interface {
 	// Compare orders two normalized versions by the format's precedence.
 	Compare(a, b string) int
+	// SortKey is the format's stored sort key of a version (formats.ViewAdapter.SortKey, Q-API-429): the cursor of the order of the
+	// versions is a version, and its key is where the next page starts.
+	SortKey(version string) []byte
 	// Prerelease reports whether a normalized version is a pre-release.
 	Prerelease(version string) bool
 	// Describe reads what the screens show of versions the caller may read. visible

@@ -138,6 +138,7 @@ func (b sizedBridge) Sizes(ctx context.Context, vs []view.Version) (map[int64]vi
 }
 
 func (b viewBridge) Compare(x, y string) int  { return b.a.Compare(x, y) }
+func (b viewBridge) SortKey(v string) []byte  { return b.a.SortKey(v) }
 func (b viewBridge) Prerelease(v string) bool { return b.pre(v) }
 
 func (b viewBridge) Describe(ctx context.Context, vs []view.Version, want view.Fields, visible func(string) bool) (map[int64]view.Data, error) {

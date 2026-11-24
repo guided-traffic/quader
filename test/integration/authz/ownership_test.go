@@ -22,6 +22,7 @@ import (
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/repository"
+	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // ownWorld is the publishing side of the team example on two in-process replicas
@@ -407,7 +408,8 @@ func TestR_AUTHZ_018_GroupOwner(t *testing.T) {
 // import before ownership existed would have.
 func (w *ownWorld) importVersion(repo, name, version string) {
 	pkg := w.e.text("INSERT INTO packages (repo_id, name, display_name) SELECT id, $2, $2 FROM repositories WHERE key = $1 RETURNING id::text", repo, name)
-	w.e.exec("INSERT INTO package_versions (package_id, version, display_version) VALUES ($1::bigint, $2, $2)", pkg, version)
+	key, pre := testenv.VersionKey(w.e.t, w.e.text("SELECT format FROM repositories WHERE key = $1", repo), version)
+	w.e.exec("INSERT INTO package_versions (package_id, version, display_version, sort_key, prerelease) VALUES ($1::bigint, $2, $2, $3, $4)", pkg, version, key, pre)
 }
 
 // TestR_AUTHZ_018_UnclaimedNameWithVersionsNeedsManage is rule 3: nobody takes over

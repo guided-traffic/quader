@@ -92,7 +92,8 @@ func TestR_API_029_TheDataPortReadsTheViewFromPostgreSQL(t *testing.T) {
 	version := func(repo int64, pkg, v, metadata string, published time.Time, listed, trashed bool, lead int64) int64 {
 		t.Helper()
 		pkgID := e.st.Number(`INSERT INTO packages (repo_id, name, display_name) VALUES ($1, $2, $2) ON CONFLICT (repo_id, name) DO UPDATE SET name = EXCLUDED.name RETURNING id`, repo, pkg)
-		id := e.st.Number(`INSERT INTO package_versions (package_id, version, display_version, trashed_at, lead_item_id) VALUES ($1, $2, $2, CASE WHEN $3::boolean THEN now() END, NULLIF($4::bigint, 0)) RETURNING id`, pkgID, v, trashed, lead)
+		key, pre := testenv.VersionKey(t, "nuget", v)
+		id := e.st.Number(`INSERT INTO package_versions (package_id, version, display_version, trashed_at, lead_item_id, sort_key, prerelease) VALUES ($1, $2, $2, CASE WHEN $3::boolean THEN now() END, NULLIF($4::bigint, 0), $5, $6) RETURNING id`, pkgID, v, trashed, lead, key, pre)
 		e.st.Exec(`INSERT INTO nuget_version (version_id, repository_id, lower_id, declared_id, original_version, sort_key, is_prerelease, is_semver2, listed, published_at, metadata, search_doc, origin)
 		           VALUES ($1, $2, $3, 'Acme.Widgets', $4, '\x01', false, false, $5, $6, $7::jsonb, to_tsvector('simple', $3), 'push')`,
 			id, repo, pkg, v, listed, published, metadata)

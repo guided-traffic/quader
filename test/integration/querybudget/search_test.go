@@ -24,11 +24,12 @@ func TestR_API_064_ASuggestionCostsAFixedNumberOfStatements(t *testing.T) {
 	ada := st.User("ada", "budget-leads")
 	st.Bind("admin", ada)
 	tok := st.Token(ada, scope.Scope{Inherit: true, Admin: true})
+	key, _ := testenv.VersionKey(t, "npm", "1.0.0")
 	seed := func(from, to int) {
 		st.Exec(`INSERT INTO packages (repo_id, name, display_name)
 		         SELECT r.id, 'budget-' || n, 'budget-' || n FROM repositories r, generate_series($1::int, $2::int) n WHERE r.key = 'npm-local'`, from, to)
-		st.Exec(`INSERT INTO package_versions (package_id, version, display_version)
-		         SELECT p.id, '1.0.0', '1.0.0' FROM packages p WHERE NOT EXISTS (SELECT 1 FROM package_versions v WHERE v.package_id = p.id)`)
+		st.Exec(`INSERT INTO package_versions (package_id, version, display_version, sort_key, prerelease)
+		         SELECT p.id, '1.0.0', '1.0.0', $1, false FROM packages p WHERE NOT EXISTS (SELECT 1 FROM package_versions v WHERE v.package_id = p.id)`, key)
 	}
 	seed(1, 10)
 	rt := testenv.NewRequestTransactions()

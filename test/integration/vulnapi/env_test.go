@@ -178,8 +178,9 @@ func (e *env) addAdvisory(ecosystem, id, summary, severity string, aliases ...st
 func (e *env) addVersion(repo, pkg, version string) {
 	e.t.Helper()
 	e.st.Exec(`INSERT INTO packages (repo_id, name, display_name) SELECT id, $2, $2 FROM repositories WHERE key = $1 ON CONFLICT (repo_id, name) DO NOTHING`, repo, pkg)
-	e.st.Exec(`INSERT INTO package_versions (package_id, version, display_version)
-		SELECT p.id, $3, $3 FROM packages p JOIN repositories r ON r.id = p.repo_id WHERE r.key = $1 AND p.name = $2`, repo, pkg, version)
+	key, pre := testenv.VersionKey(e.t, e.st.Text(`SELECT format FROM repositories WHERE key = $1`, repo), version)
+	e.st.Exec(`INSERT INTO package_versions (package_id, version, display_version, sort_key, prerelease)
+		SELECT p.id, $3, $3, $4, $5 FROM packages p JOIN repositories r ON r.id = p.repo_id WHERE r.key = $1 AND p.name = $2`, repo, pkg, version, key, pre)
 }
 
 // get sends an authenticated GET.

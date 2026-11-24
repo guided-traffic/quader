@@ -238,10 +238,10 @@ func (q *Queries) InsertPackage(ctx context.Context, arg InsertPackageParams) (i
 }
 
 const insertPackageVersion = `-- name: InsertPackageVersion :many
-INSERT INTO package_versions (package_id, version, display_version, lead_item_id, attributes, created_by)
+INSERT INTO package_versions (package_id, version, display_version, lead_item_id, attributes, created_by, sort_key, prerelease)
 VALUES ($1::bigint, $2::text, $3::text,
         NULLIF($4::bigint, 0), $5::text::jsonb,
-        NULLIF($6::text, '')::uuid)
+        NULLIF($6::text, '')::uuid, $7::bytea, $8::boolean)
 ON CONFLICT (package_id, version) WHERE trashed_at IS NULL DO NOTHING
 RETURNING id
 `
@@ -253,9 +253,12 @@ type InsertPackageVersionParams struct {
 	LeadItemID     int64
 	Attributes     string
 	CreatedBy      string
+	SortKey        []byte
+	Prerelease     bool
 }
 
-// A live version of the same name is left as it is and nothing comes back.
+// A live version of the same name is left as it is and nothing comes back. sort_key and prerelease are the format's (R-API-029,
+// Q-API-429).
 func (q *Queries) InsertPackageVersion(ctx context.Context, arg InsertPackageVersionParams) ([]int64, error) {
 	rows, err := q.db.Query(ctx, insertPackageVersion,
 		arg.PackageID,
@@ -264,6 +267,8 @@ func (q *Queries) InsertPackageVersion(ctx context.Context, arg InsertPackageVer
 		arg.LeadItemID,
 		arg.Attributes,
 		arg.CreatedBy,
+		arg.SortKey,
+		arg.Prerelease,
 	)
 	if err != nil {
 		return nil, err

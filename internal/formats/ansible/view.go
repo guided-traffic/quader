@@ -10,6 +10,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/ansible/rows"
 	"github.com/guided-traffic/quader/internal/formats/ansible/version"
+	"github.com/guided-traffic/quader/internal/formats/versionkey"
 )
 
 // viewAdapter is the format's part of the package screens (R-ANS-026, R-API-029): the description, the tags, the licenses, the README and
@@ -45,6 +46,16 @@ func (viewAdapter) Compare(a, b string) int {
 		return c
 	}
 	return strings.Compare(a, b)
+}
+
+// SortKey is the stored key of Compare's order (Q-API-429): the precedence key of the version package, build metadata not part of it,
+// then the string itself.
+func (viewAdapter) SortKey(v string) []byte {
+	sv, err := version.Parse(v)
+	if err != nil {
+		return versionkey.Of(nil, false, v)
+	}
+	return versionkey.Of(version.SortKey(sv), true, v)
 }
 
 // Stored lists what a local repository serves of the collection, newest first by precedence. A remote repository's cache is listed by

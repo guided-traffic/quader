@@ -194,7 +194,8 @@ func TestR_EP_018_FormatsOnAnEndpointWithRules(t *testing.T) {
 		e.stack.Exec(`INSERT INTO packages (repo_id, name, display_name) VALUES (` + repo + `, '@acme/sdk', '@acme/sdk')`)
 		pkg := `(SELECT id FROM packages WHERE repo_id = ` + repo + ` AND name = '@acme/sdk')`
 		for _, v := range []string{"1.9.0", "2.0.0", "2.0.1", "2.1.0-rc.1", "2.1.0", "2.2.0", "3.0.0"} {
-			e.stack.Exec(`INSERT INTO package_versions (package_id, version, display_version) VALUES (`+pkg+`, $1, $1)`, v)
+			key, pre := testenv.VersionKey(t, "npm", v)
+			e.stack.Exec(`INSERT INTO package_versions (package_id, version, display_version, sort_key, prerelease) VALUES (`+pkg+`, $1, $1, $2, $3)`, v, key, pre)
 		}
 		e.stack.Exec(`UPDATE package_versions SET trashed_at = now() WHERE version = '2.2.0' AND package_id = ` + pkg)
 		e.stack.Exec(`INSERT INTO npm_tombstones (repo_id, name, version, integrity, source, unpublished_at, unpublished_by)
@@ -274,7 +275,8 @@ func TestR_EP_018_FormatsOnAnEndpointWithRules(t *testing.T) {
 		const repo = `(SELECT id FROM repositories WHERE key = 'npm-customers')`
 		e.stack.Exec(`INSERT INTO packages (repo_id, name, display_name) VALUES (` + repo + `, '@platform/sdk', '@platform/sdk')`)
 		pkg := `(SELECT id FROM packages WHERE repo_id = ` + repo + ` AND name = '@platform/sdk')`
-		e.stack.Exec(`INSERT INTO package_versions (package_id, version, display_version) VALUES (` + pkg + `, '1.0.0', '1.0.0')`)
+		key, _ := testenv.VersionKey(t, "npm", "1.0.0")
+		e.stack.Exec(`INSERT INTO package_versions (package_id, version, display_version, sort_key, prerelease) VALUES (`+pkg+`, '1.0.0', '1.0.0', $1, false)`, key)
 		e.stack.Exec(`INSERT INTO npm_packages (package_id, repo_id, name_fold, dist_tags) VALUES (` + pkg + `, ` + repo + `, '@platform/sdk', '{"latest":"1.0.0"}')`)
 		// @acme/sdk, seeded above with versions and tags, is a package the caller may not read.
 		check := func(pkgName string) (versions, tags int, body string) {

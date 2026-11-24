@@ -11,6 +11,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/formattest"
 	"github.com/guided-traffic/quader/internal/formats/formattest/testformat"
+	"github.com/guided-traffic/quader/internal/formats/versionkey"
 )
 
 // memView is a view adapter over a list the fixture's Seed fills: versions are ordered by a number
@@ -54,6 +55,18 @@ func (m *memView) Compare(a, b string) int {
 		return 1
 	}
 	return num(a) - num(b)
+}
+
+// SortKey is the key of Compare's order: the number of the version, or a string that is no version first.
+func (m *memView) SortKey(v string) []byte {
+	switch {
+	case m.flags["key-one"]:
+		return []byte{1}
+	case m.flags["key-reversed"]:
+		return versionkey.Of([]byte{byte(255 - num(v))}, true, v) //nolint:gosec // the sample's numbers are below 256
+	}
+	_, err := strconv.Atoi(strings.ReplaceAll(v, ".", ""))
+	return versionkey.Of([]byte{byte(num(v))}, err == nil, v) //nolint:gosec // the sample's numbers are below 256
 }
 
 func (m *memView) Describe(context.Context, formats.DataPorts, []formats.ViewVersion, formats.ViewFields, func(string) bool) (map[formats.VersionID]formats.ViewData, error) {
@@ -159,6 +172,8 @@ func TestR_ARCH_010_Check11ViewAdapter(t *testing.T) {
 		{"a Compare that orders nothing", "all-equal", "the order is total"},
 		{"a Compare that is not transitive", "cyclic", "not transitive"},
 		{"a Compare that sorts a string that is no version last", "junk-last", "sorts before every version"},
+		{"a SortKey that orders the versions against Compare", "key-reversed", "the sign of Compare"},
+		{"a SortKey that gives two versions one key", "key-one", "one key"},
 		{"a Stored that sorts by version and not by arrival", "by-version", "newest arrival first"},
 		{"a Stored that ignores its limit", "ignores-limit", "limit of 2"},
 		{"a Stored that returns tags nobody asked for", "tags-unasked", "did not ask for them"},

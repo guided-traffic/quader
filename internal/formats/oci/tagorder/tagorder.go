@@ -9,7 +9,11 @@
 // and dots only. Every other tag is ordered by its bytes. Two different tags never compare equal.
 package tagorder
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/guided-traffic/quader/internal/formats/versionkey"
+)
 
 // Version is a tag read as a version.
 type Version struct {
@@ -91,6 +95,29 @@ func Compare(a, b string) int {
 		return c
 	}
 	return strings.Compare(a, b)
+}
+
+// Key is the encoding of a tag's place in the order of Compare, for the stored sort key of internal/formats/versionkey (Q-API-429): 0x00
+// for a tag that is no version; for a version 0x01, each number up to the last that is not zero as 0x01 and its value, 0x00, the rank
+// of the suffix (0x00 a pre-release, 0x01 a variant, 0x02 none) and the suffix's bytes. A number that is missing counts as zero, as in
+// Compare, so the zeros at the end are left out. The caller appends the tag itself, which breaks the ties Compare breaks by the bytes.
+// PostgreSQL derives the same bytes for a remote repository's tags (oci_tag_sort_key, migration 00116); a change here changes it there.
+func Key(tag string) []byte {
+	v, ok := Parse(tag)
+	if !ok {
+		return []byte{0x00}
+	}
+	nums := v.Numbers
+	for len(nums) > 0 && nums[len(nums)-1] == "" {
+		nums = nums[:len(nums)-1]
+	}
+	k := make([]byte, 0, 8+len(tag))
+	k = append(k, 0x01)
+	for _, n := range nums {
+		k = versionkey.Number(append(k, 0x01), n)
+	}
+	k = append(k, 0x00, byte(v.rank())) //nolint:gosec // 0, 1 or 2
+	return versionkey.Text(k, v.Suffix)
 }
 
 func compareNumbers(a, b []string) int {

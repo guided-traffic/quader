@@ -72,6 +72,11 @@ type NewVersion struct {
 	LeadItem       int64
 	Attributes     json.RawMessage
 	CreatedBy      string
+	// SortKey is the key of the format's order of versions (formats.ViewAdapter.SortKey, R-API-029, Q-API-429) and Prerelease the
+	// format's answer whether the version is a pre-release: the version list in the order of the versions and the latest version
+	// of a package are read by them. The host sets both; an empty key is refused.
+	SortKey    []byte
+	Prerelease bool
 }
 
 // Store reads the package rows. It asks PostgreSQL every time: the rows are the

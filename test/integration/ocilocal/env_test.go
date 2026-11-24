@@ -167,9 +167,10 @@ func (e *env) tag(repo, name, tag, body string) {
 	e.put(repo, name+"/_tags/"+tag, body, manifest)
 	id := e.repoID(repo)
 	e.st.Exec(`INSERT INTO packages (repo_id, name, display_name) VALUES ($1, $2, $2) ON CONFLICT DO NOTHING`, id, name)
-	e.st.Exec(`INSERT INTO package_versions (package_id, version, display_version, lead_item_id)
-		SELECT p.id, $3, $3, i.id FROM packages p, items i WHERE p.repo_id = $1 AND p.name = $2 AND i.repo_id = $1 AND i.path = $4`,
-		id, name, tag, name+"/_tags/"+tag)
+	key, _ := testenv.VersionKey(e.t, "oci", tag)
+	e.st.Exec(`INSERT INTO package_versions (package_id, version, display_version, lead_item_id, sort_key, prerelease)
+		SELECT p.id, $3, $3, i.id, $5, false FROM packages p, items i WHERE p.repo_id = $1 AND p.name = $2 AND i.repo_id = $1 AND i.path = $4`,
+		id, name, tag, name+"/_tags/"+tag, key)
 	e.st.Exec(`UPDATE items SET version_id = pv.id FROM package_versions pv, packages p
 		WHERE pv.package_id = p.id AND p.repo_id = $1 AND p.name = $2 AND pv.version = $3 AND items.repo_id = $1 AND items.path = $4`,
 		id, name, tag, name+"/_tags/"+tag)

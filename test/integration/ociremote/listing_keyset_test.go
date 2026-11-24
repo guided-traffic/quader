@@ -3,15 +3,18 @@
 package ociremote
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/guided-traffic/quader/test/integration/testenv"
 )
 
 // TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit: the tags of an image in a remote OCI repository, which are cache entries and
-// no version rows (R-OCI-036), are listed a page at a time by a keyset query on the entry's stored name and tag (Q-OCI-267, H-829): the
-// page's statement reads no tag entry past its limit, on the first page, on one deep in the list and oldest first. 2,000 tiny tag entries
-// of one pulled image are written by SQL, listed as a background download lists them; about 2 s on the stack.
+// no version rows (R-OCI-036), are listed a page at a time by a keyset query on the entry's stored name and tag (Q-OCI-267, H-829) and,
+// in the order of the tags, on the entry's sort key (Q-API-429): each page's statement reads no tag entry past its limit, on the first
+// page, on one deep in the list and oldest or lowest first, and the image's latest tag reads one entry. The sort key PostgreSQL derives
+// from a tag (oci_tag_sort_key, migration 00116) is the format's, byte for byte, over a table of tags. 2,000 tiny tag entries of one
+// pulled image are written by SQL, listed as a background download lists them; about 2 s on the stack.
 func TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit(t *testing.T) {
 	e := newEnv(t, options{})
 	rep := e.start(1)[0]
@@ -41,5 +44,47 @@ func TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit(t *testing.T) {
 		if read := e.st.RowsRead(q)["remote_cache_entries"]; read > 51 {
 			t.Errorf("%s read %v tag entries for 51", name, read)
 		}
+	}
+
+	keyArgs := map[string]string{
+		"repo_id": repo, "name": "'library/alpine'", "after_key": `'\x02'::bytea`, "withheld": "'{}'", "whole": "true", "allowed": "'{}'",
+		"max_rows": "51",
+	}
+	kFirst := testenv.QueryText(t, "package_view.sql", "PackageViewTagKeyDesc", keyArgs)
+	midKey, _ := e.st.VersionKey("oci", "m1000")
+	keyArgs["after_key"] = fmt.Sprintf(`'\x%x'::bytea`, midKey)
+	kDeep := testenv.QueryText(t, "package_view.sql", "PackageViewTagKeyDesc", keyArgs)
+	keyArgs["after_key"] = `''::bytea`
+	kAsc := testenv.QueryText(t, "package_view.sql", "PackageViewTagKeyAsc", keyArgs)
+	for name, q := range map[string]string{"the first page by tag": kFirst, "a page by tag deep in the list": kDeep, "the first page by tag, lowest first": kAsc} {
+		if n := e.st.Text("SELECT count(*)::text FROM (" + q + ") x"); n != "51" {
+			t.Errorf("%s holds %s tags, want 51", name, n)
+		}
+		if read := e.st.RowsRead(q)["remote_cache_entries"]; read > 51 {
+			t.Errorf("%s read %v tag entries for 51", name, read)
+		}
+	}
+	latest := testenv.QueryText(t, "package_view.sql", "PackageViewLatest", map[string]string{
+		"withheld": "'{}'", "whole": "'{" + repo + "}'", "rows": "'{}'", "packages": "ARRAY['oci' || chr(31) || 'library/alpine']",
+		"scope": "'{" + repo + "}'", "has_repos": "false", "repos": "'{}'",
+	})
+	if got := e.st.Text("SELECT string_agg(version, ',') FROM (" + latest + ") x"); got != "3.19" {
+		t.Errorf("the latest tag: %q, want 3.19", got)
+	}
+	if read := e.st.RowsRead(latest)["remote_cache_entries"]; read > 1 {
+		t.Errorf("the latest tag read %v tag entries for one", read)
+	}
+
+	for _, tag := range []string{
+		"3.19", "latest", "v1", "1.0", "1.0.0", "01.2", "1.0-rc1", "1.0-RC.2", "1.0-alpine", "1.0-rc1-x", "1-a",
+		"99999999999999999999999999", "_x", "Latest", "1.2.3.4.5", "v2.9.0-beta.1", "1.0-dev12", "1.0-preview",
+	} {
+		want, _ := e.st.VersionKey("oci", tag)
+		if got := e.st.Text("SELECT encode(oci_tag_sort_key($1), 'hex')", tag); got != fmt.Sprintf("%x", want) {
+			t.Errorf("the sort key of %q: PostgreSQL %s, the format %x", tag, got, want)
+		}
+	}
+	if n := e.st.Text(`SELECT count(*)::text FROM remote_cache_entries WHERE tag IS NOT NULL AND tag_sort_key IS DISTINCT FROM oci_tag_sort_key(tag)`); n != "0" {
+		t.Errorf("%s tag entries do not store the key of their tag", n)
 	}
 }

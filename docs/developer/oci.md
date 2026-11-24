@@ -475,8 +475,29 @@ using remote_cache_entries_tag_time` with `Index Cond: ((repo_id = …) AND (tag
 a page of 64, 1.1 ms; `PackageViewVersions` for the page's versions 4.6 ms; `OCITagSizes` 2.6 ms; no statement of a tag page above 5 ms.
 The package list's `PackageViewList` (0.74 s) and `PackageViewVersionNames` (0.42 s) still read every tag row of the image
 ([H-829](../spec/formats/oci.md#h-829--the-package-list-of-a-remote-reads-every-tag-entry-of-an-image-to-count-it), [api-and-ui.md](../spec/api-and-ui.md)
-H-1683). Not measured: tags that point at 100,000 different manifests (here every tag names one manifest), and a local package with as many
-versions, whose page `TestR_API_010_APageOfVersionsReadsNoVersionPastItsLimit` holds to its limit with 2,000 versions.
+H-1683). Not measured that day: tags that point at 100,000 different manifests (here every tag names one manifest), and a local package with as
+many versions; both were measured on 2026-11-24 (below, and [packages.md](packages.md#a-package-with-100000-versions-h-1683-measured)).
+
+**100,000 tags that point at 100,000 different manifests** (2026-11-24, the same stack and remote after the pull of `library/alpine:3.19`):
+100,000 rows of `oci_manifests` (the pulled manifest's row with the digest `sha256('m<g>')`), as many live `blobs` rows and 100,000 tag entries
+`library/alpine/_tags/0.<g/1000>.<g%1000>` that name them (`background_sha256` set, fetched `g` seconds before the pulled tag), inserted in 5 to 7 s,
+then `ANALYZE`; the median of three requests as the reader.
+
+| Request (as the reader, `GET`) | Before (03:10, load 21) | After Q-API-429 (03:53, load 11 to 16) |
+|---|---|---|
+| `/api/v1/packages?limit=50&repository=it/oci-anon` (the package list) | 1.24 s | 414 ms |
+| `/api/v1/packages/{id}` (the image) | 1.25 s | 412 ms |
+| `/api/v1/packages/{id}/versions?limit=50` (the first page of the tags) | 21 ms | 32 ms |
+| the same with `include=digest` | 50 ms | 32 ms |
+| `…&sort=-version` (the order of the tags) | 581 ms | 23 ms |
+| `/api/v1/packages/{id}/versions/0.50.1` (one tag) | 26 ms | 24 ms |
+
+The difference to the set of one manifest is the join of the view `oci_remote_tags` with `oci_manifests`: 100,001 manifest rows read and a probe of
+the cache entries per manifest. After [Q-API-429](../spec/api-and-ui.md#q-api-429--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row)
+the latest tag is `PackageViewLatest`, the first visible entry of `remote_cache_entries_tag_key` (0.1 ms, one entry), the order of the tags is
+`PackageViewTagKeyDesc` (51 entries a page), and the downloads of the page's images come from the files that were downloaded, not from a second read
+of the tags. `PackageViewList` took 0.49 s under `EXPLAIN ANALYZE`: 0.27 s reading the 100,001 tag entries with their listing rules, 0.18 s sorting
+them for the count (an external merge of 6.5 MB), 0.2 ms the downloads. The count is what is left ([H-829](../spec/formats/oci.md#h-829--the-package-list-of-a-remote-reads-every-tag-entry-of-an-image-to-count-it)).
 
 ## The mirror (R-OCI-026)
 

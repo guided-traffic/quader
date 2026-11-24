@@ -80,11 +80,12 @@ UPDATE packages SET attributes = sqlc.arg(attributes)::text::jsonb
  WHERE id = sqlc.arg(id)::bigint;
 
 -- name: InsertPackageVersion :many
--- A live version of the same name is left as it is and nothing comes back.
-INSERT INTO package_versions (package_id, version, display_version, lead_item_id, attributes, created_by)
+-- A live version of the same name is left as it is and nothing comes back. sort_key and prerelease are the format's (R-API-029,
+-- Q-API-429).
+INSERT INTO package_versions (package_id, version, display_version, lead_item_id, attributes, created_by, sort_key, prerelease)
 VALUES (sqlc.arg(package_id)::bigint, sqlc.arg(version)::text, sqlc.arg(display_version)::text,
         NULLIF(sqlc.arg(lead_item_id)::bigint, 0), sqlc.arg(attributes)::text::jsonb,
-        NULLIF(sqlc.arg(created_by)::text, '')::uuid)
+        NULLIF(sqlc.arg(created_by)::text, '')::uuid, sqlc.arg(sort_key)::bytea, sqlc.arg(prerelease)::boolean)
 ON CONFLICT (package_id, version) WHERE trashed_at IS NULL DO NOTHING
 RETURNING id;
 
