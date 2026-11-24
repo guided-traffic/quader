@@ -680,14 +680,6 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
-- **`UI layout checks` of R6's push failed on the date (2026-11-24; Test and Release 45340888441, read at 08:38):**
-  `cramped` on `clamav-databases` at 1,024 px, "8 days Outdated" in two lines; the age grows with the calendar, so the
-  finding comes and goes by the day. Given at 08:39, with the pale tooltip of the dark scheme, to a builder.
-
-- **The tooltip is pale in the dark scheme (seen by the toasts' builder on 2026-11-24):** Quader's tooltip uses
-  `--quader-inverse-surface`, where GitLab's tooltip uses the same strong-feedback grey as its toast
-  (`--quader-feedback-strong-bg` since Q-UI-1063). To do: the tooltip takes the toast's tokens, rendered in both schemes.
-
 - **The pull command is a box in the middle of the list, and Details is a section under it (owner, 2026-11-24, 09:50,
   with a screenshot of `upstream/docker-hub` and one of GitLab's "Code" menu): "Das Details welches unten abgebildet
   ist, gehört in einen eigenen Reiter. An letzter Position. Der Kaste „Pull-Befehl" ist einfach mitten drin und passt
@@ -704,6 +696,23 @@ records the recorder that tells such a stall apart).
   builder at 09:55, once the image scan's package (which touches the same statements) was on main.
 
 ### Closed
+
+- **Closed on 2026-11-24, 10:08, by the layout and tooltip package (Q-UI-1064, Q-UI-1065):** the finding of run
+  45340888441 on `clamav-databases` at 1,024 px came and went with the date, because the column Built shows that day's
+  dates and the table shares out its room by their widths. The age and its badge are now one value that never breaks, and
+  so is a word in a time's place (`.no-time`: "Never", "Not used yet"), which the German pass found broken on the token
+  list at 1,440 px. Two fixed dates of the renders count from the render's clock now (the `files-system` file, the Notation
+  certificate). The tooltip is GitLab's, read from its source: the toast's `#3a383f` with white text in both schemes,
+  12/16 px, 8 by 12 px of padding, 4 px corners, centred up to 200 px, above its element with an arrow, following it on
+  scroll; the inverse-surface tokens are gone. Rendered: `clamav-databases` in both states at every width,
+  `profile-tokens-tooltip` in English and German, and the full run (482 screens, 0 failed, 0 layout findings); looked at
+  by the development agent. Left, one line: on a reused local UI instance the personal token list stacks at 1,024 px as
+  the token's "Created" age grows ("now" to "9 minutes ago"); CI's fresh database does not show it. As it stood: **`UI layout checks` of R6's push failed on the date (2026-11-24; Test and Release 45340888441, read at 08:38):**
+  `cramped` on `clamav-databases` at 1,024 px, "8 days Outdated" in two lines; the age grows with the calendar, so the
+  finding comes and goes by the day. Given at 08:39, with the pale tooltip of the dark scheme, to a builder.
+  And: **The tooltip is pale in the dark scheme (seen by the toasts' builder on 2026-11-24):** Quader's tooltip uses
+  `--quader-inverse-surface`, where GitLab's tooltip uses the same strong-feedback grey as its toast
+  (`--quader-feedback-strong-bg` since Q-UI-1063). To do: the tooltip takes the toast's tokens, rendered in both schemes.
 
 - **Closed on 2026-11-24, 10:06, by the search hint's package (Q-CUR-166):** the hint under the upstream search is in the
   screen's language and says what to type. The catalogue's capabilities carry a code, `searchHint` (14 codes in
