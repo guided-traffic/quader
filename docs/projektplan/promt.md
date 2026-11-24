@@ -579,10 +579,6 @@ order is what a user or an operator meets first. The state is kept here.
   rebases onto `main` after c2e9d02be claims its instance; nothing older can. Closed by the claims, recorded as
   what happened; whose instance 6 was is not known (no claim was written for it).
 
-- **The UI development profile's backend reaches the internet at start (found by W13 on 2026-11-24):** nine
-  requests to `tuf-repo-cdn.sigstore.dev` for the signature trust root, outside the seed, which W13 made offline.
-  `signatures.trust_root.refresh: false` in `deploy/ui-dev/config.sh` would stop them and changes what the
-  signature screens show. To do: a trust root of the profile's own (a fixture), so the screens keep their states.
 
 - **`integration (shard d)` was red in the run of R4's push (2026-11-24; Test and Release 45287679724, read at
   00:40): `TestQ_VULN_200_APushedImageIsDetectedBeforeTheRedetections` (area `vulnimage`) saw five re-detections
@@ -794,11 +790,10 @@ records the recorder that tells such a stall apart).
   `write-config` reads "Set one in the mirror settings" there, which only an administrator can (R2's builder). To
   do: the button disabled with the reason beside it, and the sentence by who reads it.
 
-- **A failure's details say a step twice (seen by the development agent on 2026-11-24 at R5a's renders,
-  `repository-npm-remote-downloads-failure-dark-1024.png`):** "Step  The answer's status `status`" and "Class
-  Upstream error `upstream_error`" put the sentence and the code side by side, which reads as a stutter where they
-  share a word. To do: the code in a muted line below its words, or only where it differs from them.
-
+- **The trend's axis numbers are about 6 px high at 390 px (seen by W15 on 2026-11-24 at the renders of
+  `vulnerabilities` in Chromium, Firefox and WebKit alike):** the numbers 0, 1000 and 2000 scale with the chart's
+  viewBox, which is about half its size at a phone's width, so they are hard to read there. Not an engine's
+  difference. To do: the axis's text at the app's smallest text size whatever the chart's scale.
 - **A narrow list's stacked rows place their fields by the width that is left (seen by the development agent on
   2026-11-23 at T-25's renders, `all-repositories-chips-light-390.png`).** In the stacked rows of the shared
   table at 390 px, "Format" stands beside "Project" in one row and beside "Class" in the next, as the values'
@@ -849,6 +844,32 @@ records the recorder that tells such a stall apart).
   stack).** By the code the page shows the badge "None yet" with a sentence and no error banner. To do
   (W9): a render state of it, looked at.
 ### Closed
+
+- **Closed on 2026-11-24 by W15 (Q-CUR-134): a failure's details no longer say a step twice.** The class and the step
+  stand in words with their value as code in the muted second line the shared table gives a technical name
+  (`.secondary`), in every failure, so the value a script filters on is at one place and never beside its words; "only
+  where it differs" was declined, because "differs" has no rule a reader sees and the German words always differ. Held by
+  `remote-downloads.spec.ts` (the two values in `dd > code.secondary`) and rendered in English and German
+  (`repository-npm-remote-downloads-failure-*`). As it stood:
+  **A failure's details say a step twice (seen by the development agent on 2026-11-24 at R5a's renders,
+  `repository-npm-remote-downloads-failure-dark-1024.png`):** "Step  The answer's status `status`" and "Class
+  Upstream error `upstream_error`" put the sentence and the code side by side, which reads as a stutter where they
+  share a word. To do: the code in a muted line below its words, or only where it differs from them.
+- **Closed on 2026-11-24 by W15 (Q-UI-1047): the UI development profile's backend no longer reaches the internet at
+  start.** `signatures.trust_root.refresh: false` in `deploy/ui-dev/config.sh`: the profile's trust root is the
+  snapshot the release embeds (`internal/signatures/shipped/data`, the repository's own data), so no fixture of its own
+  was needed, and a TUF repository the profile signs could not be verified from the embedded TUF root without a product
+  setting only the profile would use. Read in the profile's database after a start: the task `signature-trust-root`
+  ended with `{"skipped": "signatures.trust_root.refresh is off"}` and `signature_trust_roots` is empty. The screens keep
+  their states: the walk of Settings › Signatures shows the release's snapshot (the stack's answer, `…-sections`), a
+  refreshed root (`…-root-refreshed`, new) and one with a failure (`…-switch-off`), the last two answered in the browser;
+  the walk now opens the section after its reload, which closed it, so neither answered state had been visible before,
+  and the failure's message stands on its own line below the state and its time (it read "…i/o timeout 2 hours ago").
+  As it stood:
+  **The UI development profile's backend reaches the internet at start (found by W13 on 2026-11-24):** nine
+  requests to `tuf-repo-cdn.sigstore.dev` for the signature trust root, outside the seed, which W13 made offline.
+  `signatures.trust_root.refresh: false` in `deploy/ui-dev/config.sh` would stop them and changes what the
+  signature screens show. To do: a trust root of the profile's own (a fixture), so the screens keep their states.
 
 - **Closed on 2026-11-24 by W15: the integration area `limits` waits for its flushes, not for fixed times.** The
   wait for the charge buffer is `awaitFlush` (`test/integration/limits/limits_test.go`): every replica of the stack
@@ -11035,8 +11056,6 @@ the walk items and the run record); what the code holds beyond the plan has not 
 
 ### C · The walk (W-12 to W-24) and what landed on 2026-11-20
 
-- **The colour scale of the severities:** rendered in Chromium only, not in Firefox or Safari; the seed holds one day of
-  findings, so the trend was judged on fed data; no finding rated None is in the seed, so its badge was not rendered.
 - **Partly closed; open: no real Sentinel failover during a start was run (the 30 s are computed); and the
   Valkey outage with a replaced packages pod has not run since 2026-11-18, which the next nightly's `npm-ha`
   runs.** Closed: the drain variant that holds a primary lost, `TestDrainLoad` variant B, passed in the
@@ -11049,14 +11068,6 @@ the walk items and the run record); what the code holds beyond the plan has not 
   **The first readiness and Valkey:** no real Sentinel failover during a start was run; the 30 s are computed from the
   Sentinel settings and the measured failovers. The nightly shows the cases its builder read (the drain variant that holds a
   primary lost, the outage with a replaced pod, the clone without Sentinels).
-- **Partly closed; open: the German page and the Bastion target of Set up client were not rendered.** Closed:
-  the journeys `08-packages` and `09-guides` run in `e2e (access-long)` (the browser suite of `TestE1_11`),
-  green in the run that ended at 21:58 on 2026-11-20, after 8bb320f44; the renders of the job `UI layout
-  checks` show Set up client against the real backend on every push (`web/e2e/renders/screens.ts`).
-  As it stood:
-  **Set up client (W-27):** the journeys `08-packages` and `09-guides` have new selectors and were not run on a cluster; the
-  German page and the Bastion target were not rendered; the renders ran against answers rewritten in the builder's dev
-  server, not against the changed backend (its side is unit-tested).
 - **`upgrade-release`** (upgrade and rollback from the published release) has not run on a cluster since it was changed: a
   dispatch of the nightly that names `e2e-upgrade` shows it.
   Read on 2026-11-23: its set last ran on 2026-11-19 at 03:22 UTC (dispatch 44451019461, green), before the
@@ -11159,6 +11170,36 @@ Nothing is open here since 2026-11-23; the entries are in the list Closed.
 Entries of this section that are closed, each with what closed it and what holds it; nothing is deleted from
 the plan.
 
+- **C · Closed on 2026-11-24 by W15 (Q-UI-1049): the colour scale of the severities is rendered in Firefox and
+  WebKit.** `UI_RENDERS_ENGINE=firefox` and `webkit` run the walk in that engine (the layout fixtures first in it, one
+  CSS pixel per pixel of the picture) into `.out/ui-renders-firefox` and `-webkit`; the screens `vulnerabilities`,
+  `security` and `package-version-npm-none` passed in both with no layout finding. Looked at: the bar, the trend at 90
+  days with an edge on every band's top and the hairline between columns, Unknown's hatch and the legend, as Chromium
+  draws them, light and dark, 1,440 and 390 px. The seed's thirty days of findings (`spreadDetections`) and the finding
+  rated None (G5-55) were in the seed already. Not rendered in any engine: the trend at 365 days (Q-UI-862), which no
+  walk opens. As it stood:
+  **The colour scale of the severities:** rendered in Chromium only, not in Firefox or Safari; the seed holds one day of
+  findings, so the trend was judged on fed data; no finding rated None is in the seed, so its badge was not rendered.
+- **C · Closed on 2026-11-24 by W15 (Q-UI-1048): the German page and the Bastion target of Set up client are
+  rendered.** `UI_RENDERS_LOCALE=de` renders the screens marked `de` against a dev server of the German build into
+  `.out/ui-renders-de`: `setup-npm-virtual`, `setup-oci-local`, the new `setup-npm-bastion` and the tab Downloads, as the
+  plain, the power user and the administrator, all passing without a layout finding. The Bastion target is the seed's
+  registration `dmz-berlin` with a token and a contact that reported its base URL, listed in the profile's
+  `server.additional_base_urls`, so the snippets are the server's; the Bastions page shows it as the stack's answer and
+  its empty state as an answer of the walk. Seen and repaired: the Bastion's sentence named `replace-registry-host=always`
+  as plain text (now code, as R-UI-121 asks), its name broke at its hyphen in the banner at 390 px, the client choices
+  "Docker CLI (with Buildx)" and "Yarn Berry (2 and later)" stood in English on the German page, and every size of the
+  app had the English decimal mark in German ("46.0 MiB"; R-UI-045 asks for the locale's). Seen and left to the
+  builders who own them: "Token" referred to as "es" and "er" in German, and the tab Downloads standing as blocks at
+  1,024 px in both languages (the shared table's stacked rows). The guide's sections stay English by Q-UI-86. As it stood:
+  **Partly closed; open: the German page and the Bastion target of Set up client were not rendered.** Closed:
+    the journeys `08-packages` and `09-guides` run in `e2e (access-long)` (the browser suite of `TestE1_11`),
+    green in the run that ended at 21:58 on 2026-11-20, after 8bb320f44; the renders of the job `UI layout
+    checks` show Set up client against the real backend on every push (`web/e2e/renders/screens.ts`).
+    As it stood:
+    **Set up client (W-27):** the journeys `08-packages` and `09-guides` have new selectors and were not run on a cluster; the
+    German page and the Bastion target were not rendered; the renders ran against answers rewritten in the builder's dev
+    server, not against the changed backend (its side is unit-tested).
 - **A · Closed on 2026-11-23 by 46c187c8d (Q-ARCH-701): the checks of a list or a convention run in the unit
   tier or in the area `conventions`.** The formats' clients and the sealed columns are unit tests; the purge's
   table lists and the revision columns moved to the new area `test/integration/conventions`, which runs in

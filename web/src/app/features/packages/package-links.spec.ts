@@ -71,10 +71,13 @@ describe('package links', () => {
     expect(relativeTime('2026-10-27T12:00:00Z', 'de', now)).toBe('vor 3 Tagen');
   });
 
-  it('R-UI-007 sizes are shown in binary units', () => {
+  it('R-UI-007 R-UI-045 sizes are shown in binary units with the decimal mark of the locale', () => {
     expect(formatSize(0)).toBe('0 B');
     expect(formatSize(1023)).toBe('1023 B');
     expect(formatSize(48213)).toBe('47.1 KiB');
     expect(formatSize(5 * 1024 * 1024)).toBe('5.0 MiB');
+    // The decimal mark is the locale's (seen in the German renders of the tab Downloads: "46.0 MiB").
+    expect(formatSize(48213, 'de')).toBe('47,1 KiB');
+    expect(formatSize(1023.95 * 1024 * 1024, 'de')).toBe('1024,0 MiB');
   });
 });

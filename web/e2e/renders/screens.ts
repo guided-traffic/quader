@@ -38,7 +38,7 @@ import { withVerify } from './verify';
 import { routeTooMany } from './suggestions';
 import { clamavDatabases, clamavRegistry, clamavRow, definitionsExpected, definitionsWith, switchState } from './clamav';
 import { damagedBlobs, noDamagedBlob, oneConnection, secondUnreachable, severalConnections, twoConnectionFacts } from './storage';
-import { auditDataKeys, bastionsHandover, bastionsRead, forbiddenLink } from './bastions';
+import { auditDataKeys, bastionsHandover, bastionsRead, forbiddenLink, seededBastion } from './bastions';
 import { downloadsWalk } from './downloads';
 
 /**
@@ -70,6 +70,11 @@ export interface Screen {
    * start page's list was wider than the page at 1,100 px, which neither 1,024 nor 1,440 showed.
    */
   readonly widths?: readonly number[];
+  /**
+   * Rendered in the German pass too (UI_RENDERS_LOCALE=de, Q-UI-1048), into `.out/ui-renders-de`: a screen whose German words were
+   * not looked at otherwise. Its walk finds its controls by their place (a selector, a test id, an ID), never by an English word.
+   */
+  readonly de?: boolean;
 }
 
 /**
@@ -568,7 +573,8 @@ async function* setupWalk(page: Page): AsyncGenerator<string> {
   await expect(page).toHaveURL(/client=yarn/);
   await expect(page.locator('main quader-setup-snippet pre').first()).toContainText('npmRegistryServer');
   yield 'yarn';
-  await page.locator('main quader-disclosure.more-options').getByRole('button', { name: 'More options' }).click();
+  // By its place, not its words: the German pass walks the page too (UI_RENDERS_LOCALE=de).
+  await page.locator('main quader-disclosure.more-options button.inline-toggle').click();
   await page.locator('main input[name="credentials"][value="paste"]').check();
   await expect(page.locator('main #setup-token')).toBeVisible();
   yield 'more';
@@ -1756,10 +1762,20 @@ async function* signatureFile(page: Page): AsyncGenerator<string> {
   yield 'sibling';
 }
 
+/** Opens the section **Public Sigstore root** of **Settings › Signatures**, which a reload closes. */
+async function openRoot(page: Page): Promise<void> {
+  const { section, toggle } = sectionHeaded(page, 'Public Sigstore root');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(section.locator('[data-testid="signature-root"]')).toBeVisible();
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+}
+
 /**
  * **Settings › Signatures** (R-SIG-036): as seeded (anchors of every kind and scope, the switch on, a block), the closed sections opened,
- * the form of each kind of anchor with a CA's More options, the form of a block; then the switch off with a project's anchor kept, the
- * public root refreshed with a failure and a backlog, and the signatures off in the configuration. Nothing is saved.
+ * the form of each kind of anchor with a CA's More options, the form of a block, the impact of a removal and of a block; then the public
+ * root refreshed (the profile's own is the release's snapshot, Q-UI-1047), the switch off with a project's anchor kept, the public root
+ * refreshed with a failure and a backlog, and the signatures off in the configuration. Nothing is saved.
  */
 async function* signatureSettings(page: Page): AsyncGenerator<string> {
   const settings = '**/api/v1/signatures/settings';
@@ -1821,6 +1837,14 @@ async function* signatureSettings(page: Page): AsyncGenerator<string> {
   yield 'block-impact';
   await blockDialog.getByRole('button', { name: 'Cancel' }).click();
   await page.unroute(impact);
+  // The profile does not refresh the public root (Q-UI-1047): 'sections' shows the release's snapshot, the stack's answer, and a
+  // refreshed root is answered here, without a failure, and in 'switch-off' with one.
+  await answerWith(page, settings, (b) => ({
+    ...b,
+    trustRoot: { source: 'refreshed', fetchedAt: new Date(Date.now() - 6 * 3_600_000).toISOString(), tufVersion: 171, lastError: null, lastErrorAt: null },
+  }));
+  await openRoot(page);
+  yield 'root-refreshed';
   await answerWith(page, settings, (b) => ({
     ...b,
     projectAnchors: false,
@@ -1828,11 +1852,13 @@ async function* signatureSettings(page: Page): AsyncGenerator<string> {
     trustRoot: {
       source: 'refreshed',
       fetchedAt: new Date(Date.now() - 3 * 86_400_000).toISOString(),
-      tufVersion: 14,
+      // A stored root is newer than the release's snapshot (166), or the task does not store it (R-SIG-017).
+      tufVersion: 171,
       lastError: 'tuf: fetching timestamp.json from https://tuf-repo-cdn.sigstore.dev: dial tcp: i/o timeout',
       lastErrorAt: new Date(Date.now() - 2 * 3_600_000).toISOString(),
     },
   }));
+  await openRoot(page);
   yield 'switch-off';
   await answerWith(page, settings, (b) => ({ ...b, enabled: false }));
   yield 'off';
@@ -2544,7 +2570,7 @@ export const screens: readonly Screen[] = [
   // The tab Downloads of a remote (R-CUR-018): its queue as the seed left it, then a queue of every state answered in the browser,
   // a failed row opened to its whole failure, and a bulk's rows (downloads.ts). The OCI remote whose tag a probe downloaded has a
   // row of the server's own.
-  { id: 'repository-npm-remote-downloads', path: `${P}/repositories/npmjs/downloads`, kinds: all, walk: downloadsWalk },
+  { id: 'repository-npm-remote-downloads', path: `${P}/repositories/npmjs/downloads`, kinds: all, walk: downloadsWalk, de: true },
   { id: 'repository-oci-probed-downloads', path: `${O}/repositories/${probedCache.key}/downloads`, kinds: ['power'] },
   { id: 'repository-npm-virtual', path: `${P}/repositories/npm`, kinds: all },
   { id: 'repository-long-key', path: `${P}/repositories/${longNpmKey}`, kinds: all },
@@ -2671,10 +2697,13 @@ export const screens: readonly Screen[] = [
   // Set up client of a repository (R-UI-120): every format and class of the seed, the long keys, and a public repository signed out.
   { id: 'setup-npm-local', path: `${P}/repositories/npm-internal/setup`, kinds: all, walk: setupVerify },
   { id: 'setup-npm-remote', path: `${P}/repositories/npmjs/setup`, kinds: all },
-  { id: 'setup-npm-virtual', path: `${P}/repositories/npm/setup`, kinds: all, walk: setupWalk },
+  { id: 'setup-npm-virtual', path: `${P}/repositories/npm/setup`, kinds: all, walk: setupWalk, de: true },
+  // The snippets of a Bastion (R-BAS-007, R-UI-121, R-UI-123): no Publish step, the banner, no explanation. The seed's registration is
+  // offered under Install from to who may read the registrations; the others get the Bastion the address names.
+  { id: 'setup-npm-bastion', path: `${P}/repositories/npm/setup?bastion=${seededBastion.name}`, kinds: all, de: true },
   { id: 'setup-long-key', path: `${P}/repositories/${longNpmKey}/setup`, kinds: all },
   { id: 'setup-generic', path: `${P}/repositories/assets/setup`, kinds: all, walk: setupVerify },
-  { id: 'setup-oci-local', path: `${P}/repositories/images/setup`, kinds: all, walk: setupVerify },
+  { id: 'setup-oci-local', path: `${P}/repositories/images/setup`, kinds: all, walk: setupVerify, de: true },
   { id: 'setup-oci-remote', path: `${O}/repositories/docker-hub-remote/setup`, kinds: all },
   { id: 'setup-nuget', path: `${O}/repositories/nuget/setup`, kinds: all },
   { id: 'setup-deb', path: `${O}/repositories/${longDebKey}/setup`, kinds: all, walk: explained },

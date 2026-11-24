@@ -120,6 +120,9 @@ describe('The tab Downloads of a remote repository', () => {
     expect(words).toContain('Failure of attempt 5');
     expect(words).toContain("The answer's status status");
     expect(words).toContain('upstream_error');
+    // Q-CUR-134: the class's and the step's value each stand in a muted line of code below the words, not beside them.
+    const values = [...detail.querySelectorAll('dd > code.secondary')].map((c) => c.textContent);
+    expect(values).toEqual(['upstream_error', 'status']);
     expect(words).toContain('https://registry.npmjs.org/left-pad/-/left-pad-1.3.0.tgz');
     expect(words).toContain('(shown without its query, which can carry a credential)');
     expect(words).toContain('HTTP 503');

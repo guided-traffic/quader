@@ -79,6 +79,9 @@
               "extractLicenses": false,
               "sourceMap": true,
               "localize": ["en"]
+            },
+            "de": {
+              "localize": ["de"]
             }
           },
           "defaultConfiguration": "production"
@@ -94,6 +97,9 @@
             },
             "development": {
               "buildTarget": "web:build:development"
+            },
+            "de": {
+              "buildTarget": "web:build:development,de"
             },
             "local": {
               "buildTarget": "web:build:development",

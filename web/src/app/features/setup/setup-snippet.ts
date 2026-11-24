@@ -16,8 +16,8 @@ import { CodeWindow } from '../../shared/code/code-window';
     @if (captionParts(); as parts) {
       <p class="why">@for (part of parts; track $index) {@if ($odd) {<code translate="no">{{ part }}</code>} @else {{{ part }}}}</p>
     }
-    @if (note(); as n) {
-      <p class="why">{{ n }}</p>
+    @if (noteParts(); as parts) {
+      <p class="why">@for (part of parts; track $index) {@if ($odd) {<code translate="no">{{ part }}</code>} @else {{{ part }}}}</p>
     }
     <quader-code-window
       [content]="snippet().content"
@@ -43,11 +43,12 @@ export class SetupSnippet {
   readonly snippet = input.required<ClientSnippet>();
   /** The sentence that says what the window does not (by the snippet's id, R-API-030); null for none. */
   readonly explanation = input<string | null>(null);
-  /** A second sentence, for a target that needs one (a Bastion). */
+  /** A second sentence, for a target that needs one (a Bastion); a name between backticks is code, as in the first. */
   readonly note = input<string | null>(null);
   /** Whether a file snippet offers **Download**. */
   readonly downloadable = input(true);
 
   /** The sentence in its parts: a name between backticks is code (`.npmrc`), the rest text. */
   protected readonly captionParts = computed(() => this.explanation()?.split('`') ?? null);
+  protected readonly noteParts = computed(() => this.note()?.split('`') ?? null);
 }

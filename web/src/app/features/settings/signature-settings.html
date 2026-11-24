@@ -174,11 +174,12 @@
         <dt i18n="@@sig.root.failure">Last failure</dt>
         <dd>
           @if (root.lastError; as err) {
-            <span class="warn"><span class="material-icons" aria-hidden="true">warning</span><ng-container i18n="@@sig.root.failed">Failed</ng-container></span
-            >&ngsp;<span class="block-value" translate="no">{{ err }}</span>
+            <!-- The state and its time on the first line, the task's message below them: the time never reads as the message's end. -->
+            <span class="warn"><span class="material-icons" aria-hidden="true">warning</span><ng-container i18n="@@sig.root.failed">Failed</ng-container></span>
             @if (root.lastErrorAt; as at) {
-              &ngsp;<quader-time-ago [at]="at" absolute="title" />
+              &ngsp;<span class="muted"><quader-time-ago [at]="at" absolute="title" /></span>
             }
+            &ngsp;<span class="root-failure" translate="no">{{ err }}</span>
           } @else {
             <span class="muted" i18n="@@sig.root.no-failure">None since the last refresh</span>
           }

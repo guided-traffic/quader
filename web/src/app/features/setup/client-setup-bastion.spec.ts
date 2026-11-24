@@ -60,6 +60,8 @@ describe('Set up client for a Bastion (R-BAS-007, R-API-030)', () => {
     expect(all).toContain('replace-registry-host=always');
     expect(all).not.toContain('quader.example.net');
     expect(text(r.root)).toContain('makes npm fetch every package from this address');
+    // R-UI-121: a setting named in a snippet's sentence is code, in the note of a Bastion too.
+    expect([...r.root.querySelectorAll('quader-setup-snippet p.why code')].map((c) => c.textContent)).toContain('replace-registry-host=always');
     expect(text(r.root)).toContain('These snippets point at the Bastion');
     expect(addressValues(r.root)).toEqual(['https://packages.example.com/api/npm/web/npm-all/']);
     expect([...r.root.querySelectorAll('section.step > h2')].map((h) => text(h))).not.toContain('3Publish');

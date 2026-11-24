@@ -1,5 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
-import { CHROMIUM_TEXT, authFile, edge } from './renders/paths';
+import { CHROMIUM_TEXT, authFile, edge, engine, locale } from './renders/paths';
 
 /**
  * `make ui-renders` (docs/developer/web-ui.md#renders-of-every-screen): every screen of the UI as pictures to judge, against
@@ -10,7 +10,10 @@ import { CHROMIUM_TEXT, authFile, edge } from './renders/paths';
  * UI_RENDERS_EDGE      the dev server, default https://localhost:4200
  * UI_RENDERS_STATE     the profile's state directory, default .dev/ui-dev (a stack of its own names its own)
  * UI_RENDERS_WORKERS   browsers at a time, default 3 (the host is shared)
+ * UI_RENDERS_LOCALE    en (default), or de: the screens marked `de`, against the dev server's German build (Q-UI-1048)
+ * UI_RENDERS_ENGINE    chromium (default), firefox or webkit (Q-UI-1049); a run other than the default writes into a folder of its own
  */
+const device = { chromium: 'Desktop Chrome', firefox: 'Desktop Firefox', webkit: 'Desktop Safari' }[engine];
 export default defineConfig({
   testDir: './renders',
   // The checks' own fixtures run in `make ui-layout-test` (playwright.layout.config.ts), without the stack and the seed.
@@ -30,7 +33,7 @@ export default defineConfig({
     baseURL: edge,
     // The dev server's certificate is signed by the profile's CA, which no browser store holds.
     ignoreHTTPSErrors: true,
-    locale: 'en-US',
+    locale: locale === 'de' ? 'de-DE' : 'en-US',
     timezoneId: 'UTC',
     actionTimeout: 15_000,
     navigationTimeout: 60_000,
@@ -38,12 +41,13 @@ export default defineConfig({
     screenshot: 'off',
     // The scrollbars are shown, as on a desktop with a mouse: one beside a table's rows takes the table's width (15 px in Chromium on
     // macOS and Linux alike once the flag is gone). Text is set without hinting (CHROMIUM_TEXT, Q-UI-1045), so the walk measures the
-    // same widths on the development machine and on the runner.
-    launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'], args: [...CHROMIUM_TEXT] },
+    // same widths on the development machine and on the runner. Firefox and WebKit take neither flag and show their own scrollbars.
+    ...(engine === 'chromium' ? { launchOptions: { ignoreDefaultArgs: ['--hide-scrollbars'], args: [...CHROMIUM_TEXT] } } : {}),
   },
   projects: (['anonymous', 'plain', 'power', 'admin', 'auditor'] as const).map((kind) => ({
     name: kind,
     grep: new RegExp(`@${kind}\\b`),
-    use: { ...devices['Desktop Chrome'], ...(kind === 'anonymous' ? {} : { storageState: authFile(kind) }) },
+    // One CSS pixel to one pixel of the picture in every engine: Desktop Safari is a screen of scale 2, which doubled WebKit's pictures.
+    use: { ...devices[device], deviceScaleFactor: 1, ...(kind === 'anonymous' ? {} : { storageState: authFile(kind) }) },
   })),
 });

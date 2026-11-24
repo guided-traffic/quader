@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { join } from 'node:path';
 import { Page, expect, test } from '@playwright/test';
 import { LayoutFinding, emptyScroll, findingLine, judge, layoutFindings } from './layout';
-import { manifestDir, outDir } from './paths';
+import { locale, manifestDir, outDir } from './paths';
 import { Kind } from './seed';
 import { KEEP_OPEN, Screen, screens } from './screens';
 
@@ -46,7 +46,8 @@ export interface Shot {
   readonly allowedFindings: readonly (LayoutFinding & { readonly why: string })[];
 }
 
-for (const screen of screens) {
+// The German pass renders the screens marked `de` (Q-UI-1048): their walks find no control by an English word.
+for (const screen of locale === 'de' ? screens.filter((s) => s.de) : screens) {
   for (const kind of screen.kinds) {
     test(`${screen.id} as ${kind}`, { tag: `@${kind}` }, async ({ page }) => {
       forget(kind, screen);
@@ -336,6 +337,8 @@ function sidewaysRegions(): { what: string; overflowX: number }[] {
 
 function slug(text: string): string {
   return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/\(\d+\)|\d+$/g, '')
     .replace(/[^a-z0-9]+/g, '-')

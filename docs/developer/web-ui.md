@@ -145,6 +145,11 @@ through the dev server works only against a Quader whose base URL is `https://lo
   with the usages server and client authentication. No name of a kind of pod is required (empty in the role `all`, Q-ARCH-553), so
   any certificate of the profile's CA is admitted, `postgres.crt` and `s3.crt` too; an installation admits only the worker at the
   scanner and only the scanners at the scan listener ([helm-chart.md](helm-chart.md#the-scanner)).
+- The public Sigstore root is not refreshed (`signatures.trust_root.refresh: false`): the profile's root is the snapshot the
+  release embeds, and no request goes to `tuf-repo-cdn.sigstore.dev`; the walk of **Settings › Signatures** answers a refreshed
+  root in the browser ([Q-UI-1047](../spec/api-and-ui.md#q-ui-1047--the-ui-development-profile-keeps-the-releases-sigstore-root-and-the-walk-answers-a-refreshed-one)).
+- The seed's Bastion `dmz-berlin` reported `https://packages.dmz-berlin.example.com`, which `server.additional_base_urls` lists, so
+  that Set up client answers a Bastion's snippets (R-BAS-007); no request reaches that address.
 - No advisory source reaches the network: KEV is off, and OSV reads only npm from the mirror repository `platform/advisory-mirror` (R-VULN-005), which the render seed fills with records of its own ([Renders of every screen](#renders-of-every-screen)); until then a sync run fails for the missing repository and the vulnerability screens stay empty.
 - The `read` class of the API's rate limits admits 800 requests per 4 s instead of 200 (`api.rate_limits.read`): `make
   ui-renders` opens three pages of one user at a time, and a full run reached 197 reads of one user in 4 s, at the default's
@@ -231,8 +236,21 @@ make web-ci                       # once, and after a change of web/package-lock
 make ui-layout-test               # the layout checks on their own fixture pages: seconds, no stack (also the first step of ui-renders)
 make ui-renders                   # every screen, into an empty .out/ui-renders
 make ui-renders GREP=repositories # the screens whose test title matches; the other pictures stay
+UI_RENDERS_LOCALE=de make ui-renders            # the screens marked `de`, in German, into .out/ui-renders-de
+UI_RENDERS_ENGINE=firefox make ui-renders GREP=vulnerabilities  # in Firefox (or webkit), into .out/ui-renders-firefox
 make ui-dev-down                  # when done (keeps the data)
 ```
+
+**German and other engines.** `UI_RENDERS_LOCALE=de` renders the screens marked `de: true` in `screens.ts` (Set up client and the
+tab Downloads so far) against a dev server that builds the German locale (`UI_LOCALE=de` of [web.sh](../../deploy/ui-dev/web.sh),
+the configurations `de` of [angular.json](../../web/angular.json)) on the instance's port; `renders.sh` starts it, and refuses a dev
+server that runs already in the other language (stop it first). A screen joins the German pass with the flag once its walk finds
+its controls by their place (a selector, a test ID, an `aria-controls`), never by an English word
+([Q-UI-1048](../spec/api-and-ui.md#q-ui-1048--a-german-pass-of-the-renders-for-the-screens-marked-for-it)).
+`UI_RENDERS_ENGINE=firefox` or `webkit` runs the same walk in that engine, its layout checks first in that engine; it is a look by
+hand for a screen that draws (the severities' trend, a bar), not a job of the pipeline
+([Q-UI-1049](../spec/api-and-ui.md#q-ui-1049--the-renders-run-in-firefox-or-webkit-on-demand-into-a-folder-of-their-own)). Each such
+run writes into a folder of its own beside `.out/ui-renders` (`-de`, `-firefox`, `-webkit-de`), with its own contact sheet.
 
 | What | Where |
 |---|---|
@@ -289,7 +307,10 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    of `upstream/clamav` on at Public, so that its client setup is the server's and the plain user reads it; only the database task writes
    the repository, so the walks answer its packages, versions and a version's details in the browser (three databases, a daily in use with
    the one before it and a history row, a bytecode 8 days old) and change the switch's state (off, on, on at Internal where Public is not
-   allowed) in the answers of the upstream list and item.
+   allowed) in the answers of the upstream list and item. **A Bastion** ([renders/bastions.ts](../../web/e2e/renders/bastions.ts),
+   R-BAS-007): the registration `dmz-berlin`, created through the API, with the contact of one replica written by SQL as a handshake
+   leaves it (the profile runs no Bastion), so that Set up client offers it under **Install from** and answers its snippets
+   (`setup-npm-bastion`); the Bastions page's empty state and its other registrations are answers of its walk.
 2. **The three kinds of user** of [R-UI-067](../spec/api-and-ui.md#r-ui-067--three-kinds-of-user-the-plain-user-the-power-user-and-the-administrator)
    and the auditor of the security dashboard (R-UI-158) sign in through the provider; their sessions are kept in
    `.out/ui-renders/.auth/` for the run:

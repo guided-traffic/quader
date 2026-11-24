@@ -20584,7 +20584,7 @@
     <unit id="sig.anchor.remove-title">
       <notes>
         <note category="location">src/app/features/projects/project-signature-anchors.ts:135</note>
-        <note category="location">src/app/features/settings/signature-settings.ts:226</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:230</note>
       </notes>
       <segment>
         <source>Remove the trust anchor <ph id="0" equiv="title" disp="title"/>?</source>
@@ -20594,7 +20594,7 @@
     <unit id="sig.anchor.remove-text">
       <notes>
         <note category="location">src/app/features/projects/project-signature-anchors.ts:136</note>
-        <note category="location">src/app/features/settings/signature-settings.ts:228</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:232</note>
       </notes>
       <segment>
         <source>The signatures it knows read &quot;Signed · signer not trusted&quot; unless another anchor knows their signer.</source>
@@ -20604,7 +20604,7 @@
     <unit id="sig.anchor.remove-confirm">
       <notes>
         <note category="location">src/app/features/projects/project-signature-anchors.ts:137</note>
-        <note category="location">src/app/features/settings/signature-settings.ts:230</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:234</note>
       </notes>
       <segment>
         <source>Remove trust anchor</source>
@@ -20614,7 +20614,7 @@
     <unit id="sig.anchor.removed">
       <notes>
         <note category="location">src/app/features/projects/project-signature-anchors.ts:148</note>
-        <note category="location">src/app/features/settings/signature-settings.ts:241</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:245</note>
       </notes>
       <segment>
         <source>Trust anchor removed.</source>
@@ -23936,7 +23936,7 @@
     </unit>
     <unit id="downloads.failure.title">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:205</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:206</note>
       </notes>
       <segment>
         <source>Failure of attempt <ph id="0" equiv="INTERPOLATION" disp="{{ f.attempt }}"/></source>
@@ -23945,7 +23945,7 @@
     </unit>
     <unit id="downloads.failure.class">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:209,210</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:210,211</note>
       </notes>
       <segment>
         <source>Class</source>
@@ -23954,7 +23954,7 @@
     </unit>
     <unit id="downloads.failure.step">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:211,212</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:212,213</note>
       </notes>
       <segment>
         <source>Step</source>
@@ -23963,7 +23963,7 @@
     </unit>
     <unit id="downloads.failure.code">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:213,214</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:214,215</note>
       </notes>
       <segment>
         <source>Code</source>
@@ -23972,7 +23972,7 @@
     </unit>
     <unit id="downloads.failure.file">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:216,217</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:217,218</note>
       </notes>
       <segment>
         <source>File</source>
@@ -23981,7 +23981,7 @@
     </unit>
     <unit id="downloads.failure.address">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:220,221</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:221,222</note>
       </notes>
       <segment>
         <source>Address</source>
@@ -23990,7 +23990,7 @@
     </unit>
     <unit id="downloads.failure.query-removed">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:221,223</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:222,224</note>
       </notes>
       <segment>
         <source>(shown without its query, which can carry a credential)</source>
@@ -23999,7 +23999,7 @@
     </unit>
     <unit id="downloads.failure.status">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:224,225</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:225,226</note>
       </notes>
       <segment>
         <source>Upstream status</source>
@@ -24008,7 +24008,7 @@
     </unit>
     <unit id="downloads.failure.retry-after">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:228,229</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:229,230</note>
       </notes>
       <segment>
         <source>Retry-After</source>
@@ -24017,7 +24017,7 @@
     </unit>
     <unit id="downloads.failure.seconds">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:229,230</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:230,231</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ f.retryAfter }}"/> s</source>
@@ -24026,7 +24026,7 @@
     </unit>
     <unit id="downloads.failure.excerpt">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:233,234</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:234,235</note>
       </notes>
       <segment>
         <source>The start of the upstream&apos;s answer</source>
@@ -24035,7 +24035,7 @@
     </unit>
     <unit id="downloads.fact.started-by">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:239,240</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:240,241</note>
       </notes>
       <segment>
         <source>Started by</source>
@@ -24044,7 +24044,7 @@
     </unit>
     <unit id="downloads.fact.queued">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:242,243</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:243,244</note>
       </notes>
       <segment>
         <source>Queued</source>
@@ -24053,7 +24053,7 @@
     </unit>
     <unit id="downloads.fact.started">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:245,246</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:246,247</note>
       </notes>
       <segment>
         <source>Started</source>
@@ -24062,7 +24062,7 @@
     </unit>
     <unit id="downloads.fact.finished">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:249,250</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:250,251</note>
       </notes>
       <segment>
         <source>Finished</source>
@@ -24071,7 +24071,7 @@
     </unit>
     <unit id="downloads.fact.files">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:253,254</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:254,255</note>
       </notes>
       <segment>
         <source>Files</source>
@@ -24080,7 +24080,7 @@
     </unit>
     <unit id="downloads.fact.files-value">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:254,255</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:255,256</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ r.files }}"/> named, <ph id="1" equiv="INTERPOLATION_1" disp="{{ r.stored }}"/> stored, <ph id="2" equiv="INTERPOLATION_2" disp="{{ r.present }}"/> already stored, <ph id="3" equiv="INTERPOLATION_3" disp="{{ r.refused }}"/> refused</source>
@@ -24089,7 +24089,7 @@
     </unit>
     <unit id="downloads.fact.bytes">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:257,258</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:258,259</note>
       </notes>
       <segment>
         <source>Stored</source>
@@ -32373,7 +32373,7 @@
     </unit>
     <unit id="sig.root.failed">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:177,178</note>
+        <note category="location">src/app/features/settings/signature-settings.html:178,179</note>
       </notes>
       <segment>
         <source>Failed</source>
@@ -32382,7 +32382,7 @@
     </unit>
     <unit id="sig.root.no-failure">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:183,186</note>
+        <note category="location">src/app/features/settings/signature-settings.html:184,187</note>
       </notes>
       <segment>
         <source>None since the last refresh</source>
@@ -32391,7 +32391,7 @@
     </unit>
     <unit id="sig.root.note">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.html:188,191</note>
+        <note category="location">src/app/features/settings/signature-settings.html:189,192</note>
       </notes>
       <segment>
         <source> Without internet, the release&apos;s snapshot holds and ages with the release; an operator can point the refresh at a mirror of the company. </source>
@@ -32400,7 +32400,7 @@
     </unit>
     <unit id="sig.settings.anchors-caption">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:133</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:137</note>
       </notes>
       <segment>
         <source>Trust anchors of the installation</source>
@@ -32409,7 +32409,7 @@
     </unit>
     <unit id="sig.settings.project-caption">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:134</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:138</note>
       </notes>
       <segment>
         <source>Trust anchors of the projects</source>
@@ -32418,7 +32418,7 @@
     </unit>
     <unit id="sig.settings.project-empty">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:135</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:139</note>
       </notes>
       <segment>
         <source>No project has a trust anchor of its own.</source>
@@ -32427,7 +32427,7 @@
     </unit>
     <unit id="sig.settings.blocks-caption">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:136</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:140</note>
       </notes>
       <segment>
         <source>Blocked signers</source>
@@ -32436,7 +32436,7 @@
     </unit>
     <unit id="sig.settings.blocks-empty">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:137</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:141</note>
       </notes>
       <segment>
         <source>No signer is blocked.</source>
@@ -32445,7 +32445,7 @@
     </unit>
     <unit id="sig.settings.blocks-hint">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:138</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:142</note>
       </notes>
       <segment>
         <source>Signers whose signatures read as not trusted, whatever anchor knows them.</source>
@@ -32454,7 +32454,7 @@
     </unit>
     <unit id="sig.settings.root">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:139</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:143</note>
       </notes>
       <segment>
         <source>Public Sigstore root</source>
@@ -32463,7 +32463,7 @@
     </unit>
     <unit id="sig.settings.root-hint">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:140</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:144</note>
       </notes>
       <segment>
         <source>Where the public Sigstore root and npm&apos;s registry keys in use come from.</source>
@@ -32472,7 +32472,7 @@
     </unit>
     <unit id="sig.block.col.signer">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:142</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:146</note>
       </notes>
       <segment>
         <source>Signer</source>
@@ -32481,7 +32481,7 @@
     </unit>
     <unit id="sig.anchor.col.signatures">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:143</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:147</note>
         <note category="location">src/app/shared/signatures/anchor-table.ts:129</note>
       </notes>
       <segment>
@@ -32491,7 +32491,7 @@
     </unit>
     <unit id="sig.block.col.blocked">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:144</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:148</note>
       </notes>
       <segment>
         <source>Blocked</source>
@@ -32500,7 +32500,7 @@
     </unit>
     <unit id="sig.anchor.col.actions">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:145</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:149</note>
         <note category="location">src/app/shared/signatures/anchor-table.ts:134</note>
       </notes>
       <segment>
@@ -32510,7 +32510,7 @@
     </unit>
     <unit id="sig.anchor.off-title">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:197</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:201</note>
       </notes>
       <segment>
         <source>Switch off the trust anchor <ph id="0" equiv="title" disp="title"/>?</source>
@@ -32519,7 +32519,7 @@
     </unit>
     <unit id="sig.anchor.off-confirm">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:198</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:202</note>
       </notes>
       <segment>
         <source>Switch off</source>
@@ -32528,7 +32528,7 @@
     </unit>
     <unit id="sig.anchor.switched-on">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:210</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:214</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="title" disp="title"/> applies again. Its signatures are judged again in the background.</source>
@@ -32537,7 +32537,7 @@
     </unit>
     <unit id="sig.anchor.switched-off">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:211</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:215</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="title" disp="title"/> no longer applies. Its signatures are judged again in the background.</source>
@@ -32546,7 +32546,7 @@
     </unit>
     <unit id="sig.switch.off-title">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:259</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:263</note>
       </notes>
       <segment>
         <source>Switch project trust anchors off?</source>
@@ -32555,7 +32555,7 @@
     </unit>
     <unit id="sig.switch.off-confirm">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:260</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:264</note>
       </notes>
       <segment>
         <source>Switch off</source>
@@ -32564,7 +32564,7 @@
     </unit>
     <unit id="sig.switch.off-text">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:267</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:271</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> project anchors stay stored and stop applying. The signatures only they know read &quot;Signed · signer not trusted&quot;.</source>
@@ -32573,7 +32573,7 @@
     </unit>
     <unit id="sig.switch.saved-on">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:280</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:284</note>
       </notes>
       <segment>
         <source>Project owners may add trust anchors for their project now.</source>
@@ -32582,7 +32582,7 @@
     </unit>
     <unit id="sig.switch.saved-off">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:281</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:285</note>
       </notes>
       <segment>
         <source>Project trust anchors are switched off.</source>
@@ -32591,7 +32591,7 @@
     </unit>
     <unit id="sig.block.lift-title">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:324</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:328</note>
       </notes>
       <segment>
         <source>Lift this block?</source>
@@ -32600,7 +32600,7 @@
     </unit>
     <unit id="sig.block.lift-text">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:325</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:329</note>
       </notes>
       <segment>
         <source>The signer&apos;s signatures are judged by the trust anchors again.</source>
@@ -32609,7 +32609,7 @@
     </unit>
     <unit id="sig.block.lift-confirm">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:326</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:330</note>
       </notes>
       <segment>
         <source>Lift block</source>
@@ -32618,7 +32618,7 @@
     </unit>
     <unit id="sig.block.lifted">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:334</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:338</note>
       </notes>
       <segment>
         <source>Block lifted.</source>
@@ -34440,8 +34440,8 @@
         <note category="location">src/app/features/setup/client-setup.ts:360</note>
       </notes>
       <segment>
-        <source>replace-registry-host=always makes npm fetch every package from this address, also when a lockfile written against another host names that host.</source>
-        <target>replace-registry-host=always lässt npm jedes Paket von dieser Adresse laden, auch wenn eine Lockfile, die gegen einen anderen Host geschrieben wurde, diesen Host nennt.</target>
+        <source>`replace-registry-host=always` makes npm fetch every package from this address, also when a lockfile written against another host names that host.</source>
+        <target>`replace-registry-host=always` lässt npm jedes Paket von dieser Adresse laden, auch wenn eine Lockfile, die gegen einen anderen Host geschrieben wurde, diesen Host nennt.</target>
       </segment>
     </unit>
     <unit id="setup.token.description">
@@ -34451,6 +34451,24 @@
       <segment>
         <source>Client setup: <ph id="0" equiv="client" disp="setup.client"/>, <ph id="1" equiv="repository" disp="repository"/>, <ph id="2" equiv="date" disp="new Date().toISOString().slice(0, 10)"/></source>
         <target>Client-Einrichtung: <ph id="0" equiv="client" disp="setup.client"/>, <ph id="1" equiv="repository" disp="repository"/>, <ph id="2" equiv="date" disp="new Date().toISOString().slice(0, 10)"/></target>
+      </segment>
+    </unit>
+    <unit id="setup.client.yarn-berry">
+      <notes>
+        <note category="location">src/app/features/setup/clients.ts:22</note>
+      </notes>
+      <segment>
+        <source>Yarn Berry (2 and later)</source>
+        <target>Yarn Berry (2 und neuer)</target>
+      </segment>
+    </unit>
+    <unit id="setup.client.docker">
+      <notes>
+        <note category="location">src/app/features/setup/clients.ts:31</note>
+      </notes>
+      <segment>
+        <source>Docker CLI (with Buildx)</source>
+        <target>Docker CLI (mit Buildx)</target>
       </segment>
     </unit>
     <unit id="setup.fold.powershell">

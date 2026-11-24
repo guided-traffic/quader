@@ -8160,6 +8160,10 @@ its pictures.
   rendered in Chromium, which sets text without hinting so that the development machine and the runner measure the same widths): the
   owner's row must fail with the 8 px he saw, each exception of R-UI-175 must pass, and an offset of 1.5 px must fail. `make
   ui-renders` runs them before the screens.
+- On demand the screens are rendered in Firefox or WebKit, the fixtures first in that engine
+  ([Q-UI-1049](#q-ui-1049--the-renders-run-in-firefox-or-webkit-on-demand-into-a-folder-of-their-own)), and the screens marked for it
+  in German against the dev server's German build
+  ([Q-UI-1048](#q-ui-1048--a-german-pass-of-the-renders-for-the-screens-marked-for-it)), each run into a folder of its own.
 - The shared patterns of the style guide are rendered with the app's own global stylesheet on the same pages and must pass, so the
   shared rule holds without a running UI
   ([Q-UI-725](#q-ui-725--the-guard-without-a-stack-renders-the-shared-patterns-with-the-global-stylesheet-and-a-lint-rule-refuses-the-off-line-declarations)). `make web-lint` refuses `vertical-align: middle` and `align-items: last baseline` in a style (the
@@ -22916,6 +22920,75 @@ then needs a Linux browser on the development machine too.
 **Applied in the spec:** R-UI-176. Code: [layout.ts](../../web/e2e/renders/layout.ts) (`label-apart`),
 [playwright.layout.config.ts](../../web/e2e/playwright.layout.config.ts), [playwright.renders.config.ts](../../web/e2e/playwright.renders.config.ts),
 [paths.ts](../../web/e2e/renders/paths.ts), the job `ui-layout` of [release.yml](../../.github/workflows/release.yml).
+
+### Q-UI-1047 · The UI development profile keeps the release's Sigstore root, and the walk answers a refreshed one
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the backend of the UI development profile (`deploy/ui-dev`) sent nine requests to `tuf-repo-cdn.sigstore.dev` at every start:
+the task `signature-trust-root` refreshes the public Sigstore root (R-SIG-017), verified from the TUF root the release embeds. The render
+seed reaches no public registry since W13; this was the last request of the profile to the internet. What the section **Public Sigstore
+root** of Settings › Signatures showed depended on it: the CDN's version when it was newer than the release's snapshot, the snapshot
+otherwise, a failure without a network.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `signatures.trust_root.refresh: false` in the profile; its root is the snapshot the release embeds (`internal/signatures/shipped/data`, the repository's own data); the walk `signatureSettings` answers a refreshed root in the browser, without a failure and with one (chosen) | The stack's answer is the release's snapshot | No request leaves the machine; the section shows the same at every start; every state of the section is rendered: the snapshot (the stack's), refreshed, refreshed with a failure | The refreshed states are answers of the walk, not of the task |
+| (b) A TUF repository of the profile's own, served on the machine, with `trust_root.url` pointing at it | The task runs | The task's own path | A repository the profile signs cannot be verified from the embedded TUF root; it needs a key that names another TUF root, a product setting that only the profile would use and that widens what an operator can make the installation trust |
+| (c) A copy of the public repository's metadata (the release's `tuf/`) served on the machine | The task verifies the real chain | No new setting | The timestamp of that metadata expires days after the snapshot, so every later start records a failure, the state the profile should not show by default |
+
+**Choice:** (a). The walk's section was closed after its reload and showed neither answered state before; it now opens it. **Rationale:**
+the trust root that ships with the release is a real state an installation without internet has, and the screen's other states are
+answered as the walk answers every state the stack cannot produce. The development agent would revisit it if the task's own path needs a
+render, which a test of the task (`internal/signatures/shipped/tuftest`) covers today.
+
+**Applied in the spec:** none (the development profile). Code: [config.sh](../../deploy/ui-dev/config.sh), `signatureSettings` of
+[screens.ts](../../web/e2e/renders/screens.ts). Elsewhere: [web-ui.md](../developer/web-ui.md#local-ui-development).
+
+### Q-UI-1048 · A German pass of the renders, for the screens marked for it
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: `make ui-renders` renders in English: the dev server of the profile builds one locale (`development` holds `localize: ["en"]`),
+and every walk finds its controls by English words. German pages were looked at only by hand in the embedded build, and Set up client's
+German page was never rendered (section 12 of the plan). The checks of a German word's length exist only for the folds' labels
+(Q-UI-810).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `UI_RENDERS_LOCALE=de`: the dev server builds the German locale (the configurations `de` of `web/angular.json`), the run renders the screens marked `de: true` into `.out/ui-renders-de`, and their walks find controls by their place, not their words (chosen) | A pass of chosen screens | The same seed, profile and checks as the English renders; a screen joins with one flag; no second source of words | A screen joins only once its walk is free of English words |
+| (b) Every screen in German | The whole walk twice | Every German page seen | Most walks click by English names (a rewrite of 2,800 lines), and the run doubles the pipeline's longest job |
+| (c) Render against the embedded build (`/ui/de/`) | The production build | The build that ships | A production build per render and a backend restart; the backend serves the build it embedded at its start |
+
+**Choice:** (a). The German dev server runs on the instance's port in place of the English one (the base URL, the cookies and the origin
+check stay those of the profile); `renders.sh` refuses to render against a dev server of the other language. The first screens: Set up
+client (`setup-npm-virtual`, `setup-oci-local`, `setup-npm-bastion`) and the tab Downloads (`repository-npm-remote-downloads`).
+The pipeline keeps the English renders. **Rationale:** the German words are longest where a layout breaks first; a screen whose words
+change gets its German look at the price of one flag. The development agent would revisit it if a German finding in the running
+installation shows a screen the pass did not hold.
+
+**Applied in the spec:** R-UI-176. Code: [paths.ts](../../web/e2e/renders/paths.ts), [render.spec.ts](../../web/e2e/renders/render.spec.ts),
+[playwright.renders.config.ts](../../web/e2e/playwright.renders.config.ts), [renders.sh](../../deploy/ui-dev/renders.sh),
+[web.sh](../../deploy/ui-dev/web.sh), [angular.json](../../web/angular.json). Elsewhere: [web-ui.md](../developer/web-ui.md#renders-of-every-screen).
+
+### Q-UI-1049 · The renders run in Firefox or WebKit on demand, into a folder of their own
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the layout checks' fixtures run in Chromium, Firefox and WebKit (Q-UI-1045); the screens' renders in Chromium only. The colour
+scale of the severities (Q-UI-860 to Q-UI-862) draws its bands and edges with SVG strokes whose `vector-effect` and rounding differ per
+engine, and was rendered in Chromium only (section 12 of the plan).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `UI_RENDERS_ENGINE=firefox` or `webkit`: the same walk in that engine, its layout checks first in that engine, the pictures in `.out/ui-renders-<engine>`; by hand, with `--grep` (chosen) | An engine on demand | A screen whose drawing depends on the engine is looked at in it; nothing in the pipeline grows | Nobody renders it unasked |
+| (b) Every push renders the three engines | Three walks | Every engine always | Three times the pipeline's longest job, for differences that only drawn screens have |
+
+**Choice:** (a). **Rationale:** the engine is a question for screens that draw (charts, bars), not for text and boxes, which the
+fixtures hold in three engines. The development agent would revisit it if a defect of one engine reaches the running installation.
+
+**Applied in the spec:** R-UI-176. Code: [paths.ts](../../web/e2e/renders/paths.ts), [playwright.renders.config.ts](../../web/e2e/playwright.renders.config.ts),
+[renders.sh](../../deploy/ui-dev/renders.sh). Elsewhere: [web-ui.md](../developer/web-ui.md#renders-of-every-screen).
 
 ### Q-UI-1046 · A journey takes a page's words by their message ID, and the lint holds the ID and the words
 

@@ -21,6 +21,7 @@ import { authFile, edge, outDir, stateDir } from './paths';
 import { seedMalwareContent, seedMalwareVerdicts } from './malware';
 import { seedSignatures, seedSignatureSettings } from './signatures';
 import { seedScannerReplicas } from './scanners';
+import { seedBastion } from './bastions';
 
 /**
  * The global setup of `make ui-renders`: waits for the edge (the dev server of the UI development profile), seeds the data
@@ -42,6 +43,7 @@ export default async function setup(): Promise<void> {
   await seedProjectsAndRepositories(admin);
   await seedUpstreamRegistries(admin);
   await seedRegistryPresets(admin);
+  await seedBastion(admin);
 
   const browser = await chromium.launch();
   try {
@@ -103,7 +105,8 @@ async function signIn(browser: Browser, kind: keyof typeof kinds): Promise<void>
     await page.getByRole('button', { name: new RegExp(`\\(${kinds[kind]}\\)`) }).click();
     // The login returns under the dev server's base href, /ui/ (UI-A-49): the start page opens signed in.
     await page.waitForURL((url) => url.origin === edge && url.pathname.startsWith('/ui/'));
-    await expect(page.getByRole('button', { name: /User menu/ })).toBeVisible({ timeout: 30_000 });
+    // By its place, not its words: the German pass signs in through the German app (UI_RENDERS_LOCALE=de).
+    await expect(page.locator('button.user-button')).toBeVisible({ timeout: 30_000 });
     const api = await Api.of(context.request, edge);
     const prefs = await api.get('/api/v1/users/me/preferences');
     await expectStatus(prefs, [200], `preferences of ${kinds[kind]}`);

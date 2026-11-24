@@ -105,6 +105,10 @@ describe('Admin area › Settings › Signatures (R-SIG-036)', () => {
     const facts = text(root.querySelector('[data-testid="signature-root"]')!);
     expect(facts).toContain('Refreshed from the Sigstore update repository');
     expect(facts).toContain('tuf: timeout');
+    // The task's message stands on a line of its own below the state and its time.
+    const failure = root.querySelector('[data-testid="signature-root"] dd .root-failure')!;
+    expect(failure.textContent).toBe('tuf: timeout');
+    expect(failure.previousElementSibling?.querySelector('quader-time-ago')).not.toBeNull();
   });
 
   it('R-SIG-036 the side bar offers the page to the holder of settings:read', async () => {

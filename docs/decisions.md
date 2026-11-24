@@ -10122,10 +10122,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-CUR
 
-47 questions on [spec/remote-curation.md](spec/remote-curation.md).
+48 questions on [spec/remote-curation.md](spec/remote-curation.md).
 
 <details>
-<summary>Q-CUR: 47 questions</summary>
+<summary>Q-CUR: 48 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10176,6 +10176,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-CUR-131](spec/remote-curation.md#q-cur-131--the-tabs-filters-are-the-states-as-pressed-buttons-with-their-counts-and-failure-as-a-select-in-the-address) | The tab's filters are the states as pressed buttons with their counts, and Failure as a select, in the address | Decided by the development agent | (a) **All**, **Waiting**, **Running**, **Failed**, **Done** as pressed buttons with their counts as badges; **Failure** a select beside them; the address `state`, `failure`, `bulk` | — |
 | [Q-CUR-132](spec/remote-curation.md#q-cur-132--a-row-offers-retry-or-cancel-by-its-state-to-whom-the-api-lets-change-it-and-a-bulks-line-stands-over-its-rows) | A row offers Retry or Cancel by its state to whom the API lets change it, and a bulk's line stands over its rows | Decided by the development agent | (a) One word per row by its state (**Retry** for failed and cancelled, **Cancel** for waiting and running), offered to the row's starter, to a holder of `manage` or the role `admin`, and for a probe's or a client's row that the rules deliver to a caller whose check of `read` and of the repository's `cacheFillAction` passes (a reader's view, which lacks it, asks `read`, the default); the opened row shows the failure without a second **Retry**; a bulk's line only where the address names the bulk | — |
 | [Q-CUR-133](spec/remote-curation.md#q-cur-133--the-tab-reads-the-queue-again-while-the-repository-has-a-row-that-waits-or-runs-keeping-what-is-shown) | The tab reads the queue again while the repository has a row that waits or runs, keeping what is shown | Decided by the development agent | (a) The timer runs while the answer's counts hold a waiting or running row of the repository, or the bulk shown expands or waits; a refresh reads the first page again with as many rows as are shown (at least 50, at most 500) and replaces them; a filter starts over | — |
+| [Q-CUR-134](spec/remote-curation.md#q-cur-134--a-failures-class-and-step-stand-in-words-with-their-value-in-a-muted-line-of-code-below) | A failure's class and step stand in words, with their value in a muted line of code below | Decided by the development agent on 2026-11-24 | (a) The words, and below them the value as code in the muted second line the shared table gives a technical name (`.secondary`), for every failure | — |
 
 </details>
 
@@ -12036,10 +12037,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-519 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+522 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 519 questions</summary>
+<summary>Q-UI: 522 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12559,6 +12560,9 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1044](spec/api-and-ui.md#q-ui-1044--an-instance-of-the-ui-development-profile-is-claimed-not-chosen) | An instance of the UI development profile is claimed, not chosen | Decided by the development agent on 2026-11-23 | (a) A claim per instance, the file `<main>/.dev/ui-dev-claims/<n>` with the claiming checkout's path, read and written under an flock(2) lock; a worktree without `UI_INSTANCE` takes the instance it claims or the first free one; a number another existing checkout claims is refused; a claim whose checkout is gone is taken over after its compose project's containers and volumes are removed; an instance that runs without a claim is never picked and is refused when named, `down.sh` may still end it; `make ui-dev-down PURGE=1` ends a claim | — |
 | [Q-UI-1045](spec/api-and-ui.md#q-ui-1045--the-layout-checks-fixtures-run-in-three-engines-and-chromium-sets-text-without-hinting) | The layout checks' fixtures run in three engines, and Chromium sets text without hinting | Decided by the development agent on 2026-11-23 | (a) The checks measure what they name in a way that holds in every engine (`label-apart`: the value's middle below the name's bottom), the fixtures run in Chromium, Firefox and WebKit with no mark for one engine, and Chromium runs with `--font-render-hinting=none` in the fixtures and the renders | — |
 | [Q-UI-1046](spec/api-and-ui.md#q-ui-1046--a-journey-takes-a-pages-words-by-their-message-id-and-the-lint-holds-the-id-and-the-words) | A journey takes a page's words by their message ID, and the lint holds the ID and the words | Decided by the development agent on 2026-11-23 | (a) `ui('<ID>')` reads the unit's source of `messages.xlf` (the German target with `'de'`); a lint rule fails an ID without a plain text and an ID whose words in the code (`$localize` with `:@@ID:`, an element's `i18n="@@ID"`) differ from `messages.xlf`; journeys move to it when they are next changed | — |
+| [Q-UI-1047](spec/api-and-ui.md#q-ui-1047--the-ui-development-profile-keeps-the-releases-sigstore-root-and-the-walk-answers-a-refreshed-one) | The UI development profile keeps the release's Sigstore root, and the walk answers a refreshed one | Decided by the development agent on 2026-11-24 | (a) `signatures.trust_root.refresh: false` in the profile; its root is the snapshot the release embeds (`internal/signatures/shipped/data`, the repository's own data); the walk `signatureSettings` answers a refreshed root in the browser, without a failure and with one | — |
+| [Q-UI-1048](spec/api-and-ui.md#q-ui-1048--a-german-pass-of-the-renders-for-the-screens-marked-for-it) | A German pass of the renders, for the screens marked for it | Decided by the development agent on 2026-11-24 | (a) `UI_RENDERS_LOCALE=de`: the dev server builds the German locale (the configurations `de` of `web/angular.json`), the run renders the screens marked `de: true` into `.out/ui-renders-de`, and their walks find controls by their place, not their words | — |
+| [Q-UI-1049](spec/api-and-ui.md#q-ui-1049--the-renders-run-in-firefox-or-webkit-on-demand-into-a-folder-of-their-own) | The renders run in Firefox or WebKit on demand, into a folder of their own | Decided by the development agent on 2026-11-24 | (a) `UI_RENDERS_ENGINE=firefox` or `webkit`: the same walk in that engine, its layout checks first in that engine, the pictures in `.out/ui-renders-<engine>`; by hand, with `--grep` | — |
 | [Q-UI-1050](spec/api-and-ui.md#q-ui-1050--a-stacked-row-is-a-grid-of-names-and-values-one-field-a-line) | A stacked row is a grid of names and values, one field a line | Decided by the development agent | (a), in [data-table.ts](../web/src/app/shared/ui/data-table.ts) (`measure`) and [_list-screens.scss](../web/src/styles/_list-screens.scss) (Stacked rows). | — |
 | [Q-UI-1051](spec/api-and-ui.md#q-ui-1051--a-versions-file-path-is-its-download) | A version's file path is its download | Decided by the development agent | (a) The path is the link that downloads the file, with the title "Download"; no column **Download**; a file that offers none (refused by a gate, in a system or a disabled repository) shows its path as text | — |
 | [Q-UI-1052](spec/api-and-ui.md#q-ui-1052--token-is-neuter-in-every-german-text) | "Token" is neuter in every German text | Decided by the development agent | (a), written into the [glossary](../web/src/locale/GLOSSARY.md) and held by [formal-german.spec.ts](../web/src/app/shared/formal-german.spec.ts), which refuses the masculine forms that have no plural reading. | — |

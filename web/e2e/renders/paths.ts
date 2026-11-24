@@ -9,8 +9,27 @@ export const edge = process.env['UI_RENDERS_EDGE'] ?? 'https://localhost:4200';
  * a stack of its own (docs/developer/web-ui.md#local-ui-development).
  */
 export const stateDir = process.env['UI_RENDERS_STATE'] ?? join(root, '.dev', 'ui-dev');
-/** Where the pictures, the contact sheet and the report go. */
-export const outDir = join(root, '.out', 'ui-renders');
+/**
+ * The language of the run (UI_RENDERS_LOCALE): `en`, or `de` for the German pass, which renders the screens marked `de` against the
+ * dev server's German build (deploy/ui-dev/renders.sh starts it, web/angular.json's configuration `de`; Q-UI-1048).
+ */
+export const locale: 'en' | 'de' = choose('UI_RENDERS_LOCALE', ['en', 'de'] as const);
+/** The browser engine of the run (UI_RENDERS_ENGINE): `chromium`, the pipeline's, or `firefox` or `webkit` for a look by hand (Q-UI-1049). */
+export const engine: 'chromium' | 'firefox' | 'webkit' = choose('UI_RENDERS_ENGINE', ['chromium', 'firefox', 'webkit'] as const);
+
+function choose<T extends string>(name: string, values: readonly T[]): T {
+  const v = process.env[name] || values[0];
+  if (!values.includes(v as T)) throw new Error(`${name}=${v}: one of ${values.join(', ')}`);
+  return v as T;
+}
+
+/**
+ * Where the pictures, the contact sheet and the report go: `.out/ui-renders`, and for a run in another language or engine a folder of
+ * its own beside it (`.out/ui-renders-de`, `.out/ui-renders-firefox`, `.out/ui-renders-webkit-de`), so that no run replaces the pictures
+ * of another.
+ */
+const variant = [engine === 'chromium' ? '' : engine, locale === 'en' ? '' : locale].filter((v) => v !== '').join('-');
+export const outDir = join(root, '.out', variant === '' ? 'ui-renders' : `ui-renders-${variant}`);
 /** The session of one kind of user, kept by the setup. */
 export const authFile = (kind: string): string => join(outDir, '.auth', `${kind}.json`);
 /** One line of JSON per picture and per failure, written by the renders and read by the contact sheet. */

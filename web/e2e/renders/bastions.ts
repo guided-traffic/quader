@@ -1,4 +1,5 @@
 import { Page, expect } from '@playwright/test';
+import { Api, expectStatus, psql } from './seed';
 
 /**
  * The Bastions screen's direct reads from the object store (bastion.md R-BAS-071), answered in the browser: the render profile has no
@@ -97,6 +98,34 @@ const blocked = [
   }),
 ];
 
+/**
+ * The registration of the seed (R-BAS-004, R-BAS-007): a Bastion that reported its base URL at a contact of one replica a moment ago, so
+ * that **Set up client** offers it under **Install from** and answers its snippets (`setup-npm-bastion`). The base URL is an entry of
+ * `server.additional_base_urls` of the profile (deploy/ui-dev/config.sh), as the setup answer requires. It holds one token, and the
+ * contact is written as a Bastion's handshake with that token leaves it, through the profile's database: the profile runs no Bastion.
+ * A second run finds the registration and its token and moves the contact to now.
+ */
+export const seededBastion = { name: 'dmz-berlin', baseUrl: 'https://packages.dmz-berlin.example.com' } as const;
+
+export async function seedBastion(admin: Api): Promise<void> {
+  const created = await admin.post('/api/v1/bastions', { name: seededBastion.name, description: 'The DMZ of the Berlin office, for the build agents of our partners' });
+  await expectStatus(created, [201, 409], `the Bastion ${seededBastion.name}`);
+  // The token its chart reads, issued once: the replica made contact with it.
+  const read = await admin.get(`/api/v1/bastions/${seededBastion.name}`);
+  await expectStatus(read, [200], `the Bastion ${seededBastion.name}`);
+  if (((await read.json()) as { tokens: unknown[] }).tokens.length === 0) {
+    const token = await admin.post(`/api/v1/bastions/${seededBastion.name}/tokens`, { description: 'berlin 2026' });
+    await expectStatus(token, [201], `a token of the Bastion ${seededBastion.name}`);
+  }
+  psql(`INSERT INTO bastion_contact (bastion_id, replica, contact_at, client_address, release, interface_version, base_url, token_id)
+SELECT p.id, 'quader-bastion-6c9f7d5b8-k2m4x', now(), '192.0.2.41', '0.42.0', 6, '${seededBastion.baseUrl}',
+       (SELECT t.id FROM api_token t WHERE t.principal_id = p.id ORDER BY t.created_at DESC LIMIT 1)
+  FROM principal p WHERE p.kind = 'bastion' AND p.name = '${seededBastion.name}'
+ON CONFLICT (bastion_id, replica) DO UPDATE SET contact_at = now(), base_url = EXCLUDED.base_url, token_id = EXCLUDED.token_id;
+UPDATE api_token t SET last_used_at = now(), last_used_addr = '192.0.2.41'
+  FROM principal p WHERE t.principal_id = p.id AND p.kind = 'bastion' AND p.name = '${seededBastion.name}';`);
+}
+
 /** The registrations and the connections' states as the walk wants them, then the page loaded again. */
 async function answer(page: Page, frankfurtOn: boolean, connections: readonly Json[]): Promise<void> {
   const list = '**/api/v1/bastions';
@@ -114,14 +143,20 @@ async function answer(page: Page, frankfurtOn: boolean, connections: readonly Js
 }
 
 /**
- * **Admin area › Bastions** (R-BAS-007, R-BAS-071): as the stack answers (no registration); two registrations with their replicas and
- * tokens, `partners` with the direct reads off and `dmz-frankfurt-edge` with them on while every connection can be read (the switch
- * and its sentence alone); the same with three connections a Bastion cannot read, an encrypted one among them, each line with its reason,
- * and the link to the storage settings, while the encrypted one it reads with each file's key has no line.
+ * **Admin area › Bastions** (R-BAS-007, R-BAS-071): as the stack answers (the seed's registration, its token, one replica that
+ * reported its base URL); no registration at all; two registrations with their replicas and tokens, `partners` with the direct reads off and
+ * `dmz-frankfurt-edge` with them on while every connection can be read (the switch and its sentence alone); the same with three
+ * connections a Bastion cannot read, an encrypted one among them, each line with its reason, and the link to the storage settings, while
+ * the encrypted one it reads with each file's key has no line.
  */
 export async function* bastionsHandover(page: Page): AsyncGenerator<string> {
   await expect(page.getByRole('heading', { name: 'Bastions', level: 1 })).toBeVisible();
+  await expect(page.locator('main quader-bastion-card')).toHaveCount(1);
   yield '';
+  await page.route('**/api/v1/bastions', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [] }) }));
+  await page.reload();
+  await expect(page.locator('main quader-empty-state')).toBeVisible();
+  yield 'empty';
   await answer(page, true, readable);
   await expect(page.getByRole('switch', { name: 'Direct reads from the object store for dmz-frankfurt-edge' })).toHaveAttribute('aria-checked', 'true');
   yield 'switch';

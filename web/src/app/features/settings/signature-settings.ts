@@ -76,6 +76,10 @@ import { SigningIdentitySection } from './signing-identity';
     .block-value {
       overflow-wrap: anywhere;
     }
+    .root-failure {
+      display: block;
+      overflow-wrap: anywhere;
+    }
     .block-reason {
       display: block;
       margin-block-start: var(--quader-space-1);

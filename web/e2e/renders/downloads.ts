@@ -194,10 +194,11 @@ export async function* downloadsWalk(p: Page): AsyncGenerator<string> {
   await p.reload();
   await expect(p.locator('main quader-remote-downloads tbody tr:not(.expansion)')).toHaveCount(9);
   yield 'queue';
-  await p.getByRole('button', { name: 'Details of left-pad 1.3.0' }).click();
+  // The controls by their place, not their words: the German pass walks the tab too (UI_RENDERS_LOCALE=de).
+  await p.locator('main quader-remote-downloads button[aria-controls="dl-0193a1b2-0000-7000-8000-000000000005"]').click();
   await expect(p.locator('main quader-remote-downloads .collapse-region.open pre.excerpt')).toBeVisible();
   yield 'failure';
-  await p.getByRole('link', { name: 'Bulk' }).first().click();
+  await p.locator('main quader-remote-downloads td a[href*="bulk="]').first().click();
   await expect(p.locator('main [data-testid="download-bulk"] h2')).toBeVisible();
   await expect(p.locator('main quader-remote-downloads tbody tr:not(.expansion)')).toHaveCount(3);
   yield 'bulk';

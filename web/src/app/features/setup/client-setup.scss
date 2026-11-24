@@ -266,3 +266,8 @@
     font: var(--quader-type-title-medium);
   }
 }
+
+// The Bastion's name in the banner is one name of at most 20 characters (R-BAS-004): it never breaks at its hyphen.
+.banner-warning strong {
+  white-space: nowrap;
+}

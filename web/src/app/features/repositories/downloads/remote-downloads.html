@@ -200,16 +200,17 @@
             @if (isOpen(r)) {
               <div class="row-detail">
                 @if (r.failure; as f) {
-                  <!-- The whole failure of the last attempt (R-CUR-011, Q-CUR-20): what a script filters on beside its words. -->
+                  <!-- The whole failure of the last attempt (R-CUR-011, Q-CUR-20): what a script filters on below its words, a muted line of
+                       code of its own, so that the words and the value never read as one phrase said twice (Q-CUR-134). -->
                   <h3 class="detail-title">
                     <ng-container i18n="@@downloads.failure.title">Failure of attempt {{ f.attempt }}</ng-container><span class="muted dot-before"><quader-time-ago [at]="f.at" absolute="title" /></span>
                   </h3>
                   <p class="failure-detail">{{ f.detail }}</p>
                   <dl class="facts">
                     <dt i18n="@@downloads.failure.class">Class</dt>
-                    <dd>{{ classText(f.class) }}&ngsp;<code translate="no">{{ f.class }}</code></dd>
+                    <dd>{{ classText(f.class) }}&ngsp;<code class="secondary" translate="no">{{ f.class }}</code></dd>
                     <dt i18n="@@downloads.failure.step">Step</dt>
-                    <dd>{{ stepText(f.step) }}&ngsp;<code translate="no">{{ f.step }}</code></dd>
+                    <dd>{{ stepText(f.step) }}&ngsp;<code class="secondary" translate="no">{{ f.step }}</code></dd>
                     <dt i18n="@@downloads.failure.code">Code</dt>
                     <dd><code translate="no">{{ f.code }}</code></dd>
                     @if (f.file) {

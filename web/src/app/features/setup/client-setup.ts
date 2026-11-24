@@ -357,7 +357,7 @@ export class ClientSetupPage {
   /** The sentence under a snippet that is for a Bastion and holds what only a Bastion needs (R-BAS-007). */
   protected bastionNote(sn: ClientSnippet): string | null {
     return this.activeBastion() !== null && sn.content.includes('replace-registry-host=always')
-      ? $localize`:@@setup.bastion.replace-host:replace-registry-host=always makes npm fetch every package from this address, also when a lockfile written against another host names that host.`
+      ? $localize`:@@setup.bastion.replace-host:\`replace-registry-host=always\` makes npm fetch every package from this address, also when a lockfile written against another host names that host.`
       : null;
   }
 

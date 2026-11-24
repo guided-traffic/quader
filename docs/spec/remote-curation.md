@@ -1110,7 +1110,8 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
     examination"), **Origin**, **State** (the badge, a done row's outcome, "Attempt 2 of 5 · next in 4 minutes"), **Progress** ("2 of 3
     files · 46.0 MiB", the files a gate refused), **Failure** (the class, the upstream's status or else the engine's code, the host:
     "Upstream error · HTTP 503 · registry.npmjs.org"). A row opens in place to its whole failure (the sentence, the class and the step
-    each in words and as its value, the code, the file, the address "shown without its query, which can carry a credential", the
+    each in words with its value in a muted line of code below
+    ([Q-CUR-134](#q-cur-134--a-failures-class-and-step-stand-in-words-with-their-value-in-a-muted-line-of-code-below)), the code, the file, the address "shown without its query, which can carry a credential", the
     upstream's status, Retry-After, the start of the upstream's answer in a code block) and to its facts (who started it, where the API
     names a person; queued, started, finished; the files named, stored, already stored and refused; the bytes). A row's one action is
     **Retry** or **Cancel** by its state, in its action cell
@@ -2215,6 +2216,28 @@ list again at every refresh (`PagedResource.start`), which drops what **Load mor
 development agent would revisit the cap if a refresh of 500 rows shows in the API's figures.
 
 **Applied in the spec:** R-CUR-018 (the tab Downloads, "As built").
+
+### Q-CUR-134 · A failure's class and step stand in words, with their value in a muted line of code below
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the opened row of the tab Downloads showed the class and the step of a failure each in words with its value beside them,
+"Step  The answer's status `status`" and "Class  Upstream error `upstream_error`": where the words and the value share a word, the line
+reads as one phrase said twice. The value stays, since it is what a script filters on (Q-CUR-20) and what the filter **Failure** puts
+into the address.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The words, and below them the value as code in the muted second line the shared table gives a technical name (`.secondary`), for every failure (chosen) | One place for the value in every row | No stutter: the eye reads the words and finds the value under them; the value is where it was in every failure; no new style | One line more per fact |
+| (b) The value only where it differs from the words | A judgement per value | Shorter where they agree | "Differs" has no rule a reader can see (`upstream_error` against "Upstream error", `status` against "The answer's status"); the value a script needs is missing in some rows and present in others, and German words always differ |
+| (c) The value alone | The code | Shortest | A reader who does not script reads `upstream_rate_limited` instead of a sentence |
+
+**Choice:** (a). The step and the class keep their words first; the code (`Code`) and the file, the address and the status keep their
+own rows. **Rationale:** the two readers of the details, a person and a script's author, each find their part at one place; the
+development agent would revisit it if a reader asks for the values to be hidden behind a toggle.
+
+**Applied in the spec:** R-CUR-018 (the tab Downloads, "As built"). Code: [remote-downloads.html](../../web/src/app/features/repositories/downloads/remote-downloads.html),
+[remote-downloads.spec.ts](../../web/src/app/features/repositories/downloads/remote-downloads.spec.ts).
 
 ### Q-CUR-80 · A download of one version runs before the catalogue: the call that names its files is a contract interface of its own
 

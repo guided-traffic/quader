@@ -30,6 +30,9 @@ server:
   listen: 127.0.0.1:$UI_BACKEND_PORT
   ops_listen: 127.0.0.1:$UI_OPS_PORT
   base_url: https://localhost:$UI_WEB_PORT
+  # The base URL the render seed's Bastion dmz-berlin reported (web/e2e/renders/bastions.ts): Set up client answers a Bastion's
+  # snippets only for a base URL listed here (R-BAS-007). No request reaches it; the profile runs no Bastion.
+  additional_base_urls: ["https://packages.dmz-berlin.example.com"]
   trusted_proxies: ["127.0.0.1/32", "::1/128"]
   tls:
     certificates:
@@ -110,6 +113,12 @@ vulnerabilities:
       ecosystems: [npm]
     kev:
       mode: "off"
+signatures:
+  trust_root:
+    # Nor does it refresh the public Sigstore root from tuf-repo-cdn.sigstore.dev (R-SIG-017), which nine requests at every start did:
+    # the profile's root is the snapshot the release embeds (internal/signatures/shipped/data). The section on Settings > Signatures
+    # shows it as the snapshot of the release; the walk answers a refreshed root, with and without a failure, in the browser (Q-UI-1047).
+    refresh: false
 maintenance:
   tasks:
     # Nor does it fetch the image scanning's database on a schedule: about 142 MB from mirror.gcr.io through upstream/scanner-trivy every

@@ -9,6 +9,8 @@
 # Instances 2 to 8 render against an instance of their own (deploy/ui-dev/instance.sh): its containers, its quader and sign-in
 # provider, its dev server, its database for the seed; a worktree claims a free one when UI_INSTANCE is unset, instance 1 is the
 # main checkout's.
+# UI_RENDERS_LOCALE=de renders the screens marked `de` against the dev server's German build (Q-UI-1048), UI_RENDERS_ENGINE=firefox or
+# webkit renders in that engine (Q-UI-1049); each into a folder of its own (.out/ui-renders-de, -firefox, -webkit-de).
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -22,7 +24,11 @@ web_log="$root/.out/ui-renders.web.log"
 
 # The layout checks first, on their fixtures (seconds, no stack): a check that cannot find the defects it names judges nothing. In
 # Chromium, the engine of the screens' renders; `make ui-layout-test` runs them in Firefox and WebKit too (Q-UI-1045).
-(cd web && npx playwright test -c e2e/playwright.layout.config.ts --project chromium)
+# A run in another engine proves them in that engine.
+engine="${UI_RENDERS_ENGINE:-chromium}"
+locale="${UI_RENDERS_LOCALE:-en}"
+case "$locale" in en | de) ;; *) echo "UI_RENDERS_LOCALE=$locale: en or de" >&2; exit 1 ;; esac
+(cd web && npx playwright test -c e2e/playwright.layout.config.ts --project "$engine")
 
 deploy/ui-dev/up.sh
 
@@ -56,11 +62,17 @@ if ! curl -skf -o /dev/null "https://127.0.0.1:$UI_OPS_PORT/readyz"; then
 fi
 
 if ! curl -skf -o /dev/null "https://localhost:$UI_WEB_PORT/ui/"; then
-  echo "ui-renders: starting the dev server (log: $web_log)"
+  echo "ui-renders: starting the dev server in $locale (log: $web_log)"
   # web.sh execs the ng process itself, not npm around it, so that the TERM of cleanup reaches it.
-  deploy/ui-dev/web.sh > "$web_log" 2>&1 &
+  UI_LOCALE="$([ "$locale" = en ] || echo "$locale")" deploy/ui-dev/web.sh > "$web_log" 2>&1 &
   started+=("$!")
   wait_for "the dev server" 300 "https://localhost:$UI_WEB_PORT/ui/" "$web_log" "$!"
+fi
+# The dev server builds one locale: one that runs already must serve the run's (its page's lang attribute).
+served="$(curl -skf "https://localhost:$UI_WEB_PORT/ui/" | sed -n 's/.*<html lang="\([a-z-]*\)".*/\1/p' | head -n 1)"
+if [ "$served" != "$locale" ]; then
+  echo "ui-renders: the dev server on port $UI_WEB_PORT serves '$served', the run wants '$locale': stop it, and renders.sh starts one in $locale" >&2
+  exit 1
 fi
 
 # The renders' edge, state and database are the instance's (web/e2e/renders/paths.ts, seed.ts).

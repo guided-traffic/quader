@@ -2,7 +2,7 @@
 export interface ClientChoice {
   /** The value of the `client` parameter of R-API-030. */
   readonly id: string;
-  /** A product name; it is not translated. */
+  /** A product name; it is not translated, the words beside it are ("Docker CLI (with Buildx)"). */
   readonly label: string;
 }
 
@@ -19,7 +19,7 @@ export const FORMAT_CLIENTS: Readonly<Record<string, readonly ClientChoice[]>> =
   npm: [
     { id: 'npm', label: 'npm' },
     { id: 'pnpm', label: 'pnpm' },
-    { id: 'yarn', label: 'Yarn Berry (2 and later)' },
+    { id: 'yarn', label: $localize`:@@setup.client.yarn-berry:Yarn Berry (2 and later)` },
     { id: 'yarn-classic', label: 'Yarn Classic (1.x)' },
   ],
   nuget: [
@@ -28,7 +28,7 @@ export const FORMAT_CLIENTS: Readonly<Record<string, readonly ClientChoice[]>> =
     { id: 'visual-studio', label: 'Visual Studio' },
   ],
   oci: [
-    { id: 'docker', label: 'Docker CLI (with Buildx)' },
+    { id: 'docker', label: $localize`:@@setup.client.docker:Docker CLI (with Buildx)` },
     { id: 'podman', label: 'Podman' },
   ],
   deb: [{ id: 'apt', label: 'APT (apt, apt-get)' }],
