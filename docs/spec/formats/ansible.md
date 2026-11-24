@@ -727,10 +727,10 @@ obtains from a single-sign-on realm with a long-lived **offline token** (a refre
 
 | Setting | Value for the Hub | Default |
 |---|---|---|
-| `remote.url` | `https://console.redhat.com/api/automation-hub/` (an API root, R-ANS-016; **not verified** that this answers `available_versions`) | none |
+| `remote.url` | `https://console.redhat.com/api/automation-hub/` (an API root, R-ANS-016; **not verified** that this answers `available_versions`: without a token it answers `401` "Missing Authentication", 2026-11-24) | none |
 | `remote.auth` | the offline token as the stored secret of the repository's credential (R-REPO-033), mode `bearer` | none |
-| `ansible.authUrl` | the token endpoint, `https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token` (# example) | none (empty: the credential is sent as it is) |
-| `ansible.clientId` | the client identifier of the grant, `cloud-services` (# example, not verified) | `cloud-services` |
+| `ansible.authUrl` | the token endpoint, `https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token` (# example; it answers the grant, H-842) | none (empty: the credential is sent as it is) |
+| `ansible.clientId` | the client identifier of the grant, `cloud-services` (# example; a client the realm knows, H-842) | `cloud-services` |
 
 - With `ansible.authUrl` set, the adapter exchanges the stored credential at that URL with `grant_type=refresh_token`,
   `client_id=<clientId>` and `refresh_token=<offline token>` (form-encoded, `application/x-www-form-urlencoded`), reads `access_token` and
@@ -743,8 +743,8 @@ obtains from a single-sign-on realm with a long-lived **offline token** (a refre
   that receives the credential in effect for one exchange only: `formats.CredentialExchanger`, recorded in architecture.md R-ARCH-008 and
   in ADR-191 ([Q-ANS-51](#q-ans-51--the-hub-exchange-is-the-optional-interface-credentialexchanger-and-the-engine-sends-the-exchanged-token-and-never-the-credential)). The engine sends the realm request, caches the token and sends the upstream request with the token in place of the
   credential, so the offline token never goes to the upstream, and nothing is sent to the upstream when the exchange fails.
-- A failed exchange (a 400 `invalid_grant` of the realm, a 401 or 403) is 502 `upstream_auth_failed`, the answer every credential the
-  upstream refuses has (R-REPO-033), never an empty list; an unreachable realm is the engine's `upstream_unreachable`. The security event
+- A failed exchange (a 400 `invalid_grant` of the realm, a 401 `invalid_client` or a 403) is 502 `upstream_auth_failed`, the answer every
+  credential the upstream refuses has (R-REPO-033), with a detail that names the realm, never an empty list; an unreachable realm is the engine's `upstream_unreachable`. The security event
   of the failed request names the realm's host and no token.
 - `ansible.authUrl` must be an `https` URL (`http` only for a loopback address, the test stub's), without user information, query or fragment;
   the repository needs `remote.authMode: bearer` (the stored secret is the refresh token) and the endpoint's host is the upstream's or an
@@ -3164,7 +3164,21 @@ installation that relies on the dashboard for Ansible content.
 
 The Automation Hub's API root, its realm and client identifier, and the response shape are taken from the catalog page and the usual OAuth
 refresh-token grant (R-ANS-019); no Red Hat account was available to the development agent. The mechanism is proven against a stub
-realm only. Dormant until a remote is pointed at the hub; real the first time it is, when the URL, the client id or the shape may differ.
+realm only. Dormant until a remote is pointed at the hub; real the first time it is, when the URL or the shape may differ.
+
+**Read from the service without an account on 2026-11-24** (02:29 UTC, curl, a dummy token): the realm's token endpoint of R-ANS-019
+answers the refresh-token grant with `client_id=cloud-services` `400` `{"error":"invalid_grant","error_description":"Invalid refresh
+token"}`, and with a client it does not know `401` `invalid_client`, so the address and the default client id are the service's. The
+stub's realm answers both as the service does since then, and `TestR_ANS_019_TheRealmsRecordedRefusalsAreUpstreamAuthFailedAndNameTheRealm`
+(unit, `internal/proxy`, milliseconds) holds the recorded answers: the `401` had been classified as the upstream's refusal, whose detail
+named the upstream instead of the realm. The hub's API root and the root `content/published/` that Ansible's documentation names answer
+`401` "Missing Authentication" without a token and "JWT token header is malformed." with a token that is no JWT, as JSON of the hub's
+gateway: the discovery of R-ANS-016 is behind the token there.
+
+**What only a run with an account shows:** the realm's answer to a valid offline token (the members `access_token`, `expires_in` and
+`token_type` that `ReadExchange` reads, the lifetime, whether it rotates the refresh token); whether the hub takes that access token as a
+`Bearer`; which of the two roots answers `available_versions` and serves collections; whether the realm limits the sessions of one offline
+token across replicas (H-850); and whether it limits the rate of exchanges.
 
 ### H-843 · A publish inspects the archive inside the request
 

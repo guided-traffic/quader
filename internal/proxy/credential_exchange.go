@@ -135,10 +135,12 @@ func (e *Engine) sendExchangedVia(ctx context.Context, c exchangeCall, req *http
 }
 
 // exchangeFailure answers a failed exchange: a realm that refused the credential (a 4xx) is upstream_auth_failed, the answer a
-// credential the upstream refuses has everywhere (R-REPO-033); any other failure keeps its own classification.
+// credential the upstream refuses has everywhere (R-REPO-033), and its detail names the realm, not the upstream: a 401 or 403 comes
+// classified as the upstream's refusal already, and the hub's realm answers a client it does not know with 401 invalid_client (H-842).
+// Any other failure keeps its own classification.
 func exchangeFailure(rem Remote, err error) error {
 	he, ok := asHandshakeError(err)
-	if !ok || he.err == nil || he.err.Code != errs.CodeUpstreamUnexpectedStatus {
+	if !ok || he.err == nil || (he.err.Code != errs.CodeUpstreamUnexpectedStatus && he.err.Code != errs.CodeUpstreamAuthFailed) {
 		return err
 	}
 	refused := errs.E(errs.UpstreamFailed, errs.CodeUpstreamAuthFailed, "The single sign-on realm of "+rem.Repo.Name.String()+" refused the repository's credential (upstream_authentication_failed).")

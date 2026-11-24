@@ -2,7 +2,7 @@
 
 Status: built: the remote class of the Ansible Galaxy format, the proxy and cache of a Galaxy API v3 and of its v1 role API
 ([R-ANS-016 to R-ANS-018 and R-ANS-020](../spec/formats/ansible.md)), the mirror (R-ANS-021) and the token exchange of a hub behind single
-sign-on (R-ANS-019), the last proven against the stub's realm only ([H-842](../spec/formats/ansible.md#h-842--the-hub-token-exchange-is-specified-from-documentation-and-never-run-against-the-service)).
+sign-on (R-ANS-019), the last proven against the stub's realm, and its refusals against the service realm's recorded answers ([H-842](../spec/formats/ansible.md#h-842--the-hub-token-exchange-is-specified-from-documentation-and-never-run-against-the-service)).
 
 This page describes what an upstream Galaxy can make Quader do and show, and what limits that. The upstream is a party Quader does not trust:
 its documents decide which addresses Quader contacts, which bytes it stores and what its clients are told. The outbound rules it relies on

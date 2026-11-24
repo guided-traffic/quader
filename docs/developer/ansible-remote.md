@@ -77,7 +77,10 @@ before the engine fetches its archive through the gate. Roles and the role index
 receive the credential, exchanges (one flight per replica and token, cached until 30 seconds before the realm's `expires_in`) and sends the
 upstream request with `Authorization: Bearer <access token>` in place of the credential; a 401 of the upstream exchanges again once. The
 stub's realm ([realm.go](../../test/ansiblestub/realm.go)) issues the tokens and counts what the upstream accepted and rejected, so a test
-shows that the offline token never reached the upstream (`Rejected == 0`).
+shows that the offline token never reached the upstream (`Rejected == 0`). Its refusals are the service realm's, recorded on 2026-11-24 with
+a dummy token (400 `invalid_grant`, 401 `invalid_client`, H-842); `exchangeFailure` in
+[credential_exchange.go](../../internal/proxy/credential_exchange.go) turns both into 502 `upstream_auth_failed` naming the realm, held by
+`TestR_ANS_019_TheRealmsRecordedRefusalsAreUpstreamAuthFailedAndNameTheRealm` with the recorded bodies.
 
 ## Tests
 
@@ -181,7 +184,7 @@ returns the whole stub to its start.
 | `wrong_digest` | `Mode.WrongDigest` | the second archive is served, the document keeps the first digest; wins over `digest_changed` |
 | — | `Mode.WrongIdentity` | the archive of another collection (`swapped.other`, the same version) is served and announced with its own digest: the digest verifies, only the identity inside the archive is wrong; wins over the digest modes |
 | — | `Mode.NoV1`, `Down`, `FailStatus` | a hub without `v1`; 503, reset or hang; a 5xx per class |
-| the hub's realm | `SetRealm` | `Require` makes the Galaxy accept only `Bearer` tokens the realm issued, not expired and not revoked; `RefreshTokens` are the offline tokens the realm takes, `ClientID` the client it requires; `ExpireAccessTokens` revokes what was issued |
+| the hub's realm | `SetRealm` | `Require` makes the Galaxy accept only `Bearer` tokens the realm issued, not expired and not revoked; `RefreshTokens` are the offline tokens the realm takes (another is 400 `invalid_grant`), `ClientID` the client it requires (another is 401 `invalid_client`); `ExpireAccessTokens` revokes what was issued |
 | — | `AddVersion`, `DropVersion` | the upstream publishes or removes a version (a dropped one is 404 everywhere) |
 
 The classes of request are `root`, `index`, `collection`, `versions`, `version`, `artifact`, `role`, `role-archive` (all three role

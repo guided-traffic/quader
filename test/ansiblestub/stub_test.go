@@ -536,7 +536,7 @@ func TestR_ANS_032_RealmIssuesAndExpiresAccessTokens(t *testing.T) {
 	if bad.status != 400 || bad.json(t)["error"] != "invalid_grant" {
 		t.Fatalf("wrong refresh token: %d %s", bad.status, bad.body)
 	}
-	if r := exchange("other-client", "offline-1"); r.status != 400 || r.json(t)["error"] != "invalid_client" {
+	if r := exchange("other-client", "offline-1"); r.status != 401 || r.json(t)["error"] != "invalid_client" {
 		t.Fatalf("wrong client: %d %s", r.status, r.body)
 	}
 	ok := exchange("cloud-services", "offline-1")

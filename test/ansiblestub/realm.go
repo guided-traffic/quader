@@ -11,8 +11,9 @@ import (
 // The realm: a single-sign-on token endpoint on its own host name, and the switch that makes the Galaxy host accept only the
 // access tokens it issued, as the hub behind a single sign-on does (R-ANS-019). The endpoint takes the refresh-token grant
 // (grant_type, client_id, refresh_token, form encoded) and answers the access token with its lifetime; a refresh token that is not
-// in Realm.RefreshTokens is answered 400 invalid_grant. The mechanism is the documented one; the service itself is not reachable
-// from the tests.
+// in Realm.RefreshTokens is answered 400 invalid_grant, a client other than Realm.ClientID 401 invalid_client, with the texts the
+// service's realm answered on 2026-11-24 to a dummy token (internal/proxy/credential_exchange_test.go holds the recording). The answer
+// to a valid offline token is the documented one; the service itself is not reachable from the tests (H-842).
 
 // DefaultRealmPath is the path of the token endpoint on the realm host.
 const DefaultRealmPath = "/auth/realms/test/protocol/openid-connect/token"
@@ -181,11 +182,11 @@ func (s *Server) serveRealm(w http.ResponseWriter, r *http.Request) {
 	s.mu.Unlock()
 
 	if cfg.ClientID != "" && clientID != cfg.ClientID {
-		s.realmError(w, http.StatusBadRequest, "invalid_client", "unknown client")
+		s.realmError(w, http.StatusUnauthorized, "invalid_client", "Invalid client or Invalid client credentials")
 		return
 	}
 	if !slices.Contains(cfg.RefreshTokens, form.Get("refresh_token")) {
-		s.realmError(w, http.StatusBadRequest, "invalid_grant", "Offline user session not found or expired")
+		s.realmError(w, http.StatusBadRequest, "invalid_grant", "Invalid refresh token")
 		return
 	}
 
