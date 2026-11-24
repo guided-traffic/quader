@@ -75,7 +75,7 @@ func TestR_LIM_021_TheDownloadThatCrossesTheDayCompletesAndTheNextIsRefusedBefor
 	if a := e.st.Do(e.r, "GET", e.filePath, e.reader, nil); a.Status != 200 || len(a.Body) != fileSize {
 		t.Fatalf("the download that crosses the day's volume: %d, %d bytes", a.Status, len(a.Body))
 	}
-	time.Sleep(time.Second) // the bytes reach the window at the flush (200 ms)
+	e.awaitFlush(t) // the bytes reach the window at the flush
 	a := e.st.Do(e.r, "GET", e.filePath, e.reader, nil)
 	refusal(t, a, "the next download", "download_limit_reached", "bytesPerDay")
 	if !strings.HasPrefix(a.Header.Get("Content-Type"), "application/problem+json") || len(a.Body) >= fileSize {
@@ -212,7 +212,7 @@ func TestR_LIM_025_RefusedRequestsBlockTheBudgetKeyAndNothingElse(t *testing.T) 
 				t.Fatalf("a miss: %d", a.Status)
 			}
 		}
-		time.Sleep(time.Second)
+		e.awaitFlush(t) // had the misses counted, the flush would have passed the limit
 		if a := e.st.Do(e.r, "GET", e.filePath, e.reader, nil); a.Status != 200 {
 			t.Fatalf("the reader after five misses: %d %s", a.Status, a.Body)
 		}
@@ -225,7 +225,7 @@ func TestR_LIM_025_RefusedRequestsBlockTheBudgetKeyAndNothingElse(t *testing.T) 
 				t.Fatalf("write %d of a reader: %d %s", i, a.Status, a.Body)
 			}
 		}
-		time.Sleep(time.Second) // the flush passes the limit and sets the marker
+		e.awaitFlush(t) // the flush passes the limit and sets the marker
 		a := e.st.Do(e.r, "GET", e.filePath, prober, nil)
 		refusal(t, a, "the blocked token's read", "caller_blocked", "")
 		if s, _ := strconv.Atoi(a.Header.Get("Retry-After")); s > 900 {
@@ -245,7 +245,7 @@ func TestR_LIM_025_RefusedRequestsBlockTheBudgetKeyAndNothingElse(t *testing.T) 
 				t.Fatalf("a wrong token: %d", a.Status)
 			}
 		}
-		time.Sleep(time.Second)
+		e.awaitFlush(t)
 		refusal(t, e.st.Do(e.r, "GET", "/files/it/open/x", "", nil, from("198.51.100.20")...), "an anonymous read from the blocked address", "caller_blocked", "")
 		if a := e.st.Do(e.r, "GET", "/files/it/open/x", e.reader, nil, from("198.51.100.20")...); a.Status != 404 {
 			t.Fatalf("a valid credential from the same address: %d %s, want the 404 of a missing file", a.Status, a.Body)
@@ -284,14 +284,11 @@ func TestR_LIM_025_RefusedRequestsBlockTheBudgetKeyAndNothingElse(t *testing.T) 
 		for i := range 5 {
 			e.st.Do(e.r, "PUT", "/files/it/"+rFiles+"/q"+strconv.Itoa(i)+".bin", prober2, []byte("x"), "Content-Type", "application/octet-stream")
 		}
-		time.Sleep(time.Second)
+		e.awaitFlush(t) // in enforce the flush would set the block
 		if a := e.st.Do(e.r, "GET", e.filePath, prober2, nil); a.Status != 200 {
 			t.Fatalf("audit blocked: %d %s", a.Status, a.Body)
 		}
-		time.Sleep(1500 * time.Millisecond) // the usage buffer flushes
-		if n := e.st.Number(`SELECT count(*) FROM usage_limit_event WHERE figure = 'refusedPerHour' AND mode = 'audit'`); n == 0 {
-			t.Fatal("no would_limit of refusedPerHour")
-		}
+		e.awaitRows(t, "a would_limit of refusedPerHour", `SELECT count(*) FROM usage_limit_event WHERE figure = 'refusedPerHour' AND mode = 'audit'`)
 	})
 }
 
@@ -362,7 +359,7 @@ func TestR_LIM_017_ARefusedRequestFillsNoRequestWindowAndAHammeringCallerIsNotBl
 		if admitted < 1 || admitted > 4 || limited < 20 {
 			t.Fatalf("3 s of hammering at one request a second: %d admitted, %d refused", admitted, limited)
 		}
-		time.Sleep(1500 * time.Millisecond) // the charge flush (200 ms) and the usage flush (1 s) pass
+		e.awaitFlush(t) // had the refusals counted, the flush would have set the block
 		a := e.st.Do(e.r, "GET", e.filePath, hammer, nil)
 		if a.Status == 429 {
 			if a.Code(t) == "caller_blocked" {
@@ -543,7 +540,7 @@ func TestR_LIM_022_WhatIsCachedIsStillServedAndTheCeilingHoldsTheWholeClass(t *t
 		if a := e.st.Do(e.r, "GET", doc(names[1]), e.reader, nil); a.Status != 200 {
 			t.Fatalf("the reader's fill: %d %s", a.Status, a.Body)
 		}
-		time.Sleep(time.Second) // the uncached bytes reach the window at the flush
+		e.awaitFlush(t) // the uncached bytes reach the window at the flush
 		a := e.st.Do(e.r, "GET", doc(names[2]), e.reader, nil)
 		refusal(t, a, "the reader's next fill", "upstream_limit_reached", "")
 		if d, _ := a.JSON(t)["error"].(string); !strings.Contains(d, "The upstream limit of 1 bytes") {

@@ -579,9 +579,6 @@ order is what a user or an operator meets first. The state is kept here.
   rebases onto `main` after c2e9d02be claims its instance; nothing older can. Closed by the claims, recorded as
   what happened; whose instance 6 was is not known (no claim was written for it).
 
-- **The integration area `limits` still waits fixed times for a flush (found by W13 on 2026-11-24):**
-  `figures_test.go` lines 78, 215 and 228 and `limits_test.go` line 172. The counter `quader_limits_flushes_total`
-  (Q-LIM-112), which the five client cases wait on since that night, can replace them. To do: wait on it.
 - **The UI development profile's backend reaches the internet at start (found by W13 on 2026-11-24):** nine
   requests to `tuf-repo-cdn.sigstore.dev` for the signature trust root, outside the seed, which W13 made offline.
   `signatures.trust_root.refresh: false` in `deploy/ui-dev/config.sh` would stop them and changes what the
@@ -852,6 +849,18 @@ records the recorder that tells such a stall apart).
   stack).** By the code the page shows the badge "None yet" with a sentence and no error banner. To do
   (W9): a render state of it, looked at.
 ### Closed
+
+- **Closed on 2026-11-24 by W15: the integration area `limits` waits for its flushes, not for fixed times.** The
+  wait for the charge buffer is `awaitFlush` (`test/integration/limits/limits_test.go`): every replica of the stack
+  ends two rounds of `quader_limits_flushes_total` (Q-LIM-112), as the e2e cases' `awaitFlush` does; a wait for the
+  usage buffer polls the row the assertion reads (`awaitRows`, `testenv.WaitFor`, bound 10 s). Thirteen fixed waits
+  of 21 s in all went: the four named and nine more of the same kind (five in `figures_test.go`, two each in
+  `limits_test.go` and `seams_test.go`). The waits that stand are time windows (a burst
+  refilling, a `Retry-After`), not flushes. The area passed once through `test/integration/run.sh` in 52 s. As it
+  stood:
+  **The integration area `limits` still waits fixed times for a flush (found by W13 on 2026-11-24):**
+  `figures_test.go` lines 78, 215 and 228 and `limits_test.go` line 172. The counter `quader_limits_flushes_total`
+  (Q-LIM-112), which the five client cases wait on since that night, can replace them. To do: wait on it.
 
 - **Closed on 2026-11-24, 01:03, by W13: R-ARCH-034's count of held requests by the clock.** A counter `quader_ratelimit_valkey_failures_total{limiter}` counts a limiter's calls to Valkey that were made and failed (none while the breaker is open; a class's calls shared with the download limits on a protocol path are the limits engine's); E1.8 counts held checks by it: 12 and 16 held against a bound of 24 in two runs on a cluster. E1.14 and E1.8's read and write classes send their burst until refused (`burstUntilRefused`), so a run without a 429 tells a class that admitted too much from a runner that never sent faster than the class refills. As it stood: **Partly closed; open: R-ARCH-034's count of held requests by the clock (decision 4 of the reading of
   2026-11-23: counted by the limiter's metric; package W8), and the cause of the 503 of

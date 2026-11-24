@@ -65,7 +65,8 @@ func TestR_LIM_001_ARegistryTokenOfATechnicalTokenIsChargedToTheTechnicalToken(t
 	if a := e.st.Do(e.r, "GET", "/v2/it/images/team/app/tags/list", registry, nil); a.Status != 200 && a.Status != 404 {
 		t.Fatalf("registry request: %d %s", a.Status, a.Body)
 	}
-	time.Sleep(2500 * time.Millisecond) // the charge buffer and the usage buffer flush
+	// The usage buffer writes what it holds at its interval: the wait ends at the two requests, a third charged one fails below.
+	testenv.WaitFor(t, "the technical token's usage of two requests", 10*time.Second, func() bool { return e.usageOf("technical_token", technical) >= 2 })
 	if n := e.usageOf("technical_token", technical); n != 2 {
 		t.Fatalf("the technical token was charged %d requests, want 2: the token request and the registry request", n)
 	}
@@ -109,10 +110,7 @@ func TestR_LIM_028_ADeletedTechnicalTokensRuleGoesAndItsUsageStays(t *testing.T)
 			t.Fatalf("%d %s", a.Status, a.Body)
 		}
 	})
-	time.Sleep(2500 * time.Millisecond)
-	if n := e.usageOf("technical_token", technical); n < 3 {
-		t.Fatalf("%d requests of the token, want 3", n)
-	}
+	testenv.WaitFor(t, "the usage of the token's three requests", 10*time.Second, func() bool { return e.usageOf("technical_token", technical) >= 3 })
 	if a := e.st.Do(e.r, "DELETE", "/api/v1/service-accounts/mirror/technical-tokens/"+name, e.admin, nil); a.Status != 204 {
 		t.Fatalf("delete: %d %s", a.Status, a.Body)
 	}

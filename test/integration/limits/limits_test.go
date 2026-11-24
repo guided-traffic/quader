@@ -118,6 +118,27 @@ func (e *env) awaitIndex(t *testing.T) {
 	}
 }
 
+// awaitFlush waits until every replica of the stack ended two rounds of its charge buffer after the call (Q-LIM-112): a round that
+// began before a request may leave it out, the round after it has it, so what the requests before the call counted is in Valkey (or on
+// the replica's share while Valkey cannot be used) and the markers it passes are set. The bound is far above the 200 ms interval of
+// the env; the e2e cases wait the same way (awaitFlush of test/e2e).
+func (e *env) awaitFlush(t *testing.T) {
+	t.Helper()
+	for _, r := range e.st.Replicas() {
+		since := testenv.MetricValue(r.Metrics(t), "quader_limits_flushes_total")
+		testenv.WaitFor(t, r.Name+" to end two rounds of its charge buffer", 10*time.Second, func() bool {
+			return testenv.MetricValue(r.Metrics(t), "quader_limits_flushes_total") >= since+2
+		})
+	}
+}
+
+// awaitRows waits until the statement counts at least one row: the usage buffer writes what it holds at its interval (1 s in the
+// env), so a row of the usage store is waited for by the row itself.
+func (e *env) awaitRows(t *testing.T, what, statement string, args ...any) {
+	t.Helper()
+	testenv.WaitFor(t, what, 10*time.Second, func() bool { return e.st.Number(statement, args...) > 0 })
+}
+
 // limitsTrips is the round trips of the download limits' batches the replica sent so far.
 func (e *env) limitsTrips(t *testing.T) float64 {
 	return testenv.MetricValue(e.r.Metrics(t), `quader_valkey_command_duration_seconds_count{command="multi"}`)
@@ -169,10 +190,7 @@ func TestR_LIM_026_AuditRefusesNothingAndEnforceRefuses(t *testing.T) {
 			t.Fatalf("audit, write %d: %d %v", i, a.Status, a.Header)
 		}
 	}
-	time.Sleep(2 * time.Second) // the usage buffer flushes
-	if n := e.st.Number(`SELECT count(*) FROM usage_limit_event WHERE mode = 'audit' AND subject_ref = $1`, e.readerPrincipl); n == 0 {
-		t.Fatal("audit recorded no would_limit event")
-	}
+	e.awaitRows(t, "a would_limit event of audit", `SELECT count(*) FROM usage_limit_event WHERE mode = 'audit' AND subject_ref = $1`, e.readerPrincipl)
 	e.setMode(t, "enforce")
 	e.awaitIndex(t)
 	t.Run("Q-LIM-27 in enforce package_write refuses the writes beyond its burst", func(t *testing.T) {
@@ -261,10 +279,8 @@ func TestR_LIM_003_AFailedCredentialIsARefusedRequestOfTheAddress(t *testing.T) 
 			t.Fatalf("a wrong token: %d", a.Status)
 		}
 	}
-	time.Sleep(2500 * time.Millisecond)
-	if n := e.st.Number(`SELECT COALESCE(sum(refused), 0) FROM usage_bucket WHERE granularity = '5m' AND subject_kind = 'anonymous'`); n < 5 {
-		t.Fatalf("%d refused requests of the address, want 5", n)
-	}
+	refused := `SELECT COALESCE(sum(refused), 0) FROM usage_bucket WHERE granularity = '5m' AND subject_kind = 'anonymous'`
+	testenv.WaitFor(t, "five refused requests of the address in the usage store", 10*time.Second, func() bool { return e.st.Number(refused) >= 5 })
 	if n := e.st.Number(`SELECT count(*) FROM usage_bucket WHERE subject_kind = 'user' AND refused > 0`); n != 0 {
 		t.Fatalf("a user was charged %d refused rows", n)
 	}
@@ -275,7 +291,8 @@ func TestR_LIM_034_TheUsageOverviewListsTheReader(t *testing.T) {
 	for range 3 {
 		e.st.Do(e.r, "GET", e.filePath, e.reader, nil)
 	}
-	time.Sleep(2500 * time.Millisecond)
+	cached := `SELECT COALESCE(sum(cached_bytes), 0) FROM usage_bucket WHERE granularity = '5m' AND subject_kind = 'user' AND subject_ref = $1`
+	testenv.WaitFor(t, "the reader's three downloads in the usage store", 10*time.Second, func() bool { return e.st.Number(cached, e.readerPrincipl) >= 3*fileSize })
 	a := e.st.Do(e.r, "GET", "/api/v1/usage?kind=user", e.admin, nil)
 	if a.Status != 200 {
 		t.Fatalf("%d %s", a.Status, a.Body)
