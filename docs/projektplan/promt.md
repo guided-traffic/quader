@@ -255,10 +255,8 @@ Read this first. The run that began at 22:21 on 2026-11-23 ended its starts at 1
   image index under `block`; the missing-data notice by its real cause; tab strips without a scrollbar; names in stacked
   rows that never break inside a word and time columns of a fixed width; an image's status line by its cause; three German layout findings at 390 px.
 
-**In work at 12:25, to be landed when it reports** (each entry in section 8, Product):
-- a failed bulk's engine sentence and the download queue's failures in the screen's language;
-- the trend's basis sentence on the vulnerability dashboard, with a list of every other server sentence the UI shows as
-  is (the list becomes findings, not built).
+**In work at 12:25, landed by 12:51:** an image's status line, three German layout findings, the download queue's failures
+in the screen's language, the trend's sentence. No builder runs; the timer of the night checks is deleted.
 
 **Open after the stop:**
 - **The owner's installation** runs v0.122.x; everything above reaches it with the next release (0.123.0, since the
@@ -726,21 +724,20 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- **Thirteen more screens show a server's English text as their own (the audit of 2026-11-24, 13:00):** the download
+  preview's note; repository warnings after a save and the upstream registries' messages; the connection test of a remote
+  and of an upstream registry; CI mapping warnings, the claim tester's result and trace, the issuer's key fetch error; the
+  jobs' result; the malware database's error; the advisory sources' last error; the signature root's last failure; the
+  mirror's last error and discovery note; a signature's verifier note; Valkey's reasons on System status. The fix for each:
+  a code said by the screen, or the raw text folded under "Technical details". A builder's full implementation of all of
+  them (a shared Technical-details component, German texts, a lint rule, an `english` check for the German render pass)
+  is kept as a diff at `.dev/server-sentences-full-scope.diff` of the main checkout (not in git). Not given: the run was
+  wound down at 12:25.
+
 - **Two German layout findings left by the layout package (2026-11-24, 12:45):** German `package-version-ansible` at
   1,024 px has a tab strip that scrolls 11–14 px (the `sideways` check flags it; the screen is not in the German pass, so
   CI does not see it); German `admin-settings-auth` at 390 px breaks its heading "Authentifizierungseinstellungen" inside
   the word (no check covers headings). Not given: the run was wound down at 12:25.
-
-- **The trend's basis sentence stays English on the German dashboard (seen by the status line's builder on 2026-11-24,
-  12:20):** "A finding counts under its current severity…" is a sentence the server sends. Given to a builder at 12:01, with every other server sentence the UI shows as is.
-
-- **A failed bulk's engine sentence is English in the German build, and its opened view says "0 von 0" (seen by the
-  development agent on 2026-11-24, 12:10, in the renders of the bulk's package):** under "Die Versionsliste von … konnte
-  nicht gelesen werden" stands "Unerwartete Antwort des Upstreams: The download failed at the step status. The upstream
-  document points to …"; the bulk's own view still reads "0 von 0 gefundenen Versionen sind eingereiht" where the list
-  shows a dash. Given to a builder at 11:57.
-
-### Closed
 
 - **Closed on 2026-11-24, 12:39, by the German layout package (Q-UI-1076, Q-UI-1077):** the untrusted signer's badge says
   **Signiert**, and "Signierer nicht vertrauenswürdig" follows as muted text that wraps between its words (in a list's cell
@@ -11577,6 +11574,25 @@ the walk items and the run record); what the code holds beyond the plan has not 
 ### F · Tests a plan named and nobody wrote
 
 Nothing is open here since 2026-11-23; the entries are in the list Closed.
+
+### Closed
+
+- **Closed on 2026-11-24, 12:51, by the trend's package:** the vulnerability trend's basis sentence came from the server
+  (`basis`) and stayed English; the field left the API and the screen writes it with `$localize` ("Ein Befund zählt unter
+  seinem aktuellen Schweregrad, …"). A Vitest case for the German build, an assertion in `vulnapi`. Rendered in English by
+  the development agent (0 findings); the German render was stopped when the owner ended the session. As it stood: **The trend's basis sentence stays English on the German dashboard (seen by the status line's builder on 2026-11-24,
+  12:20):** "A finding counts under its current severity…" is a sentence the server sends. Given to a builder at 12:01, with every other server sentence the UI shows as is.
+
+- **Closed on 2026-11-24, 12:51, by the failure words' package (Q-CUR-169):** a failed download or bulk on the tab Downloads
+  is said in the screen's language from its code (about fifty sentences in English and German, a class's sentence for an
+  unknown code); the engine's English `detail` folds under "Technische Details"; the failure gains `target` (the refused
+  address), so the German screen names the host; a bulk's bounds get a code each; an opened bulk that found nothing reads
+  "Gefundene Versionen –". Vitest per code family and for the German build, Go unit cases for `target`; renders in English
+  and German looked at by the development agent. As it stood: **A failed bulk's engine sentence is English in the German build, and its opened view says "0 von 0" (seen by the
+  development agent on 2026-11-24, 12:10, in the renders of the bulk's package):** under "Die Versionsliste von … konnte
+  nicht gelesen werden" stands "Unerwartete Antwort des Upstreams: The download failed at the step status. The upstream
+  document points to …"; the bulk's own view still reads "0 von 0 gefundenen Versionen sind eingereiht" where the list
+  shows a dash. Given to a builder at 11:57.
 
 ### Closed
 
