@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/guided-traffic/quader/internal/formats/catalog"
+	"github.com/guided-traffic/quader/internal/formats/versionkey"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/packages"
 )
@@ -98,7 +99,7 @@ func TestR_ARCH_009_ThePackageWriterSignalsARaisedPackageOnce(t *testing.T) {
 			if err != nil || !created {
 				t.Fatalf("EnsureLocked: %v created=%v", err, created)
 			}
-			vid, err := w.InsertVersion(ctx, pkg, packages.NewVersion{Version: "1.0.0"})
+			vid, err := w.InsertVersion(ctx, pkg, packages.NewVersion{Version: "1.0.0", SortKey: versionkey.Of(nil, false, "1.0.0")})
 			if err != nil {
 				return err
 			}

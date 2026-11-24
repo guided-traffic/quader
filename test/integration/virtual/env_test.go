@@ -31,6 +31,7 @@ import (
 	"github.com/guided-traffic/quader/internal/cluster"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/formathost"
+	"github.com/guided-traffic/quader/internal/formats/versionkey"
 	"github.com/guided-traffic/quader/internal/items"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
@@ -376,7 +377,7 @@ func (r *replica) publish(repoKey, pkg, version string) {
 		if err != nil {
 			return err
 		}
-		_, err = w.InsertVersion(ctx, ref, packages.NewVersion{Version: version})
+		_, err = w.InsertVersion(ctx, ref, packages.NewVersion{Version: version, SortKey: versionkey.Of(nil, false, version)})
 		return err
 	})
 	if err != nil {

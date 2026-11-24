@@ -838,6 +838,13 @@ revision column, raised by a restore), and `deb_remote_entries.provides`, `descr
 [tables_deb.go](../../internal/formatdata/deb/tables_deb.go)). No query reads the tables yet; `TestR_CUR_011_TheVocabularyIsTheMigrations`
 in `internal/remotecuration` holds the CHECK lists to the domain package's constants. The step replaces `upstream_repository_purge` (the one of 00102) with the deletes of `remote_download`, `remote_download_bulks` and `remote_examinations`; the rules and the requests stay with a retired repository (Q-CUR-111).
 
+## The purge of a retired repository takes its finished downloads (00119)
+
+[00119_upstream_purge_downloads](../../internal/meta/postgres/migrations/00119_upstream_purge_downloads.sql) replaces
+`upstream_repository_purge` (the one of 00114) with one more delete: `upstream_download_finished` of 00118 references a repository by a
+cascading key, and its rows are a record of the repository's content, so they go with it (R-REPO-067, Q-REPO-376, R-OPS-051).
+`TestR_REPO_067_EveryTableThatReferencesARepositoryIsPurgedOrKeptByADecision` in `test/integration/conventions` holds the decision.
+
 ## What judged a terminal failure of an image scan (00117)
 
 [00117_vuln_image_scan_judged](../../internal/meta/postgres/migrations/00117_vuln_image_scan_judged.sql) adds `vuln_image_scan.judged`: what a

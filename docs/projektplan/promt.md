@@ -236,6 +236,24 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
 
 ## 1 · Find the next phase
 
+### CI repair, night of 2026-11-24
+
+The owner, 2026-11-24, 19:48: "Wir haben nicht mehr so viele Tokens, deshalb wollen wir heute Nacht nicht entwickeln, sondern die Zeit
+nutzen um die aktuellen Fehler der CI zu reparieren." No feature work; only the red jobs of `main` and of the nightly.
+
+What was red at 19:49 (Test and Release on 928e2a6e7 and every run since 08:32; HA and Performance (nightly) 45393443385):
+- **integration (shard b), (shard d)** — two causes, both of today: W17 made a version without its sort key an error, and three
+  integration helpers (`test/integration/files`, `test/integration/virtual`) wrote versions straight through `packages.Writer`
+  without one; T-26's `upstream_download_finished` (00118) references a repository by a cascading key and had no decision in the purge
+  of a retired repository. Fixed: the helpers give a key (`versionkey.Of`), and 00119 purges the finished downloads with the content
+  (R-REPO-067, Q-REPO-376). The four packages pass locally against instance 1.
+- **unit tests** — four different timing-dependent tests across five runs (`TestShutdownBudgetEndToEnd`, `TestR_BAS_012_…`,
+  `TestR_BAS_032_…`, `TestR_VULN_041_…`); a builder reads each to its cause.
+- **UI layout checks** — three render findings (the untrusted signer's badge offsets the row at 1440 px, the malware cell's date in two
+  lines at 390 px, the signature gate's fixture route answered twice); a builder fixes them with renders.
+- **Nightly** — npm-ha and drain-roles (tarballs answered 429 and slow under load), alerts (`QuaderControlConnectionWaits` fired in
+  maintenance), vuln-pooler (`kind load` of a multi-platform image); a builder reads each to its cause.
+
 ### State at the stop of 2026-11-24
 
 Read this first. The run that began at 22:21 on 2026-11-23 ended its starts at 12:25 on 2026-11-24 by the owner's word

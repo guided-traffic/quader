@@ -14,6 +14,7 @@ import (
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/formathost"
 	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/versionkey"
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/packages"
@@ -113,7 +114,7 @@ func TestR_ARCH_009_PackageWriterBumpsRevSeqOncePerTransaction(t *testing.T) {
 				t.Fatalf("EnsureLocked: %v created=%v", err, created)
 			}
 			for _, v := range []string{"1.0.0", "1.1.0"} {
-				if _, err := w.InsertVersion(ctx, pkg, packages.NewVersion{Version: v}); err != nil {
+				if _, err := w.InsertVersion(ctx, pkg, packages.NewVersion{Version: v, SortKey: versionkey.Of(nil, false, v)}); err != nil {
 					return err
 				}
 			}
@@ -133,7 +134,7 @@ func TestR_ARCH_009_PackageWriterBumpsRevSeqOncePerTransaction(t *testing.T) {
 			if err != nil || created {
 				t.Fatalf("EnsureLocked: %v created=%v", err, created)
 			}
-			if _, err := w.InsertVersion(ctx, pkg, packages.NewVersion{Version: "2.0.0"}); err != nil {
+			if _, err := w.InsertVersion(ctx, pkg, packages.NewVersion{Version: "2.0.0", SortKey: versionkey.Of(nil, false, "2.0.0")}); err != nil {
 				return err
 			}
 			vs, err := w.Versions(ctx, pkg)
@@ -186,7 +187,7 @@ func TestR_ARCH_009_PackageWriterBumpsRevSeqOncePerTransaction(t *testing.T) {
 			if err != nil {
 				return err
 			}
-			if _, err := w.InsertVersion(ctx, pkg, packages.NewVersion{Version: "9.9.9"}); err != nil {
+			if _, err := w.InsertVersion(ctx, pkg, packages.NewVersion{Version: "9.9.9", SortKey: versionkey.Of(nil, false, "9.9.9")}); err != nil {
 				return err
 			}
 			return context.Canceled
@@ -208,7 +209,7 @@ func TestR_ARCH_009_PackageWriterBumpsRevSeqOncePerTransaction(t *testing.T) {
 			if err != nil {
 				return err
 			}
-			_, err = w.InsertVersion(ctx, pkg, packages.NewVersion{Version: "1.0.0"})
+			_, err = w.InsertVersion(ctx, pkg, packages.NewVersion{Version: "1.0.0", SortKey: versionkey.Of(nil, false, "1.0.0")})
 			return err
 		})
 		if err == nil || !strings.Contains(err.Error(), "already exists") {
@@ -223,7 +224,7 @@ func TestR_ARCH_009_PackageWriterBumpsRevSeqOncePerTransaction(t *testing.T) {
 			if err := w.TrashOrDeleteVersion(ctx, vs[0].ID, false); err != nil {
 				return err
 			}
-			_, err = w.InsertVersion(ctx, pkg, packages.NewVersion{Version: vs[0].Version})
+			_, err = w.InsertVersion(ctx, pkg, packages.NewVersion{Version: vs[0].Version, SortKey: versionkey.Of(nil, false, vs[0].Version)})
 			return err
 		})
 		if err != nil {

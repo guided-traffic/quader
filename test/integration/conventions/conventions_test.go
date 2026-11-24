@@ -50,7 +50,7 @@ func text(t *testing.T, conn *pgx.Conn, sql string) string {
 }
 
 // purged and kept are the tables whose rows reference a repository by a cascading foreign key, as the purge of a retired well-known
-// repository treats them (upstream_repository_purge of migration 00086, replaced last by 00114, Q-REPO-376, Q-CUR-111): content goes,
+// repository treats them (upstream_repository_purge of migration 00086, replaced last by 00119, Q-REPO-376, Q-CUR-111): content goes,
 // configuration stays. A table a later migration adds fails this test until it is put into one of the lists and, when purged, into the function.
 // What the purge does with the rows is TestR_REPO_067_ThePurgeOfARetiredRepository's (area upstream).
 var (
@@ -62,7 +62,7 @@ var (
 		"remote_download_bulks", "remote_examinations",
 		"remote_cache_invalidations", "remote_upstream_state", "remote_url_map", "repository_usage", "signature_attachments", "signature_fetches",
 		"signature_refusals",
-		"upload_sessions", "usage_bucket", "usage_daily_summary", "usage_limit_event", "vuln_finding",
+		"upload_sessions", "upstream_download_finished", "usage_bucket", "usage_daily_summary", "usage_limit_event", "vuln_finding",
 	}
 	kept = []string{
 		"authz_policy_selector", "deb_signing_keys", "endpoint_exposure_rule", "limit_assignment", "limit_ceiling", "namespace_claims",
