@@ -680,9 +680,29 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
-- **The missing-data notice of an image names the wrong cause (seen by the gate's builder on 2026-11-24, 10:20):** a
-  refused pull of an unscanned image says "no advisory data has been imported for this ecosystem yet", where the cause is
-  that the image has not been scanned yet. Given to a builder at 10:24.
+- **A bulk download of a Docker Hub image fails at once, and nothing shows it (owner, 2026-11-24, 11:05, on the UI
+  development profile, with screenshots: "Ich versuche hier einen Beispiel download zu starten.
+  guidedtraffic/valkey-operator Aber es läd nichts.").** The toast said "The bulk download is queued; its rows wait in the
+  tab Downloads", the tab read "There is no download yet", the top bar's panel "Running (0)". Read in the profile's
+  database: three bulks of `upstream/docker-hub` (`guidedtraffic/jinja-template-operator`, `s3-encryption-proxy`,
+  `valkey-operator`) all `failed` within seconds at the step `status` with `foreign_host_denied`: "The upstream document
+  points to the host hub.docker.com, which is neither the upstream of the repository upstream/docker-hub nor one of its
+  extraHosts." Two defects: the bulk's walk of the versions asks a host the remote may not reach, though the tab's search
+  reads the same host; and a bulk that fails before its first row is visible nowhere. Given to a builder at 11:05, for
+  every format's catalogue host.
+
+- **The owner's rule: no view needs a reload (2026-11-24, 11:05): "Ich hoffe das unsere Frontend bereits automatisch
+  updates fetched und von mir zu keinem Zeitpunkt erwartet wird dass ich F5 drücke um eine Ansicht zu aktualisieren."**
+  Read at 11:10: of the screens that show state that changes by itself, only the tab Downloads, the mirror status, the
+  Debian index state, the jobs, the system status and dashboard, backups, storage, a job's progress and the top bar's
+  downloads poll; the rest (an image's scan state, the version and package lists, the Upstream tab's states, the
+  vulnerability and malware pages, signatures, ...) show what they read once. Given to a builder at 11:05: every view that
+  shows state the server changes by itself refreshes itself while it is seen, one shared mechanism, the rule written into
+  the specification and CLAUDE.md.
+
+- **A version page's tab strip scrolls sideways at 390 px in German (seen by the notice's builder on 2026-11-24, 11:20,
+  in the render `package-version-oci-not-checked`):** the strip Dateien, Signaturen, Details, Schwachstellen is wider than
+  the window and shows a horizontal scrollbar under "Schwachstellen". Given to a builder at 11:01.
 
 - **A stacked row breaks a word in the middle at 390 px (seen by the development agent on 2026-11-24, 10:30, in the
   renders of the pull menu):** on a Debian repository's versions at 390 px the label "Veröffentlicht" reads
@@ -691,6 +711,19 @@ records the recorder that tells such a stall apart).
   given to a builder at 10:35.
 
 ### Closed
+
+- **Closed on 2026-11-24, 11:12, by the notice's package (Q-VULN-272; R-VULN-015, 016, 020):** a missing-data block
+  carries what it is missing: for a package the advisory data of its ecosystem; for an image no database yet, a scan not
+  finished ("try again in a minute"), a scan that failed and is tried again, or one stopped at the scanning's limits or
+  unable to read the image ("ask an administrator"); the class is read from what judged the scan. The client's 403
+  text, the audit event `vulnerability.download_blocked` (`missingData`, `scanError`), the version report and the
+  version page's notice (English and formal German, with the next step) name the same cause. Found on the way: the
+  version view did not show an unscanned image as blocked at all (it now holds an image as the gate holds its pull), and
+  the gate refused an unscanned image of a repository that is not covered (it now leaves it alone, as for every other
+  format). Five unit tests in milliseconds, a Vitest case, two integration cases extended, a render screen in English and
+  German looked at by the development agent. As it stood: **The missing-data notice of an image names the wrong cause (seen by the gate's builder on 2026-11-24, 10:20):** a
+  refused pull of an unscanned image says "no advisory data has been imported for this ecosystem yet", where the cause is
+  that the image has not been scanned yet. Given to a builder at 10:24.
 
 - **Closed on 2026-11-24, 10:30, by the gate's package (Q-VULN-271, R-VULN-015):** with `onMissingData: block`, the gate
   of a pull asked for the scan row of every manifest it gated, and an index or Docker's attestation manifest never gets
