@@ -374,15 +374,24 @@ else
   # The malware scanning and the image scanning are on in the `vuln` profile only (values-vuln.yaml, Q-HA-382): ClamAV's image and the
   # analyser's image of their pins, pulled by the host's Docker (logged in to Docker Hub in CI) and loaded into the nodes under a local
   # tag, as the test upstreams are (Q-MAL-90, R-HA-070). No other profile starts a scanner pod or loads either image.
+  # Both pins name a multi-platform index. Docker's containerd image store (the CI runner's Docker 29) keeps the index with the
+  # host's platform alone, `docker save` writes the index, and `kind load docker-image` imports with `ctr ... --all-platforms`,
+  # which fails on the first platform the archive lacks ("ctr: content digest ...: not found", nightlies 45008950010 and
+  # 45393443385). So the image of the nodes' platform is saved by itself, its manifest the archive's target, and loaded as an archive.
   if [ "$PROFILE" = "vuln" ]; then
+    platform="linux/$(arch)"
     for tool in clamav trivy; do
       case $tool in clamav) pin="$CLAMAV_IMAGE" ;; trivy) pin="$TRIVY_IMAGE" ;; esac
-      docker image inspect "$pin" >/dev/null 2>&1 || docker pull -q "$pin" > "$LOGS/$tool-pull.log" 2>&1 \
+      docker image inspect "$pin" >/dev/null 2>&1 || docker pull -q --platform "$platform" "$pin" > "$LOGS/$tool-pull.log" 2>&1 \
         || { tail -20 "$LOGS/$tool-pull.log" >&2; die "the pull of $pin failed"; }
       docker tag "$pin" "quader-e2e-$tool:$DEV_TAG"
-      log "loading $pin into the kind cluster as quader-e2e-$tool:$DEV_TAG"
-      kind load docker-image "quader-e2e-$tool:$DEV_TAG" --name "$CLUSTER" > "$LOGS/$tool-load.log" 2>&1 \
+      archive="$LOGS/$tool-image.tar"
+      docker save --platform "$platform" -o "$archive" "quader-e2e-$tool:$DEV_TAG" > "$LOGS/$tool-save.log" 2>&1 \
+        || { tail -20 "$LOGS/$tool-save.log" >&2; die "the save of quader-e2e-$tool:$DEV_TAG for $platform failed"; }
+      log "loading $pin ($platform) into the kind cluster as quader-e2e-$tool:$DEV_TAG"
+      kind load image-archive "$archive" --name "$CLUSTER" > "$LOGS/$tool-load.log" 2>&1 \
         || { tail -20 "$LOGS/$tool-load.log" >&2; die "kind load of quader-e2e-$tool:$DEV_TAG failed"; }
+      rm -f "$archive"
     done
   fi
   chart="$REPO_ROOT/deploy/helm/quader"

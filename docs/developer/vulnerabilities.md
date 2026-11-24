@@ -935,7 +935,7 @@ tools/versions.env  TRIVY_IMAGE=docker.io/aquasec/trivy:<tag>@sha256:<index dige
   ├─ deploy/helm/quader/values.yaml  trivy.image (the same line; TestR_HA_070_* holds them equal; Renovate group trivy moves both)
   │    └─ init container trivy: cp /usr/local/bin/trivy /opt/trivy/trivy ──▶ trivy-bin ──(read-only)──▶ quader: /opt/trivy/trivy
   ├─ make trivy: docker create --platform linux/<arch> + docker cp ──▶ .bin/trivy-<tag>-<12 hex>/trivy ──▶ the job container-scan (PATH)
-  ├─ deploy/dev/up.sh (profile vuln): docker pull, tag quader-e2e-trivy:dev, kind load ──▶ values-vuln.yaml trivy.image
+  ├─ deploy/dev/up.sh (profile vuln): docker pull, tag quader-e2e-trivy:dev, docker save --platform linux/<arch>, kind load image-archive ──▶ values-vuln.yaml trivy.image
   └─ make versions-check: the digest, no TRIVY_VERSION or TRIVY_SHA256_* pin, no trivy stage, the binary and a trivy on PATH say <tag>
 ```
 
