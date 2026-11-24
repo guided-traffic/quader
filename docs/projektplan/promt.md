@@ -245,7 +245,10 @@ since it wires R2's decider). R4 landed at 00:18 (one commit; section 10). Start
 tab Downloads, on R4's API). R5a landed at 00:53 (one commit; section 10). **W13 landed at 01:03** (ten commits; H-1662, the Bastion's gauge, R-ARCH-034's count, the limits'
 flush waits by `quader_limits_flushes_total`, E1.14's burst, `search-field.spec.ts`, an offline render seed).
 Started at 00:57 in its place: **W14**, the shape of the test suite and
-the CI caches (section 12, part A whole, and the cache entries without `zstd`). **The rest of the Go tests landed at 23:12** (three commits; F-126 not reproduced, open). Started at 23:00 in T-25's place: **W8** (web and end-to-end tests wait for what they stand for, with the
+the CI caches (section 12, part A whole, and the cache entries without `zstd`). Started at 01:05 in W13's place: **W15**, renders and
+small leftovers (the German page and the Bastion target of Set up client, the severities' colours in Firefox
+and WebKit, the Downloads tab in German and its stuttering details, a trust root of the UI profile's own, the
+fixed flush waits of the area `limits`). **The rest of the Go tests landed at 23:12** (three commits; F-126 not reproduced, open). Started at 23:00 in T-25's place: **W8** (web and end-to-end tests wait for what they stand for, with the
 layout fixtures in three browsers and an instance of the UI profile that is claimed, not chosen: two builders
 took instance 6 a minute apart that evening). W8 landed at 00:05 (eleven commits). **v0.115.0** was released at 23:30 by the run of
 the rest of the Go tests (the evidence record's repair, T-25, the Bastion's fix of 18:39 and the Go tests);
@@ -277,7 +280,7 @@ starts from it and from his word how the work goes on, not from the order of the
 | What | State at 19:55, the end of the evening |
 |---|---|
 | T-24 · C · Contracts | landed at 17:59 (two commits, migration 00114): tables, the domain package with its ports and stubs, the catalogue's declaration in the format contract (version 11), codes, events, keys; nothing calls them yet |
-| T-24 · R2 · Delivery rules | **built and not landed** (two commits on the branch `t24-r2-delivery-rules`, reported at 19:52): three conditions stand before its landing (section 10, "The delivery rules are built and wait"): a mirror must not lose its bound, the screens must not offer a remote's pattern fields any more, and the landing's gates run whole |
+| T-24 · R2 · Delivery rules | landed at 01:45 on 2026-11-24 (four commits; Q-CUR-40 to Q-CUR-45): the three conditions met (a mirror without its bound does not run and says "No bound", Q-CUR-43; a remote's forms offer "Mirror only these packages" and no pattern fields; every gate whole, 32 integration areas), a refusal through a Bastion that is not kept (Q-CUR-44), a stored remote's patterns not read so that `quader migrate` of an installation of the previous release does not fail (Q-CUR-45), and R4's queue deciding with the rules; not run: kind and e2e |
 | W9 · the rest of the screens' second round | landed at 17:53 (eighteen commits); one of them reverted at 18:19 (the fixtures in three browsers, which made the layout job red on the runner); the layout checks of that push's run show whether the audit log's table holds |
 | W4 · the rest of the Go tests' package | landed at 18:39 (six commits, the Bastion unit test's repair among them). What it did not do is listed below |
 | W12 · the leftovers no package took | landed at 18:27 (six commits, all six items) |
@@ -285,9 +288,7 @@ starts from it and from his word how the work goes on, not from the order of the
 
 **Not begun, each waiting for the owner's word:**
 
-- **T-24 · R2, the delivery rules, built and not landed** (section 10, "The delivery rules are built and wait"):
-  the branch `t24-r2-delivery-rules`, and three conditions before its landing (a mirror's bound at a pass, the
-  remote's pattern fields out of the screens, the landing's gates whole).
+- **T-24 · R2, the delivery rules**: landed at 01:45 on 2026-11-24 (section 10).
 - **T-24, the packages behind the contracts** (the queue of section 10; the cut, the files and the tests
   of each are on the [developer page](../developer/remote-curation.md), the contracts' exported names in
   the code and in Q-CUR-109 to Q-CUR-111): R3, the upstream catalogue (it also turns on the
@@ -572,6 +573,12 @@ order is what a user or an operator meets first. The state is kept here.
 
 ### Tests and tools
 
+- **A builder's render run took another worktree's instance of the UI profile (2026-11-24, R2's builder, whose
+  worktree was cut before the claims of W8 landed):** its migrate wrote the product rule of `scanner-trivy` into
+  instance 6's database before the replica stopped on a key-ring mismatch; the volumes were left. A builder that
+  rebases onto `main` after c2e9d02be claims its instance; nothing older can. Closed by the claims, recorded as
+  what happened; whose instance 6 was is not known (no claim was written for it).
+
 - **The integration area `limits` still waits fixed times for a flush (found by W13 on 2026-11-24):**
   `figures_test.go` lines 78, 215 and 228 and `limits_test.go` line 172. The counter `quader_limits_flushes_total`
   (Q-LIM-112), which the five client cases wait on since that night, can replace them. To do: wait on it.
@@ -783,6 +790,12 @@ records the recorder that tells such a stall apart).
   whose refill it sets), or measures the rate it reached and asserts against that.
 
 ### Product
+
+- **A mirror without its bound still offers "Run a pass now" (seen by the development agent on 2026-11-24 at R2's
+  renders, `power/repository-settings-npm-mirror-unbounded-unbounded-light-1440.png`):** the status says "No bound"
+  and the button stays active, though the run answers 422 `mirror_unbounded`. And a project's Owner without
+  `write-config` reads "Set one in the mirror settings" there, which only an administrator can (R2's builder). To
+  do: the button disabled with the reason beside it, and the sentence by who reads it.
 
 - **A failure's details say a step twice (seen by the development agent on 2026-11-24 at R5a's renders,
   `repository-npm-remote-downloads-failure-dark-1024.png`):** "Step  The answer's status `status`" and "Class
@@ -3098,7 +3111,7 @@ The work queue of T-24 (the planner's cut; the contracts and files of each packa
 What the tests cost by the specification: a format adds about 4 s of integration and 10 s in its own end-to-end
 leg and nothing in another format's leg; the layout walk gains about twenty screens.
 
-**The delivery rules are built and wait (R2, 2026-11-23, 19:52; decided by the development agent not to land them
+**Landed on 2026-11-24 at 01:45**, with the three conditions below met (the queue's row above). **The delivery rules were built and waited (R2, 2026-11-23, 19:52; decided by the development agent not to land them
 that evening, and told to the owner at 19:54).** Two commits on the branch `t24-r2-delivery-rules` (pushed, on the
 `main` of 19:46): `78a9de517` (a change of the contracts: the package `internal/remotecuration` and its `rules` are
 leaves, the code `invalid_name` is registered) and `718a2b8c6` (the feature). **Built and held by its builder's
