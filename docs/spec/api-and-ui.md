@@ -5821,7 +5821,12 @@ Priority: **MVP** · Covers: quader-only
 - 503: a page-level notice with "Retry"; in maintenance mode the notice shows the operator's
   message.
 - Confirmations use a polite live region (`role="status"`), errors `role="alert"`; notifications
-  with actions stay until dismissed.
+  with actions stay until dismissed. Both are shown as the reference's toast at the bottom right of the window, the owner's place
+  (2026-11-24: "Und diese dann bitte unten rechts einblenden, nicht links"), with the text, an optional action and a close button
+  "×" named **Close**. One confirmation is shown at a time: a new one replaces the confirmation still on screen, and the region
+  announces each; a notification with an action and an error keep their own toast. A confirmation without an action goes after
+  8 seconds, which stop while the pointer or the focus is on it
+  ([Q-UI-1063](#q-ui-1063--feedback-outside-forms-is-the-references-toast-at-the-bottom-right-one-confirmation-at-a-time)).
 - Jobs show a progress component that polls the job (R-API-015) and announces progress at most every
   10 seconds.
 
@@ -23125,6 +23130,61 @@ be laid out the same way.
 the page beside the drawing …"), and in Chromium, Firefox and WebKit at 358 and 1,100 px
 [layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts) ("the axis's numbers keep the small text size and stand on their grid
 lines …"). Rendered: `vulnerabilities` in the three engines.
+
+### Q-UI-1063 · Feedback outside forms is the reference's toast at the bottom right, one confirmation at a time
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+The place is the owner's (2026-11-24, 08:02: "Und diese dann bitte unten rechts einblenden, nicht links").
+
+Context: the owner's screenshot of the same morning ("Was sind dass denn für hässlich Notifications?"): after three registries were
+switched on under **Upstream registries**, three pale grey boxes stood stacked at the bottom left over the side bar, each with its
+sentence and a text button **Schließen**, and covered the side bar's **Seitenleiste einklappen**. The boxes were the inverse surface of
+a Material snack bar (pale in the dark scheme), without a shadow, and every confirmation added one more. The reference's toast
+(its design system's `GlToast`, read from its source) is a compact box at the bottom of the window: 16 by 24 px of padding, 8 px round,
+a shadow, 14 px text at weight 300 on a 16 px line, its "strong feedback" fill (neutral 800, `#3a383f`, with white text) in both schemes,
+an action as a bold link in its blue 300, and a close button that is a small tertiary icon button with the label **Close**; 24 px from
+the corner, at most 586 px wide, across the window with 8 px each side below 576 px. It stops its 5 seconds while the pointer is on it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A new confirmation replaces the confirmation still shown; a notice with an action and an error keep their own toast (chosen) | `Notifier.status` without an action dismisses the plain confirmation on screen before it adds its own; the polite region announces each new one | A row of switches shows its last result, not a tower; what needs the user (an action, an error) is never pushed away | A confirmation shown for a second is read by a screen reader but may be missed by eye |
+| (b) One toast of any kind at a time, the rest queued | A queue behind the visible toast | Never more than one box | An error waits behind confirmations; a queue of 8 s each lags behind what the user does |
+| (c) A stack of at most N | The oldest goes when the N+1st comes | Keeps some history | Still stacks; the owner's three were already too many |
+| (d) Repeated confirmations merged into one ("3 registries are on") | A counter per kind of message | One box with the sum | Needs a kind per message in every caller (about 190); a sum hides which registries |
+
+**Choice:** (a); every notice of the `Notifier` is the reference's toast. What that takes:
+
+- **Look:** the reference's measures and its strong feedback colours as three tokens, `--quader-feedback-strong-bg` (`#3a383f`),
+  `-fg` (white) and `-link` in both schemes. The link is `#66a8ea`, the reference's `#63a6e9` a hair lighter, which gives 4.49:1 on the
+  grey: the same step the accent takes (R-UI-044). The shadow is `--quader-elevation-2`, the app's shadow of what floats over the page,
+  not a fourth shadow token for the reference's slightly smaller one (the style guide adds no shadow). The close button is a 24 px icon
+  button, the action a link-like button; both stand on the middle of the text's first line (R-UI-175), which for one line is the toast's
+  middle, as the reference centres them.
+- **An error** keeps the toast's shape, place and close button in the colours and with the icon of the shared error notice
+  (`error-notice.ts`), so it is not told by colour alone. The reference shows an error as an alert in the page; a `Notifier` alert has no
+  place in a page (a failed copy, a refused download link, anywhere), so it stays a toast.
+- **Place:** the window's bottom right, the owner's; 24 px from the corner, at most 586 px wide; below 576 px across the window with
+  8 px each side. Above the overlays (`z-index` 1100, as the reference's), so a confirmation of a copy in a dialog is seen. A page's own
+  controls at the bottom right are not covered at 1,024 px and wider: the policy editor's save bar has its buttons at its start; at
+  390 px a toast spans the window, as the reference's does, and is closed with its "×" or goes after its time.
+- **Time:** 8 seconds as before (the reference's 5 are short for a sentence of a registry's name), stopped while the pointer or the
+  focus is on the toast and going on with what was left, at least 1 second (the reference's least).
+- **A warning of the same write** goes into the same status after its confirmation (the upstream registries' level and the ClamAV
+  definitions' switch), since a second status would now replace the first.
+
+**Rationale:** the stack was the defect the owner saw, and only plain confirmations stack in normal use (each switch, each saved
+setting); replacing them ends it without hiding what needs the user. Everything else is the reference's toast as its source sets it.
+The development agent would revisit (a) if a confirmation that matters is found to be replaced before it can be read; then (d) for that
+caller.
+
+**Applied in the spec:** R-UI-042 (the bullet of the live regions). Code: [notifier.ts](../../web/src/app/core/notifier.ts),
+[notices.ts](../../web/src/app/shared/notices.ts), the tokens in [_tokens.scss](../../web/src/styles/_tokens.scss) (the inverse
+accent of the snack bar is gone), `withWarnings` in [upstream-actions.ts](../../web/src/app/features/upstream/upstream-actions.ts). Tests:
+[notices.spec.ts](../../web/src/app/shared/notices.spec.ts) (one confirmation at a time, actions and errors keep their place, the time
+that stops, the close button named **Close**), [palette.spec.ts](../../web/src/styles/palette.spec.ts) (the toast's pairs). Rendered:
+`admin-upstream-toasts` (one toast, a replaced one, three kinds side by side), in English and German. Docs:
+[design-language.md](../developer/design-language.md) (the controls' table, the palette), [ui-style-guide.md](../developer/ui-style-guide.md#lists),
+[web-ui.md](../developer/web-ui.md).
 
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 

@@ -202,6 +202,7 @@ every row.
 | Dialog | `QuaderDialog.open(Component, { data, width, maxWidth, disableClose })` with `<h2 quaderDialogTitle>`, `<div class="dialog-body">`, `<div class="dialog-actions">` and `quaderDialogClose` on a closing button ([dialog.ts](../../web/src/app/shared/ui/dialog.ts), [_dialog.scss](../../web/src/styles/_dialog.scss)) | the CDK dialog: `role="dialog"`, `aria-modal`, named by its title, the focus trapped inside and returned to the opener, Escape and the backdrop close it unless `disableClose`; the panel on `--quader-dialog-bg`, 16 px round, the title in the heading-3 size, the body scrolling between title and actions, the actions right-aligned |
 | Menu | `cdkMenuTriggerFor` and `<div class="menu" cdkMenu>` with `class="menu-item" cdkMenuItem` (or `cdkMenuItemRadio`) | the CDK menu, in `_shell.scss`; the user menu, the sort menu of the browser and the mirror's run menu |
 | Tooltip | `[quaderTooltip]="text"` ([tooltip.ts](../../web/src/app/shared/ui/tooltip.ts)) | a small bubble on `--quader-inverse-surface` under the element, on pointer and keyboard focus, closed by Escape, blur or leaving it (WCAG 1.4.13); the element is always described by the text (the CDK's hidden description), the bubble itself is `aria-hidden` |
+| Toast | `Notifier.status(text, action?)`, `Notifier.alert(text, action?)` ([notifier.ts](../../web/src/app/core/notifier.ts)), drawn once by `<quader-notices>` ([notices.ts](../../web/src/app/shared/notices.ts)) | the reference's toast ([Q-UI-1063](../spec/api-and-ui.md#q-ui-1063--feedback-outside-forms-is-the-references-toast-at-the-bottom-right-one-confirmation-at-a-time)): 24 px from the window's bottom right corner, at most 586 px wide (below 576 px across the window with 8 px each side); `--quader-feedback-strong-bg` with `--quader-feedback-strong-fg` in both schemes, 8 px round, `--quader-elevation-2`, 16 by 24 px of padding, 14 px text at weight 300 on a 16 px line; the action a bold link-like button in `--quader-feedback-strong-link`, the close button a 24 px icon button **Close**. One confirmation at a time; a notice with an action and an error each keep their toast; an error has the error notice's colours and its icon |
 | Text field, select with label and error | `<quader-text-field>`, `<quader-select-field>` ([fields.ts](../../web/src/app/shared/access/fields.ts)) | the label above, `text-input` / `area-input` / `select-input`, the hint and the error as text below, joined by `aria-describedby`, with `aria-invalid` on an error |
 | Focus | every control | `--quader-focus-ring` (2 px solid accent), offset 2 px for buttons and 1 px for fields |
 
@@ -374,7 +375,11 @@ Q-UI-96 and Q-UI-128 are computed only: the browser tier has not run against the
 | `on-surface` | selected row | 4.5:1 | `#3a383f` on `#e9f3fc`: 10.3:1 | `#ececef` on `#1d283e`: 12.5:1 | cell text in the current audit row |
 | `on-surface-variant` | selected row | 4.5:1 | `#626168` on `#e9f3fc`: 5.5:1 | `#bfbfc3` on `#1d283e`: 8.0:1 | muted text in the current audit row |
 | `on-primary-container` | primary-container | 4.5:1 | `#18171d` on `#e9f3fc`: 15.9:1 | `#ececef` on `#1d283e`: 12.5:1 | text on primary-container |
-| `inverse-primary` | inverse surface | 4.5:1 | `#66a8ea` on `#28272d`: 5.9:1 | `#2f68b4` on `#ececef`: 4.7:1 | action of a snack bar |
+| `on-inverse-surface` | inverse surface | 4.5:1 | `#ececef` on `#28272d`: 12.6:1 | `#28272d` on `#ececef`: 12.6:1 | text of a tooltip |
+| `--quader-feedback-strong-fg` | strong feedback | 4.5:1 | `#ffffff` on `#3a383f`: 11.6:1 | `#ffffff` on `#3a383f`: 11.6:1 | text of a toast |
+| `--quader-feedback-strong-link` | strong feedback | 4.5:1 | `#66a8ea` on `#3a383f`: 4.6:1 | `#66a8ea` on `#3a383f`: 4.6:1 | action of a toast, and its focus ring (3:1) |
+| `--quader-feedback-strong-fg` | strong feedback hover | 4.5:1 | `#ffffff` on `#4b4950`: 8.9:1 | `#ffffff` on `#5a585e`: 7.0:1 | close button of a toast under the pointer |
+| `on-error-container` | error container | 4.5:1 | `#93000a` on `#ffdad6`: 7.2:1 | `#ffdad6` on `#93000a`: 7.2:1 | text of an error toast, and its focus ring (3:1) |
 | `on-surface` | page | 4.5:1 | `#3a383f` on `#ffffff`: 11.6:1 | `#ececef` on `#18171d`: 15.1:1 | text |
 | `on-surface` | raised | 4.5:1 | `#3a383f` on `#ffffff`: 11.6:1 | `#ececef` on `#18171d`: 15.1:1 | text on a card |
 | `on-surface-variant` | page | 4.5:1 | `#626168` on `#ffffff`: 6.1:1 | `#bfbfc3` on `#18171d`: 9.7:1 | muted text, field label |
@@ -436,7 +441,7 @@ Q-UI-96 and Q-UI-128 are computed only: the browser tier has not run against the
 | `#1f75cb` | filled field `#ececef` | 4.5:1 | light | 3.99:1 fails | the reference's confirm blue as the focused label |
 | `#1f75cb` | row hover `#e9f3fc` | 4.5:1 | light | 4.19:1 fails | the reference's confirm blue in a hovered row |
 | `#63a6e9` | filled field `#3a383f` | 4.5:1 | dark | 4.49:1 fails | the reference's dark confirm blue as the focused label |
-| `#1f75cb` | inverse surface `#ececef` | 4.5:1 | dark | 3.99:1 fails | the reference's blue as a snack bar's action |
+| `#63a6e9` | strong feedback `#3a383f` | 4.5:1 | both | 4.49:1 fails | the reference's blue 300 as a toast's action |
 | `#050506 @ 24 %` | frame `#ececef` | 3:1 | light | 1.74:1 fails | the reference's search hairline |
 | `#ffffff @ 16 %` | frame `#28272d` | 3:1 | dark | 1.67:1 fails | the reference's search hairline |
 | `#89888d` | frame `#ececef` | 3:1 | light | 2.98:1 fails | the field outline as the search outline on the frame |

@@ -1615,6 +1615,47 @@ async function* registryPresetsWalk(page: Page): AsyncGenerator<string> {
   await dialog.getByRole('button', { name: 'Cancel' }).click();
 }
 
+/**
+ * The toasts of R-UI-042 (Q-UI-1063) on the page where the owner saw them stack (2026-11-24): a registry switched on, its write answered
+ * in the browser so the seed's registries stay as they are; a second one switched on, whose toast replaces the first's; and beside it
+ * the toasts that keep their place, a notice with an action and an error. Those two are sent to the app's `Notifier` through Angular's
+ * debugging API of the development build, with the texts of their real callers (the tab Upstream's bulk download, a copy that failed),
+ * because this page has neither. Its controls are found by role and state, so it renders in German too.
+ */
+async function* toastsWalk(page: Page): AsyncGenerator<string> {
+  await page.route('**/api/v1/upstream-repositories/*/state', async (route) => {
+    const url = new URL(route.request().url());
+    const item = (await (await page.request.get(url.href.replace(/\/state$/, ''))).json()) as Record<string, unknown>;
+    await route.fulfill({ status: 200, contentType: 'application/json', headers: { ETag: '"1"' }, body: JSON.stringify({ ...item, state: 'active' }) });
+  });
+  const off = page.locator('main quader-upstream-registries [role="switch"][aria-checked="false"]');
+  const toasts = page.locator('quader-notices .toast');
+  await expect(off.first()).toBeVisible();
+  await off.first().click();
+  await expect(toasts).toHaveCount(1);
+  yield 'toast';
+  await off.first().click();
+  await expect(page.locator('main [role="switch"][aria-busy="true"]')).toHaveCount(0);
+  await expect(toasts).toHaveCount(1);
+  yield 'toast-replaced';
+  await page.evaluate(() => {
+    const de = document.documentElement.lang.startsWith('de');
+    const ng = (window as unknown as { ng: { getComponent(el: Element): unknown } }).ng;
+    const host = ng.getComponent(document.querySelector('quader-notices') as Element) as {
+      notifier: { status(text: string, action?: { label: string; run(): void }): void; alert(text: string): void };
+    };
+    host.notifier.status(
+      de ? 'Der Sammeldownload ist eingereiht; seine Zeilen warten im Reiter Downloads.' : 'The bulk download is queued; its rows wait in the tab Downloads.',
+      { label: de ? 'Downloads anzeigen' : 'Show downloads', run: () => undefined },
+    );
+    host.notifier.alert(
+      de ? 'Die Zwischenablage ist nicht verfügbar. Markieren Sie den Text und kopieren Sie ihn.' : 'The clipboard is not available. Select the text and copy it.',
+    );
+  });
+  await expect(toasts).toHaveCount(3);
+  yield 'toasts';
+}
+
 /** The section without a registry of the installation: the list answered empty (R-UI-195). */
 async function* registryPresetsEmpty(page: Page): AsyncGenerator<string> {
   await page.route('**/api/v1/settings/registry-presets', (route) =>
@@ -2907,6 +2948,9 @@ export const screens: readonly Screen[] = [
   // The row of clamav in System repositories with its switch ClamAV definition updates (R-UI-187, Q-UI-903): on as the seed left it,
   // the question before switching off, and off.
   { id: 'admin-upstream-clamav-row', path: '/ui/admin/upstream', kinds: admins, walk: clamavRow },
+  // The toasts (R-UI-042, Q-UI-1063): one registry switched on, a second whose toast replaces the first's, and the toasts that keep
+  // their place beside it, a notice with an action and an error.
+  { id: 'admin-upstream-toasts', path: '/ui/admin/upstream', kinds: ['admin'], walk: toastsWalk, de: true },
   { id: 'admin-upstream-registry', path: '/ui/admin/upstream/debian', kinds: admins },
   { id: 'admin-upstream-menu', path: '/ui/admin/upstream', kinds: ['admin'], walk: rowMenuOpen },
   // The system repository of the image scanning's database: in use while the scanning reads through it (R-REPO-070, R-VULN-044).

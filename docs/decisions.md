@@ -12077,10 +12077,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-525 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+526 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 525 questions</summary>
+<summary>Q-UI: 526 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12609,6 +12609,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1060](spec/api-and-ui.md#q-ui-1060--what-a-layout-check-can-hold-of-the-render-sets-blind-spots-and-what-stays-to-the-eye) | What a layout check can hold of the render set's blind spots, and what stays to the eye | Decided by the development agent on 2026-11-24 | as in the table: one check (`cramped`), built on 2026-11-24 with a run of the whole set (above); the rest are held already, have no seen defect, cannot be measured in the page, or are not layout. | — |
 | [Q-UI-1061](spec/api-and-ui.md#q-ui-1061--a-mirror-without-its-bound-offers-no-run-and-says-who-can-set-the-bound) | A mirror without its bound offers no run, and says who can set the bound | Decided by the development agent on 2026-11-24 | (a) **Run a pass now** and its menu disabled in the state **No bound**, the reason beside them; the state's sentence by who reads it | — |
 | [Q-UI-1062](spec/api-and-ui.md#q-ui-1062--the-trends-axis-numbers-are-text-of-the-page-beside-the-drawing) | The trend's axis numbers are text of the page beside the drawing | Decided by the development agent on 2026-11-24 | (a) The numbers as HTML in a column of their own beside the drawing, at the app's small text size (`--quader-type-body-small`, 12 px), each at its grid line's share of the drawing's height; the drawing keeps its aspect and starts at the plot's edge | — |
+| [Q-UI-1063](spec/api-and-ui.md#q-ui-1063--feedback-outside-forms-is-the-references-toast-at-the-bottom-right-one-confirmation-at-a-time) | Feedback outside forms is the reference's toast at the bottom right, one confirmation at a time | Decided by the development agent on 2026-11-24 | (a); every notice of the `Notifier` is the reference's toast. | — |
 
 </details>
 

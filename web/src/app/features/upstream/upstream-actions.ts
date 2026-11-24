@@ -10,6 +10,14 @@ import { VisibilityLevel, VisibilityLevelControl, installationReasons, levelName
 import { SystemClients } from '../../core/system-clients';
 import { clientsLoweredWarning, clientsSwitchedText, levelSetText, publicSentence, switchedText } from './upstream-words';
 
+/**
+ * A confirmation and the server's warnings as one status (R-UI-042): the toast shows one confirmation at a time, so a warning sent as a
+ * status of its own would replace the confirmation it belongs to.
+ */
+function withWarnings(text: string, saved: Pick<UpstreamRepository, 'warnings'>): string {
+  return [text, ...(saved.warnings ?? []).map((w) => w.detail)].join(' ');
+}
+
 interface SetAllData {
   readonly choices: VisibilityChoices | null;
 }
@@ -99,7 +107,7 @@ export class UpstreamActions {
    * Switches **ClamAV definition updates** of `clamav` on or off (R-UI-187, R-UI-188, Q-UI-903), each after its question: on names
    * the address the installations update from and who can read it (Public, or Internal where the installation allows no public
    * level); off says that the installations get 404 and that Quader's own scan goes on. On asks for Public; the server lowers it
-   * where it must and says so in a warning, which the status line repeats.
+   * where it must and says so in a warning, which the status repeats after its confirmation.
    */
   async toggleClients(r: UpstreamRepository, on: boolean, publicAllowed: boolean): Promise<UpstreamRepository | null> {
     const address = r.clients?.address ?? '';
@@ -126,8 +134,7 @@ export class UpstreamActions {
     if (answer === null) return null;
     const saved = (await this.api.setClients(r.key, on, on ? 'public' : undefined)).value;
     this.systemClients.forget();
-    this.notifier.status(clientsSwitchedText(saved));
-    for (const w of saved.warnings ?? []) this.notifier.status(w.detail);
+    this.notifier.status(withWarnings(clientsSwitchedText(saved), saved));
     return saved;
   }
 
@@ -142,8 +149,7 @@ export class UpstreamActions {
       if (answer === null) return null;
     }
     const saved = (await this.api.setVisibility(r.key, level)).value;
-    this.notifier.status(levelSetText(saved));
-    for (const w of saved.warnings ?? []) this.notifier.status(w.detail);
+    this.notifier.status(withWarnings(levelSetText(saved), saved));
     return saved;
   }
 

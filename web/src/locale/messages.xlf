@@ -25104,7 +25104,7 @@
     <unit id="repo.visibility.level">
       <notes>
         <note category="location">src/app/features/repositories/repository-visibility.ts:47,48</note>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:30,32</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:38,40</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:58,59</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:69,70</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:194,195</note>
@@ -36970,7 +36970,7 @@
       <notes>
         <note category="location">src/app/features/upstream/account-again-dialog.ts:58,59</note>
         <note category="location">src/app/features/upstream/registry-preset-dialog.ts:111,112</note>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:38,39</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:46,47</note>
         <note category="location">src/app/shared/confirm-dialog.ts:69,70</note>
       </notes>
       <segment>
@@ -37176,7 +37176,7 @@
     </unit>
     <unit id="wellknown.set-all.title">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:25,27</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:33,35</note>
       </notes>
       <segment>
         <source>Set the visibility of every registry</source>
@@ -37184,7 +37184,7 @@
     </unit>
     <unit id="wellknown.set-all.text">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:27,29</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:35,37</note>
       </notes>
       <segment>
         <source>Every registry that Quader offers takes this level, whether it is on or off.</source>
@@ -37192,7 +37192,7 @@
     </unit>
     <unit id="wellknown.set-all.confirm">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:39,43</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:47,51</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:99,101</note>
       </notes>
       <segment>
@@ -37201,7 +37201,7 @@
     </unit>
     <unit id="wellknown.off.title">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:81</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:89</note>
       </notes>
       <segment>
         <source>Switch off <ph id="0" equiv="name" disp="r.displayName"/>?</source>
@@ -37209,7 +37209,7 @@
     </unit>
     <unit id="wellknown.off.one">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:84</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:92</note>
       </notes>
       <segment>
         <source>1 virtual repository lists it. It skips it until it is on again; nothing of its own changes.</source>
@@ -37217,7 +37217,7 @@
     </unit>
     <unit id="wellknown.off.many-one-project">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:86</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:94</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> virtual repositories in 1 project list it. They skip it until it is on again; nothing of theirs changes.</source>
@@ -37225,7 +37225,7 @@
     </unit>
     <unit id="wellknown.off.many">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:87</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:95</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> virtual repositories in <ph id="1" equiv="projects" disp="projects"/> projects list it. They skip it until it is on again; nothing of theirs changes.</source>
@@ -37233,8 +37233,8 @@
     </unit>
     <unit id="wellknown.off.confirm">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:89</note>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:123</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:97</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:131</note>
       </notes>
       <segment>
         <source>Switch off</source>
@@ -37242,7 +37242,7 @@
     </unit>
     <unit id="clamav.on.title">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:109</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:117</note>
       </notes>
       <segment>
         <source>Offer the ClamAV definitions to your ClamAV installations?</source>
@@ -37250,7 +37250,7 @@
     </unit>
     <unit id="clamav.on.address">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:111</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:119</note>
       </notes>
       <segment>
         <source>They update from <ph id="0" equiv="address" disp="address"/>.</source>
@@ -37258,7 +37258,7 @@
     </unit>
     <unit id="clamav.on.public">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:113</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:121</note>
       </notes>
       <segment>
         <source>Public: anyone who reaches this address can download them, without a credential.</source>
@@ -37266,7 +37266,7 @@
     </unit>
     <unit id="clamav.on.confirm">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:116</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:124</note>
       </notes>
       <segment>
         <source>Switch on</source>
@@ -37274,7 +37274,7 @@
     </unit>
     <unit id="clamav.off.title">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:119</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:127</note>
       </notes>
       <segment>
         <source>Stop serving the ClamAV definitions?</source>
@@ -37282,7 +37282,7 @@
     </unit>
     <unit id="clamav.off.text">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:121</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:129</note>
       </notes>
       <segment>
         <source>ClamAV installations that update from Quader get 404 until they are on again. Quader&apos;s own malware scan is not affected.</source>
@@ -37290,7 +37290,7 @@
     </unit>
     <unit id="wellknown.public.title">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:138</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:145</note>
       </notes>
       <segment>
         <source>Make <ph id="0" equiv="name" disp="r.displayName"/> public?</source>
@@ -37298,8 +37298,8 @@
     </unit>
     <unit id="wellknown.public.confirm">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:140</note>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:188</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:147</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:194</note>
       </notes>
       <segment>
         <source>Make public</source>
@@ -37307,7 +37307,7 @@
     </unit>
     <unit id="wellknown.all-on.title-one">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:156</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:162</note>
       </notes>
       <segment>
         <source>Switch on 1 registry?</source>
@@ -37315,7 +37315,7 @@
     </unit>
     <unit id="wellknown.all-on.title">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:157</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:163</note>
       </notes>
       <segment>
         <source>Switch on <ph id="0" equiv="count" disp="n"/> registries?</source>
@@ -37323,7 +37323,7 @@
     </unit>
     <unit id="wellknown.all-on.text">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:159</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:165</note>
       </notes>
       <segment>
         <source>Each is Internal once it is on: everyone signed in who is not marked external, people and their pipelines and service accounts, can pull through it, directly and through every virtual repository that lists it. Quader contacts each registry when a client asks for something it has not stored.</source>
@@ -37331,7 +37331,7 @@
     </unit>
     <unit id="wellknown.all-on.confirm">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:162</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:168</note>
       </notes>
       <segment>
         <source>Switch all on</source>
@@ -37339,7 +37339,7 @@
     </unit>
     <unit id="wellknown.all-on.done-one">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:169</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:175</note>
       </notes>
       <segment>
         <source>1 registry switched on.</source>
@@ -37347,7 +37347,7 @@
     </unit>
     <unit id="wellknown.all-on.done">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:170</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:176</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="changed"/> registries switched on.</source>
@@ -37355,7 +37355,7 @@
     </unit>
     <unit id="wellknown.public.all-title">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:186</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:192</note>
       </notes>
       <segment>
         <source>Make every registry public?</source>
@@ -37363,7 +37363,7 @@
     </unit>
     <unit id="wellknown.set-all.done">
       <notes>
-        <note category="location">src/app/features/upstream/upstream-actions.ts:194</note>
+        <note category="location">src/app/features/upstream/upstream-actions.ts:200</note>
       </notes>
       <segment>
         <source>Every registry is <ph id="0" equiv="level" disp="name"/>.</source>
@@ -44396,20 +44396,12 @@
         <source>every scan failed</source>
       </segment>
     </unit>
-    <unit id="notice.dismiss">
+    <unit id="notice.close">
       <notes>
-        <note category="location">src/app/shared/notices.ts:24,25</note>
+        <note category="location">src/app/shared/notices.ts:45</note>
       </notes>
       <segment>
-        <source> Dismiss </source>
-      </segment>
-    </unit>
-    <unit id="notice.dismiss-alert">
-      <notes>
-        <note category="location">src/app/shared/notices.ts:39,40</note>
-      </notes>
-      <segment>
-        <source> Dismiss </source>
+        <source>Close</source>
       </segment>
     </unit>
     <unit id="person.someone">

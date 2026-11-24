@@ -190,6 +190,10 @@ const surfaces: Record<string, string | readonly [string, string]> = {
   'selected row': '--quader-accent-container',
   'primary-container': '--quader-accent-container',
   'inverse surface': '--quader-inverse-surface',
+  // The toast (R-UI-042, Q-UI-1063): the reference's strong feedback, and its close button under the pointer.
+  'strong feedback': '--quader-feedback-strong-bg',
+  'strong feedback hover': ['--quader-btn-tertiary-bg-hover', '--quader-feedback-strong-bg'],
+  'error container': '--quader-error-container',
   primary: '--quader-accent',
   'side bar': '--quader-nav-bg',
   'open group': '--quader-nav-bg-nested',
@@ -279,7 +283,11 @@ const textPairs: readonly (readonly [string, string])[] = [
   ['--quader-on-surface', 'selected row'],
   ['--quader-text-muted', 'selected row'],
   ['--quader-on-accent-container', 'primary-container'],
-  ['--quader-inverse-accent', 'inverse surface'],
+  ['--quader-on-inverse-surface', 'inverse surface'],
+  ['--quader-feedback-strong-fg', 'strong feedback'],
+  ['--quader-feedback-strong-link', 'strong feedback'],
+  ['--quader-feedback-strong-fg', 'strong feedback hover'],
+  ['--quader-on-error-container', 'error container'],
   ['--quader-on-surface', 'page'],
   ['--quader-on-surface', 'raised'],
   ['--quader-text-muted', 'page'],
@@ -394,6 +402,9 @@ const markPairs: readonly (readonly [string, string])[] = [
   ['--quader-mark-accent', 'switcher panel'],
   ['--quader-mark-letter', 'project mark'],
   ['--quader-mark-letter', 'project mark lit'],
+  // The focus ring inside a toast and inside an alert notice (R-UI-042, Q-UI-1063).
+  ['--quader-feedback-strong-link', 'strong feedback'],
+  ['--quader-on-error-container', 'error container'],
   // The focus ring inside a snippet's window, and the dashed line under what the reader replaces (Q-UI-801).
   ['--quader-code-focus', 'code window'],
   ['--quader-code-focus', 'code bar'],

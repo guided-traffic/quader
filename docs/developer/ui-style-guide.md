@@ -185,7 +185,9 @@ side bar (**Tokens**). The description is one sentence, the header's `descriptio
   "in 4 weeks"). A log (the audit log, the issued CI tokens) writes the date and the time; a card or a page's facts the relative
   time with the absolute in brackets ([Q-UI-431](../spec/api-and-ui.md#q-ui-431--a-time-in-a-list-is-relative-with-the-absolute-time-as-its-title-a-log-writes-the-moment)).
 - An inline control in a row (the role select, a level, a switch) has no visible label and an `aria-label` that names the row. It
-  shows the current value, and a change is saved at once, with the status message of the `Notifier`.
+  shows the current value, and a change is saved at once, with the status message of the `Notifier`: a toast at the window's bottom
+  right, one at a time, so a row of such changes shows the last one ([Q-UI-1063](../spec/api-and-ui.md#q-ui-1063--feedback-outside-forms-is-the-references-toast-at-the-bottom-right-one-confirmation-at-a-time)).
+  The message is one sentence that names the thing ("Docker Hub is on."); a warning of the same write goes into the same message.
 - Filter and order work on what is loaded, or are sent to the server where the list is paged. A filter that finds nothing says
   so in a row of the table; an empty list says so in place of the table and offers the action that fills it.
 - **The head of a list** is `<quader-list-head>` ([list-head.ts](../../web/src/app/shared/ui/list-head.ts), [R-UI-100](../spec/api-and-ui.md#r-ui-100--the-head-of-every-list-the-search-by-name-filters-and-the-filters-that-are-set)): give
