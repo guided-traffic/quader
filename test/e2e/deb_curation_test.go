@@ -3,8 +3,6 @@
 package e2e
 
 import (
-	"context"
-	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -63,16 +61,11 @@ func TestDebCuration_R_CUR_004_WhatAptShowsOfARemoteThatDeliversOnlyWhatIsAllowe
 	t.Run("R-CUR-010 R-CUR-014 quader-hello-doc 1.0-1 downloaded ahead and then allowed is installed from the cache", func(t *testing.T) {
 		file := pool("quader-hello", "quader-hello-doc", "1.0-1")
 		// a download ahead names its files from the indexes the remote has parsed (R-DEB-023, R-DEB-036): APT read them by their hash at
-		// the update above, which enqueued their parse (Q-CUR-162). The rows are read in the database, since the catalogue caches its
-		// answers for a while (R-CUR-008) and an answer read before the parse would be the one it keeps.
-		parsed := fmt.Sprintf(`SELECT count(*) FROM deb_remote_entries e JOIN repositories r ON r.id = e.repo_id
-			WHERE r.key = '%s' AND e.package = 'quader-hello-doc' AND e.version = '1.0-1'`, repo)
-		waitFor(t, "the remote's parsed indexes to list quader-hello-doc 1.0-1", time.Minute, 250*time.Millisecond, func() bool {
-			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-			defer cancel()
-			out, err := bakSQL(ctx, parsed)
-			fields := strings.Fields(out)
-			return err == nil && len(fields) > 0 && fields[len(fields)-1] != "0"
+		// the update above, which enqueued their parse (Q-CUR-162). The case asks the catalogue: a lookup that found nothing before the
+		// parse is not kept, since a Debian remote answers from its own rows and asks no upstream (R-CUR-008, Q-CUR-164).
+		waitFor(t, "the catalogue to list quader-hello-doc 1.0-1 from the remote's parsed indexes", time.Minute, 250*time.Millisecond, func() bool {
+			r := fx.adm.get(repoAPI(repo) + "/upstream/package?name=quader-hello-doc")
+			return r.Status == http.StatusOK && strings.Contains(string(r.Body), `"version":"1.0-1"`)
 		})
 		before := s.debCounts(t).Requests(http.MethodGet, debstub.ArchiveBase+file)
 		downloadAhead(t, fx.adm, repo, "quader-hello-doc", "1.0-1")

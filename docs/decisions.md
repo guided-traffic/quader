@@ -10133,10 +10133,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-CUR
 
-75 questions on [spec/remote-curation.md](spec/remote-curation.md).
+76 questions on [spec/remote-curation.md](spec/remote-curation.md).
 
 <details>
-<summary>Q-CUR: 75 questions</summary>
+<summary>Q-CUR: 76 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10215,6 +10215,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-CUR-161](spec/remote-curation.md#q-cur-161--each-formats-end-to-end-case-is-the-remotes-own-refusal-an-allow-and-a-download-ahead-what-the-clients-print-is-measured) | Each format's end-to-end case is the remote's own refusal, an allow and a download ahead; what the clients print is measured | Decided by the development agent on 2026-11-24 | (a) One case per format in its own set, on a remote of its counting test upstream in mode `onlyAllowed`: the client refused (what it prints, a row of the manual's table), an allow of one version through the API (where the client resolves a range or "the newest", it takes the allowed one), a version downloaded ahead through the queue and allowed that the client takes from the cache (the stub's count) | — |
 | [Q-CUR-162](spec/remote-curation.md#q-cur-162--a-debian-index-apt-fetched-by-its-hash-is-parsed) | A Debian index APT fetched by its hash is parsed | Decided by the development agent on 2026-11-24 | (a) The commit of a by-hash file below a `binary-<arch>` directory enqueues the parse of that directory's `Packages`; the job reads the index the current release names for it by its SHA-256 | — |
 | [Q-CUR-163](spec/remote-curation.md#q-cur-163--the-background-engine-of-the-role-api-shares-the-caches-of-its-read-only-view) | The background engine of the role api shares the caches of its read-only view | Decided by the development agent on 2026-11-24 | (a) The engine takes the view (`proxy.Options.View`) and reads the state and the negative L1 through the view's two caches | — |
+| [Q-CUR-164](spec/remote-curation.md#q-cur-164--the-catalogue-keeps-a-page-that-found-nothing-only-when-it-asked-the-upstream) | The catalogue keeps a page that found nothing only when it asked the upstream | Decided by the development agent on 2026-11-24 | (a) A page that found nothing is kept only when a request of the call reached the network; the engine sees it in the budget's `Spend`, which the lent upstream calls before every request | — |
 
 </details>
 

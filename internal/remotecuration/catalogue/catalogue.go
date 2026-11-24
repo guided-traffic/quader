@@ -17,6 +17,7 @@ import (
 	"log/slog"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 	"unicode/utf8"
 
@@ -296,7 +297,8 @@ func (e *Engine) catalogue(t Target) (discover.Catalogue, error) {
 }
 
 // call runs one call: from the cache when it holds the page, else through a lent upstream within the budget, the timeout and the
-// bounds, keeping a page it answers. into receives the page.
+// bounds, keeping a page it answers unless the page found nothing and no request reached the network (foundNothing). into receives
+// the page.
 func (e *Engine) call(ctx context.Context, t Target, call string, args any, into any, run func(context.Context, discover.Upstream) (any, error)) error {
 	st := e.o.Settings()
 	key, err := cacheKey(t, call, args)
@@ -315,7 +317,12 @@ func (e *Engine) call(ctx context.Context, t Target, call string, args any, into
 	}
 	cctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	u, err := e.o.Lender.Lend(cctx, t, Lend{MaxBytes: st.MaxDocumentBytes, Spend: e.spender(t)})
+	var asked atomic.Bool
+	spend := e.spender(t)
+	u, err := e.o.Lender.Lend(cctx, t, Lend{MaxBytes: st.MaxDocumentBytes, Spend: func(ctx context.Context) error {
+		asked.Store(true)
+		return spend(ctx)
+	}})
 	if err != nil {
 		return e.fail(t, call, err, st, cctx)
 	}
@@ -324,8 +331,26 @@ func (e *Engine) call(ctx context.Context, t Target, call string, args any, into
 		return e.fail(t, call, err, st, cctx)
 	}
 	e.o.Metrics.count(t.Repo, call, OutcomeOK)
-	e.cache.put(key, v, st.CacheBytes, st.CacheTTL)
+	if asked.Load() || !foundNothing(v) {
+		e.cache.put(key, v, st.CacheBytes, st.CacheTTL)
+	}
 	return assign(v, into)
+}
+
+// foundNothing says that a page found nothing: a package not found, a search without a hit, a level without an entry. Such a page is
+// kept only when the upstream was asked for it (Q-CUR-164): a format that answers from what Quader holds of the upstream (Debian's
+// parsed indexes, R-DEB-036) finds the package once its index is parsed, and keeping "nothing" would hide it for the cache's period,
+// while a request it does not send needs no budget protected.
+func foundNothing(v any) bool {
+	switch p := v.(type) {
+	case discover.PackageInfo:
+		return !p.Found
+	case discover.SearchPage:
+		return len(p.Hits) == 0
+	case discover.LevelPage:
+		return len(p.Levels) == 0 && len(p.Packages) == 0
+	}
+	return false
 }
 
 // spender takes one unit of the person's budget and one of the repository's before a request goes to the network (R-CUR-008).

@@ -566,7 +566,9 @@ Priority: **P1** · Covers: ART-044
 - **Short caching.** Answers are kept per replica in an in-process cache of `proxy.catalogue.cache_bytes` (32 MiB) for
   `proxy.catalogue.cache_ttl` (300 s; npm's search answers `max-age=300`), keyed by repository, upstream URL, call and arguments. What
   is kept is the parsed page (names, facts), never a document's bytes. Quader's own state of a row (R-CUR-009) is added at answer time
-  and never cached.
+  and never cached. A page that found nothing (a package not found, a search without a hit, a level without an entry) is kept only when a
+  request of the call reached the upstream: a format that answers from what Quader holds of the upstream (Debian's parsed indexes,
+  R-DEB-036) finds a package as soon as its index is parsed, and asking its rows again costs no upstream request (Q-CUR-164).
 - **Bounds on untrusted answers.** A document the catalogue reads is at most `proxy.catalogue.max_document_bytes` (64 MiB) and is
   parsed as a stream; a call takes at most `proxy.catalogue.timeout` (20 s); a page holds at most 50 hits, 200 entries of a level or
   100 versions; a text from the upstream (a description) is cut at 1,000 characters and shown as text, never as markup. Above a bound the
@@ -579,7 +581,9 @@ Acceptance criteria:
 - Unit (`internal/remotecuration/catalogue`, milliseconds, a fake format and a fake upstream): a call stores nothing (the fake engine's
   store records no write); a second identical call within the period sends nothing; the 121st upstream request of a repository within a
   minute answers `429`; a 65 MiB document answers `502 catalogue_answer_too_large`; a host the preset does not declare is refused
-  `foreign_host_denied`; a shape failure of the declared undocumented search turns the capability off for the period.
+  `foreign_host_denied`; a shape failure of the declared undocumented search turns the capability off for the period; a not-found the
+  upstream answered is kept for the period, while a format that answers from its own rows finds within the period what its index's
+  parse added (lookup, search and level), and its pages that found something are kept.
 - Integration (area `npm`, `TestR_CUR_008_…`, about 2 s, the counting npm stub with a search route added): a search through the API
   reaches the stub once for two identical calls; the packument of a package no client fetched is read and not stored
   (`remote_cache_entries` unchanged).
@@ -2603,6 +2607,33 @@ development agent would revisit it if the role `api` gets the remote engine of t
 `virtualEngineArea.view` in [wire_virtual_engine.go](../../internal/app/wire_virtual_engine.go), `buildEngine` in
 [wire_mirror_host.go](../../internal/app/wire_mirror_host.go); held by `TestR_CUR_009_TheCatalogueAnswersOnAReplicaOfTheRoleAPI` (area
 `npm`) and the journey `24-upstream.spec.ts`.
+
+### Q-CUR-164 · The catalogue keeps a page that found nothing only when it asked the upstream
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below after R6's builder recorded that a Debian
+lookup made before the remote's index was parsed stayed empty for up to five minutes; the owner reviews it at the walkthrough.
+
+Context: the catalogue kept every page for `proxy.catalogue.cache_ttl` (300 s) per replica (R-CUR-008), a not-found as well. The period
+protects the upstream's budget: a second identical call sends no request. A Debian remote's catalogue sends none at all; it answers from
+the indexes the remote parsed (R-DEB-036), which a client's `apt update` or a download ahead fills at any moment. A lookup or a search made
+before the parse kept "nothing" on that replica for the period, though the rows held the package seconds later; the end-to-end case of
+the leg `deb` and the integration case of the area `debremote` had to read the rows in the database instead of the catalogue for it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A page that found nothing is kept only when a request of the call reached the network; the engine sees it in the budget's `Spend`, which the lent upstream calls before every request (chosen) | No format flag: whatever answers from Quader's own rows or stored copies and found nothing is asked again | Every format that searches its own rows is covered without declaring it; an upstream's not-found keeps its period and its budget; no contract change | A query that finds nothing is run again at every call, a statement on Quader's own rows; a page that found something stays up to the period old after a parse |
+| (b) The epoch of the repository's last parse in the cache's key, read per call through a new optional call of the format | Every page of a parsed index is dropped at the next parse | A version the parse added shows at once on a page that found something, too | A database read at every call, also one the cache answers, which halves what the cache saves for Debian; a call of the format contract and of Debian's data port, in the kit's lists |
+| (c) No page of a format whose search is `index` is kept | Debian's catalogue reads its rows every time | Simple | Keyed on the search's kind, though the lookup and the levels are what goes stale; every page read again, also those that found something |
+
+**Choice:** (a). **Rationale:** the period exists to spare the upstream's budget (R-CUR-008), and a call that sent no request spent none,
+so keeping its "nothing" only hides what the next parse adds. A page that found something is as old as any upstream's page may be. The
+development agent would revisit (b) if a person misses a version the parse added on a package page within the period, or if the queries
+that find nothing show in the database's load.
+
+**Applied in the spec:** R-CUR-008 ("Short caching" and the unit criterion). Code: `call` and `foundNothing` in
+[catalogue.go](../../internal/remotecuration/catalogue/catalogue.go); held by `TestR_CUR_008_TheCatalogueEngine` (unit), by
+`TestR_DEB_036_TheCatalogueSearchesTheIndexesTheRemoteParsed` (area `debremote`, which now looks the package up before the parse and waits
+on the catalogue) and by the leg `deb` (`TestDebCuration_R_CUR_004_…`, which waits on the catalogue instead of the database rows).
 
 ### Q-CUR-80 · A download of one version runs before the catalogue: the call that names its files is a contract interface of its own
 

@@ -58,7 +58,9 @@ who can make Quader download how much, and what is kept of content that no clien
 
 - A document the catalogue reads is at most 64 MiB and parsed as a stream; a call ends after 20 s; a page holds at most 50 hits, 200
   entries of a level or 100 versions; a text is cut at 1,000 characters (R-CUR-008). The catalogue's cache keeps parsed pages, 32 MiB per
-  replica, never a document's bytes, and nothing it keeps is served to a client.
+  replica, never a document's bytes, and nothing it keeps is served to a client. A page that found nothing is kept only when the call
+  asked the upstream, so the period still spares an upstream's budget; a not-found answered from Quader's own rows (Debian) is asked
+  again, against the database and not the upstream (Q-CUR-164).
 - A catalogue call stores nothing in the repository's cache, its rows or the negative cache: browsing never populates, so the rule that a
   session cookie never fills a cache (R-AUTHZ-008) holds for it unchanged.
 - A failure's excerpt in the download queue is the first 512 bytes of the upstream's answer as printable text, and the address is shown

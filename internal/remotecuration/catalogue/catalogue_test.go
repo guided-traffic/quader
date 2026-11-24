@@ -109,7 +109,59 @@ func (fakeCatalogue) Package(ctx context.Context, u discover.Upstream, name stri
 	return discover.PackageInfo{Found: true, Name: name, Versions: []discover.VersionFacts{{Version: "1.0.0"}}, Done: true}, nil
 }
 
-func newEngine(t *testing.T, cat *fakeCatalogue, l *fakeLender, st Settings, now func() time.Time) *Engine {
+// indexCatalogue answers from rows Quader holds of the upstream, as Debian's parsed indexes (R-DEB-036): no request reaches the network.
+// parsed is the package the index holds once the remote parsed it; reads counts the answers it read from its rows.
+type indexCatalogue struct {
+	mu     sync.Mutex
+	parsed string
+	reads  int
+}
+
+func (c *indexCatalogue) read() string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.reads++
+	return c.parsed
+}
+
+func (c *indexCatalogue) parse(name string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.parsed = name
+}
+
+func (c *indexCatalogue) count() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.reads
+}
+
+func (*indexCatalogue) CatalogueCaps(context.Context, discover.Upstream) (discover.CatalogueCaps, error) {
+	return discover.CatalogueCaps{Search: discover.SearchIndex, Levels: []string{"suite"}, Sizes: "known"}, nil
+}
+
+func (c *indexCatalogue) Search(_ context.Context, _ discover.Upstream, q discover.SearchQuery) (discover.SearchPage, error) {
+	if p := c.read(); p != "" && strings.Contains(p, q.Text) {
+		return discover.SearchPage{Hits: []discover.Hit{{Name: p}}, Total: -1, Done: true}, nil
+	}
+	return discover.SearchPage{Total: -1, Done: true}, nil
+}
+
+func (c *indexCatalogue) Children(context.Context, discover.Upstream, discover.LevelRequest) (discover.LevelPage, error) {
+	if p := c.read(); p != "" {
+		return discover.LevelPage{Packages: []discover.Hit{{Name: p}}, Total: -1, Done: true}, nil
+	}
+	return discover.LevelPage{Total: -1, Done: true}, nil
+}
+
+func (c *indexCatalogue) Package(_ context.Context, _ discover.Upstream, name string, _ discover.VersionsRequest) (discover.PackageInfo, error) {
+	if c.read() != name {
+		return discover.PackageInfo{}, nil
+	}
+	return discover.PackageInfo{Found: true, Name: name, Versions: []discover.VersionFacts{{Version: "1.0-1"}}, Done: true}, nil
+}
+
+func newEngine(t *testing.T, cat discover.Catalogue, l *fakeLender, st Settings, now func() time.Time) *Engine {
 	t.Helper()
 	e, err := New(Options{
 		Catalogues: func(string) (discover.Catalogue, bool) { return cat, true },
@@ -252,6 +304,55 @@ func TestR_CUR_008_TheCatalogueEngine(t *testing.T) {
 		e := newEngine(t, &fakeCatalogue{}, &fakeLender{}, defaults(), func() time.Time { return t0 })
 		if _, err := e.Package(ctx, tgt, "absent", discover.VersionsRequest{}); code(err) != errs.CodeCatalogueNotFound {
 			t.Fatalf("%v", err)
+		}
+	})
+	t.Run("R-CUR-008 a not-found the upstream answered is kept for the period", func(t *testing.T) {
+		l := &fakeLender{}
+		e := newEngine(t, &fakeCatalogue{}, l, defaults(), func() time.Time { return t0 })
+		for range 2 {
+			if _, err := e.Package(ctx, tgt, "absent", discover.VersionsRequest{}); code(err) != errs.CodeCatalogueNotFound {
+				t.Fatalf("%v", err)
+			}
+		}
+		if gets, _ := l.totals(); gets != 1 {
+			t.Fatalf("two lookups of a package the upstream does not have sent %d requests, want 1", gets)
+		}
+	})
+	t.Run("R-CUR-008 R-DEB-036 a format that answers from its index finds what the index's parse added within the period", func(t *testing.T) {
+		l := &fakeLender{}
+		cat := &indexCatalogue{}
+		e := newEngine(t, cat, l, defaults(), func() time.Time { return t0 })
+		deb := tgt
+		deb.Format = "debian"
+		root := discover.LevelRequest{}
+		if _, err := e.Package(ctx, deb, "hello", discover.VersionsRequest{}); code(err) != errs.CodeCatalogueNotFound {
+			t.Fatalf("the lookup before the parse: %v", err)
+		}
+		if p, err := e.Search(ctx, deb, discover.SearchQuery{Text: "hello"}); err != nil || len(p.Hits) != 0 {
+			t.Fatalf("the search before the parse: %+v %v", p, err)
+		}
+		if p, err := e.Children(ctx, deb, root); err != nil || len(p.Packages) != 0 {
+			t.Fatalf("the level before the parse: %+v %v", p, err)
+		}
+		cat.parse("hello")
+		if p, err := e.Package(ctx, deb, "hello", discover.VersionsRequest{}); err != nil || !p.Found {
+			t.Fatalf("the lookup after the parse, within the period: %+v %v", p, err)
+		}
+		if p, err := e.Search(ctx, deb, discover.SearchQuery{Text: "hello"}); err != nil || len(p.Hits) != 1 {
+			t.Fatalf("the search after the parse, within the period: %+v %v", p, err)
+		}
+		if p, err := e.Children(ctx, deb, root); err != nil || len(p.Packages) != 1 {
+			t.Fatalf("the level after the parse, within the period: %+v %v", p, err)
+		}
+		reads := cat.count()
+		_, _ = e.Package(ctx, deb, "hello", discover.VersionsRequest{})
+		_, _ = e.Search(ctx, deb, discover.SearchQuery{Text: "hello"})
+		_, _ = e.Children(ctx, deb, root)
+		if n := cat.count(); n != reads {
+			t.Fatalf("the pages that found something read the rows again (%d reads, want %d): they are kept for the period", n, reads)
+		}
+		if gets, artifacts := l.totals(); gets != 0 || artifacts != 0 {
+			t.Fatalf("a catalogue of the index sent %d requests and %d artifact reads, want none", gets, artifacts)
 		}
 	})
 	t.Run("R-CUR-007 a search's text is 1 to 128 characters", func(t *testing.T) {
