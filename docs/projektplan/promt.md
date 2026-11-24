@@ -250,7 +250,9 @@ its bound offers no run, the trend's axis numbers at 390 px, the layout check `c
 a walk in mirror mode for OCI and Debian). **The Go tests' names landed at 02:30** (six commits: 736 names, 157 functions,
 carry a requirement's number or the behaviour alone, no R-ID lost, R-API-083 newly named and so counted by the
 next record; `TestGoTestNamesCarryARequirementNeverADecision` holds it, about 1 to 2 s of the unit job; three
-tests that docs still name no longer exist under any name, left as found).
+tests that docs still name no longer exist under any name, left as found). Started at 02:32 in its place: **W16**, the open entries of section 8,
+"Tests and tools", worked down (the red jobs of 2026-11-23 read before their artifacts expire, entries closed
+by tonight's landings, repairs where code is wrong).
 **W13 landed at 01:03** (ten commits; H-1662, the Bastion's gauge, R-ARCH-034's count, the limits'
 flush waits by `quader_limits_flushes_total`, E1.14's burst, `search-field.spec.ts`, an offline render seed).
 Started at 00:57 in its place: **W14**, the shape of the test suite and
@@ -845,6 +847,13 @@ records the recorder that tells such a stall apart).
   stack).** By the code the page shows the badge "None yet" with a sentence and no error banner. To do
   (W9): a render state of it, looked at.
 ### Closed
+
+- **Closed on 2026-11-24, 03:00: `e2e (access-long)` was red in the runs of R2's push and the next (Test and Release
+  45299737446 and 45300439644).** Journey `08-packages.spec.ts` looked for the mirror's bound notice by its words of
+  before R2 ("… needs a bound."); R2 changed the sentence ("… needs a bound: packages to mirror whose …"). R2's builder
+  ran no journey (kind and e2e not run, as its report said). The journey takes the new words; a journey that takes
+  its words by message ID (`ui()`, W8) would not have broken, but this message holds an inline code element, which
+  `ui()` does not render. Shown only by the next run of the set.
 
 - **Closed on 2026-11-24, 02:30: a worker panicked when a late claim started its job during the shutdown's wait
   (`integration (shard d)` of Test and Release 45300439644, area `vulnimage`, read at 02:15).** "sync: WaitGroup is
