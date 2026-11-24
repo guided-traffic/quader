@@ -110,9 +110,10 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// shapes per package at a Bastion (R-BAS-080 to R-BAS-088, nine P1 requirements). 1234 since the destruction of a retired
 		// connection's storage keys (R-STOR-097 to R-STOR-103, R-BAK-032, eight P1 requirements). 1262 since the curation of a remote
 		// repository (R-CUR-001 to R-CUR-023, R-NPM-049, R-NUGET-035, R-OCI-038, R-DEB-036, R-ANS-047, 28 P1 requirements). 1264 since
-		// the scans after any fill (R-VULN-050, R-MAL-035, two P1 requirements).
-		if len(m.Reqs) != 1264 || count[prioMVP] != 718 || count[prioP1] != 507 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1264 (718, 507, 39)",
+		// the scans after any fill (R-VULN-050, R-MAL-035, two P1 requirements). 1268 since the downloads from upstreams (R-OPS-049 to
+		// R-OPS-052, four P1 requirements).
+		if len(m.Reqs) != 1268 || count[prioMVP] != 718 || count[prioP1] != 511 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1268 (718, 511, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

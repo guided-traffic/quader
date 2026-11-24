@@ -127,8 +127,10 @@ func (s *Store) ReadUpstreamDownloads(ctx context.Context) (View, error) {
 			return err
 		}
 		for _, r := range live {
-			l := Live{InstanceUID: r.InstanceUid, Replica: r.ReplicaName, WrittenAt: time.UnixMicro(r.WrittenUs).UTC(),
-				Age: max(time.Duration(r.AgeUs)*time.Microsecond, 0), Omitted: int(r.Omitted)}
+			l := Live{
+				InstanceUID: r.InstanceUid, Replica: r.ReplicaName, WrittenAt: time.UnixMicro(r.WrittenUs).UTC(),
+				Age: max(time.Duration(r.AgeUs)*time.Microsecond, 0), Omitted: int(r.Omitted),
+			}
 			if err := json.Unmarshal([]byte(r.Downloads), &l.Downloads); err != nil {
 				l.Downloads = nil // a row this release cannot read counts its omitted downloads only
 			}

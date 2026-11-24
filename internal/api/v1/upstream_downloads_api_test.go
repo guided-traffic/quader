@@ -38,26 +38,34 @@ func upstreamDownloadView() fills.View {
 		Now: t0,
 		Live: []fills.Live{
 			{InstanceUID: "a", Replica: "quader-worker-1", WrittenAt: t0.Add(-time.Second), Age: time.Second, Omitted: 140, Downloads: []fills.Entry{
-				{ID: "01937d4e-0000-7000-8000-000000000002", RepoID: 1, Name: "library/ubuntu", Version: "26.10", Path: "v2/library/ubuntu/blobs/sha256:1a",
+				{
+					ID: "01937d4e-0000-7000-8000-000000000002", RepoID: 1, Name: "library/ubuntu", Version: "26.10", Path: "v2/library/ubuntu/blobs/sha256:1a",
 					Bytes: 16384, Total: &total, Speed: &speed, StartedAt: t0.Add(-10 * time.Second), ElapsedMs: 9000,
-					Origin: "queue", QueueOrigin: "person", QueueRow: udRow, By: udPriya},
+					Origin: "queue", QueueOrigin: "person", QueueRow: udRow, By: udPriya,
+				},
 				{ID: "01937d4e-0000-7000-8000-000000000003", RepoID: 9, Name: "gone", Path: "gone-1.tgz", StartedAt: t0.Add(-5 * time.Second), Origin: "client"},
 			}},
 			{InstanceUID: "b", Replica: "quader-packages-1", WrittenAt: t0, Downloads: []fills.Entry{
-				{ID: "01937d4e-0000-7000-8000-000000000001", RepoID: 2, Name: "@angular/core", Version: "22.0.1", Path: "@angular/core/-/core-22.0.1.tgz",
-					Bytes: 100, StartedAt: t0.Add(-20 * time.Second), ElapsedMs: 20000, Origin: "client", By: udGone},
+				{
+					ID: "01937d4e-0000-7000-8000-000000000001", RepoID: 2, Name: "@angular/core", Version: "22.0.1", Path: "@angular/core/-/core-22.0.1.tgz",
+					Bytes: 100, StartedAt: t0.Add(-20 * time.Second), ElapsedMs: 20000, Origin: "client", By: udGone,
+				},
 			}},
 			{InstanceUID: "c", Replica: "quader-worker-2", WrittenAt: t0.Add(-time.Minute), Age: time.Minute, Omitted: 3, Downloads: []fills.Entry{
 				{ID: "01937d4e-0000-7000-8000-000000000004", RepoID: 1, Name: "stalled", StartedAt: t0.Add(-2 * time.Minute), Origin: "mirror"},
 			}},
 		},
 		Finished: []fills.Finished{
-			{ID: "01937d4c-0000-7000-8000-000000000001", RepoID: 2, Name: "lodash", Version: "4.17.21", Path: "lodash/-/lodash-4.17.21.tgz", Bytes: 3000,
+			{
+				ID: "01937d4c-0000-7000-8000-000000000001", RepoID: 2, Name: "lodash", Version: "4.17.21", Path: "lodash/-/lodash-4.17.21.tgz", Bytes: 3000,
 				Total: &total, StartedAt: t0.Add(-3 * time.Second), FinishedAt: t0.Add(-time.Second), DurationMs: 1500, Outcome: fills.OutcomeCompleted,
-				Origin: "client", By: &by, Replica: "quader-packages-1"},
-			{ID: "01937d4c-0000-7000-8000-000000000002", RepoID: 1, Name: "library/alpine", Path: "v2/library/alpine/blobs/sha256:2b", Bytes: 10,
+				Origin: "client", By: &by, Replica: "quader-packages-1",
+			},
+			{
+				ID: "01937d4c-0000-7000-8000-000000000002", RepoID: 1, Name: "library/alpine", Path: "v2/library/alpine/blobs/sha256:2b", Bytes: 10,
 				StartedAt: t0.Add(-4 * time.Second), FinishedAt: t0.Add(-2 * time.Second), Outcome: fills.OutcomeFailed, FailureClass: "integrity",
-				FailureCode: "upstream_integrity_mismatch", Origin: "queue", QueueOrigin: "bulk", QueueRow: &row, Replica: "quader-worker-1"},
+				FailureCode: "upstream_integrity_mismatch", Origin: "queue", QueueOrigin: "bulk", QueueRow: &row, Replica: "quader-worker-1",
+			},
 			{ID: "01937d4c-0000-7000-8000-000000000003", RepoID: 9, Name: "gone", Outcome: fills.OutcomeCompleted, Origin: "mirror", Replica: "quader-worker-1"},
 		},
 		Repos:      map[int64]fills.RepoName{1: {Project: "upstream", Key: "docker-hub", Format: "oci"}, 2: {Project: "web", Key: "npm-remote", Format: "npm"}},

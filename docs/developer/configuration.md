@@ -268,7 +268,9 @@ fields `Delivery`, `Catalogue` and `Downloads` of `Proxy`; [remote-curation.md](
 `examine_versions_per_request` and `request_retention` and the schedule of `remote-examination-cleanup` by the requests and the
 retention ([wire_delivery_requests.go](../../internal/app/wire_delivery_requests.go)), the rest by the packages still to come. A repository's own switches (`remote.delivery.mode`, `examineOnRequest`,
 `examinedRetentionDays`) are members of its document, not keys of this file. The unit tests are in
-[remote_curation_test.go](../../internal/config/remote_curation_test.go).
+[remote_curation_test.go](../../internal/config/remote_curation_test.go). The block below also shows `proxy.upstream_downloads`, the
+key of the overview of downloads from upstreams ([outbound.go](../../internal/config/outbound.go), read by
+[wire_upstream_downloads.go](../../internal/app/wire_upstream_downloads.go) and the API; [upstream-downloads.md](upstream-downloads.md)).
 
 ```yaml
 proxy:
@@ -294,6 +296,8 @@ proxy:
     done_retention: 168h                   # default; at least 1h
     failed_retention: 720h                 # default; at least 1h
     client_failures_per_repository: 1000   # default; 1 to 100000 (Q-CUR-19)
+  upstream_downloads:
+    publish_interval: 2s                   # default; 1s to 30s, how often a replica writes its running downloads (R-OPS-050, Q-OPS-424)
 jobs:
   workers:
     downloads: 4                           # default; the job remote-download (R-CUR-011)

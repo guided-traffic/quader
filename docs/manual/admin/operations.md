@@ -70,6 +70,7 @@ The ops Service selects every `api`, `packages`, `worker` and `web` pod, so each
 | Object store and upstreams | `quader_storage_s3_requests_total`, `quader_storage_s3_request_duration_seconds`, `quader_storage_s3_circuit_open` (each by `connection`), `quader_outbound_requests_total`, `quader_outbound_request_duration_seconds`, `quader_outbound_egress_denied_total` |
 | Connections and copies | `quader_storage_copies_damaged_total`, `quader_storage_reads_fallen_over_total`, `quader_storage_blobs_damaged_total` (the marks of reads and of the scrub), `quader_storage_reconcile_queue`, `quader_storage_reconcile_queue_oldest_seconds`, `quader_storage_connection_filling`, `quader_storage_connection_detached`, `quader_storage_reconcile_copied_total`, `quader_storage_reconcile_failures_total`, `quader_storage_scrub_copies_total`, `quader_storage_scrub_repairs_total`, `quader_storage_scrub_overdue_copies`, `quader_gc_copies_released_total` (each by `connection`); from the hourly storage summary `quader_storage_copies` (`connection`, `state`), `quader_storage_connection_backlog_blobs`, `quader_storage_connection_backlog_bytes`, `quader_storage_connection_fill_ratio`, `quader_storage_blobs_damaged` (`status`) and `quader_storage_summary_age_seconds` |
 | Caches | `quader_cache_requests_total`, `quader_cache_entries`, `quader_cache_bytes`, `quader_cache_flushes_total` |
+| Downloads from upstreams | `quader_remote_upstream_downloads_running`, `quader_remote_upstream_downloads_total` (labels `repo`, `outcome`), `quader_remote_upstream_download_bytes_total`, `quader_upstream_downloads_publish_failures_total` ([below](#downloads-from-upstreams)) |
 | Vulnerability scanning | `quader_vuln_source_last_success_timestamp_seconds`, `quader_vuln_source_records`, `quader_vuln_source_consecutive_failures` (labels `source`, `ecosystem`), `quader_vuln_sync_runs_total`, `quader_vuln_sync_records_total`, `quader_vuln_unevaluable_ranges_total`, `quader_vuln_evaluations_total`, `quader_vuln_evaluation_duration_seconds`, `quader_vuln_findings` (`severity`, `status`, `kind`), `quader_vuln_downloads_blocked_total`, `quader_vuln_audit_requests_total`, `quader_vuln_claimed_name_matches` (`ecosystem`, `kind`) |
 | Audit and telemetry | `quader_audit_events_total`, `quader_audit_events_dropped_total`, `quader_metrics_label_overflow_total`, `quader_tracing_spans_dropped_total` |
 | Package formats | Each format adds families named `quader_npm_*`, `quader_nuget_*`, `quader_oci_*` and `quader_deb_*`; [Container image repositories](container-repositories.md), [Debian (APT) repositories](apt-repositories.md) and the guide of a format name the ones an operator reads |
@@ -168,6 +169,41 @@ A connection is one element of `config.storage.connections`, one bucket and pref
 4. **A connection removed without draining** is **Detached**: the replicas start, no copy is read from it, the blobs only it holds answer `503`, and `QuaderStorageConnectionDetached` fires. Put the element back and everything returns. If the store is gone for good, `quader admin storage forget-connection <id>` (in a pod of the release) gives it up: it deletes the connection's copy and queue rows, marks a blob that only it held `missing`, retires the id and writes the audit event `system.storage.connection_forgotten`; it deletes no object.
 
 `quader admin storage check --connection <id>` runs the conformance check of one connection from a pod of the release, and `quader admin storage verify` asks every connection for the object of every copy ([Backup and restore](backup-and-restore.md)).
+
+## Downloads from upstreams
+
+Quader shows what it loads from the upstreams of its remote repositories now, and the last 100 downloads that finished. Only the holders
+of the capability `content:metadata-read` see it: the roles `admin` and `auditor`. A project's Owner, a `security-admin` and every other
+user do not; a repository's own queue of downloads is its tab **Downloads**.
+
+- **What counts as a download:** the file of a package (a tarball, a `.nupkg`, a `.deb`, a layer of an image) that Quader fetches from an
+  upstream and stores, whatever caused it: a client that asked for something the cache does not hold, a row of a repository's download
+  queue (a person's download ahead, a bulk, a probe, a request or an allow), a mirror's pass, or the vulnerability scanning's database.
+  Ten clients that ask for the same file at once cause one download.
+- **What does not count:** the documents that list packages and versions (an npm package document, an APT index, a tag list), a file
+  answered from the cache, a `HEAD`, an upstream's error answer, a search of the upstream, what a Bastion or the ClamAV updater fetches by
+  itself, and the sync of the advisory sources.
+- **A running download** shows its repository, the package and version, the bytes so far, the size the upstream announced (and so the
+  progress; an upstream that announces no size shows only the bytes), the speed over the last 10 seconds, how long it has run, what caused
+  it and who: the client's user, or the person who started the queue row.
+- **A finished download** shows its size, its duration, its average speed (size over duration) and how it ended: **completed**;
+  **failed** with the reason in the classes of the download queue (the network, the upstream's answer, the integrity check, a size limit,
+  the store); **cancelled** (a client's request took the slot of a background download, or the job was cancelled, or the replica shut
+  down); **interrupted** (the replica that ran it stopped without saying so; a replica that was only slow writes the real end later).
+- **How fresh:** every replica writes its running downloads every 2 seconds; a replica that has not written for three of those intervals
+  is left out. The last 100 are kept until 100 newer downloads push them out, whatever their age. Neither list is in a backup.
+- **What is never kept:** the upstream's address (a signed address can hold a credential), headers, the client's address.
+- **No one clears the finished list** for everybody: no operation removes its rows.
+
+The API is `GET /api/v1/system/upstream-downloads` and `GET /api/v1/system/upstream-downloads/summary` (the count only). One setting
+changes the interval of the writes, and with it how often an open view refreshes:
+
+```yaml
+config:
+  proxy:
+    upstream_downloads:
+      publish_interval: 2s   # default; 1s to 30s
+```
 
 ## Banner and maintenance mode
 

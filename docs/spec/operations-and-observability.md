@@ -990,11 +990,15 @@ Priority: **P1** · Covers: quader-only
 
 Acceptance criteria:
 
-- Unit (`internal/proxy`, `TestR_OPS_049_OneDownloadPerBodyFromTheUpstream`, the engine's `httptest` rig, bodies of 1 to 64 KiB): a miss
-  of an artifact with `Content-Length` records one download with that total, its bytes and `completed`; a body without a length records
-  no total; three concurrent misses of one item record one; a `404`, a metadata document, a `HEAD` and a hit record none; a digest
-  mismatch records `failed` with class `integrity`; a background fill that a client's fetch pre-empts records `cancelled`, and the
-  client's own fetch records a second download of origin `client`.
+- Unit (`internal/proxy`, `TestR_OPS_049_TheEngineReportsEachArtifactBody`, a body of 64 KiB): the begin carries the facts and the
+  cause (a client's by default, a queue row's version for a request without one, no total without a length); every byte read is
+  counted; each result of a fetch maps to its outcome: stored `completed`, a pre-empted or cancelled fetch `cancelled`, a digest
+  mismatch `failed` with class `integrity`, the size limit class `bound`, a refused spool class `storage`, a body passed to its client
+  unstored class `storage` and code `object_store_unavailable`.
+- Integration (area `proxy`, in `TestR_OPS_050_TwoReplicasShowOneRunningDownload`, the real engine, bodies of 1 to 64 KiB): three
+  concurrent misses of one item with `Content-Length` record one download with that total and `completed`; a hit, a `HEAD`, a `404` and
+  a metadata document record none; a body without a length records no total; a digest mismatch records `failed` with class `integrity`.
+  The engine's path is tested here because the unit tier of `internal/proxy` has no item store.
 - Unit (`internal/formathost`, `TestR_OPS_049_TheCauseOfABackgroundFill`, milliseconds): a queue row of origin `person` started by a
   principal makes each of its fills carry `queue`, `person`, the row's id, its version and the principal; a mirror's pass `mirror`; the
   image database task `scanner_database`; a probe's row `queue`/`probe` without a principal.
@@ -1039,8 +1043,10 @@ Priority: **P1** · Covers: quader-only
 
 Acceptance criteria:
 
-- Unit (`internal/fills`, a fake clock, milliseconds): the speed over the window and in the first window; at most 200 entries with the
-  count of the others; no write while idle; one deletion after the last end; a write after a change only.
+- Unit (`internal/fills`, `TestR_OPS_050_TheSpeedOfARunningDownload` and `TestR_OPS_050_APublicationWritesWhatRunsAndWhatEnded`, a
+  fake clock and sink, milliseconds): the speed over the window, in the first window and after a stall; at most 200 entries with the
+  count of the others; no write while idle; one deletion after the last end; ends kept for the next publication after a failure; the
+  sweep at most every 30 s.
 - Integration (area `proxy`, `TestR_OPS_050_TwoReplicasShowOneRunningDownload`, one artifact of 64 KiB): two replicas' publishers in
   process against the stack's PostgreSQL; a stub upstream sends 16 KiB of a 64 KiB artifact with its length and holds the rest.
   - Replica b's reader lists replica a's download with bytes ≥ 16,384, total 65,536 and a speed.
@@ -1050,7 +1056,7 @@ Acceptance criteria:
 ### R-OPS-051 · The last 100 finished downloads
 Priority: **P1** · Covers: quader-only
 
-- **The table** ([Q-OPS-422](#q-ops-422--the-last-100-are-a-table-trimmed-to-100-not-backed-up-and-a-stopped-replicas-downloads-end-interrupted)):
+- **The table** ([Q-OPS-422](#q-ops-422--the-last-100-are-a-table-trimmed-to-100-not-backed-up-a-stopped-replicas-downloads-end-interrupted)):
 
   ```sql
   CREATE TABLE upstream_download_finished (
@@ -1097,8 +1103,8 @@ Priority: **P1** · Covers: quader-only
 
 Acceptance criteria:
 
-- Unit (`internal/fills`, milliseconds): each fetch result maps to its outcome and class; the buffer keeps the newest 100; a stale live
-  row becomes `interrupted` entries with its bytes and elapsed time.
+- Unit (`internal/fills`, `TestR_OPS_051_AStaleLiveRowEndsInterrupted` and the publication test above, milliseconds): the buffer keeps
+  the newest 100; a stale live row becomes `interrupted` entries with its bytes and elapsed time.
 - Integration (inside `TestR_OPS_050_TwoReplicasShowOneRunningDownload`, rows of a few bytes):
   - The 64 KiB download ends `completed` with its duration and an average of bytes over duration.
   - 101 ended downloads published leave 100, the oldest gone.

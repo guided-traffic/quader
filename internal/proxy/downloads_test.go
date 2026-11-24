@@ -73,8 +73,10 @@ func TestR_OPS_049_TheEngineReportsEachArtifactBody(t *testing.T) {
 		}
 		_ = resp.Body.Close()
 		endDownload(context.Background(), d, flightResult{stored: true})
-		want := DownloadStart{RepoID: 7, Repo: "web/npm-remote", Format: "npm", Name: "left-pad", Version: "1.0.0",
-			Path: "left-pad/-/left-pad-1.0.0.tgz", Total: 64 << 10, Cause: DownloadCause{Origin: DownloadOriginClient, Principal: "p-1"}}
+		want := DownloadStart{
+			RepoID: 7, Repo: "web/npm-remote", Format: "npm", Name: "left-pad", Version: "1.0.0",
+			Path: "left-pad/-/left-pad-1.0.0.tgz", Total: 64 << 10, Cause: DownloadCause{Origin: DownloadOriginClient, Principal: "p-1"},
+		}
 		if len(tr.starts) != 1 || tr.starts[0] != want || tr.bytes != 64<<10 || len(tr.ends) != 1 || tr.ends[0] != DownloadCompleted {
 			t.Fatalf("starts %+v bytes %d ends %v", tr.starts, tr.bytes, tr.ends)
 		}
@@ -114,11 +116,18 @@ func TestR_OPS_049_TheEngineReportsEachArtifactBody(t *testing.T) {
 			{"stored by a duplicate flight after the cancellation", cancelled, flightResult{stored: true}, DownloadCompleted, "", ""},
 			{"pre-empted", cancelled, flightResult{err: context.Canceled}, DownloadCancelled, "", ""},
 			{"pre-empted, as the background fetch reports it", context.Background(), flightResult{own: ErrPreempted}, DownloadCancelled, "", ""},
-			{"a digest mismatch", context.Background(), flightResult{err: errs.E(errs.UpstreamFailed, errs.CodeUpstreamIntegrityMismatch, "x")},
-				DownloadFailed, remotecuration.ClassIntegrity, errs.CodeUpstreamIntegrityMismatch},
+			{
+				"a digest mismatch", context.Background(),
+				flightResult{err: errs.E(errs.UpstreamFailed, errs.CodeUpstreamIntegrityMismatch, "x")},
+				DownloadFailed, remotecuration.ClassIntegrity, errs.CodeUpstreamIntegrityMismatch,
+			},
 			{"too large", context.Background(), flightResult{err: tooLarge(rem)}, DownloadFailed, remotecuration.ClassBound, errs.CodeUpstreamItemTooLarge},
-			{"the spool refused it", context.Background(), flightResult{own: &BackgroundWait{Reason: WaitSpoolBusy}}, DownloadFailed,
-				remotecuration.ClassStorage, "spool_busy"},
+			{
+				"the spool refused it", context.Background(),
+				flightResult{own: &BackgroundWait{Reason: WaitSpoolBusy}},
+				DownloadFailed,
+				remotecuration.ClassStorage, "spool_busy",
+			},
 			{"passed to its client unstored", context.Background(), flightResult{}, DownloadFailed, remotecuration.ClassStorage, errs.CodeObjectStoreUnavail},
 		} {
 			outcome, f := downloadOutcome(c.ctx, c.res)

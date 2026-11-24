@@ -21,7 +21,8 @@ type PublisherOptions struct {
 	InstanceUID, Replica string
 	// Interval is proxy.upstream_downloads.publish_interval; zero is two seconds.
 	Interval time.Duration
-	Log      *slog.Logger
+	// Log is the component's logger; nil logs nothing.
+	Log *slog.Logger
 	// Now replaces the clock, for tests.
 	Now func() time.Time
 }
@@ -52,7 +53,7 @@ func NewPublisher(o PublisherOptions) *Publisher {
 		o.Now = time.Now
 	}
 	if o.Log == nil {
-		o.Log = slog.Default()
+		o.Log = slog.New(slog.DiscardHandler)
 	}
 	return &Publisher{o: o}
 }

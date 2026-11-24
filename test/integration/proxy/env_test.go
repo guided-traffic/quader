@@ -384,6 +384,8 @@ type replicaOpts struct {
 	// and the environment they name.
 	secrets upstream.SecretSource
 	env     func(string) (string, bool)
+	// downloads sees the replica's downloads from the upstream (R-OPS-049); nil sees none.
+	downloads proxy.DownloadTracker
 }
 
 // replica is one in-process web replica.
@@ -497,7 +499,7 @@ func (e *env) newReplica(name string, o replicaOpts) *replica {
 	po := proxy.Options{
 		Runner: r.db, Items: r.items, Blobs: r.blobs, Flights: flights, Negatives: cluster.NewNegativeStore(r.vk),
 		Lookups: r.vk, Changes: r.changes, Clients: clients, Caches: r.caches, Replicas: o.replicas,
-		Audit: r.rec, Config: pcfg, SafetyTTL: time.Minute, Metrics: r.reg, Log: quiet,
+		Audit: r.rec, Config: pcfg, SafetyTTL: time.Minute, Metrics: r.reg, Log: quiet, Downloads: o.downloads,
 	}
 	if o.items != nil {
 		po.Items = o.items(r.items)

@@ -24,8 +24,10 @@ func newClock() *clock                      { return &clock{t: time.Date(2026, 1
 func start(name string) proxy.DownloadStart { return startOf(name, 1000) }
 
 func startOf(name string, total int64) proxy.DownloadStart {
-	return proxy.DownloadStart{RepoID: 1, Repo: "web/npm-remote", Format: "npm", Name: name, Version: "1.0.0", Path: name + "-1.0.0.tgz",
-		Total: total, Cause: proxy.DownloadCause{Origin: proxy.DownloadOriginClient, Principal: "0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a20"}}
+	return proxy.DownloadStart{
+		RepoID: 1, Repo: "web/npm-remote", Format: "npm", Name: name, Version: "1.0.0", Path: name + "-1.0.0.tgz",
+		Total: total, Cause: proxy.DownloadCause{Origin: proxy.DownloadOriginClient, Principal: "0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a20"},
+	}
 }
 
 // value reads the one series of a collector.
