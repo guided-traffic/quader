@@ -23013,6 +23013,38 @@ file exists, which makes the words check of this rule a part of it.
 **Applied in the spec:** none (test tooling). Code: `ui` in [support.ts](../../web/e2e/support.ts), the rule and its test in
 [lint-rules.test.mjs](../../web/scripts/lint-rules.test.mjs), the journey [16-security-dashboard.spec.ts](../../web/e2e/vuln/16-security-dashboard.spec.ts).
 Elsewhere: [e2e.md](../developer/e2e.md#what-a-journey-is).
+### Q-UI-1060 · What a layout check can hold of the render set's blind spots, and what stays to the eye
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+Continues the reading of 2026-11-23 ([web-ui.md](../developer/web-ui.md#renders-of-every-screen), "What the checks leave to the eye").
+
+Context: two lists of the plan named what the layout checks of the renders do not see. The builder of W-23: a control beside a framed
+box, absolutely placed elements and text drawn by CSS, the states the set does not render, an offset of 1 px or less. The builder of
+W-5: a wrapping column cramped beside a roomy neighbour ("3 findings · / 0 fixable" at 1,024 px), a text cut at the start of a wrapped
+line, a stacked label off its control, two words for one thing across screens. The question is which of them a check of
+[layout.ts](../../web/e2e/renders/layout.ts) can hold, measured in the page of every picture; the states and the words are not
+layout, and the reading of 2026-11-23 set the rule that a check comes with the fixture of a defect that was seen.
+
+| Blind spot | Can a check hold it? | Decision |
+|---|---|---|
+| An offset of 1 px or less | It is held: R-UI-175's threshold is "within 1 px", and the fixtures hold it from both sides (1.5 px fails, 0.5 px passes) | Not a blind spot; nothing to build |
+| A control beside a framed box (a code block, a list of members) | Yes: its rule of Q-UI-724, that the control stands on the box, is a measurement of the control's top against the box's top edge | Not built: no such defect has been seen on a render, and the exception exists because measuring it against the text inside the box found false defects; a check `on-box` comes with the fixture of the first seen one |
+| A wrapping column cramped beside a roomy neighbour | Yes: in a table that stands as a table, a short text (a summary, a count with its unit) in two or more lines whose one-line width the table could give it from a column that is wider than its widest content in every row; the measurement is the one `stacked-fits` already makes (the table's columns at their least widths, undone in the same task) | **To be built, with the fixture of W-5's row** (`3 findings · / 0 fixable` beside a column of fixed width): a defect of this shape was seen. Not built in this package: a new check lands with a run of the whole render set and the repair of every screen it then finds, which the package that decided it did not run; it is an open item of the plan until then |
+| Absolutely placed elements (menus, tooltips, a positioned hint) | In part: their overlap with text in the flow is measurable, their place is set by their anchor by design | Not built: no defect seen; `cell-overflow` and `sideways` already leave them out on purpose |
+| Text drawn by CSS (`content` of `::before` and `::after`) | No: a pseudo-element has no node, so no range and no box can be read for it; only its string is (`getComputedStyle(el, '::before').content`) | Stays to the eye: the app draws only glyphs of icons and separators this way, which the pictures show |
+| A text cut at the start of a wrapped line; a stacked label off its control | Yes, by measuring every wrapped line's first glyph and every stacked label's distance to its control | Not built, as decided on 2026-11-23: no defect of either shape seen; `label-apart` holds the stacked facts of a row |
+| The states the set does not render (open menus, hover, most dialogs, error states) | No: a state is a screen of the set (a walk in `screens.ts`), not a check | Screens, outside this decision; W9 added the open row menus and the shared error notice |
+| Two words for one thing across screens | No: vocabulary, not layout | Stays to the eye and to the translation files' review |
+
+**Choice:** as in the table: one check (`cramped`) is decided and waits for its render run; the rest are held already, have no seen
+defect, cannot be measured in the page, or are not layout. **Rationale:** every check measures every one of about 4,600 pictures and
+has to be right on screens it was not written for (`stacked-offset` and `label-apart` were each wrong once on older screens before
+they were right); the rule that a check follows a seen defect keeps the set's cost and its false findings down, and the one seen
+defect gets its check. The development agent revisits a row when its defect is seen on a render.
+
+**Applied in the spec:** R-UI-176's list of checks is unchanged until `cramped` lands. Elsewhere:
+[web-ui.md](../developer/web-ui.md#renders-of-every-screen), "What the checks leave to the eye".
+
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 
 Status: **Decided by the owner, 2026-11-23** (T-25, 19:30, whole: "Ich finde Projects und Repositories haben im Admin-Mneü nichts

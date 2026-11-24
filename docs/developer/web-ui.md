@@ -408,7 +408,13 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    A text cut at the start of a wrapped line and a stacked label that stands off its control have no check: no defect of either shape has
    been seen on a render, and a check of every wrapped line's first glyph or of every label's distance would measure each text node of
    every picture for a shape the look at the pictures that every UI change gets (rule 11) catches. A check is added when such a defect
-   is seen, with the fixture of that defect.
+   is seen, with the fixture of that defect. The rest of the blind spots, decided on 2026-11-24
+   ([Q-UI-1060](../spec/api-and-ui.md#q-ui-1060--what-a-layout-check-can-hold-of-the-render-sets-blind-spots-and-what-stays-to-the-eye)):
+   a control beside a framed box and absolutely placed elements could be measured and have no check, since no defect of either has
+   been seen; text drawn by CSS (`::before`, `::after`) has no node and cannot be measured, and stays to the eye; the states the set
+   does not render are screens, not checks; two words for one thing is vocabulary. One check is decided and not built yet: `cramped`,
+   a short text in a table's cell in two or more lines while a column beside it is wider than its widest content in every row, with
+   the fixture of the defect W-5 saw ("3 findings · / 0 fixable" at 1,024 px); it lands with a run of the whole render set.
 
    A screen can add widths of its own (`widths` in `screens.ts`) where a list changes its form between the run's three: the
    start page's projects and a project's repositories at 1,100 px, the start page with its administrator's columns and the list of

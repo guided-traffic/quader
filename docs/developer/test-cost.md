@@ -964,7 +964,7 @@ Ranked by the larger of the push and nightly minutes at stake: the measured minu
 
 ## 7. Not measured
 
-* **Unit tests per format.** `unit tests` is one job of 12.3 min (run 2); 234 packages overlap, so package times do not add; only the package wall times of section 3.3 are known (upper bounds). The share of the unit job that is a format's was not measured.
+* **Unit tests per format.** `unit tests` is one job of 12.3 min (run 2); 234 packages overlap, so package times do not add; only the package wall times of section 3.3 are known (upper bounds). The share of the unit job that is a format's was not measured. Measured since, from a later run: [section 14](#14-the-three-measurements-section-7-left-open-from-the-runs-of-2026-11-20-to-2026-11-23-read-on-2026-11-24).
 * **UI layout per screen.** The report has no timings; the per-screen time is step time divided by shots. Admin vs list screens could differ.
 * **Playwright per spec** for every leg except access-long and vuln (run 2); the Playwright journeys of the ansible-docs, bastion and upgrade legs are inside their Go test times only; run 1 has no Playwright report downloaded.
 * **Integration classes** are by test name for the 14 format packages only (`npm`, `nuget`, `ansible*`, `deb*`, `oci*`, `registry`); I did not read the 1,645 tests. I read two to confirm the e2e duplicates (`documents_test.go:53`, `preempt_test.go:54`). Format tests inside platform packages (`mirror`, `proxy`, `virtual`, `itempublish`, `vuln*`) are counted as platform. The `registry` package is counted as OCI by its name and by the Makefile shard rule (oci%, registry), not by reading it.
@@ -974,7 +974,7 @@ Ranked by the larger of the push and nightly minutes at stake: the measured minu
 * **Billing and runner size.** Minutes are wall time; large, GitHub-hosted and self-hosted minutes are counted alike. CPU, memory and cost per class were not measured.
 * **Queues and pool size.** Queue time per job is in the job records but I did not derive the size of the large pool; the nightly's is three by design, the push's is between 5 and 6 concurrent in the two samples.
 * **One nightly sample, two push samples.** The nightly was red on `e2e (backup)` (including its point-in-time step), `e2e (npm-ha-soak)` and `e2e (drain-load-pooler)`; their durations are counted as measured, and a green run could be shorter or longer. The nightly is a dispatch of all legs; a scheduled night may skip legs. Spread between the two pushes: e2e legs +11.5 min (161.1 to 172.6); the added limits cases and the OCI probe are 200.8 s (3.3 min) of test time; the rest (and the effect of the nightly dispatch that shared the large runners during run 1) was not isolated [I].
-* **A push that touches one format.** Both pushes touched shared code and ran every leg they started (none of the e2e legs gates the release, Q-ARCH-457); the cost of a push that touches only one format's files is not measured. Under the rule of [Q-ARCH-540](../spec/architecture.md#q-arch-540--a-formats-e2e-leg-runs-on-a-push-only-when-that-formats-own-code-changed) such a push runs that format's leg and `push`, `access-long` and `ci`, which run on every change; npm's leg runs for npm's own paths or shared code, and NuGet's is scoped like the others since 08d6f014b ([which e2e legs a change runs](releasing.md#which-e2e-legs-a-change-runs)).
+* **A push that touches one format** (computed from the parts of later runs in [section 14](#14-the-three-measurements-section-7-left-open-from-the-runs-of-2026-11-20-to-2026-11-23-read-on-2026-11-24), with a second and a third nightly). Both pushes touched shared code and ran every leg they started (none of the e2e legs gates the release, Q-ARCH-457); the cost of a push that touches only one format's files is not measured. Under the rule of [Q-ARCH-540](../spec/architecture.md#q-arch-540--a-formats-e2e-leg-runs-on-a-push-only-when-that-formats-own-code-changed) such a push runs that format's leg and `push`, `access-long` and `ci`, which run on every change; npm's leg runs for npm's own paths or shared code, and NuGet's is scoped like the others since 08d6f014b ([which e2e legs a change runs](releasing.md#which-e2e-legs-a-change-runs)).
 * **Generic format.** No leg, no client; its UI screens (72 shots) are the only cost I can attribute to it, and the `files` integration package is counted as platform.
 * **Per-format cost of the carrier legs** is not charged to a format (section 4.1); if one charges drain, failure and pod-crash legs to the client that loads them, npm would carry 99.1 + (ha-suite, ha-faults, ha-pooler, drain-roles) 113.1 = 212.2 min and NuGet would add half of four drain-load legs; I did not compute that variant as a table.
 * **Playwright and other artifacts not opened:** the `e2e-ansible-artifacts-ansible`, `e2e-*-artifacts-*` and `profile-*` artifacts (logs, cluster evidence, coverage profiles); the job logs were read only to confirm the path-filter decision of eight legs.
@@ -1278,3 +1278,48 @@ component areas' databases were migrated (0.6 s each), now cloned. What each sha
 52 s (`querybudget`) and 85 to 115 s (`TestInvalidationAtScale`), shard c about 19 s, shards a and d about 3 to 7 s each. Bounds that
 are longer now than before and cost nothing on a host that keeps up: the Bastion's link bounds, the commit grace of one case, the waits
 of `TestR_MAL_014` and `TestR_NUGET_004`; they are reached only on a host that would have failed before.
+
+## 14. The three measurements section 7 left open, from the runs of 2026-11-20 to 2026-11-23 (read on 2026-11-24)
+
+Read from the Actions API and the artifacts of runs that had already run (the jobs of every Test and Release run on `main` from
+2026-11-20 12:00 to 2026-11-23 23:53 UTC, 71 runs; the nightlies 44828435420 and 45008950010; the report `test-unit` of run
+45283317395); nothing was started or re-run for them. What they decided is [Q-ARCH-1060](../spec/architecture.md#q-arch-1060--a-push-that-touches-one-format-runs-that-formats-leg-and-the-tiers-below-it-whole).
+
+**A push that touches one format.** None of the 71 pushes did: each started npm's leg (shared code) or no format's leg [V: the
+`e2e (<format>)` jobs that ran or were skipped]. Of the 682 commits on `main` since 2026-11-20, classified one by one with
+`.github/scripts/e2e-legs.sh --classify` (every changed path; `release.yml` and `versions.env` counted as shared), 464 start no
+format's leg (documents, tests, `web/`), 209 are shared code and 9 touch one format alone (Ansible 4, Debian 3, npm 2) [V]. So the
+cost is computed from parts [I]: a push that starts no format's leg costs 273 runner minutes (45277825413: the 25 other jobs 125.2,
+the four integration shards 92.1, `push` 18.7, `access-long` 25.7, `ci` 10.5, the clients images' lookups 1.2) [V]; a push of one
+format adds that format's leg and its clients images' row: Debian 10.8, Ansible 13.1, OCI 19.9, NuGet 19.6, npm 24.2 (45179000559)
+plus about half a minute of lookup, so 284 to 298 runner minutes; a push of shared code with npm's leg costs 300 to 330
+(45212749706: 302) and one that starts every leg 444 to 453 (45179000559, 45187733127, with clients images built) [V]. A second
+format adds nothing to the first's push.
+
+**The unit tests per format** (run 45283317395, `make test` 509 s of wall [V]): 296 packages report 2,308.8 s of package time, so the
+run keeps about 4.5 packages busy at once [I]. The packages of the five formats (by the paths of `e2elegs`' lists: the format's
+packages, its data port, its stub and its signature scheme) are 478.9 s of it, 20.7 % [V]: npm 152.9 s in 15 packages, NuGet 101.3 in
+17, Ansible 78.2 in 13, OCI 76.4 in 11, Debian 70.3 in 14; the format contract's kit (`formattest` 164.2, `testformat` 118.9) runs
+once. At the run's parallelism a format is about 21 s of the job's wall (mean 95.8 s / 4.5) [I]; with 25 formats the job would be
+about 7 minutes longer than its 8.9 to 15.3 minutes over the 83 runs read (mean 11.6), inside its limit of 30. The slowest package is
+no longer `internal/api/v1` (110.8 s in this run, 476 to 585 s on 2026-11-21).
+
+**A second and a third nightly** (each a run of all legs) [V]:
+
+| Nightly | Runner minutes | large / GitHub-hosted / self-hosted | e2e legs | The formats' own sets (Q-ARCH-545) | Wall | Red legs |
+|---|---:|---|---|---:|---:|---|
+| 44625277245 (2026-11-19, section 2) | 682.9 | 445 / 233 / 4 | 25 = 658 | none yet | 299 min | backup, npm-ha-soak, drain-load-pooler |
+| 44828435420 (2026-11-20) | 747 | 496 / 248 / 2 | 30 = 724 | 79.8 (npm 22.7, NuGet 20.9, OCI 12.3, Debian 11.7, Ansible 12.2) | 272 min | drain-roles, ha-faults, ha-pooler, ansible, drain-load-e, the four platform rows |
+| 45008950010 (2026-11-22) | 764 | 510 / 250 / 2 | 30 = 739 | 89.3 (npm 23.4, NuGet 22.7, OCI 18.5, Debian 11.6, Ansible 13.1) | 284 min | vuln-pooler, ha-faults, backup, nuget-ha |
+
+Without the formats' sets the night is 667 and 675 runner minutes, within 2 % of the first; the sets added since are the whole
+difference. A format's own set costs 11.6 to 23.4 minutes a night (mean 17.9), its whole nightly cost when it has no load leg of its
+own. With 25 formats the night would be about 764 + 19 × 17.9 ≈ 1,104 runner minutes [I], and lane 3, which takes the formats' sets
+of the `large` class one after the other (Q-ARCH-545), would grow by about 19 × 15 ≈ 285 minutes and become the longest lane, about
+6.8 hours of wall instead of lane 1's 4 [I]. That is the next limit of the nightly; it is a revisit condition of Q-ARCH-545, not built.
+
+**Who ran beside the nightly's legs** (45008950010, a scheduled run that GitHub started at 09:43 UTC on a Sunday of landings): 21 of
+its 23 `large` legs had kind legs of Test and Release beside them, among them the red ones: `ha-faults` 6 kind legs (78 runner minutes
+inside its 28), `backup` 4 (89 inside 31), `nuget-ha` 5 (45 inside 28) [V: the job times of both workflows; computed as the record of
+[Q-ARCH-1062](../spec/architecture.md#q-arch-1062--a-nightly-leg-records-the-jobs-of-test-and-release-that-ran-beside-it-and-nothing-holds-a-push)
+computes it]. Each leg now writes this itself.

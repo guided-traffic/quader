@@ -9127,10 +9127,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-ARCH
 
-279 questions on [spec/architecture.md](spec/architecture.md).
+281 questions on [spec/architecture.md](spec/architecture.md).
 
 <details>
-<summary>Q-ARCH: 279 questions</summary>
+<summary>Q-ARCH: 281 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9411,8 +9411,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ARCH-811](spec/architecture.md#q-arch-811--the-pipeline-writes-the-evidence-record-and-the-coverage-badge-onto-the-branch-coverage-main-holds-neither) | The pipeline writes the evidence record and the coverage badge onto the branch `coverage`; `main` holds neither | Decided by the development agent | (c), with the record whole as set out above, and (b) for a test that holds a refusal. | — |
 | [Q-ARCH-1040](spec/architecture.md#q-arch-1040--a-commit-on-the-branch-coverage-holds-the-record-and-the-badge-alone) | A commit on the branch `coverage` holds the record and the badge alone | Decided by the development agent | (c) The four files and nothing else; the branch's head as the only parent; the pages' links to the rest of the repository at the record's commit on GitHub; (ii) `badges/coverage.json` | — |
 | [Q-ARCH-1041](spec/architecture.md#q-arch-1041--a-statement-whose-cancel-request-is-dropped-ends-when-the-server-sees-its-client-gone) | A statement whose cancel request is dropped ends when the server sees its client gone | Decided by the development agent on 2026-11-24 | (a) `database.session.client_connection_check_interval` (1 s by default), sent as a startup parameter on direct connections and a role default through a transaction-mode pooler, verified by preflight like the other session settings | — |
+| [Q-ARCH-1060](spec/architecture.md#q-arch-1060--a-push-that-touches-one-format-runs-that-formats-leg-and-the-tiers-below-it-whole) | A push that touches one format runs that format's leg, and the tiers below it whole | Decided by the development agent | (a) The unit job and the four integration shards run whole on every push that starts a run | — |
 | [Q-ARCH-1061](spec/architecture.md#q-arch-1061--the-actions-cache-writes-zstd-on-every-runner-kind-from-a-zstd-built-at-its-pin) | The Actions cache writes zstd on every runner kind, from a zstd built at its pin | Decided by the development agent | (c) A composite action puts zstd at a pin on PATH before the job's first cache step: the hosted image's own when it reports the pin, else the program restored from the cache, else built once from the release's source archive (SHA-256 pinned) as the hosted image builds it, and saved | — |
 | [Q-ARCH-1062](spec/architecture.md#q-arch-1062--a-nightly-leg-records-the-jobs-of-test-and-release-that-ran-beside-it-and-nothing-holds-a-push) | A nightly leg records the jobs of Test and Release that ran beside it, and nothing holds a push | Decided by the development agent | (c), with `make nightly-load-guard` kept for the one case where the quiet is the point: a single set the development agent dispatches itself to measure goes with no push beside it. | — |
+| [Q-ARCH-1063](spec/architecture.md#q-arch-1063--where-the-minutes-of-the-suite-are-each-of-the-six-ranked-costs-decided) | Where the minutes of the suite are: each of the six ranked costs decided | Decided by the development agent | as in the table. | — |
 
 </details>
 
@@ -12039,10 +12041,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-522 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+523 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 522 questions</summary>
+<summary>Q-UI: 523 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12568,6 +12570,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1050](spec/api-and-ui.md#q-ui-1050--a-stacked-row-is-a-grid-of-names-and-values-one-field-a-line) | A stacked row is a grid of names and values, one field a line | Decided by the development agent | (a), in [data-table.ts](../web/src/app/shared/ui/data-table.ts) (`measure`) and [_list-screens.scss](../web/src/styles/_list-screens.scss) (Stacked rows). | — |
 | [Q-UI-1051](spec/api-and-ui.md#q-ui-1051--a-versions-file-path-is-its-download) | A version's file path is its download | Decided by the development agent | (a) The path is the link that downloads the file, with the title "Download"; no column **Download**; a file that offers none (refused by a gate, in a system or a disabled repository) shows its path as text | — |
 | [Q-UI-1052](spec/api-and-ui.md#q-ui-1052--token-is-neuter-in-every-german-text) | "Token" is neuter in every German text | Decided by the development agent | (a), written into the [glossary](../web/src/locale/GLOSSARY.md) and held by [formal-german.spec.ts](../web/src/app/shared/formal-german.spec.ts), which refuses the masculine forms that have no plural reading. | — |
+| [Q-UI-1060](spec/api-and-ui.md#q-ui-1060--what-a-layout-check-can-hold-of-the-render-sets-blind-spots-and-what-stays-to-the-eye) | What a layout check can hold of the render set's blind spots, and what stays to the eye | Decided by the development agent on 2026-11-24 | as in the table: one check (`cramped`) is decided and waits for its render run; the rest are held already, have no seen defect, cannot be measured in the page, or are not layout. | — |
 
 </details>
 

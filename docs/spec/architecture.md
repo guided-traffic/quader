@@ -11409,6 +11409,39 @@ case of [coverage_test.go](../../internal/tools/coverage/coverage_test.go). Else
 [coverage.md](../developer/coverage.md#the-record-on-the-branch-coverage), [releasing.md](../developer/releasing.md#release-flow),
 [data-and-secret-flow.md](../security/data-and-secret-flow.md).
 
+### Q-ARCH-1060 · A push that touches one format runs that format's leg, and the tiers below it whole
+
+Status: **Decided by the development agent** (2026-11-24) — selected from the options below; the owner reviews it at the walkthrough.
+Completes [Q-ARCH-540](#q-arch-540--a-formats-e2e-leg-runs-on-a-push-only-when-that-formats-own-code-changed) for the tiers below the
+kind legs.
+
+Context: the rule of the owner (2026-11-20) cut the e2e tier by format: a push runs the leg of each format whose own code changed, and
+npm's for shared code. Open were the unit and the integration tiers, and three numbers that were not measured: a push that touches one
+format, the unit tests per format, a second nightly. They are measured now, from the runs of 2026-11-20 to 2026-11-23
+([test-cost.md, section 14](../developer/test-cost.md#14-the-three-measurements-section-7-left-open-from-the-runs-of-2026-11-20-to-2026-11-23-read-on-2026-11-24)):
+none of 71 pushes and 9 of 682 commits touched one format alone (464 started no format's leg, 209 were shared code); a push of one
+format costs 284 to 298 runner minutes against 273 for a push that starts no format's leg, and a second format adds nothing to it; the
+packages of the five formats are 20.7 % of the unit run's package time, about 21 s of the job's wall per format; every integration
+area imports the package of every format (`go list -deps -test -tags integration ./test/integration/<area>` names all five for `npm`,
+`nuget` and `oci`), so a change of one format reaches every area through Go's dependency graph.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The unit job and the four integration shards run whole on every push that starts a run (chosen) | What Q-ARCH-540 cut stays the e2e tier's | The unit job gates the release and sees every package; the evidence record and the coverage badge read whole reports of this run; nothing to keep in step with the format lists | A push of one format still runs the other formats' unit packages (about 21 s of wall each) and integration areas (Debian 658 s, npm 400, OCI 332, NuGet 272, Ansible 152 s of shard time at the measurement) |
+| (b) Go's test cache kept across runs (`GOCACHE` in the Actions cache), so an unchanged package's result is replayed | Exact by Go's dependency graph and the reports stay whole, since a cached result is replayed with its events and its profile | No list to maintain | A test's inputs that Go does not see are not keyed: the workflow tests run scripts with `bash` (`nightly-load-guard.sh`, `e2e-legs.sh`), which Go never opens, so a changed script would replay a stale pass; the integration stack's images are not an input; a fresh checkout gives every file a new modification time, so a test that opens one never hits; the cache of race and coverage builds is gigabytes, restored at 4 to 12 MB/s on the self-hosted runners (Q-ARCH-523 dropped `GOCACHE` for that) |
+| (c) The format lists of `e2e-legs.sh` select the unit packages and the integration areas of a push | A Debian-only push skips the other formats' packages and areas | Saves up to 24 × 6 minutes of shard time on such a push at 25 formats | Such pushes were 0 of 71 (1.3 % of commits), so the gain is a few runner minutes per push on average; a skipped area's requirements fall out of the evidence record unless its report of an earlier run is carried per package, a mechanism the integration tier does not have; a list that misses a dependency lets a gating package go untested |
+
+**Choice:** (a). **Rationale:** the gain of (b) and (c) is the other formats' tests on a push of one format, and such pushes do not
+happen in the way the work is landed (a format's change comes with shared code); what grows with every push is the shared-code push,
+which by the owner's rule runs the tiers below whole. (b) would replay stale passes of exactly the tests that guard the pipeline, and
+(c) costs a carried-report mechanism and a selection error that could release untested code, for minutes. A format adds a constant
+to each tier, as "Tests stay runnable" asks: about 21 s to the unit job, its own areas to the shards (cut by Q-ARCH-565's rule when
+one passes 43.5 minutes), its own leg only to a push that changes it, and its own set of 11.6 to 23.4 minutes to the nightly. The
+development agent revisits (c) when the summaries of `e2e-scope` show one push in ten touching one format alone, and the nightly's
+lanes (Q-ARCH-545) when the formats' sets make lane 3 the longest (about nine more formats of the `large` class, test-cost.md
+section 14). **Applied in the spec:** nothing changes in the pipeline. Measurements:
+[test-cost.md, section 14](../developer/test-cost.md#14-the-three-measurements-section-7-left-open-from-the-runs-of-2026-11-20-to-2026-11-23-read-on-2026-11-24).
+
 ### Q-ARCH-1061 · The Actions cache writes zstd on every runner kind, from a zstd built at its pin
 
 Status: **Decided by the development agent** (2026-11-24) — selected from the options below; the owner reviews it at the walkthrough.
@@ -11476,6 +11509,30 @@ leg" of every `large` job of [performance.yml](../../.github/workflows/performan
 `TestEveryLargeLegOfTheNightlyRecordsItsNeighbours` ([neighbours_test.go](../../internal/tools/ciworkflows/neighbours_test.go)).
 Elsewhere: [releasing.md, A code push during a nightly](../developer/releasing.md#a-code-push-during-a-nightly),
 [e2e.md, Reading a stall](../developer/e2e.md#reading-a-stall).
+
+### Q-ARCH-1063 · Where the minutes of the suite are: each of the six ranked costs decided
+
+Status: **Decided by the development agent** (2026-11-24) — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the measurement of 2026-11-20 ([test-cost.md, section 5](../developer/test-cost.md#5-the-largest-candidates)) ranked where the
+runner minutes are and designed nothing. The rule they are judged by is "Tests stay runnable": a format adds a small constant to each
+tier and nothing to another format's leg. Since then Q-ARCH-540 cut the e2e tier by format, `nuget-ha` dropped the scenarios of
+`npm-ha` (Q-HA-488), and `vuln-pooler` stays by Q-VULN-267. The numbers below are those of section 5 unless a run is named.
+
+| # | Cost | Options | Choice and why |
+|---|---|---|---|
+| 1 | The fixed cost of every kind leg (95.1 of 172.6 e2e minutes of a push, 240.6 of 658.1 of a nightly; `make dev-up` 154 to 186 s per leg) | (a) one cluster per leg, as now; (b) several formats' sets in one leg on one cluster; (c) a cheaper start (a registry mirror in the runners' cluster for the kind node and the profile's images, a prebuilt node image) | **(a).** Since Q-ARCH-540 a push of shared code starts four kind legs (`push`, `access-long`, `ci`, `npm`; 79 runner minutes in 45212749706) whatever the number of formats, and a format's set pays its fixed cost once a night: a constant per format, as the rule asks. (b) is a leg that grows with the formats and loads several formats' client images, which the rule forbids. (c) lies outside this repository (the runners' cluster) and is named to the owner, as before. |
+| 2 | The drain, switchover, failover and pod crash under a client's load, repeated across 12 nightly legs (331.2 minutes) | (a) keep the legs; (b) run `drain-load-b`, `-c` and `-e` in one leg again (about 16 runner minutes and as much of lane 1's wall a night); (c) move the scenarios of `vuln-long` onto the platform legs | **(a).** None of them grows with the number of formats: they are platform legs under npm's and NuGet's load, and `nuget-ha` no longer repeats `npm-ha` (Q-HA-488). (b) takes back Q-HA-242, whose single leg lost its runner three times; the cause then (the kind clusters' cgroup weight, fixed on 2026-11-18) may be gone, but only a dispatch of the joined leg shows it, for 2 % of a night. (c) would test the block of a vulnerability without the drain it must hold through. Revisited if lane 1 becomes the limit of a night that has to end earlier. |
+| 3 | Behaviour that is the same for every format inside the formats' e2e legs (21.0 minutes a push at the measurement; the mirror's clients-first test 11.0 across npm, NuGet and OCI) | (a) keep each format's case; (b) keep npm's alone, the others at the integration tier | **(a).** Since Q-ARCH-540 the NuGet and OCI cases run on a push only when their format changes, and once a night. Each is not a copy: NuGet's pass discovers through the catalog (`feed`) under `dotnet restore`, OCI's through the registry's catalog under pulls; what is the same (the bound of open requests, the preemption) is held in process by `TestR_REPO_055_AClientFetchThatHasToWaitPreemptsThePassOfAnotherProcess`. Each is a constant of its format. Revisited when a format's mirror source has an integration case with its discovery, which would leave the client case one small run. |
+| 4 | The formats' integration areas (30.2 minutes a push) | (a) every area on every push; (b) a format's areas only for its own code; (c) the cases that repeat a kit check move to the format contract's kit | **(a) and (c).** (b) is option (c) of [Q-ARCH-1060](#q-arch-1060--a-push-that-touches-one-format-runs-that-formats-leg-and-the-tiers-below-it-whole), not taken. (c) is the kit move (its first package landed on 2026-11-23, `test-cost.md` section 10); its later packages wait with the new formats (the owner's word of 2026-11-23), since they make room for them. The shards are cut by Q-ARCH-565's rule when one passes 43.5 minutes (31.4, 30.6, 32.3 and 27.9 minutes on average over the runs of 2026-11-20 to 2026-11-23). |
+| 5 | The layout checks of every screen (32.7 minutes a push at the measurement, 43.4 on average and 54.0 at most over 51 runs of 2026-11-20 to 2026-11-23; the screens named after a format 54.5 % of the shots; an average format adds about 183 s) | (a) every screen on every push in one job; (b) a format's screens only when that format or the UI changed; (c) the job cut in two by a rule on the screens when it nears its limit | **(a), with (c) as the rule when a green run passes 60 of its 75 minutes.** (b) saves nothing on a push that changes `web/`, which is every push that can move a screen. A format's screens are a constant of that format. (c) is built when the trigger is reached, by the screens' names as the integration shards are cut by the areas'. |
+| 6 | `vuln-long` and `vuln-pooler` (50.2 minutes a night) | (a) keep both; (b) fold `vuln-pooler` into a pooler leg under load; (c) the block asserted at a cheaper tier without the drain | **(a).** (b) is decided against by [Q-VULN-267](vulnerability-scanning.md#q-vuln-267--the-probe-of-variant-d-stays-in-its-own-set-no-pooler-leg-under-load-runs-the-profile-vuln); (c) would no longer test what R-VULN-029 asks: that a block holds through a drain and a failure. Neither leg grows with the number of formats. |
+
+**Choice:** as in the table. **Rationale:** of the six, the ones that grew with every format were the e2e tier of a push (cut by
+Q-ARCH-540) and the integration areas (cut by the kit move and by the shards' rule); the rest are constants of a format or of the
+platform, which the rule allows. Each row names what would bring it back. **Applied in the spec:** nothing is built by this block;
+[test-cost.md](../developer/test-cost.md#14-the-three-measurements-section-7-left-open-from-the-runs-of-2026-11-20-to-2026-11-23-read-on-2026-11-24)
+holds the numbers it reads.
 
 ### Q-ARCH-446 · A response to a request whose body is unread is sent first, then the body is read and discarded within a bound
 
