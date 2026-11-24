@@ -703,12 +703,21 @@ records the recorder that tells such a stall apart).
   `Detected` stays false, against its own comment "a manifest list passes". Dormant: the default is `allow`. Given to a
   builder at 09:55, once the image scan's package (which touches the same statements) was on main.
 
-- **The upstream search's hint is English in the German build (seen by the development agent on 2026-11-24, 09:10, in
+### Closed
+
+- **Closed on 2026-11-24, 10:06, by the search hint's package (Q-CUR-166):** the hint under the upstream search is in the
+  screen's language and says what to type. The catalogue's capabilities carry a code, `searchHint` (14 codes in
+  `discover.SearchHint`), in place of `searchNote` and `searchReason`, and the screen writes the sentence in English or
+  German: for Docker Hub "Suchen Sie nach einem Image-Namen, z. B. nginx; offizielle Images liegen unter library/<Name>.",
+  for an upstream without a search why and what to enter. OCI (Docker Hub, Quay, ghcr.io, GitLab, a registry without a
+  preset, Docker Hub's search while switched off), npm, NuGet, Ansible Galaxy and Debian all moved. Kit check 22 holds every
+  format to the list of codes, a Go test holds the API's enum to it, a Vitest case shows the German sentence in the German
+  build. The contract keeps its version. Renders of the Docker Hub and npm remotes in English and German, both schemes,
+  1,440 and 390 px, plus the ghcr.io look-up and the Debian search (one spacing finding under Names only, fixed), looked at
+  by the development agent. As it stood: **The upstream search's hint is English in the German build (seen by the development agent on 2026-11-24, 09:10, in
   the renders of the unknown level):** under "Upstream durchsuchen" the OCI remote reads "Docker Hub's repository search,
   which its operator does not document; an official image is library/<name>." The text comes from the format, not from
-  the UI's translations, and it speaks to an operator, not to a user who wants an image. Given to a builder at 09:15.
-
-### Closed
+  the UI's translations, and it speaks to an operator, not to a user who wants an image.
 
 - **Closed on 2026-11-24, 09:50, by the image scan's package (Q-VULN-269, Q-VULN-270; R-VULN-050 and R-MAL-035 new;
   migration 00117, renumbered at the landing after the versions' order took 00116):** Docker's attestation manifests are
@@ -3456,7 +3465,8 @@ row an icon of its kind, the name and version, the size, actions). State: specif
 (where fills happen and which count, the carrier of live progress across replicas, the bounded list of the last 100, who
 sees it, the panel, the API); cut in two packages, A the backend and its API (its first commit the specification and the
 OpenAPI contract), B the top-bar button and the panel. Package A given to a builder at 09:20, in the place the
-unknown level's package left; B follows once A's contract is on main. Three of its choices go to
+unknown level's package left; B (the button and the panel, R-UI-210 to 212, Q-UI-1070 to 1073 since the
+planner's numbers were taken) given to a builder at 10:00 against A's committed contract, with browser-side mocks. Three of its choices go to
 the owner in one line each: the existing drawer from the right instead of a panel hung from the button, the auditor sees
 the panel too (`content:metadata-read`), and metadata documents such as Debian indexes are not listed.
 
