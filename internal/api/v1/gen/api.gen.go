@@ -13480,24 +13480,34 @@ type RemoteDownloadCounts struct {
 }
 
 // RemoteDownloadFailure The failure of a row's attempt in its own words (R-CUR-011, Q-CUR-20): the class and the step a script filters on, the engine's
-// code, the file, the address asked without its query (a signed address of a CDN carries a credential in it), the upstream's
-// status, the first 512 bytes of a non-success answer as text, the upstream's Retry-After and Quader's sentence for a person.
+// code, the file, the address asked without its query (a signed address of a CDN carries a credential in it), the address the
+// upstream named and Quader refused to ask, the upstream's status, the first 512 bytes of a non-success answer as text, the
+// upstream's Retry-After and an English sentence for a script and an administrator. A screen writes its own sentence from the
+// code and these members, in its language (Q-CUR-169).
 type RemoteDownloadFailure struct {
 	Address *string   `json:"address,omitempty"`
 	At      time.Time `json:"at"`
 	Attempt int       `json:"attempt"`
 
 	// Class The class of a failure (remote-curation.md R-CUR-011, Q-CUR-20).
-	Class   RemoteDownloadFailureClass `json:"class"`
-	Code    string                     `json:"code"`
-	Detail  string                     `json:"detail"`
-	Excerpt *string                    `json:"excerpt,omitempty"`
-	File    *string                    `json:"file,omitempty"`
+	Class RemoteDownloadFailureClass `json:"class"`
+
+	// Code The engine's error code (`internal/errs/codes.go`), or a code of the queue's own: `download_timeout`, `circuit_open`,
+	// `spool_busy`, `preempted`, and for a bulk `catalogue_not_offered`, `catalogue_unavailable`, `bulk_max_versions`,
+	// `bulk_max_bytes` and `bulk_stored_bytes` (R-CUR-011, Q-CUR-169).
+	Code    string  `json:"code"`
+	Detail  string  `json:"detail"`
+	Excerpt *string `json:"excerpt,omitempty"`
+	File    *string `json:"file,omitempty"`
 
 	// RetryAfter Seconds.
 	RetryAfter *int                      `json:"retryAfter,omitempty"`
 	Status     *int                      `json:"status,omitempty"`
 	Step       RemoteDownloadFailureStep `json:"step"`
+
+	// Target The address the upstream named and Quader did not ask, without its query: the host of `foreign_host_denied` (neither the
+	// upstream nor one of the repository's `extraHosts`) or the cleartext address of `insecure_redirect`; null otherwise.
+	Target *string `json:"target,omitempty"`
 }
 
 // RemoteDownloadFailureStep defines model for RemoteDownloadFailure.Step.

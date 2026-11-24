@@ -196,14 +196,17 @@ const (
 )
 
 // Failure is the failure of a row's attempt as the column remote_download.failure and the API hold it, every member a script can
-// filter on (R-CUR-011, Q-CUR-20). Address has no query: a signed address of a CDN carries a credential in it. Excerpt is at most 512
-// bytes of printable ASCII.
+// filter on (R-CUR-011, Q-CUR-20). Address has no query: a signed address of a CDN carries a credential in it; Target is the address
+// the upstream named and Quader refused to ask (foreign_host_denied, insecure_redirect), without its query as well. Excerpt is at
+// most 512 bytes of printable ASCII. Detail is an English sentence for a script and an administrator; a screen writes its own
+// sentence from Code and the other members (Q-CUR-169).
 type Failure struct {
 	Class      FailureClass `json:"class"`
 	Step       FailureStep  `json:"step"`
 	Code       string       `json:"code"`
 	File       string       `json:"file,omitempty"`
 	Address    string       `json:"address,omitempty"`
+	Target     string       `json:"target,omitempty"`
 	Status     int          `json:"status,omitempty"`
 	Excerpt    string       `json:"excerpt,omitempty"`
 	RetryAfter int          `json:"retryAfter,omitempty"`

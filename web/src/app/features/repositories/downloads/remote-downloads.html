@@ -47,9 +47,9 @@
             @if (b.failure; as f) {
               @if (bulkFailureLead(b); as lead) {
                 <span class="failure-lead">{{ lead }}</span>
-                <span class="secondary">{{ classText(f.class) }}:&ngsp;{{ f.detail }}</span>
+                <span class="secondary">{{ classText(f.class) }}:&ngsp;{{ sentence(f) }}</span>
               } @else {
-                <span class="secondary">{{ f.detail }}</span>
+                <span class="secondary">{{ sentence(f) }}</span>
               }
             } @else {
               <quader-no-value />
@@ -145,7 +145,12 @@
         </span>
       </div>
       <p class="bulk-facts dot-separated">
-        <span>{{ bulkCounts(b) }}</span>
+        @if (b.versionsFound > 0 || b.versionsQueued > 0) {
+          <span>{{ bulkCounts(b) }}</span>
+        } @else {
+          <!-- Nothing found yet reads as the list's dash, never "0 of 0" (Q-CUR-169). -->
+          <span><ng-container i18n="@@downloads.bulk.versions-found">Versions found</ng-container>&ngsp;<quader-no-value /></span>
+        }
         @for (x of bulkRows(b); track x.state) {
           <span>{{ stateText(x.state) }} {{ x.n }}</span>
         }
@@ -161,11 +166,15 @@
         @if (bulkFailureLead(b); as lead) {
           <p class="bulk-failure">
             <span class="failure-lead">{{ lead }}</span>
-            <span>{{ classText(f.class) }}:&ngsp;{{ f.detail }}</span>
+            <span>{{ classText(f.class) }}:&ngsp;{{ sentence(f) }}</span>
           </p>
         } @else {
-          <p class="bulk-failure muted">{{ f.detail }}</p>
+          <p class="bulk-failure muted">{{ sentence(f) }}</p>
         }
+        <!-- The server's own sentence, English, for an administrator and a script (Q-CUR-169): folded under the screen's sentence. -->
+        <quader-disclosure class="technical" [inline]="true" i18n-heading="@@downloads.failure.technical" heading="Technical details">
+          <p class="technical-detail" lang="en" translate="no">{{ f.detail }}&ngsp;<code>{{ f.code }}</code></p>
+        </quader-disclosure>
       }
     } @else {
       <p role="status" i18n="@@downloads.bulk.loading">Loading the bulk download.</p>
@@ -300,7 +309,11 @@
                   <h3 class="detail-title">
                     <ng-container i18n="@@downloads.failure.title">Failure of attempt {{ f.attempt }}</ng-container><span class="muted dot-before"><quader-time-ago [at]="f.at" absolute="title" /></span>
                   </h3>
-                  <p class="failure-detail">{{ f.detail }}</p>
+                  <p class="failure-detail">{{ sentence(f) }}</p>
+                  <!-- The server's own sentence, English, for an administrator and a script (Q-CUR-169); the facts below carry the code. -->
+                  <quader-disclosure class="technical" [inline]="true" i18n-heading="@@downloads.failure.technical" heading="Technical details">
+                    <p class="technical-detail" lang="en" translate="no">{{ f.detail }}</p>
+                  </quader-disclosure>
                   <dl class="facts">
                     <dt i18n="@@downloads.failure.class">Class</dt>
                     <dd>{{ classText(f.class) }}&ngsp;<code class="secondary" translate="no">{{ f.class }}</code></dd>

@@ -18,6 +18,7 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/mirror/discover"
 	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/internal/proxy/upstream"
 	"github.com/guided-traffic/quader/internal/remotecuration"
 )
 
@@ -156,8 +157,9 @@ func withExchange(e *errs.Error, x Exchange) *errs.Error {
 }
 
 // Describe is the failure of R-CUR-011 for an error of a background fill or of a client's fetch (Q-CUR-20): its class, its step, its
-// code and Quader's sentence, and where an exchange failed, the address without its query, the status, the excerpt and the
-// Retry-After. The caller sets the file, the attempt and the time.
+// code and Quader's English sentence for a script and an administrator (a screen writes its own from the code, Q-CUR-169), where an
+// exchange failed the address without its query, the status, the excerpt and the Retry-After, and where Quader refused an address the
+// upstream named, that address as the target. The caller sets the file, the attempt and the time.
 func Describe(err error) remotecuration.Failure {
 	f := remotecuration.Failure{Class: remotecuration.ClassInternal, Step: remotecuration.StepPlan, Code: errs.CodeInternal}
 	if err == nil {
@@ -167,6 +169,10 @@ func Describe(err error) remotecuration.Failure {
 	if errors.As(err, &x) {
 		f.Step, f.Address, f.Status, f.Excerpt = x.Step, x.Address, x.Status, x.Excerpt
 		f.RetryAfter = int(x.RetryAfter / time.Second)
+	}
+	var target *upstream.RefusedTarget
+	if errors.As(err, &target) {
+		f.Target = target.Address
 	}
 	var wait *BackgroundWait
 	if errors.As(err, &wait) {

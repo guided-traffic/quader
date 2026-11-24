@@ -255,7 +255,7 @@ func TestR_CUR_010_ABulkIsExpandedWithinItsBounds(t *testing.T) {
 	})
 	t.Run("maxBytes of the announced sizes", func(t *testing.T) {
 		_, b := run(t, big, BulkSpec{RepoID: 1, Level: LevelPackage, Subject: "@acme/a", MaxVersions: 100, MaxBytes: 25}, fakePlanner{versions: vs})
-		if b.VersionsQueued != 2 || b.Failure == nil || b.Failure.Class != remotecuration.ClassBound {
+		if b.VersionsQueued != 2 || b.Failure == nil || b.Failure.Class != remotecuration.ClassBound || b.Failure.Code != CodeBulkMaxBytes {
 			t.Fatalf("bulk %+v, want two versions and the bound noted", b)
 		}
 	})
@@ -275,7 +275,7 @@ func TestR_CUR_010_ABulkIsExpandedWithinItsBounds(t *testing.T) {
 	})
 	t.Run("without a planner the bulk fails in words", func(t *testing.T) {
 		_, b := run(t, big, BulkSpec{RepoID: 1, Level: LevelPackage, Subject: "x", MaxVersions: 1, MaxBytes: 1}, nil)
-		if b.State != BulkFailed || b.Failure == nil || b.Failure.Code != "catalogue_not_offered" {
+		if b.State != BulkFailed || b.Failure == nil || b.Failure.Code != CodeCatalogueUnavailable {
 			t.Fatalf("bulk %+v", b)
 		}
 	})

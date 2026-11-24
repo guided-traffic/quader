@@ -53,6 +53,7 @@ export function downloadFailure(over: Partial<RemoteDownloadFailure> = {}): Remo
     code: 'upstream_error',
     file: 'left-pad/-/left-pad-1.3.0.tgz',
     address: 'https://registry.npmjs.org/left-pad/-/left-pad-1.3.0.tgz',
+    target: null,
     status: 503,
     excerpt: '<html><body>Service Unavailable</body></html>',
     retryAfter: null,

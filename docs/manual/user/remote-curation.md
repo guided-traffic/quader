@@ -111,7 +111,8 @@ a cache while it is being built and to find out why a client's fetch failed.
   **Allow**, **Bulk**, **Probe** for a download Quader started after a client asked about a version, **Client** for a client's fetch
   that failed, with how often it failed), its state with the attempt ("Attempt 2 of 5 · next in 4 minutes"), the files and bytes stored,
   and a failure in one line: its kind, the upstream's HTTP status (or Quader's error code where no answer came) and the upstream's host.
-- Open a row with its arrow to read the whole failure: Quader's sentence of what failed and what helps, the step it failed in (resolving
+- Open a row with its arrow to read the whole failure: Quader's sentence of what failed and what helps, in the language of the screen
+  (under **Technical details**, the server's own English sentence for an administrator), the step it failed in (resolving
   the host name, connecting, the TLS check, the answer's status, reading the body, checking the digest, storing), the error code, the
   file, the address it asked (without its query, which can carry a credential), the upstream's status, how long the upstream asked to
   wait, and the start of the upstream's answer. Everyone who may read the repository sees these details, the upstream's answer included.

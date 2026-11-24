@@ -94,11 +94,13 @@ func (c *Client) Close() {
 // 502 insecure_redirect: upstream metadata cannot steer a fetch, or a credential
 // of an extraHosts entry with sendCredentials, onto cleartext (R-REPO-039,
 // Q-ARCH-224). It guards the URLs that come out of upstream metadata; redirects
-// have their own rule (R-REPO-039) in the client.
+// have their own rule (R-REPO-039) in the client. The refusal's cause is the
+// [RefusedTarget], which a failure of the download queue names (R-CUR-011).
 func (c *Client) Allowed(u *url.URL) error {
 	if strings.EqualFold(c.origin.Scheme, "https") && !strings.EqualFold(u.Scheme, "https") {
 		return errs.E(errs.UpstreamFailed, errs.CodeInsecureRedirect,
-			"The upstream document of the repository "+c.key+" points to "+u.Scheme+"://"+u.Host+"; an https upstream is never left for cleartext.")
+			"The upstream document of the repository "+c.key+" points to "+u.Scheme+"://"+u.Host+"; an https upstream is never left for cleartext.",
+			refusedTarget(u))
 	}
 	if sameHost(c.origin, u) {
 		return nil
@@ -110,7 +112,24 @@ func (c *Client) Allowed(u *url.URL) error {
 		}
 	}
 	return errs.E(errs.UpstreamFailed, errs.CodeForeignHostDenied,
-		"The upstream document points to the host "+host+", which is neither the upstream of the repository "+c.key+" nor one of its extraHosts.")
+		"The upstream document points to the host "+host+", which is neither the upstream of the repository "+c.key+" nor one of its extraHosts.", refusedTarget(u))
+}
+
+func refusedTarget(u *url.URL) errs.Option {
+	return errs.WithCause(&RefusedTarget{Address: (&url.URL{Scheme: u.Scheme, Host: u.Host, Path: u.Path, RawPath: u.RawPath}).String()})
+}
+
+// RefusedTarget is the cause of an [Client.Allowed] refusal: the address the
+// upstream named and Quader did not ask, scheme, host, port and path without the
+// query, user information and fragment (a signed address of a CDN carries a
+// credential in its query). It stays in the process (R-ARCH-023); the download
+// queue's failure names it as its target (R-CUR-011, Q-CUR-169).
+type RefusedTarget struct {
+	Address string
+}
+
+func (t *RefusedTarget) Error() string {
+	return "upstream: the address " + t.Address + " was not asked"
 }
 
 // sameHost compares the host names and the effective ports. A port that is the

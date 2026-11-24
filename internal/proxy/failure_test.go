@@ -15,6 +15,7 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/mirror"
 	"github.com/guided-traffic/quader/internal/outbound"
+	"github.com/guided-traffic/quader/internal/proxy/upstream"
 	"github.com/guided-traffic/quader/internal/qname"
 	"github.com/guided-traffic/quader/internal/remotecuration"
 	"github.com/guided-traffic/quader/internal/repository"
@@ -203,6 +204,23 @@ func TestR_CUR_011_TheFailureOfAnExchangeInPreciseWords(t *testing.T) {
 			if !c.want.class.Retryable() && c.want.class == remotecuration.ClassUpstreamAuth {
 				t.Errorf("%s retryable", c.name)
 			}
+		}
+	})
+
+	t.Run("an address the upstream named and Quader refused is the target, beside the address asked", func(t *testing.T) {
+		const named = "https://replicate.registry.example.com/left-pad/-/left-pad-1.0.0.tgz"
+		refused := errs.E(errs.UpstreamFailed, errs.CodeForeignHostDenied, "x", errs.WithCause(&upstream.RefusedTarget{Address: named}))
+		got := Describe(refused)
+		check(t, "foreign host", got, want{remotecuration.ClassUpstreamUnexpected, remotecuration.StepStatus, errs.CodeForeignHostDenied, 0})
+		if got.Target != named || got.Address != "" {
+			t.Errorf("target %q, address %q, want the named address as the target and nothing asked", got.Target, got.Address)
+		}
+		asked := Describe(withExchange(refused, Exchange{Step: remotecuration.StepStatus, Address: "https://registry.npmjs.org/left-pad"}))
+		if asked.Target != named || asked.Address != "https://registry.npmjs.org/left-pad" {
+			t.Errorf("target %q, address %q after an exchange", asked.Target, asked.Address)
+		}
+		if plain := Describe(errs.E(errs.UpstreamFailed, errs.CodeUpstreamError, "x")); plain.Target != "" {
+			t.Errorf("a failure without a refused address has the target %q", plain.Target)
 		}
 	})
 }

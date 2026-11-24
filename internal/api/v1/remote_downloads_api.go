@@ -449,7 +449,7 @@ func failureView(f *remotecuration.Failure) any {
 		return nil
 	}
 	return map[string]any{
-		"class": f.Class, "step": f.Step, "code": f.Code, "file": nullString(f.File), "address": nullString(f.Address),
+		"class": f.Class, "step": f.Step, "code": f.Code, "file": nullString(f.File), "address": nullString(f.Address), "target": nullString(f.Target),
 		"status": nullInt(f.Status), "excerpt": nullString(f.Excerpt), "retryAfter": nullInt(f.RetryAfter), "detail": f.Detail,
 		"attempt": f.Attempt, "at": f.At.UTC(),
 	}

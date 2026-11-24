@@ -809,13 +809,14 @@ Priority: **P1** · Covers: RMT-027
   |---|---|
   | `class` | closed list: `upstream_not_found`, `upstream_auth`, `upstream_rate_limited`, `upstream_error`, `upstream_unexpected`, `network`, `tls`, `egress_denied`, `integrity`, `content_refused`, `gate_refused`, `circuit_open`, `bound`, `storage`, `internal` |
   | `step` | closed list: `plan` (reading the documents that name the files), `resolve` (the host's name), `connect`, `tls` (the handshake or the certificate's verification), `request`, `status` (an answer whose status is no success), `body` (reading the body), `verify` (digest, size, media type), `gate` (the vulnerability miss gate), `store` (the object store or the database) |
-  | `code` | the error code of the engine (`upstream_unreachable`, `tls_untrusted`, `upstream_integrity_mismatch`, `vulnerability_blocked`, …; `internal/errs/codes.go`) |
+  | `code` | the error code of the engine (`upstream_unreachable`, `tls_untrusted`, `upstream_integrity_mismatch`, `vulnerability_blocked`, …; `internal/errs/codes.go`), or one of the queue's own: `download_timeout`, `circuit_open`, `spool_busy`, `preempted`, and a bulk's `catalogue_not_offered`, `catalogue_unavailable`, `bulk_max_versions`, `bulk_max_bytes`, `bulk_stored_bytes` ([Q-CUR-169](#q-cur-169--a-download-failure-is-said-in-the-screens-language-from-its-code-the-servers-english-sentence-folds-under-it)) |
   | `file` | the repository path of the file that failed |
   | `address` | the address asked: scheme, host, port and path; the query is dropped (a signed address of a CDN carries a credential in it) and the sentence says so |
+  | `target` | the address the upstream named and Quader refused to ask, without its query: the host of `foreign_host_denied` (neither the upstream nor one of `extraHosts`) or the cleartext address of `insecure_redirect` (Q-CUR-169) |
   | `status` | the upstream's status, when an answer came |
   | `excerpt` | the first 512 bytes of a non-success answer's body as text, characters outside printable ASCII and line ends replaced by `?`; none for a body the upstream declared as binary |
   | `retryAfter` | the upstream's `Retry-After` in seconds, when it named one |
-  | `detail` | Quader's sentence for a person: what failed, where, and what helps ("The TLS certificate of `registry.example.com:443` is not trusted by this installation; add its CA to `outbound.tls.ca_file`.") |
+  | `detail` | Quader's English sentence for a script and an administrator: what failed, where, and what helps ("The TLS certificate of `registry.example.com:443` is not trusted by this installation; add its CA to `outbound.tls.ca_file`."). A screen does not show it as the failure's words: it writes its own sentence from `code` and the members above, in its language, and folds `detail` under it (Q-CUR-169) |
   | `attempt`, `at` | the attempt's number and time |
 
   The engine tells the steps apart from what Go's transport reports: a `*net.DNSError` is `resolve`, a dial error `connect`, a TLS record
@@ -870,7 +871,10 @@ Below `/api/v1/projects/{projectKey}/repositories/{repoKey}` (tag `remote-curati
   person to those who may set rules and to that person; to other readers it reads `{"id": null, "name": null}` with `origin`.
 - A bulk's representation: `{"id", "level", "subject", "origin", "state", "bounds", "versionsFound", "versionsQueued", "failure",
   "startedBy", "createdAt", "finishedAt", "rows"}`; `origin` is `person`, `request` (a request's examination) or `allow` (Q-CUR-141);
-  `failure` is the expansion's, in a row's form; `rows` counts its rows by state.
+  `failure` is the expansion's, in a row's form, or the note of the bound that stopped it (class `bound`, codes `bulk_max_versions`,
+  `bulk_max_bytes`, `bulk_stored_bytes`); `rows` counts its rows by state.
+- A failure's `code` and its members are what a client says the failure from; `detail` is an English sentence for a script and an
+  administrator, and `target` names the address Quader refused to ask (R-CUR-011, Q-CUR-169).
 - Retry and cancel write `remote.download.retried` and `remote.download.cancelled` (R-CUR-019).
 
 Acceptance criteria:
@@ -1214,7 +1218,9 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
     The table: **Package** (name and version, a row that fetches what the rules do not deliver marked "Not delivered here: stored for
     examination"), **Origin**, **State** (the badge, a done row's outcome, "Attempt 2 of 5 · next in 4 minutes"), **Progress** ("2 of 3
     files · 46.0 MiB", the files a gate refused), **Failure** (the class, the upstream's status or else the engine's code, the host:
-    "Upstream error · HTTP 503 · registry.npmjs.org"). A row opens in place to its whole failure (the sentence, the class and the step
+    "Upstream error · HTTP 503 · registry.npmjs.org"). A row opens in place to its whole failure (the screen's sentence, written from
+    the failure's code in the screen's language with **Technical details** folded under it, which hold the server's English `detail`;
+    [Q-CUR-169](#q-cur-169--a-download-failure-is-said-in-the-screens-language-from-its-code-the-servers-english-sentence-folds-under-it)), the class and the step
     each in words with its value in a muted line of code below
     ([Q-CUR-134](#q-cur-134--a-failures-class-and-step-stand-in-words-with-their-value-in-a-muted-line-of-code-below)), the code, the file, the address "shown without its query, which can carry a credential", the
     upstream's status, Retry-After, the start of the upstream's answer in a code block) and to its facts (who started it, where the API
@@ -1222,13 +1228,15 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
     **Retry** or **Cancel** by its state, in its action cell
     ([Q-CUR-132](#q-cur-132--a-row-offers-retry-or-cancel-by-its-state-to-whom-the-api-lets-change-it-and-a-bulks-line-stands-over-its-rows)).
     The origin **Bulk** links to `?bulk=<id>`, which shows the bulk's line over its rows: what it downloads, its state, "38 of 38
-    versions found are queued", its rows by state, its bounds, who started it, **Cancel bulk** and **Show every download**.
+    versions found are queued" ("Versions found –" while nothing is found, as the list's dash), its rows by state, its bounds, who
+    started it, **Cancel bulk** and **Show every download**.
     Over the head, once the repository has a bulk, a table **Bulk downloads**, newest first, five and **Load more**: what it downloads
     (a link to `?bulk=<id>`, who started it and when under it), its state, "2 of 100 queued" with its rows by state, and where its
     expansion failed the cause in words ("Docker Hub's version list could not be read", the upstream's preset name where the reader
-    has the remote's address, else "The upstream's …"), then the class and the engine's sentence; a bound's note stands muted. Its
-    one action is **Cancel** while it expands or its rows wait, and **Start again** for a person's failed bulk to who may start one;
-    the bulk of the address shows the same failure and action. The table **Downloads** of the rows stands under it, and the notice of
+    has the remote's address, else "The upstream's …"), then the class and the screen's sentence of the failure's code (Q-CUR-169); a
+    bound's note stands muted, in the screen's words too. Its one action is **Cancel** while it expands or its rows wait, and **Start
+    again** for a person's failed bulk to who may start one; the bulk of the address shows the same failure and action, with
+    **Technical details** (the server's sentence and the code) folded under it. The table **Downloads** of the rows stands under it, and the notice of
     a start says that the bulk reads the versions first and leads to the bulk
     ([Q-CUR-168](#q-cur-168--the-tab-downloads-lists-the-repositorys-bulks-over-its-rows-a-failed-one-says-what-failed-and-starts-again)). The
     refresh reads as many rows and bulks as are shown, and runs while a bulk shown expands or waits, so **Load more** and the opened rows stay
@@ -2873,6 +2881,97 @@ must find it whatever happened to it; the development agent would revisit (b) if
 [store_pg.go](../../internal/remotecuration/queue/store_pg.go), the tab in
 [remote-downloads.ts](../../web/src/app/features/repositories/downloads/remote-downloads.ts), the notice in
 [upstream-actions.ts](../../web/src/app/features/repositories/upstream/upstream-actions.ts).
+
+### Q-CUR-169 · A download failure is said in the screen's language from its code; the server's English sentence folds under it
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below after its own look at the renders of
+Q-CUR-168 (12:10); the owner reviews it at the walkthrough.
+
+Context: the German tab Downloads read, under "Die Versionsliste von npm public registry konnte nicht gelesen werden", "Unerwartete
+Antwort des Upstreams: The download failed at the step status. The upstream document points to the host
+replicate.registry.example.com, which is neither the upstream of the repository web/npmjs nor one of its extraHosts." The failure's
+`detail` is an English sentence the engine writes (`proxy.Describe`, the queue's own notes), and every opened row and every bulk showed it
+as the failure's words. The bulk's opened view also read "0 von 0 gefundenen Versionen sind eingereiht" where its line in the list of
+bulks shows a dash. The host of `foreign_host_denied` stood only in that English sentence: the failure had no member for an address
+Quader refused to ask, and the three bounds of a bulk shared the code `bulk_bound` while their sentences differed, as did the two
+causes of `catalogue_not_offered`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The screen writes the sentence from `code` and the members with `$localize`; a code it does not know reads as its class's sentence; the failure gains `target` (the address the upstream named and Quader refused, without its query); a bulk's bounds get a code each and a bulk without a planner `catalogue_unavailable`; `detail` stays the API's English sentence and folds under **Technical details** (chosen) | The screen speaks, as for the search hint (Q-CUR-166) | Every sentence is in the screen's language and says what the reader can do; a script and an administrator keep the engine's sentence and the code; a new code reads as its class until the screen has a sentence for it | About fifty sentences and their German texts; a code the engine adds needs a sentence here to be more precise than its class |
+| (b) The server writes `detail` in the language of `Accept-Language` | Server-side translation | One field | A failure is written once, when it happens, not when it is read: the stored row has one language for every later reader; a second catalogue of German texts in Go |
+| (c) The class's sentence only, `detail` folded | Fifteen sentences | Small | "Unexpected answer" says nothing a person can act on: the foreign host and what to add are lost |
+| (d) `detail` as it is, marked as English | Nothing to build | — | The screen stays half English, which the owner's German build is meant not to be |
+
+**Choice:** (a). `failureSentence` in [download-words.ts](../../web/src/app/features/repositories/downloads/download-words.ts) asks the
+families in turn (answers of the upstream, the way to it, what came, the limits, Quader's own state, a bulk's ends) and else the class.
+The host of a sentence is `target`'s, else `address`'s; a sentence that names one has a variant without it. The opened row shows the
+sentence, then **Technical details** folded (the server's sentence, `lang="en"`; the code and the address stand in the facts below), and
+an opened bulk the same with the code; the list of bulks shows the class and the sentence. Nothing found yet reads "Versions found –" in
+an opened bulk, as the list's dash. The codes and their sentences:
+
+| Code | English | German |
+|---|---|---|
+| `foreign_host_denied` (with a target / without) | The upstream points to {host}, which is neither the upstream nor one of the repository's further hosts, so Quader sent no request there. If you trust this host, add it to the repository's further hosts. | Der Upstream verweist auf {host}, der weder der Upstream noch einer der weiteren Hosts des Repositorys ist; Quader hat dorthin keine Anfrage gesendet. Wenn Sie diesem Host vertrauen, tragen Sie ihn bei den weiteren Hosts des Repositorys ein. |
+|  | The upstream points to a host that is neither the upstream nor one of the repository's further hosts, so Quader sent no request there. If you trust this host, add it to the repository's further hosts. | Der Upstream verweist auf einen Host, der weder der Upstream noch einer der weiteren Hosts des Repositorys ist; Quader hat dorthin keine Anfrage gesendet. Wenn Sie diesem Host vertrauen, tragen Sie ihn bei den weiteren Hosts des Repositorys ein. |
+| `insecure_redirect` (with a target / without) | The upstream sent the request from https to plain http on {host}, and Quader never leaves https. Ask the upstream's operator for an https address. | Der Upstream hat die Anfrage von https auf unverschlüsseltes http auf {host} umgeleitet, und Quader verlässt https nie. Fragen Sie den Betreiber des Upstreams nach einer https-Adresse. |
+|  | The upstream sent the request from https to plain http, and Quader never leaves https. Ask the upstream's operator for an https address. | Der Upstream hat die Anfrage von https auf unverschlüsseltes http umgeleitet, und Quader verlässt https nie. Fragen Sie den Betreiber des Upstreams nach einer https-Adresse. |
+| `upstream_unexpected_status` | The upstream answered with a status Quader does not expect here. Check the upstream's address in the repository's settings; the start of its answer may say more. | Der Upstream hat mit einem Status geantwortet, den Quader hier nicht erwartet. Prüfen Sie die Adresse des Upstreams in den Einstellungen des Repositorys; der Anfang seiner Antwort kann mehr verraten. |
+| `too_many_redirects` | The upstream redirected the request more often than this installation allows. Check the upstream's address in the repository's settings. | Der Upstream hat die Anfrage öfter weitergeleitet, als diese Installation erlaubt. Prüfen Sie die Adresse des Upstreams in den Einstellungen des Repositorys. |
+| `upstream_package_mismatch` | The upstream answered with another package than the one asked for; nothing was stored. | Der Upstream hat mit einem anderen Paket als dem angefragten geantwortet; es wurde nichts gespeichert. |
+| `npm_invalid_upstream_document`, `nuget_invalid_upstream_document` | The upstream's document of the package is not valid; nothing was stored. A later attempt succeeds once the upstream corrects it. | Das Dokument des Upstreams zu diesem Paket ist ungültig; es wurde nichts gespeichert. Ein späterer Versuch gelingt, sobald der Upstream es korrigiert. |
+| `upstream_timeout` | The upstream did not answer in time. A later attempt may succeed. | Der Upstream hat nicht rechtzeitig geantwortet. Ein späterer Versuch kann gelingen. |
+| `source_network_unavailable` | This replica has no address in the network the repository sends its requests from; another replica may have one. An administrator checks the repository's source network. | Dieses Replikat hat keine Adresse in dem Netz, aus dem das Repository seine Anfragen sendet; ein anderes Replikat hat vielleicht eine. Ein Administrator prüft das Quellnetz des Repositorys. |
+| `upstream_secret_unavailable` | The repository's credential for the upstream cannot be read on this replica. A Maintainer or Owner enters it again in the repository's settings. | Die Zugangsdaten des Repositorys für den Upstream können auf diesem Replikat nicht gelesen werden. Ein Maintainer oder Eigentümer gibt sie in den Einstellungen des Repositorys erneut ein. |
+| `upstream_integrity_mismatch` | The file does not match the digest the upstream announced, so it was not stored. | Die Datei passt nicht zu dem Digest, den der Upstream angekündigt hat; sie wurde nicht gespeichert. |
+| `upstream_digest_missing` | The upstream announces no digest for the file and the repository requires one, so it was not stored. | Der Upstream kündigt für die Datei keinen Digest an, das Repository verlangt aber einen; sie wurde nicht gespeichert. |
+| `oci_digest_invalid` | The content does not match its digest, so it was not stored. | Der Inhalt passt nicht zu seinem Digest; er wurde nicht gespeichert. |
+| `oci_size_invalid` | The image exceeds a size limit of this installation, so it was not stored. | Das Image überschreitet eine Größengrenze dieser Installation; es wurde nicht gespeichert. |
+| `upstream_content_type_blocked` | The upstream answered with a page in place of the file, usually an error page or the sign-in page of a network, so nothing was stored. | Der Upstream hat statt der Datei mit einer Seite geantwortet, meist einer Fehlerseite oder der Anmeldeseite eines Netzes; es wurde nichts gespeichert. |
+| `upstream_item_too_large`, `payload_too_large`, `npm_too_large` | The file is larger than the repository's limit allows, so it was not stored. A Maintainer or Owner can raise the limit in the repository's settings. | Die Datei ist größer, als die Grenze des Repositorys erlaubt; sie wurde nicht gespeichert. Ein Maintainer oder Eigentümer kann die Grenze in den Einstellungen des Repositorys anheben. |
+| `download_timeout` | The download took longer than its time limit. What it stored stays, and the next attempt goes on from there. | Der Download hat länger gedauert, als seine Zeitgrenze erlaubt. Was er gespeichert hat, bleibt, und der nächste Versuch macht dort weiter. |
+| `vulnerability_blocked` | A vulnerability finding blocks this version in this repository, so it was not fetched. | Ein Schwachstellenbefund sperrt diese Version in diesem Repository; sie wurde nicht geladen. |
+| `vulnerability_data_missing` | The vulnerability data of this ecosystem is not complete and the repository blocks what it cannot check, so the version was not fetched. | Die Schwachstellendaten dieses Ökosystems sind nicht vollständig, und das Repository sperrt, was es nicht prüfen kann; die Version wurde nicht geladen. |
+| `populate_not_permitted` | Whoever started the download may read the repository but not bring new content into its cache. | Wer den Download gestartet hat, darf das Repository lesen, aber keine neuen Inhalte in seinen Cache laden. |
+| `not_cached_offline` | The repository is offline and the file is not in its cache, so Quader sent no request. | Das Repository ist offline und die Datei liegt nicht in seinem Cache; Quader hat keine Anfrage gesendet. |
+| `spool_busy` | The space for downloads in progress is full; the next attempt waits for room. | Der Platz für laufende Downloads ist voll; der nächste Versuch wartet, bis wieder Platz frei ist. |
+| `preempted` | A client's fetch took the repository's place for downloads ahead; the download goes on with its next attempt. | Der Abruf eines Clients hat den Platz des Repositorys für Downloads im Voraus übernommen; der Download geht mit seinem nächsten Versuch weiter. |
+| `database_timeout` | The database answered too slowly. A later attempt may succeed. | Die Datenbank hat zu langsam geantwortet. Ein späterer Versuch kann gelingen. |
+| `catalogue_not_offered` (a bulk) | The upstream of this repository lists no sub-sections, so a sub-section cannot be downloaded. Download its packages one by one. | Der Upstream dieses Repositorys listet keine Unterbereiche, daher kann kein Unterbereich heruntergeladen werden. Laden Sie seine Pakete einzeln herunter. |
+| `catalogue_unavailable` (a bulk) | This server cannot read the upstream's lists for a bulk download. Start it again; if it fails again, an administrator finds the cause in the server's log. | Dieser Server kann die Listen des Upstreams für einen Sammeldownload nicht lesen. Starten Sie ihn erneut; scheitert er wieder, findet ein Administrator die Ursache im Protokoll des Servers. |
+| `bulk_max_versions` | The bulk download queued as many versions as its limit allows and adds no more. | Der Sammeldownload hat so viele Versionen eingereiht, wie seine Grenze erlaubt, und reiht keine weiteren ein. |
+| `bulk_max_bytes` | The announced sizes of the queued versions reach the bulk download's size limit; it adds no more. | Die angekündigten Größen der eingereihten Versionen erreichen die Größengrenze des Sammeldownloads; er reiht keine weiteren ein. |
+| `bulk_stored_bytes` | The versions of the bulk download stored as much as its size limit allows; it adds no more. | Die Versionen des Sammeldownloads haben so viel gespeichert, wie seine Größengrenze erlaubt; er reiht keine weiteren ein. |
+| class `upstream_not_found` (`not_found`) | The upstream does not have this file. Check the package's name and version. | Der Upstream hat diese Datei nicht. Prüfen Sie Namen und Version des Pakets. |
+| class `upstream_auth` (`upstream_auth_failed`) | The upstream refused the repository's credentials. A Maintainer or Owner checks them in the repository's settings. | Der Upstream hat die Zugangsdaten des Repositorys abgelehnt. Ein Maintainer oder Eigentümer prüft sie in den Einstellungen des Repositorys. |
+| class `upstream_rate_limited` (`upstream_rate_limited`; with a Retry-After / without) | The upstream limits how often Quader may ask it and asked to wait {seconds} s; the next attempt waits that long. | Der Upstream begrenzt, wie oft Quader ihn fragen darf, und bat, {seconds} s zu warten; der nächste Versuch wartet so lange. |
+|  | The upstream limits how often Quader may ask it; the next attempt waits. | Der Upstream begrenzt, wie oft Quader ihn fragen darf; der nächste Versuch wartet. |
+| class `upstream_error` (`upstream_error`) | The upstream answered with an error of its own. A later attempt may succeed. | Der Upstream hat mit einem eigenen Fehler geantwortet. Ein späterer Versuch kann gelingen. |
+| class `upstream_unexpected` | The upstream answered in a way Quader does not expect here, so nothing was stored. | Der Upstream hat anders geantwortet, als Quader es hier erwartet; es wurde nichts gespeichert. |
+| class `network` (`upstream_unreachable`) | Quader could not reach the upstream. Check the upstream's address in the repository's settings; an administrator checks the network and the proxy. | Quader konnte den Upstream nicht erreichen. Prüfen Sie die Adresse des Upstreams in den Einstellungen des Repositorys; ein Administrator prüft das Netz und den Proxy. |
+| class `tls` (`tls_untrusted`; with the host / without) | This installation does not trust the certificate of {host}. An administrator adds the certificate authority that signed it. | Diese Installation vertraut dem Zertifikat von {host} nicht. Ein Administrator fügt die Zertifizierungsstelle hinzu, die es signiert hat. |
+|  | This installation does not trust the upstream's certificate. An administrator adds the certificate authority that signed it. | Diese Installation vertraut dem Zertifikat des Upstreams nicht. Ein Administrator fügt die Zertifizierungsstelle hinzu, die es signiert hat. |
+| class `egress_denied` (`egress_denied`; with the host / without) | This installation does not allow requests to {host}. An administrator decides which addresses Quader may reach. | Diese Installation erlaubt keine Anfragen an {host}. Ein Administrator legt fest, welche Adressen Quader erreichen darf. |
+|  | This installation does not allow requests to the upstream's address. An administrator decides which addresses Quader may reach. | Diese Installation erlaubt keine Anfragen an die Adresse des Upstreams. Ein Administrator legt fest, welche Adressen Quader erreichen darf. |
+| class `integrity` | The file failed its integrity check, so it was not stored. | Die Datei hat ihre Integritätsprüfung nicht bestanden; sie wurde nicht gespeichert. |
+| class `content_refused` (`content_refused`) | The file has a structure Quader does not read, so it was not stored. | Die Datei hat eine Struktur, die Quader nicht liest; sie wurde nicht gespeichert. |
+| class `gate_refused` | A check of this repository refused the file before it was fetched. | Eine Prüfung dieses Repositorys hat die Datei abgelehnt, bevor sie geladen wurde. |
+| class `circuit_open` (`circuit_open`, `upstream_assumed_offline`) | The upstream failed several times in a row and counts as unavailable for a while; the next attempt waits for it. | Der Upstream ist mehrmals hintereinander gescheitert und gilt eine Weile als nicht verfügbar; der nächste Versuch wartet darauf. |
+| class `bound` | The download reached a limit. What it stored stays. | Der Download hat eine Grenze erreicht. Was er gespeichert hat, bleibt. |
+| class `storage` (`object_store_unavailable`) | The file could not be stored. A later attempt may succeed. | Die Datei konnte nicht gespeichert werden. Ein späterer Versuch kann gelingen. |
+| class `internal` (`internal`) | The download failed inside Quader. A later attempt may succeed; if not, an administrator finds the cause in the server's log. | Der Download ist innerhalb von Quader gescheitert. Ein späterer Versuch kann gelingen; wenn nicht, findet ein Administrator die Ursache im Protokoll des Servers. |
+
+A code of the engine that has no row here (`upstream_unreachable`, `tls_untrusted`, `egress_denied`, `not_found`, …) is said by its
+class's row, which is precise enough for it. The step, the address, the status and the excerpt stay facts beside the sentence, in words
+with their values. **Rationale:** a failure a person reads is in the screen's language and says what helps; the development agent would
+revisit (b) if failures were ever read outside a screen that has the codes, such as a mail.
+
+**Applied in the spec:** R-CUR-011 (the failure's `code`, `target` and `detail`), R-CUR-012 (the bulk's bound and a client's words),
+R-CUR-018 (the opened row and bulk, the dash); the API's `RemoteDownloadFailure.target`. Code: `RefusedTarget` in
+[client.go](../../internal/proxy/upstream/client.go), `Describe` in [failure.go](../../internal/proxy/failure.go), the bulk's codes in
+[bulk.go](../../internal/remotecuration/queue/bulk.go), `failureSentence` in
+[download-words.ts](../../web/src/app/features/repositories/downloads/download-words.ts), the tab in
+[remote-downloads.html](../../web/src/app/features/repositories/downloads/remote-downloads.html).
 
 ### Q-CUR-80 · A download of one version runs before the catalogue: the call that names its files is a contract interface of its own
 

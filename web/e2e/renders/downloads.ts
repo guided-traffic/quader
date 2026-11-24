@@ -60,6 +60,7 @@ function failure(over: Record<string, unknown>): Record<string, unknown> {
     code: 'upstream_error',
     file: null,
     address: null,
+    target: null,
     status: null,
     excerpt: null,
     retryAfter: null,
@@ -193,6 +194,7 @@ const failedBulk = {
     class: 'upstream_unexpected',
     step: 'status',
     code: 'foreign_host_denied',
+    target: 'https://replicate.registry.example.com/@customer-portal/release-candidates-for-the-frontend-design-system-components',
     attempt: 0,
     at: at(-5),
     detail:
@@ -259,6 +261,10 @@ export async function* downloadsWalk(p: Page): AsyncGenerator<string> {
   await p.goto(`${new URL(p.url()).pathname}?bulk=${BULK_FAILED}`);
   await expect(p.locator('main [data-testid="download-bulk"] .bulk-failure')).toBeVisible();
   yield 'bulk-failed';
+  // The server's English sentence and its code, folded under the screen's sentence (Q-CUR-169).
+  await p.locator('main [data-testid="download-bulk"] quader-disclosure.technical button').click();
+  await expect(p.locator('main [data-testid="download-bulk"] quader-disclosure.technical .collapse-region.open')).toBeVisible();
+  yield 'bulk-failed-technical';
   // The rows of one package, as the link Show in queue of the top bar's downloads panel opens the tab (R-UI-211).
   await p.goto(`${new URL(p.url()).pathname}?name=${encodeURIComponent('typescript')}`);
   await expect(p.locator('main [data-testid="download-name-filter"]')).toBeVisible();

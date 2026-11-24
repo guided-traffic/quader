@@ -10202,10 +10202,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-CUR
 
-80 questions on [spec/remote-curation.md](spec/remote-curation.md).
+81 questions on [spec/remote-curation.md](spec/remote-curation.md).
 
 <details>
-<summary>Q-CUR: 80 questions</summary>
+<summary>Q-CUR: 81 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10289,6 +10289,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-CUR-166](spec/remote-curation.md#q-cur-166--the-hint-under-the-upstream-search-is-a-code-the-screen-says-in-its-language) | The hint under the upstream search is a code the screen says in its language | Decided by the development agent on 2026-11-24 | (a) A code: `discover.CatalogueCaps.SearchHint` from a closed list in the leaf (`discover.SearchHints`), one per upstream whose hint differs; `UnavailableError.Hint` for a search the engine turns off; the API's `searchHint` enum replaces `searchNote` and `searchReason`; the screen writes the sentence per code with `$localize` | [ADR-277](#adr-277--a-remote-repository-can-be-curated-delivery-rules-in-two-modes-an-upstream-catalogue-downloads-ahead-and-their-queue-requests-with-examination) |
 | [Q-CUR-167](spec/remote-curation.md#q-cur-167--a-bulks-expansion-reaches-the-hosts-the-catalogue-reaches-a-rows-fetch-reaches-no-more) | A bulk's expansion reaches the hosts the catalogue reaches; a row's fetch reaches no more | Decided by the development agent on 2026-11-24 | (a) The expansion's upstream reaches the hosts of `catalogueHosts` (the mirror's hosts and the preset's catalogue hosts), as hosts without a credential; a row's run keeps the mirror's hosts | — |
 | [Q-CUR-168](spec/remote-curation.md#q-cur-168--the-tab-downloads-lists-the-repositorys-bulks-over-its-rows-a-failed-one-says-what-failed-and-starts-again) | The tab Downloads lists the repository's bulks over its rows; a failed one says what failed and starts again | Decided by the development agent on 2026-11-24 | (a) `GET download-bulks` lists a repository's bulks newest first; the tab shows them in a table over its rows (five and **Load more**), with the state, the counters, the failure in words and one action; the notice of a start says that the bulk reads the versions first and leads to the bulk | — |
+| [Q-CUR-169](spec/remote-curation.md#q-cur-169--a-download-failure-is-said-in-the-screens-language-from-its-code-the-servers-english-sentence-folds-under-it) | A download failure is said in the screen's language from its code; the server's English sentence folds under it | Decided by the development agent on 2026-11-24 | (a) The screen writes the sentence from `code` and the members with `$localize`; a code it does not know reads as its class's sentence; the failure gains `target` (the address the upstream named and Quader refused, without its query); a bulk's bounds get a code each and a bulk without a planner `catalogue_unavailable`; `detail` stays the API's English sentence and folds under **Technical details** | — |
 
 </details>
 

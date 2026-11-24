@@ -181,7 +181,19 @@ tr.expansion > td {
 }
 
 .failure-detail {
+  margin: 0 0 var(--quader-space-1);
+}
+
+// The server's English sentence under the screen's (Q-CUR-169): folded, muted, and broken anywhere, since it names addresses.
+quader-disclosure.technical {
+  display: block;
   margin: 0 0 var(--quader-space-3);
+}
+
+.technical-detail {
+  margin: 0;
+  color: var(--quader-text-muted);
+  overflow-wrap: anywhere;
 }
 
 .excerpt-label {

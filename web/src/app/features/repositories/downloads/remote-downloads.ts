@@ -24,6 +24,7 @@ import { SessionStore } from '../../../core/session-store';
 import { ErrorNotice } from '../../../shared/error-notice';
 import { asApiError, valueOf } from '../../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
+import { Disclosure } from '../../../shared/ui/disclosure';
 import { NoValue } from '../../../shared/ui/no-value';
 import { TimeAgo } from '../../../shared/ui/time-ago';
 import { formatSize } from '../../packages/format-size';
@@ -33,6 +34,7 @@ import {
   downloadSubject,
   failureClassText,
   failureLine,
+  failureSentence,
   failureStepText,
   queueOriginText,
 } from './download-words';
@@ -60,7 +62,7 @@ type FilterState = (typeof FILTER_STATES)[number];
  */
 @Component({
   selector: 'quader-remote-downloads',
-  imports: [DataTable, ErrorNotice, NoValue, RouterLink, TimeAgo],
+  imports: [DataTable, Disclosure, ErrorNotice, NoValue, RouterLink, TimeAgo],
   templateUrl: './remote-downloads.html',
   styleUrl: './remote-downloads.scss',
 })
@@ -195,6 +197,8 @@ export class RemoteDownloads {
   protected readonly outcomeText = downloadOutcomeText;
   protected readonly subject = downloadSubject;
   protected readonly line = failureLine;
+  /** A failure in the screen's language, written from its code (Q-CUR-169); the server's English sentence folds under it. */
+  protected readonly sentence = failureSentence;
   protected readonly size = formatSize;
 
   protected readonly caption = $localize`:@@downloads.caption:Downloads of this repository, running and waiting first`;

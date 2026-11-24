@@ -97,6 +97,7 @@ function refusedBulk() {
       code: 'foreign_host_denied',
       file: null,
       address: null,
+      target: 'https://hub.docker.com/v2/namespaces/guidedtraffic/repositories/valkey-operator/tags',
       status: null,
       excerpt: null,
       attempt: 0,
@@ -157,7 +158,11 @@ describe('The tab Downloads of a remote repository', () => {
     expect(words).toContain('(shown without its query, which can carry a credential)');
     expect(words).toContain('HTTP 503');
     expect(detail.querySelector('pre.excerpt')?.textContent).toBe('<html><body>Service Unavailable</body></html>');
-    expect(words).toContain('answered 503 Service Unavailable');
+    // The screen's sentence from the code; the server's English one folded under it (Q-CUR-169).
+    expect(detail.querySelector('.failure-detail')?.textContent).toBe('The upstream answered with an error of its own. A later attempt may succeed.');
+    const engine = detail.querySelector<HTMLElement>('quader-disclosure.technical .technical-detail')!;
+    expect(engine.lang).toBe('en');
+    expect(engine.textContent).toContain('answered 503 Service Unavailable');
     await expectAccessible(root);
   });
 
@@ -228,7 +233,7 @@ describe('The tab Downloads of a remote repository', () => {
     expect(text(failed)).toContain('Failed');
     expect(text(failed)).not.toContain('0 of 0');
     expect(text(failed)).toContain("Docker Hub's version list could not be read");
-    expect(text(failed)).toContain('Unexpected answer of the upstream: The download failed at the step status.');
+    expect(text(failed)).toContain('Unexpected answer of the upstream: The upstream points to hub.docker.com, which is neither the upstream nor');
     expect(text(failed)).toContain('hub.docker.com');
     // The rows below say that there is none, and the bulk's title leads to the bulk.
     expect(text(root.querySelector('[data-testid="download-rows"]')!)).toContain('There is no download yet.');
@@ -270,7 +275,21 @@ describe('The tab Downloads of a remote repository', () => {
     expect(root.querySelector('[data-testid="download-bulks"]')).toBeNull();
     const bulk = root.querySelector<HTMLElement>('[data-testid="download-bulk"]')!;
     expect(text(bulk)).toContain("The upstream's version list could not be read");
-    expect(text(bulk)).toContain('Unexpected answer of the upstream: The download failed at the step status.');
+    expect(text(bulk)).toContain(
+      "Unexpected answer of the upstream: The upstream points to hub.docker.com, which is neither the upstream nor one of the repository's further hosts",
+    );
+    // Nothing found yet is the list's dash, never "0 of 0".
+    expect(text(bulk)).not.toContain('0 of 0');
+    expect(text(bulk)).toContain('Versions found');
+    expect(bulk.querySelector('.bulk-facts quader-no-value')).not.toBeNull();
+    // The server's English sentence and the code fold under the screen's sentence, marked as English.
+    const technical = bulk.querySelector<HTMLElement>('quader-disclosure.technical')!;
+    expect(technical.querySelector('button[aria-expanded="false"]')?.textContent).toContain('Technical details');
+    const engine = technical.querySelector<HTMLElement>('.technical-detail')!;
+    expect(engine.lang).toBe('en');
+    expect(engine.textContent).toContain('The upstream document points to the host hub.docker.com');
+    expect(engine.textContent).toContain('foreign_host_denied');
+    await expectAccessible(root);
     [...bulk.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.includes('Start again'))!.click();
     await settle(fixture);
     await settle(fixture);

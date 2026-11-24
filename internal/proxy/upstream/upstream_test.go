@@ -660,6 +660,18 @@ func TestAllowed(t *testing.T) {
 		}
 	}
 
+	t.Run("R-CUR-011 a refusal names the address the upstream named, without its query, user information or fragment", func(t *testing.T) {
+		for raw, want := range map[string]string{
+			"https://user:pw@replicate.registry.example.com/left-pad/-/left-pad-1.0.0.tgz?X-Amz-Signature=secret#f": "https://replicate.registry.example.com/left-pad/-/left-pad-1.0.0.tgz",
+			"http://registry.example.org:8080/x?token=secret":                                                       "http://registry.example.org:8080/x",
+		} {
+			u, _ := url.Parse(raw)
+			var target *RefusedTarget
+			if err := cl.Allowed(u); !errors.As(err, &target) || target.Address != want {
+				t.Errorf("Allowed(%s) = %v with the target %+v, want %s", raw, err, target, want)
+			}
+		}
+	})
 	t.Run("R-REPO-039 R-REPO-043 an https upstream's document cannot send a fetch to http, on its own host or an extra one", func(t *testing.T) {
 		for _, raw := range []string{"http://registry.example.org/x", "http://registry.example.org:443/x", "http://tarballs.example.net/x", "http://eu.cdn.example.org/x"} {
 			u, _ := url.Parse(raw)

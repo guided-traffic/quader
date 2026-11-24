@@ -96,7 +96,7 @@ const packagesPerStep = 20
 func (s *Service) expand(ctx context.Context, b Bulk, describe func(error) remotecuration.Failure) error {
 	if s.o.Planner == nil {
 		return s.endBulk(ctx, b, BulkFailed, &remotecuration.Failure{
-			Class: remotecuration.ClassUpstreamUnexpected, Step: remotecuration.StepPlan, Code: "catalogue_not_offered",
+			Class: remotecuration.ClassUpstreamUnexpected, Step: remotecuration.StepPlan, Code: CodeCatalogueUnavailable,
 			Detail: "This process cannot list what the bulk names.", At: s.o.Now(),
 		})
 	}
@@ -120,7 +120,7 @@ func (s *Service) expand(ctx context.Context, b Bulk, describe func(error) remot
 	if stored, err := s.storedBytes(ctx, b); err != nil {
 		return err
 	} else if stored >= b.MaxBytes {
-		return s.endBulk(ctx, b, BulkQueued, boundFailure(s.o.Now(), "The rows of the bulk stored its maxBytes; it adds no more."))
+		return s.endBulk(ctx, b, BulkQueued, boundFailure(s.o.Now(), CodeBulkStoredBytes))
 	}
 	var add []NewRow
 	bounded := ""
@@ -137,12 +137,12 @@ func (s *Service) expand(ctx context.Context, b Bulk, describe func(error) remot
 		}
 		for cur.Next < len(vs) && len(add) < room {
 			if b.VersionsQueued+len(add) >= b.MaxVersions {
-				bounded = "The bulk queued its maxVersions; it adds no more."
+				bounded = CodeBulkMaxVersions
 				break
 			}
 			v := vs[cur.Next]
 			if v.Size > 0 && cur.Bytes+v.Size > b.MaxBytes {
-				bounded = "The announced sizes of the queued versions reach the bulk's maxBytes; it adds no more."
+				bounded = CodeBulkMaxBytes
 				break
 			}
 			cur.Bytes += v.Size
@@ -247,7 +247,32 @@ func (s *Service) endBulk(ctx context.Context, b Bulk, state BulkState, f *remot
 	})
 }
 
-// boundFailure is the note of a bulk a bound cut: the class bound, which the bulk's end reads as bounded.
-func boundFailure(now time.Time, detail string) *remotecuration.Failure {
-	return &remotecuration.Failure{Class: remotecuration.ClassBound, Step: remotecuration.StepPlan, Code: "bulk_bound", Detail: detail, At: now}
+// The codes of a bulk's own ends (R-CUR-010, Q-CUR-169): one per sentence, so that a screen writes the sentence in its language from
+// the code; the failure's detail keeps the English one.
+const (
+	// CodeBulkMaxVersions: the bulk queued its maxVersions.
+	CodeBulkMaxVersions = "bulk_max_versions"
+	// CodeBulkMaxBytes: the announced sizes of the queued versions reach the bulk's maxBytes.
+	CodeBulkMaxBytes = "bulk_max_bytes"
+	// CodeBulkStoredBytes: the rows of the bulk stored its maxBytes.
+	CodeBulkStoredBytes = "bulk_stored_bytes"
+	// CodeCatalogueUnavailable: this process has no planner, so it cannot list what a bulk names.
+	CodeCatalogueUnavailable = "catalogue_unavailable"
+)
+
+// boundDetail is the English sentence of a bound.
+func boundDetail(code string) string {
+	switch code {
+	case CodeBulkMaxVersions:
+		return "The bulk queued its maxVersions; it adds no more."
+	case CodeBulkMaxBytes:
+		return "The announced sizes of the queued versions reach the bulk's maxBytes; it adds no more."
+	default:
+		return "The rows of the bulk stored its maxBytes; it adds no more."
+	}
+}
+
+// boundFailure is the note of a bulk a bound cut: the class bound, which the bulk's end reads as bounded, with the bound's code.
+func boundFailure(now time.Time, code string) *remotecuration.Failure {
+	return &remotecuration.Failure{Class: remotecuration.ClassBound, Step: remotecuration.StepPlan, Code: code, Detail: boundDetail(code), At: now}
 }

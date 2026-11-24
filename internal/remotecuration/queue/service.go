@@ -23,7 +23,7 @@ type Options struct {
 	Maintenance Maintenance
 	// Settings reads the bounds at every use; nil is [DefaultSettings].
 	Settings func() Settings
-	// Planner expands a bulk; nil fails every bulk with catalogue_not_offered.
+	// Planner expands a bulk; nil fails every bulk with catalogue_unavailable.
 	Planner Planner
 	// Jobs cancels the job of a running row; nil cancels only waiting rows.
 	Jobs JobCanceller
