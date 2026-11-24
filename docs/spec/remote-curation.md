@@ -1490,6 +1490,8 @@ Made in the same change as this page, each named in a decision block below or on
   revisit).
 - [signatures.md](signatures.md): R-SIG-069 (the fourth check and its place).
 - [bastion.md](bastion.md): R-BAS-015 (the new journaled event).
+- [operations-and-observability.md](operations-and-observability.md) R-OPS-049 (2026-11-24, T-26): a row's run hands its id, origin,
+  version and starter to the engine, so that the overview of downloads from upstreams names the row and its starter.
 - The format pages: R-NPM-037, R-NPM-049, R-NUGET-016, R-NUGET-035, R-OCI-017, R-OCI-038, R-DEB-036, R-ANS-017, R-ANS-047, and the
   sections "Mirror discovery" and the mirror settings (R-OCI-026, R-DEB-024, R-ANS-021), whose include patterns become
   `remote.mirror.include`.

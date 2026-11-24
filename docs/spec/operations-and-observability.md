@@ -926,6 +926,262 @@ server:
 - (P1) With `content_base_url: https://quader-content.example.net`,
   `additional_base_urls: ["https://quader-content.example.net"]` stops startup.
 
+## Downloads from upstreams
+
+The owner, 2026-11-24, 08:20 (task T-26, whole): "Ich will als Admin oben Rechts eine Downlaod Übersicht haben wie aus dem
+Screenshot. Dort werden alle laufenden Downloads, ihr Forschritt, Download-Geschwindigkeit abgebildet. Es werden nur Downloads
+von Upstream Repos angezeigt. Zusätzlich zu den laufenden Downloads werden auch die letzten 100 abgeschlossenen Downloads
+abgebildet zu sammen mit ihrer Download-Dauer und der durchschnittlichen Geschwindigkeit". Record:
+[ADR-279](../decisions.md#adr-279--administrators-see-the-downloads-from-upstreams-live-and-the-last-100-finished). The security view
+is [security/upstream-downloads.md](../security/upstream-downloads.md); the code is described in
+[developer/upstream-downloads.md](../developer/upstream-downloads.md). Status: specified on 2026-11-24; the tracker, the publication,
+the tables and the API are built (T-26 package A); the top bar's button and its panel are the UI's package (T-26 package B), whose
+requirements stand in [api-and-ui.md](api-and-ui.md) once it is built.
+
+### R-OPS-049 · What a download from an upstream is
+Priority: **P1** · Covers: quader-only
+
+- **One download is one transfer of an artifact's body from the upstream of a remote repository into Quader**: the fetch of
+  [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-025 step 10 that got a success answer (2xx) and passed the checks before
+  the first byte (`fetcher.artifact` in `internal/proxy/artifact.go`, after `admitBody`). It begins there and ends when the fetch's
+  result is known ([Q-OPS-419](#q-ops-419--a-download-is-the-body-of-an-artifact-from-a-remote-repositorys-upstream-whatever-caused-it)).
+- **What counts, whatever caused it and in every format:** a client's miss; a row of the download queue
+  ([remote-curation.md](remote-curation.md) R-CUR-011: a person's download ahead, a bulk's row, a probe's background download, the
+  examination of a request or an allow); a mirror's pass (R-REPO-057); the vulnerability scanning's database fetched through its
+  repository (`upstream/scanner-trivy`, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-044). The repositories of the
+  project `upstream` (R-REPO-066) count like every remote repository.
+- **What does not count:**
+  - a metadata document (a package document, an index, a tag);
+  - a `HEAD`, a `304`, an answer without success;
+  - the upstream catalogue's calls (R-CUR-008: they store nothing), a shadowing probe (R-REPO-048);
+  - an artifact answered from the cache;
+  - a request that waited for another request's fetch (R-REPO-026: the fetch is one download whoever waits for it);
+  - the fetches of a Quader Bastion from this installation ([bastion.md](bastion.md): no remote repository of this installation; a
+    Bastion's request that makes this installation fill a remote counts here as a client's miss);
+  - the ClamAV updater's fetches ([malware-scanning.md](malware-scanning.md) R-MAL-032: its pod fetches by itself, Quader stores the set
+    it hands over);
+  - the advisory sources' sync ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-004), webhooks, and every other outbound
+    call of R-OPS-011.
+- Two fetches of one item on two replicas (the flight lock bypassed, [architecture.md](architecture.md) R-ARCH-033) are two downloads.
+  A client that waits for a background fill of the same item sees that fill under the fill's origin: only the request that leads the
+  flight reaches the upstream.
+- **The facts of a download:**
+
+  | Fact | Value |
+  |---|---|
+  | `id` | UUIDv7 at its begin |
+  | repository | the repository's id; its format |
+  | `name`, `version` | the request's package and version as the format classified the path; for a queue row whose request has no version (an OCI blob), the row's version; `""` when neither has one |
+  | `path` | the repository path |
+  | `bytes` | the bytes read from the upstream's body so far, counted before the spool, also those of a download that failed |
+  | `total` | the length the upstream announced (`Content-Length`); none when it announced none |
+  | `startedAt`, elapsed | the begin on the replica's wall clock; the time since then on its monotonic clock |
+  | `origin` | `client`, `queue`, `mirror`, `scanner_database` |
+  | `queueOrigin`, `queueRow` | for `queue`: the row's origin (`person`, `request`, `allow`, `bulk`, `probe`) and its id |
+  | `by` | the principal who caused it: a client's caller; the person who started the queue row, its bulk or its request; none for system work. An anonymous caller and a removed principal read as none |
+  | `replica` | the pod name of the replica that reads the body |
+
+- **The outcome of a finished download:** `completed` (the item was stored, or a duplicate flight found it stored, R-REPO-026);
+  `failed`, with the failure's `class` and `code` of R-CUR-011 (`proxy.Describe`): the body broke off, the size limit, the integrity
+  check, the format's inspection, the store, or the object store was unavailable and the body went to its client unstored (R-REPO-025;
+  class `storage`, code `object_store_unavailable`); `cancelled` (the fetch's context ended before its result: a client's fetch
+  pre-empted a background fill, R-REPO-055; the job was cancelled; the replica shut down); `interrupted` (the replica stopped publishing
+  while it ran, R-OPS-051).
+
+Acceptance criteria:
+
+- Unit (`internal/proxy`, `TestR_OPS_049_OneDownloadPerBodyFromTheUpstream`, the engine's `httptest` rig, bodies of 1 to 64 KiB): a miss
+  of an artifact with `Content-Length` records one download with that total, its bytes and `completed`; a body without a length records
+  no total; three concurrent misses of one item record one; a `404`, a metadata document, a `HEAD` and a hit record none; a digest
+  mismatch records `failed` with class `integrity`; a background fill that a client's fetch pre-empts records `cancelled`, and the
+  client's own fetch records a second download of origin `client`.
+- Unit (`internal/formathost`, `TestR_OPS_049_TheCauseOfABackgroundFill`, milliseconds): a queue row of origin `person` started by a
+  principal makes each of its fills carry `queue`, `person`, the row's id, its version and the principal; a mirror's pass `mirror`; the
+  image database task `scanner_database`; a probe's row `queue`/`probe` without a principal.
+
+### R-OPS-050 · The running downloads, across replicas
+Priority: **P1** · Covers: quader-only
+
+- **A tracker per replica.** Every serving replica (`api`, `packages`, `worker`, `web`, `all`) keeps one tracker for every remote engine
+  it builds: the begin, the count of bytes (one atomic addition per read of the body), the end. No call to PostgreSQL or Valkey lies on
+  the path of a fetch. The engine of `api` lends the upstream catalogue its upstream and fills nothing, so its tracker stays empty; it
+  publishes nothing and only sweeps (R-OPS-051).
+- **Publication** ([Q-OPS-420](#q-ops-420--a-replica-publishes-its-running-downloads-as-one-row-of-postgresql-every-two-seconds)):
+  - Every `proxy.upstream_downloads.publish_interval` (2 s), a replica that has running downloads, or whose set changed since its last
+    write, upserts its one row of `upstream_download_live`, keyed by its instance UID.
+  - The row holds the replica's pod name, the time of the write (PostgreSQL's `now()`), and its running downloads as JSON: at most 200,
+    the longest-running first, each with the facts of R-OPS-049, the bytes so far, the speed and the elapsed milliseconds at the write.
+    It also holds the number of running downloads it left out.
+  - A replica with nothing running and nothing changed writes nothing. When its last running download ends, that interval's write
+    deletes its row.
+  - The close step of a clean shutdown ([architecture.md](architecture.md) R-ARCH-024) writes the finished downloads (R-OPS-051) and
+    deletes the row.
+  - **Cost bound:** at most one upsert of at most about 100 KiB per replica and interval, whatever the number of downloads.
+- **Speed** ([Q-OPS-421](#q-ops-421--the-speed-is-the-last-ten-seconds-the-average-is-bytes-over-duration)):
+  - The bytes of the last 10 s over those 10 s, from the samples taken at each publication by the replica that reads the body.
+  - In the first 10 s: the bytes over the time since the begin. None in the first second.
+- **No total.** A download without a total has no share. It shows its bytes and its speed.
+- **Freshness.** A reader takes a row whose write is at most 3 × `publish_interval` old and leaves out every older row: a replica that
+  stalled, was killed or lost its database connection disappears from the list within three intervals.
+- **No Valkey.** Valkey is not used; its absence or the loss of its data changes nothing here.
+- **The table** (migration `00118_upstream_downloads.sql`, export class `transient`,
+  [backup-and-restore.md](backup-and-restore.md) R-BAK-004):
+
+  ```sql
+  CREATE TABLE upstream_download_live (
+    instance_uid uuid        PRIMARY KEY,   -- the replica (replica.instance_uid); no reference: the registry's prune is its own
+    replica_name text        NOT NULL,
+    written_at   timestamptz NOT NULL DEFAULT now(),
+    downloads    jsonb       NOT NULL,      -- at most 200 entries, the longest running first
+    omitted      integer     NOT NULL DEFAULT 0
+  );
+  ```
+
+Acceptance criteria:
+
+- Unit (`internal/fills`, a fake clock, milliseconds): the speed over the window and in the first window; at most 200 entries with the
+  count of the others; no write while idle; one deletion after the last end; a write after a change only.
+- Integration (area `proxy`, `TestR_OPS_050_TwoReplicasShowOneRunningDownload`, one artifact of 64 KiB): two replicas' publishers in
+  process against the stack's PostgreSQL; a stub upstream sends 16 KiB of a 64 KiB artifact with its length and holds the rest.
+  - Replica b's reader lists replica a's download with bytes ≥ 16,384, total 65,536 and a speed.
+  - Released, the running list is empty within two intervals.
+  - A live row whose write the test sets back by one minute is left out at once.
+
+### R-OPS-051 · The last 100 finished downloads
+Priority: **P1** · Covers: quader-only
+
+- **The table** ([Q-OPS-422](#q-ops-422--the-last-100-are-a-table-trimmed-to-100-not-backed-up-and-a-stopped-replicas-downloads-end-interrupted)):
+
+  ```sql
+  CREATE TABLE upstream_download_finished (
+    id            uuid        PRIMARY KEY,          -- the download's id (R-OPS-049)
+    repo_id       bigint      NOT NULL REFERENCES repositories (id) ON DELETE CASCADE,
+    name          text        NOT NULL CHECK (char_length(name) <= 1024),
+    version       text        NOT NULL CHECK (char_length(version) <= 256),
+    path          text        NOT NULL CHECK (char_length(path) <= 4096),
+    bytes         bigint      NOT NULL,
+    total         bigint      NULL,
+    started_at    timestamptz NOT NULL,
+    finished_at   timestamptz NOT NULL,
+    duration_ms   bigint      NOT NULL,
+    outcome       text        NOT NULL CHECK (outcome IN ('completed', 'failed', 'cancelled', 'interrupted')),
+    failure_class text        NULL,
+    failure_code  text        NULL,
+    origin        text        NOT NULL CHECK (origin IN ('client', 'queue', 'mirror', 'scanner_database')),
+    queue_origin  text        NULL CHECK (queue_origin IN ('person', 'request', 'allow', 'bulk', 'probe')),
+    queue_row     uuid        NULL,                 -- no reference: the queue's retention is its own
+    by_principal  uuid        NULL REFERENCES principal (id) ON DELETE SET NULL,
+    replica_name  text        NOT NULL
+  );
+  CREATE INDEX upstream_download_finished_order ON upstream_download_finished (finished_at DESC, id DESC);
+  ```
+
+  Export class `transient`: a backup holds neither table, and a restored installation starts with both empty. A name or a version
+  longer than the bounds is cut to them; a download of a repository that was removed before its end is not written, and a principal
+  that was removed before it reads as nobody.
+- **Writing and trimming.** A replica keeps each ended download in a buffer. Its next publication inserts them (at most 100, the
+  newest; `ON CONFLICT (id) DO UPDATE`), then removes every row older than the 100th by `(finished_at, id)`. The table holds at most 100
+  rows, plus one batch per replica between an insert and its trim; the read takes the newest 100. A publication that fails keeps the
+  buffer for the next one.
+- **The number is fixed.** 100 is the owner's number and is not configurable.
+- **What is not kept:** the upstream's address (a query or user information can hold a credential), headers, the client's address.
+- **Retention.** Nothing but the count: a quiet installation keeps its last 100 until newer downloads push them out
+  ([H-1843](../security/upstream-downloads.md#h-1843--who-fetched-what-stays-until-100-newer-downloads-push-it-out)). A deleted
+  repository's downloads leave the list with it; a deleted principal's read as nobody's.
+- **A replica that stopped while it ran downloads:**
+  - A replica's publication sweeps, at most every 30 s, the live rows older than 10 × `publish_interval` (at least 30 s). In one
+    transaction (`DELETE … RETURNING`) it records their downloads as `interrupted`, ended at the row's last write, with the bytes and the
+    elapsed time of that write. A sweep never overwrites a recorded end (`ON CONFLICT (id) DO NOTHING`).
+  - A replica that only stalled and later ends such a download writes its end over the `interrupted` row (the same id).
+- **Nothing removes a row for everybody.** The UI may hide the list on one device; no operation of the API clears it.
+
+Acceptance criteria:
+
+- Unit (`internal/fills`, milliseconds): each fetch result maps to its outcome and class; the buffer keeps the newest 100; a stale live
+  row becomes `interrupted` entries with its bytes and elapsed time.
+- Integration (inside `TestR_OPS_050_TwoReplicasShowOneRunningDownload`, rows of a few bytes):
+  - The 64 KiB download ends `completed` with its duration and an average of bytes over duration.
+  - 101 ended downloads published leave 100, the oldest gone.
+  - A swept stale row becomes `interrupted`, and its later end makes it `completed`.
+  - A deleted repository's rows are gone.
+
+### R-OPS-052 · The API, who reads it, metrics and configuration
+Priority: **P1** · Covers: quader-only
+
+| Method | Path | Operation | Answers | Permission |
+|---|---|---|---|---|
+| GET | `/api/v1/system/upstream-downloads` | `listUpstreamDownloads` | the running and the finished downloads | `content:metadata-read` |
+| GET | `/api/v1/system/upstream-downloads/summary` | `getUpstreamDownloadSummary` | `{"running": <n>, "pollSeconds": <s>}` | `content:metadata-read` |
+
+```json
+{
+  "asOf": "2026-11-24T08:40:12Z",
+  "pollSeconds": 2,
+  "runningCount": 214,
+  "running": [
+    {
+      "id": "01937d4e-…", "repository": {"project": "upstream", "key": "docker-hub", "format": "oci"},
+      "name": "library/ubuntu", "version": "26.10", "path": "v2/library/ubuntu/blobs/sha256:1a2b…",
+      "bytes": 134217728, "total": 300847104, "bytesPerSecond": 12897484,
+      "startedAt": "2026-11-24T08:39:30Z", "elapsedSeconds": 42.3,
+      "origin": "queue", "queueOrigin": "person", "queueRow": "01937d4d-…",
+      "by": {"id": "…", "name": "priya"}, "replica": "quader-worker-6f9c7-2xk4p"
+    }
+  ],
+  "finished": [
+    {
+      "id": "…", "repository": {"project": "web", "key": "npm-remote", "format": "npm"},
+      "name": "@angular/core", "version": "22.0.1", "path": "@angular/core/-/core-22.0.1.tgz",
+      "bytes": 2345678, "total": 2345678, "bytesPerSecond": 1563785,
+      "startedAt": "…", "finishedAt": "…", "durationSeconds": 1.5,
+      "outcome": "completed", "failure": null,
+      "origin": "client", "queueOrigin": null, "queueRow": null, "by": {"id": "…", "name": "sam"},
+      "replica": "quader-packages-7d9f-abc12"
+    }
+  ]
+}
+```
+
+- **The schemas** of the API document: `UpstreamDownloadList`, `UpstreamDownloadSummary`, `UpstreamDownloadRunning`,
+  `UpstreamDownloadFinished`, `UpstreamDownloadRepository`, `UpstreamDownloadPrincipal`, `UpstreamDownloadFailure` (its `class` is the
+  queue's `RemoteDownloadFailureClass`) and `UpstreamDownloadOrigin`. A finished download's `bytesPerSecond` is its average, null for a
+  duration of 0.
+- **Who** ([Q-OPS-423](#q-ops-423--the-holders-of-contentmetadata-read-see-the-downloads-of-every-repository-and-nobody-else)): the
+  holders of `content:metadata-read`, which are the administrator and the auditor ([authorization.md](authorization.md) R-AUTHZ-010).
+  A project's Owner or Maintainer, a `security-admin`, a `repository-admin` and a plain user get `403`; a caller without a session or
+  token gets `401`. A token's scope is a ceiling (R-AUTHZ-013).
+- **Bounds.** `running` holds at most 200 per live replica; `runningCount` counts all of them, the left-out ones included. `finished`
+  holds at most 100, newest first. `running` is in the order of the begin, the oldest first. No paging and no filter on the server.
+- **Resolved at the read.** The repository's current project, key and format are resolved by its id at the read, and an entry whose
+  repository no longer exists is left out. `by.name` is the principal's current name.
+- **Any replica answers alike.** Every replica of `api`, `web` and `all` reads PostgreSQL only. `elapsedSeconds` is the elapsed time at
+  the write plus the age of the write, on PostgreSQL's clock.
+- **The answer** is `Cache-Control: no-store`. `pollSeconds` is `publish_interval`.
+- **No audit event** for a read (R-OPS-015 records changes and refusals).
+- **Metrics** (R-OPS-008; `repo` capped by R-OPS-007):
+
+  | Name | Type | Labels | Meaning |
+  |---|---|---|---|
+  | `quader_remote_upstream_downloads_running` | gauge | — | the replica's running downloads |
+  | `quader_remote_upstream_downloads_total` | counter | `repo`, `outcome` | ended downloads |
+  | `quader_remote_upstream_download_bytes_total` | counter | `repo` | bytes read from the upstreams' artifact bodies |
+  | `quader_upstream_downloads_publish_failures_total` | counter | — | publications that failed; a failure logs a warning at most once a minute |
+
+- **Configuration** (R-OPS-028, [Q-OPS-424](#q-ops-424--one-key-the-publication-interval-the-list-holds-100)):
+
+  ```yaml
+  proxy:
+    upstream_downloads:
+      publish_interval: 2s   # default; 1s to 30s; how often a replica writes its running downloads, and the open panel refreshes
+  ```
+
+Acceptance criteria:
+
+- Unit (`internal/api/v1`, `TestR_OPS_052_TheDownloadsFromUpstreams`, an in-memory store): the administrator gets `200` with the shape
+  above, and so does the auditor; a `security-admin`, the Owner of a project and a plain user get `403`, an anonymous caller `401`; a
+  stale live row is left out; `elapsedSeconds` adds the age of the write; a removed repository's entries are left out; the summary
+  counts the listed and the left-out downloads.
+
 ## Metrics
 
 ### R-OPS-006 · Metrics endpoint
@@ -1276,6 +1532,10 @@ HTTP duration histograms use the buckets 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.
 | `quader_remote_downloads_total` | counter | `repo`, `origin`, `outcome` (the ends of the queue's runs `completed`, `bounded`, `refused`, `skipped`, `failed`, `cancelled`; the decisions on probes, origin `probe`: `started`, `off`, `stored`, `local`, `not_admitted`, `active`, `queue_full`, `limited`, `busy`, `failed`) | The ends of the download queue's rows and the decisions on probes ([remote-curation.md](remote-curation.md) R-CUR-013, R-CUR-019) |
 | `quader_remote_downloads` | gauge | `repo`, `state` | Rows of the download queues by state, set by the task `remote-downloads-dispatch` every minute on the worker that runs it (R-CUR-019) |
 | `quader_remote_download_failures_total` | counter | `repo`, `class` | Failed attempts of the download queue's rows by failure class (R-CUR-011, R-CUR-019) |
+| `quader_remote_upstream_downloads_running` | gauge | — | Downloads from upstreams that run on the replica now (R-OPS-049, R-OPS-050) |
+| `quader_remote_upstream_downloads_total` | counter | `repo`, `outcome` (`completed`, `failed`, `cancelled`) | Downloads from upstreams the replica ended (R-OPS-049); `interrupted` is recorded by the sweep of another replica and not counted |
+| `quader_remote_upstream_download_bytes_total` | counter | `repo` | Bytes read from the upstreams' artifact bodies, also those of downloads that failed (R-OPS-049) |
+| `quader_upstream_downloads_publish_failures_total` | counter | — | Publications of the running and finished downloads that failed (R-OPS-050, R-OPS-051) |
 
 </details>
 
@@ -6750,6 +7010,111 @@ the configuration's default where that has one.
 **Applied in the spec:** R-OPS-019 (the table, the paragraph "The table is the registry", the configuration block, an acceptance
 criterion). Code: [wire_jobs.go](../../internal/app/wire_jobs.go), [maintenance.go](../../internal/config/maintenance.go). Tests:
 `TestR_OPS_019_TheTaskTableIsTheRegistry` and `TestR_OPS_019_AKeyOfNoTaskStopsTheStart` (unit, `internal/app`).
+
+### Q-OPS-419 · A download is the body of an artifact from a remote repository's upstream, whatever caused it
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner asked for "nur Downloads von Upstream Repos". Fills happen at one point of the engine (`fetcher.artifact`) for a
+client's miss, a queue row, a mirror's pass and the scanner's database. Metadata documents go through the same fetch, and a Bastion, the
+ClamAV updater and the advisory sync fetch from elsewhere.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Artifact bodies after a 2xx, whatever caused them; no documents, no catalogue or probe, no Bastion, no ClamAV updater, no advisory sync (chosen) | One hook in `fetcher.artifact` | Exactly what fills a remote repository's cache; the same for every format; nothing a remote does not store | An `apt update` through Quader (index documents) shows nothing |
+| (b) As (a), and metadata documents | Packuments, indexes and tags too | Large Debian indexes show | An `npm install` doubles the rows with documents of milliseconds; the last 100 hold mostly documents |
+| (c) As (a), and the ClamAV updater's fetches | The updater reports its transfers | One place for all inbound traffic | The updater is no remote repository and has no tracker; a report path only for this |
+
+**Choice:** (a). The scanner's database counts: it is a remote repository's fill. **Rationale:** the panel answers "what is Quader
+loading from upstream into its repositories now". A document belongs to serving metadata, and a fetch by another party belongs to that
+party. The development agent would revisit (b) if the owner asks for index downloads.
+
+**Applied in the spec:** R-OPS-049. Code: [artifact.go](../../internal/proxy/artifact.go),
+[downloads.go](../../internal/proxy/downloads.go).
+
+### Q-OPS-420 · A replica publishes its running downloads as one row of PostgreSQL every two seconds
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a download runs on one replica (`packages` for a client, `worker` for the rest); any `api` replica answers the panel.
+Hundreds can run at once (a bulk's rows, an `npm install` of a thousand packages).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The tracker in memory; per replica one row of `upstream_download_live` with its running downloads as JSON, every 2 s while something runs (chosen) | Writes grow with the replicas, not with the downloads | Bounded cost (one upsert per active replica and interval); no work on the fetch path; one clock for freshness; the replica registry's pattern | Up to 2 s behind; a JSON document per write |
+| (b) Valkey keys with a TTL per download | A heartbeat key each | Expires by itself | No enumerating command in Quader's ACL (R-ARCH-031); names may not be in keys and values are at most 1 KiB (R-ARCH-030); its rule 2 forbids showing metadata read from Valkey; nothing to show while Valkey is down |
+| (c) A row per download, updated every 2 s | One row each | Simple queries | Writes grow with the downloads: 300 running mean 150 updates a second |
+| (d) Pub/Sub messages that `api` collects | Push | No storage | A starting `api` replica knows nothing; lost messages; Valkey again |
+| (e) `api` asks every replica | Fan-out | Live | No listener between replicas that may carry names; every request costs as many calls as replicas |
+
+**Choice:** (a). At most 200 entries per replica (the longest running first) and the count of the rest. Readers take rows at most three
+intervals old. **Rationale:** the only option whose cost does not grow with the number of downloads and that holds the platform's rules
+on Valkey. The development agent would revisit it if a measurement under the reference load shows the writes in PostgreSQL's top
+statements.
+
+**Applied in the spec:** R-OPS-050, [architecture.md](architecture.md) R-ARCH-030 (the row of the map). Code:
+[internal/fills](../../internal/fills/).
+
+### Q-OPS-421 · The speed is the last ten seconds; the average is bytes over duration
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A running download's speed over a sliding window of 10 s, sampled at each publication on the replica that reads; the finished one's average is bytes over duration (chosen) | Two numbers, each where it means something | Follows a stall or a rate limit within seconds; the average is what the owner named | Five samples per download in memory |
+| (b) Bytes since the start for both | One formula | Simplest | A download that stalled shows its old speed for minutes |
+| (c) The speed computed by the browser from two polls | No sampling on the server | Nothing stored | Two seconds of resolution at best, wrong across a reload, differs between viewers |
+
+**Choice:** (a). Before 10 s have passed: bytes over the time since the begin; none in the first second; no total means no share.
+
+**Applied in the spec:** R-OPS-050, R-OPS-051. Code: [window.go](../../internal/fills/window.go).
+
+### Q-OPS-422 · The last 100 are a table trimmed to 100, not backed up; a stopped replica's downloads end interrupted
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A table trimmed to 100 at each publication's insert; export class `transient`; the repository a reference that cascades, the principal one that nulls; a stale live row swept into `interrupted` (chosen) | Bounded and consistent across replicas | One read for any `api` replica; a crashed replica's downloads get an end; a removed repository leaves no row to a page that does not exist | A sweep may call a stalled replica's download interrupted before it ends (its end replaces it) |
+| (b) A Valkey list trimmed to 100 | `LPUSH`/`LTRIM` | Cheap | Not in the ACL; names in Valkey; lost at a flush |
+| (c) A table with a retention in days | Kept a week | Also covers quiet hours | Not what the owner asked; unbounded on a busy day |
+| (d) As (a) without the sweep | Crashed downloads vanish | Less code | A running download without an end is a silent hole in "what happened" |
+
+**Choice:** (a). Outcomes `completed`, `failed` (with the failure's class and code of R-CUR-011), `cancelled` and `interrupted`. No
+operation removes a row for everybody.
+
+**Applied in the spec:** R-OPS-051, [backup-and-restore.md](backup-and-restore.md) R-BAK-004.
+
+### Q-OPS-423 · The holders of content:metadata-read see the downloads of every repository, and nobody else
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner said "als Admin". The list names packages of every remote repository and who caused each fill.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `content:metadata-read`: the administrator and the auditor (chosen) | One capability | It is exactly "the metadata of every repository"; the auditor reads every name anyway and holds `identities:read` and `usage:read` | The auditor sees it too, which the owner did not name |
+| (b) The system role `admin` only | A role check | The owner's word | A role check where every other operation names a capability (R-AUTHZ-010) |
+| (c) `settings:read` | As the jobs list | System status | Gives a `security-admin`, who holds no content right, the names of every repository |
+| (d) As (a), and a project's Owners and Maintainers for their repositories | A filtered list | Teams watch their remotes | A second view with a filter per caller; a team has its repository's tab Downloads for queued work |
+
+**Choice:** (a). (d) is deferred: the panel stays the installation's.
+
+**Applied in the spec:** R-OPS-052; the top bar's button shows itself to the same holders (T-26 package B).
+
+### Q-OPS-424 · One key, the publication interval; the list holds 100
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `proxy.upstream_downloads.publish_interval` (2 s, 1 s to 30 s); 100 fixed (chosen) | One key | An operator of a large installation can halve the writes; the owner's number stays his | Nothing to switch the panel off |
+| (b) No key | Constants | Simplest | No answer to a write load that a measurement may show |
+| (c) Keys for the interval, the list's length and the cap per replica | Everything tunable | Flexible | Three keys nobody needs; the owner named 100 |
+
+**Choice:** (a).
+
+**Applied in the spec:** R-OPS-052, R-OPS-028.
 
 ## What this does not cover
 

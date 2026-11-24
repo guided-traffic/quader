@@ -193,6 +193,9 @@ func layerTable() []layerRule {
 		{"internal/vuln", layerDomain},
 		// The mirror engine of remote repositories (R-REPO-053 to R-REPO-058): dispatch, passes, throttling, status.
 		{"internal/mirror", layerDomain},
+		// The downloads from the upstreams of remote repositories (operations-and-observability.md R-OPS-049 to R-OPS-052): the tracker
+		// behind the remote engine's port proxy.DownloadTracker, the publisher and the store. The engine does not import it.
+		{"internal/fills", layerDomain},
 		// The curation of a remote repository (remote-curation.md R-CUR-001 to R-CUR-023). The vocabulary and the ports at the root and the
 		// compiled delivery rules with their refusal (rules) are leaves: standard library, errs and qname only, so that the format contract
 		// hands a format the rules of the request's repository and a format filters its documents by them (R-CUR-003, R-ARCH-008,

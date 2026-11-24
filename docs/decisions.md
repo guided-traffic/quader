@@ -2621,6 +2621,33 @@ sets its stored keys to NULL, which the fill recomputes. **Revised on 2026-11-24
 version rows, which refused every upgrade. The order of publication of a package several repositories hold, and the count of a
 package's versions in the list, still read every version (H-1683).
 
+### ADR-279 · Administrators see the downloads from upstreams live, and the last 100 finished
+
+**Status:** Decided by the owner on 2026-11-24 (task T-26: the wish, the place at the top right, the running downloads with their progress
+and speed, the last 100 with their duration and average speed); the design decided by the development agent
+([Q-OPS-419](spec/operations-and-observability.md#q-ops-419--a-download-is-the-body-of-an-artifact-from-a-remote-repositorys-upstream-whatever-caused-it)
+to [Q-OPS-424](spec/operations-and-observability.md#q-ops-424--one-key-the-publication-interval-the-list-holds-100)). The backend and the
+API are built (T-26 package A, 2026-11-24); the top bar's button and its panel are the UI's package.
+
+**Context.** The owner, 2026-11-24, 08:20: "Ich will als Admin oben Rechts eine Downlaod Übersicht haben wie aus dem Screenshot. Dort
+werden alle laufenden Downloads, ihr Forschritt, Download-Geschwindigkeit abgebildet. Es werden nur Downloads von Upstream Repos
+angezeigt. Zusätzlich zu den laufenden Downloads werden auch die letzten 100 abgeschlossenen Downloads abgebildet zu sammen mit ihrer
+Download-Dauer und der durchschnittlichen Geschwindigkeit". Nothing showed what an installation was loading from its upstreams: the
+queue of one remote repository showed its own rows, and a client's miss or a mirror's pass showed nowhere while it ran.
+
+**Decision.**
+- A download is the body of an artifact from a remote repository's upstream after a success answer, whatever caused it: a client's miss,
+  a row of the download queue, a mirror's pass, the vulnerability scanning's database; one hook where the engine reads the body
+  ([operations-and-observability.md](spec/operations-and-observability.md) R-OPS-049).
+- A tracker in memory per replica; one row of PostgreSQL per replica every two seconds while something runs; readers take rows at most
+  three intervals old; no Valkey (R-OPS-050).
+- The last 100 are a table trimmed to 100, not backed up; a stopped replica's downloads end `interrupted` (R-OPS-051).
+- Two operations under `content:metadata-read`: the administrator and the auditor (R-OPS-052).
+
+**Consequences.** R-API-038, R-ARCH-030, R-BAK-004, R-REPO-025 and R-CUR-011's page changed. The security view is
+[security/upstream-downloads.md](security/upstream-downloads.md); the code is described in
+[developer/upstream-downloads.md](developer/upstream-downloads.md).
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -11282,10 +11309,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-OPS
 
-97 questions on [spec/operations-and-observability.md](spec/operations-and-observability.md).
+103 questions on [spec/operations-and-observability.md](spec/operations-and-observability.md).
 
 <details>
-<summary>Q-OPS: 97 questions</summary>
+<summary>Q-OPS: 103 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11386,6 +11413,12 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-OPS-226](spec/operations-and-observability.md#q-ops-226--the-updaters-report-carries-its-dailys-build-time-in-a-column-of-its-own-and-no-slots) | The updater's report carries its daily's build time in a column of its own, and no slots | Decided by the development agent | (a) The report's member `databaseBuiltAt`, from the kind `freshclam` only, kept in a column `db_built_at`; the list shows it before the join; the updater reports the slots `{0, 0}`, which the table admits for its kind only (migration 00095) | — |
 | [Q-OPS-237](spec/operations-and-observability.md#q-ops-237--the-image-scanners-spool-exports-the-two-spool-gauges-and-quaderspoolnearlyfull-fires-per-unit) | The image scanner's spool exports the two spool gauges, and `QuaderSpoolNearlyFull` fires per unit | Decided by the development agent | (a) The scanner's spool exports the same two gauges on the scanner's registry; the unit is the scrape's label `role`, which the chart's ServiceMonitor sets from the pod's component (`vuln-scanner-trivy`); the alert groups by it | — |
 | [Q-OPS-418](spec/operations-and-observability.md#q-ops-418--a-maintenance-task-the-version-does-not-have-stops-the-start-and-the-task-table-is-held-to-the-registry) | A maintenance task the version does not have stops the start, and the task table is held to the registry | Decided by the development agent | (a) A key that names no registered task stops the start, naming the key and listing the tasks; the default names only registered tasks; a unit test holds the table to the registry both ways | — |
+| [Q-OPS-419](spec/operations-and-observability.md#q-ops-419--a-download-is-the-body-of-an-artifact-from-a-remote-repositorys-upstream-whatever-caused-it) | A download is the body of an artifact from a remote repository's upstream, whatever caused it | Decided by the development agent on 2026-11-24 | (a) Artifact bodies after a 2xx, whatever caused them; no documents, no catalogue or probe, no Bastion, no ClamAV updater, no advisory sync | [ADR-279](#adr-279--administrators-see-the-downloads-from-upstreams-live-and-the-last-100-finished) |
+| [Q-OPS-420](spec/operations-and-observability.md#q-ops-420--a-replica-publishes-its-running-downloads-as-one-row-of-postgresql-every-two-seconds) | A replica publishes its running downloads as one row of PostgreSQL every two seconds | Decided by the development agent on 2026-11-24 | (a) The tracker in memory; per replica one row of `upstream_download_live` with its running downloads as JSON, every 2 s while something runs | — |
+| [Q-OPS-421](spec/operations-and-observability.md#q-ops-421--the-speed-is-the-last-ten-seconds-the-average-is-bytes-over-duration) | The speed is the last ten seconds; the average is bytes over duration | Decided by the development agent on 2026-11-24 | (a) A running download's speed over a sliding window of 10 s, sampled at each publication on the replica that reads; the finished one's average is bytes over duration | — |
+| [Q-OPS-422](spec/operations-and-observability.md#q-ops-422--the-last-100-are-a-table-trimmed-to-100-not-backed-up-a-stopped-replicas-downloads-end-interrupted) | The last 100 are a table trimmed to 100, not backed up; a stopped replica's downloads end interrupted | Decided by the development agent on 2026-11-24 | (a) A table trimmed to 100 at each publication's insert; export class `transient`; the repository a reference that cascades, the principal one that nulls; a stale live row swept into `interrupted` | — |
+| [Q-OPS-423](spec/operations-and-observability.md#q-ops-423--the-holders-of-contentmetadata-read-see-the-downloads-of-every-repository-and-nobody-else) | The holders of content:metadata-read see the downloads of every repository, and nobody else | Decided by the development agent on 2026-11-24 | (a) `content:metadata-read`: the administrator and the auditor | — |
+| [Q-OPS-424](spec/operations-and-observability.md#q-ops-424--one-key-the-publication-interval-the-list-holds-100) | One key, the publication interval; the list holds 100 | Decided by the development agent on 2026-11-24 | (a) `proxy.upstream_downloads.publish_interval` (2 s, 1 s to 30 s); 100 fixed | [ADR-279](#adr-279--administrators-see-the-downloads-from-upstreams-live-and-the-last-100-finished) |
 
 </details>
 

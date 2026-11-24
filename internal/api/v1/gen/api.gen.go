@@ -5257,6 +5257,81 @@ func (e UpstreamCatalogueSizes) Valid() bool {
 	}
 }
 
+// Defines values for UpstreamDownloadFinishedOutcome.
+const (
+	UpstreamDownloadCancelled   UpstreamDownloadFinishedOutcome = "cancelled"
+	UpstreamDownloadCompleted   UpstreamDownloadFinishedOutcome = "completed"
+	UpstreamDownloadFailed      UpstreamDownloadFinishedOutcome = "failed"
+	UpstreamDownloadInterrupted UpstreamDownloadFinishedOutcome = "interrupted"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamDownloadFinishedOutcome enum.
+func (e UpstreamDownloadFinishedOutcome) Valid() bool {
+	switch e {
+	case UpstreamDownloadCancelled:
+		return true
+	case UpstreamDownloadCompleted:
+		return true
+	case UpstreamDownloadFailed:
+		return true
+	case UpstreamDownloadInterrupted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpstreamDownloadOrigin.
+const (
+	UpstreamDownloadOriginClient          UpstreamDownloadOrigin = "client"
+	UpstreamDownloadOriginMirror          UpstreamDownloadOrigin = "mirror"
+	UpstreamDownloadOriginQueue           UpstreamDownloadOrigin = "queue"
+	UpstreamDownloadOriginScannerDatabase UpstreamDownloadOrigin = "scanner_database"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamDownloadOrigin enum.
+func (e UpstreamDownloadOrigin) Valid() bool {
+	switch e {
+	case UpstreamDownloadOriginClient:
+		return true
+	case UpstreamDownloadOriginMirror:
+		return true
+	case UpstreamDownloadOriginQueue:
+		return true
+	case UpstreamDownloadOriginScannerDatabase:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpstreamDownloadQueueOrigin.
+const (
+	UpstreamDownloadQueueAllow   UpstreamDownloadQueueOrigin = "allow"
+	UpstreamDownloadQueueBulk    UpstreamDownloadQueueOrigin = "bulk"
+	UpstreamDownloadQueuePerson  UpstreamDownloadQueueOrigin = "person"
+	UpstreamDownloadQueueProbe   UpstreamDownloadQueueOrigin = "probe"
+	UpstreamDownloadQueueRequest UpstreamDownloadQueueOrigin = "request"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamDownloadQueueOrigin enum.
+func (e UpstreamDownloadQueueOrigin) Valid() bool {
+	switch e {
+	case UpstreamDownloadQueueAllow:
+		return true
+	case UpstreamDownloadQueueBulk:
+		return true
+	case UpstreamDownloadQueuePerson:
+		return true
+	case UpstreamDownloadQueueProbe:
+		return true
+	case UpstreamDownloadQueueRequest:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for UpstreamHitStored.
 const (
 	UpstreamHitStoredNone    UpstreamHitStored = "none"
@@ -16201,6 +16276,142 @@ type UpstreamCatalogueSearchHint string
 // UpstreamCatalogueSizes defines model for UpstreamCatalogue.Sizes.
 type UpstreamCatalogueSizes string
 
+// UpstreamDownloadFailure Why a download failed, in the classes and codes of the download queue (remote-curation.md R-CUR-011).
+type UpstreamDownloadFailure struct {
+	// Class The class of a failure (remote-curation.md R-CUR-011, Q-CUR-20).
+	Class RemoteDownloadFailureClass `json:"class"`
+	Code  string                     `json:"code"`
+}
+
+// UpstreamDownloadFinished A download from an upstream that ended (R-OPS-049, R-OPS-051).
+type UpstreamDownloadFinished struct {
+	By *UpstreamDownloadPrincipal `json:"by"`
+
+	// Bytes The bytes read from the upstream's body, also those of a download that failed.
+	Bytes int64 `json:"bytes"`
+
+	// BytesPerSecond The average, the bytes over the duration; null for a duration of 0.
+	BytesPerSecond  *int64  `json:"bytesPerSecond"`
+	DurationSeconds float64 `json:"durationSeconds"`
+
+	// Failure For `failed` the failure's class and code; null otherwise.
+	Failure    *UpstreamDownloadFailure `json:"failure"`
+	FinishedAt time.Time                `json:"finishedAt"`
+	Id         openapi_types.UUID       `json:"id"`
+	Name       string                   `json:"name"`
+
+	// Origin What caused a download - a client's miss, a row of the download queue, a mirror's pass, the vulnerability scanning's database.
+	Origin UpstreamDownloadOrigin `json:"origin"`
+
+	// Outcome `completed`: stored, or a duplicate fetch found it stored. `failed`: see `failure`. `cancelled`: a client's fetch pre-empted a
+	// background fill, the job was cancelled, or the request ended. `interrupted`: the replica stopped publishing while it ran.
+	Outcome     UpstreamDownloadFinishedOutcome `json:"outcome"`
+	Path        string                          `json:"path"`
+	QueueOrigin *UpstreamDownloadQueueOrigin    `json:"queueOrigin"`
+	QueueRow    *openapi_types.UUID             `json:"queueRow"`
+	Replica     string                          `json:"replica"`
+
+	// Repository The remote repository a download fills, resolved by its id at the read.
+	Repository UpstreamDownloadRepository `json:"repository"`
+	StartedAt  time.Time                  `json:"startedAt"`
+	Total      *int64                     `json:"total"`
+	Version    string                     `json:"version"`
+}
+
+// UpstreamDownloadFinishedOutcome `completed`: stored, or a duplicate fetch found it stored. `failed`: see `failure`. `cancelled`: a client's fetch pre-empted a
+// background fill, the job was cancelled, or the request ended. `interrupted`: the replica stopped publishing while it ran.
+type UpstreamDownloadFinishedOutcome string
+
+// UpstreamDownloadList The running and the last finished downloads from the upstreams of remote repositories (R-OPS-052).
+type UpstreamDownloadList struct {
+	// AsOf The time of the read on PostgreSQL's clock.
+	AsOf time.Time `json:"asOf"`
+
+	// Finished At most 100, the newest end first.
+	Finished []UpstreamDownloadFinished `json:"finished"`
+
+	// PollSeconds `proxy.upstream_downloads.publish_interval` in seconds: how often a replica publishes, and how often an open view reads again.
+	PollSeconds float64 `json:"pollSeconds"`
+
+	// Running At most 200 per replica, in the order of the begin, the oldest first.
+	Running []UpstreamDownloadRunning `json:"running"`
+
+	// RunningCount Every running download of the replicas that published within three intervals, those left out of `running` included.
+	RunningCount int64 `json:"runningCount"`
+}
+
+// UpstreamDownloadOrigin What caused a download - a client's miss, a row of the download queue, a mirror's pass, the vulnerability scanning's database.
+type UpstreamDownloadOrigin string
+
+// UpstreamDownloadPrincipal The principal who caused a download, by its current name.
+type UpstreamDownloadPrincipal struct {
+	Id   openapi_types.UUID `json:"id"`
+	Name string             `json:"name"`
+}
+
+// UpstreamDownloadQueueOrigin The origin of the queue row a download of origin `queue` belongs to (remote-curation.md R-CUR-011).
+type UpstreamDownloadQueueOrigin string
+
+// UpstreamDownloadRepository The remote repository a download fills, resolved by its id at the read.
+type UpstreamDownloadRepository struct {
+	Format  string `json:"format"`
+	Key     string `json:"key"`
+	Project string `json:"project"`
+}
+
+// UpstreamDownloadRunning A download from an upstream that runs now (R-OPS-049, R-OPS-050).
+type UpstreamDownloadRunning struct {
+	// By The client's caller, or the person who started the queue row, its bulk or its request; null for system work, an anonymous caller and a removed principal.
+	By *UpstreamDownloadPrincipal `json:"by"`
+
+	// Bytes The bytes read from the upstream's body so far, as of the replica's last publication.
+	Bytes int64 `json:"bytes"`
+
+	// BytesPerSecond The bytes of the last 10 s over those 10 s; in the first 10 s the bytes over the time since the begin; null in the first second.
+	BytesPerSecond *int64 `json:"bytesPerSecond"`
+
+	// ElapsedSeconds The time since the begin at the replica's last publication, plus the age of that publication.
+	ElapsedSeconds float64            `json:"elapsedSeconds"`
+	Id             openapi_types.UUID `json:"id"`
+
+	// Name The package as the format classified the path; empty for a path of no package.
+	Name string `json:"name"`
+
+	// Origin What caused a download - a client's miss, a row of the download queue, a mirror's pass, the vulnerability scanning's database.
+	Origin UpstreamDownloadOrigin `json:"origin"`
+
+	// Path The repository path of the artifact.
+	Path string `json:"path"`
+
+	// QueueOrigin For origin `queue` the row's origin; null otherwise.
+	QueueOrigin *UpstreamDownloadQueueOrigin `json:"queueOrigin"`
+
+	// QueueRow For origin `queue` the row's id; null otherwise.
+	QueueRow *openapi_types.UUID `json:"queueRow"`
+
+	// Replica The pod name of the replica that reads the body.
+	Replica string `json:"replica"`
+
+	// Repository The remote repository a download fills, resolved by its id at the read.
+	Repository UpstreamDownloadRepository `json:"repository"`
+	StartedAt  time.Time                  `json:"startedAt"`
+
+	// Total The length the upstream announced; null when it announced none.
+	Total *int64 `json:"total"`
+
+	// Version The version; for a queue row's file of no version (an OCI blob) the row's version; empty when neither has one.
+	Version string `json:"version"`
+}
+
+// UpstreamDownloadSummary The number of running downloads from upstreams (R-OPS-052).
+type UpstreamDownloadSummary struct {
+	// PollSeconds `proxy.upstream_downloads.publish_interval` in seconds.
+	PollSeconds float64 `json:"pollSeconds"`
+
+	// Running The same count as `runningCount` of the list.
+	Running int64 `json:"running"`
+}
+
 // UpstreamHit A package of a search or a level (R-CUR-009): the upstream's facts as plain text and the repository's state: `delivery` (the
 // package's decision of the rules), `stored` (`none`, or `partial` when the repository holds a version of it) and `request`.
 type UpstreamHit struct {
@@ -22243,6 +22454,12 @@ type ServerInterface interface {
 	// RunTask Run a maintenance task now
 	// (POST /api/v1/system/tasks/{name}/run)
 	RunTask(w http.ResponseWriter, r *http.Request, name TaskName, params RunTaskParams)
+	// ListUpstreamDownloads The running downloads from the upstreams of remote repositories and the last 100 finished
+	// (GET /api/v1/system/upstream-downloads)
+	ListUpstreamDownloads(w http.ResponseWriter, r *http.Request)
+	// GetUpstreamDownloadSummary How many downloads from upstreams run now
+	// (GET /api/v1/system/upstream-downloads/summary)
+	GetUpstreamDownloadSummary(w http.ResponseWriter, r *http.Request)
 	// GetVersion Build facts of this replica
 	// (GET /api/v1/system/version)
 	GetVersion(w http.ResponseWriter, r *http.Request)
@@ -38282,6 +38499,34 @@ func (siw *ServerInterfaceWrapper) RunTask(w http.ResponseWriter, r *http.Reques
 	handler.ServeHTTP(w, r)
 }
 
+// ListUpstreamDownloads operation middleware
+func (siw *ServerInterfaceWrapper) ListUpstreamDownloads(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListUpstreamDownloads(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetUpstreamDownloadSummary operation middleware
+func (siw *ServerInterfaceWrapper) GetUpstreamDownloadSummary(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetUpstreamDownloadSummary(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetVersion operation middleware
 func (siw *ServerInterfaceWrapper) GetVersion(w http.ResponseWriter, r *http.Request) {
 
@@ -41207,6 +41452,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/scanners", wrapper.ListScanners)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/migrations", wrapper.GetMigrationStatus)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/overview", wrapper.GetSystemOverview)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/upstream-downloads", wrapper.ListUpstreamDownloads)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/upstream-downloads/summary", wrapper.GetUpstreamDownloadSummary)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/openapi.json", wrapper.GetOpenApiJson)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/openapi.yaml", wrapper.GetOpenApiYaml)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/problems/{code}", wrapper.GetProblemType)

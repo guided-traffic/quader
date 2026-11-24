@@ -603,6 +603,122 @@ paths:
           $ref: "#/components/responses/Internal"
         "503":
           $ref: "#/components/responses/Unavailable"
+  /api/v1/system/upstream-downloads:
+    get:
+      operationId: listUpstreamDownloads
+      tags: [system]
+      summary: The running downloads from the upstreams of remote repositories and the last 100 finished
+      description: |
+        Every download of an artifact's body from the upstream of a remote repository that runs now on any replica, and the last 100
+        that ended (R-OPS-049 to R-OPS-052). Whatever caused it counts: a client's miss, a row of the download queue, a mirror's pass,
+        the vulnerability scanning's database; a metadata document, a hit and a request that waited for another one's fetch do not.
+        `running` holds at most 200 entries per replica, the oldest first, and `runningCount` counts all of them, those left out
+        included; `finished` holds at most 100, the newest first. A replica publishes its running downloads every `pollSeconds`
+        (`proxy.upstream_downloads.publish_interval`), and a reader leaves out a replica whose last write is older than three of
+        them. Every replica answers alike from PostgreSQL; the repository and the person are resolved by id at the read, and an
+        entry whose repository no longer exists is left out. No upstream address, header or client address is kept. Reading is not
+        audited.
+      x-quader-permission:
+        permission: content:metadata-read
+      responses:
+        "200":
+          description: The running and the finished downloads.
+          headers:
+            Cache-Control:
+              description: '`no-store`: the list changes every few seconds.'
+              schema:
+                type: string
+                enum: [no-store]
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpstreamDownloadList"
+              example:
+                asOf: "2026-11-24T08:40:12Z"
+                pollSeconds: 2
+                runningCount: 1
+                running:
+                  - id: 01937d4e-6a1b-7c2d-8e3f-4a5b6c7d8e9f
+                    repository: {project: upstream, key: docker-hub, format: oci}
+                    name: library/ubuntu
+                    version: "26.10"
+                    path: v2/library/ubuntu/blobs/sha256:1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b
+                    bytes: 134217728
+                    total: 300847104
+                    bytesPerSecond: 12897484
+                    startedAt: "2026-11-24T08:39:30Z"
+                    elapsedSeconds: 42.3
+                    origin: queue
+                    queueOrigin: person
+                    queueRow: 01937d4d-1a2b-7c3d-9e4f-5a6b7c8d9e0f
+                    by: {id: 0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a10, name: priya}
+                    replica: quader-worker-6f9c7-2xk4p
+                finished:
+                  - id: 01937d4c-2b3c-7d4e-8f5a-6b7c8d9e0f1a
+                    repository: {project: web, key: npm-remote, format: npm}
+                    name: "@angular/core"
+                    version: 22.0.1
+                    path: "@angular/core/-/core-22.0.1.tgz"
+                    bytes: 2345678
+                    total: 2345678
+                    bytesPerSecond: 1563785
+                    startedAt: "2026-11-24T08:38:01Z"
+                    finishedAt: "2026-11-24T08:38:02.5Z"
+                    durationSeconds: 1.5
+                    outcome: completed
+                    failure: null
+                    origin: client
+                    queueOrigin: null
+                    queueRow: null
+                    by: {id: 0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a11, name: sam}
+                    replica: quader-packages-7d9f-abc12
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/system/upstream-downloads/summary:
+    get:
+      operationId: getUpstreamDownloadSummary
+      tags: [system]
+      summary: How many downloads from upstreams run now
+      description: |
+        The number of downloads from the upstreams of remote repositories that run now on every replica (R-OPS-052): the same count as
+        `runningCount` of `GET /api/v1/system/upstream-downloads`, for the top bar's indicator, and the publication interval in
+        seconds. Read from PostgreSQL with the freshness rule of the list.
+      x-quader-permission:
+        permission: content:metadata-read
+      responses:
+        "200":
+          description: The count.
+          headers:
+            Cache-Control:
+              description: '`no-store`: the count changes every few seconds.'
+              schema:
+                type: string
+                enum: [no-store]
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpstreamDownloadSummary"
+              example:
+                running: 3
+                pollSeconds: 2
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
   /api/v1/openapi.json:
     get:
       operationId: getOpenApiJson
@@ -33522,6 +33638,215 @@ components:
     # <<< W-26 limits
     #
     # >>> T-24 downloads
+    UpstreamDownloadList:
+      type: object
+      additionalProperties: false
+      description: The running and the last finished downloads from the upstreams of remote repositories (R-OPS-052).
+      required: [asOf, pollSeconds, runningCount, running, finished]
+      properties:
+        asOf:
+          type: string
+          format: date-time
+          description: The time of the read on PostgreSQL's clock.
+        pollSeconds:
+          type: number
+          format: double
+          description: "`proxy.upstream_downloads.publish_interval` in seconds: how often a replica publishes, and how often an open view reads again."
+        runningCount:
+          type: integer
+          format: int64
+          description: Every running download of the replicas that published within three intervals, those left out of `running` included.
+        running:
+          type: array
+          description: At most 200 per replica, in the order of the begin, the oldest first.
+          items:
+            $ref: "#/components/schemas/UpstreamDownloadRunning"
+        finished:
+          type: array
+          description: At most 100, the newest end first.
+          items:
+            $ref: "#/components/schemas/UpstreamDownloadFinished"
+    UpstreamDownloadSummary:
+      type: object
+      additionalProperties: false
+      description: The number of running downloads from upstreams (R-OPS-052).
+      required: [running, pollSeconds]
+      properties:
+        running:
+          type: integer
+          format: int64
+          description: The same count as `runningCount` of the list.
+        pollSeconds:
+          type: number
+          format: double
+          description: "`proxy.upstream_downloads.publish_interval` in seconds."
+    UpstreamDownloadRepository:
+      type: object
+      additionalProperties: false
+      description: The remote repository a download fills, resolved by its id at the read.
+      required: [project, key, format]
+      properties:
+        project:
+          type: string
+        key:
+          type: string
+        format:
+          type: string
+    UpstreamDownloadPrincipal:
+      type: object
+      additionalProperties: false
+      description: The principal who caused a download, by its current name.
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+    UpstreamDownloadFailure:
+      type: object
+      additionalProperties: false
+      description: Why a download failed, in the classes and codes of the download queue (remote-curation.md R-CUR-011).
+      required: [class, code]
+      properties:
+        class:
+          $ref: "#/components/schemas/RemoteDownloadFailureClass"
+        code:
+          type: string
+    UpstreamDownloadRunning:
+      type: object
+      additionalProperties: false
+      description: A download from an upstream that runs now (R-OPS-049, R-OPS-050).
+      required: [id, repository, name, version, path, bytes, total, bytesPerSecond, startedAt, elapsedSeconds, origin, queueOrigin,
+        queueRow, by, replica]
+      properties:
+        id:
+          type: string
+          format: uuid
+        repository:
+          $ref: "#/components/schemas/UpstreamDownloadRepository"
+        name:
+          type: string
+          description: The package as the format classified the path; empty for a path of no package.
+        version:
+          type: string
+          description: The version; for a queue row's file of no version (an OCI blob) the row's version; empty when neither has one.
+        path:
+          type: string
+          description: The repository path of the artifact.
+        bytes:
+          type: integer
+          format: int64
+          description: The bytes read from the upstream's body so far, as of the replica's last publication.
+        total:
+          type: [integer, "null"]
+          format: int64
+          description: The length the upstream announced; null when it announced none.
+        bytesPerSecond:
+          type: [integer, "null"]
+          format: int64
+          description: The bytes of the last 10 s over those 10 s; in the first 10 s the bytes over the time since the begin; null in the first second.
+        startedAt:
+          type: string
+          format: date-time
+        elapsedSeconds:
+          type: number
+          format: double
+          description: The time since the begin at the replica's last publication, plus the age of that publication.
+        origin:
+          $ref: "#/components/schemas/UpstreamDownloadOrigin"
+        queueOrigin:
+          description: For origin `queue` the row's origin; null otherwise.
+          oneOf:
+            - $ref: "#/components/schemas/UpstreamDownloadQueueOrigin"
+            - type: "null"
+        queueRow:
+          type: [string, "null"]
+          format: uuid
+          description: For origin `queue` the row's id; null otherwise.
+        by:
+          description: The client's caller, or the person who started the queue row, its bulk or its request; null for system work, an anonymous caller and a removed principal.
+          oneOf:
+            - $ref: "#/components/schemas/UpstreamDownloadPrincipal"
+            - type: "null"
+        replica:
+          type: string
+          description: The pod name of the replica that reads the body.
+    UpstreamDownloadFinished:
+      type: object
+      additionalProperties: false
+      description: A download from an upstream that ended (R-OPS-049, R-OPS-051).
+      required: [id, repository, name, version, path, bytes, total, bytesPerSecond, startedAt, finishedAt, durationSeconds, outcome, failure,
+        origin, queueOrigin, queueRow, by, replica]
+      properties:
+        id:
+          type: string
+          format: uuid
+        repository:
+          $ref: "#/components/schemas/UpstreamDownloadRepository"
+        name:
+          type: string
+        version:
+          type: string
+        path:
+          type: string
+        bytes:
+          type: integer
+          format: int64
+          description: The bytes read from the upstream's body, also those of a download that failed.
+        total:
+          type: [integer, "null"]
+          format: int64
+        bytesPerSecond:
+          type: [integer, "null"]
+          format: int64
+          description: The average, the bytes over the duration; null for a duration of 0.
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+        durationSeconds:
+          type: number
+          format: double
+        outcome:
+          type: string
+          enum: [completed, failed, cancelled, interrupted]
+          x-enum-varnames: [UpstreamDownloadCompleted, UpstreamDownloadFailed, UpstreamDownloadCancelled, UpstreamDownloadInterrupted]
+          description: |
+            `completed`: stored, or a duplicate fetch found it stored. `failed`: see `failure`. `cancelled`: a client's fetch pre-empted a
+            background fill, the job was cancelled, or the request ended. `interrupted`: the replica stopped publishing while it ran.
+        failure:
+          description: For `failed` the failure's class and code; null otherwise.
+          oneOf:
+            - $ref: "#/components/schemas/UpstreamDownloadFailure"
+            - type: "null"
+        origin:
+          $ref: "#/components/schemas/UpstreamDownloadOrigin"
+        queueOrigin:
+          oneOf:
+            - $ref: "#/components/schemas/UpstreamDownloadQueueOrigin"
+            - type: "null"
+        queueRow:
+          type: [string, "null"]
+          format: uuid
+        by:
+          oneOf:
+            - $ref: "#/components/schemas/UpstreamDownloadPrincipal"
+            - type: "null"
+        replica:
+          type: string
+    UpstreamDownloadOrigin:
+      type: string
+      description: What caused a download - a client's miss, a row of the download queue, a mirror's pass, the vulnerability scanning's database.
+      enum: [client, queue, mirror, scanner_database]
+      x-enum-varnames: [UpstreamDownloadOriginClient, UpstreamDownloadOriginQueue, UpstreamDownloadOriginMirror, UpstreamDownloadOriginScannerDatabase]
+    UpstreamDownloadQueueOrigin:
+      type: string
+      description: The origin of the queue row a download of origin `queue` belongs to (remote-curation.md R-CUR-011).
+      enum: [person, request, allow, bulk, probe]
+      x-enum-varnames: [UpstreamDownloadQueuePerson, UpstreamDownloadQueueRequest, UpstreamDownloadQueueAllow, UpstreamDownloadQueueBulk, UpstreamDownloadQueueProbe]
     RemoteDownloadFailureClass:
       type: string
       description: The class of a failure (remote-curation.md R-CUR-011, Q-CUR-20).

@@ -313,6 +313,7 @@ moves one of its tables states it on its own page.
 | `ansible_version_docs`, `ansible_doc_entries`, `ansible_doc_files`, `ansible_doc_fetches` | [formats/ansible.md](formats/ansible.md) R-ANS-033 | `transient` | The documentation of a collection version is derived: a restore enqueues the reindex, which regenerates a local repository's rows from the archives and queues the fetch of a remote's (R-ANS-044) |
 | `ci_issuer_keys` | [gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-003 | `transient` | A restored copy would accept keys the issuer removed (revoked) after the snapshot; the first exchange or `ci-keys-refresh` fetches the current set |
 | `replica` | [operations-and-observability.md](operations-and-observability.md) R-OPS-003 | `transient` | Describes pods that do not exist after a restore |
+| `upstream_download_live`, `upstream_download_finished` | [operations-and-observability.md](operations-and-observability.md) R-OPS-050, R-OPS-051 | `transient` | A live view; its 100 rows are no record |
 | `support_bundle`, `support_bundle_part` | operations-and-observability.md R-OPS-027 | `transient` | Diagnostic archives with logs; their blobs are not referenced by any other row |
 | `api_idempotency_keys` | [api-and-ui.md](api-and-ui.md) | `transient` | Retry protection for minutes |
 | `backup_run`, `backup_blob_pin` | this page | `transient` | The target, not the database, is the record of backups |

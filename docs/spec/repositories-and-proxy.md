@@ -2776,7 +2776,9 @@ execute these steps in order:
     or goes on without the cross-replica lock, takes the fetch slots of R-REPO-040; then the fetch,
     classification of the outcome (R-REPO-029), verification (R-REPO-041, R-REPO-042), storage and
     response. The repository's share of the slots is returned when the upstream exchange ends, before
-    verification and storage; the replica's slot when the fetch ends (R-REPO-040, Q-REPO-235).
+    verification and storage; the replica's slot when the fetch ends (R-REPO-040, Q-REPO-235). The transfer of an artifact's body
+    after a success answer is reported to the replica's tracker of downloads from upstreams
+    ([operations-and-observability.md](operations-and-observability.md) R-OPS-049).
 
 - **Gone packages** (R-REPO-029). A request whose descriptor names a package that is gone from R,
   other than the request for that package's package document, MUST answer 404 after step 3,

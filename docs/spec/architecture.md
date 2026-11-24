@@ -769,6 +769,7 @@ quader/
 │   │   ├── store/               # the store of signing_identities, signing_work and signing_settings, the replay, the snapshot
 │   │   ├── job/                 # the job signing, the watcher of the files, the key holder; worker and all only (R-SIG-046, R-SIG-049)
 │   │   └── signingtest/         # the company CA of the tests
+│   ├── fills/                   # the downloads from upstreams: tracker, speed window, publisher, store (R-OPS-049 to R-OPS-052)
 │   ├── mirror/                  # the mirror mode of remote repositories: dispatch, passes, throttling, status (R-REPO-050 to R-REPO-059)
 │   │   └── discover/            # the discovery contract a format's remote adapter implements, the catalogue's browsing calls among it (leaf layer, ADR-152, Q-CUR-109)
 │   ├── remotecuration/          # the curation of a remote repository: the vocabulary and the ports, the rules, the catalogue's engine, the queue, the requests, the retention (remote-curation.md)
@@ -4296,6 +4297,7 @@ The keys are shown with the default prefix `quader:`.
 | Browser login flows, npm web login and device login polling, UI sessions | PostgreSQL | — | — | Unaffected | Unaffected | R-AUTH-006, R-AUTH-010, R-AUTH-034, R-AUTH-036 |
 | Job queue, scheduler slots, named and singleton leases, migration lock, configuration locks | PostgreSQL | — | — | Unaffected | Unaffected | R-ARCH-016, R-ARCH-017 |
 | Replica registry, break-glass lockout and rotation hold (R-AUTH-014, R-AUTH-038), multi-request upload sessions (P1), download statistics, CI subject-token replay set, its restore cut-off and CI issuance records | PostgreSQL | — | — | Unaffected | Unaffected | R-OPS-003, R-AUTH-014, R-AUTH-038, R-STOR-011, [storage.md](storage.md), [gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-018, R-CI-020 |
+| Live downloads from upstreams and the last 100 finished | PostgreSQL | `upstream_download_live`, `upstream_download_finished` | three publication intervals; 100 rows | Unaffected | Unaffected | [operations-and-observability.md](operations-and-observability.md) R-OPS-050, R-OPS-051 |
 
 `<ks>` is the keyspace: the first 12 hex digits of `system_state.keyspace_id` after its dashes are removed
 ([backup-and-restore.md](backup-and-restore.md) R-BAK-022), read from PostgreSQL at start-up. `<f>`

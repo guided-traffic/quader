@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"runtime"
 	"sort"
+	"time"
 
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
 	"github.com/guided-traffic/quader/internal/audit"
@@ -111,7 +112,11 @@ type Options struct {
 	Replicas      ReplicaLister
 	// Scanners lists the kinds of scanner and the scanner replicas (R-OPS-048); nil answers the operation with 503.
 	Scanners ScannerLister
-	Facts    FactSource
+	// UpstreamDownloads reads the downloads from the upstreams of remote repositories (R-OPS-052); nil answers the two operations with
+	// 503. UpstreamDownloadInterval is proxy.upstream_downloads.publish_interval: the answer's pollSeconds and the freshness rule.
+	UpstreamDownloads        UpstreamDownloadReader
+	UpstreamDownloadInterval time.Duration
+	Facts                    FactSource
 	// Formats is the list of served package formats, from the format registry.
 	Formats []string
 

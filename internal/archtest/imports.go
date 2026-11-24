@@ -120,6 +120,10 @@ func moduleBans() []moduleBan {
 			why: "the mirror engine reaches the remote engine only through mirror.Host and takes the background share from its options; the composition root binds proxy.BackgroundShare (Q-ARCH-322)",
 		},
 		{
+			rule: "R-ARCH-002", from: "internal/proxy", forbidden: []string{"internal/fills"},
+			why: "the remote engine reports its downloads through the port proxy.DownloadTracker; the composition root binds the tracker of internal/fills (R-OPS-049)",
+		},
+		{
 			rule: "R-ARCH-002", from: "internal/formathost", forbidden: []string{"internal/formatdata"},
 			why: "the data port of a format is bound by the composition root; the host reaches it only through Host.FormatData (Q-ARCH-193)",
 		},
