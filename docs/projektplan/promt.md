@@ -328,7 +328,7 @@ starts from it and from his word how the work goes on, not from the order of the
 - **The repair of the evidence record's publish**: landed at 22:51 (Q-ARCH-1040); the release v0.115.0 made
   the branch `coverage` with its four files and the badge shows 82.1% (closed in section 8).
 - **The nightly sets:** `drain-roles` ran alone at 22:24 and closed its entry; `vuln-perf` ran at 03:53 and closed
-  F-121; `upgrade-release` ran at 04:21 and failed before it upgraded; repaired at 05:40 and dispatched again with `upgrade`; the two
+  F-121; `upgrade-release` ran at 04:21 and failed before it upgraded; repaired at 05:40, and with `upgrade` green at 06:04; the two
   changed nightly sets `npm-ha` and `nuget-ha` have not run since their change either.
 - **What W4 did not do**: landed at 23:12 with the integration tests' environment and ports and the mirror's
   back-off bound (section 8, Closed); F-126 stays open with a new reading.
@@ -591,6 +591,7 @@ order is what a user or an operator meets first. The state is kept here.
 ### Tests and tools
 
 
+
 - **`e2e (bastion)` was red once on a runner that could not reach github.com (2026-11-24; Test and Release
   45302495247, job 138140910820, read at 03:23):** `deploy/dev/charts.sh` timed out seven times connecting to
   github.com:443 (20 s each) fetching `haproxy-ingress-0.16.3.tgz`, before anything of Quader ran. An outage of the
@@ -664,7 +665,20 @@ None open (2026-11-24).
 
 ### Closed
 
-- **Closed on 2026-11-24, 05:40, by its repair: `upgrade-release` failed before it upgraded.** The reset dropped the database and Valkey but left the connection marker of R-STOR-051 and the backup target's marker, which name the installation by its database's id, so from v0.96.0 on every `helm install` after a reset, and the return to the dev release, ended at the progress deadline. The set `upgrade` has the same reset; its green job in that run had been skipped by the leg selector. `resetInstallation` now empties `quader/` of `quader-blobs` and `quader-backups` (`emptyStoreLocations`, one aws-cli Job of about 10 s); Q-HA-95 amended, `e2e.md` updated. Verified locally: the reset emptied the location (711 objects) and v0.121.0 installed in 33 s; the upgrade step and the return then failed on the host's load (etcd timeouts at a load of 28 to 34), not on the store. The dispatch of `upgrade-release,upgrade` after the landing shows the upgrade, the rollback and the return. As it stood: **`upgrade-release` fails before it upgrades (2026-11-24; HA and Performance 45318634839, job 138192925847, the set
+- **Closed on 2026-11-24, 06:25: the two red jobs of the morning, both in the tests, no product defect.**
+  `integration (shard d)` (45322629378): a run queued behind the detection of the stored images began between the
+  new database and the push (re-detections at 04:13:22.374, the manifest's PUT at .508), which is Q-VULN-200's stated
+  bound for a push during a run; `runFreshScan` could not exclude it and is replaced by `waitIdle` (no
+  `vuln-image-scan` queued or running before `setDB(2)`); Q-VULN-268 played no part. `UI layout checks`
+  (45322754683): `usageDetailWalk` filled the explanation's field while its panel still opened, the focus scrolled
+  the clipped content and the click's release landed beside the moving button (shown with a press and release 60 ms
+  apart); the walk waits for the panel's transition. Ran: `vulnimage` once and the test once under load, the walk's
+  four screens with 0 findings, the web's gates, the full unit run. As it stood: **Two red jobs of the morning of 2026-11-24, given to a builder at 05:55:** `integration (shard d)` of 45322629378
+  (`TestR_VULN_048_APushedImageIsDetectedBeforeTheRedetections` again, five re-detections before the pushed image,
+  after the repair of 00:45 and W18's Q-VULN-268) and `UI layout checks` of 45322754683 (the render
+  `admin-usage-caller` stopped at 390 px: `main ol.steps li` not visible). Cause of either not read yet.
+
+- **Closed on 2026-11-24, 05:40, by its repair: `upgrade-release` failed before it upgraded.** The reset dropped the database and Valkey but left the connection marker of R-STOR-051 and the backup target's marker, which name the installation by its database's id, so from v0.96.0 on every `helm install` after a reset, and the return to the dev release, ended at the progress deadline. The set `upgrade` has the same reset; its green job in that run had been skipped by the leg selector. `resetInstallation` now empties `quader/` of `quader-blobs` and `quader-backups` (`emptyStoreLocations`, one aws-cli Job of about 10 s); Q-HA-95 amended, `e2e.md` updated. Verified locally: the reset emptied the location (711 objects) and v0.121.0 installed in 33 s; the upgrade step and the return then failed on the host's load (etcd timeouts at a load of 28 to 34), not on the store. The dispatch of `upgrade-release,upgrade` after the landing (HA and Performance 45327654491, 05:38) is green: `upgrade-release` installed v0.122.0 in 33 s, upgraded, verified and rolled back (R-HA-020, R-HA-052, R-HA-019); `upgrade` passed `TestUpgrade_R_HA_020_AcrossTwoBundles` (292 s). As it stood: **`upgrade-release` fails before it upgrades (2026-11-24; HA and Performance 45318634839, job 138192925847, the set
   dispatched alone at 04:21, read at 05:00).** `helm install` of v0.119.0 ended "quader-api not ready … Progress
   deadline exceeded", and the return to the dev release the same way. The api pods stopped at the object store's
   start-up check: `quader-blobs/quader` still held the `_connection` marker of the installation before it (R-STOR-051
