@@ -11315,10 +11315,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-OPS
 
-103 questions on [spec/operations-and-observability.md](spec/operations-and-observability.md).
+104 questions on [spec/operations-and-observability.md](spec/operations-and-observability.md).
 
 <details>
-<summary>Q-OPS: 103 questions</summary>
+<summary>Q-OPS: 104 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11425,6 +11425,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-OPS-422](spec/operations-and-observability.md#q-ops-422--the-last-100-are-a-table-trimmed-to-100-not-backed-up-a-stopped-replicas-downloads-end-interrupted) | The last 100 are a table trimmed to 100, not backed up; a stopped replica's downloads end interrupted | Decided by the development agent on 2026-11-24 | (a) A table trimmed to 100 at each publication's insert; export class `transient`; the repository a reference that cascades, the principal one that nulls; a stale live row swept into `interrupted` | — |
 | [Q-OPS-423](spec/operations-and-observability.md#q-ops-423--the-holders-of-contentmetadata-read-see-the-downloads-of-every-repository-and-nobody-else) | The holders of content:metadata-read see the downloads of every repository, and nobody else | Decided by the development agent on 2026-11-24 | (a) `content:metadata-read`: the administrator and the auditor | — |
 | [Q-OPS-424](spec/operations-and-observability.md#q-ops-424--one-key-the-publication-interval-the-list-holds-100) | One key, the publication interval; the list holds 100 | Decided by the development agent on 2026-11-24 | (a) `proxy.upstream_downloads.publish_interval` (2 s, 1 s to 30 s); 100 fixed | [ADR-279](#adr-279--administrators-see-the-downloads-from-upstreams-live-and-the-last-100-finished) |
+| [Q-OPS-425](spec/operations-and-observability.md#q-ops-425--quadercontrolconnectionwaits-fires-on-waits-that-go-on-for-five-minutes-for-10m-on-the-five-minute-window) | QuaderControlConnectionWaits fires on waits that go on for five minutes: `for: 10m` on the five-minute window | Decided by the development agent on 2026-11-24 | (a) `for: 10m` on the five-minute window | — |
 
 </details>
 

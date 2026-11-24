@@ -906,7 +906,7 @@ tests:
               description: "The request pool, or every server connection of the request pooler, is busy (R-HA-016). If the database CPU is idle while the wait grows, raise database.pool.max_conns within the connection budget; otherwise the database is the limit. quader_db_pool_canceled_acquires_total counts the waits that ended in 503 database_timeout."
       - {eval_time: 30m, alertname: QuaderControlConnectionWaits, exp_alerts: []}
 
-  - name: "QuaderControlConnectionWaits fires when the 95th percentile of the control connection wait is above one second for five minutes, not the request alert"
+  - name: "QuaderControlConnectionWaits fires when the 95th percentile of the control connection wait stays above one second for ten minutes on its five-minute window, not the request alert"
     interval: 1m
     input_series:
       - {series: "quader_db_pool_acquire_duration_seconds_bucket{namespace=\"default\",db_pool=\"control\",le=\"0.005\",pod=\"p1\"}", values: "0x60"}
@@ -917,6 +917,7 @@ tests:
       - {series: "quader_db_pool_acquire_duration_seconds_bucket{namespace=\"default\",db_pool=\"request\",le=\"+Inf\",pod=\"p1\"}", values: "0+10x60"}
     alert_rule_test:
       - {eval_time: 4m, alertname: QuaderControlConnectionWaits, exp_alerts: []}
+      - {eval_time: 9m, alertname: QuaderControlConnectionWaits, exp_alerts: []}
       - eval_time: 15m
         alertname: QuaderControlConnectionWaits
         exp_alerts:
@@ -925,6 +926,23 @@ tests:
               summary: "A replica waits more than a second for its control connection (95th percentile)."
               description: "The loops that readiness and job ownership depend on (change-log poll, database check, registry heartbeat, job heartbeats) wait for the one control connection (Q-HA-20). If this goes on, the invalidation and database checks fail on every replica (R-OPS-046). Check the pooler endpoint of the control connection and the database latency."
       - {eval_time: 30m, alertname: QuaderDatabasePoolSaturated, exp_alerts: []}
+
+  # Q-OPS-425: the PostgreSQL switchovers of a node rotation (nightly 45393443385: four within two minutes). Of 80 acquisitions a
+  # minute, half waited 1 to 2.5 s in each of the minutes 10 to 12; the five-minute quantile is above 1 s from 10 to 15 minutes,
+  # which fired the rule with `for: 5m` at 15 minutes. It stays silent throughout.
+  - name: "QuaderControlConnectionWaits stays silent through the switchovers of a node rotation, whose waits end within three minutes"
+    interval: 1m
+    input_series:
+      - {series: "quader_db_pool_acquire_duration_seconds_bucket{namespace=\"default\",db_pool=\"control\",le=\"0.005\",pod=\"p1\"}", values: "0+80x9 760+40x2 920+80x20"}
+      - {series: "quader_db_pool_acquire_duration_seconds_bucket{namespace=\"default\",db_pool=\"control\",le=\"1\",pod=\"p1\"}", values: "0+80x9 760+40x2 920+80x20"}
+      - {series: "quader_db_pool_acquire_duration_seconds_bucket{namespace=\"default\",db_pool=\"control\",le=\"2.5\",pod=\"p1\"}", values: "0+80x9 800+80x3 1120+80x19"}
+      - {series: "quader_db_pool_acquire_duration_seconds_bucket{namespace=\"default\",db_pool=\"control\",le=\"+Inf\",pod=\"p1\"}", values: "0+80x9 800+80x3 1120+80x19"}
+    alert_rule_test:
+      - {eval_time: 13m, alertname: QuaderControlConnectionWaits, exp_alerts: []}
+      - {eval_time: 15m, alertname: QuaderControlConnectionWaits, exp_alerts: []}
+      - {eval_time: 16m, alertname: QuaderControlConnectionWaits, exp_alerts: []}
+      - {eval_time: 20m, alertname: QuaderControlConnectionWaits, exp_alerts: []}
+      - {eval_time: 30m, alertname: QuaderControlConnectionWaits, exp_alerts: []}
 
   - name: "QuaderJobsStuck fires when the oldest queued job is older than 900 s for five minutes, and not for 899 s or another namespace"
     interval: 1m

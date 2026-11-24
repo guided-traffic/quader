@@ -1646,7 +1646,7 @@ backup alerts' expressions.
 | HA PostgreSQL | Primary unreachable beyond the retry budget | `quader_db_retries_total{kind="connection"}`, `quader_health_check_passing{name="database"}` | `QuaderDatabaseUnreachable` |
 | HA PostgreSQL | Change log stalled on a replica | `quader_cluster_poll_last_success_timestamp_seconds`, the `invalidation` check | `QuaderReplicasNotReady` once a role is short |
 | Load beyond one replica | Request pool saturated | `quader_db_pool_acquire_duration_seconds{db_pool="request"}`, `quader_db_pool_canceled_acquires_total` | `QuaderDatabasePoolSaturated`; its expression selects `db_pool="request"`, so the control connection's waits stay with the next row (cross-page R-HA-045) |
-| Load beyond one replica | Readiness-critical loops wait for the control connection ([ha-and-helm.md](ha-and-helm.md) Q-HA-20) | `quader_db_pool_acquire_duration_seconds{db_pool="control"}` | `QuaderControlConnectionWaits` (new): p95 above 1 s for 5 minutes, before the `invalidation` and `database` checks start failing on every replica |
+| Load beyond one replica | Readiness-critical loops wait for the control connection ([ha-and-helm.md](ha-and-helm.md) Q-HA-20) | `quader_db_pool_acquire_duration_seconds{db_pool="control"}` | `QuaderControlConnectionWaits` (new): p95 above 1 s for 5 minutes, before the `invalidation` and `database` checks start failing on every replica; the rule counts the five minutes on the waits, `for: 10m` on the five-minute window ([Q-OPS-425](#q-ops-425--quadercontrolconnectionwaits-fires-on-waits-that-go-on-for-five-minutes-for-10m-on-the-five-minute-window)) |
 | Load beyond one replica | Connections growing with the replica count (INV-12) | `sum by (role, db_pool) (quader_db_pool_connections)` against the budget of [ha-and-helm.md](ha-and-helm.md) R-HA-016 | none: the migration Job's budget check refuses a deployment that would exceed it |
 | Load beyond one replica | Job queue falling behind | `quader_jobs_oldest_queued_age_seconds` | `QuaderJobsStuck` |
 | HA Valkey with Sentinel | Valkey unavailable for every replica | `quader_valkey_available` | `QuaderValkeyUnavailable` |
@@ -7121,6 +7121,35 @@ Status: **Decided by the development agent on 2026-11-24** — selected from the
 **Choice:** (a).
 
 **Applied in the spec:** R-OPS-052, R-OPS-028.
+
+### Q-OPS-425 · QuaderControlConnectionWaits fires on waits that go on for five minutes: `for: 10m` on the five-minute window
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-OPS-046 defines the alert as "p95 above 1 s for 5 minutes" and requires that the designed maintenance fires no alert. The rule
+was `histogram_quantile(0.95, rate(...{db_pool="control"}[5m])) > 1` with `for: 5m`. A window of five minutes keeps a burst of waits in the
+quantile for five minutes after the last of them, so with `for: 5m` the rule fired on waits that lasted well under five minutes. That is
+what the set `alerts` met in the nightly 45393443385 (`TestAlerts_R_OPS_046_MaintenanceStaysQuiet`): drain variants A, E and C moved the
+PostgreSQL primary four times within two minutes (the replicas' control connections were ended with `57P01` at 12:38:15, 12:39:19,
+12:39:29 and 12:40:05, and the polls and checks of each gap waited on the dial to the new primary or failed on it, `dial error: timeout`
+in the pods' logs), and the alert fired. The leg's Prometheus is not kept in its artifacts, so the quantile itself was not read: by the
+rule, such bursts keep it above 1 s from the first switchover until about five minutes after the last, which is more than the `for` of
+five minutes. In the green nightly 45158700734 the same steps left the alert pending. The control pool's code had not changed between the two runs; the leg ran alone on its runner (pressure of the
+CPU 5 to 18 % in the window), so the waits were those of the switchovers, not of a starved cluster. A switchover is reported by its own
+signals (`QuaderDatabaseUnreachable` when it lasts); this alert is for a control connection that stays busy.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `for: 10m` on the five-minute window (chosen) | The quantile of the last five minutes stays above 1 s for ten minutes of evaluations: the waits went on for five minutes | The alert says what R-OPS-046 defines; the same shape as `QuaderDatabasePoolSaturated` (`[5m]`, `for: 10m`) on the same histogram; the node rotation of the set `alerts` stays quiet | A control connection that is busy from one moment on is reported after about ten minutes instead of five |
+| (b) A window of one or two minutes with `for: 5m` | A burst leaves the quantile after one or two minutes | Reported after five minutes | A window of one minute holds two samples at the chart's scrape interval of 30 s and none at an operator's 60 s; a window of two minutes keeps a rotation's switchovers of two minutes for four, one minute short of firing |
+| (c) Keep the rule and let the test tolerate the alert | No rule change | None | The alert would page on every node rotation in production as well (rejected, as Q-OPS-198 rejected it for the failover alert) |
+| (d) Leave the failed acquisitions out of the histogram | A dial that fails during a switchover is not a wait | The outage's waits drop out | The waits that end in a connection to the new primary stay in; the histogram deliberately counts a failed acquisition as the longest wait (`TraceAcquireEnd`) |
+
+**Choice:** (a). **Rationale:** a false alert during planned maintenance is the failure R-OPS-046 rules out, and ten minutes on the
+five-minute window is the definition's "five minutes" counted on the waits instead of on the evaluations. The development agent would revisit
+it if a busy control connection must be reported sooner than its readiness checks fail. **Applied:** [_rules.tpl](../../deploy/helm/quader/templates/_rules.tpl),
+the rule test "a node rotation's switchovers" in [rules_test.yaml](../../deploy/helm/quader/tests/rules_test.yaml), R-OPS-046's table, the alert
+table of [ha-and-helm.md](ha-and-helm.md) R-HA-045 and its control-pool saturation scenario (R-HA-052), the operator manual.
 
 ## What this does not cover
 

@@ -147,7 +147,7 @@ func TestR_HA_045_PrometheusRule(t *testing.T) {
 			"QuaderReplicasNotReady": "5m", "QuaderDatabaseUnreachable": "2m", "QuaderObjectStoreUnreachable": "2m",
 			"QuaderObjectStoreUnreachableSingleReplica": "5m", "QuaderObjectStoreConnectionUnreachable": "2m",
 			"QuaderStorageReplicationBacklog": "30m", "QuaderStorageCopyDamaged": "1h", "QuaderStorageScrubBehind": "6h",
-			"QuaderStorageConnectionDetached": "15m", "QuaderStorageUnknownKey": "10m", "QuaderBlobCorrupt": "", "QuaderDatabasePoolSaturated": "10m", "QuaderControlConnectionWaits": "5m",
+			"QuaderStorageConnectionDetached": "15m", "QuaderStorageUnknownKey": "10m", "QuaderBlobCorrupt": "", "QuaderDatabasePoolSaturated": "10m", "QuaderControlConnectionWaits": "10m",
 			"QuaderJobsStuck": "5m", "QuaderLeaseLost": "", "QuaderMixedVersions": "2h", "QuaderSpoolNearlyFull": "10m",
 			"QuaderBlobMissing": "", "QuaderGCStale": "1h", "QuaderValkeyUnavailable": "2m", "QuaderValkeyUnavailableSingleReplica": "5m",
 			"QuaderValkeySentinelsDegraded": "5m", "QuaderValkeyFailoverFlapping": "", "QuaderValkeyPrimaryDisagreement": "5m",

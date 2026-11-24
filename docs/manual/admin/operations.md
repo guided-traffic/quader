@@ -343,7 +343,7 @@ With `metrics.prometheusRule.enabled` the chart renders one PrometheusRule with 
 | `QuaderStorageConnectionDetached` | a connection holds copies but no replica has it in its configuration | 15m | warning |
 | `QuaderStorageUnknownKey` | reads of an encrypted connection keep meeting records of storage keys the database does not hold: those copies are unreadable until the export of the storage keys is imported | 10m | critical |
 | `QuaderDatabasePoolSaturated` | the 95th percentile of the wait for a connection of a replica's request pool is above 100 ms | 10m | warning |
-| `QuaderControlConnectionWaits` | the 95th percentile of the wait for the control connection is above one second; readiness checks are close to failing | 5m | warning |
+| `QuaderControlConnectionWaits` | the 95th percentile of the wait for the control connection is above one second, over five minutes, and stays so for ten: the waits go on for five minutes, so the switchovers of a node rotation do not raise it; readiness checks are close to failing | 10m | warning |
 | `QuaderJobsStuck` | a queued job has been waiting for more than 15 minutes | 5m | warning |
 | `QuaderLeaseLost` | a singleton task lost its lease more than three times in 15 minutes | at once | warning |
 | `QuaderMixedVersions` | replicas of more than one version run for two hours: an upgrade is stuck | 2h | warning |

@@ -122,7 +122,9 @@ the alert and the report banner agree (R-VULN-004). It is a duration parsed by q
     description: The request pool, or every server connection of the request pooler, is busy (R-HA-016). If the database CPU is idle while the wait grows, raise database.pool.max_conns within the connection budget; otherwise the database is the limit. quader_db_pool_canceled_acquires_total counts the waits that ended in 503 database_timeout.
 - alert: QuaderControlConnectionWaits
   expr: histogram_quantile(0.95, rate(quader_db_pool_acquire_duration_seconds_bucket{ {{ $ns }},db_pool="control" }[5m])) > 1
-  for: 5m
+  # Ten minutes on the five-minute window: the window keeps a burst for five minutes after it, so the waits went on for five
+  # (R-OPS-046, Q-OPS-425); the PostgreSQL switchovers of a node rotation do not fire it.
+  for: 10m
   labels:
     severity: warning
   annotations:
