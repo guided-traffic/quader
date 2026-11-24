@@ -197,6 +197,8 @@ type App struct {
 	downloadsState
 	// requestsState holds the requests for an allow and the retention of what was fetched for examination (wire_delivery_requests.go).
 	requestsState
+	// catalogueState holds the upstream catalogue of the remote repositories (wire_upstream_catalogue.go).
+	catalogueState
 	// attestations are the hooks of the receipt attestations (wire_attestations.go).
 	attestations attestationHooks
 }
@@ -615,6 +617,8 @@ func (a *App) startClient() error {
 			RemoteDownloads: a.remoteDownloadsAPI(),
 			// The requests for an allow and the discard of what was fetched for examination (wire_delivery_requests.go).
 			DeliveryRequests: a.deliveryRequestsAPI(),
+			// The upstream catalogue of the remote repositories (wire_upstream_catalogue.go).
+			UpstreamCatalogue: a.upstreamCatalogueAPI(),
 			// The list of damaged blobs and the recheck of one blob (wire_storage_scrub.go).
 			Storage: a.storageAPI(),
 			// The malware scanning's operations and the member malware of a file (wire_malware.go).

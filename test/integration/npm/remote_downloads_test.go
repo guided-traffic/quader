@@ -141,7 +141,9 @@ func TestR_CUR_010_ADownloadAheadOfOneVersionAndOfAPackage(t *testing.T) {
 			t.Fatalf("alice's bulk: %d %s, want 403", a.Status, a.Body)
 		}
 		pv := r.st.Do(rep, http.MethodPost, downloadsPath+"/downloads/preview", r.tokL, body)
-		if pv.Status != http.StatusOK || pv.JSON(t)["packages"] != float64(1) {
+		// The preview counts the newest maxVersions of the package by one catalogue call (R-CUR-010): npm announces no tarball size.
+		if m := pv.JSON(t); pv.Status != http.StatusOK || m["packages"] != float64(1) || m["versions"] != float64(2) || m["bytes"] != nil ||
+			m["sizeUnknown"] != float64(2) {
 			t.Fatalf("the preview: %d %s", pv.Status, pv.Body)
 		}
 		a := r.startDownload(rep, r.tokL, body)

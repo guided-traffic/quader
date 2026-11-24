@@ -1,0 +1,187 @@
+Package: cagent
+Architecture: amd64
+Version: 1.23.3-1~debian.13~trixie
+Priority: optional
+Section: admin
+Maintainer: Docker <support@docker.com>
+Installed-Size: 88444
+Filename: dists/trixie/pool/stable/amd64/cagent_1.23.3-1~debian.13~trixie_amd64.deb
+Size: 18932952
+MD5sum: 37c3d7f153d835827c63cb46ec57f264
+SHA1: bcc591667321714be7a12cc8e7802edff276f688
+SHA256: b3c287c98534ec430b9aa42cbc4600cce8ed1302fde5f1e742f5db30e3c03577
+SHA512: ad11a0f145f6af942f0e0b230b6962adc4372cbfff571610a660149e3cc8940ee9ed7d62d86f7699a78bf2ee90bfc95639507b6c196b7f0022456967c6a146ec
+Homepage: https://github.com/docker/cagent
+Description: cagent is a powerful multi-agent AI runtime that enables you to
+ create, configure, and orchestrate specialized AI agents that work together to
+ solve complex problems. Each agent can be equipped with specific tools,
+ knowledge domains, and capabilities.
+ .
+ Key features:
+  * Multi-agent architecture with hierarchical task delegation
+  * Declarative YAML-based agent configuration
+  * MCP (Model Context Protocol) integration for extensible tooling
+  * Support for multiple AI providers (OpenAI, Anthropic, Google Gemini, Docker Model Runner)
+  * Built-in reasoning tools (think, todo, memory) for complex problem-solving
+  * Docker Hub integration for sharing and distributing agent configurations
+  * Event-driven streaming architecture for real-time responses
+ .
+ cagent makes it easy to build agent teams where specialized agents collaborate,
+ each bringing their own expertise and tools to handle specific aspects of user
+ requests. Perfect for developers building AI-powered workflows and automation.
+
+Package: cagent
+Architecture: amd64
+Version: 1.9.7-1~debian.13~trixie
+Priority: optional
+Section: admin
+Maintainer: Docker <support@docker.com>
+Installed-Size: 47975
+Filename: dists/trixie/pool/stable/amd64/cagent_1.9.7-1~debian.13~trixie_amd64.deb
+Size: 11749224
+MD5sum: 61b37503fdc0fb601f16d0a153b5e708
+SHA1: 76ed04526294e03b52be9c4aff1980ad16119205
+SHA256: 102ac2c4933d6bb2c07e2c77ee326671305a1faab5a2cad94a8a74f31d820f3c
+SHA512: 1c9dc46fcac97ae0140e641a6b92f7c171a4af19e2daa502c6a3b23feafe7668ffe140eb0068b07c46c1c9e0ba37f3fae4b8fbf1d67e35466a55fe22febdb665
+Homepage: https://github.com/docker/cagent
+Description: cagent is a powerful multi-agent AI runtime that enables you to
+ create, configure, and orchestrate specialized AI agents that work together to
+ solve complex problems. Each agent can be equipped with specific tools,
+ knowledge domains, and capabilities.
+ .
+ Key features:
+  * Multi-agent architecture with hierarchical task delegation
+  * Declarative YAML-based agent configuration
+  * MCP (Model Context Protocol) integration for extensible tooling
+  * Support for multiple AI providers (OpenAI, Anthropic, Google Gemini, Docker Model Runner)
+  * Built-in reasoning tools (think, todo, memory) for complex problem-solving
+  * Docker Hub integration for sharing and distributing agent configurations
+  * Event-driven streaming architecture for real-time responses
+ .
+ cagent makes it easy to build agent teams where specialized agents collaborate,
+ each bringing their own expertise and tools to handle specific aspects of user
+ requests. Perfect for developers building AI-powered workflows and automation.
+
+Package: containerd.io
+Architecture: amd64
+Version: 1.7.27-1
+Priority: optional
+Section: devel
+Maintainer: Containerd team <help@containerd.io>
+Installed-Size: 122137
+Provides: containerd, runc
+Depends: libc6 (>= 2.38), libseccomp2 (>= 2.5.0)
+Conflicts: containerd, runc
+Replaces: containerd, runc
+Filename: dists/trixie/pool/stable/amd64/containerd.io_1.7.27-1_amd64.deb
+Size: 30521692
+MD5sum: 4f2bff8e629a09e51ae3678281072d69
+SHA1: 8076f2d9d6d1fa418e4a5b4ef7337146755c2988
+SHA256: f8964abc4709edd58e5a33ef29d36ba804246cabafd60984e2b4d91cc20f860a
+SHA512: c22c705792dbbe24f7d2ab5b847a8b4265f61a58e4568c8f68344effbe2a82e268861dd5fb20e4223ef0c6b9841632f7c1e93503f29722e68d3807ea599ec3f2
+Homepage: https://containerd.io
+Description: An open and reliable container runtime
+
+Package: containerd.io
+Architecture: amd64
+Version: 1.7.28-0~debian.13~trixie
+Priority: optional
+Section: devel
+Maintainer: Containerd team <help@containerd.io>
+Installed-Size: 127410
+Provides: containerd, runc
+Depends: libc6 (>= 2.38), libseccomp2 (>= 2.5.0)
+Conflicts: containerd, runc
+Replaces: containerd, runc
+Filename: dists/trixie/pool/stable/amd64/containerd.io_1.7.28-0~debian.13~trixie_amd64.deb
+Size: 31907888
+MD5sum: 80b856198a89c34c4f296cf98af27885
+SHA1: 4331cd7726416b0cbd0b4e3909fbc85dd6b1c51f
+SHA256: 7dad9a45af4810086ecf190808373b13c80810e63e680b1e72f75dc474c82e65
+SHA512: 11fe19042e932e2ec5e4d16d298bca9ace0adaf7366914edeba342be0621d50ff0075f9b3a1df72f9c96faae4c058dbdcaa20fd17b9dc3d184975467485feacb
+Homepage: https://containerd.io
+Description: An open and reliable container runtime
+
+Package: docker-compose-plugin
+Architecture: amd64
+Version: 2.35.0-1~debian.13~trixie
+Priority: optional
+Section: admin
+Source: docker-ce (5:28.1.0-1~debian.13~trixie)
+Maintainer: Docker <support@docker.com>
+Installed-Size: 72072
+Recommends: docker-buildx-plugin
+Enhances: docker-ce-cli
+Filename: dists/trixie/pool/stable/amd64/docker-compose-plugin_2.35.0-1~debian.13~trixie_amd64.deb
+Size: 13825420
+MD5sum: fbe21eba52f901cbd254a5f5c09f7aa2
+SHA1: 1fd1f1a54d7215cb0c8eadc2e1c64c3a5cf9990a
+SHA256: 860ad84ed05c98c933a9380808e27c482dbb9abda499cf5156968e6a8e425f80
+SHA512: bbed5c40b8bfeab98714b52efd6a74b7e7cc0a3ce8bddf475ba60c433466d86013b60a4bb61d7cdfe88802750597d0f93378a2196bece3193ba749ea02e1adfc
+Homepage: https://github.com/docker/compose
+Description: Docker Compose (V2) plugin for the Docker CLI.
+ .
+ This plugin provides the 'docker compose' subcommand.
+ .
+ The binary can also be run standalone as a direct replacement for
+ Docker Compose V1 ('docker-compose').
+
+Package: docker-secrets-engine
+Architecture: amd64
+Version: 0.10.0~debian.13~trixie
+Priority: optional
+Section: admin
+Maintainer: Docker <support@docker.com>
+Installed-Size: 32756
+Depends: init-system-helpers (>= 1.52)
+Suggests: dbus, gnome-keyring | kwallet
+Filename: dists/trixie/pool/stable/amd64/docker-secrets-engine_0.10.0~debian.13~trixie_amd64.deb
+Size: 8383128
+MD5sum: 5f7ed82bd8c85d8ac656691db33b6fe1
+SHA1: 4586bf5058038a280677d9447714eabf54e42bc2
+SHA256: bc3e8351114f0b1aec91f5547767622af6961534d1d50ad1e0ba4105e58377bf
+SHA512: 414d83eaa03b4370ac130f15c5306512d22b55570d8adbbf4ae4f714f706513600b970fcb23d17648e9fb38db5e872e5440c3859d2d3cf046c2963a1acd266a5
+Homepage: https://www.docker.com
+Description: Docker secrets engine
+ Per-user daemon that brokers access to credentials stored via Docker
+ secret providers. Ships the docker-pass CLI alongside the daemon.
+
+Package: docker-secrets-engine
+Architecture: amd64
+Version: 0.11.0~debian.13~trixie
+Priority: optional
+Section: admin
+Maintainer: Docker <support@docker.com>
+Installed-Size: 33852
+Depends: init-system-helpers (>= 1.52)
+Suggests: dbus, gnome-keyring | kwallet
+Filename: dists/trixie/pool/stable/amd64/docker-secrets-engine_0.11.0~debian.13~trixie_amd64.deb
+Size: 8753560
+MD5sum: 9cb0475dbe0c66a270f0cff78c43bbbd
+SHA1: adc192f798d6614725dba26fbfecf4df09f62c8b
+SHA256: 24ae1937a3b47c5aece12f5e6ac2144bfb8e042391ee9f6115c41d2d8d4dde7d
+SHA512: 78e5f86ab26c137b527ad52e361da0e05d5f9f9efba1d45d9407113544562ae2adcf1efdd62e1a0260f23a922c51be530accd0cec4cd849ac6297afd7e01df7b
+Homepage: https://www.docker.com
+Description: Docker secrets engine
+ Per-user daemon that brokers access to credentials stored via Docker
+ secret providers. Ships the docker-pass CLI alongside the daemon.
+
+Package: docker-secrets-engine
+Architecture: amd64
+Version: 0.11.1~debian.13~trixie
+Priority: optional
+Section: admin
+Maintainer: Docker <support@docker.com>
+Installed-Size: 33836
+Depends: init-system-helpers (>= 1.52)
+Suggests: dbus, gnome-keyring | kwallet
+Filename: dists/trixie/pool/stable/amd64/docker-secrets-engine_0.11.1~debian.13~trixie_amd64.deb
+Size: 8752608
+MD5sum: 006fc4b96b650fee15975d008bdd96d8
+SHA1: 61bc87a2759e90bd077a518da424e7434a9b190a
+SHA256: 907e2a20635c2711a26a3fceb2171c391e50e7e2ff912fc3ebbf85612adb777b
+SHA512: 60fea2cca609101f2fd6a63303c032c927f8aca859cb889370581bd6723d588f92008efdeaec2515a51b2f996408cf732611d3f9d593981595b38b4eceaf10c3
+Homepage: https://www.docker.com
+Description: Docker secrets engine
+ Per-user daemon that brokers access to credentials stored via Docker
+ secret providers. Ships the docker-pass CLI alongside the daemon.

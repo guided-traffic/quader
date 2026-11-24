@@ -47,9 +47,10 @@ type CatalogueDeclaration struct {
 }
 
 // checkCatalogue holds a format with the class remote to a declaration of its upstream catalogue and of its version canon (R-CUR-006,
-// R-CUR-007): the lookup, search and levels each declared or given a reason, never both, and a canon. A format without the class
-// declares neither.
-func checkCatalogue(_ Format, d Descriptor) error {
+// R-CUR-007): the lookup, search and levels each declared or given a reason, never both, a canon, and a remote adapter that implements
+// [Catalogue] (Q-CUR-109: the check lands with the five formats' catalogues). Whether each declared call answers is the kit's check 22.
+// A format without the class declares neither.
+func checkCatalogue(f Format, d Descriptor) error {
 	c := d.Catalogue
 	if !d.Supports(Remote) {
 		if c.Lookup || c.Search || len(c.Levels) > 0 || c.NoSearch != "" || c.NoLevels != "" {
@@ -66,6 +67,8 @@ func checkCatalogue(_ Format, d Descriptor) error {
 		return fmt.Errorf("%q declares its catalogue's levels and a reason it has none, or neither (R-CUR-007)", d.ID)
 	case d.VersionCanon == nil:
 		return fmt.Errorf("%q has the class remote and declares no version canon (R-CUR-006)", d.ID)
+	case f.Remote() != nil && CapabilitiesOf(f).Remote.Catalogue == nil:
+		return fmt.Errorf("%q has the class remote and its remote adapter does not implement formats.Catalogue (R-CUR-007, Q-CUR-109)", d.ID)
 	}
 	for _, l := range c.Levels {
 		if strings.TrimSpace(l) == "" {

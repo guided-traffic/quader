@@ -98,6 +98,7 @@ func TestR_ARCH_010_KitSkips(t *testing.T) {
 		formattest.CheckRevision: "no package rows", formattest.CheckNames: "no package names",
 		formattest.CheckView: "no package screens", formattest.CheckShared: "no routes", formattest.CheckAuthzPaths: "no routes",
 		formattest.CheckBastion: "no routes", formattest.CheckPackageShape: "no routes", formattest.CheckDelivery: "no remote class",
+		formattest.CheckCatalogue: "no remote class",
 	}
 	fx := formattest.Fixture{
 		Paths: []formattest.PathCase{{Path: "a/b.bin", Want: formats.PathInfo{Kind: formats.Content}}},
@@ -131,7 +132,8 @@ func TestR_ARCH_010_KitSkips(t *testing.T) {
 		want := []formattest.Check{
 			formattest.CheckAmbiguity, formattest.CheckClassify, formattest.CheckRewrite, formattest.CheckMerge, formattest.CheckInspect,
 			formattest.CheckHeaders, formattest.CheckSetup, formattest.CheckRevision, formattest.CheckNames, formattest.CheckView,
-			formattest.CheckShared, formattest.CheckAuthzPaths, formattest.CheckBastion, formattest.CheckPackageShape, formattest.CheckDelivery,
+			formattest.CheckShared, formattest.CheckAuthzPaths, formattest.CheckBastion, formattest.CheckPackageShape, formattest.CheckCatalogue,
+			formattest.CheckDelivery,
 		}
 		got := rep.Failed()
 		if len(got) != len(want) {

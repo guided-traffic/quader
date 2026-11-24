@@ -14,6 +14,7 @@ import (
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/proxy"
 	"github.com/guided-traffic/quader/internal/remotecuration"
+	"github.com/guided-traffic/quader/internal/remotecuration/catalogue"
 	"github.com/guided-traffic/quader/internal/remotecuration/queue"
 )
 
@@ -298,7 +299,10 @@ func (a *App) remoteDownloadsAPI() v1.RemoteDownloadsServices {
 	}
 	out := v1.RemoteDownloadsServices{
 		Queue: svc, Limits: part[downloadLimitsArea](a.parts).engine, Settings: a.cfg.Proxy.Downloads,
-		Decider: part[deliveryRulesArea](a.parts).decider,
+		Decider: part[deliveryRulesArea](a.parts).decider, Stored: catalogue.Stored{Runner: a.database()},
+	}
+	if eng, err := a.upstreamCatalogue(); err == nil {
+		out.Catalogue = eng
 	}
 	if p := part[identityArea](a.parts).principals; p != nil {
 		out.Principals = p

@@ -460,25 +460,32 @@ func (q *Queries) DebRemoteIndexesOfDirs(ctx context.Context, arg DebRemoteIndex
 }
 
 const debRemoteInsertEntries = `-- name: DebRemoteInsertEntries :exec
-INSERT INTO deb_remote_entries (repo_id, dir, index_path, package, version, architecture, path, sha256, size)
-SELECT $1::bigint, $2::text, $3::text, e.pk, e.v, e.a, e.p, e.s, e.z
+INSERT INTO deb_remote_entries (repo_id, dir, index_path, package, version, architecture, path, sha256, size, provides, description, description_md5)
+SELECT $1::bigint, $2::text, $3::text, e.pk, e.v, e.a, e.p, e.s, e.z, e.pr, e.d, NULLIF(e.m, '')
   FROM (SELECT unnest($4::text[]) AS pk, unnest($5::text[]) AS v,
                unnest($6::text[]) AS a, unnest($7::text[]) AS p,
-               unnest($8::bytea[]) AS s, unnest($9::bigint[]) AS z) AS e
+               unnest($8::bytea[]) AS s, unnest($9::bigint[]) AS z,
+               unnest($10::text[]) AS pr, unnest($11::text[]) AS d,
+               unnest($12::text[]) AS m) AS e
 `
 
 type DebRemoteInsertEntriesParams struct {
-	RepoID        int64
-	Dir           string
-	IndexPath     string
-	Packages      []string
-	Versions      []string
-	Architectures []string
-	Paths         []string
-	Sha256s       [][]byte
-	Sizes         []int64
+	RepoID          int64
+	Dir             string
+	IndexPath       string
+	Packages        []string
+	Versions        []string
+	Architectures   []string
+	Paths           []string
+	Sha256s         [][]byte
+	Sizes           []int64
+	Provides        []string
+	Descriptions    []string
+	DescriptionMd5s []string
 }
 
+// The Provides, the short description and the Description-md5 of a binary row are what the upstream catalogue searches (R-DEB-036); a
+// row of a Sources index carries them empty.
 func (q *Queries) DebRemoteInsertEntries(ctx context.Context, arg DebRemoteInsertEntriesParams) error {
 	_, err := q.db.Exec(ctx, debRemoteInsertEntries,
 		arg.RepoID,
@@ -490,6 +497,9 @@ func (q *Queries) DebRemoteInsertEntries(ctx context.Context, arg DebRemoteInser
 		arg.Paths,
 		arg.Sha256s,
 		arg.Sizes,
+		arg.Provides,
+		arg.Descriptions,
+		arg.DescriptionMd5s,
 	)
 	return err
 }

@@ -196,6 +196,11 @@ func Fixture() formattest.Fixture {
 				},
 			},
 		},
+		Catalogue: &formattest.CatalogueFixture{Cases: []formattest.CatalogueCase{{
+			Name: "a registry of the test format", Base: "https://upstream.example/",
+			Documents: map[string][]byte{"left-pad": []byte(`{"name":"left-pad","versions":{"1.0.0":{"dist":{"tarball":"x"}},"1.1.0":{},"2.0.0":{}}}`)},
+			Package:   "left-pad", Absent: "right-pad", Limit: 2,
+		}}},
 		Delivery: &formattest.DeliveryFixture{
 			Remote:  func() *formattest.MemRemote { return &formattest.MemRemote{} },
 			Package: "left-pad", Refused: "2.0.0", Kept: "1.0.0",

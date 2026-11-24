@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"slices"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/errs"
@@ -252,62 +253,87 @@ func (m *MirrorHost) downloadUpstream(repo repository.Repository, jobID string, 
 	return &backgroundUpstream{passUpstream: pu, win: mirror.NewWindow(nil, nil, share)}, nil
 }
 
-// The expansion of a bulk (R-CUR-010): the format's mirror lister names a package's versions through the worker's upstream, bounded by
-// the bulk's bounds instead of the mirror's; a sub-section's packages are the catalogue's (R3), which no format answers yet.
+// The expansion of a bulk (R-CUR-010): the format's upstream catalogue names a package's versions (Package) and a sub-section's packages
+// (Children) through the worker's upstream, never through a second lister (R-CUR-007); the bulk's bounds are applied by the queue.
 
 var _ queue.Planner = (*MirrorHost)(nil)
 
-// Versions implements [queue.Planner] over the format's mirror plan (discover.Lister.MirrorPlan): the versions newest first, each with
-// the sum of the sizes the upstream announced for its files.
-func (m *MirrorHost) Versions(ctx context.Context, repoID int64, name string, includePrereleases bool, maxVersions int) ([]queue.PlannedVersion, error) {
+// plannerPage is the page size of the expansion's catalogue calls: a package document is read once per page.
+const plannerPage = 1000
+
+// planner reads the repository and its format's catalogue for a bulk's expansion.
+func (m *MirrorHost) planner(ctx context.Context, repoID int64) (formats.Catalogue, *backgroundUpstream, error) {
 	repo, err := m.h.o.Repos.ByID(ctx, repoID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	lister, ok := m.Lister(repo.Format)
-	if !ok {
-		return nil, errs.E(errs.NotImplemented, errs.CodeNotImplemented, "The format "+repo.Format+" cannot list the versions of a package.")
+	cat := formats.RemoteCapabilities(formats.ID(repo.Format)).Catalogue
+	if cat == nil {
+		return nil, nil, errs.E(errs.NotImplemented, errs.CodeNotImplemented, "The format "+repo.Format+" has no upstream catalogue to list a package's versions with.")
 	}
 	u, err := m.downloadUpstream(repo, "", nil, fillDownloadAhead)
 	if err != nil {
+		return nil, nil, err
+	}
+	return cat, u, nil
+}
+
+// Versions implements [queue.Planner] over the format's catalogue (Package): the versions newest first, without prereleases unless
+// asked, at most maxVersions (0 for all), each with the size the upstream announces.
+func (m *MirrorHost) Versions(ctx context.Context, repoID int64, name string, includePrereleases bool, maxVersions int) ([]queue.PlannedVersion, error) {
+	cat, u, err := m.planner(ctx, repoID)
+	if err != nil {
 		return nil, err
 	}
-	plan, err := lister.MirrorPlan(ctx, &boundedUpstream{backgroundUpstream: u, max: maxVersions, prereleases: includePrereleases}, name)
-	if err != nil {
-		return nil, mapBackground(err)
-	}
 	var out []queue.PlannedVersion
-	index := map[string]int{}
-	for _, it := range plan.Items {
-		if it.Prerelease && !includePrereleases && !it.Pinned {
-			continue
+	var cursor discover.Cursor
+	for {
+		info, err := cat.Package(ctx, u, name, discover.VersionsRequest{Cursor: cursor, Limit: plannerPage})
+		if err != nil {
+			return nil, mapBackground(err)
 		}
-		i, seen := index[it.Version]
-		if !seen {
-			if maxVersions > 0 && len(out) >= maxVersions {
+		if !info.Found {
+			return nil, nil
+		}
+		for _, v := range info.Versions {
+			if !includePrereleases && slices.Contains(v.Flags, "prerelease") {
 				continue
 			}
-			i = len(out)
-			index[it.Version] = i
-			out = append(out, queue.PlannedVersion{Version: it.Version})
+			if maxVersions > 0 && len(out) >= maxVersions {
+				return out, nil
+			}
+			out = append(out, queue.PlannedVersion{Version: v.Version, Size: v.Size})
 		}
-		out[i].Size += it.Size
+		if info.Done || len(info.Cursor) == 0 {
+			return out, nil
+		}
+		cursor = info.Cursor
 	}
-	return out, nil
 }
 
-// Packages implements [queue.Planner]: the packages of a sub-section are listed by the upstream catalogue's levels, which no format
-// answers before the catalogue's package (R3).
-func (m *MirrorHost) Packages(context.Context, int64, string, string) ([]string, string, bool, error) {
-	return nil, "", true, discover.ErrNotOffered
+// Packages implements [queue.Planner] over the format's catalogue (Children): one page of the packages directly in the level the section
+// names (its path joined by "/", each part URL-encoded, as the API spells a level). An upstream that lists no levels answers
+// discover.ErrNotOffered.
+func (m *MirrorHost) Packages(ctx context.Context, repoID int64, section, cursor string) ([]string, string, bool, error) {
+	cat, u, err := m.planner(ctx, repoID)
+	if err != nil {
+		return nil, "", false, err
+	}
+	level, err := discover.ParseLevel(section)
+	if err != nil {
+		return nil, "", false, err
+	}
+	var cur discover.Cursor
+	if cursor != "" {
+		cur = discover.Cursor(cursor)
+	}
+	page, err := cat.Children(ctx, u, discover.LevelRequest{Level: level, Cursor: cur, Limit: discover.MaxLevelEntries})
+	if err != nil {
+		return nil, "", false, mapBackground(err)
+	}
+	names := make([]string, 0, len(page.Packages))
+	for _, h := range page.Packages {
+		names = append(names, h.Name)
+	}
+	return names, string(page.Cursor), page.Done || len(page.Cursor) == 0, nil
 }
-
-// boundedUpstream is a run's upstream whose version bounds are a bulk's, not the mirror's (discover.Bounded).
-type boundedUpstream struct {
-	*backgroundUpstream
-	max         int
-	prereleases bool
-}
-
-// VersionBounds implements [discover.Bounded].
-func (b *boundedUpstream) VersionBounds() (int, bool) { return b.max, b.prereleases }

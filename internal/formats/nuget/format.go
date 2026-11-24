@@ -115,11 +115,11 @@ func (f *Format) Descriptor() formats.Descriptor {
 			{Route: routeNuspec, Method: http.MethodHead, What: "a HEAD of the .nuspec"},
 			{Route: routeNupkg, Method: http.MethodHead, What: "a HEAD of the .nupkg"},
 		},
-		// The upstream catalogue (remote-curation.md R-CUR-007, formats/nuget.md R-NUGET-035): the lookup by exact name is the floor;
-		// the search waits for the catalogue's package of T-24, and IDs have no levels.
+		// The upstream catalogue (remote-curation.md R-CUR-007, formats/nuget.md R-NUGET-035): the search resource of the service index
+		// and an ID's version list with its registration (catalogue.go); IDs have no levels.
 		Catalogue: formats.CatalogueDeclaration{
 			Lookup:   true,
-			NoSearch: "The search of NuGet's upstream (R-NUGET-035) is specified and not built yet; look a package up by its exact ID.",
+			Search:   true,
 			NoLevels: "NuGet IDs have no levels; search for a prefix with id:.",
 		},
 		VersionCanon:     versionCanon{},

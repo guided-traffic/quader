@@ -57,6 +57,10 @@ var ownerRightsExempt = map[string]string{
 	"deleteDeliveryRule":  "manage on the repository or the role admin, through the decision point with the scope (R-CUR-005)",
 	"checkDeliveryRules":  "a question that writes nothing: read on the repository through the decision point with the scope (R-CUR-005)",
 	"revokeBastionToken":  "endpoints:write or tokens:revoke through the decision point, with the scope (requireAny)",
+	// >>> T-24 catalogue
+	"evaluateUpstreamVulnerabilities": "a question that writes nothing: read on the repository through the decision point with the scope " +
+		"(catalogueSetup, R-CUR-005)",
+	// <<< T-24 catalogue
 	// >>> T-24 downloads
 	"previewRemoteDownload": "read and the populate right, or manage, through the decision point with the scope (mayStart, " +
 		"remote-curation.md R-CUR-005); nothing is written",
@@ -113,6 +117,12 @@ var ownerRightsReads = map[string]string{
 	"listDeliveryRequests": "read on the repository through the decision point with the scope (requestSetup, R-CUR-005); a caller " +
 		"without manage sees only the entries it asks in",
 	// <<< T-24 requests
+	// >>> T-24 catalogue
+	"getUpstreamCatalogue":    "read on the repository through the decision point with the scope (catalogueSetup, R-CUR-005)",
+	"searchUpstreamCatalogue": "as getUpstreamCatalogue",
+	"listUpstreamLevel":       "as getUpstreamCatalogue",
+	"getUpstreamPackage":      "as getUpstreamCatalogue",
+	// <<< T-24 catalogue
 	"listCacheEntries":                 "decided through the decision point with the scope (requireCacheReader)",
 	"getVulnerabilitySummary":          "counts over the repositories the read scope of the decision point admits for the subject, scope included (vulnCaller, ReadScopeOn)",
 	"getVulnerabilityTrend":            "as getVulnerabilitySummary",

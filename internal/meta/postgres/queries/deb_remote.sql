@@ -134,11 +134,15 @@ ON CONFLICT (repo_id, dir, path) DO UPDATE
 DELETE FROM deb_remote_entries WHERE repo_id = sqlc.arg(repo_id)::bigint AND dir = sqlc.arg(dir)::text AND index_path = sqlc.arg(path)::text;
 
 -- name: DebRemoteInsertEntries :exec
-INSERT INTO deb_remote_entries (repo_id, dir, index_path, package, version, architecture, path, sha256, size)
-SELECT sqlc.arg(repo_id)::bigint, sqlc.arg(dir)::text, sqlc.arg(index_path)::text, e.pk, e.v, e.a, e.p, e.s, e.z
+-- The Provides, the short description and the Description-md5 of a binary row are what the upstream catalogue searches (R-DEB-036); a
+-- row of a Sources index carries them empty.
+INSERT INTO deb_remote_entries (repo_id, dir, index_path, package, version, architecture, path, sha256, size, provides, description, description_md5)
+SELECT sqlc.arg(repo_id)::bigint, sqlc.arg(dir)::text, sqlc.arg(index_path)::text, e.pk, e.v, e.a, e.p, e.s, e.z, e.pr, e.d, NULLIF(e.m, '')
   FROM (SELECT unnest(sqlc.arg(packages)::text[]) AS pk, unnest(sqlc.arg(versions)::text[]) AS v,
                unnest(sqlc.arg(architectures)::text[]) AS a, unnest(sqlc.arg(paths)::text[]) AS p,
-               unnest(sqlc.arg(sha256s)::bytea[]) AS s, unnest(sqlc.arg(sizes)::bigint[]) AS z) AS e;
+               unnest(sqlc.arg(sha256s)::bytea[]) AS s, unnest(sqlc.arg(sizes)::bigint[]) AS z,
+               unnest(sqlc.arg(provides)::text[]) AS pr, unnest(sqlc.arg(descriptions)::text[]) AS d,
+               unnest(sqlc.arg(description_md5s)::text[]) AS m) AS e;
 
 -- name: DebRemoteDeleteIndex :exec
 DELETE FROM deb_remote_indexes WHERE repo_id = sqlc.arg(repo_id)::bigint AND dir = sqlc.arg(dir)::text AND path = sqlc.arg(path)::text;

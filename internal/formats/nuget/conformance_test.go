@@ -252,6 +252,7 @@ func conformance(f *Format) formattest.Fixture {
 		OptionNames: []string{"--password", "--store-password-in-clear-text", "-Password", "ClearTextPassword", "QUADER_TOKEN"},
 		Remote:      remoteFixture(),
 		Delivery:    deliveryFixture(),
+		Catalogue:   catalogueFixture(),
 		Merge:       mergeFixture(),
 		Discovery:   discoveryFixture(),
 	}

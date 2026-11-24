@@ -111,7 +111,8 @@ for `Lookup` and `List`. It panics on:
   the class `remote` nor the class `virtual`, whose method is not GET or HEAD or that says nothing of what it names;
 - the class `remote` without `Descriptor.Catalogue` (the lookup by exact name, and for search and levels each the call or a one-sentence
   reason, never both) or without `Descriptor.VersionCanon` (the canonical form of a version, `catalog.VersionCanon`), and either of them on
-  a format without the class ([remote-curation.md](../spec/remote-curation.md) R-CUR-006, R-CUR-007, [checkCatalogue](../../internal/formats/catalogue.go));
+  a format without the class, and a remote adapter that does not implement `formats.Catalogue` ([remote-curation.md](../spec/remote-curation.md)
+  R-CUR-006, R-CUR-007, [checkCatalogue](../../internal/formats/catalogue.go));
 - a `DataPort` that is no interface type;
 - a format whose `Signatures()` is nil, or whose declaration says neither its kinds nor why it has none, says both, or leaves a field of
   a kind empty or outside the roles and schemes of [signatures.md](../spec/signatures.md) R-SIG-001 (R-SIG-022, Q-SIG-43); a format
@@ -647,7 +648,9 @@ the item store, [oci.md](oci.md#upload-sessions-r-stor-011); the in-memory host 
    answered from a member's own handler); `ProbedOnSeen` says which, and `TestR_REPO_065_AProbeIsAProbeThroughAVirtualRepositoryToo` holds
    that every probe route serves the class `virtual` (Q-REPO-367).
    A format with the class `remote` also declares its upstream catalogue (`Descriptor.Catalogue`) and its version canon
-   (`Descriptor.VersionCanon`) and adds its rows to `TestR_CUR_007_EveryRemoteFormatDeclaresItsCatalogue` and
+   (`Descriptor.VersionCanon`), implements `formats.Catalogue` on its remote adapter in its `catalogue.go` (`Register` refuses a remote
+   adapter without it), gives kit check 22 its `Catalogue` fixture of answers its real upstream gave (one case per upstream whose
+   capabilities differ, in `testdata/catalogue/`), and adds its rows to `TestR_CUR_007_EveryRemoteFormatDeclaresItsCatalogue` and
    `TestR_CUR_006_EveryRemoteFormatHasItsVersionCanon` in [catalogue_test.go](../../internal/formats/all/catalogue_test.go)
    ([remote-curation.md](../spec/remote-curation.md) R-CUR-023).
    Give every route at least one example; a name that two routes could both match needs a `Route.Match` that tells them apart.

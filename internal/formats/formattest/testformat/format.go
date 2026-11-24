@@ -192,6 +192,9 @@ const (
 	// DropsChallenge renders a refusal without a credential as 401 without the WWW-Authenticate the error carries: a client is never told
 	// to authenticate. Check 7 (identity-and-authentication.md R-AUTH-002).
 	DropsChallenge Defect = "drops-challenge"
+	// CatalogueRawVersions answers the catalogue's versions as the document spells them, with a "v" before each, instead of in the version
+	// canon: a rule written on a version would never meet the catalogue's row. Check 22 (remote-curation.md R-CUR-006, R-CUR-007).
+	CatalogueRawVersions Defect = "catalogue-raw-versions"
 )
 
 // UndeclaredHeader is the protocol header the defect UndeclaredReplayHeader puts on the package document.

@@ -56,6 +56,7 @@ func conformance(t testing.TB) formattest.Fixture {
 		WikiSamples: []string{"# tools 1.0.0", "# tools 1.1.0", "# tools 2.0.0"},
 		Remote:      remoteFixture(),
 		Delivery:    deliveryFixture(),
+		Catalogue:   catalogueFixture(),
 		Merge:       mergeFixture(),
 		Discovery:   discoveryFixture(),
 		Names: []formattest.NameCase{

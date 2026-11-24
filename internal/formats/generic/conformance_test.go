@@ -32,6 +32,7 @@ func conformance(t testing.TB) formattest.Fixture {
 			formattest.CheckRewrite:    "local class only: no remote adapter, no upstream document to rewrite",
 			formattest.CheckMerge:      "local class only: no virtual adapter",
 			formattest.CheckDelivery:   "local class only: no remote class, so no delivery rules (remote-curation.md R-CUR-023)",
+			formattest.CheckCatalogue:  "local class only: no remote class, so no upstream catalogue (remote-curation.md R-CUR-023)",
 			formattest.CheckInspect:    "Inspect reads no archive: an upload is an opaque file",
 			formattest.CheckHeaders:    "no routes: the content headers of /files/ are tested with the generic layer (R-STOR-012)",
 			formattest.CheckRevision:   "no package rows: the format writes none and keeps no hook",

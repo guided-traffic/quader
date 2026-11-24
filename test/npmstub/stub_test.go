@@ -319,10 +319,14 @@ func TestPingUnknownPathsAndMethods(t *testing.T) {
 	if s := f.status("/no-such-package-anywhere"); s != 404 {
 		t.Errorf("unknown package: %d", s)
 	}
-	if s := f.status("/-/v1/search?text=x"); s != 404 {
-		t.Errorf("search: %d", s)
+	// The search answers names that hold the text and refuses a text of one character, as the public registry does (R-NPM-049).
+	if s := f.status("/-/v1/search?text=x"); s != 400 {
+		t.Errorf("search of one character: %d", s)
 	}
 	_, name := names(t)
+	if r := f.get("/-/v1/search?text=" + url.QueryEscape(name[:2]) + "&size=1"); r.status != 200 || !strings.Contains(string(r.body), `"total"`) {
+		t.Errorf("search: %d %s", r.status, r.body)
+	}
 	if r := f.do(http.MethodPut, docPath(name), nil, strings.NewReader("{}")); r.status != 405 || r.header.Get("Allow") == "" {
 		t.Errorf("PUT: %d", r.status)
 	}
@@ -1013,7 +1017,7 @@ func TestPathParsing(t *testing.T) {
 		{"/b/-/..%2f..%2fx.tgz", route{kind: KindOther, name: "b"}},
 		{"/@a", route{kind: KindOther}},
 		{"/", route{kind: KindOther}},
-		{"/-/v1/search", route{kind: KindOther}},
+		{"/-/v1/search", route{kind: KindSearch}},
 		{"/b/%zz", route{kind: KindOther}},
 	}
 	for _, c := range cases {

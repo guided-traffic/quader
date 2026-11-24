@@ -1809,7 +1809,9 @@ answers what `apt search` answers.
   index of its own, its long descriptions in `deb_remote_descriptions (repo_id, dir, index_path, md5, text)` (a text at most 8 KiB, the rows
   going with their index by the foreign key to `deb_remote_indexes`), so the search reads rows and no file: a row's long description is
   the description of its `(repo_id, dir, description_md5)` (Q-CUR-16; the migration is
-  [00114_remote_curation.sql](../../../internal/meta/postgres/migrations/00114_remote_curation.sql), the parse is not built).
+  [00114_remote_curation.sql](../../../internal/meta/postgres/migrations/00114_remote_curation.sql)). As built, the parse keeps the
+  Provides, the short description and the `Description-md5`, and the search matches the name, Provides and the short description; the
+  parse of `Translation-en` and **Read the index** are not built ([Q-CUR-62](../remote-curation.md#q-cur-62--debian-searches-the-name-provides-and-the-short-description-the-long-descriptions-and-read-the-index-wait)).
 - **The rules** see a binary package's name (`Package`) and its version; a source package's name is no subject of a rule.
 - **Documents** (Q-CUR-9): a Debian remote passes its upstream's `InRelease`, `Release` and indexes through byte for byte (R-DEB-019), so
   a client that uses it directly lists every package and is refused the files the rules refuse, with the status line `403 Forbidden`

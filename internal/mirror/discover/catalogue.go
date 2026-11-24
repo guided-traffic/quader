@@ -117,11 +117,14 @@ type VersionFacts struct {
 	// Version is canonical (R-CUR-006).
 	Version   string
 	Published time.Time
-	// Size is 0 when unknown.
-	Size      int64
-	Flags     []string
-	Platforms []string
-	Digest    string
+	// Size is the size of the version's download as the upstream announces it, 0 when unknown.
+	Size int64
+	// UnpackedSize is the size of the unpacked files where the upstream tells only that (npm's dist.unpackedSize), 0 otherwise; it is
+	// never counted as a download's size.
+	UnpackedSize int64
+	Flags        []string
+	Platforms    []string
+	Digest       string
 }
 
 // PackageInfo is a package looked up by its exact name and one page of its versions, newest first by the format's order.
@@ -152,3 +155,36 @@ type Catalogue interface {
 // ErrNotOffered answers a catalogue call the repository's upstream does not answer (a search where its caps say none, a level where
 // it has none); the API answers 400 catalogue_not_offered (R-CUR-009).
 var ErrNotOffered = errors.New("discover: the upstream does not offer this catalogue call")
+
+// UnavailableError is a format's answer that the repository's upstream does not answer a catalogue call as the format expects (R-CUR-008):
+// an npm registry without the search route (404, 405, 501), a Galaxy without the keyword search (404), or an undocumented endpoint whose
+// answer is not a page of the expected shape (Docker Hub's repository search). The engine turns the capability off for its cache
+// period, answers the call with 400 catalogue_not_offered and Reason, and says Reason in the capabilities until the period ends.
+type UnavailableError struct {
+	// Reason is the sentence a person reads, one sentence, no URL and no credential.
+	Reason string
+	// Shape says that the answer was not of the expected shape (counted as outcome shape), not that the route is absent.
+	Shape bool
+}
+
+func (e *UnavailableError) Error() string {
+	return "discover: the upstream does not answer the call: " + e.Reason
+}
+
+// Is makes errors.Is(err, ErrNotOffered) true for an UnavailableError: whoever only asks whether the call is offered reads it so.
+func (e *UnavailableError) Is(target error) bool { return target == ErrNotOffered }
+
+// RepositoryIDer is implemented by every [Upstream] the product lends (a pass's, a background run's, the catalogue's): the repository
+// the call is for. A format whose catalogue or plan reads rows of its own (Debian's parsed indexes) needs it, and the upstream is all
+// it is given.
+type RepositoryIDer interface{ RepositoryID() int64 }
+
+// The bounds of a catalogue page (R-CUR-008): what one call answers at most. The engine clamps a request's Limit to them; a format
+// honours the Limit it is handed.
+const (
+	MaxSearchHits     = 50
+	MaxLevelEntries   = 200
+	MaxVersionsOnPage = 100
+	// MaxTextRunes cuts a text of the upstream (a description) before it reaches a person.
+	MaxTextRunes = 1000
+)

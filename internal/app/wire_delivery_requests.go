@@ -60,6 +60,8 @@ func (a *App) buildRequests() (*requests.Service, *retention.Service, error) {
 	}
 	req, err := requests.New(requests.Options{
 		Runner: db, Recorder: a.auditRecorder(), Rules: rules, Queue: q, Retention: ret, Settings: a.requestSettings,
+		// The upstream catalogue checks the subject of an ask (R-CUR-015, wire_upstream_catalogue.go).
+		Lookup: catalogueLookup{a},
 	})
 	if err != nil {
 		return nil, nil, err

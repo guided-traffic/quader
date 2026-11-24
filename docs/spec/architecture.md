@@ -167,7 +167,7 @@ routes read them. The areas of the client listener are split by route family:
 | `ui-assets` | the shared asset store of the UI ([ha-and-helm.md](ha-and-helm.md) R-HA-020, Q-HA-120): the build's hashed files published before the replica turns ready and renewed hourly, the files of the other release read from it | yes | **no** | no | yes |
 | `ci_exchange` | the CI token exchange (`POST /api/v1/auth/oidc/token`, the npm exchange of R-NPM-022 at P1) | yes | **no** | no | yes |
 | `mirror` | the counters and the gauge source of R-REPO-057 (every role), the engine built at the first job of a process that claims one (R-REPO-053, Q-ARCH-312) | yes | yes | yes | yes |
-| `mirror-engine` | the remote engine and the format host behind `mirror.Host`: in `all` the engine and host of the client path, in `worker` an engine of its own for background requests (Q-ARCH-316, Q-ARCH-317) | **no** | **no** | yes | `all` only |
+| `mirror-engine` | the remote engine and the format host behind `mirror.Host` and the upstream catalogue's lent upstream: in `web` and `all` the engine and host of the client path, in `worker` and `api` an engine of its own for background requests, built at its first use (Q-ARCH-316, Q-ARCH-317, [remote-curation.md](remote-curation.md) Q-CUR-60) | yes | **no** | yes | yes |
 
 - A `packages` replica MUST NOT build the areas `sessions`, `login`, `ci_exchange`, `packages-api` and `vuln-api`, MUST NOT
   read the OIDC client-secret or break-glass files (the chart does not mount them, [ha-and-helm.md](ha-and-helm.md) R-HA-030),
@@ -2833,9 +2833,9 @@ Priority: **MVP** · Covers: FMT-001, FMT-002, FMT-003
     format in the same change, R-ARCH-025);
   - a format with the class `remote` that declares no upstream catalogue (`Descriptor.Catalogue`: the lookup by exact name, and for
     search and levels each the call or a reason, never both) or no version canon (`Descriptor.VersionCanon`), and a format without the
-    class that declares either ([remote-curation.md](remote-curation.md) R-CUR-006, R-CUR-007; built). From the catalogue's package of
-    T-24 on, also a format whose remote adapter does not implement `Catalogue` while its declaration names the lookup: the five formats'
-    catalogues and that check land in one change ([Q-CUR-109](remote-curation.md#q-cur-109--the-catalogues-browsing-calls-live-in-the-leaf-discover-and-registers-adapter-check-lands-with-the-adapters));
+    class that declares either ([remote-curation.md](remote-curation.md) R-CUR-006, R-CUR-007; built), and a format whose remote adapter
+    does not implement `Catalogue`: the five formats' catalogues and that check landed in one change, the catalogue's package of T-24
+    ([Q-CUR-109](remote-curation.md#q-cur-109--the-catalogues-browsing-calls-live-in-the-leaf-discover-and-registers-adapter-check-lands-with-the-adapters); built);
   - a format with the class `remote` that declares neither `Probes` nor a `NoProbe` reason, or a probe on a route it does not have,
     that does not serve the class `remote`, whose method is not GET or HEAD, or that says nothing of what it names (R-REPO-065);
   - a route set that fails the kit's ambiguity check, which `Register` runs itself: every route has
@@ -2968,13 +2968,18 @@ own tests:
 
 Checks 19 (the Bastion's facts, [bastion.md](bastion.md) R-BAS-058), 20 (the routes whose clients check a digest) and 21 (the package
 shapes, [bastion.md](bastion.md) R-BAS-086) are specified on their pages. Two more are specified on 2026-11-23
-([remote-curation.md](remote-curation.md) R-CUR-022); 21 was taken, so they are 22 (not built) and 23 (built, `CheckDelivery` in
+([remote-curation.md](remote-curation.md) R-CUR-022); 21 was taken, so they are 22 (built, `CheckCatalogue` in
+`internal/formats/formattest/checks_catalogue.go`) and 23 (built, `CheckDelivery` in
 `internal/formats/formattest/checks_delivery.go`, [Q-CUR-42](remote-curation.md#q-cur-42--the-places-the-rules-decide-as-built-kit-check-23-oci-and-debian-in-the-kit)):
 
 22. The upstream catalogue (R-CUR-007), for a format with the class remote: each declared call answers the fixture's fake upstream in
     process with a page of names the format's rule accepts, a cursor that continues and an end; an undeclared call answers
     `ErrNotOffered`; an answer above the catalogue's bounds fails; no call reaches a host outside the upstream, its `extraHosts` and the
-    declared catalogue hosts.
+    declared catalogue hosts. As built, a fixture names one case per upstream whose capabilities differ (a preset with its operator's
+    API, a registry without), each with canned answers its upstream gave, the search, level and package it reads, a name the upstream
+    does not have and a page size that makes every call page; the capabilities decide which calls must answer, and a case whose upstream
+    does not answer the search as the format expects (`ExpectSearchUnavailable`) holds the call to a `*discover.UnavailableError`. A
+    version the catalogue answers is in the format's canon (`testformat.CatalogueRawVersions` fails it).
 23. The delivery rules (R-CUR-003, R-CUR-004), for a format with the class remote: against a host whose rule set refuses one version of
     the fixture's package, no document of the format lists that version, its file answers `403` with `Cache-Control: no-store` and the
     code (or the refusal's text) in the format's shape, and a package whose every version is refused answers that refusal at its
@@ -10199,6 +10204,10 @@ not have, and failed.
 
 **Rationale:** what a process runs must be in the table that says what a process runs. The development agent would revisit it with the
 owner's decision on the topology.
+
+**Extended with the upstream catalogue (2026-11-24).** The roles `api` and `web` build the area too: the catalogue of the management API
+reads an upstream through the host's lent upstream, which in `web` stands on the client path's engine and in `api` on an engine of its
+own built at the first call ([remote-curation.md](remote-curation.md) Q-CUR-60).
 
 **Applied in the spec:** R-ARCH-001 (the area table), [docs/developer/architecture.md](../developer/architecture.md). Code:
 [internal/app/wire_mirror_host.go](../../internal/app/wire_mirror_host.go), `steps.go`. Test: `TestR_ARCH_001_RoleTableIsData`,

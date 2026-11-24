@@ -20407,6 +20407,418 @@ paths:
         "503":
           $ref: "#/components/responses/Unavailable"
   # <<< T-24 downloads
+  # >>> T-24 catalogue
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/upstream:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+    get:
+      operationId: getUpstreamCatalogue
+      tags: [remote-curation]
+      summary: The upstream catalogue's capabilities of a remote repository
+      description: |
+        What a person can see of the repository's upstream (remote-curation.md R-CUR-007, R-CUR-009): how it searches (by the upstream,
+        by Quader over an index it holds, or not, with the reason), the levels above a package (or why there are none), whether the
+        upstream tells a version's size, and the hosts besides the upstream's the catalogue reaches (from the preset only, R-CUR-008); with
+        the delivery mode, the number of rules, the open requests (to those who may set rules) and the queue's rows by state. A capability
+        whose upstream did not answer as expected is `none` with its sentence for the cache period. Needs `read` on the repository; a
+        repository hidden from the caller answers `404`, a local or virtual one `400 not_applicable`.
+      x-quader-permission:
+        authenticated: true
+      responses:
+        "200":
+          description: The capabilities.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpstreamCatalogue"
+              example:
+                search: upstream
+                searchWindow: 5250
+                searchNote: The registry ranks names, descriptions, keywords and maintainers; a query takes 2 to 64 characters.
+                searchReason: null
+                levels: [scope]
+                levelsReason: null
+                sizes: unknown
+                hosts: [replicate.npmjs.com]
+                mode: allExceptBlocked
+                rules: 2
+                openRequests: null
+                queue: {waiting: 0, running: 1, failed: 0, done: 4}
+                maySetRules: false
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/search:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+    get:
+      operationId: searchUpstreamCatalogue
+      tags: [remote-curation]
+      summary: Search the upstream of a remote repository
+      description: |
+        One page of a text query (R-CUR-007, R-CUR-009), answered by the upstream or over an index Quader holds; nothing is stored in the
+        cache (R-CUR-008). Every hit carries the repository's state beside the upstream's facts: `delivery`, `stored`, `request`. In the
+        mode `onlyAllowed` a caller who may not set rules sees only the hits whose package is delivered, with `withheld` and its sentence
+        (Q-CUR-14). `400 catalogue_not_offered` where the repository has no search, `429 catalogue_budget_exhausted` with `Retry-After`
+        when the catalogue's budget of the repository or of the person is used up or the upstream rate limits Quader, `502
+        catalogue_answer_too_large` above a bound. Needs `read`; a local or virtual repository answers `400 not_applicable`.
+      x-quader-permission:
+        authenticated: true
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: The text, 1 to 128 characters after trimming; a format may narrow it (npm takes 2 to 64).
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 1024
+        - name: namesOnly
+          in: query
+          description: Match names only (Debian, as `apt-cache search --names-only`).
+          schema:
+            type: boolean
+        - name: level
+          in: query
+          description: Restrict the query to a level where the upstream can; the path joined by `/`, each part URL-encoded.
+          schema:
+            type: string
+            maxLength: 2048
+        - name: cursor
+          in: query
+          description: The `nextCursor` of the previous page; opaque, valid for the same call and arguments.
+          schema:
+            type: string
+            maxLength: 8192
+        - name: limit
+          in: query
+          description: Hits on the page, at most 50.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 50
+      responses:
+        "200":
+          description: One page of hits.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpstreamSearchPage"
+              example:
+                hits:
+                  - name: "@tufjs/models"
+                    description: TUF metadata models
+                    latest: 5.0.3
+                    updated: "2026-11-19T22:21:33Z"
+                    flags: []
+                    delivery: {delivered: true, decidedBy: {mode: allExceptBlocked}}
+                    stored: none
+                    request: null
+                total: 4
+                nextCursor: eyJvZmZzZXQiOjJ9
+                done: false
+                truncated: false
+                note: null
+                withheld: null
+                withheldNote: null
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/levels:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+    get:
+      operationId: listUpstreamLevel
+      tags: [remote-curation]
+      summary: List a level of the upstream of a remote repository
+      description: |
+        One page of a level (R-CUR-007, R-CUR-009): the levels below it and the packages directly in it, each package with the
+        repository's state. A level is its path joined by `/`, each part URL-encoded; none is the root. Where a level's own names are not
+        listable (npm's scopes, Docker Hub's namespaces), the root lists nothing and a level is entered by its name. In the mode
+        `onlyAllowed` a caller who may not set rules sees only the delivered packages, with `withheld`. `400 catalogue_not_offered` where
+        the upstream lists no levels. Needs `read`; a local or virtual repository answers `400 not_applicable`.
+      x-quader-permission:
+        authenticated: true
+      parameters:
+        - name: level
+          in: query
+          description: The level's path joined by `/`, each part URL-encoded; absent for the root.
+          schema:
+            type: string
+            maxLength: 2048
+        - name: cursor
+          in: query
+          description: The `nextCursor` of the previous page; opaque, valid for the same call and arguments.
+          schema:
+            type: string
+            maxLength: 8192
+        - name: limit
+          in: query
+          description: Entries on the page, at most 200.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 200
+      responses:
+        "200":
+          description: One page of the level.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpstreamLevelPage"
+              example:
+                levels: []
+                packages:
+                  - name: "@tufjs/cli"
+                    description: ""
+                    latest: null
+                    updated: null
+                    flags: []
+                    delivery: {delivered: true, decidedBy: {mode: allExceptBlocked}}
+                    stored: partial
+                    request: null
+                total: null
+                nextCursor: null
+                done: true
+                withheld: null
+                withheldNote: null
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/package:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+    get:
+      operationId: getUpstreamPackage
+      tags: [remote-curation]
+      summary: Look a package of the upstream up by its exact name
+      description: |
+        A package by its exact name and one page of its versions, newest first by the format's order (R-CUR-007, R-CUR-009): what the
+        upstream tells of each without a download (time, size, flags, platforms, digest) and the repository's state of each (`delivery`,
+        `stored`, `queued`, `request`). The package document is read from the repository's store when it holds one and otherwise without
+        storing it (R-CUR-008). Every reader may look up any package, in either mode, so that a person can ask for it (Q-CUR-14). `404
+        catalogue_not_found` when the upstream does not have it. Needs `read`; a local or virtual repository answers `400 not_applicable`.
+      x-quader-permission:
+        authenticated: true
+      parameters:
+        - name: name
+          in: query
+          required: true
+          description: The package's exact name in any spelling the format reads.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 512
+        - name: filter
+          in: query
+          description: A substring of the version, applied by Quader.
+          schema:
+            type: string
+            maxLength: 128
+        - name: cursor
+          in: query
+          description: The `nextCursor` of the previous page; opaque, valid for the same call and arguments.
+          schema:
+            type: string
+            maxLength: 8192
+        - name: limit
+          in: query
+          description: Versions on the page, at most 100.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 100
+      responses:
+        "200":
+          description: The package and one page of its versions.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpstreamPackage"
+              example:
+                name: left-pad
+                description: String left pad
+                tags: {latest: 1.3.0}
+                delivery: {delivered: true, decidedBy: {mode: allExceptBlocked}}
+                stored: partial
+                request: null
+                versions:
+                  - version: 1.3.0
+                    published: "2018-04-09T00:56:58Z"
+                    size: null
+                    unpackedSize: null
+                    flags: []
+                    platforms: []
+                    digest: sha512-VBRr0Rr0ZpYtQmtQ...
+                    delivery: {delivered: true, decidedBy: {mode: allExceptBlocked}}
+                    stored: whole
+                    queued: null
+                    request: null
+                total: 2
+                nextCursor: null
+                done: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/vulnerabilities:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+    post:
+      operationId: evaluateUpstreamVulnerabilities
+      tags: [remote-curation]
+      summary: The vulnerability verdicts of versions the repository has not stored
+      description: |
+        The vulnerability verdict of each named version that the repository does not hold, computed as the miss gate computes it
+        (R-VULN-015, `EvaluateMiss`): nothing is fetched and nothing is written (R-CUR-009). A version the repository stores answers
+        `stored`, whose verdicts are the package API's version view. A format the vulnerability scanning does not cover, or a repository
+        whose upstream it does not evaluate, answers `notCovered: true` (R-CUR-014). Needs `read`; a local or virtual repository answers
+        `400 not_applicable`. A question, not a change: it needs no CSRF token beyond the session's and writes no event.
+      x-quader-permission:
+        authenticated: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpstreamVulnerabilitiesRequest"
+            example:
+              name: lodash
+              versions: [4.17.20, 4.17.21]
+      responses:
+        "200":
+          description: The verdicts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpstreamVulnerabilities"
+              example:
+                notCovered: false
+                versions:
+                  - {version: 4.17.20, stored: false, verdict: blocked, reason: malicious, advisoryId: MAL-2026-1, enforced: true}
+                  - {version: 4.17.21, stored: false, verdict: none, reason: null, advisoryId: null, enforced: false}
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  # <<< T-24 catalogue
 components:
   securitySchemes:
     bearerAuth:
@@ -33406,3 +33818,315 @@ components:
         retried:
           type: integer
     # <<< T-24 downloads
+    # >>> T-24 catalogue
+    UpstreamCatalogue:
+      type: object
+      additionalProperties: false
+      description: |
+        The upstream catalogue's capabilities of a remote repository (R-CUR-007, R-CUR-009): read per repository, since one format's
+        upstreams differ.
+      required: [search, searchWindow, searchNote, searchReason, levels, levelsReason, sizes, hosts, mode, rules, openRequests, queue, maySetRules]
+      properties:
+        search:
+          type: string
+          enum: [upstream, index, none]
+          x-enum-varnames: [CatalogueSearchUpstream, CatalogueSearchIndex, CatalogueSearchNone]
+          description: "upstream: the upstream answers a text query; index: Quader answers it over an index it holds; none: no search."
+        searchWindow:
+          type: [integer, "null"]
+          description: The deepest hit the upstream's search reaches; null when it says nothing.
+        searchNote:
+          type: [string, "null"]
+          description: What a query matches, one sentence.
+        searchReason:
+          type: [string, "null"]
+          description: Why there is no search, one sentence.
+        levels:
+          type: array
+          items:
+            type: string
+          description: The kinds of the levels above a package, outermost first (scope; namespace; project; suite, component, architecture).
+        levelsReason:
+          type: [string, "null"]
+          description: Why the upstream lists no levels; null where the root lists packages or levels.
+        sizes:
+          type: string
+          enum: [known, perVersion, unknown]
+          x-enum-varnames: [CatalogueSizesKnown, CatalogueSizesPerVersion, CatalogueSizesUnknown]
+        hosts:
+          type: array
+          items:
+            type: string
+          description: The hosts besides the upstream's that the catalogue reaches, from the preset (R-CUR-008); none receives a credential.
+        mode:
+          type: string
+          enum: [allExceptBlocked, onlyAllowed]
+          x-enum-varnames: [CatalogueModeAllExceptBlocked, CatalogueModeOnlyAllowed]
+        rules:
+          type: integer
+          minimum: 0
+          description: The repository's delivery rules.
+        openRequests:
+          type: [integer, "null"]
+          description: The open request entries; null for a caller who may not set rules.
+        queue:
+          type: object
+          additionalProperties: false
+          required: [waiting, running, failed, done]
+          properties:
+            waiting:
+              type: integer
+            running:
+              type: integer
+            failed:
+              type: integer
+            done:
+              type: integer
+        maySetRules:
+          type: boolean
+          description: The caller holds manage on the repository or the system role admin (R-CUR-005).
+    UpstreamRequestState:
+      type: [object, "null"]
+      additionalProperties: false
+      description: The open request entry of a subject (R-CUR-015), null for none.
+      required: [id, askers, refusals]
+      properties:
+        id:
+          type: string
+          format: uuid
+        askers:
+          type: integer
+        refusals:
+          type: integer
+          format: int64
+    UpstreamQueued:
+      type: [object, "null"]
+      additionalProperties: false
+      description: The queue row of a download of the version that waits or runs (R-CUR-011), null for none.
+      required: [id, state, origin, attempts, maxAttempts, nextAttemptAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        state:
+          type: string
+          enum: [waiting, running]
+          x-enum-varnames: [UpstreamQueuedWaiting, UpstreamQueuedRunning]
+        origin:
+          type: string
+        attempts:
+          type: integer
+        maxAttempts:
+          type: integer
+        nextAttemptAt:
+          type: [string, "null"]
+          format: date-time
+    UpstreamHit:
+      type: object
+      additionalProperties: false
+      description: |
+        A package of a search or a level (R-CUR-009): the upstream's facts as plain text and the repository's state: `delivery` (the
+        package's decision of the rules), `stored` (`none`, or `partial` when the repository holds a version of it) and `request`.
+      required: [name, description, latest, updated, flags, delivery, stored, request]
+      properties:
+        name:
+          type: string
+          description: The format's normalized name.
+        description:
+          type: string
+          maxLength: 1000
+        latest:
+          type: [string, "null"]
+        updated:
+          type: [string, "null"]
+          format: date-time
+        flags:
+          type: array
+          items:
+            type: string
+          description: deprecated, unlisted, official, verified, insecure, unsigned-index.
+        delivery:
+          $ref: "#/components/schemas/DeliveryDecision"
+        stored:
+          type: string
+          enum: [none, partial]
+          x-enum-varnames: [UpstreamHitStoredNone, UpstreamHitStoredPartial]
+        request:
+          $ref: "#/components/schemas/UpstreamRequestState"
+    UpstreamSearchPage:
+      type: object
+      additionalProperties: false
+      description: One page of a text query (R-CUR-007, R-CUR-009).
+      required: [hits, total, nextCursor, done, truncated, note, withheld, withheldNote]
+      properties:
+        hits:
+          type: array
+          items:
+            $ref: "#/components/schemas/UpstreamHit"
+        total:
+          type: [integer, "null"]
+          description: The upstream's count; null when it does not say.
+        nextCursor:
+          type: [string, "null"]
+        done:
+          type: boolean
+        truncated:
+          type: boolean
+          description: The upstream's window ends before its total.
+        note:
+          type: [string, "null"]
+        withheld:
+          type: [integer, "null"]
+          description: In the mode onlyAllowed, the hits of this page a caller who may not set rules does not see (Q-CUR-14).
+        withheldNote:
+          type: [string, "null"]
+    UpstreamLevelPage:
+      type: object
+      additionalProperties: false
+      description: One page of a level (R-CUR-007, R-CUR-009).
+      required: [levels, packages, total, nextCursor, done, withheld, withheldNote]
+      properties:
+        levels:
+          type: array
+          items:
+            type: string
+        packages:
+          type: array
+          items:
+            $ref: "#/components/schemas/UpstreamHit"
+        total:
+          type: [integer, "null"]
+        nextCursor:
+          type: [string, "null"]
+        done:
+          type: boolean
+        withheld:
+          type: [integer, "null"]
+        withheldNote:
+          type: [string, "null"]
+    UpstreamVersion:
+      type: object
+      additionalProperties: false
+      description: |
+        A version of a package as the upstream tells it without a download, with the repository's state: `delivery` (the rules'
+        decision), `stored` (`none` or `whole`), `queued` and `request` (R-CUR-009). The version is canonical (R-CUR-006).
+      required: [version, published, size, unpackedSize, flags, platforms, digest, delivery, stored, queued, request]
+      properties:
+        version:
+          type: string
+        published:
+          type: [string, "null"]
+          format: date-time
+        size:
+          type: [integer, "null"]
+          format: int64
+          description: The download's size the upstream announces; null when it does not.
+        unpackedSize:
+          type: [integer, "null"]
+          format: int64
+          description: The unpacked files' size where the upstream tells only that (npm); never counted as a download's size.
+        flags:
+          type: array
+          items:
+            type: string
+          description: deprecated, yanked, unlisted, prerelease, vulnerable.
+        platforms:
+          type: array
+          items:
+            type: string
+        digest:
+          type: [string, "null"]
+        delivery:
+          $ref: "#/components/schemas/DeliveryDecision"
+        stored:
+          type: string
+          enum: [none, whole]
+          x-enum-varnames: [UpstreamVersionStoredNone, UpstreamVersionStoredWhole]
+        queued:
+          $ref: "#/components/schemas/UpstreamQueued"
+        request:
+          $ref: "#/components/schemas/UpstreamRequestState"
+    UpstreamPackage:
+      type: object
+      additionalProperties: false
+      description: A package looked up by its exact name and one page of its versions (R-CUR-007, R-CUR-009).
+      required: [name, description, tags, delivery, stored, request, versions, total, nextCursor, done]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          maxLength: 1000
+        tags:
+          type: object
+          additionalProperties:
+            type: string
+          description: npm's dist-tags; empty for a format without.
+        delivery:
+          $ref: "#/components/schemas/DeliveryDecision"
+        stored:
+          type: string
+          enum: [none, partial]
+          x-enum-varnames: [UpstreamPackageStoredNone, UpstreamPackageStoredPartial]
+        request:
+          $ref: "#/components/schemas/UpstreamRequestState"
+        versions:
+          type: array
+          items:
+            $ref: "#/components/schemas/UpstreamVersion"
+        total:
+          type: [integer, "null"]
+        nextCursor:
+          type: [string, "null"]
+        done:
+          type: boolean
+    UpstreamVulnerabilitiesRequest:
+      type: object
+      additionalProperties: false
+      required: [name, versions]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 512
+        versions:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            type: string
+            minLength: 1
+            maxLength: 256
+    UpstreamVulnerabilities:
+      type: object
+      additionalProperties: false
+      description: The vulnerability verdicts of versions the repository has not stored (R-CUR-009, R-VULN-015).
+      required: [notCovered, versions]
+      properties:
+        notCovered:
+          type: boolean
+          description: The vulnerability scanning does not evaluate this repository's versions (its format, or its upstream).
+        versions:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [version, stored, verdict, reason, advisoryId, enforced]
+            properties:
+              version:
+                type: string
+              stored:
+                type: boolean
+              verdict:
+                type: string
+                enum: [none, blocked, stored, notCovered]
+                x-enum-varnames: [UpstreamVerdictNone, UpstreamVerdictBlocked, UpstreamVerdictStored, UpstreamVerdictNotCovered]
+                description: "none: no block; blocked: the miss gate would refuse it (or report it in the mode report); stored: see the version view."
+              reason:
+                type: [string, "null"]
+                description: malicious, triage or missing_data.
+              advisoryId:
+                type: [string, "null"]
+              enforced:
+                type: boolean
+    # <<< T-24 catalogue

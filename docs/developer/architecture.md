@@ -72,7 +72,7 @@ of the client listener are split by route family:
 | `worker` | none | none | all |
 | `scanner` | none | the area `scanner` alone: no infrastructure area at all | everything else |
 
-The area `mirror` (the mirror's counters and gauges and, at the first job of a process that claims one, the engine, [mirror.md](mirror.md)) is on every role: its gauges are what the alerts read (Q-OPS-171). The area `mirror-engine` (the remote engine and the format host behind `mirror.Host`: the client path's in `all`, an engine of its own in `worker`) is built on `worker` and `all` only, the roles with job loops (Q-ARCH-316).
+The area `mirror` (the mirror's counters and gauges and, at the first job of a process that claims one, the engine, [mirror.md](mirror.md)) is on every role: its gauges are what the alerts read (Q-OPS-171). The area `mirror-engine` (the remote engine and the format host behind `mirror.Host` and the upstream catalogue's lent upstream: the client path's in `web` and `all`, an engine of its own in `worker` and `api`, built at its first use) is built on every role but `packages`: the roles with job loops (Q-ARCH-316) and the roles of the management API, whose catalogue reads an upstream through it ([remote-curation.md](../spec/remote-curation.md) Q-CUR-60).
 
 A `worker` therefore runs the deletion, token and fold jobs on the same services an `api` replica has, and builds no session store, login
 or limiter. The test `TestR_ARCH_001_RoleTableIsData` ([roles_table_test.go](../../internal/app/roles_table_test.go)) holds the table as

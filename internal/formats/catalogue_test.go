@@ -16,8 +16,8 @@ type anyCanon struct{}
 
 func (anyCanon) Canonical(v string) (string, bool) { return v, v != "" }
 
-// catalogueRemote is a remote adapter with an upstream catalogue: RemoteCaps.Catalogue finds it.
-type catalogueRemote struct{ stubRemote }
+// catalogueRemote is the upstream catalogue of the contract's fake remote adapters: RemoteCaps.Catalogue finds it.
+type catalogueRemote struct{}
 
 func (catalogueRemote) CatalogueCaps(context.Context, discover.Upstream) (discover.CatalogueCaps, error) {
 	return discover.CatalogueCaps{Search: discover.SearchNone}, nil
@@ -71,18 +71,19 @@ func TestR_CUR_007_RegisterRefusesARemoteFormatWithoutACatalogue(t *testing.T) {
 		d.Catalogue = testCatalogue
 		mustPanic(t, fake{d: d}, "has no class remote")
 	})
+	t.Run("R-CUR-007 Register panics on a remote adapter that does not implement the catalogue", func(t *testing.T) {
+		f := remote("cat-bare", testCatalogue, anyCanon{})
+		f.remote = bareRemote{}
+		mustPanic(t, f, "does not implement formats.Catalogue")
+	})
 	t.Run("R-CUR-007 the floor registers, and the canon reaches the catalog", func(t *testing.T) {
 		Register(remote("cat-floor", testCatalogue, anyCanon{}))
 		if v, ok := catalog.Default().CanonicalVersion("cat-floor", "1.0"); !ok || v != "1.0" {
 			t.Fatalf("CanonicalVersion = %q, %v", v, ok)
 		}
-		if RemoteCapabilities("cat-floor").Catalogue != nil {
-			t.Fatal("a remote adapter without the calls has a catalogue")
-		}
 	})
 	t.Run("R-CUR-007 CapabilitiesOf finds an adapter's catalogue", func(t *testing.T) {
 		f := remote("cat-full", CatalogueDeclaration{Lookup: true, Search: true, Levels: []string{"scope"}}, anyCanon{})
-		f.remote = catalogueRemote{}
 		Register(f)
 		if RemoteCapabilities("cat-full").Catalogue == nil {
 			t.Fatal("RemoteCaps.Catalogue is nil for an adapter that implements Catalogue")

@@ -142,13 +142,9 @@ func (f *Format) Descriptor() formats.Descriptor {
 			{Route: routeArtifact, Method: http.MethodHead, What: "a HEAD of a collection's archive"},
 			{Route: routeRoleArchive, Method: http.MethodHead, What: "a HEAD of a role's archive"},
 		},
-		// The upstream catalogue (remote-curation.md R-CUR-007, formats/ansible.md R-ANS-047): the lookup by exact name is the floor;
-		// the keyword search and the namespace level wait for the catalogue's package of T-24.
-		Catalogue: formats.CatalogueDeclaration{
-			Lookup:   true,
-			NoSearch: "The keyword search of the Galaxy (R-ANS-047) is specified and not built yet; look a collection up by its exact name.",
-			NoLevels: "The listing of the Galaxy's namespaces (R-ANS-047) is specified and not built yet; look a collection up by its exact name.",
-		},
+		// The upstream catalogue (remote-curation.md R-CUR-007, formats/ansible.md R-ANS-047): the keyword search, the namespaces and
+		// a namespace's collections, a collection's version list (catalogue.go).
+		Catalogue:              formats.CatalogueDeclaration{Lookup: true, Search: true, Levels: []string{"namespace"}},
 		VersionCanon:           versionCanon{},
 		Names:                  names{},
 		Clients:                clients(),

@@ -14,7 +14,7 @@ import (
 // whole for formats.Validate, which holds the complete route table to the ambiguity check of R-ARCH-010 (check 1).
 func allClasses() *Format {
 	f := &Format{classes: []formats.Class{formats.Local, formats.Remote, formats.Virtual}}
-	f.remote = struct{ formats.RemoteAdapter }{}
+	f.remote = remoteAdapter{f: f}
 	f.virtual = struct{ formats.VirtualAdapter }{}
 	f.routes = f.buildRoutes()
 	return f

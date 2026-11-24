@@ -159,7 +159,7 @@ PostgreSQL through `mirror.Store`.
 | [store.go](../../internal/mirror/store.go), [store_pg.go](../../internal/mirror/store_pg.go) | the port `Store` and its PostgreSQL implementation `PGStore` over [mirror.sql](../../internal/meta/postgres/queries/mirror.sql); `ClearAfterRestore` |
 | [metrics.go](../../internal/mirror/metrics.go) | the twelve families of R-REPO-057, the per-pass handle that `Forget` invalidates, and the database gauge source (every role) |
 | [events_mirror.go](../../internal/audit/events_mirror.go) | the four asynchronous event types (`mirror.pass_requested` is the run operation's) |
-| [wire_mirror.go](../../internal/app/wire_mirror.go), [wire_mirror_host.go](../../internal/app/wire_mirror_host.go) | the area `mirror` (roles `worker`, `all`), the kinds and the task, `MirrorOverride`; the area `mirror-engine` (`worker`, `all`) and the host's builder, which builds in stages and keeps what succeeded (Q-ARCH-316, Q-ARCH-319) |
+| [wire_mirror.go](../../internal/app/wire_mirror.go), [wire_mirror_host.go](../../internal/app/wire_mirror_host.go) | the area `mirror` (roles `worker`, `all`), the kinds and the task, `MirrorOverride`; the area `mirror-engine` (`worker`, `all`, and `api` and `web` for the upstream catalogue's lent upstream, Q-CUR-60) and the host's builder, which builds in stages and keeps what succeeded (Q-ARCH-316, Q-ARCH-319) |
 
 ### How a pass runs
 

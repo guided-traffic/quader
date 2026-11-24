@@ -116,7 +116,8 @@ func TestR_ARCH_024_AMissingPrerequisiteIsAStartupError(t *testing.T) {
 		base, _ := SubsystemsFor("web")
 		// The proxy engine and the format host need the files area, so all of them go.
 		base.Areas = slices.DeleteFunc(base.Areas, func(a Area) bool {
-			return a == AreaFiles || a == AreaProxyEngine || a == AreaFormatHost || a == AreaVirtualEngine || a == AreaPackagesAPI
+			return a == AreaFiles || a == AreaProxyEngine || a == AreaFormatHost || a == AreaVirtualEngine || a == AreaPackagesAPI ||
+				a == AreaMirrorEngine
 		})
 		if _, err := planSteps(wiringSteps(), base, "web"); err != nil {
 			t.Fatalf("plan: %v", err)

@@ -50,7 +50,7 @@ const CheckMalware Check = 17
 var kitChecks = [...]Check{
 	CheckAmbiguity, CheckTraversal, CheckClassify, CheckRewrite, CheckMerge, CheckInspect, CheckHeaders, CheckSetup,
 	CheckRevision, CheckNames, CheckView, CheckShared, CheckAuthzPaths, CheckWiki, CheckAdmission, CheckMalware, CheckSignatures,
-	CheckBastion, CheckLinks, CheckPackageShape, CheckDelivery,
+	CheckBastion, CheckLinks, CheckPackageShape, CheckCatalogue, CheckDelivery,
 }
 
 // name is the short name of the check.
@@ -96,6 +96,8 @@ func (c Check) name() string {
 		return "signed links"
 	case CheckPackageShape:
 		return "package shapes"
+	case CheckCatalogue:
+		return "upstream catalogue"
 	case CheckDelivery:
 		return "delivery rules"
 	}
@@ -112,6 +114,11 @@ func (c Check) judgesRoutes() bool {
 		return true
 	}
 	return false
+}
+
+// judgesRemote reports whether the check judges a format's remote adapter, so that a format with one cannot skip it.
+func (c Check) judgesRemote() bool {
+	return c == CheckRewrite || c == CheckDelivery || c == CheckCatalogue
 }
 
 // String is the name of the subtest: "R-ARCH-010 check 7 content headers".
@@ -200,6 +207,8 @@ type Fixture struct {
 	OptionNames []string
 	// Signatures are the signed samples of check 18: one case at least per kind the format declares (R-SIG-022).
 	Signatures []SignatureCase
+	// Catalogue is the fixture of check 22 (remote-curation.md R-CUR-007): the upstream catalogue against canned answers.
+	Catalogue *CatalogueFixture
 	// Delivery is the fixture of check 23 (remote-curation.md R-CUR-003): a remote's package whose rules refuse one version.
 	Delivery *DeliveryFixture
 	// OtherPackage is the second package of check 21 (bastion.md R-BAS-086): a package beside the one a content case reads, stored
@@ -483,6 +492,8 @@ func runCheck(c Check, f formats.Format, fx Fixture) (res Result) {
 		r.links()
 	case CheckPackageShape:
 		r.packageShapes()
+	case CheckCatalogue:
+		r.catalogue()
 	case CheckDelivery:
 		r.delivery()
 	}
@@ -526,7 +537,7 @@ func (r *run) skipProblem(c Check, reason string) string {
 	switch {
 	case c.judgesRoutes() && routes > 0:
 		return fmt.Sprintf("%s is skipped (%s) and the format has %d routes", c, reason, routes)
-	case (c == CheckRewrite || c == CheckDelivery) && r.f.Remote() != nil:
+	case c.judgesRemote() && r.f.Remote() != nil:
 		return fmt.Sprintf("%s is skipped (%s) and the format has a remote adapter", c, reason)
 	case c == CheckMerge && r.f.Virtual() != nil:
 		return fmt.Sprintf("%s is skipped (%s) and the format has a virtual adapter", c, reason)

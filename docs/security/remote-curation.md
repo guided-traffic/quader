@@ -120,8 +120,8 @@ who can make Quader download how much, and what is kept of content that no clien
 
 ### H-1720 · A search tells the upstream's operator what people look for
 
-Component: the upstream catalogue (R-CUR-008). Subject: the people of an installation who search a remote's upstream. Dormant until the
-catalogue is built; live for every remote whose upstream answers a search. The query, from Quader's address and with the repository's
+Component: the upstream catalogue (R-CUR-008). Subject: the people of an installation who search a remote's upstream. Live for every
+remote whose upstream answers a search. The query, from Quader's address and with the repository's
 credential where the upstream receives it, reaches the upstream's operator, who learns the names and words an organisation looks for. The
 search guard withholds only terms a rule protects. What makes it real: an operator that logs queries per account, and a search for an
 internal project's name that no rule protects.
@@ -129,7 +129,7 @@ internal project's name that no rule protects.
 ### H-1721 · A reader of a remote that delivers only what is allowed can look up names one by one
 
 Component: the catalogue's lookup by exact name (R-CUR-009). Subject: a remote in mode `onlyAllowed` whose upstream is private (a
-credential). Dormant until built. Search and levels show a reader only what is delivered, but a lookup by exact name answers any package
+credential). Live. Search and levels show a reader only what is delivered, but a lookup by exact name answers any package
 with its versions, so that a reader can ask for it; a reader who guesses names learns which exist in the private upstream and their
 versions, bounded by the catalogue's budget per person (30 requests a minute). What makes it real: a private registry whose names are
 confidential to its deciders.
@@ -137,14 +137,14 @@ confidential to its deciders.
 ### H-1722 · The catalogue shows what the upstream credential sees
 
 Component: the catalogue (R-CUR-008, R-CUR-009). Subject: every reader of a remote whose upstream credential reads more than the readers
-should see. Dormant until built. The catalogue asks with the repository's credential, so its answers are that account's view; in mode
+should see. Live. The catalogue asks with the repository's credential, so its answers are that account's view; in mode
 `allExceptBlocked` every signed-in reader of the repository browses it. A reader could already fetch every one of those packages through
 the remote in that mode, so the catalogue adds the listing, not the access. What makes it real: an account of a hosted registry that sees
 packages of several organisations.
 
 ### H-1723 · Docker Hub's search is an endpoint its operator does not document
 
-Component: the OCI format's catalogue for the preset `docker-hub` (R-OCI-038). Subject: every Docker Hub remote. Dormant until built.
+Component: the OCI format's catalogue for the preset `docker-hub` (R-OCI-038). Subject: every Docker Hub remote. Live.
 `GET /v2/search/repositories/` of the Hub API is not in its reference; it may change or disappear without notice. The fallback turns the
 search off for the cache period when the answer is not of the expected shape, so a change shows as "search unavailable", never as a
 wrong answer, but an answer that keeps the shape and changes its meaning (a different ranking, a cut window) is shown as it comes. What
@@ -201,6 +201,14 @@ Component: the listing of a remote (R-API-081, R-CUR-014, Q-CUR-26). Subject: wh
 examination (R2b) is built. A stored version that the rules do not deliver is listed to every reader of the repository, marked not delivered, with its
 verdicts; so is an open request's examination. A reader therefore learns which packages are being looked at before a decision. What
 makes it real: an examination that is confidential to its deciders, such as a package considered for a security product.
+
+### H-1730 · A catalogue call holds a whole document in memory
+
+Component: the upstream catalogue's lent upstream (R-CUR-008, [Q-CUR-64](../spec/remote-curation.md#q-cur-64--a-document-is-read-whole-up-to-the-bound-a-cursor-travels-base64url-the-preview-and-the-bulk-read-larger-pages)).
+Subject: the replicas that answer the management API (`api`, `web`, `all`). Live. A document the catalogue reads is held whole, up to
+`proxy.catalogue.max_document_bytes` (64 MiB), for the call; signed-in readers who look up large packages at once make a replica hold that
+much per call. The budget (120 upstream requests a minute per repository, 30 per person) and the cache bound the rate, not the bytes in
+flight at one moment. What makes it real: an upstream whose package documents approach the bound, or an operator who raises it.
 
 ### H-1800 · A replica loses up to five seconds of refusal counts at a crash
 

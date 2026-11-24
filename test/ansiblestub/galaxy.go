@@ -106,8 +106,18 @@ func collectionDocument(c *collectionDef) map[string]any {
 	}
 }
 
-// indexDocument is a page of the collection index, ordered by name.
+// indexDocument is a page of the collection index, ordered by name; the filter namespace keeps one namespace's collections, as the
+// Galaxy's index does (the upstream catalogue's namespace level, R-ANS-047).
 func indexDocument(cols []*collectionDef, q url.Values) map[string]any {
+	if ns := q.Get("namespace"); ns != "" {
+		kept := make([]*collectionDef, 0, len(cols))
+		for _, c := range cols {
+			if c.ns == ns {
+				kept = append(kept, c)
+			}
+		}
+		cols = kept
+	}
 	limit, offset := limitOffset(q)
 	lo, hi := window(len(cols), limit, offset)
 	data := make([]any, 0, hi-lo)

@@ -21,6 +21,8 @@ func parseRoute(escapedPath string) route {
 		return route{kind: KindPing}
 	case auditPath:
 		return route{kind: KindAudit}
+	case searchPath:
+		return route{kind: KindSearch}
 	}
 	if rt, ok := signatureRoute(escapedPath); ok {
 		return rt

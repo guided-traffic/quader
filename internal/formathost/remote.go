@@ -313,6 +313,11 @@ func (r *remote) request(ctx context.Context, rq *formats.Request, p formats.Pat
 		bg.apply(&preq, rq, info, p)
 		return preq, nil
 	}
+	if ctx.Value(catalogueFlow{}) != nil {
+		// The upstream catalogue's read of a document (catalogue_upstream.go): it stores nothing and shows a package the rules do not
+		// deliver marked, so they refuse nothing here (R-CUR-008, R-CUR-009).
+		return preq, nil
+	}
 	if kind == proxy.Artifact || ctx.Value(artifactFlow{}) == nil {
 		preq.Undelivered = undelivered(rq, info, kind)
 	}

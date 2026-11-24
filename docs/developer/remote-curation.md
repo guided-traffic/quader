@@ -1,6 +1,6 @@
 # Curating a remote repository: the work packages
 
-Status: specified on 2026-11-23; the contracts package (C), the delivery rules (R2) and the downloads ahead with their queue (R4) built on 2026-11-23 and 2026-11-24, the tab strip and the tab Downloads (R5a) and the requests, examination and retention (R2b) on 2026-11-24, the rest not. The specification is [spec/remote-curation.md](../spec/remote-curation.md) with the format
+Status: specified on 2026-11-23; the contracts package (C), the delivery rules (R2) and the downloads ahead with their queue (R4) built on 2026-11-23 and 2026-11-24, the tab strip and the tab Downloads (R5a) and the requests, examination and retention (R2b) and the upstream catalogue (R3) on 2026-11-24, the rest not. The specification is [spec/remote-curation.md](../spec/remote-curation.md) with the format
 pages' requirements (R-NPM-049, R-NUGET-035, R-OCI-038, R-DEB-036, R-ANS-047) and the changed sentences its section "Changes to other
 pages" lists; the security view is [security/remote-curation.md](../security/remote-curation.md). This page cuts the work into packages
 for builders, in the order they can land, each a whole feature that leaves `main` working, with the files and directories each owns so
@@ -35,7 +35,7 @@ that several builders work at once, the contracts between them, and the tests ea
 |---|---|---|---|
 | **C · Contracts** (built) | the migration of every table, the domain package's skeleton and its layer row, the catalogue's interface and types, the version canon, the descriptor's declaration and contract version 11 with every format's declaration (the floor: lookup), the error codes, the audit events' registrations, the configuration keys, the job queue `downloads` | — | 0.5 |
 | **R2 · Delivery rules** (built) | R-CUR-001 to R-CUR-006, R-CUR-017 (the mirror's scope), the rules' API; the refusal before a fill, at the serve point and in the five formats' documents (kit check 23); the virtual walk; the journal and the Bastion's feed; the listing marks; a remote without patterns | C | 2.5 |
-| **R3 · Upstream catalogue** | R-CUR-007 to R-CUR-009: the catalogue engine (lent upstream that stores nothing, budget, cache, bounds, second hosts), the five formats' catalogues (kit check 22) and the check of `Register` that a remote adapter implements `formats.Catalogue` (Q-CUR-109), the Debian parse's descriptions, the API with the vulnerability verdicts of unstored versions | C | 2 |
+| **R3 · Upstream catalogue** (built) | R-CUR-007 to R-CUR-009: the catalogue engine (lent upstream that stores nothing, budget, cache, bounds, second hosts), the five formats' catalogues (kit check 22) and the check of `Register` that a remote adapter implements `formats.Catalogue` (Q-CUR-109), the Debian parse's descriptions, the API with the vulnerability verdicts of unstored versions | C | 2 |
 | **R4 · Downloads ahead and the queue** | R-CUR-010 to R-CUR-013: the queue's store, dispatch, run, retries and failures in words; the probe's row; bulks and their expansion; the API; the client failure rows; the charge; a fill without a client is no refused download (Q-CUR-22) | C (the expansion calls the catalogue's interface; its integration case of a bulk lands with whichever of R3 and R4 lands second) | 2 |
 | **R2b · Requests, examination, retention** (built) | R-CUR-014 to R-CUR-016: requests and askers, the examination a request starts, allow and decline, the list with client refusals, discard and the retention task, their events, journal and replay | R2, R4 | 1.5 |
 | **R5a · The tab strip and the tab Downloads** | R-CUR-018: the strip on a remote's page with the three addresses, the tab Downloads with its states, filters, failure detail, retry and cancel | R4 | 1 |
@@ -148,6 +148,46 @@ Tests: unit, the engine with a fake format and upstream (about 1 s); kit check 2
 few kilobytes in each format's fixture); integration, `TestR_CUR_008_…` and `TestR_CUR_009_…` (npm stub with a search route, about 5 s)
 and the Debian search (`TestR_DEB_036_…`, about 3 s). What a leg gains: the unit job about 1 s, the shards about 8 s.
 
+**As built** (2026-11-24, [Q-CUR-60](../spec/remote-curation.md#q-cur-60--the-catalogues-upstream-is-lent-by-the-mirror-host-which-the-roles-of-the-management-api-now-build)
+to [Q-CUR-65](../spec/remote-curation.md#q-cur-65--a-bulk-and-a-preview-read-the-catalogue-a-preview-is-one-page-of-the-bulks-bound); what is
+not built is [Q-CUR-61](../spec/remote-curation.md#q-cur-61--a-rows-stored-state-is-what-the-repository-holds-the-stored-versions-verdicts-stay-the-version-views)'s
+verdicts in the row and [Q-CUR-62](../spec/remote-curation.md#q-cur-62--debian-searches-the-name-provides-and-the-short-description-the-long-descriptions-and-read-the-index-wait)'s
+Debian long descriptions and **Read the index**):
+
+| File or directory | What |
+|---|---|
+| [catalogue](../../internal/remotecuration/catalogue/catalogue.go) (domain) | the engine: `Caps`, `Search`, `Children`, `Package`, `Versions` (a page of any size, for the preview); the budget per repository and per person (`Budget`, the cluster limiter, [window.go](../../internal/remotecuration/catalogue/window.go) where none is wired), spent before every request to the network; the per-replica cache of parsed pages ([cache.go](../../internal/remotecuration/catalogue/cache.go)); the bounds (text, page, timeout, size); a capability an unexpected answer turned off for the cache period; the two metric families ([metrics.go](../../internal/remotecuration/catalogue/metrics.go)); `Stored` ([stored.go](../../internal/remotecuration/catalogue/stored.go)), which versions of a page a repository holds |
+| [discover/catalogue.go](../../internal/mirror/discover/catalogue.go), [discover/page.go](../../internal/mirror/discover/page.go) | `UnavailableError` (a route the upstream does not answer, or an answer not of the expected shape), `RepositoryIDer`, the page bounds, `VersionFacts.UnpackedSize`; `PageVersions`, `PageHits`, `CutText`, `FormatLevel`, `ParseLevel` |
+| [proxy/catalogue_upstream.go](../../internal/proxy/catalogue_upstream.go) | `Engine.Peruse`: a document read from the upstream as a fetch builds its request (the format's request, the URL map, the discovery document) and sent as a discovery request; nothing written |
+| [formathost/catalogue_upstream.go](../../internal/formathost/catalogue_upstream.go) | `MirrorHost.CatalogueUpstream`, the lent upstream: the stored copy by the cache view (the rules refuse nothing there, `catalogueFlow`), else `Peruse`; `Artifact` refused; the preset's catalogue hosts as hosts without a credential; a document read once per call; the circuit, a pre-emption and the offline mode as the API's answers |
+| [background_download.go](../../internal/formathost/background_download.go) | the bulk's planner over the catalogue: `Versions` pages `Package`, `Packages` pages `Children` of the section's level |
+| `catalogue.go` of [npm](../../internal/formats/npm/catalogue.go), [nuget](../../internal/formats/nuget/catalogue.go), [oci](../../internal/formats/oci/catalogue.go), [deb](../../internal/formats/deb/catalogue.go), [ansible](../../internal/formats/ansible/catalogue.go) | each format's `formats.Catalogue`; OCI's capabilities by preset (Docker Hub's Hub API with its fallback, Quay's API, GitLab's project API, ghcr.io's tags list only, a registry's `_catalog`), its presets' `CatalogueHosts` in [format.go](../../internal/formats/oci/format.go); Debian's over the data port's `CatalogueStore` |
+| [catalogue_store.go](../../internal/formatdata/deb/catalogue_store.go), [remote_parse.go](../../internal/formatdata/deb/remote_parse.go) | the Debian rows the catalogue reads; the parse keeps `provides`, the short description and `description_md5` |
+| [upstream_catalogue.sql](../../internal/meta/postgres/queries/upstream_catalogue.sql) | the stored versions of a page; Debian's directories, indexes, search and rows |
+| [checks_catalogue.go](../../internal/formats/formattest/checks_catalogue.go) | kit check 22 and its fixture types; `testformat.CatalogueRawVersions` |
+| [upstream_catalogue_api.go](../../internal/api/v1/upstream_catalogue_api.go), `api/openapi.yaml` (`# >>> T-24 catalogue`) | the five operations and each row's state; the verdicts over [vuln.MissVerdicts](../../internal/vuln/miss_verdicts.go) and `evaluate.Service.Covers` |
+| [remote_downloads_api.go](../../internal/api/v1/remote_downloads_api.go) | R4's rest: the preview's counts (`preview`) and a section's start (`sectionOffered`) |
+| [wire_upstream_catalogue.go](../../internal/app/wire_upstream_catalogue.go) | the engine of the process, the limiters `catalogue.repository` and `catalogue.person`, the lender over the area `mirror-engine`, now built on `api` and `web` too ([steps.go](../../internal/app/steps.go)) |
+
+Tests and what they cost (each run once):
+
+| Test | Tier | Run time | Data |
+|---|---|---|---|
+| `TestR_CUR_008_TheCatalogueEngine` (`internal/remotecuration/catalogue`) | unit | milliseconds | none (a fake format and upstream) |
+| kit check 22 of npm, NuGet, OCI (five cases), Debian, Ansible Galaxy (two cases) and the test format | unit | milliseconds per format | recorded answers in each format's `testdata/catalogue/`: npm 10 KB, NuGet 56 KB, OCI 39 KB, Debian 8 KB, Ansible 12 KB |
+| `TestR_OCI_038_DockerHubsSearchFallsBackWhenItsAnswerIsNotAPage` (`internal/formats/oci`) | unit | milliseconds | answers of a few bytes |
+| `TestR_DEB_036_TheParseKeepsWhatTheCatalogueSearches` (`internal/formatdata/deb`) | unit | milliseconds | the Debian fixture's 8 KB |
+| `TestR_CUR_007_RegisterRefusesARemoteFormatWithoutACatalogue` (the adapter's case) | unit | milliseconds | none |
+| `TestR_CUR_008_TheCatalogueReadsWithoutStoringAndAnswersFromItsCache` (area `npm`) | integration | about 1.8 s | the stub's corpus, its new search route |
+| `TestR_CUR_009_TheRowsCarryTheRepositorysStateAndAReaderSeesWhatIsDelivered` (area `npm`) | integration | about 0.9 s | the stub's corpus, one tarball |
+| `TestR_DEB_036_TheCatalogueSearchesTheIndexesTheRemoteParsed` (area `debremote`) | integration | about 1.5 s | the stub archive |
+| `TestR_CUR_010_ASubSectionIsPreviewedAndDownloadedThroughTheCatalogue` (area `ansibleremote`) | integration | about 3.2 s | two archives of the stub's corpus |
+| the preview's counts in `TestR_CUR_010_ADownloadAheadOfOneVersionAndOfAPackage` (area `npm`) | integration | unchanged | unchanged |
+
+What a leg gains: the unit job well under a second; the integration shards about 7.5 s (npm 2.7 s, debremote 1.5 s, ansibleremote
+3.2 s). A new format adds its `catalogue.go`, a kit fixture of a few kilobytes and no integration case of its own unless its catalogue
+reads rows of its own (as Debian's).
+
 ## R4 · Downloads ahead and the queue
 
 Built on 2026-11-23 (R-CUR-010 to R-CUR-013, Q-CUR-80 to Q-CUR-85). No migration: the tables are 00114's. What it holds:
@@ -172,7 +212,7 @@ released at shutdown or whose lease was lost leaves its row `running` with its j
 The delivery rules' decider is `repository.Decider` over the replica's snapshot, wired with R2's landing (`remoteDownloadsAPI` in [wire_remote_downloads.go](../../internal/app/wire_remote_downloads.go)): who may start a version and the
 row's member `delivery` read it.
 
-Not built here, and why: a sub-section's bulk and the counts of a package's preview wait for the catalogue (R3, Q-CUR-80); the tab
+Not built here, and why: a sub-section's bulk and the counts of a package's preview waited for the catalogue and are R3's (Q-CUR-65); the tab
 **Downloads** is R5a's; the examination's rows (`remote_examinations`) and the request's examination are R2b's (built, below).
 
 Tests and what they cost (each run once, R-CUR-022):
@@ -266,7 +306,6 @@ screens (about 60 s).
 ## What was not verified
 
 - The migration is 00114 (00113 is the version list keyset of another package, which lands first); a package that adds a migration takes the next free one when it lands.
-- The kit check numbers 21 and 22 hold only if no other check lands first (R-ARCH-010 says so).
 - Docker Hub's search, Quay's and GitLab's APIs and npm's replication host were read live once on 2026-11-23; their answers' fields are
   observed, not specified by their operators (R-OCI-038, upstream research).
 - Whether a GitLab registry credential is accepted by the GitLab REST API was not tried; the catalogue sends none there.

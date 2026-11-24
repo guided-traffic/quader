@@ -38,12 +38,18 @@ func upstreamPresets() []catalog.UpstreamPreset {
 		{
 			ID: "docker-hub", DisplayName: "Docker Hub", URL: "https://registry-1.docker.io/", Default: true,
 			ExtraHosts: []catalog.PresetHost{{Pattern: "auth.docker.io", SendCredentials: true}},
+			// The Hub API answers the search, a namespace's images and a tag's facts (remote-curation.md R-CUR-008, R-OCI-038); it gets no
+			// credential.
+			CatalogueHosts: []catalog.PresetHost{{Pattern: hubAPI}},
 		},
 		{ID: "quay", DisplayName: "Quay", URL: "https://quay.io/"},
 		{ID: "ghcr", DisplayName: "GitHub (ghcr.io)", URL: "https://ghcr.io/"},
 		{
 			ID: "gitlab", DisplayName: "GitLab", URL: "https://registry.gitlab.com/",
 			ExtraHosts: []catalog.PresetHost{{Pattern: "gitlab.com", SendCredentials: true}},
+			// The project API lists a public project's images (R-OCI-038); the catalogue sends it no credential, whether a registry
+			// credential is accepted there was not tried.
+			CatalogueHosts: []catalog.PresetHost{{Pattern: gitlabAPI}},
 		},
 	}
 }
@@ -108,13 +114,10 @@ func (f *Format) Descriptor() formats.Descriptor {
 		// The manifest of a tag, a HEAD by digest and a HEAD of a blob name one image or file without fetching it (R-REPO-065,
 		// Q-OCI-224); probe.go.
 		Probes: probes(),
-		// The upstream catalogue (remote-curation.md R-CUR-007, formats/oci.md R-OCI-038): the lookup by exact name is the floor; the
-		// searches and levels of the presets wait for the catalogue's package of T-24.
-		Catalogue: formats.CatalogueDeclaration{
-			Lookup:   true,
-			NoSearch: "The search of a registry's operator (R-OCI-038) is specified and not built yet; look an image up by its full name.",
-			NoLevels: "The listing of a registry's namespaces and of its catalog (R-OCI-038) is specified and not built yet; look an image up by its full name.",
-		},
+		// The upstream catalogue (remote-curation.md R-CUR-007, formats/oci.md R-OCI-038): the operators' APIs of the presets (Docker Hub,
+		// Quay, GitLab), the tags list of every registry and the catalog of one without a preset (catalogue.go). The levels are a
+		// namespace (Docker Hub, Quay) or a project (GitLab), whichever the repository's preset has.
+		Catalogue:        formats.CatalogueDeclaration{Lookup: true, Search: true, Levels: []string{"namespace"}},
 		VersionCanon:     versionCanon{},
 		Names:            names{},
 		PropertyPrefix:   "oci.",

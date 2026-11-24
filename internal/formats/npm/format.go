@@ -96,13 +96,9 @@ func (f *Format) Descriptor() formats.Descriptor {
 			{Route: "npm.version.get", Method: http.MethodHead, What: "a HEAD of the version document"},
 			{Route: "npm.tarball.get", Method: http.MethodHead, What: "a HEAD of the tarball"},
 		},
-		// The upstream catalogue (remote-curation.md R-CUR-007, formats/npm.md R-NPM-049): the lookup by exact name is the floor;
-		// the search and the scope level are specified and wait for the catalogue's package of T-24.
-		Catalogue: formats.CatalogueDeclaration{
-			Lookup:   true,
-			NoSearch: "The search of npm's upstream (R-NPM-049) is specified and not built yet; look a package up by its exact name.",
-			NoLevels: "The listing of a scope of the public registry (R-NPM-049) is specified and not built yet; look a package up by its exact name.",
-		},
+		// The upstream catalogue (remote-curation.md R-CUR-007, formats/npm.md R-NPM-049): the registry's search, the scopes of the
+		// public registry through its replication host, the full package document (catalogue.go).
+		Catalogue:        formats.CatalogueDeclaration{Lookup: true, Search: true, Levels: []string{"scope"}},
 		VersionCanon:     versionCanon{},
 		Names:            names{},
 		Clients:          clients(),

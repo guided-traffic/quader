@@ -174,6 +174,7 @@ func conformance() formattest.Fixture {
 				return []string{"https://" + d.Name}
 			},
 		},
+		Catalogue: catalogueFixture(),
 		// The delivery rules of a remote (check 23, R-CUR-003, R-OCI-038): the version is the tag, so a rule that refuses the tag
 		// "legacy" leaves it out of the tags list and refuses its manifest, and a rule that refuses the image refuses its tags list.
 		Delivery: &formattest.DeliveryFixture{

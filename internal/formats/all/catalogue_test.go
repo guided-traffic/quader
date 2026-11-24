@@ -17,11 +17,11 @@ func TestR_CUR_007_EveryRemoteFormatDeclaresItsCatalogue(t *testing.T) {
 		built          bool   // the remote adapter implements formats.Catalogue
 	}
 	want := map[formats.ID]*decl{
-		"npm":     {},
-		"nuget":   {},
-		"oci":     {},
-		"deb":     {},
-		"ansible": {},
+		"npm":     {search: "search", levels: "scope", built: true},
+		"nuget":   {search: "search", built: true},
+		"oci":     {search: "search", levels: "namespace", built: true},
+		"deb":     {search: "search", levels: "suite > component > architecture", built: true},
+		"ansible": {search: "search", levels: "namespace", built: true},
 		"generic": nil, // no class remote (R-GENERIC-001)
 		"clamav":  nil, // no class remote (R-CLAMAV-001)
 	}

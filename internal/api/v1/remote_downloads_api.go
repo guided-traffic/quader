@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"slices"
 	"strconv"
 	"time"
 
@@ -14,12 +15,15 @@ import (
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/limits"
 	"github.com/guided-traffic/quader/internal/limits/httplimit"
 	"github.com/guided-traffic/quader/internal/meta"
+	"github.com/guided-traffic/quader/internal/mirror/discover"
 	"github.com/guided-traffic/quader/internal/qname"
 	"github.com/guided-traffic/quader/internal/remotecuration"
+	"github.com/guided-traffic/quader/internal/remotecuration/catalogue"
 	"github.com/guided-traffic/quader/internal/remotecuration/queue"
 	"github.com/guided-traffic/quader/internal/repository"
 )
@@ -41,6 +45,11 @@ type RemoteDownloadsServices struct {
 	Settings config.ProxyDownloads
 	// Principals names the person who started a row; nil names nobody.
 	Principals LimitsPrincipals
+	// Catalogue is the upstream catalogue, which counts a preview and lists a sub-section (R-CUR-010); nil counts nothing and refuses a
+	// sub-section with 400 catalogue_not_offered.
+	Catalogue *catalogue.Engine
+	// Stored reads which versions a repository holds, for the preview's stored count; nil counts none.
+	Stored StoredVersions
 }
 
 // downloadTarget is the remote repository an operation addresses.
@@ -245,33 +254,23 @@ func (s *Server) PreviewRemoteDownload(w http.ResponseWriter, r *http.Request, p
 	if err == nil {
 		_, err = s.mayStart(ctx, acc, t, in)
 	}
-	if err == nil && in.Level == string(queue.LevelSection) {
-		err = sectionNotOffered()
+	var out map[string]any
+	if err == nil {
+		out, err = s.preview(ctx, t, in, b)
 	}
 	if err != nil {
 		httpserver.Problem(w, r, errs.Wrap(err, "api.previewRemoteDownload"))
 		return
 	}
-	out := map[string]any{"bounds": b, "stored": 0, "notDelivered": 0, "sizeUnknown": 0}
-	switch in.Level {
-	case string(queue.LevelVersion):
-		out["versions"], out["packages"], out["bytes"], out["sizeUnknown"] = 1, 1, nil, 1
-		if !s.downloadDecider().Decide(ctx, strconv.FormatInt(t.ID, 10), in.Name, in.Version).Delivered {
-			out["notDelivered"] = 1
-		}
-		out["note"] = "The size of the version is known once it is stored."
-	default:
-		out["versions"], out["packages"], out["bytes"] = nil, 1, nil
-		out["note"] = "The upstream's versions are counted when the bulk is expanded; the bounds cut while it runs."
-	}
 	writeJSON(w, r, http.StatusOK, out)
 }
 
-// sectionNotOffered answers a sub-section: the levels of an upstream are the catalogue's, which no format answers before the
-// catalogue's package (R3).
-func sectionNotOffered() error {
-	return errs.E(errs.Invalid, errs.CodeCatalogueNotOffered,
-		"The upstream of this repository lists no sub-sections yet; download a package or a version.")
+// sectionNotOffered answers a sub-section of an upstream whose catalogue lists no levels.
+func sectionNotOffered(reason string) error {
+	if reason == "" {
+		reason = "The upstream of this repository lists no sub-sections; download a package or a version."
+	}
+	return errs.E(errs.Invalid, errs.CodeCatalogueNotOffered, reason)
 }
 
 // StartRemoteDownload implements POST …/downloads (R-CUR-010).
@@ -292,7 +291,7 @@ func (s *Server) StartRemoteDownload(w http.ResponseWriter, r *http.Request, pro
 		charged, err = s.mayStart(ctx, acc, t, in)
 	}
 	if err == nil && in.Level == string(queue.LevelSection) {
-		err = sectionNotOffered()
+		err = s.sectionOffered(ctx, t, in.Section)
 	}
 	var ticket []byte
 	if err == nil && charged {
@@ -758,4 +757,149 @@ func (s *Server) CancelRemoteDownloadBulk(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		httpserver.Problem(w, r, err)
 	}
+}
+
+// downloadCatalogueTarget is the catalogue's target of a download's repository: the person is the caller, whose budget a preview spends.
+func (s *Server) downloadCatalogueTarget(ctx context.Context, t downloadTarget) (catalogue.Target, error) {
+	svc, err := s.repositoryService()
+	if err != nil {
+		return catalogue.Target{}, err
+	}
+	st, err := svc.Get(ctx, t.Key)
+	if err != nil {
+		return catalogue.Target{}, err
+	}
+	rs, _ := st.Repository.Remote()
+	return catalogue.Target{RepoID: t.ID, Repo: t.Key.String(), Format: t.Format, Upstream: rs.URL, Person: callerID(ctx)}, nil
+}
+
+// sectionOffered refuses a sub-section of an upstream whose catalogue lists no levels, and a level that is not spelled as one (R-CUR-010).
+func (s *Server) sectionOffered(ctx context.Context, t downloadTarget, section string) error {
+	eng := s.o.RemoteDownloads.Catalogue
+	if eng == nil {
+		return sectionNotOffered("")
+	}
+	if _, err := parseLevelParam(section); err != nil {
+		return err
+	}
+	ct, err := s.downloadCatalogueTarget(ctx, t)
+	if err != nil {
+		return err
+	}
+	caps, err := eng.Caps(ctx, ct)
+	if err != nil {
+		return err
+	}
+	if len(caps.Levels) == 0 && caps.LevelsReason != "" {
+		return sectionNotOffered(caps.LevelsReason)
+	}
+	return nil
+}
+
+// preview counts what a download ahead would queue (R-CUR-010): one version or a package by one catalogue call (Package) with a page of
+// the bulk's maxVersions, a sub-section by its level's count where the upstream tells it. Without the catalogue a version is one version
+// of unknown size and a package is not counted.
+func (s *Server) preview(ctx context.Context, t downloadTarget, in downloadRequest, b downloadBounds) (map[string]any, error) {
+	out := map[string]any{"bounds": b, "stored": 0, "notDelivered": 0, "sizeUnknown": 0, "note": nil}
+	repoID := strconv.FormatInt(t.ID, 10)
+	eng := s.o.RemoteDownloads.Catalogue
+	if in.Level == string(queue.LevelSection) {
+		if err := s.sectionOffered(ctx, t, in.Section); err != nil {
+			return nil, err
+		}
+		level, _ := parseLevelParam(in.Section)
+		ct, err := s.downloadCatalogueTarget(ctx, t)
+		if err != nil {
+			return nil, err
+		}
+		page, err := eng.Children(ctx, ct, discover.LevelRequest{Level: level, Limit: 1})
+		if err != nil {
+			return nil, err
+		}
+		out["versions"], out["bytes"], out["packages"] = nil, nil, nil
+		if page.Total >= 0 {
+			out["packages"] = page.Total
+		}
+		out["note"] = "The upstream does not tell the versions and sizes of a sub-section; the bounds cut while the bulk runs."
+		return out, nil
+	}
+	if eng == nil {
+		return previewWithoutCatalogue(ctx, s, repoID, in, out), nil
+	}
+	ct, err := s.downloadCatalogueTarget(ctx, t)
+	if err != nil {
+		return nil, err
+	}
+	rq := discover.VersionsRequest{Limit: b.MaxVersions}
+	if in.Level == string(queue.LevelVersion) {
+		rq.Filter = in.Version // a substring: the exact version is picked below
+	}
+	info, err := eng.Versions(ctx, ct, in.Name, rq)
+	if err != nil {
+		return nil, err
+	}
+	var picked []discover.VersionFacts
+	for _, v := range info.Versions {
+		switch {
+		case in.Level == string(queue.LevelVersion):
+			cv, ok := catalog.Default().CanonicalVersion(t.Format, in.Version)
+			if v.Version == in.Version || (ok && v.Version == cv) {
+				picked = append(picked, v)
+			}
+		case !b.IncludePrereleases && slices.Contains(v.Flags, "prerelease"):
+		case len(picked) < b.MaxVersions:
+			picked = append(picked, v)
+		}
+	}
+	if in.Level == string(queue.LevelVersion) && len(picked) == 0 {
+		return nil, errs.E(errs.NotFound, errs.CodeCatalogueNotFound, "The upstream does not list "+in.Name+" "+in.Version+".")
+	}
+	var stored map[string][]string
+	if s.o.RemoteDownloads.Stored != nil {
+		if stored, err = s.o.RemoteDownloads.Stored.Versions(ctx, t.ID, []string{info.Name}); err != nil {
+			return nil, err
+		}
+	}
+	var bytes int64
+	unknown, held, refused := 0, 0, 0
+	for _, v := range picked {
+		if v.Size > 0 {
+			bytes += v.Size
+		} else {
+			unknown++
+		}
+		if slices.Contains(stored[info.Name], v.Version) {
+			held++
+		}
+		if !s.downloadDecider().Decide(ctx, repoID, info.Name, v.Version).Delivered {
+			refused++
+		}
+	}
+	out["versions"], out["packages"], out["sizeUnknown"], out["stored"], out["notDelivered"] = len(picked), 1, unknown, held, refused
+	switch {
+	case unknown == len(picked):
+		out["bytes"] = nil
+		out["note"] = "The upstream announces no size; a size counts when the file is stored, and the bounds cut while the bulk runs."
+	default:
+		out["bytes"] = bytes
+	}
+	if !info.Done && in.Level == string(queue.LevelPackage) && len(picked) < b.MaxVersions {
+		out["note"] = "The upstream lists more versions than one answer holds; the bulk counts the rest while it runs."
+	}
+	return out, nil
+}
+
+// previewWithoutCatalogue is the preview of a process without the catalogue: a version of unknown size, a package not counted.
+func previewWithoutCatalogue(ctx context.Context, s *Server, repoID string, in downloadRequest, out map[string]any) map[string]any {
+	if in.Level == string(queue.LevelVersion) {
+		out["versions"], out["packages"], out["bytes"], out["sizeUnknown"] = 1, 1, nil, 1
+		if !s.downloadDecider().Decide(ctx, repoID, in.Name, in.Version).Delivered {
+			out["notDelivered"] = 1
+		}
+		out["note"] = "The size of the version is known once it is stored."
+		return out
+	}
+	out["versions"], out["packages"], out["bytes"] = nil, 1, nil
+	out["note"] = "The upstream's versions are counted when the bulk is expanded; the bounds cut while it runs."
+	return out
 }

@@ -395,6 +395,19 @@ type batch struct {
 }
 
 func (b *batch) add(pkg, version, arch, p string, sum [32]byte, size int64) {
+	b.addFacts(pkg, version, arch, p, sum, size, entryFacts{})
+}
+
+// entryFacts are what the upstream catalogue searches of a binary row (R-DEB-036): its Provides, its short description and its
+// Description-md5.
+type entryFacts struct {
+	provides, description, md5 string
+}
+
+func (b *batch) addFacts(pkg, version, arch, p string, sum [32]byte, size int64, f entryFacts) {
+	b.arg.Provides = append(b.arg.Provides, f.provides)
+	b.arg.Descriptions = append(b.arg.Descriptions, f.description)
+	b.arg.DescriptionMd5s = append(b.arg.DescriptionMd5s, f.md5)
 	b.arg.Packages = append(b.arg.Packages, pkg)
 	b.arg.Versions = append(b.arg.Versions, version)
 	b.arg.Architectures = append(b.arg.Architectures, arch)
@@ -536,8 +549,36 @@ func binaryEntry(p control.Paragraph, b *batch) int {
 		!packageRE.MatchString(pkg) || !versionRE.MatchString(version) || !archRE.MatchString(arch) {
 		return 0
 	}
-	b.add(pkg, version, arch, file, sum32(sum), size)
+	b.addFacts(pkg, version, arch, file, sum32(sum), size, factsOf(p))
 	return 1
+}
+
+// md5RE is a Description-md5 as apt writes it.
+var md5RE = regexp.MustCompile(`^[0-9a-f]{32}$`)
+
+// factsOf reads the catalogue's facts of a binary paragraph: the Provides as written (at most 8 KiB), the first line of the Description cut
+// at 1,000 characters, and the Description-md5 that names its long description in a Translation file (Q-CUR-16).
+func factsOf(p control.Paragraph) entryFacts {
+	f := entryFacts{provides: strings.TrimSpace(p.Value("Provides"))}
+	if len(f.provides) > 8192 {
+		f.provides = ""
+	}
+	short, _, _ := strings.Cut(p.Value("Description"), "\n")
+	f.description = cutRunes(strings.TrimSpace(short), 1000)
+	if m := strings.ToLower(strings.TrimSpace(p.Value("Description-md5"))); md5RE.MatchString(m) {
+		f.md5 = m
+	}
+	return f
+}
+
+// cutRunes keeps at most n runes of s, valid UTF-8 only.
+func cutRunes(s string, n int) string {
+	s = strings.ToValidUTF8(s, "")
+	r := []rune(s)
+	if len(r) > n {
+		r = r[:n]
+	}
+	return string(r)
 }
 
 // sourceEntries reads a paragraph of a Sources index: one entry for each file of Checksums-Sha256, below its Directory.

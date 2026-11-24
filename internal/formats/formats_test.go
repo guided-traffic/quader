@@ -294,7 +294,13 @@ func TestR_ARCH_010_RegisterChecksTheClassMatrix(t *testing.T) {
 }
 
 type (
-	stubRemote  struct{ RemoteAdapter }
+	// stubRemote is a remote adapter with the floor of the upstream catalogue, which Register requires of every remote adapter
+	// (R-CUR-007, Q-CUR-109); bareRemote is one without it.
+	stubRemote struct {
+		RemoteAdapter
+		catalogueRemote
+	}
+	bareRemote  struct{ RemoteAdapter }
 	stubVirtual struct{ VirtualAdapter }
 )
 

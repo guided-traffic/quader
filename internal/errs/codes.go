@@ -411,6 +411,8 @@ const (
 	CodeCatalogueBudgetExhausted = "catalogue_budget_exhausted"
 	// CodeCatalogueAnswerTooLarge: an upstream answer exceeds a bound of the catalogue; the detail names the bound (502, R-CUR-008).
 	CodeCatalogueAnswerTooLarge = "catalogue_answer_too_large"
+	// CodeOffline: the remote repository is offline, so the upstream catalogue sends no request (409, R-CUR-008).
+	CodeOffline = "offline"
 	// CodeDownloadQueueFull: the repository's queue holds proxy.downloads.max_waiting_per_repository waiting rows (429, R-CUR-011).
 	CodeDownloadQueueFull = "download_queue_full"
 	// CodeAlreadyQueued: a download of the version is waiting or running; the answer names its row (409, R-CUR-010).
@@ -1033,6 +1035,7 @@ var registry = []CodeInfo{
 	{CodeCatalogueNotOffered, Invalid, "Not offered by the upstream", "The upstream of this remote repository does not answer this call of the catalogue, for example a search where it has none. Look the package up by its exact name."},
 	{CodeCatalogueNotFound, NotFound, "Not found upstream", "The upstream of this remote repository does not have a package of this name. Check the name's spelling as the format writes it."},
 	{CodeCatalogueBudgetExhausted, RateLimited, "Catalogue budget used up", "The upstream catalogue's requests of this repository or of this person within the last minute reached their bound, or the upstream rate limits Quader. Try again after the Retry-After period; an answer from the catalogue's cache costs nothing."},
+	{CodeOffline, Conflict, "Repository offline", "The remote repository is offline (its own mode or the global switch): the upstream catalogue sends no request to its upstream. A document the repository has stored is still shown."},
 	{CodeCatalogueAnswerTooLarge, UpstreamFailed, "Upstream answer too large", "An answer of the upstream exceeds a bound of the catalogue (the document's size, the time of a call, the entries of a page); the detail names the bound. Quader does not read it for browsing."},
 	{CodeDownloadQueueFull, RateLimited, "Download queue full", "The repository's download queue holds as many waiting downloads as it may (proxy.downloads.max_waiting_per_repository). Wait until rows finish, or cancel some."},
 	{CodeAlreadyQueued, Conflict, "Already queued", "A download of this version is waiting or running in the repository's queue; the answer names its row."},

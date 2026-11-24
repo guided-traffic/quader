@@ -90,7 +90,7 @@ func (m Mode) Validate() error {
 		}
 	}
 	for class, ms := range m.DelayMS {
-		if !slices.Contains([]string{KindDocument, KindTarball, KindAudit, KindOther, KindPing, KindReplication}, class) {
+		if !slices.Contains([]string{KindDocument, KindTarball, KindAudit, KindOther, KindPing, KindReplication, KindSearch}, class) {
 			return fmt.Errorf("delay_ms class %q: want document, tarball, replication, audit or other", class)
 		}
 		if ms < 0 || ms > int(MaxHang/time.Millisecond) {

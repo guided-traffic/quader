@@ -317,3 +317,11 @@ func missVerdict(pol vuln.Policy, in missInput, data advisory.DataState) vuln.Bl
 	}
 	return vuln.Verdict(pol, vuln.BlockRow{}, data)
 }
+
+// Covers reports whether the evaluation applies to versions of the format: the format has an ecosystem adapter and the scanning is on
+// (R-VULN-001). The upstream catalogue asks it before it shows the verdicts of versions not stored (remote-curation.md R-CUR-009,
+// vuln.MissVerdicts).
+func (s *Service) Covers(format string) bool {
+	_, ok := s.byFmt[format]
+	return ok && s.o.Enabled
+}

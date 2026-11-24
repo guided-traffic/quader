@@ -290,37 +290,9 @@ func (remoteAdapter) MirrorPlan(ctx context.Context, u discover.Upstream, name s
 // mirrorVersions reads the version list of a collection page by page through the stored documents; found is false when the
 // upstream has no such collection.
 func mirrorVersions(ctx context.Context, u discover.Upstream, ns, name string) (list []string, found bool, err error) {
-	path := VersionsDocumentPath(ns, name)
-	first, found, err := u.Document(ctx, path, offsetVariant(0))
-	if err != nil || !found {
-		return nil, false, err
-	}
-	head, err := parsePage(first)
-	if err != nil {
-		return nil, false, err
-	}
-	for _, e := range head.entries {
+	entries, found, err := catalogueVersions(ctx, u, ns, name)
+	for _, e := range entries {
 		list = append(list, e.Version)
 	}
-	size := upstreamListLimit
-	if head.count > len(head.entries) && len(head.entries) > 0 {
-		size = len(head.entries)
-	}
-	for start := size; start < head.count; start += size {
-		doc, ok, err := u.Document(ctx, path, offsetVariant(start))
-		if err != nil {
-			return nil, false, err
-		}
-		if !ok {
-			break
-		}
-		p, err := parsePage(doc)
-		if err != nil {
-			return nil, false, err
-		}
-		for _, e := range p.entries {
-			list = append(list, e.Version)
-		}
-	}
-	return list, true, nil
+	return list, found, err
 }

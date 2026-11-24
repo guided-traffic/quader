@@ -93,6 +93,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.serveTarball(w, r, rt)
 	case KindKeys, KindAttestations:
 		s.serveSignatures(w, rt)
+	case KindSearch:
+		s.serveSearch(w, r)
 	default:
 		writeError(w, http.StatusNotFound, "not found")
 	}

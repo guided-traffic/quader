@@ -1081,6 +1081,7 @@ discover.Plan: field Name string
 discover.RateLimited: embedded error
 discover.RateLimited: method RateLimitReason() string
 discover.RateLimited: method RetryAfter() (time.Duration, bool)
+discover.RepositoryIDer: method RepositoryID() int64
 discover.Response: field Body []byte
 discover.Response: field Header http.Header
 discover.Response: field Status int
@@ -1099,6 +1100,10 @@ discover.SearchQuery: field Level LevelRef
 discover.SearchQuery: field Limit int
 discover.SearchQuery: field NamesOnly bool
 discover.SearchQuery: field Text string
+discover.UnavailableError: field Reason string
+discover.UnavailableError: field Shape bool
+discover.UnavailableError: method Error() string
+discover.UnavailableError: method Is(error) bool
 discover.Upstream: method Artifact(context.Context, string, int64) ([]byte, bool, error)
 discover.Upstream: method Base() *url.URL
 discover.Upstream: method Document(context.Context, string, string) ([]byte, bool, error)
@@ -1109,13 +1114,19 @@ discover.VersionFacts: field Flags []string
 discover.VersionFacts: field Platforms []string
 discover.VersionFacts: field Published time.Time
 discover.VersionFacts: field Size int64
+discover.VersionFacts: field UnpackedSize int64
 discover.VersionFacts: field Version string
 discover.VersionsRequest: field Cursor Cursor
 discover.VersionsRequest: field Filter string
 discover.VersionsRequest: field Limit int
+discover.ErrBadLevel: value = errors.New("discover: the level is its path joined by /, each part URL-encoded and not empty")
 discover.ErrMethodUnavailable: value = errors.New("discover: the upstream does not offer the discovery method")
 discover.ErrNotOffered: value = errors.New("discover: the upstream does not offer this catalogue call")
 discover.MaxCursorBytes: value = 4096
+discover.MaxLevelEntries: value = 200
+discover.MaxSearchHits: value = 50
+discover.MaxTextRunes: value = 1000
+discover.MaxVersionsOnPage: value = 100
 discover.MethodFeed: value Method = "feed"
 discover.MethodListing: value Method = "listing"
 discover.MethodNames: value Method = "names"

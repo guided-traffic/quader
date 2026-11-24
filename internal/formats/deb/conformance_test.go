@@ -173,6 +173,7 @@ func conformance(t testing.TB) formattest.Fixture {
 		// remote passes its upstream's signed InRelease and indexes byte for byte, so it has no document that leaves a version out or
 		// refuses a package: its InRelease is a Passthrough document that answers the upstream's bytes under the rules, and the filtered view
 		// is a virtual repository's merge (delivery_test.go).
+		Catalogue: catalogueFixture(),
 		Delivery: &formattest.DeliveryFixture{
 			Remote: func() *formattest.MemRemote {
 				return &formattest.MemRemote{Docs: map[string][]byte{"dists/stable/InRelease": []byte(kitRelease)}, Artifacts: map[string][]byte{

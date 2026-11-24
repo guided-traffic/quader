@@ -270,6 +270,7 @@ func conformance(t *testing.T) formattest.Fixture {
 			},
 			DownloadLinks: tarballLinks,
 		},
+		Catalogue: catalogueFixture(t),
 		// Check 23 (R-NPM-049): the upstream's latest is the refused 2.0.0, so the package document, the dist-tags and the document
 		// of latest show that latest moved to 1.0.0.
 		Delivery: &formattest.DeliveryFixture{

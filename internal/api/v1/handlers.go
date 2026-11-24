@@ -179,6 +179,11 @@ type Options struct {
 	// their operations with 503.
 	RemoteDownloads RemoteDownloadsServices
 	// <<< T-24 downloads
+	// >>> T-24 catalogue
+	// UpstreamCatalogue holds the services of the upstream catalogue of a remote repository (upstream_catalogue_api.go); a nil engine
+	// answers its operations with 503.
+	UpstreamCatalogue UpstreamCatalogueServices
+	// <<< T-24 catalogue
 	// >>> T-24 rules
 	// DeliveryRules holds the services of the delivery rules of a remote repository (delivery_rules_api.go); a nil member answers
 	// their operations with 503.

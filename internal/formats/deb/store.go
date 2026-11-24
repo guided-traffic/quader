@@ -28,6 +28,7 @@ type Store interface {
 	BuildStore
 	RemoteStore
 	MirrorStore
+	CatalogueStore
 	VirtualStore
 	ViewStore
 	JournalStore

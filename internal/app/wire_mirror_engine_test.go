@@ -10,8 +10,8 @@ import (
 )
 
 func TestMirrorEngineArea(t *testing.T) {
-	t.Run("R-ARCH-001 the worker and all build the area, no other role does", func(t *testing.T) {
-		for role, want := range map[string]bool{"worker": true, "all": true, "web": false, "packages": false, "api": false} {
+	t.Run("R-ARCH-001 the worker, all and the roles of the management API build the area, the role packages does not", func(t *testing.T) {
+		for role, want := range map[string]bool{"worker": true, "all": true, "web": true, "packages": false, "api": true} {
 			sub, err := SubsystemsFor(role)
 			if err != nil {
 				t.Fatal(err)

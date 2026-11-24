@@ -4,9 +4,10 @@ Status: specified on 2026-11-23; its contracts (the tables, the types, the codes
 to R-CUR-006, R-CUR-017, package R2) are built with what [Q-CUR-42](#q-cur-42--the-places-the-rules-decide-as-built-kit-check-23-oci-and-debian-in-the-kit)
 lists as not built, the downloads ahead with their queue (R-CUR-010 to R-CUR-013, package R4), the examination, the requests and the retention
 (R-CUR-014 to R-CUR-016, package R2b, with what [Q-CUR-140](#q-cur-140--an-examination-row-names-the-files-its-runs-stored-a-discard-removes-what-belongs-to-the-version-alone)
-to [Q-CUR-148](#q-cur-148--every-persons-ask-is-recorded-the-last-asker-who-withdraws-ends-an-entry-no-client-was-refused) decide), and of the
-screens (R-CUR-018) the tab strip and the tab **Downloads** (package R5a); the catalogue, the gauge `quader_remote_delivery_requests_open` and the
-other screens are not. The owner asked for it on 2026-11-23 (task T-24 of the
+to [Q-CUR-148](#q-cur-148--every-persons-ask-is-recorded-the-last-asker-who-withdraws-ends-an-entry-no-client-was-refused) decide), the upstream catalogue
+(R-CUR-007 to R-CUR-009, package R3, with what [Q-CUR-62](#q-cur-62--debian-searches-the-name-provides-and-the-short-description-the-long-descriptions-and-read-the-index-wait)
+lists as not built), and of the screens (R-CUR-018) the tab strip and the tab **Downloads** (package R5a); the gauge
+`quader_remote_delivery_requests_open` and the other screens are not. The owner asked for it on 2026-11-23 (task T-24 of the
 [project plan](../projektplan/promt.md)), at 12:38:
 
 > In Repositories, die Remote sind, fehlt mir dafür ein Reiter um das Remote zu durchsuchen. Manche Varianten von
@@ -597,6 +598,9 @@ Below `/api/v1/projects/{projectKey}/repositories/{repoKey}` (tag `remote-curati
   for OCI the platforms held), `examination` (a version stored that the rules do not deliver, R-CUR-014), the stored version's gate verdicts
   (`malware`, `vulnerabilities`, `signatures`, each as the version views of the package API carry them, R-VULN-020, R-MAL-022, R-SIG-034),
   `queued` (the queue row of a waiting or running download, R-CUR-011) and `request` (the open request entry of its subject, R-CUR-015).
+  As built, `stored` is `none` or `partial` for a hit and a package and `none` or `whole` for a version, and a stored version's gate
+  verdicts are read from the package API's version view, not repeated in the row; `examination` waits for R2b
+  ([Q-CUR-61](#q-cur-61--a-rows-stored-state-is-what-the-repository-holds-the-stored-versions-verdicts-stay-the-version-views)).
 - **What a reader sees in mode `onlyAllowed`.** A caller who may not set rules sees in search and level answers only the hits whose
   package is delivered, with `"withheld": <count>` and the sentence "N hits are not allowed in this repository; look a package up by its
   exact name to ask for it." A lookup by exact name answers every package with its versions and its state, so the person can ask for it
@@ -624,10 +628,10 @@ Priority: **P1** · Covers: RMT-027
   | `POST downloads` | the same | `202` with the queue row of a version, or the bulk `{"id", "state": "expanding", …}` and `Location` of `download-bulks/{id}`; `409 already_queued` names the row of a version that is waiting or running |
 
   The preview of a version or a package is one catalogue call (`Package`); of a section the level's count where the upstream tells it
-  (Debian's index rows, a Galaxy namespace's count, a Docker Hub namespace's count), else `null`. Until the catalogue is built (R3) the
-  preview of a version answers one version of unknown size and whether the rules deliver it, the preview of a package `versions` and
-  `bytes` `null` with the note, and a section `400 catalogue_not_offered`; a package's bulk is expanded through the format's mirror plan
-  with the bulk's bounds ([Q-CUR-80](#q-cur-80--a-download-of-one-version-runs-before-the-catalogue-the-call-that-names-its-files-is-a-contract-interface-of-its-own)).
+  (Debian's index rows, a Galaxy namespace's count, a Docker Hub namespace's count), else `null`; a section of an upstream that lists no
+  levels answers `400 catalogue_not_offered`. A package's bulk is expanded through the catalogue's `Package`, a section's through its
+  `Children` and `Package`, with the bulk's bounds ([Q-CUR-65](#q-cur-65--a-bulk-and-a-preview-read-the-catalogue-a-preview-is-one-page-of-the-bulks-bound),
+  which replaces the mirror plan's expansion of [Q-CUR-80](#q-cur-80--a-download-of-one-version-runs-before-the-catalogue-the-call-that-names-its-files-is-a-contract-interface-of-its-own)).
 - **Bounds of a bulk**, each a value in the form that the person may lower: `maxVersions` (`proxy.downloads.max_versions_per_bulk`,
   10,000 by default), `maxBytes` (`proxy.downloads.max_bytes_per_bulk`, 100 GiB), `includePrereleases` (true), and for a package
   `newest` (all). A size the upstream does not announce counts when the file is stored: the bulk stops adding rows when the stored bytes
@@ -2426,6 +2430,10 @@ by an `api` replica.
 **Choice:** (a). **Rationale:** the development agent would revisit it when the catalogue (R3) answers the newest versions on every
 replica, which would make the ask's row exist at once.
 
+**With the catalogue (R3, 2026-11-24).** The bulk is kept: its expansion now names the newest versions through the catalogue's `Package`
+on the worker ([Q-CUR-65](#q-cur-65--a-bulk-and-a-preview-read-the-catalogue-a-preview-is-one-page-of-the-bulks-bound)), so the order is
+the catalogue's; naming the version at the ask stays the revisit above.
+
 **Applied in the spec:** R-CUR-011 (the bulk's columns), R-CUR-015 ("Examination at once", "Allow").
 
 ### Q-CUR-142 · A write that widens the rules removes the examination rows it comes to deliver; the task catches the rest
@@ -2497,6 +2505,10 @@ R-CUR-015). The catalogue is built beside R2b.
 
 **Choice:** (a). **Rationale:** R3 wires its lookup into `requests.Options.Lookup`; nothing else changes.
 
+**Wired with the catalogue (R3, 2026-11-24).** An ask is checked by the catalogue's lookup on the replica that answers it, spent from the
+asker's budget: a package the upstream does not have, or a version it does not list, answers `404 catalogue_not_found`; an upstream that
+cannot be asked answers the catalogue's error (`catalogueLookup` in [wire_upstream_catalogue.go](../../internal/app/wire_upstream_catalogue.go)).
+
 **Applied in the spec:** R-CUR-015 ("Asking", through this block).
 
 ### Q-CUR-146 · The list names the versions an entry's examination stored; their verdicts are the stored versions'
@@ -2551,10 +2563,134 @@ entry with no asker and no refusal is removed after `request_retention`.
 
 **Applied in the spec:** R-CUR-015 ("Asking", "Withdraw"), R-CUR-019.
 
+### Q-CUR-60 · The catalogue's upstream is lent by the mirror host, which the roles of the management API now build
+
+Status: **Decided by the development agent** — selected from the options below while building the catalogue (R3); the owner reviews it at
+the walkthrough.
+
+Context: R-CUR-008 wants every catalogue request to go through the repository's upstream client with its egress rules, credential policy,
+circuit and a background slot, and a document answered from the stored copy or read without storing. The developer page put the lent
+upstream in `internal/proxy/catalogue_upstream.go`. The proxy does not know a format's handshake, exchange or URL map of a path, which the
+format host holds; and the role `api`, which answers the management API, has no remote engine and no format host.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The proxy gains `Engine.Peruse` (a format's request built as a fetch builds it, sent as a discovery request, nothing written); the lent upstream is `formathost`'s `catalogueUpstream` over a pass's upstream, answering the stored copy by the cache view and the rest by `Peruse`; the area `mirror-engine` is built on `api` and `web` too, so `api` builds a background engine of its own at the first call (chosen) | One request path for passes, background runs and the catalogue | Egress, credentials, handshake, exchange, URL map, circuit and slots are the engine's, unchanged; nothing new decides a host | An `api` replica runs a background engine (small caches, Q-ARCH-317) once the catalogue is used |
+| (b) A catalogue client of its own over `proxy/upstream.Clients` | No engine on `api` | Smaller footprint | A second request path that has to repeat the handshake, the exchange and the circuit, and reads no stored copy |
+| (c) The catalogue only on roles with a remote engine (`web`, `all`) | No new area | Nothing to build | An installation that separates `api` and `packages` has no catalogue |
+
+**Choice:** (a). A preset's `catalogueHosts` are handed to the request as the mirror's hosts are, so they never receive the repository's
+credential; a preset that declared one with `sendCredentials` would still get none, and no preset does.
+
+**Rationale:** the egress and credential rules are the remote engine's, and a second path would have to be held to them twice. The
+development agent would revisit (b) if the background engine's memory shows on `api` replicas.
+
+**Applied in the spec:** R-CUR-008; [architecture.md](architecture.md) R-ARCH-001 (the area table) and Q-ARCH-316; [../developer/remote-curation.md](../developer/remote-curation.md) (R3).
+
+### Q-CUR-61 · A row's stored state is what the repository holds; the stored version's verdicts stay the version view's
+
+Status: **Decided by the development agent** — selected from the options below while building the catalogue (R3); the owner reviews it at
+the walkthrough.
+
+Context: R-CUR-009 lists `stored` (`none`, `partial`, `whole`, for OCI the platforms held) and the stored version's gate verdicts (malware,
+vulnerabilities, signatures) on every row. Whether a version is held whole needs the upstream's list of its files, and the three verdicts
+are computed by the package API's version view over the scopes of the caller, three readers that each read their own rows.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `stored` from the live package versions of the repository: a package `none` or `partial` (some version held), a version `none` or `whole`; a stored version's verdicts are read from the package API's version view, which R5b's screen opens (chosen) | One statement per page | No second computation of three gates' badges that could disagree with the version view | A row says "stored" without its verdicts; OCI's platforms held are not shown |
+| (b) Compute the three verdicts per row | As R-CUR-009 says | One answer | Three readers per page, and a second place that decides a badge |
+
+**Choice:** (a). **Rationale:** the version view is the one place a badge is decided; the catalogue names the version so that the screen
+can open it. The development agent would revisit (b) when R5b's screen needs the badges in the list itself.
+
+**Applied in the spec:** R-CUR-009 (as built).
+
+### Q-CUR-62 · Debian searches the name, Provides and the short description; the long descriptions and "Read the index" wait
+
+Status: **Decided by the development agent** — selected from the options below while building the catalogue (R3); the owner reviews it at
+the walkthrough.
+
+Context: R-DEB-036 searches the long descriptions of `i18n/Translation-en` too, parsed as an index of their own, and offers **Read the
+index**, a queue row that downloads a suite's release and indexes. Both change what the remote's parse and its queue run walk: every place
+that enqueues a parse reads the release's index list (the release's record, the scope's fetch, the housekeeping and the virtual
+repository's merge), and the merge reads the same list for paragraphs.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The parse keeps `provides`, the short description and `description_md5`; the search matches the name, Provides and the short description; the long descriptions and **Read the index** are not built in R3 (chosen) | What `apt search` finds in a `Packages` file | No change of what the merge and the housekeeping walk | A word only a long description holds is not found; a suite no client read is not searchable |
+| (b) Parse `Translation-en` and add **Read the index** now | All of R-DEB-036 | Complete | A change of four enqueue paths and the queue run in the same package as five catalogues |
+
+**Choice:** (a). `deb_remote_entries.description_md5` is stored, so the long descriptions join by it when their parse lands.
+
+**Rationale:** the catalogue answers for every format now; the two parts change the remote's parse and queue, which are tested by their
+own areas. The development agent would revisit it with R5b, whose Debian screen offers **Read the index**.
+
+**Applied in the spec:** [formats/debian.md](formats/debian.md) R-DEB-036 (as built); the status of this page.
+
+### Q-CUR-63 · The levels a repository has: a registry's catalog is a root of packages; a namespace or a project is entered by name
+
+Status: **Decided by the development agent** — selected from the options below while building the catalogue (R3); the owner reviews it at
+the walkthrough.
+
+Context: `CatalogueCaps.Levels` names the kinds of levels above a package. An OCI registry without a preset lists its images at its root
+(`_catalog`), with no level above an image; Docker Hub's and Quay's namespaces, npm's scopes and GitLab's projects are not listable
+themselves.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `levels` empty with no `levelsReason` means the root lists packages; a reason means no listing, and `Children` answers `catalogue_not_offered`; a level whose names are not listable answers an empty root and is entered by its name (chosen) | No new member | The engine and the screen read one rule | An empty root says nothing by itself; the capabilities' note says it |
+| (b) A member `rootLists` | Explicit | Clear | A type change of the contract's leaf for one registry kind |
+
+**Choice:** (a). OCI declares the level `namespace` for the format; a repository's capabilities say `project` for the GitLab preset.
+
+**Rationale:** the declaration is the format's, the capabilities the repository's (R-CUR-007). The development agent would revisit (b)
+if a second registry kind needs it.
+
+**Applied in the spec:** R-CUR-007 (the capabilities), [formats/oci.md](formats/oci.md) R-OCI-038.
+
+### Q-CUR-64 · A document is read whole up to the bound; a cursor travels base64url; the preview and the bulk read larger pages
+
+Status: **Decided by the development agent** — selected from the options below while building the catalogue (R3); the owner reviews it at
+the walkthrough.
+
+Context: R-CUR-008 says a document is at most `proxy.catalogue.max_document_bytes` and parsed as a stream. The engine's request reads a
+body into memory up to its bound, and the formats' parsers take bytes.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A document is read whole up to the bound (64 MiB) and parsed; a call reads a document once and keeps it for the call; a cursor is the format's JSON, base64url-encoded in the API; the preview and a bulk's expansion read pages of the bulk's bound, the API at most 50, 200 and 100 (chosen) | The engine's discovery request | One read path; the largest document seen (npm's `typescript`, 2 MB) is far below the bound | A call may hold up to 64 MiB ([H-1730](../security/remote-curation.md#h-1730--a-catalogue-call-holds-a-whole-document-in-memory)) |
+| (b) A streaming parser per format | As specified | Bounded memory | Five parsers of their own for the catalogue alone |
+
+**Choice:** (a). **Rationale:** the budget (120 requests a minute per repository) and the bound keep the memory of a replica bounded; the
+development agent would revisit (b) when a replica's memory shows it.
+
+**Applied in the spec:** R-CUR-008 (as built).
+
+### Q-CUR-65 · A bulk and a preview read the catalogue; a preview is one page of the bulk's bound
+
+Status: **Decided by the development agent** — selected from the options below while building the catalogue (R3); the owner reviews it at
+the walkthrough.
+
+Context: R4 expanded a package's bulk through the format's mirror plan (Q-CUR-80) and answered a section `400 catalogue_not_offered`;
+R-CUR-007 says a bulk expands through `Package` and `Children`, never a second lister.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The planner of the worker calls the format's catalogue through the worker's upstream (which stores, since a bulk downloads); a section's packages are the level's; the preview counts the newest `maxVersions` of one `Package` page and a section's packages by the level's count (chosen) | R-CUR-007 | OCI's tags are listed without a manifest per tag; one notion of a package's versions | npm's `latest` is no longer pinned in a bulk: the bulk takes the newest versions |
+| (b) Keep the mirror plan for a package | Q-CUR-80 | Unchanged | Two listers of a package's versions |
+
+**Choice:** (a). A level that lists only levels below it (a Debian suite) queues nothing; the preview's count says so.
+
+**Rationale:** one lister per question. The development agent would revisit it if a format's catalogue answers a package's versions
+more expensively than its plan.
+
+**Applied in the spec:** R-CUR-010 (the preview and the expansion).
+
 ## What this does not cover
 
 - [H-1720](../security/remote-curation.md#h-1720--a-search-tells-the-upstreams-operator-what-people-look-for) to
-  [H-1729](../security/remote-curation.md#h-1729--a-reader-learns-what-is-being-examined),
+  [H-1730](../security/remote-curation.md#h-1730--a-catalogue-call-holds-a-whole-document-in-memory),
   [H-1840](../security/remote-curation.md#h-1840--clients-failures-of-many-files-write-as-many-rows-a-minute) and
   [H-1841](../security/remote-curation.md#h-1841--the-usage-overview-does-not-name-who-started-a-bulk) and
   [H-1842](../security/remote-curation.md#h-1842--a-discard-leaves-what-a-version-shares-by-its-digest): the gaps of this page's

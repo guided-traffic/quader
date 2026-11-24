@@ -2577,6 +2577,13 @@ admitted or hid whole packages; no surface showed its upstream or a failed downl
 a Debian remote's curated view is a virtual repository over it; the page of a remote repository has tabs; R-UI-052, R-REPO-005, R-REPO-024,
 R-REPO-065, R-AUTHZ-008, R-API-081 and INV-11 changed. The security view is [security/remote-curation.md](security/remote-curation.md).
 
+**Built: the upstream catalogue (2026-11-24, package R3).** The five formats implement `formats.Catalogue`, and `Register` refuses a remote
+adapter without it. The contract's surface grew by additions that keep version 11: the leaf `discover` gained `UnavailableError`,
+`RepositoryIDer`, `VersionFacts.UnpackedSize`, the page bounds, `ErrBadLevel` and its paging helpers
+([Q-CUR-60](spec/remote-curation.md#q-cur-60--the-catalogues-upstream-is-lent-by-the-mirror-host-which-the-roles-of-the-management-api-now-build)
+to [Q-CUR-65](spec/remote-curation.md#q-cur-65--a-bulk-and-a-preview-read-the-catalogue-a-preview-is-one-page-of-the-bulks-bound));
+`internal/formats/testdata/contract.txt` holds them.
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -10126,10 +10133,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-CUR
 
-57 questions on [spec/remote-curation.md](spec/remote-curation.md).
+63 questions on [spec/remote-curation.md](spec/remote-curation.md).
 
 <details>
-<summary>Q-CUR: 57 questions</summary>
+<summary>Q-CUR: 63 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10167,6 +10174,12 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-CUR-43](spec/remote-curation.md#q-cur-43--a-mirror-without-its-bound-does-not-run-and-says-so) | A mirror without its bound does not run, and says so | Decided by the development agent | (a) The dispatch and the pass apply the save's predicate (`repository.UnboundedMirror`): such a mirror is not dispatched, a pass of it ends `skipped: unbounded`, its status reads `unbounded`, its run answers 422 `mirror_unbounded` | — |
 | [Q-CUR-44](spec/remote-curation.md#q-cur-44--a-bastion-keeps-no-refusal-of-the-rules-an-allow-reaches-its-clients-at-once) | A Bastion keeps no refusal of the rules: an allow reaches its clients at once | Decided by the development agent | (a) A Bastion keeps no `403` that says `Cache-Control: no-store`; it relays it unchanged | — |
 | [Q-CUR-45](spec/remote-curation.md#q-cur-45--a-remotes-stored-patterns-are-not-read-into-its-document-either) | A remote's stored patterns are not read into its document either | Decided by the development agent | (a) The document of a remote is read without patterns, as the snapshot reads it | — |
+| [Q-CUR-60](spec/remote-curation.md#q-cur-60--the-catalogues-upstream-is-lent-by-the-mirror-host-which-the-roles-of-the-management-api-now-build) | The catalogue's upstream is lent by the mirror host, which the roles of the management API now build | Decided by the development agent | (a) The proxy gains `Engine.Peruse` (a format's request built as a fetch builds it, sent as a discovery request, nothing written); the lent upstream is `formathost`'s `catalogueUpstream` over a pass's upstream, answering the stored copy by the cache view and the rest by `Peruse`; the area `mirror-engine` is built on `api` and `web` too, so `api` builds a background engine of its own at the first call | [ADR-277](#adr-277--a-remote-repository-can-be-curated-delivery-rules-in-two-modes-an-upstream-catalogue-downloads-ahead-and-their-queue-requests-with-examination) |
+| [Q-CUR-61](spec/remote-curation.md#q-cur-61--a-rows-stored-state-is-what-the-repository-holds-the-stored-versions-verdicts-stay-the-version-views) | A row's stored state is what the repository holds; the stored version's verdicts stay the version view's | Decided by the development agent | (a) `stored` from the live package versions of the repository: a package `none` or `partial` (some version held), a version `none` or `whole`; a stored version's verdicts are read from the package API's version view, which R5b's screen opens | — |
+| [Q-CUR-62](spec/remote-curation.md#q-cur-62--debian-searches-the-name-provides-and-the-short-description-the-long-descriptions-and-read-the-index-wait) | Debian searches the name, Provides and the short description; the long descriptions and "Read the index" wait | Decided by the development agent | (a) The parse keeps `provides`, the short description and `description_md5`; the search matches the name, Provides and the short description; the long descriptions and **Read the index** are not built in R3 | — |
+| [Q-CUR-63](spec/remote-curation.md#q-cur-63--the-levels-a-repository-has-a-registrys-catalog-is-a-root-of-packages-a-namespace-or-a-project-is-entered-by-name) | The levels a repository has: a registry's catalog is a root of packages; a namespace or a project is entered by name | Decided by the development agent | (a) `levels` empty with no `levelsReason` means the root lists packages; a reason means no listing, and `Children` answers `catalogue_not_offered`; a level whose names are not listable answers an empty root and is entered by its name | — |
+| [Q-CUR-64](spec/remote-curation.md#q-cur-64--a-document-is-read-whole-up-to-the-bound-a-cursor-travels-base64url-the-preview-and-the-bulk-read-larger-pages) | A document is read whole up to the bound; a cursor travels base64url; the preview and the bulk read larger pages | Decided by the development agent | (a) A document is read whole up to the bound (64 MiB) and parsed; a call reads a document once and keeps it for the call; a cursor is the format's JSON, base64url-encoded in the API; the preview and a bulk's expansion read pages of the bulk's bound, the API at most 50, 200 and 100 | — |
+| [Q-CUR-65](spec/remote-curation.md#q-cur-65--a-bulk-and-a-preview-read-the-catalogue-a-preview-is-one-page-of-the-bulks-bound) | A bulk and a preview read the catalogue; a preview is one page of the bulk's bound | Decided by the development agent | (a) The planner of the worker calls the format's catalogue through the worker's upstream (which stores, since a bulk downloads); a section's packages are the level's; the preview counts the newest `maxVersions` of one `Package` page and a section's packages by the level's count | [ADR-277](#adr-277--a-remote-repository-can-be-curated-delivery-rules-in-two-modes-an-upstream-catalogue-downloads-ahead-and-their-queue-requests-with-examination) |
 | [Q-CUR-80](spec/remote-curation.md#q-cur-80--a-download-of-one-version-runs-before-the-catalogue-the-call-that-names-its-files-is-a-contract-interface-of-its-own) | A download of one version runs before the catalogue: the call that names its files is a contract interface of its own | Decided by the development agent | (a). npm, NuGet and Debian name a version's files from their mirror plan's rows (`formats.ProbeFromPlan`); OCI reads the tag's document and names the manifest by its digest, as a client's GET of the tag does; Ansible Galaxy reads the version document. | — |
 | [Q-CUR-81](spec/remote-curation.md#q-cur-81--the-step-of-a-failure-is-the-exchanges-where-an-exchange-failed) | The step of a failure is the exchange's where an exchange failed | Decided by the development agent | (a) A failed exchange names its own step wherever the run was; `plan`, `verify`, `gate` and `store` name failures that are no exchange's (a version the document does not list, a digest that differs, a gate's refusal, the object store) | — |
 | [Q-CUR-82](spec/remote-curation.md#q-cur-82--the-bound-of-running-rows-holds-across-replicas-by-the-repositorys-row-lock) | The bound of running rows holds across replicas by the repository's row lock | Decided by the development agent | (a) Every start takes the repository's row with `SELECT … FOR NO KEY UPDATE` first, then counts and starts | — |

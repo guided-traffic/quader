@@ -220,7 +220,7 @@ func wiringSteps() []step {
 		newStep(AreaProxyEngine, onFilling, (*App).wireProxyEngine),
 		newStep(AreaVirtualEngine, withListener, (*App).wireVirtualEngine, withOptional(proxyEngineArea{})),
 		newStep(AreaFormatHost, onFilling, (*App).wireFormatHost),
-		newStep(AreaMirrorEngine, onWorker|onAll, (*App).wireMirrorEngine, withOptional(proxyEngineArea{}, formatHostArea{})),
+		newStep(AreaMirrorEngine, onWorker|onManagement, (*App).wireMirrorEngine, withOptional(proxyEngineArea{}, formatHostArea{})),
 		newStep(AreaPackagesAPI, onManagement, (*App).wirePackagesAPI),
 		newStep(AreaVulnAPI, onManagement, (*App).wireVulnAPI),
 		newStep(AreaSessions, onManagement, (*App).wireSessions),

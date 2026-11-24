@@ -29,13 +29,15 @@ func TestR_REPO_062_TheOCIPresetsAreTheFourRegistriesTheOwnerNamed(t *testing.T)
 	want := []catalog.UpstreamPreset{
 		{
 			ID: "docker-hub", DisplayName: "Docker Hub", URL: "https://registry-1.docker.io/", Default: true,
-			ExtraHosts: []catalog.PresetHost{{Pattern: "auth.docker.io", SendCredentials: true}},
+			ExtraHosts:     []catalog.PresetHost{{Pattern: "auth.docker.io", SendCredentials: true}},
+			CatalogueHosts: []catalog.PresetHost{{Pattern: "hub.docker.com"}},
 		},
 		{ID: "quay", DisplayName: "Quay", URL: "https://quay.io/"},
 		{ID: "ghcr", DisplayName: "GitHub (ghcr.io)", URL: "https://ghcr.io/"},
 		{
 			ID: "gitlab", DisplayName: "GitLab", URL: "https://registry.gitlab.com/",
-			ExtraHosts: []catalog.PresetHost{{Pattern: "gitlab.com", SendCredentials: true}},
+			ExtraHosts:     []catalog.PresetHost{{Pattern: "gitlab.com", SendCredentials: true}},
+			CatalogueHosts: []catalog.PresetHost{{Pattern: "gitlab.com"}},
 		},
 	}
 	if got := New().Descriptor().UpstreamPresets; !reflect.DeepEqual(got, want) {

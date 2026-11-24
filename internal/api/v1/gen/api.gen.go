@@ -5140,6 +5140,120 @@ func (e TokenScopeGrantActions) Valid() bool {
 	}
 }
 
+// Defines values for UpstreamCatalogueMode.
+const (
+	CatalogueModeAllExceptBlocked UpstreamCatalogueMode = "allExceptBlocked"
+	CatalogueModeOnlyAllowed      UpstreamCatalogueMode = "onlyAllowed"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamCatalogueMode enum.
+func (e UpstreamCatalogueMode) Valid() bool {
+	switch e {
+	case CatalogueModeAllExceptBlocked:
+		return true
+	case CatalogueModeOnlyAllowed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpstreamCatalogueSearch.
+const (
+	CatalogueSearchIndex    UpstreamCatalogueSearch = "index"
+	CatalogueSearchNone     UpstreamCatalogueSearch = "none"
+	CatalogueSearchUpstream UpstreamCatalogueSearch = "upstream"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamCatalogueSearch enum.
+func (e UpstreamCatalogueSearch) Valid() bool {
+	switch e {
+	case CatalogueSearchIndex:
+		return true
+	case CatalogueSearchNone:
+		return true
+	case CatalogueSearchUpstream:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpstreamCatalogueSizes.
+const (
+	CatalogueSizesKnown      UpstreamCatalogueSizes = "known"
+	CatalogueSizesPerVersion UpstreamCatalogueSizes = "perVersion"
+	CatalogueSizesUnknown    UpstreamCatalogueSizes = "unknown"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamCatalogueSizes enum.
+func (e UpstreamCatalogueSizes) Valid() bool {
+	switch e {
+	case CatalogueSizesKnown:
+		return true
+	case CatalogueSizesPerVersion:
+		return true
+	case CatalogueSizesUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpstreamHitStored.
+const (
+	UpstreamHitStoredNone    UpstreamHitStored = "none"
+	UpstreamHitStoredPartial UpstreamHitStored = "partial"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamHitStored enum.
+func (e UpstreamHitStored) Valid() bool {
+	switch e {
+	case UpstreamHitStoredNone:
+		return true
+	case UpstreamHitStoredPartial:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpstreamPackageStored.
+const (
+	UpstreamPackageStoredNone    UpstreamPackageStored = "none"
+	UpstreamPackageStoredPartial UpstreamPackageStored = "partial"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamPackageStored enum.
+func (e UpstreamPackageStored) Valid() bool {
+	switch e {
+	case UpstreamPackageStoredNone:
+		return true
+	case UpstreamPackageStoredPartial:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpstreamQueuedState.
+const (
+	UpstreamQueuedRunning UpstreamQueuedState = "running"
+	UpstreamQueuedWaiting UpstreamQueuedState = "waiting"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamQueuedState enum.
+func (e UpstreamQueuedState) Valid() bool {
+	switch e {
+	case UpstreamQueuedRunning:
+		return true
+	case UpstreamQueuedWaiting:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for UpstreamRepositoryAccountAuthMode.
 const (
 	UpstreamRepositoryAccountAuthModeBasic  UpstreamRepositoryAccountAuthMode = "basic"
@@ -5308,6 +5422,48 @@ func (e UpstreamTestResultErrorCode) Valid() bool {
 	case UpstreamTestResultErrorCodeTooManyRedirects:
 		return true
 	case UpstreamTestResultErrorCodeUpstreamSecretUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpstreamVersionStored.
+const (
+	UpstreamVersionStoredNone  UpstreamVersionStored = "none"
+	UpstreamVersionStoredWhole UpstreamVersionStored = "whole"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamVersionStored enum.
+func (e UpstreamVersionStored) Valid() bool {
+	switch e {
+	case UpstreamVersionStoredNone:
+		return true
+	case UpstreamVersionStoredWhole:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpstreamVulnerabilitiesVersionsVerdict.
+const (
+	UpstreamVerdictBlocked    UpstreamVulnerabilitiesVersionsVerdict = "blocked"
+	UpstreamVerdictNone       UpstreamVulnerabilitiesVersionsVerdict = "none"
+	UpstreamVerdictNotCovered UpstreamVulnerabilitiesVersionsVerdict = "notCovered"
+	UpstreamVerdictStored     UpstreamVulnerabilitiesVersionsVerdict = "stored"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamVulnerabilitiesVersionsVerdict enum.
+func (e UpstreamVulnerabilitiesVersionsVerdict) Valid() bool {
+	switch e {
+	case UpstreamVerdictBlocked:
+		return true
+	case UpstreamVerdictNone:
+		return true
+	case UpstreamVerdictNotCovered:
+		return true
+	case UpstreamVerdictStored:
 		return true
 	default:
 		return false
@@ -15906,6 +16062,113 @@ type UpstreamArchiveKey struct {
 	UserId string `json:"userId"`
 }
 
+// UpstreamCatalogue The upstream catalogue's capabilities of a remote repository (R-CUR-007, R-CUR-009): read per repository, since one format's
+// upstreams differ.
+type UpstreamCatalogue struct {
+	// Hosts The hosts besides the upstream's that the catalogue reaches, from the preset (R-CUR-008); none receives a credential.
+	Hosts []string `json:"hosts"`
+
+	// Levels The kinds of the levels above a package, outermost first (scope; namespace; project; suite, component, architecture).
+	Levels []string `json:"levels"`
+
+	// LevelsReason Why the upstream lists no levels; null where the root lists packages or levels.
+	LevelsReason *string `json:"levelsReason"`
+
+	// MaySetRules The caller holds manage on the repository or the system role admin (R-CUR-005).
+	MaySetRules bool                  `json:"maySetRules"`
+	Mode        UpstreamCatalogueMode `json:"mode"`
+
+	// OpenRequests The open request entries; null for a caller who may not set rules.
+	OpenRequests *int `json:"openRequests"`
+	Queue        struct {
+		Done    int `json:"done"`
+		Failed  int `json:"failed"`
+		Running int `json:"running"`
+		Waiting int `json:"waiting"`
+	} `json:"queue"`
+
+	// Rules The repository's delivery rules.
+	Rules int `json:"rules"`
+
+	// Search upstream: the upstream answers a text query; index: Quader answers it over an index it holds; none: no search.
+	Search UpstreamCatalogueSearch `json:"search"`
+
+	// SearchNote What a query matches, one sentence.
+	SearchNote *string `json:"searchNote"`
+
+	// SearchReason Why there is no search, one sentence.
+	SearchReason *string `json:"searchReason"`
+
+	// SearchWindow The deepest hit the upstream's search reaches; null when it says nothing.
+	SearchWindow *int                   `json:"searchWindow"`
+	Sizes        UpstreamCatalogueSizes `json:"sizes"`
+}
+
+// UpstreamCatalogueMode defines model for UpstreamCatalogue.Mode.
+type UpstreamCatalogueMode string
+
+// UpstreamCatalogueSearch upstream: the upstream answers a text query; index: Quader answers it over an index it holds; none: no search.
+type UpstreamCatalogueSearch string
+
+// UpstreamCatalogueSizes defines model for UpstreamCatalogue.Sizes.
+type UpstreamCatalogueSizes string
+
+// UpstreamHit A package of a search or a level (R-CUR-009): the upstream's facts as plain text and the repository's state: `delivery` (the
+// package's decision of the rules), `stored` (`none`, or `partial` when the repository holds a version of it) and `request`.
+type UpstreamHit struct {
+	// Delivery The decision of R-CUR-001 and what made it.
+	Delivery    DeliveryDecision `json:"delivery"`
+	Description string           `json:"description"`
+
+	// Flags deprecated, unlisted, official, verified, insecure, unsigned-index.
+	Flags  []string `json:"flags"`
+	Latest *string  `json:"latest"`
+
+	// Name The format's normalized name.
+	Name string `json:"name"`
+
+	// Request The open request entry of a subject (R-CUR-015), null for none.
+	Request *UpstreamRequestState `json:"request"`
+	Stored  UpstreamHitStored     `json:"stored"`
+	Updated *time.Time            `json:"updated"`
+}
+
+// UpstreamHitStored defines model for UpstreamHit.Stored.
+type UpstreamHitStored string
+
+// UpstreamLevelPage One page of a level (R-CUR-007, R-CUR-009).
+type UpstreamLevelPage struct {
+	Done         bool          `json:"done"`
+	Levels       []string      `json:"levels"`
+	NextCursor   *string       `json:"nextCursor"`
+	Packages     []UpstreamHit `json:"packages"`
+	Total        *int          `json:"total"`
+	Withheld     *int          `json:"withheld"`
+	WithheldNote *string       `json:"withheldNote"`
+}
+
+// UpstreamPackage A package looked up by its exact name and one page of its versions (R-CUR-007, R-CUR-009).
+type UpstreamPackage struct {
+	// Delivery The decision of R-CUR-001 and what made it.
+	Delivery    DeliveryDecision `json:"delivery"`
+	Description string           `json:"description"`
+	Done        bool             `json:"done"`
+	Name        string           `json:"name"`
+	NextCursor  *string          `json:"nextCursor"`
+
+	// Request The open request entry of a subject (R-CUR-015), null for none.
+	Request *UpstreamRequestState `json:"request"`
+	Stored  UpstreamPackageStored `json:"stored"`
+
+	// Tags npm's dist-tags; empty for a format without.
+	Tags     map[string]string `json:"tags"`
+	Total    *int              `json:"total"`
+	Versions []UpstreamVersion `json:"versions"`
+}
+
+// UpstreamPackageStored defines model for UpstreamPackage.Stored.
+type UpstreamPackageStored string
+
 // UpstreamPreset defines model for UpstreamPreset.
 type UpstreamPreset struct {
 	// Default The format's default upstream; exactly one preset of a format has it.
@@ -15941,6 +16204,19 @@ type UpstreamProductAddress struct {
 	UpstreamKeys *[]UpstreamArchiveKey `json:"upstreamKeys"`
 	Url          string                `json:"url"`
 }
+
+// UpstreamQueued The queue row of a download of the version that waits or runs (R-CUR-011), null for none.
+type UpstreamQueued struct {
+	Attempts      int                 `json:"attempts"`
+	Id            openapi_types.UUID  `json:"id"`
+	MaxAttempts   int                 `json:"maxAttempts"`
+	NextAttemptAt *time.Time          `json:"nextAttemptAt"`
+	Origin        string              `json:"origin"`
+	State         UpstreamQueuedState `json:"state"`
+}
+
+// UpstreamQueuedState defines model for UpstreamQueued.State.
+type UpstreamQueuedState string
 
 // UpstreamRepository A well-known repository as the admin page shows it (R-REPO-073). `state` is `null` and `inUse` a boolean for a system
 // repository; `inUse` is `null` for a preset repository. `fixed` names what the product holds beyond the table of R-REPO-069
@@ -16159,6 +16435,31 @@ type UpstreamRepositoryVisibilityRequest struct {
 	Level VisibilityLevel `json:"level"`
 }
 
+// UpstreamRequestState The open request entry of a subject (R-CUR-015), null for none.
+type UpstreamRequestState struct {
+	Askers   int                `json:"askers"`
+	Id       openapi_types.UUID `json:"id"`
+	Refusals int64              `json:"refusals"`
+}
+
+// UpstreamSearchPage One page of a text query (R-CUR-007, R-CUR-009).
+type UpstreamSearchPage struct {
+	Done       bool          `json:"done"`
+	Hits       []UpstreamHit `json:"hits"`
+	NextCursor *string       `json:"nextCursor"`
+	Note       *string       `json:"note"`
+
+	// Total The upstream's count; null when it does not say.
+	Total *int `json:"total"`
+
+	// Truncated The upstream's window ends before its total.
+	Truncated bool `json:"truncated"`
+
+	// Withheld In the mode onlyAllowed, the hits of this page a caller who may not set rules does not see (Q-CUR-14).
+	Withheld     *int    `json:"withheld"`
+	WithheldNote *string `json:"withheldNote"`
+}
+
 // UpstreamTestRequest defines model for UpstreamTestRequest.
 type UpstreamTestRequest struct {
 	// Format The format of the repository the section is for; its defaults and probe resource apply.
@@ -16209,6 +16510,63 @@ type UpstreamTestResult struct {
 
 // UpstreamTestResultErrorCode defines model for UpstreamTestResult.Error.Code.
 type UpstreamTestResultErrorCode string
+
+// UpstreamVersion A version of a package as the upstream tells it without a download, with the repository's state: `delivery` (the rules'
+// decision), `stored` (`none` or `whole`), `queued` and `request` (R-CUR-009). The version is canonical (R-CUR-006).
+type UpstreamVersion struct {
+	// Delivery The decision of R-CUR-001 and what made it.
+	Delivery DeliveryDecision `json:"delivery"`
+	Digest   *string          `json:"digest"`
+
+	// Flags deprecated, yanked, unlisted, prerelease, vulnerable.
+	Flags     []string   `json:"flags"`
+	Platforms []string   `json:"platforms"`
+	Published *time.Time `json:"published"`
+
+	// Queued The queue row of a download of the version that waits or runs (R-CUR-011), null for none.
+	Queued *UpstreamQueued `json:"queued"`
+
+	// Request The open request entry of a subject (R-CUR-015), null for none.
+	Request *UpstreamRequestState `json:"request"`
+
+	// Size The download's size the upstream announces; null when it does not.
+	Size   *int64                `json:"size"`
+	Stored UpstreamVersionStored `json:"stored"`
+
+	// UnpackedSize The unpacked files' size where the upstream tells only that (npm); never counted as a download's size.
+	UnpackedSize *int64 `json:"unpackedSize"`
+	Version      string `json:"version"`
+}
+
+// UpstreamVersionStored defines model for UpstreamVersion.Stored.
+type UpstreamVersionStored string
+
+// UpstreamVulnerabilities The vulnerability verdicts of versions the repository has not stored (R-CUR-009, R-VULN-015).
+type UpstreamVulnerabilities struct {
+	// NotCovered The vulnerability scanning does not evaluate this repository's versions (its format, or its upstream).
+	NotCovered bool `json:"notCovered"`
+	Versions   []struct {
+		AdvisoryId *string `json:"advisoryId"`
+		Enforced   bool    `json:"enforced"`
+
+		// Reason malicious, triage or missing_data.
+		Reason *string `json:"reason"`
+		Stored bool    `json:"stored"`
+
+		// Verdict none: no block; blocked: the miss gate would refuse it (or report it in the mode report); stored: see the version view.
+		Verdict UpstreamVulnerabilitiesVersionsVerdict `json:"verdict"`
+		Version string                                 `json:"version"`
+	} `json:"versions"`
+}
+
+// UpstreamVulnerabilitiesVersionsVerdict none: no block; blocked: the miss gate would refuse it (or report it in the mode report); stored: see the version view.
+type UpstreamVulnerabilitiesVersionsVerdict string
+
+// UpstreamVulnerabilitiesRequest defines model for UpstreamVulnerabilitiesRequest.
+type UpstreamVulnerabilitiesRequest struct {
+	Name     string   `json:"name"`
+	Versions []string `json:"versions"`
+}
 
 // UsageBudget One budget key of the subject (R-LIM-014) in the last 24 hours, its place, the rule that applies there now, and every figure.
 type UsageBudget struct {
@@ -18697,6 +19055,51 @@ type GetItemStatsParams struct {
 	Path string `form:"path" json:"path"`
 }
 
+// ListUpstreamLevelParams defines parameters for ListUpstreamLevel.
+type ListUpstreamLevelParams struct {
+	// Level The level's path joined by `/`, each part URL-encoded; absent for the root.
+	Level *string `form:"level,omitempty" json:"level,omitempty"`
+
+	// Cursor The `nextCursor` of the previous page; opaque, valid for the same call and arguments.
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Entries on the page, at most 200.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// GetUpstreamPackageParams defines parameters for GetUpstreamPackage.
+type GetUpstreamPackageParams struct {
+	// Name The package's exact name in any spelling the format reads.
+	Name string `form:"name" json:"name"`
+
+	// Filter A substring of the version, applied by Quader.
+	Filter *string `form:"filter,omitempty" json:"filter,omitempty"`
+
+	// Cursor The `nextCursor` of the previous page; opaque, valid for the same call and arguments.
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Versions on the page, at most 100.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// SearchUpstreamCatalogueParams defines parameters for SearchUpstreamCatalogue.
+type SearchUpstreamCatalogueParams struct {
+	// Q The text, 1 to 128 characters after trimming; a format may narrow it (npm takes 2 to 64).
+	Q string `form:"q" json:"q"`
+
+	// NamesOnly Match names only (Debian, as `apt-cache search --names-only`).
+	NamesOnly *bool `form:"namesOnly,omitempty" json:"namesOnly,omitempty"`
+
+	// Level Restrict the query to a level where the upstream can; the path joined by `/`, each part URL-encoded.
+	Level *string `form:"level,omitempty" json:"level,omitempty"`
+
+	// Cursor The `nextCursor` of the previous page; opaque, valid for the same call and arguments.
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Hits on the page, at most 50.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // RescanRepositoryVulnerabilitiesParams defines parameters for RescanRepositoryVulnerabilities.
 type RescanRepositoryVulnerabilitiesParams struct {
 	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
@@ -19837,6 +20240,9 @@ type CreateRepositoryServiceAccountTechnicalTokenSecretJSONRequestBody = NewTech
 
 // CreateSignatureReleaseJSONRequestBody defines body for CreateSignatureRelease for application/json ContentType.
 type CreateSignatureReleaseJSONRequestBody = SignatureReleaseRequest
+
+// EvaluateUpstreamVulnerabilitiesJSONRequestBody defines body for EvaluateUpstreamVulnerabilities for application/json ContentType.
+type EvaluateUpstreamVulnerabilitiesJSONRequestBody = UpstreamVulnerabilitiesRequest
 
 // CreateProjectServiceAccountJSONRequestBody defines body for CreateProjectServiceAccount for application/json ContentType.
 type CreateProjectServiceAccountJSONRequestBody = NewServiceAccount
@@ -21415,9 +21821,24 @@ type ServerInterface interface {
 	// GetItemStats Read the download statistics of a file
 	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/stats)
 	GetItemStats(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params GetItemStatsParams)
+	// GetUpstreamCatalogue The upstream catalogue's capabilities of a remote repository
+	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/upstream)
+	GetUpstreamCatalogue(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string)
 	// TestRepositoryUpstream Test the saved upstream of a remote repository
 	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/upstream-test)
 	TestRepositoryUpstream(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string)
+	// ListUpstreamLevel List a level of the upstream of a remote repository
+	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/levels)
+	ListUpstreamLevel(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params ListUpstreamLevelParams)
+	// GetUpstreamPackage Look a package of the upstream up by its exact name
+	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/package)
+	GetUpstreamPackage(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params GetUpstreamPackageParams)
+	// SearchUpstreamCatalogue Search the upstream of a remote repository
+	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/search)
+	SearchUpstreamCatalogue(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params SearchUpstreamCatalogueParams)
+	// EvaluateUpstreamVulnerabilities The vulnerability verdicts of versions the repository has not stored
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/vulnerabilities)
+	EvaluateUpstreamVulnerabilities(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string)
 	// RescanRepositoryVulnerabilities Evaluate every stored version of a repository again
 	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/vulnerabilities/rescan)
 	RescanRepositoryVulnerabilities(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params RescanRepositoryVulnerabilitiesParams)
@@ -33414,6 +33835,41 @@ func (siw *ServerInterfaceWrapper) GetItemStats(w http.ResponseWriter, r *http.R
 	handler.ServeHTTP(w, r)
 }
 
+// GetUpstreamCatalogue operation middleware
+func (siw *ServerInterfaceWrapper) GetUpstreamCatalogue(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetUpstreamCatalogue(w, r, projectKey, repoKey)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // TestRepositoryUpstream operation middleware
 func (siw *ServerInterfaceWrapper) TestRepositoryUpstream(w http.ResponseWriter, r *http.Request) {
 
@@ -33440,6 +33896,311 @@ func (siw *ServerInterfaceWrapper) TestRepositoryUpstream(w http.ResponseWriter,
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.TestRepositoryUpstream(w, r, projectKey, repoKey)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListUpstreamLevel operation middleware
+func (siw *ServerInterfaceWrapper) ListUpstreamLevel(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListUpstreamLevelParams
+
+	// ------------- Optional query parameter "level" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "level", r.URL.Query(), &params.Level, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "level"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "level", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListUpstreamLevel(w, r, projectKey, repoKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetUpstreamPackage operation middleware
+func (siw *ServerInterfaceWrapper) GetUpstreamPackage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetUpstreamPackageParams
+
+	// ------------- Required query parameter "name" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "name", r.URL.Query(), &params.Name, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "name"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "name", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "filter" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "filter", r.URL.Query(), &params.Filter, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "filter"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "filter", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetUpstreamPackage(w, r, projectKey, repoKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SearchUpstreamCatalogue operation middleware
+func (siw *ServerInterfaceWrapper) SearchUpstreamCatalogue(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SearchUpstreamCatalogueParams
+
+	// ------------- Required query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "namesOnly" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "namesOnly", r.URL.Query(), &params.NamesOnly, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "namesOnly"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "namesOnly", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "level" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "level", r.URL.Query(), &params.Level, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "level"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "level", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SearchUpstreamCatalogue(w, r, projectKey, repoKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// EvaluateUpstreamVulnerabilities operation middleware
+func (siw *ServerInterfaceWrapper) EvaluateUpstreamVulnerabilities(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.EvaluateUpstreamVulnerabilities(w, r, projectKey, repoKey)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -40707,6 +41468,11 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/{downloadId}/cancel", wrapper.CancelRemoteDownload)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks/{bulkId}", wrapper.GetRemoteDownloadBulk)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks/{bulkId}/cancel", wrapper.CancelRemoteDownloadBulk)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/upstream", wrapper.GetUpstreamCatalogue)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/search", wrapper.SearchUpstreamCatalogue)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/levels", wrapper.ListUpstreamLevel)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/package", wrapper.GetUpstreamPackage)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/vulnerabilities", wrapper.EvaluateUpstreamVulnerabilities)
 
 	return m
 }

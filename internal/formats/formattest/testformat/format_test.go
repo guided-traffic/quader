@@ -136,6 +136,7 @@ func TestR_ARCH_010_Defects(t *testing.T) {
 			"R-AUTH-002 a format whose 401 drops the challenge the error carries fails check 7", testformat.DropsChallenge, formattest.CheckHeaders,
 			"want 401 with a challenge", nil,
 		},
+		{"R-CUR-007 a catalogue whose versions are not canonical fails check 22", testformat.CatalogueRawVersions, formattest.CheckCatalogue, "which is not canonical", nil},
 		{"R-SIG-022 a format whose signature becomes a version fails check 18", testformat.SignatureVersion, formattest.CheckSignatures, "a signature is never a version", nil},
 		{"R-SIG-063 a format that names a signature file an artifact fails check 18", testformat.GatesAttachment, formattest.CheckSignatures, "Gate names GateArtifact", nil},
 		{"R-SIG-063 a format that names an artifact GateNone fails check 18", testformat.PassesArtifact, formattest.CheckSignatures, "Gate names GateNone", nil},

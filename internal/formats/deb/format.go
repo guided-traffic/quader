@@ -163,13 +163,9 @@ func (f *Format) Descriptor() formats.Descriptor {
 			{Route: routeFlatFile, Method: http.MethodHead, What: "a HEAD of a package file of a flat repository"},
 			{Route: routeMemberGet, Method: http.MethodHead, What: "a HEAD of a package file by the member path of a virtual repository's index"},
 		},
-		// The upstream catalogue (remote-curation.md R-CUR-007, R-DEB-036): the lookup by exact name is the floor; the search over the
-		// indexes held and the levels suite, component and architecture wait for the catalogue's package of T-24.
-		Catalogue: formats.CatalogueDeclaration{
-			Lookup:   true,
-			NoSearch: "The search over the indexes the remote holds (R-DEB-036) is specified and not built yet; look a package up by its exact name.",
-			NoLevels: "The levels suite, component and architecture (R-DEB-036) are specified and not built yet; look a package up by its exact name.",
-		},
+		// The upstream catalogue (remote-curation.md R-CUR-007, R-DEB-036): Quader searches the indexes the remote has parsed, and the
+		// levels are their suites, components and architectures (catalogue.go).
+		Catalogue:        formats.CatalogueDeclaration{Lookup: true, Search: true, Levels: []string{"suite", "component", "architecture"}},
 		VersionCanon:     versionCanon{},
 		Names:            names{},
 		Clients:          clients(),
