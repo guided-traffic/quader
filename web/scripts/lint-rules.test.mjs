@@ -12,6 +12,7 @@ import { offTheLine } from './line-rule.mjs';
 import { compare, rewrite } from './i18n-check.mjs';
 import { journeyTextFindings } from './journey-texts-rule.mjs';
 import { decisionNumbersInTestNames } from './test-names-rule.mjs';
+import { tabStripFindings } from './tab-strip-rule.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const eslint = new ESLint({ cwd: root });
@@ -306,4 +307,20 @@ test("a test name that carries a decision's number fails the check, one that car
     [1, 3, 5, 9, 10, 11],
   );
   assert.equal(found[2].title, 'a title on its own line that goes on with Q-AUTH-6');
+});
+
+test('R-UI-173 a tab strip without quaderTabStrip or without the import of TabStrip fails the check; a marked, imported one passes', () => {
+  const marked = '<nav quaderTabStrip class="tab-nav profile-nav" aria-label="Profile pages"><a class="tab-link">Profile</a></nav>';
+  const bare = marked.replace('quaderTabStrip ', '');
+  const ok = { unmarked: [], unimported: false };
+  assert.deepEqual(tabStripFindings(`@Component({ imports: [RouterLink, TabStrip], template: \`${marked}\` })`), ok);
+  assert.deepEqual(tabStripFindings("@Component({ imports: [TabStrip], templateUrl: './list.html' })", marked), ok);
+  // The tablist of the tab group: the attributes on lines of their own.
+  assert.deepEqual(tabStripFindings('@Component({ imports: [TabList, TabStrip], template: `<div\n  ngTabList\n  quaderTabStrip\n  class="tab-nav"\n>` })'), ok);
+  assert.deepEqual(tabStripFindings(`@Component({ imports: [RouterLink, TabStrip], template: \`${bare}\` })`).unmarked, [bare.slice(0, bare.indexOf('>') + 1)]);
+  assert.equal(tabStripFindings(`@Component({ imports: [RouterLink], template: \`${marked}\` })`).unimported, true);
+  assert.equal(tabStripFindings("@Component({ imports: [RouterLink], templateUrl: './list.html' })", marked).unimported, true);
+  assert.equal(tabStripFindings('@Component({ template: `<div quaderTabStrip class="view-tabs tab-nav"></div>` })').unimported, true);
+  assert.deepEqual(tabStripFindings('@Component({ imports: [RouterLink], template: `<nav class="tab-navigation"></nav>` })'), ok);
+  assert.deepEqual(tabStripFindings('/** The links of `<nav class="tab-nav">`. */ @Directive({ selector: \'[quaderTabStrip]\' })'), ok);
 });

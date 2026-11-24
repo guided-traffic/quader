@@ -421,7 +421,7 @@
       <notes>
         <note category="location">src/app/app.routes.ts:150</note>
         <note category="location">src/app/features/projects/project-context.routes.ts:65</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:133</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:134</note>
         <note category="location">src/app/features/usage/usage.routes.ts:43</note>
         <note category="location">src/app/features/usage/usage.routes.ts:61</note>
       </notes>
@@ -433,7 +433,7 @@
     <unit id="limits.heading">
       <notes>
         <note category="location">src/app/app.routes.ts:156</note>
-        <note category="location">src/app/features/limits/limits-frame.ts:22,23</note>
+        <note category="location">src/app/features/limits/limits-frame.ts:23,24</note>
         <note category="location">src/app/features/limits/limits.routes.ts:25</note>
       </notes>
       <segment>
@@ -13545,7 +13545,7 @@
     </unit>
     <unit id="limits.description">
       <notes>
-        <note category="location">src/app/features/limits/limits-frame.ts:24,25</note>
+        <note category="location">src/app/features/limits/limits-frame.ts:25,26</note>
       </notes>
       <segment>
         <source>How much each caller may download, and how fast.</source>
@@ -13554,7 +13554,7 @@
     </unit>
     <unit id="limits.nav">
       <notes>
-        <note category="location">src/app/features/limits/limits-frame.ts:28,29</note>
+        <note category="location">src/app/features/limits/limits-frame.ts:29,30</note>
       </notes>
       <segment>
         <source>Download limits</source>
@@ -13563,7 +13563,7 @@
     </unit>
     <unit id="limits.tab.rules">
       <notes>
-        <note category="location">src/app/features/limits/limits-frame.ts:29,30</note>
+        <note category="location">src/app/features/limits/limits-frame.ts:30,31</note>
       </notes>
       <segment>
         <source>Rules</source>
@@ -13572,7 +13572,7 @@
     </unit>
     <unit id="limits.tab.profiles">
       <notes>
-        <note category="location">src/app/features/limits/limits-frame.ts:30,31</note>
+        <note category="location">src/app/features/limits/limits-frame.ts:31,32</note>
       </notes>
       <segment>
         <source>Profiles</source>
@@ -13581,7 +13581,7 @@
     </unit>
     <unit id="limits.tab.projects">
       <notes>
-        <note category="location">src/app/features/limits/limits-frame.ts:31,32</note>
+        <note category="location">src/app/features/limits/limits-frame.ts:32,33</note>
       </notes>
       <segment>
         <source>Projects</source>
@@ -13590,7 +13590,7 @@
     </unit>
     <unit id="limits.tab.blocks">
       <notes>
-        <note category="location">src/app/features/limits/limits-frame.ts:32,34</note>
+        <note category="location">src/app/features/limits/limits-frame.ts:33,35</note>
       </notes>
       <segment>
         <source>Blocks</source>
@@ -16306,7 +16306,7 @@
     <unit id="pkg.filter.type">
       <notes>
         <note category="location">src/app/features/packages/package-list.html:149,150</note>
-        <note category="location">src/app/features/packages/package-list.ts:139</note>
+        <note category="location">src/app/features/packages/package-list.ts:141</note>
       </notes>
       <segment>
         <source>Package type</source>
@@ -16316,7 +16316,7 @@
     <unit id="pkg.filter.repository">
       <notes>
         <note category="location">src/app/features/packages/package-list.html:161,163</note>
-        <note category="location">src/app/features/packages/package-list.ts:148</note>
+        <note category="location">src/app/features/packages/package-list.ts:150</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -16327,7 +16327,7 @@
       <notes>
         <note category="location">src/app/features/packages/package-list.html:175,177</note>
         <note category="location">src/app/features/packages/package-list.html:181</note>
-        <note category="location">src/app/features/packages/package-list.ts:160</note>
+        <note category="location">src/app/features/packages/package-list.ts:162</note>
       </notes>
       <segment>
         <source>Keyword</source>
@@ -16338,7 +16338,7 @@
       <notes>
         <note category="location">src/app/features/packages/package-list.html:186,188</note>
         <note category="location">src/app/features/packages/package-list.html:190</note>
-        <note category="location">src/app/features/packages/package-list.ts:169</note>
+        <note category="location">src/app/features/packages/package-list.ts:171</note>
       </notes>
       <segment>
         <source>Created</source>
@@ -16392,7 +16392,7 @@
     </unit>
     <unit id="pkg.list.caption">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:185</note>
+        <note category="location">src/app/features/packages/package-list.ts:187</note>
       </notes>
       <segment>
         <source>Packages</source>
@@ -16401,7 +16401,7 @@
     </unit>
     <unit id="pkg.list.empty">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:186</note>
+        <note category="location">src/app/features/packages/package-list.ts:188</note>
       </notes>
       <segment>
         <source>No package has been published yet.</source>
@@ -16410,7 +16410,7 @@
     </unit>
     <unit id="pkg.list.empty-filtered">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:187</note>
+        <note category="location">src/app/features/packages/package-list.ts:189</note>
       </notes>
       <segment>
         <source>No package matches the filters.</source>
@@ -16419,7 +16419,7 @@
     </unit>
     <unit id="pkg.list.search">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:188</note>
+        <note category="location">src/app/features/packages/package-list.ts:190</note>
       </notes>
       <segment>
         <source>Filter packages</source>
@@ -16428,7 +16428,7 @@
     </unit>
     <unit id="pkg.col.package">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:195</note>
+        <note category="location">src/app/features/packages/package-list.ts:197</note>
         <note category="location">src/app/features/search/search-results.ts:256</note>
       </notes>
       <segment>
@@ -16438,7 +16438,7 @@
     </unit>
     <unit id="pkg.col.format">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:196</note>
+        <note category="location">src/app/features/packages/package-list.ts:198</note>
         <note category="location">src/app/features/search/search-results.ts:259</note>
       </notes>
       <segment>
@@ -16448,7 +16448,7 @@
     </unit>
     <unit id="pkg.col.latest">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:200</note>
+        <note category="location">src/app/features/packages/package-list.ts:202</note>
         <note category="location">src/app/features/search/search-results.ts:262</note>
       </notes>
       <segment>
@@ -16458,7 +16458,7 @@
     </unit>
     <unit id="pkg.help.latest">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:201</note>
+        <note category="location">src/app/features/packages/package-list.ts:203</note>
         <note category="location">src/app/features/search/search-results.ts:263</note>
       </notes>
       <segment>
@@ -16468,7 +16468,7 @@
     </unit>
     <unit id="pkg.col.updated">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:205</note>
+        <note category="location">src/app/features/packages/package-list.ts:207</note>
         <note category="location">src/app/features/search/search-results.ts:268</note>
       </notes>
       <segment>
@@ -16478,7 +16478,7 @@
     </unit>
     <unit id="pkg.help.updated">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:207</note>
+        <note category="location">src/app/features/packages/package-list.ts:209</note>
         <note category="location">src/app/features/search/search-results.ts:269</note>
       </notes>
       <segment>
@@ -16488,7 +16488,7 @@
     </unit>
     <unit id="pkg.period.7">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:212</note>
+        <note category="location">src/app/features/packages/package-list.ts:214</note>
       </notes>
       <segment>
         <source>Last 7 days</source>
@@ -16497,7 +16497,7 @@
     </unit>
     <unit id="pkg.period.30">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:213</note>
+        <note category="location">src/app/features/packages/package-list.ts:215</note>
       </notes>
       <segment>
         <source>Last 30 days</source>
@@ -16506,7 +16506,7 @@
     </unit>
     <unit id="pkg.period.90">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:214</note>
+        <note category="location">src/app/features/packages/package-list.ts:216</note>
       </notes>
       <segment>
         <source>Last 90 days</source>
@@ -16515,7 +16515,7 @@
     </unit>
     <unit id="pkg.period.custom">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:215</note>
+        <note category="location">src/app/features/packages/package-list.ts:217</note>
       </notes>
       <segment>
         <source>Custom period</source>
@@ -16524,7 +16524,7 @@
     </unit>
     <unit id="pkg.views.actions-of">
       <notes>
-        <note category="location">src/app/features/packages/package-list.ts:332</note>
+        <note category="location">src/app/features/packages/package-list.ts:334</note>
       </notes>
       <segment>
         <source>Actions for <ph id="0" equiv="name" disp="name"/></source>
@@ -19171,7 +19171,7 @@
     </unit>
     <unit id="profile.nav">
       <notes>
-        <note category="location">src/app/features/profile/profile-nav.ts:9,10</note>
+        <note category="location">src/app/features/profile/profile-nav.ts:10,11</note>
       </notes>
       <segment>
         <source>Profile pages</source>
@@ -19180,7 +19180,7 @@
     </unit>
     <unit id="profile.nav.profile">
       <notes>
-        <note category="location">src/app/features/profile/profile-nav.ts:10,11</note>
+        <note category="location">src/app/features/profile/profile-nav.ts:11,12</note>
       </notes>
       <segment>
         <source>Profile</source>
@@ -19189,7 +19189,7 @@
     </unit>
     <unit id="profile.nav.tokens">
       <notes>
-        <note category="location">src/app/features/profile/profile-nav.ts:11,12</note>
+        <note category="location">src/app/features/profile/profile-nav.ts:12,13</note>
       </notes>
       <segment>
         <source>Personal tokens</source>
@@ -19198,7 +19198,7 @@
     </unit>
     <unit id="profile.nav.sessions">
       <notes>
-        <note category="location">src/app/features/profile/profile-nav.ts:12,13</note>
+        <note category="location">src/app/features/profile/profile-nav.ts:13,14</note>
       </notes>
       <segment>
         <source>Sessions</source>
@@ -19207,7 +19207,7 @@
     </unit>
     <unit id="profile.nav.usage">
       <notes>
-        <note category="location">src/app/features/profile/profile-nav.ts:13,16</note>
+        <note category="location">src/app/features/profile/profile-nav.ts:14,17</note>
       </notes>
       <segment>
         <source>Usage</source>
@@ -22517,7 +22517,7 @@
     </unit>
     <unit id="repo.tabs">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-tabs.ts:30</note>
+        <note category="location">src/app/features/repositories/content/repository-tabs.ts:31</note>
       </notes>
       <segment>
         <source>Views of the repository</source>
@@ -22526,7 +22526,7 @@
     </unit>
     <unit id="repo.tab.upstream">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-tabs.ts:34,35</note>
+        <note category="location">src/app/features/repositories/content/repository-tabs.ts:35,36</note>
       </notes>
       <segment>
         <source>Upstream</source>
@@ -22535,7 +22535,7 @@
     </unit>
     <unit id="repo.tab.downloads">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-tabs.ts:38,39</note>
+        <note category="location">src/app/features/repositories/content/repository-tabs.ts:39,40</note>
       </notes>
       <segment>
         <source>Downloads</source>
@@ -22544,7 +22544,7 @@
     </unit>
     <unit id="repo.tab.downloads-failed">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-tabs.ts:39,40</note>
+        <note category="location">src/app/features/repositories/content/repository-tabs.ts:40,41</note>
       </notes>
       <segment>
         <source>· <ph id="0" equiv="INTERPOLATION" disp="{{ n }}"/> failed</source>
@@ -22553,7 +22553,7 @@
     </unit>
     <unit id="repo.tab.details">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-tabs.ts:44,47</note>
+        <note category="location">src/app/features/repositories/content/repository-tabs.ts:45,48</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -40140,7 +40140,7 @@
     </unit>
     <unit id="system.heading">
       <notes>
-        <note category="location">src/app/features/system/system-page.ts:21</note>
+        <note category="location">src/app/features/system/system-page.ts:22</note>
       </notes>
       <segment>
         <source>System status</source>
@@ -40149,7 +40149,7 @@
     </unit>
     <unit id="system.resume">
       <notes>
-        <note category="location">src/app/features/system/system-page.ts:24,25</note>
+        <note category="location">src/app/features/system/system-page.ts:25,26</note>
       </notes>
       <segment>
         <source>Resume automatic refresh</source>
@@ -40158,7 +40158,7 @@
     </unit>
     <unit id="system.pause">
       <notes>
-        <note category="location">src/app/features/system/system-page.ts:26,28</note>
+        <note category="location">src/app/features/system/system-page.ts:27,29</note>
       </notes>
       <segment>
         <source>Pause automatic refresh</source>
@@ -40167,7 +40167,7 @@
     </unit>
     <unit id="system.refresh">
       <notes>
-        <note category="location">src/app/features/system/system-page.ts:29,30</note>
+        <note category="location">src/app/features/system/system-page.ts:30,31</note>
       </notes>
       <segment>
         <source>Refresh now</source>
@@ -40176,7 +40176,7 @@
     </unit>
     <unit id="system.tabs">
       <notes>
-        <note category="location">src/app/features/system/system-page.ts:32</note>
+        <note category="location">src/app/features/system/system-page.ts:33</note>
       </notes>
       <segment>
         <source>System status pages</source>
@@ -40185,7 +40185,7 @@
     </unit>
     <unit id="system.tab.status">
       <notes>
-        <note category="location">src/app/features/system/system-page.ts:34,36</note>
+        <note category="location">src/app/features/system/system-page.ts:35,37</note>
       </notes>
       <segment>
         <source>Status</source>
@@ -40194,7 +40194,7 @@
     </unit>
     <unit id="system.tab.jobs">
       <notes>
-        <note category="location">src/app/features/system/system-page.ts:38,39</note>
+        <note category="location">src/app/features/system/system-page.ts:39,40</note>
       </notes>
       <segment>
         <source>Jobs</source>
@@ -40203,7 +40203,7 @@
     </unit>
     <unit id="system.tab.backups">
       <notes>
-        <note category="location">src/app/features/system/system-page.ts:40,42</note>
+        <note category="location">src/app/features/system/system-page.ts:41,43</note>
       </notes>
       <segment>
         <source>Backups</source>
@@ -40212,7 +40212,7 @@
     </unit>
     <unit id="system.tab.storage">
       <notes>
-        <note category="location">src/app/features/system/system-page.ts:43,47</note>
+        <note category="location">src/app/features/system/system-page.ts:44,48</note>
       </notes>
       <segment>
         <source>Storage</source>
@@ -43595,7 +43595,7 @@
       <notes>
         <note category="location">src/app/features/usage/profile-usage.ts:122</note>
         <note category="location">src/app/features/usage/usage-detail.ts:188</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:185</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:186</note>
       </notes>
       <segment>
         <source>No downloads <ph id="0" equiv="period" disp="periodPhrase(this.activePeriod())"/>.</source>
@@ -43808,7 +43808,7 @@
       <notes>
         <note category="location">src/app/features/usage/usage-history.ts:363</note>
         <note category="location">src/app/features/usage/usage-history.ts:421</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:167</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:168</note>
         <note category="location">src/app/features/usage/usage-tables.ts:60</note>
         <note category="location">src/app/features/usage/usage-tables.ts:140</note>
       </notes>
@@ -43821,7 +43821,7 @@
       <notes>
         <note category="location">src/app/features/usage/usage-history.ts:364</note>
         <note category="location">src/app/features/usage/usage-history.ts:423</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:168</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:169</note>
         <note category="location">src/app/features/usage/usage-tables.ts:61</note>
         <note category="location">src/app/features/usage/usage-tables.ts:141</note>
       </notes>
@@ -43834,7 +43834,7 @@
       <notes>
         <note category="location">src/app/features/usage/usage-history.ts:365</note>
         <note category="location">src/app/features/usage/usage-history.ts:425</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:169</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:170</note>
         <note category="location">src/app/features/usage/usage-tables.ts:62</note>
         <note category="location">src/app/features/usage/usage-tables.ts:142</note>
       </notes>
@@ -43846,7 +43846,7 @@
     <unit id="usage.col.upstream">
       <notes>
         <note category="location">src/app/features/usage/usage-history.ts:368</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:170</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:171</note>
         <note category="location">src/app/features/usage/usage-tables.ts:63</note>
       </notes>
       <segment>
@@ -43857,7 +43857,7 @@
     <unit id="usage.col.refused">
       <notes>
         <note category="location">src/app/features/usage/usage-history.ts:372</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:171</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:172</note>
         <note category="location">src/app/features/usage/usage-tables.ts:64</note>
       </notes>
       <segment>
@@ -43941,7 +43941,7 @@
     <unit id="usage.col.now">
       <notes>
         <note category="location">src/app/features/usage/usage-meter.ts:102</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:174</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:175</note>
       </notes>
       <segment>
         <source>Now</source>
@@ -43960,7 +43960,7 @@
     <unit id="usage.filter.kind">
       <notes>
         <note category="location">src/app/features/usage/usage-overview.html:30</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:144</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:145</note>
       </notes>
       <segment>
         <source>Kind</source>
@@ -43970,7 +43970,7 @@
     <unit id="usage.filter.state">
       <notes>
         <note category="location">src/app/features/usage/usage-overview.html:34</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:146</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:147</note>
       </notes>
       <segment>
         <source>State</source>
@@ -43980,7 +43980,7 @@
     <unit id="usage.filter.project">
       <notes>
         <note category="location">src/app/features/usage/usage-overview.html:39,40</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:148</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:149</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -44060,7 +44060,7 @@
     </unit>
     <unit id="usage.search">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:94</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:95</note>
       </notes>
       <segment>
         <source>Filter by name or address</source>
@@ -44069,7 +44069,7 @@
     </unit>
     <unit id="usage.heading-repository">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:135</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:136</note>
       </notes>
       <segment>
         <source>Usage of <ph id="0" equiv="repository" disp="repo"/></source>
@@ -44078,7 +44078,7 @@
     </unit>
     <unit id="usage.heading-project">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:137</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:138</note>
       </notes>
       <segment>
         <source>Usage of <ph id="0" equiv="project" disp="name"/></source>
@@ -44087,8 +44087,8 @@
     </unit>
     <unit id="usage.filter.any">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:154</note>
-        <note category="location">src/app/features/usage/usage-overview.ts:206</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:155</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:207</note>
       </notes>
       <segment>
         <source>Any</source>
@@ -44097,7 +44097,7 @@
     </unit>
     <unit id="usage.col.caller">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:166</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:167</note>
       </notes>
       <segment>
         <source>Caller</source>
@@ -44106,7 +44106,7 @@
     </unit>
     <unit id="usage.empty.filtered">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:180</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:181</note>
       </notes>
       <segment>
         <source>No caller matches.</source>
@@ -44115,7 +44115,7 @@
     </unit>
     <unit id="usage.empty.project">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:183</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:184</note>
       </notes>
       <segment>
         <source>Nobody downloaded from this project in the last 24 hours.</source>
@@ -44124,7 +44124,7 @@
     </unit>
     <unit id="usage.exact-bytes">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:334</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:335</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="bytes" disp="formatCount(n, this.locale)"/> bytes</source>
@@ -44133,7 +44133,7 @@
     </unit>
     <unit id="usage.meter-tooltip">
       <notes>
-        <note category="location">src/app/features/usage/usage-overview.ts:342</note>
+        <note category="location">src/app/features/usage/usage-overview.ts:343</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="figure" disp="figureName(u.figure)"/> <ph id="1" equiv="place" disp="placeText(u.place)"/>: <ph id="2" equiv="percent" disp="percent"/> % of the limit</source>

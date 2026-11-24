@@ -44,7 +44,7 @@
   }
 </quader-filter-panel>
 
-<nav class="tab-nav views" i18n-aria-label="@@usage.views" aria-label="Views">
+<nav quaderTabStrip class="tab-nav views" i18n-aria-label="@@usage.views" aria-label="Views">
   <a class="tab-link" [routerLink]="[]" [queryParams]="{ state: null }" queryParamsHandling="merge" [attr.aria-current]="!query().state ? 'page' : null" i18n="@@usage.view.all">All callers</a>
   <a class="tab-link" [routerLink]="[]" [queryParams]="{ state: 'close' }" queryParamsHandling="merge" [attr.aria-current]="query().state === 'close' ? 'page' : null" i18n="@@usage.state.close">Close to the limit</a>
   <a class="tab-link" [routerLink]="[]" [queryParams]="{ state: reachedState() }" queryParamsHandling="merge" [attr.aria-current]="query().state === reachedState() ? 'page' : null">

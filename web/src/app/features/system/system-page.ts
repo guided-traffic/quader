@@ -2,6 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { SessionStore } from '../../core/session-store';
 import { PageHeader } from '../../shared/ui/page-header';
+import { TabStrip } from '../../shared/ui/tab-strip';
 import { SystemRefresh } from './system-refresh';
 
 /**
@@ -15,7 +16,7 @@ import { SystemRefresh } from './system-refresh';
  */
 @Component({
   selector: 'quader-system-page',
-  imports: [PageHeader, RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [PageHeader, RouterLink, RouterLinkActive, RouterOutlet, TabStrip],
   providers: [SystemRefresh],
   template: `
     <quader-page-header heading="System status" i18n-heading="@@system.heading">
@@ -29,7 +30,7 @@ import { SystemRefresh } from './system-refresh';
       <button actions class="btn btn-default" type="button" (click)="refresh.now()" i18n="@@system.refresh">Refresh now</button>
     </quader-page-header>
     @if (tabs()) {
-      <nav class="tab-nav system-tabs" aria-label="System status pages" i18n-aria-label="@@system.tabs">
+      <nav quaderTabStrip class="tab-nav system-tabs" aria-label="System status pages" i18n-aria-label="@@system.tabs">
         <a class="tab-link" routerLink="/admin/system" routerLinkActive [routerLinkActiveOptions]="exact" ariaCurrentWhenActive="page" i18n="@@system.tab.status"
           >Status</a
         >

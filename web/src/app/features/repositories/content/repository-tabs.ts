@@ -4,6 +4,7 @@ import { DeliveryRequestsApi } from '../../../api/delivery-requests-api';
 import { RemoteDownloadCounts, RemoteDownloadsApi } from '../../../api/remote-downloads-api';
 import { SessionStore } from '../../../core/session-store';
 import { valueOf } from '../../../shared/paged-resource';
+import { TabStrip } from '../../../shared/ui/tab-strip';
 
 /**
  * The tabs of a repository's page (R-UI-052): its content, for a remote repository **Upstream** and **Downloads** (remote-curation.md
@@ -25,9 +26,9 @@ const REQUESTS_COUNTED = 100;
  */
 @Component({
   selector: 'quader-repository-tabs',
-  imports: [RouterLink],
+  imports: [RouterLink, TabStrip],
   template: `
-    <nav class="tab-nav repository-tabs" aria-label="Views of the repository" i18n-aria-label="@@repo.tabs">
+    <nav quaderTabStrip class="tab-nav repository-tabs" aria-label="Views of the repository" i18n-aria-label="@@repo.tabs">
       <a class="tab-link" [routerLink]="base()" [attr.aria-current]="current() === 'content' ? 'page' : null">{{ contentLabel() }}</a>
       @if (remote()) {
         <a class="tab-link" [routerLink]="upstreamLink()" [attr.aria-current]="current() === 'upstream' ? 'page' : null"

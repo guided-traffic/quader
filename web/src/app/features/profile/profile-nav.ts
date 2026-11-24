@@ -1,12 +1,13 @@
 import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { TabStrip } from '../../shared/ui/tab-strip';
 
 /** The four pages of the profile as the tab strip of links (UI-A-20, R-UI-185); the current page is marked with `aria-current`. */
 @Component({
   selector: 'quader-profile-nav',
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, TabStrip],
   template: `
-    <nav class="tab-nav profile-nav" i18n-aria-label="@@profile.nav" aria-label="Profile pages">
+    <nav quaderTabStrip class="tab-nav profile-nav" i18n-aria-label="@@profile.nav" aria-label="Profile pages">
       <a class="tab-link" routerLink="/profile" routerLinkActive [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page" i18n="@@profile.nav.profile">Profile</a>
       <a class="tab-link" routerLink="/profile/tokens" routerLinkActive ariaCurrentWhenActive="page" i18n="@@profile.nav.tokens">Personal tokens</a>
       <a class="tab-link" routerLink="/profile/sessions" routerLinkActive ariaCurrentWhenActive="page" i18n="@@profile.nav.sessions">Sessions</a>

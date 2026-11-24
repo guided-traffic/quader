@@ -808,6 +808,31 @@ test.describe("the trend's axis with the app's stylesheet (R-VULN-022)", () => {
   }
 });
 
+test.describe('a tab strip wider than its place (R-UI-173)', () => {
+  // A version's tabs in German at 390 px (2026-11-24, `package-version-oci-not-checked`): Dateien, Signaturen, Details,
+  // Schwachstellen in a strip of 358 px.
+  const strip = (cls: string): string =>
+    `<div style="inline-size:358px"><nav class="${cls}" aria-label="Ansichten">` +
+    ['Dateien', 'Signaturen', 'Details', 'Schwachstellen'].map((t, i) => `<a class="tab-link" href="#"${i === 0 ? ' aria-current="page"' : ''}>${t}</a>`).join('') +
+    '</nav></div>';
+  // A scrollbar that takes room, where an engine draws a styled one (WebKit): the fixtures' Chromium hides its scrollbars (the
+  // renders' does not) and Firefox overlays them, so there the guard has nothing to find.
+  const classic = '::-webkit-scrollbar { height: 12px; background: #ccc; } ::-webkit-scrollbar-thumb { background: #888; }';
+
+  test("R-UI-173 the app's strip scrolls its tabs without a scrollbar", async ({ page }) => {
+    const found = await check(page, strip('tab-nav'), classic, true);
+    expect(only(found, 'tab-scrollbar'), describe(found)).toEqual([]);
+    expect(await page.locator('.tab-nav').evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
+  });
+
+  test('R-UI-173 the guard can fail: a strip that scrolls with the scrollbar of an engine that lays one out is found', async ({ page }) => {
+    const css = `.bare-strip { display: flex; overflow-x: auto; } .bare-strip > a { flex: none; padding: 16px 12px; } ${classic}`;
+    const found = await check(page, strip('bare-strip').replace('<nav ', '<nav role="tablist" '), css, true);
+    const laidOut = await page.locator('.bare-strip').evaluate((el: HTMLElement) => el.offsetHeight - el.clientHeight);
+    expect(only(found, 'tab-scrollbar'), describe(found)).toHaveLength(laidOut >= 1 ? 1 : 0);
+  });
+});
+
 test.describe('a list\'s cell without a value (R-UI-146)', () => {
   // The start page's projects as an administrator who is a member of none (2026-11-23, `projects-details-details-dark-1440.png`):
   // **Your role** empty in every row, beside the dashes of the other columns.

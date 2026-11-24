@@ -22,6 +22,7 @@ import { TimeAgo } from '../../shared/ui/time-ago';
 import { packageCommands } from './package-links';
 import { PackageMemory, SavedView } from './package-memory';
 import { PageHeader } from '../../shared/ui/page-header';
+import { TabStrip } from '../../shared/ui/tab-strip';
 
 type Param = string | readonly string[] | undefined;
 type ListTab = 'all' | 'recent' | 'views';
@@ -61,6 +62,7 @@ interface Chip extends ListChip {
     FilterPanel,
     FormatIconView,
     ListHead,
+    TabStrip,
     TimeAgo,
   ],
   templateUrl: './package-list.html',

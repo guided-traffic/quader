@@ -8102,6 +8102,9 @@ Priority: **MVP** · Covers: quader-only
 - A text cut with an ellipsis, and a field's value cut, is cut only where the box that holds it has no room for the rest.
 - The page scrolls sideways at no width; from 1,024 px no region inside it scrolls sideways either (Q-UI-427, R-UI-085). A table is
   never wider than its place: where its columns do not fit, its rows stack (R-UI-174).
+- A tab strip whose tabs are wider than its place keeps them on one line and scrolls sideways without a scrollbar; at an edge
+  beyond which tabs lie a fade with a chevron says so and scrolls it by a click, and the current tab and a focused tab stand clear
+  of the fades ([Q-UI-1074](#q-ui-1074--a-tab-strip-wider-than-its-place-scrolls-without-a-scrollbar-with-a-fade-and-a-chevron-at-the-edge)).
 - Neither the window nor the shell's panel scrolls past the content. The panel and a table's scroll region are the containing
   blocks of what is positioned inside them: a text for assistive technology only (`.visually-hidden`) in the rows a region hides
   stood at its place, far below the window's end, and a package's 33 versions had 900 px of empty page under them (the check
@@ -8116,8 +8119,12 @@ Priority: **MVP** · Covers: quader-only
 
 Acceptance criteria:
 
-- The render run's report names no `clipped`, no `cramped` and no `sideways` finding (the checks of the same names in
-  [layout.ts](../../web/e2e/renders/layout.ts) and [render.spec.ts](../../web/e2e/renders/render.spec.ts)).
+- The render run's report names no `clipped`, no `cramped`, no `sideways` and no `tab-scrollbar` finding (the checks of the same
+  names in [layout.ts](../../web/e2e/renders/layout.ts) and [render.spec.ts](../../web/e2e/renders/render.spec.ts)).
+- Unit (`tab-strip.spec.ts`): a strip whose tabs fit shows no fade; a wider one shows a fade at each edge beyond which tabs lie and
+  a click on it scrolls by the strip's width less the fades; the current tab and a focused tab are scrolled clear of the fades;
+  the fades add no text, no tab stop and nothing for a screen reader. The web lint refuses a strip without `quaderTabStrip` and a component with one that does not
+  import the directive (`tab-strip-rule.mjs`, tested by `lint-rules.test.mjs`).
 
 ### R-UI-174 · A list stacks its rows only where its columns do not fit, and a stacked row is dense
 Priority: **MVP** · Covers: quader-only
@@ -23573,6 +23580,41 @@ Status: **Decided by the development agent on 2026-11-24** — selected from the
 stays quiet for assistive technology. The development agent would revisit (b) if the app gains an event stream to the browser.
 
 **Applied in the spec:** R-UI-210, R-UI-211. Code: [page-visibility.ts](../../web/src/app/core/page-visibility.ts).
+
+### Q-UI-1074 · A tab strip wider than its place scrolls without a scrollbar, with a fade and a chevron at the edge
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a package version's strip **Dateien, Signaturen, Details, Schwachstellen** at 390 px in German was wider than the window
+and showed a scrollbar under **Schwachstellen** (the render `package-version-oci-not-checked`, 2026-11-24). Every strip of Quader
+is the one class `.tab-nav` (nine of them: a version's tabs, a repository's, the profile's, the packages' views, the search's,
+a CI issuer's, System status, Download limits and the usage's views), and a repository's page holds up to four tabs since that day.
+GitLab's scrollable tabs (`GlScrollableTabs` of GitLab UI) hide the strip's overflow and put a 2rem fade from the page's fill at an
+edge beyond which tabs lie, holding a chevron button (`chevron-lg-left`, `chevron-lg-right`, `tabindex="-1"`) that scrolls the
+strip by its width.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) As GitLab: no scrollbar, a fade with a chevron at an edge beyond which tabs lie, a click on it scrolls by a page; the strip still scrolls by a swipe, Shift and the wheel, and the keyboard; the current tab and a focused tab are scrolled clear of the fades (chosen) | One directive, `quaderTabStrip`, on every strip | GitLab's look; the hint is where the tabs are; nothing moves when it appears; a phone swipes as before | A little script per strip |
+| (b) The scrollbar hidden and a fade only, drawn by the stylesheet | No script | Cheapest | No way to scroll for a mouse without a wheel; the current tab can stand beyond the edge on arrival |
+| (c) The tabs wrap to a second line | No scrolling | Everything seen | Two rows read as two strips (UI-A-12); not GitLab |
+| (d) The tabs that do not fit go into a menu **More** | No scrolling | Everything reachable in one place | Not GitLab; the menu's width changes with the language; a tab's place jumps between strip and menu as the window changes |
+
+**Choice:** (a). The strip's `overflow-x` stays `auto` where GitLab hides the overflow: a swipe on a phone, the 390 px case, keeps
+working. The fades are `aria-hidden` buttons out of the tab order: the tabs themselves are reached by Tab (links) or the arrow
+keys (a `tablist`), and a tab that takes the focus is scrolled clear of the fade, so the keyboard needs no button of its own and a
+`tablist` stays a list of tabs alone. A fade is 2rem from `--quader-surface` (the content panel's fill) to transparent; it stands
+inside the strip, sticky at its edge with a negative margin, so showing it moves no tab and a strip needs no wrapper element.
+
+**Rationale:** the owner's direction is GitLab's look; the hint has to say that more tabs lie beyond the edge without a scrollbar,
+and the current tab has to be in view when the page opens on it (`?tab=vulnerabilities` at 390 px). The development agent would
+revisit (d) if a strip ever holds more tabs than a phone can page through in two clicks.
+
+**Applied in the spec:** R-UI-173. Code: [tab-strip.ts](../../web/src/app/shared/ui/tab-strip.ts), `.tab-nav` and `.tab-strip-fade`
+of [_controls.scss](../../web/src/styles/_controls.scss); the lint rule [tab-strip-rule.mjs](../../web/scripts/tab-strip-rule.mjs)
+(every strip carries the directive and its component imports it); the render check `tab-scrollbar` of
+[layout.ts](../../web/e2e/renders/layout.ts). Docs: [design-language.md](../developer/design-language.md) (the tab strip),
+[web-ui.md](../developer/web-ui.md) (the checks).
 
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 

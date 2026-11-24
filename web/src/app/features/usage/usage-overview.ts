@@ -25,6 +25,7 @@ import { FilterCategory, FilterPanel } from '../../shared/ui/filter-panel';
 import { ListChip, ListHead } from '../../shared/ui/list-head';
 import { NoValue } from '../../shared/ui/no-value';
 import { PageHeader } from '../../shared/ui/page-header';
+import { TabStrip } from '../../shared/ui/tab-strip';
 import { Tooltip } from '../../shared/ui/tooltip';
 import { CallerCell } from '../limits/caller-cell';
 import { placeText, subjectKindFilterLabel, subjectView } from '../limits/callers';
@@ -68,7 +69,7 @@ function parseState(v: string | undefined): UsageStateFilter | undefined {
 @Component({
   selector: 'quader-usage-overview',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CallerCell, Checkbox, DataTable, FilterCategory, FilterPanel, ListHead, NoValue, PageHeader, RouterLink, SelectField, Tooltip, UsageMeter],
+  imports: [CallerCell, Checkbox, DataTable, FilterCategory, FilterPanel, ListHead, NoValue, PageHeader, RouterLink, SelectField, TabStrip, Tooltip, UsageMeter],
   templateUrl: './usage-overview.html',
   styleUrl: './usage.scss',
 })

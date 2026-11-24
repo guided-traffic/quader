@@ -15,6 +15,8 @@
 //    line's middle by the line rule of _controls.scss (line-rule.mjs).
 //  - Q-UI-1046: every text a journey names by its message ID (`ui('…')` of e2e/support.ts) is a plain unit of the translation files,
 //    and the code's words for it are messages.xlf's (journey-texts-rule.mjs).
+//  - Q-UI-1074: a tab strip (class tab-nav) carries quaderTabStrip and its component imports TabStrip, which scrolls it
+//    (tab-strip-rule.mjs).
 //  - a test's name carries a requirement ID, never a decision's number: no `describe`, `it` or `test` title of a spec, a journey or
 //    a script's test names a `Q-…` or an `ADR-…` (test-names-rule.mjs).
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -27,6 +29,7 @@ import { wordActionsSideBySide } from './row-actions-rule.mjs';
 import { offTheLine } from './line-rule.mjs';
 import { journeyTextFindings } from './journey-texts-rule.mjs';
 import { decisionNumbersInTestNames } from './test-names-rule.mjs';
+import { tabStripFindings } from './tab-strip-rule.mjs';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 
@@ -132,6 +135,22 @@ for (const file of sources.filter((p) => /\.(ts|scss|css)$/.test(p) && !p.endsWi
   for (const { line, text } of offTheLine(readFileSync(file, 'utf8'))) {
     failed = true;
     console.error(`R-UI-175: ${relative(root, file)}:${line}: a box placed off the line of its text; use the line rule of _controls.scss (vertical-align: top and margins from --quader-line): ${text}`);
+  }
+}
+
+// Every tab strip scrolls the same way where its tabs do not fit: its component imports the directive that does it (Q-UI-1074).
+for (const file of sources.filter((p) => p.endsWith('.ts') && !p.endsWith('.spec.ts'))) {
+  const source = readFileSync(file, 'utf8');
+  const url = /templateUrl:\s*'([^']+)'/.exec(source);
+  const template = url ? readFileSync(join(file, '..', url[1]), 'utf8') : '';
+  const { unmarked, unimported } = tabStripFindings(source, template);
+  for (const tag of unmarked) {
+    failed = true;
+    console.error(`Q-UI-1074: ${relative(root, file)}: a tab strip (class tab-nav) without quaderTabStrip: ${tag}`);
+  }
+  if (unimported) {
+    failed = true;
+    console.error(`Q-UI-1074: ${relative(root, file)}: a tab strip (class tab-nav) in a component that does not import TabStrip (src/app/shared/ui/tab-strip.ts)`);
   }
 }
 

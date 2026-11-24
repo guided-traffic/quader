@@ -178,7 +178,9 @@ quader-copy-button.on-line {
 // a line in the strong border colour; the strip on a hairline.
 
 // The strip keeps its tabs on one line and scrolls sideways where they do not fit (UI-A-12): a strip of two rows reads as two
-// strips.
+// strips. It scrolls as GitLab's scrolling tabs do (Q-UI-1074): no scrollbar, which stood under the last tab where scrollbars are
+// shown (a desktop with a mouse); a swipe, Shift and the wheel, Tab and the arrow keys still scroll it; and at an edge beyond which
+// tabs lie a fade with a chevron (`.tab-strip-fade`, shared/ui/tab-strip.ts) says so and scrolls it by a click.
 .tab-nav {
   display: flex;
   flex-wrap: nowrap;
@@ -186,11 +188,67 @@ quader-copy-button.on-line {
   // Never upwards and downwards: the current tab's line reaches 1 px below the strip, which gave every strip a vertical
   // scrollbar where the scrollbars are shown (a desktop with a mouse).
   overflow-y: hidden;
-  scrollbar-width: thin;
+  scrollbar-width: none;
   border-block-end: 1px solid var(--quader-border);
+
+  // A WebKit before `scrollbar-width`.
+  &::-webkit-scrollbar {
+    display: none;
+  }
 
   > * {
     flex: none;
+  }
+}
+
+// A fade of an edge: 2rem from the page's fill to nothing over the tabs, the chevron at the edge. It sticks to its edge inside the
+// strip and takes no room of it (its negative margin), so showing it moves no tab. The strip stands on the page's fill.
+.tab-strip-fade {
+  position: sticky;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  inline-size: 2rem;
+  padding: 0;
+  border: 0;
+  color: var(--quader-control-fg);
+  cursor: pointer;
+
+  // The icon font's glyph, as `.material-icons` draws it (_icons.scss).
+  &::before {
+    font-family: 'Material Icons';
+    font-size: 1rem;
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1;
+    font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+  }
+
+  &.start {
+    inset-inline-start: 0;
+    justify-content: flex-start;
+    margin-inline-end: -2rem;
+    background: linear-gradient(to left, transparent, var(--quader-surface) 50%);
+
+    &::before {
+      content: 'chevron_left';
+    }
+  }
+
+  &.end {
+    inset-inline-end: 0;
+    justify-content: flex-end;
+    margin-inline-start: -2rem;
+    background: linear-gradient(to right, transparent, var(--quader-surface) 50%);
+
+    &::before {
+      content: 'chevron_right';
+    }
+  }
+
+  &[hidden] {
+    display: none;
   }
 }
 

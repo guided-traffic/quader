@@ -4,6 +4,7 @@ import { LimitSettings } from '../../api/limits-api';
 import { Versioned } from '../../api/repositories-api';
 import { SessionStore } from '../../core/session-store';
 import { PageHeader } from '../../shared/ui/page-header';
+import { TabStrip } from '../../shared/ui/tab-strip';
 import { LimitModeLine } from './limit-mode';
 import { LimitsSettingsState } from './limits-state';
 
@@ -15,7 +16,7 @@ import { LimitsSettingsState } from './limits-state';
 @Component({
   selector: 'quader-limits-frame',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LimitModeLine, PageHeader, RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [LimitModeLine, PageHeader, RouterLink, RouterLinkActive, RouterOutlet, TabStrip],
   providers: [LimitsSettingsState],
   template: `
     <quader-page-header
@@ -25,7 +26,7 @@ import { LimitsSettingsState } from './limits-state';
       i18n-description="@@limits.description"
     />
     <quader-limit-mode [canWrite]="canWrite()" (loaded)="state.settings.set($event)" />
-    <nav class="tab-nav limits-nav" i18n-aria-label="@@limits.nav" aria-label="Download limits">
+    <nav quaderTabStrip class="tab-nav limits-nav" i18n-aria-label="@@limits.nav" aria-label="Download limits">
       <a class="tab-link" routerLink="/admin/limits" routerLinkActive [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page" i18n="@@limits.tab.rules">Rules</a>
       <a class="tab-link" routerLink="/admin/limits/profiles" routerLinkActive ariaCurrentWhenActive="page" i18n="@@limits.tab.profiles">Profiles</a>
       <a class="tab-link" routerLink="/admin/limits/projects" routerLinkActive ariaCurrentWhenActive="page" i18n="@@limits.tab.projects">Projects</a>

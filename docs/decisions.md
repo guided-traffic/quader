@@ -12155,10 +12155,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-534 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+535 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 534 questions</summary>
+<summary>Q-UI: 535 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12696,6 +12696,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1071](spec/api-and-ui.md#q-ui-1071--the-downloads-open-in-the-drawer-from-the-right) | The downloads open in the drawer from the right | Decided by the development agent on 2026-11-24 | (a) Quader's drawer (Q-UI-420), 30rem wide, with its head, close button, filter and two sections | — |
 | [Q-UI-1072](spec/api-and-ui.md#q-ui-1072--a-row-says-what-what-it-took-and-who-caused-it-a-queued-one-links-the-queue) | A row says what, what it took and who caused it; a queued one links the queue | Decided by the development agent on 2026-11-24 | (a) The name and version (else the file), the bar where the total is known, size and speed and time, the format's name, the repository, the origin in words; **Show in queue** for a queue row; no actions | — |
 | [Q-UI-1073](spec/api-and-ui.md#q-ui-1073--the-panel-refreshes-by-polling-while-it-is-seen-and-announces-nothing) | The panel refreshes by polling while it is seen, and announces nothing | Decided by the development agent on 2026-11-24 | (a) The full list every `pollSeconds` (2 s) while open and visible; the summary every 10 s while closed and visible; no live region; closing stops it | [ADR-279](#adr-279--administrators-see-the-downloads-from-upstreams-live-and-the-last-100-finished) |
+| [Q-UI-1074](spec/api-and-ui.md#q-ui-1074--a-tab-strip-wider-than-its-place-scrolls-without-a-scrollbar-with-a-fade-and-a-chevron-at-the-edge) | A tab strip wider than its place scrolls without a scrollbar, with a fade and a chevron at the edge | Decided by the development agent on 2026-11-24 | (a) As GitLab: no scrollbar, a fade with a chevron at an edge beyond which tabs lie, a click on it scrolls by a page; the strip still scrolls by a swipe, Shift and the wheel, and the keyboard; the current tab and a focused tab are scrolled clear of the fades | — |
 
 </details>
 

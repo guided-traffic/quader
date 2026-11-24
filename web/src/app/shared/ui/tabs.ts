@@ -11,6 +11,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { Tab as AriaTab, TabList, TabPanel, Tabs } from '@angular/aria/tabs';
+import { TabStrip } from './tab-strip';
 
 /** Marks the lazy content of a tab: `<ng-template quaderTabContent>` is created when the tab is selected and gone when it is left. */
 @Directive({ selector: 'ng-template[quaderTabContent]' })
@@ -36,17 +37,18 @@ export class TabPage {
  * Tabs that switch a view in place (Q-UI-126). The strip is the reference's tab strip (`.tab-nav`, `.tab-link` of
  * `_controls.scss`); the roles, the arrow keys, Home and End and the roving tab stop are `@angular/aria`'s
  * WAI-ARIA tabs pattern, and the selected tab's panel is a `tabpanel` named by its tab. Tabs that are links to
- * routes are plain `.tab-nav` links instead.
+ * routes are plain `.tab-nav` links instead. Either strip scrolls as `TabStrip` has it where its tabs do not fit (Q-UI-1074).
  *
  *   <quader-tab-group [(selectedIndex)]="index"><quader-tab label="General">…</quader-tab></quader-tab-group>
  */
 @Component({
   selector: 'quader-tab-group',
-  imports: [NgTemplateOutlet, Tabs, TabList, AriaTab, TabPanel],
+  imports: [NgTemplateOutlet, Tabs, TabList, AriaTab, TabPanel, TabStrip],
   template: `
     <div ngTabs>
       <div
         ngTabList
+        quaderTabStrip
         class="tab-nav"
         [selectedTab]="active().toString()"
         (selectedTabChange)="select($event)"

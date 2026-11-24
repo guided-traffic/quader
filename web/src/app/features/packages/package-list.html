@@ -3,7 +3,7 @@
 </quader-page-header>
 
 @if (memory.available()) {
-  <nav class="view-tabs tab-nav" aria-label="Package views" i18n-aria-label="@@pkg.views.label">
+  <nav quaderTabStrip class="view-tabs tab-nav" aria-label="Package views" i18n-aria-label="@@pkg.views.label">
     <a class="tab-link"
       [routerLink]="listLink()"
       [queryParams]="{ tab: null }"

@@ -2742,7 +2742,7 @@ export const screens: readonly Screen[] = [
   { id: 'sidebar-auditor', path: '/ui/projects', kinds: ['auditor'], walk: sidebarShown },
   { id: 'projects-anonymous', path: '/ui/projects', kinds: ['anonymous'], expected: tooMany },
   // The results page of the search (R-UI-098): every tab with matches, a text without a match, a tab opened by `kind`.
-  { id: 'search-results', path: '/ui/search?q=web', kinds: all },
+  { id: 'search-results', path: '/ui/search?q=web', kinds: all, de: true },
   { id: 'search-results-none', path: '/ui/search?q=zzqx', kinds: ['plain'] },
   { id: 'search-results-kind-package', path: '/ui/search?q=acme&kind=package', kinds: all },
   { id: 'repositories', path: `${P}/repositories`, kinds: all, walk: filtersOpen(repositoryChips), widths: [1100] },
@@ -2757,13 +2757,13 @@ export const screens: readonly Screen[] = [
   // section (R-UI-192); the plain user reads the registries that are on and no system repository, so no section.
   { id: 'repositories-upstream', path: '/ui/projects/upstream/repositories', kinds: ['admin'], walk: systemRepositories },
   { id: 'repositories-upstream-plain', path: '/ui/projects/upstream/repositories', kinds: ['plain'] },
-  { id: 'repository-npm-local', path: `${P}/repositories/npm-internal`, kinds: all },
+  { id: 'repository-npm-local', path: `${P}/repositories/npm-internal`, kinds: all, de: true },
   // The tab Details, the last of the strip (Q-UI-1067): a local repository's address for downloads by path, a remote's upstream and
   // address, a virtual one's members.
   { id: 'repository-npm-local-details', path: `${P}/repositories/npm-internal/details`, kinds: all, de: true },
   { id: 'repository-oci-remote-details', path: `${O}/repositories/docker-hub-remote/details`, kinds: ['plain', 'admin'], de: true },
   { id: 'repository-npm-virtual-details', path: `${P}/repositories/npm/details`, kinds: ['power'] },
-  { id: 'repository-npm-remote', path: `${P}/repositories/npmjs`, kinds: all },
+  { id: 'repository-npm-remote', path: `${P}/repositories/npmjs`, kinds: all, de: true },
   // The tab Downloads of a remote (R-CUR-018): its queue as the seed left it, then a queue of every state answered in the browser,
   // a failed row opened to its whole failure, and a bulk's rows (downloads.ts). The OCI remote whose tag a probe downloaded has a
   // row of the server's own.
@@ -2778,7 +2778,7 @@ export const screens: readonly Screen[] = [
   { id: 'repository-oci-upstream-unknown-level', path: `${O}/repositories/docker-hub-remote/upstream`, kinds: ['power'], walk: upstreamUnknownLevelWalk, de: true },
   { id: 'repository-deb-upstream', path: `${O}/repositories/debian/upstream`, kinds: ['power'], walk: upstreamDebWalk, tables: upstreamVersions },
   { id: 'repository-oci-upstream-own', path: `${O}/repositories/${remoteCache.key}/upstream`, kinds: ['power', 'admin'], walk: upstreamOwnWalk, tables: upstreamVersions },
-  { id: 'repository-npm-virtual', path: `${P}/repositories/npm`, kinds: all },
+  { id: 'repository-npm-virtual', path: `${P}/repositories/npm`, kinds: all, de: true },
   { id: 'repository-long-key', path: `${P}/repositories/${longNpmKey}`, kinds: all },
   { id: 'repository-generic', path: `${P}/repositories/assets`, kinds: all },
   { id: 'repository-oci', path: `${P}/repositories/images`, kinds: all, walk: rowOpened },
@@ -2815,7 +2815,7 @@ export const screens: readonly Screen[] = [
   { id: 'package-nuget', path: pkg(O, nugetPackage), kinds: all },
   { id: 'package-deb', path: pkg(O, debPackage), kinds: all },
   { id: 'package-ansible', path: pkg(O, { format: 'ansible', name: collectionName }), kinds: all },
-  { id: 'package-version-npm', path: ver(P, npmPackage, '1.1.0'), kinds: all },
+  { id: 'package-version-npm', path: ver(P, npmPackage, '1.1.0'), kinds: all, de: true },
   { id: 'package-version-npm-graded', path: ver(P, gradedPackage, gradedPackage.version), kinds: all },
   { id: 'package-version-npm-many', path: ver(P, manyVersionsPackage, '3.7.0'), kinds: ['plain'] },
   { id: 'package-version-npm-fixed', path: ver(P, { format: 'npm', name: 'xml-stream-parser' }, '0.9.2'), kinds: ['plain'] },
@@ -2826,7 +2826,7 @@ export const screens: readonly Screen[] = [
   { id: 'package-version-disabled', path: ver(P, npmPackage, '1.1.0'), kinds: ['plain'], walk: disabledVersion },
   // The tab's findings narrowed by a segment of the card's bar (Q-UI-379).
   { id: 'package-version-npm-graded-critical', path: `${ver(P, gradedPackage, gradedPackage.version)}?severity=critical`, kinds: ['plain'] },
-  { id: 'package-version-oci', path: ver(P, ociPackage, '1.4.0'), kinds: all, tables: 'quader-data-table.version-files' },
+  { id: 'package-version-oci', path: ver(P, ociPackage, '1.4.0'), kinds: all, tables: 'quader-data-table.version-files', de: true },
   // An image refused while it is not checked: the notice names the state of its scan and what happens next (Q-VULN-272).
   { id: 'package-version-oci-not-checked', path: `${ver(P, ociPackage, '1.4.0')}?tab=vulnerabilities`, kinds: ['plain'], walk: imageNotChecked, de: true },
   // The image a remote cached (W-24): its versions, and the tags whose index it holds one platform of and none of, with their platforms.
@@ -2836,7 +2836,7 @@ export const screens: readonly Screen[] = [
   // The tag a background download stored (W-25): its platforms, two stored and one not fetched.
   { id: 'package-version-oci-probed', path: `${ver(O, { format: 'oci', name: remoteImage.name }, probedCache.tag)}?tab=details`, kinds: all },
   { id: 'package-version-nuget', path: ver(O, nugetPackage, nugetPackage.versions[1]), kinds: all },
-  { id: 'package-version-deb', path: ver(O, debPackage, debPackage.versions[1]), kinds: all },
+  { id: 'package-version-deb', path: ver(O, debPackage, debPackage.versions[1]), kinds: all, de: true },
   { id: 'package-version-ansible', path: ver(O, { format: 'ansible', name: collectionName }, ansiblePackage.versions[1]), kinds: all },
   // The folders and files of a repository on its page (R-UI-010 to R-UI-012, ADR-203): a folder with the Owner's operations, a
   // folder deep in a path of long names, a folder of more than a page, an empty folder, a file and a package format's raw files.
@@ -2940,13 +2940,13 @@ export const screens: readonly Screen[] = [
   { id: 'guides-class', path: '/ui/guides/npm/local', kinds: ['plain', 'power'], walk: explained },
   { id: 'help', path: '/ui/help', kinds: all },
   { id: 'help-user-page', path: '/ui/help/user/getting-started', kinds: all },
-  { id: 'profile', path: '/ui/profile', kinds: all },
+  { id: 'profile', path: '/ui/profile', kinds: all, de: true },
   { id: 'profile-tokens', path: '/ui/profile/tokens', kinds: all },
   // The plain user holds a token (setup.ts): its revoke-all, last on the page behind Advanced.
   { id: 'profile-tokens-advanced', path: '/ui/profile/tokens', kinds: ['plain'], walk: advancedOpen },
   // A tooltip open over the token's Rotate (Q-UI-1065): the one screen that shows the bubble.
   { id: 'profile-tokens-tooltip', path: '/ui/profile/tokens', kinds: ['plain'], walk: tooltipOpen, de: true },
-  { id: 'profile-sessions', path: '/ui/profile/sessions', kinds: all },
+  { id: 'profile-sessions', path: '/ui/profile/sessions', kinds: all, de: true },
   // A user's own usage and limits (R-UI-185).
   { id: 'profile-usage', path: '/ui/profile/usage', kinds: all, walk: usageDetailWalk },
   { id: 'not-found', path: '/ui/no-such-page', kinds: all },
@@ -3096,7 +3096,7 @@ export const screens: readonly Screen[] = [
   { id: 'admin-usage-caller-blocked', path: `/ui/admin/usage/anonymous/${blockedAddress}`, kinds: admins, walk: limitsModes },
   { id: 'admin-usage-caller-ci', path: `/ui/admin/usage/ci/${ciIssuer}:${ciProject.id}`, kinds: admins },
   { id: 'admin-limits', path: '/ui/admin/limits', kinds: auditors, walk: limitRulesWalk, tables: 'quader-limit-rules quader-data-table' },
-  { id: 'admin-limits-profiles', path: '/ui/admin/limits/profiles', kinds: auditors },
+  { id: 'admin-limits-profiles', path: '/ui/admin/limits/profiles', kinds: auditors, de: true },
   { id: 'admin-limits-profile', path: '/ui/admin/limits/profiles/standard', kinds: auditors },
   { id: 'admin-limits-profile-unlimited', path: '/ui/admin/limits/profiles/unlimited', kinds: admins },
   { id: 'admin-limits-profile-new', path: '/ui/admin/limits/profiles/new', kinds: admins },
@@ -3132,7 +3132,7 @@ export const screens: readonly Screen[] = [
   { id: 'admin-system', path: '/ui/admin/system', kinds: admins, walk: systemScanners },
   // The auditor reads the replicas and the scanner replicas (settings:read, R-OPS-048).
   { id: 'admin-system-read', path: '/ui/admin/system', kinds: ['auditor'] },
-  { id: 'admin-system-jobs', path: '/ui/admin/system/jobs', kinds: admins },
+  { id: 'admin-system-jobs', path: '/ui/admin/system/jobs', kinds: admins, de: true },
   { id: 'admin-system-backups', path: '/ui/admin/system/backups', kinds: admins },
   { id: 'admin-system-storage', path: '/ui/admin/system/storage', kinds: admins, walk: systemStorage },
   { id: 'admin-settings-auth', path: '/ui/admin/settings/auth', kinds: admins },

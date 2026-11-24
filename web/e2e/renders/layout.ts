@@ -10,7 +10,7 @@
 export interface LayoutFinding {
   /**
    * Which check found it: `icon-apart`, `broken`, `row-offset`, `row-actions`, `stacked-offset`, `stacked-place`, `label-apart`,
-   * `empty-cell`, `cell-overflow`, `clipped`, `cramped`, `stacked-fits`, `sideways`, `empty-scroll`.
+   * `empty-cell`, `cell-overflow`, `clipped`, `cramped`, `stacked-fits`, `sideways`, `empty-scroll`, `tab-scrollbar`.
    */
   readonly check: string;
   /** The element, as a path of up to four tags with their first two classes. */
@@ -882,6 +882,17 @@ export function layoutFindings(): LayoutFinding[] {
         add('cramped', m.cell, m.text, `a short text in ${lineCount(textRects(m.cell, true))} lines needs ${Math.round(m.need)} px more for one line, and the other columns have ${Math.round(room)} px that no row uses (${where})`);
       }
     }
+  }
+
+  // ---- tab-scrollbar: a tab strip that shows a scrollbar (R-UI-173, Q-UI-1074) ---------------------------------------------
+  // A strip wider than its place scrolls without one, with a fade at the edge; a scrollbar stood under the last tab of a version's
+  // strip at 390 px in German. Measured as the room a scrollbar takes below the strip's content, so an overlay scrollbar, which
+  // takes none, is not one.
+  for (const strip of Array.from(document.querySelectorAll<HTMLElement>('.tab-nav, [role="tablist"]'))) {
+    if (!shown(strip)) continue;
+    const style = getComputedStyle(strip);
+    const bar = strip.offsetHeight - strip.clientHeight - parseFloat(style.borderTopWidth) - parseFloat(style.borderBottomWidth);
+    if (bar >= 1) add('tab-scrollbar', strip, strip.getAttribute('aria-label') ?? '', `a scrollbar of ${Math.round(bar)} px under the tabs`);
   }
 
   // ---- stacked-fits: a table whose rows stand as blocks although its columns fit (R-UI-174) -------------------------------
