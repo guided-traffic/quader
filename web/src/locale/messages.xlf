@@ -46456,7 +46456,7 @@
     </unit>
     <unit id="sig.badge.stale">
       <notes>
-        <note category="location">src/app/shared/signatures/signature-badge.ts:54</note>
+        <note category="location">src/app/shared/signatures/signature-badge.ts:59</note>
       </notes>
       <segment>
         <source>Trust is being recomputed after a change of trust anchors.</source>
