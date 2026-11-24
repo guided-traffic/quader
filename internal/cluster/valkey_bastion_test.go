@@ -27,7 +27,7 @@ func newBastionFixture(t *testing.T) *bastionFixture {
 	srv := newMemServer(t)
 	cfg := standaloneCfg(srv.addr())
 	cfg.KeyPrefix = bastionPrefix
-	cfg.CommandTimeout = time.Second
+	cfg.CommandTimeout = storeCommandTimeout
 	reg := prometheus.NewRegistry()
 	v, err := NewValkey(t.Context(), cfg, "bastion-0", "bastion", nil, reg, WithoutKeyspace())
 	if err != nil {

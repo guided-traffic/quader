@@ -18,11 +18,20 @@ type negativeFixture struct {
 	store NegativeStore
 }
 
+// newNegativeFixture is a store on the in-memory server whose calls wait for its answer as long as a starved host needs: what the
+// store writes and reads is the subject of its tests, not the command timeout (a call of 1 s timed out on a runner that carried three
+// runs at once, Test and Release 45227959384).
 func newNegativeFixture(t *testing.T) *negativeFixture {
+	t.Helper()
+	return newNegativeFixtureWith(t, storeCommandTimeout)
+}
+
+// newNegativeFixtureWith is newNegativeFixture with the command timeout a test's bound is measured against.
+func newNegativeFixtureWith(t *testing.T, commandTimeout time.Duration) *negativeFixture {
 	t.Helper()
 	srv := newMemServer(t)
 	cfg := standaloneCfg(srv.addr())
-	cfg.CommandTimeout = time.Second
+	cfg.CommandTimeout = commandTimeout
 	v, reg := newTestValkey(t, cfg)
 	eventually(t, "availability", 5*time.Second, v.Available)
 	return &negativeFixture{srv: srv, v: v, reg: reg, store: NewNegativeStore(v)}
@@ -208,7 +217,7 @@ func TestNegativeStoreUnavailable(t *testing.T) {
 		}
 	})
 	t.Run("R-REPO-028 R-ARCH-031 with the breaker open both calls return ErrUnavailable at once and count the fallback", func(t *testing.T) {
-		fx := newNegativeFixture(t)
+		fx := newNegativeFixtureWith(t, time.Second)
 		for range 10 {
 			fx.v.br.allow()
 			fx.v.br.done(outcomeFailure)

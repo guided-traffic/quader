@@ -38,6 +38,12 @@ func sentinelCfg(addrs ...string) config.Valkey {
 
 const testKeyspace = "0123456789abcdef"
 
+// storeCommandTimeout is the command timeout of a store's fixture on the in-memory server (the negative entries, the Bastion's
+// store): a call waits for the server's answer as long as a starved host needs, because what such a test holds is what the store
+// writes and reads, not how fast the host answers. A test whose subject is a bound measured against the command timeout sets its
+// own.
+const storeCommandTimeout = 30 * time.Second
+
 func newTestValkey(t *testing.T, cfg config.Valkey) (*Valkey, *prometheus.Registry) {
 	t.Helper()
 	reg := prometheus.NewRegistry()
