@@ -458,14 +458,23 @@ export function layoutFindings(): LayoutFinding[] {
       for (const cell of Array.from(row.cells)) {
         if (!shown(cell)) continue;
         const text = lines(cell)[0]?.[0];
-        if (text) {
+        const units = Array.from(cell.querySelectorAll(UNIT)).filter(
+          (unit) => outermost(unit) && shown(unit) && !positioned(unit) && unit.closest('table') === table,
+        );
+        // A control on a line of its own above the cell's text (a state's badge with the rule that decided it or a link under it,
+        // Q-CUR-157) is the cell's first line, and the text under it its second: its middle is above the text's top. A control beside
+        // the text shares the text's line and is measured against it (`off-line`).
+        const first = units.map((unit) => ({ unit, rect: boxOf(unit) })).sort((a, b) => a.rect.top - b.rect.top)[0];
+        if (text && !(first && middle(first.rect) < text.top)) {
           anchors.push({ cell, rect: text, what: '' });
           continue;
         }
-        for (const unit of Array.from(cell.querySelectorAll(UNIT))) {
-          if (!outermost(unit) || unitsSeen.has(unit) || !shown(unit) || positioned(unit) || unit.closest('table') !== table) continue;
-          anchors.push({ cell, rect: boxOf(unit), what: nameOf(unit) });
+        if (text && first) {
+          anchors.push({ cell, rect: first.rect, what: nameOf(first.unit) });
+          continue;
         }
+        // A cell without text: its controls, each once (one measured against a text of its row already is named there).
+        for (const unit of units) if (!unitsSeen.has(unit)) anchors.push({ cell, rect: boxOf(unit), what: nameOf(unit) });
       }
       const ref = anchors.find((a) => a.what === '' && a.cell.matches('th[scope="row"]')) ?? anchors.find((a) => a.what === '') ?? anchors[0];
       if (ref && anchors.length > 1) {

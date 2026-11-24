@@ -76,45 +76,44 @@
   >
     @for (v of versions(); track v.version) {
       <tr>
+        <!-- The version with its published time and size under it, the rule that decided under the delivery, the verdicts under
+             the cache: the list keeps the form of a table at 1,024 px (Q-CUR-157). -->
         <th scope="row">
-          <span class="version" translate="no">{{ v.version }}</span>
-          @for (f of v.flags; track f) {
-            &ngsp;<span class="badge">{{ flag(f) }}</span>
-          }
+          <span class="version-line">
+            <span class="version" translate="no">{{ v.version }}</span>
+            @for (f of v.flags; track f) {
+              &ngsp;<span class="badge">{{ flag(f) }}</span>
+            }
+          </span>
+          <span class="secondary facts-line">
+            @if (v.published; as at) {
+              <quader-time-ago [at]="at" absolute="title" />&ngsp;·&ngsp;
+            }
+            @if (v.size !== null && v.size > 0) {
+              {{ size(v.size) }}
+            } @else {
+              <ng-container i18n="@@upstream.size.not-told-line">Size not told</ng-container>
+            }
+          </span>
           @if (v.platforms.length > 0) {
             <span class="secondary" translate="no">{{ v.platforms.join(', ') }}</span>
           }
         </th>
-        <td class="keep">
-          @if (v.published; as at) {
-            <quader-time-ago [at]="at" absolute="title" />
-          } @else {
-            <quader-no-value />
-          }
-        </td>
-        <td class="num keep">
-          @if (v.size !== null && v.size > 0) {
-            {{ size(v.size) }}
-          } @else {
-            <span class="muted" i18n="@@upstream.size.not-told">Not told</span>
-          }
-        </td>
-        <td class="keep">
+        <td class="delivery-cell">
           @let vb = badge(v.delivery, !!v.request);
           <span [class]="vb.look"><span class="material-icons" aria-hidden="true">{{ vb.icon }}</span>{{ vb.text }}</span>
-        </td>
-        <td class="rule-cell">
           @if (ruleOf(v); as rule) {
-            @if (rule.pattern) {
-              <code translate="no">{{ rule.words }}</code>
-            } @else {
-              {{ rule.words }}
-            }
-          } @else {
-            <quader-no-value />
+            <span class="secondary rule-line">
+              @if (rule.pattern) {
+                <ng-container i18n="@@upstream.rule.label">Rule:</ng-container>&ngsp;<code translate="no">{{ rule.words }}</code>
+              } @else {
+                {{ rule.words }}
+              }
+            </span>
           }
         </td>
-        <td class="keep">
+        <!-- The cache, and under it the verdicts: a stored version's page, or the vulnerability verdict of one that is not stored. -->
+        <td class="cache-cell">
           @if (v.queued; as q) {
             <span class="badge"><span class="material-icons" aria-hidden="true">{{ q.state === 'running' ? 'sync' : 'hourglass_empty' }}</span>{{ queuedText(q.state) }}</span>
           } @else if (v.stored === 'whole' && !v.delivery.delivered) {
@@ -124,18 +123,12 @@
           } @else {
             <span class="muted" i18n="@@upstream.cache.not-stored">Not stored</span>
           }
-        </td>
-        @if (verdictColumn()) {
-        <td class="verdict-cell">
           @if (v.stored === 'whole') {
-            <a [routerLink]="versionLink(v.version)" i18n="@@upstream.verdicts.open">Open the version</a>
+            <div class="verdict-line"><a [routerLink]="versionLink(v.version)" i18n="@@upstream.verdicts.open">Open the version</a></div>
           } @else if (verdictOf(v); as verdict) {
-            <span [class.bad]="blockedVerdict(v)">{{ verdict }}</span>
-          } @else {
-            <quader-no-value />
+            <div class="verdict-line"><span [class.bad]="blockedVerdict(v)">{{ verdict }}</span></div>
           }
         </td>
-        }
         @if (hasActions()) {
           <td class="actions">
             @let list = acts(v);

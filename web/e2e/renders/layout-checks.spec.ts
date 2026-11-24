@@ -273,6 +273,24 @@ test.describe('a table\'s row (R-UI-176)', () => {
     expect(low[0]!.detail).toMatch(/1\.\d px below/);
   });
 
+  // A version's delivery and cache on the tab Upstream (Q-CUR-157): the state's badge, and the rule that decided it (a secondary line)
+  // or the link to the version's page (a line of the cell's own text) under it. The badge is the cell's first line; the check had
+  // measured the line under it and found the cell 16 px low.
+  for (const under of ['<span class="secondary">Rule: this version</span>', '<a href="#" class="line">Open the version</a>']) {
+    test(`R-UI-172 a badge with ${under.startsWith('<a') ? 'a link' : 'a secondary line'} under it is the cell's first line: on the row's line it passes, 4 px low it is found`, async ({ page }) => {
+      const cell = (badgeCss: string): [string, string] => [
+        `<table class="data"><tbody><tr><th scope="row">4.98.1<span class="secondary">5 days ago</span></th>
+           <td><span class="badge">Allowed</span>${under}</td><td>Not stored</td></tr></tbody></table>`,
+        `tbody td .badge { margin-block: calc((1rem - 20px) / 2); vertical-align: top; ${badgeCss} } .secondary { display: block; font-size: 12px; } .line { display: block; }`,
+      ];
+      const ok = await check(page, ...cell(''));
+      expect(ok, describe(ok)).toEqual([]);
+      const low = only(await check(page, ...cell('margin-block-start: 2px;')), 'row-offset');
+      expect(low, describe(low)).toHaveLength(1);
+      expect(low[0]!.detail).toMatch(/the middle of ".*Allowed.*" is 4\.\d px below/);
+    });
+  }
+
   test('R-UI-176 a stacked row: the menu on the name\'s line passes, the menu at the block\'s top is found', async ({ page }) => {
     const stacked = (menuCss: string): [string, string] => [
       `<table class="data" style="display:block"><tbody style="display:block"><tr style="display:flex;flex-wrap:wrap;align-items:center">

@@ -1137,10 +1137,12 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
     repository holds a version: the API answers no count, Q-CUR-61). A package opens in place: its description where nothing showed it,
     its tags, its state with the rule that decided, **Download every version…**, **Allow every version** and **Block every version** (the
     one the package's rule has is **Remove the allow** or **Remove the block**) for those who decide, **Request every version** for a
-    reader; **Filter versions** and "Showing 100 of 3,893" with **Load more**; per version **Published**, **Size** ("Not told"),
-    **Delivery**, **Rule** (the subject that decided), **Cache** (**Stored**, **Stored for examination**, **Waiting**, **Running**,
-    **Not stored**), **Verdicts** and the acts
-    ([Q-CUR-152](#q-cur-152--a-versions-acts-are-a-word-for-a-reader-and-a-menu-for-those-who-decide-the-rule-is-a-column-the-verdicts-a-word-or-a-link)).
+    reader; **Filter versions** and "Showing 100 of 3,893" with **Load more**; per version **Version** (with the published time and the
+    size under it, "Size not told"), **Delivery** (with the rule that decided under it), **Cache** (**Stored**, **Stored for
+    examination**, **Waiting**, **Running**, **Not stored**, with the verdicts under it) and the acts
+    ([Q-CUR-152](#q-cur-152--a-versions-acts-are-a-word-for-a-reader-and-a-menu-for-those-who-decide-the-rule-is-a-column-the-verdicts-a-word-or-a-link)),
+    a table from 1,024 px on
+    ([Q-CUR-157](#q-cur-157--a-packages-versions-are-three-columns-the-facts-under-the-version-the-rule-under-the-delivery-the-verdicts-under-the-cache)).
     The catalogue's states are sentences in a warning line
     ([Q-CUR-155](#q-cur-155--the-catalogues-own-states-are-sentences-of-the-screen-the-upstreams-own-sentences-stand-as-the-upstream-wrote-them)).
 - **The preview of a bulk** (a dialog): what will be fetched (versions, packages, bytes, "size of 12 versions not told by the upstream;
@@ -2364,7 +2366,10 @@ stored version's verdicts are its version page's (Q-CUR-61), an unstored one's v
 | (c) The rule under the state's badge | One column fewer | Narrower | The cell's first line is no longer the badge's (the layout check `row-offset`, R-UI-172) |
 
 **Choice:** (a). The package's acts stand as buttons in the opened package's head, which is no row. **Rationale:** the development agent
-would revisit the verdicts' link (Q-CUR-61 (b)) if a decider needs the badges in the list itself.
+would revisit the verdicts' link (Q-CUR-61 (b)) if a decider needs the badges in the list itself. **Revised on 2026-11-24**
+([Q-CUR-157](#q-cur-157--a-packages-versions-are-three-columns-the-facts-under-the-version-the-rule-under-the-delivery-the-verdicts-under-the-cache)):
+the rule that decided stands under the delivery's badge and the verdicts under the cache's state, not in columns of their own, so
+that the list is a table at 1,024 px; the badge stays its cell's first line, which was (c)'s objection.
 
 **Applied in the spec:** R-CUR-018 (the tab Upstream, "As built (R5b)"). Code:
 [upstream-package.ts](../../web/src/app/features/repositories/upstream/upstream-package.ts).
@@ -2456,6 +2461,39 @@ entry.
 **Applied in the spec:** R-CUR-009 (as built). Code:
 [upstream_catalogue.sql](../../internal/meta/postgres/queries/upstream_catalogue.sql) `CatalogueStoredVersions`. Test:
 `TestR_CUR_009_TheCatalogueSaysStoredOfATagARemotePulledThrough` (area `ociremote`).
+
+### Q-CUR-157 · A package's versions are three columns: the facts under the version, the rule under the delivery, the verdicts under the cache
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below when R5b's renders showed a package's
+versions as blocks at 1,024 px; the owner reviews it at the walkthrough.
+
+Context: the list of a package's versions on the tab Upstream had seven columns and the acts (**Version**, **Published**, **Size**,
+**Delivery**, **Rule**, **Cache**, **Verdicts**, Q-CUR-152). Their least widths with a cell's padding of 16 px on each side need more
+than the list has at 1,024 px beside the side bar (about 690 px, measured in the renders), so the shared table stacked its rows
+(R-UI-174): five lines a version, 24 versions over several screens, on the list a person scrolls most on the tab. Four columns and the
+acts (the verdicts still a column) were measured the same day: they still stacked for a reader, whose act is the word **Request** or
+**Download** and not a menu, and they wrapped **Open the version** beside a column with room to spare (`cramped`). At 390 px a list
+may stack.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Version** (the version, its flags, under it the published time and the size, "Size not told" where the upstream does not tell it, and an image's platforms), **Delivery** (the badge, under it the rule that decided: "Rule: this version", "Rule: the package", "Rule:" and a sub-section's pattern), **Cache** (the state, under it **Open the version** for a stored version or the vulnerability verdict of one that is not stored, "No known vulnerability" where none is known) and the acts (chosen) | Three columns | The list is a table from 1,024 px on for every kind of user; a row's first line is the version, its state and its cache; nothing moves into a menu | Published, size and verdict have no column of their own to scan down |
+| (b) The verdicts and the rule behind the row's menu | Three columns | As narrow | A reader has no menu (Q-CUR-152), and a verdict is a fact, not an act |
+| (c) Published and size hidden below 64 rem of the list's width (`narrow` columns) | Seven columns at 1,440 px | Nothing changes where there is room | Published and size are gone at 1,024 px, and the rule and the verdict still need their room |
+
+**Choice:** (a). The verdict "None known" became "No known vulnerability": under the cache's state it no longer has a column's name that
+says what is known. The layout check `row-offset` measured a cell whose badge has a line of text under it on that text, 16 px under the
+row's line; a control on a line of its own above the cell's text is now the cell's first line (the fixture in
+[layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts)), which was Q-CUR-152 (c)'s objection. **Rationale:** the facts a
+person reads per version stay in the row, and the render run holds the form at 1,024 px with the screens' `tables` (`stacked` finding).
+The development agent would revisit (c) if a person asks to sort or scan by the published time.
+
+**Applied in the spec:** R-CUR-018 (the tab Upstream, "As built (R5b)"); Q-CUR-152 (the rule's and the verdicts' columns). Code:
+[upstream-package.ts](../../web/src/app/features/repositories/upstream/upstream-package.ts),
+[upstream-package.html](../../web/src/app/features/repositories/upstream/upstream-package.html),
+[upstream-words.ts](../../web/src/app/features/repositories/upstream/upstream-words.ts) `verdictText`; the check in
+[layout.ts](../../web/e2e/renders/layout.ts) (`row-offset`); the screens' [upstream.ts](../../web/e2e/renders/upstream.ts)
+`upstreamVersions`.
 
 ### Q-CUR-80 · A download of one version runs before the catalogue: the call that names its files is a contract interface of its own
 

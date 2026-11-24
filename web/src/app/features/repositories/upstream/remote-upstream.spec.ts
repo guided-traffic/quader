@@ -147,13 +147,16 @@ describe('The tab Upstream of a remote repository', () => {
     expect(catalogue.calls).toContain('package gitlab-ai-provider');
     expect(root.querySelector('#up-gitlab-ai-provider')!.classList).toContain('open');
     expect(text(root.querySelector('quader-upstream-package')!)).toContain('Showing 3 of 3,893');
-    // A version that is not stored has its vulnerability verdict; a stored one leads to its version page.
-    expect(text(versionRow(root, '1.4.0'))).toContain('None known');
-    expect(text(versionRow(root, '1.4.0'))).toContain('Not told');
-    expect(versionRow(root, '1.3.9').querySelector('a')?.getAttribute('href')).toBe('/projects/web/packages/npm/gitlab-ai-provider@1.3.9');
+    // A version that is not stored has its vulnerability verdict under the cache; a stored one leads to its version page.
+    expect(text(versionRow(root, '1.4.0').querySelector('td.cache-cell .verdict-line')!)).toBe('No known vulnerability');
+    // Three columns and the acts (Q-CUR-157): the size under the version, the rule under the delivery, the verdicts under the cache.
+    const heads = [...root.querySelectorAll('quader-upstream-package thead th')].map((th) => text(th));
+    expect(heads).toEqual(['Version', 'Delivery', 'Cache', 'Actions']);
+    expect(text(versionRow(root, '1.4.0').querySelector('th .secondary')!)).toMatch(/ · Size not told$/);
+    expect(versionRow(root, '1.3.9').querySelector('td.cache-cell a')?.getAttribute('href')).toBe('/projects/web/packages/npm/gitlab-ai-provider@1.3.9');
     expect(text(versionRow(root, '1.3.9'))).toContain('Stored for examination');
-    expect(text(versionRow(root, '1.3.8').querySelector('td.rule-cell')!)).toBe('This version');
-    expect(text(versionRow(root, '1.3.8'))).toContain('2.3 MiB');
+    expect(text(versionRow(root, '1.3.8').querySelector('td.delivery-cell .rule-line')!)).toBe('Rule: this version');
+    expect(text(versionRow(root, '1.3.8').querySelector('th .secondary')!)).toContain('2.3 MiB');
     // Several acts are the row's menu (R-UI-163).
     const menu = versionRow(root, '1.4.0').querySelector<HTMLButtonElement>('td.actions button[aria-haspopup]')!;
     expect(menu.getAttribute('aria-label')).toBe('Actions for gitlab-ai-provider 1.4.0');

@@ -94,11 +94,14 @@ export function flagText(flag: string): string {
   }
 }
 
-/** The vulnerability verdict of a version that is not stored (R-CUR-009, R-CUR-014), in words; null where it says nothing. */
+/**
+ * The vulnerability verdict of a version that is not stored (R-CUR-009, R-CUR-014), in words that say what they judge, since they
+ * stand under the cache's state (Q-CUR-157); null where it says nothing.
+ */
 export function verdictText(v: UpstreamVerdict): string | null {
   switch (v.verdict) {
     case 'none':
-      return $localize`:@@upstream.verdict.none:None known`;
+      return $localize`:@@upstream.verdict.none-known:No known vulnerability`;
     case 'blocked':
       switch (v.reason) {
         case 'malicious':

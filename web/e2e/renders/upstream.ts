@@ -374,6 +374,12 @@ export async function* upstreamTabWalk(p: Page): AsyncGenerator<string> {
   await p.unrouteAll({ behavior: 'ignoreErrors' });
 }
 
+/**
+ * The list of a package's versions, which keeps the form of a table from 1,024 px on (Q-CUR-157): with seven columns it stood as
+ * blocks of five lines per version at 1,024 px (2026-11-24).
+ */
+export const upstreamVersions = 'quader-upstream-package quader-data-table';
+
 /** The answers of the npm walk that are its states, not failures. */
 export const upstreamExpected = [
   { match: /^GET \/api\/v1\/projects\/[^/]+\/repositories\/[^/]+\/upstream(\/package|\/search)?(\?\S*)? answered (409|429|502|503)$/, why: 'the seed keeps public remotes offline, and the walk answers the budget, the size bound and the circuit to render their states' },

@@ -68,15 +68,27 @@
   font-weight: 600;
 }
 
-// Published, size, delivery and cache never break (Q-UI-563): the verdict is the column that wraps.
-td.keep {
+// The version with its flags, the delivery's badge, the cache's state and the link to a stored version never break (Q-UI-563): the
+// facts, the rule and the verdict under them are what wraps.
+.version-line,
+.delivery-cell > :first-child,
+.cache-cell > :first-child,
+.verdict-line a {
   white-space: nowrap;
 }
 
-.rule-cell code {
+.rule-line code {
   overflow-wrap: anywhere;
 }
 
-.verdict-cell {
+.verdict-line {
   overflow-wrap: anywhere;
+}
+
+// A badge (20 px) reaches 2 px past its line of 16 px (_controls.scss): the line under it starts below the badge, not inside it, and
+// the version's facts stand on the same second line as the rule and the verdict beside them.
+.facts-line,
+.rule-line,
+.verdict-line {
+  margin-block-start: calc((20px - 1rem) / 2);
 }

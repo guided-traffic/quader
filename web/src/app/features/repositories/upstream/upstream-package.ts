@@ -12,7 +12,6 @@ import {
 import { ErrorNotice } from '../../../shared/error-notice';
 import { asApiError } from '../../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
-import { NoValue } from '../../../shared/ui/no-value';
 import { TimeAgo } from '../../../shared/ui/time-ago';
 import { formatSize } from '../../packages/format-size';
 import { versionCommands } from '../../packages/package-links';
@@ -41,7 +40,7 @@ export function groupedCount(n: number): string {
  */
 @Component({
   selector: 'quader-upstream-package',
-  imports: [CdkMenu, CdkMenuItem, CdkMenuTrigger, DataTable, ErrorNotice, NoValue, RouterLink, TimeAgo],
+  imports: [CdkMenu, CdkMenuItem, CdkMenuTrigger, DataTable, ErrorNotice, RouterLink, TimeAgo],
   templateUrl: './upstream-package.html',
   styleUrl: './upstream-package.scss',
 })
@@ -76,16 +75,16 @@ export class UpstreamPackageView {
   protected readonly badge = stateBadge;
   protected readonly ruleLine = decidedByText;
   /**
-   * The rule that decided, for the column Rule: the version's own and the package's in words (the row names them already), a
-   * sub-section's by its pattern; null where the mode decided.
+   * The rule that decided, the line under the delivery: the version's own and the package's in words (the row names them already),
+   * a sub-section's by its pattern after "Rule:"; null where the mode decided.
    */
   protected ruleOf(v: UpstreamVersion): { readonly words: string; readonly pattern: boolean } | null {
     const by = v.delivery.decidedBy;
     switch (by.kind) {
       case 'version':
-        return { words: $localize`:@@upstream.rule.own:This version`, pattern: false };
+        return { words: $localize`:@@upstream.rule.own-line:Rule: this version`, pattern: false };
       case 'package':
-        return { words: $localize`:@@upstream.rule.package:The package`, pattern: false };
+        return { words: $localize`:@@upstream.rule.package-line:Rule: the package`, pattern: false };
       case 'section':
         return by.subject ? { words: by.subject, pattern: true } : null;
       default:
@@ -105,19 +104,15 @@ export class UpstreamPackageView {
   protected readonly noVersions = $localize`:@@upstream.versions.empty:The upstream lists no version of this package.`;
   protected readonly noVersionMatches = $localize`:@@upstream.versions.empty-filtered:No version matches.`;
 
-  protected readonly verdictColumn = computed(() => !this.notCovered() || this.versions().some((v) => v.stored === 'whole'));
-
   protected readonly hasActions = computed(() => this.versions().some((v) => this.acts(v).length > 0));
+  // Three columns and the acts (Q-CUR-157): the published time and the size stand under the version, the rule that decided under the
+  // delivery, the verdicts under the cache, so that the list keeps the form of a table at 1,024 px beside the side bar; with seven
+  // columns it stood as blocks of five lines per version there. A format without vulnerability verdicts says so once, above the
+  // list (R-CUR-014); a stored version still leads to its malware and signature verdicts.
   protected readonly columns = computed<readonly TableColumn[]>(() => [
-    { id: 'version', label: this.versionLabel(), width: '8rem' },
-    { id: 'published', label: $localize`:@@upstream.col.published:Published` },
-    { id: 'size', label: $localize`:@@upstream.col.size:Size`, numeric: true },
+    { id: 'version', label: this.versionLabel() },
     { id: 'delivery', label: $localize`:@@upstream.col.delivery:Delivery` },
-    { id: 'rule', label: $localize`:@@upstream.col.rule:Rule`, width: '8rem' },
     { id: 'cache', label: $localize`:@@upstream.col.cache:Cache` },
-    // A format without vulnerability verdicts says so once, above the list, instead of a column of dashes (R-CUR-014); a stored
-    // version still leads to its malware and signature verdicts.
-    ...(!this.verdictColumn() ? [] : [{ id: 'verdicts', label: $localize`:@@upstream.col.verdicts:Verdicts`, width: '10rem' }]),
     ...(this.hasActions() ? [{ id: 'actions', label: $localize`:@@upstream.col.actions:Actions`, hideLabel: true }] : []),
   ]);
 

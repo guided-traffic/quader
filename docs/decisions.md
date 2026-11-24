@@ -10133,10 +10133,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-CUR
 
-70 questions on [spec/remote-curation.md](spec/remote-curation.md).
+71 questions on [spec/remote-curation.md](spec/remote-curation.md).
 
 <details>
-<summary>Q-CUR: 70 questions</summary>
+<summary>Q-CUR: 71 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10210,6 +10210,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-CUR-154](spec/remote-curation.md#q-cur-154--the-section-delivery-saves-remotedelivery-alone-and-leads-to-the-rules-on-the-tab-upstream) | The section Delivery saves `remote.delivery` alone and leads to the rules on the tab Upstream | Decided by the development agent on 2026-11-24 | (a) A component of its own that patches `remote.delivery` with the page's `ETag`, after **Mirror** on every remote but a system repository, opened by the address's `#delivery` (the tab's **Change**), with a link to the tab Upstream for the rules | — |
 | [Q-CUR-155](spec/remote-curation.md#q-cur-155--the-catalogues-own-states-are-sentences-of-the-screen-the-upstreams-own-sentences-stand-as-the-upstream-wrote-them) | The catalogue's own states are sentences of the screen; the upstream's own sentences stand as the upstream wrote them | Decided by the development agent on 2026-11-24 | (a) The three refusals, the offline mode and a call not offered as the screen's own translated sentences in a warning line, the time computed from `Retry-After`; the server's sentences shown as written; the catalogue's reads never repeated by the client | — |
 | [Q-CUR-156](spec/remote-curation.md#q-cur-156--an-oci-remotes-stored-tags-are-the-tags-its-package-screens-list) | An OCI remote's stored tags are the tags its package screens list | Decided by the development agent on 2026-11-24 | (a) The statement adds an OCI remote's tag entries, each kept by the view's rules written as checks per entry from the page's packages, as the version list's `PackageViewTagPageDesc` does | — |
+| [Q-CUR-157](spec/remote-curation.md#q-cur-157--a-packages-versions-are-three-columns-the-facts-under-the-version-the-rule-under-the-delivery-the-verdicts-under-the-cache) | A package's versions are three columns: the facts under the version, the rule under the delivery, the verdicts under the cache | Decided by the development agent on 2026-11-24 | (a) **Version** (the version, its flags, under it the published time and the size, "Size not told" where the upstream does not tell it, and an image's platforms), **Delivery** (the badge, under it the rule that decided: "Rule: this version", "Rule: the package", "Rule:" and a sub-section's pattern), **Cache** (the state, under it **Open the version** for a stored version or the vulnerability verdict of one that is not stored, "No known vulnerability" where none is known) and the acts | — |
 
 </details>
 
