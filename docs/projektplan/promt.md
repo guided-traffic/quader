@@ -247,8 +247,13 @@ What was red at 19:49 (Test and Release on 928e2a6e7 and every run since 08:32; 
   without one; T-26's `upstream_download_finished` (00118) references a repository by a cascading key and had no decision in the purge
   of a retired repository. Fixed: the helpers give a key (`versionkey.Of`), and 00119 purges the finished downloads with the content
   (R-REPO-067, Q-REPO-376). The four packages pass locally against instance 1.
-- **unit tests** — four different timing-dependent tests across five runs (`TestShutdownBudgetEndToEnd`, `TestR_BAS_012_…`,
-  `TestR_BAS_032_…`, `TestR_VULN_041_…`); a builder reads each to its cause.
+- **unit tests** — four different timing-dependent tests across five runs, each read to its cause and landed at 20:15:
+  `TestR_BAS_032_…` ("the forged entry was used") was a product defect, not a forged entry served: a Bastion fill ended its flight only
+  after its callers had their last bytes, so a second request joined it instead of going upstream; the flight now ends at the commit,
+  as Q-BAS-123 says (reproduced with a 50 ms delay, three tests failed before and pass after). `TestR_BAS_012_…` ran past the 10 s
+  staleness bound with a test engine that never polled (the fixture's poll confirms the index now); `TestR_VULN_041_…` cancelled after
+  a fixed 50 ms, before the TLS handshake ended (cancels once the scanner holds the call); `TestShutdownBudgetEndToEnd` measured the
+  runner's stalls as overrun (the bounds add the measured stalls of the process; a real 600 ms overrun still fails).
 - **UI layout checks** — three render findings (the untrusted signer's badge offsets the row at 1440 px, the malware cell's date in two
   lines at 390 px, the signature gate's fixture route answered twice); a builder fixes them with renders.
 - **Nightly** — npm-ha and drain-roles (tarballs answered 429 and slow under load), alerts (`QuaderControlConnectionWaits` fired in
