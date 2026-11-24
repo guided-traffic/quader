@@ -3511,7 +3511,17 @@ client's miss, a queue row with its origin, id and starter, a mirror's pass, the
 writes its running downloads as one row of `upstream_download_live` every two seconds, the ends go to
 `upstream_download_finished` trimmed to the newest 100, a stopped replica's rows are swept as `interrupted`; the API answers
 the holders of `content:metadata-read` from PostgreSQL alone. Tests under a second each at the unit tier and one integration
-case in area `proxy` (2.7 s, one 64 KiB artifact). Not measured: the write load under the reference load. Three of its choices go to
+case in area `proxy` (2.7 s, one 64 KiB artifact). Not measured: the write load under the reference load. **Package B landed at 10:57** (R-UI-210 to 212,
+Q-UI-1070 to 1073): the button Downloads between Documentation and the theme, for the holders of
+`content:metadata-read` only, with a count badge ("99+" above 99), reading the summary every 10 s while the window is
+visible; it opens the drawer from the right with one filter, the running downloads (the format's icon, name and
+version, a progress bar where the size is known, bytes, speed and time, the repository and the origin, Show in queue
+for a queued row) and the last 100 finished (size, duration, average speed, the outcome's badge, when it ended); Hide
+all per device, Show again; the open panel refreshes every two seconds. The tab Downloads takes `?name=` from its
+address. Below 440 px a top bar with the button gives up the product name. Rendered against A's real backend in English
+and German, both schemes, 1,440, 1,024 and 390 px, looked at by the development agent. **T-26 is built whole**; the
+owner hears in one line the three choices he may reverse: the drawer from the right instead of a panel hung from the
+button, the auditor sees it too, metadata documents such as Debian indexes are not listed. Three of its choices go to
 the owner in one line each: the existing drawer from the right instead of a panel hung from the button, the auditor sees
 the panel too (`content:metadata-read`), and metadata documents such as Debian indexes are not listed.
 
