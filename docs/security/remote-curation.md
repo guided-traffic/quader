@@ -1,7 +1,8 @@
 # Curating a remote repository
 
-Status: specified on 2026-11-23 ([remote-curation.md](../spec/remote-curation.md)); the delivery rules are built (R-CUR-001 to R-CUR-006,
-R-CUR-017), the catalogue, the downloads ahead, the requests and the examination are not. A gap of an unbuilt mechanism says "dormant".
+Status: specified on 2026-11-23 ([remote-curation.md](../spec/remote-curation.md)); the delivery rules (R-CUR-001 to R-CUR-006,
+R-CUR-017), the downloads ahead with their queue (R-CUR-010 to R-CUR-013), and the examination, the requests and the retention
+(R-CUR-014 to R-CUR-016) are built; the catalogue is not. A gap of an unbuilt mechanism says "dormant".
 The perspective of this page is what the curation of a remote repository lets a person make Quader do and show: what a search of the
 upstream tells its operator and shows its caller, which hosts it reaches, what a delivery rule keeps from a client and what it does not,
 who can make Quader download how much, and what is kept of content that no client may get.
@@ -100,7 +101,13 @@ who can make Quader download how much, and what is kept of content that no clien
   the malware gate refuses what ClamAV finds at every serve point, but a format the advisories do not cover (Debian, Ansible Galaxy, OCI
   before its analysis) stores it unexamined by them ([H-1727](#h-1727--content-fetched-for-examination-lies-in-the-object-store-until-it-is-discarded)).
 - It is removed by a discard, by a decline, or after the repository's days without a decision (30 by default), each journaled, so a
-  restore removes it again (R-CUR-016).
+  restore removes it again (R-CUR-016): the replay makes the version due and queues the retention task, whose run on a worker removes it
+  while the rules still do not deliver it (Q-CUR-144); until that run the restored copy is stored and not served. What a removal takes is
+  what the version's runs recorded and the package rows link to it; a file it shares by its digest stays
+  ([H-1842](#h-1842--a-discard-leaves-what-a-version-shares-by-its-digest)).
+- Who removes it: the holders of `manage` and the administrator (a discard, a decline), and the task as `system:examination-cleanup`.
+  A reader who asks for an allow starts an examination charged to the reader's own budget, at most one per entry it opens and 20 open
+  entries per repository.
 - Who sees it: whoever reads the repository sees the stored version as not delivered, with its verdicts
   ([H-1729](#h-1729--a-reader-learns-what-is-being-examined)).
 
@@ -172,11 +179,11 @@ virtual repository instead.
 ### H-1727 · Content fetched for examination lies in the object store until it is discarded
 
 Component: the examination (R-CUR-014, R-CUR-016). Subject: the installation's object store and every process that reads blobs from it
-(the scanners, the replicas). Dormant until built. A download ahead stores a version that no client may get, which may be malicious: the
+(the scanners, the replicas). A download ahead stores a version that no client may get, which may be malicious: the
 vulnerability miss gate refuses only what the advisories of npm and NuGet name, ClamAV's verdict follows the store, and Debian and Ansible
 Galaxy content is not analysed for vulnerabilities at all. It stays until a discard, a decline or the days of the repository pass
-(30 by default). It is never served while the rules refuse it, and the malware gate refuses what ClamAV finds once it is delivered. What
-makes it real: a malicious package fetched for examination whose malware no signature describes, later allowed by a decider who reads
+(30 by default). It is never served while the rules refuse it, and the malware gate refuses what ClamAV finds once it is delivered. Live
+since the examination (R2b) is built. What makes it real: a malicious package fetched for examination whose malware no signature describes, later allowed by a decider who reads
 "No malware found" as "safe" (R-MAL-003).
 
 ### H-1728 · The excerpt of an upstream's error answer is shown to every reader of the repository
@@ -190,8 +197,8 @@ registry or proxy behind the remote whose error pages carry internal details.
 
 ### H-1729 · A reader learns what is being examined
 
-Component: the listing of a remote (R-API-081, R-CUR-014, Q-CUR-26). Subject: what a project's deciders are considering. Dormant until
-built. A stored version that the rules do not deliver is listed to every reader of the repository, marked not delivered, with its
+Component: the listing of a remote (R-API-081, R-CUR-014, Q-CUR-26). Subject: what a project's deciders are considering. Live since the
+examination (R2b) is built. A stored version that the rules do not deliver is listed to every reader of the repository, marked not delivered, with its
 verdicts; so is an open request's examination. A reader therefore learns which packages are being looked at before a decision. What
 makes it real: an examination that is confidential to its deciders, such as a package considered for a security product.
 
@@ -219,4 +226,15 @@ who used an upstream's quota. Live since the download queue (R4) is built. A bul
 `system` with no person; the person stands in the bulk's and its rows' `started_by`, which go after the queue's retention (7 days for
 done rows, 30 for failed ones), and in the audit event `remote.download.started`, which stays as long as the audit log keeps it. What
 makes it real: a quota of an upstream used up by bulks, looked into after the rows are gone, by someone without the audit log.
+
+### H-1842 · A discard leaves what a version shares by its digest
+
+Component: the discard and the retention of what was fetched for examination (R-CUR-016, Q-CUR-140). Subject: the object store of an
+installation with OCI remotes. Live since the examination (R2b) is built. A removal takes the files a version's runs recorded and the items
+the package rows link to it, each only when the format classifies it as a file of that version; an image's manifests and layers are named
+by digest and belong to no tag, so they stay after the tag's examination is discarded or removed after its days, possibly malicious, until
+R-STOR-045 removes unused files (specified, not built). They are not served while no delivered tag names them (Q-CUR-10), except a layer
+by its digest ([H-1724](#h-1724--a-blob-of-a-refused-tag-can-be-fetched-by-its-digest-when-the-image-is-partly-allowed)). An OCI tag that a
+client fetched before a rule refused it has no examination row and no version row, so a discard of it removes nothing. What makes it real:
+an image examined and declined whose layers no allowed image shares, on an installation that counts its storage.
 

@@ -78,6 +78,21 @@ type Bulk struct {
 	StartedBy          string                  `json:"started_by"`
 	CreatedAt          time.Time               `json:"created_at"`
 	FinishedAt         *time.Time              `json:"finished_at"`
+	// Origin is the origin of the rows the bulk queues: bulk for a person's bulk, request for the examination of a package a request
+	// starts, allow for the newest version an allow downloads (Q-CUR-141).
+	Origin remotecuration.Origin `json:"origin"`
+	// RequestID is the request whose examination or allow the bulk is; "" for a person's bulk.
+	RequestID string `json:"request_id"`
+	// Ticket is the asker's charge the rows of a request's examination carry (R-CUR-015); null for system work.
+	Ticket json.RawMessage `json:"ticket"`
+}
+
+// RowOrigin is the origin of the rows the bulk queues: bulk unless a request or an allow started it.
+func (b Bulk) RowOrigin() remotecuration.Origin {
+	if b.Origin == remotecuration.OriginRequest || b.Origin == remotecuration.OriginAllow {
+		return b.Origin
+	}
+	return remotecuration.OriginBulk
 }
 
 // Level is the level of a download ahead (R-CUR-010).
@@ -154,6 +169,17 @@ type Result struct {
 	Failed bool
 	// Cancelled reports that the run stopped because the row was cancelled while it ran.
 	Cancelled bool
+	// Examination is the version the attempt stored while the rules did not deliver it: the end of the attempt writes its examination
+	// row (R-CUR-016 "What is examination"); nil for none.
+	Examination *Examination
+}
+
+// Examination is a version a run of the queue stored while the delivery rules did not deliver it (R-CUR-014, R-CUR-016): its name
+// and version in the format's canonical forms and the repository paths of the files the run stored or found for it, which a discard
+// and the retention remove (Q-CUR-140).
+type Examination struct {
+	Name, Version string
+	Files         []string
 }
 
 // Errors of the queue's operations; the API maps them to its codes.

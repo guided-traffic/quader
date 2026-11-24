@@ -1,6 +1,6 @@
 # Curating a remote repository: the work packages
 
-Status: specified on 2026-11-23; the contracts package (C), the delivery rules (R2) and the downloads ahead with their queue (R4) built on 2026-11-23 and 2026-11-24, the tab strip and the tab Downloads (R5a) on 2026-11-24, the rest not. The specification is [spec/remote-curation.md](../spec/remote-curation.md) with the format
+Status: specified on 2026-11-23; the contracts package (C), the delivery rules (R2) and the downloads ahead with their queue (R4) built on 2026-11-23 and 2026-11-24, the tab strip and the tab Downloads (R5a) and the requests, examination and retention (R2b) on 2026-11-24, the rest not. The specification is [spec/remote-curation.md](../spec/remote-curation.md) with the format
 pages' requirements (R-NPM-049, R-NUGET-035, R-OCI-038, R-DEB-036, R-ANS-047) and the changed sentences its section "Changes to other
 pages" lists; the security view is [security/remote-curation.md](../security/remote-curation.md). This page cuts the work into packages
 for builders, in the order they can land, each a whole feature that leaves `main` working, with the files and directories each owns so
@@ -37,7 +37,7 @@ that several builders work at once, the contracts between them, and the tests ea
 | **R2 · Delivery rules** (built) | R-CUR-001 to R-CUR-006, R-CUR-017 (the mirror's scope), the rules' API; the refusal before a fill, at the serve point and in the five formats' documents (kit check 23); the virtual walk; the journal and the Bastion's feed; the listing marks; a remote without patterns | C | 2.5 |
 | **R3 · Upstream catalogue** | R-CUR-007 to R-CUR-009: the catalogue engine (lent upstream that stores nothing, budget, cache, bounds, second hosts), the five formats' catalogues (kit check 22) and the check of `Register` that a remote adapter implements `formats.Catalogue` (Q-CUR-109), the Debian parse's descriptions, the API with the vulnerability verdicts of unstored versions | C | 2 |
 | **R4 · Downloads ahead and the queue** | R-CUR-010 to R-CUR-013: the queue's store, dispatch, run, retries and failures in words; the probe's row; bulks and their expansion; the API; the client failure rows; the charge; a fill without a client is no refused download (Q-CUR-22) | C (the expansion calls the catalogue's interface; its integration case of a bulk lands with whichever of R3 and R4 lands second) | 2 |
-| **R2b · Requests, examination, retention** | R-CUR-014 to R-CUR-016: requests and askers, the examination a request starts, allow and decline, the list with client refusals, discard and the retention task, their events, journal and replay | R2, R4 | 1.5 |
+| **R2b · Requests, examination, retention** (built) | R-CUR-014 to R-CUR-016: requests and askers, the examination a request starts, allow and decline, the list with client refusals, discard and the retention task, their events, journal and replay | R2, R4 | 1.5 |
 | **R5a · The tab strip and the tab Downloads** | R-CUR-018: the strip on a remote's page with the three addresses, the tab Downloads with its states, filters, failure detail, retry and cancel | R4 | 1 |
 | **R5b · The tab Upstream and the settings** | R-CUR-018: search, levels, lookup, a package's versions with states and verdicts, the actions, the preview of a bulk, the rule list, the requests panel, the settings section Delivery, the glossary rows | R2, R3, R2b, R5a | 2 |
 | **R6 · Clients and documents** | the end-to-end case per format in its own leg; the manual's pages (the tabs, curation, the queue); the developer pages this change touches (formats, proxy, mirror) | R5b | 1 |
@@ -173,7 +173,7 @@ The delivery rules' decider is `repository.Decider` over the replica's snapshot,
 row's member `delivery` read it.
 
 Not built here, and why: a sub-section's bulk and the counts of a package's preview wait for the catalogue (R3, Q-CUR-80); the tab
-**Downloads** is R5a's; the examination's rows (`remote_examinations`) and the request's examination are R2b's.
+**Downloads** is R5a's; the examination's rows (`remote_examinations`) and the request's examination are R2b's (built, below).
 
 Tests and what they cost (each run once, R-CUR-022):
 
@@ -192,14 +192,37 @@ format adds its `version_probe.go` and one `TestR_CUR_010_…` of about 3 s in i
 
 ## R2b · Requests, examination, retention
 
-| Area | Files |
-|---|---|
-| Requests | `internal/remotecuration/requests/` (ask, the examination it starts, allow, decline, withdraw, the list) |
-| Retention | `internal/remotecuration/retention/` (discard, the task `remote-examination-cleanup`), its journal entry and replay in `internal/journal/` |
-| The API | `internal/api/v1/delivery_requests_api.go`, `api/openapi.yaml` (`# >>> T-24 requests`) |
+Built on 2026-11-24 (R-CUR-014 to R-CUR-016, [Q-CUR-140](../spec/remote-curation.md#q-cur-140--an-examination-row-names-the-files-its-runs-stored-a-discard-removes-what-belongs-to-the-version-alone)
+to [Q-CUR-148](../spec/remote-curation.md#q-cur-148--every-persons-ask-is-recorded-the-last-asker-who-withdraws-ends-an-entry-no-client-was-refused)).
+Migration [00115_remote_examination_files.sql](../../internal/meta/postgres/migrations/00115_remote_examination_files.sql): the files of an
+examination row, the origin, request and charge of a bulk, and why an entry's examination did not start. What it holds:
 
-Tests: integration, `TestR_CUR_014_…`, `TestR_CUR_015_…`, `TestR_CUR_016_…` (npm, about 9 s together, the stub's corpus and the test
-`MAL-` record); unit, the replay of a discard (milliseconds). What a leg gains: the shards about 9 s.
+| File or directory | What |
+|---|---|
+| [requests](../../internal/remotecuration/requests/requests.go) (domain) | `requests.go`: `Check` (the subject in canonical forms, `already_delivered`, the catalogue's lookup when wired, Q-CUR-145) and `AskTx` (one open entry per subject, the bound per person, the examination of the entry's first person: a row of origin `request`, or of a package a bulk of its newest versions, Q-CUR-141, charged by the caller's `Charge`); `AllowTx` (the rule through `rules/store.PutTx`, the state, the downloads: the examination's failed rows again, else a row or a bulk of origin `allow`, or a bulk of every version); `DeclineTx` (the reason, the examination's waiting rows and bulks cancelled, its stored versions discarded, Q-CUR-143); `WithdrawTx` (Q-CUR-148); `list.go`: `List`, `ViewTx`, `Get` and `Open` (`remotecuration.Requests`) |
+| [retention](../../internal/remotecuration/retention/retention.go) (domain) | `retention.go`: `DiscardTx` (the versions of a subject the rules do not deliver, their files by the examination row and the package rows filtered by the format's `Classify`, Q-CUR-140, removed through `items.Store.RemoveIn`, the rows, the event with its journal entry) and `Cleanup` (the task: rows older than a day in batches of 1,000, a delivered version's row dropped, Q-CUR-142, an expired one discarded as `system:examination-cleanup`; the entries without an asker after `request_retention`); `journal_replay.go`: the replay of `remote.examination.discarded` (the rows due, a run of the task queued, Q-CUR-144) |
+| [delivery_requests.sql](../../internal/meta/postgres/queries/delivery_requests.sql) | every statement of the requests, the examination rows, the bulk of a request and the stored files of a version |
+| [queue](../../internal/remotecuration/queue/queue.go) | `Result.Examination`, written with the end of an attempt (`store_pg.go` `Settle`); a bulk's `Origin`, `RequestID` and `Ticket`, which its rows take |
+| [background_download.go](../../internal/formathost/background_download.go) `examinationOf`, [mirror_host.go](../../internal/formathost/mirror_host.go) `admitted` | a run that stored a file of a version the rules do not deliver holds it for examination with its files; a row of the queue is admitted past the rules, a pass of the mirror is not (Q-CUR-147) |
+| [rules/store](../../internal/remotecuration/rules/store/store.go) `examinationsDelivered` | an allow written, or a block removed, removes the examination rows of its subject that the rules then deliver (`Target.Mode` carries the caller's mode) |
+| [delivery_requests_api.go](../../internal/api/v1/delivery_requests_api.go), `api/openapi.yaml` (`# >>> T-24 requests`) | the list, the ask, allow, decline, withdraw and the discard, and who may call them (R-CUR-005) |
+| [wire_delivery_requests.go](../../internal/app/wire_delivery_requests.go) | both services, built at their first use in every role; the task `remote-examination-cleanup` (queue `maintenance`, mutating; it left `tasksNotBuilt`); the API's services |
+
+Not built here: the gauge `quader_remote_delivery_requests_open` (R-CUR-019); the catalogue's lookup of an ask, which R3 wires into
+`requests.Options.Lookup`; the screens (R5b).
+
+Tests and what they cost (each run once):
+
+| Test | Tier | Run time | Data |
+|---|---|---|---|
+| `TestR_CUR_015_ARequestsBulkQueuesTheNewestVersionsAsTheRequestsRows`, `TestR_CUR_016_TheEndOfAnAttemptWritesItsExamination` (`internal/remotecuration/queue`) | unit | milliseconds | none (the store in memory) |
+| `TestR_CUR_016_ARunHoldsAnUndeliveredVersionForExamination`, the download-ahead rows of `TestR_CUR_017_TheMirrorAdmitsWhatItsScopeAndTheRulesAdmit` (`internal/formathost`) | unit | milliseconds | none |
+| `TestR_CUR_016_TheReplayOfADiscardReadsItsEntry` (`internal/remotecuration/retention`) | unit | milliseconds | none |
+| `TestR_CUR_014_AnExaminationIsStoredScannedAndNotDelivered`, `TestR_CUR_015_ARequestIsExaminedAllowedOrDeclined`, `TestR_CUR_016_WhatWasExaminedIsRemovedAfterItsDaysOrADiscard` (area `npm`) | integration | about 2 s, 6 s and 3 s | the stub's corpus: four tarballs of a few kilobytes |
+| `TestR_CUR_016_ADiscardAfterARestorePointIsReplayed` (area `backup`) | integration | about 1 s | two examination rows, no artifact |
+
+What a leg gains: the unit job well under a second; the integration shards about 12 s (npm 11 s, backup 1 s). No format adds anything:
+the examination, the discard and the retention are the same for every format with a remote class (Q-CUR-140).
 
 ## R5a and R5b · The screens
 

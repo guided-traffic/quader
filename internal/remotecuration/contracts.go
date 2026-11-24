@@ -263,7 +263,7 @@ type OpenRequest struct {
 
 // Requests answers which subjects of a package have an open request entry in a repository (R-CUR-015): an entry per subject, keyed by
 // the version, "" for the package. versions are canonical (R-CUR-006); the package's own entry is answered whatever versions holds.
-// The requests package implements it (R2b); until then [NoRequests] answers.
+// requests.Service implements it (R2b); [NoRequests] answers where none is wired.
 type Requests interface {
 	Open(ctx context.Context, repoID, name string, versions []string) (map[string]OpenRequest, error)
 }

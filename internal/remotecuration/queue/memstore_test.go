@@ -22,6 +22,13 @@ type memStore struct {
 	seq     int
 	now     func() time.Time
 	written []Row // the client failures written
+	// examined are the examination rows the ends of attempts wrote, with the request of their row.
+	examined []examinedRow
+}
+
+type examinedRow struct {
+	Examination
+	RequestID string
 }
 
 func newMemStore(now func() time.Time) *memStore {
@@ -142,6 +149,9 @@ func (t memTx) Settle(_ context.Context, id, jobID string, s settlement, res Res
 	if !s.NotBefore.IsZero() {
 		nb := s.NotBefore
 		x.NotBefore = &nb
+	}
+	if res.Examination != nil {
+		t.m.examined = append(t.m.examined, examinedRow{Examination: *res.Examination, RequestID: x.RequestID})
 	}
 	return true, nil
 }

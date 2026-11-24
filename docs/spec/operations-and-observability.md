@@ -2360,8 +2360,8 @@ requirement: the MVP registers `gc`, `gc-full`, `audit-retention`, `replica-regi
 `ci-keys-refresh`, `ci-replay-cleanup` and `ci-issuance-retention` of
 [gitlab-ci-oidc.md](gitlab-ci-oidc.md) R-CI-030, and from M4b the four tasks of
 [vulnerability-scanning.md](vulnerability-scanning.md)); P1 requirements add theirs when they ship (the download queue of remote
-repositories adds `remote-downloads-dispatch`, [remote-curation.md](remote-curation.md) R-CUR-011, and
-`remote-examination-cleanup`, R-CUR-016, specified, not built).
+repositories adds `remote-downloads-dispatch`, [remote-curation.md](remote-curation.md) R-CUR-011, and the requests for an allow
+`remote-examination-cleanup`, R-CUR-016).
 
 **Tasks and leases.** A *task* is a named maintenance job, recurring or manual-only. A singleton
 scheduler enqueues due tasks into the job queue. The scheduler runs on the `worker` replica that
@@ -2419,7 +2419,7 @@ shared key is offered again on the next scheduler tick, so it is postponed, neve
 | `deb-index-refresh` | [formats/debian.md](formats/debian.md) R-DEB-010: enqueues a `deb-index` job for a repository whose retention is due, a virtual repository whose check is due and a remote repository's housekeeping, and deletes nothing itself (Q-DEB-33); queue `maintenance`, exclusive | `* * * * *` (formats/debian.md) |
 | `mirror-dispatch` | [repositories-and-proxy.md](repositories-and-proxy.md) R-REPO-053: starts the passes of the remote repositories in mode `mirror` that are due; queue `maintenance` (Q-ARCH-321), exclusive | `* * * * *` (repositories-and-proxy.md) |
 | `remote-downloads-dispatch` | [remote-curation.md](remote-curation.md) R-CUR-011: lets the running rows whose job ended wait again, starts the waiting rows of a remote repository's download queue whose next attempt came, goes one step on with every bulk that expands, ends the bulks whose rows all ended, removes finished rows after their retention and sets the gauge `quader_remote_downloads` | `* * * * *` (remote-curation.md) |
-| `remote-examination-cleanup` | [remote-curation.md](remote-curation.md) R-CUR-016: removes what was fetched for examination and not delivered after the repository's `remote.delivery.examinedRetentionDays`; specified, not built | `0 4 * * *` (remote-curation.md) |
+| `remote-examination-cleanup` | [remote-curation.md](remote-curation.md) R-CUR-016: removes what was fetched for examination and not delivered after the repository's `remote.delivery.examinedRetentionDays`, drops the examination rows of versions the rules deliver now, and removes the request entries without an asker after `proxy.delivery.request_retention` (R-CUR-015); mutating | `0 4 * * *` (remote-curation.md) |
 | `remote-cache-cleanup` | [storage.md](storage.md) R-STOR-045; the per-repository expiry setting belongs to [repositories-and-proxy.md](repositories-and-proxy.md) (RET-036, RMT-021); specified, not built | `0 3 * * *` (proposed, storage.md) |
 | `token-cleanup`, `session-cleanup` | [identity-and-authentication.md](identity-and-authentication.md) R-AUTH-043 (R-AUTH-023; R-AUTH-005, R-AUTH-010, R-AUTH-034) | `40 3 * * *` and `*/10 * * * *` (identity-and-authentication.md) |
 | `token-expiry-notice` | [identity-and-authentication.md](identity-and-authentication.md) R-AUTH-043, R-AUTH-032: writes `token.expiring` for tokens entering the notice period | `0 6 * * *` (identity-and-authentication.md) |
@@ -2459,8 +2459,9 @@ API shows them and can trigger a run, but it cannot edit them. A task's default 
 when its key is absent; the owning page of a task sets that default, and the table above repeats
 it. A key that names a task the version does not have stops startup with an error that names the key and lists the tasks
 there are (Q-OPS-418): a misspelt name would otherwise be ignored, and the task it meant would run on its default. The one exception
-is a task the specification puts into the configuration's default before a replica registers it (`remote-examination-cleanup`,
-R-CUR-020): its key is accepted and has no effect until the task is registered.
+is a task the specification puts into the configuration's default before a replica registers it (none at present; the last,
+`remote-examination-cleanup` of R-CUR-020, is registered since package R2b of the remote curation): its key is accepted and has no
+effect until the task is registered.
 
 API:
 
@@ -2830,7 +2831,7 @@ In `read_only` mode:
   repositories serve only what they already cache, as in global offline mode
   ([repositories-and-proxy.md](repositories-and-proxy.md), RMT-031).
 - **Background work.** The scheduler does not enqueue mutating tasks (`gc`, `gc-full`,
-  `orphan-sweep`, retention, reindex, `remote-cache-cleanup`). Runs already in progress finish.
+  `orphan-sweep`, retention, reindex, `remote-cache-cleanup`, `remote-examination-cleanup`). Runs already in progress finish.
 - **Readiness** is unaffected.
 - **UI.** The UI shows the mode as a banner (R-OPS-025).
 

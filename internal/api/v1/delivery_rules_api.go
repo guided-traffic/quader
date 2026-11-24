@@ -45,7 +45,7 @@ func (s *Server) deliveryTarget(ctx context.Context, key qname.Repo) (repository
 		return repository.Repository{}, store.Target{}, errs.E(errs.Invalid, errs.CodeNotApplicable,
 			"Only a remote repository has delivery rules; "+strconv.Quote(key.String())+" is a "+string(repo.Class)+" repository.")
 	}
-	return repo, store.Target{ID: repo.NumericID(), Name: repo.Name, Format: repo.Format}, nil
+	return repo, store.Target{ID: repo.NumericID(), Name: repo.Name, Format: repo.Format, Mode: repo.Delivery().Mode()}, nil
 }
 
 // requireRuleReader decides who reads the rules with their notes (R-CUR-005): manage on the repository, repositories:read-config

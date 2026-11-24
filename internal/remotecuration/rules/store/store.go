@@ -75,6 +75,9 @@ type Target struct {
 	ID     int64
 	Name   qname.Repo
 	Format string
+	// Mode is the repository's delivery mode as the caller's snapshot holds it; "" is allExceptBlocked. A write decides with it which
+	// examination rows it comes to deliver (R-CUR-016).
+	Mode rc.Mode
 }
 
 // Caller is who writes, as the audit event names it.
@@ -271,6 +274,11 @@ func (s *Store) PutTx(ctx context.Context, tx meta.Tx, t Target, c Caller, in In
 				return err
 			}
 		}
+		if r.Effect == rc.Allow {
+			if err := s.examinationsDelivered(ctx, qs, t, r); err != nil {
+				return err
+			}
+		}
 		if err := s.changed(ctx, tx, t); err != nil {
 			return err
 		}
@@ -339,8 +347,84 @@ func (s *Store) DeleteTx(ctx context.Context, tx meta.Tx, t Target, c Caller, id
 				return err
 			}
 		}
+		// Removing a block can make what it refused delivered (R-CUR-016).
+		if r.Effect == rc.Block {
+			if err := s.examinationsDelivered(ctx, qs, t, r); err != nil {
+				return err
+			}
+		}
 		return s.changed(ctx, tx, t)
 	}()
+}
+
+// maxExaminationScan bounds the examination rows a section rule's write reads in its transaction; the rows beyond it go with the next
+// run of the task remote-examination-cleanup, which drops every row of a delivered version (Q-CUR-142).
+const maxExaminationScan = 100000
+
+// examinationsDelivered removes the examination rows of the versions that the repository's rules deliver after a write that widened
+// them (R-CUR-016 "The row goes when the rules come to deliver the version"): an allow written, or a block removed. The rules are
+// compiled from the transaction's rows with the caller's mode, so a narrower rule of the other effect keeps its version's row; the rows
+// are those of the rule's subject: the version, the package's versions, or, for a section, every row of the repository up to
+// maxExaminationScan. What is stored stays: the version is delivered from that moment.
+func (s *Store) examinationsDelivered(ctx context.Context, qs *q.Queries, t Target, r rules.Rule) error {
+	list, err := qs.DeliveryRulesOfRepository(ctx, t.ID)
+	if err != nil {
+		return err
+	}
+	rs := make([]rules.Rule, len(list))
+	for i, row := range list {
+		rs[i] = rules.Rule{Kind: rc.RuleKind(row.Kind), Pattern: row.Pattern.String, Name: row.Name.String, Version: row.Version.String, Effect: rc.Effect(row.Effect)}
+	}
+	mode := t.Mode
+	if !mode.Valid() {
+		mode = rc.AllExceptBlocked
+	}
+	canon := rules.Canon{
+		Name:    func(n string) (string, bool) { return s.o.Catalog.NormalizeName(t.Format, n) },
+		Version: func(v string) (string, bool) { return s.o.Catalog.CanonicalVersion(t.Format, v) },
+	}
+	set, err := rules.Compile(mode, 0, rs, s.o.Compile, canon)
+	if err != nil {
+		return nil //nolint:nilerr // a set that does not compile cannot have been written; the retention task decides on the snapshot
+	}
+	drop := map[string][]string{}
+	consider := func(name, version string) {
+		if set.Decide(name, version).Delivered {
+			drop[name] = append(drop[name], version)
+		}
+	}
+	switch r.Kind {
+	case rc.KindVersion, rc.KindPackage:
+		rows, err := qs.RemoteExaminationsOf(ctx, q.RemoteExaminationsOfParams{RepoID: t.ID, Name: r.Name, Version: r.Version})
+		if err != nil {
+			return err
+		}
+		for _, x := range rows {
+			consider(x.Name, x.Version)
+		}
+	case rc.KindSection:
+		afterName, afterVersion := "", ""
+		for read := 0; read < maxExaminationScan; {
+			page, err := qs.RemoteExaminationsPage(ctx, q.RemoteExaminationsPageParams{RepoID: t.ID, AfterName: afterName, AfterVersion: afterVersion, MaxRows: 1000})
+			if err != nil {
+				return err
+			}
+			for _, x := range page {
+				consider(x.Name, x.Version)
+			}
+			read += len(page)
+			if len(page) < 1000 {
+				break
+			}
+			afterName, afterVersion = page[len(page)-1].Name, page[len(page)-1].Version
+		}
+	}
+	for name, versions := range drop {
+		if _, err := qs.RemoteExaminationDelete(ctx, q.RemoteExaminationDeleteParams{RepoID: t.ID, Name: name, Versions: versions}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func uuidText(valid bool, s string) string {

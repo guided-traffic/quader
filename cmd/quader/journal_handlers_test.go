@@ -9,12 +9,7 @@ import (
 
 // handlerPending are the journaled events whose replay handler is not built yet, each with the gap that says so. The list
 // keeps itself honest: an event that has a handler must leave it.
-var handlerPending = map[string]string{
-	// The event is registered by the contracts of the curation of a remote repository; the discard that writes it and its replay
-	// land together with requests, examination and retention (docs/developer/remote-curation.md, package R2b). Until then nothing
-	// writes the event, so no journal entry of it can exist.
-	"remote.examination.discarded": "the discard of R-CUR-016 and its replay land with package R2b of T-24",
-}
+var handlerPending = map[string]string{}
 
 // TestR_HA_054_EveryJournaledEventHasAReplayHandler: the quader binary, which runs both replays (`quader backup restore`,
 // `quader admin post-restore`), holds a replay handler for every event the audit registry flags for the revocation journal.

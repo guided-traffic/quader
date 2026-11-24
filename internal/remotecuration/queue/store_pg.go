@@ -94,6 +94,9 @@ func decodeBulk(doc string) (Bulk, error) {
 	if string(b.Cursor) == "null" {
 		b.Cursor = nil
 	}
+	if string(b.Ticket) == "null" {
+		b.Ticket = nil
+	}
 	return b, nil
 }
 
@@ -251,12 +254,46 @@ func (t *pgTx) Settle(ctx context.Context, id, jobID string, s settlement, res R
 		Files: int32(res.Files), Stored: int32(res.Stored), Present: int32(res.Present), Refused: int32(res.Refused), //nolint:gosec // bounded by MaxProbeFiles
 		Bytes: res.Bytes, NotBeforeUs: us(s.NotBefore), NowUs: us(now),
 	})
-	return n > 0, err
+	if err != nil || n == 0 || res.Examination == nil {
+		return n > 0, err
+	}
+	// The version the attempt stored while the rules did not deliver it is held for examination (R-CUR-016), with the request that
+	// caused the row.
+	row, found, err := t.Get(ctx, id, 0)
+	if err != nil || !found {
+		return true, err
+	}
+	ex := res.Examination
+	return true, t.qs.RemoteExaminationPut(ctx, q.RemoteExaminationPutParams{
+		RepoID: row.RepoID, Name: ex.Name, Version: ex.Version, RequestID: row.RequestID, Files: nonNil(ex.Files),
+	})
+}
+
+func nonNil(s []string) []string {
+	if s == nil {
+		return []string{}
+	}
+	return s
 }
 
 func (t *pgTx) InsertBulk(ctx context.Context, b Bulk) (Bulk, error) {
 	if b.ID == "" {
 		b.ID = uuid.Must(uuid.NewV7()).String()
+	}
+	if b.RowOrigin() != remotecuration.OriginBulk {
+		ticket := ""
+		if len(b.Ticket) > 0 && string(b.Ticket) != "null" {
+			ticket = string(b.Ticket)
+		}
+		doc, err := t.qs.RemoteDownloadBulkInsertOf(ctx, q.RemoteDownloadBulkInsertOfParams{
+			ID: b.ID, RepoID: b.RepoID, Level: string(b.Level), Subject: b.Subject, MaxVersions: int32(b.MaxVersions), //nolint:gosec // bounded by the configuration
+			MaxBytes: b.MaxBytes, IncludePrereleases: b.IncludePrereleases, StartedBy: b.StartedBy, Origin: string(b.Origin),
+			RequestID: b.RequestID, Ticket: ticket,
+		})
+		if err != nil {
+			return Bulk{}, err
+		}
+		return decodeBulk(doc)
 	}
 	doc, err := t.qs.RemoteDownloadBulkInsert(ctx, q.RemoteDownloadBulkInsertParams{
 		ID: b.ID, RepoID: b.RepoID, Level: string(b.Level), Subject: b.Subject, MaxVersions: int32(b.MaxVersions), //nolint:gosec // bounded by the configuration

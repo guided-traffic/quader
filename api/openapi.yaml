@@ -16659,6 +16659,427 @@ paths:
         "503":
           $ref: "#/components/responses/Unavailable"
   # <<< T-24 rules
+  # >>> T-24 requests
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+    get:
+      operationId: listDeliveryRequests
+      tags: [remote-curation]
+      summary: List the requests for an allow of a remote repository
+      description: |
+        The request entries of a remote repository (R-CUR-015): one entry per subject (a package, or a version of it) with the people
+        who ask in it and the refusals clients met (R-CUR-004), open entries first, then by the last ask or refusal, newest first, each
+        with its examination (the newest row of the download queue it caused), the versions its examination stored, why an examination
+        did not start, and the decision. `state` filters; `origin=person` lists the entries someone asks in, `origin=client` those
+        clients were refused; `mine=true` the caller's own. Cursor pagination (R-API-010). Holders of `manage` and the system role
+        `admin` see every entry and the askers' names; any other reader of the repository sees only the entries it asks in, with its own
+        name and no other asker's (R-CUR-005). A local or virtual repository answers `400 not_applicable`.
+      x-quader-permission:
+        authenticated: true
+      parameters:
+        - name: state
+          in: query
+          schema:
+            type: string
+            enum: [open, allowed, declined, withdrawn]
+            x-enum-varnames: [ListRequestsStateOpen, ListRequestsStateAllowed, ListRequestsStateDeclined, ListRequestsStateWithdrawn]
+        - name: origin
+          in: query
+          schema:
+            type: string
+            enum: [person, client]
+            x-enum-varnames: [ListRequestsOriginPerson, ListRequestsOriginClient]
+        - name: mine
+          in: query
+          schema:
+            type: boolean
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: One page of entries.
+          headers:
+            Link:
+              $ref: "#/components/headers/Link"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryRequestPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+    post:
+      operationId: askDeliveryRequest
+      tags: [remote-curation]
+      summary: Ask for an allow of a package or a version
+      description: |
+        Asks that a package (with its future versions) or one version be allowed in the repository (R-CUR-015): the subject in the
+        format's canonical forms (`422 invalid_name`, `422 invalid_version`); a subject the rules deliver answers `409 already_delivered`;
+        where the upstream catalogue is wired, a subject the upstream does not have `404 catalogue_not_found`. One open entry per subject:
+        the caller is added to it (`201`); a caller who asks in it already gets it unchanged (`200`). At most
+        `proxy.delivery.open_requests_per_person` open entries per person and repository (`429 too_many_requests`). The first person of
+        an entry starts its examination when the repository's `remote.delivery.examineOnRequest` is on: a download ahead of the version,
+        or of the newest versions of a package that are no prereleases (`proxy.delivery.examine_versions_per_request`), charged to the
+        caller (R-CUR-010); a refusal by the caller's budget starts nothing and the entry says so in `examinationRefused`. Writes
+        `remote.request.created`. Needs `read` on the repository and no right to set its rules: a holder of `manage` or the system role
+        `admin` sets the rule instead (`403`).
+      x-quader-permission:
+        authenticated: true
+      x-quader-idempotency-key: optional
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliveryRequestInput"
+            example:
+              name: "@acme/b"
+              note: Needed by the billing service.
+      responses:
+        "200":
+          description: The caller asks in the entry already.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryRequest"
+        "201":
+          description: The caller asks in the entry.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryRequest"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests/{requestId}/allow:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+      - name: requestId
+        in: path
+        required: true
+        description: The request entry's ID (a UUID).
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: allowDeliveryRequest
+      tags: [remote-curation]
+      summary: Allow a request
+      description: |
+        Allows an open entry (R-CUR-015): writes the subject's rule (`allow`, with the entry's ID; `as: package` widens a version's entry
+        to its package) as a rule's write does (R-CUR-006, `remote.rule.created` or `remote.rule.updated`), sets the entry `allowed`
+        and starts the download at once: nothing more where the examination stored the version, which is delivered from that moment;
+        else a download of the version asked, or of a package its newest version that is no prerelease; with `downloadEveryVersion` a
+        bulk of every version within the bounds of `proxy.downloads`. A row of the examination that failed or was cancelled is started
+        again. An entry that is not open answers `409 conflict`. Writes `remote.request.allowed`. Needs what writing a rule needs:
+        `manage` on the repository or the system role `admin`; a system repository of the project `upstream` keeps the product's rules
+        (`409 managed_by_product`).
+      x-quader-permission:
+        authenticated: true
+      x-quader-idempotency-key: optional
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliveryRequestAllowInput"
+            example:
+              as: asked
+              downloadEveryVersion: false
+              note: Reviewed by the platform team.
+      responses:
+        "200":
+          description: The entry is allowed.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryRequestAllowed"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests/{requestId}/decline:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+      - name: requestId
+        in: path
+        required: true
+        description: The request entry's ID (a UUID).
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: declineDeliveryRequest
+      tags: [remote-curation]
+      summary: Decline a request with a reason
+      description: |
+        Declines an open entry (R-CUR-015): a reason of 1 to 1,000 characters, which the askers read; the waiting rows and the expanding
+        bulk of its examination are cancelled; with `discard` (the default) what its examination stored and the rules do not deliver is
+        discarded as `POST examinations/discard` does (R-CUR-016, `remote.examination.discarded` with the cause `declined`). Later
+        refusals of clients count in the declined entry; a person's new ask opens a new entry. An entry that is not open answers
+        `409 conflict`. Writes `remote.request.declined`. Needs `manage` on the repository or the system role `admin`.
+      x-quader-permission:
+        authenticated: true
+      x-quader-idempotency-key: optional
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeliveryRequestDeclineInput"
+            example:
+              reason: Use the maintained fork @acme/b2 instead.
+              discard: true
+      responses:
+        "200":
+          description: The entry is declined.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryRequestDeclined"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests/{requestId}/withdraw:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+      - name: requestId
+        in: path
+        required: true
+        description: The request entry's ID (a UUID).
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: withdrawDeliveryRequest
+      tags: [remote-curation]
+      summary: Withdraw from a request
+      description: |
+        Takes the caller out of an entry it asks in (R-CUR-015; `404` when it does not): an open entry that keeps no asker and counts no
+        refusal of a client ends `withdrawn`, one that clients were refused stays open; an entry without an asker and without a refusal
+        for `proxy.delivery.request_retention` is removed by the task `remote-examination-cleanup`. Writes `remote.request.withdrawn`.
+      x-quader-permission:
+        authenticated: true
+      x-quader-idempotency-key: optional
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: The caller no longer asks in the entry.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryRequest"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/examinations/discard:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+    post:
+      operationId: discardExaminations
+      tags: [remote-curation]
+      summary: Discard what a remote stores and does not deliver
+      description: |
+        Removes the stored files of the versions of a subject (a version, or every version of a package) that the rules do not deliver,
+        as an eviction of the cache, with their examination rows (R-CUR-016): what a download ahead fetched for examination, and what a
+        client fetched before a rule refused it. A file the version shares with others by its digest (an image's manifest and layers)
+        stays (Q-CUR-140). A version the rules deliver answers `409 delivered`. Writes `remote.examination.discarded` with the cause
+        `person`, which the revocation journal carries, so that a restore removes it again. Needs what writing a rule needs: `manage` on
+        the repository or the system role `admin`.
+      x-quader-permission:
+        authenticated: true
+      x-quader-idempotency-key: optional
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExaminationDiscardInput"
+            example:
+              name: "@acme/a"
+              version: "1.0.0"
+      responses:
+        "200":
+          description: What was discarded.
+          headers:
+            Idempotency-Replayed:
+              $ref: "#/components/headers/IdempotencyReplayed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExaminationDiscarded"
+              example:
+                versions: ["1.0.0"]
+                files: 1
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "413":
+          $ref: "#/components/responses/PayloadTooLarge"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
+        "422":
+          $ref: "#/components/responses/Unprocessable"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
+  # <<< T-24 requests
   #
   # >>> M5 backup
   /api/v1/system/backups:
@@ -30760,6 +31181,221 @@ components:
               type: string
               enum: [allExceptBlocked, onlyAllowed]
     # <<< T-24 rules
+    # >>> T-24 requests
+    DeliveryRequestInput:
+      type: object
+      additionalProperties: false
+      description: "An ask for an allow (R-CUR-015): a package with its future versions, or one version of it."
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 1024
+        version:
+          type: string
+          minLength: 1
+          maxLength: 256
+        note:
+          type: string
+          maxLength: 500
+          description: Why the caller asks; read by those who decide and by the caller.
+    DeliveryRequestPerson:
+      type: object
+      additionalProperties: false
+      description: A person; both members are null for a reader who may not see the name.
+      required: [id, name]
+      properties:
+        id:
+          type: [string, "null"]
+        name:
+          type: [string, "null"]
+    DeliveryRequestAsker:
+      type: object
+      additionalProperties: false
+      description: A person who asks in an entry; another asker's id, name and note are null for a reader who may not set the rules.
+      required: [id, name, note, askedAt]
+      properties:
+        id:
+          type: [string, "null"]
+        name:
+          type: [string, "null"]
+        note:
+          type: [string, "null"]
+        askedAt:
+          type: string
+          format: date-time
+    DeliveryRequestExamined:
+      type: object
+      additionalProperties: false
+      description: |
+        A version the entry's examination stored and the rules do not deliver yet (R-CUR-014, R-CUR-016): its findings, malware verdict
+        and signatures are the stored version's, read where every stored version's are (R-API-081, Q-CUR-146).
+      required: [version, fetchedAt, files]
+      properties:
+        version:
+          type: string
+        fetchedAt:
+          type: string
+          format: date-time
+        files:
+          type: integer
+          minimum: 0
+    DeliveryRequest:
+      type: object
+      additionalProperties: false
+      description: |
+        A request entry (R-CUR-015): one per subject, with the people who ask in it (`askerCount`) and the refusals clients met
+        (`refusals`, R-CUR-004), its examination and its decision.
+      required: [id, name, version, state, askers, askerCount, refusals, firstAt, lastAt, examination, examined, examinationRefused,
+        decidedBy, decidedAt, declineReason]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        version:
+          type: [string, "null"]
+          description: The version asked; null for the package with its future versions.
+        state:
+          type: string
+          enum: [open, allowed, declined, withdrawn]
+          x-enum-varnames: [RequestStateOpen, RequestStateAllowed, RequestStateDeclined, RequestStateWithdrawn]
+        askers:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeliveryRequestAsker"
+        askerCount:
+          type: integer
+          minimum: 0
+        refusals:
+          type: integer
+          format: int64
+          minimum: 0
+        firstAt:
+          type: string
+          format: date-time
+        lastAt:
+          type: string
+          format: date-time
+          description: The last ask or refusal of a client.
+        examination:
+          description: The newest row of the download queue the entry caused (its examination, or the download its allow started).
+          oneOf:
+            - $ref: "#/components/schemas/RemoteDownload"
+            - type: "null"
+        examined:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeliveryRequestExamined"
+        examinationRefused:
+          type: [string, "null"]
+          description: Why the examination did not start (the asker's budget, the bound of waiting rows); null otherwise.
+        decidedBy:
+          oneOf:
+            - $ref: "#/components/schemas/DeliveryRequestPerson"
+            - type: "null"
+        decidedAt:
+          type: [string, "null"]
+          format: date-time
+        declineReason:
+          type: [string, "null"]
+    DeliveryRequestPage:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeliveryRequest"
+        nextCursor:
+          type: [string, "null"]
+    DeliveryRequestAllowInput:
+      type: object
+      additionalProperties: false
+      properties:
+        as:
+          type: string
+          enum: [asked, package]
+          default: asked
+          description: "`package` widens a version's entry to its package with its future versions."
+        downloadEveryVersion:
+          type: boolean
+          default: false
+          description: Download every version of the package with a bulk (R-CUR-010).
+        note:
+          type: string
+          maxLength: 1000
+          description: The rule's note.
+    DeliveryRequestAllowed:
+      type: object
+      additionalProperties: false
+      required: [request, rule, downloads, bulk]
+      properties:
+        request:
+          $ref: "#/components/schemas/DeliveryRequest"
+        rule:
+          $ref: "#/components/schemas/DeliveryRuleWritten"
+        downloads:
+          type: array
+          description: The rows the allow queued or started again.
+          items:
+            $ref: "#/components/schemas/RemoteDownload"
+        bulk:
+          description: The bulk of a package's newest version, or of every version; null for none.
+          oneOf:
+            - $ref: "#/components/schemas/RemoteDownloadBulk"
+            - type: "null"
+    DeliveryRequestDeclineInput:
+      type: object
+      additionalProperties: false
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        discard:
+          type: boolean
+          default: true
+          description: Discard what the examination stored (R-CUR-016).
+    DeliveryRequestDeclined:
+      type: object
+      additionalProperties: false
+      required: [request, discarded]
+      properties:
+        request:
+          $ref: "#/components/schemas/DeliveryRequest"
+        discarded:
+          $ref: "#/components/schemas/ExaminationDiscarded"
+    ExaminationDiscardInput:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 1024
+        version:
+          type: string
+          minLength: 1
+          maxLength: 256
+          description: Absent for every version of the package that the rules do not deliver.
+    ExaminationDiscarded:
+      type: object
+      additionalProperties: false
+      required: [versions, files]
+      properties:
+        versions:
+          type: array
+          items:
+            type: string
+        files:
+          type: integer
+          minimum: 0
+    # <<< T-24 requests
     MirrorStatus:
       type: object
       description: |

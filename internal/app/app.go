@@ -195,6 +195,8 @@ type App struct {
 	scannerSrv *httpserver.Server
 	// downloadsState holds the download queue of the remote repositories (wire_remote_downloads.go).
 	downloadsState
+	// requestsState holds the requests for an allow and the retention of what was fetched for examination (wire_delivery_requests.go).
+	requestsState
 	// attestations are the hooks of the receipt attestations (wire_attestations.go).
 	attestations attestationHooks
 }
@@ -611,6 +613,8 @@ func (a *App) startClient() error {
 			Limits: a.limitsAPI(),
 			// The download queue of the remote repositories (wire_remote_downloads.go).
 			RemoteDownloads: a.remoteDownloadsAPI(),
+			// The requests for an allow and the discard of what was fetched for examination (wire_delivery_requests.go).
+			DeliveryRequests: a.deliveryRequestsAPI(),
 			// The list of damaged blobs and the recheck of one blob (wire_storage_scrub.go).
 			Storage: a.storageAPI(),
 			// The malware scanning's operations and the member malware of a file (wire_malware.go).

@@ -184,6 +184,11 @@ type Options struct {
 	// their operations with 503.
 	DeliveryRules DeliveryRulesServices
 	// <<< T-24 rules
+	// >>> T-24 requests
+	// DeliveryRequests holds the services of the requests for an allow and of the discard of what was fetched for examination
+	// (delivery_requests_api.go); a nil member answers their operations with 503.
+	DeliveryRequests DeliveryRequestsServices
+	// <<< T-24 requests
 
 	// >>> M2 packages
 	// Packages are the services of the package operations (packages_api.go); a

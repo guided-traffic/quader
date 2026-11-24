@@ -56,8 +56,14 @@ func TestR_CUR_017_TheMirrorAdmitsWhatItsScopeAndTheRulesAdmit(t *testing.T) {
 	}
 	m := &MirrorHost{h: &Host{o: Options{Formats: func(string) (formats.Format, bool) { return nameFormat{}, true }}}}
 	for path, want := range map[string]bool{"acme-a/1.bin": true, "acme-a/2.bin": false, "acme-b/1.bin": false, "acme-a": true} {
-		if got := m.admitted(repo, formats.Path{Path: path}); got != want {
+		if got := m.admitted(repo, formats.Path{Path: path}, true); got != want {
 			t.Errorf("fill %s: admitted %v, want %v", path, got, want)
+		}
+	}
+	// R-CUR-014, Q-CUR-147: a row of the download queue stores what the rules do not deliver, for examination; the patterns still hold.
+	for _, path := range []string{"acme-a/2.bin", "acme-b/1.bin"} {
+		if !m.admitted(repo, formats.Path{Path: path}, false) {
+			t.Errorf("a download ahead of %s is not admitted", path)
 		}
 	}
 }

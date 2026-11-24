@@ -67,6 +67,14 @@ var ownerRightsExempt = map[string]string{
 	"retryRemoteDownloads":     "manage through the decision point with the scope (R-CUR-005)",
 	"cancelRemoteDownloadBulk": "the starter of the bulk or manage through the decision point with the scope (R-CUR-005)",
 	// <<< T-24 downloads
+	// >>> T-24 requests
+	"askDeliveryRequest": "read on the repository and no manage, through the decision point with the scope (requestSetup, R-CUR-005); " +
+		"the examination it starts is charged to the caller's budget",
+	"allowDeliveryRequest":    "manage on the repository or the role admin, through the decision point with the scope (requestDecider, R-CUR-005)",
+	"declineDeliveryRequest":  "as allowDeliveryRequest",
+	"discardExaminations":     "as allowDeliveryRequest",
+	"withdrawDeliveryRequest": "read on the repository through the decision point with the scope; it takes out only the caller's own ask",
+	// <<< T-24 requests
 }
 
 // ownerRightsReads are the authenticated reads (GET) that do not declare x-quader-owner-rights, each with why a token whose
@@ -101,6 +109,10 @@ var ownerRightsReads = map[string]string{
 	"getRemoteDownload":     "as listRemoteDownloads",
 	"getRemoteDownloadBulk": "as listRemoteDownloads",
 	// <<< T-24 downloads
+	// >>> T-24 requests
+	"listDeliveryRequests": "read on the repository through the decision point with the scope (requestSetup, R-CUR-005); a caller " +
+		"without manage sees only the entries it asks in",
+	// <<< T-24 requests
 	"listCacheEntries":                 "decided through the decision point with the scope (requireCacheReader)",
 	"getVulnerabilitySummary":          "counts over the repositories the read scope of the decision point admits for the subject, scope included (vulnCaller, ReadScopeOn)",
 	"getVulnerabilityTrend":            "as getVulnerabilitySummary",

@@ -1174,6 +1174,48 @@ func (e DeliveryDecisionReason) Valid() bool {
 	}
 }
 
+// Defines values for DeliveryRequestState.
+const (
+	RequestStateAllowed   DeliveryRequestState = "allowed"
+	RequestStateDeclined  DeliveryRequestState = "declined"
+	RequestStateOpen      DeliveryRequestState = "open"
+	RequestStateWithdrawn DeliveryRequestState = "withdrawn"
+)
+
+// Valid indicates whether the value is a known member of the DeliveryRequestState enum.
+func (e DeliveryRequestState) Valid() bool {
+	switch e {
+	case RequestStateAllowed:
+		return true
+	case RequestStateDeclined:
+		return true
+	case RequestStateOpen:
+		return true
+	case RequestStateWithdrawn:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeliveryRequestAllowInputAs.
+const (
+	DeliveryRequestAllowInputAsAsked   DeliveryRequestAllowInputAs = "asked"
+	DeliveryRequestAllowInputAsPackage DeliveryRequestAllowInputAs = "package"
+)
+
+// Valid indicates whether the value is a known member of the DeliveryRequestAllowInputAs enum.
+func (e DeliveryRequestAllowInputAs) Valid() bool {
+	switch e {
+	case DeliveryRequestAllowInputAsAsked:
+		return true
+	case DeliveryRequestAllowInputAsPackage:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DeliveryRuleEffect.
 const (
 	DeliveryRuleEffectAllow DeliveryRuleEffect = "allow"
@@ -6724,6 +6766,48 @@ func (e GetClientSetupParamsCredentials) Valid() bool {
 	}
 }
 
+// Defines values for ListDeliveryRequestsParamsState.
+const (
+	ListRequestsStateAllowed   ListDeliveryRequestsParamsState = "allowed"
+	ListRequestsStateDeclined  ListDeliveryRequestsParamsState = "declined"
+	ListRequestsStateOpen      ListDeliveryRequestsParamsState = "open"
+	ListRequestsStateWithdrawn ListDeliveryRequestsParamsState = "withdrawn"
+)
+
+// Valid indicates whether the value is a known member of the ListDeliveryRequestsParamsState enum.
+func (e ListDeliveryRequestsParamsState) Valid() bool {
+	switch e {
+	case ListRequestsStateAllowed:
+		return true
+	case ListRequestsStateDeclined:
+		return true
+	case ListRequestsStateOpen:
+		return true
+	case ListRequestsStateWithdrawn:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListDeliveryRequestsParamsOrigin.
+const (
+	ListRequestsOriginClient ListDeliveryRequestsParamsOrigin = "client"
+	ListRequestsOriginPerson ListDeliveryRequestsParamsOrigin = "person"
+)
+
+// Valid indicates whether the value is a known member of the ListDeliveryRequestsParamsOrigin enum.
+func (e ListDeliveryRequestsParamsOrigin) Valid() bool {
+	switch e {
+	case ListRequestsOriginClient:
+		return true
+	case ListRequestsOriginPerson:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListDeliveryRulesParamsKind.
 const (
 	ListDeliveryRulesParamsKindPackage ListDeliveryRulesParamsKind = "package"
@@ -9521,6 +9605,119 @@ type DeliveryDecisionDecidedByMode string
 // DeliveryDecisionReason Why the rules do not deliver it; absent when delivered.
 type DeliveryDecisionReason string
 
+// DeliveryRequest A request entry (R-CUR-015): one per subject, with the people who ask in it (`askerCount`) and the refusals clients met
+// (`refusals`, R-CUR-004), its examination and its decision.
+type DeliveryRequest struct {
+	AskerCount    int                    `json:"askerCount"`
+	Askers        []DeliveryRequestAsker `json:"askers"`
+	DecidedAt     *time.Time             `json:"decidedAt"`
+	DecidedBy     *DeliveryRequestPerson `json:"decidedBy"`
+	DeclineReason *string                `json:"declineReason"`
+
+	// Examination The newest row of the download queue the entry caused (its examination, or the download its allow started).
+	Examination *RemoteDownload `json:"examination"`
+
+	// ExaminationRefused Why the examination did not start (the asker's budget, the bound of waiting rows); null otherwise.
+	ExaminationRefused *string                   `json:"examinationRefused"`
+	Examined           []DeliveryRequestExamined `json:"examined"`
+	FirstAt            time.Time                 `json:"firstAt"`
+	Id                 openapi_types.UUID        `json:"id"`
+
+	// LastAt The last ask or refusal of a client.
+	LastAt   time.Time            `json:"lastAt"`
+	Name     string               `json:"name"`
+	Refusals int64                `json:"refusals"`
+	State    DeliveryRequestState `json:"state"`
+
+	// Version The version asked; null for the package with its future versions.
+	Version *string `json:"version"`
+}
+
+// DeliveryRequestState defines model for DeliveryRequest.State.
+type DeliveryRequestState string
+
+// DeliveryRequestAllowInput defines model for DeliveryRequestAllowInput.
+type DeliveryRequestAllowInput struct {
+	// As `package` widens a version's entry to its package with its future versions.
+	As *DeliveryRequestAllowInputAs `json:"as,omitempty"`
+
+	// DownloadEveryVersion Download every version of the package with a bulk (R-CUR-010).
+	DownloadEveryVersion *bool `json:"downloadEveryVersion,omitempty"`
+
+	// Note The rule's note.
+	Note *string `json:"note,omitempty"`
+}
+
+// DeliveryRequestAllowInputAs `package` widens a version's entry to its package with its future versions.
+type DeliveryRequestAllowInputAs string
+
+// DeliveryRequestAllowed defines model for DeliveryRequestAllowed.
+type DeliveryRequestAllowed struct {
+	// Bulk The bulk of a package's newest version, or of every version; null for none.
+	Bulk *RemoteDownloadBulk `json:"bulk"`
+
+	// Downloads The rows the allow queued or started again.
+	Downloads []RemoteDownload `json:"downloads"`
+
+	// Request A request entry (R-CUR-015): one per subject, with the people who ask in it (`askerCount`) and the refusals clients met
+	// (`refusals`, R-CUR-004), its examination and its decision.
+	Request DeliveryRequest     `json:"request"`
+	Rule    DeliveryRuleWritten `json:"rule"`
+}
+
+// DeliveryRequestAsker A person who asks in an entry; another asker's id, name and note are null for a reader who may not set the rules.
+type DeliveryRequestAsker struct {
+	AskedAt time.Time `json:"askedAt"`
+	Id      *string   `json:"id"`
+	Name    *string   `json:"name"`
+	Note    *string   `json:"note"`
+}
+
+// DeliveryRequestDeclineInput defines model for DeliveryRequestDeclineInput.
+type DeliveryRequestDeclineInput struct {
+	// Discard Discard what the examination stored (R-CUR-016).
+	Discard *bool  `json:"discard,omitempty"`
+	Reason  string `json:"reason"`
+}
+
+// DeliveryRequestDeclined defines model for DeliveryRequestDeclined.
+type DeliveryRequestDeclined struct {
+	Discarded ExaminationDiscarded `json:"discarded"`
+
+	// Request A request entry (R-CUR-015): one per subject, with the people who ask in it (`askerCount`) and the refusals clients met
+	// (`refusals`, R-CUR-004), its examination and its decision.
+	Request DeliveryRequest `json:"request"`
+}
+
+// DeliveryRequestExamined A version the entry's examination stored and the rules do not deliver yet (R-CUR-014, R-CUR-016): its findings, malware verdict
+// and signatures are the stored version's, read where every stored version's are (R-API-081, Q-CUR-146).
+type DeliveryRequestExamined struct {
+	FetchedAt time.Time `json:"fetchedAt"`
+	Files     int       `json:"files"`
+	Version   string    `json:"version"`
+}
+
+// DeliveryRequestInput An ask for an allow (R-CUR-015): a package with its future versions, or one version of it.
+type DeliveryRequestInput struct {
+	Name string `json:"name"`
+
+	// Note Why the caller asks; read by those who decide and by the caller.
+	Note    *string `json:"note,omitempty"`
+	Version *string `json:"version,omitempty"`
+}
+
+// DeliveryRequestPage defines model for DeliveryRequestPage.
+type DeliveryRequestPage struct {
+	Items      []DeliveryRequest `json:"items"`
+	NextCursor *string           `json:"nextCursor"`
+}
+
+// DeliveryRequestPerson A person; both members are null for a reader who may not see the name.
+type DeliveryRequestPerson struct {
+	Id   *string `json:"id"`
+	Name *string `json:"name"`
+}
+
 // DeliveryRule A delivery rule as stored, its members in the format's canonical forms (R-CUR-006).
 type DeliveryRule struct {
 	CreatedAt time.Time `json:"createdAt"`
@@ -9904,6 +10101,20 @@ type EndpointRateLimit struct {
 
 // EndpointRateLimitKey defines model for EndpointRateLimit.Key.
 type EndpointRateLimitKey string
+
+// ExaminationDiscardInput defines model for ExaminationDiscardInput.
+type ExaminationDiscardInput struct {
+	Name string `json:"name"`
+
+	// Version Absent for every version of the package that the rules do not deliver.
+	Version *string `json:"version,omitempty"`
+}
+
+// ExaminationDiscarded defines model for ExaminationDiscarded.
+type ExaminationDiscarded struct {
+	Files    int      `json:"files"`
+	Versions []string `json:"versions"`
+}
 
 // ExposureCheck defines model for ExposureCheck.
 type ExposureCheck struct {
@@ -18202,6 +18413,49 @@ type GetDebIndexStateParams struct {
 	WaitFor *string `form:"waitFor,omitempty" json:"waitFor,omitempty"`
 }
 
+// ListDeliveryRequestsParams defines parameters for ListDeliveryRequests.
+type ListDeliveryRequestsParams struct {
+	State  *ListDeliveryRequestsParamsState  `form:"state,omitempty" json:"state,omitempty"`
+	Origin *ListDeliveryRequestsParamsOrigin `form:"origin,omitempty" json:"origin,omitempty"`
+	Mine   *bool                             `form:"mine,omitempty" json:"mine,omitempty"`
+
+	// Limit Page size, 1 to `api.page_size_max` (R-API-010).
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// ListDeliveryRequestsParamsState defines parameters for ListDeliveryRequests.
+type ListDeliveryRequestsParamsState string
+
+// ListDeliveryRequestsParamsOrigin defines parameters for ListDeliveryRequests.
+type ListDeliveryRequestsParamsOrigin string
+
+// AskDeliveryRequestParams defines parameters for AskDeliveryRequest.
+type AskDeliveryRequestParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// AllowDeliveryRequestParams defines parameters for AllowDeliveryRequest.
+type AllowDeliveryRequestParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// DeclineDeliveryRequestParams defines parameters for DeclineDeliveryRequest.
+type DeclineDeliveryRequestParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// WithdrawDeliveryRequestParams defines parameters for WithdrawDeliveryRequest.
+type WithdrawDeliveryRequestParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
 // ListDeliveryRulesParams defines parameters for ListDeliveryRules.
 type ListDeliveryRulesParams struct {
 	Kind   *ListDeliveryRulesParamsKind   `form:"kind,omitempty" json:"kind,omitempty"`
@@ -18276,6 +18530,12 @@ type CancelRemoteDownloadParams struct {
 
 // RetryRemoteDownloadParams defines parameters for RetryRemoteDownload.
 type RetryRemoteDownloadParams struct {
+	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// DiscardExaminationsParams defines parameters for DiscardExaminations.
+type DiscardExaminationsParams struct {
 	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
 	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
 }
@@ -19512,6 +19772,15 @@ type PutDebCoordinatesJSONRequestBody = DebCoordinatesRequest
 // CreateDebSigningKeyJSONRequestBody defines body for CreateDebSigningKey for application/json ContentType.
 type CreateDebSigningKeyJSONRequestBody = DebSigningKeyCreate
 
+// AskDeliveryRequestJSONRequestBody defines body for AskDeliveryRequest for application/json ContentType.
+type AskDeliveryRequestJSONRequestBody = DeliveryRequestInput
+
+// AllowDeliveryRequestJSONRequestBody defines body for AllowDeliveryRequest for application/json ContentType.
+type AllowDeliveryRequestJSONRequestBody = DeliveryRequestAllowInput
+
+// DeclineDeliveryRequestJSONRequestBody defines body for DeclineDeliveryRequest for application/json ContentType.
+type DeclineDeliveryRequestJSONRequestBody = DeliveryRequestDeclineInput
+
 // PutDeliveryRuleJSONRequestBody defines body for PutDeliveryRule for application/json ContentType.
 type PutDeliveryRuleJSONRequestBody = DeliveryRuleInput
 
@@ -19526,6 +19795,9 @@ type PreviewRemoteDownloadJSONRequestBody = RemoteDownloadRequest
 
 // RetryRemoteDownloadsJSONRequestBody defines body for RetryRemoteDownloads for application/json ContentType.
 type RetryRemoteDownloadsJSONRequestBody = RemoteDownloadRetryRequest
+
+// DiscardExaminationsJSONRequestBody defines body for DiscardExaminations for application/json ContentType.
+type DiscardExaminationsJSONRequestBody = ExaminationDiscardInput
 
 // CreateRepositoryLimitAssignmentJSONRequestBody defines body for CreateRepositoryLimitAssignment for application/json ContentType.
 type CreateRepositoryLimitAssignmentJSONRequestBody = LimitAssignmentWrite
@@ -20975,6 +21247,21 @@ type ServerInterface interface {
 	// ReinstateDebSigningKey Return a withheld signing key to the repository
 	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/deb/signing-keys/{fingerprint}/reinstate)
 	ReinstateDebSigningKey(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey RepoKey, fingerprint DebFingerprint)
+	// ListDeliveryRequests List the requests for an allow of a remote repository
+	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests)
+	ListDeliveryRequests(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params ListDeliveryRequestsParams)
+	// AskDeliveryRequest Ask for an allow of a package or a version
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests)
+	AskDeliveryRequest(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params AskDeliveryRequestParams)
+	// AllowDeliveryRequest Allow a request
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests/{requestId}/allow)
+	AllowDeliveryRequest(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, requestId openapi_types.UUID, params AllowDeliveryRequestParams)
+	// DeclineDeliveryRequest Decline a request with a reason
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests/{requestId}/decline)
+	DeclineDeliveryRequest(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, requestId openapi_types.UUID, params DeclineDeliveryRequestParams)
+	// WithdrawDeliveryRequest Withdraw from a request
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests/{requestId}/withdraw)
+	WithdrawDeliveryRequest(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, requestId openapi_types.UUID, params WithdrawDeliveryRequestParams)
 	// ListDeliveryRules List the delivery rules of a remote repository
 	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules)
 	ListDeliveryRules(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params ListDeliveryRulesParams)
@@ -21014,6 +21301,9 @@ type ServerInterface interface {
 	// RetryRemoteDownload Retry a failed or cancelled download
 	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/{downloadId}/retry)
 	RetryRemoteDownload(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, downloadId string, params RetryRemoteDownloadParams)
+	// DiscardExaminations Discard what a remote stores and does not deliver
+	// (POST /api/v1/projects/{projectKey}/repositories/{repoKey}/examinations/discard)
+	DiscardExaminations(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params DiscardExaminationsParams)
 	// GetRepositoryGuide The guide of a repository for one client
 	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/guide)
 	GetRepositoryGuide(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params GetRepositoryGuideParams)
@@ -29842,6 +30132,372 @@ func (siw *ServerInterfaceWrapper) ReinstateDebSigningKey(w http.ResponseWriter,
 	handler.ServeHTTP(w, r)
 }
 
+// ListDeliveryRequests operation middleware
+func (siw *ServerInterfaceWrapper) ListDeliveryRequests(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListDeliveryRequestsParams
+
+	// ------------- Optional query parameter "state" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "origin" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "origin", r.URL.Query(), &params.Origin, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "origin"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "origin", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "mine" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "mine", r.URL.Query(), &params.Mine, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "mine"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "mine", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDeliveryRequests(w, r, projectKey, repoKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AskDeliveryRequest operation middleware
+func (siw *ServerInterfaceWrapper) AskDeliveryRequest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AskDeliveryRequestParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AskDeliveryRequest(w, r, projectKey, repoKey, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AllowDeliveryRequest operation middleware
+func (siw *ServerInterfaceWrapper) AllowDeliveryRequest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "requestId" -------------
+	var requestId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", r.PathValue("requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requestId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AllowDeliveryRequestParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AllowDeliveryRequest(w, r, projectKey, repoKey, requestId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeclineDeliveryRequest operation middleware
+func (siw *ServerInterfaceWrapper) DeclineDeliveryRequest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "requestId" -------------
+	var requestId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", r.PathValue("requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requestId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeclineDeliveryRequestParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeclineDeliveryRequest(w, r, projectKey, repoKey, requestId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// WithdrawDeliveryRequest operation middleware
+func (siw *ServerInterfaceWrapper) WithdrawDeliveryRequest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "requestId" -------------
+	var requestId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", r.PathValue("requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requestId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params WithdrawDeliveryRequestParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.WithdrawDeliveryRequest(w, r, projectKey, repoKey, requestId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListDeliveryRules operation middleware
 func (siw *ServerInterfaceWrapper) ListDeliveryRules(w http.ResponseWriter, r *http.Request) {
 
@@ -30648,6 +31304,65 @@ func (siw *ServerInterfaceWrapper) RetryRemoteDownload(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RetryRemoteDownload(w, r, projectKey, repoKey, downloadId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DiscardExaminations operation middleware
+func (siw *ServerInterfaceWrapper) DiscardExaminations(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DiscardExaminationsParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DiscardExaminations(w, r, projectKey, repoKey, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -39919,6 +40634,12 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules", wrapper.PutDeliveryRule)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/check", wrapper.CheckDeliveryRules)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/{ruleId}", wrapper.DeleteDeliveryRule)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests", wrapper.ListDeliveryRequests)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests", wrapper.AskDeliveryRequest)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests/{requestId}/allow", wrapper.AllowDeliveryRequest)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests/{requestId}/decline", wrapper.DeclineDeliveryRequest)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests/{requestId}/withdraw", wrapper.WithdrawDeliveryRequest)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/examinations/discard", wrapper.DiscardExaminations)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/backups", wrapper.ListBackupRuns)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/backups/summary", wrapper.GetBackupSummary)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system/backups/{runId}", wrapper.GetBackupRun)

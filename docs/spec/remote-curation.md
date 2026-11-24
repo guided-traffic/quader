@@ -2,8 +2,11 @@
 
 Status: specified on 2026-11-23; its contracts (the tables, the types, the codes, the events, the keys) are built, the delivery rules (R-CUR-001
 to R-CUR-006, R-CUR-017, package R2) are built with what [Q-CUR-42](#q-cur-42--the-places-the-rules-decide-as-built-kit-check-23-oci-and-debian-in-the-kit)
-lists as not built, the downloads ahead with their queue (R-CUR-010 to R-CUR-013, package R4), and of the screens (R-CUR-018) the tab strip and
-the tab **Downloads** (package R5a); the catalogue, the requests, examination and retention and the other screens are not. The owner asked for it on 2026-11-23 (task T-24 of the
+lists as not built, the downloads ahead with their queue (R-CUR-010 to R-CUR-013, package R4), the examination, the requests and the retention
+(R-CUR-014 to R-CUR-016, package R2b, with what [Q-CUR-140](#q-cur-140--an-examination-row-names-the-files-its-runs-stored-a-discard-removes-what-belongs-to-the-version-alone)
+to [Q-CUR-148](#q-cur-148--every-persons-ask-is-recorded-the-last-asker-who-withdraws-ends-an-entry-no-client-was-refused) decide), and of the
+screens (R-CUR-018) the tab strip and the tab **Downloads** (package R5a); the catalogue, the gauge `quader_remote_delivery_requests_open` and the
+other screens are not. The owner asked for it on 2026-11-23 (task T-24 of the
 [project plan](../projektplan/promt.md)), at 12:38:
 
 > In Repositories, die Remote sind, fehlt mir dafür ein Reiter um das Remote zu durchsuchen. Manche Varianten von
@@ -331,7 +334,9 @@ ALTER TABLE repositories ADD COLUMN delivery_rules_revision bigint NOT NULL DEFA
 ```
 
 The migration of every table of this page is
-[00114_remote_curation.sql](../../internal/meta/postgres/migrations/00114_remote_curation.sql) (built); beside the statements of this page
+[00114_remote_curation.sql](../../internal/meta/postgres/migrations/00114_remote_curation.sql) (built), with the columns
+[00115_remote_examination_files.sql](../../internal/meta/postgres/migrations/00115_remote_examination_files.sql) adds (Q-CUR-140, Q-CUR-141,
+R-CUR-015); beside the statements of this page
 it bounds every counter at zero from below and every bulk's bounds at one.
 
 - **One rule per subject.** A write of a subject that has a rule replaces its effect and note; the subject is the identity.
@@ -688,7 +693,11 @@ Priority: **P1** · Covers: RMT-027
     failure             jsonb       NULL,                             -- as a row's failure, below
     started_by          uuid        NULL REFERENCES principal (id) ON DELETE SET NULL,
     created_at          timestamptz NOT NULL DEFAULT now(),
-    finished_at         timestamptz NULL
+    finished_at         timestamptz NULL,
+    -- a bulk a request or an allow starts for the newest versions of a package (Q-CUR-141): its rows' origin, request and charge
+    origin              text        NOT NULL DEFAULT 'bulk' CHECK (origin IN ('bulk', 'request', 'allow')),
+    request_id          uuid        NULL REFERENCES remote_delivery_requests (id) ON DELETE SET NULL,
+    ticket              jsonb       NULL
   );
   CREATE INDEX remote_download_bulks_repo ON remote_download_bulks (repo_id, created_at DESC, id);
 
@@ -921,7 +930,8 @@ CREATE TABLE remote_delivery_requests (
   last_at         timestamptz NOT NULL DEFAULT now(),
   decided_by      uuid        NULL REFERENCES principal (id) ON DELETE SET NULL,
   decided_at      timestamptz NULL,
-  decline_reason  text        NULL CHECK (char_length(decline_reason) BETWEEN 1 AND 1000)
+  decline_reason  text        NULL CHECK (char_length(decline_reason) BETWEEN 1 AND 1000),
+  examination_refused text    NULL CHECK (char_length(examination_refused) BETWEEN 1 AND 1000) -- why the examination did not start
 );
 CREATE UNIQUE INDEX remote_delivery_requests_open
   ON remote_delivery_requests (repo_id, name, coalesce(version, '')) WHERE state = 'open';
@@ -950,25 +960,30 @@ CREATE INDEX remote_delivery_request_askers_principal ON remote_delivery_request
 - **Examination at once** (Q-CUR-23): with the repository's `remote.delivery.examineOnRequest` on (the default), a new entry starts a
   download ahead of origin `request` (R-CUR-010): the version asked for, or of a package the newest version that is no prerelease
   (`proxy.delivery.examine_versions_per_request`, 1), charged to the asker. A refusal by the asker's budget starts nothing and the entry
-  says so. A second asker starts nothing more.
+  says so (`examinationRefused`). A second asker starts nothing more. The newest versions of a package are named by the worker that
+  expands a bulk of them (Q-CUR-141), whose rows carry the origin `request`, the entry and the asker's charge.
 - **Who sees them:** those who may set rules see every entry of the repository; the tab **Upstream** shows the count of open entries in
   its label and lists them first, set apart (R-CUR-018); an asker sees the entries they asked in, with the state and the reason of a
   decline.
 - **Allow** (`POST delivery-requests/{id}/allow`, `{"as": "asked" | "package", "downloadEveryVersion": false, "note"?}`): writes the rule of
   the subject (`allow`, `request_id` set; `as: package` widens a version's entry to its package), sets the entry `allowed`, and starts the
   download at once: nothing more where the examination stored the version (it is delivered from that moment), else a row of origin `allow`
-  of the version asked for (of a package, its newest version), and with `downloadEveryVersion` a bulk of the package (R-CUR-010). A row
-  of the examination that waits or failed is started again. "An allow starts the download" holds in every case.
+  of the version asked for (of a package, a bulk of its newest version that is no prerelease, Q-CUR-141), and with `downloadEveryVersion` a
+  bulk of the package (R-CUR-010). A row of the examination that failed or was cancelled is started again; one that waits runs as it is.
+  "An allow starts the download" holds in every case. An entry that is not open answers `409 conflict`.
 - **Decline** (`POST delivery-requests/{id}/decline`, `{"reason", "discard": true}`): a reason of 1 to 1,000 characters; the entry is
-  `declined`; with `discard` (the default in the dialog) what was stored for its examination is discarded (R-CUR-016). Later refusals of
-  clients count in the declined entry; a person's new ask opens a new entry.
+  `declined`; its examination's waiting rows and expanding bulk are cancelled; with `discard` (the default) what was stored for its
+  examination is discarded (R-CUR-016, Q-CUR-143). Later refusals of clients count in the declined entry; a person's new ask opens a new
+  entry.
 - **Withdraw** (`POST delivery-requests/{id}/withdraw`): an asker leaves the entry; an entry with no asker and no refusal in
   `proxy.delivery.request_retention` (720 h) is removed by the task of R-CUR-016. At most `proxy.delivery.max_client_entries` (10,000)
   entries without an asker per repository: a client that is refused many names in mode `onlyAllowed` cannot grow the list without end;
   the entry with the oldest last refusal goes first.
 - **The list** (`GET delivery-requests?state=&origin=person|client&mine=&cursor=`): `{"id", "name", "version", "state", "askers": [{"id",
   "name", "note", "askedAt"}] (names only for those who may set rules and for the asker themselves), "askerCount", "refusals", "firstAt",
-  "lastAt", "examination": <queue row>, "verdicts", "decidedBy", "decidedAt", "declineReason"}`.
+  "lastAt", "examination": <queue row>, "examined": [{"version", "fetchedAt", "files"}], "examinationRefused", "decidedBy", "decidedAt",
+  "declineReason"}`. A caller without `manage` sees only the entries it asks in. The verdicts of an examined version are the stored
+  version's, read where every stored version's are (R-API-081; Q-CUR-146).
 - **Audit:** `remote.request.created`, `remote.request.allowed`, `remote.request.declined`, `remote.request.withdrawn`, transactional and
   webhook events (R-OPS-037), so an installation can tell people outside the page; Quader sends no mail of its own.
 
@@ -994,23 +1009,32 @@ CREATE TABLE remote_examinations (
   version     text        NOT NULL,
   fetched_at  timestamptz NOT NULL DEFAULT now(),
   request_id  uuid        NULL REFERENCES remote_delivery_requests (id) ON DELETE SET NULL,
+  files       text[]      NOT NULL DEFAULT '{}' CHECK (cardinality(files) <= 2000), -- the paths its runs stored or found (Q-CUR-140)
   PRIMARY KEY (repo_id, name, version)
 );
 CREATE INDEX remote_examinations_age ON remote_examinations (fetched_at);
 ```
 
 - **What is examination.** A run of the queue that stores a file of a package's version that the rules do not deliver at that moment
-  writes the version's row (once; a later run keeps `fetched_at`); a document it stores (a Debian index that **Read the index** reads,
-  R-DEB-036) is none. The row goes when the rules come to deliver the version (the write of the allowing rule
-  deletes the rows it covers), at a discard and at the removal below.
+  writes the version's row (once; a later run keeps `fetched_at` and adds the files it found) with the paths of the files the run stored or
+  found (Q-CUR-140); a document it stores (a Debian index that **Read the index** reads, R-DEB-036) is none. The row goes when the rules
+  come to deliver the version (the write of an allowing rule, or the removal of a block, deletes the rows of its subject that the rules
+  then deliver; a widening the write does not see, such as the mode, is caught by the task below, Q-CUR-142), at a discard and at the
+  removal below.
 - **Discard** (`POST examinations/discard`, `{"name", "version"?}`, those who may set rules): removes the stored files of the versions
   of the subject that the rules do not deliver, as an eviction (R-AUTHZ-006 `delete` on a remote), with their rows, and writes
   `remote.examination.discarded`, flagged `journal: revocation`, so a restore removes them again (replay: evict what is stored of the
-  subject and still not delivered; nothing else). A delivered version is never discarded (`409 delivered`).
+  subject and still not delivered; nothing else; the replay makes the subject's rows due and queues a run of the task below, Q-CUR-144).
+  A delivered version is never discarded (`409 delivered`). The files of a version are those its examination row names and the items
+  the package rows link to it, each kept when the format classifies it as a file of that package and version; a file the version shares
+  by its digest (an image's manifest and layers) stays (Q-CUR-140). The answer is `{"versions", "files"}`.
 - **Removal after a time without a decision:** the task `remote-examination-cleanup` (daily, `0 4 * * *`, R-OPS-019) removes the stored
   files of every version whose examination row is older than the repository's `remote.delivery.examinedRetentionDays` (30 by default, 1
   to 365) and that the rules still do not deliver. It writes the same event with the actor `system:examination-cleanup`, in batches of
-  1,000, checkpointed.
+  1,000, each version in a transaction of its own so that a run that stops keeps what it did. It also drops the rows of versions the rules
+  deliver now without removing anything (Q-CUR-142), and removes the request entries without an asker after
+  `proxy.delivery.request_retention` (R-CUR-015). It removes content, so it is mutating: it does not run in read-only maintenance mode
+  (R-OPS-024).
 - **With R-STOR-045, once it is built:** its task leaves a file of a version with an examination row to this rule, and counts the last
   use of a file the rules deliver from the later of its last download, its storing and the creation of the rule that delivers it, so an
   allow is a use and an examined file that waited for its decision is not removed just after it.
@@ -1242,7 +1266,7 @@ Priority: **P1** · Covers: SEC-032
 | `quader_remote_download_failures_total` | `repo`, `class` | failed attempts |
 | `quader_remote_catalogue_requests_total` | `repo`, `call`, `outcome` | catalogue calls (`ok`, `cached`, `budget`, `upstream_error`, `not_offered`, `too_large`, `shape`) |
 | `quader_remote_catalogue_seconds` | `call` | duration of a catalogue call (histogram) |
-| `quader_remote_delivery_requests_open` | `repo` | open request entries (gauge) |
+| `quader_remote_delivery_requests_open` | `repo` | open request entries (gauge; specified, not built) |
 
 The label `repo` is capped as R-OPS-007 caps it.
 
@@ -2362,12 +2386,178 @@ revisit it if an administrator needs the usage overview to name who caused syste
 
 **Applied in the spec:** R-CUR-010 ("Whose budget").
 
+### Q-CUR-140 · An examination row names the files its runs stored; a discard removes what belongs to the version alone
+
+Status: **Decided by the development agent** — selected from the options below while building the requests and the examination (R2b);
+the owner reviews it at the walkthrough.
+
+Context: a discard and the retention task remove "the stored files of a version" (R-CUR-016) for every format with a remote class. The
+generic package rows link a version to its items for npm, NuGet, Debian and Ansible Galaxy; an OCI remote writes no version rows (a tag is
+a cached document), and its manifests and layers are named by digest and shared by tags. The run of a queue row knows every file it stored.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The examination row records the paths a run stored or found (`files`, at most 2,000); a removal takes those and the items the package rows link to the version, each kept when the format's `Classify` names that package and version (chosen) | A column, no new method of the format contract | Constant cost per format: nothing per format; no upstream call at a discard; a file shared by digest (an image's manifest, its layers) classifies to no version and is never taken from a sibling | An image's manifests and layers fetched for examination stay after the discard, until R-STOR-045 ([H-1842](../security/remote-curation.md#h-1842--a-discard-leaves-what-a-version-shares-by-its-digest)) |
+| (b) A method of the format contract that names a stored version's files | Each format answers | Exact per format | Five implementations, a contract version, the kit's check; OCI cannot tell a layer of one tag from a shared one without reading every manifest |
+| (c) Plan the version again at the discard (`VersionProbe`, `ProbeContent`) | The run's own plan | No column | An upstream call at every discard and every retention run; a discard fails while the upstream is down |
+
+**Choice:** (a). **Rationale:** the development agent would revisit it when R-STOR-045 removes unused files, which takes the shared layers
+no tag needs any more.
+
+**Applied in the spec:** R-CUR-016 (the table, "What is examination", "Discard"); the migration
+[00115_remote_examination_files.sql](../../internal/meta/postgres/migrations/00115_remote_examination_files.sql).
+
+### Q-CUR-141 · The newest versions of a package are named by a bulk of the request or of the allow
+
+Status: **Decided by the development agent** — selected from the options below while building the requests (R2b); the owner reviews it at
+the walkthrough.
+
+Context: a request for a package examines its newest versions that are no prereleases, and an allow of a package without
+`downloadEveryVersion` downloads its newest version (R-CUR-015). The catalogue (R3) is not built, and only a worker holds the upstream
+client that can name a package's versions (the format's mirror plan, the planner of a bulk, Q-CUR-80); the ask and the allow are answered
+by an `api` replica.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A bulk of the package with `maxVersions` the examination's count (`examine_versions_per_request`) or 1, no prereleases, whose rows take the origin `request` (with the asker's charge) or `allow`, the entry's ID and the person; the bulk table gains `origin`, `request_id` and `ticket` (chosen) | The planner that expands every bulk names them on a worker | One way to name versions; the rows are the request's (order, the entry's examination, the decline's cancel); the asker is charged as R-CUR-010 says | Three columns of the bulk table; until the bulk is expanded the entry shows no row |
+| (b) Name the version at the ask through the catalogue | Ask the upstream on the `api` replica | The row exists at once | Waits for R3; an upstream call inside the ask |
+| (c) A row with an empty version that the run resolves | One row | No bulk | An empty version means a file of no version (an OCI blob, Q-CUR-83); the row's version changes while it runs |
+
+**Choice:** (a). **Rationale:** the development agent would revisit it when the catalogue (R3) answers the newest versions on every
+replica, which would make the ask's row exist at once.
+
+**Applied in the spec:** R-CUR-011 (the bulk's columns), R-CUR-015 ("Examination at once", "Allow").
+
+### Q-CUR-142 · A write that widens the rules removes the examination rows it comes to deliver; the task catches the rest
+
+Status: **Decided by the development agent** — selected from the options below while building the examination (R2b); the owner reviews it
+at the walkthrough.
+
+Context: an examination row goes "when the rules come to deliver the version" (R-CUR-016). A rule's subject can be narrower or wider than
+the rows it touches: a package allow beside a version block keeps that version refused, and a section allow covers many names. The mode is
+written by the repository service, which knows nothing of examinations.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The write of an allow, and the removal of a block, compile the repository's rules in their transaction with the caller's mode and remove the rows of the rule's subject that the rules then deliver (a section reads at most 100,000 rows); the task `remote-examination-cleanup` drops every row of a delivered version it reads (chosen) | Exact at the write; the task closes what the write cannot see | A row of a version a narrower block still refuses stays, so the retention still removes it; a mode change is caught within a day | A row of a delivered version may live until the next run of the task |
+| (b) Remove every row the rule's subject covers | Literal | Simple | A row of a version still refused would leave the retention, and its content would stay for ever |
+| (c) Only the task removes rows | One place | No work in the rule's write | The allow of an examined version leaves its row a day; the retention could not tell it from what still waits |
+
+**Choice:** (a). **Rationale:** the development agent would revisit the bound of a section's scan with measured examination counts.
+
+**Applied in the spec:** R-CUR-016 ("What is examination", "Removal after a time without a decision").
+
+### Q-CUR-143 · A decline discards what its own examination stored and cancels what it still fetches
+
+Status: **Decided by the development agent** — selected from the options below while building the requests (R2b); the owner reviews it at
+the walkthrough.
+
+Context: a decline with `discard` discards "what was stored for its examination" (R-CUR-015). A package's entry is one subject among others:
+a version of the same package may be examined for another entry, or have been fetched by a client before a rule refused it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The versions whose examination row names the entry, with their files (Q-CUR-140); the entry's waiting rows and expanding bulks are cancelled (chosen) | What this entry caused | Another entry's examination and a client's earlier fetch stay; nothing the decline dismissed is still fetched | A version examined before the entry existed is not discarded by it (a discard of the subject removes it) |
+| (b) Every version of the subject that the rules do not deliver | The subject | One rule with the discard | Removes what another request is examining |
+
+**Choice:** (a). **Rationale:** the development agent would revisit it if deciders expect a decline of a package to empty its cache.
+
+**Applied in the spec:** R-CUR-015 ("Decline").
+
+### Q-CUR-144 · The replay of a discard makes the rows due and queues the retention task; it removes nothing itself
+
+Status: **Decided by the development agent** — selected from the options below while building the retention (R2b); the owner reviews it at
+the walkthrough.
+
+Context: a restore replays `remote.examination.discarded` so that content discarded after the restore point does not come back
+(R-CUR-016). A replay handler runs in a transaction of the restored database while no replica serves, holds no item store, no format hook and
+no snapshot of the rules, and never deletes content (R-HA-054).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The handler makes the subject's examination rows due (fetched at the epoch; a stored version without a row gets one) and queues a run of `remote-examination-cleanup` in its transaction (`jobs.EnqueueTx`); the run evicts each due version the rules still do not deliver (chosen) | The retention's own removal, with the format's hooks and the rules as restored and replayed | No content deleted by the replay; one way to remove; a version a rule allowed in between stays; idempotent (a resumed replay finds the rows due: already in effect) | The content stays until a worker runs the task after the restore; it is not served meanwhile, since the rules do not deliver it |
+| (b) Delete the items in the handler | At once | No wait | Without the format's hooks its rows go stale; R-HA-054 forbids a replay to delete content |
+
+**Choice:** (a). **Rationale:** the development agent would revisit it if a restore must leave no examined byte stored before it serves.
+
+**Applied in the spec:** R-CUR-016 ("Discard"); [ha-and-helm.md](ha-and-helm.md) the row of `remote.examination.discarded` in R-HA-054.
+
+### Q-CUR-145 · Until the catalogue is wired, an ask is not checked against the upstream
+
+Status: **Decided by the development agent** — selected from the options below while building the requests (R2b), before the catalogue
+(R3) lands; the owner reviews it at the walkthrough.
+
+Context: the subject of an ask is checked by the catalogue's lookup, so a typo cannot become a request (`404 catalogue_not_found`,
+R-CUR-015). The catalogue is built beside R2b.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The requests' service takes a lookup port; while none is wired an ask is checked by the format's name rule only, and the examination's download says whether the upstream has the subject (`upstream_not_found`) (chosen) | The check arrives with R3's wiring | Requests work before R3; the decider sees the failure in the entry's examination | A typo becomes an entry until then |
+| (b) Refuse asks until the catalogue lands | Strict | No typo entries | No requests at all until R3 |
+
+**Choice:** (a). **Rationale:** R3 wires its lookup into `requests.Options.Lookup`; nothing else changes.
+
+**Applied in the spec:** R-CUR-015 ("Asking", through this block).
+
+### Q-CUR-146 · The list names the versions an entry's examination stored; their verdicts are the stored versions'
+
+Status: **Decided by the development agent** — selected from the options below while building the requests' list (R2b); the owner reviews
+it at the walkthrough.
+
+Context: the list of R-CUR-015 carried a member `verdicts`. The verdicts of a stored version (vulnerability findings, the malware verdict,
+the signatures) are answered by their own services for every stored version (R-API-081, R-VULN-019, R-MAL-022, R-SIG-034), each with its
+visibility.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The member `examined` lists each version the examination stored with its time and its count of files; a screen reads its verdicts where every stored version's are read (chosen) | No second path to the verdicts | The verdicts' visibility stays the scanners'; the list reads only its own tables | A screen makes one more call per examined version |
+| (b) Join the three scanners' verdicts into each entry | One answer | Fewer calls | Three domains joined into a list; their visibility rules repeated |
+
+**Choice:** (a). **Rationale:** the development agent would revisit it if the tab **Upstream** (R5b) needs the verdicts in the list.
+
+**Applied in the spec:** R-CUR-015 ("The list").
+
+### Q-CUR-147 · The mirror's admission asks the rules for a pass, never for a row of the queue
+
+Status: **Decided by the development agent** while building the examination (R2b): a defect of how R2 and R4 met; the owner reviews it at the
+walkthrough.
+
+Context: the admission of a background fill (`MirrorHost.admitted`) asked the delivery rules for every fill, so a row of the download queue
+of a version the rules do not deliver ended `refused` and stored nothing, against R-CUR-014 ("A download ahead does not depend on the
+rules"). It was found by the examination's integration case.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The admission asks the rules for a pass of the mirror (R-CUR-017) and not for a row of the queue (a probe's, a person's, a request's, an allow's, a bulk's), which keeps the patterns (chosen) | The fill's own filler tells them apart | R-CUR-014 as specified; a mirror still keeps only what the rules deliver | — |
+
+**Choice:** (a).
+
+**Applied in the spec:** R-CUR-014 (as written); the code in [mirror_host.go](../../internal/formathost/mirror_host.go).
+
+### Q-CUR-148 · Every person's ask is recorded; the last asker who withdraws ends an entry no client was refused
+
+Status: **Decided by the development agent** — selected from the options below while building the requests (R2b); the owner reviews it at
+the walkthrough.
+
+Context: R-CUR-019 names `remote.request.created` and `remote.request.withdrawn`; R-CUR-015 names the state `withdrawn` and says that an
+entry with no asker and no refusal is removed after `request_retention`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `remote.request.created` for each person's ask (the first opens the entry, a later one joins it; a repeated ask of the same person is answered `200` and writes nothing); a withdrawal writes `remote.request.withdrawn`, and an open entry that keeps no asker and no refusal ends `withdrawn`; one that clients were refused stays open as theirs (chosen) | One event per act | A webhook tells about every ask; the list's states say what happened | An entry asked by many writes many events |
+| (b) The event only when the entry opens | Fewer events | — | A second person's ask leaves no trace in the audit log |
+
+**Choice:** (a).
+
+**Applied in the spec:** R-CUR-015 ("Asking", "Withdraw"), R-CUR-019.
+
 ## What this does not cover
 
 - [H-1720](../security/remote-curation.md#h-1720--a-search-tells-the-upstreams-operator-what-people-look-for) to
   [H-1729](../security/remote-curation.md#h-1729--a-reader-learns-what-is-being-examined),
   [H-1840](../security/remote-curation.md#h-1840--clients-failures-of-many-files-write-as-many-rows-a-minute) and
-  [H-1841](../security/remote-curation.md#h-1841--the-usage-overview-does-not-name-who-started-a-bulk): the gaps of this page's
+  [H-1841](../security/remote-curation.md#h-1841--the-usage-overview-does-not-name-who-started-a-bulk) and
+  [H-1842](../security/remote-curation.md#h-1842--a-discard-leaves-what-a-version-shares-by-its-digest): the gaps of this page's
   mechanisms, on its security page.
 - The conditions of a curation policy and their wizard (SEC-009 to SEC-011), curation across sites (SEC-040, REPL-061).
 - Rules of a local or a virtual repository.

@@ -6396,6 +6396,174 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * List the requests for an allow of a remote repository
+         * @description The request entries of a remote repository (R-CUR-015): one entry per subject (a package, or a version of it) with the people
+         *     who ask in it and the refusals clients met (R-CUR-004), open entries first, then by the last ask or refusal, newest first, each
+         *     with its examination (the newest row of the download queue it caused), the versions its examination stored, why an examination
+         *     did not start, and the decision. `state` filters; `origin=person` lists the entries someone asks in, `origin=client` those
+         *     clients were refused; `mine=true` the caller's own. Cursor pagination (R-API-010). Holders of `manage` and the system role
+         *     `admin` see every entry and the askers' names; any other reader of the repository sees only the entries it asks in, with its own
+         *     name and no other asker's (R-CUR-005). A local or virtual repository answers `400 not_applicable`.
+         */
+        get: operations["listDeliveryRequests"];
+        put?: never;
+        /**
+         * Ask for an allow of a package or a version
+         * @description Asks that a package (with its future versions) or one version be allowed in the repository (R-CUR-015): the subject in the
+         *     format's canonical forms (`422 invalid_name`, `422 invalid_version`); a subject the rules deliver answers `409 already_delivered`;
+         *     where the upstream catalogue is wired, a subject the upstream does not have `404 catalogue_not_found`. One open entry per subject:
+         *     the caller is added to it (`201`); a caller who asks in it already gets it unchanged (`200`). At most
+         *     `proxy.delivery.open_requests_per_person` open entries per person and repository (`429 too_many_requests`). The first person of
+         *     an entry starts its examination when the repository's `remote.delivery.examineOnRequest` is on: a download ahead of the version,
+         *     or of the newest versions of a package that are no prereleases (`proxy.delivery.examine_versions_per_request`), charged to the
+         *     caller (R-CUR-010); a refusal by the caller's budget starts nothing and the entry says so in `examinationRefused`. Writes
+         *     `remote.request.created`. Needs `read` on the repository and no right to set its rules: a holder of `manage` or the system role
+         *     `admin` sets the rule instead (`403`).
+         */
+        post: operations["askDeliveryRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests/{requestId}/allow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The request entry's ID (a UUID). */
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Allow a request
+         * @description Allows an open entry (R-CUR-015): writes the subject's rule (`allow`, with the entry's ID; `as: package` widens a version's entry
+         *     to its package) as a rule's write does (R-CUR-006, `remote.rule.created` or `remote.rule.updated`), sets the entry `allowed`
+         *     and starts the download at once: nothing more where the examination stored the version, which is delivered from that moment;
+         *     else a download of the version asked, or of a package its newest version that is no prerelease; with `downloadEveryVersion` a
+         *     bulk of every version within the bounds of `proxy.downloads`. A row of the examination that failed or was cancelled is started
+         *     again. An entry that is not open answers `409 conflict`. Writes `remote.request.allowed`. Needs what writing a rule needs:
+         *     `manage` on the repository or the system role `admin`; a system repository of the project `upstream` keeps the product's rules
+         *     (`409 managed_by_product`).
+         */
+        post: operations["allowDeliveryRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests/{requestId}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The request entry's ID (a UUID). */
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decline a request with a reason
+         * @description Declines an open entry (R-CUR-015): a reason of 1 to 1,000 characters, which the askers read; the waiting rows and the expanding
+         *     bulk of its examination are cancelled; with `discard` (the default) what its examination stored and the rules do not deliver is
+         *     discarded as `POST examinations/discard` does (R-CUR-016, `remote.examination.discarded` with the cause `declined`). Later
+         *     refusals of clients count in the declined entry; a person's new ask opens a new entry. An entry that is not open answers
+         *     `409 conflict`. Writes `remote.request.declined`. Needs `manage` on the repository or the system role `admin`.
+         */
+        post: operations["declineDeliveryRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-requests/{requestId}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The request entry's ID (a UUID). */
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw from a request
+         * @description Takes the caller out of an entry it asks in (R-CUR-015; `404` when it does not): an open entry that keeps no asker and counts no
+         *     refusal of a client ends `withdrawn`, one that clients were refused stays open; an entry without an asker and without a refusal
+         *     for `proxy.delivery.request_retention` is removed by the task `remote-examination-cleanup`. Writes `remote.request.withdrawn`.
+         */
+        post: operations["withdrawDeliveryRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/examinations/discard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Discard what a remote stores and does not deliver
+         * @description Removes the stored files of the versions of a subject (a version, or every version of a package) that the rules do not deliver,
+         *     as an eviction of the cache, with their examination rows (R-CUR-016): what a download ahead fetched for examination, and what a
+         *     client fetched before a rule refused it. A file the version shares with others by its digest (an image's manifest and layers)
+         *     stays (Q-CUR-140). A version the rules deliver answers `409 delivered`. Writes `remote.examination.discarded` with the cause
+         *     `person`, which the revocation journal carries, so that a restore removes it again. Needs what writing a rule needs: `manage` on
+         *     the repository or the system role `admin`.
+         */
+        post: operations["discardExaminations"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/system/backups": {
         parameters: {
             query?: never;
@@ -14724,6 +14892,117 @@ export interface components {
                 /** @enum {string} */
                 mode?: "allExceptBlocked" | "onlyAllowed";
             };
+        };
+        /** @description An ask for an allow (R-CUR-015): a package with its future versions, or one version of it. */
+        DeliveryRequestInput: {
+            name: string;
+            version?: string;
+            /** @description Why the caller asks; read by those who decide and by the caller. */
+            note?: string;
+        };
+        /** @description A person; both members are null for a reader who may not see the name. */
+        DeliveryRequestPerson: {
+            id: string | null;
+            name: string | null;
+        };
+        /** @description A person who asks in an entry; another asker's id, name and note are null for a reader who may not set the rules. */
+        DeliveryRequestAsker: {
+            id: string | null;
+            name: string | null;
+            note: string | null;
+            /** Format: date-time */
+            askedAt: string;
+        };
+        /**
+         * @description A version the entry's examination stored and the rules do not deliver yet (R-CUR-014, R-CUR-016): its findings, malware verdict
+         *     and signatures are the stored version's, read where every stored version's are (R-API-081, Q-CUR-146).
+         */
+        DeliveryRequestExamined: {
+            version: string;
+            /** Format: date-time */
+            fetchedAt: string;
+            files: number;
+        };
+        /**
+         * @description A request entry (R-CUR-015): one per subject, with the people who ask in it (`askerCount`) and the refusals clients met
+         *     (`refusals`, R-CUR-004), its examination and its decision.
+         */
+        DeliveryRequest: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** @description The version asked; null for the package with its future versions. */
+            version: string | null;
+            /** @enum {string} */
+            state: "open" | "allowed" | "declined" | "withdrawn";
+            askers: components["schemas"]["DeliveryRequestAsker"][];
+            askerCount: number;
+            /** Format: int64 */
+            refusals: number;
+            /** Format: date-time */
+            firstAt: string;
+            /**
+             * Format: date-time
+             * @description The last ask or refusal of a client.
+             */
+            lastAt: string;
+            /** @description The newest row of the download queue the entry caused (its examination, or the download its allow started). */
+            examination: components["schemas"]["RemoteDownload"] | null;
+            examined: components["schemas"]["DeliveryRequestExamined"][];
+            /** @description Why the examination did not start (the asker's budget, the bound of waiting rows); null otherwise. */
+            examinationRefused: string | null;
+            decidedBy: components["schemas"]["DeliveryRequestPerson"] | null;
+            /** Format: date-time */
+            decidedAt: string | null;
+            declineReason: string | null;
+        };
+        DeliveryRequestPage: {
+            items: components["schemas"]["DeliveryRequest"][];
+            nextCursor: string | null;
+        };
+        DeliveryRequestAllowInput: {
+            /**
+             * @description `package` widens a version's entry to its package with its future versions.
+             * @default asked
+             * @enum {string}
+             */
+            as: "asked" | "package";
+            /**
+             * @description Download every version of the package with a bulk (R-CUR-010).
+             * @default false
+             */
+            downloadEveryVersion: boolean;
+            /** @description The rule's note. */
+            note?: string;
+        };
+        DeliveryRequestAllowed: {
+            request: components["schemas"]["DeliveryRequest"];
+            rule: components["schemas"]["DeliveryRuleWritten"];
+            /** @description The rows the allow queued or started again. */
+            downloads: components["schemas"]["RemoteDownload"][];
+            /** @description The bulk of a package's newest version, or of every version; null for none. */
+            bulk: components["schemas"]["RemoteDownloadBulk"] | null;
+        };
+        DeliveryRequestDeclineInput: {
+            reason: string;
+            /**
+             * @description Discard what the examination stored (R-CUR-016).
+             * @default true
+             */
+            discard: boolean;
+        };
+        DeliveryRequestDeclined: {
+            request: components["schemas"]["DeliveryRequest"];
+            discarded: components["schemas"]["ExaminationDiscarded"];
+        };
+        ExaminationDiscardInput: {
+            name: string;
+            /** @description Absent for every version of the package that the rules do not deliver. */
+            version?: string;
+        };
+        ExaminationDiscarded: {
+            versions: string[];
+            files: number;
         };
         /**
          * @description The status of the mirror of a remote repository (R-REPO-056), read from PostgreSQL. `pass` and `lastCompletePass` are
@@ -29732,6 +30011,307 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listDeliveryRequests: {
+        parameters: {
+            query?: {
+                state?: "open" | "allowed" | "declined" | "withdrawn";
+                origin?: "person" | "client";
+                mine?: boolean;
+                /** @description Page size, 1 to `api.page_size_max` (R-API-010). */
+                limit?: components["parameters"]["Limit"];
+                /** @description The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for. */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of entries. */
+            200: {
+                headers: {
+                    Link: components["headers"]["Link"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryRequestPage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    askDeliveryRequest: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "name": "@acme/b",
+                 *       "note": "Needed by the billing service."
+                 *     }
+                 */
+                "application/json": components["schemas"]["DeliveryRequestInput"];
+            };
+        };
+        responses: {
+            /** @description The caller asks in the entry already. */
+            200: {
+                headers: {
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryRequest"];
+                };
+            };
+            /** @description The caller asks in the entry. */
+            201: {
+                headers: {
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryRequest"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    allowDeliveryRequest: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The request entry's ID (a UUID). */
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                /**
+                 * @example {
+                 *       "as": "asked",
+                 *       "downloadEveryVersion": false,
+                 *       "note": "Reviewed by the platform team."
+                 *     }
+                 */
+                "application/json": components["schemas"]["DeliveryRequestAllowInput"];
+            };
+        };
+        responses: {
+            /** @description The entry is allowed. */
+            200: {
+                headers: {
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryRequestAllowed"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    declineDeliveryRequest: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The request entry's ID (a UUID). */
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "reason": "Use the maintained fork @acme/b2 instead.",
+                 *       "discard": true
+                 *     }
+                 */
+                "application/json": components["schemas"]["DeliveryRequestDeclineInput"];
+            };
+        };
+        responses: {
+            /** @description The entry is declined. */
+            200: {
+                headers: {
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryRequestDeclined"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    withdrawDeliveryRequest: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+                /** @description The request entry's ID (a UUID). */
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The caller no longer asks in the entry. */
+            200: {
+                headers: {
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryRequest"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    discardExaminations: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 1 to 255 printable ASCII characters, preferably a UUID (R-API-014). */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "name": "@acme/a",
+                 *       "version": "1.0.0"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ExaminationDiscardInput"];
+            };
+        };
+        responses: {
+            /** @description What was discarded. */
+            200: {
+                headers: {
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "versions": [
+                     *         "1.0.0"
+                     *       ],
+                     *       "files": 1
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ExaminationDiscarded"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            413: components["responses"]["PayloadTooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             503: components["responses"]["Unavailable"];

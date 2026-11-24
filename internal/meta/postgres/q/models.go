@@ -1244,18 +1244,19 @@ type RemoteCacheInvalidation struct {
 }
 
 type RemoteDeliveryRequest struct {
-	ID            pgtype.UUID
-	RepoID        int64
-	Name          string
-	Version       pgtype.Text
-	State         string
-	Askers        int32
-	Refusals      int64
-	FirstAt       pgtype.Timestamptz
-	LastAt        pgtype.Timestamptz
-	DecidedBy     pgtype.UUID
-	DecidedAt     pgtype.Timestamptz
-	DeclineReason pgtype.Text
+	ID                 pgtype.UUID
+	RepoID             int64
+	Name               string
+	Version            pgtype.Text
+	State              string
+	Askers             int32
+	Refusals           int64
+	FirstAt            pgtype.Timestamptz
+	LastAt             pgtype.Timestamptz
+	DecidedBy          pgtype.UUID
+	DecidedAt          pgtype.Timestamptz
+	DeclineReason      pgtype.Text
+	ExaminationRefused pgtype.Text
 }
 
 type RemoteDeliveryRequestAsker struct {
@@ -1326,6 +1327,9 @@ type RemoteDownloadBulk struct {
 	StartedBy          pgtype.UUID
 	CreatedAt          pgtype.Timestamptz
 	FinishedAt         pgtype.Timestamptz
+	Origin             string
+	RequestID          pgtype.UUID
+	Ticket             json.RawMessage
 }
 
 type RemoteExamination struct {
@@ -1334,6 +1338,7 @@ type RemoteExamination struct {
 	Version   string
 	FetchedAt pgtype.Timestamptz
 	RequestID pgtype.UUID
+	Files     []string
 }
 
 type RemoteUpstreamState struct {

@@ -100,6 +100,7 @@ func (m *MirrorHost) RunDownload(ctx context.Context, row queue.Row, jobID strin
 	res.Outcome = remotecuration.OutcomeCompleted
 	seen := map[string]bool{}
 	notFound := 0
+	var kept []string // the files stored or found: what an examination row names (Q-CUR-140)
 	for _, it := range items {
 		if seen[it.Path] {
 			continue
@@ -133,11 +134,14 @@ func (m *MirrorHost) RunDownload(ctx context.Context, row queue.Row, jobID strin
 			return fail(err, it.Path)
 		case fr.res.Present:
 			res.Present++
+			kept = append(kept, it.Path)
 		default:
 			res.Stored++
 			res.Bytes += fr.res.Bytes
+			kept = append(kept, it.Path)
 		}
 	}
+	res.Examination = examinationOf(repo, row, res.Stored, kept)
 	switch {
 	case res.Files > 0 && notFound == res.Files:
 		res.Failed = true // the upstream has none of the files: no attempt changes that
@@ -150,6 +154,21 @@ func (m *MirrorHost) RunDownload(ctx context.Context, row queue.Row, jobID strin
 		}
 	}
 	return res, nil
+}
+
+// examinationOf is the examination of a run (R-CUR-014, R-CUR-016 "What is examination"): a run that stored a file of a version the
+// rules do not deliver at that moment holds the version for examination, named in the format's canonical forms, with the files the
+// run stored or found. A run that stored nothing (every file was stored already) and a file of no version (an OCI blob) are none.
+func examinationOf(repo repository.Repository, row queue.Row, stored int, files []string) *queue.Examination {
+	if stored == 0 || row.Version == "" {
+		return nil
+	}
+	set := repo.Delivery()
+	if set.Decide(row.Name, row.Version).Delivered {
+		return nil
+	}
+	name, version := set.Fold(row.Name, row.Version)
+	return &queue.Examination{Name: name, Version: version, Files: files}
 }
 
 // downloadable reads the row's repository: ok is false for a run that has nothing to do (the outcome skipped): the repository is

@@ -38,6 +38,11 @@ type BulkSpec struct {
 	MaxBytes           int64
 	IncludePrereleases bool
 	StartedBy          string
+	// Origin, RequestID and Ticket are those of a bulk a request or an allow starts for the newest versions of a package (Q-CUR-141):
+	// its rows take the origin, the request and the charge; the zero values are a person's bulk.
+	Origin    remotecuration.Origin
+	RequestID string
+	Ticket    json.RawMessage
 }
 
 // StartBulk records a bulk in the state expanding; the dispatch task expands it step by step (R-CUR-010). tx is the caller's
@@ -47,7 +52,8 @@ func (s *Service) StartBulk(ctx context.Context, tx meta.Tx, b BulkSpec) (Bulk, 
 	err := s.within(ctx, tx, func(t Tx) (err error) {
 		out, err = t.InsertBulk(ctx, Bulk{
 			RepoID: b.RepoID, Level: b.Level, Subject: b.Subject, MaxVersions: b.MaxVersions, MaxBytes: b.MaxBytes,
-			IncludePrereleases: b.IncludePrereleases, State: BulkExpanding, StartedBy: b.StartedBy,
+			IncludePrereleases: b.IncludePrereleases, State: BulkExpanding, StartedBy: b.StartedBy, Origin: b.Origin, RequestID: b.RequestID,
+			Ticket: b.Ticket,
 		})
 		return err
 	})
@@ -141,7 +147,8 @@ func (s *Service) expand(ctx context.Context, b Bulk, describe func(error) remot
 			}
 			cur.Bytes += v.Size
 			add = append(add, NewRow{
-				RepoID: b.RepoID, Name: name, Version: v.Version, Origin: remotecuration.OriginBulk, BulkID: b.ID, StartedBy: b.StartedBy,
+				RepoID: b.RepoID, Name: name, Version: v.Version, Origin: b.RowOrigin(), BulkID: b.ID, StartedBy: b.StartedBy,
+				RequestID: b.RequestID, Ticket: b.Ticket,
 			})
 			cur.Next++
 		}
