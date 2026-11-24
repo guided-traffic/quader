@@ -171,7 +171,8 @@ func (r *fillRun) release() {
 // continued from the main installation into the same spool (R-BAS-075); the commit's check of the SHA-256 decides for
 // every source. A fill that fails ends its flight before its callers learn it: a request that comes after the failure
 // joins no flight, is a miss of its own and is never cut by a fill that no longer runs (R-BAS-054, R-BAS-075), while the
-// fill still closes its source.
+// fill still closes its source. A fill that succeeds ends its flight after its entry is written and before its callers
+// receive the withheld tail, the point the flight of a fill ends at (Q-BAS-123).
 func (r *fillRun) run(body io.ReadCloser, end, flightDone func()) {
 	e := r.e
 	defer r.release()
@@ -239,6 +240,9 @@ func (r *fillRun) run(body io.ReadCloser, end, flightDone func()) {
 		// a failed request (R-BAS-030).
 		_ = e.saveEntry(ctx, r.key, r.ent)
 	}
+	// The flight ends before the callers receive their withheld tail: a request that comes after a caller's complete answer
+	// is decided on the entry, not on the spool of a fill that is over.
+	flightDone()
 	r.finishWith(fillOK)
 }
 
