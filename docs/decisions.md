@@ -11342,10 +11342,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-REPO
 
-236 questions on [spec/repositories-and-proxy.md](spec/repositories-and-proxy.md).
+237 questions on [spec/repositories-and-proxy.md](spec/repositories-and-proxy.md).
 
 <details>
-<summary>Q-REPO: 236 questions</summary>
+<summary>Q-REPO: 237 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -11585,6 +11585,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-REPO-420](spec/repositories-and-proxy.md#q-repo-420--switching-the-clients-off-is-the-journal-part-clientsoff) | Switching the clients off is the journal part `clientsOff` | Decided by the development agent | (a) A part `clientsOff` of `repository.narrowed`; the replay sets `clients_enabled` false and writes the document so that every replica reads it | — |
 | [Q-REPO-431](spec/repositories-and-proxy.md#q-repo-431--oci-and-debian-record-packagepublished-with-the-guards-of-a-first-version) | OCI and Debian record package.published with the guards of a first version | Decided by the development agent | (a) Both write `package.published` (`package`, `version`, `files`, the guards) and the security event: OCI for a new tag and for the first manifest of a name pushed by its digest, Debian for every package file an upload stores | — |
 | [Q-REPO-481](spec/repositories-and-proxy.md#q-repo-481--the-million-entries-of-r-repo-045s-criterion-are-a-measurement-the-test-holds-the-invalidations-shape-with-2000) | The million entries of R-REPO-045's criterion are a measurement; the test holds the invalidation's shape with 2,000 | Decided by the development agent | (a) The test holds the shape with 2,000 entries and a fold batch of 250 (eight batches); the million and its second are run once with `QUADER_TEST_INVALIDATION_ENTRIES=1000000` and written down | — |
+| [Q-REPO-482](spec/repositories-and-proxy.md#q-repo-482--a-mirrors-boundusedbytes-is-the-folded-counter-and-the-replicas-are-compared-once-the-fold-has-counted-the-pass) | A mirror's `bound.usedBytes` is the folded counter, and the replicas are compared once the fold has counted the pass | Decided by the development agent | (a) `bound.usedBytes` stays the folded counter; the spec says it follows by up to one fold interval, and the test compares the replicas once the fold has taken every delta of the repository | — |
 
 </details>
 

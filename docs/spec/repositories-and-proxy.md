@@ -4768,6 +4768,10 @@ Priority: **MVP** · Covers: API-084, API-085
   PostgreSQL by whichever replica answers; a remote in mode `mirror` that has no `mirror_state` row yet answers `scheduled` with
   nulls (Q-REPO-165). `pass.job` is a job reference of R-API-015, `null` once the job row is removed; `lastCompletePass` is the
   stored `last_pass` document and `null` when there is none or it cannot be read (Q-API-197).
+- `bound.usedBytes` is the folded counter `repository_usage.logical_bytes` of [storage.md](storage.md) R-STOR-003, the base of the
+  bound (R-REPO-052), read in the same statement as the rest of the document. It follows what a pass or a client stored by up to
+  one fold interval (`storage.usage.fold_interval`, 5 s by default), so two reads on either side of a fold differ in it, from one
+  replica as from two; "every replica answers the same" means the same answer at the same state of the database (Q-REPO-482).
 - `packagesPending` is the number of pending names a pass still takes (attempts below three), the figure of the gauge
   (Q-OPS-173); `failing` is three failures in a row (`mirror.FailingFailures`), the threshold of the alert; `rateLimit.until` is
   null once the wait is over; `lastCompletePass` is the summary of the last pass attempt that ended with one of five outcomes (`complete`, `partial`,
@@ -4787,7 +4791,8 @@ Priority: **MVP** · Covers: API-084, API-085
 Acceptance criteria:
 
 - During a pass the status answers `state: running` with counts that grow; after it, `lastCompletePass.outcome: complete`
-  and `pass: null`; the same answer comes from every replica.
+  and `pass: null`; once the fold has counted what the pass stored, the same answer comes from every replica, with
+  `bound.usedBytes` the folded counter (Q-REPO-482).
 - A user with `read` on the remote and nothing else gets 403 for the status (404 where the repository is hidden,
   R-AUTHZ-016); a holder of `repositories:read-config` gets 200.
 - Two `POST …/mirror/run` in a row answer 202 and 409 `mirror_pass_running` with the same job; on a `pullThrough` remote 409
@@ -10444,6 +10449,31 @@ shape is what regresses.
 
 **Applied in the spec:** R-REPO-045's criterion is measured, not tested, at its million. Code:
 [invalidation_test.go](../../test/integration/repository/invalidation_test.go).
+
+### Q-REPO-482 · A mirror's `bound.usedBytes` is the folded counter, and the replicas are compared once the fold has counted the pass
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: on 2026-11-24 the integration test of R-REPO-056 read the status from `web-a` and then from `web-b` right after a pass and
+found the two documents equal except `bound.usedBytes`: 0 from `web-a`, 106996 from `web-b`. Both web replicas answer from the one
+statement `MirrorStatusRead`, which joins `repository_usage`; neither holds a cache or a tally of its own. The two reads lay eight
+milliseconds apart, and the runner's fold (R-STOR-003, every `storage.usage.fold_interval`) took the pass's deltas between them. The
+value moved in the database, not between replicas: a second read from `web-a` would have shown the same change. The end-to-end test
+of R-REPO-058 had met the same lag and takes its reference after the fold
+([e2e.md](../developer/e2e.md#findings-of-the-suite), finding 13).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `bound.usedBytes` stays the folded counter; the spec says it follows by up to one fold interval, and the test compares the replicas once the fold has taken every delta of the repository (chosen) | The status shows the number the bound and the repository quota decide on | One source read the same way by every replica; the test holds what R-REPO-056 means: the same state gives the same answer | The figure lags a pass by up to five seconds |
+| (b) The status adds the repository's unfolded deltas to the counter | An exact figure at every read | No lag | `storage_usage_deltas` has no index on the repository and no request reads it (R-STOR-003); the status would show a number the bound does not decide on (H-527) |
+| (c) Drop `usedBytes` from the comparison | | | The test no longer holds the whole document, and it does not check that the field is the counter |
+
+**Choice:** (a). **Rationale:** the requirement is that the answer does not depend on the replica that gives it, and it does not: a
+value that moves in the database moves for every replica at the same instant. What the status shows beside `maxBytes` should be the
+base the bound is checked against, lag included ([H-527](../security/mirror.md#h-527--the-bounds-base-is-a-lagging-counter-and-a-per-process-tally)).
+
+**Applied in the spec:** R-REPO-056 (the bullet on `bound.usedBytes` and the first acceptance criterion). Code:
+[status_test.go](../../test/integration/mirror/status_test.go).
 
 ## What this does not cover
 

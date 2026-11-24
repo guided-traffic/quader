@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/guided-traffic/quader/test/integration/testenv"
 	"github.com/guided-traffic/quader/test/npmstub"
 )
 
@@ -97,6 +98,14 @@ func TestR_REPO_056_AStatusFollowsARunningPassAndEveryReplicaAnswersTheSame(t *t
 	})
 
 	t.Run("R-REPO-056 after the pass lastCompletePass is complete, pass is null and every replica answers the same", func(t *testing.T) {
+		// bound.usedBytes is the folded counter repository_usage.logical_bytes (R-STOR-003), which the runner's fold moves up to
+		// one fold interval after the pass stored its bytes. The replicas are compared at one state of the database, the one
+		// after the fold has taken every delta of the repository; two reads on either side of a fold differ by the fold, from
+		// one replica as from two (Q-REPO-482; 0 from web-a and 106996 from web-b, eight milliseconds apart, on 2026-11-24).
+		testenv.WaitFor(t, "the fold to take every delta of the pass", 30*time.Second, func() bool {
+			return r.number(`SELECT count(*) FROM storage_usage_deltas WHERE repo_id = $1`, r.repoN) == 0
+		})
+		folded := r.number(`SELECT COALESCE((SELECT logical_bytes FROM repository_usage WHERE repo_id = $1), 0)`, r.repoN)
 		var bodies []map[string]any
 		for _, answer := range []string{string(r.api(a, http.MethodGet, status, nil).Body), string(r.api(b, http.MethodGet, status, nil).Body)} {
 			var m map[string]any
@@ -109,6 +118,9 @@ func TestR_REPO_056_AStatusFollowsARunningPassAndEveryReplicaAnswersTheSame(t *t
 		last, _ := doc["lastCompletePass"].(map[string]any)
 		if last["outcome"] != "complete" || doc["pass"] != nil || doc["state"] != "scheduled" || last["packages"] != float64(packages) || last["itemsStored"] != float64(packages) {
 			t.Errorf("status %v", doc)
+		}
+		if bound, _ := doc["bound"].(map[string]any); folded <= 0 || bound["usedBytes"] != float64(folded) {
+			t.Errorf("bound.usedBytes is %v, want the folded counter %d of what the pass stored", bound["usedBytes"], folded)
 		}
 		if a, b := fmt.Sprint(bodies[0]), fmt.Sprint(bodies[1]); a != b {
 			t.Errorf("the replicas answer differently:\n%s\n%s", a, b)
