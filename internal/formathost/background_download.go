@@ -79,7 +79,7 @@ func (m *MirrorHost) RunDownload(ctx context.Context, row queue.Row, jobID strin
 	if row.Origin == remotecuration.OriginProbe {
 		fill = fillBackgroundDownload
 	}
-	u, err := m.downloadUpstream(repo, jobID, charge, fill)
+	u, err := m.downloadUpstream(repo, jobID, charge, fill, &row)
 	if err != nil {
 		return fail(err, "")
 	}
@@ -234,8 +234,9 @@ func probeOf(row queue.Row) formats.Probe {
 }
 
 // downloadUpstream is the upstream of one run: a pass's, with the window of a background run (Host.BackgroundUpstream), whose
-// requests carry the row's charge and record their fills for system:background-download with the reason of the work.
-func (m *MirrorHost) downloadUpstream(repo repository.Repository, jobID string, charge *limits.Charge, fill filler) (*backgroundUpstream, error) {
+// requests carry the row's charge and record their fills for system:background-download with the reason of the work. The row, nil for
+// the catalogue's calls of a bulk's expansion, names the downloads of the fills (operations-and-observability.md R-OPS-049).
+func (m *MirrorHost) downloadUpstream(repo repository.Repository, jobID string, charge *limits.Charge, fill filler, row *queue.Row) (*backgroundUpstream, error) {
 	rem, err := proxy.NewRemote(repo)
 	if err != nil {
 		return nil, errs.E(errs.Internal, errs.CodeInternal, "The repository is not a usable remote repository.", errs.WithCause(err))
@@ -249,8 +250,17 @@ func (m *MirrorHost) downloadUpstream(repo repository.Repository, jobID string, 
 	if err != nil {
 		return nil, err
 	}
-	pu.charge, pu.fill = charge, fill
+	pu.charge, pu.fill, pu.queue = charge, fill, queueCause(row)
 	return &backgroundUpstream{passUpstream: pu, win: mirror.NewWindow(nil, nil, share)}, nil
+}
+
+// queueCause is what a row's run hands the engine for the downloads of its fills (R-OPS-049): the row's origin, id and version and the
+// principal who started it, its bulk or its request; zero for no row.
+func queueCause(row *queue.Row) proxy.DownloadCause {
+	if row == nil {
+		return proxy.DownloadCause{}
+	}
+	return proxy.DownloadCause{QueueOrigin: row.Origin, QueueRow: row.ID, QueueVersion: row.Version, Principal: row.StartedBy}
 }
 
 // The expansion of a bulk (R-CUR-010): the format's upstream catalogue names a package's versions (Package) and a sub-section's packages
@@ -271,7 +281,7 @@ func (m *MirrorHost) planner(ctx context.Context, repoID int64) (formats.Catalog
 	if cat == nil {
 		return nil, nil, errs.E(errs.NotImplemented, errs.CodeNotImplemented, "The format "+repo.Format+" has no upstream catalogue to list a package's versions with.")
 	}
-	u, err := m.downloadUpstream(repo, "", nil, fillDownloadAhead)
+	u, err := m.downloadUpstream(repo, "", nil, fillDownloadAhead, nil)
 	if err != nil {
 		return nil, nil, err
 	}

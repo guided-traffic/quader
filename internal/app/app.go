@@ -591,8 +591,11 @@ func (a *App) startClient() error {
 			Ready: a.health.Serving, PublicVersion: cfg.System.PublicVersion, Formats: formatNames(),
 			Access:   a.access(),
 			Replicas: replicaSource{a: a}, Scanners: scannerSource{a: a}, Facts: configFacts{cfg: cfg, a: a},
-			API:  a.apiServices(),
-			Auth: a.authServices(), Avatars: avatars, AuditStore: a.auditStoreForAPI(), Authz: a.authzServices(), CI: a.ciAPI(),
+			// The downloads from upstreams of every replica, read from PostgreSQL (R-OPS-052, wire_upstream_downloads.go).
+			UpstreamDownloads:        part[upstreamDownloadsArea](a.parts).reader(),
+			UpstreamDownloadInterval: cfg.Proxy.UpstreamDownloads.PublishInterval,
+			API:                      a.apiServices(),
+			Auth:                     a.authServices(), Avatars: avatars, AuditStore: a.auditStoreForAPI(), Authz: a.authzServices(), CI: a.ciAPI(),
 			// The endpoint and exposure-rule operations (R-EP-016, wire_exposure.go).
 			Endpoints:    a.endpointServices(),
 			Repositories: a.repositoryAPI(), Packages: part[packagesAPIArea](a.parts).services,

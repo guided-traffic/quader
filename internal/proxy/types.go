@@ -190,6 +190,9 @@ type Request struct {
 	// (limits.Engine.Resume, R-LIM-037), whose exchanges and uncached bytes count for the probe's budget key. Nil, and every
 	// client request, which carries its charge in its context: a background request's exchanges are the system's (Q-LIM-19).
 	Charge *limits.Charge
+	// Cause is what caused the request's download from the upstream, if it makes one (operations-and-observability.md R-OPS-049): a
+	// mirror's pass, a queue row's run or the image database task. Nil is a client's: origin client, Caller.Principal.
+	Cause *DownloadCause
 	// slot is the background slot the request holds before it enters the flights (holdBackground): a background request
 	// never holds a flight while it may not run.
 	slot *bgSlot

@@ -234,6 +234,8 @@ func (b *mirrorHostBuilder) buildEngine() error {
 			// system of its repository and limited by nothing (usage-and-limits.md Q-LIM-19, vulnerability-scanning.md R-VULN-044): the
 			// engine charges a background request without a charge of its own to Limits.System.
 			Limits: part[downloadLimitsArea](a.parts).engine,
+			// The fills of the worker are downloads from upstreams too: a pass's, a queue row's, the image database's (R-OPS-049).
+			Downloads: part[upstreamDownloadsArea](a.parts).downloads(),
 		}
 		if b.in.vk != nil { // a nil *cluster.Valkey in the interface would not be nil
 			opts.Lookups = b.in.vk

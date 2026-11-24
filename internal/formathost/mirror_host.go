@@ -88,6 +88,17 @@ func (f filler) who() (audit.Actor, authz.Subject, string) {
 	return authz.MirrorActor(), mirrorSubject, authz.ReasonMirror
 }
 
+// origin is the origin of the work's downloads from the upstream (operations-and-observability.md R-OPS-049).
+func (f filler) origin() string {
+	switch f {
+	case fillBackgroundDownload, fillDownloadAhead:
+		return proxy.DownloadOriginQueue
+	case fillImageDatabase:
+		return proxy.DownloadOriginScannerDatabase
+	}
+	return proxy.DownloadOriginMirror
+}
+
 // Lister implements [mirror.Host]: the discovery of the format's remote adapter, found through the capabilities Register read.
 // Ready implements [mirror.Host]: a built host serves passes until its engine drains; a process that is shutting down starts no
 // pass (an error wrapping mirror.ErrShuttingDown).
@@ -343,6 +354,9 @@ type backgroundFacts struct {
 	ceiling int
 	charge  *limits.Charge
 	fill    filler
+	// queue holds the facts of the queue row a run fills for (its origin, id, version and starter); zero for a pass and the image
+	// database task. The downloads of the fills carry them (R-OPS-049).
+	queue proxy.DownloadCause
 }
 
 type backgroundKey struct{}
@@ -364,6 +378,7 @@ func backgroundFrom(ctx context.Context) (*backgroundFacts, bool) {
 func (b *backgroundFacts) apply(preq *proxy.Request, rq *formats.Request, info formats.PathInfo, p formats.Path) {
 	preq.Priority, preq.Ceiling, preq.JobID, preq.Mode = proxy.PriorityBackground, b.ceiling, b.jobID, proxy.Normal
 	preq.Charge = b.charge
+	preq.Cause = b.cause()
 	actor, subject, reason := b.fill.who()
 	preq.Caller = proxy.CallerFacts{Actor: actor}
 	preq.Populate = &mirrorPopulate{h: b.h, subject: subject, reason: reason, coord: authz.Coordinate{
@@ -371,6 +386,16 @@ func (b *backgroundFacts) apply(preq *proxy.Request, rq *formats.Request, info f
 		Path: p.Path, Package: info.Package, Version: info.Version, Actions: []formats.Action{formats.ActionRead},
 		Addressed: rq.Addressed(),
 	}}
+}
+
+// cause is what caused the downloads of the work's fills (R-OPS-049): the filler's origin, and for a queue row's run the row's facts.
+func (b *backgroundFacts) cause() *proxy.DownloadCause {
+	if o := b.fill.origin(); o != proxy.DownloadOriginQueue {
+		return &proxy.DownloadCause{Origin: o}
+	}
+	c := b.queue
+	c.Origin = proxy.DownloadOriginQueue
+	return &c
 }
 
 // mirrorPopulate is the populate check of a pass's request: the system fills the cache, whatever the repository's cacheFillAction
@@ -416,11 +441,13 @@ type passUpstream struct {
 	// recorded for system:background-download) or of the image scanning's database task (R-VULN-044).
 	charge *limits.Charge
 	fill   filler
+	// queue are the facts of the queue row a run is for (R-OPS-049); zero for a pass and the image database task.
+	queue proxy.DownloadCause
 }
 
 // facts are the background facts of the upstream's requests.
 func (u *passUpstream) facts() *backgroundFacts {
-	return &backgroundFacts{h: u.m.h, jobID: u.pass.JobID, ceiling: u.pass.Ceiling, charge: u.charge, fill: u.fill}
+	return &backgroundFacts{h: u.m.h, jobID: u.pass.JobID, ceiling: u.pass.Ceiling, charge: u.charge, fill: u.fill, queue: u.queue}
 }
 
 var _ discover.Upstream = (*passUpstream)(nil)

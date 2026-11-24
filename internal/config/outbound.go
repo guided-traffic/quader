@@ -40,6 +40,15 @@ type Proxy struct {
 	Delivery  ProxyDelivery  `yaml:"delivery"`
 	Catalogue ProxyCatalogue `yaml:"catalogue"`
 	Downloads ProxyDownloads `yaml:"downloads"`
+
+	// The overview of the downloads from upstreams (operations-and-observability.md R-OPS-052).
+	UpstreamDownloads ProxyUpstreamDownloads `yaml:"upstream_downloads"`
+}
+
+// ProxyUpstreamDownloads configures the overview of the downloads from the upstreams of remote repositories (R-OPS-050, Q-OPS-424). The
+// length of the finished list is the owner's number, 100, and not a key.
+type ProxyUpstreamDownloads struct {
+	PublishInterval time.Duration `yaml:"publish_interval" default:"2s" validate:"min=1s,max=30s" doc:"How often a replica writes its running downloads from upstreams to PostgreSQL, and how often an open overview reads them again (R-OPS-050, R-OPS-052)."`
 }
 
 // ProxyClaims holds the system-wide switch of the namespace-claim rule for remote

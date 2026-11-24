@@ -33,7 +33,7 @@ func (p proxyEngineArea) remote() formathost.RemoteEngine {
 // invalidation set and the flight lock. It is a component: the shutdown drains it
 // (no new cross-replica flight, R-ARCH-024 step 1) and cancels the fetches still
 // running 5 s before the deadline, releasing their locks with failed (step 4).
-func (a *App) wireProxyEngine(ctx context.Context, in infra, px proxyArea, inv invalidationArea, fa filesArea, vz vulnArea, dl downloadLimitsArea) (proxyEngineArea, error) {
+func (a *App) wireProxyEngine(ctx context.Context, in infra, px proxyArea, inv invalidationArea, fa filesArea, vz vulnArea, dl downloadLimitsArea, ud upstreamDownloadsArea) (proxyEngineArea, error) {
 	if err := requireInputs(AreaProxyEngine, given("upstream clients", px.clients), given("invalidation set", inv.set),
 		given("item store", fa.items)); err != nil {
 		return proxyEngineArea{}, err
@@ -59,6 +59,8 @@ func (a *App) wireProxyEngine(ctx context.Context, in infra, px proxyArea, inv i
 		Detach: httpserver.WithoutTicket, GlobalOffline: a.offlineForMaintenance(in.sys), Limits: dl.engine,
 		// A client's failed fetch is a row of the repository's download queue (remote-curation.md Q-CUR-19).
 		ClientFailures: clientFailures{a},
+		// Every download of an artifact's body from an upstream is reported to the process's tracker (R-OPS-049).
+		Downloads: ud.downloads(),
 	}
 	if in.vk != nil { // a nil *cluster.Valkey in the interface would not be nil
 		opts.Lookups = in.vk

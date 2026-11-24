@@ -1,6 +1,10 @@
 package fills
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 // The bounds of R-OPS-050 and R-OPS-051: the running downloads one replica publishes, the finished downloads the list keeps.
 const (
@@ -120,4 +124,11 @@ func Interrupted(replica string, writtenAt time.Time, entries []Entry) []Finishe
 		out = append(out, f)
 	}
 	return out
+}
+
+// validUUID reports whether s is a UUID: a principal or a queue row that is not one is not recorded, so that a row of the insert never
+// fails its cast.
+func validUUID(s string) bool {
+	_, err := uuid.Parse(s)
+	return err == nil
 }

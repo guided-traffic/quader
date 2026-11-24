@@ -17,7 +17,9 @@ import (
 // fakeUpstreamDownloads is the in-memory store of the downloads from upstreams: the view a read gets.
 type fakeUpstreamDownloads struct{ v fills.View }
 
-func (f fakeUpstreamDownloads) ReadUpstreamDownloads(context.Context) (fills.View, error) { return f.v, nil }
+func (f fakeUpstreamDownloads) ReadUpstreamDownloads(context.Context) (fills.View, error) {
+	return f.v, nil
+}
 
 const (
 	udPriya = "0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a20"

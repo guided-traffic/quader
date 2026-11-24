@@ -403,12 +403,23 @@ func (e *Engine) head(ctx context.Context, rq Request, w http.ResponseWriter) er
 // artifact handles a 2xx for an artifact: the checks before the first byte, the
 // transfer to the spool (and to the leader's client, except for the withheld tail),
 // the verification, and the commit of the item and its entry (R-REPO-025 step 10).
+//
+// From the first byte on, the transfer is a download from the upstream: the replica's tracker sees its begin, every byte read before
+// the spool and its end with the fetch's result (operations-and-observability.md R-OPS-049).
 func (f *fetcher) artifact(ctx context.Context, resp *http.Response, idle *atomic.Bool) flightResult {
-	e, rq := f.e, f.rq
-	rem := rq.Remote
 	if res, ok := f.admitBody(ctx, resp); !ok {
 		return res
 	}
+	dl := f.beginDownload(resp)
+	res := f.artifactBody(ctx, resp, idle)
+	endDownload(ctx, dl, res)
+	return res
+}
+
+// artifactBody is the transfer of an admitted artifact's body, its verification and its commit.
+func (f *fetcher) artifactBody(ctx context.Context, resp *http.Response, idle *atomic.Bool) flightResult {
+	e, rq := f.e, f.rq
+	rem := rq.Remote
 	// The leader's own client gets the body while it arrives only when the upstream
 	// announced its length: a body of unknown length can cross the size limit after
 	// the status line is out, and R-REPO-040 owes the client a 502, not a cut transfer.

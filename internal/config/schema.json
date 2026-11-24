@@ -3614,6 +3614,20 @@
           "minimum": 0,
           "type": "integer",
           "x-quader-env": "QUADER_PROXY_QUEUE_TIMEOUT_SECONDS"
+        },
+        "upstream_downloads": {
+          "additionalProperties": false,
+          "properties": {
+            "publish_interval": {
+              "default": "2s",
+              "description": "How often a replica writes its running downloads from upstreams to PostgreSQL, and how often an open overview reads them again (R-OPS-050, R-OPS-052).",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h)([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))*$|^0$",
+              "type": "string",
+              "x-quader-env": "QUADER_PROXY_UPSTREAM_DOWNLOADS_PUBLISH_INTERVAL",
+              "x-quader-type": "duration"
+            }
+          },
+          "type": "object"
         }
       },
       "type": "object"

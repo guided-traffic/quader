@@ -1838,6 +1838,35 @@ type UploadSessionTail struct {
 	Sha256    []byte
 }
 
+type UpstreamDownloadFinished struct {
+	ID           pgtype.UUID
+	RepoID       int64
+	Name         string
+	Version      string
+	Path         string
+	Bytes        int64
+	Total        pgtype.Int8
+	StartedAt    pgtype.Timestamptz
+	FinishedAt   pgtype.Timestamptz
+	DurationMs   int64
+	Outcome      string
+	FailureClass pgtype.Text
+	FailureCode  pgtype.Text
+	Origin       string
+	QueueOrigin  pgtype.Text
+	QueueRow     pgtype.UUID
+	ByPrincipal  pgtype.UUID
+	ReplicaName  string
+}
+
+type UpstreamDownloadLive struct {
+	InstanceUid pgtype.UUID
+	ReplicaName string
+	WrittenAt   pgtype.Timestamptz
+	Downloads   json.RawMessage
+	Omitted     int32
+}
+
 type UpstreamRepository struct {
 	RepositoryID      int64
 	Kind              string
