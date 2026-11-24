@@ -26,8 +26,8 @@ func TestR_ARCH_007_SessionContentIsSameOrigin(t *testing.T) {
 		kind ContentKind
 		want string
 	}{
-		{"Q-ARCH-86 a file read with the session cookie is same-origin", &session, ContentFile, "same-origin"},
-		{"Q-ARCH-86 a directory index read with the session cookie is same-origin", &session, ContentIndex, "same-origin"},
+		{"a file read with the session cookie is same-origin", &session, ContentFile, "same-origin"},
+		{"a directory index read with the session cookie is same-origin", &session, ContentIndex, "same-origin"},
 		{"R-ARCH-007 a file read with a token stays same-site", &bearer, ContentFile, "same-site"},
 		{"R-ARCH-007 an anonymous read stays same-site", nil, ContentFile, "same-site"},
 	} {

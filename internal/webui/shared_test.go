@@ -257,7 +257,7 @@ func TestSharedAssets(t *testing.T) {
 		}
 	})
 
-	t.Run("R-HA-020 a kept file is read again after its TTL: new bytes replace it, a store away leaves it served, a name gone is a 404 (Q-UI-142)", func(t *testing.T) {
+	t.Run("R-HA-020 a kept file is read again after its TTL: new bytes replace it, a store away leaves it served, a name gone is a 404", func(t *testing.T) {
 		store := otherRelease()
 		h := newHandler(t, builtFS(), func(o *Options) { o.Shared = store })
 		now := time.Unix(1_800_000_000, 0)
@@ -374,7 +374,7 @@ func TestSharedCacheBound(t *testing.T) {
 // TestHashedPatternOfTheBuild keeps the pattern of web/scripts/hashed.mjs, which build:embed checks every build against, equal
 // to the server's: a build whose names the server would not take as hashed fails there, not in a rolling upgrade.
 func TestHashedPatternOfTheBuild(t *testing.T) {
-	t.Run("R-UI-001 build:embed checks the build against the pattern the server serves by (Q-UI-140)", func(t *testing.T) {
+	t.Run("R-UI-001 build:embed checks the build against the pattern the server serves by", func(t *testing.T) {
 		src, err := os.ReadFile("../../web/scripts/hashed.mjs")
 		if err != nil {
 			t.Fatal(err)
@@ -393,7 +393,7 @@ func TestHashedPatternOfTheBuild(t *testing.T) {
 }
 
 func TestChunkCaching(t *testing.T) {
-	t.Run("R-UI-001 a chunk named with a base64url hash of either case is immutable (Q-UI-140)", func(t *testing.T) {
+	t.Run("R-UI-001 a chunk named with a base64url hash of either case is immutable", func(t *testing.T) {
 		fsys := builtFS()
 		fsys["en/chunk-b3RHWPW-.js"] = &fstest.MapFile{Data: []byte("export{}")}
 		fsys["en/chunk-Bo__WLzq.js"] = &fstest.MapFile{Data: []byte("export{}")}

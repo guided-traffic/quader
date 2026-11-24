@@ -660,7 +660,7 @@ func TestAllowed(t *testing.T) {
 		}
 	}
 
-	t.Run("R-REPO-039 R-REPO-043 Q-ARCH-224 an https upstream's document cannot send a fetch to http, on its own host or an extra one", func(t *testing.T) {
+	t.Run("R-REPO-039 R-REPO-043 an https upstream's document cannot send a fetch to http, on its own host or an extra one", func(t *testing.T) {
 		for _, raw := range []string{"http://registry.example.org/x", "http://registry.example.org:443/x", "http://tarballs.example.net/x", "http://eu.cdn.example.org/x"} {
 			u, _ := url.Parse(raw)
 			if e, ok := errs.As(cl.Allowed(u)); !ok || e.Code != errs.CodeInsecureRedirect || e.Status() != 502 {

@@ -223,7 +223,7 @@ func TestMemoryGuard(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-ARCH-500 the kernel gate closes at 80 % of the kernel's share, stays closed above 70 % and opens below it, whatever the heap and the charges say", func(t *testing.T) {
+	t.Run("R-ARCH-005 the kernel gate closes at 80 % of the kernel's share, stays closed above 70 % and opens below it, whatever the heap and the charges say", func(t *testing.T) {
 		// The forced reproduction of Q-ARCH-500: 860 downloads whose clients stopped reading held 383 MiB of send queues
 		// (sock) beside 619 MiB of Go memory, the container was OOM-killed at 1 GiB, and the heap gate and the slots
 		// never refused: the live heap stayed below its mark and the charges below the slots.
@@ -273,7 +273,7 @@ func TestMemoryGuard(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-ARCH-500 a response is charged its send buffer against the kernel's share when it starts, beside what the kernel holds beyond the charges, and waits for room: a burst cannot overfill the share and a request that writes nothing holds none of it", func(t *testing.T) {
+	t.Run("R-ARCH-005 a response is charged its send buffer against the kernel's share when it starts, beside what the kernel holds beyond the charges, and waits for room: a burst cannot overfill the share and a request that writes nothing holds none of it", func(t *testing.T) {
 		// Without the charge the gate alone let 640 downloads in during the 300 ms after it opened, and their send
 		// queues took the kernel's memory from 112 to 237 MiB against a mark of 123 MiB.
 		var kern atomic.Int64
@@ -342,7 +342,7 @@ func TestMemoryGuard(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-ARCH-500 a response that waits for kernel room and whose request ends writes nothing and holds no charge", func(t *testing.T) {
+	t.Run("R-ARCH-005 a response that waits for kernel room and whose request ends writes nothing and holds no charge", func(t *testing.T) {
 		g := NewMemoryGuard(MemoryGuardConfig{
 			Limit: 1 << 40, RequestBytes: 1, Read: func() (uint64, uint64) { return 0, 1 },
 			Kernel: func() (int64, error) { return 0, nil }, KernelBudget: 125, KernelRequestBytes: 100,
@@ -366,7 +366,7 @@ func TestMemoryGuard(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-ARCH-500 without a reader or a share for the kernel there is no kernel gate", func(t *testing.T) {
+	t.Run("R-ARCH-005 without a reader or a share for the kernel there is no kernel gate", func(t *testing.T) {
 		for _, c := range []MemoryGuardConfig{
 			{Limit: 1000, RequestBytes: 1, Read: func() (uint64, uint64) { return 0, 1 }},
 			{Limit: 1000, RequestBytes: 1, Read: func() (uint64, uint64) { return 0, 1 }, Kernel: func() (int64, error) { return 1 << 40, nil }},

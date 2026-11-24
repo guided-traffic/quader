@@ -25,18 +25,18 @@ func TestR_ARCH_010_TheTestFormatPassesTheKit(t *testing.T) {
 	t.Run("R-BAS-013 a document that varies by a request header it names in Vary passes check 12", func(t *testing.T) {
 		formattest.Run(t, testformat.With(testformat.VariesByHeader, testformat.Defect(testformat.VaryUserAgent)), testformat.Fixture())
 	})
-	t.Run("Q-ARCH-258 a Volatile search that returns package-derived bytes passes, with or without a handler that deletes the headers", func(t *testing.T) {
+	t.Run("a Volatile search that returns package-derived bytes passes, with or without a handler that deletes the headers", func(t *testing.T) {
 		formattest.Run(t, testformat.With(testformat.SearchReadsPackages), testformat.Fixture())
 		formattest.Run(t, testformat.With(testformat.SearchReadsPackages, testformat.StripHeaders), testformat.Fixture())
 	})
 }
 
-// TestQ_ARCH_258_OnlyContentRoutesAndVolatileOnesMayReturnPackageBytes: an Admin route that
+// TestR_ARCH_010_OnlyContentRoutesAndVolatileOnesMayReturnPackageBytes: an Admin route that
 // answers with the bytes of a stored package fails the check that drives it (check 9, its
 // change case); a Volatile search that returns
 // package-derived bytes does not (TestR_ARCH_010_TheTestFormatPassesTheKit), and the
 // Volatile tarball route of the TarballVolatile defect fails because it serves a stored item.
-func TestQ_ARCH_258_OnlyContentRoutesAndVolatileOnesMayReturnPackageBytes(t *testing.T) {
+func TestR_ARCH_010_OnlyContentRoutesAndVolatileOnesMayReturnPackageBytes(t *testing.T) {
 	rep := formattest.Evaluate(testformat.With(testformat.AdminReadsPackages), testformat.Fixture())
 	if failed := rep.Failed(); !slices.Equal(failed, []formattest.Check{formattest.CheckRevision}) {
 		t.Fatalf("failed checks = %v:\n%v", failed, rep)
@@ -46,19 +46,19 @@ func TestQ_ARCH_258_OnlyContentRoutesAndVolatileOnesMayReturnPackageBytes(t *tes
 	}
 }
 
-// TestQ_ARCH_259_AFormatNotifiesTheAreasItDeclared: the in-memory Host refuses an area the
+// TestR_ARCH_009_AFormatNotifiesTheAreasItDeclared: the in-memory Host refuses an area the
 // descriptor did not declare, as the production writer does: the route that names it answers 500.
-func TestQ_ARCH_259_AFormatNotifiesTheAreasItDeclared(t *testing.T) {
+func TestR_ARCH_009_AFormatNotifiesTheAreasItDeclared(t *testing.T) {
 	rep := formattest.Evaluate(testformat.With(testformat.NotifiesUndeclared), testformat.Fixture())
 	if got := strings.Join(rep.Result(formattest.CheckRevision).Failures, "\n"); !strings.Contains(got, "tag change (Admin route)") || !strings.Contains(got, "answered 500") {
 		t.Fatalf("check 9 does not fail the tag change:\n%s\n%v", got, rep)
 	}
 }
 
-// TestQ_ARCH_260_AFormatNamesItsOwnRepositoryOnly: a format that reads a package of a
+// TestR_ARCH_009_AFormatNamesItsOwnRepositoryOnly: a format that reads a package of a
 // repository that is neither the request's nor a member of it fails the content check, because
 // the in-memory Host refuses it as the production Host does.
-func TestQ_ARCH_260_AFormatNamesItsOwnRepositoryOnly(t *testing.T) {
+func TestR_ARCH_009_AFormatNamesItsOwnRepositoryOnly(t *testing.T) {
 	rep := formattest.Evaluate(testformat.With(testformat.ReadsOtherRepository), testformat.Fixture())
 	if got := strings.Join(rep.Result(formattest.CheckHeaders).Failures, "\n"); !strings.Contains(got, `content case "package document": status 500, want 200`) {
 		t.Fatalf("check 7 does not fail the document route:\n%s\n%v", got, rep)

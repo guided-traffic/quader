@@ -6,11 +6,11 @@ import (
 	"github.com/guided-traffic/quader/internal/auth/scope"
 )
 
-// TestQ_AUTHZ_172_AuditorReadScope: the read scope of a listing (R-API-029) holds
+// TestR_AUTHZ_011_AuditorReadScope: the read scope of a listing (R-API-029) holds
 // every package of every physical repository for the auditor, decides rows under
 // a token's repository scope, and never lists anything to a token that does not
 // carry the capability.
-func TestQ_AUTHZ_172_AuditorReadScope(t *testing.T) {
+func TestR_AUTHZ_011_AuditorReadScope(t *testing.T) {
 	e := newTestEngine(t, metadataFixture(), nil)
 	keys := []string{"npm-internal", "nuget-local", "npm-all"}
 	shapes := func(t *testing.T, sub Subject) (ReadScope, map[string]ReadShape) {
@@ -25,7 +25,7 @@ func TestQ_AUTHZ_172_AuditorReadScope(t *testing.T) {
 		}
 		return rs, out
 	}
-	t.Run("Q-AUTHZ-172 a session of the auditor lists every package of every physical repository", func(t *testing.T) {
+	t.Run("R-AUTHZ-011 a session of the auditor lists every package of every physical repository", func(t *testing.T) {
 		rs, got := shapes(t, userSub(idInGroup, "member", idAuditors))
 		if got["npm-internal"] != ReadAll || got["nuget-local"] != ReadAll || got["npm-all"] != ReadNone {
 			t.Fatalf("shapes %v", got)

@@ -50,7 +50,7 @@ func (k destroyedTestKeys) Lookup(ctx context.Context, connection string) blobcr
 }
 
 func TestR_STOR_101_TheOrphanSweepLeavesAnObjectWhoseRecordNamesADestroyedKey(t *testing.T) {
-	t.Run("R-STOR-101 Q-STOR-441 an object without a copy row under a destroyed key is not placed: reported foreign, neither adopted nor deleted", func(t *testing.T) {
+	t.Run("R-STOR-101 an object without a copy row under a destroyed key is not placed: reported foreign, neither adopted nor deleted", func(t *testing.T) {
 		ctx := context.Background()
 		p, keyed := "quader", true
 		s, ks := blobtest.New(), blobtest.NewKeys()
@@ -73,7 +73,7 @@ func TestR_STOR_101_TheOrphanSweepLeavesAnObjectWhoseRecordNamesADestroyedKey(t 
 }
 
 func TestR_STOR_101_AReadThatMeetsADestroyedKeyFallsOverAndMarksTheCopy(t *testing.T) {
-	t.Run("R-STOR-101 Q-STOR-406 a record of a destroyed key falls over to the second copy, marks the first corrupt and counts destroyed_key", func(t *testing.T) {
+	t.Run("R-STOR-101 a record of a destroyed key falls over to the second copy, marks the first corrupt and counts destroyed_key", func(t *testing.T) {
 		cfg := blobtest.Storage(t, t.TempDir())
 		p := "quader"
 		cfg.Replication.MinCopies = 2

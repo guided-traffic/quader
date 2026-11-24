@@ -29,7 +29,7 @@ func TestR_VULN_025_TheLinksOfTheImageScanningAreValidatedForTheRoleThatUsesThem
 			}
 		}
 	})
-	t.Run("Q-ARCH-563 the role all may leave both addresses empty: it builds no image scanner", func(t *testing.T) {
+	t.Run("R-ARCH-036 the role all may leave both addresses empty: it builds no image scanner", func(t *testing.T) {
 		if err := loadRole(t, "all"); err != nil {
 			t.Fatal(err)
 		}
@@ -63,7 +63,7 @@ func TestR_VULN_025_TheLinksOfTheImageScanningAreValidatedForTheRoleThatUsesThem
 	})
 }
 
-func TestQ_ARCH_527_TheScannerReadsOnlyTheKeysItUsesAndResolvesNoSecretFile(t *testing.T) {
+func TestR_ARCH_036_TheScannerReadsOnlyTheKeysItUsesAndResolvesNoSecretFile(t *testing.T) {
 	// A database, Valkey and object-store configuration whose files the scanner's pod does not have, and keys outside the role's
 	// sections that would fail their checks: the scanner loads; every other role refuses the same configuration.
 	env := []string{
@@ -136,7 +136,7 @@ func TestR_ARCH_038_TheListenersOfTheLinksNameTheKindTheyAdmit(t *testing.T) {
 			t.Fatalf("packages without a scan listener: %v", err)
 		}
 	})
-	t.Run("Q-ARCH-553 the role all may leave both names empty", func(t *testing.T) {
+	t.Run("the role all may leave both names empty", func(t *testing.T) {
 		if err := loadRole(t, "all", with("QUADER_SERVER_SCAN_LISTEN=:8082")...); err != nil {
 			t.Fatal(err)
 		}

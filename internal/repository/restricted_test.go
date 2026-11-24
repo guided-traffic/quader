@@ -42,52 +42,52 @@ func TestR_AUTHZ_026_RestrictedRemoteRules(t *testing.T) {
 		name, stored, next string
 		want               map[string]string
 	}{
-		{"Q-REPO-127 a value of its own is always allowed", "", `{"url":"https://evil.example.test/","authMode":"bearer","password":{"value":"mine"}}`, nil},
-		{"Q-REPO-127 a create names no reference", "", ref, map[string]string{"/remote/password/secretRef": "secret_value_required"}},
-		{"Q-REPO-127 the stored reference sent back is kept", ref, ref, nil},
+		{"R-REPO-033 a value of its own is always allowed", "", `{"url":"https://evil.example.test/","authMode":"bearer","password":{"value":"mine"}}`, nil},
+		{"R-REPO-033 a create names no reference", "", ref, map[string]string{"/remote/password/secretRef": "secret_value_required"}},
+		{"R-REPO-033 the stored reference sent back is kept", ref, ref, nil},
 		{
-			"Q-REPO-127 another reference is refused", ref, `{"url":"https://partner.example.test/","authMode":"bearer","password":{"secretRef":{"env":"QUADER_CAC_OTHER"}}}`,
+			"R-REPO-033 another reference is refused", ref, `{"url":"https://partner.example.test/","authMode":"bearer","password":{"secretRef":{"env":"QUADER_CAC_OTHER"}}}`,
 			map[string]string{"/remote/password/secretRef": "secret_value_required"},
 		},
-		{"Q-REPO-127 a kept value with another url", sealed, `{` + elsewhr + `,"authMode":"bearer","password":{"set":true}}`, map[string]string{"/remote/password": "secret_value_required"}},
-		{"Q-REPO-127 the kept reference with another url", ref, `{` + elsewhr + `,"authMode":"bearer","password":{"secretRef":{"file":"partner"}}}`, map[string]string{"/remote/password": "secret_value_required"}},
-		{"Q-REPO-127 a kept value whatever the auth mode says", sealed, `{` + elsewhr + `,"authMode":"none","password":{"set":true}}`, map[string]string{"/remote/password": "secret_value_required"}},
-		{"Q-REPO-127 a new value with another url", sealed, `{` + elsewhr + `,"authMode":"bearer","password":{"value":"new"}}`, nil},
-		{"Q-REPO-127 no credential with another url", sealed, `{` + elsewhr + `}`, nil},
+		{"R-REPO-033 a kept value with another url", sealed, `{` + elsewhr + `,"authMode":"bearer","password":{"set":true}}`, map[string]string{"/remote/password": "secret_value_required"}},
+		{"R-REPO-033 the kept reference with another url", ref, `{` + elsewhr + `,"authMode":"bearer","password":{"secretRef":{"file":"partner"}}}`, map[string]string{"/remote/password": "secret_value_required"}},
+		{"R-REPO-033 a kept value whatever the auth mode says", sealed, `{` + elsewhr + `,"authMode":"none","password":{"set":true}}`, map[string]string{"/remote/password": "secret_value_required"}},
+		{"R-REPO-033 a new value with another url", sealed, `{` + elsewhr + `,"authMode":"bearer","password":{"value":"new"}}`, nil},
+		{"R-REPO-033 no credential with another url", sealed, `{` + elsewhr + `}`, nil},
 		{
-			"Q-REPO-127 a new host that receives credentials", sealed,
+			"R-REPO-033 a new host that receives credentials", sealed,
 			`{"url":"https://partner.example.test/","authMode":"bearer","password":{"set":true},"extraHosts":[{"pattern":"*.example.test","sendCredentials":true}]}`,
 			map[string]string{"/remote/password": "secret_value_required"},
 		},
 		{
-			"Q-REPO-127 a new host without credentials", sealed,
+			"R-REPO-033 a new host without credentials", sealed,
 			`{"url":"https://partner.example.test/","authMode":"bearer","password":{"set":true},"extraHosts":[{"pattern":"*.example.test"}]}`, nil,
 		},
 		{
-			"Q-REPO-127 forwarding on redirects", sealed, `{"url":"https://partner.example.test/","authMode":"bearer","password":{"set":true},"forwardAuthOnRedirect":true}`,
+			"R-REPO-033 forwarding on redirects", sealed, `{"url":"https://partner.example.test/","authMode":"bearer","password":{"set":true},"forwardAuthOnRedirect":true}`,
 			map[string]string{"/remote/password": "secret_value_required"},
 		},
 		{
-			"Q-REPO-128 a create chooses no outbound path", "", routed,
+			"R-REPO-037 a create chooses no outbound path", "", routed,
 			map[string]string{"/remote/sourceNetwork": "outbound_path_restricted", "/remote/outboundProxy/mode": "outbound_path_restricted"},
 		},
-		{"Q-REPO-128 the stored path stays with url and hosts", routed, routed, nil},
+		{"R-REPO-037 the stored path stays with url and hosts", routed, routed, nil},
 		{
-			"Q-REPO-128 the stored path does not follow a new url", routed,
+			"R-REPO-037 the stored path does not follow a new url", routed,
 			`{` + elsewhr + `,"sourceNetwork":"10.99.0.0/24","outboundProxy":{"mode":"direct"},"extraHosts":[{"pattern":"cdn.example.test"}]}`,
 			map[string]string{"/remote/sourceNetwork": "outbound_path_restricted", "/remote/outboundProxy/mode": "outbound_path_restricted"},
 		},
 		{
-			"Q-REPO-128 nor a new extra host", routed,
+			"R-REPO-037 nor a new extra host", routed,
 			`{"url":"https://partner.example.test/","sourceNetwork":"10.99.0.0/24","outboundProxy":{"mode":"direct"},"extraHosts":[{"pattern":"cdn.example.test"},{"pattern":"*"}]}`,
 			map[string]string{"/remote/sourceNetwork": "outbound_path_restricted", "/remote/outboundProxy/mode": "outbound_path_restricted"},
 		},
 		{
-			"Q-REPO-128 another source network", routed,
+			"R-REPO-037 another source network", routed,
 			`{"url":"https://partner.example.test/","sourceNetwork":"10.98.0.0/24","outboundProxy":{"mode":"direct"},"extraHosts":[{"pattern":"cdn.example.test"}]}`,
 			map[string]string{"/remote/sourceNetwork": "outbound_path_restricted"},
 		},
-		{"Q-REPO-128 the defaults are always allowed", routed, `{` + elsewhr + `,"sourceNetwork":null,"outboundProxy":{"mode":"default"}}`, nil},
+		{"R-REPO-037 the defaults are always allowed", routed, `{` + elsewhr + `,"sourceNetwork":null,"outboundProxy":{"mode":"default"}}`, nil},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -102,14 +102,14 @@ func TestR_AUTHZ_026_RestrictedRemoteRules(t *testing.T) {
 			}
 		})
 	}
-	t.Run("Q-REPO-127 a holder of repositories:write-config is not bound by the rules", func(t *testing.T) {
+	t.Run("R-REPO-033 a holder of repositories:write-config is not bound by the rules", func(t *testing.T) {
 		nd, v := validateRemoteDoc(t, ref)
 		restrictedRemote(v, Caller{}, nil, &nd)
 		if err := v.err(); err != nil {
 			t.Fatal(err)
 		}
 	})
-	t.Run("Q-REPO-127 the rule's code answers at the top", func(t *testing.T) {
+	t.Run("R-REPO-033 the rule's code answers at the top", func(t *testing.T) {
 		nd, v := validateRemoteDoc(t, ref)
 		restrictedRemote(v, Caller{Restricted: true}, nil, &nd)
 		e, ok := errs.As(v.err())

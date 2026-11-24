@@ -9,11 +9,11 @@ import (
 	"github.com/guided-traffic/quader/internal/bastion/mainclient"
 )
 
-// TestQ_BAS_203_TheGalaxyTokenSchemeIsACredentialOfTheProtocolFamily: "Authorization: Token <Quader token>", which ansible-galaxy sends
+// TestR_BAS_019_TheGalaxyTokenSchemeIsACredentialOfTheProtocolFamily: "Authorization: Token <Quader token>", which ansible-galaxy sends
 // and the main installation reads on the routes that declare it, is forwarded unchanged on /api/<format>/…; on another family it is an
 // unknown scheme, refused without a request. Its answers are the token's under that scheme only: the main installation's refusal of
 // the scheme on a route that does not declare it never refuses the same token sent as Bearer.
-func TestQ_BAS_203_TheGalaxyTokenSchemeIsACredentialOfTheProtocolFamily(t *testing.T) {
+func TestR_BAS_019_TheGalaxyTokenSchemeIsACredentialOfTheProtocolFamily(t *testing.T) {
 	s := newSiteHarness(t, options{})
 	tok := s.full
 	s.main.doFn = func(f mainclient.Forward) (*mainclient.Response, error) {

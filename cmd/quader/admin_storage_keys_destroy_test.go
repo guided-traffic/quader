@@ -84,7 +84,7 @@ func TestR_STOR_099_TheDestroyCommand(t *testing.T) {
 			t.Fatalf("exit %d: %v; a dry run changed something", exitCode(err), err)
 		}
 	})
-	t.Run("R-STOR-099 Q-STOR-475 the dry run names the files whose data key was handed and the handovers, with the audit log's bound", func(t *testing.T) {
+	t.Run("R-STOR-099 the dry run names the files whose data key was handed and the handovers, with the audit log's bound", func(t *testing.T) {
 		f := newDestroyFixture(t)
 		f.deps.now = func() time.Time { return time.Date(2027, 3, 20, 23, 30, 0, 0, time.UTC) }
 		f.db.Held.HandedFiles, f.db.Held.Handovers = 2, 3
@@ -155,7 +155,7 @@ func TestR_STOR_099_TheDestroyCommand(t *testing.T) {
 			t.Fatalf("a second run: %v %q", err, text)
 		}
 	})
-	t.Run("R-STOR-099 Q-STOR-405 a holder's refusal exits 5 and prints the report with the refusal, in a dry run as well", func(t *testing.T) {
+	t.Run("R-STOR-099 a holder's refusal exits 5 and prints the report with the refusal, in a dry run as well", func(t *testing.T) {
 		f := newDestroyFixture(t)
 		f.db.Held.Copies = 1
 		out, err := f.run("", nil)

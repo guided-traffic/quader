@@ -78,12 +78,12 @@ func catalogOf(t *testing.T) *Catalog {
 	return c
 }
 
-// TestQ_BAS_166_TheTokenServiceAndTheCatalogTellTheMarkingTheirKind: below /v2/ the token service and the catalog tell the
+// TestR_BAS_051_TheTokenServiceAndTheCatalogTellTheMarkingTheirKind: below /v2/ the token service and the catalog tell the
 // marking stage their route before they authenticate or read a body. The probe of a POST to the token service is answered
 // 204 read-with-body without its form being read, so the Bastion forwards the real request with the form; the probe of a
 // method neither route answers gets the route's own 405, not a 204. A token answer is pass, never kept, and names the
 // caller the service accepted (Q-BAS-187); a refused credential is invalid; the catalog is pass.
-func TestQ_BAS_166_TheTokenServiceAndTheCatalogTellTheMarkingTheirKind(t *testing.T) {
+func TestR_BAS_051_TheTokenServiceAndTheCatalogTellTheMarkingTheirKind(t *testing.T) {
 	f := newFixture(t, false)
 	f.allow[aliceID+" web/docker-local app read"] = true
 	h := markedChain(t, f.h, catalogOf(t))
@@ -170,12 +170,12 @@ func (oneBastion) Authenticate(_ context.Context, raw string, _ bastionmain.Auth
 	return bastionmain.BastionToken{TokenID: "t-bst", BastionID: "b-1", Name: "partners", ExpiresAt: time.Now().Add(time.Hour)}, nil
 }
 
-// TestQ_BAS_166_ABastionsHostReachesTheTokenServicesServiceCheck establishes that the token service, reached by a forward,
+// TestR_BAS_051_ABastionsHostReachesTheTokenServicesServiceCheck establishes that the token service, reached by a forward,
 // checks service against the Bastion's host (R-BAS-051): the recognition re-derives the forwarded headers of a recognized
 // request with the Bastion's egress trusted (R-BAS-017, the composition root's bastionForwarded), and the token service reads
 // the response base URL the chain hands on. The Bastion's host is accepted and the main installation's own refused; the same
 // headers without a Bastion token count for nothing, and the main installation's host stays the service.
-func TestQ_BAS_166_ABastionsHostReachesTheTokenServicesServiceCheck(t *testing.T) {
+func TestR_BAS_051_ABastionsHostReachesTheTokenServicesServiceCheck(t *testing.T) {
 	const egress, caller = "198.51.100.20", "203.0.113.7"
 	f := newFixture(t, false)
 	main, err := httpserver.NewResolver(nil, "https://quader.example.com", []string{"https://packages.example.com"})

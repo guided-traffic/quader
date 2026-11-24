@@ -31,12 +31,12 @@ func registryGrant() *httpserver.RegistryGrant {
 	return &httpserver.RegistryGrant{Entries: []httpserver.RegistryEntry{{Repo: qr("mk-local"), Name: "left-pad", Pull: true}}}
 }
 
-// TestQ_BAS_167_ARegistryTokensShapeIsAtMostPartial: the decision point computes a registry token's shape for the token it
+// TestR_BAS_052_ARegistryTokensShapeIsAtMostPartial: the decision point computes a registry token's shape for the token it
 // was issued for, and the marking caps it at partial (R-BAS-052): a document is the caller's private copy, an artifact is
 // still an artifact but carries partial, so a Bastion asks the main installation per URL. The subject is the token behind
 // the registry token with the registry token's own expiry. A Quader token presented directly is full as before, and an
 // anonymous registry token is capped as well.
-func TestQ_BAS_167_ARegistryTokensShapeIsAtMostPartial(t *testing.T) {
+func TestR_BAS_052_ARegistryTokensShapeIsAtMostPartial(t *testing.T) {
 	cases := []struct {
 		name, cred, path string
 		read             iface.Read
@@ -68,12 +68,12 @@ func TestQ_BAS_167_ARegistryTokensShapeIsAtMostPartial(t *testing.T) {
 	})
 }
 
-// TestQ_BAS_167_TheDecisionPointDoesNotSeeTheGrant establishes what the cap rests on: the subject the decision point and the
+// TestR_BAS_080_TheDecisionPointDoesNotSeeTheGrant establishes what the cap rests on: the subject the decision point and the
 // shape resolver get (edge.SubjectOf, the dispatcher's conversion) is the same for a registry token and for the token it was
 // issued for. authz.Subject has no member for the grant (a scan token's one repository is a system subject's and not a
 // client's), so no shape the resolver computes can depend on it, and an uncapped full would hand a token granted one image
 // every cached image of the repository. The rig shows the same at the marking: both callers reach the resolver as one subject.
-func TestQ_BAS_167_TheDecisionPointDoesNotSeeTheGrant(t *testing.T) {
+func TestR_BAS_080_TheDecisionPointDoesNotSeeTheGrant(t *testing.T) {
 	exp := registryExpiry
 	direct := httpserver.Principal{
 		Kind: httpserver.KindUser, ID: "p-1", Name: "alice", Credential: httpserver.Credential{Method: httpserver.MethodBearer, TokenID: "t-1", ExpiresAt: &exp},
@@ -94,11 +94,11 @@ func TestQ_BAS_167_TheDecisionPointDoesNotSeeTheGrant(t *testing.T) {
 	}
 }
 
-// TestQ_BAS_167_InsufficientScopeIsNoStatementAboutTheCredential: a 401 whose challenge says insufficient_scope - the
+// TestR_BAS_052_InsufficientScopeIsNoStatementAboutTheCredential: a 401 whose challenge says insufficient_scope - the
 // enforcement point's answer to a registry token whose grant lacks the route's action - is marked with the subject the
 // authentication stage accepted, so a Bastion neither counts it as a failed authentication nor keeps the token as invalid;
 // every other 401 stays invalid (R-BAS-052, H-442).
-func TestQ_BAS_167_InsufficientScopeIsNoStatementAboutTheCredential(t *testing.T) {
+func TestR_BAS_052_InsufficientScopeIsNoStatementAboutTheCredential(t *testing.T) {
 	for name, c := range map[string]struct{ challenge, want string }{
 		"insufficient_scope": {`Bearer realm="https://packages.example.com/v2/_token",service="packages.example.com",scope="repository:web/mk-local/x:pull",error="insufficient_scope"`, "token=t-1; principal=p-1; expires=1800000300"},
 		"invalid_token":      {`Bearer realm="https://packages.example.com/v2/_token",service="packages.example.com",error="invalid_token"`, "invalid"},
@@ -116,10 +116,10 @@ func TestQ_BAS_167_InsufficientScopeIsNoStatementAboutTheCredential(t *testing.T
 	}
 }
 
-// TestQ_BAS_177_ADownloadTheCoreCountedIsMarkedCounted: a 200 whose serve the core's download recording noted carries
+// TestR_BAS_059_ADownloadTheCoreCountedIsMarkedCounted: a 200 whose serve the core's download recording noted carries
 // Quader-Bastion-Counted: download, a document's included (the manifest of an OCI tag is one, Q-OCI-222); a 304, a 404, a
 // response nothing noted and an ordinary caller's response carry none (R-BAS-059).
-func TestQ_BAS_177_ADownloadTheCoreCountedIsMarkedCounted(t *testing.T) {
+func TestR_BAS_059_ADownloadTheCoreCountedIsMarkedCounted(t *testing.T) {
 	counted := func(ctx context.Context) { bastionmain.NoteCounted(ctx) }
 	for _, c := range []struct {
 		name, path string
@@ -151,11 +151,11 @@ func TestQ_BAS_177_ADownloadTheCoreCountedIsMarkedCounted(t *testing.T) {
 	})
 }
 
-// TestQ_BAS_165_AWriteBelowTheRegistryRootNamesTheImagePrefix is the main installation's side of R-BAS-051's write
+// TestR_BAS_051_AWriteBelowTheRegistryRootNamesTheImagePrefix is the main installation's side of R-BAS-051's write
 // refusal: the probe of a push through a Bastion reaches the dispatcher's handler of the registry root, which tells the
 // marking its route, and is refused 403 DENIED in the distribution's shape before any decision, naming the image prefix
 // a client pushes to on the main installation. No handler runs and no body is read.
-func TestQ_BAS_165_AWriteBelowTheRegistryRootNamesTheImagePrefix(t *testing.T) {
+func TestR_BAS_051_AWriteBelowTheRegistryRootNamesTheImagePrefix(t *testing.T) {
 	r := newRig(t)
 	d, err := dispatch.New(dispatch.Options{
 		Host: fakeHost{}, Decider: r.decider, Formats: func() []formats.Format { return []formats.Format{oci.New()} },

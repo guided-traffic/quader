@@ -11,14 +11,14 @@ import (
 	"testing"
 )
 
-// dumpableHelper names the mode of the child process of TestQ_VULN_203_...: "notdump" makes itself not dumpable, "dump" stays as it is.
+// dumpableHelper names the mode of the child process of TestR_VULN_036_AChildOfTheSameUserCannotOpenTheMemoryOfANonDumpableProcess: "notdump" makes itself not dumpable, "dump" stays as it is.
 const dumpableHelper = "QUADER_TEST_DUMPABLE_HELPER"
 
-// TestQ_VULN_203_DumpableHelper is the child of the test below, started by it with dumpableHelper set; run alone it does nothing.
-func TestQ_VULN_203_DumpableHelper(t *testing.T) {
+// TestR_VULN_036_DumpableHelper is the child of the test below, started by it with dumpableHelper set; run alone it does nothing.
+func TestR_VULN_036_DumpableHelper(t *testing.T) {
 	mode := os.Getenv(dumpableHelper)
 	if mode == "" {
-		t.Skip("the child of TestQ_VULN_203_AChildOfTheSameUserCannotOpenTheMemoryOfANonDumpableProcess")
+		t.Skip("the child of TestR_VULN_036_AChildOfTheSameUserCannotOpenTheMemoryOfANonDumpableProcess")
 	}
 	if mode == "notdump" {
 		if err := NotDumpable(); err != nil {
@@ -36,7 +36,7 @@ func TestQ_VULN_203_DumpableHelper(t *testing.T) {
 // dumpable, and can open it while it is dumpable. The scanner's analysers are such processes of its user; the test runs the other direction
 // (the parent opens its child's memory), because a node's Yama scope 1 refuses a child's access to its parent whatever the flag says and
 // would hide what the flag does. About 0.1 s; skipped where the test holds CAP_SYS_PTRACE (root) or the node refuses even a dumpable child.
-func TestQ_VULN_203_AChildOfTheSameUserCannotOpenTheMemoryOfANonDumpableProcess(t *testing.T) {
+func TestR_VULN_036_AChildOfTheSameUserCannotOpenTheMemoryOfANonDumpableProcess(t *testing.T) {
 	if os.Getenv(dumpableHelper) != "" {
 		t.Skip("this is the helper's process")
 	}
@@ -45,7 +45,7 @@ func TestQ_VULN_203_AChildOfTheSameUserCannotOpenTheMemoryOfANonDumpableProcess(
 	}
 	open := func(mode string) error {
 		t.Helper()
-		cmd := exec.Command(os.Args[0], "-test.run=^TestQ_VULN_203_DumpableHelper$", "-test.count=1") //nolint:gosec // the test binary itself
+		cmd := exec.Command(os.Args[0], "-test.run=^TestR_VULN_036_DumpableHelper$", "-test.count=1") //nolint:gosec // the test binary itself
 		cmd.Env = append(os.Environ(), dumpableHelper+"="+mode)
 		stdin, err := cmd.StdinPipe()
 		if err != nil {

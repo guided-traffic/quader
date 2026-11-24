@@ -364,7 +364,7 @@ func TestR_STOR_082_ReadingFromAnEncryptedConnection(t *testing.T) {
 			})
 		}
 	}
-	t.Run("R-STOR-082 Q-STOR-311 a record of a storage key the replica does not hold falls over to the second copy, marks nothing and counts unknown_key", func(t *testing.T) {
+	t.Run("R-STOR-082 a record of a storage key the replica does not hold falls over to the second copy, marks nothing and counts unknown_key", func(t *testing.T) {
 		f, sp := setup(t, nil, nil)
 		name := f.name(t, sp.SHA256)
 		other, _ := blobcrypt.NewStorageKey("sk-archive-2-0a1b2c3d", bytes.Repeat([]byte{5}, 32))

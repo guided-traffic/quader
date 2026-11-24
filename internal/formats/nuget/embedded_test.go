@@ -115,10 +115,10 @@ func TestR_NUGET_024_AFileOutsideItsBoundsIsNotServed(t *testing.T) {
 	}
 }
 
-// TestQ_NUGET_136_AnEmbeddedFileOfAPackageACheckHoldsBackIsNotServed: the read decides the checks of a download of the .nupkg it reads
+// TestR_NUGET_024_AnEmbeddedFileOfAPackageACheckHoldsBackIsNotServed: the read decides the checks of a download of the .nupkg it reads
 // from (ItemStore.Check: the malware gate, the vulnerability block, the signature gate), and answers their refusal before any byte of the
 // package is read.
-func TestQ_NUGET_136_AnEmbeddedFileOfAPackageACheckHoldsBackIsNotServed(t *testing.T) {
+func TestR_NUGET_024_AnEmbeddedFileOfAPackageACheckHoldsBackIsNotServed(t *testing.T) {
 	var checked []string
 	refusal := errs.E(errs.Forbidden, errs.CodeMalwareFound, "Quader found malware in acme.widgets/1.2.3/acme.widgets.1.2.3.nupkg.")
 	h := newWriteHost(t, formattest.HostOptions{Check: func(_ context.Context, _ *formats.Request, it formats.Item) error {
@@ -196,9 +196,9 @@ func seedCached(t *testing.T, h *formattest.Host, st *nugettest.Store, repoID in
 	st.PutPackage(pkg)
 }
 
-// TestQ_NUGET_137_ARemoteServesTheFilesOfThePackagesItsCacheHolds: a remote repository reads the embedded files out of the .nupkg its
+// TestR_NUGET_024_ARemoteServesTheFilesOfThePackagesItsCacheHolds: a remote repository reads the embedded files out of the .nupkg its
 // cache holds; a version it has not cached is a 404, and no fetch of the package is started for it.
-func TestQ_NUGET_137_ARemoteServesTheFilesOfThePackagesItsCacheHolds(t *testing.T) {
+func TestR_NUGET_024_ARemoteServesTheFilesOfThePackagesItsCacheHolds(t *testing.T) {
 	st := nugettest.New()
 	h := formattest.NewHost(New(), formattest.HostOptions{Class: formats.Remote, Data: st})
 	if r := get(t, h, http.MethodGet, leafOfWidgets+"readme"); r.Code != http.StatusNotFound {
@@ -210,10 +210,10 @@ func TestQ_NUGET_137_ARemoteServesTheFilesOfThePackagesItsCacheHolds(t *testing.
 	}
 }
 
-// TestQ_NUGET_137_AVirtualServesTheFilesOfTheFirstMemberThatHoldsThePackage: the walk asks the members in resolution order; a member
+// TestR_NUGET_024_AVirtualServesTheFilesOfTheFirstMemberThatHoldsThePackage: the walk asks the members in resolution order; a member
 // that holds no such version is a miss and the next one answers, and a member that holds the package and whose checks refuse ends the
 // walk with the refusal (R-REPO-019).
-func TestQ_NUGET_137_AVirtualServesTheFilesOfTheFirstMemberThatHoldsThePackage(t *testing.T) {
+func TestR_NUGET_024_AVirtualServesTheFilesOfTheFirstMemberThatHoldsThePackage(t *testing.T) {
 	members := []repository.Repository{
 		{ID: "5", Name: qr("empty"), Class: repository.Local, Format: string(ID)},
 		{ID: "6", Name: qr("holder"), Class: repository.Local, Format: string(ID)},

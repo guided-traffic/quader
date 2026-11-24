@@ -162,7 +162,7 @@ func TestR_AUTH_007_ClaimMapping(t *testing.T) {
 		{"an overage marker", missingOverage, func(c claims) { delete(c, "groups"); c["_claim_names"] = map[string]any{"groups": "src1"} }},
 	}
 	for _, mc := range missing {
-		t.Run("R-AUTH-008 Q-AUTH-4 a group claim that is "+mc.name+" clears by default with the reason "+mc.reason, func(t *testing.T) {
+		t.Run("R-AUTH-008 a group claim that is "+mc.name+" clears by default with the reason "+mc.reason, func(t *testing.T) {
 			m, lerr := p.mapClaims(base(mc.mut), nil, "admin")
 			if lerr != nil {
 				t.Fatal(lerr)
@@ -302,7 +302,7 @@ func TestR_AUTH_009_LoginOptions(t *testing.T) {
 		s.providers = append(s.providers, p)
 	}
 	sortProviders(s.providers)
-	t.Run("R-AUTH-009 Q-AUTH-30 providers in configuration order, no auto redirect with two or more", func(t *testing.T) {
+	t.Run("R-AUTH-009 providers in configuration order, no auto redirect with two or more", func(t *testing.T) {
 		o := s.LoginOptions(false)
 		var ids []string
 		for _, p := range o.Providers {

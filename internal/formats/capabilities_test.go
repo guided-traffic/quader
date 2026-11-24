@@ -17,10 +17,10 @@ func (restorable) OnItemsRestored(context.Context, Tx, ItemsEvent) error {
 	return errors.New("restored")
 }
 
-// TestQ_ARCH_256_AnOptionalCapabilityIsFoundOnceAndRecordedAtRegister: a format that has the
+// TestR_ARCH_008_AnOptionalCapabilityIsFoundOnceAndRecordedAtRegister: a format that has the
 // restore hook has it in its capabilities, one without it has none, and the registry answers
 // from what Register recorded, so the core never asks the format value.
-func TestQ_ARCH_256_AnOptionalCapabilityIsFoundOnceAndRecordedAtRegister(t *testing.T) {
+func TestR_ARCH_008_AnOptionalCapabilityIsFoundOnceAndRecordedAtRegister(t *testing.T) {
 	if c := CapabilitiesOf(fake{d: valid("cap-plain")}); c.ItemsRestorer != nil {
 		t.Fatal("a format without the hook has one")
 	}
@@ -39,9 +39,9 @@ func TestQ_ARCH_256_AnOptionalCapabilityIsFoundOnceAndRecordedAtRegister(t *test
 	}
 }
 
-// TestQ_ARCH_259_NotifyAreasAreSignalAreasOfTheCatalog: a descriptor may list the areas of
+// TestR_ARCH_009_NotifyAreasAreSignalAreasOfTheCatalog: a descriptor may list the areas of
 // catalog.FormatAreas and no other.
-func TestQ_ARCH_259_NotifyAreasAreSignalAreasOfTheCatalog(t *testing.T) {
+func TestR_ARCH_009_NotifyAreasAreSignalAreasOfTheCatalog(t *testing.T) {
 	d := valid("notify-ok")
 	d.NotifyAreas = []string{catalog.MetadataChangedArea}
 	if err := Validate(fake{d: d}); err != nil {

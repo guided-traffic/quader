@@ -464,7 +464,7 @@ func TestR_VULN_042_TheAnswersOfTheScanListenerMapToTheirCodes(t *testing.T) {
 		status int
 		code   string
 	}{
-		{"Q-VULN-165 an uncached layer of a remote is layer_missing", func(w http.ResponseWriter, r *http.Request) bool {
+		{"an uncached layer of a remote is layer_missing", func(w http.ResponseWriter, r *http.Request) bool {
 			if strings.HasSuffix(r.URL.Path, layer) {
 				w.Header().Set(ErrorCodeHeader, "populate_not_permitted")
 				w.WriteHeader(http.StatusForbidden)
@@ -476,12 +476,12 @@ func TestR_VULN_042_TheAnswersOfTheScanListenerMapToTheirCodes(t *testing.T) {
 			w.WriteHeader(http.StatusNotFound)
 			return true
 		}, http.StatusUnprocessableEntity, imagescan.CodeLayerMissing},
-		{"Q-VULN-226 a repository the listener holds for disabled is repository_disabled, not the image's", func(w http.ResponseWriter, _ *http.Request) bool {
+		{"a repository the listener holds for disabled is repository_disabled, not the image's", func(w http.ResponseWriter, _ *http.Request) bool {
 			w.Header().Set(ErrorCodeHeader, "repository_disabled")
 			w.WriteHeader(http.StatusNotFound)
 			return true
 		}, http.StatusConflict, imagescan.CodeRepositoryDisabled},
-		{"Q-VULN-226 a layer of a repository the listener holds for disabled is repository_disabled too", func(w http.ResponseWriter, r *http.Request) bool {
+		{"a layer of a repository the listener holds for disabled is repository_disabled too", func(w http.ResponseWriter, r *http.Request) bool {
 			if strings.HasSuffix(r.URL.Path, layer) {
 				w.Header().Set(ErrorCodeHeader, "repository_disabled")
 				w.WriteHeader(http.StatusNotFound)
@@ -519,7 +519,7 @@ func TestR_VULN_042_TheAnswersOfTheScanListenerMapToTheirCodes(t *testing.T) {
 	r.reg.answer = nil
 }
 
-func TestQ_VULN_145_AnAnalysisHoldsTheRoomOfItsImageAndANewOneThatDoesNotFitIsPutOff(t *testing.T) {
+func TestR_VULN_036_AnAnalysisHoldsTheRoomOfItsImageAndANewOneThatDoesNotFitIsPutOff(t *testing.T) {
 	r := newRig(t, 2)
 	d := r.reg.add(imageOf(t, tarOf(t, map[string]string{"a": "1"})))
 	t.Run("one that cannot fit an empty spool is spool_too_small", func(t *testing.T) {
@@ -570,7 +570,7 @@ func TestR_HA_065_ADrainingScannerAnswersDraining(t *testing.T) {
 	}
 }
 
-func TestQ_ARCH_530_TheReaperActsOnlyAsTheContainersFirstProcess(t *testing.T) {
+func TestR_VULN_036_TheReaperActsOnlyAsTheContainersFirstProcess(t *testing.T) {
 	var killed []int
 	waits := []int{41, 42, 0}
 	r := &Reaper{

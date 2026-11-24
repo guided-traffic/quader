@@ -82,7 +82,7 @@ func TestContentRoutes(t *testing.T) {
 	sum[0] = 1
 	file := items.Item{ID: 3, RepoID: 5, Repository: qr("generic-local"), Path: "a.bin", Kind: items.KindFile, Size: 3, Digest: sum, SHA512: make([]byte, 64)}
 
-	t.Run("R-API-025 Q-UI-106 a download for the session answers what /files/ answers", func(t *testing.T) {
+	t.Run("R-API-025 a download for the session answers what /files/ answers", func(t *testing.T) {
 		d := &decider{}
 		h := handler(t, d, &store{file: file, body: []byte("abc")})
 		viaFiles := httptest.NewRecorder()
@@ -101,7 +101,7 @@ func TestContentRoutes(t *testing.T) {
 		}
 	})
 
-	t.Run("R-API-025 Q-UI-106 a download decides on one index with the repository key, like /files/", func(t *testing.T) {
+	t.Run("R-API-025 a download decides on one index with the repository key, like /files/", func(t *testing.T) {
 		d := &decider{}
 		serveContent(t, handler(t, d, &store{file: file, body: []byte("abc")}), 0,
 			as(httptest.NewRequest(http.MethodGet, contentDownload, nil), httpserver.MethodSession))
@@ -115,7 +115,7 @@ func TestContentRoutes(t *testing.T) {
 		}
 	})
 
-	t.Run("R-API-025 Q-UI-106 a range and HEAD work as on /files/", func(t *testing.T) {
+	t.Run("R-API-025 a range and HEAD work as on /files/", func(t *testing.T) {
 		h := handler(t, &decider{}, &store{file: file, body: []byte("abc")})
 		req := as(httptest.NewRequest(http.MethodGet, contentDownload, nil), httpserver.MethodSession)
 		req.Header.Set("Range", "bytes=1-2")
@@ -128,7 +128,7 @@ func TestContentRoutes(t *testing.T) {
 		}
 	})
 
-	t.Run("R-API-025 Q-UI-106 a path that is not stored answers 404", func(t *testing.T) {
+	t.Run("R-API-025 a path that is not stored answers 404", func(t *testing.T) {
 		h := handler(t, &decider{}, &store{})
 		rec := serveContent(t, h, 0, as(httptest.NewRequest(http.MethodGet, "/api/v1/projects/it/repositories/generic-local/content/missing.bin", nil), httpserver.MethodSession))
 		want := httptest.NewRecorder()
@@ -138,7 +138,7 @@ func TestContentRoutes(t *testing.T) {
 		}
 	})
 
-	t.Run("R-API-025 Q-UI-106 every request the session did not authenticate is the 404 of an unknown path, before any decision", func(t *testing.T) {
+	t.Run("R-API-025 every request the session did not authenticate is the 404 of an unknown path, before any decision", func(t *testing.T) {
 		unknown := httptest.NewRecorder()
 		httpserver.Problem(unknown, httptest.NewRequest(http.MethodGet, contentDownload, nil), notFoundRoute())
 		for name, method := range map[string]httpserver.AuthMethod{
@@ -181,7 +181,7 @@ func TestContentRoutes(t *testing.T) {
 		}
 	})
 
-	t.Run("R-API-025 Q-UI-106 an upload within the limit is stored", func(t *testing.T) {
+	t.Run("R-API-025 an upload within the limit is stored", func(t *testing.T) {
 		h := handlerOver(t, &decider{}, &countingStore{})
 		rec := serveContent(t, h, 4, as(httptest.NewRequest(http.MethodPut, "/api/v1/projects/it/repositories/generic-local/content/new/b.bin", strings.NewReader("xyz")), httpserver.MethodSession))
 		if rec.Code != http.StatusCreated {
@@ -195,7 +195,7 @@ func TestContentRoutes(t *testing.T) {
 		}
 	})
 
-	t.Run("R-API-025 Q-UI-106 an upload above ui.deploy.max_upload_bytes answers 413, a declared length before anything is spooled", func(t *testing.T) {
+	t.Run("R-API-025 an upload above ui.deploy.max_upload_bytes answers 413, a declared length before anything is spooled", func(t *testing.T) {
 		st := &countingStore{}
 		h := handlerOver(t, &decider{}, st)
 		rec := serveContent(t, h, 4, as(httptest.NewRequest(http.MethodPut, "/api/v1/projects/it/repositories/generic-local/content/big.bin", strings.NewReader("12345")), httpserver.MethodSession))
@@ -210,7 +210,7 @@ func TestContentRoutes(t *testing.T) {
 		}
 	})
 
-	t.Run("R-API-025 Q-UI-106 a limit of 0 is no limit, and /files/ has none of its own", func(t *testing.T) {
+	t.Run("R-API-025 a limit of 0 is no limit, and /files/ has none of its own", func(t *testing.T) {
 		h := handlerOver(t, &decider{}, &countingStore{})
 		body := strings.Repeat("x", 1<<16)
 		if rec := serveContent(t, h, 0, as(httptest.NewRequest(http.MethodPut, "/api/v1/projects/it/repositories/generic-local/content/big.bin", strings.NewReader(body)), httpserver.MethodSession)); rec.Code != http.StatusCreated {
@@ -223,7 +223,7 @@ func TestContentRoutes(t *testing.T) {
 		}
 	})
 
-	t.Run("R-API-025 Q-UI-106 a caller who may not deploy is refused before the body is read, not told 413", func(t *testing.T) {
+	t.Run("R-API-025 a caller who may not deploy is refused before the body is read, not told 413", func(t *testing.T) {
 		st := &countingStore{}
 		h := handlerOver(t, &denier{outcome: authz.DenyVisible}, st)
 		rec := serveContent(t, h, 4, as(httptest.NewRequest(http.MethodPut, "/api/v1/projects/it/repositories/generic-local/content/big.bin", strings.NewReader("123456789")), httpserver.MethodSession))
@@ -232,7 +232,7 @@ func TestContentRoutes(t *testing.T) {
 		}
 	})
 
-	t.Run("R-API-025 Q-API-195 a path ServeMux would clean is redirected, not served", func(t *testing.T) {
+	t.Run("R-API-025 a path ServeMux would clean is redirected, not served", func(t *testing.T) {
 		h := handler(t, &decider{}, &store{file: file, body: []byte("abc")})
 		rec := serveContent(t, h, 0, as(httptest.NewRequest(http.MethodGet, "/api/v1/projects/it/repositories/generic-local/content/x/../a.bin", nil), httpserver.MethodSession))
 		if rec.Code/100 != 3 || rec.Header().Get("Location") != "/api/v1/projects/it/repositories/generic-local/content/a.bin" || rec.Body.String() == "abc" {
@@ -240,7 +240,7 @@ func TestContentRoutes(t *testing.T) {
 		}
 	})
 
-	t.Run("R-API-025 Q-ARCH-307 DELETE is not a content route: 405 for the session, the 404 of an unknown path for every other caller", func(t *testing.T) {
+	t.Run("R-API-025 DELETE is not a content route: 405 for the session, the 404 of an unknown path for every other caller", func(t *testing.T) {
 		for _, m := range []string{http.MethodDelete, http.MethodPost, http.MethodPatch} {
 			rec := serveContent(t, handler(t, &decider{}, &store{file: file}), 0, as(httptest.NewRequest(m, contentDownload, nil), httpserver.MethodSession))
 			if rec.Code != http.StatusMethodNotAllowed || rec.Header().Get("Allow") != "GET, HEAD, PUT" {
@@ -302,7 +302,7 @@ func TestContentRoutesAgreeWithTheDocument(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Run("R-API-025 Q-UI-106 the routes of the content family and the document agree in both directions", func(t *testing.T) {
+	t.Run("R-API-025 the routes of the content family and the document agree in both directions", func(t *testing.T) {
 		router := httpserver.NewClientRouter()
 		New(Options{}).Content(0).Register(router)
 		patterns := router.Patterns()

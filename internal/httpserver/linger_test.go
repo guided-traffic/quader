@@ -48,7 +48,7 @@ func bigBody(n int, entered chan<- struct{}, release <-chan struct{}) http.Handl
 }
 
 func TestLingerShutdown(t *testing.T) {
-	t.Run("Q-ARCH-187 R-ARCH-024 the shutdown waits until the peer has acknowledged the bytes of a finished response", func(t *testing.T) {
+	t.Run("R-ARCH-024 the shutdown waits until the peer has acknowledged the bytes of a finished response", func(t *testing.T) {
 		if runtime.GOOS != "linux" {
 			t.Skip("the send queue is read with SIOCOUTQ, which the pods have (Linux)")
 		}
@@ -96,7 +96,7 @@ func TestLingerShutdown(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-ARCH-187 R-ARCH-024 a peer that never reads is reset at the bound, not waited for", func(t *testing.T) {
+	t.Run("R-ARCH-024 a peer that never reads is reset at the bound, not waited for", func(t *testing.T) {
 		if runtime.GOOS != "linux" {
 			t.Skip("the send queue is read with SIOCOUTQ, which the pods have (Linux)")
 		}
@@ -122,7 +122,7 @@ func TestLingerShutdown(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-ARCH-187 R-ARCH-024 a transfer cut at the deadline is reset at once, so the peer hears of the end", func(t *testing.T) {
+	t.Run("R-ARCH-024 a transfer cut at the deadline is reset at once, so the peer hears of the end", func(t *testing.T) {
 		if runtime.GOOS != "linux" {
 			t.Skip("the reset is sent on Linux, where the pods run")
 		}

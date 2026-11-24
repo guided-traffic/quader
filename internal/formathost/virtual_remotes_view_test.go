@@ -56,7 +56,7 @@ func TestR_ARCH_001_VirtualRemotesOverAReadOnlyView(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-ARCH-294 the view answers the reads and refuses Metadata and Probe with Unavailable, never contacting an upstream", func(t *testing.T) {
+	t.Run("the view answers the reads and refuses Metadata and Probe with Unavailable, never contacting an upstream", func(t *testing.T) {
 		view := &viewOnly{}
 		r, err := bind(VirtualRemotesOptions{View: view})
 		if err != nil {

@@ -26,10 +26,10 @@ func TestR_OCI_031_TheMetadataSizeIsTheStoredImageSize(t *testing.T) {
 	}
 }
 
-// TestQ_OCI_221_AnIndexCountsThePlatformsTheRepositoryHolds: the size of an index is the sum over the images of its platforms that the
+// TestR_OCI_031_AnIndexCountsThePlatformsTheRepositoryHolds: the size of an index is the sum over the images of its platforms that the
 // repository holds; while some are missing it is partial and says so, while none is it is not known and is no number (R-API-080). An
 // attestation manifest is no platform and is left out of the count; the platform that is not held lists no size.
-func TestQ_OCI_221_AnIndexCountsThePlatformsTheRepositoryHolds(t *testing.T) {
+func TestR_OCI_031_AnIndexCountsThePlatformsTheRepositoryHolds(t *testing.T) {
 	amd := rows.Child{Platform: "linux/amd64", Stored: true, ContentSize: 10}
 	arm := rows.Child{Platform: "linux/arm64", ContentSize: 0}
 	att := rows.Child{Platform: rows.AttestationPlatform}

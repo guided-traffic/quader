@@ -271,7 +271,7 @@ func TestSlots(t *testing.T) {
 			t.Errorf("n=0 counts as 1: %d", got)
 		}
 	})
-	t.Run("R-REPO-040 Q-ARCH-297 only the replicas that fill share the budget: two api, three packages and two worker replicas give each packages replica 22 of 64", func(t *testing.T) {
+	t.Run("R-REPO-040 only the replicas that fill share the budget: two api, three packages and two worker replicas give each packages replica 22 of 64", func(t *testing.T) {
 		live := []string{"api", "api", "packages", "packages", "packages", "worker", "worker"}
 		n := 0
 		for _, role := range live {

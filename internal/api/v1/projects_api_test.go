@@ -134,7 +134,7 @@ func TestR_API_047_ListProjectsNarrowsToTheCaller(t *testing.T) {
 func TestR_AUTHZ_026_GetProjectIsNotFoundForAnotherProject(t *testing.T) {
 	web := projectCaller{members: map[string]authz.ProjectRole{"web": authz.ProjectRoleOwner}, owns: map[string]bool{"web": true}}
 	s := projectsSetup(t, web)
-	t.Run("R-AUTHZ-026 an administrator reads its project with an ETag, and a conditional read still answers the body (Q-AUTHZ-202)", func(t *testing.T) {
+	t.Run("R-AUTHZ-026 an administrator reads its project with an ETag, and a conditional read still answers the body", func(t *testing.T) {
 		w := s.get("/api/v1/projects/web")
 		if w.Code != 200 || w.Header().Get("ETag") != `"3"` {
 			t.Fatalf("%d %v", w.Code, w.Header())

@@ -115,7 +115,7 @@ func TestR_AUTHZ_013_ATokenScopeIntersectsTheRole(t *testing.T) {
 			t.Errorf("an Owner's inheriting token holds the content actions, %s refused", a)
 		}
 	}
-	t.Run("Q-AUTHZ-215 the administration needs a session or a token with admin: true", func(t *testing.T) {
+	t.Run("R-AUTHZ-026 the administration needs a session or a token with admin: true", func(t *testing.T) {
 		idx := e.Index()
 		if e.OwnsOn(idx, inherit, "web") || e.RoleOn(idx, inherit, "web") != ProjectRoleMaintainer {
 			t.Error("a token without admin administers the project")
@@ -126,12 +126,12 @@ func TestR_AUTHZ_013_ATokenScopeIntersectsTheRole(t *testing.T) {
 	})
 }
 
-// TestQ_AUTHZ_215_AMembershipReachesATokenWithinItsScope: the projects a personal access token is a member of, and its
+// TestR_AUTHZ_013_AMembershipReachesATokenWithinItsScope: the projects a personal access token is a member of, and its
 // role in each, are the ones its scope reaches (R-AUTHZ-013): a session, an inheriting token, a token with admin: true
 // or with the system item projects:read reach every membership; a restricted token reaches a project one of its
 // repository elements covers, whatever the element's actions, and no other. A token scoped to one repository's
 // deploy does not read the other projects of its owner and their members.
-func TestQ_AUTHZ_215_AMembershipReachesATokenWithinItsScope(t *testing.T) {
+func TestR_AUTHZ_013_AMembershipReachesATokenWithinItsScope(t *testing.T) {
 	e := roleEngine(t, roleFixture().member(pWeb, idDave, "reader").member(pShop, idDave, "owner"))
 	idx := e.Index()
 	dave := userSub(idDave, "dave")
@@ -172,9 +172,9 @@ func TestQ_AUTHZ_215_AMembershipReachesATokenWithinItsScope(t *testing.T) {
 	}
 }
 
-// TestQ_AUTHZ_215_OnlyUsersCarryARole: a service account, a CI token, a Bastion registration and anonymous are
+// TestR_AUTHZ_026_OnlyUsersCarryARole: a service account, a CI token, a Bastion registration and anonymous are
 // never members; a membership row of a principal that is neither a user nor a group is skipped by the build.
-func TestQ_AUTHZ_215_OnlyUsersCarryARole(t *testing.T) {
+func TestR_AUTHZ_026_OnlyUsersCarryARole(t *testing.T) {
 	f := roleFixture().member(pWeb, idBot, "owner")
 	f.s.ProjectMembers[len(f.s.ProjectMembers)-1].PrincipalKind = dbServiceAcct
 	e := roleEngine(t, f)

@@ -6,7 +6,7 @@ import "testing"
 // (Q-OPS-157, Q-ARCH-583). A replica runs one App; the tests of this package and the integration harness start many in one
 // process, and each paid 0.04 to 0.07 s for its own parse.
 func TestTheAPIDocumentIsParsedOncePerProcess(t *testing.T) {
-	t.Run("Q-ARCH-583 two Apps of one process share one parse of the document", func(t *testing.T) {
+	t.Run("two Apps of one process share one parse of the document", func(t *testing.T) {
 		a, b := &App{}, &App{}
 		da, err := a.apiDocument()
 		if err != nil {

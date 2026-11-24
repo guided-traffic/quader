@@ -389,7 +389,7 @@ func TestR_STOR_096_ThePlainCopyFirstAndTheTraceOfAKey(t *testing.T) {
 			t.Fatalf("%s", h.Link)
 		}
 	})
-	t.Run("R-STOR-096 Q-STOR-341 with an encrypted copy first and a plain one second, the plain one is named and no key is taken", func(t *testing.T) {
+	t.Run("R-STOR-096 with an encrypted copy first and a plain one second, the plain one is named and no key is taken", func(t *testing.T) {
 		s := newSealed(t, map[string]bool{"plain": true}, map[string]bool{"plain": true})
 		h, _, declined := s.links.handover(ctx, s.item, offer)
 		if declined != "" || h.Connection != "second" || h.Encrypted || h.DataKey.Present() || h.StoredSize != s.item.Size {
@@ -556,7 +556,7 @@ func TestR_STOR_096_ThePlainCopyFirstAndTheTraceOfAKey(t *testing.T) {
 				len(s.trail.events), s.tx.n, s.links.KeysHeld())
 		}
 	})
-	t.Run("R-STOR-095 Q-STOR-471 a credential that expires and a signing error stream without taking a key", func(t *testing.T) {
+	t.Run("R-STOR-095 a credential that expires and a signing error stream without taking a key", func(t *testing.T) {
 		s := newSealed(t, map[string]bool{"plain": true, "second": true}, map[string]bool{"plain": true, "second": true})
 		s.stores["plain"].SetCredentialExpiry(time.Now().Add(3 * time.Second))
 		if ok, _, _ := s.offer(t); ok || s.declined(t, HandoverDeclinedCredential) != 1 {

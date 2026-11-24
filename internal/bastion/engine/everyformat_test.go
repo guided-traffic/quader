@@ -504,10 +504,10 @@ func TestR_BAS_053_ContainerImagesFollowTheRouteKinds(t *testing.T) {
 	}
 }
 
-// TestQ_BAS_181_TheEnginesHeaderListsAreTheCatalogs holds the engine's header lists to the catalog's (Q-BAS-181): what a
+// TestR_BAS_053_TheEnginesHeaderListsAreTheCatalogs holds the engine's header lists to the catalog's (Q-BAS-181): what a
 // cached answer replays is the core's representation headers, and every per-request header of the core is either dropped
 // from every answer or framing of the one answer passed through, never replayed from the cache.
-func TestQ_BAS_181_TheEnginesHeaderListsAreTheCatalogs(t *testing.T) {
+func TestR_BAS_053_TheEnginesHeaderListsAreTheCatalogs(t *testing.T) {
 	if !slices.Equal(representationHeaders(), catalog.RepresentationHeaders()) {
 		t.Fatalf("the engine replays %v, the catalog names %v", representationHeaders(), catalog.RepresentationHeaders())
 	}

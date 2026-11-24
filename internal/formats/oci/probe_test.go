@@ -84,10 +84,10 @@ func (r remoteMemberResolver) Plan(context.Context, *formats.Request, formats.Pa
 	return &formats.VirtualPlan{Admitted: true, Members: []formats.PlannedMember{{Member: r.member, Tier: formats.TierRemote, MayFill: true}}}, nil
 }
 
-// TestQ_REPO_367_WhatAProbeOfTheRegistryIsThroughAVirtualRepository: the same requests are probes through a virtual address, told to
+// TestR_REPO_065_WhatAProbeOfTheRegistryIsThroughAVirtualRepository: the same requests are probes through a virtual address, told to
 // the host with the request of the remote member that answered them (the walk serves a member's answer through the member's own
 // handler), whose content and charge the host then decides on; a GET of a blob and a tag no member holds are none. Milliseconds.
-func TestQ_REPO_367_WhatAProbeOfTheRegistryIsThroughAVirtualRepository(t *testing.T) {
+func TestR_REPO_065_WhatAProbeOfTheRegistryIsThroughAVirtualRepository(t *testing.T) {
 	cfg, layer := []byte("cfg"), []byte("layer")
 	image := imageManifestBytes(sha(cfg), sha(layer))
 	mem := &formattest.MemRemote{
@@ -125,10 +125,10 @@ func TestQ_REPO_367_WhatAProbeOfTheRegistryIsThroughAVirtualRepository(t *testin
 	}
 }
 
-// TestQ_OCI_223_ATagOfAnIndexNamesThePlatformsOfTheRepositorysList: the probe of a tag whose manifest is an index names the manifests
+// TestR_OCI_026_ATagOfAnIndexNamesThePlatformsOfTheRepositorysList: the probe of a tag whose manifest is an index names the manifests
 // of the platforms of oci.platforms (linux/amd64 and linux/arm64 while the repository sets none) and their attestations, and none of
 // another platform.
-func TestQ_OCI_223_ATagOfAnIndexNamesThePlatformsOfTheRepositorysList(t *testing.T) {
+func TestR_OCI_026_ATagOfAnIndexNamesThePlatformsOfTheRepositorysList(t *testing.T) {
 	_, amdD := imageManifest("amd", "base", "amd")
 	_, armD := imageManifest("arm", "base", "arm")
 	_, s390D := imageManifest("s390", "base", "s390")

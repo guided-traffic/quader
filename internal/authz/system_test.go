@@ -51,7 +51,7 @@ func TestR_OCI_037_TheScanSubjectReadsTheRepositoryItsTokenNamesAndNothingElse(t
 		{"another system subject without a rule", Subject{Kind: principal.KindSystem, Name: "nobody", SystemRepo: qr("docker-local")}, read("docker-local", "app", ""), DenyHidden},
 	}
 	for _, tc := range cases {
-		t.Run("Q-OCI-228 "+tc.name, func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			if d := e.DecideOn(ctx, idx, tc.sub, tc.c); d.Outcome != tc.want {
 				t.Fatalf("decision %+v, want %d", d, tc.want)
 			}
@@ -63,7 +63,7 @@ func TestR_OCI_037_TheScanSubjectReadsTheRepositoryItsTokenNamesAndNothingElse(t
 			t.Fatalf("decision %+v err %v", d, d.Err())
 		}
 	})
-	t.Run("Q-VULN-226 a refusal for the switch alone names repository_disabled, every other refusal is the plain 404", func(t *testing.T) {
+	t.Run("R-VULN-042 a refusal for the switch alone names repository_disabled, every other refusal is the plain 404", func(t *testing.T) {
 		d := e.DecideOn(ctx, idx, scanSub("docker-off"), read("docker-off", "app", "app/_manifests/sha256:x"))
 		if ee, ok := errs.As(d.Err()); d.Reason != ReasonRepositoryDisabled || !ok || ee.Status() != 404 || ee.Code != errs.CodeRepositoryDisabled {
 			t.Fatalf("the disabled repository: decision %+v err %v", d, d.Err())

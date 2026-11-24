@@ -62,7 +62,7 @@ func TestR_VULN_025_TheRefusals(t *testing.T) {
 		{"the ecosystem is spelled as OSV spells it", "vulnerabilities:\n  sources:\n    osv:\n      ecosystems: [nuget]\n", nil, []string{"vulnerabilities.sources.osv.ecosystems"}},
 		{"mode repository without repository", "vulnerabilities:\n  sources:\n    osv:\n      mode: repository\n", nil, []string{"vulnerabilities.sources.osv.repository"}},
 		{"kev mode repository without repository", "vulnerabilities:\n  sources:\n    kev:\n      mode: repository\n", nil, []string{"vulnerabilities.sources.kev.repository"}},
-		{"a bare key as the mirror repository (Q-AUTHZ-206)", "vulnerabilities:\n  sources:\n    osv:\n      mode: repository\n      repository: vuln-mirror\n", nil, []string{"vulnerabilities.sources.osv.repository", "qualified name"}},
+		{"a bare key as the mirror repository (R-AUTHZ-026)", "vulnerabilities:\n  sources:\n    osv:\n      mode: repository\n      repository: vuln-mirror\n", nil, []string{"vulnerabilities.sources.osv.repository", "qualified name"}},
 		{"a pattern as the kev repository", "vulnerabilities:\n  sources:\n    kev:\n      mode: off\n      repository: platform/vuln-*\n", nil, []string{"vulnerabilities.sources.kev.repository"}},
 		{"an http base url", "vulnerabilities:\n  sources:\n    osv:\n      base_url: http://osv.example.com/\n", nil, []string{"vulnerabilities.sources.osv.base_url", "https"}},
 		{"an http kev url", "vulnerabilities:\n  sources:\n    kev:\n      url: http://kev.example.com/k.json\n", nil, []string{"vulnerabilities.sources.kev.url"}},

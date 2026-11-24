@@ -278,7 +278,7 @@ func TestLoadErrors(t *testing.T) {
 		}
 	})
 
-	t.Run("R-ARCH-021 Q-HA-8 a missing key file names the file and the fix", func(t *testing.T) {
+	t.Run("R-ARCH-021 a missing key file names the file and the fix", func(t *testing.T) {
 		_, err := Load(config.Secrets{EncryptionKeyFiles: []string{"/nonexistent/2026-10.key"}, ActiveKeyID: "2026-10"})
 		if err == nil || !strings.Contains(err.Error(), "/nonexistent/2026-10.key does not exist") {
 			t.Errorf("err = %v", err)

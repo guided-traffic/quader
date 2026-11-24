@@ -208,7 +208,7 @@ func TestR_CI_004_NoneAndHMACAreNeverSupported(t *testing.T) {
 			t.Errorf("%q is supported", alg)
 		}
 	}
-	t.Run("R-CI-004 HS256 signed with the PEM of the RSA public key does not verify with that key (Q-CI-24)", func(t *testing.T) {
+	t.Run("R-CI-004 HS256 signed with the PEM of the RSA public key does not verify with that key", func(t *testing.T) {
 		raw, err := stub.Mint(oidcstub.MintOptions{Alg: "HS256"})
 		if err != nil {
 			t.Fatal(err)

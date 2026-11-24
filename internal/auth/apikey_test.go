@@ -329,7 +329,7 @@ func TestR_NUGET_012_NoSessionCookieOnAnAPIKeyRoute(t *testing.T) {
 		{"R-NUGET-012 with anonymous access on it runs as anonymous, never as the cookie's user", "POST", "/api/nuget/nuget-local/package/acme.widgets/1.2.3", true, false, ""},
 		{"R-NUGET-012 a push with only a cookie answers 401", "PUT", "/api/nuget/nuget-local/package", false, false, errs.CodeCredentialsRequired},
 		{"R-NUGET-012 a delete with only a cookie answers 401", "DELETE", "/api/nuget/nuget-local/package/acme.widgets/1.2.3", false, false, errs.CodeCredentialsRequired},
-		{"Q-AUTH-187 a GET that declares the key does not take the cookie either", "GET", "/api/keyed/r/declared-get", false, false, errs.CodeCredentialsRequired},
+		{"R-AUTH-001 a GET that declares the key does not take the cookie either", "GET", "/api/keyed/r/declared-get", false, false, errs.CodeCredentialsRequired},
 		{"R-AUTH-001 a download route keeps the cookie for GET", "GET", "/api/nuget/nuget-local/v3-flatcontainer/acme.widgets/1.2.3/acme.widgets.1.2.3.nupkg", false, true, ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

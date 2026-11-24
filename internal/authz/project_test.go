@@ -353,8 +353,8 @@ func TestR_AUTHZ_026_ProjectPolicyValidation(t *testing.T) {
 		{"R-AUTHZ-004 a key of no repository of the project", projectPolicy("web-out", "web", "npm-internal"), errs.CodeUnknownRepository, "/resources/repositories/0"},
 		{"R-AUTHZ-004 a key another project has", projectPolicy("web-shop", "web", "shop-npm"), errs.CodeUnknownRepository, "/resources/repositories/0"},
 		{"R-AUTHZ-004 a key that exists nowhere", projectPolicy("web-none", "web", "no-such-repo"), errs.CodeUnknownRepository, "/resources/repositories/0"},
-		{"R-AUTHZ-004 Q-AUTHZ-216 a selector with a slash names another project and is refused", projectPolicy("web-q", "web", "shop/shop-npm"), errs.CodeInvalidPattern, "/resources/repositories/0"},
-		{"R-AUTHZ-004 Q-AUTHZ-216 its own project qualified is refused too", projectPolicy("web-q", "web", "web/web-npm"), errs.CodeInvalidPattern, "/resources/repositories/0"},
+		{"R-AUTHZ-004 a selector with a slash names another project and is refused", projectPolicy("web-q", "web", "shop/shop-npm"), errs.CodeInvalidPattern, "/resources/repositories/0"},
+		{"R-AUTHZ-004 its own project qualified is refused too", projectPolicy("web-q", "web", "web/web-npm"), errs.CodeInvalidPattern, "/resources/repositories/0"},
 		{"R-AUTHZ-004 a class of the project", projectPolicy("web-c", "web", "@any-local:npm"), "", ""},
 		{"a CI mapping never holds manage", projectPolicy("web-ci", "web", "web-npm", Entry{"ci:gitlab-internal/acme-publish", []string{"manage"}}), errs.CodeActionNotAllowed, "/entries/0/actions"},
 		{"a CI mapping may deploy", projectPolicy("web-ci", "web", "web-npm", Entry{"ci:gitlab-internal/acme-publish", []string{"deploy"}}), "", ""},
@@ -363,9 +363,9 @@ func TestR_AUTHZ_026_ProjectPolicyValidation(t *testing.T) {
 		{"a service account of another project", projectPolicy("web-shopbot", "web", "web-npm", Entry{"sa:shop-bot", []string{"deploy"}}), errs.CodePrincipalOutsideProject, "/entries/0/principal"},
 		{"a global policy naming a project service account", global(projectPolicy("p", "web", "it/npm-internal", Entry{"sa:web-bot", []string{"read"}})), errs.CodePrincipalOutsideProject, "/entries/0/principal"},
 		{"a global policy may name a global service account", global(projectPolicy("p", "web", "it/npm-internal", Entry{"sa:ci-bot", []string{"read"}})), "", ""},
-		{"Q-AUTHZ-209 the stored name of a project policy carries its project", PolicyInput{Name: "read", Project: ptr("web"), Resources: Resources{Repositories: []string{"web-npm"}}}, "invalid_name", "/name"},
-		{"Q-AUTHZ-209 and no other project", PolicyInput{Name: "shop/read", Project: ptr("web"), Resources: Resources{Repositories: []string{"web-npm"}}}, "invalid_name", "/name"},
-		{"Q-AUTHZ-209 the name within the project follows the name rule", projectPolicy("Read", "web", "web-npm"), "invalid_name", "/name"},
+		{"the stored name of a project policy carries its project", PolicyInput{Name: "read", Project: ptr("web"), Resources: Resources{Repositories: []string{"web-npm"}}}, "invalid_name", "/name"},
+		{"and no other project", PolicyInput{Name: "shop/read", Project: ptr("web"), Resources: Resources{Repositories: []string{"web-npm"}}}, "invalid_name", "/name"},
+		{"the name within the project follows the name rule", projectPolicy("Read", "web", "web-npm"), "invalid_name", "/name"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p, _ := firstProblem(t, s, tc.in)
@@ -395,7 +395,7 @@ func TestR_AUTHZ_026_ProjectPolicyValidation(t *testing.T) {
 			t.Fatalf("%v %v", r.Warnings, r.Covers)
 		}
 	})
-	t.Run("Q-AUTHZ-209 the same name in two projects and once instance-wide are three policies", func(t *testing.T) {
+	t.Run("the same name in two projects and once instance-wide are three policies", func(t *testing.T) {
 		web, mobile := "web", "mobile"
 		names := map[string]bool{}
 		for _, project := range []*string{&web, &mobile, nil} {

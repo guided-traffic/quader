@@ -18,9 +18,9 @@ func roleEndpoint(t *testing.T, surface []string, role string) *Endpoint {
 	return e
 }
 
-// TestQ_ARCH_298_TheEffectiveSurfaceIsTheSurfaceIntersectedWithTheRole covers the intersection of an endpoint's configured
+// TestR_EP_005_TheEffectiveSurfaceIsTheSurfaceIntersectedWithTheRole covers the intersection of an endpoint's configured
 // surface with the families of the process's role, the listener rule's input (R-EP-002, R-EP-005).
-func TestQ_ARCH_298_TheEffectiveSurfaceIsTheSurfaceIntersectedWithTheRole(t *testing.T) {
+func TestR_EP_005_TheEffectiveSurfaceIsTheSurfaceIntersectedWithTheRole(t *testing.T) {
 	all := config.Surfaces()
 	for name, tc := range map[string]struct {
 		surface []string
@@ -48,9 +48,9 @@ func TestQ_ARCH_298_TheEffectiveSurfaceIsTheSurfaceIntersectedWithTheRole(t *tes
 	}
 }
 
-// TestQ_ARCH_302_ServesRequestFollowsTheEffectiveSurface: the question the authentication stage asks for a request of a family
+// TestR_ARCH_001_ServesRequestFollowsTheEffectiveSurface: the question the authentication stage asks for a request of a family
 // the process does not serve.
-func TestQ_ARCH_302_ServesRequestFollowsTheEffectiveSurface(t *testing.T) {
+func TestR_ARCH_001_ServesRequestFollowsTheEffectiveSurface(t *testing.T) {
 	api := roleEndpoint(t, config.Surfaces(), "api")
 	packages := roleEndpoint(t, config.Surfaces(), "packages")
 	for path, want := range map[string]struct{ api, packages bool }{

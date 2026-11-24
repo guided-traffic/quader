@@ -51,7 +51,7 @@ func TestR_OCI_037_AScanTokenIsIssuedAndVerifiedWithItsClaims(t *testing.T) {
 		t.Fatalf("lifetime %s, want pull_timeout", got)
 	}
 
-	t.Run("Q-OCI-229 it lives pull_timeout, checked against that bound and not oci.token_lifetime", func(t *testing.T) {
+	t.Run("it lives pull_timeout, checked against that bound and not oci.token_lifetime", func(t *testing.T) {
 		if _, err := s.Verify(tok.Reveal(), ScanEndpoint, t0.Add(10*time.Minute)); !errors.Is(err, ErrExpired) {
 			t.Fatalf("at its end: %v", err)
 		}

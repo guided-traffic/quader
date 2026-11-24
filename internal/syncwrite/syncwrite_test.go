@@ -35,10 +35,10 @@ func TestCopy(t *testing.T) {
 		every   int64
 		want    []int
 	}{
-		{"Q-VULN-225 a flush after every piece and after the rest", "0123456789", 4, []int{4, 8, 10}},
-		{"Q-VULN-225 a payload of whole pieces ends with the last piece's flush", "01234567", 4, []int{4, 8}},
-		{"Q-VULN-225 a payload below the threshold is flushed once", "012", 4, []int{3}},
-		{"Q-VULN-225 nothing is not flushed", "", 4, nil},
+		{"R-VULN-049 a flush after every piece and after the rest", "0123456789", 4, []int{4, 8, 10}},
+		{"R-VULN-049 a payload of whole pieces ends with the last piece's flush", "01234567", 4, []int{4, 8}},
+		{"R-VULN-049 a payload below the threshold is flushed once", "012", 4, []int{3}},
+		{"R-VULN-049 nothing is not flushed", "", 4, nil},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var r recorder
@@ -52,26 +52,26 @@ func TestCopy(t *testing.T) {
 			}
 		})
 	}
-	t.Run("Q-VULN-225 a failed flush ends the copy", func(t *testing.T) {
+	t.Run("R-VULN-049 a failed flush ends the copy", func(t *testing.T) {
 		r := recorder{failAt: 1}
 		n, err := Copy(&r, strings.NewReader("0123456789"), 4)
 		if err == nil || n != 4 || len(r.flushes) != 1 {
 			t.Fatalf("Copy = %d, %v; flushes %v", n, err, r.flushes)
 		}
 	})
-	t.Run("Q-VULN-225 a failed read ends the copy after flushing what came", func(t *testing.T) {
+	t.Run("R-VULN-049 a failed read ends the copy after flushing what came", func(t *testing.T) {
 		var r recorder
 		n, err := Copy(&r, iotest.TimeoutReader(strings.NewReader("0123456789")), 4)
 		if !errors.Is(err, iotest.ErrTimeout) || n == 0 {
 			t.Fatalf("Copy = %d, %v", n, err)
 		}
 	})
-	t.Run("Q-VULN-225 a threshold of zero is refused", func(t *testing.T) {
+	t.Run("R-VULN-049 a threshold of zero is refused", func(t *testing.T) {
 		if _, err := Copy(&recorder{}, strings.NewReader("x"), 0); err == nil {
 			t.Fatal("accepted")
 		}
 	})
-	t.Run("Q-STOR-486 a Writer flushes at exactly every threshold whatever the size of the writes, and Sync flushes the rest once", func(t *testing.T) {
+	t.Run("R-STOR-004 a Writer flushes at exactly every threshold whatever the size of the writes, and Sync flushes the rest once", func(t *testing.T) {
 		var r recorder
 		w := NewWriter(&r, 4)
 		for _, piece := range []string{"012", "3456", "789"} { // the threshold falls inside the second and the third write
@@ -86,7 +86,7 @@ func TestCopy(t *testing.T) {
 			t.Fatalf("flushes at %v after Sync, want [4 8 10] and no flush of nothing", r.flushes)
 		}
 	})
-	t.Run("Q-VULN-225 an *os.File is a File", func(t *testing.T) {
+	t.Run("R-VULN-049 an *os.File is a File", func(t *testing.T) {
 		f, err := os.Create(filepath.Join(t.TempDir(), "f"))
 		if err != nil {
 			t.Fatal(err)

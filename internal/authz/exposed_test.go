@@ -9,7 +9,7 @@ func TestR_EP_014_ExposedBindsConfigurationReaders(t *testing.T) {
 	f := exposureFixture()
 	e := newTestEngine(t, f, func(o *Options) { o.Ceiling = exposureCeiling() })
 	keys := []string{"files-virtual", "generic-auth", "generic-local", "generic-other", "npm-customers"}
-	t.Run("R-EP-014 Q-EP-12 on an endpoint with rules only repositories with an enabled rule, for every subject", func(t *testing.T) {
+	t.Run("R-EP-014 on an endpoint with rules only repositories with an enabled rule, for every subject", func(t *testing.T) {
 		for _, s := range []Subject{adminSub, carolSub} {
 			got, err := e.Exposed(t.Context(), onEP(s, "customers"), qrs(keys))
 			if err != nil {

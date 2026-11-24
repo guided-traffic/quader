@@ -78,7 +78,7 @@ func TestDownloadBuffers(t *testing.T) {
 		}
 	})
 
-	t.Run("R-ARCH-005 Q-ARCH-328 a download costs the size class of its buffer plus what the object store sends ahead, at most the receive window", func(t *testing.T) {
+	t.Run("R-ARCH-005 a download costs the size class of its buffer plus what the object store sends ahead, at most the receive window", func(t *testing.T) {
 		var cfg config.Storage
 		cfg.Download = config.StorageDownload{BufferSize: 256 << 10, HoldBack: 64 << 10}
 		cfg.ObjectStore.HTTP.ReceiveWindow = 256 << 10

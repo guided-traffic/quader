@@ -42,7 +42,7 @@ func readAll(t *testing.T, archive []byte, l untrusted.Limits) ([]untrusted.Entr
 // Q-ANS-91, R-ARCH-028: with ContainedSymlinks a symbolic link whose target stays inside the archive is handed out with its resolved
 // target and counted against the entries, and nothing is read through it; without the option, and for a hard link always, the link is
 // refused.
-func TestQ_ANS_91_AContainedSymlinkIsAdmittedCountedAndNeverFollowed(t *testing.T) {
+func TestR_ANS_010_AContainedSymlinkIsAdmittedCountedAndNeverFollowed(t *testing.T) {
 	archive := tarGz(t, func(tw *tar.Writer) {
 		file(t, tw, "tests/utils/shippable/remote.sh", "#!/bin/sh\necho remote\n")
 		symlink(t, tw, "tests/utils/shippable/aix.sh", "remote.sh", tar.TypeSymlink)
@@ -89,7 +89,7 @@ func TestQ_ANS_91_AContainedSymlinkIsAdmittedCountedAndNeverFollowed(t *testing.
 
 // Q-ANS-91: a link with an absolute target, one that leaves the archive, one without a target and a hard link are refused with a
 // sentence that names the entry.
-func TestQ_ANS_91_ALinkThatLeavesTheArchiveIsRefusedByName(t *testing.T) {
+func TestR_ANS_010_ALinkThatLeavesTheArchiveIsRefusedByName(t *testing.T) {
 	for name, c := range map[string]struct {
 		entry, target string
 		typ           byte

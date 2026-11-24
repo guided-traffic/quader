@@ -18,13 +18,13 @@ import (
 )
 
 func TestStatementBoundIsNoOutage(t *testing.T) {
-	t.Run("Q-ARCH-650 a read whose statement passed the bound is not run again, whatever error the cut connection gave", func(t *testing.T) {
+	t.Run("R-ARCH-019 a read whose statement passed the bound is not run again, whatever error the cut connection gave", func(t *testing.T) {
 		cut := fmt.Errorf("%w: %w", errStatementBound, &net.OpError{Op: "read", Err: os.ErrDeadlineExceeded})
 		if classify(cut) != retryNo {
 			t.Fatalf("classify = %v, want retryNo", classify(cut))
 		}
 	})
-	t.Run("Q-ARCH-650 the bound ends each statement on its own context and says so at the end", func(t *testing.T) {
+	t.Run("R-ARCH-019 the bound ends each statement on its own context and says so at the end", func(t *testing.T) {
 		b := &boundedConn{d: time.Millisecond}
 		ctx := b.bound(context.Background())
 		<-ctx.Done()
@@ -40,13 +40,13 @@ func TestStatementBoundIsNoOutage(t *testing.T) {
 }
 
 func TestBeginOptions(t *testing.T) {
-	t.Run("Q-ARCH-650 a context with a statement bound opens its transaction with the bound in the same query", func(t *testing.T) {
+	t.Run("R-ARCH-019 a context with a statement bound opens its transaction with the bound in the same query", func(t *testing.T) {
 		o := beginOptions(meta.WithStatementTimeout(context.Background(), 1500*time.Millisecond))
 		if o.IsoLevel != pgx.ReadCommitted || o.BeginQuery != "BEGIN ISOLATION LEVEL READ COMMITTED; SET LOCAL statement_timeout = 1500" {
 			t.Fatalf("%+v", o)
 		}
 	})
-	t.Run("Q-ARCH-650 a context without one opens a plain transaction, and a bound of zero is none", func(t *testing.T) {
+	t.Run("R-ARCH-019 a context without one opens a plain transaction, and a bound of zero is none", func(t *testing.T) {
 		for _, ctx := range []context.Context{context.Background(), meta.WithStatementTimeout(context.Background(), 0)} {
 			if o := beginOptions(ctx); o.BeginQuery != "" || o.IsoLevel != pgx.ReadCommitted {
 				t.Fatalf("%+v", o)

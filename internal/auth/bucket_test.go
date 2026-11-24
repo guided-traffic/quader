@@ -12,7 +12,7 @@ func TestR_AUTH_038_AddressBucket(t *testing.T) {
 		{"", ""},
 		{"not-an-address", "not-an-address"},
 	} {
-		t.Run("R-AUTH-038 Q-AUTH-90 "+c.in, func(t *testing.T) {
+		t.Run("R-AUTH-038 "+c.in, func(t *testing.T) {
 			if got := AddressBucket(c.in); got != c.want {
 				t.Fatalf("AddressBucket(%q) = %q, want %q", c.in, got, c.want)
 			}

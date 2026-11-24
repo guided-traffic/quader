@@ -555,10 +555,10 @@ func TestR_ARCH_010_CleanMethodCoverage(t *testing.T) {
 	}
 }
 
-// TestQ_ARCH_281_AContentRouteThatOnlyRefusesIsListed: check 7 checks the content headers on what a
+// TestR_ARCH_010_AContentRouteThatOnlyRefusesIsListed: check 7 checks the content headers on what a
 // route serves, so a route whose content cases all expect a refusal is listed in NoContent with the
 // reason, and an entry the fixture contradicts fails.
-func TestQ_ARCH_281_AContentRouteThatOnlyRefusesIsListed(t *testing.T) {
+func TestR_ARCH_010_AContentRouteThatOnlyRefusesIsListed(t *testing.T) {
 	fx := testformat.Fixture()
 	var cases []formattest.ContentCase
 	for _, c := range fx.Content {
@@ -595,9 +595,9 @@ func TestQ_ARCH_281_AContentRouteThatOnlyRefusesIsListed(t *testing.T) {
 	})
 }
 
-// TestQ_ARCH_281_EveryStorageHookIsDrivenByAChange: check 9 asks a change case of every storage hook
+// TestR_ARCH_010_EveryStorageHookIsDrivenByAChange: check 9 asks a change case of every storage hook
 // the format has, the restore hook of formats.ItemsRestorer included, or a reasoned NoRevision entry.
-func TestQ_ARCH_281_EveryStorageHookIsDrivenByAChange(t *testing.T) {
+func TestR_ARCH_010_EveryStorageHookIsDrivenByAChange(t *testing.T) {
 	fx := testformat.Fixture()
 	var changes []formattest.ChangeCase
 	for _, c := range fx.Changes {
@@ -628,9 +628,9 @@ func (f fillInspecting) InspectFill(ctx context.Context, _ formats.RemoteContext
 	return f.fill(ctx)
 }
 
-// TestQ_ARCH_281_TheFillHookMeetsTheBoundsOfCheck6: a remote adapter that inspects fills runs the
+// TestR_ARCH_010_TheFillHookMeetsTheBoundsOfCheck6: a remote adapter that inspects fills runs the
 // crafted inputs of check 6 through its hook; what it answers is its own, and a panic fails the check.
-func TestQ_ARCH_281_TheFillHookMeetsTheBoundsOfCheck6(t *testing.T) {
+func TestR_ARCH_010_TheFillHookMeetsTheBoundsOfCheck6(t *testing.T) {
 	fx := testformat.Fixture()
 	fx.Inspect = fx.Inspect[:1]
 	withFill := func(fill func(context.Context) (*formats.Inspection, error)) override {

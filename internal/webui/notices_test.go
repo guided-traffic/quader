@@ -62,7 +62,7 @@ func assertNotices(t *testing.T, rec *httptest.ResponseRecorder, path string) {
 // under every locale (Q-UI-144). The file is not hashed, so the shared asset store never holds it and every replica serves
 // the notices of its own build.
 func TestR_UI_001_ThirdPartyNotices(t *testing.T) {
-	t.Run("the build writes the notices into every locale directory (Q-UI-144)", func(t *testing.T) {
+	t.Run("the build writes the notices into every locale directory", func(t *testing.T) {
 		src, err := os.ReadFile("../../web/scripts/build-embed.mjs")
 		if err != nil {
 			t.Fatal(err)
@@ -78,7 +78,7 @@ func TestR_UI_001_ThirdPartyNotices(t *testing.T) {
 		}
 	})
 
-	t.Run("the notices are not a hashed file, so the store neither holds nor serves them (Q-UI-144)", func(t *testing.T) {
+	t.Run("the notices are not a hashed file, so the store neither holds nor serves them", func(t *testing.T) {
 		if IsHashed(noticesFile) {
 			t.Fatalf("%s is hashed: the store would publish it under a name that does not change with its content", noticesFile)
 		}
@@ -96,7 +96,7 @@ func TestR_UI_001_ThirdPartyNotices(t *testing.T) {
 		}
 	})
 
-	t.Run("the embedded build carries the notices of every locale (Q-UI-144)", func(t *testing.T) {
+	t.Run("the embedded build carries the notices of every locale", func(t *testing.T) {
 		h, err := New(Options{Locales: []string{"en", "de"}, DefaultLocale: "en"})
 		if err != nil {
 			t.Fatalf("New: %v", err)

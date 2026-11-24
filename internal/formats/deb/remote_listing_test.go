@@ -20,11 +20,11 @@ func (p entryPort) EntryDigest(_ context.Context, _ int64, path string) (rows.En
 	return e, ok, nil
 }
 
-// TestQ_REPO_330_ARemoteListsThePackageFileItCachedAndItsRemovalTakesTheVersion: the fill of a pool file of a remote writes the version
+// TestR_API_081_ARemoteListsThePackageFileItCachedAndItsRemovalTakesTheVersion: the fill of a pool file of a remote writes the version
 // its parsed index row names, the first file its lead and another architecture's beside it (FetchAnyFile counts both, R-API-079); a
 // source package's file, a file no parsed index lists and an index get no row; the removal of the lead takes the version with it
 // (R-API-081).
-func TestQ_REPO_330_ARemoteListsThePackageFileItCachedAndItsRemovalTakesTheVersion(t *testing.T) {
+func TestR_API_081_ARemoteListsThePackageFileItCachedAndItsRemovalTakesTheVersion(t *testing.T) {
 	const (
 		amd = "pool/main/h/hello/hello_1.0-1_amd64.deb"
 		arm = "pool/main/h/hello/hello_1.0-1_arm64.deb"

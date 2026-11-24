@@ -34,7 +34,7 @@ func TestR_OPS_017_AuditFilter(t *testing.T) {
 			t.Fatalf("%+v", f)
 		}
 	})
-	t.Run("R-OPS-017 Q-AUTH-402 the outcome filter takes warning", func(t *testing.T) {
+	t.Run("R-OPS-017 the outcome filter takes warning", func(t *testing.T) {
 		f, err := auditFilter(map[string]string{"outcome": "warning"})
 		if err != nil || f.Outcome != audit.Warning {
 			t.Fatalf("%+v %v", f, err)
@@ -127,7 +127,7 @@ func (c *captureRecorder) RecordTx(_ context.Context, _ meta.Tx, ev audit.Event)
 
 func (c *captureRecorder) Record(_ context.Context, ev audit.Event) { c.events = append(c.events, ev) }
 
-func TestQ_OPS_49_RequestSourceIsAddedToEvents(t *testing.T) {
+func TestR_OPS_015_RequestSourceIsAddedToEvents(t *testing.T) {
 	inner := &captureRecorder{}
 	rec := WithRequestSource(inner)
 	router := httpserver.NewClientRouter()

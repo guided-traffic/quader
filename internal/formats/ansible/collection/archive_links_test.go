@@ -37,7 +37,7 @@ func linked() collectiontest.Spec {
 // Q-ANS-91, R-ANS-010: an archive with links whose targets stay inside it is accepted; the links are checked against FILES.json by
 // the digest of their targets, they are no files of the count, and nothing is read through them: the tap never sees a link, and the
 // README that collection_info names through a link is absent.
-func TestQ_ANS_91_ACollectionWithContainedLinksIsAcceptedAndNoLinkIsRead(t *testing.T) {
+func TestR_ANS_010_ACollectionWithContainedLinksIsAcceptedAndNoLinkIsRead(t *testing.T) {
 	tap := &namesTap{}
 	a, err := collection.ReadArchive(context.Background(), bytes.NewReader(collectiontest.Build(linked())), collection.DefaultLimits(),
 		collection.WithTap(tap))
@@ -66,7 +66,7 @@ func TestQ_ANS_91_ACollectionWithContainedLinksIsAcceptedAndNoLinkIsRead(t *test
 }
 
 // Q-ANS-91: what FILES.json says of a link is held as it is of a file, and a link that leaves the archive is refused by its name.
-func TestQ_ANS_91_ALinkIsHeldToFilesJSONAndToTheArchive(t *testing.T) {
+func TestR_ANS_010_ALinkIsHeldToFilesJSONAndToTheArchive(t *testing.T) {
 	relist := func(mutate func(files []any) []any) []byte {
 		es := collectiontest.Entries(linked())
 		for i := range es {

@@ -54,7 +54,7 @@ func withCookie(r *http.Request, value string) *http.Request {
 // endedCookie is a cookie of the session form whose session has ended.
 var endedCookie = session.NewSecret()
 
-func TestQ_AUTH_410_WhoamiClearsAnEndedSessionsCookie(t *testing.T) {
+func TestR_AUTH_002_WhoamiClearsAnEndedSessionsCookie(t *testing.T) {
 	looked := 0
 	s := newStage(&fakeTokens{}, Options{Sessions: refusingSessions{looked: &looked}})
 
@@ -85,7 +85,7 @@ func TestQ_AUTH_410_WhoamiClearsAnEndedSessionsCookie(t *testing.T) {
 		})
 	}
 
-	t.Run("Q-AUTH-412 a malformed cookie and an ended session's cookie get the same answer, so it tells nothing about which sessions exist", func(t *testing.T) {
+	t.Run("R-AUTH-002 a malformed cookie and an ended session's cookie get the same answer, so it tells nothing about which sessions exist", func(t *testing.T) {
 		before := looked
 		malformed, _ := answer(t, s, withCookie(req("GET", whoamiPath), "not-a-session"), defaultRules())
 		if looked != before {
@@ -103,7 +103,7 @@ func TestQ_AUTH_410_WhoamiClearsAnEndedSessionsCookie(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-AUTH-410 every other route answers session_expired and leaves the cookies alone", func(t *testing.T) {
+	t.Run("R-AUTH-002 every other route answers session_expired and leaves the cookies alone", func(t *testing.T) {
 		for _, c := range []struct{ method, path string }{
 			{"GET", "/api/v1/formats"},
 			{"GET", "/api/v1/projects"},

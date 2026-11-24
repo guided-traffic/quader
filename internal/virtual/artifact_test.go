@@ -63,7 +63,7 @@ func TestR_REPO_019_ArtifactTiers(t *testing.T) {
 		}
 	})
 
-	t.Run("R-REPO-025 Q-REPO-204 a cached copy whose object is lost is a miss of the cache tier: the member's fetch tier fills it again", func(t *testing.T) {
+	t.Run("R-REPO-025 a cached copy whose object is lost is a miss of the cache tier: the member's fetch tier fills it again", func(t *testing.T) {
 		w := newWorld(t)
 		vt.Put(w.arts.CachedItems, "npm-remote", tgz, "cached-bytes")
 		vt.Put(w.arts.UpstreamItems, "npm-remote", tgz, "upstream-bytes")
@@ -80,7 +80,7 @@ func TestR_REPO_019_ArtifactTiers(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-REPO-205 a lost cached copy of a member the caller may not fill is 503 content_unavailable, never 404", func(t *testing.T) {
+	t.Run("a lost cached copy of a member the caller may not fill is 503 content_unavailable, never 404", func(t *testing.T) {
 		lost := errs.E(errs.Unavailable, errs.CodeContentUnavailable, "lost", errs.WithRetryAfter(30*time.Second))
 		for name, arrange := range map[string]func(w *world){
 			// The first request: the cache tier serves, and the read finds the object gone.
@@ -106,7 +106,7 @@ func TestR_REPO_019_ArtifactTiers(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-REPO-205 a lost cached copy is no answer while another member's cache serves the item", func(t *testing.T) {
+	t.Run("a lost cached copy is no answer while another member's cache serves the item", func(t *testing.T) {
 		w := newWorld(t, func(o *worldOpts) {
 			o.fill = "deploy"
 			o.members = []repository.Repository{local, remote, remote2}

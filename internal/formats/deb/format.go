@@ -53,7 +53,7 @@ func upstreamPresets() []catalog.UpstreamPreset {
 
 // The archive keys of the presets (Q-REPO-379): the keyring files of the leaf internal/formats/deb/archivekeys, which says what each is
 // and where it comes from; the signatures ship the same files as the anchors debian-archive and ubuntu-archive (R-SIG-017).
-// TestQ_REPO_379_TheArchiveKeys pins every fingerprint and fails 90 days before a key expires. A key change of either keyring is a
+// TestR_REPO_062_TheArchiveKeys pins every fingerprint and fails 90 days before a key expires. A key change of either keyring is a
 // release of Quader.
 var (
 	debianArchiveKeyring = string(archivekeys.Debian())

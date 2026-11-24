@@ -219,7 +219,7 @@ func TestR_NPM_016_OnCommitLeavesATagAtAHiddenVersion(t *testing.T) {
 		return func(v string) bool { return v != "2.0.0" }, nil
 	}
 	for _, c := range []struct{ tag, version string }{{"latest", "3.0.0"}, {"latest", "1.5.0"}, {"beta", "3.0.0-beta.1"}} {
-		t.Run("Q-NPM-85 "+c.tag+" at a hidden version stays for "+c.version, func(t *testing.T) {
+		t.Run(c.tag+" at a hidden version stays for "+c.version, func(t *testing.T) {
 			pc, in, err := commit(c.tag, c.version, hides)
 			if err != nil {
 				t.Fatal(err)
@@ -232,7 +232,7 @@ func TestR_NPM_016_OnCommitLeavesATagAtAHiddenVersion(t *testing.T) {
 			}
 		})
 	}
-	t.Run("Q-NPM-85 a view that fails fails the commit", func(t *testing.T) {
+	t.Run("a view that fails fails the commit", func(t *testing.T) {
 		boom := errors.New("no view")
 		if _, _, err := commit("latest", "3.0.0", func(context.Context) (func(string) bool, error) { return nil, boom }); !errors.Is(err, boom) {
 			t.Fatalf("err %v, want the view's", err)

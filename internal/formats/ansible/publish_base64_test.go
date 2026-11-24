@@ -46,10 +46,10 @@ func base64Publish(t *testing.T, archive []byte) (*bytes.Buffer, string) {
 	return &body, mw.FormDataContentType()
 }
 
-// TestQ_ANS_53_TheArchiveLimitCountsTheDecodedBytesOfABase64Part: ansible.max_archive_bytes bounds the archive, which is the decoded bytes of
+// TestR_ANS_008_TheArchiveLimitCountsTheDecodedBytesOfABase64Part: ansible.max_archive_bytes bounds the archive, which is the decoded bytes of
 // a base64 file part, not the encoded text a third larger: a limit between the two admits the publish, and a limit below the archive refuses
 // it with the archive limit's answer (R-ANS-008, R-ANS-031). Limits of kilobytes.
-func TestQ_ANS_53_TheArchiveLimitCountsTheDecodedBytesOfABase64Part(t *testing.T) {
+func TestR_ANS_008_TheArchiveLimitCountsTheDecodedBytesOfABase64Part(t *testing.T) {
 	archive := collectiontest.Build(collectionSpec("1.0.0"))
 	encoded := int64(base64.StdEncoding.EncodedLen(len(archive)))
 	for _, c := range []struct {

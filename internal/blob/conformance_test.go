@@ -74,7 +74,7 @@ func TestConformance(t *testing.T) {
 			t.Fatalf("startup check: %v", err)
 		}
 	})
-	t.Run("R-STOR-035 a store that serves an old version after an overwrite is reported eventual and tolerated (A1, Q-STOR-249)", func(t *testing.T) {
+	t.Run("R-STOR-035 a store that serves an old version after an overwrite is reported eventual and tolerated (A1)", func(t *testing.T) {
 		m := blobtest.New()
 		stale := &staleStore{Store: m}
 		seen := false

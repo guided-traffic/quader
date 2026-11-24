@@ -270,9 +270,9 @@ func TestR_BAS_087_TheGrantIsReadAsTheTokenServiceWritesIt(t *testing.T) {
 	}
 }
 
-// TestQ_BAS_252_TheExpiryIsReadAsTheTokenServiceWritesIt: RegistryTokenExpiry reads the expiry of a token from the real encoder;
+// TestR_BAS_087_TheExpiryIsReadAsTheTokenServiceWritesIt: RegistryTokenExpiry reads the expiry of a token from the real encoder;
 // claims without one, or with one that is not positive, yield none.
-func TestQ_BAS_252_TheExpiryIsReadAsTheTokenServiceWritesIt(t *testing.T) {
+func TestR_BAS_087_TheExpiryIsReadAsTheTokenServiceWritesIt(t *testing.T) {
 	s := issuer(t)
 	exp := time.Now().Add(2 * time.Minute).Truncate(time.Second)
 	tok := issueRegistryToken(t, s, exp)

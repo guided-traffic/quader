@@ -126,7 +126,7 @@ func TestReadiness(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-OPS-2 a first-readiness check gates once and is reported afterwards", func(t *testing.T) {
+	t.Run("R-OPS-001 a first-readiness check gates once and is reported afterwards", func(t *testing.T) {
 		c := cfg()
 		c.FailureThreshold = 1
 		h := New(c)
@@ -154,7 +154,7 @@ func TestReadiness(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-OPS-2 require_object_store keeps the check gating (first=false)", func(t *testing.T) {
+	t.Run("R-OPS-001 require_object_store keeps the check gating (first=false)", func(t *testing.T) {
 		c := cfg()
 		c.FailureThreshold = 1
 		h := New(c)
@@ -168,7 +168,7 @@ func TestReadiness(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-HA-13 a reported check gates the first readiness on configuration errors only", func(t *testing.T) {
+	t.Run("R-HA-008 a reported check gates the first readiness on configuration errors only", func(t *testing.T) {
 		c := cfg()
 		c.FailureThreshold = 1
 		h := New(c)
@@ -410,7 +410,7 @@ func TestLiveness(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-OPS-1 liveness never reads a readiness result", func(t *testing.T) {
+	t.Run("R-OPS-001 liveness never reads a readiness result", func(t *testing.T) {
 		h := New(cfg(), WithClock(clock))
 		var db toggle
 		db.set(errors.New("postgres down"))
@@ -561,7 +561,7 @@ func TestCheckTimeoutClassification(t *testing.T) {
 	live := context.Background()
 	other := errors.New("connection refused")
 
-	t.Run("R-OPS-001 Q-OPS-31 an answer of context.DeadlineExceeded after the check's own deadline is a timeout", func(t *testing.T) {
+	t.Run("R-OPS-001 an answer of context.DeadlineExceeded after the check's own deadline is a timeout", func(t *testing.T) {
 		got := timedOut(expired, live, context.DeadlineExceeded)
 		if !errors.Is(got, errCheckTimeout) || !IsTransient(got) {
 			t.Fatalf("got %v, transient=%v", got, IsTransient(got))
@@ -570,7 +570,7 @@ func TestCheckTimeoutClassification(t *testing.T) {
 			t.Fatalf("a wrapped DeadlineExceeded is %v", wrapped)
 		}
 	})
-	t.Run("R-OPS-001 Q-OPS-31 other answers and other expiries stay as they are", func(t *testing.T) {
+	t.Run("R-OPS-001 other answers and other expiries stay as they are", func(t *testing.T) {
 		if got := timedOut(expired, live, other); !errors.Is(got, other) {
 			t.Fatalf("another error after the deadline became %v", got)
 		}
@@ -595,7 +595,7 @@ func TestCheckTimeoutClassification(t *testing.T) {
 		"forced": func(h *Health, ctx context.Context) { h.Refresh(ctx) },
 		"timed":  func(h *Health, ctx context.Context) { h.runDue(ctx, false) },
 	} {
-		t.Run("R-OPS-001 Q-OPS-31 a check returning its ctx.Err() at the deadline is recorded as timeout ("+name+")", func(t *testing.T) {
+		t.Run("R-OPS-001 a check returning its ctx.Err() at the deadline is recorded as timeout ("+name+")", func(t *testing.T) {
 			for range 5 {
 				h := New(cfg())
 				h.AddReadiness("database", giveUp, false, WithGrace(time.Minute))
@@ -680,7 +680,7 @@ func TestOutageGrace(t *testing.T) {
 		}
 	})
 
-	t.Run("R-OPS-001 Q-OPS-31 a check that runs past health.check_timeout earns the grace: degraded inside it, failing after it", func(t *testing.T) {
+	t.Run("R-OPS-001 a check that runs past health.check_timeout earns the grace: degraded inside it, failing after it", func(t *testing.T) {
 		clk := &clock{t: time.Unix(1_700_000_000, 0)}
 		h := New(cfg(), WithClock(func() time.Time { clk.mu.Lock(); defer clk.mu.Unlock(); return clk.t }))
 		var stall atomic.Bool

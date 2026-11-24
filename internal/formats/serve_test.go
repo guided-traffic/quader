@@ -88,12 +88,12 @@ func TestR_ARCH_007_ServeRouteWrapsTheContentRoutes(t *testing.T) {
 			t.Fatalf("headers = %v", rec.Header())
 		}
 	})
-	t.Run("Q-ARCH-86 a request the session cookie authenticated gets the same-origin policy", func(t *testing.T) {
+	t.Run("a request the session cookie authenticated gets the same-origin policy", func(t *testing.T) {
 		if got := serve(t, Metadata, write("x"), true).Header().Get("Cross-Origin-Resource-Policy"); got != "same-origin" {
 			t.Fatalf("policy = %q", got)
 		}
 	})
-	t.Run("Q-ARCH-258 a volatile route that returns package-derived bytes carries the metadata headers and no attachment", func(t *testing.T) {
+	t.Run("a volatile route that returns package-derived bytes carries the metadata headers and no attachment", func(t *testing.T) {
 		rec := serve(t, Volatile, func(_ context.Context, _ *Request, w http.ResponseWriter) error {
 			w.Header().Del("Content-Security-Policy")
 			w.Header().Set("Content-Type", "application/json")

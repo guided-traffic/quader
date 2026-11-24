@@ -8,7 +8,7 @@ import (
 )
 
 func TestSendBuffer(t *testing.T) {
-	t.Run("Q-ARCH-500 every accepted connection gets server.send_buffer as its SO_SNDBUF, so the kernel holds a bounded part of a response its client does not read", func(t *testing.T) {
+	t.Run("R-ARCH-005 every accepted connection gets server.send_buffer as its SO_SNDBUF, so the kernel holds a bounded part of a response its client does not read", func(t *testing.T) {
 		for _, n := range []int{0, 128 << 10} {
 			s, err := NewServer(ServerConfig{Name: "test", Addr: "127.0.0.1:0", SendBuffer: n, Handler: http.NotFoundHandler()})
 			if err != nil {

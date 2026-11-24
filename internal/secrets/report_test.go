@@ -35,7 +35,7 @@ func TestRingsCompatible(t *testing.T) {
 			}
 		})
 	}
-	t.Run("R-OPS-004 the ring of a replica of every role counts, and a role that never registers does not (Q-OPS-161)", func(t *testing.T) {
+	t.Run("R-OPS-004 the ring of a replica of every role counts, and a role that never registers does not", func(t *testing.T) {
 		for _, role := range []string{"api", "packages", "worker", "web", "all"} {
 			if !opensSecrets(role) {
 				t.Errorf("a %s replica is left out of the key ring rule", role)

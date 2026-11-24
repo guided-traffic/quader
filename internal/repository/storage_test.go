@@ -52,8 +52,8 @@ func TestR_STOR_014_TheRepositorysOptOut(t *testing.T) {
 	for _, tc := range []struct {
 		name, storage, pointer, code string
 	}{
-		{"R-STOR-014 Q-STOR-283 the member presignedDownloads is refused at its pointer", `{"presignedDownloads":true}`, "/storage/presignedDownloads", codeInvalidValue},
-		{"R-STOR-014 Q-STOR-283 a member storage does not hold is refused", `{"quota":"1TiB"}`, "/storage/quota", codeInvalidValue},
+		{"R-STOR-014 the member presignedDownloads is refused at its pointer", `{"presignedDownloads":true}`, "/storage/presignedDownloads", codeInvalidValue},
+		{"R-STOR-014 a member storage does not hold is refused", `{"quota":"1TiB"}`, "/storage/quota", codeInvalidValue},
 		{"R-STOR-014 downloadLinks is a boolean", `{"downloadLinks":"no"}`, "/storage/downloadLinks", codeInvalidValue},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -83,7 +83,7 @@ func TestR_STOR_014_TheRepositorysOptOut(t *testing.T) {
 		{"false to true", off, on, false},
 		{"false to absent", off, absent, false},
 	} {
-		t.Run("R-STOR-014 Q-STOR-282 "+c.name+" by a project Owner", func(t *testing.T) {
+		t.Run("R-STOR-014 "+c.name+" by a project Owner", func(t *testing.T) {
 			cur, nd := &Document{Settings: Settings{Storage: c.cur}}, &Document{Settings: Settings{Storage: c.nd}}
 			e := s.narrowing(r, cur, nd, nil, nil)
 			if got := slices.Contains(e.parts(), partDownloadLinks); got != c.narrows || e.DownloadLinksOff != c.narrows {

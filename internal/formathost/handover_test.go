@@ -431,7 +431,7 @@ func TestR_STOR_095_TheConditionsOfAHandover(t *testing.T) {
 		mod  func(h *handoverServe)
 	}{
 		{"a route whose clients check no digest", func(h *handoverServe) { h.route.ClientDigest = formats.ClientDigest{} }},
-		{"a repository that opted out of the clients' links (Q-STOR-345)", func(h *handoverServe) {
+		{"a repository that opted out of the clients' links", func(h *handoverServe) {
 			h.repos.by[linkHolder] = repositoryOptedOut(h.repos.by[linkHolder])
 		}},
 		{"the switch of the clients' links on", func(h *handoverServe) {
@@ -465,7 +465,7 @@ func TestR_STOR_095_TheConditionsOfAHandover(t *testing.T) {
 		}
 	})
 	for _, mode := range []limits.Mode{limits.ModeEnforce, limits.ModeAudit} {
-		t.Run("R-STOR-095 Q-STOR-343 a caller with a speed limit is handed over in "+string(mode)+", charged its size at the issue", func(t *testing.T) {
+		t.Run("R-STOR-095 a caller with a speed limit is handed over in "+string(mode)+", charged its size at the issue", func(t *testing.T) {
 			h := newHandoverServe(t, nil)
 			h.mode, h.figs[limits.CachedBytesPerSecond] = mode, 1_000_000
 			if rec := h.serve(); rec.Code != http.StatusOK || h.absence.Handover() == "" {

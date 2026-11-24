@@ -70,9 +70,9 @@ func forged(payload string) string {
 	return iface.RegistryTokenPrefix + enc([]byte(payload)) + "." + enc(make([]byte, 32))
 }
 
-// TestQ_BAS_167_ARegistryTokenIsCheckedByItsFormOnly: a Bastion holds no key, so it checks a registry token by its form - the
+// TestR_BAS_052_ARegistryTokenIsCheckedByItsFormOnly: a Bastion holds no key, so it checks a registry token by its form - the
 // prefix, base64url, one dot, base64url, at most 4 KiB - as the main installation's token service writes it (R-BAS-052).
-func TestQ_BAS_167_ARegistryTokenIsCheckedByItsFormOnly(t *testing.T) {
+func TestR_BAS_052_ARegistryTokenIsCheckedByItsFormOnly(t *testing.T) {
 	if iface.RegistryTokenPrefix != registrytoken.Prefix || iface.MaxRegistryTokenBytes != registrytoken.MaxLength {
 		t.Fatalf("the interface's form (%q, %d) is not the token service's (%q, %d)", iface.RegistryTokenPrefix, iface.MaxRegistryTokenBytes, registrytoken.Prefix, registrytoken.MaxLength)
 	}
@@ -99,9 +99,9 @@ func TestQ_BAS_167_ARegistryTokenIsCheckedByItsFormOnly(t *testing.T) {
 	}
 }
 
-// TestQ_BAS_168_AnAnonymousRegistryTokenReadsAsTheAnonymousCaller: the unverified claims of the token the token service issues to
+// TestR_BAS_052_AnAnonymousRegistryTokenReadsAsTheAnonymousCaller: the unverified claims of the token the token service issues to
 // a request without a credential name the anonymous principal, and nothing else reads so (R-BAS-052).
-func TestQ_BAS_168_AnAnonymousRegistryTokenReadsAsTheAnonymousCaller(t *testing.T) {
+func TestR_BAS_052_AnAnonymousRegistryTokenReadsAsTheAnonymousCaller(t *testing.T) {
 	user, anonymous := tokens(t)
 	if !iface.RegistryTokenAnonymous(anonymous) {
 		t.Errorf("the anonymous principal's token does not read as anonymous: %q", anonymous)
@@ -125,9 +125,9 @@ func TestQ_BAS_168_AnAnonymousRegistryTokenReadsAsTheAnonymousCaller(t *testing.
 	}
 }
 
-// TestQ_BAS_170_TheHandshakeCarriesTheFormatTable: the handshake's format table and bound repository travel and decode strictly,
+// TestR_BAS_057_TheHandshakeCarriesTheFormatTable: the handshake's format table and bound repository travel and decode strictly,
 // a format the table does not name gets the defaults, and the Bastion refuses a table it cannot rely on (R-BAS-057).
-func TestQ_BAS_170_TheHandshakeCarriesTheFormatTable(t *testing.T) {
+func TestR_BAS_057_TheHandshakeCarriesTheFormatTable(t *testing.T) {
 	table := iface.HandshakeFormats{
 		{ID: "npm", ReplayHeaders: []string{}, RateLimitedStatus: http.StatusTooManyRequests, BoundPrefixes: []string{}},
 		{ID: "oci", RegistryRoot: true, ReplayHeaders: []string{"Docker-Content-Digest", "Link"}, RateLimitedStatus: http.StatusTooManyRequests, BoundPrefixes: []string{"/v2/"}},
@@ -181,9 +181,9 @@ func TestQ_BAS_170_TheHandshakeCarriesTheFormatTable(t *testing.T) {
 	}
 }
 
-// TestQ_BAS_177_TheMarkingSaysWhenItCountedADownload: Quader-Bastion-Counted: download travels as a member of the marking, a
+// TestR_BAS_059_TheMarkingSaysWhenItCountedADownload: Quader-Bastion-Counted: download travels as a member of the marking, a
 // marking without it counted nothing, any other value is malformed, and the strip removes it with the rest (R-BAS-059).
-func TestQ_BAS_177_TheMarkingSaysWhenItCountedADownload(t *testing.T) {
+func TestR_BAS_059_TheMarkingSaysWhenItCountedADownload(t *testing.T) {
 	h := http.Header{}
 	iface.Marking{
 		Class: iface.ClassShared, Repository: "web/docker", Read: iface.ReadFull, Subject: iface.Subject{Kind: iface.SubjectAnonymous},

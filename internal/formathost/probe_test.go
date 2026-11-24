@@ -45,11 +45,11 @@ func (f *tiersFake) gateAt(_ context.Context, mrq *formats.Request, _ formats.Pa
 	return formats.Digests{}, nil
 }
 
-// TestQ_REPO_367_AProbeThroughAVirtualRepositoryIsTheProbeOfTheMemberThatServesIt: the member is found by the tiers of R-REPO-019
+// TestR_REPO_065_AProbeThroughAVirtualRepositoryIsTheProbeOfTheMemberThatServesIt: the member is found by the tiers of R-REPO-019
 // step 6 for the probe's file, without an upstream: a local member that holds it starts nothing; the first remote member whose cache
 // holds it is the one; then the first remote member the caller may fill whose gate announces the file, else the first whose gate does
 // not refuse it; a member the caller may not fill, and one whose gate says the version is not there, are passed over.
-func TestQ_REPO_367_AProbeThroughAVirtualRepositoryIsTheProbeOfTheMemberThatServesIt(t *testing.T) {
+func TestR_REPO_065_AProbeThroughAVirtualRepositoryIsTheProbeOfTheMemberThatServesIt(t *testing.T) {
 	v := vt.VirtualRepo(9, "all", 0, nil, vt.LocalRepo(1, "team"), vt.RemoteRepo(2, "vendor"), vt.RemoteRepo(3, "public"), vt.RemoteRepo(4, "mirror"))
 	rq := &formats.Request{Request: httptest.NewRequest(http.MethodHead, "/x", nil), Repo: &v}
 	member := func(id int64, key string, tier formats.Tier, fill bool) formats.PlannedMember {

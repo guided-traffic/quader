@@ -89,9 +89,9 @@ func TestR_CI_010_Normalization(t *testing.T) {
 		{"the literal 20 and the claim \"020\"", `{"claim":"v","equals":20}`, "020", false},
 		{"the literal -0 and the claim 0", `{"claim":"v","equals":0}`, json.Number("-0"), true},
 		{"a big integer stays exact", `{"claim":"v","equals":"123456789012345678901234567890"}`, json.Number("123456789012345678901234567890"), true},
-		{"a non-integer claim has no value (Q-CI-28)", `{"claim":"v","equals":"20.5"}`, json.Number("20.5"), false},
-		{"an exponent is not an integer (Q-CI-28)", `{"claim":"v","equals":"2e1"}`, json.Number("2e1"), false},
-		{"a non-integer claim is present (Q-CI-28)", `{"claim":"v","present":true}`, json.Number("20.5"), true},
+		{"a non-integer claim has no value", `{"claim":"v","equals":"20.5"}`, json.Number("20.5"), false},
+		{"an exponent is not an integer", `{"claim":"v","equals":"2e1"}`, json.Number("2e1"), false},
+		{"a non-integer claim is present", `{"claim":"v","present":true}`, json.Number("20.5"), true},
 		{"strings compare byte for byte", `{"claim":"v","equals":"Café"}`, "Café", false},
 		{"case-sensitive by default", `{"claim":"v","equals":"Push"}`, "push", false},
 		{"ignoreCase folds", `{"claim":"v","equals":"PUSH","ignoreCase":true}`, "push", true},
@@ -300,7 +300,7 @@ func TestR_CI_010_TheLimitsOfACondition(t *testing.T) {
 		{"64 leaves", leaves(64)},
 		{"256 in values", inList(256)},
 		{"a regex of 512 characters", `{"claim":"ref","regex":"` + strings.Repeat("a", 512) + `"}`},
-		{"a glob of 1024 characters (Q-CI-28)", `{"claim":"ref","glob":"` + strings.Repeat("a", 1024) + `"}`},
+		{"a glob of 1024 characters", `{"claim":"ref","glob":"` + strings.Repeat("a", 1024) + `"}`},
 	}
 	for _, c := range ok {
 		t.Run("R-CI-010 "+c.name+" is valid", func(t *testing.T) {
@@ -317,7 +317,7 @@ func TestR_CI_010_TheLimitsOfACondition(t *testing.T) {
 		{"a regex that does not compile", `{"claim":"ref","regex":"(a"}`, "/regex"},
 		{"a regex that would escape the anchors", `{"claim":"ref","regex":"a)|(b"}`, "/regex"},
 		{"an invalid glob", `{"all":[{"claim":"ref","glob":"a**"}]}`, "/all/0/glob"},
-		{"a glob of 1025 characters (Q-CI-28)", `{"claim":"ref","glob":"` + strings.Repeat("a", 1025) + `"}`, "/glob"},
+		{"a glob of 1025 characters", `{"claim":"ref","glob":"` + strings.Repeat("a", 1025) + `"}`, "/glob"},
 	}
 	for _, c := range bad {
 		t.Run("R-CI-010 "+c.name+" is condition_invalid", func(t *testing.T) {
@@ -343,8 +343,8 @@ func TestR_CI_010_TheShapeOfANode(t *testing.T) {
 		{"an operator without claim", `{"equals":"a"}`, ""},
 		{"a null literal", `{"claim":"ref","equals":null}`, "/equals"},
 		{"an object literal", `{"claim":"ref","in":["a",{"b":1}]}`, "/in/1"},
-		{"a fractional literal (Q-CI-28)", `{"claim":"project_id","equals":20.0}`, "/equals"},
-		{"an exponent literal (Q-CI-28)", `{"claim":"project_id","in":[2e1]}`, "/in/0"},
+		{"a fractional literal", `{"claim":"project_id","equals":20.0}`, "/equals"},
+		{"an exponent literal", `{"claim":"project_id","in":[2e1]}`, "/in/0"},
 		{"ignoreCase with present", `{"claim":"ref","present":true,"ignoreCase":true}`, "/ignoreCase"},
 		{"a node that is not an object", `{"all":["ref"]}`, "/all/0"},
 		{"an empty path", `{"path":[],"present":true}`, "/path"},

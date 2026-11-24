@@ -40,7 +40,7 @@ func TestMemoryLimit(t *testing.T) {
 			t.Fatalf("limit %d from %q", l, src)
 		}
 	})
-	t.Run("Q-ARCH-500 the kernel gate's budget is the container's limit less the Go memory limit, read from the replica's own cgroup", func(t *testing.T) {
+	t.Run("R-ARCH-005 the kernel gate's budget is the container's limit less the Go memory limit, read from the replica's own cgroup", func(t *testing.T) {
 		root := t.TempDir()
 		for p, s := range map[string]string{
 			"proc/self/cgroup":          "0::/\n",

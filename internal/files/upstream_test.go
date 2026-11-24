@@ -27,9 +27,9 @@ func TestR_REPO_070_TheFilesOfASystemRepositoryServeNoClient(t *testing.T) {
 	}
 }
 
-// TestQ_REPO_416_NoOneDeletesADefinitionFileByHand: a local system repository of the project upstream refuses a hand delete with 409
+// TestR_REPO_075_NoOneDeletesADefinitionFileByHand: a local system repository of the project upstream refuses a hand delete with 409
 // managed_by_product, whether its clients are on or off; the remote scanner-trivy does not (R-REPO-075). Milliseconds.
-func TestQ_REPO_416_NoOneDeletesADefinitionFileByHand(t *testing.T) {
+func TestR_REPO_075_NoOneDeletesADefinitionFileByHand(t *testing.T) {
 	for _, on := range []bool{false, true} {
 		r := repository.Repository{Class: repository.Local, Upstream: &repository.UpstreamFacts{Kind: wellknown.KindSystem, ClientsEnabled: on}}
 		if !r.RefusesHandDelete() {

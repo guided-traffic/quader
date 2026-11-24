@@ -119,7 +119,7 @@ func TestTheJobTokenFallbackIsRefusedByName(t *testing.T) {
 
 // Contract of R-CI-001 (phase 5); the requirement's evidence comes from the tests of its work package.
 func TestIssuersFromTheConfiguration(t *testing.T) {
-	t.Run("Q-CI-16 the owner's declaration loads and keeps the keys left out unset", func(t *testing.T) {
+	t.Run("R-CI-001 the owner's declaration loads and keeps the keys left out unset", func(t *testing.T) {
 		l, err := loadCI(t, `ci:
   issuers:
     - name: gitlab-main

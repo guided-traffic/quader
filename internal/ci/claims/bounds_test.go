@@ -23,7 +23,7 @@ func TestR_CI_010_TheSizeBoundsOfACondition(t *testing.T) {
 		{"a path of 16 members", `{"path":[` + strings.TrimSuffix(strings.Repeat(`"p",`, claims.MaxPathMembers), ",") + `],"present":true}`},
 	}
 	for _, c := range ok {
-		t.Run("Q-CI-49 "+c.name+" is valid", func(t *testing.T) {
+		t.Run(c.name+" is valid", func(t *testing.T) {
 			if err := parse(t, c.cond).Validate(claims.DefaultLimits()); err != nil {
 				t.Fatal(err)
 			}
@@ -43,7 +43,7 @@ func TestR_CI_010_TheSizeBoundsOfACondition(t *testing.T) {
 		{"a condition of more than 64 KiB", `{"any":[` + strings.Join(huge, ",") + `]}`, ""},
 	}
 	for _, c := range bad {
-		t.Run("Q-CI-49 "+c.name+" is condition_invalid", func(t *testing.T) {
+		t.Run(c.name+" is condition_invalid", func(t *testing.T) {
 			err := parse(t, c.cond).Validate(claims.DefaultLimits())
 			if err == nil {
 				t.Fatal("valid")
@@ -122,7 +122,7 @@ func TestR_CI_010_TheCompiledConditionCompilesNothingPerEvaluation(t *testing.T)
 
 // Q-CI-17 as amended by Q-CI-47: the bundle is version 2 with a per-contribution expiry and the authorization epoch
 // of the exchange; a token issued before carries version 1, which still decodes, and nothing else does.
-func TestQ_CI_47_TheBundleOfVersionTwoAndTheBundleOfVersionOne(t *testing.T) {
+func TestR_CI_009_TheBundleOfVersionTwoAndTheBundleOfVersionOne(t *testing.T) {
 	at := time.Date(2026, 11, 3, 12, 0, 0, 0, time.UTC)
 	sys := claims.Freeze("ci:gitlab-com/acme-read", "m-1", "system", nil, claims.Rendered{Groups: []string{"readers"}}, nil)
 	proj := claims.Freeze("ci:gitlab-com/web-read", "m-2", "project:web", &claims.FrozenProject{Key: "web", ID: "p-7"}, claims.Rendered{Groups: []string{"ci"}}, nil)

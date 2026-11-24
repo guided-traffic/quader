@@ -23,10 +23,10 @@ func (r *recordSignals) Notify(_ meta.Tx, area, payload string) {
 	r.got = append(r.got, [2]string{area, payload})
 }
 
-// TestQ_ARCH_259_NotifyIsLimitedToTheAreasTheFormatDeclared: a format notifies the areas
+// TestR_ARCH_009_NotifyIsLimitedToTheAreasTheFormatDeclared: a format notifies the areas
 // its descriptor lists and no other; one (area, payload) is attached once per
 // transaction, so a signal the writer raised for a package is not repeated.
-func TestQ_ARCH_259_NotifyIsLimitedToTheAreasTheFormatDeclared(t *testing.T) {
+func TestR_ARCH_009_NotifyIsLimitedToTheAreasTheFormatDeclared(t *testing.T) {
 	sig := &recordSignals{}
 	w := &writer{tx: &meta.TxState{}, d: writerDeps{signals: sig, areas: []string{catalog.MetadataChangedArea}}}
 	if err := w.Notify("authz", "x"); errs.KindOf(err) != errs.Internal {
@@ -55,10 +55,10 @@ func TestQ_ARCH_259_NotifyIsLimitedToTheAreasTheFormatDeclared(t *testing.T) {
 	})
 }
 
-// TestQ_ARCH_259_APackageTheTransactionRaisedSignalsOnce: the function the package
+// TestR_ARCH_009_APackageTheTransactionRaisedSignalsOnce: the function the package
 // writer calls on a raise attaches metadata_changed with the payload of the engine,
 // once per package, and a format that names the same payload adds nothing.
-func TestQ_ARCH_259_APackageTheTransactionRaisedSignalsOnce(t *testing.T) {
+func TestR_ARCH_009_APackageTheTransactionRaisedSignalsOnce(t *testing.T) {
 	sig := &recordSignals{}
 	tx := &meta.TxState{}
 	raised := packageRaised(sig)
@@ -89,9 +89,9 @@ func TestQ_ARCH_259_APackageTheTransactionRaisedSignalsOnce(t *testing.T) {
 	})
 }
 
-// TestQ_ARCH_260_AWriterWritesToItsOwnRepositoryOnly: a writer bound to the request's or
+// TestR_ARCH_009_AWriterWritesToItsOwnRepositoryOnly: a writer bound to the request's or
 // the event's repository refuses EnsureLocked and DeleteItems for any other.
-func TestQ_ARCH_260_AWriterWritesToItsOwnRepositoryOnly(t *testing.T) {
+func TestR_ARCH_009_AWriterWritesToItsOwnRepositoryOnly(t *testing.T) {
 	own := formats.RepoRef{ID: 7, Name: qr("npm-local"), Class: formats.Local, Format: "npm"}
 	other := formats.RepoRef{ID: 8, Name: qr("npm-team"), Class: formats.Local, Format: "npm"}
 	rq := &formats.Request{Repo: &repository.Repository{Name: qr("npm-local")}}
@@ -112,10 +112,10 @@ func TestQ_ARCH_260_AWriterWritesToItsOwnRepositoryOnly(t *testing.T) {
 	}
 }
 
-// TestQ_ARCH_260_TheStoresRefuseARepositoryOutsideTheRequest: inside ServeRoute the read
+// TestR_ARCH_009_TheStoresRefuseARepositoryOutsideTheRequest: inside ServeRoute the read
 // stores answer for the request's repository and the members below it, and refuse every
 // other repository with an internal error.
-func TestQ_ARCH_260_TheStoresRefuseARepositoryOutsideTheRequest(t *testing.T) {
+func TestR_ARCH_009_TheStoresRefuseARepositoryOutsideTheRequest(t *testing.T) {
 	local := vt.LocalRepo(1, "member-local")
 	remote := vt.RemoteRepo(2, "member-remote")
 	v := vt.VirtualRepo(9, "all", 60, nil, local, remote)

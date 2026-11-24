@@ -65,7 +65,7 @@ func TestR_OPS_048_AReportIsCheckedForItsSizeAndShape(t *testing.T) {
 
 // R-OPS-048, Q-OPS-225: an image scanner reports the newest database its pod holds as the 64 hexadecimal digits of its layer's digest,
 // with the build time of its metadata.json; anything else of the kind trivy, and a build time without a database, is refused.
-func TestQ_OPS_225_AnImageScannerReportsTheDatabaseItDetectsWith(t *testing.T) {
+func TestR_OPS_048_AnImageScannerReportsTheDatabaseItDetectsWith(t *testing.T) {
 	built := time.Date(2026, 11, 21, 7, 2, 51, 0, time.UTC)
 	trivy := valid()
 	trivy.Reason, trivy.Database, trivy.DatabaseBuiltAt = "", strings.Repeat("ab", 32), &built
@@ -93,7 +93,7 @@ func TestQ_OPS_225_AnImageScannerReportsTheDatabaseItDetectsWith(t *testing.T) {
 
 // R-OPS-048, Q-OPS-224: the updater reports the set its directory holds with the daily's build time and no slots; a slot from it, a build
 // time from another kind, and a build time without a set are refused.
-func TestQ_OPS_224_TheUpdaterReportsItsSetAndNoSlots(t *testing.T) {
+func TestR_OPS_048_TheUpdaterReportsItsSetAndNoSlots(t *testing.T) {
 	built := time.Date(2026, 11, 21, 8, 29, 0, 0, time.UTC)
 	upd := valid()
 	upd.Name, upd.Reason, upd.Slots, upd.DatabaseBuiltAt = "quader-malware-updater-freshclam-7c9d8-k2l4m", "seed", Slots{}, &built

@@ -396,7 +396,7 @@ func TestR_VULN_036_TheSpoolKeepsTheWorkingDirectoryOfTheImageScanning(t *testin
 	}
 }
 
-func TestQ_VULN_145_AHoldIsCountedInTheBudgetOfTheUploads(t *testing.T) {
+func TestR_VULN_036_AHoldIsCountedInTheBudgetOfTheUploads(t *testing.T) {
 	sp := newSpool(t, func(c *config.StorageSpool) { c.MaxBytes = 1000; c.MemoryThreshold = 1 })
 	h, err := sp.Hold(700)
 	if err != nil {
@@ -427,7 +427,7 @@ func TestQ_VULN_145_AHoldIsCountedInTheBudgetOfTheUploads(t *testing.T) {
 	}
 }
 
-func TestQ_VULN_145_AHoldFollowsTheFreeSpaceOfTheVolumeAndAdoptionChecksNothing(t *testing.T) {
+func TestR_VULN_036_AHoldFollowsTheFreeSpaceOfTheVolumeAndAdoptionChecksNothing(t *testing.T) {
 	sp := newSpool(t, func(c *config.StorageSpool) { c.MaxBytes = 1 << 30; c.MinFreeBytes = 100 },
 		WithFreeBytes(func(string) (uint64, error) { return 600, nil }))
 	if _, err := sp.Hold(600); !errors.Is(err, ErrSpoolFull) {

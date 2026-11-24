@@ -8,17 +8,17 @@ import (
 func TestR_OPS_013_LoginSecretsInURLsAreScrubbed(t *testing.T) {
 	for _, c := range []struct{ name, in, want string }{
 		{
-			"R-OPS-013 Q-OPS-91 the query of an OIDC callback",
+			"R-OPS-013 the query of an OIDC callback",
 			"/auth/oidc/corp/callback?code=SplxlOBeZQQYbYS6WxSbIA&state=af0ifjsldkj&session_state=x.y",
 			"/auth/oidc/corp/callback?[REDACTED]",
 		},
 		{
-			"R-OPS-013 Q-OPS-91 a callback inside a logged URL keeps its fragment and what follows",
+			"R-OPS-013 a callback inside a logged URL keeps its fragment and what follows",
 			`redirect to "https://quader.test/auth/oidc/corp/callback?state=s3cr3t&code=c0de" failed`,
 			`redirect to "https://quader.test/auth/oidc/corp/callback?[REDACTED]" failed`,
 		},
 		{
-			"R-OPS-013 Q-OPS-91 an ID token hint",
+			"R-OPS-013 an ID token hint",
 			"https://idp.test/logout?id_token_hint=eyJhbGciOi.eyJzdWIi.sig&post_logout_redirect_uri=https%3A%2F%2Fquader.test%2F",
 			"https://idp.test/logout?id_token_hint=[REDACTED]&post_logout_redirect_uri=https%3A%2F%2Fquader.test%2F",
 		},

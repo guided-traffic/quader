@@ -14,7 +14,7 @@ import (
 
 // Q-CI-30: every violation is in errors[] with its pointer and code, and a rule the specification names by its
 // code is also the problem's code; the others answer validation_failed.
-func TestQ_CI_30_AMappingViolationIsShapedLikeTheRestOfTheAPI(t *testing.T) {
+func TestR_CI_002_AMappingViolationIsShapedLikeTheRestOfTheAPI(t *testing.T) {
 	err := mappingViolation([]errs.FieldError{
 		field("/name", "invalid_name", "bad name"),
 		field("/match", errs.CodePinRequired, "a pin"),

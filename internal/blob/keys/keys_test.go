@@ -430,7 +430,7 @@ func TestR_STOR_083_TheHolderFollowsTheRegisteredChangeArea(t *testing.T) {
 }
 
 func TestKeyIdentifiers(t *testing.T) {
-	t.Run("R-STOR-083 an identifier names its kind, connection and generation; anything else is no identifier (Q-STOR-324)", func(t *testing.T) {
+	t.Run("R-STOR-083 an identifier names its kind, connection and generation; anything else is no identifier", func(t *testing.T) {
 		for id, want := range map[string]keys.ID{
 			"sk-archive-1-3f9a0c2e":     {Kind: keys.KindStorage, Connection: "archive", Generation: 1},
 			"sk-archive-1-12-0000ffff":  {Kind: keys.KindStorage, Connection: "archive-1", Generation: 12},

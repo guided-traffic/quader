@@ -62,10 +62,10 @@ func TestR_REPO_065_WhatAProbeOfNpmIs(t *testing.T) {
 	}
 }
 
-// TestQ_REPO_367_WhatAProbeOfNpmIsThroughAVirtualRepository: the same requests are probes through a virtual repository, told to the
+// TestR_REPO_065_WhatAProbeOfNpmIsThroughAVirtualRepository: the same requests are probes through a virtual repository, told to the
 // host with the request addressed to the virtual repository, which finds the member that serves the tarball; the package document and a
 // GET of the tarball are not.
-func TestQ_REPO_367_WhatAProbeOfNpmIsThroughAVirtualRepository(t *testing.T) {
+func TestR_REPO_065_WhatAProbeOfNpmIsThroughAVirtualRepository(t *testing.T) {
 	var doc map[string]any
 	if err := json.Unmarshal(upstreamBody("@acme/ui", "2026-10-30T11:00:00.000Z", "1.0.0", "1.1.0"), &doc); err != nil {
 		t.Fatal(err)

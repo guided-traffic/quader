@@ -87,10 +87,10 @@ func TestR_REPO_065_EveryFormatDeclaresItsProbes(t *testing.T) {
 	}
 }
 
-// TestQ_REPO_367_AProbeIsAProbeThroughAVirtualRepositoryToo pins that a format with the classes remote and virtual answers its probes
+// TestR_REPO_065_AProbeIsAProbeThroughAVirtualRepositoryToo pins that a format with the classes remote and virtual answers its probes
 // through a virtual address as well: every probe route serves the class virtual, unless this list names why the virtual repository
 // serves that request on another route that is itself a probe. Each format's own test asserts that the virtual handler tells the host.
-func TestQ_REPO_367_AProbeIsAProbeThroughAVirtualRepositoryToo(t *testing.T) {
+func TestR_REPO_065_AProbeIsAProbeThroughAVirtualRepositoryToo(t *testing.T) {
 	remoteOnly := map[string]string{
 		// A flat repository is an upstream's layout; a virtual repository serves its files by the member path of its index.
 		"deb.flat.file": "deb.members.get",

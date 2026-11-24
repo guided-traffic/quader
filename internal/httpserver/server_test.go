@@ -76,7 +76,7 @@ func TestServerShutdown(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-ARCH-18 a transfer still running at the deadline is cut and counted", func(t *testing.T) {
+	t.Run("R-ARCH-024 a transfer still running at the deadline is cut and counted", func(t *testing.T) {
 		var cuts atomic.Int32
 		var dir atomic.Value
 		entered := make(chan struct{})
@@ -219,7 +219,7 @@ func TestServerShutdown(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-ARCH-18 an upload whose body is still arriving is cut at the deadline", func(t *testing.T) {
+	t.Run("R-ARCH-024 an upload whose body is still arriving is cut at the deadline", func(t *testing.T) {
 		var dir atomic.Value
 		entered := make(chan struct{})
 		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

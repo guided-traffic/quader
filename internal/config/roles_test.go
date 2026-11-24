@@ -56,7 +56,7 @@ func TestR_EP_005_RoleFamilies(t *testing.T) {
 			t.Errorf("api + packages = %v, want %v", got, want)
 		}
 	})
-	t.Run("Q-ARCH-298 the effective surface is the surface in its own order, narrowed to the role", func(t *testing.T) {
+	t.Run("the effective surface is the surface in its own order, narrowed to the role", func(t *testing.T) {
 		surface := []string{SurfacePackages, SurfaceFiles, SurfaceAPI}
 		for role, want := range map[string][]string{
 			RoleAPI:      {SurfaceAPI},
@@ -82,7 +82,7 @@ func TestR_EP_005_RoleFamilies(t *testing.T) {
 }
 
 func TestR_HA_016_ExpectedServingReplicas(t *testing.T) {
-	t.Run("Q-HA-77 the new key counts, the deprecated key is read while the new one is 0", func(t *testing.T) {
+	t.Run("the new key counts, the deprecated key is read while the new one is 0", func(t *testing.T) {
 		for name, tc := range map[string]struct {
 			p     DatabasePreflight
 			n     int
@@ -99,14 +99,14 @@ func TestR_HA_016_ExpectedServingReplicas(t *testing.T) {
 			}
 		}
 	})
-	t.Run("Q-HA-77 both keys set to different values are refused naming the deprecated one", func(t *testing.T) {
+	t.Run("both keys set to different values are refused naming the deprecated one", func(t *testing.T) {
 		_, err := Load(Options{
 			Environ: servableEnv("QUADER_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS=6", "QUADER_DATABASE_PREFLIGHT_EXPECTED_WEB_REPLICAS=4"),
 			Command: CommandServe, ReadFile: fakeFS(nil),
 		})
 		containsAll(t, issuesOf(t, err), "database.preflight.expected_web_replicas", "expected_serving_replicas")
 	})
-	t.Run("Q-HA-77 the same value in both keys, and either key alone, load", func(t *testing.T) {
+	t.Run("the same value in both keys, and either key alone, load", func(t *testing.T) {
 		for _, env := range [][]string{
 			{"QUADER_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS=4", "QUADER_DATABASE_PREFLIGHT_EXPECTED_WEB_REPLICAS=4"},
 			{"QUADER_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS=4"},
@@ -117,7 +117,7 @@ func TestR_HA_016_ExpectedServingReplicas(t *testing.T) {
 			}
 		}
 	})
-	t.Run("Q-HA-77 the key is a schema key with its environment variable, and the deprecated one stays", func(t *testing.T) {
+	t.Run("the key is a schema key with its environment variable, and the deprecated one stays", func(t *testing.T) {
 		s := MustDescribe()
 		for path, env := range map[string]string{
 			"database.preflight.expected_serving_replicas": "QUADER_DATABASE_PREFLIGHT_EXPECTED_SERVING_REPLICAS",

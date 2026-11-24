@@ -73,7 +73,7 @@ func TestDispatcherAndHostBans(t *testing.T) {
 		wantEdge(t, vs, "R-ARCH-002", "internal/api/dispatch", "internal/api/v1")
 		wantEdge(t, vs, "R-ARCH-002", "internal/formathost", "internal/api/v1")
 	})
-	t.Run("Q-ARCH-193 the host importing a format's data package names the edge", func(t *testing.T) {
+	t.Run("R-ARCH-002 the host importing a format's data package names the edge", func(t *testing.T) {
 		vs := CheckModuleBans(mod, []Package{pkg("internal/formathost", "internal/formatdata/npm")})
 		wantEdge(t, vs, "R-ARCH-002", "internal/formathost", "internal/formatdata/npm")
 	})

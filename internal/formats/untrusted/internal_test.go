@@ -6,9 +6,9 @@ import (
 	"time"
 )
 
-// TestR_ARCH_028_DefaultsOfQ_ARCH_217: the bounds R-ARCH-028 leaves without a
+// TestR_ARCH_028_DefaultBoundsAndTheirTightening: the bounds R-ARCH-028 leaves without a
 // number have the defaults Q-ARCH-217 fixes, and a format can only tighten them.
-func TestR_ARCH_028_DefaultsOfQ_ARCH_217(t *testing.T) {
+func TestR_ARCH_028_DefaultBoundsAndTheirTightening(t *testing.T) {
 	d := DefaultLimits()
 	if d.JSONMembers != 2_000_000 || d.XMLDepth != 64 || d.StreamBytes != 2<<30 {
 		t.Fatalf("defaults = %+v", d)

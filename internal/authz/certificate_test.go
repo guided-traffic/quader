@@ -72,7 +72,7 @@ func TestR_CLAMAV_010_TheCertificateSubjectsRule(t *testing.T) {
 		{"a write", "public", true, Coordinate{Repository: upClamav, Kind: KindWrite, Path: "daily/1/daily.cvd", Actions: []Action{Deploy}}, DenyHidden},
 		{"delete", "public", true, Coordinate{Repository: upClamav, Kind: KindWrite, Path: "daily/1/daily.cvd", Actions: []Action{Delete}}, DenyHidden},
 	} {
-		t.Run("Q-CLAMAV-9 "+tc.name, func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			if d := decide(t, certificateFixture(tc.level, tc.on), nil, certSub("default"), tc.c); d.Outcome != tc.want {
 				t.Fatalf("decision %+v, want %d", d, tc.want)
 			}

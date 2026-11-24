@@ -19,7 +19,7 @@ func chargeGuard(held *int64) *MemoryGuard {
 }
 
 func TestMemoryCharges(t *testing.T) {
-	t.Run("R-ARCH-005 Q-ARCH-328 a request is charged a download of a large object at admission, until it settles", func(t *testing.T) {
+	t.Run("R-ARCH-005 a request is charged a download of a large object at admission, until it settles", func(t *testing.T) {
 		var held int64
 		g := chargeGuard(&held)
 		n := 0
@@ -38,7 +38,7 @@ func TestMemoryCharges(t *testing.T) {
 		}
 	})
 
-	t.Run("R-ARCH-005 Q-ARCH-328 a download that settles holds its buffer, window and overhead, so a burst of small downloads that the worst case would have shed is admitted", func(t *testing.T) {
+	t.Run("R-ARCH-005 a download that settles holds its buffer, window and overhead, so a burst of small downloads that the worst case would have shed is admitted", func(t *testing.T) {
 		var held int64
 		g := chargeGuard(&held)
 		small := int64(64<<10 + 50<<10) // a 50 KiB tarball: its buffer class and its bytes
@@ -64,7 +64,7 @@ func TestMemoryCharges(t *testing.T) {
 		}
 	})
 
-	t.Run("R-ARCH-005 Q-ARCH-328 a settled charge never exceeds the charge at admission, and the full-size download keeps its slot", func(t *testing.T) {
+	t.Run("R-ARCH-005 a settled charge never exceeds the charge at admission, and the full-size download keeps its slot", func(t *testing.T) {
 		var held int64
 		g := chargeGuard(&held)
 		tk, release, _ := g.Admit()
@@ -78,7 +78,7 @@ func TestMemoryCharges(t *testing.T) {
 		}
 	})
 
-	t.Run("R-ARCH-005 Q-ARCH-328 the bytes the caches hold reduce what requests may hold; empty caches reserve nothing", func(t *testing.T) {
+	t.Run("R-ARCH-005 the bytes the caches hold reduce what requests may hold; empty caches reserve nothing", func(t *testing.T) {
 		held := int64(0)
 		g := chargeGuard(&held)
 		if g.Slots() != 80 {
@@ -101,7 +101,7 @@ func TestMemoryCharges(t *testing.T) {
 		}
 	})
 
-	t.Run("R-ARCH-005 Q-ARCH-330 readers open together are charged together, a closed reader's bytes are taken off again, and release gives back everything", func(t *testing.T) {
+	t.Run("R-ARCH-005 readers open together are charged together, a closed reader's bytes are taken off again, and release gives back everything", func(t *testing.T) {
 		var held int64
 		g := chargeGuard(&held)
 		tk, release, _ := g.Admit()
@@ -127,7 +127,7 @@ func TestMemoryCharges(t *testing.T) {
 		(*Ticket)(nil).Settle(1 << 20)() // a request without a guard
 	})
 
-	t.Run("R-ARCH-005 Q-ARCH-328 a request that is alone is always served, however small the limit", func(t *testing.T) {
+	t.Run("R-ARCH-005 a request that is alone is always served, however small the limit", func(t *testing.T) {
 		g := NewMemoryGuard(MemoryGuardConfig{Limit: 1 << 20, RequestBytes: 4 << 20, Read: func() (uint64, uint64) { return 0, 0 }})
 		_, release, reason := g.Admit()
 		if reason != "" {
@@ -142,7 +142,7 @@ func TestMemoryCharges(t *testing.T) {
 		}
 	})
 
-	t.Run("R-ARCH-005 Q-ARCH-328 SettleMemory settles the request of its context, and does nothing outside a request", func(t *testing.T) {
+	t.Run("R-ARCH-005 SettleMemory settles the request of its context, and does nothing outside a request", func(t *testing.T) {
 		var held int64
 		g := chargeGuard(&held)
 		SettleMemory(t.Context(), 1<<20) // no ticket in the context

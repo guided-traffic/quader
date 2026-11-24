@@ -573,7 +573,7 @@ func TestR_API_029_BridgeReadScope(t *testing.T) {
 			t.Fatal("a listing was scoped by nothing")
 		}
 	})
-	t.Run("Q-AUTHZ-168 the rows are decided through the repository the client addressed", func(t *testing.T) {
+	t.Run("R-AUTHZ-009 the rows are decided through the repository the client addressed", func(t *testing.T) {
 		b := newBridge(t)
 		rec := &recordingScoper{}
 		r, err := NewResolver(b.eng, rec, nil)

@@ -283,7 +283,7 @@ func TestR_AUTH_001_SessionRules(t *testing.T) {
 		_, err := do(fakeSessions{err: session.ErrInvalid}, "GET", "/api/v1/tokens", defaultRules())
 		wantErr(t, err, 401, "session_expired")
 	})
-	t.Run("R-AUTH-001 Q-AUTH-177 the login options ignore the cookie, so an ended session leaves the sign-in screen reachable", func(t *testing.T) {
+	t.Run("R-AUTH-001 the login options ignore the cookie, so an ended session leaves the sign-in screen reachable", func(t *testing.T) {
 		res, err := do(fakeSessions{err: session.ErrInvalid}, "GET", "/api/v1/auth/login-options", defaultRules())
 		if err != nil || !res.Anonymous {
 			t.Fatalf("%+v %v", res, err)
@@ -425,7 +425,7 @@ func TestR_AUTH_037_AnonymousAccess(t *testing.T) {
 			}
 		}
 	})
-	t.Run("Q-ARCH-302 a route of a family the process does not serve is not always open: it is decided like an unknown path", func(t *testing.T) {
+	t.Run("R-ARCH-001 a route of a family the process does not serve is not always open: it is decided like an unknown path", func(t *testing.T) {
 		packagesOnly := defaultRules()
 		packagesOnly.PublicRoute = func(r *http.Request) bool { return r.URL.Path == "/api/v1/system/ping" }
 		packagesOnly.Served = func(r *http.Request) bool {
@@ -522,13 +522,13 @@ func outcomeOf(res Result, err error) outcome {
 	return outcome{Status: e.Status(), Code: e.Code, Detail: e.Detail, Challenge: e.Challenge}
 }
 
-// TestQ_ARCH_306_EveryPathRuleOfTheStageAsksWhetherTheFamilyIsServed: on a role that does not serve a route's family, the
+// TestR_ARCH_001_EveryPathRuleOfTheStageAsksWhetherTheFamilyIsServed: on a role that does not serve a route's family, the
 // stage's verdict on the request is the one on GET (or the same method of) /does-not-exist, whatever the request carries:
 // no credential, a rejected token, a valid token, an ended or a live session cookie, from a package client or a browser,
 // with the endpoint closed to anonymous requests and open (R-EP-005, Q-ARCH-302, Q-ARCH-306). The challenge (Basic on /files/ and the
 // package protocols, error="invalid_token" on /api/v1), the cookie's path rule and the hard limit of /api/v1 are rules
 // of the served family.
-func TestQ_ARCH_306_EveryPathRuleOfTheStageAsksWhetherTheFamilyIsServed(t *testing.T) {
+func TestR_ARCH_001_EveryPathRuleOfTheStageAsksWhetherTheFamilyIsServed(t *testing.T) {
 	pat := newToken(t, token.TypePAT)
 	unknownPAT := newToken(t, token.TypePAT)
 	ft := &fakeTokens{known: map[string]token.Info{pat: {ID: "t1", Type: token.TypePAT, Owner: alice, Scope: token.Scope{Inherit: true}}}}

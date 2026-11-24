@@ -8,11 +8,11 @@ import (
 	"testing"
 )
 
-// TestQ_BAS_186_ACountedDownloadIsNotedAtItsStatusLine: the writer of a counting serve notes Quader-Bastion-Counted when
+// TestR_BAS_059_ACountedDownloadIsNotedAtItsStatusLine: the writer of a counting serve notes Quader-Bastion-Counted when
 // the status line of a download the core counts once its body is complete goes out (a GET answered 200, or 206 from byte
 // 0), before the marking stage below it reads the note, and notes nothing for a HEAD, a 304, a later range or a refusal.
 // An ordinary request gets its own writer back. Named by the decision until the Bastion's side reports what it notes.
-func TestQ_BAS_186_ACountedDownloadIsNotedAtItsStatusLine(t *testing.T) {
+func TestR_BAS_059_ACountedDownloadIsNotedAtItsStatusLine(t *testing.T) {
 	for name, c := range map[string]struct {
 		method string
 		write  func(w http.ResponseWriter)

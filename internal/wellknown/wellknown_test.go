@@ -86,7 +86,7 @@ func TestR_REPO_066_TheProductDeclaresOneRepositoryPerPresetAndTheSystemReposito
 			t.Fatalf("names: %v %q", wellknown.ScannerTrivy, wellknown.ScannerTrivyImage)
 		}
 	})
-	t.Run("R-REPO-075 Q-REPO-411 Q-REPO-413 clamav is the local repository of ClamAV's definitions that may serve clients", func(t *testing.T) {
+	t.Run("R-REPO-075 clamav is the local repository of ClamAV's definitions that may serve clients", func(t *testing.T) {
 		d := got[len(got)-1]
 		if d.Name() != wellknown.Clamav || d.Kind != wellknown.KindSystem || d.Format != "clamav" || d.Class != catalog.Local || !d.Local() ||
 			d.URL != "" || d.ExtraHosts != nil || d.Settings != nil || d.Allow != nil || d.Private || d.Level != "private" ||

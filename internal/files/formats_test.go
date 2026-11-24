@@ -152,7 +152,7 @@ func TestR_AUTHZ_018_FilesDeleteAsksTheFormat(t *testing.T) {
 			t.Fatalf("classified %v, want %v", acc.classified, want)
 		}
 	})
-	t.Run("R-AUTHZ-018 Q-AUTHZ-161 the format is asked about the removed files with the request's index and subject", func(t *testing.T) {
+	t.Run("R-AUTHZ-018 the format is asked about the removed files with the request's index and subject", func(t *testing.T) {
 		idx := new(authz.Index)
 		acc, seam := &access{allow: true, idx: idx}, &packageSeam{}
 		st := &store{found: true, live: items.Item{Kind: items.KindFolder}}
@@ -185,7 +185,7 @@ func TestR_STOR_007_FilesRefusesRawDeploysIntoFormats(t *testing.T) {
 		if folder {
 			name = "a folder"
 		}
-		t.Run("R-STOR-007 R-API-025 Q-ARCH-223 "+name+" of a format with a protocol of its own is refused before the body is read", func(t *testing.T) {
+		t.Run("R-STOR-007 R-API-025 "+name+" of a format with a protocol of its own is refused before the body is read", func(t *testing.T) {
 			acc, st, body := &access{allow: true}, &store{}, &readCounter{}
 			req := DeployRequest{Repo: qr("pkg-local"), Path: repository.Cleaned{Path: "ui/-/ui-2.0.0.tgz", Folder: folder}, Body: body, ContentLength: 1}
 			_, err := packageService(t, st, &packageSeam{}).Deploy(ctx, caller(acc), req)

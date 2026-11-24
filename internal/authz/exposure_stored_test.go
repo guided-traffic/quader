@@ -37,13 +37,13 @@ func TestR_EP_016_StoredOfShowsOnlyWhatTheCallerMayRead(t *testing.T) {
 	ctx := context.Background()
 	want := storedWant{versions: true, tags: true}
 
-	t.Run("R-EP-016 Q-EP-62 a package the caller may not read answers as one the repository does not hold", func(t *testing.T) {
+	t.Run("R-EP-016 a package the caller may not read answers as one the repository does not hold", func(t *testing.T) {
 		got, _, err := s.storedOf(ctx, repo, "@finance/ledger", nil, want, func(pkg, v string) bool { return false })
 		if err != nil || !got.Listed || len(got.Versions) != 0 || len(got.Tags) != 0 {
 			t.Fatalf("%+v %v", got, err)
 		}
 	})
-	t.Run("R-EP-016 Q-EP-62 a version the caller may not read is dropped with the tags that point to it", func(t *testing.T) {
+	t.Run("R-EP-016 a version the caller may not read is dropped with the tags that point to it", func(t *testing.T) {
 		got, _, err := s.storedOf(ctx, repo, "p", nil, want, func(pkg, v string) bool { return v != "3.0.0" })
 		if err != nil || !slices.Equal(got.Versions, []string{"2.0.0", "1.0.0"}) || len(got.Tags) != 1 || got.Tags["lts"] != "1.0.0" {
 			t.Fatalf("%+v %v", got, err)
@@ -54,13 +54,13 @@ func TestR_EP_016_StoredOfShowsOnlyWhatTheCallerMayRead(t *testing.T) {
 			t.Fatalf("limit %d, err %v", src.limit, err)
 		}
 	})
-	t.Run("R-EP-016 Q-EP-66 a nil MayRead lists nothing and keeps Listed", func(t *testing.T) {
+	t.Run("R-EP-016 a nil MayRead lists nothing and keeps Listed", func(t *testing.T) {
 		got, cut, err := s.storedOf(ctx, repo, "p", nil, want, nil)
 		if err != nil || !got.Listed || len(got.Versions) != 0 || len(got.Tags) != 0 || cut {
 			t.Fatalf("%+v cut %v %v", got, cut, err)
 		}
 	})
-	t.Run("R-EP-016 Q-EP-66 a check that names the versions decides none for the read scope", func(t *testing.T) {
+	t.Run("R-EP-016 a check that names the versions decides none for the read scope", func(t *testing.T) {
 		var asked []string
 		got, _, err := s.storedOf(ctx, repo, "p", nil, storedWant{tags: true}, func(pkg, v string) bool { asked = append(asked, v); return true })
 		if err != nil || len(got.Versions) != 0 || len(got.Tags) != 2 {
@@ -71,7 +71,7 @@ func TestR_EP_016_StoredOfShowsOnlyWhatTheCallerMayRead(t *testing.T) {
 			t.Fatalf("the read scope was asked %q", asked)
 		}
 	})
-	t.Run("R-EP-016 Q-EP-67 the tags are asked for only when the format has tags", func(t *testing.T) {
+	t.Run("R-EP-016 the tags are asked for only when the format has tags", func(t *testing.T) {
 		if _, _, err := s.storedOf(ctx, repo, "p", nil, storedWant{versions: true}, allowAll); err != nil || src.withTags {
 			t.Fatalf("withTags %v, err %v", src.withTags, err)
 		}
@@ -102,33 +102,33 @@ func TestR_EP_016_ATruncationIsJudgedBeforeTheReadFilter(t *testing.T) {
 	ctx := context.Background()
 	want := storedWant{versions: true}
 
-	t.Run("Q-EP-66 rows the caller may not read are dropped and the cut is still reported", func(t *testing.T) {
+	t.Run("rows the caller may not read are dropped and the cut is still reported", func(t *testing.T) {
 		got, cut, err := s.storedOf(ctx, storedRepo, "p", nil, want, func(_, v string) bool { return v == "" || v != "1.0.0" })
 		if err != nil || !cut || len(got.Versions) != MaxCheckStored {
 			t.Fatalf("cut %v, %d versions, %v", cut, len(got.Versions), err)
 		}
 	})
-	t.Run("Q-EP-66 a list the filter made short is a cut one when the source held more than it judges", func(t *testing.T) {
+	t.Run("a list the filter made short is a cut one when the source held more than it judges", func(t *testing.T) {
 		only := map[string]bool{"1.0.1": true, "1.0.2": true}
 		got, cut, err := s.storedOf(ctx, storedRepo, "p", nil, want, func(_, v string) bool { return v == "" || only[v] })
 		if err != nil || !cut || len(got.Versions) != 2 {
 			t.Fatalf("cut %v, %d versions, %v", cut, len(got.Versions), err)
 		}
 	})
-	t.Run("Q-EP-66 a list that fits is not cut", func(t *testing.T) {
+	t.Run("a list that fits is not cut", func(t *testing.T) {
 		s := serviceOver(&fakeStored{sp: StoredPackage{Listed: true, Versions: all[:MaxCheckStored]}})
 		got, cut, err := s.storedOf(ctx, storedRepo, "p", nil, want, allowAll)
 		if err != nil || cut || len(got.Versions) != MaxCheckStored {
 			t.Fatalf("cut %v, %d versions, %v", cut, len(got.Versions), err)
 		}
 	})
-	t.Run("Q-EP-66 versions the request named are not a cut", func(t *testing.T) {
+	t.Run("versions the request named are not a cut", func(t *testing.T) {
 		_, cut, err := s.storedOf(ctx, storedRepo, "p", nil, storedWant{}, allowAll)
 		if err != nil || cut {
 			t.Fatalf("cut %v %v", cut, err)
 		}
 	})
-	t.Run("Q-EP-66 more tags than the check judges are a cut", func(t *testing.T) {
+	t.Run("more tags than the check judges are a cut", func(t *testing.T) {
 		tags := map[string]string{}
 		for i := range MaxCheckStored + 1 {
 			tags[fmt.Sprintf("t%04d", i)] = "1.0.0"

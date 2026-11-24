@@ -16,10 +16,10 @@ func TestR_AUTH_027_DelegatedTokenRules(t *testing.T) {
 		selfRotatable bool
 		code, pointer string
 	}{
-		{"Q-AUTHZ-177 repository rights only are allowed", scope.Scope{Inherit: true}, false, "", ""},
-		{"Q-AUTHZ-177 a system item is refused", scope.Scope{Inherit: true, System: []string{"identities:read"}}, false, errs.CodeInvalidScope, ""},
-		{"Q-AUTHZ-177 admin true is refused", scope.Scope{Inherit: true, Admin: true}, false, errs.CodeInvalidScope, ""},
-		{"Q-AUTH-192 a self-rotatable token is refused", scope.Scope{Inherit: true}, true, errs.CodeValidation, "/selfRotatable"},
+		{"R-AUTHZ-026 repository rights only are allowed", scope.Scope{Inherit: true}, false, "", ""},
+		{"R-AUTHZ-026 a system item is refused", scope.Scope{Inherit: true, System: []string{"identities:read"}}, false, errs.CodeInvalidScope, ""},
+		{"R-AUTHZ-026 admin true is refused", scope.Scope{Inherit: true, Admin: true}, false, errs.CodeInvalidScope, ""},
+		{"a self-rotatable token is refused", scope.Scope{Inherit: true}, true, errs.CodeValidation, "/selfRotatable"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

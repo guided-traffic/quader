@@ -120,7 +120,7 @@ func TestGracefulShutdown(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-ARCH-18 a transfer that outlasts shutdown_timeout is cut and counted", func(t *testing.T) {
+	t.Run("R-ARCH-024 a transfer that outlasts shutdown_timeout is cut and counted", func(t *testing.T) {
 		h := start(t, "web", map[string]string{
 			"QUADER_HEALTH_SHUTDOWN_DRAIN_DELAY": "0s", "QUADER_SERVER_SHUTDOWN_TIMEOUT": "1s",
 		})

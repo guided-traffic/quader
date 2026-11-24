@@ -229,7 +229,7 @@ func TestR_STOR_055_ReadsOverTheCopies(t *testing.T) {
 		}
 		return x, d
 	}
-	t.Run("R-STOR-055 Q-STOR-275 copies the caller read with its own statement are taken as given: the download asks PostgreSQL nothing, and falls over on what they no longer say", func(t *testing.T) {
+	t.Run("R-STOR-055 copies the caller read with its own statement are taken as given: the download asks PostgreSQL nothing, and falls over on what they no longer say", func(t *testing.T) {
 		x, d := both(t)
 		copies, err := x.store.Copies(context.Background(), d)
 		if err != nil || len(copies) != 2 {
@@ -261,7 +261,7 @@ func TestR_STOR_055_ReadsOverTheCopies(t *testing.T) {
 			t.Fatalf("first copy %+v", cp)
 		}
 	})
-	t.Run("R-STOR-055 Q-STOR-275 the copies of an item lookup are read from its JSON array, a timestamp of PostgreSQL and null as written", func(t *testing.T) {
+	t.Run("R-STOR-055 the copies of an item lookup are read from its JSON array, a timestamp of PostgreSQL and null as written", func(t *testing.T) {
 		cs, err := blob.ParseCopies(`[{"connection": "primary", "objectKey": "quader/sha256/ab/cd/x", "storedSize": 3, "storageKeyId": "", "state": "present",
 			"verifiedAt": "2026-11-22T10:00:00.123456+00:00", "checkedAt": null, "retired": false},
 			{"connection": "old", "objectKey": "k", "storedSize": 3, "storageKeyId": "", "state": "missing", "verifiedAt": null, "checkedAt": null, "retired": true}]`)

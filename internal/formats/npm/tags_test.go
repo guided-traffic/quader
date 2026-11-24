@@ -66,7 +66,7 @@ func TestR_NPM_016_APublishLeavesATagAtAHiddenVersionWhereItIs(t *testing.T) {
 		{"a readable latest is still guarded", tags{"latest": "2.0.0", "old": "1.0.0"}, "latest", "1.5.0", true, tags{"latest": "2.0.0", "old": "1.0.0"}, tagGuarded},
 	}
 	for _, c := range cases {
-		t.Run("Q-NPM-85 "+c.name, func(t *testing.T) {
+		t.Run(c.name, func(t *testing.T) {
 			got, out := tagAfterPublish(c.cur, c.tag, c.version, c.guard, hidden)
 			if !maps.Equal(got, c.want) || out != c.out {
 				t.Fatalf("tags %v outcome %v, want %v %v", got, out, c.want, c.out)

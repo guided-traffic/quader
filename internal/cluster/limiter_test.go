@@ -215,7 +215,7 @@ func TestLimiterCluster(t *testing.T) {
 		}
 	})
 
-	t.Run("R-ARCH-034 Q-HA-66 requests a stage held are charged to the windows they arrived in", func(t *testing.T) {
+	t.Run("R-ARCH-034 requests a stage held are charged to the windows they arrived in", func(t *testing.T) {
 		// A client at 8 requests/s, below a burst of 10 per 1 s window, whose requests of three seconds are all
 		// decided at the end, as after a database switchover that held the token lookup.
 		held := func(take func(l *Limiter, at time.Time) bool, perSecond int) int {
@@ -246,7 +246,7 @@ func TestLimiterCluster(t *testing.T) {
 		}
 	})
 
-	t.Run("R-ARCH-034 Q-HA-66 an arrival time in the future or zero is now", func(t *testing.T) {
+	t.Run("R-ARCH-034 an arrival time in the future or zero is now", func(t *testing.T) {
 		st, clk := newMemWindows(), newLimClock()
 		l := replica(t, st, clk, 1, nil).NewLimiter("x", ScopeCluster, 1, 2)
 		l.TakeAt(t.Context(), "a", clk.now().Add(time.Hour))

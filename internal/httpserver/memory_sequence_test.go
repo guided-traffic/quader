@@ -7,7 +7,7 @@ import (
 )
 
 func TestMemoryChargeSequence(t *testing.T) {
-	t.Run("R-ARCH-005 Q-ARCH-330 sequential objects opened by one request never exceed the admission charge", func(t *testing.T) {
+	t.Run("R-ARCH-005 sequential objects opened by one request never exceed the admission charge", func(t *testing.T) {
 		var held int64
 		g := chargeGuard(&held)
 		tk, release, _ := g.Admit()
@@ -25,7 +25,7 @@ func TestMemoryChargeSequence(t *testing.T) {
 			t.Fatalf("%d bytes charged after 100 sequential opens, more than the admission charge of 1 MiB", g.used.Load())
 		}
 	})
-	t.Run("R-ARCH-005 Q-ARCH-330 a settle after the request's release charges nothing", func(t *testing.T) {
+	t.Run("R-ARCH-005 a settle after the request's release charges nothing", func(t *testing.T) {
 		var held int64
 		g := chargeGuard(&held)
 		tk, release, _ := g.Admit()
@@ -37,7 +37,7 @@ func TestMemoryChargeSequence(t *testing.T) {
 			t.Fatalf("%d bytes charged to a released request", g.used.Load())
 		}
 	})
-	t.Run("R-ARCH-005 Q-ARCH-330 a context without the ticket settles nothing of the request", func(t *testing.T) {
+	t.Run("R-ARCH-005 a context without the ticket settles nothing of the request", func(t *testing.T) {
 		var held int64
 		g := chargeGuard(&held)
 		var during int64

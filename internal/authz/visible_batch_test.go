@@ -133,7 +133,7 @@ func TestR_VULN_028_ReadScopeVersionIndependence(t *testing.T) {
 		{"an endpoint the configuration does not hold", e, onEP(botSub, "nowhere"), []string{"npm-a", "npm-b"}, std, false, false},
 	}
 	for _, tc := range cases {
-		t.Run("R-VULN-028 Q-VULN-81 "+tc.name, func(t *testing.T) {
+		t.Run("R-VULN-028 "+tc.name, func(t *testing.T) {
 			idx, err := tc.e.Begin(ctx, tc.sub, qrs(tc.keys)...)
 			if err != nil {
 				t.Fatal(err)

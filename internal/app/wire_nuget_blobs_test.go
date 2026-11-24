@@ -36,7 +36,7 @@ func (r oneCopy) Copies(_ context.Context, _ meta.Tx, d blob.Digest) ([]blob.Cop
 // (one Open per ReadAt, Q-NUGET-48) inside one request: however many ranged reads the zip reader makes,
 // the request is never charged more than the admission charge (R-ARCH-005, Q-ARCH-330).
 func TestNuGetReadmePathMemory(t *testing.T) {
-	t.Run("R-ARCH-005 Q-ARCH-330 R-NUGET-027 the ranged reads of a package's README stay within one admission charge", func(t *testing.T) {
+	t.Run("R-ARCH-005 R-NUGET-027 the ranged reads of a package's README stay within one admission charge", func(t *testing.T) {
 		var pkg bytes.Buffer
 		zw := zip.NewWriter(&pkg)
 		for i := range 150 {

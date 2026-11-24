@@ -21,7 +21,7 @@ func TestMirrorEngineArea(t *testing.T) {
 			}
 		}
 	})
-	t.Run("Q-ARCH-317 the caches of the worker's engine are sized for background use", func(t *testing.T) {
+	t.Run("R-REPO-055 the caches of the worker's engine are sized for background use", func(t *testing.T) {
 		got := backgroundProxyConfig(config.Proxy{MetadataCacheBytes: 128 << 20, NegativeL1Entries: 100000, QueryCacheBytes: 8 << 20})
 		if got.MetadataCacheBytes != backgroundMetadataCacheBytes || got.NegativeL1Entries != backgroundNegativeL1Entries || got.QueryCacheBytes != 0 {
 			t.Fatalf("%+v", got)
@@ -31,7 +31,7 @@ func TestMirrorEngineArea(t *testing.T) {
 			t.Fatalf("an operator's smaller value was raised: %+v", small)
 		}
 	})
-	t.Run("Q-ARCH-312 a host that cannot be built answers every Ready with its error, and a later call tries again without panicking", func(t *testing.T) {
+	t.Run("R-ARCH-001 a host that cannot be built answers every Ready with its error, and a later call tries again without panicking", func(t *testing.T) {
 		env := baseEnv(t, nil)
 		a, err := New(Options{Loaded: loadCfg(t, "worker", env), Role: "worker", Environ: env, SkipInfrastructure: true})
 		if err != nil {

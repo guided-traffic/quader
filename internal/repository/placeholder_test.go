@@ -91,7 +91,7 @@ func TestR_REPO_071_TheDocumentRulesOfAMemberOfUpstream(t *testing.T) {
 			t.Fatalf("fields = %v", f)
 		}
 	})
-	t.Run("Q-REPO-401 a member of the own project and one of upstream with the same key are refused together", func(t *testing.T) {
+	t.Run("a member of the own project and one of upstream with the same key are refused together", func(t *testing.T) {
 		for _, members := range []string{`["npmjs","upstream/npmjs"]`, `["upstream/npmjs","npmjs"]`} {
 			_, _, err := decodeValidate(t, virtualDoc(`{"members":`+members+`}`), true)
 			if f := fieldsOf(err); f["/virtual/members/1"] != errs.CodeInvalidMember || len(f) != 1 {

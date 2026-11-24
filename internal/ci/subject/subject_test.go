@@ -194,7 +194,7 @@ func TestR_CI_004_EachStepRefusesWithItsReason(t *testing.T) {
 		{name: "2 a nested JWT", opts: oidcstub.MintOptions{Headers: map[string]any{"cty": "JWT"}}, want: reason.SubjectTokenMalformed},
 		{name: "2 an opaque string", raw: "not-a-jwt", want: reason.SubjectTokenMalformed},
 		// Step 3
-		{name: "3 the algorithm-confusion token (HS256, the PEM of the RSA key, Q-CI-24)", opts: oidcstub.MintOptions{Alg: "HS256"}, want: reason.AlgorithmNotAllowed},
+		{name: "3 the algorithm-confusion token (HS256, the PEM of the RSA key)", opts: oidcstub.MintOptions{Alg: "HS256"}, want: reason.AlgorithmNotAllowed},
 		{name: "3 HS256 even when the allow list names it", opts: oidcstub.MintOptions{Alg: "HS256"}, set: func(s *subject.Settings) { s.AllowedAlgorithms = append(s.AllowedAlgorithms, "HS256") }, want: reason.AlgorithmNotAllowed},
 		{name: "3 PS256 outside allowed_algorithms", opts: oidcstub.MintOptions{Alg: "PS256"}, want: reason.AlgorithmNotAllowed},
 		{name: "3 ES256 outside allowed_algorithms", opts: oidcstub.MintOptions{Alg: "ES256"}, want: reason.AlgorithmNotAllowed},
@@ -225,10 +225,10 @@ func TestR_CI_004_EachStepRefusesWithItsReason(t *testing.T) {
 		{name: "8 exp 61 seconds ago with a 60-second skew", opts: oidcstub.MintOptions{Claims: map[string]any{"exp": now.Unix() - 61}}, want: reason.TokenExpired},
 		{name: "8 nbf 61 seconds ahead", opts: oidcstub.MintOptions{Claims: map[string]any{"nbf": now.Unix() + 61}}, want: reason.TokenNotYetValid},
 		{name: "8 iat 61 seconds ahead", opts: oidcstub.MintOptions{Claims: map[string]any{"iat": now.Unix() + 61}}, want: reason.IssuedInFuture},
-		{name: "8 no exp (Q-CI-27)", opts: oidcstub.MintOptions{Remove: []string{"exp"}}, want: reason.RequiredClaimMissing},
-		{name: "8 a null iat (Q-CI-27)", opts: oidcstub.MintOptions{Claims: map[string]any{"iat": nil}}, want: reason.RequiredClaimMissing},
-		{name: "8 an exp that is a string (Q-CI-27)", opts: oidcstub.MintOptions{Claims: map[string]any{"exp": "1792940000"}}, want: reason.SubjectTokenMalformed},
-		{name: "8 a negative nbf (Q-CI-27)", opts: oidcstub.MintOptions{Claims: map[string]any{"nbf": -1}}, want: reason.SubjectTokenMalformed},
+		{name: "8 no exp", opts: oidcstub.MintOptions{Remove: []string{"exp"}}, want: reason.RequiredClaimMissing},
+		{name: "8 a null iat", opts: oidcstub.MintOptions{Claims: map[string]any{"iat": nil}}, want: reason.RequiredClaimMissing},
+		{name: "8 an exp that is a string", opts: oidcstub.MintOptions{Claims: map[string]any{"exp": "1792940000"}}, want: reason.SubjectTokenMalformed},
+		{name: "8 a negative nbf", opts: oidcstub.MintOptions{Claims: map[string]any{"nbf": -1}}, want: reason.SubjectTokenMalformed},
 		// Step 9
 		{name: "9 no project_id", opts: oidcstub.MintOptions{Remove: []string{"project_id"}}, want: reason.RequiredClaimMissing},
 		{name: "9 a null jti", opts: oidcstub.MintOptions{Claims: map[string]any{"jti": nil}}, want: reason.RequiredClaimMissing},
@@ -269,7 +269,7 @@ func TestR_CI_004_TheStepsRunInOrder(t *testing.T) {
 	}{
 		{"a bad signature wins over a wrong audience and an expired token", oidcstub.MintOptions{ForeignSignature: true, Claims: map[string]any{"aud": "x", "exp": 1}}, reason.SignatureInvalid},
 		{"a refused algorithm wins over a bad signature", oidcstub.MintOptions{Alg: "PS256", ForeignSignature: true}, reason.AlgorithmNotAllowed},
-		{"an unknown issuer wins over a refused algorithm (Q-CI-19)", oidcstub.MintOptions{Alg: "HS256", Claims: map[string]any{"iss": "https://gitlab.com"}}, reason.UnknownIssuer},
+		{"an unknown issuer wins over a refused algorithm", oidcstub.MintOptions{Alg: "HS256", Claims: map[string]any{"iss": "https://gitlab.com"}}, reason.UnknownIssuer},
 		{"a wrong audience wins over an expired token", oidcstub.MintOptions{Claims: map[string]any{"aud": "x", "exp": 1}}, reason.AudienceInvalid},
 		{"an expired token wins over a missing required claim", oidcstub.MintOptions{Claims: map[string]any{"exp": 1}, Remove: []string{"project_id"}}, reason.TokenExpired},
 		{"a malformed payload wins over everything after it", oidcstub.MintOptions{Alg: "HS256", Duplicate: map[string]any{"iss": issuerURL}}, reason.SubjectTokenMalformed},

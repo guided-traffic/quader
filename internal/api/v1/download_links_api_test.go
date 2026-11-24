@@ -295,7 +295,7 @@ func TestR_STOR_074_TheConnectionAndItsAddress(t *testing.T) {
 			t.Fatalf("%d %v", w.Code, got)
 		}
 	})
-	t.Run("R-STOR-014 Q-STOR-355 a stored address the write leaves alone is not checked again; one it names is", func(t *testing.T) {
+	t.Run("R-STOR-014 a stored address the write leaves alone is not checked again; one it names is", func(t *testing.T) {
 		if w := linkCall(h, http.MethodPatch, "/api/v1/download-links/settings", `{"minSize":0}`, `"1"`); w.Code != http.StatusOK {
 			t.Fatalf("a change of the size: %d %s", w.Code, w.Body)
 		}
@@ -342,8 +342,8 @@ func TestR_STOR_074_TheConnectionAndItsAddress(t *testing.T) {
 	})
 }
 
-// TestQ_UI_996_TheLinkChecksFields: each outcome of a failed link check carries the fields its sentence needs and no others.
-func TestQ_UI_996_TheLinkChecksFields(t *testing.T) {
+// TestR_STOR_074_TheLinkChecksFields: each outcome of a failed link check carries the fields its sentence needs and no others.
+func TestR_STOR_074_TheLinkChecksFields(t *testing.T) {
 	if c := downloadLinkCheck(&blob.LinkCheck{}); c == nil || c.Outcome != gen.NotRun || c.Status != nil {
 		t.Errorf("not run %+v", c)
 	}

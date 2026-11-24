@@ -70,7 +70,7 @@ func TestR_CLAMAV_010_TheCertificateSubject(t *testing.T) {
 			t.Fatalf("default endpoint: %+v, %v", res, err)
 		}
 	})
-	t.Run("Q-CLAMAV-12 a subject longer than 255 bytes is cut at a UTF-8 boundary", func(t *testing.T) {
+	t.Run("a subject longer than 255 bytes is cut at a UTF-8 boundary", func(t *testing.T) {
 		long := strings.Repeat("ä", 200) // 400 bytes
 		got := cutName(long)
 		if !strings.HasSuffix(got, TruncatedMarker) || len(strings.TrimSuffix(got, TruncatedMarker)) != 254 {

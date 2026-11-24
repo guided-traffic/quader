@@ -118,7 +118,7 @@ func TestEnqueueParams(t *testing.T) {
 }
 
 func TestValidateSchedules(t *testing.T) {
-	t.Run("Q-STOR-4 a bad configured schedule names its key", func(t *testing.T) {
+	t.Run("R-STOR-025 a bad configured schedule names its key", func(t *testing.T) {
 		err := ValidateSchedules(config.Maintenance{Tasks: map[string]config.MaintenanceTask{
 			"gc":      {Enabled: true, Schedule: "*/30 * * * *"},
 			"scrub":   {Enabled: true, Schedule: "0 30 4 ? * *"},

@@ -13,7 +13,7 @@ func TestR_EP_010_CredentialRuleConfiguration(t *testing.T) {
 			t.Fatalf("err = %v", err)
 		}
 	})
-	t.Run("R-EP-010 Q-EP-10 the defaults: SATs bound to the endpoint, no anonymous; the default endpoint unchanged", func(t *testing.T) {
+	t.Run("R-EP-010 the defaults: SATs bound to the endpoint, no anonymous; the default endpoint unchanged", func(t *testing.T) {
 		l, err := loadEndpoints(t, customersYAML)
 		if err != nil {
 			t.Fatal(err)

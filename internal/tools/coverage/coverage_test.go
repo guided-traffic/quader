@@ -199,7 +199,7 @@ func TestRuleViolationsFailTheCommand(t *testing.T) {
 }
 
 func TestFeatureStatus(t *testing.T) {
-	t.Run("Q-ROAD-4 feature is implemented only when every covering requirement is", func(t *testing.T) {
+	t.Run("feature is implemented only when every covering requirement is", func(t *testing.T) {
 		// R-WID-001 covers WID-001 and WID-002; R-WID-002 covers nothing.
 		m := fixtureModel(t, "ok", "R-WID-001")
 		status := map[string]string{}
@@ -213,7 +213,7 @@ func TestFeatureStatus(t *testing.T) {
 			}
 		}
 	})
-	t.Run("Q-ROAD-4 feature with an unimplemented covering requirement stays specified", func(t *testing.T) {
+	t.Run("feature with an unimplemented covering requirement stays specified", func(t *testing.T) {
 		c := mustLoad(t, fixtureDocs("ok"))
 		c.Reqs = append(c.Reqs, requirement{ID: "R-WID-003", Priority: prioMVP, Covers: []string{"WID-001"}, Page: "widgets.md"})
 		m := newModel(c, []string{"widgets.md"}, map[string]bool{"R-WID-001": true})
@@ -230,7 +230,7 @@ func TestFeatureStatus(t *testing.T) {
 			}
 		}
 	})
-	t.Run("Q-ROAD-4 no evidence leaves everything specified or open", func(t *testing.T) {
+	t.Run("no evidence leaves everything specified or open", func(t *testing.T) {
 		m := fixtureModel(t, "ok")
 		if got := m.countImplemented(m.Features); got != 0 {
 			t.Errorf("implemented features: got %d, want 0", got)
@@ -255,49 +255,49 @@ func readEvidence(t *testing.T, files ...string) *evidence {
 func TestEvidence(t *testing.T) {
 	known := map[string]bool{"R-WID-001": true, "R-WID-002": true, "R-WID-003": true}
 
-	t.Run("Q-ROAD-4 passing test marks requirement implemented, failing test does not", func(t *testing.T) {
+	t.Run("passing test marks requirement implemented, failing test does not", func(t *testing.T) {
 		ids, unknown := readEvidence(t, "pass-fail.json").implemented(known)
 		if len(unknown) != 0 || strings.Join(ids, ",") != "R-WID-001" {
 			t.Fatalf("got %v (unknown %v), want exactly R-WID-001", ids, unknown)
 		}
 	})
-	t.Run("Q-ROAD-4 a failing test vetoes a passing one that names the same requirement", func(t *testing.T) {
+	t.Run("a failing test vetoes a passing one that names the same requirement", func(t *testing.T) {
 		ids, _ := readEvidence(t, "veto.json").implemented(known)
 		if strings.Join(ids, ",") != "R-WID-002" {
 			t.Fatalf("got %v, want only R-WID-002 (R-WID-001 failed in package b, R-WID-003 was skipped)", ids)
 		}
 	})
-	t.Run("Q-ROAD-4 JUnit reports are read like go test streams", func(t *testing.T) {
+	t.Run("JUnit reports are read like go test streams", func(t *testing.T) {
 		ids, _ := readEvidence(t, "junit.xml").implemented(known)
 		if strings.Join(ids, ",") != "R-WID-001" {
 			t.Fatalf("got %v, want R-WID-001", ids)
 		}
 	})
-	t.Run("Q-ROAD-4 reports combine and the veto holds across files", func(t *testing.T) {
+	t.Run("reports combine and the veto holds across files", func(t *testing.T) {
 		ids, _ := readEvidence(t, "pass-fail.json", "veto.json", "junit.xml").implemented(known)
 		if len(ids) != 0 {
 			t.Fatalf("got %v, want none: R-WID-001 fails in veto.json, R-WID-002 fails in pass-fail.json and junit.xml", ids)
 		}
 	})
-	t.Run("Q-ROAD-4 an unknown ID in a test name is reported", func(t *testing.T) {
+	t.Run("an unknown ID in a test name is reported", func(t *testing.T) {
 		_, unknown := readEvidence(t, "typo.json").implemented(known)
 		if strings.Join(unknown, ",") != "R-WID-777" {
 			t.Fatalf("unknown: got %v, want R-WID-777", unknown)
 		}
 	})
-	t.Run("Q-ROAD-4 build chatter between JSON lines is skipped", func(t *testing.T) {
+	t.Run("build chatter between JSON lines is skipped", func(t *testing.T) {
 		ids, _ := readEvidence(t, "mixed-output.txt").implemented(known)
 		if strings.Join(ids, ",") != "R-WID-001" {
 			t.Fatalf("got %v, want R-WID-001", ids)
 		}
 	})
-	t.Run("Q-ROAD-4 a file that is no report is an error", func(t *testing.T) {
+	t.Run("a file that is no report is an error", func(t *testing.T) {
 		err := newEvidence().readFile(filepath.Join("testdata", "evidence", "not-a-report.json"), strings.NewReader(""))
 		if err == nil {
 			t.Fatal("expected an error")
 		}
 	})
-	t.Run("Q-ARCH-811 a test that holds a refusal marks the requirement unbuilt: it proves the refusal's requirement and keeps the marked one out", func(t *testing.T) {
+	t.Run("a test that holds a refusal marks the requirement unbuilt: it proves the refusal's requirement and keeps the marked one out", func(t *testing.T) {
 		ev := newEvidence()
 		stream := `{"Action":"pass","Package":"p","Test":"TestM/search_R-WID-001-unbuilt_R-WID-002"}` + "\n" +
 			`{"Action":"pass","Package":"p","Test":"TestR_WID_003_unbuilt_DeprecateIsRefused"}` + "\n" +
@@ -342,7 +342,7 @@ func TestEvidence(t *testing.T) {
 			}
 		}
 	})
-	t.Run("Q-ARCH-811 a package that started and did not end makes the report cut, one that ended in any way does not", func(t *testing.T) {
+	t.Run("a package that started and did not end makes the report cut, one that ended in any way does not", func(t *testing.T) {
 		cases := map[string]string{
 			"two packages, one cut": `{"Action":"start","Package":"a"}` + "\n" + `{"Action":"start","Package":"b"}` + "\n" +
 				`{"Action":"pass","Package":"a","Test":"TestA/R-WID-001_ok"}` + "\n" + `{"Action":"pass","Package":"a"}` + "\n",
@@ -361,7 +361,7 @@ func TestEvidence(t *testing.T) {
 			t.Errorf("a report whose packages passed, failed and were skipped: %v", err)
 		}
 	})
-	t.Run("Q-ROAD-4 standard input is read for -", func(t *testing.T) {
+	t.Run("standard input is read for -", func(t *testing.T) {
 		ev := newEvidence()
 		if err := ev.readFile("-", strings.NewReader(`{"Action":"pass","Package":"p","Test":"TestX/R-WID-002_ok"}`+"\n")); err != nil {
 			t.Fatal(err)
@@ -422,7 +422,7 @@ func TestIDsInTestNames(t *testing.T) {
 	n := 0
 	for name, want := range cases {
 		n++
-		t.Run(fmt.Sprintf("Q-ROAD-4 test name case %d", n), func(t *testing.T) {
+		t.Run(fmt.Sprintf("test name case %d", n), func(t *testing.T) {
 			got := idsIn(name)
 			if strings.Join(got, ",") != strings.Join(want, ",") {
 				t.Errorf("got %v, want %v", got, want)
@@ -485,7 +485,7 @@ func TestCommandWithTestReports(t *testing.T) {
 
 	// The pipeline's run: the record, and with -links-at (Q-ARCH-1040) the pages' links to the files the branch coverage does not
 	// hold pointed at the record's commit, their links to each other relative.
-	t.Run("E0.8 Q-ARCH-1040 go test -json stream marks exactly the passing requirement implemented, the links at the record's commit", func(t *testing.T) {
+	t.Run("E0.8 go test -json stream marks exactly the passing requirement implemented, the links at the record's commit", func(t *testing.T) {
 		repo := setup(t)
 		report := write(t, t.TempDir(), stream)
 		const commit = "0123456789abcdef0123456789abcdef01234567"
@@ -517,7 +517,7 @@ func TestCommandWithTestReports(t *testing.T) {
 			}
 		}
 	})
-	t.Run("Q-ROAD-4 a test naming an unknown requirement fails the command", func(t *testing.T) {
+	t.Run("a test naming an unknown requirement fails the command", func(t *testing.T) {
 		repo := setup(t)
 		report := write(t, t.TempDir(), `{"Action":"pass","Package":"p","Test":"TestA/R-ARCH-999_typo"}`+"\n")
 		var stdout, stderr bytes.Buffer
@@ -528,7 +528,7 @@ func TestCommandWithTestReports(t *testing.T) {
 			t.Errorf("stderr does not name R-ARCH-999:\n%s", stderr.String())
 		}
 	})
-	t.Run("Q-ROAD-4 positional report arguments and standard input count as reports", func(t *testing.T) {
+	t.Run("positional report arguments and standard input count as reports", func(t *testing.T) {
 		repo := setup(t)
 		var stdout, stderr bytes.Buffer
 		if code := run([]string{"-repo", repo, "-tests", "-"}, strings.NewReader(stream), &stdout, &stderr); code != exitOK {
@@ -539,7 +539,7 @@ func TestCommandWithTestReports(t *testing.T) {
 			t.Errorf("implemented.txt:\n%s", data)
 		}
 	})
-	t.Run("Q-ARCH-811 -previous lists what the record adds and drops, with the reason, and fails on neither", func(t *testing.T) {
+	t.Run("-previous lists what the record adds and drops, with the reason, and fails on neither", func(t *testing.T) {
 		repo := setup(t)
 		previous := filepath.Join(t.TempDir(), "implemented.txt")
 		// R-ARCH-002 stays; R-ARCH-003 fails in this run; R-ARCH-004 fails in a carried report; R-ARCH-005 is named by no report;
@@ -573,7 +573,7 @@ func TestCommandWithTestReports(t *testing.T) {
 			t.Errorf("implemented.txt lists %v, want R-ARCH-002 and R-ARCH-006", got)
 		}
 	})
-	t.Run("Q-ARCH-811 a cut report fails the command and writes nothing", func(t *testing.T) {
+	t.Run("a cut report fails the command and writes nothing", func(t *testing.T) {
 		repo := setup(t)
 		cut := write(t, t.TempDir(), `{"Action":"start","Package":"p"}`+"\n"+
 			`{"Action":"run","Package":"p","Test":"TestA/R-ARCH-002_passes"}`+"\n"+
@@ -589,7 +589,7 @@ func TestCommandWithTestReports(t *testing.T) {
 			t.Error("a record was written from a cut report")
 		}
 	})
-	t.Run("Q-ARCH-811 the flags of the record need -tests, and -check does not combine with it", func(t *testing.T) {
+	t.Run("the flags of the record need -tests, and -check does not combine with it", func(t *testing.T) {
 		repo := setup(t)
 		for _, args := range [][]string{
 			{"-carried", "x.json"},
@@ -607,7 +607,7 @@ func TestCommandWithTestReports(t *testing.T) {
 			}
 		}
 	})
-	t.Run("Q-ARCH-811 a tree that holds the record or the badge is refused by the generator and by -check", func(t *testing.T) {
+	t.Run("a tree that holds the record or the badge is refused by the generator and by -check", func(t *testing.T) {
 		for _, rel := range []string{recordRel, badgeRel} {
 			repo := setup(t)
 			p := filepath.Join(repo, filepath.FromSlash(rel))
@@ -628,7 +628,7 @@ func TestCommandWithTestReports(t *testing.T) {
 			}
 		}
 	})
-	t.Run("Q-ARCH-811 without a record the pages show what the specification covers and point to the branch", func(t *testing.T) {
+	t.Run("without a record the pages show what the specification covers and point to the branch", func(t *testing.T) {
 		repo := setup(t)
 		var stdout, stderr bytes.Buffer
 		if code := run([]string{"-repo", repo}, strings.NewReader(""), &stdout, &stderr); code != exitOK {
@@ -666,7 +666,7 @@ func TestChecklistFormat(t *testing.T) {
 			}
 		}
 	})
-	t.Run("Q-ROAD-4 checklist shows implementation status", func(t *testing.T) {
+	t.Run("checklist shows implementation status", func(t *testing.T) {
 		out := renderChecklist(fixtureModel(t, "ok", "R-WID-001", "R-WID-002"))
 		for _, want := range []string{
 			"| WID-001 | First widget | MVP | implemented | [R-WID-001](../spec/widgets.md) (implemented) |",

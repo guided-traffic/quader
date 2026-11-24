@@ -341,7 +341,7 @@ func TestR_STOR_081_UploadSessionsOnAnEncryptedConnection(t *testing.T) {
 			t.Errorf("the session is %s", x.rows.state(sess.ID))
 		}
 	})
-	t.Run("R-STOR-081 Q-STOR-318 a request whose session's counter would pass the bound answers 409 session_exhausted and aborts the session", func(t *testing.T) {
+	t.Run("R-STOR-081 a request whose session's counter would pass the bound answers 409 session_exhausted and aborts the session", func(t *testing.T) {
 		x := newSealedSessions(t, blob.Capabilities{Metadata: true, CopyReplacesMetadata: true})
 		s := x.service()
 		sess, err := s.Start(ctx, 3, x.sc)

@@ -9,7 +9,7 @@ import (
 
 // Q-LIM-66: a scan token's request is system work: the subject system with the credential vuln-scanner-trivy, recorded under the
 // repository, and no request figure, ceiling, block or parallel lease refuses it, whatever the figures say.
-func TestQ_LIM_66_TheImageScanningsPullIsRecordedUnderSystemAndLimitedByNothing(t *testing.T) {
+func TestR_LIM_001_TheImageScanningsPullIsRecordedUnderSystemAndLimitedByNothing(t *testing.T) {
 	s, ok := SubjectOf(Caller{Kind: CallerSystem})
 	if !ok || s.Kind != KindSystem || s.Ref != "system" || s.Credential != ScanCredential || s.String() != "system" {
 		t.Fatalf("subject %+v", s)
@@ -51,7 +51,7 @@ func TestQ_LIM_66_TheImageScanningsPullIsRecordedUnderSystemAndLimitedByNothing(
 
 // Q-LIM-80: the malware scanner's read with a blob token is system work with the credential malware-scanner-clamav, and limited by nothing;
 // a system subject of another name keeps the image scanner's credential.
-func TestQ_LIM_80_TheMalwareScannersReadIsRecordedUnderSystemWithItsOwnCredential(t *testing.T) {
+func TestR_LIM_001_TheMalwareScannersReadIsRecordedUnderSystemWithItsOwnCredential(t *testing.T) {
 	s, ok := SubjectOf(Caller{Kind: CallerSystem, System: MalwareScanCredential})
 	if !ok || s.Kind != KindSystem || s.Credential != MalwareScanCredential || s.String() != "system" {
 		t.Fatalf("subject %+v", s)

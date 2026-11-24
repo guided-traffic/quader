@@ -40,7 +40,7 @@ func TestR_REPO_003_TheCatalogFactsOfNPM(t *testing.T) {
 			t.Fatalf("OwnershipDefault = %q", d.OwnershipDefault)
 		}
 	})
-	t.Run("Q-ARCH-193 the data port is the Store interface and the property prefix is npm.", func(t *testing.T) {
+	t.Run("R-ARCH-009 the data port is the Store interface and the property prefix is npm.", func(t *testing.T) {
 		if d.DataPort != reflect.TypeFor[Store]() || d.PropertyPrefix != "npm." {
 			t.Fatalf("%v %q", d.DataPort, d.PropertyPrefix)
 		}

@@ -126,7 +126,7 @@ func hopByHop(name string) bool {
 // header of the core (catalog.PerRequestHeaders) or Set-Cookie; the other per-request headers are the framing of the
 // one answer passed through (Content-Length, Content-Range, Accept-Ranges, Date, Age), its Retry-After and the member
 // of a virtual repository that answered it (Quader-Resolved-From), which a cached answer never replays because
-// [keepHeader] keeps the representation headers only (TestQ_BAS_181_TheEnginesHeaderListsAreTheCatalogs).
+// [keepHeader] keeps the representation headers only (TestR_BAS_053_TheEnginesHeaderListsAreTheCatalogs).
 func neverReplayed(name string) bool {
 	switch name {
 	case "X-Quader-Replica", "Cache-Status", "Set-Cookie", "X-Request-Id":

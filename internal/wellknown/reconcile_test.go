@@ -52,7 +52,7 @@ func TestR_REPO_067_ThePlanOfTheReconcile(t *testing.T) {
 		return steps
 	}
 
-	t.Run("R-REPO-067 step 1 an empty project gets one create per declaration, in catalog order: a preset internal, the system repositories private (Q-REPO-388)", func(t *testing.T) {
+	t.Run("R-REPO-067 step 1 an empty project gets one create per declaration, in catalog order: a preset internal, the system repositories private", func(t *testing.T) {
 		steps := plan(t, decls, nil)
 		if len(steps) != 14 || steps[0].Op != wellknown.OpCreate || steps[len(steps)-1].Key != "clamav" {
 			t.Fatalf("steps = %v", stepsOf(steps))
@@ -79,7 +79,7 @@ func TestR_REPO_067_ThePlanOfTheReconcile(t *testing.T) {
 			t.Fatalf("steps = %+v", steps)
 		}
 	})
-	t.Run("Q-REPO-377 step 2 an account goes when the product moves its host", func(t *testing.T) {
+	t.Run("step 2 an account goes when the product moves its host", func(t *testing.T) {
 		stored := with("npmjs", func(s *wellknown.Stored) { s.Address.URL = "https://npm.example.com/"; s.HasAccount = true })
 		steps := plan(t, decls, stored)
 		if len(steps) != 1 || !steps[0].Write.RemoveAccount {
@@ -155,7 +155,7 @@ func TestR_REPO_067_ThePlanOfTheReconcile(t *testing.T) {
 			t.Fatalf("err %v, calls %v", err, rec.calls)
 		}
 	})
-	t.Run("Q-REPO-411 step 6 clamav stored as a remote repository writes nothing and names its class", func(t *testing.T) {
+	t.Run("step 6 clamav stored as a remote repository writes nothing and names its class", func(t *testing.T) {
 		stored := with("clamav", func(s *wellknown.Stored) { s.Class = catalog.Remote })
 		_, err := wellknown.Plan(decls, stored)
 		if err == nil || !strings.Contains(err.Error(), "upstream/clamav as a system local repository") {
@@ -168,7 +168,7 @@ func TestR_REPO_067_ThePlanOfTheReconcile(t *testing.T) {
 			t.Fatalf("steps = %v", stepsOf(steps))
 		}
 	})
-	t.Run("Q-REPO-414 the level of clamav while its clients are on is the administrator's: the reconcile writes nothing back", func(t *testing.T) {
+	t.Run("R-REPO-075 the level of clamav while its clients are on is the administrator's: the reconcile writes nothing back", func(t *testing.T) {
 		for _, private := range []bool{true, false} {
 			stored := with("clamav", func(s *wellknown.Stored) { s.Fixed.Private = private })
 			if steps := plan(t, decls, stored); len(steps) != 0 {

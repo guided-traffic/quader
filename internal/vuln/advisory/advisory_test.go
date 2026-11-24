@@ -97,7 +97,7 @@ func TestR_VULN_017_URLOf(t *testing.T) {
 }
 
 // Q-VULN-17: 53 bits of SHA-256 of "npm:<canonical id>", stable across replicas, releases and restores.
-func TestQ_VULN_17_NPMAuditID(t *testing.T) {
+func TestR_VULN_017_NPMAuditID(t *testing.T) {
 	for _, id := range []string{"GHSA-vr7g-88fq-vhq3", "MAL-2026-1234", "x"} {
 		sum := sha256.Sum256([]byte("npm:" + id))
 		want := int64(binary.BigEndian.Uint64(sum[:8]) >> 11) // the first 53 bits
@@ -114,7 +114,7 @@ func TestQ_VULN_17_NPMAuditID(t *testing.T) {
 	}
 }
 
-func TestQ_VULN_17_AssignedIDsDoNotCollideAndDoNotDependOnOrder(t *testing.T) {
+func TestR_VULN_017_AssignedIDsDoNotCollideAndDoNotDependOnOrder(t *testing.T) {
 	ids := []string{"GHSA-a", "GHSA-b", "MAL-1", "CVE-1", "GHSA-b"}
 	a := NPMAuditIDs(ids)
 	b := NPMAuditIDs([]string{"CVE-1", "MAL-1", "GHSA-b", "GHSA-a"})

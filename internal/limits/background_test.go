@@ -78,7 +78,7 @@ func TestR_LIM_037_ABackgroundDownloadIsChargedToTheProbe(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-LIM-54 the worker's charge counts uncached bytes and every exchange after the first, and no second background download", func(t *testing.T) {
+	t.Run("the worker's charge counts uncached bytes and every exchange after the first, and no second background download", func(t *testing.T) {
 		r := newRig(t, ModeEnforce, BuiltinProfiles()[ProfileAnonymous])
 		probe := r.e.Begin(anonCaller("198.51.100.21"), repo)
 		ticket, _, err := probe.StartBackground(ctx, 21)

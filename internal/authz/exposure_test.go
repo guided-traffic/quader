@@ -303,29 +303,29 @@ func TestR_EP_013_ExposureCeiling(t *testing.T) {
 		{"R-EP-014 the same file on default is readable", onEP(botSub, "default"), read("generic-local", "", "internal/x.bin"), Allow, ReasonAllowGrant, ""},
 		{"R-EP-013 a repository the index does not know is the same 404", onEP(botSub, "customers"), read("ghost", "", "releases/1.0/app.zip"), DenyHidden, ReasonExposure, Read},
 		{"R-EP-013 a disabled rule exposes nothing", onEP(botSub, "customers"), read("generic-other", "", "a"), DenyHidden, ReasonExposure, Read},
-		{"R-EP-013 Q-EP-12 an administrator sees no more than the rules expose", onEP(adminSub, "customers"), read("generic-local", "", "internal/x.bin"), DenyHidden, ReasonExposure, Read},
-		{"R-EP-013 Q-EP-12 an administrator reads an exposed file through content:bypass", onEP(adminSub, "customers"), read("generic-local", "", "releases/a"), Allow, ReasonAllowRole, ""},
-		{"R-EP-013 Q-EP-12 the break-glass administrator is bound too", onEP(breakSub, "customers"), read("generic-local", "", "internal/x.bin"), DenyHidden, ReasonExposure, Read},
+		{"R-EP-013 an administrator sees no more than the rules expose", onEP(adminSub, "customers"), read("generic-local", "", "internal/x.bin"), DenyHidden, ReasonExposure, Read},
+		{"R-EP-013 an administrator reads an exposed file through content:bypass", onEP(adminSub, "customers"), read("generic-local", "", "releases/a"), Allow, ReasonAllowRole, ""},
+		{"R-EP-013 the break-glass administrator is bound too", onEP(breakSub, "customers"), read("generic-local", "", "internal/x.bin"), DenyHidden, ReasonExposure, Read},
 		{"R-EP-013 exposure never grants", onEP(carolSub, "customers"), read("generic-local", "", "releases/a"), DenyHidden, ReasonNoGrant, Read},
-		{"R-EP-013 Q-EP-9 a write on customers is 403 read-only", onEP(aliceSub, "customers"), write("generic-local", "", "releases/a", Deploy), DenyVisible, ReasonEndpointReadOnly, Deploy},
+		{"R-EP-013 a write on customers is 403 read-only", onEP(aliceSub, "customers"), write("generic-local", "", "releases/a", Deploy), DenyVisible, ReasonEndpointReadOnly, Deploy},
 		{"R-EP-013 a write is read-only whether or not its target exists", onEP(aliceSub, "customers"), write("ghost", "", "x", Deploy, Overwrite), DenyVisible, ReasonEndpointReadOnly, Deploy},
 		{"R-EP-013 a write is read-only before a read is hidden", onEP(aliceSub, "customers"), Coordinate{Repository: qr("ghost"), Path: "x", Kind: KindWrite, Actions: []Action{Read, Deploy}}, DenyVisible, ReasonEndpointReadOnly, Deploy},
 		{"R-EP-013 R-AUTHZ-016 an anonymous request is 401 first", onEP(anonSub, "customers"), read("generic-local", "", "releases/a"), DenyUnauthenticated, ReasonUnauthenticated, ""},
-		{"R-EP-013 Q-EP-11 exposure is decided on the addressed virtual repository", onEP(botSub, "customers"), Coordinate{Repository: qr("generic-local"), Addressed: qr("files-virtual"), Path: "releases/a", Kind: KindArtifact, Actions: []Action{Read}}, Allow, ReasonAllowGrant, ""},
-		{"R-EP-013 Q-EP-11 a member coordinate outside the virtual repository's rule is hidden", onEP(botSub, "customers"), Coordinate{Repository: qr("generic-local"), Addressed: qr("files-virtual"), Path: "internal/x", Kind: KindArtifact, Actions: []Action{Read}}, DenyHidden, ReasonExposure, Read},
+		{"R-EP-013 exposure is decided on the addressed virtual repository", onEP(botSub, "customers"), Coordinate{Repository: qr("generic-local"), Addressed: qr("files-virtual"), Path: "releases/a", Kind: KindArtifact, Actions: []Action{Read}}, Allow, ReasonAllowGrant, ""},
+		{"R-EP-013 a member coordinate outside the virtual repository's rule is hidden", onEP(botSub, "customers"), Coordinate{Repository: qr("generic-local"), Addressed: qr("files-virtual"), Path: "internal/x", Kind: KindArtifact, Actions: []Action{Read}}, DenyHidden, ReasonExposure, Read},
 		{"R-EP-013 the virtual repository itself passes its gate on customers", onEP(botSub, "customers"), read("files-virtual", "", "releases/a"), Allow, "", ""},
 		{"R-EP-013 a path of the virtual repository outside its rule is hidden", onEP(botSub, "customers"), read("files-virtual", "", "internal/x"), DenyHidden, ReasonExposure, Read},
 		{"R-EP-013 an endpoint name the configuration does not hold is closed", onEP(botSub, "nowhere"), read("generic-local", "", "releases/a"), DenyHidden, ReasonExposure, Read},
 		{"R-EP-013 a coordinate without an endpoint has no ceiling (a job)", botSub, read("generic-local", "", "internal/x.bin"), Allow, ReasonAllowGrant, ""},
 		{"R-EP-018 a version of an npm-like format is decided by the rule's range", onEP(botSub, "customers"), Coordinate{Repository: qr("npm-customers"), Package: "@acme/sdk", Version: "2.1.0", Kind: KindArtifact, Actions: []Action{Read}}, Allow, "", ""},
 		{"R-EP-018 a version below the range is hidden", onEP(botSub, "customers"), Coordinate{Repository: qr("npm-customers"), Package: "@acme/sdk", Version: "1.9.0", Kind: KindArtifact, Actions: []Action{Read}}, DenyHidden, ReasonExposure, Read},
-		{"R-EP-014 Q-EP-59 a raw file of the npm-like format is decided on the package and version the format gives it", onEP(botSub, "customers"), Coordinate{Repository: qr("npm-customers"), Path: "@acme/sdk/-/sdk-2.1.0.tgz", Package: "@acme/sdk", Version: "2.1.0", Kind: KindArtifact, Actions: []Action{Read}}, Allow, "", ""},
-		{"R-EP-014 Q-EP-59 a raw file of a version the rule hides is hidden", onEP(botSub, "customers"), Coordinate{Repository: qr("npm-customers"), Path: "@acme/sdk/-/sdk-1.9.0.tgz", Package: "@acme/sdk", Version: "1.9.0", Kind: KindArtifact, Actions: []Action{Read}}, DenyHidden, ReasonExposure, Read},
-		{"R-EP-014 Q-EP-59 a path of a format with package names that names no package is hidden", onEP(botSub, "customers"), read("npm-customers", "", "@acme/sdk/-/sdk-2.1.0.tgz"), DenyHidden, ReasonExposure, Read},
-		{"R-EP-014 Q-EP-59 a generic path without a package is decided by the paths as before", onEP(botSub, "customers"), read("generic-local", "", "releases/x"), Allow, ReasonAllowGrant, ""},
+		{"R-EP-014 a raw file of the npm-like format is decided on the package and version the format gives it", onEP(botSub, "customers"), Coordinate{Repository: qr("npm-customers"), Path: "@acme/sdk/-/sdk-2.1.0.tgz", Package: "@acme/sdk", Version: "2.1.0", Kind: KindArtifact, Actions: []Action{Read}}, Allow, "", ""},
+		{"R-EP-014 a raw file of a version the rule hides is hidden", onEP(botSub, "customers"), Coordinate{Repository: qr("npm-customers"), Path: "@acme/sdk/-/sdk-1.9.0.tgz", Package: "@acme/sdk", Version: "1.9.0", Kind: KindArtifact, Actions: []Action{Read}}, DenyHidden, ReasonExposure, Read},
+		{"R-EP-014 a path of a format with package names that names no package is hidden", onEP(botSub, "customers"), read("npm-customers", "", "@acme/sdk/-/sdk-2.1.0.tgz"), DenyHidden, ReasonExposure, Read},
+		{"R-EP-014 a generic path without a package is decided by the paths as before", onEP(botSub, "customers"), read("generic-local", "", "releases/x"), Allow, ReasonAllowGrant, ""},
 	}, &n)
 
-	t.Run("R-EP-013 Q-EP-4 a hidden file and a missing file answer the same error", func(t *testing.T) {
+	t.Run("R-EP-013 a hidden file and a missing file answer the same error", func(t *testing.T) {
 		hidden := e.Decide(t.Context(), onEP(botSub, "customers"), read("generic-local", "", "internal/x.bin")).Err()
 		missing := e.Decide(t.Context(), onEP(botSub, "customers"), read("ghost", "", "internal/x.bin")).Err()
 		hp, _ := errs.ProblemOf(hidden, "/x", "r")

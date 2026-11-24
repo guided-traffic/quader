@@ -63,12 +63,12 @@ func headersOf(rec *httptest.ResponseRecorder) http.Header {
 	return h
 }
 
-// TestQ_ARCH_306_TheEdgeStagesAnswerAnUnservedFamilyLikeAnUnknownPath: on the default endpoint of a role, a request of a
+// TestR_ARCH_001_TheEdgeStagesAnswerAnUnservedFamilyLikeAnUnknownPath: on the default endpoint of a role, a request of a
 // family the role does not serve gets neither the headers of the management API (R-API-017) nor a CORS answer or header
 // (R-API-018) nor a rate-limit class (R-API-016): its status and header are those of the same request to /does-not-exist,
 // for a caller with a token and an anonymous one, and for the preflight of an allowed origin (R-EP-005, Q-ARCH-306). On
 // the role that serves the family, the same request still gets them.
-func TestQ_ARCH_306_TheEdgeStagesAnswerAnUnservedFamilyLikeAnUnknownPath(t *testing.T) {
+func TestR_ARCH_001_TheEdgeStagesAnswerAnUnservedFamilyLikeAnUnknownPath(t *testing.T) {
 	type probe struct {
 		method, path string
 		hdr          []string

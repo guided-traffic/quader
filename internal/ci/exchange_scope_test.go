@@ -28,7 +28,7 @@ type heldOnly struct{ noIndex }
 
 // H-418, Q-CI-51: a scope item whose key names no repository is answered exactly as one whose repository exists and
 // is not granted, so a matched job learns nothing of which repositories exist.
-func TestQ_CI_51_AnUnknownScopeKeyAnswersAsANotGrantedOne(t *testing.T) {
+func TestR_CI_007_AnUnknownScopeKeyAnswersAsANotGrantedOne(t *testing.T) {
 	f := claims.Frozen{Version: claims.FrozenVersion, Issuer: "gitlab-test", IssuerID: "i-1", ProjectID: "7"}
 	f.Add(claims.Freeze("ci:gitlab-test/read", "m-1", TierSystem, nil,
 		claims.Rendered{Inline: []claims.InlineGrant{{Repositories: []string{"web/npm-internal"}, Actions: []claims.Action{claims.Read}}}}, nil))

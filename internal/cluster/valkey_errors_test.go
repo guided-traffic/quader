@@ -62,7 +62,7 @@ func TestClassify(t *testing.T) {
 			}
 		}
 	})
-	t.Run("Q-HA-13 configuration error kinds", func(t *testing.T) {
+	t.Run("R-HA-056 configuration error kinds", func(t *testing.T) {
 		for _, k := range []ErrorKind{KindAuth, KindTLS, KindNoPrimary} {
 			if !isConfigError(k) {
 				t.Errorf("%q is not a configuration error", k)

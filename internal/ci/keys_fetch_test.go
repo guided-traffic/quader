@@ -309,7 +309,7 @@ func TestBundleRefSyntax(t *testing.T) {
 	}
 }
 
-func TestQ_CI_31_ABundleInAnEnvironmentVariableAddsToTheTrust(t *testing.T) {
+func TestR_CI_001_ABundleInAnEnvironmentVariableAddsToTheTrust(t *testing.T) {
 	d := startDouble(t)
 	t.Setenv("QUADER_CIC_STUB", string(d.ca.CAPEM))
 	is := d.issuer(t, false)

@@ -149,7 +149,7 @@ func TestR_EP_019_TheSubjectCarriesTheEndpointsCacheFill(t *testing.T) {
 	})
 }
 
-func TestQ_OPS_49_ActorFrom(t *testing.T) {
+func TestR_OPS_015_ActorFrom(t *testing.T) {
 	a := ActorFrom(httpserver.Principal{
 		Kind: httpserver.KindServiceAccount, ID: "id1", Name: "sa1",
 		Credential: httpserver.Credential{Method: httpserver.MethodBearer, TokenID: "t1"},

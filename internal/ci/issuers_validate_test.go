@@ -136,7 +136,7 @@ func TestR_CI_001_AllowedPinClaimsAndBundles(t *testing.T) {
 	}
 }
 
-func TestQ_CI_30_AValidationErrorCarriesANamedRuleAsItsCode(t *testing.T) {
+func TestR_CI_002_AValidationErrorCarriesANamedRuleAsItsCode(t *testing.T) {
 	err := validationError([]errs.FieldError{field("/kind", "kind_not_available", "x")})
 	e, ok := errs.As(err)
 	if !ok || e.Code != "kind_not_available" || e.Status() != 422 || len(e.Fields) != 1 {

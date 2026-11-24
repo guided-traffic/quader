@@ -215,7 +215,7 @@ func TestR_OCI_008_WriteErrorMapsEveryRowOfTheTable(t *testing.T) {
 		// from a refused scan token by it (R-VULN-042, Q-VULN-180), and a repository the replica holds for disabled from a manifest or
 		// a layer the repository does not hold (Q-VULN-226).
 		{"populate not permitted", errs.E(errs.Forbidden, errs.CodePopulateNotPermitted, "x"), 403, "DENIED", map[string]string{"Quader-Error-Code": "populate_not_permitted"}},
-		{"Q-VULN-226 repository disabled", errs.E(errs.NotFound, errs.CodeRepositoryDisabled, "x"), 404, "NAME_UNKNOWN", map[string]string{"Quader-Error-Code": "repository_disabled"}},
+		{"R-VULN-042 repository disabled", errs.E(errs.NotFound, errs.CodeRepositoryDisabled, "x"), 404, "NAME_UNKNOWN", map[string]string{"Quader-Error-Code": "repository_disabled"}},
 		{"not offered", errs.E(errs.Invalid, errs.CodeOCIUnsupported, "x"), 400, "UNSUPPORTED", nil},
 		{"method not allowed", errs.E(errs.MethodNotAllowed, errs.CodeMethodNotAllowed, "x", errs.WithAllow("GET", "HEAD")), 405, "UNSUPPORTED", map[string]string{"Allow": "GET, HEAD"}},
 		{"rate limit", errs.E(errs.RateLimited, errs.CodeRateLimited, "x", errs.WithRetryAfter(3*time.Second)), 429, "TOOMANYREQUESTS", map[string]string{"Retry-After": "3"}},

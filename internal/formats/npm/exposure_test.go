@@ -47,7 +47,7 @@ func fixtureView() exampleRule { return exampleRule{x: newExposure()} }
 
 func TestR_NPM_048_RangesOfRules(t *testing.T) {
 	x := New().Exposure()
-	t.Run("R-NPM-048 Q-NPM-16 ValidateRange accepts the strict syntax only", func(t *testing.T) {
+	t.Run("R-NPM-048 ValidateRange accepts the strict syntax only", func(t *testing.T) {
 		for _, ok := range []string{">=2.0.0 <4", "^1.2.3 || ~2.0", "2.x", ">=2.0.0"} {
 			if err := x.ValidateRange(ok); err != nil {
 				t.Errorf("%q refused: %v", ok, err)
@@ -59,7 +59,7 @@ func TestR_NPM_048_RangesOfRules(t *testing.T) {
 			}
 		}
 	})
-	t.Run("R-NPM-048 Q-NPM-16 a range is evaluated with includePrerelease; the rule's flag decides", func(t *testing.T) {
+	t.Run("R-NPM-048 a range is evaluated with includePrerelease; the rule's flag decides", func(t *testing.T) {
 		if !x.InRange("2.1.0-beta", ">=2.0.0 <4") || x.InRange("4.0.0-rc.1", ">=2.0.0 <4") || x.InRange("1.9.0", ">=2.0.0 <4") {
 			t.Fatal("includePrerelease evaluation")
 		}

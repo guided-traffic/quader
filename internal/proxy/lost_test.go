@@ -50,7 +50,7 @@ func (r *recheckItems) Usable(_ context.Context, it items.Item) (items.Item, err
 }
 
 func TestR_REPO_025_ALostItemIsAMissAndItsAnswerIs503(t *testing.T) {
-	t.Run("Q-REPO-202 an entry or an item whose blob is not ok is damaged; an unread status is ok", func(t *testing.T) {
+	t.Run("an entry or an item whose blob is not ok is damaged; an unread status is ok", func(t *testing.T) {
 		for status, want := range map[string]bool{"": false, "ok": false, "missing": true, "corrupt": true} {
 			if got := (entry{ContentStatus: status}).Damaged(); got != want {
 				t.Errorf("entry %q: Damaged = %v", status, got)
@@ -65,7 +65,7 @@ func TestR_REPO_025_ALostItemIsAMissAndItsAnswerIs503(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-STOR-153 an item marked missing whose object is back is a hit again; a View asks no store", func(t *testing.T) {
+	t.Run("R-STOR-012 an item marked missing whose object is back is a hit again; a View asks no store", func(t *testing.T) {
 		back := &recheckItems{back: true}
 		e := &Engine{o: Options{Items: back}}
 		if it, state := e.classify(context.Background(), items.Item{ContentStatus: "missing"}); state != hitStored || it.ContentStatus != "ok" || back.asked != 1 {
@@ -86,7 +86,7 @@ func TestR_REPO_025_ALostItemIsAMissAndItsAnswerIs503(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-REPO-205 the cache tier's answer for a lost item is a 503 that IsLost tells apart", func(t *testing.T) {
+	t.Run("the cache tier's answer for a lost item is a 503 that IsLost tells apart", func(t *testing.T) {
 		err := lostContent("the cache cannot serve it until its upstream fills it again", errLost)
 		if !IsLost(err) || !items.ContentLost(err) || err.Status() != 503 || err.RetryAfter != lostRetry {
 			t.Fatalf("%v: lost %v, status %d", err, IsLost(err), err.Status())
@@ -96,7 +96,7 @@ func TestR_REPO_025_ALostItemIsAMissAndItsAnswerIs503(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-REPO-205 an item whose fill left it lost is not fetched again on this replica for the backoff", func(t *testing.T) {
+	t.Run("an item whose fill left it lost is not fetched again on this replica for the backoff", func(t *testing.T) {
 		now := time.Date(2026, 11, 6, 12, 0, 0, 0, time.UTC)
 		e := &Engine{o: Options{Now: func() time.Time { return now }}}
 		rq := Request{Remote: Remote{id: 7}, Path: "left-pad/-/left-pad-1.0.0.tgz"}
@@ -122,7 +122,7 @@ func TestR_REPO_025_ALostItemIsAMissAndItsAnswerIs503(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-REPO-202 a client that cannot fill a lost item gets 503 content_unavailable with the cause's Retry-After, or 30 s", func(t *testing.T) {
+	t.Run("a client that cannot fill a lost item gets 503 content_unavailable with the cause's Retry-After, or 30 s", func(t *testing.T) {
 		e := lostContent("the upstream is assumed to be offline", assumedOffline(42*time.Second))
 		if e.Status() != 503 || e.Code != errs.CodeContentUnavailable || e.RetryAfter != 42*time.Second {
 			t.Fatalf("%d %s %s", e.Status(), e.Code, e.RetryAfter)
@@ -135,7 +135,7 @@ func TestR_REPO_025_ALostItemIsAMissAndItsAnswerIs503(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-REPO-202 the answer of a miss stays for an item that is not lost and for a mirror's pass", func(t *testing.T) {
+	t.Run("the answer of a miss stays for an item that is not lost and for a mirror's pass", func(t *testing.T) {
 		miss := offlineMiss(Remote{})
 		if got := lostOr(Request{}, false, "offline", miss); !errors.Is(got, miss) {
 			t.Fatalf("not lost: %v", got)
@@ -149,7 +149,7 @@ func TestR_REPO_025_ALostItemIsAMissAndItsAnswerIs503(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-REPO-202 a document's missing object is 503 and a corrupt one 500, both content_unavailable; nothing else changes", func(t *testing.T) {
+	t.Run("a document's missing object is 503 and a corrupt one 500, both content_unavailable; nothing else changes", func(t *testing.T) {
 		if ee, _ := errs.As(storedObjectError(blob.ErrNotFound)); ee == nil || ee.Status() != 503 || ee.Code != errs.CodeContentUnavailable || ee.RetryAfter != lostRetry {
 			t.Fatalf("missing: %v", ee)
 		}
@@ -162,7 +162,7 @@ func TestR_REPO_025_ALostItemIsAMissAndItsAnswerIs503(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-REPO-203 a stored document's lost bytes are filled again only on the request path, once per digest", func(t *testing.T) {
+	t.Run("a stored document's lost bytes are filled again only on the request path, once per digest", func(t *testing.T) {
 		bs := &lostBlobs{err: blob.ErrNotFound}
 		e := &Engine{o: Options{Blobs: bs}, log: slog.New(slog.DiscardHandler), throttled: map[string]time.Time{}}
 		e.o.Now = time.Now

@@ -99,7 +99,7 @@ func TestR_EP_014_PathsAllowedClassifies(t *testing.T) {
 	}{
 		{"R-AUTHZ-005 an exclude-only grant reads the packages outside its excludes and not the excluded one", userSub(idAlice, "alice"), Read, classify, []bool{false, true, false}},
 		{"R-STOR-018 an exclude-only delete grant cannot delete an excluded package's file", userSub(idAlice, "alice"), Delete, classify, []bool{false, true, false}},
-		{"Q-AUTHZ-160 without the format's classification every path of the exclude-only grant is refused", userSub(idAlice, "alice"), Read, nil, []bool{false, false, false}},
+		{"R-AUTHZ-005 without the format's classification every path of the exclude-only grant is refused", userSub(idAlice, "alice"), Read, nil, []bool{false, false, false}},
 		{"R-AUTHZ-005 a grant without patterns reads every path, classified or not", userSub(idBob, "bob"), Read, classify, []bool{true, true, true}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

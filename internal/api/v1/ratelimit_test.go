@@ -104,11 +104,11 @@ func TestR_API_016_ChallengedByLevels(t *testing.T) {
 		name, path string
 		want       bool
 	}{
-		{"Q-OCI-225 a push into public artifacts without a credential answers the challenge", "POST /v2/main/open/app/blobs/uploads/", true},
-		{"Q-OCI-225 a manifest PUT into public artifacts without a credential answers the challenge", "PUT /v2/main/open/app/manifests/1", true},
-		{"Q-OCI-225 a HEAD of a blob in public artifacts is a read and is charged", "HEAD /v2/main/open/app/blobs/sha256:00", false},
-		{"Q-OCI-225 a write into a repository the index does not hold is charged", "POST /v2/main/nothing/app/blobs/uploads/", false},
-		{"Q-OCI-225 a POST of another format can be a read and is charged", "POST /api/npm/main/open/-/npm/v1/security/advisories/bulk", false},
+		{"R-LIM-005 a push into public artifacts without a credential answers the challenge", "POST /v2/main/open/app/blobs/uploads/", true},
+		{"R-LIM-005 a manifest PUT into public artifacts without a credential answers the challenge", "PUT /v2/main/open/app/manifests/1", true},
+		{"R-LIM-005 a HEAD of a blob in public artifacts is a read and is charged", "HEAD /v2/main/open/app/blobs/sha256:00", false},
+		{"R-LIM-005 a write into a repository the index does not hold is charged", "POST /v2/main/nothing/app/blobs/uploads/", false},
+		{"R-LIM-005 a POST of another format can be a read and is charged", "POST /api/npm/main/open/-/npm/v1/security/advisories/bulk", false},
 		{"a repository with public artifacts is read without a credential", "/api/nuget/main/open/v3/index.json", false},
 		{"internal artifacts answer the challenge", "/api/nuget/main/staff/v3/flatcontainer/acme.widgets/index.json", true},
 		{"private artifacts answer the challenge", "/api/npm/main/team/left-pad", true},
@@ -244,7 +244,7 @@ func TestRateLimitStage(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-LIM-4 in audit nothing on a protocol path is refused or limited by a class: reads, reads without a credential, writes", func(t *testing.T) {
+	t.Run("R-LIM-026 in audit nothing on a protocol path is refused or limited by a class: reads, reads without a credential, writes", func(t *testing.T) {
 		h, reg := limitedChain(t, tightLimits(), func(o *RateLimitOptions) { o.Limits = limitsEngine(t, limits.ModeAudit) })
 		for _, tc := range []struct {
 			method, path string
@@ -268,7 +268,7 @@ func TestRateLimitStage(t *testing.T) {
 		}
 	})
 
-	t.Run("R-API-016 Q-LIM-27 in enforce the unsafe methods of the protocol paths have the class package_write; reads have none", func(t *testing.T) {
+	t.Run("R-API-016 in enforce the unsafe methods of the protocol paths have the class package_write; reads have none", func(t *testing.T) {
 		h, reg := limitedChain(t, tightLimits(), func(o *RateLimitOptions) { o.Limits = limitsEngine(t, limits.ModeEnforce) })
 		for _, path := range []string{"/api/npm/main/left-pad", "/files/repo/a", "/v2/web/docker/library/nginx/manifests/latest"} {
 			w := token("w-" + path)

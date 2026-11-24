@@ -53,12 +53,12 @@ func TestR_BAS_014_AForwardReachesOnlyThePackageFamilies(t *testing.T) {
 	}
 }
 
-// TestQ_BAS_165_TheMainInstallationForwardsTheRegistryRoot is the main installation's side of R-BAS-051: the backstop
+// TestR_BAS_051_TheMainInstallationForwardsTheRegistryRoot is the main installation's side of R-BAS-051: the backstop
 // admits the registry root as a family a Bastion forwards - a repository route, the three core routes, the root without
 // its slash and a segment the router decodes to v2 - and still refuses the management API however it is spelled, and a
 // /v2 whose encoded slash the router keeps in one segment. Named by the decision until the Bastion's side (package C of
 // Every format) proves the requirement.
-func TestQ_BAS_165_TheMainInstallationForwardsTheRegistryRoot(t *testing.T) {
+func TestR_BAS_051_TheMainInstallationForwardsTheRegistryRoot(t *testing.T) {
 	admitted := []string{
 		"/v2/web/docker/app/manifests/1", "/v2/web/docker-local/app/blobs/uploads/", "/v2/_token", "/v2/_catalog", "/v2/", "/v2",
 		"/%76%32/_token", "/v2/library/alpine/manifests/3",

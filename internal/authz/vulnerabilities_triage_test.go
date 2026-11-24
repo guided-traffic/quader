@@ -7,7 +7,7 @@ import (
 
 // R-VULN-013, R-VULN-019, Q-VULN-27: the capability vulnerabilities:triage belongs to admin and auditor in the MVP, to no other
 // role, and is a system scope item (R-AUTH-025), so a token's scope can carry it (R-AUTHZ-013).
-func TestQ_VULN_27_TriageBelongsToAdminAndAuditor(t *testing.T) {
+func TestR_VULN_019_TriageBelongsToAdminAndAuditor(t *testing.T) {
 	if !VulnerabilitiesTriage.Valid() || string(VulnerabilitiesTriage) != "vulnerabilities:triage" {
 		t.Fatalf("not a capability: %v", Capabilities())
 	}
@@ -27,7 +27,7 @@ func TestQ_VULN_27_TriageBelongsToAdminAndAuditor(t *testing.T) {
 
 // The auditor holds the triage next to content:metadata-read and still holds no write capability of the installation
 // (Q-AUTHZ-172): the one write it has is the security metadata of R-VULN-013.
-func TestQ_VULN_27_TheAuditorGainsNothingElse(t *testing.T) {
+func TestR_VULN_019_TheAuditorGainsNothingElse(t *testing.T) {
 	caps := RoleCapabilities(RoleAuditor)
 	for _, c := range caps {
 		if c == VulnerabilitiesTriage {

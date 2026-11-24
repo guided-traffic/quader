@@ -25,11 +25,11 @@ func (s rulesStage) Authenticate(_ *http.Request, ep auth.EndpointRules) (auth.R
 	}, nil
 }
 
-// TestQ_BAS_167_TheCheckDecidesItsPathsAsAReplicaThatServesThePackageFamilies: the check presents a registry token below
+// TestR_BAS_052_TheCheckDecidesItsPathsAsAReplicaThatServesThePackageFamilies: the check presents a registry token below
 // /v2/ and every other credential below /api/ (R-BAS-052); the stage it runs them through treats those paths as served,
 // so a replica of the role api, which answers the interface but serves neither family, does not read them as unknown
 // paths (Q-ARCH-302) and verifies a registry token there. The chain's own rule for every other request is untouched.
-func TestQ_BAS_167_TheCheckDecidesItsPathsAsAReplicaThatServesThePackageFamilies(t *testing.T) {
+func TestR_BAS_052_TheCheckDecidesItsPathsAsAReplicaThatServesThePackageFamilies(t *testing.T) {
 	var asked auth.EndpointRules
 	a := &App{cfg: &config.Config{}, parts: &wiring{}}
 	a.parts.put(reflect.ValueOf(authArea{stage: rulesStage{rules: &asked}}))
@@ -52,9 +52,9 @@ func TestQ_BAS_167_TheCheckDecidesItsPathsAsAReplicaThatServesThePackageFamilies
 	}
 }
 
-// TestQ_BAS_165_TheMarkingNamesTheFormatOfTheRegistryRoot: the Mark stage learns which format's write refusal names an image
+// TestR_BAS_051_TheMarkingNamesTheFormatOfTheRegistryRoot: the Mark stage learns which format's write refusal names an image
 // prefix from the formats themselves.
-func TestQ_BAS_165_TheMarkingNamesTheFormatOfTheRegistryRoot(t *testing.T) {
+func TestR_BAS_051_TheMarkingNamesTheFormatOfTheRegistryRoot(t *testing.T) {
 	if got := bastionRegistryRoot(nil); got != "" {
 		t.Fatalf("no format: %q", got)
 	}

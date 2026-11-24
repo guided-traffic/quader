@@ -40,12 +40,12 @@ func (stillFeed) Read(context.Context, string, int) (iface.FeedAnswer, error) {
 	return iface.FeedAnswer{Entries: []iface.FeedEntry{}}, nil
 }
 
-// TestQ_BAS_170_TheHandshakeCarriesTheFormatTable: the handshake lists every registered format with routes once, with the
+// TestR_BAS_057_TheHandshakeCarriesTheFormatTable: the handshake lists every registered format with routes once, with the
 // facts it declares - OCI the registry root, its four replay headers and the bound prefix /v2/, the ClamAV definitions 503,
 // every other format nothing and 429, the lists empty rather than null - and leaves out generic, which has no family of its
 // own at a Bastion; the table passes the rules the Bastion reads it with. The answer validates against the document; its
 // boundRepository is the binding the dispatcher reads for the request's host, absent for an unbound host (R-BAS-057).
-func TestQ_BAS_170_TheHandshakeCarriesTheFormatTable(t *testing.T) {
+func TestR_BAS_057_TheHandshakeCarriesTheFormatTable(t *testing.T) {
 	table := BastionFormatTable(formats.List())
 	if err := table.Validate(); err != nil {
 		t.Fatal(err)
@@ -190,12 +190,12 @@ func (noPrincipals) ByName(context.Context, principal.Kind, string) (principal.P
 
 func (noPrincipals) Groups(context.Context, string) ([]principal.GroupRef, error) { return nil, nil }
 
-// TestQ_BAS_167_TheCheckPresentsARegistryTokenBelowTheRegistryRoot: the check hands a registry token to the real
+// TestR_BAS_052_TheCheckPresentsARegistryTokenBelowTheRegistryRoot: the check hands a registry token to the real
 // authentication stage on /v2/bastion-check, the one kind of path where the stage verifies it (its MAC, expiry, endpoint and
 // the token behind it), and every other credential on /api/bastion-check as before. A registry token's subject is the token
 // it was issued for with the registry token's own expiry, and its shape on a repository the token behind it reads in full
 // is partial (R-BAS-052); the Quader token presented itself stays full. A registry token signed with another key is invalid.
-func TestQ_BAS_167_TheCheckPresentsARegistryTokenBelowTheRegistryRoot(t *testing.T) {
+func TestR_BAS_052_TheCheckPresentsARegistryTokenBelowTheRegistryRoot(t *testing.T) {
 	now := time.Date(2026, 11, 22, 10, 0, 0, 0, time.UTC)
 	signer, other := registrySigner(t, 1), registrySigner(t, 2)
 	pat, err := token.Generate(token.TypePAT)

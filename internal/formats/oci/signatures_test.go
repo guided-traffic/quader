@@ -233,7 +233,7 @@ func TestR_SIG_023_DetectNamesEveryKindOfOCI(t *testing.T) {
 			}
 		}
 	})
-	t.Run("an attachment tag is recognised by its name (Q-SIG-32)", func(t *testing.T) {
+	t.Run("an attachment tag is recognised by its name (R-SIG-024)", func(t *testing.T) {
 		h := hex.EncodeToString(subject[:])
 		for tag, ok := range map[string]bool{
 			"sha256-" + h: true, "sha256-" + h + ".sig": true, "sha256-" + h + ".att": true,

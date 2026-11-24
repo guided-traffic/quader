@@ -353,7 +353,7 @@ func TestR_REPO_056_MirrorStatusDocument(t *testing.T) {
 			t.Error("the last complete pass stays after the mode is turned back (Q-REPO-148)")
 		}
 	})
-	t.Run("R-REPO-056 Q-API-196 Q-CUR-43 the state is the first that holds of off, paused, unbounded, failing, bound_reached, running, waiting, scheduled", func(t *testing.T) {
+	t.Run("R-REPO-056 the state is the first that holds of off, paused, unbounded, failing, bound_reached, running, waiting, scheduled", func(t *testing.T) {
 		mirrorRS := mirrorSettings(repository.ModeMirror, nil)
 		pausedRS := mirrorSettings(repository.ModeMirror, func(r *repository.RemoteSettings) { r.Mirror.Paused = true })
 		pullRS := mirrorSettings(repository.ModePullThrough, func(r *repository.RemoteSettings) { r.Mirror.Paused = true })
@@ -399,7 +399,7 @@ func TestR_REPO_056_MirrorStatusDocument(t *testing.T) {
 			t.Errorf("state = %v", got["state"])
 		}
 	})
-	t.Run("R-REPO-052 Q-CUR-43 a mirror without a bound answers unbounded through the router", func(t *testing.T) {
+	t.Run("R-REPO-052 a mirror without a bound answers unbounded through the router", func(t *testing.T) {
 		if got := status(t, "npm-unbound", nil); got["state"] != "unbounded" {
 			t.Errorf("state = %v", got["state"])
 		}
@@ -586,7 +586,7 @@ func TestR_REPO_056_MirrorRun(t *testing.T) {
 			t.Errorf("enqueued %+v", e.queue.specs)
 		}
 	})
-	t.Run("R-REPO-052 Q-CUR-43 a mirror without a bound answers 422 mirror_unbounded and enqueues nothing", func(t *testing.T) {
+	t.Run("R-REPO-052 a mirror without a bound answers 422 mirror_unbounded and enqueues nothing", func(t *testing.T) {
 		e, w := run(t, writeConfigCall, mirrorDecider{read: true}, "/api/v1/projects/it/repositories/npm-unbound/mirror/run", "", nil)
 		problem(t, w, 422, "mirror_unbounded")
 		if len(e.queue.specs) != 0 {

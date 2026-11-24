@@ -53,9 +53,9 @@ func (portFormat) PackageDocumentPath(string) (formats.Path, bool) {
 	return formats.Path{}, false
 }
 
-// TestQ_ARCH_193_ABindingThatIsMissingOrWrongIsAStartupError: the composition root
+// TestR_ARCH_009_ABindingThatIsMissingOrWrongIsAStartupError: the composition root
 // binds one data port per format; Check names every format at fault.
-func TestQ_ARCH_193_ABindingThatIsMissingOrWrongIsAStartupError(t *testing.T) {
+func TestR_ARCH_009_ABindingThatIsMissingOrWrongIsAStartupError(t *testing.T) {
 	withPort := portFormat{id: "withport", port: reflect.TypeFor[store]()}
 	noPort := portFormat{id: "noport"}
 	check := func(bind map[formats.ID]any, fs ...formats.Format) error {

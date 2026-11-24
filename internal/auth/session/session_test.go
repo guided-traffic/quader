@@ -181,7 +181,7 @@ func TestR_AUTH_023_SessionChanges(t *testing.T) {
 			t.Fatal("b was evicted")
 		}
 	})
-	t.Run("R-AUTH-023 Q-AUTH-22 token, membership, group and settings changes leave the session cache alone", func(t *testing.T) {
+	t.Run("R-AUTH-023 token, membership, group and settings changes leave the session cache alone", func(t *testing.T) {
 		for _, k := range []string{principal.ChangeToken, principal.ChangeMembership, principal.ChangeGroup, principal.ChangeSettings} {
 			fill()
 			apply(principal.ChangeVersion, principal.Change{Kind: k, IDs: []string{"x"}})

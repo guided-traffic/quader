@@ -53,10 +53,10 @@ func TestR_REPO_065_WhatAProbeOfTheGalaxyIs(t *testing.T) {
 	}
 }
 
-// TestQ_REPO_367_WhatAProbeOfTheGalaxyIsThroughAVirtualRepository: the version document and a HEAD of a collection's archive are probes
+// TestR_REPO_065_WhatAProbeOfTheGalaxyIsThroughAVirtualRepository: the version document and a HEAD of a collection's archive are probes
 // through a virtual repository, told to the host with the request addressed to the virtual repository, which finds the member that
 // serves the archive. A GET of an archive and a version no member holds are not.
-func TestQ_REPO_367_WhatAProbeOfTheGalaxyIsThroughAVirtualRepository(t *testing.T) {
+func TestR_REPO_065_WhatAProbeOfTheGalaxyIsThroughAVirtualRepository(t *testing.T) {
 	w := newWorld(t, local("loc", 1, 0), remote("rem", 2, 1))
 	w.doc("collections/acme/tools/1.0.0.json", "rem", upstreamVersion("acme", "tools", "1.0.0", "upstream.example", sha(3)))
 	collection := "virt acme.tools 1.0.0 " + ArtifactPath("acme", "tools", "1.0.0")

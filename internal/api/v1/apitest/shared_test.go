@@ -23,7 +23,7 @@ paths:
 // of the operations it saw; a document of other bytes is parsed on its own (Q-ARCH-580).
 func TestNewSharesOneParsePerDocument(t *testing.T) {
 	doc := docOf("listThings")
-	t.Run("Q-ARCH-580 two validators of the same bytes share the document and keep separate records", func(t *testing.T) {
+	t.Run("two validators of the same bytes share the document and keep separate records", func(t *testing.T) {
 		a, b := New(t, doc), New(t, append([]byte(nil), doc...))
 		if a.doc != b.doc || a.router != b.router {
 			t.Fatal("two validators of the same bytes hold two parses")
@@ -41,7 +41,7 @@ func TestNewSharesOneParsePerDocument(t *testing.T) {
 			t.Fatalf("Uncovered of the other validator = %v, want listThings", got)
 		}
 	})
-	t.Run("Q-ARCH-580 a document of other bytes is parsed on its own", func(t *testing.T) {
+	t.Run("a document of other bytes is parsed on its own", func(t *testing.T) {
 		a, c := New(t, doc), New(t, docOf("listOtherThings"))
 		if a.doc == c.doc {
 			t.Fatal("two documents share one parse")
@@ -50,7 +50,7 @@ func TestNewSharesOneParsePerDocument(t *testing.T) {
 			t.Fatalf("the second document's operations: %v", got)
 		}
 	})
-	t.Run("Q-ARCH-580 a document that does not parse fails every New of its bytes", func(t *testing.T) {
+	t.Run("a document that does not parse fails every New of its bytes", func(t *testing.T) {
 		bad := []byte("openapi: 3.0.3\ninfo: {title: t, version: \"1\"}\npaths: {}\n")
 		for range 2 {
 			if _, err := parsedSpec(bad); err == nil {

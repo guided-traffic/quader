@@ -8,11 +8,11 @@ import (
 	"github.com/guided-traffic/quader/internal/openpgp"
 )
 
-// TestQ_REPO_379_TheArchiveKeys holds the archive keys the Debian and Ubuntu presets ship (R-REPO-062, Q-REPO-379): each keyring parses
+// TestR_REPO_062_TheArchiveKeys holds the archive keys the Debian and Ubuntu presets ship (R-REPO-062, Q-REPO-379): each keyring parses
 // as deb.upstreamKeys parses a remote's keys, holds exactly the keys whose fingerprints are pinned here, and no key is within 90 days
 // of its expiry, so a release ships a keyring package's newer keys before an archive stops verifying. The fingerprints are those of
 // ftp-master.debian.org/keys.html and of keyserver.ubuntu.com (docs/developer/deb.md, The archive keys of the presets).
-func TestQ_REPO_379_TheArchiveKeys(t *testing.T) {
+func TestR_REPO_062_TheArchiveKeys(t *testing.T) {
 	const warnBefore = 90 * 24 * time.Hour
 	now := time.Now()
 	for _, tc := range []struct {
@@ -37,7 +37,7 @@ func TestQ_REPO_379_TheArchiveKeys(t *testing.T) {
 			"F6ECB3762474EDA9D21B7022871920D1991BC93C", // Ubuntu Archive Automatic Signing Key (2018)
 		}},
 	} {
-		t.Run("Q-REPO-379 "+tc.name, func(t *testing.T) {
+		t.Run("R-REPO-062 "+tc.name, func(t *testing.T) {
 			certs, err := openpgp.ParseCertificates([]byte(tc.armored), now, openpgp.Limits{})
 			if err != nil {
 				t.Fatalf("the keys do not parse as deb.upstreamKeys: %v", err)

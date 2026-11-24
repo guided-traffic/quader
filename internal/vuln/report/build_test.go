@@ -82,7 +82,7 @@ func TestR_VULN_028_ScopeLoadsTheRowsTheScopeCanDecide(t *testing.T) {
 		return sc, n
 	}
 
-	t.Run("R-VULN-028 Q-VULN-81 a version-independent scope reads the pairs and is asked without a version", func(t *testing.T) {
+	t.Run("R-VULN-028 a version-independent scope reads the pairs and is asked without a version", func(t *testing.T) {
 		fs := &fakeScope{allow: byPackage}
 		sc, n := run(t, independent{fs, true}, false, true)
 		if n != (loaders{pairs: 1}) {
@@ -97,7 +97,7 @@ func TestR_VULN_028_ScopeLoadsTheRowsTheScopeCanDecide(t *testing.T) {
 			}
 		}
 	})
-	t.Run("R-VULN-028 Q-VULN-81 a scope that says false reads the triples and MayRead gets each version", func(t *testing.T) {
+	t.Run("R-VULN-028 a scope that says false reads the triples and MayRead gets each version", func(t *testing.T) {
 		fs := &fakeScope{allow: rule}
 		sc, n := run(t, independent{fs, false}, false, true)
 		if n != (loaders{triples: 1}) {
@@ -114,21 +114,21 @@ func TestR_VULN_028_ScopeLoadsTheRowsTheScopeCanDecide(t *testing.T) {
 			t.Errorf("rows MayRead was not asked with their version: %v (asked %v)", want, fs.asked)
 		}
 	})
-	t.Run("R-VULN-028 Q-VULN-81 a scope without the property reads the triples", func(t *testing.T) {
+	t.Run("R-VULN-028 a scope without the property reads the triples", func(t *testing.T) {
 		fs := &fakeScope{allow: rule}
 		sc, n := run(t, fs, false, true)
 		if n != (loaders{triples: 1}) || len(sc.Rows) != 1 || len(sc.Packages) != 0 {
 			t.Errorf("loaders %+v, scope %+v", n, sc)
 		}
 	})
-	t.Run("R-VULN-028 Q-VULN-81 a package view needs the versions even for a version-independent scope", func(t *testing.T) {
+	t.Run("R-VULN-028 a package view needs the versions even for a version-independent scope", func(t *testing.T) {
 		fs := &fakeScope{allow: byPackage}
 		sc, n := run(t, independent{fs, true}, true, true)
 		if n != (loaders{triples: 1}) || len(sc.Holders) != 2 || len(sc.Packages) != 0 {
 			t.Errorf("loaders %+v, scope %+v", n, sc)
 		}
 	})
-	t.Run("R-VULN-028 Q-VULN-81 a caller without a pair loader reads the triples", func(t *testing.T) {
+	t.Run("R-VULN-028 a caller without a pair loader reads the triples", func(t *testing.T) {
 		fs := &fakeScope{allow: byPackage}
 		if _, n := run(t, independent{fs, true}, false, false); n != (loaders{triples: 1}) {
 			t.Errorf("loaders %+v", n)

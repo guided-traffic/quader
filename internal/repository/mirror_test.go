@@ -266,14 +266,14 @@ func TestR_AUTHZ_026_DelegatedMirrorRules(t *testing.T) {
 		name, stored, next string
 		want               map[string]string
 	}{
-		{"Q-REPO-142 a create in mode pullThrough is allowed", "", pull, map[string]string{}},
-		{"Q-REPO-142 a create in mode mirror is refused", "", mirror, map[string]string{"/remote/mode": "mirror_restricted", "/remote/mirror": "mirror_restricted"}},
-		{"Q-REPO-142 switching a stored pullThrough remote to mirror is refused", pull, `{"url":"https://partner.example.test/","mode":"mirror"}`, map[string]string{"/remote/mode": "mirror_restricted"}},
-		{"Q-REPO-142 the stored mirror sent back is kept", mirror, mirror, map[string]string{}},
-		{"Q-REPO-142 pausing is allowed", mirror, `{"url":"https://partner.example.test/","mode":"mirror","mirror":{"paused":true,"concurrency":8,"maxBytes":10737418240}}`, map[string]string{}},
-		{"Q-REPO-142 turning the mode back to pullThrough is allowed", mirror, `{"url":"https://partner.example.test/","mode":"pullThrough","mirror":{"concurrency":8,"maxBytes":10737418240}}`, map[string]string{}},
-		{"Q-REPO-142 raising the byte bound is refused", mirror, `{"url":"https://partner.example.test/","mode":"mirror","mirror":{"concurrency":8,"maxBytes":21474836480}}`, map[string]string{"/remote/mirror": "mirror_restricted"}},
-		{"Q-REPO-142 raising the concurrency is refused", mirror, `{"url":"https://partner.example.test/","mode":"mirror","mirror":{"concurrency":16,"maxBytes":10737418240}}`, map[string]string{"/remote/mirror": "mirror_restricted"}},
+		{"R-REPO-050 a create in mode pullThrough is allowed", "", pull, map[string]string{}},
+		{"R-REPO-050 a create in mode mirror is refused", "", mirror, map[string]string{"/remote/mode": "mirror_restricted", "/remote/mirror": "mirror_restricted"}},
+		{"R-REPO-050 switching a stored pullThrough remote to mirror is refused", pull, `{"url":"https://partner.example.test/","mode":"mirror"}`, map[string]string{"/remote/mode": "mirror_restricted"}},
+		{"R-REPO-050 the stored mirror sent back is kept", mirror, mirror, map[string]string{}},
+		{"R-REPO-050 pausing is allowed", mirror, `{"url":"https://partner.example.test/","mode":"mirror","mirror":{"paused":true,"concurrency":8,"maxBytes":10737418240}}`, map[string]string{}},
+		{"R-REPO-050 turning the mode back to pullThrough is allowed", mirror, `{"url":"https://partner.example.test/","mode":"pullThrough","mirror":{"concurrency":8,"maxBytes":10737418240}}`, map[string]string{}},
+		{"R-REPO-050 raising the byte bound is refused", mirror, `{"url":"https://partner.example.test/","mode":"mirror","mirror":{"concurrency":8,"maxBytes":21474836480}}`, map[string]string{"/remote/mirror": "mirror_restricted"}},
+		{"R-REPO-050 raising the concurrency is refused", mirror, `{"url":"https://partner.example.test/","mode":"mirror","mirror":{"concurrency":16,"maxBytes":10737418240}}`, map[string]string{"/remote/mirror": "mirror_restricted"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			got := fields(t, tc.stored, tc.next)

@@ -94,8 +94,8 @@ func TestR_VULN_041_EveryAnswerOfTheScannerMapsToItsCodeAttemptAndWait(t *testin
 		{"503 draining", problem(503, CodeScannerDraining, false), CodeScannerBusy, false, false, time.Minute},
 		{"502", problem(502, CodeRegistryUnavailable, false), CodeRegistryUnavailable, false, false, time.Minute},
 		{"403", problem(403, CodePullRefused, false), CodePullRefused, false, false, 5 * time.Minute},
-		{"Q-VULN-237 503 scanner_disk_failed", problem(503, CodeScannerDiskFailed, false), CodeScannerDiskFailed, false, false, time.Minute},
-		{"Q-VULN-226 409 repository_disabled", problem(409, CodeRepositoryDisabled, false), CodeRepositoryDisabled, false, false, time.Minute},
+		{"503 scanner_disk_failed", problem(503, CodeScannerDiskFailed, false), CodeScannerDiskFailed, false, false, time.Minute},
+		{"409 repository_disabled", problem(409, CodeRepositoryDisabled, false), CodeRepositoryDisabled, false, false, time.Minute},
 		{"an answer that is no analysis", func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Set(AnalyserVersionHeader, "0.76.2")
 			w.Header().Set("Content-Encoding", "gzip")
@@ -123,7 +123,7 @@ func TestR_VULN_041_EveryAnswerOfTheScannerMapsToItsCodeAttemptAndWait(t *testin
 			t.Fatalf("%+v %v", a, err)
 		}
 	})
-	t.Run("Q-VULN-162 a busy answer is tried three times, each on a new connection, before the scan is put off", func(t *testing.T) {
+	t.Run("a busy answer is tried three times, each on a new connection, before the scan is put off", func(t *testing.T) {
 		s := newScannerStub(t)
 		s.answer = problem(503, CodeScannerBusy, false)
 		_, _ = s.client(t).Analyse(t.Context(), testCall())
@@ -131,7 +131,7 @@ func TestR_VULN_041_EveryAnswerOfTheScannerMapsToItsCodeAttemptAndWait(t *testin
 			t.Fatalf("%d calls on %d connections", s.calls.Load(), s.conns.Load())
 		}
 	})
-	t.Run("Q-VULN-170 every call opens a connection of its own", func(t *testing.T) {
+	t.Run("every call opens a connection of its own", func(t *testing.T) {
 		s := newScannerStub(t)
 		s.answer = analysis
 		c := s.client(t)

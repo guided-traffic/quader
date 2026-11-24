@@ -45,7 +45,7 @@ func TestDownloadVerification(t *testing.T) {
 			t.Fatal("status changed")
 		}
 	})
-	t.Run("R-ARCH-005 Q-ARCH-328 Q-ARCH-330 Open charges what the reader will hold until it is closed: a whole object by DownloadCost, a range by its length", func(t *testing.T) {
+	t.Run("R-ARCH-005 Open charges what the reader will hold until it is closed: a whole object by DownloadCost, a range by its length", func(t *testing.T) {
 		var charged []int64
 		var open int
 		f := newFixture(t, func(c *config.Storage) {
@@ -104,7 +104,7 @@ func TestDownloadVerification(t *testing.T) {
 			t.Fatalf("%d readers charged after a failed open", open)
 		}
 	})
-	t.Run("Q-STOR-6 a corrupted object of the same length is detected, the held-back bytes are never released and the blob is marked corrupt", func(t *testing.T) {
+	t.Run("R-STOR-013 a corrupted object of the same length is detected, the held-back bytes are never released and the blob is marked corrupt", func(t *testing.T) {
 		f, sp, damaged := setup(t, nil)
 		bad := bytes.Clone(data)
 		bad[len(bad)/2] ^= 0xff
@@ -155,7 +155,7 @@ func TestDownloadVerification(t *testing.T) {
 			t.Fatal("the repaired object differs")
 		}
 	})
-	t.Run("Q-STOR-151 a read that found no object does not undo a repair that wrote it again before the mark", func(t *testing.T) {
+	t.Run("R-STOR-012 a read that found no object does not undo a repair that wrote it again before the mark", func(t *testing.T) {
 		f, sp, damaged := setup(t, nil)
 		// The read misses the object, which a commit of the same content writes again before the mark: the store answers
 		// the read "no such object" and the look after the mark finds it.
@@ -172,7 +172,7 @@ func TestDownloadVerification(t *testing.T) {
 			t.Fatalf("status %s, damaged hook %d: the detection counts, the row ends ok", f.db.rows[sp.SHA256].status, damaged.Load())
 		}
 	})
-	t.Run("Q-STOR-153 a blob marked missing asks the store again once per interval, and an object that is back makes it ok", func(t *testing.T) {
+	t.Run("R-STOR-012 a blob marked missing asks the store again once per interval, and an object that is back makes it ok", func(t *testing.T) {
 		f, sp, _ := setup(t, nil)
 		clock := time.Date(2026, 11, 6, 12, 0, 0, 0, time.UTC)
 		f.db.now = func() time.Time { return clock }
@@ -300,7 +300,7 @@ func TestDownloadVerification(t *testing.T) {
 			t.Fatal("unexpected content")
 		}
 	})
-	t.Run("R-STOR-013 R-HA-020 OpenOptions.Verify checks a swapped object of the same length with verification turned off (Q-UI-143)", func(t *testing.T) {
+	t.Run("R-STOR-013 R-HA-020 OpenOptions.Verify checks a swapped object of the same length with verification turned off", func(t *testing.T) {
 		f, sp, damaged := setup(t, func(c *config.Storage) { c.Download.Verify = false })
 		bad := bytes.Clone(data)
 		bad[0] ^= 1

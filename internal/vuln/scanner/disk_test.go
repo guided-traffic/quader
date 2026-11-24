@@ -32,7 +32,7 @@ func (d fullDisk) Sync() error {
 
 // Q-VULN-237: a write or a flush of the scanner's own disk that fails is the scanner's, not the image's and not the caller's: the call
 // is answered 503 scanner_disk_failed, which the worker puts off without an attempt on another scanner, never 400 malformed_request.
-func TestQ_VULN_237_AFailedWriteOfTheScannersDiskIsTheScannersAndNotTheCallers(t *testing.T) {
+func TestR_VULN_041_AFailedWriteOfTheScannersDiskIsTheScannersAndNotTheCallers(t *testing.T) {
 	var gz bytes.Buffer
 	zw := gzip.NewWriter(&gz)
 	_, _ = zw.Write([]byte(`{"bomFormat":"CycloneDX","specVersion":"1.6"}`))

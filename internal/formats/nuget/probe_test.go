@@ -51,10 +51,10 @@ func TestR_REPO_065_WhatAProbeOfNuGetIs(t *testing.T) {
 	}
 }
 
-// TestQ_REPO_367_WhatAProbeOfNuGetIsThroughAVirtualRepository: the same requests are probes through a virtual repository, told to
+// TestR_REPO_065_WhatAProbeOfNuGetIsThroughAVirtualRepository: the same requests are probes through a virtual repository, told to
 // the host with the request addressed to the virtual repository, which finds the member that serves the .nupkg; the registration index,
 // the version list, a GET of the .nupkg and the leaf of a version no member holds are not.
-func TestQ_REPO_367_WhatAProbeOfNuGetIsThroughAVirtualRepository(t *testing.T) {
+func TestR_REPO_065_WhatAProbeOfNuGetIsThroughAVirtualRepository(t *testing.T) {
 	res := &mergeResolver{docs: docsOf(
 		[]formats.MemberDocument{remoteFlat("remote", 0, "1.0.0", "1.1.0")},
 		[]formats.MemberDocument{remotePart("remote", 0, "", "1.0.0", "1.1.0")},

@@ -39,10 +39,10 @@ func TestDescriptor(t *testing.T) {
 	})
 }
 
-// TestQ_GENERIC_7_TheContractWithoutRoutes: the format implements the contract with
+// TestR_GENERIC_001_TheContractWithoutRoutes: the format implements the contract with
 // no route, so the dispatcher registers no prefix for it and a Match finds
 // nothing; its protocol is /files/ (Q-GENERIC-7).
-func TestQ_GENERIC_7_TheContractWithoutRoutes(t *testing.T) {
+func TestR_GENERIC_001_TheContractWithoutRoutes(t *testing.T) {
 	f := Format{}
 	if len(f.Routes()) != 0 {
 		t.Fatal("generic has routes")

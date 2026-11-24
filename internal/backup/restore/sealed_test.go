@@ -174,7 +174,7 @@ func TestR_BAK_031_TheRestoresTable(t *testing.T) {
 			t.Fatalf("streamedAll %v after an object written as it is; the plain sink got %d objects", r.streamedAll, len(e.blobs.objs))
 		}
 	})
-	t.Run("R-BAK-031 Q-BAK-82 into an encrypted connection of another id: keys drawn for it, every blob decrypted and sealed anew", func(t *testing.T) {
+	t.Run("R-BAK-031 into an encrypted connection of another id: keys drawn for it, every blob decrypted and sealed anew", func(t *testing.T) {
 		e := newEnv(t)
 		alpha, skID := sealedBackup(t, e)
 		sink := encryptedSink(e, "vault")

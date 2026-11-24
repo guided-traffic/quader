@@ -138,14 +138,14 @@ func TestR_AUTHZ_026_SetAndRemoveAMember(t *testing.T) {
 			t.Errorf("%d ref %q", w.Code, got.ref)
 		}
 	})
-	t.Run("Q-AUTHZ-208 a role outside the four is 422", func(t *testing.T) {
+	t.Run("a role outside the four is 422", func(t *testing.T) {
 		s, got := memberSetup(t, owner)
 		w := put(s, "/api/v1/projects/web/members/user:alice", `{"role":"admin"}`)
 		if w.Code != 422 || got.op != "" {
 			t.Errorf("%d %s (the service was asked: %q)", w.Code, w.Body, got.op)
 		}
 	})
-	t.Run("Q-AUTHZ-217 the holder of projects:write may pass the last-Owner rule, an Owner may not", func(t *testing.T) {
+	t.Run("the holder of projects:write may pass the last-Owner rule, an Owner may not", func(t *testing.T) {
 		s, got := memberSetup(t, projectCaller{caps: map[string]bool{"projects:write": true}})
 		if w := put(s, "/api/v1/projects/web/members/user:alice", `{"role":"owner"}`); w.Code != 201 || !got.bypass {
 			t.Errorf("administrator: %d bypass %v", w.Code, got.bypass)

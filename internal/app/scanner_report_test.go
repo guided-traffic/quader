@@ -104,7 +104,7 @@ func TestR_OPS_048_AScannerReportsItselfToItsScanListenerAndSignsOff(t *testing.
 
 // Q-OPS-223: the kinds the management API names, from the configuration: the scan listener records a kind's reports only with TLS and
 // the kind's name; without an address no scanner of the kind is configured, the role all's image scanning included (Q-ARCH-563).
-func TestQ_OPS_221_TheKindsSayWhetherTheirReplicasReport(t *testing.T) {
+func TestR_OPS_001_TheKindsSayWhetherTheirReplicasReport(t *testing.T) {
 	cfg := &config.Config{}
 	cfg.Vulnerabilities.Enabled, cfg.Vulnerabilities.Images.Enabled, cfg.Malware.Enabled = true, true, true
 	modes := func(string) string {

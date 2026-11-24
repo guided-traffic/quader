@@ -45,7 +45,7 @@ func (f *fakeSpace) Held() int64 {
 	return f.held
 }
 
-func TestQ_VULN_145_TheRoomOfTheBlobsIsAdmittedBeforeTheFirstOneIsWritten(t *testing.T) {
+func TestR_VULN_036_TheRoomOfTheBlobsIsAdmittedBeforeTheFirstOneIsWritten(t *testing.T) {
 	m := imageWith(tarOf(t, map[string]string{"etc/os-release": "alpine"}, true))
 	var total int64
 	for _, b := range m.blobs {

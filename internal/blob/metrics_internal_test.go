@@ -47,7 +47,7 @@ func TestSpoolGauges(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-OPS-237 a spool of its own room shows the free space from its start and a hold in the used bytes", func(t *testing.T) {
+	t.Run("R-STOR-004 a spool of its own room shows the free space from its start and a hold in the used bytes", func(t *testing.T) {
 		m := NewSpoolMetrics(observability.NewMetrics("scanner"))
 		sp := newSpool(t, nil, WithSpoolRoom(m), WithFreeBytes(func(string) (uint64, error) { return free, nil }))
 		if u, f := valueOf(t, m.used), valueOf(t, m.free); u != 0 || f != float64(free) {

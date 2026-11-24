@@ -12,7 +12,7 @@ import (
 // Q-ANS-91, R-ANS-010, R-ANS-034: a collection that holds a contained link publishes, and its documentation's index lists what the
 // archive holds as regular files: the module behind a link is not documented under the link's name, because nothing is read through a
 // link.
-func TestQ_ANS_91_APublishOfACollectionWithALinkDocumentsTheRegularFilesOnly(t *testing.T) {
+func TestR_ANS_010_APublishOfACollectionWithALinkDocumentsTheRegularFilesOnly(t *testing.T) {
 	h := newHost(t)
 	s := collectionSpec("1.0.0")
 	s.Files["plugins/modules/ping.py"] = "DOCUMENTATION = '''\nmodule: ping\nshort_description: Pings\n'''\n"

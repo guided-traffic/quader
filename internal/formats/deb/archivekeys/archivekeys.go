@@ -10,7 +10,7 @@
 //     24.04 noble): the archive keys of 2012 and 2018 and the CD image key of 2012. The 2018 key signs the archive, its security updates
 //     and its ports.
 //
-// How they were obtained and checked is in docs/developer/deb.md (The archive keys of the presets); TestQ_REPO_379_TheArchiveKeys of
+// How they were obtained and checked is in docs/developer/deb.md (The archive keys of the presets); TestR_REPO_062_TheArchiveKeys of
 // internal/formats/deb pins every fingerprint and fails 90 days before a key expires. A key change of either keyring is a release of
 // Quader.
 package archivekeys

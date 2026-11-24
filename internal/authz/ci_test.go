@@ -219,7 +219,7 @@ func TestR_AUTHZ_014_AProjectTiersGrantsStayInsideItsProject(t *testing.T) {
 		{"a global policy naming the project mapping grants nothing", npmRead("npm-all", "x"), false},
 		{"the groups of a project tier grant nothing", npmRead("npm-loose", "x"), false},
 	} {
-		t.Run("Q-CI-26 "+tc.name, func(t *testing.T) {
+		t.Run("R-CI-019 "+tc.name, func(t *testing.T) {
 			if got := ciAllows(e, idx, sub, tc.c); got != tc.want {
 				t.Fatalf("allowed %v, want %v", got, tc.want)
 			}
@@ -229,7 +229,7 @@ func TestR_AUTHZ_014_AProjectTiersGrantsStayInsideItsProject(t *testing.T) {
 
 // Q-CI-67: a frozen project tier carries instance selectors (claims.Freeze writes <project>/<key>), and the engine reads them
 // in the instance context; the tier stays bounded to its project.
-func TestQ_CI_67_AFrozenProjectTierIsReadAsInstanceSelectors(t *testing.T) {
+func TestR_CI_009_AFrozenProjectTierIsReadAsInstanceSelectors(t *testing.T) {
 	e, idx := ciEngine(t)
 	m := projectTier("gitlab-internal/acme", "web", idProjWeb,
 		inline([]string{"web/npm-web"}, nil, "", claims.Read, claims.Deploy),
@@ -254,7 +254,7 @@ func TestQ_CI_67_AFrozenProjectTierIsReadAsInstanceSelectors(t *testing.T) {
 // R-CI-016, R-CI-017, Q-CI-47: a contribution gives its grants until its own expiry and while its mapping is active;
 // a contribution that ended or whose mapping was disabled or deleted takes none of the other contributions' grants
 // with it.
-func TestQ_CI_47_AContributionEndsWithoutTheOthers(t *testing.T) {
+func TestR_CI_009_AContributionEndsWithoutTheOthers(t *testing.T) {
 	f := ciFixture()
 	// The index knows the system mapping acme and the project mapping shop-reader as active; shop-gone was disabled or
 	// deleted before the index was built. The project shop's repository npm-shop is the project tier's alone.
@@ -274,7 +274,7 @@ func TestQ_CI_47_AContributionEndsWithoutTheOthers(t *testing.T) {
 	}
 	internal, web := npmRead("npm-internal", "@acme/x"), npmRead("npm-shop", "x")
 
-	t.Run("Q-CI-47 a contribution past its own expiry gives nothing, the others still do", func(t *testing.T) {
+	t.Run("R-CI-009 a contribution past its own expiry gives nothing, the others still do", func(t *testing.T) {
 		past, future := time.Now().Add(-time.Second), time.Now().Add(time.Hour)
 		ended, open := reader, reader
 		ended.ExpiresAt, open.ExpiresAt = &past, &future
@@ -285,7 +285,7 @@ func TestQ_CI_47_AContributionEndsWithoutTheOthers(t *testing.T) {
 			t.Error("a contribution before its expiry does not read")
 		}
 	})
-	t.Run("Q-CI-47 an index at the bundle's epoch drops the contribution of a mapping it does not hold as active", func(t *testing.T) {
+	t.Run("R-CI-009 an index at the bundle's epoch drops the contribution of a mapping it does not hold as active", func(t *testing.T) {
 		sub := atIndex(sys, gone)
 		if ciAllows(e, idx, sub, web) {
 			t.Error("the contribution of a disabled or deleted mapping still reads")
@@ -297,12 +297,12 @@ func TestQ_CI_47_AContributionEndsWithoutTheOthers(t *testing.T) {
 			t.Error("an active mapping's contribution was dropped")
 		}
 	})
-	t.Run("Q-CI-47 an index older than the bundle keeps every contribution, it cannot know a mapping created just before", func(t *testing.T) {
+	t.Run("R-CI-009 an index older than the bundle keeps every contribution, it cannot know a mapping created just before", func(t *testing.T) {
 		if sub := ciSubject(frozenOf("101", sys, gone)); !ciAllows(e, idx, sub, web) {
 			t.Error("a contribution of a mapping newer than the index was dropped")
 		}
 	})
-	t.Run("Q-CI-47 a bundle of version 1 is decided against every index", func(t *testing.T) {
+	t.Run("R-CI-009 a bundle of version 1 is decided against every index", func(t *testing.T) {
 		old := frozenOf("101", sys, gone)
 		old.Version, old.AuthzEpoch = claims.FrozenVersion1, 0
 		if err := old.Check(); err != nil {

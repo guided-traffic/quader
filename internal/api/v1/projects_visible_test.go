@@ -82,7 +82,7 @@ func TestR_AUTHZ_041_TheProjectUpstreamIsSeenThroughItsRepositories(t *testing.T
 			}
 		})
 	}
-	t.Run("Q-UI-837 the project upstream stands first, before a project with the key alpha, whatever the sort", func(t *testing.T) {
+	t.Run("R-UI-190 the project upstream stands first, before a project with the key alpha, whatever the sort", func(t *testing.T) {
 		list := []project.Project{{Key: "alpha"}, {Key: "upstream"}, {Key: "web"}}
 		keysOf := func(ps []project.Project) string {
 			var out []string

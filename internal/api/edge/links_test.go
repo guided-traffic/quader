@@ -60,7 +60,7 @@ func TestDescribeItem(t *testing.T) {
 		}
 	})
 
-	t.Run("R-API-025 Q-UI-106 a file carries the relative content route, a folder none", func(t *testing.T) {
+	t.Run("R-API-025 a file carries the relative content route, a folder none", func(t *testing.T) {
 		raw, _ := json.Marshal(DescribeItem(file, links))
 		var m map[string]any
 		_ = json.Unmarshal(raw, &m)

@@ -196,7 +196,7 @@ func TestR_VULN_048_TheScannerRefusesADetectionBeforeItReadsTheBody(t *testing.T
 			t.Fatalf("%v %+v", res, p)
 		}
 	})
-	t.Run("Q-VULN-204 with the slot taken by an analysis a detection is 503 scanner_busy", func(t *testing.T) {
+	t.Run("with the slot taken by an analysis a detection is 503 scanner_busy", func(t *testing.T) {
 		r.an.block, r.an.started = make(chan struct{}), make(chan struct{}, 1)
 		d := r.reg.add(imageOf(t, tarOf(t, map[string]string{"a": "1"})))
 		first := make(chan int, 1)

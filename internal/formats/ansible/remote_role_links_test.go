@@ -15,7 +15,7 @@ import (
 // Q-ANS-91, R-ANS-020: a role archive (a tarball of a role's repository, one directory at its root) holds a link whose target stays
 // inside the role's directory, which ansible-galaxy role install extracts; one that leaves the role's directory, even if it stays in the
 // archive, is refused by its name, as the client refuses it.
-func TestQ_ANS_91_ARoleArchiveHoldsALinkInsideTheRolesDirectory(t *testing.T) {
+func TestR_ANS_010_ARoleArchiveHoldsALinkInsideTheRolesDirectory(t *testing.T) {
 	const top = "geerlingguy-ansible-role-docker-7.4.1"
 	good := collectiontest.Pack([]collectiontest.Entry{
 		{Name: top, Dir: true},

@@ -262,7 +262,7 @@ func TestR_CI_007_TheExchangeWithoutADatabase(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-CI-15 a copy behind the issuer's mappings_version evaluates the set read in the transaction", func(t *testing.T) {
+	t.Run("R-CI-001 a copy behind the issuer's mappings_version evaluates the set read in the transaction", func(t *testing.T) {
 		x := newTestExchange(t)
 		x.issuers.row.MappingsVersion = 6
 		shadow := testMapping(1, 5)
@@ -279,7 +279,7 @@ func TestR_CI_007_TheExchangeWithoutADatabase(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-CI-15 an issuer whose version changed validates the token again against the re-read row", func(t *testing.T) {
+	t.Run("R-CI-001 an issuer whose version changed validates the token again against the re-read row", func(t *testing.T) {
 		x := newTestExchange(t)
 		x.issuers.row.Version = 4
 		x.issuers.row.AllowedAudiences = []string{"https://other.test"}
@@ -293,7 +293,7 @@ func TestR_CI_007_TheExchangeWithoutADatabase(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-CI-43 a second mismatch inside the transaction is configuration_changed", func(t *testing.T) {
+	t.Run("R-CI-008 a second mismatch inside the transaction is configuration_changed", func(t *testing.T) {
 		x := newTestExchange(t)
 		x.issuers.row.MappingsVersion = 6
 		// The store answers a set at another mappings_version than the row the transaction holds FOR SHARE: a writer
@@ -309,7 +309,7 @@ func TestR_CI_007_TheExchangeWithoutADatabase(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-CI-43 matched rows that changed again after the fresh read are configuration_changed", func(t *testing.T) {
+	t.Run("R-CI-008 matched rows that changed again after the fresh read are configuration_changed", func(t *testing.T) {
 		x := newTestExchange(t)
 		x.queries.versions["m-1"] = 2 // the copy's version 1 differs, and the fresh set's too
 		_, err := x.s.Exchange(t.Context(), x.request(x.sign(t, nil)))
@@ -384,9 +384,9 @@ func projectMapping(id string, maxTTL int64) Mapping {
 // R-CI-009, R-CI-016, Q-CI-47: a project tier's maxTtlSeconds bounds its own contribution in the bundle and neither
 // the token nor the system tier's grants; the token belongs to the system tier's mapping, and the bundle carries the
 // authorization epoch of the transaction.
-func TestQ_CI_47_TheExchangeKeepsTheTiersApart(t *testing.T) {
+func TestR_CI_009_TheExchangeKeepsTheTiersApart(t *testing.T) {
 	dbNow := time.Date(2026, 11, 3, 10, 0, 0, 0, time.UTC)
-	t.Run("Q-CI-47 a project's bound of 1 s ends its contribution, not the token", func(t *testing.T) {
+	t.Run("R-CI-009 a project's bound of 1 s ends its contribution, not the token", func(t *testing.T) {
 		x := newTestExchange(t)
 		x.queries.nowUs, x.queries.epoch = dbNow.UnixMicro(), 77
 		x.mappings.set.Mappings = append(x.mappings.set.Mappings, projectMapping("m-web", 1))
@@ -404,7 +404,7 @@ func TestQ_CI_47_TheExchangeKeepsTheTiersApart(t *testing.T) {
 			t.Fatalf("contributions %+v", cs)
 		}
 	})
-	t.Run("Q-CI-47 without the system tier the longest project contribution owns the token", func(t *testing.T) {
+	t.Run("R-CI-009 without the system tier the longest project contribution owns the token", func(t *testing.T) {
 		x := newTestExchange(t)
 		x.queries.nowUs = dbNow.UnixMicro()
 		x.mappings.set.Mappings = []Mapping{projectMapping("m-web", 120)}
@@ -417,7 +417,7 @@ func TestQ_CI_47_TheExchangeKeepsTheTiersApart(t *testing.T) {
 			t.Fatalf("issued %+v", r)
 		}
 	})
-	t.Run("Q-CI-49 the copy is evaluated before the transaction, which only re-confirms the versions", func(t *testing.T) {
+	t.Run("R-CI-009 the copy is evaluated before the transaction, which only re-confirms the versions", func(t *testing.T) {
 		x := newTestExchange(t)
 		if _, err := x.s.Exchange(t.Context(), x.request(x.sign(t, nil))); err != nil {
 			t.Fatal(err)

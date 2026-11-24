@@ -414,7 +414,7 @@ func TestR_VULN_048_AnOutdatedAnalysisIsAnalysedAgainOnceAndASecondRefusalPutsTh
 
 // Q-VULN-202: a detection the analyser refused spends an attempt and deletes the stored analysis, so that the next attempt analyses the
 // image again; an analysis the worker's check refuses is not stored.
-func TestQ_VULN_202_ARefusedDetectionDropsTheStoredAnalysis(t *testing.T) {
+func TestR_VULN_048_ARefusedDetectionDropsTheStoredAnalysis(t *testing.T) {
 	r := newJobRig(t, testAnalyser)
 	r.scanner.detect = func(DetectCall) (Detection, error) {
 		return Detection{}, &ScanError{Code: CodeAnalyserFailed, RefusedAnalysis: true}

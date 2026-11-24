@@ -113,7 +113,7 @@ func TestR_AUTHZ_009_TheGrantIndexFollowsAMemberOfUpstream(t *testing.T) {
 			}
 		}
 	})
-	t.Run("Q-AUTHZ-168 a listing through npm-all reads the member's rows as reads through it", func(t *testing.T) {
+	t.Run("a listing through npm-all reads the member's rows as reads through it", func(t *testing.T) {
 		e := upstreamRowsEngine(t, "internal")
 		sub := scopedToNpmAll(Subject{Kind: principal.KindCI, Name: "ci", Mappings: []string{"ci:gitlab/web-build"}, TokenID: "cit-1", AuthMethod: "bearer"})
 		idx, err := e.Begin(t.Context(), sub, webNpmAll)
@@ -128,7 +128,7 @@ func TestR_AUTHZ_009_TheGrantIndexFollowsAMemberOfUpstream(t *testing.T) {
 			t.Fatalf("shape %v, MayRead %v: the member's rows are not read through npm-all", rs.Shape(upNpmjs), rs.MayRead(upNpmjs, "lodash", ""))
 		}
 	})
-	t.Run("R-BAS-012 Q-BAS-148 a Bastion's reach of npm-all follows the member of upstream", func(t *testing.T) {
+	t.Run("R-BAS-012 a Bastion's reach of npm-all follows the member of upstream", func(t *testing.T) {
 		e := upstreamRowsEngine(t, "internal")
 		for who, c := range map[string]struct {
 			sub  Subject

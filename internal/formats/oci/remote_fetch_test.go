@@ -32,10 +32,10 @@ func (s *statusSpy) Write(p []byte) (int, error) {
 	return s.ResponseRecorder.Write(p)
 }
 
-// TestQ_BAS_186_ARemoteTagIsCountedBeforeItsStatusLine: the GET of a remote tag is counted before its answer's status line, so
+// TestR_BAS_059_ARemoteTagIsCountedBeforeItsStatusLine: the GET of a remote tag is counted before its answer's status line, so
 // the host's note of the count travels with the answer a Bastion keeps (bastion.md R-BAS-059); it counts what it counted before,
-// once per 200 (TestQ_OCI_222 below).
-func TestQ_BAS_186_ARemoteTagIsCountedBeforeItsStatusLine(t *testing.T) {
+// once per 200 (TestR_API_079_AGetOfARemoteTagIsADownloadOfItsManifest below).
+func TestR_BAS_059_ARemoteTagIsCountedBeforeItsStatusLine(t *testing.T) {
 	body := imageManifestBytes(sha([]byte("cfg")), sha([]byte("layer")))
 	tw := newTwin()
 	h := formattest.NewHost(New(), formattest.HostOptions{
@@ -54,10 +54,10 @@ func TestQ_BAS_186_ARemoteTagIsCountedBeforeItsStatusLine(t *testing.T) {
 	}
 }
 
-// TestQ_OCI_222_AGetOfARemoteTagIsADownloadOfItsManifest: a remote tag's document is a metadata entry and no item, so the GET of the
+// TestR_API_079_AGetOfARemoteTagIsADownloadOfItsManifest: a remote tag's document is a metadata entry and no item, so the GET of the
 // tag that answers the manifest is counted on the item that holds the manifest under its digest, where a pull by digest is counted as
 // well (R-API-079). A HEAD, a 304 and a tag whose manifest item is not stored count nothing.
-func TestQ_OCI_222_AGetOfARemoteTagIsADownloadOfItsManifest(t *testing.T) {
+func TestR_API_079_AGetOfARemoteTagIsADownloadOfItsManifest(t *testing.T) {
 	body := imageManifestBytes(sha([]byte("cfg")), sha([]byte("layer")))
 	digest := sha(body)
 	m := &formattest.MemRemote{Docs: map[string][]byte{

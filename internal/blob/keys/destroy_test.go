@@ -333,7 +333,7 @@ func TestR_STOR_101_ReplicasForgetDestroyedKeysAndReadsAnswerDestroyedKey(t *tes
 			t.Fatalf("a load opened %v", storage)
 		}
 	})
-	t.Run("R-STOR-101 Q-STOR-462 a change whose list was cut to fit the change log forgets every key all the same", func(t *testing.T) {
+	t.Run("R-STOR-101 a change whose list was cut to fit the change log forgets every key all the same", func(t *testing.T) {
 		f := newDestroyEnv(t)
 		f.h.ApplyChange(cluster.AreaStorageKeys, keys.DestroyedChangeVersion, json.RawMessage(`{"connection":"archive","destroyed":[]}`))
 		if storage, active, n := f.h.Held("archive"); len(storage) != 0 || active != "" || n != "" {
@@ -432,7 +432,7 @@ func TestR_HA_054_TheReplayOfADestruction(t *testing.T) {
 		}
 		return res, got
 	}
-	t.Run("R-HA-054 Q-HA-416 a sealed row is destroyed and the area announced: applied", func(t *testing.T) {
+	t.Run("R-HA-054 a sealed row is destroyed and the area announced: applied", func(t *testing.T) {
 		e := newDestroyEnv(t)
 		res, got := replay(t, e, keys.DestroyedEntry{Connection: "archive", KeyIDs: e.ids, DestroyedAt: at}, []string{"default"})
 		if res.Outcome != keys.ReplayApplied || len(res.Changed) != 3 || len(got) != 1 || got[0].conn != "archive" {
@@ -444,7 +444,7 @@ func TestR_HA_054_TheReplayOfADestruction(t *testing.T) {
 			}
 		}
 	})
-	t.Run("R-HA-054 Q-HA-416 a destroyed row is already in effect", func(t *testing.T) {
+	t.Run("R-HA-054 a destroyed row is already in effect", func(t *testing.T) {
 		e := newDestroyEnv(t)
 		if _, err := e.destroy(e.confirmation(), nil); err != nil {
 			t.Fatal(err)
@@ -453,7 +453,7 @@ func TestR_HA_054_TheReplayOfADestruction(t *testing.T) {
 			t.Fatalf("%+v %+v", res, got)
 		}
 	})
-	t.Run("R-HA-054 Q-HA-416 a missing row is inserted destroyed with created_at at the entry's time: applied", func(t *testing.T) {
+	t.Run("R-HA-054 a missing row is inserted destroyed with created_at at the entry's time: applied", func(t *testing.T) {
 		e := newDestroyEnv(t)
 		res, _ := replay(t, e, keys.DestroyedEntry{Connection: "gone", KeyIDs: []string{"sk-gone-1-0000aaaa", "nk-gone-0000bbbb"}, DestroyedAt: at}, []string{"default"})
 		rows := slices.DeleteFunc(e.db.Rows(), func(r keys.Row) bool { return r.Connection != "gone" })
@@ -466,7 +466,7 @@ func TestR_HA_054_TheReplayOfADestruction(t *testing.T) {
 			}
 		}
 	})
-	t.Run("R-HA-054 Q-HA-417 an entry for a connection of the restoring configuration is skipped with its note, its keys still sealed", func(t *testing.T) {
+	t.Run("R-HA-054 an entry for a connection of the restoring configuration is skipped with its note, its keys still sealed", func(t *testing.T) {
 		e := newDestroyEnv(t)
 		res, got := replay(t, e, keys.DestroyedEntry{Connection: "archive", KeyIDs: e.ids, DestroyedAt: at}, []string{"default", "archive"})
 		if res.Outcome != keys.ReplaySkipped || res.Note != "connection archive is in this installation's configuration; its keys are not destroyed" || len(got) != 0 {

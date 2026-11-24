@@ -67,10 +67,10 @@ func (r poolResolver) Plan(context.Context, *formats.Request, formats.Path, form
 	return &formats.VirtualPlan{Admitted: true, Members: []formats.PlannedMember{{Member: r.member, Tier: formats.TierRemote, MayFill: true}}}, nil
 }
 
-// TestQ_REPO_367_WhatAProbeOfAnAPTArchiveIsThroughAVirtualRepository: a HEAD of a package file by its own path is told to the host with
+// TestR_REPO_065_WhatAProbeOfAnAPTArchiveIsThroughAVirtualRepository: a HEAD of a package file by its own path is told to the host with
 // the request addressed to the virtual repository, which finds the member that serves it; a HEAD by the member path of the merged index
 // is the probe of that member, told with the member's request. A GET of either is none.
-func TestQ_REPO_367_WhatAProbeOfAnAPTArchiveIsThroughAVirtualRepository(t *testing.T) {
+func TestR_REPO_065_WhatAProbeOfAnAPTArchiveIsThroughAVirtualRepository(t *testing.T) {
 	const pool = "pool/main/h/hello/hello_1.0-1_amd64.deb"
 	member := repository.Repository{ID: "2", Name: qname.Repo{Project: "it", Key: "debian"}, Class: repository.Remote, Format: string(ID), Lifecycle: "active"}
 	m := &formattest.MemRemote{Artifacts: map[string][]byte{pool: []byte("deb")}}

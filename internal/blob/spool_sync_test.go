@@ -32,7 +32,7 @@ func (r *syncRecorder) Sync() error {
 // Q-STOR-486: the spool file of an upload is flushed to the disk every syncEvery bytes while the body arrives, so the dirty pages of
 // a large upload never count against the replica's memory at once. The threshold is set to 4 bytes and the body is 10 bytes, read
 // two bytes at a time; the flushes come at 4 and 8, and the rest stays for the page cache (the file is scratch).
-func TestQ_STOR_486_TheSpoolFlushesAnUploadWhileItArrives(t *testing.T) {
+func TestR_STOR_004_TheSpoolFlushesAnUploadWhileItArrives(t *testing.T) {
 	var rec *syncRecorder
 	sp := newSpool(t, func(c *config.StorageSpool) { c.MemoryThreshold = 0 })
 	sp.syncEvery = 4

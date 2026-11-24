@@ -177,7 +177,7 @@ func TestR_STOR_087_TheScrubOverEncryptedCopies(t *testing.T) {
 		})
 	}
 
-	t.Run("R-STOR-087 Q-STOR-311 a copy whose record names a storage key the replica does not hold is not marked, counted, and stays due", func(t *testing.T) {
+	t.Run("R-STOR-087 a copy whose record names a storage key the replica does not hold is not marked, counted, and stays due", func(t *testing.T) {
 		l, store, ks := newLedger(), blobtest.New(), blobtest.NewKeys()
 		lost := ks.Draw("archive", 1)
 		archive := sealedConnection("archive", store, ks)

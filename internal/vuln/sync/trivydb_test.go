@@ -102,7 +102,7 @@ func (r *trimRepo) Prune(_ context.Context, _, manifest string, before time.Time
 // 48 hours on upstream/scanner-trivy, counted back from the clock; the manifest the run read is named to stay. A run that failed and a
 // repository without a period (a local repository, a remote of an own project) remove nothing. A trim that fails leaves the run a
 // success with a note.
-func TestQ_VULN_194_TheRetentionIsTheRepositorysOwnCachePeriod(t *testing.T) {
+func TestR_VULN_044_TheRetentionIsTheRepositorysOwnCachePeriod(t *testing.T) {
 	now := time.Date(2026, 11, 20, 23, 0, 0, 0, time.UTC)
 	s := &Service{o: Options{Now: func() time.Time { return now }}, log: slog.New(slog.DiscardHandler)}
 	manifest := []byte(`{"schemaVersion":2}`)

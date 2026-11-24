@@ -40,11 +40,11 @@ func scopeOn(t *testing.T, e *Engine, sub Subject, addressed string, keys ...str
 	return rs
 }
 
-// TestQ_AUTHZ_168_AListingThroughAVirtualRepositoryAppliesItsExposure: the rows of a member read
+// TestR_AUTHZ_009_AListingThroughAVirtualRepositoryAppliesItsExposure: the rows of a member read
 // for a virtual repository are exposed by the rule on the virtual repository, as its documents
 // are (R-EP-012, Q-EP-11); the same rows listed on their own are decided on the member, which
 // has no rule on that endpoint.
-func TestQ_AUTHZ_168_AListingThroughAVirtualRepositoryAppliesItsExposure(t *testing.T) {
+func TestR_AUTHZ_009_AListingThroughAVirtualRepositoryAppliesItsExposure(t *testing.T) {
 	e := newTestEngine(t, addressedFixture(), func(o *Options) { o.Ceiling = exposureCeiling() })
 	sub := onEP(botSub, "customers")
 	through := scopeOn(t, e, sub, "npm-v", "npm-a")
@@ -70,10 +70,10 @@ func TestQ_AUTHZ_168_AListingThroughAVirtualRepositoryAppliesItsExposure(t *test
 	}
 }
 
-// TestQ_AUTHZ_168_AListingThroughAVirtualRepositoryLiftsATokenScopeThatNamesIt: a token scoped
+// TestR_AUTHZ_009_AListingThroughAVirtualRepositoryLiftsATokenScopeThatNamesIt: a token scoped
 // to the virtual repository by its key lists the member's rows through it (Q-AUTHZ-163) and
 // not on their own.
-func TestQ_AUTHZ_168_AListingThroughAVirtualRepositoryLiftsATokenScopeThatNamesIt(t *testing.T) {
+func TestR_AUTHZ_009_AListingThroughAVirtualRepositoryLiftsATokenScopeThatNamesIt(t *testing.T) {
 	e := newTestEngine(t, addressedFixture(), func(o *Options) { o.Ceiling = exposureCeiling() })
 	sub := onEP(tokenScop(bearer(botSub), scope.Scope{Repositories: []scope.Grant{{Repositories: []string{"it/npm-v"}, Actions: []string{"read"}}}}), "default")
 	through := scopeOn(t, e, sub, "npm-v", "npm-a")
@@ -85,9 +85,9 @@ func TestQ_AUTHZ_168_AListingThroughAVirtualRepositoryLiftsATokenScopeThatNamesI
 	}
 }
 
-// TestQ_AUTHZ_168_ARepositoryTheAddressedOneDoesNotReachIsNotListed: a key that is not the
+// TestR_AUTHZ_009_ARepositoryTheAddressedOneDoesNotReachIsNotListed: a key that is not the
 // addressed repository and not a member it resolves through is no read the client asked for.
-func TestQ_AUTHZ_168_ARepositoryTheAddressedOneDoesNotReachIsNotListed(t *testing.T) {
+func TestR_AUTHZ_009_ARepositoryTheAddressedOneDoesNotReachIsNotListed(t *testing.T) {
 	e := newTestEngine(t, addressedFixture(), func(o *Options) { o.Ceiling = exposureCeiling() })
 	sub := onEP(botSub, "default")
 	for _, addressed := range []string{"npm-v", "npm-a", "ghost"} {
@@ -101,10 +101,10 @@ func TestQ_AUTHZ_168_ARepositoryTheAddressedOneDoesNotReachIsNotListed(t *testin
 	}
 }
 
-// TestQ_AUTHZ_168_AReadScopeThroughAVirtualRepositoryAgreesWithTheDecisionPoint: MayRead through
+// TestR_AUTHZ_009_AReadScopeThroughAVirtualRepositoryAgreesWithTheDecisionPoint: MayRead through
 // the virtual repository is the decision of DecideOn for the coordinate whose Addressed is the
 // virtual repository, and the shape never promises more or less.
-func TestQ_AUTHZ_168_AReadScopeThroughAVirtualRepositoryAgreesWithTheDecisionPoint(t *testing.T) {
+func TestR_AUTHZ_009_AReadScopeThroughAVirtualRepositoryAgreesWithTheDecisionPoint(t *testing.T) {
 	e := newTestEngine(t, addressedFixture(), func(o *Options) { o.Ceiling = exposureCeiling() })
 	subjects := map[string]Subject{
 		"bot": botSub, "carol": carolSub, "admin": adminSub,

@@ -83,7 +83,7 @@ func TestMirrorPopulate(t *testing.T) {
 			t.Fatalf("%q %v", name, fills)
 		}
 	})
-	t.Run("R-REPO-057 Q-REPO-145 the event of the fill names the system as subject and mirror as reason", func(t *testing.T) {
+	t.Run("R-REPO-057 the event of the fill names the system as subject and mirror as reason", func(t *testing.T) {
 		if err := p.Record(t.Context(), nil); err != nil {
 			t.Fatal(err)
 		}

@@ -118,7 +118,7 @@ func TestWriteProblem(t *testing.T) {
 			}
 		}
 	})
-	t.Run("Q-AUTH-410 each cookie of an error is a Set-Cookie line of its own, in order", func(t *testing.T) {
+	t.Run("R-AUTH-002 each cookie of an error is a Set-Cookie line of its own, in order", func(t *testing.T) {
 		rec, _, _ := render(E(Unauthenticated, CodeSessionExpired, "x", WithCookies(
 			&http.Cookie{Name: "a", Path: "/", MaxAge: -1}, &http.Cookie{Name: "b", Path: "/", MaxAge: -1})))
 		got := rec.Header().Values("Set-Cookie")

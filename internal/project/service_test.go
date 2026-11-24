@@ -309,7 +309,7 @@ func TestR_REPO_060_TheMovedEvent(t *testing.T) {
 		t.Errorf("journal %v", j)
 	}
 	withinSchema(t, ev)
-	t.Run("Q-REPO-233 the arrival in the target project", func(t *testing.T) {
+	t.Run("the arrival in the target project", func(t *testing.T) {
 		if in.Type != audit.EventRepositoryMovedIn || in.Repository != "mobile/npm-libs" || in.Project != "mobile" ||
 			in.Subject.ID != "42" || in.Subject.Name != "mobile/npm-libs" || in.Journal != nil {
 			t.Errorf("%+v", in)

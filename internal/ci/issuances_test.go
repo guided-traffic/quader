@@ -11,7 +11,7 @@ import (
 )
 
 // Q-CI-26: a project Owner's record shows the contributions of its project's tier only.
-func TestQ_CI_26_AProjectsRecordShowsItsOwnMappingsOnly(t *testing.T) {
+func TestR_CI_019_AProjectsRecordShowsItsOwnMappingsOnly(t *testing.T) {
 	var f claims.Frozen
 	f.Version, f.Issuer, f.IssuerID, f.ProjectID = claims.FrozenVersion, "gitlab-main", "i", "4711"
 	f.Add(claims.FrozenMapping{Ref: "ci:gitlab-main/acme-read", ID: "m1", Tier: "system"})

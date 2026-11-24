@@ -51,7 +51,7 @@ func TestRemoteRequestMode(t *testing.T) {
 			t.Fatal("a missing member must be nil")
 		}
 	})
-	t.Run("Q-NPM-13 the engine's currencies map to the contract's", func(t *testing.T) {
+	t.Run("R-NPM-026 the engine's currencies map to the contract's", func(t *testing.T) {
 		if currency(proxy.Current) != formats.Current || currency(proxy.Revalidated) != formats.Revalidated || currency(proxy.Unknown) != formats.Unknown {
 			t.Fatal("currency mapping")
 		}

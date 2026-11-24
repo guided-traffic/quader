@@ -18,7 +18,7 @@ func TestWrap(t *testing.T) {
 		disp       string
 	}{
 		{"R-ARCH-007 a file carries the four headers", File, false, sandbox, "same-site", "attachment; filename*=UTF-8''x%20y.tgz"},
-		{"R-ARCH-007 Q-ARCH-86 a session request gets the same-origin policy", File, true, sandbox, "same-origin", "attachment; filename*=UTF-8''x%20y.tgz"},
+		{"R-ARCH-007 a session request gets the same-origin policy", File, true, sandbox, "same-origin", "attachment; filename*=UTF-8''x%20y.tgz"},
 		{"R-ARCH-007 R-STOR-017 the directory index has no sandbox and no disposition", Index, false, "default-src 'none'", "same-site", ""},
 		{"R-ARCH-007 a package document has the sandbox and no disposition", Document, false, sandbox, "same-site", ""},
 		{"R-ARCH-007 a package document on a session request", Document, true, sandbox, "same-origin", ""},

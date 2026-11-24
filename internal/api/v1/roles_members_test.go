@@ -7,9 +7,9 @@ import (
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
 )
 
-// TestQ_ARCH_341_EveryReplicaIsListedWithItsOwnRole: an api or packages replica is listed with its own role, not with a
+// TestR_OPS_003_EveryReplicaIsListedWithItsOwnRole: an api or packages replica is listed with its own role, not with a
 // class, and the pool is carried (R-OPS-003, R-OPS-004, Q-OPS-161, Q-ARCH-341).
-func TestQ_ARCH_341_EveryReplicaIsListedWithItsOwnRole(t *testing.T) {
+func TestR_OPS_003_EveryReplicaIsListedWithItsOwnRole(t *testing.T) {
 	pool := "ep-customers"
 	reps := fakeReplicas{
 		replica("quader-api-1", "api", "n1", gen.Ready, false),

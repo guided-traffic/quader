@@ -49,7 +49,7 @@ func (b *swappedBlobs) CommitAll(context.Context, []*blob.Spooled, blob.LinkFunc
 func TestReadVerified(t *testing.T) {
 	good := []byte("export const release='A'")
 	digest := blob.Digest(sha256.Sum256(good))
-	t.Run("R-HA-020 a file of the store is read with verification, whatever storage.download.verify says (Q-UI-143)", func(t *testing.T) {
+	t.Run("R-HA-020 a file of the store is read with verification, whatever storage.download.verify says", func(t *testing.T) {
 		b := &swappedBlobs{body: good}
 		got, err := readVerified(context.Background(), b, digest, int64(len(good)))
 		if err != nil || !bytes.Equal(got, good) {
@@ -59,7 +59,7 @@ func TestReadVerified(t *testing.T) {
 			t.Fatalf("Open options %+v, want a whole read with Verify", b.opts)
 		}
 	})
-	t.Run("R-HA-020 an object swapped for other bytes of the same length is refused, not served (Q-UI-143)", func(t *testing.T) {
+	t.Run("R-HA-020 an object swapped for other bytes of the same length is refused, not served", func(t *testing.T) {
 		swapped := bytes.Clone(good)
 		swapped[len(swapped)-2] = 'X'
 		_, err := readVerified(context.Background(), &swappedBlobs{body: swapped}, digest, int64(len(good)))

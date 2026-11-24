@@ -22,7 +22,7 @@ func publicKey(t *testing.T) (armored, fingerprint string) {
 
 // Q-DEB-133: a verification recorded after it was made (the remote job's re-verification) holds only while its signer is a key of the
 // set the recording transaction reads.
-func TestQ_DEB_133_ASignerHoldsWhileItsKeyIsInTheSet(t *testing.T) {
+func TestR_DEB_020_ASignerHoldsWhileItsKeyIsInTheSet(t *testing.T) {
 	a, fa := publicKey(t)
 	b, fb := publicKey(t)
 	for _, c := range []struct {

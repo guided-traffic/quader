@@ -87,7 +87,7 @@ func TestR_STOR_087_TheReconciliationsFourCases(t *testing.T) {
 			t.Fatal("the copy does not read back")
 		}
 	})
-	t.Run("R-STOR-087 Q-STOR-308 encrypted to encrypted: new bytes under a new data key and the target's own storage key, never the source's ciphertext; both read back", func(t *testing.T) {
+	t.Run("R-STOR-087 encrypted to encrypted: new bytes under a new data key and the target's own storage key, never the source's ciphertext; both read back", func(t *testing.T) {
 		a, b, ks := blobtest.New(), blobtest.New(), blobtest.NewKeys()
 		ks.Draw("archive", 1)
 		other := ks.Draw("vault", 1)

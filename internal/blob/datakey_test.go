@@ -239,7 +239,7 @@ func TestR_STOR_083_CopyDataKeyOpensTheRecordOfTheCopy(t *testing.T) {
 			t.Error("a blob size the record does not bind gave a key")
 		}
 	})
-	t.Run("R-STOR-083 Q-STOR-470 CopyDataKey reads no row and marks nothing", func(t *testing.T) {
+	t.Run("R-STOR-083 CopyDataKey reads no row and marks nothing", func(t *testing.T) {
 		if db.txCount != 0 {
 			t.Errorf("%d transactions ran, want none", db.txCount)
 		}

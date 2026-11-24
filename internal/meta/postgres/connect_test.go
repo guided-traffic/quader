@@ -282,7 +282,7 @@ func TestConnectionBudget(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
-	t.Run("Q-HA-77 expected_serving_replicas counts like the deprecated expected_web_replicas, and only the old name warns", func(t *testing.T) {
+	t.Run("R-HA-016 expected_serving_replicas counts like the deprecated expected_web_replicas, and only the old name warns", func(t *testing.T) {
 		var out strings.Builder
 		log := slog.New(slog.NewTextHandler(&out, nil))
 		c := testConfig()
@@ -329,9 +329,9 @@ func TestClassify(t *testing.T) {
 		{"R-HA-007 R-HA-058 a pooler that cannot reach its server", &pgconn.PgError{Code: "08P01", Message: "pgbouncer cannot connect to server"}, retryFailover},
 		{"a refused startup parameter is no outage", &pgconn.PgError{Code: "08P01", Message: "unsupported startup parameter: statement_timeout"}, retryNo},
 		{"a pooler whose server connections cannot be made is an outage", &pgconn.PgError{Code: "08P01", Message: "server login has been failing, cached error: connect failed (server_login_retry)"}, retryFailover},
-		{"Q-HA-306 a pooler whose server died while it set the client's parameters", &pgconn.PgError{Code: "08P01", Message: "invalid server parameter"}, retryFailover},
-		{"Q-HA-306 a pooler whose server login failed while the client waited", &pgconn.PgError{Code: "28P01", Message: `password authentication failed for user "quader"`}, retryFailover},
-		{"Q-HA-306 a wrong password at connect is Quader's own", passwordRejectedAtConnect(t), retryNo},
+		{"R-HA-058 a pooler whose server died while it set the client's parameters", &pgconn.PgError{Code: "08P01", Message: "invalid server parameter"}, retryFailover},
+		{"R-HA-058 a pooler whose server login failed while the client waited", &pgconn.PgError{Code: "28P01", Message: `password authentication failed for user "quader"`}, retryFailover},
+		{"R-HA-058 a wrong password at connect is Quader's own", passwordRejectedAtConnect(t), retryNo},
 		{"unique violation is the caller's", pg("23505"), retryNo},
 		{"statement timeout is not retried", pg("57014"), retryNo},
 		{"io.EOF", io.EOF, retryFailover},

@@ -63,10 +63,10 @@ func TestR_MAL_011_ClamavIsInUseWhileTheMalwareScanKeepsItsDatabaseThere(t *test
 	}
 }
 
-// TestQ_API_382_TheItemOfClamavCarriesItsClientsAndTheirAddress: the member clients of the item of clamav says whether its clients are
+// TestR_API_083_TheItemOfClamavCarriesItsClientsAndTheirAddress: the member clients of the item of clamav says whether its clients are
 // on and names the address a ClamAV installation puts into PrivateMirror, the protocol base on the base URL of the request without a
 // trailing slash (R-REPO-073, R-CLAMAV-006).
-func TestQ_API_382_TheItemOfClamavCarriesItsClientsAndTheirAddress(t *testing.T) {
+func TestR_API_083_TheItemOfClamavCarriesItsClientsAndTheirAddress(t *testing.T) {
 	clam := repository.UpstreamItem{
 		Key: wellknown.ClamavKey, Format: "clamav", Kind: wellknown.KindSystem, Fixed: []string{"state", "address", "account"},
 		Clients: &repository.UpstreamClients{Enabled: true},

@@ -76,12 +76,12 @@ func TestR_CI_016_ComputeTTL(t *testing.T) {
 		{"no subject term without an exp", with(func(in *TTLInput) { in.SubjectExpiresAt = time.Time{} }), 15 * time.Minute, "", ""},
 		{"20 s of the subject token left", with(func(in *TTLInput) { in.SubjectExpiresAt = now.Add(20 * time.Second) }), 0, reason.SubjectTokenExpiresTooSoon, "subject token"},
 		{"an expired subject token within the skew", with(func(in *TTLInput) { in.SubjectExpiresAt = now.Add(-10 * time.Second) }), 0, reason.SubjectTokenExpiresTooSoon, "subject token"},
-		{"Q-CI-41 a requested ttl below the floor is the caller's", with(func(in *TTLInput) { in.Requested = d(10) }), 0, reason.TTLBelowMinimum, "requested ttl"},
-		{"Q-CI-41 the request is named before the subject", with(func(in *TTLInput) {
+		{"a requested ttl below the floor is the caller's", with(func(in *TTLInput) { in.Requested = d(10) }), 0, reason.TTLBelowMinimum, "requested ttl"},
+		{"the request is named before the subject", with(func(in *TTLInput) {
 			in.Requested, in.SubjectExpiresAt = d(10), now.Add(5*time.Second)
 		}), 0, reason.TTLBelowMinimum, "requested ttl"},
-		{"Q-CI-41 a mapping's bound below the floor", with(func(in *TTLInput) { in.MappingMax = d(10) }), 0, reason.TTLBelowMinimum, "mapping"},
-		{"Q-CI-41 the issuer's bound below the floor", with(func(in *TTLInput) { in.IssuerMax = d(10) }), 0, reason.TTLBelowMinimum, "issuer"},
+		{"a mapping's bound below the floor", with(func(in *TTLInput) { in.MappingMax = d(10) }), 0, reason.TTLBelowMinimum, "mapping"},
+		{"the issuer's bound below the floor", with(func(in *TTLInput) { in.IssuerMax = d(10) }), 0, reason.TTLBelowMinimum, "issuer"},
 		{"exactly the floor", with(func(in *TTLInput) { in.Requested = d(30) }), 30 * time.Second, "", ""},
 	}
 	for _, c := range cases {

@@ -45,7 +45,7 @@ func TestR_EP_014_ConfigurationReadersAreBoundByTheCeiling(t *testing.T) {
 	}
 	customers := authz.Subject{Endpoint: "customers"} // the subject edge.SubjectFrom builds for a request of the endpoint
 	s := New(Options{})
-	t.Run("R-EP-014 Q-EP-12 a holder of repositories:read-config sees what the endpoint exposes", func(t *testing.T) {
+	t.Run("R-EP-014 a holder of repositories:read-config sees what the endpoint exposes", func(t *testing.T) {
 		got, err := s.visibleKeys(ctx, holder(t, customers), qrs(keys), true)
 		if err != nil || !slices.Equal(qkeys(got), []string{"npm-customers"}) {
 			t.Fatalf("%v %v", got, err)

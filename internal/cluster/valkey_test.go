@@ -128,7 +128,7 @@ func TestValkeyClient(t *testing.T) {
 			}
 		}
 	})
-	t.Run("Q-HA-13 a rejected credential is a startup error with the cause", func(t *testing.T) {
+	t.Run("R-HA-056 a rejected credential is a startup error with the cause", func(t *testing.T) {
 		srv := errorServer(t, "WRONGPASS invalid username-password pair or user is disabled.")
 		v, _ := newTestValkey(t, standaloneCfg(srv.addr()))
 		err := v.StartupError()

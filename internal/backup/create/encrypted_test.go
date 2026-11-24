@@ -175,7 +175,7 @@ func TestR_BAK_031_ThePoolKeepsAnEncryptedCopyAsStored(t *testing.T) {
 
 func TestR_BAK_032_TheCopyOrderAndTheRepool(t *testing.T) {
 	content := strings.Repeat("a blob of a departing connection ", 12)
-	t.Run("Q-BAK-76 a draining connection's copy comes after every other copy, also before a server-side copy on the target's endpoint", func(t *testing.T) {
+	t.Run("R-BAK-030 a draining connection's copy comes after every other copy, also before a server-side copy on the target's endpoint", func(t *testing.T) {
 		e := newEnv(t)
 		d := e.addBlob(content)
 		id := e.sealedCopy(content, "secondary")
