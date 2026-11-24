@@ -12598,10 +12598,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-VULN
 
-184 questions on [spec/vulnerability-scanning.md](spec/vulnerability-scanning.md).
+185 questions on [spec/vulnerability-scanning.md](spec/vulnerability-scanning.md).
 
 <details>
-<summary>Q-VULN: 184 questions</summary>
+<summary>Q-VULN: 185 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12789,6 +12789,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-VULN-226](spec/vulnerability-scanning.md#q-vuln-226--a-pull-refused-for-a-repository-the-listener-holds-for-disabled-is-put-off-without-an-attempt) | A pull refused for a repository the listener holds for disabled is put off without an attempt | Decided by the development agent | (a) The refusal names `repository_disabled` in `Quader-Error-Code` on the registry's `404`; the scanner answers `409` `repository_disabled`; the worker puts the scan off a minute without an attempt | — |
 | [Q-VULN-237](spec/vulnerability-scanning.md#q-vuln-237--a-write-the-scanners-own-volume-refuses-is-the-scanners-fault-put-off-on-another-scanner) | A write the scanner's own volume refuses is the scanner's fault, put off on another scanner | Decided by the development agent | (a) A code of its own, `503` `scanner_disk_failed`, an error log line of the scanner that names the working directory; the worker tries it like `scanner_busy`, three times on new connections, and puts the scan off a minute without an attempt | — |
 | [Q-VULN-267](spec/vulnerability-scanning.md#q-vuln-267--the-probe-of-variant-d-stays-in-its-own-set-no-pooler-leg-under-load-runs-the-profile-vuln) | The probe of variant D stays in its own set: no pooler leg under load runs the profile vuln | Decided by the development agent on 2026-11-23 | (a) Keep `vuln-pooler` as its own set | — |
+| [Q-VULN-268](spec/vulnerability-scanning.md#q-vuln-268--a-run-with-nothing-due-runs-again-when-a-discovered-manifest-becomes-due) | A run with nothing due runs again when a discovered manifest becomes due | Decided by the development agent | (a) A run that finds nothing due asks for the first `not_before` of a discovered row still waiting (`pending`, no code) and enqueues itself for that moment | — |
 
 </details>
 <!-- coverage-gen:end decisions -->

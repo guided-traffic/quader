@@ -39,6 +39,14 @@ SELECT s.repo_id::bigint AS repo_id, s.name::text AS name, s.digest AS digest, s
  ORDER BY (s.state = 'scanned'), s.not_before, s.repo_id, s.name, s.digest
  LIMIT sqlc.arg(max_rows)::int;
 
+-- name: VulnImageNextNew :one
+-- The seconds until the first manifest that was discovered and still waits out its scan delay becomes due, or -1 when none waits
+-- (Q-VULN-268): a run that finds nothing due runs again at that time instead of at the task's next slot. A row that was put off keeps
+-- its code and is left to the schedule, so an outage of the scanners does not wake a run per deferral.
+SELECT COALESCE(EXTRACT(EPOCH FROM min(s.not_before) - now()), -1)::float8 AS wait_seconds
+  FROM vuln_image_scan s
+ WHERE s.state = 'pending' AND s.error_code IS NULL AND s.not_before > now();
+
 -- name: VulnImageDueCount :one
 SELECT count(*)::bigint
   FROM vuln_image_scan s

@@ -91,6 +91,20 @@ func (s *Images) DueCount(ctx context.Context, dbDigest string) (n int64, err er
 	return n, err
 }
 
+// NextNew reports how long until the first discovered manifest that waits out its scan delay becomes due, and false when none waits
+// (Q-VULN-268).
+func (s *Images) NextNew(ctx context.Context) (wait time.Duration, ok bool, err error) {
+	var secs float64
+	err = s.tx(ctx, func(qs *q.Queries) (err error) {
+		secs, err = qs.VulnImageNextNew(ctx)
+		return err
+	})
+	if err != nil || secs < 0 {
+		return 0, false, err
+	}
+	return time.Duration(secs * float64(time.Second)), true, nil
+}
+
 // Failed records a scan that did not finish.
 func (s *Images) Failed(ctx context.Context, repoID int64, name string, digest [32]byte, code, detail string, backoff time.Duration) error {
 	return s.tx(ctx, func(qs *q.Queries) error {

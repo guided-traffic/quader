@@ -458,6 +458,16 @@ func TestR_VULN_034_AnImageIsScannedAfterItsPushAndItsFindingsReachThePackageAPI
 	}
 }
 
+// R-VULN-034, Q-VULN-268: with a scan delay the run the commit woke finds the new manifest not yet due; it runs again when the manifest
+// becomes due, so the image is scanned without the task's schedule (switched off here) and without a start of the task.
+func TestR_VULN_034_APushedImageIsScannedWhenItsScanDelayEndsWithoutTheSchedule(t *testing.T) {
+	f := newFlowWith(t, options{stackEnv: []string{"QUADER_VULNERABILITIES_IMAGES_SCAN_DELAY=2s"}})
+	f.push("app", "1.0", newImage(t))
+	if r := f.waitEvaluation("app", "1.0", "evaluated"); len(r.Repositories[0].Findings) != 1 {
+		t.Fatalf("findings: %+v", r.Repositories[0].Findings)
+	}
+}
+
 // R-VULN-038: an image whose OS is at its end of life grades C at best, without a finding; the list grades the image by that tag.
 func TestR_VULN_038_AnImageAtTheEndOfLifeOfItsOSGradesCAtBest(t *testing.T) {
 	f := newFlow(t)

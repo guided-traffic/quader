@@ -675,6 +675,22 @@ func (q *Queries) VulnImageManifests(ctx context.Context, arg VulnImageManifests
 	return items, nil
 }
 
+const vulnImageNextNew = `-- name: VulnImageNextNew :one
+SELECT COALESCE(EXTRACT(EPOCH FROM min(s.not_before) - now()), -1)::float8 AS wait_seconds
+  FROM vuln_image_scan s
+ WHERE s.state = 'pending' AND s.error_code IS NULL AND s.not_before > now()
+`
+
+// The seconds until the first manifest that was discovered and still waits out its scan delay becomes due, or -1 when none waits
+// (Q-VULN-268): a run that finds nothing due runs again at that time instead of at the task's next slot. A row that was put off keeps
+// its code and is left to the schedule, so an outage of the scanners does not wake a run per deferral.
+func (q *Queries) VulnImageNextNew(ctx context.Context) (float64, error) {
+	row := q.db.QueryRow(ctx, vulnImageNextNew)
+	var wait_seconds float64
+	err := row.Scan(&wait_seconds)
+	return wait_seconds, err
+}
+
 const vulnImageOrphanFindings = `-- name: VulnImageOrphanFindings :many
 SELECT f.id::text AS id
   FROM vuln_finding f

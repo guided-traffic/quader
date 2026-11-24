@@ -216,6 +216,13 @@ type fakeRows struct {
 	failed   []string
 	deferred []string
 	deletes  int
+	// nextNew is what NextNew answers once due is empty: the wait of a discovered manifest, hasNew whether one waits.
+	nextNew time.Duration
+	hasNew  bool
+}
+
+func (f *fakeRows) NextNew(context.Context) (time.Duration, bool, error) {
+	return f.nextNew, f.hasNew, nil
 }
 
 func (f *fakeRows) Discover(context.Context, time.Duration, int) (int64, error) { return 0, nil }
@@ -372,6 +379,34 @@ func TestR_VULN_048_WhileTheScannersLoadTheDatabaseTheRunEndsAndNoRowChanges(t *
 	if len(r.rows.failed)+len(r.rows.deferred)+len(r.applied) != 0 || len(r.scanner.analyses) != 0 {
 		t.Fatalf("a row changed: failed %v, deferred %v, applied %d, analyses %v", r.rows.failed, r.rows.deferred, len(r.applied), r.scanner.analyses)
 	}
+}
+
+// R-VULN-034, Q-VULN-268: a run that finds nothing due while a discovered manifest waits out its scan delay hands it to a job at the
+// time it becomes due; with none waiting it enqueues nothing and the task's schedule stays the only next run.
+func TestR_VULN_034_ARunWithNothingDueRunsAgainWhenADiscoveredManifestBecomesDue(t *testing.T) {
+	t.Run("a manifest waits out its delay", func(t *testing.T) {
+		r := newJobRig(t, testAnalyser)
+		r.rows.due, r.rows.nextNew, r.rows.hasNew = nil, 20*time.Second, true
+		run := &fakeRun{}
+		if err := r.svc.RunScan(t.Context(), run); err != nil {
+			t.Fatal(err)
+		}
+		res, _ := json.Marshal(run.result)
+		if len(r.enqueued) != 1 || r.enqueued[0] != 20*time.Second || !strings.Contains(string(res), `"next":"20s"`) {
+			t.Fatalf("result %s, enqueued %v, want one job in 20s", res, r.enqueued)
+		}
+	})
+	t.Run("nothing waits", func(t *testing.T) {
+		r := newJobRig(t, testAnalyser)
+		r.rows.due = nil
+		run := &fakeRun{}
+		if err := r.svc.RunScan(t.Context(), run); err != nil {
+			t.Fatal(err)
+		}
+		if len(r.enqueued) != 0 || run.result == nil {
+			t.Fatalf("result %v, enqueued %v, want a result and no job", run.result, r.enqueued)
+		}
+	})
 }
 
 // R-VULN-048, Q-VULN-199: a scanner of another version refuses the stored analysis: the image is analysed again, the new analysis

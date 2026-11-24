@@ -67,6 +67,7 @@ type Rows interface {
 	Orphans(ctx context.Context, limit int) ([]string, error)
 	DueCount(ctx context.Context, dbDigest string) (int64, error)
 	Due(ctx context.Context, dbDigest string, maxAttempts, limit int) ([]store.ImageDue, error)
+	NextNew(ctx context.Context) (time.Duration, bool, error)
 	Unanalysed(ctx context.Context, maxAttempts, limit int) ([]store.ImageDue, error)
 	SBOM(ctx context.Context, digest [32]byte) (store.StoredAnalysis, bool, error)
 	PutSBOM(ctx context.Context, digest [32]byte, a store.StoredAnalysis) error
@@ -198,7 +199,7 @@ func (s *Service) RunScan(ctx context.Context, run Run) error {
 			return err
 		}
 		if len(due) == 0 {
-			return run.SetResult(map[string]any{"done": done, "database": digest})
+			return s.ended(ctx, run, map[string]any{"done": done, "database": digest})
 		}
 		err = s.scanBatch(ctx, due, digest)
 		if errors.Is(err, errDatabaseLoading) {
@@ -223,6 +224,21 @@ func (s *Service) waitForDatabase(ctx context.Context, run Run, digest string, d
 	return s.continued(ctx, run, DatabaseLoadingWait, map[string]any{
 		"done": done, "database": digest, "waiting": CodeDatabaseLoading + ": the scanners hold no copy of the database in use yet; the scan runs again in 30 seconds",
 	})
+}
+
+// ended closes a run that found nothing due (Q-VULN-268): a manifest it discovered still waits out its scan delay, so the run hands it to
+// a job of its own at the time it becomes due, instead of leaving it to the task's next slot. A push during a run is discovered by the
+// next run and waits there the same way.
+func (s *Service) ended(ctx context.Context, run Run, result map[string]any) error {
+	wait, ok, err := s.o.Images.NextNew(ctx)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return run.SetResult(result)
+	}
+	result["next"] = wait.Round(time.Second).String()
+	return s.continued(ctx, run, wait, result)
 }
 
 // continued hands the rest of the work to a job of its own, after delay and after whatever waits on the queue.

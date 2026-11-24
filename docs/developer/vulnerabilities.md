@@ -680,17 +680,20 @@ database in use for a run and checks that its repository holds the layer (`datab
 [wire_vuln_database.go](../../internal/app/wire_vuln_database.go)); the worker reads no byte of it. The job `vuln-image-scan` (queue `vuln`,
 `coalesce`) reads its work from `vuln_image_scan`; a push only wakes it (`imagescan.Hooks`), and `vuln-sync-trivy-db` makes the database's
 repository hold the database ([the database's repository](#the-databases-repository-r-vuln-044-r-vuln-045) below). The rows without a
-detection come before the re-detections of a new database (`VulnImageDue`, Q-VULN-200). The result enters the lifecycle of findings
+detection come before the re-detections of a new database (`VulnImageDue`, Q-VULN-200). A run that finds nothing due while a manifest it
+discovered waits out `scan_delay` enqueues itself for the moment that manifest is due (`Service.ended`, `VulnImageNextNew`, Q-VULN-268);
+a manifest pushed while a run goes is discovered by the next run, which the push's wake-up queues behind it. The result enters the lifecycle of findings
 through `evaluate.Service.ApplyImage`, so an image's finding differs from a package's only in its version (the manifest digest) and its
 `components`. A pull is gated by `enforce.GateImage` through the Host port `RefuseImage` (Q-VULN-138). **The working space is the scanner's
 spool** (Q-VULN-145): an analysis holds the image plus 64 MiB, a detection 64 MiB, before its first file; the worker writes nothing of a scan
 to its disk, and the chart checks no worker spool for the image scanning (Q-HA-318, revisited).
 
 Tests: `internal/vuln/imagescan` (bounds and report parsing, the check of an analysis, both calls' clients and their tables of answers, the
-job's decisions over stand-in rows: `database_loading`, a second `analysis_outdated`, a refused analysis; the unpack of a database; a run of
+job's decisions over stand-in rows: `database_loading`, a second `analysis_outdated`, a refused analysis, the run that wakes itself for
+a manifest's scan delay; the unpack of a database; a run of
 the real binary when `QUADER_TEST_TRIVY_BIN`, `QUADER_TEST_TRIVY_CACHE` and `QUADER_TEST_IMAGE_LAYOUT` name them), `internal/vuln/scanner`
 (the handlers of both calls, slots, drain, pull, reaper, the process not dumpable on Linux), `internal/vuln/dbloader` (the loader),
-[test/integration/vulnimage](../../test/integration/vulnimage) (push to findings through a scanner replica, a busy and a stopped scanner,
+[test/integration/vulnimage](../../test/integration/vulnimage) (push to findings through a scanner replica, a push scanned when its scan delay ends with the schedule off, a busy and a stopped scanner,
 the handshake of both links, a blocked private image analysed again without a download, a remote's uncached layer, a disabled repository,
 a new database, the block of a pull, the order of work after a new database, the loader's database and a run that waits for it in
 `detection_test.go`, the role `all` without a scanner, and in `database_test.go` the database's repository: a local one, a remote of a stub
