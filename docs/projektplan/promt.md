@@ -242,7 +242,10 @@ Q-ARCH-1040; its release shows the rest); `drain-roles` ran alone at 22:24, gree
 **T-25 landed at 22:58** (one commit; Q-UI-1040 to Q-UI-1043; the renders looked at by the development agent;
 the browser journeys it rewrote run first in the pipeline's e2e legs). Started at 22:53 in the freed place: **T-24 · R4** (downloads ahead and the queue; R3 waits for R2's landing,
 since it wires R2's decider). R4 landed at 00:18 (one commit; section 10). Started at 00:22 in its place: **T-24 · R5a** (the tab strip and the
-tab Downloads, on R4's API). R5a landed at 01:00 (one commit; section 10). **The rest of the Go tests landed at 23:12** (three commits; F-126 not reproduced, open). Started at 23:00 in T-25's place: **W8** (web and end-to-end tests wait for what they stand for, with the
+tab Downloads, on R4's API). R5a landed at 00:53 (one commit; section 10). **W13 landed at 01:03** (ten commits; H-1662, the Bastion's gauge, R-ARCH-034's count, the limits'
+flush waits by `quader_limits_flushes_total`, E1.14's burst, `search-field.spec.ts`, an offline render seed).
+Started at 00:57 in its place: **W14**, the shape of the test suite and
+the CI caches (section 12, part A whole, and the cache entries without `zstd`). **The rest of the Go tests landed at 23:12** (three commits; F-126 not reproduced, open). Started at 23:00 in T-25's place: **W8** (web and end-to-end tests wait for what they stand for, with the
 layout fixtures in three browsers and an instance of the UI profile that is claimed, not chosen: two builders
 took instance 6 a minute apart that evening). W8 landed at 00:05 (eleven commits). **v0.115.0** was released at 23:30 by the run of
 the rest of the Go tests (the evidence record's repair, T-25, the Bastion's fix of 18:39 and the Go tests);
@@ -299,8 +302,9 @@ starts from it and from his word how the work goes on, not from the order of the
   Closed). Left by it: the ten fixed waits of `search-field.spec.ts`, the 2 s flush waits of the limits'
   five client cases, R-ARCH-034's count by the limiter's metric, `TestE1_14Exposure`'s burst that depends on
   the runner's speed, a render seed independent of a public registry, F-95 (a recurrence to read), and a
-  push during a nightly, which `make nightly-load-guard` names and nothing stops; the runner side of the
-  layout fixtures and of the walk's widths shows in the next `UI layout checks` job.
+  push during a nightly, which `make nightly-load-guard` names and nothing stops. The runner side of the
+  layout fixtures in three browsers and of the walk's widths is shown: `UI layout checks` of W8's push (Test and
+  Release 45285588577) green.
 - **W10b · Translations and test names**: landed at 23:52; left: about 1,000 test names that carry a
   decision's number (a package of its own).
 - **A second round of the documents' writer**: landed at 23:52 with W10b.
@@ -568,6 +572,14 @@ order is what a user or an operator meets first. The state is kept here.
 
 ### Tests and tools
 
+- **The integration area `limits` still waits fixed times for a flush (found by W13 on 2026-11-24):**
+  `figures_test.go` lines 78, 215 and 228 and `limits_test.go` line 172. The counter `quader_limits_flushes_total`
+  (Q-LIM-112), which the five client cases wait on since that night, can replace them. To do: wait on it.
+- **The UI development profile's backend reaches the internet at start (found by W13 on 2026-11-24):** nine
+  requests to `tuf-repo-cdn.sigstore.dev` for the signature trust root, outside the seed, which W13 made offline.
+  `signatures.trust_root.refresh: false` in `deploy/ui-dev/config.sh` would stop them and changes what the
+  signature screens show. To do: a trust root of the profile's own (a fixture), so the screens keep their states.
+
 - **`integration (shard d)` was red in the run of R4's push (2026-11-24; Test and Release 45287679724, read at
   00:40): `TestQ_VULN_200_APushedImageIsDetectedBeforeTheRedetections` (area `vulnimage`) saw five re-detections
   before the pushed image's first detection.** Reproduced once on `main` and not on the commit before R4, then
@@ -639,22 +651,6 @@ records the recorder that tells such a stall apart).
   ([H-491](../security/vulnerability-scanning.md#h-491--the-performance-run-is-not-the-reference-environment)).
 - **F-95 · One Angular unit test failed once in 1,080, its name not recorded** (seen once, on a loaded host). Done when the
   failing test is identified and its cause fixed; until then a recurrence is reported with the test's name and output.
-- **Partly closed; open: R-ARCH-034's count of held requests by the clock (decision 4 of the reading of
-  2026-11-23: counted by the limiter's metric; package W8), and the cause of the 503 of
-  `TestR_DEB_010_DelayBound`, which its next recurrence names.** Closed: `TestE14Drain`'s unready pod with
-  Valkey `circuit_open`, by the statement on the stall family: its run, of 2026-11-10 or earlier, predates
-  every recorder of the evidence ("Reading a stall" of `docs/developer/e2e.md`). The 503's diagnostic, by
-  039f8fa2b (2026-11-23): a refused upload of `TestR_DEB_010_DelayBound`
-  (`test/integration/deblocal/delay_test.go`) prints the replica's log lines of its request ID, so a
-  recurrence of `database_unavailable` tells an exhausted pool from a fault of the database. The cause in
-  those lines, by bc787cfed (2026-11-23): until then the Debian format's error writer wrote the line "request
-  failed", the one that names the cause, through the process's default logger, which never reaches the log the
-  harness keeps of a replica (`LogWriter` in `test/integration/testenv/replica.go`), so the diagnostic could
-  not have printed why the upload failed; the line now goes to the request's logger with its `request_id`
-  (held as the entry "Seen by the builder of W5b" in the list Closed says). As it stood:
-  `TestE14Drain` (a packages pod unready for 5 s at the end, Valkey `circuit_open`), R-ARCH-034 (26 held against 24, once),
-  `TestR_DEB_010_DelayBound` (503 `database_unavailable`, once in nightly 42677190569; the suspicion on the retry budget of Q-HA-259
-  is unverified).
 - A job can stay queued for hours when the ARC listener loses its assignment (P-13, 2026-11-10, `assigned job=0` after a broker
   retry); the cause was not established, and a stuck run holds the nightly group until it is cancelled.
 - **Partly closed; open: the cause itself: which download failed is read in the image job's log when the error
@@ -695,22 +691,6 @@ records the recorder that tells such a stall apart).
   unit test of an upper-case path pattern wait for the owner's go for new formats (his words of 2026-11-23 in
   section 0), since their only use is room for more formats: each moves a behaviour that is tested once
   already to a cheaper tier, which pays only when the kit move deletes the integration cases.
-- **Partly closed; open: the gauge of the Bastion's answers of the kind `shape` (the trace below decides).** Closed by
-  package W7 (2026-11-23): the Bastion chart's tag `:dev` (bastion.sh sets the image it is given, Q-HA-489) and the OCI set
-  without a local clients image (`e2e.sh` checks every clients image when its build is switched off and names the image and the
-  switch, F-078). As it stood:
-  **Seen by the builder of the Bastion's P4 on 2026-11-23 and left for the batch:** the gauge of the Bastion's
-  answers of the kind `shape` read 0 on a cluster of the development profile while lookups hit (not traced;
-  the profile's answers end after 30 s); the development profile's Bastion chart and values name the image
-  tag `:dev`, so an image given by another tag is loaded and never used (the same as the links' builder
-  saw); the end-to-end script of the OCI set fails without a local image of the clients when told not to
-  build it.
-  Read on 2026-11-23: no run records the Bastion's answers by kind (no end-to-end test reads
-  `quader_bastion_answers` by kind), and `TestR_BAS_020_TheCounterAndTheGaugeOfTheAnswersFollowTheLookups`
-  (`internal/bastion/engine`) holds the gauge of kind `shape` at 1 after a recorded answer; so the 0 is either
-  answers of kind `package` since 3a194e987 or an answer ended after the profile's 30 s, which a trace of
-  `quader_bastion_answers_total{result="hit"}` by kind within 30 s of a lookup on the development profile
-  decides.
 - **Partly closed; open: whether the gating jobs without the module cache stopped downloading the module
   graph after d9e79a585 (read from the first run after it).** Closed on 2026-11-23, 22:50, by the reading of the
   builder of the evidence record's publish: (2)'s summary, the job `coverage evidence` of run 45212749706,
@@ -845,15 +825,6 @@ records the recorder that tells such a stall apart).
   of 60 to 120, left). A comment of the UI development profile still says the role `all` calls its own image scanner.
 - The coverage badge and the evidence record stand still until the first stable release (Q-ARCH-457).
 
-- **A cancel of a statement may not reach the database through the development profile's poolers (gap
-  H-1662, 2026-11-23, from the second step of W2).** A single read of a request is bounded by a deadline
-  with which the driver cancels the statement; the profile runs two pooler instances behind one
-  Service that are not configured as peers, and a cancel that reaches the instance not holding the
-  client is dropped: the request answers 503 at its bound and the statement runs on until the
-  session's 30 s. Read from the pooler's documentation, not run. To do: run it on the profile once
-  (a statement held by a lock, the server's activity read after the 503); if it holds, make the
-  profile's poolers peers and say in the chart's page what an operator's own pooler needs; the
-  owner's installation uses his database operator's pooler, which is read the same way.
 - **Partly closed; open: a render state of it, looked at: the walk's state `none` of `malwareSettings`
   (`web/e2e/renders/screens.ts`) takes the database's version away but keeps the scanners' answer of the
   render seed, which holds a ready updater (`web/e2e/renders/scanners.ts`), so the page's sentence for a
@@ -868,6 +839,50 @@ records the recorder that tells such a stall apart).
   stack).** By the code the page shows the badge "None yet" with a sentence and no error banner. To do
   (W9): a render state of it, looked at.
 ### Closed
+
+- **Closed on 2026-11-24, 01:03, by W13: R-ARCH-034's count of held requests by the clock.** A counter `quader_ratelimit_valkey_failures_total{limiter}` counts a limiter's calls to Valkey that were made and failed (none while the breaker is open; a class's calls shared with the download limits on a protocol path are the limits engine's); E1.8 counts held checks by it: 12 and 16 held against a bound of 24 in two runs on a cluster. E1.14 and E1.8's read and write classes send their burst until refused (`burstUntilRefused`), so a run without a 429 tells a class that admitted too much from a runner that never sent faster than the class refills. As it stood: **Partly closed; open: R-ARCH-034's count of held requests by the clock (decision 4 of the reading of
+  2026-11-23: counted by the limiter's metric; package W8), and the cause of the 503 of
+  `TestR_DEB_010_DelayBound`, which its next recurrence names.** Closed: `TestE14Drain`'s unready pod with
+  Valkey `circuit_open`, by the statement on the stall family: its run, of 2026-11-10 or earlier, predates
+  every recorder of the evidence ("Reading a stall" of `docs/developer/e2e.md`). The 503's diagnostic, by
+  039f8fa2b (2026-11-23): a refused upload of `TestR_DEB_010_DelayBound`
+  (`test/integration/deblocal/delay_test.go`) prints the replica's log lines of its request ID, so a
+  recurrence of `database_unavailable` tells an exhausted pool from a fault of the database. The cause in
+  those lines, by bc787cfed (2026-11-23): until then the Debian format's error writer wrote the line "request
+  failed", the one that names the cause, through the process's default logger, which never reaches the log the
+  harness keeps of a replica (`LogWriter` in `test/integration/testenv/replica.go`), so the diagnostic could
+  not have printed why the upload failed; the line now goes to the request's logger with its `request_id`
+  (held as the entry "Seen by the builder of W5b" in the list Closed says). As it stood:
+  `TestE14Drain` (a packages pod unready for 5 s at the end, Valkey `circuit_open`), R-ARCH-034 (26 held against 24, once),
+  `TestR_DEB_010_DelayBound` (503 `database_unavailable`, once in nightly 42677190569; the suspicion on the retry budget of Q-HA-259
+  is unverified).
+
+- **Closed on 2026-11-24, 01:03, by W13: the gauge of the Bastion's answers of the kind `shape`.** A shape answer is still stored beside every package answer; the gauge holds the answers one replica holds, so it reads 0 after the period and grace without a lookup, or on the replica that served none, while the hit counter keeps its count. Held by the extended `TestR_BAS_020_TheCounterAndTheGaugeOfTheAnswersFollowTheLookups` (unit, milliseconds) and written in `bastion.md`; the profile's reading was not repeated. As it stood: **Partly closed; open: the gauge of the Bastion's answers of the kind `shape` (the trace below decides).** Closed by
+  package W7 (2026-11-23): the Bastion chart's tag `:dev` (bastion.sh sets the image it is given, Q-HA-489) and the OCI set
+  without a local clients image (`e2e.sh` checks every clients image when its build is switched off and names the image and the
+  switch, F-078). As it stood:
+  **Seen by the builder of the Bastion's P4 on 2026-11-23 and left for the batch:** the gauge of the Bastion's
+  answers of the kind `shape` read 0 on a cluster of the development profile while lookups hit (not traced;
+  the profile's answers end after 30 s); the development profile's Bastion chart and values name the image
+  tag `:dev`, so an image given by another tag is loaded and never used (the same as the links' builder
+  saw); the end-to-end script of the OCI set fails without a local image of the clients when told not to
+  build it.
+  Read on 2026-11-23: no run records the Bastion's answers by kind (no end-to-end test reads
+  `quader_bastion_answers` by kind), and `TestR_BAS_020_TheCounterAndTheGaugeOfTheAnswersFollowTheLookups`
+  (`internal/bastion/engine`) holds the gauge of kind `shape` at 1 after a recorded answer; so the 0 is either
+  answers of kind `package` since 3a194e987 or an answer ended after the profile's 30 s, which a trace of
+  `quader_bastion_answers_total{result="hit"}` by kind within 30 s of a lookup on the development profile
+  decides.
+
+- **Closed on 2026-11-24, 01:03, by W13: H-1662, a cancel dropped between poolers that are not peers.** Reproduced in process with PgBouncer 1.26.1 behind a proxy that drops the cancel: the statement ran on 3 s past its bound of 300 ms; the cancel is not what ends it, PgBouncer closes the server connection when its client leaves, and PostgreSQL notices that only with `client_connection_check_interval` above 0. The new key `database.session.client_connection_check_interval` (default 1 s) is sent as a startup parameter on a direct connection and is a role default through a pooler, which the preflight checks (a fifth role default; the pooler profile's `up.sh` sets it); with it the statement ended 0.7 s after the bound (`TestR_ARCH_019_AStatementWhoseCancelIsDroppedEndsWhenItsClientIsGone`, area `postgres`, about 2 s; Q-ARCH-1041). Peers rejected: no stable address per instance, and the operator's pooler configures none. Not run on the profile's two pooler instances. **Correction of what this entry said:** the owner's installation does not use his database operator's pooler; `apps/quader` connects straight to `quader-postgres-cluster-rw:5432` (read, not changed), so H-1662 was dormant there. As it stood: **A cancel of a statement may not reach the database through the development profile's poolers (gap
+  H-1662, 2026-11-23, from the second step of W2).** A single read of a request is bounded by a deadline
+  with which the driver cancels the statement; the profile runs two pooler instances behind one
+  Service that are not configured as peers, and a cancel that reaches the instance not holding the
+  client is dropped: the request answers 503 at its bound and the statement runs on until the
+  session's 30 s. Read from the pooler's documentation, not run. To do: run it on the profile once
+  (a statement held by a lock, the server's activity read after the 503); if it holds, make the
+  profile's poolers peers and say in the chart's page what an operator's own pooler needs; the
+  owner's installation uses his database operator's pooler, which is read the same way.
 
 - **Closed on 2026-11-24, 00:10: the evidence record listed npm's search as implemented.** The first published record holds none of R-NPM-018, R-NPM-020, R-NPM-021, R-NPM-037 and R-UI-039 (`grep -cE` prints 0). As it stood: **The evidence record lists npm's search as implemented and the route answers that it is not (found on
   2026-11-23 by the inventory of T-24).** `docs/coverage/implemented.txt` holds R-NPM-037; `-/v1/search` is
@@ -958,7 +973,7 @@ records the recorder that tells such a stall apart).
   to reach every replica; a replica that takes longer counts the first document against the instance and the
   archive is admitted where the case expects a 429 (read on 2026-11-21, not seen).
 
-- **Closed on 2026-11-24, 00:05, by W8:** `label-apart` measures a value's middle against the name's bottom, since a line's box outgrows a 1rem line by a different pixel in each engine; the fixtures run in three browsers with no mark for an engine, 150 of 150 on macOS and in the Linux image; the job `ui-layout` installs Firefox and WebKit (Q-UI-1045). Shown on the runner only by the next `UI layout checks` job, to be read. As it stood: **The layout checks' fixtures in Firefox and WebKit were taken back the day they landed (2026-11-23;
+- **Closed on 2026-11-24, 00:05, by W8:** `label-apart` measures a value's middle against the name's bottom, since a line's box outgrows a 1rem line by a different pixel in each engine; the fixtures run in three browsers with no mark for an engine, 150 of 150 on macOS and in the Linux image; the job `ui-layout` installs Firefox and WebKit (Q-UI-1045). Shown on the runner by `UI layout checks` of Test and Release 45285588577, green. As it stood: **The layout checks' fixtures in Firefox and WebKit were taken back the day they landed (2026-11-23;
   Q-UI-1008, commit 5d5d29e11 of the screens' rest, reverted at 18:19).** Two fixtures of the check
   `label-apart` were marked as expected to fail in Firefox; they fail in the development machine's Firefox
   and pass in the runner's, so the job ended with "Expected to fail, but passed" (two of 150) before any
@@ -3076,7 +3091,7 @@ The work queue of T-24 (the planner's cut; the contracts and files of each packa
 | T-24 · R3 · The upstream catalogue | the engine (stores nothing; budget, cache, bounds, second hosts); the five formats (kit check 21); Debian's descriptions; the API with the verdicts of versions that are not stored | C | after C; beside R2 and R4 |
 | T-24 · R4 · Downloads and the queue | the queue's store, dispatch, run and retries; failures in precise words; the probe as a row; bulks with their preview and bounds; the charge; the rows of clients' failed fetches | C | landed at 00:18 on 2026-11-24 (one commit, Q-CUR-80 to Q-CUR-85, gaps H-1840 and H-1841, H-1725 and H-1728 now live): the job kind `remote-download`, the task `remote-downloads-dispatch`, failures as class, step, code, address, status and excerpt, a probe as a row, clients' failed fetches as rows, one version charged to the person, the queue's API; left for R3: a section's bulk (`400 catalogue_not_offered`) and a package preview's counts; left for R2's landing: its decider in `RemoteDownloadsServices.Decider` (the stub delivers everything); not covered: the cancel of a running row and the 30-minute bound by an integration test |
 | T-24 · R2b · Requests and examination | requests; the examination a request starts; allow and decline; discard; the retention task; the journal | R2, R4 | after them; beside R5a |
-| T-24 · R5a · The tab strip and the tab Downloads | the three addresses; the queue's states, failures and retry | R4 | landed at 01:00 on 2026-11-24 (one commit, Q-CUR-130 to Q-CUR-133; the renders looked at by the development agent): the strip with the content tab and **Downloads** (`Downloads · 2 failed`), no tab Upstream until R5b, the states as buttons with counts, the failure class as a select, a row's whole failure with the upstream's excerpt as plain text, retry and cancel by role, a refresh every 5 s while rows wait or run; not tried: the mark "Not delivered here" until R2's decider is wired, the German texts on a screen |
+| T-24 · R5a · The tab strip and the tab Downloads | the three addresses; the queue's states, failures and retry | R4 | landed at 00:53 on 2026-11-24 (one commit, Q-CUR-130 to Q-CUR-133; the renders looked at by the development agent): the strip with the content tab and **Downloads** (`Downloads · 2 failed`), no tab Upstream until R5b, the states as buttons with counts, the failure class as a select, a row's whole failure with the upstream's excerpt as plain text, retry and cancel by role, a refresh every 5 s while rows wait or run; not tried: the mark "Not delivered here" until R2's decider is wired, the German texts on a screen |
 | T-24 · R5b · The tab Upstream and the settings | search, levels, versions, rules, requests, the bulk's preview, the settings' section, the glossary's rows; renders in both schemes, wide and narrow | R2, R3, R2b, R5a | after them |
 | T-24 · R6 · Clients and documents | one end-to-end case per format in that format's own leg; the manual and the developer pages | R5b | last |
 
