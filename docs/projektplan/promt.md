@@ -672,11 +672,42 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- **The tooltip is pale in the dark scheme (seen by the toasts' builder on 2026-11-24):** Quader's tooltip uses
+  `--quader-inverse-surface`, where GitLab's tooltip uses the same strong-feedback grey as its toast
+  (`--quader-feedback-strong-bg` since Q-UI-1063). To do: the tooltip takes the toast's tokens, rendered in both schemes.
+
+- **An image pulled through a remote reads "not checked" though it was checked (owner, 2026-11-24, 08:10, with a
+  screenshot of `upstream/docker-hub` → `library/ubuntu` 26.10; his requirement, whole: "Nach dem Download eines
+  Artefakts erwarte ich umgehend die Schwachstellen und Malware analyse. Artefakte müssen dazu in eine Queue
+  eingereiht werden, damit es auch wenn viel los ist, geordnet läuft. dabei ist egal ob ein Artefakt über einen
+  Client oder über das Frontend geladen wurde.").** Read on his installation at 08:15: every part `clean` of the
+  malware scan at 07:09, a minute after the pull; both platform images `scanned` at 07:09:46–52; Docker's two
+  attestation manifests (`attachment`) scanned as images and `failed` with `layer_format` (next attempt 2026-12-19),
+  which makes the list read "not checked". Both scans already run from queues (`malware_scan`, `vuln_image_scan`).
+  Told to him; given to a builder at 08:17: attachments are no images to scan, the state of a tag is its platforms'
+  aggregate, the 25 days of a permanent failure, and his requirement written into the specification and held per
+  path (a client's fill, a mirror pass, a download ahead from the browser, an examination).
+
+- **A level the upstream does not know reads as an empty level (owner, 2026-11-24, 08:05, with a screenshot: "Die Suche
+  nach meinem namespace scheitert.").** On his installation (v0.122.3) the Docker Hub remote's level "guided-traffic"
+  showed "Diese Ebene listet kein Paket.": Docker Hub's namespace is `guidedtraffic` (namespaces hold no hyphen; 30
+  repositories), and its API answers an unknown namespace with 200 and an empty list. Told to him at once. Given to a
+  builder at 08:07: the catalogue tells an unknown level from an empty one where the protocol allows, the screen says
+  so in words with a hint from the format's naming rule, and a name the rule refuses costs no request.
+
+
 
 
 None open (2026-11-24).
 
 ### Closed
+
+- **Closed on 2026-11-24, 08:35, by the toasts' package (Q-UI-1063):** every notice is GitLab's toast, taken from its design system's source: `#3a383f` with white text in both schemes, 8 px round, a shadow, the action a bold link, "×" named Close as an icon button; at the window's bottom right as the owner said, across the window below 576 px, above the overlays; a new confirmation replaces the one shown, a notice with an action and an error keep their own; the live regions announce each; the 8 s pause under the pointer or the focus; the upstream registries' warnings join their confirmation. Held by `notices.spec.ts` and the render walk `admin-upstream-toasts` (three states, German too), looked at by the development agent. Left: the tooltip uses the pale inverse surface in the dark scheme where GitLab uses the same grey; the error toast keeps Quader's error pair. As it stood: **The toast notices are ugly (owner, 2026-11-24, 07:58, with a screenshot of the page Upstream registries in German
+  and dark: "Was sind dass denn für hässlich Notifications?").** Three pale grey boxes stacked at the bottom left over
+  the side bar ("Ubuntu ist eingeschaltet. Schließen", twice more), covering "Seitenleiste einklappen": one per switch,
+  a text button where GitLab has a close icon, no shadow. Given to a builder at 08:00: GitLab's toast, one confirmation
+  at a time (`web/src/app/shared/notices.ts`, R-UI-042). **The owner's word on the position, 08:02:** "Und diese dann
+  bitte unten rechts einblenden, nicht links": bottom right.
 
 - **Closed on 2026-11-24, 07:55 (Q-CUR-164): the catalogue cached a "not found" for 300 s on each replica.** A page that found nothing is kept only when the call sent a request to the upstream (the engine sees it in the budget's `Spend`); an upstream's not-found keeps the period that protects its budget; Debian, which answers from its parsed indexes, finds a package as soon as its index is parsed. Held by `TestR_CUR_008_TheCatalogueEngine` (unit) and `TestR_DEB_036_TheCatalogueSearchesTheIndexesTheRemoteParsed` (area `debremote`, 1.6 s), which looks the package up before the parse and waits on the catalogue; the `deb` leg's case waits on the catalogue too (compiled, not run on kind). As it stood: **The catalogue caches a "not found" for 300 s on each replica (recorded by R6's builder on 2026-11-24):** a Debian
   lookup made before the remote's index is parsed stays empty for up to five minutes (R-CUR-008's cache period). To do:
@@ -3378,6 +3409,16 @@ built, in every format's pages: no place of the main area links into `/admin` fo
 both schemes, wide and narrow, as an administrator, a project's Owner and a plain user. It is one package of a
 builder for the screens, specification first (R-UI-003, R-UI-020, R-UI-041, R-UI-168 and the manual in the same
 change).
+
+**T-26 · A download overview for administrators at the top right** (owner, 2026-11-24, 08:20, whole: "Ich will als
+Admin oben Rechts eine Downlaod Übersicht haben wie aus dem Screenshot. Dort werden alle laufenden Downloads, ihr
+Forschritt, Download-Geschwindigkeit abgebildet. Es werden nur Downloads von Upstream Repos angezeigt. Zusätzlich zu den
+laufenden Downloads werden auch die letzten 100 abgeschlossenen Downloads abgebildet zu sammen mit ihrer Download-Dauer
+und der durchschnittlichen Geschwindigkeit"; his screenshot is a desktop app's download panel, taken as the pattern
+only: a header button with a download icon opening a panel with a filter, the running and the finished downloads, each
+row an icon of its kind, the name and version, the size, actions). State: a planner writes the specification since
+08:22 (where fills happen and which count, the carrier of live progress across replicas, the bounded list of the last
+100, who sees it, the panel, the API); built when a builder's place is free.
 
 ### Owner walk of 2026-11-18: the frontend
 
