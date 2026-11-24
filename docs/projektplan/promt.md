@@ -688,7 +688,38 @@ records the recorder that tells such a stall apart).
   `--quader-inverse-surface`, where GitLab's tooltip uses the same strong-feedback grey as its toast
   (`--quader-feedback-strong-bg` since Q-UI-1063). To do: the tooltip takes the toast's tokens, rendered in both schemes.
 
-- **An image pulled through a remote reads "not checked" though it was checked (owner, 2026-11-24, 08:10, with a
+- **The pull command is a box in the middle of the list, and Details is a section under it (owner, 2026-11-24, 09:50,
+  with a screenshot of `upstream/docker-hub` and one of GitLab's "Code" menu): "Das Details welches unten abgebildet
+  ist, gehört in einen eigenen Reiter. An letzter Position. Der Kaste „Pull-Befehl" ist einfach mitten drin und passt
+  dort nicht gut hinein. Der Pull-Befehl soll viel mehr in ein overlay wie in screenshot 2 abgebildet überführt werden.
+  Neben einer Version des Artefakts gibt es einen Button, aktuell „Befehl anzeigen" (Scheiß Name) und wenn man da
+  drauf klickt, öffnet das Overlay und man kann dort den jeweiligen Befehl entnehmen. Der Button sollte eher „Info"
+  oder „Pull" heißen. Das gilt natürlich für alle Registry-Typen".** Given to a builder at 09:55: Details a tab of its
+  own, the last, on every repository's page; the client's command in a menu hung from a button beside each version,
+  GitLab's "Code" menu as the pattern, for every format.
+
+- **With `onMissingData: block`, a pull of an image index is refused (seen in the code by the image scan's builder on
+  2026-11-24, 09:19; not run):** `GateImage` asks for a scan row of every manifest, an index never has one, so
+  `Detected` stays false, against its own comment "a manifest list passes". Dormant: the default is `allow`. Given to a
+  builder at 09:55, once the image scan's package (which touches the same statements) was on main.
+
+- **The upstream search's hint is English in the German build (seen by the development agent on 2026-11-24, 09:10, in
+  the renders of the unknown level):** under "Upstream durchsuchen" the OCI remote reads "Docker Hub's repository search,
+  which its operator does not document; an official image is library/<name>." The text comes from the format, not from
+  the UI's translations, and it speaks to an operator, not to a user who wants an image. Given to a builder at 09:15.
+
+### Closed
+
+- **Closed on 2026-11-24, 09:50, by the image scan's package (Q-VULN-269, Q-VULN-270; R-VULN-050 and R-MAL-035 new;
+  migration 00117, renumbered at the landing after the versions' order took 00116):** Docker's attestation manifests are
+  no longer queued as images (discovery leaves out what the format recorded as an attachment and drops the rows it had;
+  proven with `library/ubuntu:26.10` as Docker Hub served it, the index byte for byte the one on his installation); a tag
+  reads as checked once the platform images the repository stores are scanned, neither an attestation nor a platform a
+  remote never fetched counts; a terminal scan failure names what judged it (the limits or the release) and is due again
+  when that changes, not after 25 days. That a client's fill, a download ahead, a mirror pass and an examination each
+  start both scans at once and in order is specified, and held for the two runtime paths by one integration test of
+  about 6 s with both schedules off. His case shows once the next release reaches his installation. As it stood:
+  **An image pulled through a remote reads "not checked" though it was checked (owner, 2026-11-24, 08:10, with a
   screenshot of `upstream/docker-hub` → `library/ubuntu` 26.10; his requirement, whole: "Nach dem Download eines
   Artefakts erwarte ich umgehend die Schwachstellen und Malware analyse. Artefakte müssen dazu in eine Queue
   eingereiht werden, damit es auch wenn viel los ist, geordnet läuft. dabei ist egal ob ein Artefakt über einen
@@ -699,18 +730,6 @@ records the recorder that tells such a stall apart).
   Told to him; given to a builder at 08:17: attachments are no images to scan, the state of a tag is its platforms'
   aggregate, the 25 days of a permanent failure, and his requirement written into the specification and held per
   path (a client's fill, a mirror pass, a download ahead from the browser, an examination).
-
-- **With `onMissingData: block`, a pull of an image index is refused (seen in the code by the image scan's builder on
-  2026-11-24, 09:19; not run):** `GateImage` asks for a scan row of every manifest, an index never has one, so
-  `Detected` stays false, against its own comment "a manifest list passes". Dormant: the default is `allow`. Given to a
-  builder after the image scan's package lands, which touches the same statements.
-
-- **The upstream search's hint is English in the German build (seen by the development agent on 2026-11-24, 09:10, in
-  the renders of the unknown level):** under "Upstream durchsuchen" the OCI remote reads "Docker Hub's repository search,
-  which its operator does not document; an official image is library/<name>." The text comes from the format, not from
-  the UI's translations, and it speaks to an operator, not to a user who wants an image. Given to a builder at 09:15.
-
-### Closed
 
 - **Closed on 2026-11-24, 09:15, by the unknown level's package (Q-CUR-165):** a level that lists nothing now says whether the upstream has it. Docker Hub (`/v2/users/{n}`), Quay (organization and user accounts), npm (`/-/org/{scope}/package`), the Galaxy (`v3/namespaces/{n}/`), GitLab (`404 Project Not Found`) and Debian (the suite's `InRelease`/`Release`) answer it at a constant cost of at most two `HEAD` requests, held by the format kit's check 22 with answers recorded on 2026-11-24; a Docker Hub or Galaxy namespace with a character outside `[a-z0-9_]` is refused without a request. The screen says "Docker Hub kennt keinen Namespace „guided-traffic“." with the rule, and "Meinten Sie „guidedtraffic“?" where the upstream has the name the rule makes; no fuzzy search (Docker Hub's search answered `apache/traffic_*` for his name). The contract grows by `discover.LevelPage.Unknown` (version 11 kept, ADR-277). Renders in English and German, both schemes, 1,440, 1,024 and 390 px: no finding, looked at by the development agent. The owner's case shows once the next release reaches his installation. As it stood: A level the upstream does not know reads as an empty level (owner, 2026-11-24, 08:05, with a screenshot: "Die Suche
   nach meinem namespace scheitert.").** On his installation (v0.122.3) the Docker Hub remote's level "guided-traffic"
