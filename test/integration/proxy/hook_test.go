@@ -130,9 +130,23 @@ func TestFillHook(t *testing.T) {
 	t.Run("R-NUGET-015 over two replicas every request gets the 502 and each replica asks the upstream and the hook at most once", func(t *testing.T) {
 		e := newEnv(t)
 		up := e.upstream()
-		up.Set("/"+path, proxytest.Route{Body: tarball, Type: "application/octet-stream", Delay: 700 * time.Millisecond})
 		rem := e.remote("hook-refuse-2", up)
 		a, b := e.newReplica("a", replicaOpts{}), e.newReplica("b", replicaOpts{})
+		// A refusal writes no negative entry, so a request that arrives after its replica's flight ended fetches again: the upstream
+		// holds its answer until every request of the burst has looked the path up and found nothing, which each does right before it
+		// joins or leads a flight. A fixed delay of 700 ms let a request that a loaded host started late fetch a third time (Test and
+		// Release 45226379787: three GETs and three runs of the hook).
+		misses := func() float64 {
+			return a.metric("quader_remote_cache_lookups_total", "repo", "hook-refuse-2", "kind", "artifact", "result", "miss") +
+				b.metric("quader_remote_cache_lookups_total", "repo", "hook-refuse-2", "kind", "artifact", "result", "miss")
+		}
+		up.Set("/"+path, proxytest.Route{Handler: func(w http.ResponseWriter, _ *http.Request) {
+			for deadline := time.Now().Add(time.Minute); misses() < 40 && time.Now().Before(deadline); {
+				time.Sleep(10 * time.Millisecond)
+			}
+			w.Header().Set("Content-Type", "application/octet-stream")
+			_, _ = w.Write(tarball)
+		}})
 		ad := &proxytest.Adapter{Inspect: func(string, *items.Spooled) (any, error) {
 			return nil, errors.New("the package declares another identity")
 		}}
