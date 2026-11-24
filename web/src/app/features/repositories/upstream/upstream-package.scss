@@ -1,13 +1,9 @@
 // A package of the upstream opened in place (R-CUR-018): its head with the state and the acts, the version filter and the versions.
 // Only Quader's tokens, so both schemes follow; the table is the shared data table.
 
+// Where the list around the package stands as blocks, so do its versions, and their table measures its own column of names
+// (data-table.ts, Q-UI-1068).
 :host {
-  // The column of names of the versions' rows where they stand as blocks. The stacked rows of the list around the package (its
-  // descendant rules) reach these rows too, while this table does not count itself as stacked and measures no names: without a
-  // width of its own it took the outer list's ("Latest", "State"), and "Published" ran into its value (2026-11-24). A table that
-  // stacks by itself sets its own on its host.
-  --quader-stack-names: 7rem;
-
   display: block;
   padding: var(--quader-space-2) 0 var(--quader-space-3) var(--quader-space-6);
 }

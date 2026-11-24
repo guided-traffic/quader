@@ -21,3 +21,28 @@ export function relativeTime(iso: string, locale: string, now: number = Date.now
   }
   return format.format(0, 'second');
 }
+
+/** The largest count of each unit that `relativeTime` writes: 59 minutes, 23 hours, 6 days, 4 weeks, 12 months; a year's is open. */
+const MOST: Readonly<Record<string, number>> = { year: 10, month: 12, week: 4, day: 6, hour: 23, minute: 59 };
+const words = new Map<string, readonly string[]>();
+
+/**
+ * The wordings of `relativeTime` in a language that are the widest candidates: "now", and for each unit its largest count and the
+ * words of one and two ("yesterday", "vorgestern"), before and after now. A list's column of times is at least as wide as the widest
+ * of them, so its width does not follow the ages its rows show (Q-UI-1069): "now" and "59 minutes ago" make one layout.
+ */
+export function relativeTimeWords(locale: string): readonly string[] {
+  const known = words.get(locale);
+  if (known) return known;
+  const format = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+  const found = new Set<string>([format.format(0, 'second')]);
+  for (const [unit] of UNITS) {
+    for (const n of [1, 2, MOST[unit] ?? 1]) {
+      found.add(format.format(-n, unit));
+      found.add(format.format(n, unit));
+    }
+  }
+  const list = [...found];
+  words.set(locale, list);
+  return list;
+}

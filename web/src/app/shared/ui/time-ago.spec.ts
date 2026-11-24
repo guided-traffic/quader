@@ -1,6 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { expectAccessible, settle, text } from '../../testing/screen';
+import { relativeTimeWords } from '../../features/packages/format-time';
 import { TimeAgo, timeAgo } from './time-ago';
 
 const NOW = Date.parse('2026-11-12T14:00:00Z');
@@ -19,6 +20,14 @@ describe('Time ago', () => {
     [-29 * 86_400_000, 'in 4 weeks'],
   ] as const)('R-UI-093 R-UI-103 a time %d ms ago reads "%s", the one wording of a relative time', (ms, words) => {
     expect(timeAgo(before(ms), NOW)).toBe(words);
+  });
+
+  it('R-UI-103 the widest wordings of a relative time in a language are the ones a column of times holds', () => {
+    // The largest count of each unit relativeTime writes, before and after now, and the words of one and two (Q-UI-1069).
+    const en = relativeTimeWords('en-US');
+    expect(en).toEqual(expect.arrayContaining(['now', '59 minutes ago', 'in 59 minutes', '23 hours ago', '6 days ago', 'in 4 weeks', '12 months ago', 'yesterday']));
+    expect(new Set(en).size).toBe(en.length);
+    expect(relativeTimeWords('de')).toEqual(expect.arrayContaining(['jetzt', 'vor 59 Minuten', 'in 59 Minuten', 'vor 23 Stunden', 'vor 12 Monaten', 'vorgestern', 'übermorgen']));
   });
 
   it('R-UI-093 shows the relative time and the absolute time in brackets, with the machine-readable time', async () => {

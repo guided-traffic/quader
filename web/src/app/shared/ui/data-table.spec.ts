@@ -4,6 +4,7 @@ import { ApiError } from '../../api/problem';
 import { seriousViolations } from '../../testing/axe';
 import { DataTable, TableColumn, TableSort } from './data-table';
 import { NoValue } from './no-value';
+import { TimeAgo } from './time-ago';
 
 @Component({
   imports: [DataTable],
@@ -353,6 +354,154 @@ describe('Data table', () => {
     } finally {
       rect.mockRestore();
       client.mockRestore();
+    }
+  });
+
+  it("R-UI-174 a stacked row's column of names is never narrower than its longest word, so a name wraps only between words", async () => {
+    // Two fifths of 200 px are 80 px; the names are 300 px on one line and their longest word 120 px ("Veröffentlicht" in a list of
+    // German names): the column takes 120 px, and a name of two words wraps between them.
+    const rect = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      const names = this.classList.contains('stack-names');
+      const width = this.tagName === 'TABLE' ? 900 : names ? ((this as HTMLElement).style.inlineSize === 'min-content' ? 119.4 : 300) : 200;
+      return { width, height: 10, top: 0, left: 0, right: width, bottom: 10, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+    });
+    const client = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(() => 200);
+    try {
+      const { root, settle } = await render();
+      await settle();
+      const table = root.querySelector<HTMLElement>('quader-data-table')!;
+      expect(table.classList.contains('stacked')).toBe(true);
+      expect(table.style.getPropertyValue('--quader-stack-names')).toBe('120px');
+      // The measurement leaves the hidden list as it found it.
+      expect(root.querySelector<HTMLElement>('.stack-names')!.getAttribute('style') ?? '').toBe('');
+    } finally {
+      rect.mockRestore();
+      client.mockRestore();
+    }
+  });
+
+  it('R-UI-174 a list in a block of a stacked list measures the names of its own rows', async () => {
+    // A package's versions opened in a repository's packages at 390 px: the versions fit by themselves and stand as blocks by the
+    // rules of the list around them. Without names of their own they took the outer list's column ("Aktualisiert", 82 px), and
+    // "Veröffentlicht" broke inside itself there (2026-11-24).
+    @Component({
+      imports: [DataTable],
+      template: `
+        <quader-data-table caption="Packages" [columns]="outer">
+          <tr>
+            <th scope="row">acme-agent</th>
+            <td>1.3.0-1</td>
+          </tr>
+          <tr>
+            <td colspan="2">
+              <quader-data-table class="inner" caption="Versions" [columns]="inner">
+                <tr>
+                  <th scope="row">1.2.0-1</th>
+                  <td>716 B</td>
+                  <td>now</td>
+                </tr>
+              </quader-data-table>
+            </td>
+          </tr>
+        </quader-data-table>
+      `,
+    })
+    class Nested {
+      readonly outer: readonly TableColumn[] = [
+        { id: 'name', label: 'Package' },
+        { id: 'latest', label: 'Aktualisiert' },
+      ];
+      readonly inner: readonly TableColumn[] = [
+        { id: 'version', label: 'Version' },
+        { id: 'size', label: 'Größe' },
+        { id: 'published', label: 'Veröffentlicht' },
+      ];
+    }
+    const rect = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      const inner = !!this.closest('quader-data-table.inner');
+      let width = 300;
+      if (this.tagName === 'TABLE') width = inner ? 100 : 900;
+      else if (this.classList.contains('stack-names')) width = inner ? 97.5 : 82;
+      return { width, height: 10, top: 0, left: 0, right: width, bottom: 10, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+    });
+    const client = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(() => 300);
+    try {
+      TestBed.resetTestingModule();
+      await TestBed.configureTestingModule({ imports: [Nested] }).compileComponents();
+      const fixture = TestBed.createComponent(Nested);
+      await fixture.whenStable();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      const root = fixture.nativeElement as HTMLElement;
+      const [outer, inner] = [...root.querySelectorAll<HTMLElement>('quader-data-table')];
+      expect(outer!.classList.contains('stacked')).toBe(true);
+      expect(outer!.style.getPropertyValue('--quader-stack-names')).toBe('82px');
+      // The versions are no stacked list of their own, and still name their fields from a column of their own names.
+      expect(inner!.classList.contains('stacked')).toBe(false);
+      const names = inner!.querySelector(':scope > .stack-names')!;
+      expect([...names.querySelectorAll('span')].map((s) => s.textContent)).toEqual(['Größe', 'Veröffentlicht']);
+      expect(inner!.style.getPropertyValue('--quader-stack-names')).toBe('98px');
+    } finally {
+      rect.mockRestore();
+      client.mockRestore();
+    }
+  });
+
+  it('R-UI-103 R-UI-174 a column of relative times holds the widest relative time of the language, whatever age its rows show', async () => {
+    // A token created a moment ago reads "now", one of an hour "59 minutes ago": the list keeps its form while its times grow (Q-UI-1069).
+    @Component({
+      imports: [DataTable, TimeAgo, NoValue],
+      template: `
+        <quader-data-table caption="Tokens" [columns]="columns">
+          <tr>
+            <th scope="row">laptop</th>
+            <td><quader-time-ago [at]="at" absolute="title" /></td>
+            <td>Created <quader-time-ago [at]="at" absolute="title" /></td>
+            <td class="no-time">Never</td>
+          </tr>
+          <tr>
+            <th scope="row">ci</th>
+            <td><quader-no-value /></td>
+            <td>–</td>
+            <td><quader-time-ago [at]="at" absolute="title" /></td>
+          </tr>
+        </quader-data-table>
+      `,
+    })
+    class Times {
+      readonly at = new Date().toISOString();
+      readonly columns: readonly TableColumn[] = [
+        { id: 'name', label: 'Token' },
+        { id: 'created', label: 'Created' },
+        { id: 'note', label: 'Note' },
+        { id: 'lastUsed', label: 'Last used', width: '9rem' },
+      ];
+    }
+    const rect = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      const width = this.classList.contains('time-widths') ? 97.3 : this.tagName === 'TABLE' ? 400 : 700;
+      return { width, height: 10, top: 0, left: 0, right: width, bottom: 10, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+    });
+    try {
+      TestBed.resetTestingModule();
+      await TestBed.configureTestingModule({ imports: [Times] }).compileComponents();
+      const fixture = TestBed.createComponent(Times);
+      await fixture.whenStable();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      const root = fixture.nativeElement as HTMLElement;
+      const table = root.querySelector<HTMLElement>('quader-data-table')!;
+      // A column whose value starts with a relative time in some row; a time inside a sentence is no column of times.
+      const heads = [...root.querySelectorAll<HTMLElement>('thead th')];
+      expect(heads.map((h) => h.classList.contains('time-column'))).toEqual([false, true, false, true]);
+      // The widest wordings of the language, measured once: their width is every such column's least.
+      const words = [...root.querySelectorAll(':scope quader-data-table > .time-widths span')].map((s) => s.textContent);
+      expect(words).toEqual(expect.arrayContaining(['now', '59 minutes ago', 'in 59 minutes', '12 months ago', 'in 4 weeks']));
+      expect(root.querySelector('.time-widths')!.getAttribute('aria-hidden')).toBe('true');
+      expect(table.style.getPropertyValue('--quader-time-width')).toBe('98px');
+      // A declared width stays the column's least as an inline style, which the stylesheet's least of a column of times yields to.
+      expect(heads[3]!.style.minInlineSize).toBe('9rem');
+    } finally {
+      rect.mockRestore();
     }
   });
 

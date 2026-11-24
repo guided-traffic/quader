@@ -376,9 +376,11 @@ td.class-cell .material-icons {
 .quader-data-table {
   display: block;
 
-  // The names a stacked row labels its fields with (R-UI-174, Q-UI-1050): a hidden list the data table measures for the width of
-  // the rows' column of names. Never seen, never in the way: no height, no room taken.
-  .stack-names {
+  // The names a stacked row labels its fields with (R-UI-174, Q-UI-1050), and the widest relative times of the language (Q-UI-1069):
+  // hidden lists the data table measures for the width of the rows' column of names and for the least width of a column of times.
+  // Never seen, never in the way: no height, no room taken.
+  .stack-names,
+  .time-widths {
     position: absolute;
     display: grid;
     inline-size: max-content;
@@ -464,6 +466,13 @@ td.class-cell .material-icons {
 
     thead th {
       vertical-align: middle;
+    }
+
+    // A column whose cells start with a relative time is at least as wide as the widest relative time of the language, so the list's
+    // form does not follow the ages its rows show (Q-UI-1069): a token of a moment ("now") and one of an hour ("59 minutes ago") make
+    // one layout, in the renders as in an installation. A column that declares its least width (an inline style) keeps it.
+    thead th.time-column {
+      min-inline-size: var(--quader-time-width, auto);
     }
 
     thead th {
@@ -824,6 +833,8 @@ td.class-cell .material-icons {
       column-gap: 0;
     }
 
+    // A name longer than its column wraps between its words: the column is never narrower than the list's longest word (Q-UI-1068).
+    // Only a word wider than the whole list would break inside itself, rather than run into its value.
     td[data-label]::before {
       content: attr(data-label);
       display: table-cell;

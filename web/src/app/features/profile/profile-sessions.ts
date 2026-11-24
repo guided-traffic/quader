@@ -38,12 +38,12 @@ import { ProfileNav } from './profile-nav';
         @for (s of sessions(); track s.id) {
           <tr>
             <th scope="row">
-              {{ s.createdAt | date: 'medium' }}
+              <time [attr.datetime]="s.createdAt">{{ s.createdAt | date: 'medium' }}</time>
               @if (s.current) {
                 <span class="badge this-session"><span class="material-icons" aria-hidden="true">computer</span><ng-container i18n="@@profile.sessions.this">This session</ng-container></span>
               }
             </th>
-            <td>{{ s.lastSeenAt | date: 'medium' }}</td>
+            <td><time [attr.datetime]="s.lastSeenAt">{{ s.lastSeenAt | date: 'medium' }}</time></td>
             <td translate="no">{{ s.createdAddr ?? '' }}</td>
             <td translate="no" class="wrap agent">{{ s.userAgent ?? '' }}</td>
             <td translate="no">{{ s.providerId ?? s.authMethod }}</td>
@@ -64,6 +64,11 @@ import { ProfileNav } from './profile-nav';
   styles: `
     .agent {
       overflow-wrap: anywhere;
+    }
+    /* A date and its time are one value that never breaks (Q-UI-1064): in two lines, "Nov 24, 2026, 9:24:50 AM" made the column of
+       11 rem cramped by 1 px, and by the clock's hour it did or did not (2026-11-24). */
+    th time {
+      white-space: nowrap;
     }
     /* The mark of the session in use stands under its time, at every width: beside it, it fitted the column at some widths and
        wrapped under it at others (the check cramped, Q-UI-1060). */

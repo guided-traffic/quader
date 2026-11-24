@@ -7147,7 +7147,9 @@ The walk of 2026-11-18 found three ways across lists: "4 minutes ago", "Nov 18, 
 
 - **A list of things** (packages, repositories, findings, users, tokens, the search results) writes a time relative to now in the
   build's language, "4 minutes ago", "yesterday", "in 4 weeks", with its date and time ("Nov 18, 2026, 8:17:21 AM") as the title of
-  the `<time>` element: `<quader-time-ago absolute="title">`.
+  the `<time>` element: `<quader-time-ago absolute="title">`. A column whose cells start with such a time is at least as wide as the
+  widest relative time of the language (`relativeTimeWords`), so the list's form does not change with the ages of its rows
+  ([Q-UI-1069](#q-ui-1069--a-column-of-relative-times-holds-the-widest-relative-time-of-its-language)).
 - **A card or a page's facts** write the relative time with the absolute time in brackets (Q-UI-378): `<quader-time-ago>`.
 - **A log** (the audit log, the issued CI tokens), where the moment is the content, writes the date and the time, `medium`.
 - One wording of a relative time: `relativeTime` ([format-time.ts](../../web/src/app/features/packages/format-time.ts)); `timeAgo`
@@ -7159,7 +7161,7 @@ The walk of 2026-11-18 found three ways across lists: "4 minutes ago", "Nov 18, 
 Acceptance criteria:
 
 - Unit tests: `relativeTime` and `timeAgo` give one wording ("now", "1 minute ago", "yesterday", "in 4 weeks"); the list form puts
-  the absolute time into the title.
+  the absolute time into the title; `relativeTimeWords` holds the largest count of every unit in English and German.
 ### R-UI-110 · A package's versions as one table
 Priority: **MVP** · Covers: quader-only
 
@@ -8136,9 +8138,15 @@ renders, 2026-11-18).
 - A data table stacks where its columns at their least widths (a wrapping column's declared `width`, a column that never breaks
   at its longest value) need more than its region has, and only there
   ([Q-UI-680](#q-ui-680--a-list-stacks-where-its-columns-at-their-least-widths-do-not-fit-measured-by-the-table-itself)).
+  A column whose cells start with a relative time is at least as wide as the widest relative time of the build's language, so the
+  list's form does not follow the ages of its rows
+  ([Q-UI-1069](#q-ui-1069--a-column-of-relative-times-holds-the-widest-relative-time-of-its-language)).
 - A stacked row is the name with its actions on the first line, then one line per field: its column's name in a column as wide as
   the list's longest name, at most two fifths of the list, and its value beside it, so a field stands at the same place in every
-  block ([Q-UI-1050](#q-ui-1050--a-stacked-row-is-a-grid-of-names-and-values-one-field-a-line)). Every name stands on its value's
+  block ([Q-UI-1050](#q-ui-1050--a-stacked-row-is-a-grid-of-names-and-values-one-field-a-line)). The column is never narrower than
+  the longest word of the names, so a name wraps between its words and never inside one, and a list in a block of a stacked list (a
+  package's versions opened in a repository's list) measures its own names
+  ([Q-UI-1068](#q-ui-1068--a-stacked-rows-column-name-wraps-between-its-words-never-inside-one)). Every name stands on its value's
   first line; a value of two lines grows downwards ([Q-UI-762](#q-ui-762--the-cells-of-a-stacked-rows-line-stand-on-one-baseline)). A meter takes a line of its own: its column's name,
   the bar and its figure on one line, the state under the bar
   ([Q-UI-763](#q-ui-763--a-meter-in-a-stacked-row-is-a-line-of-its-own-name-bar-and-figure-on-one-line)).
@@ -8146,8 +8154,10 @@ renders, 2026-11-18).
 Acceptance criteria:
 
 - Unit test: the table stacks where its least width exceeds its region's and not where it fits, measured again when its rows
-  change, and a stacked table measures the longest name its rows show for their column of names (`data-table.spec.ts`).
-- The render run's report names no `stacked-fits`, no `stacked-place`, no `stacked-offset` and no `label-apart` finding: a stacked
+  change, and a stacked table measures the longest name its rows show for their column of names, never narrower than their longest
+  word, also a list in a block of a stacked list; a column of relative times holds the widest wording (`data-table.spec.ts`).
+- The render run's report names no `broken` column's name (a name broken inside a word), and no `stacked-fits`, no `stacked-place`,
+  no `stacked-offset` and no `label-apart` finding: a stacked
   table whose columns would fit is a finding, and so is a field of a stacked list off the place of the list's other fields, two fields
   on one line of a block, and a stacked row's name off its value's line or off its neighbours' line.
 
@@ -23615,6 +23625,86 @@ of [_controls.scss](../../web/src/styles/_controls.scss); the lint rule [tab-str
 (every strip carries the directive and its component imports it); the render check `tab-scrollbar` of
 [layout.ts](../../web/e2e/renders/layout.ts). Docs: [design-language.md](../developer/design-language.md) (the tab strip),
 [web-ui.md](../developer/web-ui.md) (the checks).
+
+### Q-UI-1068 · A stacked row's column name wraps between its words, never inside one
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: in the renders of the pull menu (2026-11-24, 10:30) a Debian repository's versions, opened in its packages at 390 px in German,
+read "Veröffentli" / "cht" for **Veröffentlicht**. Two causes. The versions' list stands in a block of the packages' stacked list and is
+laid out by that list's rules (its descendant selectors) without counting itself as stacked, so it measured no names and took the outer
+list's column of names, 82 px for **Aktualisiert**; the versions on the tab Upstream had a fixed 7 rem on their host for the same reason.
+And the column of names is the longest name up to two fifths of the list (Q-UI-1050), where a name breaks where it must
+(`overflow-wrap: break-word`), so a German compound wider than two fifths broke inside itself in any list. No check saw it: the
+`broken` check of a word in a cell leaves stacked tables out, and a column's name is a pseudo-element.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The column of names is never narrower than the list's longest word (the names measured once more at their least width), so a name longer than two fifths wraps between its words; a list in a block of a stacked list measures its own names (chosen) | Two measurements of the hidden list of names; a list that stacks or stops stacking asks the lists in its rows to measure again | No word broken in any language; the versions' column fits their own names, as every stacked list's does | A list with a very long single word (none of Quader's names in English or German) gives its values less room |
+| (b) Hyphenation by the browser (`hyphens: auto`, the page's `lang`) | A hyphen at a syllable | The column keeps two fifths | Chromium on Linux, the runner's engine, brings no hyphenation dictionary, so the renders and the machines break differently; a name hyphenated in a column of two words reads worse than one wrapped between them |
+| (c) The column as wide as its longest name, without the cap | No wrap | Simple | A long name of several words takes the values' room at 390 px |
+
+**Choice:** (a). `overflow-wrap: break-word` stays as the last resort for a word wider than the whole list, which would otherwise run
+into its value. **Rationale:** a word broken inside itself is the defect the owner's eye catches first; the measurement that fixes it
+costs one more read of a hidden element, and the nested list's own names remove the fixed 7 rem. The development agent revisits (b) if a
+language with long single words (Finnish, Hungarian) joins the build and a column of names takes half a phone's line.
+
+The render run measures it: `broken` names a column's name broken inside a word in a stacked row, measured letter by letter in the
+span that stands in for the pseudo-element ([layout.ts](../../web/e2e/renders/layout.ts) `nameBox`).
+
+**Applied in the spec:** R-UI-174. Code: [data-table.ts](../../web/src/app/shared/ui/data-table.ts) (`measure`),
+[_list-screens.scss](../../web/src/styles/_list-screens.scss), [upstream-package.scss](../../web/src/app/features/repositories/upstream/upstream-package.scss)
+(the fixed 7 rem gone). Tests: "R-UI-174 a stacked row's column of names is never narrower than its longest word, so a name wraps only
+between words" and "R-UI-174 a list in a block of a stacked list measures the names of its own rows" in
+[data-table.spec.ts](../../web/src/app/shared/ui/data-table.spec.ts); "R-UI-174 a column's name broken inside its word is found; one
+that wraps between its words passes" in [layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts). Docs:
+[ui-style-guide.md](../developer/ui-style-guide.md), [web-ui.md](../developer/web-ui.md). Rendered: `repository-deb-menu` in German
+and English at every width ("Veröffentlicht" on one line in a column of its own at 390 px), and every screen without a walk in German at
+390 px (234 pictures) with no column's name broken.
+
+### Q-UI-1069 · A column of relative times holds the widest relative time of its language
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the layout package of the morning (Q-UI-1064) left a line: on a reused UI instance the personal token list stacked at 1,024 px
+"as the token's **Created** grows from now to 9 minutes ago", which CI's fresh database would never show. Measured on 2026-11-24 it does
+not hold as written: with a token made a moment before ("now") the list stacks at 1,024 px too, its columns need 773 px of the 712 its
+region has, and **Created** is not one of them there (a `narrow` column, hidden below 64 rem of the list); a picture of 2026-11-20 shows
+the same blocks. What the suspicion named is real all the same: a column of times is as wide as the widest age its rows show, the
+renders seed ages of minutes, an installation shows "11 months ago" and "vor 23 Stunden", and a list near its budget changes its form
+with the calendar (the `clamav-databases` of Q-UI-1064 was one).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The data table gives a column whose cells start with a relative time (`<quader-time-ago>`) the least width of the widest relative time of the build's language, measured from the wordings `relativeTime` can write (chosen) | `relativeTimeWords`: "now", and per unit its largest count and the words of one and two, before and after now; a hidden list the table measures; the header's `time-column` | Every list, without a change of its own; the renders show the layout an installation shows on any day | A column of times is about 100 px wide also where every row says "now"; a list near its budget may stack where it fitted with fresh ages |
+| (b) The renders seed older times ("vor 59 Minuten") | A fixture per screen | Shows the case where seeded | Only the seeded screens; the installation still changes with the calendar |
+| (c) The reserve on the time element itself | Every relative time as wide as the widest | No table involved | A gap after a short time inside a sentence ("created now ·"), as many times stand in running text |
+| (d) A declared width per column | A number per list | Simple | A guess for one language and one font (Q-UI-1064 (c)) |
+
+**Choice:** (a). A column that declares its least width (`width`) keeps it; such widths hold the widest time already (a Bastion's
+**Time** and its tokens' **Expires**). A time inside a sentence ("Created 3 days ago", "Lifted by … 2 hours ago") makes no column of times.
+**Rationale:** a list's form that does not depend on the age of its rows cannot flip with the calendar, and the render run then judges
+the form every installation has. The development agent revisits it if a list that holds a time column stacks at 1,440 px.
+
+**Applied in the spec:** R-UI-103, R-UI-174. Code: [format-time.ts](../../web/src/app/features/packages/format-time.ts)
+(`relativeTimeWords`), [data-table.ts](../../web/src/app/shared/ui/data-table.ts) (`startsWithTime`, the label pass, `measure`),
+[_list-screens.scss](../../web/src/styles/_list-screens.scss) (`th.time-column`). Tests: "R-UI-103 the widest wordings of a relative
+time in a language are the ones a column of times holds" in [time-ago.spec.ts](../../web/src/app/shared/ui/time-ago.spec.ts), "R-UI-103
+R-UI-174 a column of relative times holds the widest relative time of the language, whatever age its rows show" in
+[data-table.spec.ts](../../web/src/app/shared/ui/data-table.spec.ts); the check `cramped` counts the room a column of times keeps as
+used ("R-UI-173 the room a column of relative times keeps for the widest one of the language is not room to give" in
+[layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts)). Docs: [ui-style-guide.md](../developer/ui-style-guide.md),
+[web-ui.md](../developer/web-ui.md).
+
+What the full render run showed, measured in every picture with and without the least width (2026-11-24, 87 screens with a column of
+times; the widest English wording is 102 px): two tables change their form. A project's service account's technical tokens needed 690
+px of 689 at 1,024 px with **Last used** at its widest; the token's least width is 9.5 rem now
+([technical-token-table.ts](../../web/src/app/features/service-accounts/technical-token-table.ts)), which keeps it a table there
+without a scrollbar beside the page, as it was with fresh ages (with one, it stood as blocks before and after). A ClamAV version's
+repositories at 390 px are blocks now, one field a line. The same run found the sessions' **Created** ("Nov 24, 2026, 9:24:50 AM") in two
+lines in a column of 11 rem by the clock's hour, as Q-UI-1064 found the ages: the sessions' dates are `<time>` values that never break
+([profile-sessions.ts](../../web/src/app/features/profile/profile-sessions.ts)). Rendered: the full run in English (486 screens; its one finding of this change, `cramped` beside the signature releases' **Released**, made
+the exception above, and the screens re-rendered without a finding), `profile-tokens` and `profile-sessions` in both languages, and every screen without a walk in German at 390 px.
 
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 

@@ -580,7 +580,10 @@ export function layoutFindings(): LayoutFinding[] {
   // The span takes the pseudo-element's box as well as its text: in the shared table's blocks the name is a cell of its own, as wide as
   // the list's column of names (Q-UI-1050), and the value stands beside that column, not beside the name's last letter.
   const NAME_BOX = ['display', 'inline-size', 'box-sizing', 'padding-inline-end', 'vertical-align', 'flex', 'overflow-wrap', 'color'] as const;
-  function nameBox(cell: Element): { text: DOMRect; column: DOMRect } | null {
+  // The name's text is measured as it stands, letter by letter: a name wraps between its words where its column is narrower than it,
+  // never inside a word (Q-UI-1068). "Veröffentlicht" stood as "Veröffentli" / "cht" in the column of names of the list around it
+  // (a Debian repository's versions opened in its packages at 390 px in German, 2026-11-24): `broken` is the word and where it broke.
+  function nameBox(cell: Element): { text: DOMRect; column: DOMRect; broken: string | null } | null {
     const label = cell.getAttribute('data-label') ?? '';
     if (label === '') return null;
     const before = getComputedStyle(cell, '::before');
@@ -593,13 +596,26 @@ export function layoutFindings(): LayoutFinding[] {
     }
     cell.setAttribute(MEASURED, '');
     cell.prepend(span);
-    range.setStart(span.firstChild!, 0);
-    range.setEnd(span.firstChild!, label.length);
+    const node = span.firstChild!;
+    range.setStart(node, 0);
+    range.setEnd(node, label.length);
     const text = range.getBoundingClientRect();
     const column = span.getBoundingClientRect();
+    let broken: string | null = null;
+    let top: number | null = null;
+    for (let i = 0; i < label.length && !broken; i++) {
+      range.setStart(node, i);
+      range.setEnd(node, i + 1);
+      const r = range.getClientRects()[0];
+      if (!r) continue;
+      if (top !== null && r.top > top + 2 && /[\p{L}\p{N}]/u.test(label[i - 1] ?? '') && /[\p{L}\p{N}]/u.test(label[i] ?? '')) {
+        broken = `${/\S*$/u.exec(label.slice(0, i))?.[0] ?? ''}|${/^\S*/u.exec(label.slice(i))?.[0] ?? ''}`;
+      }
+      top = r.top;
+    }
     span.remove();
     cell.removeAttribute(MEASURED);
-    return { text, column };
+    return { text, column, broken };
   }
   // ---- stacked-place: a field of a stacked list at the same place in every block (R-UI-174, Q-UI-1050) -------------------------
   // The fields of a stacked row stand a line each, the names in one column and the values in the next, so a reader finds a field at
@@ -618,6 +634,15 @@ export function layoutFindings(): LayoutFinding[] {
       const piece = firstPiece(cell);
       const measured = nameBox(cell);
       if (!measured) continue;
+      if (measured.broken) {
+        const [head, tail] = measured.broken.split('|');
+        add(
+          'broken',
+          cell,
+          cell.getAttribute('data-label') ?? '',
+          `the column's name "${head}${tail}" broken inside its word ("${head}" / "${tail}"), the column of names ${Math.round(measured.column.width)} px wide`,
+        );
+      }
       const name = measured.text;
       // The room beside the name: a cell of a block may grow to the block's width, so the row's width less the cell's padding and the
       // name's box (its column, in the shared table's blocks).
@@ -841,6 +866,9 @@ export function layoutFindings(): LayoutFinding[] {
         const col = columns.get(i) ?? { width: box.width, used: 0, wraps: false, long: false, name: '' };
         col.width = Math.max(col.width, box.width);
         col.used = Math.max(col.used, reach(cell, box.left));
+        // A column of relative times keeps the width of the widest one of the language (Q-UI-1069): what its rows' ages leave of it is
+        // held for the ages of another day, not room to give.
+        if (cell.matches('th.time-column')) col.used = Math.max(col.used, parseFloat(getComputedStyle(cell).minInlineSize) || 0);
         if (row.parentElement?.tagName === 'THEAD') col.name ||= primaryText(cell);
         const lines = lineCount(textRects(cell, true));
         if (lines > 1) {

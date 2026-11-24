@@ -12155,10 +12155,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-535 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+537 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 535 questions</summary>
+<summary>Q-UI: 537 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12692,6 +12692,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1065](spec/api-and-ui.md#q-ui-1065--the-tooltip-is-the-references-the-toasts-grey-above-the-element-with-an-arrow) | The tooltip is the reference's: the toast's grey, above the element, with an arrow | Decided by the development agent on 2026-11-24 | (a) The reference's tooltip whole: the strong feedback pair, its measures, its arrow, above first and under where the window has no room above | — |
 | [Q-UI-1066](spec/api-and-ui.md#q-ui-1066--a-versions-commands-are-a-menu-hung-from-a-button-with-the-formats-client-verb) | A version's commands are a menu hung from a button with the format's client verb | Decided by the development agent on 2026-11-24 | (c), the panel (a), the button in both rows. | — |
 | [Q-UI-1067](spec/api-and-ui.md#q-ui-1067--details-is-the-last-tab-of-a-repositorys-page-not-a-section-under-its-list) | Details is the last tab of a repository's page, not a section under its list | Decided by the development agent on 2026-11-24 | (a) **Details** a tab with its address (`…/details`), always the last, on every repository of every format and class that has details for its reader; a page that would have only its content keeps no strip, and its address `…/details` leads to the content | — |
+| [Q-UI-1068](spec/api-and-ui.md#q-ui-1068--a-stacked-rows-column-name-wraps-between-its-words-never-inside-one) | A stacked row's column name wraps between its words, never inside one | Decided by the development agent on 2026-11-24 | (a) The column of names is never narrower than the list's longest word (the names measured once more at their least width), so a name longer than two fifths wraps between its words; a list in a block of a stacked list measures its own names | — |
+| [Q-UI-1069](spec/api-and-ui.md#q-ui-1069--a-column-of-relative-times-holds-the-widest-relative-time-of-its-language) | A column of relative times holds the widest relative time of its language | Decided by the development agent on 2026-11-24 | (a) The data table gives a column whose cells start with a relative time (`<quader-time-ago>`) the least width of the widest relative time of the build's language, measured from the wordings `relativeTime` can write | — |
 | [Q-UI-1070](spec/api-and-ui.md#q-ui-1070--the-downloads-button-stands-between-documentation-and-the-theme-and-counts-what-runs) | The Downloads button stands between Documentation and the theme, and counts what runs | Decided by the development agent on 2026-11-24 | (a) An icon button between **Documentation** and the theme button, a count badge while downloads run | [ADR-279](#adr-279--administrators-see-the-downloads-from-upstreams-live-and-the-last-100-finished) |
 | [Q-UI-1071](spec/api-and-ui.md#q-ui-1071--the-downloads-open-in-the-drawer-from-the-right) | The downloads open in the drawer from the right | Decided by the development agent on 2026-11-24 | (a) Quader's drawer (Q-UI-420), 30rem wide, with its head, close button, filter and two sections | — |
 | [Q-UI-1072](spec/api-and-ui.md#q-ui-1072--a-row-says-what-what-it-took-and-who-caused-it-a-queued-one-links-the-queue) | A row says what, what it took and who caused it; a queued one links the queue | Decided by the development agent on 2026-11-24 | (a) The name and version (else the file), the bar where the total is known, size and speed and time, the format's name, the repository, the origin in words; **Show in queue** for a queue row; no actions | — |

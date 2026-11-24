@@ -212,11 +212,12 @@ export class TechnicalTokenTable {
   protected readonly changeWord = $localize`:@@tt-table.change-limit:Change limit`;
   protected readonly rotateText = $localize`:@@tt-table.rotate-tip:Rotate: a new secret now, the old one ends after the overlap you choose. The token keeps its name and its limit.`;
   /**
-   * The token wraps and declares its least width (Q-UI-308); the times and the actions are as wide as their content. An active
-   * token's expiry stands beside its secret's hint, so that the list is a table at 1,024 px (Q-UI-761).
+   * The token wraps and declares its least width (Q-UI-308); the actions are as wide as their content, and **Last used** as the
+   * widest relative time of the language (Q-UI-1069). An active token's expiry stands beside its secret's hint, so that the list is a
+   * table at 1,024 px (Q-UI-761); the token's 9.5 rem keep it one there with "59 minutes ago" (10 rem needed 690 px of 689).
    */
   protected readonly columns = computed<readonly TableColumn[]>(() => [
-    { id: 'token', label: $localize`:@@tt-table.token:Token`, width: '10rem', prefer: true },
+    { id: 'token', label: $localize`:@@tt-table.token:Token`, width: '9.5rem', prefer: true },
     ...(this.limits()
       ? [
           {

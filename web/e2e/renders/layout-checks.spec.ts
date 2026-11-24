@@ -705,6 +705,22 @@ test.describe("the shared patterns with the app's stylesheet (R-UI-176)", () => 
     expect(only(squeezed, 'broken').map((f) => f.text), describe(squeezed)).toEqual(['latest']);
   });
 
+  // A Debian repository's versions opened in its packages at 390 px in German (2026-11-24): the column of names was the list's around
+  // them, 82 px for "Aktualisiert", and "Veröffentlicht" broke inside itself there. A name of two words wraps between them.
+  const namedFacts = (names: string): string => `<div class="quader-data-table stacked" style="inline-size:358px;--quader-stack-names:${names}"><div class="table-frame"><div class="table-scroll"><table class="data"><tbody>
+      <tr>
+        <th scope="row"><span>1.2.0-1</span></th>
+        <td data-label="Größe">716 B</td>
+        <td data-label="Veröffentlicht"><time>vor 59 Minuten</time></td>
+        <td data-label="Zuletzt verwendet"><time>gestern</time></td>
+      </tr></tbody></table></div></div></div>`;
+  test("R-UI-174 a column's name broken inside its word is found; one that wraps between its words passes", async ({ page }) => {
+    const narrow = await check(page, namedFacts('82px'), '', true);
+    expect(only(narrow, 'broken').map((f) => f.text), describe(narrow)).toEqual(['Veröffentlicht']);
+    const wide = (await check(page, namedFacts('100px'), '', true)).filter((f) => f.check === 'broken');
+    expect(wide, describe(wide)).toEqual([]);
+  });
+
   test("R-UI-176 the guard can fail: the owner's row without the line rule is found with the app's stylesheet", async ({ page }) => {
     const html = patterns[0]!.html.replace('btn btn-tertiary btn-icon on-line', 'btn btn-tertiary btn-icon');
     expect(only(await check(page, html, '', true), 'off-line')).toHaveLength(1);
@@ -731,6 +747,13 @@ test.describe('a short text cramped beside a column with room to spare (R-UI-173
     const cramped = only(found, 'cramped');
     expect(cramped, describe(found)).toHaveLength(1);
     expect(cramped[0]!.text).toBe('3 findings · 0 fixable');
+  });
+
+  test('R-UI-173 the room a column of relative times keeps for the widest one of the language is not room to give', async ({ page }) => {
+    // The signature releases at 1,440 px (2026-11-24): "Released" kept 14 px beside its "now" for "59 minutes ago" (Q-UI-1069).
+    const timed = versions('4 minutes ago').replace('<th scope="col" class="fixed">Published</th>', '<th scope="col" class="fixed time-column">Published</th>');
+    const found = await check(page, timed, `${css('auto')} th.time-column { min-inline-size: 300px; }`);
+    expect(only(found, 'cramped'), describe(found)).toEqual([]);
   });
 
   test('R-UI-173 the same grade passes where the column takes the width its values need, and stands on one line', async ({ page }) => {

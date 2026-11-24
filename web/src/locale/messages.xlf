@@ -13854,7 +13854,7 @@
         <note category="location">src/app/features/packages/ansible-import-log.ts:50,51</note>
         <note category="location">src/app/features/system/backups/backups-page.html:227,228</note>
         <note category="location">src/app/features/system/jobs-page.ts:103,104</note>
-        <note category="location">src/app/shared/ui/data-table.ts:127,128</note>
+        <note category="location">src/app/shared/ui/data-table.ts:148,149</note>
       </notes>
       <segment>
         <source> Load more </source>
@@ -17137,7 +17137,7 @@
     </unit>
     <unit id="profile.sessions.caption">
       <notes>
-        <note category="location">src/app/features/profile/profile-sessions.ts:78</note>
+        <note category="location">src/app/features/profile/profile-sessions.ts:83</note>
       </notes>
       <segment>
         <source>Your browser sessions</source>
@@ -17145,7 +17145,7 @@
     </unit>
     <unit id="profile.sessions.created">
       <notes>
-        <note category="location">src/app/features/profile/profile-sessions.ts:80</note>
+        <note category="location">src/app/features/profile/profile-sessions.ts:85</note>
       </notes>
       <segment>
         <source>Created</source>
@@ -17153,7 +17153,7 @@
     </unit>
     <unit id="profile.sessions.last-seen">
       <notes>
-        <note category="location">src/app/features/profile/profile-sessions.ts:81</note>
+        <note category="location">src/app/features/profile/profile-sessions.ts:86</note>
       </notes>
       <segment>
         <source>Last seen</source>
@@ -17161,7 +17161,7 @@
     </unit>
     <unit id="profile.sessions.address">
       <notes>
-        <note category="location">src/app/features/profile/profile-sessions.ts:82</note>
+        <note category="location">src/app/features/profile/profile-sessions.ts:87</note>
       </notes>
       <segment>
         <source>Address</source>
@@ -17169,7 +17169,7 @@
     </unit>
     <unit id="profile.sessions.agent">
       <notes>
-        <note category="location">src/app/features/profile/profile-sessions.ts:83</note>
+        <note category="location">src/app/features/profile/profile-sessions.ts:88</note>
       </notes>
       <segment>
         <source>Browser</source>
@@ -17177,7 +17177,7 @@
     </unit>
     <unit id="profile.sessions.method">
       <notes>
-        <note category="location">src/app/features/profile/profile-sessions.ts:84</note>
+        <note category="location">src/app/features/profile/profile-sessions.ts:89</note>
       </notes>
       <segment>
         <source>Sign-in</source>
@@ -17185,7 +17185,7 @@
     </unit>
     <unit id="profile.sessions.actions">
       <notes>
-        <note category="location">src/app/features/profile/profile-sessions.ts:85</note>
+        <note category="location">src/app/features/profile/profile-sessions.ts:90</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -17193,7 +17193,7 @@
     </unit>
     <unit id="profile.sessions.heading">
       <notes>
-        <note category="location">src/app/features/profile/profile-sessions.ts:87</note>
+        <note category="location">src/app/features/profile/profile-sessions.ts:92</note>
       </notes>
       <segment>
         <source>Sessions</source>
@@ -17201,7 +17201,7 @@
     </unit>
     <unit id="profile.sessions.ended">
       <notes>
-        <note category="location">src/app/features/profile/profile-sessions.ts:117</note>
+        <note category="location">src/app/features/profile/profile-sessions.ts:122</note>
       </notes>
       <segment>
         <source>Session ended.</source>
@@ -17209,7 +17209,7 @@
     </unit>
     <unit id="profile.sessions.end-others-title">
       <notes>
-        <note category="location">src/app/features/profile/profile-sessions.ts:123</note>
+        <note category="location">src/app/features/profile/profile-sessions.ts:128</note>
       </notes>
       <segment>
         <source>End all other sessions?</source>
@@ -17217,7 +17217,7 @@
     </unit>
     <unit id="profile.sessions.end-others-text">
       <notes>
-        <note category="location">src/app/features/profile/profile-sessions.ts:124</note>
+        <note category="location">src/app/features/profile/profile-sessions.ts:129</note>
       </notes>
       <segment>
         <source>Every other browser is signed out at once. This session stays.</source>
@@ -17225,7 +17225,7 @@
     </unit>
     <unit id="profile.sessions.end-others-confirm">
       <notes>
-        <note category="location">src/app/features/profile/profile-sessions.ts:125</note>
+        <note category="location">src/app/features/profile/profile-sessions.ts:130</note>
       </notes>
       <segment>
         <source>End other sessions</source>
@@ -17233,7 +17233,7 @@
     </unit>
     <unit id="profile.sessions.ended-others">
       <notes>
-        <note category="location">src/app/features/profile/profile-sessions.ts:130</note>
+        <note category="location">src/app/features/profile/profile-sessions.ts:135</note>
       </notes>
       <segment>
         <source>Other sessions ended.</source>
@@ -29327,7 +29327,7 @@
     </unit>
     <unit id="tt-table.token">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:219</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:220</note>
       </notes>
       <segment>
         <source>Token</source>
@@ -29335,7 +29335,7 @@
     </unit>
     <unit id="tt-table.limit">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:224</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:225</note>
       </notes>
       <segment>
         <source>Limit</source>
@@ -29343,7 +29343,7 @@
     </unit>
     <unit id="tt-table.help.limit-day">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:226</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:227</note>
       </notes>
       <segment>
         <source>The download limit of this token: its own rule at the account&apos;s place, or the default of technical tokens. Below it, what the token downloaded in the last 24 hours.</source>
@@ -29351,7 +29351,7 @@
     </unit>
     <unit id="tt-table.help.limit">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:227</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:228</note>
       </notes>
       <segment>
         <source>The download limit of this token: its own rule at the account&apos;s place, or the default of technical tokens.</source>
@@ -29359,7 +29359,7 @@
     </unit>
     <unit id="tt-table.ended">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:231</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:232</note>
       </notes>
       <segment>
         <source>Ended</source>
@@ -29367,7 +29367,7 @@
     </unit>
     <unit id="tt-table.last-used">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:234</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:235</note>
       </notes>
       <segment>
         <source>Last used</source>
@@ -29375,7 +29375,7 @@
     </unit>
     <unit id="tt-table.help.last-used">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:235</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:236</note>
       </notes>
       <segment>
         <source>The last time a secret of the token authenticated a request. Not every use is recorded immediately.</source>
@@ -29383,7 +29383,7 @@
     </unit>
     <unit id="tt-table.actions">
       <notes>
-        <note category="location">src/app/features/service-accounts/technical-token-table.ts:237</note>
+        <note category="location">src/app/features/service-accounts/technical-token-table.ts:238</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -47435,7 +47435,7 @@
     </unit>
     <unit id="table.loading">
       <notes>
-        <note category="location">src/app/shared/ui/data-table.ts:71,73</note>
+        <note category="location">src/app/shared/ui/data-table.ts:90,92</note>
       </notes>
       <segment>
         <source>Loading.</source>
@@ -47443,7 +47443,7 @@
     </unit>
     <unit id="table.empty">
       <notes>
-        <note category="location">src/app/shared/ui/data-table.ts:151</note>
+        <note category="location">src/app/shared/ui/data-table.ts:172</note>
       </notes>
       <segment>
         <source>Nothing to show.</source>
@@ -47451,7 +47451,7 @@
     </unit>
     <unit id="table.help-label">
       <notes>
-        <note category="location">src/app/shared/ui/data-table.ts:324</note>
+        <note category="location">src/app/shared/ui/data-table.ts:381</note>
       </notes>
       <segment>
         <source>About the column <ph id="0" equiv="column" disp="c.label"/></source>

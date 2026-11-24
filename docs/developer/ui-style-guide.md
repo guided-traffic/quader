@@ -145,13 +145,18 @@ side bar (**Tokens**). The description is one sentence, the header's `descriptio
   `width`, a column that never breaks at its longest value) against its room and shows each row as a block where they do not fit,
   and only there ([Q-UI-680](../spec/api-and-ui.md#q-ui-680--a-list-stacks-where-its-columns-at-their-least-widths-do-not-fit-measured-by-the-table-itself)):
   the name and its actions on the first line, then one line per field: its column's name in a column as wide as the list's
-  longest name (at most two fifths of the list) and its value beside it, so a field stands at the same place in every block
-  (the table sets `data-label` and measures the names; `stackLabel: false` where the value says it, which takes the line alone),
+  longest name (at most two fifths of the list, never narrower than its longest word, so a name wraps between its words and never
+  inside one, [Q-UI-1068](../spec/api-and-ui.md#q-ui-1068--a-stacked-rows-column-name-wraps-between-its-words-never-inside-one)) and
+  its value beside it, so a field stands at the same place in every block
+  (the table sets `data-label` and measures the names, also those of a list in a block of a stacked list; `stackLabel: false` where
+  the value says it, which takes the line alone),
   a cell without a value ("–") left out
   ([Q-UI-1050](../spec/api-and-ui.md#q-ui-1050--a-stacked-row-is-a-grid-of-names-and-values-one-field-a-line)); a row that only carries an expansion of
   the row above (an opened image's tags, an opened malware find) takes the block's whole width, whatever its content. So a column's least width decides
   where its list stacks: a wrapping column without one is as narrow as its longest word (the start page's description, one word
-  a line).
+  a line). A column whose cells start with a relative time (`<quader-time-ago absolute="title">`) is at least as wide as the
+  widest relative time of the language, which the table measures, so "now" and "59 minutes ago" give one layout
+  ([Q-UI-1069](../spec/api-and-ui.md#q-ui-1069--a-column-of-relative-times-holds-the-widest-relative-time-of-its-language)).
   The head of a stacked list is one row of its sort buttons above the blocks; a header that sorts nothing is for assistive
   technology only ([Q-UI-391](../spec/api-and-ui.md#q-ui-391--a-stacked-list-keeps-its-sort-buttons-in-a-row-above-its-blocks)).
   `[stack]="false"` keeps the table for a list that cannot be read as blocks.
