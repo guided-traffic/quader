@@ -1023,6 +1023,8 @@ async function* malwareSettings(page: Page): AsyncGenerator<string> {
   const scanners = '**/api/v1/system/scanners';
   await answerWith(page, scanners, (b) => ({ ...b, items: [] }));
   await expect(page.locator('main [data-testid="scanners-none-clamav"]')).toBeVisible();
+  // Before the first set and with no updater configured, the database part says why none arrives (Q-UI-1003).
+  await expect(page.locator('main [data-testid="malware-db-no-updater"]')).toBeVisible();
   yield 'scanners-none';
   await page.unroute(scanners);
   await answerWith(page, settings, (b) => ({ ...b, enabled: false }));
