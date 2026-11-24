@@ -56,20 +56,34 @@ type ImageDue struct {
 	Repo qname.Repo
 }
 
-// Discover adds the scan rows of manifests that have none, at most limit, and reports how many it added.
+// Discover adds the scan rows of manifests that have none, at most limit, and reports how many it added. In the same transaction it drops
+// the rows of manifests that are no image to scan (Q-VULN-269): an attachment, a referrer, the object of a signature, which the selection
+// leaves out and an earlier one queued.
 func (s *Images) Discover(ctx context.Context, delay time.Duration, limit int) (n int64, err error) {
 	err = s.tx(ctx, func(qs *q.Queries) (err error) {
+		if _, err = qs.VulnImageDropAttachments(ctx); err != nil {
+			return err
+		}
 		n, err = qs.VulnImageDiscover(ctx, q.VulnImageDiscoverParams{DelaySeconds: delay.Seconds(), MaxRows: rows32(limit)})
 		return err
 	})
 	return n, err
 }
 
+// Retry is what makes a failed row due again (R-VULN-034): MaxAttempts bounds a failure that may pass, and Judges are what a terminal
+// failure may have been judged under and still stand (Q-VULN-270); a terminal row judged under none of them is due.
+type Retry struct {
+	MaxAttempts int
+	Judges      []string
+}
+
 // Due returns the next manifests to work on.
-func (s *Images) Due(ctx context.Context, dbDigest string, maxAttempts, limit int) ([]ImageDue, error) {
+func (s *Images) Due(ctx context.Context, dbDigest string, retry Retry, limit int) ([]ImageDue, error) {
 	var out []ImageDue
 	err := s.tx(ctx, func(qs *q.Queries) error {
-		rows, err := qs.VulnImageDue(ctx, q.VulnImageDueParams{MaxAttempts: rows32(maxAttempts), DbDigest: dbDigest, MaxRows: rows32(limit)})
+		rows, err := qs.VulnImageDue(ctx, q.VulnImageDueParams{
+			MaxAttempts: rows32(retry.MaxAttempts), Judges: nn(retry.Judges), DbDigest: dbDigest, MaxRows: rows32(limit),
+		})
 		if err != nil {
 			return err
 		}
@@ -105,11 +119,19 @@ func (s *Images) NextNew(ctx context.Context) (wait time.Duration, ok bool, err 
 	return time.Duration(secs * float64(time.Second)), true, nil
 }
 
+// ImageFailure is a scan that did not finish: its code and detail, and either the back-off of a failure that may pass or, for a terminal
+// one, what it was judged under (Q-VULN-270), which makes it due again only when that changes.
+type ImageFailure struct {
+	Code, Detail string
+	Backoff      time.Duration
+	Judged       string
+}
+
 // Failed records a scan that did not finish.
-func (s *Images) Failed(ctx context.Context, repoID int64, name string, digest [32]byte, code, detail string, backoff time.Duration) error {
+func (s *Images) Failed(ctx context.Context, repoID int64, name string, digest [32]byte, f ImageFailure) error {
 	return s.tx(ctx, func(qs *q.Queries) error {
 		return qs.VulnImageFailed(ctx, q.VulnImageFailedParams{
-			RepoID: repoID, Name: name, Digest: digest[:], ErrorCode: code, ErrorDetail: detail, BackoffSeconds: backoff.Seconds(),
+			RepoID: repoID, Name: name, Digest: digest[:], ErrorCode: f.Code, ErrorDetail: f.Detail, BackoffSeconds: f.Backoff.Seconds(), Judged: f.Judged,
 		})
 	})
 }

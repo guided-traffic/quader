@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/guided-traffic/quader/internal/blob"
+	"github.com/guided-traffic/quader/internal/buildinfo"
+	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/jobs"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/vuln"
@@ -83,12 +85,22 @@ func (a *App) wireVulnImages(ctx context.Context, in infra, m *vmetrics.Metrics,
 		DB: in.db, Images: rows, Evaluate: evaluation, Scanner: call, Tokens: tokens, Database: database,
 		States: out.states, Enqueue: enqueue, WakeDatabase: wakeDatabase,
 		Concurrency: images.Concurrency, RunSlice: images.RunSlice, MaxAttempts: images.MaxAttempts, Delay: images.ScanDelay, Metrics: m, Log: log,
+		// What a terminal failure is judged under (Q-VULN-270): the scanner's bounds, which the worker reads from the same section, and the
+		// release, whose scanner reads the images and whose analyser it pins.
+		Judges: imagescan.Judges{Limits: imagescan.LimitsJudge(imageContentLimits(images)), Release: buildinfo.Get().Version},
 	})
 	if err != nil {
 		return fmt.Errorf("the image scanning: %w", err)
 	}
 	out.images = svc
 	return nil
+}
+
+// imageContentLimits are the bounds of R-VULN-036 the scanner applies to an image, from vulnerabilities.images.
+func imageContentLimits(images config.VulnerabilityImages) imagescan.ContentLimits {
+	return imagescan.ContentLimits{
+		MaxLayers: images.MaxLayers, MaxImageBytes: int64(images.MaxImageSize), MaxUncompressedBytes: int64(images.MaxUncompressedSize), MaxEntries: images.MaxEntries,
+	}
 }
 
 // spoolSpace is the scanner's spool as the image scanning sees it: the room of every analysis and detection is taken from its budget

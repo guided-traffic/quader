@@ -12656,10 +12656,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-VULN
 
-185 questions on [spec/vulnerability-scanning.md](spec/vulnerability-scanning.md).
+187 questions on [spec/vulnerability-scanning.md](spec/vulnerability-scanning.md).
 
 <details>
-<summary>Q-VULN: 185 questions</summary>
+<summary>Q-VULN: 187 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12848,6 +12848,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-VULN-237](spec/vulnerability-scanning.md#q-vuln-237--a-write-the-scanners-own-volume-refuses-is-the-scanners-fault-put-off-on-another-scanner) | A write the scanner's own volume refuses is the scanner's fault, put off on another scanner | Decided by the development agent | (a) A code of its own, `503` `scanner_disk_failed`, an error log line of the scanner that names the working directory; the worker tries it like `scanner_busy`, three times on new connections, and puts the scan off a minute without an attempt | — |
 | [Q-VULN-267](spec/vulnerability-scanning.md#q-vuln-267--the-probe-of-variant-d-stays-in-its-own-set-no-pooler-leg-under-load-runs-the-profile-vuln) | The probe of variant D stays in its own set: no pooler leg under load runs the profile vuln | Decided by the development agent on 2026-11-23 | (a) Keep `vuln-pooler` as its own set | — |
 | [Q-VULN-268](spec/vulnerability-scanning.md#q-vuln-268--a-run-with-nothing-due-runs-again-when-a-discovered-manifest-becomes-due) | A run with nothing due runs again when a discovered manifest becomes due | Decided by the development agent | (a) A run that finds nothing due asks for the first `not_before` of a discovered row still waiting (`pending`, no code) and enqueues itself for that moment | — |
+| [Q-VULN-269](spec/vulnerability-scanning.md#q-vuln-269--an-attachment-is-no-image-to-scan-and-an-image-is-its-stored-platform-images) | An attachment is no image to scan, and an image is its stored platform images | Decided by the development agent | (a) The discovery leaves out what the format recorded as an attachment (`oci_manifests.attachment`, R-SIG-063), a referrer and a signature's object; a row such a manifest has is dropped by the next run; a tag's state is that of the children the repository stores that the same selection scans, the index alone only while none is stored | — |
+| [Q-VULN-270](spec/vulnerability-scanning.md#q-vuln-270--a-terminal-failure-waits-for-what-judged-it-to-change-not-for-a-time) | A terminal failure waits for what judged it to change, not for a time | Decided by the development agent | (a) The row names what judged it (`judged`: `limits:<the four bounds>` for a code of a bound, `release:<version>` for a code of reading) and is due when that is none of the worker's current judges | — |
 
 </details>
 <!-- coverage-gen:end decisions -->

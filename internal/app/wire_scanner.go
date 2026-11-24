@@ -134,7 +134,7 @@ func (a *App) wireScanner(ctx context.Context, _ blobArea) (scannerArea, error) 
 	svc, err := scanner.New(scanner.Options{
 		Analyser: analyser, Registry: reg, Space: spoolSpace{spool}, ScanDir: images.ScanDir, DatabaseDir: images.Database.Dir, Slots: images.Scanner.Slots,
 		PullTimeout: images.PullTimeout, Reaper: scanner.NewReaper(log), Metrics: m, Log: log,
-		Content: imagescan.ContentLimits{MaxLayers: images.MaxLayers, MaxImageBytes: int64(images.MaxImageSize), MaxUncompressedBytes: int64(images.MaxUncompressedSize), MaxEntries: images.MaxEntries},
+		Content: imageContentLimits(images),
 		Run:     imagescan.Limits{Timeout: images.Timeout, MemoryBytes: int64(images.MemoryLimit), OutputBytes: imageOutputBytes, StderrBytes: 16 << 10},
 	})
 	if err != nil {

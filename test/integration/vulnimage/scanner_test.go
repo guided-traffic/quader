@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"path/filepath"
-	"strconv"
 	"testing"
 	"time"
 
@@ -193,40 +192,9 @@ func TestR_VULN_042_ABlockedPrivateImageIsAnalysedAgainWithoutADownload(t *testi
 // R-VULN-042, Q-VULN-165: the scanner reads a remote repository from what it holds. A manifest whose layers no client brought ends the
 // analysis with layer_missing and one attempt, and the upstream sees no request of the scan.
 func TestR_VULN_042_ARemoteImageWithoutItsLayersEndsLayerMissing(t *testing.T) {
-	ss, err := ocistub.NewSelfSigned(ocistub.LoopbackHosts...)
-	if err != nil {
-		t.Fatal(err)
-	}
-	stub, err := ocistub.New(ocistub.Config{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	run, err := stub.Start("127.0.0.1:0", ss.ServerConfig())
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = run.Close() })
-	ca := testenv.WriteFile(t, t.TempDir(), "stub-ca.pem", string(ss.CAPEM))
-	host := func(h string) map[string]any { return map[string]any{"pattern": h, "sendCredentials": false} }
-	doc, err := json.Marshal(map[string]any{"remote": map[string]any{
-		"url": run.URL, "extraHosts": []any{host(ocistub.LoopbackRealmHost), host(ocistub.LoopbackCDNHost)}, "authMode": "none", "username": "",
-		"password": nil, "clientCertificate": nil, "headers": []any{}, "forwardAuthOnRedirect": false, "outboundProxy": map[string]any{"mode": "direct"},
-		"connectTimeoutMs": 5000, "readTimeoutMs": 15000, "sourceNetwork": nil, "cacheFillAction": "read",
-		"cache": map[string]any{
-			"storeArtifacts": true, "metadataTtlSeconds": 300, "metadataRefreshTimeoutSeconds": 10, "notFoundTtlSeconds": 60,
-			"maxStaleSeconds": 0, "unusedRetentionHours": 0,
-		},
-		"integrity":    map[string]any{"checksumPolicy": "verify-if-available", "blockUnexpectedContentTypes": true, "allowedContentTypes": []any{}},
-		"availability": map[string]any{"mode": "online", "failureThreshold": 3, "circuitOpenSeconds": 30},
-		"limits":       map[string]any{"maxArtifactBytes": nil, "maxMetadataBytes": nil, "maxConcurrentFetches": 16},
-		// The background fetch of the image's signatures (signatures.md R-SIG-026) is off: the test counts what the scan asks.
-	}, "signatures": map[string]any{"fetch": false}})
-	if err != nil {
-		t.Fatal(err)
-	}
-	f := newFlowWith(t, options{dial: run.DialOverride(), seed: func(st *testenv.Stack) { st.Repository("hub", "remote", "oci", string(doc)) }, stackEnv: []string{
-		"QUADER_PROXY_OUTBOUND_TLS_CA_FILES=[" + strconv.Quote(filepath.ToSlash(ca)) + "]", `QUADER_PROXY_OUTBOUND_ADDRESS_POLICY_ALLOW_CIDRS=["127.0.0.1/32"]`,
-	}})
+	hub := newHub(t, nil)
+	f := newFlowWith(t, hub.options(options{}))
+	stub := hub.stub
 	digest, ok := ocistub.Default().Digest("other/c", "1.0")
 	if !ok {
 		t.Fatal("the stub has no other/c:1.0")

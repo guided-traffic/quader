@@ -214,6 +214,7 @@ type fakeRows struct {
 	due      []store.ImageDue
 	sbom     map[[32]byte]store.StoredAnalysis
 	failed   []string
+	failures []store.ImageFailure
 	deferred []string
 	deletes  int
 	// nextNew is what NextNew answers once due is empty: the wait of a discovered manifest, hasNew whether one waits.
@@ -230,11 +231,11 @@ func (f *fakeRows) Orphans(context.Context, int) ([]string, error)              
 func (f *fakeRows) DueCount(context.Context, string) (int64, error)             { return int64(len(f.due)), nil }
 func (f *fakeRows) PruneSBOMs(context.Context) (int64, error)                   { return 0, nil }
 func (f *fakeRows) Rearm(context.Context, int64) (int64, error)                 { return 0, nil }
-func (f *fakeRows) Unanalysed(context.Context, int, int) ([]store.ImageDue, error) {
+func (f *fakeRows) Unanalysed(context.Context, store.Retry, int) ([]store.ImageDue, error) {
 	return nil, nil
 }
 
-func (f *fakeRows) Due(context.Context, string, int, int) ([]store.ImageDue, error) {
+func (f *fakeRows) Due(context.Context, string, store.Retry, int) ([]store.ImageDue, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	out := f.due
@@ -264,10 +265,11 @@ func (f *fakeRows) DeleteSBOM(_ context.Context, d [32]byte) error {
 	return nil
 }
 
-func (f *fakeRows) Failed(_ context.Context, _ int64, _ string, _ [32]byte, code, _ string, _ time.Duration) error {
+func (f *fakeRows) Failed(_ context.Context, _ int64, _ string, _ [32]byte, fl store.ImageFailure) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	f.failed = append(f.failed, code)
+	f.failed = append(f.failed, fl.Code)
+	f.failures = append(f.failures, fl)
 	return nil
 }
 

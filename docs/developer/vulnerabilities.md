@@ -682,7 +682,17 @@ database in use for a run and checks that its repository holds the layer (`datab
 repository hold the database ([the database's repository](#the-databases-repository-r-vuln-044-r-vuln-045) below). The rows without a
 detection come before the re-detections of a new database (`VulnImageDue`, Q-VULN-200). A run that finds nothing due while a manifest it
 discovered waits out `scan_delay` enqueues itself for the moment that manifest is due (`Service.ended`, `VulnImageNextNew`, Q-VULN-268);
-a manifest pushed while a run goes is discovered by the next run, which the push's wake-up queues behind it. The result enters the lifecycle of findings
+a manifest pushed while a run goes is discovered by the next run, which the push's wake-up queues behind it. Every path that stores a manifest
+(a push, a client's fill, a mirror pass, a row of the download queue) wakes the job through the item store's commit alone (R-VULN-050).
+**What is scanned** (`VulnImageDiscover`, Q-VULN-269): an image manifest that is no attachment by its content (`oci_manifests.attachment`,
+which the signature gate writes at the commit: Docker's attestation manifests with their in-toto layer, cosign's and Notation's carriers),
+no referrer and no signature's object; `VulnImageDropAttachments`, in the discovery's transaction, drops a row such a manifest got before.
+A tag's state is that of its **platform images** (`VulnImageManifests` for the version view, `VulnImageGradeScans` for the grades and the
+list): for an index the children the repository stores that the same selection scans, so an attestation and a platform a remote has not
+fetched do not count; the index stands alone only while none is stored. The selection is written in all three statements. **A terminal
+failure** names what judged it (`vuln_image_scan.judged`, [judged.go](../../internal/vuln/imagescan/judged.go), Q-VULN-270): the four bounds
+for a code of a bound, the release for a code of reading; `VulnImageDue` and `VulnImageUnanalysed` take it again when it is none of the
+worker's `Judges` (wired from `vulnerabilities.images` and `buildinfo`), with no back-off and whatever its attempts. The result enters the lifecycle of findings
 through `evaluate.Service.ApplyImage`, so an image's finding differs from a package's only in its version (the manifest digest) and its
 `components`. A pull is gated by `enforce.GateImage` through the Host port `RefuseImage` (Q-VULN-138). **The working space is the scanner's
 spool** (Q-VULN-145): an analysis holds the image plus 64 MiB, a detection 64 MiB, before its first file; the worker writes nothing of a scan
@@ -693,7 +703,9 @@ job's decisions over stand-in rows: `database_loading`, a second `analysis_outda
 a manifest's scan delay; the unpack of a database; a run of
 the real binary when `QUADER_TEST_TRIVY_BIN`, `QUADER_TEST_TRIVY_CACHE` and `QUADER_TEST_IMAGE_LAYOUT` name them), `internal/vuln/scanner`
 (the handlers of both calls, slots, drain, pull, reaper, the process not dumpable on Linux), `internal/vuln/dbloader` (the loader),
-[test/integration/vulnimage](../../test/integration/vulnimage) (push to findings through a scanner replica, a push scanned when its scan delay ends with the schedule off, a busy and a stopped scanner,
+[test/integration/vulnimage](../../test/integration/vulnimage) (push to findings through a scanner replica, a push scanned when its scan delay ends with the schedule off, a download
+ahead and a client's fill of a remote scanned and checked for malware with both schedules off (`fill_test.go`), the selection of an index's
+platform images and the retry of a terminal failure over rows the test writes (`selection_test.go`), a busy and a stopped scanner,
 the handshake of both links, a blocked private image analysed again without a download, a remote's uncached layer, a disabled repository,
 a new database, the block of a pull, the order of work after a new database, the loader's database and a run that waits for it in
 `detection_test.go`, the role `all` without a scanner, and in `database_test.go` the database's repository: a local one, a remote of a stub
@@ -845,7 +857,8 @@ loader (container database, kind trivy-db): every 5 s before its first database,
 | `503 scanner_busy`, `scanner_draining`; no connection; a refused handshake | `scanner_busy`, `scanner_unavailable` | none | 1 minute |
 | `503 scanner_disk_failed` (the scanner's own volume refused a write or a flush, a `*syncwrite.WriteError`, Q-VULN-237) after three tries within 3 s | `scanner_disk_failed` | none | 1 minute |
 | `422 analyser_failed` | `analyser_failed`, and the stored analysis is deleted (Q-VULN-202) | spent | the back-off |
-| `422 timeout`, `report_too_large`; a broken connection (`scanner_lost`); the deadline | the code | spent | the back-off |
+| `422 timeout`; a broken connection (`scanner_lost`); the deadline | the code | spent | the back-off |
+| `422 report_too_large` and the other terminal codes of R-VULN-034 | the code, and `judged` (Q-VULN-270) | spent | when the bounds (a code of a bound) or the release (a code of reading) change |
 | `422 spool_too_small` | `spool_too_small` | none | 1 hour |
 | an answer whose `Quader-Database` or `Quader-Analyser-Version` differs, no JSON, or a report that does not parse | `analyser_failed` | spent | the back-off |
 

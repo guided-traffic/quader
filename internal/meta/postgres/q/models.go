@@ -2079,6 +2079,7 @@ type VulnImageScan struct {
 	OsName      pgtype.Text
 	OsEosl      bool
 	Packages    int32
+	Judged      pgtype.Text
 }
 
 type VulnKev struct {

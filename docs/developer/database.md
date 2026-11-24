@@ -838,6 +838,14 @@ revision column, raised by a restore), and `deb_remote_entries.provides`, `descr
 [tables_deb.go](../../internal/formatdata/deb/tables_deb.go)). No query reads the tables yet; `TestR_CUR_011_TheVocabularyIsTheMigrations`
 in `internal/remotecuration` holds the CHECK lists to the domain package's constants. The step replaces `upstream_repository_purge` (the one of 00102) with the deletes of `remote_download`, `remote_download_bulks` and `remote_examinations`; the rules and the requests stay with a retired repository (Q-CUR-111).
 
+## What judged a terminal failure of an image scan (00117)
+
+[00117_vuln_image_scan_judged](../../internal/meta/postgres/migrations/00117_vuln_image_scan_judged.sql) adds `vuln_image_scan.judged`: what a
+terminal failure was judged under, `limits:<the four bounds>` for a code of a bound, `release:<version>` for a code of reading; NULL on every
+other row. `VulnImageDue` and `VulnImageUnanalysed` take a terminal row again when its `judged` is none of the judges the worker names, and
+no time makes it due ([vulnerability-scanning.md](../spec/vulnerability-scanning.md) R-VULN-034, Q-VULN-270). The table stays transient for
+backups.
+
 ## The storage summary (00109)
 
 [00109_storage_summary](../../internal/meta/postgres/migrations/00109_storage_summary.sql) is an expand step of package F of the several

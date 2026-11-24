@@ -41,7 +41,8 @@ import (
 const (
 	discoverBatch = 1000
 	orphanBatch   = 1000
-	// retryBackoff is the wait before the first retry of a scan that failed; it doubles per attempt.
+	// retryBackoff is the wait before the first retry of a scan that failed for a reason that may pass; it doubles per attempt. A terminal
+	// failure has no back-off: it is due again when what it was judged under changes (Judges, Q-VULN-270).
 	retryBackoff = time.Minute
 	maxBackoff   = 6 * time.Hour
 	// versionsDifferWait is the wait of a row whose detection met two scanner versions in one cycle (R-VULN-048).
@@ -66,14 +67,14 @@ type Rows interface {
 	Discover(ctx context.Context, delay time.Duration, limit int) (int64, error)
 	Orphans(ctx context.Context, limit int) ([]string, error)
 	DueCount(ctx context.Context, dbDigest string) (int64, error)
-	Due(ctx context.Context, dbDigest string, maxAttempts, limit int) ([]store.ImageDue, error)
+	Due(ctx context.Context, dbDigest string, retry store.Retry, limit int) ([]store.ImageDue, error)
 	NextNew(ctx context.Context) (time.Duration, bool, error)
-	Unanalysed(ctx context.Context, maxAttempts, limit int) ([]store.ImageDue, error)
+	Unanalysed(ctx context.Context, retry store.Retry, limit int) ([]store.ImageDue, error)
 	SBOM(ctx context.Context, digest [32]byte) (store.StoredAnalysis, bool, error)
 	PutSBOM(ctx context.Context, digest [32]byte, a store.StoredAnalysis) error
 	DeleteSBOM(ctx context.Context, digest [32]byte) error
 	PruneSBOMs(ctx context.Context) (int64, error)
-	Failed(ctx context.Context, repoID int64, name string, digest [32]byte, code, detail string, backoff time.Duration) error
+	Failed(ctx context.Context, repoID int64, name string, digest [32]byte, f store.ImageFailure) error
 	Deferred(ctx context.Context, repoID int64, name string, digest [32]byte, code, detail string, wait time.Duration) error
 	Rearm(ctx context.Context, repoID int64) (int64, error)
 }
@@ -105,6 +106,9 @@ type Options struct {
 	RunSlice time.Duration
 	// MaxAttempts bounds the retries of a scan that failed for a reason that may pass.
 	MaxAttempts int
+	// Judges are what a terminal failure is judged under: the bounds and the release (Q-VULN-270). A row judged under neither any more is
+	// due again. An empty Limits stands for the fingerprint of zero bounds, so that a terminal failure always names a judge.
+	Judges Judges
 	// Delay postpones a new manifest, so that a pull of a remote image has brought its layers.
 	Delay   time.Duration
 	Metrics *vmetrics.Metrics
@@ -194,7 +198,7 @@ func (s *Service) RunScan(ctx context.Context, run Run) error {
 		if err := ctx.Err(); err != nil {
 			return context.Cause(ctx)
 		}
-		due, err := s.o.Images.Due(ctx, digest, s.o.MaxAttempts, s.o.Concurrency)
+		due, err := s.o.Images.Due(ctx, digest, s.retry(), s.o.Concurrency)
 		if err != nil {
 			return err
 		}
@@ -261,7 +265,7 @@ func (s *Service) analyseOnly(ctx context.Context, run Run, why string) error {
 		if err := ctx.Err(); err != nil {
 			return context.Cause(ctx)
 		}
-		due, err := s.o.Images.Unanalysed(ctx, s.o.MaxAttempts, s.o.Concurrency+len(seen))
+		due, err := s.o.Images.Unanalysed(ctx, s.retry(), s.o.Concurrency+len(seen))
 		if err != nil {
 			return err
 		}
@@ -389,14 +393,20 @@ func (s *Service) record(ctx context.Context, d store.ImageDue, err error) error
 	return s.recordFailure(ctx, d, "scan_error", "the scan failed; the worker's log has the cause", false)
 }
 
-// recordFailure records a scan that did not finish. A terminal failure is not retried: it spends all its attempts at once.
+// recordFailure records a scan that did not finish. A failure that may pass is due again after a doubling back-off, up to MaxAttempts; a
+// terminal one is not retried after a time: it names what it was judged under and is due again when that changes (Q-VULN-270).
 func (s *Service) recordFailure(ctx context.Context, d store.ImageDue, code, detail string, terminal bool) error {
-	backoff := min(retryBackoff<<min(d.Attempts, 10), maxBackoff)
+	f := store.ImageFailure{Code: code, Detail: detail, Backoff: min(retryBackoff<<min(d.Attempts, 10), maxBackoff)}
 	if terminal {
-		backoff = 100 * maxBackoff
+		f.Backoff, f.Judged = 0, s.o.Judges.judgedUnder(code)
 	}
-	s.log.WarnContext(ctx, "an image could not be scanned", "repository", d.Repo.String(), "name", d.Name, "code", code)
-	return s.o.Images.Failed(ctx, d.RepoID, d.Name, d.Digest, code, detail, backoff)
+	s.log.WarnContext(ctx, "an image could not be scanned", "repository", d.Repo.String(), "name", d.Name, "code", code, "judged", f.Judged)
+	return s.o.Images.Failed(ctx, d.RepoID, d.Name, d.Digest, f)
+}
+
+// retry is what makes a failed row due again: the attempts of a failure that may pass, the judges of a terminal one.
+func (s *Service) retry() store.Retry {
+	return store.Retry{MaxAttempts: s.o.MaxAttempts, Judges: s.o.Judges.all()}
 }
 
 // recordDeferred records a scan that did not start or did not finish for a reason of the installation (R-VULN-034, Q-VULN-162): the row

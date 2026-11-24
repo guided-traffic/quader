@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 805 specified, 1,434 open. 1,262 spec requirements:
-787 cover catalog features, 475 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 805 specified, 1,434 open. 1,264 spec requirements:
+787 cover catalog features, 477 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>475 requirements</summary>
+<summary>477 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3277,6 +3277,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-IMP-008 | Politeness towards the source | P1 | [import.md](../spec/import.md) |
 | R-IMP-009 | The seam for a format | P1 | [import.md](../spec/import.md) |
 | R-MAL-003 | The name and the promise | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
+| R-MAL-035 | Every stored file is checked at once after any fill, in order under load | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-005 | The call from the worker to the malware scanner | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-006 | The scanner's read of a blob: the route on the scan listener and its token | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
 | R-MAL-007 | The malware scanner: what it unpacks and what it hands to `clamd` | P1 | [malware-scanning.md](../spec/malware-scanning.md) |
@@ -3442,6 +3443,7 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-VULN-028 | Performance bounds | MVP | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
 | R-VULN-029 | Acceptance suite | MVP | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
 | R-VULN-034 | The state of a scan, and that no finding is not the same as clean | P1 | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
+| R-VULN-050 | An image is scanned at once after any fill, in order under load | P1 | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
 | R-VULN-036 | Scanning untrusted layers | P1 | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
 | R-VULN-041 | The call from the worker to the scanner | P1 | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |
 | R-VULN-042 | The scanner's pull through the registry | P1 | [vulnerability-scanning.md](../spec/vulnerability-scanning.md) |

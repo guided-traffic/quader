@@ -145,7 +145,7 @@ func (q *Queries) VulnImageDatabaseStale(ctx context.Context, arg VulnImageDatab
 const vulnImageDeferred = `-- name: VulnImageDeferred :exec
 UPDATE vuln_image_scan
    SET state = 'pending', not_before = now() + make_interval(secs => $1::float8),
-       error_code = $2::text, error_detail = left($3::text, 1024)
+       error_code = $2::text, error_detail = left($3::text, 1024), judged = NULL
  WHERE repo_id = $4::bigint AND name = $5::text AND digest = $6
 `
 
@@ -181,7 +181,7 @@ SELECT m.repo_id, m.name, m.digest, now() + make_interval(secs => $1::float8)
  WHERE r.format = 'oci' AND r.class IN ('local', 'remote') AND r.lifecycle = 'active'
    AND m.media_type IN ('application/vnd.oci.image.manifest.v1+json', 'application/vnd.docker.distribution.manifest.v2+json')
    AND COALESCE(m.artifact_type, '') IN ('', 'application/vnd.oci.image.config.v1+json', 'application/vnd.docker.container.image.v1+json')
-   AND m.subject IS NULL
+   AND m.subject IS NULL AND NOT m.attachment
    AND NOT EXISTS (SELECT 1 FROM vuln_image_scan s WHERE s.repo_id = m.repo_id AND s.name = m.name AND s.digest = m.digest)
    AND NOT EXISTS (SELECT 1 FROM signatures g JOIN signature_attachments a ON a.signature_id = g.id
                     WHERE g.object_sha256 = m.digest AND a.repo_id = m.repo_id)
@@ -198,11 +198,33 @@ type VulnImageDiscoverParams struct {
 // bytea, a time travels as microseconds since the epoch.
 // The image manifests of active local and remote repositories of the format that have no scan row yet: a push, a fill, an image stored
 // before the scanning was switched on and a restored installation all arrive here. An index is not scanned, its children are; an artifact
-// that is no container image (a chart, a signature) is left out by its media types. A signature or an attestation by R-SIG-023 is left
-// out as well (signatures.md R-SIG-024): a referrer by its subject, and cosign's older layout and BuildKit's attestation manifests, which
-// carry an image configuration, by the signature their manifest is the object of in the repository.
+// that is no container image (a chart, a signature) is left out by its media types. A signature, an attestation or an SBOM by R-SIG-023 is
+// left out as well (signatures.md R-SIG-024, Q-VULN-269), because cosign's older layout and Docker's attestation manifests carry an image
+// configuration: a manifest the format recorded as an attachment by its content (oci_manifests.attachment: no image layer, a layer or a type
+// of R-SIG-023, such as the in-toto layer of Docker's attestation manifest), a referrer by its subject, and a manifest that is the object of
+// a signature in the repository. VulnImageManifests and VulnImageGradeScans count the children of an index by the same selection.
 func (q *Queries) VulnImageDiscover(ctx context.Context, arg VulnImageDiscoverParams) (int64, error) {
 	result, err := q.db.Exec(ctx, vulnImageDiscover, arg.DelaySeconds, arg.MaxRows)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const vulnImageDropAttachments = `-- name: VulnImageDropAttachments :execrows
+DELETE FROM vuln_image_scan s
+ USING oci_manifests m
+ WHERE m.repo_id = s.repo_id AND m.name = s.name AND m.digest = s.digest
+   AND (m.attachment OR m.subject IS NOT NULL
+        OR EXISTS (SELECT 1 FROM signatures g JOIN signature_attachments a ON a.signature_id = g.id
+                    WHERE g.object_sha256 = m.digest AND a.repo_id = m.repo_id))
+`
+
+// The scan rows of manifests that are no image to scan by VulnImageDiscover's selection (Q-VULN-269): an attachment, a referrer, the object
+// of a signature. A row of such a manifest was queued before the selection left it out (Docker's attestation manifests, whose in-toto layer
+// failed layer_format); it goes at the next run, and the findings it had resolve as those of a manifest that is gone.
+func (q *Queries) VulnImageDropAttachments(ctx context.Context) (int64, error) {
+	result, err := q.db.Exec(ctx, vulnImageDropAttachments)
 	if err != nil {
 		return 0, err
 	}
@@ -217,14 +239,16 @@ SELECT s.repo_id::bigint AS repo_id, s.name::text AS name, s.digest AS digest, s
   JOIN project p ON p.id = r.project_id
  WHERE r.lifecycle = 'active' AND NOT COALESCE((r.config->>'disabled')::boolean, false)
    AND ((s.state = 'pending' AND s.not_before <= now())
-     OR (s.state = 'failed' AND s.not_before <= now() AND s.attempts < $1::int)
-     OR (s.state = 'scanned' AND s.db_digest IS DISTINCT FROM $2::text))
+     OR (s.state = 'failed' AND s.judged IS NULL AND s.not_before <= now() AND s.attempts < $1::int)
+     OR (s.state = 'failed' AND s.judged IS NOT NULL AND NOT (s.judged = ANY($2::text[])))
+     OR (s.state = 'scanned' AND s.db_digest IS DISTINCT FROM $3::text))
  ORDER BY (s.state = 'scanned'), s.not_before, s.repo_id, s.name, s.digest
- LIMIT $3::int
+ LIMIT $4::int
 `
 
 type VulnImageDueParams struct {
 	MaxAttempts int32
+	Judges      []string
 	DbDigest    string
 	MaxRows     int32
 }
@@ -242,9 +266,15 @@ type VulnImageDueRow struct {
 // of a repository that is disabled or being deleted are not due (R-VULN-042): the scanner's pull could not address it. The qualified
 // name of the repository is what the scan token and the call to the scanner name (R-VULN-041). The rows without a detection (pending, or
 // failed and due) come before the re-detections of scanned rows under a new database, each class by not_before (Q-VULN-200): a pushed
-// image waits for the slots, not for the cycle, and a scanned image keeps its findings while it waits.
+// image waits for the slots, not for the cycle, and a scanned image keeps its findings while it waits. A terminal failure is due when
+// what it was judged under is none of the judges the job names now (Q-VULN-270): the bounds or the release changed.
 func (q *Queries) VulnImageDue(ctx context.Context, arg VulnImageDueParams) ([]VulnImageDueRow, error) {
-	rows, err := q.db.Query(ctx, vulnImageDue, arg.MaxAttempts, arg.DbDigest, arg.MaxRows)
+	rows, err := q.db.Query(ctx, vulnImageDue,
+		arg.MaxAttempts,
+		arg.Judges,
+		arg.DbDigest,
+		arg.MaxRows,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -288,26 +318,30 @@ func (q *Queries) VulnImageDueCount(ctx context.Context, dbDigest string) (int64
 const vulnImageFailed = `-- name: VulnImageFailed :exec
 UPDATE vuln_image_scan
    SET state = 'failed', attempts = attempts + 1, not_before = now() + make_interval(secs => $1::float8),
-       error_code = $2::text, error_detail = left($3::text, 1024)
- WHERE repo_id = $4::bigint AND name = $5::text AND digest = $6
+       error_code = $2::text, error_detail = left($3::text, 1024),
+       judged = NULLIF($4::text, '')
+ WHERE repo_id = $5::bigint AND name = $6::text AND digest = $7
 `
 
 type VulnImageFailedParams struct {
 	BackoffSeconds float64
 	ErrorCode      string
 	ErrorDetail    string
+	Judged         string
 	RepoID         int64
 	Name           string
 	Digest         []byte
 }
 
 // A scan that did not finish: the state says so, so that nobody reads the absence of findings as clean. A row that had a detection keeps
-// it, and it is due again after the back-off.
+// it. A failure that may pass is due again after the back-off (judged empty); a terminal one names what it was judged under and is due
+// again when that changes (Q-VULN-270).
 func (q *Queries) VulnImageFailed(ctx context.Context, arg VulnImageFailedParams) error {
 	_, err := q.db.Exec(ctx, vulnImageFailed,
 		arg.BackoffSeconds,
 		arg.ErrorCode,
 		arg.ErrorDetail,
+		arg.Judged,
 		arg.RepoID,
 		arg.Name,
 		arg.Digest,
@@ -500,10 +534,17 @@ WITH wanted AS (
       JOIN oci_remote_tags t ON t.name = w.name AND t.version = w.tag
      WHERE t.repo_id = ANY($3::bigint[])
 ), images AS (
-    SELECT repo_id, name, tag, digest, platform FROM tagged
+    SELECT tagged.repo_id, tagged.name, tagged.tag, tagged.digest, tagged.platform, false AS child FROM tagged
     UNION
-    SELECT t.repo_id, t.name, t.tag, r.target, COALESCE(r.platform, '')
-      FROM tagged t JOIN oci_references r ON r.repo_id = t.repo_id AND r.name = t.name AND r.manifest = t.digest AND r.kind = 'manifest'
+    SELECT t.repo_id, t.name, t.tag, r.target, COALESCE(r.platform, ''), true
+      FROM tagged t
+      JOIN oci_references r ON r.repo_id = t.repo_id AND r.name = t.name AND r.manifest = t.digest AND r.kind = 'manifest'
+      JOIN oci_manifests c ON c.repo_id = r.repo_id AND c.name = r.name AND c.digest = r.target
+     WHERE c.media_type IN ('application/vnd.oci.image.manifest.v1+json', 'application/vnd.docker.distribution.manifest.v2+json')
+       AND COALESCE(c.artifact_type, '') IN ('', 'application/vnd.oci.image.config.v1+json', 'application/vnd.docker.container.image.v1+json')
+       AND c.subject IS NULL AND NOT c.attachment
+       AND NOT EXISTS (SELECT 1 FROM signatures g JOIN signature_attachments a ON a.signature_id = g.id
+                        WHERE g.object_sha256 = c.digest AND a.repo_id = c.repo_id)
 )
 SELECT g.repo_id::bigint AS repo_id, g.name::text AS name, g.tag::text AS version, ('sha256:' || encode(g.digest, 'hex'))::text AS digest,
        g.platform::text AS platform, COALESCE(s.state, '')::text AS state,
@@ -511,8 +552,8 @@ SELECT g.repo_id::bigint AS repo_id, g.name::text AS name, g.tag::text AS versio
        COALESCE(s.os_family, '')::text AS os_family, COALESCE(s.os_name, '')::text AS os_name, COALESCE(s.os_eosl, false)::boolean AS os_eosl
   FROM images g
   LEFT JOIN vuln_image_scan s ON s.repo_id = g.repo_id AND s.name = g.name AND s.digest = g.digest
- WHERE g.platform <> '' OR NOT EXISTS (
-         SELECT 1 FROM images c WHERE c.repo_id = g.repo_id AND c.name = g.name AND c.tag = g.tag AND c.platform <> '')
+ WHERE g.child OR NOT EXISTS (
+         SELECT 1 FROM images c WHERE c.repo_id = g.repo_id AND c.name = g.name AND c.tag = g.tag AND c.child)
  ORDER BY g.repo_id, g.name, g.tag, g.platform, g.digest
 `
 
@@ -535,9 +576,10 @@ type VulnImageGradeScansRow struct {
 	OsEosl    bool
 }
 
-// The manifests the given (name, tag) pairs stand for in the repositories (the tag's own and, for an index, the children it names), with
-// how far each is scanned, its OS and whether that OS is at its end of life: the scan facts of the grades of R-VULN-038. As
-// VulnImageManifests, for many tags at once; an index is left out once it has children.
+// The manifests the given (name, tag) pairs stand for in the repositories, with how far each is scanned, its OS and whether that OS is at
+// its end of life: the scan facts of the grades of R-VULN-038 and of the list's grade (R-VULN-039). As VulnImageManifests, for many tags at
+// once: for an index its platform images, the children the repository stores that VulnImageDiscover's selection scans (Q-VULN-269), and
+// the index alone only while no platform image is stored.
 func (q *Queries) VulnImageGradeScans(ctx context.Context, arg VulnImageGradeScansParams) ([]VulnImageGradeScansRow, error) {
 	rows, err := q.db.Query(ctx, vulnImageGradeScans, arg.Names, arg.Tags, arg.Repos)
 	if err != nil {
@@ -606,10 +648,17 @@ WITH tagged AS (
       FROM oci_remote_tags t
      WHERE t.repo_id = ANY($1::bigint[]) AND t.name = $2::text AND t.version = $3::text
 ), images AS (
-    SELECT repo_id, name, digest, platform FROM tagged
+    SELECT tagged.repo_id, tagged.name, tagged.digest, tagged.platform, false AS child FROM tagged
     UNION
-    SELECT t.repo_id, t.name, r.target, COALESCE(r.platform, '')
-      FROM tagged t JOIN oci_references r ON r.repo_id = t.repo_id AND r.name = t.name AND r.manifest = t.digest AND r.kind = 'manifest'
+    SELECT t.repo_id, t.name, r.target, COALESCE(r.platform, ''), true
+      FROM tagged t
+      JOIN oci_references r ON r.repo_id = t.repo_id AND r.name = t.name AND r.manifest = t.digest AND r.kind = 'manifest'
+      JOIN oci_manifests c ON c.repo_id = r.repo_id AND c.name = r.name AND c.digest = r.target
+     WHERE c.media_type IN ('application/vnd.oci.image.manifest.v1+json', 'application/vnd.docker.distribution.manifest.v2+json')
+       AND COALESCE(c.artifact_type, '') IN ('', 'application/vnd.oci.image.config.v1+json', 'application/vnd.docker.container.image.v1+json')
+       AND c.subject IS NULL AND NOT c.attachment
+       AND NOT EXISTS (SELECT 1 FROM signatures g JOIN signature_attachments a ON a.signature_id = g.id
+                        WHERE g.object_sha256 = c.digest AND a.repo_id = c.repo_id)
 )
 SELECT g.repo_id::bigint AS repo_id, ('sha256:' || encode(g.digest, 'hex'))::text AS digest, g.platform::text AS platform,
        COALESCE(s.state, '')::text AS state, COALESCE(s.error_code, '')::text AS error_code,
@@ -618,7 +667,7 @@ SELECT g.repo_id::bigint AS repo_id, ('sha256:' || encode(g.digest, 'hex'))::tex
        COALESCE(s.packages, 0)::int AS packages
   FROM images g
   LEFT JOIN vuln_image_scan s ON s.repo_id = g.repo_id AND s.name = g.name AND s.digest = g.digest
- WHERE g.platform <> '' OR NOT EXISTS (SELECT 1 FROM images c WHERE c.repo_id = g.repo_id AND c.platform <> '')
+ WHERE g.child OR NOT EXISTS (SELECT 1 FROM images c WHERE c.repo_id = g.repo_id AND c.child)
  ORDER BY g.repo_id, g.platform, g.digest
 `
 
@@ -641,9 +690,11 @@ type VulnImageManifestsRow struct {
 	Packages  int32
 }
 
-// The manifests a tag stands for in the repositories (the tag's own and, for an index, the children it names), with how far each is
-// scanned: the version views of the report (R-VULN-020). The tag item's blob is the manifest it points at (R-OCI-007); the tag of a remote repository is its cache entry (R-OCI-036). An index has no
-// scan row of its own and is left out once it has children.
+// The manifests a tag stands for in the repositories, with how far each is scanned: the version views of the report (R-VULN-020). The tag
+// item's blob is the manifest it points at (R-OCI-007); the tag of a remote repository is its cache entry (R-OCI-036). For an index these
+// are its platform images (Q-VULN-269): the children the repository stores that VulnImageDiscover's selection scans. A child that is an
+// attachment (Docker's attestation manifest, platform unknown/unknown) is no image of the tag, and a child a remote has not fetched is not
+// in the repository and has nothing to check. An index has no scan row of its own and stands alone only while no platform image is stored.
 func (q *Queries) VulnImageManifests(ctx context.Context, arg VulnImageManifestsParams) ([]VulnImageManifestsRow, error) {
 	rows, err := q.db.Query(ctx, vulnImageManifests, arg.Repos, arg.Name, arg.Tag)
 	if err != nil {
@@ -753,7 +804,7 @@ func (q *Queries) VulnImagePackageID(ctx context.Context, arg VulnImagePackageID
 
 const vulnImageRearm = `-- name: VulnImageRearm :execrows
 UPDATE vuln_image_scan
-   SET state = 'pending', not_before = now(), attempts = 0
+   SET state = 'pending', not_before = now(), attempts = 0, judged = NULL
  WHERE repo_id = $1::bigint
 `
 
@@ -848,7 +899,7 @@ func (q *Queries) VulnImageSBOMPut(ctx context.Context, arg VulnImageSBOMPutPara
 
 const vulnImageScanned = `-- name: VulnImageScanned :exec
 UPDATE vuln_image_scan
-   SET state = 'scanned', db_digest = $1::text, scanned_at = now(), attempts = 0, error_code = NULL, error_detail = NULL,
+   SET state = 'scanned', db_digest = $1::text, scanned_at = now(), attempts = 0, error_code = NULL, error_detail = NULL, judged = NULL,
        os_family = NULLIF($2::text, ''), os_name = NULLIF($3::text, ''), os_eosl = $4::boolean,
        packages = $5::int
  WHERE repo_id = $6::bigint AND name = $7::text AND digest = $8
@@ -912,14 +963,17 @@ SELECT s.repo_id::bigint AS repo_id, s.name::text AS name, s.digest AS digest, s
   JOIN repositories r ON r.id = s.repo_id
   JOIN project p ON p.id = r.project_id
  WHERE r.lifecycle = 'active' AND NOT COALESCE((r.config->>'disabled')::boolean, false)
-   AND s.state IN ('pending', 'failed') AND s.not_before <= now() AND s.attempts < $1::int
+   AND ((s.state = 'pending' AND s.not_before <= now())
+     OR (s.state = 'failed' AND s.judged IS NULL AND s.not_before <= now() AND s.attempts < $1::int)
+     OR (s.state = 'failed' AND s.judged IS NOT NULL AND NOT (s.judged = ANY($2::text[]))))
    AND NOT EXISTS (SELECT 1 FROM vuln_image_sbom b WHERE b.digest = s.digest)
  ORDER BY s.not_before, s.repo_id, s.name, s.digest
- LIMIT $2::int
+ LIMIT $3::int
 `
 
 type VulnImageUnanalysedParams struct {
 	MaxAttempts int32
+	Judges      []string
 	MaxRows     int32
 }
 
@@ -934,9 +988,9 @@ type VulnImageUnanalysedRow struct {
 
 // The due manifests that have no analysis yet (Q-VULN-168): without a database the job has the scanner analyse them and leaves the rows
 // pending, so the first database detects without reading a layer. A row whose analysis is stored is not taken again, whatever version
-// made it (Q-VULN-199: the detection's scanner says whether it is current), so the run ends.
+// made it (Q-VULN-199: the detection's scanner says whether it is current), so the run ends. A terminal failure is due as in VulnImageDue.
 func (q *Queries) VulnImageUnanalysed(ctx context.Context, arg VulnImageUnanalysedParams) ([]VulnImageUnanalysedRow, error) {
-	rows, err := q.db.Query(ctx, vulnImageUnanalysed, arg.MaxAttempts, arg.MaxRows)
+	rows, err := q.db.Query(ctx, vulnImageUnanalysed, arg.MaxAttempts, arg.Judges, arg.MaxRows)
 	if err != nil {
 		return nil, err
 	}
