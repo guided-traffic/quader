@@ -12063,10 +12063,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-523 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+525 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 523 questions</summary>
+<summary>Q-UI: 525 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12592,7 +12592,9 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1050](spec/api-and-ui.md#q-ui-1050--a-stacked-row-is-a-grid-of-names-and-values-one-field-a-line) | A stacked row is a grid of names and values, one field a line | Decided by the development agent | (a), in [data-table.ts](../web/src/app/shared/ui/data-table.ts) (`measure`) and [_list-screens.scss](../web/src/styles/_list-screens.scss) (Stacked rows). | — |
 | [Q-UI-1051](spec/api-and-ui.md#q-ui-1051--a-versions-file-path-is-its-download) | A version's file path is its download | Decided by the development agent | (a) The path is the link that downloads the file, with the title "Download"; no column **Download**; a file that offers none (refused by a gate, in a system or a disabled repository) shows its path as text | — |
 | [Q-UI-1052](spec/api-and-ui.md#q-ui-1052--token-is-neuter-in-every-german-text) | "Token" is neuter in every German text | Decided by the development agent | (a), written into the [glossary](../web/src/locale/GLOSSARY.md) and held by [formal-german.spec.ts](../web/src/app/shared/formal-german.spec.ts), which refuses the masculine forms that have no plural reading. | — |
-| [Q-UI-1060](spec/api-and-ui.md#q-ui-1060--what-a-layout-check-can-hold-of-the-render-sets-blind-spots-and-what-stays-to-the-eye) | What a layout check can hold of the render set's blind spots, and what stays to the eye | Decided by the development agent on 2026-11-24 | as in the table: one check (`cramped`) is decided and waits for its render run; the rest are held already, have no seen defect, cannot be measured in the page, or are not layout. | — |
+| [Q-UI-1060](spec/api-and-ui.md#q-ui-1060--what-a-layout-check-can-hold-of-the-render-sets-blind-spots-and-what-stays-to-the-eye) | What a layout check can hold of the render set's blind spots, and what stays to the eye | Decided by the development agent on 2026-11-24 | as in the table: one check (`cramped`), built on 2026-11-24 with a run of the whole set (above); the rest are held already, have no seen defect, cannot be measured in the page, or are not layout. | — |
+| [Q-UI-1061](spec/api-and-ui.md#q-ui-1061--a-mirror-without-its-bound-offers-no-run-and-says-who-can-set-the-bound) | A mirror without its bound offers no run, and says who can set the bound | Decided by the development agent on 2026-11-24 | (a) **Run a pass now** and its menu disabled in the state **No bound**, the reason beside them; the state's sentence by who reads it | — |
+| [Q-UI-1062](spec/api-and-ui.md#q-ui-1062--the-trends-axis-numbers-are-text-of-the-page-beside-the-drawing) | The trend's axis numbers are text of the page beside the drawing | Decided by the development agent on 2026-11-24 | (a) The numbers as HTML in a column of their own beside the drawing, at the app's small text size (`--quader-type-body-small`, 12 px), each at its grid line's share of the drawing's height; the drawing keeps its aspect and starts at the plot's edge | — |
 
 </details>
 

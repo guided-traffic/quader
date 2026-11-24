@@ -227,21 +227,50 @@
   }
 }
 
+// The chart and its axis (Q-UI-1062): the axis's numbers are text of the page in a column of their own, at the app's small text size
+// whatever the drawing's scale; inside the SVG they scaled with the viewBox, to about 6 px at 390 px. The drawing keeps its aspect
+// (the plot of report-trend.ts, 596 by 200 viewBox units), so a number's place, a share of the drawing's height, is its grid line's,
+// and is at most 48rem wide (16rem high, the height it had).
+.trend-figure {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 48rem);
+  column-gap: var(--quader-space-2);
+  margin-block-start: var(--quader-space-3);
+}
+
+.trend-axis {
+  position: relative;
+  font: var(--quader-type-body-small);
+  font-variant-numeric: tabular-nums;
+  color: var(--quader-text-muted);
+  text-align: end;
+}
+
+// The widest number of the axis, its top, in the flow without a height: the column is as wide as it.
+.trend-axis-sizer {
+  display: block;
+  block-size: 0;
+  overflow: hidden;
+  visibility: hidden;
+}
+
+.trend-tick {
+  position: absolute;
+  inset-inline-end: 0;
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+
 .trend-chart {
   display: block;
   inline-size: 100%;
-  max-block-size: 16rem;
-  margin-block-start: var(--quader-space-3);
+  block-size: auto;
+  aspect-ratio: 596 / 200;
 }
 
 .trend-grid {
   stroke: var(--quader-border);
   stroke-width: 1;
-}
-
-.trend-tick {
-  fill: var(--quader-text-muted);
-  font-size: 11px;
 }
 
 .trend-series {

@@ -661,17 +661,7 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
-- **A mirror without its bound still offers "Run a pass now" (seen by the development agent on 2026-11-24 at R2's
-  renders, `power/repository-settings-npm-mirror-unbounded-unbounded-light-1440.png`):** the status says "No bound"
-  and the button stays active, though the run answers 422 `mirror_unbounded`. And a project's Owner without
-  `write-config` reads "Set one in the mirror settings" there, which only an administrator can (R2's builder). To
-  do: the button disabled with the reason beside it, and the sentence by who reads it.
-
-- **The trend's axis numbers are about 6 px high at 390 px (seen by W15 on 2026-11-24 at the renders of
-  `vulnerabilities` in Chromium, Firefox and WebKit alike):** the numbers 0, 1000 and 2000 scale with the chart's
-  viewBox, which is about half its size at a phone's width, so they are hard to read there. Not an engine's
-  difference. To do: the axis's text at the app's smallest text size whatever the chart's scale.
-
+None open (2026-11-24).
 
 ### Closed
 
@@ -892,6 +882,31 @@ records the recorder that tells such a stall apart).
   closes when none runs (`runCount`), held by `TestR_ARCH_024_AJobStartedWhileTheShutdownWaitsDoesNotPanic` (unit,
   milliseconds, 20,000 starts beside four waiters); the area `vulnimage` passed once after it. One local run of that
   area before it failed in 110 s and its output was not kept, so what failed there is not known.
+
+- **Closed on 2026-11-24 by the screens' package of round 3 (Q-UI-1061): a mirror without its bound offers no run.** In
+  the state **No bound** **Run a pass now** and its menu are disabled with "No pass runs until the mirror has a bound."
+  beside them (`aria-describedby`); **Pause** stays. The state's sentence ends "Set one in the mirror settings and save."
+  only for the holder of `repositories:write-config`; an Owner without it and every other reader read "Only an
+  administrator of the installation can set one." A paused mirror keeps its run and the answer in words, **Resume**
+  beside it (the decision says why). Held by `mirror-status.spec.ts` and `mirror-tab.spec.ts` (unit, about 0.1 s each,
+  no data); rendered `repository-settings-npm-mirror-unbounded-unbounded-*` (`power`, `admin`). As it stood:
+  **A mirror without its bound still offers "Run a pass now" (seen by the development agent on 2026-11-24 at R2's
+  renders, `power/repository-settings-npm-mirror-unbounded-unbounded-light-1440.png`):** the status says "No bound"
+  and the button stays active, though the run answers 422 `mirror_unbounded`. And a project's Owner without
+  `write-config` reads "Set one in the mirror settings" there, which only an administrator can (R2's builder). To
+  do: the button disabled with the reason beside it, and the sentence by who reads it.
+
+- **Closed on 2026-11-24 by the screens' package of round 3 (Q-UI-1062): the trend's axis numbers are readable at every
+  width.** They are text of the page in a column of their own beside the drawing, at the small text size (12 px), each
+  at its grid line's share of the drawing's height; the SVG draws the plot alone, at most 48rem wide, and stands at the
+  start of its card. Held by `vulnerability-report.spec.ts` (unit: no text in the SVG, each number at its line) and by
+  the layout fixtures (`make ui-layout-test`: 12 px, at least 12 px high, on its grid line within 1 px and left of the
+  drawing, at 358 and 1,100 px, in Chromium, Firefox and WebKit; six cases, about 0.3 to 0.9 s each); rendered
+  `vulnerabilities` in the three engines, looked at. As it stood:
+  **The trend's axis numbers are about 6 px high at 390 px (seen by W15 on 2026-11-24 at the renders of
+  `vulnerabilities` in Chromium, Firefox and WebKit alike):** the numbers 0, 1000 and 2000 scale with the chart's
+  viewBox, which is about half its size at a phone's width, so they are hard to read there. Not an engine's
+  difference. To do: the axis's text at the app's smallest text size whatever the chart's scale.
 
 - **Closed on 2026-11-24, 01:50, by the same package: "Your role" shows the dash for no role** (R-UI-146), and the layout check `empty-cell` refuses a list cell that shows nothing (it found two more, fixed); German "das Token" throughout (Q-UI-1052, glossary, `formal-german.spec.ts`); the signature column at 1,024 px holds as a table, the file's path being its download (Q-UI-1051). As it stood: **The column "Your role" of the projects list is empty where the caller has no role (seen the same evening,
   `projects-details-details-dark-1440.png`, as `ada`).** Every other column of the same rows shows "–" for no
@@ -11043,7 +11058,18 @@ the walk items and the run record); what the code holds beyond the plan has not 
   text drawn by CSS, states the set does not render (open menus, hover, most dialogs, error states), an offset of 1 px or
   less. **The two newest checks** (`stacked-offset`, `label-apart`) were each wrong once on older screens before they were
   right; `joined` has run in one full set.
-- **What the render checks of W-5 leave to the eye** (its builder's list): a wrapping column cramped beside a roomy neighbour
+- **Partly closed; open: what Q-UI-1060 leaves to the eye by decision (a text cut at the start of a wrapped line, a stacked
+  label off its control, two words for one thing across screens), each until a defect of its shape is seen.** Closed on
+  2026-11-24 by the screens' package of round 3: the check `cramped` (`web/e2e/renders/layout.ts`, R-UI-173) with W-5's
+  row as its fixture and four more cases (`make ui-layout-test`, three engines, six cases of about 0.25 to 0.9 s each,
+  no stack); its first run of the whole set found five screens, of which three were repaired (the sessions' "This
+  session" under the time, the admin area's users with a column of names of 10 rem instead of 14, the storage page's
+  scrub as its share with the period as a muted second line) and two (the audit log, the tokens) were columns that also
+  hold long values that wrap, which the check now passes by a case of its own; the run after the repairs had no
+  finding. The check measures each table's cells once per picture and sets a wrapped short cell on one line for a
+  moment; the whole set (470 screens) took about 50 minutes on the development machine at a load of 14 to 20, and no
+  run without the check was timed beside it, so its own share is not measured. As it stood:
+  **What the render checks of W-5 leave to the eye** (its builder's list): a wrapping column cramped beside a roomy neighbour
   ("3 findings · / 0 fixable" at 1,024 px is one), text cut at the start of a wrapped line, a stacked label off its control,
   two words for one thing across screens.
 
@@ -11078,7 +11104,20 @@ the walk items and the run record); what the code holds beyond the plan has not 
   Read on 2026-11-23: its set last ran on 2026-11-19 at 03:22 UTC (dispatch 44451019461, green), before the
   chart's certificates changed (af1a16ee3, 2026-11-20); every nightly since skipped it, so the dispatch
   `gh workflow run "HA and Performance (nightly)" --ref main -f sets=upgrade-release` is still what shows it.
-- **No render walk switches a remote to mirror mode**: the OCI and Debian mirror settings are covered by unit tests only, and a
+- **Partly closed; open: a row of a remote's list that a mirror pass filled is not in the render set (W-24)**: no pass
+  runs on the render stack, so such a row needs a mirror that stores from an upstream the seed reaches (the installation's
+  own `image-source`, as `image-cache` does) and a pass that ends before the pictures; not built. Closed on 2026-11-24 by
+  the screens' package of round 3: the walk `storedMirror` (`web/e2e/renders/screens.ts`) renders an OCI and a Debian
+  remote stored in the mode mirror, as `admin` (`repository-settings-oci-mirror-stored`,
+  `repository-settings-deb-mirror-stored`): a bounded mirror between two passes (packages to mirror, a storage limit of
+  10 GiB, the format's own members: OCI tags and tags never mirrored, Debian suites, components, architectures and
+  translations; the status Scheduled with a complete last pass, rate-limit waits and the bound) and one of the
+  well-known registry without its bound (No bound, the run disabled, Q-UI-1061); the repository's answer and the status
+  are changed in the browser, nothing is saved; 24 pictures, about 25 s of the render run. The switch of the mode in
+  the form was already rendered (`mirrorMode`, G5-65). The first render of a complete pass found two defects of the
+  status, both repaired: a time beside "Discovery saw everything" and after "HTTP 429 at" broke in two at 390 px (a
+  term takes at most two fifths of the list now, a time moves whole). As it stood:
+  **No render walk switches a remote to mirror mode**: the OCI and Debian mirror settings are covered by unit tests only, and a
   row of a remote's list that a mirror pass filled is not in the render set (W-24).
 
 ### D · Open findings whose cause is not known (each needs a recurrence read, not a new test)

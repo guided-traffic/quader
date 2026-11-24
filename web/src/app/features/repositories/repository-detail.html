@@ -224,6 +224,7 @@
               <quader-mirror-status
                 [key]="ref()"
                 [canChange]="canChange()"
+                [canSetBound]="!mirrorRestricted()"
                 [busy]="pausing()"
                 [refresh]="mirrorRefresh()"
                 (setPaused)="setMirrorPaused($event)"

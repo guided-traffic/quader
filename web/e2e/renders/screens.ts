@@ -806,36 +806,97 @@ const unboundedStatus = {
 
 /**
  * A stored mirror of a well-known registry without a bound (Q-CUR-43): the status says **No bound** and plans no pass, and **Run a pass
- * now** answers 422 mirror_unbounded in words. The seed stores no such mirror (a save refuses it): the repository's answer is changed in
- * the browser to the mode mirror and the status and the run are the server's answers for one; nothing is saved.
+ * now** is disabled with its reason beside it (Q-UI-1061); the sentence tells the administrator to set a bound and the Owner, who keeps
+ * the mirror's settings as stored, who can. The seed stores no such mirror (a save refuses it): the repository's answer is changed in
+ * the browser to the mode mirror and the status is the server's answer for one; nothing is saved.
  */
 async function* mirrorUnbounded(page: Page): AsyncGenerator<string> {
   const repo = `**/api/v1/projects/${mainProject}/repositories/npmjs`;
   await page.route(`${repo}/mirror`, (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(unboundedStatus) }),
   );
-  await page.route(`${repo}/mirror/run`, (route) =>
-    route.fulfill({
-      status: 422,
-      contentType: 'application/problem+json',
-      body: JSON.stringify({
-        type: '/api/v1/problems/mirror_unbounded',
-        title: 'Mirror unbounded',
-        status: 422,
-        code: 'mirror_unbounded',
-        detail: 'The mirror of "web-frontend/npmjs" reads https://registry.npmjs.org/ and has no bound, so it does not run.',
-      }),
-    }),
-  );
   await answerWith(page, repo, (body) => ({ ...body, remote: { ...(body['remote'] as Record<string, unknown>), mode: 'mirror' } }));
   const section = page.locator('main quader-disclosure').filter({ has: page.locator('quader-mirror-settings') });
   await section.getByRole('button', { name: 'Mirror', exact: true }).click();
   await expect(section.locator('[data-testid="mirror-state"][data-state="unbounded"]')).toBeVisible();
+  await expect(section.getByRole('button', { name: 'Run a pass now' })).toBeDisabled();
   await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
   yield 'unbounded';
-  await section.getByRole('button', { name: 'Run a pass now' }).click();
-  await expect(section.getByText('The mirror has no bound, so no pass runs.')).toBeVisible();
-  yield 'unbounded-run';
+}
+
+/** A mirror status of a bounded mirror between two passes, after a complete one, as the server answers it. */
+const scheduledStatus = {
+  mode: 'mirror',
+  state: 'scheduled',
+  pass: null,
+  lastCompletePass: {
+    outcome: 'complete',
+    kind: 'incremental',
+    method: 'listing',
+    startedAt: '2026-11-23T08:00:00Z',
+    finishedAt: '2026-11-23T08:14:37Z',
+    packages: 42,
+    packagesFailed: 0,
+    itemsStored: 1318,
+    bytesStored: 3_435_973_837,
+    discoveryComplete: true,
+    discoveryNote: null,
+  },
+  nextPassAt: '2026-11-23T09:00:00Z',
+  lastFullPassAt: '2026-11-22T02:00:00Z',
+  errors: { consecutiveFailures: 0, lastAt: null, lastCode: null, lastMessage: null },
+  rateLimit: { waits: 3, waitSeconds: 95, lastAt: '2026-11-23T08:06:12Z', lastStatus: 429, until: null },
+  bound: { reached: null, at: null, maxBytes: 10_737_418_240, usedBytes: 3_435_973_837 },
+};
+
+/** The format's own mirror members of a stored mirror (R-OCI-026, R-DEB-024): what the seed's remotes never store. */
+const formatMirror: Record<string, Record<string, unknown>> = {
+  oci: { tags: ['1.*', 'stable', 'latest'], excludeTags: ['*-rc*', '*-debug'] },
+  deb: { suites: ['bookworm', 'bookworm-updates', 'bookworm-security'], components: ['main', 'contrib'], architectures: ['amd64', 'arm64'], translations: ['en', 'de'], sources: false },
+};
+
+/**
+ * A remote of a format with mirror settings of its own (an OCI and a Debian remote), stored in the mode mirror (section 12, part C; W-24):
+ * first a bounded mirror (packages to mirror, a storage limit and the format's own members) between two passes, then a mirror of the
+ * well-known registry stored without its bound, as **No bound** with **Run a pass now** disabled. The seed stores neither (no mirror runs
+ * on the render stack): the repository's answer is changed in the browser and the status is the server's answer for one; nothing is
+ * saved.
+ */
+async function* storedMirror(page: Page): AsyncGenerator<string> {
+  const repo = `**/api/v1/projects/${otherProject}/repositories/${new URL(page.url()).pathname.split('/').at(-2)}`;
+  const section = page.locator('main quader-disclosure').filter({ has: page.locator('quader-mirror-settings') });
+  const stored = (bounded: boolean) => (body: Record<string, unknown>): Record<string, unknown> => {
+    const format = body['format'] as string;
+    const remote = body['remote'] as Record<string, unknown>;
+    const mirror = (remote['mirror'] as Record<string, unknown> | undefined) ?? {};
+    return {
+      ...body,
+      remote: {
+        ...remote,
+        mode: 'mirror',
+        mirror: bounded
+          ? { ...mirror, include: format === 'oci' ? ['library/nginx', 'library/postgres', 'bitnami/*'] : ['nginx*', 'postgresql-16*'], maxBytes: 10_737_418_240 }
+          : { ...mirror, include: [], maxBytes: null },
+      },
+      [format]: { ...(body[format] as Record<string, unknown>), mirror: formatMirror[format] },
+    };
+  };
+  const open = async (state: string): Promise<void> => {
+    await section.getByRole('button', { name: 'Mirror', exact: true }).click();
+    await expect(section.locator(`[data-testid="mirror-state"][data-state="${state}"]`)).toBeVisible();
+    await expect(section.locator('quader-format-settings')).toBeVisible();
+    await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+  };
+  await page.route(`${repo}/mirror`, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(scheduledStatus) }));
+  await answerWith(page, repo, stored(true));
+  await open('scheduled');
+  yield 'stored';
+  await page.unroute(`${repo}/mirror`);
+  await page.route(`${repo}/mirror`, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(unboundedStatus) }));
+  await answerWith(page, repo, stored(false));
+  await open('unbounded');
+  await expect(section.getByRole('button', { name: 'Run a pass now' })).toBeDisabled();
+  yield 'stored-unbounded';
 }
 
 /**
@@ -2745,7 +2806,6 @@ export const screens: readonly Screen[] = [
     path: `${P}/repositories/npmjs/settings`,
     kinds: owners,
     walk: mirrorUnbounded,
-    expected: [{ match: /^POST \/api\/v1\/projects\/[^/]+\/repositories\/npmjs\/mirror\/run answered 422$/, why: 'the run of a mirror without a bound' }],
   },
   { id: 'repository-settings-npm-virtual', path: `${P}/repositories/npm/settings`, kinds: all, walk: allSections },
   { id: 'repository-settings-generic', path: `${P}/repositories/assets/settings`, kinds: owners, walk: allSections },
@@ -2810,6 +2870,9 @@ export const screens: readonly Screen[] = [
   // The section Mirror of an OCI and a Debian remote switched to the mode mirror, with the format's own mirror settings (G5-65).
   { id: 'repository-settings-oci-mirror', path: `${O}/repositories/docker-hub-remote/settings`, kinds: ['admin'], walk: mirrorMode },
   { id: 'repository-settings-deb-mirror', path: `${O}/repositories/debian/settings`, kinds: ['admin'], walk: mirrorMode },
+  // The same remotes stored in the mode mirror, a bounded one and one without its bound (section 12, part C; Q-UI-1061).
+  { id: 'repository-settings-oci-mirror-stored', path: `${O}/repositories/docker-hub-remote/settings`, kinds: ['admin'], walk: storedMirror },
+  { id: 'repository-settings-deb-mirror-stored', path: `${O}/repositories/debian/settings`, kinds: ['admin'], walk: storedMirror },
   { id: 'repository-settings-ansible', path: `${O}/repositories/collections/settings`, kinds: all, walk: allSections },
   { id: 'repository-settings-ansible-remote', path: `${O}/repositories/galaxy/settings`, kinds: admins, walk: remoteSections },
   { id: 'repository-settings-ansible-virtual', path: `${O}/repositories/ansible/settings`, kinds: admins, walk: allSections },

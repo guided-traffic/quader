@@ -39,8 +39,12 @@ type RunNotice =
   | { readonly kind: 'running'; readonly job: JobReference | null }
   | { readonly kind: 'off' | 'paused' | 'unbounded' | 'not-applicable' };
 
-/** The words of a state; the colour is a second signal, never the only one (R-UI-044). */
-export function stateInfo(status: MirrorStatus): StateInfo {
+/**
+ * The words of a state; the colour is a second signal, never the only one (R-UI-044). `canSetBound`: the reader may change the
+ * mirror's settings (`repositories:write-config`, Q-REPO-142); the sentence of a mirror without its bound tells only that reader to
+ * set one, and every other reader that an administrator of the installation can (Q-UI-1061).
+ */
+export function stateInfo(status: MirrorStatus, canSetBound = false): StateInfo {
   switch (status.state) {
     case 'off':
       return {
@@ -61,7 +65,9 @@ export function stateInfo(status: MirrorStatus): StateInfo {
         label: $localize`:@@mirror.state.unbounded:No bound`,
         icon: 'block',
         tone: 'warn',
-        sentence: $localize`:@@mirror.state.unbounded.text:No pass starts: a mirror of a well-known registry needs packages to mirror whose patterns each start with a literal part, or a storage limit. Set one in the mirror settings and save.`,
+        sentence: canSetBound
+          ? $localize`:@@mirror.state.unbounded.text:No pass starts: a mirror of a well-known registry needs packages to mirror whose patterns each start with a literal part, or a storage limit. Set one in the mirror settings and save.`
+          : $localize`:@@mirror.state.unbounded.text-restricted:No pass starts: a mirror of a well-known registry needs packages to mirror whose patterns each start with a literal part, or a storage limit. Only an administrator of the installation can set one.`,
       };
     case 'running':
       return {
@@ -193,13 +199,20 @@ function boundText(kind: string): string {
               </button>
             }
             <span class="split">
-              <button class="btn btn-confirm" type="button" [disabled]="requesting()" (click)="run(false)">
+              <button
+                class="btn btn-confirm"
+                type="button"
+                [disabled]="requesting() || s.state === 'unbounded'"
+                [attr.aria-describedby]="s.state === 'unbounded' ? 'mirror-run-why' : null"
+                (click)="run(false)"
+              >
                 <ng-container i18n="@@mirror.run">Run a pass now</ng-container>
               </button>
               <button
                 type="button"
                 class="btn btn-confirm more"
-                [disabled]="requesting()"
+                [disabled]="requesting() || s.state === 'unbounded'"
+                [attr.aria-describedby]="s.state === 'unbounded' ? 'mirror-run-why' : null"
                 [cdkMenuTriggerFor]="runMenu"
                 aria-label="More ways to run a pass"
                 i18n-aria-label="@@mirror.run.more"
@@ -214,6 +227,9 @@ function boundText(kind: string): string {
                 </div>
               </ng-template>
             </span>
+            @if (s.state === 'unbounded') {
+              <span class="hint" id="mirror-run-why" i18n="@@mirror.run.why-unbounded">No pass runs until the mirror has a bound.</span>
+            }
           </div>
         }
 
@@ -485,12 +501,25 @@ function boundText(kind: string): string {
     .buttons {
       display: flex;
       flex-wrap: wrap;
+      align-items: center;
       gap: var(--quader-space-3);
       margin-block: var(--quader-space-3);
     }
     .split {
       display: inline-flex;
       gap: 2px;
+    }
+    /* Why the run is disabled, beside the buttons and on their middle (Q-UI-1061). */
+    .buttons .hint {
+      margin: 0;
+    }
+    /* A term takes at most 40 % of a narrow list, so that a time keeps its one line beside "Discovery saw everything" at 390 px. */
+    .facts {
+      grid-template-columns: fit-content(40%) minmax(0, 1fr);
+    }
+    /* A time after words ("HTTP 429 at …") moves to the next line whole (R-UI-171). */
+    .facts time {
+      white-space: nowrap;
     }
     .notices p {
       margin-block: var(--quader-space-2);
@@ -504,6 +533,8 @@ export class MirrorStatusPanel {
   readonly key = input.required<string>();
   /** May pause, resume and request a pass: the same permission as saving the repository (Q-UI-120). */
   readonly canChange = input(false);
+  /** May change the mirror's settings, its bound among them: `repositories:write-config` (Q-REPO-142, Q-UI-1061). */
+  readonly canSetBound = input(false);
   /** A pause or resume is being written. */
   readonly busy = input(false);
   /** Changes when the parent changed the document (a pause, a resume, a save): the status is read again. */
@@ -519,7 +550,7 @@ export class MirrorStatusPanel {
   protected readonly runFailure = signal<ApiError | null>(null);
   protected readonly info = computed(() => {
     const s = this.status();
-    return s ? stateInfo(s) : null;
+    return s ? stateInfo(s, this.canSetBound()) : null;
   });
 
   private generation = 0;

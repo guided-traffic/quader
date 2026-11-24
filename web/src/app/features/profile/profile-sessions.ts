@@ -40,7 +40,7 @@ import { ProfileNav } from './profile-nav';
             <th scope="row">
               {{ s.createdAt | date: 'medium' }}
               @if (s.current) {
-                <span class="badge"><span class="material-icons" aria-hidden="true">computer</span><ng-container i18n="@@profile.sessions.this">This session</ng-container></span>
+                <span class="badge this-session"><span class="material-icons" aria-hidden="true">computer</span><ng-container i18n="@@profile.sessions.this">This session</ng-container></span>
               }
             </th>
             <td>{{ s.lastSeenAt | date: 'medium' }}</td>
@@ -64,6 +64,13 @@ import { ProfileNav } from './profile-nav';
   styles: `
     .agent {
       overflow-wrap: anywhere;
+    }
+    /* The mark of the session in use stands under its time, at every width: beside it, it fitted the column at some widths and
+       wrapped under it at others (the check cramped, Q-UI-1060). */
+    .this-session {
+      display: flex;
+      inline-size: fit-content;
+      margin-block-start: var(--quader-space-1);
     }
   `,
 })

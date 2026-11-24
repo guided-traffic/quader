@@ -86,7 +86,7 @@ export class UserList {
 
   protected readonly caption = $localize`:@@users.caption:Users`;
   protected readonly columns: readonly TableColumn[] = [
-    { id: 'username', label: $localize`:@@users.col.user:User`, sortable: true, width: '14rem' },
+    { id: 'username', label: $localize`:@@users.col.user:User`, sortable: true, width: '10rem' },
     { id: 'email', label: $localize`:@@users.col.email:Email` },
     {
       id: 'origin',

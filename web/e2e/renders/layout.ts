@@ -10,7 +10,7 @@
 export interface LayoutFinding {
   /**
    * Which check found it: `icon-apart`, `broken`, `row-offset`, `row-actions`, `stacked-offset`, `stacked-place`, `label-apart`,
-   * `empty-cell`, `cell-overflow`, `clipped`, `stacked-fits`, `sideways`, `empty-scroll`.
+   * `empty-cell`, `cell-overflow`, `clipped`, `cramped`, `stacked-fits`, `sideways`, `empty-scroll`.
    */
   readonly check: string;
   /** The element, as a path of up to four tags with their first two classes. */
@@ -772,6 +772,106 @@ export function layoutFindings(): LayoutFinding[] {
         if ((cell.textContent ?? '').trim() !== '' || cell.querySelector('*:not(:empty), input, img, svg')) return;
         add('empty-cell', cell, head.textContent ?? '', `the cell of "${(head.textContent ?? '').trim()}" shows nothing; a cell without a value is the dash`);
       });
+    }
+  }
+
+  // ---- cramped: a short text wrapped beside a column that has room to spare (R-UI-173, Q-UI-1060) -------------------------
+  // In a table that stands as a table, a short text (a summary, a count with its unit: at most CRAMPED_CHARS characters of its first
+  // line's text, a `.secondary` line left out) in two or more lines, while the other columns together have the room its one line needs
+  // and use none of it: a column is as wide as its widest content in every row, its head included, only where something set its width
+  // (a fixed column), and the rest of its width is room that no row uses. W-5 saw "3 findings ·" / "0 fixable" in a column of the
+  // versions at 1,024 px beside such a column (2026-11-20). A column that has a wrapped text of its own has no room to give. Measured as
+  // `stacked-fits` measures: the cell is set on one line for the measurement (`white-space: nowrap`), and set back in the same task; a
+  // cell whose lines stay under it has them by its layout (a mark in a block under a name, a line break), not by a wrap.
+  const CRAMPED_CHARS = 40;
+  const CRAMPED = 'data-quader-layout-cramped';
+  const crampedStyle = document.createElement('style');
+  crampedStyle.textContent = `[${CRAMPED}], [${CRAMPED}] * { white-space: nowrap !important; }`;
+  /** The content box's left and width of a cell. */
+  const contentBox = (cell: Element): { left: number; width: number } => {
+    const r = cell.getBoundingClientRect();
+    const cs = getComputedStyle(cell);
+    const left = r.left + parseFloat(cs.borderLeftWidth) + parseFloat(cs.paddingLeft);
+    return { left, width: r.right - parseFloat(cs.borderRightWidth) - parseFloat(cs.paddingRight) - left };
+  };
+  /** The visible text of a cell, without an icon's glyph name, a `.secondary` line and text for assistive technology only. */
+  const primaryText = (cell: Element): string => {
+    let text = '';
+    const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const parent = n.parentElement;
+      if (!parent || inIcon(parent) || !shown(parent) || parent.closest('.secondary')) continue;
+      text += n.nodeValue ?? '';
+    }
+    return text.replace(/\s+/g, ' ').trim();
+  };
+  /**
+   * How far a cell's content reaches from its content box's left: its text, its units (a badge with its padding, an icon, a control)
+   * and the boxes that hold neither an element nor text (a meter's bar, a picture). A block that holds only text is as wide as the cell
+   * whatever its text, so its text is measured, not its box.
+   */
+  const reach = (cell: Element, left: number): number => {
+    let right = left;
+    for (const r of textRects(cell)) right = Math.max(right, r.right);
+    for (const el of Array.from(cell.querySelectorAll('*'))) {
+      if (!el.matches(UNIT) && (el.children.length > 0 || /\S/.test(el.textContent ?? ''))) continue;
+      if (!shown(el) || positioned(el)) continue;
+      right = Math.max(right, el.getBoundingClientRect().right);
+    }
+    return right - left;
+  };
+  for (const table of Array.from(document.querySelectorAll<HTMLTableElement>('main table, [role="dialog"] table'))) {
+    if (!shown(table) || table.closest('.readme') || getComputedStyle(table).display !== 'table') continue;
+    const rows = Array.from(table.rows).filter((row) => row.closest('table') === table && shown(row) && Array.from(row.cells).every((c) => c.colSpan === 1));
+    const columns = new Map<number, { width: number; used: number; wraps: boolean; long: boolean; name: string }>();
+    const candidates: { cell: Element; column: number; text: string }[] = [];
+    for (const row of rows) {
+      Array.from(row.cells).forEach((cell, i) => {
+        if (!shown(cell)) return;
+        const box = contentBox(cell);
+        const col = columns.get(i) ?? { width: box.width, used: 0, wraps: false, long: false, name: '' };
+        col.width = Math.max(col.width, box.width);
+        col.used = Math.max(col.used, reach(cell, box.left));
+        if (row.parentElement?.tagName === 'THEAD') col.name ||= primaryText(cell);
+        const lines = lineCount(textRects(cell, true));
+        if (lines > 1) {
+          col.wraps = true;
+          const short = primaryText(cell);
+          // A column of long values that wrap (an owner's path, a description) is as wide as the list gives it, and a short value of it
+          // wraps at that width as the long ones do: nothing of it is cramped.
+          if (short.length > CRAMPED_CHARS) col.long = true;
+          else if (row.parentElement?.tagName === 'TBODY' && short.length > 0) candidates.push({ cell, column: i, text: short });
+        }
+        columns.set(i, col);
+      });
+    }
+    if (candidates.length === 0) continue;
+    // The room the other columns have and use in no row, in a column without a wrapped text of its own.
+    const givers = (except: number): { name: string; px: number }[] =>
+      [...columns]
+        .filter(([i, c]) => i !== except && !c.wraps && c.width - c.used >= 1)
+        .map(([i, c]) => ({ name: c.name || `column ${i + 1}`, px: c.width - c.used }));
+    // One cell per column: the one that needs the most room for its one line.
+    const measured = new Map<number, { cell: Element; text: string; need: number }>();
+    document.head.append(crampedStyle);
+    for (const c of candidates) {
+      const before = contentBox(c.cell).width;
+      c.cell.setAttribute(CRAMPED, '');
+      const box = contentBox(c.cell);
+      // Lines that stay under `nowrap` are laid out so (a block under the text, a line break): nothing wrapped, nothing to give.
+      const need = lineCount(textRects(c.cell, true)) > 1 ? 0 : reach(c.cell, box.left) - before;
+      c.cell.removeAttribute(CRAMPED);
+      const known = measured.get(c.column);
+      if (need > 0 && !columns.get(c.column)?.long && (!known || need > known.need)) measured.set(c.column, { cell: c.cell, text: c.text, need });
+    }
+    crampedStyle.remove();
+    for (const [column, m] of measured) {
+      const from = givers(column);
+      const room = from.reduce((sum, g) => sum + g.px, 0);
+      if (room >= m.need) {
+        const where = from.map((g) => `"${g.name}" ${Math.round(g.px)}`).join(', ');
+        add('cramped', m.cell, m.text, `a short text in ${lineCount(textRects(m.cell, true))} lines needs ${Math.round(m.need)} px more for one line, and the other columns have ${Math.round(room)} px that no row uses (${where})`);
+      }
     }
   }
 

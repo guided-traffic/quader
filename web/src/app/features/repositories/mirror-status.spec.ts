@@ -31,12 +31,13 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function render(
   statuses: readonly MirrorStatus[],
-  options: { canChange?: boolean; intervalMs?: number; busy?: boolean } = {},
+  options: { canChange?: boolean; canSetBound?: boolean; intervalMs?: number; busy?: boolean } = {},
 ) {
   const r = await renderScreen(MirrorStatusPanel, {
     inputs: {
       key: 'web/npm-remote',
       canChange: options.canChange ?? true,
+      canSetBound: options.canSetBound ?? true,
       intervalMs: options.intervalMs ?? 60_000,
       busy: options.busy ?? false,
     },
@@ -317,6 +318,44 @@ describe('Mirror status panel', () => {
       const resume = firstValueFrom(outputToObservable(paused.r.fixture.componentInstance.setPaused));
       button(paused.r.root, 'Resume').click();
       expect(await resume).toBe(false);
+    });
+
+    it('R-UI-021 a mirror without its bound has "Run a pass now" and its menu disabled, with the reason beside them', async () => {
+      const { r, fake } = await render([sampleMirrorStatus({ state: 'unbounded' })]);
+      const run = button(r.root, 'Run a pass now');
+      const more = r.root.querySelector<HTMLButtonElement>('button[aria-label="More ways to run a pass"]')!;
+      expect(run.disabled).toBe(true);
+      expect(more.disabled).toBe(true);
+      const why = r.root.querySelector(`#${run.getAttribute('aria-describedby')}`)!;
+      expect(text(why)).toBe('No pass runs until the mirror has a bound.');
+      expect(more.getAttribute('aria-describedby')).toBe(why.id);
+      expect(why.parentElement).toBe(run.closest('.buttons'));
+      run.click();
+      await settle(r.fixture);
+      expect(fake.mirrorRuns).toHaveLength(0);
+      // Pause stays: a mirror without a bound may still be paused.
+      expect(button(r.root, 'Pause').disabled).toBe(false);
+
+      const bounded = await render([sampleMirrorStatus()]);
+      expect(button(bounded.r.root, 'Run a pass now').disabled).toBe(false);
+      expect(button(bounded.r.root, 'Run a pass now').hasAttribute('aria-describedby')).toBe(false);
+      expect(bounded.r.root.querySelector('#mirror-run-why')).toBeNull();
+    });
+
+    it('R-UI-021 the sentence of a mirror without its bound says "Set one in the mirror settings" only to a reader who can set it', async () => {
+      const admin = await render([sampleMirrorStatus({ state: 'unbounded' })], { canSetBound: true });
+      const adminSentence = text(stateOf(admin.r.root).querySelector('.sentence')!);
+      expect(adminSentence).toContain('Set one in the mirror settings and save.');
+      expect(adminSentence).not.toContain('Only an administrator');
+
+      // An Owner without repositories:write-config keeps the mirror's settings as stored (Q-REPO-142).
+      const owner = await render([sampleMirrorStatus({ state: 'unbounded' })], { canSetBound: false });
+      const ownerSentence = text(stateOf(owner.r.root).querySelector('.sentence')!);
+      expect(ownerSentence).toContain('Only an administrator of the installation can set one.');
+      expect(ownerSentence).not.toContain('Set one in the mirror settings');
+
+      const reader = await render([sampleMirrorStatus({ state: 'unbounded' })], { canChange: false, canSetBound: false });
+      expect(text(stateOf(reader.r.root).querySelector('.sentence')!)).toContain('Only an administrator of the installation can set one.');
     });
 
     it('R-UI-021 Pause is disabled while the document is being written', async () => {

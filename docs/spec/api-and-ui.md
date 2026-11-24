@@ -4657,7 +4657,10 @@ Priority: **MVP** · Covers: UI-031
   `remote.mirror.paused` with `If-Match` and nothing else of the form (a 412 opens the conflict dialog of R-UI-042), and **Run a
   pass now** (`POST …/mirror/run`, and **Run a full pass** from its menu), which shows the queued job with a link to the jobs of
   the kind `mirror-pass`; `409 mirror_pass_running` shows the running job instead of an error, and `mirror_off`,
-  `mirror_paused` and `mirror_unbounded` are shown in words (Q-UI-104, Q-UI-105, Q-UI-121).
+  `mirror_paused` and `mirror_unbounded` are shown in words (Q-UI-104, Q-UI-105, Q-UI-121). In the state **No bound** the run and its
+  menu are disabled with the reason beside them, and the state's sentence tells only the holder of `repositories:write-config` to set
+  a bound in the mirror settings, every other reader that an administrator of the installation can
+  ([Q-UI-1061](#q-ui-1061--a-mirror-without-its-bound-offers-no-run-and-says-who-can-set-the-bound)).
 - From M4b, on local and remote repositories of a format with the vulnerability adapter: the
   `vulnerabilities` member ([vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-002), and
   on the settings page a link to the repository's view of the vulnerability report (R-VULN-022).
@@ -8075,13 +8078,17 @@ Priority: **MVP** · Covers: quader-only
   blocks of what is positioned inside them: a text for assistive technology only (`.visually-hidden`) in the rows a region hides
   stood at its place, far below the window's end, and a package's 33 versions had 900 px of empty page under them (the check
   `empty-scroll`).
+- A short text in a table's cell (a summary, a count with its unit) stands on one line where the other columns have the room for it
+  and no row uses that room: a column whose width was set wider than every value of it gives the room back (the check `cramped`,
+  [Q-UI-1060](#q-ui-1060--what-a-layout-check-can-hold-of-the-render-sets-blind-spots-and-what-stays-to-the-eye); W-5's grade
+  "3 findings ·" over "0 fixable" at 1,024 px).
 - The renders take a screen at a further width where a list changes its form between the run's three (the start page at 1,100 px,
   the list of every project's repositories at 1,100 and 1,280 px; `widths` of a screen in
   [screens.ts](../../web/e2e/renders/screens.ts)).
 
 Acceptance criteria:
 
-- The render run's report names no `clipped` and no `sideways` finding (the checks of the same names in
+- The render run's report names no `clipped`, no `cramped` and no `sideways` finding (the checks of the same names in
   [layout.ts](../../web/e2e/renders/layout.ts) and [render.spec.ts](../../web/e2e/renders/render.spec.ts)).
 
 ### R-UI-174 · A list stacks its rows only where its columns do not fit, and a stacked row is dense
@@ -8969,7 +8976,8 @@ The owner's decision 9 of 2026-11-22: the admin area shows each connection with 
   - **Backlog**: the queue ("12 blobs, oldest 4 minutes"), or the en dash when empty; "behind for over an hour" in the warning colour when
     the alert of R-STOR-056 would fire;
   - **Damaged copies**: missing and corrupt, the en dash for none;
-  - **Scrub**: "*n* % read within 30 days" (the connection's period), and "behind" in the warning colour when copies are overdue;
+  - **Scrub**: "*n* % read" with "within 30 days" (the connection's period) as the cell's muted second line, and "behind" in the
+    warning colour when copies are overdue;
   - **Encrypted**: **No** (stage 1 knows no other value).
 - **Details on demand.** A row's name opens a fold below it with the connection's non-secret settings as read (the credential source,
   `force_path_style`, the checksum modes, `batch_delete`, `storage_class`, `sse_mode`, `scrub_period`, `scrub_bytes_per_second`), its
@@ -23029,21 +23037,91 @@ layout, and the reading of 2026-11-23 set the rule that a check comes with the f
 |---|---|---|
 | An offset of 1 px or less | It is held: R-UI-175's threshold is "within 1 px", and the fixtures hold it from both sides (1.5 px fails, 0.5 px passes) | Not a blind spot; nothing to build |
 | A control beside a framed box (a code block, a list of members) | Yes: its rule of Q-UI-724, that the control stands on the box, is a measurement of the control's top against the box's top edge | Not built: no such defect has been seen on a render, and the exception exists because measuring it against the text inside the box found false defects; a check `on-box` comes with the fixture of the first seen one |
-| A wrapping column cramped beside a roomy neighbour | Yes: in a table that stands as a table, a short text (a summary, a count with its unit) in two or more lines whose one-line width the table could give it from a column that is wider than its widest content in every row; the measurement is the one `stacked-fits` already makes (the table's columns at their least widths, undone in the same task) | **To be built, with the fixture of W-5's row** (`3 findings · / 0 fixable` beside a column of fixed width): a defect of this shape was seen. Not built in this package: a new check lands with a run of the whole render set and the repair of every screen it then finds, which the package that decided it did not run; it is an open item of the plan until then |
+| A wrapping column cramped beside a roomy neighbour | Yes: in a table that stands as a table, a short text (a summary, a count with its unit) in two or more lines whose one-line width the table could give it from a column that is wider than its widest content in every row; the measurement is the one `stacked-fits` already makes (the table's columns at their least widths, undone in the same task) | **Built, with the fixture of W-5's row** (`3 findings · / 0 fixable` beside a column of fixed width): a defect of this shape was seen. Not built by the package that decided it, since a new check lands with a run of the whole render set and the repair of every screen it then finds; built on 2026-11-24 (below) |
 | Absolutely placed elements (menus, tooltips, a positioned hint) | In part: their overlap with text in the flow is measurable, their place is set by their anchor by design | Not built: no defect seen; `cell-overflow` and `sideways` already leave them out on purpose |
 | Text drawn by CSS (`content` of `::before` and `::after`) | No: a pseudo-element has no node, so no range and no box can be read for it; only its string is (`getComputedStyle(el, '::before').content`) | Stays to the eye: the app draws only glyphs of icons and separators this way, which the pictures show |
 | A text cut at the start of a wrapped line; a stacked label off its control | Yes, by measuring every wrapped line's first glyph and every stacked label's distance to its control | Not built, as decided on 2026-11-23: no defect of either shape seen; `label-apart` holds the stacked facts of a row |
 | The states the set does not render (open menus, hover, most dialogs, error states) | No: a state is a screen of the set (a walk in `screens.ts`), not a check | Screens, outside this decision; W9 added the open row menus and the shared error notice |
 | Two words for one thing across screens | No: vocabulary, not layout | Stays to the eye and to the translation files' review |
 
-**Choice:** as in the table: one check (`cramped`) is decided and waits for its render run; the rest are held already, have no seen
+**Built on 2026-11-24** (the screens' package of round 3): `cramped` in [layout.ts](../../web/e2e/renders/layout.ts), with the fixture
+of W-5's row and, from the first run of the whole set, two cases it must pass: a mark laid out under its text (the cell keeps its lines
+when set on one line, so nothing wrapped) and a short value in a column of long values that wrap (an owner's path: the column is as wide
+as the list gives it, and its short values wrap at that width as its long ones do). A text counts as short up to 40 characters; the
+finding names the columns that have the room. That run found it on five screens; three are repaired in the same change: the sessions' "This
+session" wrapped under the time in a column of 11 rem at 1,440 px (it stands under the time at every width now); the admin area's users,
+whose e-mail broke at its hyphen at 1,024 px beside a column of names with a least width of 14 rem (10 rem now, the avatar and a name of
+about fifteen letters); the storage page's scrub, "96 % read within 30 days" in two lines in its 6.5 rem beside a State column kept at 11
+rem for "Filling 63 % of the blobs" (the share on its line, the period as the cell's muted second line; a Scrub of 11 rem stacked the
+table at 1,440 px). The audit log (an action's name, by 5 and 10 px) and the admin area's tokens (an owner's path, by 14 px) passed once
+the two cases were in: their columns also hold values longer than a summary that wrap (the tokens' owners, paths of about 80 characters;
+the audit's actions, names of up to about 60). The run after the repairs had no finding.
+
+**Choice:** as in the table: one check (`cramped`), built on 2026-11-24 with a run of the whole set (above); the rest are held already, have no seen
 defect, cannot be measured in the page, or are not layout. **Rationale:** every check measures every one of about 4,600 pictures and
 has to be right on screens it was not written for (`stacked-offset` and `label-apart` were each wrong once on older screens before
 they were right); the rule that a check follows a seen defect keeps the set's cost and its false findings down, and the one seen
 defect gets its check. The development agent revisits a row when its defect is seen on a render.
 
-**Applied in the spec:** R-UI-176's list of checks is unchanged until `cramped` lands. Elsewhere:
+**Applied in the spec:** R-UI-173 (the check `cramped`). Elsewhere:
 [web-ui.md](../developer/web-ui.md#renders-of-every-screen), "What the checks leave to the eye".
+
+### Q-UI-1061 · A mirror without its bound offers no run, and says who can set the bound
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a stored mirror of a well-known registry without its bound is in the state **No bound** (Q-CUR-43): no pass starts, and a
+run answers `422 mirror_unbounded`. The status still offered **Run a pass now** and its menu as active buttons, so the only way to learn
+that a run cannot start was to click and read the refusal; and its sentence ended "Set one in the mirror settings and save." for
+every reader, though an Owner without `repositories:write-config` keeps the mirror's settings as stored
+([Q-REPO-142](repositories-and-proxy.md#q-repo-142--who-may-switch-a-remote-to-mirror)) and cannot set one (seen in R2's renders,
+`power/repository-settings-npm-mirror-unbounded-unbounded-light-1440.png`).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Run a pass now** and its menu disabled in the state **No bound**, the reason beside them; the state's sentence by who reads it (chosen) | The buttons stay where they are, disabled (`aria-describedby` names the reason, "No pass runs until the mirror has a bound."); the sentence ends "Set one in the mirror settings and save." for the holder of `repositories:write-config` and "Only an administrator of the installation can set one." for every other reader | The panel says before a click what the server would answer; nobody is told to do what they cannot; the style guide's rule that a disabled action says why, next to the button | Two sentences of one state to translate |
+| (b) The buttons hidden in the state **No bound** | Nothing to click | Less on the screen | The way to a pass is gone without a word, and comes back unannounced when a bound is saved |
+| (c) As built: the buttons active, the refusal in words after the click | No change | The refusal is an answer (Q-UI-121) | A click to learn what the status already knows |
+
+**Choice:** (a). **Pause** stays active: a mirror without its bound may be paused. A paused mirror keeps **Run a pass now** active, and
+its refusal stays an answer in words (Q-UI-121): **Resume** stands beside the button, so the way out is one click, and the browser
+journey of the mirror holds that answer (`14-mirror.spec.ts`). **Rationale:** the state is the server's and is read with the panel,
+so the panel knows the run's answer; a refusal that the screen could have shown is a question the user should not have had to ask.
+The development agent would revisit the paused state if a reader is seen clicking a run there.
+
+**Applied in the spec:** R-UI-021. Code: [mirror-status.ts](../../web/src/app/features/repositories/mirror-status.ts) (`canSetBound`,
+`stateInfo`), [repository-detail.html](../../web/src/app/features/repositories/repository-detail.html). Tests:
+[mirror-status.spec.ts](../../web/src/app/features/repositories/mirror-status.spec.ts) ("a mirror without its bound has "Run a pass
+now" and its menu disabled …", "the sentence of a mirror without its bound says …"),
+[mirror-tab.spec.ts](../../web/src/app/features/repositories/mirror-tab.spec.ts). Rendered: `repository-settings-npm-mirror-unbounded`
+(`power`, `admin`), `repository-settings-oci-mirror-stored` and `repository-settings-deb-mirror-stored` (`stored-unbounded`). The manual:
+[repositories.md](../manual/admin/repositories.md#the-status-of-a-mirror).
+
+### Q-UI-1062 · The trend's axis numbers are text of the page beside the drawing
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the trend of the vulnerabilities (R-VULN-022) drew its axis numbers (0, 1,000, 2,000) as `<text>` of its SVG at 11 viewBox units.
+The drawing scales with its width, so the numbers were about 6 px high at 390 px, in Chromium, Firefox and WebKit alike (seen by W15 on
+2026-11-24), and about 14 px at 1,440 px.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The numbers as HTML in a column of their own beside the drawing, at the app's small text size (`--quader-type-body-small`, 12 px), each at its grid line's share of the drawing's height; the drawing keeps its aspect and starts at the plot's edge (chosen) | The SVG draws the plot alone (viewBox `40 0 596 200`), at most 48rem wide (16rem high, as it was); the axis's column is as wide as its widest number | The text is the page's at every width and in every engine; its place follows the drawing without script | The drawing stands at the start of its card instead of its middle at a wide window |
+| (b) The SVG's text set to a size computed from the drawing's scale (a resize observer) | The numbers stay in the drawing | One element | Script for a size; the margin for the numbers scales too and is too narrow for "2,000" at 12 px on a phone |
+| (c) A larger font in the SVG | One value | Nothing moves | Still scales: readable at 390 px means large at 1,440 px |
+
+**Choice:** (a). The numbers are formatted as the page's numbers are (`2,000`) and hidden from assistive technology: the chart's text
+alternative and its table carry every number. **Rationale:** a text that must be read at every width belongs to the page, whose sizes
+do not scale; the drawing keeps what scales. The development agent would revisit it if the chart gets a time axis with labels, which would
+be laid out the same way.
+
+**Applied in the spec:** R-VULN-022 (the UI line). Code: [report-trend.ts](../../web/src/app/features/vulnerabilities/report-trend.ts),
+[_vulnerabilities.scss](../../web/src/styles/_vulnerabilities.scss). Tests:
+[vulnerability-report.spec.ts](../../web/src/app/features/vulnerabilities/vulnerability-report.spec.ts) ("the axis's numbers are text of
+the page beside the drawing …"), and in Chromium, Firefox and WebKit at 358 and 1,100 px
+[layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts) ("the axis's numbers keep the small text size and stand on their grid
+lines …"). Rendered: `vulnerabilities` in the three engines.
 
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 

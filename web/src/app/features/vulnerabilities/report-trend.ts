@@ -90,7 +90,8 @@ export function trendGeometry(trend: VulnerabilityTrend): TrendGeometry {
 
 /**
  * The trend of the open findings by severity (R-VULN-022): a stacked column per day, drawn here as an SVG (no chart
- * library, Q-VULN-53), over 30, 90 or 365 days, with a "Show as table" alternative that carries every number. The
+ * library, Q-VULN-53), over 30, 90 or 365 days, its axis's numbers as text of the page beside the drawing at the app's small text
+ * size whatever the drawing's scale (Q-UI-1062), with a "Show as table" alternative that carries every number. The
  * chart is an image with a text alternative; the table is the accessible form of the data. Its colours are the severity
  * bar's (one scale, R-UI-092): the bands its fills, each with an edge in the severity's mark tone, Unknown its hatch. The
  * edges are drawn after every band, the worst last, so where two thin bands meet the worse one stays on top.
@@ -148,33 +149,42 @@ export function trendGeometry(trend: VulnerabilityTrend): TrendGeometry {
             </table>
           </div>
         } @else if (geometry(); as g) {
-          <svg class="trend-chart" [class.touching]="g.touching" [attr.viewBox]="'0 0 ' + g.width + ' ' + g.height" role="img" aria-labelledby="vuln-trend-title vuln-trend-desc">
-            <desc id="vuln-trend-desc">{{ description() }}</desc>
-            @for (t of g.ticks; track t.value) {
-              <line class="trend-grid" [attr.x1]="g.left" [attr.x2]="g.right" [attr.y1]="t.y" [attr.y2]="t.y" />
-              <text class="trend-tick" [attr.x]="g.left - 6" [attr.y]="t.y + 4" text-anchor="end">{{ t.value }}</text>
-            }
-            <defs>
-              <pattern [attr.id]="hatchId" patternUnits="userSpaceOnUse" width="4" height="4" patternTransform="rotate(45)">
-                <rect class="trend-hatch-b" width="4" height="4" />
-                <rect class="trend-hatch-a" width="2" height="4" />
-              </pattern>
-            </defs>
-            @for (s of g.series; track s.severity) {
-              @if (s.path) {
-                <path
-                  [class]="'trend-series trend-' + s.severity"
-                  [attr.fill]="s.severity === 'unknown' ? 'url(#' + hatchId + ')' : null"
-                  [attr.d]="s.path"
-                />
+          <div class="trend-figure">
+            <!-- The axis's numbers are text of the page, not of the drawing: in the SVG they scaled with it, to about 6 px at a phone's
+                 width. The chart's alternative is its description and the table, so they are hidden from assistive technology. -->
+            <div class="trend-axis" aria-hidden="true">
+              <span class="trend-axis-sizer">{{ g.yMax | number }}</span>
+              @for (t of g.ticks; track t.value) {
+                <span class="trend-tick" [style.top.%]="(t.y / g.height) * 100">{{ t.value | number }}</span>
               }
-            }
-            @for (s of edges(); track s.severity) {
-              @if (s.edge) {
-                <path [class]="'trend-edge trend-' + s.severity" [attr.d]="s.edge" />
+            </div>
+            <svg class="trend-chart" [class.touching]="g.touching" [attr.viewBox]="g.left + ' 0 ' + (g.right - g.left) + ' ' + g.height" role="img" aria-labelledby="vuln-trend-title vuln-trend-desc">
+              <desc id="vuln-trend-desc">{{ description() }}</desc>
+              @for (t of g.ticks; track t.value) {
+                <line class="trend-grid" [attr.x1]="g.left" [attr.x2]="g.right" [attr.y1]="t.y" [attr.y2]="t.y" />
               }
-            }
-          </svg>
+              <defs>
+                <pattern [attr.id]="hatchId" patternUnits="userSpaceOnUse" width="4" height="4" patternTransform="rotate(45)">
+                  <rect class="trend-hatch-b" width="4" height="4" />
+                  <rect class="trend-hatch-a" width="2" height="4" />
+                </pattern>
+              </defs>
+              @for (s of g.series; track s.severity) {
+                @if (s.path) {
+                  <path
+                    [class]="'trend-series trend-' + s.severity"
+                    [attr.fill]="s.severity === 'unknown' ? 'url(#' + hatchId + ')' : null"
+                    [attr.d]="s.path"
+                  />
+                }
+              }
+              @for (s of edges(); track s.severity) {
+                @if (s.edge) {
+                  <path [class]="'trend-edge trend-' + s.severity" [attr.d]="s.edge" />
+                }
+              }
+            </svg>
+          </div>
           <ul class="trend-legend" aria-label="Legend" i18n-aria-label="@@vuln.trend.legend">
             @for (s of stack; track s) {
               <li>

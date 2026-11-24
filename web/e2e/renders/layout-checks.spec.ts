@@ -693,6 +693,103 @@ test.describe("the shared patterns with the app's stylesheet (R-UI-176)", () => 
   });
 });
 
+test.describe('a short text cramped beside a column with room to spare (R-UI-173)', () => {
+  // W-5's row (2026-11-20): a version's grade, "3 findings ·" over "0 fixable", beside a column whose width was set wider than any of
+  // its values at 1,024 px. The grade as quader-grade builds it: the shield, then the parts, each on one line.
+  const grade = '<span class="grade"><quader-grade-shield></quader-grade-shield><span class="grade-text"><span class="grade-part">3 findings ·</span> <span class="grade-part">0 fixable</span></span></span>';
+  const versions = (published: string, table = 560): string =>
+    `<table class="data" style="inline-size:${table}px"><thead><tr><th scope="col">Version</th><th scope="col" class="fixed">Published</th><th scope="col">Vulnerabilities</th></tr></thead>` +
+    `<tbody><tr><th scope="row">4.0.1</th><td class="fixed">${published}</td><td>${grade}</td></tr>` +
+    `<tr><th scope="row">4.0.0</th><td class="fixed">2 days ago</td><td>${grade}</td></tr></tbody></table>`;
+  const css = (fixed: string): string => `
+    .grade { display: flex; align-items: flex-start; gap: 8px; }
+    quader-grade-shield { display: inline-block; flex: none; inline-size: 20px; block-size: 20px; background: #888; }
+    .grade-text { min-inline-size: 0; }
+    .grade-part { white-space: nowrap; }
+    th.fixed, td.fixed { inline-size: ${fixed}; }`;
+
+  test('R-UI-173 the grade in two lines beside a fixed column that no row fills is found', async ({ page }) => {
+    const found = await check(page, versions('4 minutes ago'), css('300px'));
+    const cramped = only(found, 'cramped');
+    expect(cramped, describe(found)).toHaveLength(1);
+    expect(cramped[0]!.text).toBe('3 findings · 0 fixable');
+  });
+
+  test('R-UI-173 the same grade passes where the column takes the width its values need, and stands on one line', async ({ page }) => {
+    const found = await check(page, versions('4 minutes ago'), css('auto'));
+    expect(only(found, 'cramped'), describe(found)).toEqual([]);
+  });
+
+  test('R-UI-173 a wrapped grade beside a column whose own text wraps has no room to take, and passes', async ({ page }) => {
+    const found = await check(page, versions('A description of the version that wraps as prose does in its column', 520), css('300px'));
+    expect(only(found, 'cramped'), describe(found)).toEqual([]);
+  });
+
+  test('R-UI-173 a mark laid out under its text (the session in use, a block under its time) is no wrap, and passes', async ({ page }) => {
+    // The sessions at 1,440 px (2026-11-24): "This session" wrapped under the time in a column of 11 rem; laid out under it, it stays.
+    const cell = (badge: string): string =>
+      '<table class="data" style="inline-size:560px"><tbody><tr><th scope="row">Nov 24, 2026, 1:29:28 AM' + badge + '</th>' +
+      '<td class="fixed">127.0.0.1</td></tr></tbody></table>';
+    const inline = await check(page, cell(' <span class="badge">This session</span>'), `${css('300px')} th { inline-size: 11rem; }`);
+    expect(only(inline, 'cramped'), describe(inline)).toHaveLength(1);
+    const block = await check(page, cell('<span class="badge" style="display:flex;inline-size:fit-content">This session</span>'), `${css('300px')} th { inline-size: 11rem; }`);
+    expect(only(block, 'cramped'), describe(block)).toEqual([]);
+  });
+
+  test('R-UI-173 a short value in a column of long values that wrap (an owner\'s path) wraps as they do, and passes', async ({ page }) => {
+    const owners = (long: string): string =>
+      '<table class="data" style="inline-size:560px"><tbody>' +
+      '<tr><td class="owner">sa:web-frontend/release-pipeline</td><td class="fixed">in 4 weeks</td></tr>' +
+      `<tr><td class="owner">${long}</td><td class="fixed">in 2 months</td></tr></tbody></table>`;
+    const cssOwners = `${css('300px')} td.owner { inline-size: 9rem; }`;
+    const shortOnly = await check(page, owners('sa:backup-reader'), cssOwners);
+    expect(only(shortOnly, 'cramped'), describe(shortOnly)).toHaveLength(1);
+    const withLong = await check(page, owners('sa:web-frontend/npm-internal/frontend-release-pipeline-of-the-customer-portal-team'), cssOwners);
+    expect(only(withLong, 'cramped'), describe(withLong)).toEqual([]);
+  });
+
+  test('R-UI-173 a text longer than a summary (a sentence) wrapped beside the same column is not cramped', async ({ page }) => {
+    const long = '<table class="data" style="inline-size:560px"><tbody><tr><td class="fixed">2 days ago</td>' +
+      '<td>A long description of the version that wraps as prose does</td></tr></tbody></table>';
+    const found = await check(page, long, css('300px'));
+    expect(only(found, 'cramped'), describe(found)).toEqual([]);
+  });
+});
+
+test.describe("the trend's axis with the app's stylesheet (R-VULN-022)", () => {
+  // The vulnerabilities' trend as report-trend.ts builds it: its axis's numbers inside the SVG scaled with the viewBox, to about 6 px at
+  // 390 px in every engine (W15, 2026-11-24). As text of the page they keep the small text size at every width, each on its grid line.
+  const figure = (width: number): string =>
+    `<div style="inline-size:${width}px"><div class="trend-figure"><div class="trend-axis" aria-hidden="true"><span class="trend-axis-sizer">2,000</span>` +
+    [8, 92, 176].map((y, i) => `<span class="trend-tick" style="top:${(y / 200) * 100}%">${['2,000', '1,000', '0'][i]}</span>`).join('') +
+    `</div><svg class="trend-chart" viewBox="40 0 596 200">` +
+    [8, 92, 176].map((y) => `<line class="trend-grid" x1="40" x2="636" y1="${y}" y2="${y}" />`).join('') +
+    `</svg></div></div>`;
+
+  for (const width of [358, 1100]) {
+    test(`R-VULN-022 the axis's numbers keep the small text size and stand on their grid lines in a chart ${width} px wide`, async ({ page }) => {
+      await check(page, figure(width), '', true);
+      const m = await page.evaluate(() => {
+        const ticks = [...document.querySelectorAll<HTMLElement>('.trend-tick')];
+        const lines = [...document.querySelectorAll('line.trend-grid')];
+        const range = document.createRange();
+        return ticks.map((t, i) => {
+          range.selectNodeContents(t.firstChild!);
+          const glyphs = range.getBoundingClientRect();
+          const line = lines[i]!.getBoundingClientRect();
+          return { size: parseFloat(getComputedStyle(t).fontSize), height: glyphs.height, off: (glyphs.top + glyphs.bottom) / 2 - (line.top + line.bottom) / 2, svgLeft: document.querySelector('svg')!.getBoundingClientRect().left, right: glyphs.right };
+        });
+      });
+      for (const t of m) {
+        expect(t.size).toBe(12);
+        expect(t.height).toBeGreaterThanOrEqual(12);
+        expect(Math.abs(t.off)).toBeLessThanOrEqual(1);
+        expect(t.right).toBeLessThan(t.svgLeft);
+      }
+    });
+  }
+});
+
 test.describe('a list\'s cell without a value (R-UI-146)', () => {
   // The start page's projects as an administrator who is a member of none (2026-11-23, `projects-details-details-dark-1440.png`):
   // **Your role** empty in every row, beside the dashes of the other columns.

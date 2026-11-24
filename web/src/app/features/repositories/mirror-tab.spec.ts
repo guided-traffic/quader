@@ -81,6 +81,19 @@ describe('The section Mirror of the settings page: status, pause, resume, run (R
     await expectAccessible(r.root);
   });
 
+  it('R-UI-021 R-REPO-050 the status of a mirror without its bound tells an administrator to set one and an Owner without repositories:write-config who can', async () => {
+    const unbounded = [sampleMirrorStatus({ state: 'unbounded' })];
+    const admin = await open(stored('mirror'), { capabilities: ['repositories:read-config', 'repositories:write-config'], statuses: unbounded });
+    expect(text(admin.r.root.querySelector('[data-testid="mirror-state"]')!)).toContain('Set one in the mirror settings and save.');
+    expect(button(admin.r.root, 'Run a pass now').disabled).toBe(true);
+
+    const owner = await open(stored('mirror'), { projectAdmin: true, statuses: unbounded });
+    const sentence = text(owner.r.root.querySelector('[data-testid="mirror-state"]')!);
+    expect(sentence).toContain('Only an administrator of the installation can set one.');
+    expect(sentence).not.toContain('Set one in the mirror settings');
+    expect(button(owner.r.root, 'Run a pass now').disabled).toBe(true);
+  });
+
   it('R-UI-021 a remote stored in pull-through mode reads no status and shows only the settings; choosing mirror says the status comes after the save', async () => {
     const { r, fake } = await open(stored('pullThrough'));
     expect(fake.mirrorStatusCalls).toBe(0);

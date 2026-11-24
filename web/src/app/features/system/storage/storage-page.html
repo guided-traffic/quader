@@ -218,13 +218,14 @@
         <td class="lines-cell">
           @if (scrub(c); as s) {
             <div class="lines">
-              @if (s.days !== null) {
-                <span class="line" i18n="@@storage.scrub.read"
-                  >{s.days, plural, =1 {{{ s.percent }} % read within 1 day} other {{{ s.percent }} % read within {{ s.days }} days}}</span
-                >
-              } @else {
-                <span class="line" i18n="@@storage.scrub.read-period">{{ s.percent }} % read within its period</span>
-              }
+              <!-- The share on its line, the period under it as the cell's muted second line: in the column's 6.5 rem the sentence
+                   on one line broke wherever the width fell (the check cramped, Q-UI-1060). -->
+              <span class="line"
+                ><ng-container i18n="@@storage.scrub.read-share">{{ s.percent }} % read</ng-container
+                >&ngsp;@if (s.days !== null) {<span class="secondary" i18n="@@storage.scrub.read-within"
+                  >{s.days, plural, =1 {within 1 day} other {within {{ s.days }} days}}</span
+                >} @else {<span class="secondary" i18n="@@storage.scrub.within-period">within its period</span>}</span
+              >
               @if (s.behind) {
                 <span class="line warn-text" i18n="@@storage.scrub.behind">Behind</span>
               }
