@@ -590,6 +590,18 @@ order is what a user or an operator meets first. The state is kept here.
 
 ### Tests and tools
 
+- **Two red jobs of R5b's push (2026-11-24; Test and Release 45324445298, read at 06:25):** `UI layout checks`: the
+  renders `repository-npm-remote-upstream` as power and admin ended with eight `cramped` findings at 1440 px (the
+  version and its Pre-release badge in two lines beside 76 px no row uses); the check landed after R5b's own render run,
+  and the builder of the tab's findings repairs it with the version table. `integration (shard a)`:
+  `TestR_REPO_056_AStatusFollowsARunningPassAndEveryReplicaAnswersTheSame` saw two replicas answer a mirror's status
+  with different `bound.usedBytes` (0 and 106,996). **Closed at 06:40 (Q-REPO-482):** both answer from one statement
+  over the folded counter `repository_usage.logical_bytes`, and a worker's fold landed in the 8 ms between the two
+  reads; the product meets R-REPO-056 (the same answer for the same database state, now written into it, with the lag
+  of one fold interval). The test waits until no unfolded delta of the repository is left, checks `usedBytes` against
+  the counter, then compares the replicas; the areas `mirror` and `mirrorapi` passed once. Possible since 2026-11-05,
+  not caused by the night's changes.
+
 
 
 - **`e2e (bastion)` was red once on a runner that could not reach github.com (2026-11-24; Test and Release
