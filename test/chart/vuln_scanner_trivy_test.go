@@ -141,7 +141,7 @@ func TestR_HA_065_TheImageScanningOffRendersNoScanner(t *testing.T) {
 	}
 }
 
-func TestQ_HA_318_TheSpoolsAreCheckedAgainstWhatTheyHold(t *testing.T) {
+func TestR_HA_035_TheSpoolsAreCheckedAgainstWhatTheyHold(t *testing.T) {
 	t.Run("the scanner's budget holds every slot's largest image plus 64 MiB", func(t *testing.T) {
 		renderFails(t, required(), []string{"vulnScannerTrivy.spool.sizeLimit=4Gi"}, "vulnScannerTrivy.spool.sizeLimit", "spool.headroom", "max_image_size")
 		renderFails(t, required(), []string{"config.vulnerabilities.images.scanner.slots=2"}, "vulnScannerTrivy.spool.sizeLimit", "slots")
@@ -151,7 +151,7 @@ func TestQ_HA_318_TheSpoolsAreCheckedAgainstWhatTheyHold(t *testing.T) {
 		renderFails(t, required(), []string{"vulnScannerTrivy.spool.sizeLimit=5183Mi"}, "vulnScannerTrivy.spool.sizeLimit")
 		renderFails(t, required(), []string{"config.vulnerabilities.images.max_image_size=6GiB"}, "max_image_size (6GiB)")
 	})
-	t.Run("Q-HA-318 revisited: the worker of the queue vuln holds nothing of the image scanning, so its spool is not checked for it", func(t *testing.T) {
+	t.Run("R-HA-035 the worker of the queue vuln holds nothing of the image scanning, so its spool is not checked for it", func(t *testing.T) {
 		// ADR-229: the detection runs in the scanner; the worker writes nothing of a scan to its disk. A spool that holds the largest
 		// advisory archive (R-VULN-025) is all the worker of vuln needs.
 		render(t, required(), "worker.spool.sizeLimit=4Gi")
@@ -237,7 +237,7 @@ func TestR_HA_066_TheLinksOfTheImageScanning(t *testing.T) {
 		}
 		renderFails(t, required(), []string{"config.server.scan_clients[0]=x"}, "config.server.scan_clients is managed by the chart")
 	})
-	t.Run("Q-HA-322 without TLS the links are plain and nothing of TLS mounts", func(t *testing.T) {
+	t.Run("without TLS the links are plain and nothing of TLS mounts", func(t *testing.T) {
 		_, docs := render(t, required(), "tls.enabled=false", "tls.certManager.issuerRef.name=")
 		cfg := renderedConfig(t, docs)
 		if str(cfg, "vulnerabilities", "images", "scanner", "url") != "http://quader-vuln-scanner-trivy.default.svc:8080" || at(cfg, "server", "internal_tls") != nil {
@@ -461,7 +461,7 @@ func TestR_HA_042_TheLinksAdmitTheirOneSender(t *testing.T) {
 
 // Q-VULN-185, Q-HA-347: the dev profile lets the chart issue its pairs, and the manual's example of named Secrets gives the worker and the
 // two scanners client authentication and each kind its name, which the links check.
-func TestQ_VULN_185_TheDocumentedPairsAllowTheLinksOfEachKind(t *testing.T) {
+func TestR_HA_066_TheDocumentedPairsAllowTheLinksOfEachKind(t *testing.T) {
 	read := func(t *testing.T, path string) string {
 		t.Helper()
 		b, err := os.ReadFile(filepath.Join(repoRoot, path))

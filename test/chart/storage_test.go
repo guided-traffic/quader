@@ -211,7 +211,7 @@ func TestR_HA_072_SeveralConnectionsAndAProvisioner(t *testing.T) {
 		}
 	})
 
-	t.Run("restore and post-restore Jobs mount the journal reader of every connection with source static, and the file names each (Q-HA-399)", func(t *testing.T) {
+	t.Run("restore and post-restore Jobs mount the journal reader of every connection with source static, and the file names each", func(t *testing.T) {
 		_, d := render(t, connectionsSet(), restoreSets("restore.journalCredentials.source=static", "secrets.storageConnections[0].journalReader.existingSecret=quader-s3-versions",
 			"secrets.storageConnections[1].journalReader.existingSecret=quader-s3-secondary-versions")...)
 		pod := restorePod(d)

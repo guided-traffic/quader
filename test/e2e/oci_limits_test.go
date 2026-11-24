@@ -178,10 +178,10 @@ func TestOCIProbe_R_REPO_065_ManifestInspectThroughAVirtualRepositoryDownloadsTh
 	}
 }
 
-// TestOCILimits_Q_LIM_27_APushOfManyTinyLayersMeetsTheWriteClass measures what decides package_write on the registry's paths (F-161,
+// TestOCILimits_R_API_016_APushOfManyTinyLayersMeetsTheWriteClass measures what decides package_write on the registry's paths (F-161,
 // "Open, for the owner"): the unsafe requests of a push. docker and podman push an image of 40 layers of a few bytes each in Enforce;
 // the request log of the packages replicas gives the unsafe requests per second at the peak and the answers 429 of the class.
-func TestOCILimits_Q_LIM_27_APushOfManyTinyLayersMeetsTheWriteClass(t *testing.T) {
+func TestOCILimits_R_API_016_APushOfManyTinyLayersMeetsTheWriteClass(t *testing.T) {
 	fx := ociFx(t)
 	host := ociRegistryHost(t)
 	key := "oci-limits-push-" + fx.run

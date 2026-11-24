@@ -967,7 +967,7 @@ func TestR_HA_030_BackupSecrets(t *testing.T) {
 		}
 	})
 
-	t.Run("the environment of the Jobs is their own: the global extraEnv does not reach them (Q-HA-149)", func(t *testing.T) {
+	t.Run("the environment of the Jobs is their own: the global extraEnv does not reach them (R-HA-060)", func(t *testing.T) {
 		_, d := render(t, required(), backupSets("extraEnv[0].name=FOR_REPLICAS", "extraEnv[0].value=1", "backup.extraEnv[0].name=FOR_BACKUP", "backup.extraEnv[0].value=1")...)
 		if _, ok := envByName(cronJobPod(d))["FOR_REPLICAS"]; ok {
 			t.Error("the global extraEnv reaches the backup pod")
@@ -1012,7 +1012,7 @@ func TestR_HA_030_BackupSecrets(t *testing.T) {
 		}
 	})
 
-	t.Run("the global extraVolumes reach no Job, the Jobs' own do (Q-HA-149)", func(t *testing.T) {
+	t.Run("the global extraVolumes reach no Job, the Jobs' own do (R-HA-060)", func(t *testing.T) {
 		vol := func(prefix, name string) []string {
 			return []string{
 				prefix + "extraVolumes[0].name=" + name, prefix + "extraVolumes[0].secret.secretName=" + name,
@@ -1165,7 +1165,7 @@ func TestR_BAK_012_ChartObjects(t *testing.T) {
 			t.Errorf("manual_run.namespace = %q", str(cfg, "backup", "manual_run", "namespace"))
 		}
 	})
-	t.Run("the CronJob name stays within the 52 characters Kubernetes allows a CronJob for every <fullname> the chart accepts (Q-HA-374)", func(t *testing.T) {
+	t.Run("the CronJob name stays within the 52 characters Kubernetes allows a CronJob for every <fullname> the chart accepts (R-HA-028)", func(t *testing.T) {
 		_, docs := render(t, required(), backupSets("fullnameOverride="+strings.Repeat("a", 37))...)
 		if find(docs, "CronJob", strings.Repeat("a", 37)+"-backup") == nil {
 			t.Error("no CronJob of 44 characters")

@@ -275,7 +275,7 @@ func TestServiceMonitor(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-HA-349 with TLS the endpoint verifies the pods under the ops name every pair carries, against ca.crt of the api kind's Secret", func(t *testing.T) {
+	t.Run("R-HA-063 with TLS the endpoint verifies the pods under the ops name every pair carries, against ca.crt of the api kind's Secret", func(t *testing.T) {
 		if str(ep, "scheme") != "https" || str(ep, "tlsConfig", "serverName") != "quader-ops.default.svc" ||
 			str(ep, "tlsConfig", "ca", "secret", "name") != "quader-tls-api" || str(ep, "tlsConfig", "ca", "secret", "key") != "ca.crt" {
 			t.Errorf("tlsConfig = %v scheme %q", at(ep, "tlsConfig"), str(ep, "scheme"))

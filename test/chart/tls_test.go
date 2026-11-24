@@ -126,7 +126,7 @@ func TestTLS(t *testing.T) {
 		}
 	})
 
-	t.Run("R-HA-063 Q-HA-346 the chart issues a Certificate per kind with its name, the ops name and the usages of the kind", func(t *testing.T) {
+	t.Run("R-HA-063 the chart issues a Certificate per kind with its name, the ops name and the usages of the kind", func(t *testing.T) {
 		_, docs := render(t, required())
 		certs := ofKind(docs, "Certificate")
 		if len(certs) != 6 {
@@ -180,7 +180,7 @@ func TestTLS(t *testing.T) {
 		renderFails(t, required(), []string{"tls.certManager.privateKey.algorithm=DSA"}, "algorithm")
 	})
 
-	t.Run("R-HA-063 Q-HA-347 without an issuer every kind names a Secret of its own; neither, both or one Secret for two kinds fail", func(t *testing.T) {
+	t.Run("R-HA-063 without an issuer every kind names a Secret of its own; neither, both or one Secret for two kinds fail", func(t *testing.T) {
 		renderFails(t, required(), []string{noIssuer}, "tls.certManager.issuerRef.name", "tls.existingSecrets", "tls.enabled: false")
 		named := []string{
 			noIssuer, "tls.existingSecrets.api=a", "tls.existingSecrets.packages=p", "tls.existingSecrets.worker=w", "tls.existingSecrets.vuln-scanner-trivy=s",
@@ -337,7 +337,7 @@ func TestTLS(t *testing.T) {
 		}
 	})
 
-	t.Run("R-HA-063 Q-HA-348 the edge verifies each backend under its kind's name, where the controller reads it", func(t *testing.T) {
+	t.Run("R-HA-063 the edge verifies each backend under its kind's name, where the controller reads it", func(t *testing.T) {
 		t.Run("HAProxy Ingress is the default: secure-backends on the Ingress, the kind's name and CA on each Service", func(t *testing.T) {
 			_, docs := render(t, haIngress())
 			ann := at(ofKind(docs, "Ingress")[0], "metadata", "annotations")

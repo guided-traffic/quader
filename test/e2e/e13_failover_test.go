@@ -167,7 +167,7 @@ func TestE13Failover(t *testing.T) {
 		{"dev-valkey-kill", "valkey-kill.sh", nil},
 		{"dev-valkey-outage 60s", "valkey-outage.sh", []string{"60s"}},
 	} {
-		t.Run("R-HA-056 Q-HA-13 R-ARCH-027 E0.13 "+c.name+" under load: only 200, /readyz 200 on every replica throughout, changes and jobs keep P-13 and P-14 without Valkey", func(t *testing.T) {
+		t.Run("R-HA-056 R-ARCH-027 E0.13 "+c.name+" under load: only 200, /readyz 200 on every replica throughout, changes and jobs keep P-13 and P-14 without Valkey", func(t *testing.T) {
 			r := runFault(t, strings.ReplaceAll(c.name, " ", "-"), func() { script(t, c.script, c.args...) })
 			r.k6.only200(t)
 			if len(r.mon.ready) != 0 {

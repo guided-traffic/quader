@@ -231,7 +231,7 @@ func TestEndpoints(t *testing.T) {
 		}
 	})
 
-	t.Run("R-EP-008 Q-HA-348 backend TLS annotations follow the endpoint's controller: the kind's name, or the Service's own with a pair of its own", func(t *testing.T) {
+	t.Run("R-EP-008 backend TLS annotations follow the endpoint's controller: the kind's name, or the Service's own with a pair of its own", func(t *testing.T) {
 		_, docs := render(t, endpointsSet())
 		part := find(docs, "Ingress", "quader-ep-partners")
 		if str(part, "metadata", "annotations", "haproxy-ingress.github.io/secure-backends") != "true" ||
@@ -267,7 +267,7 @@ func TestEndpoints(t *testing.T) {
 		}
 	})
 
-	t.Run("R-EP-008 Q-EP-96 R-CLAMAV-010 the endpoint of the client certificates passes TLS through per controller and is refused where that cannot work", func(t *testing.T) {
+	t.Run("R-EP-008 R-CLAMAV-010 the endpoint of the client certificates passes TLS through per controller and is refused where that cannot work", func(t *testing.T) {
 		clamav := []string{
 			"endpoints.clamav.port=8444", "endpoints.clamav.baseUrl=https://clamav.quader.example.com", "endpoints.clamav.exposure=all",
 			"endpoints.clamav.auth.clientCertificates=true", "endpoints.clamav.tls.existingSecret=quader-clamav-tls",

@@ -318,7 +318,7 @@ func edgeRules(ing any) map[string]string {
 }
 
 func TestRolesEdge(t *testing.T) {
-	t.Run("R-HA-062 Q-HA-90 a pool with routed false renders without its route; the route follows when the key goes", func(t *testing.T) {
+	t.Run("R-HA-062 a pool with routed false renders without its route; the route follows when the key goes", func(t *testing.T) {
 		sets := []string{"ingress.enabled=true", "ingress.backendTLS.caSecret=quader-tls", "packages.pools[0].name=npm", "packages.pools[0].paths={/api/npm}"}
 		_, docs := render(t, required(), append(sets, "packages.pools[0].routed=false")...)
 		if find(docs, "Deployment", "quader-packages-npm") == nil {

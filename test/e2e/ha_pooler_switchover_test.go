@@ -67,7 +67,7 @@ func TestHAPooler_Switchover(t *testing.T) {
 		t.Fatalf("health.database_outage_grace is %s: the profile must run with the grace the spec gives a switchover", grace)
 	}
 
-	t.Run("R-HA-058 R-HA-007 R-HA-052 Q-HA-302 E5.10 a PostgreSQL switchover behind both poolers under the npm load: every npm command exits 0, no quader container restarts, k6 only 2xx and 304 (no 503 of the edge), /readyz 200 on every replica throughout, every pooler serves again within health.database_outage_grace", func(t *testing.T) {
+	t.Run("R-HA-058 R-HA-007 R-HA-052 E5.10 a PostgreSQL switchover behind both poolers under the npm load: every npm command exits 0, no quader container restarts, k6 only 2xx and 304 (no 503 of the edge), /readyz 200 on every replica throughout, every pooler serves again within health.database_outage_grace", func(t *testing.T) {
 		before := pgPrimary(t)
 		r := runNPMFault(t, h, "pooler-switchover", haFullLoad(), time.Minute, time.Minute, func() { script(t, "failover.sh") })
 		after := pgPrimary(t)
