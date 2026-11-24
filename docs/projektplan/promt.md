@@ -3504,7 +3504,14 @@ row an icon of its kind, the name and version, the size, actions). State: specif
 sees it, the panel, the API); cut in two packages, A the backend and its API (its first commit the specification and the
 OpenAPI contract), B the top-bar button and the panel. Package A given to a builder at 09:20, in the place the
 unknown level's package left; B (the button and the panel, R-UI-210 to 212, Q-UI-1070 to 1073 since the
-planner's numbers were taken) given to a builder at 10:00 against A's committed contract, with browser-side mocks. Three of its choices go to
+planner's numbers were taken) given to a builder at 10:00 against A's committed contract, with browser-side mocks. **Package A landed at 10:46**
+(three commits; R-OPS-049 to 052, Q-OPS-419 to 424, ADR-279, H-1843 to 1846, migration 00118): one hook in
+`fetcher.artifact` reports every artifact body read from an upstream after a 2xx to a tracker per process (its cause: a
+client's miss, a queue row with its origin, id and starter, a mirror's pass, the scanner database); every serving replica
+writes its running downloads as one row of `upstream_download_live` every two seconds, the ends go to
+`upstream_download_finished` trimmed to the newest 100, a stopped replica's rows are swept as `interrupted`; the API answers
+the holders of `content:metadata-read` from PostgreSQL alone. Tests under a second each at the unit tier and one integration
+case in area `proxy` (2.7 s, one 64 KiB artifact). Not measured: the write load under the reference load. Three of its choices go to
 the owner in one line each: the existing drawer from the right instead of a panel hung from the button, the auditor sees
 the panel too (`content:metadata-read`), and metadata documents such as Debian indexes are not listed.
 
