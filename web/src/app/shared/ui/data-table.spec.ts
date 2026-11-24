@@ -333,6 +333,29 @@ describe('Data table', () => {
     }
   });
 
+  it('R-UI-174 a stacked list measures its longest column name for the column of names its rows share', async () => {
+    // The hidden list of names holds the names the stacked rows show (not the row's own name, which stands on the first line); its
+    // width is the list's `--quader-stack-names`, the same for every row.
+    const rect = vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      const width = this.tagName === 'TABLE' ? 900 : this.classList.contains('stack-names') ? 87.2 : 700;
+      return { width, height: 10, top: 0, left: 0, right: width, bottom: 10, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+    });
+    const client = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(() => 700);
+    try {
+      const { root, settle } = await render();
+      await settle();
+      const table = root.querySelector<HTMLElement>('quader-data-table')!;
+      expect(table.classList.contains('stacked')).toBe(true);
+      const names = root.querySelector('.stack-names')!;
+      expect(names.getAttribute('aria-hidden')).toBe('true');
+      expect([...names.querySelectorAll('span')].map((s) => s.textContent?.trim())).toEqual(['Detail']);
+      expect(table.style.getPropertyValue('--quader-stack-names')).toBe('88px');
+    } finally {
+      rect.mockRestore();
+      client.mockRestore();
+    }
+  });
+
   it('Q-UI-680 a scrollbar that appears beside the rows narrows the region, not the list, and the rows stack then', async () => {
     // The admin area's repositories at 1,280 px (2026-11-21): the window grew and shrank back, the region got its scrollbar
     // while the ruler across the list kept its width, and the table stayed 10 px wider than its region. jsdom has no

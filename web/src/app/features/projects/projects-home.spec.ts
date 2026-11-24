@@ -69,6 +69,22 @@ describe('Start page', () => {
     expect(text(root)).not.toContain('Find a package');
   });
 
+  it('R-UI-146 a project the caller sees through a system role shows the dash as its role, and one without a description the dash too', async () => {
+    const { root, fixture } = await renderScreen(ProjectsHome, {
+      setup: (get) => {
+        const fake = get(ProjectsApi) as FakeProjectsApi;
+        fake.projects = fake.projects.map((p) => ({ ...p, role: undefined, description: '' }));
+      },
+    });
+    await settle(fixture);
+    const heads = [...root.querySelectorAll('thead th')].map((th) => text(th).replace('help_outline', ''));
+    const cells = [...root.querySelectorAll('tbody tr:first-child > td')];
+    for (const column of ['Your role', 'Description']) {
+      const cell = cells[heads.findIndex((h) => h.startsWith(column)) - 1]!;
+      expect(cell.querySelector('quader-no-value'), column).not.toBeNull();
+    }
+  });
+
   it('R-UI-095 an anonymous visitor sees the public projects without a role column', async () => {
     const { root, fixture } = await renderScreen(ProjectsHome, {
       setup: (get) => ((get(SessionApi) as FakeSessionApi).whoamiResult = new ApiError(401, null, null)),

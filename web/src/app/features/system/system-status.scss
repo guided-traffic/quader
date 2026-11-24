@@ -187,13 +187,23 @@ td {
   }
 }
 
+// In a row that stands as a block the state's checks break inside a long key where the column of values ends (Q-UI-1050): beside
+// the column of names "malwareUpdaterFreshclam" reached 3 px past the panel at 390 px.
+.quader-data-table.stacked .state {
+  grid-template-columns: auto minmax(0, 1fr);
+
+  .check > span:not(.material-icons) {
+    overflow-wrap: anywhere;
+  }
+}
+
 // In a row that stands as a block the column's name is the cell's first column, so the state starts on the name's line
-// (Q-UI-762), as a meter's does (_list-screens.scss).
+// (Q-UI-762), as a meter's does (_list-screens.scss); the name keeps the width of the list's column of names (Q-UI-1050).
 .quader-data-table.stacked td.state-cell {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
-  column-gap: var(--quader-space-1);
+  column-gap: 0;
 }
 
 .visually-hidden {

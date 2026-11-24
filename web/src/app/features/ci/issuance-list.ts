@@ -31,7 +31,7 @@ export interface IssuanceDetailData {
  */
 @Component({
   selector: 'quader-ci-issuance-detail',
-  imports: [DatePipe, DialogTitle, DialogClose, ErrorNotice],
+  imports: [DatePipe, DialogTitle, DialogClose, ErrorNotice, NoValue],
   template: `
     <h2 quaderDialogTitle i18n="@@ci.issuance.title">Issued token</h2>
     <div class="dialog-body" tabindex="0">
@@ -56,7 +56,13 @@ export interface IssuanceDetailData {
         <dt i18n="@@ci.issuance.issuer">Issuer</dt>
         <dd translate="no">{{ data.issuance.issuer }}</dd>
         <dt i18n="@@ci.issuance.mappings">Mappings</dt>
-        <dd translate="no">{{ data.issuance.mappingNames.join(', ') }}</dd>
+        <dd translate="no">
+          @if (data.issuance.mappingNames.length > 0) {
+            {{ data.issuance.mappingNames.join(', ') }}
+          } @else {
+            <quader-no-value />
+          }
+        </dd>
         <dt i18n="@@ci.issuance.project">Project</dt>
         <dd translate="no">{{ data.issuance.projectPath ?? '–' }} ({{ data.issuance.projectId }})</dd>
         <dt i18n="@@ci.issuance.job">Pipeline and job</dt>
@@ -218,7 +224,14 @@ function dayStart(value: string, plusDays = 0): string | undefined {
             @if (!project()) {
               <td translate="no">{{ i.issuer }}</td>
             }
-            <td translate="no">{{ i.mappingNames.join(', ') }}</td>
+            <!-- A token whose list of mappings is empty shows the dash (R-UI-146). -->
+            <td translate="no">
+              @if (i.mappingNames.length > 0) {
+                {{ i.mappingNames.join(', ') }}
+              } @else {
+                <quader-no-value />
+              }
+            </td>
             <td translate="no" class="wrap">{{ i.projectPath ?? i.projectId }}</td>
             <td translate="no">{{ i.pipelineId ?? '–' }} / {{ i.jobId }}</td>
             <td translate="no">

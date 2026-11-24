@@ -293,7 +293,7 @@
       <notes>
         <note category="location">src/app/app.routes.ts:62</note>
         <note category="location">src/app/app.routes.ts:63</note>
-        <note category="location">src/app/features/search/search-results.ts:214</note>
+        <note category="location">src/app/features/search/search-results.ts:227</note>
       </notes>
       <segment>
         <source>Search</source>
@@ -6109,7 +6109,7 @@
       </notes>
       <segment>
         <source>For the renewal: say which year or rollout the token is for.</source>
-        <target>Für die Erneuerung: Nenne das Jahr oder den Rollout, für den das Token gilt.</target>
+        <target>Für die Erneuerung: Nennen Sie das Jahr oder den Rollout, für den das Token gilt.</target>
       </segment>
     </unit>
     <unit id="bastion-token.days-hint">
@@ -6568,7 +6568,7 @@
       </notes>
       <segment>
         <source>Claims as JSON, or paste an ID token</source>
-        <target>Claims als JSON oder einen ID-Token einfügen</target>
+        <target>Claims als JSON oder ein ID-Token einfügen</target>
       </segment>
     </unit>
     <unit id="ci.test.form-hint">
@@ -6604,7 +6604,7 @@
       </notes>
       <segment>
         <source>The pasted token was decoded in your browser and discarded. Only its claims are used, and the signature was not checked.</source>
-        <target>Der eingefügte Token wurde in Ihrem Browser dekodiert und verworfen. Nur seine Claims werden verwendet; die Signatur wurde nicht geprüft.</target>
+        <target>Das eingefügte Token wurde in Ihrem Browser dekodiert und verworfen. Nur seine Claims werden verwendet; die Signatur wurde nicht geprüft.</target>
       </segment>
     </unit>
     <unit id="ci.test.token-valid">
@@ -6613,7 +6613,7 @@
       </notes>
       <segment>
         <source>The token&apos;s expiry lies in the future, so it is still a valid credential until then. It is not kept here, but remove it from wherever you copied it from, and revoke the job if it was not a test.</source>
-        <target>Das Ablaufdatum des Tokens liegt in der Zukunft, er ist also bis dahin noch ein gültiges Zugangsmittel. Er wird hier nicht aufbewahrt, entfernen Sie ihn aber von dort, wo Sie ihn kopiert haben, und widerrufen Sie den Job, falls es kein Test war.</target>
+        <target>Das Ablaufdatum des Tokens liegt in der Zukunft, es ist also bis dahin noch ein gültiges Zugangsmittel. Es wird hier nicht aufbewahrt, entfernen Sie es aber von dort, wo Sie es kopiert haben, und widerrufen Sie den Job, falls es kein Test war.</target>
       </segment>
     </unit>
     <unit id="ci.test.evaluate">
@@ -6802,7 +6802,7 @@
       </notes>
       <segment>
         <source>The token that would be issued</source>
-        <target>Der Token, der ausgestellt würde</target>
+        <target>Das Token, das ausgestellt würde</target>
       </segment>
     </unit>
     <unit id="ci.test.token-type">
@@ -6901,7 +6901,7 @@
       </notes>
       <segment>
         <source>Enter the claims as JSON, or paste an ID token.</source>
-        <target>Geben Sie die Claims als JSON ein oder fügen Sie einen ID-Token ein.</target>
+        <target>Geben Sie die Claims als JSON ein oder fügen Sie ein ID-Token ein.</target>
       </segment>
     </unit>
     <unit id="ci.test.err.not-object">
@@ -7208,7 +7208,7 @@
       </notes>
       <segment>
         <source>Issued token</source>
-        <target>Ausgestellter Token</target>
+        <target>Ausgestelltes Token</target>
       </segment>
     </unit>
     <unit id="ci.issuance.state">
@@ -7232,7 +7232,7 @@
     <unit id="ci.issuance.active">
       <notes>
         <note category="location">src/app/features/ci/issuance-list.ts:47,48</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:235,236</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:248,249</note>
       </notes>
       <segment>
         <source>Active</source>
@@ -7251,7 +7251,7 @@
     <unit id="ci.issuance.expired">
       <notes>
         <note category="location">src/app/features/ci/issuance-list.ts:51,52</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:239,240</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:252,253</note>
       </notes>
       <segment>
         <source>Expired</source>
@@ -7278,7 +7278,7 @@
     </unit>
     <unit id="ci.issuance.mappings">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:58,59</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:58,60</note>
       </notes>
       <segment>
         <source>Mappings</source>
@@ -7287,7 +7287,7 @@
     </unit>
     <unit id="ci.issuance.project">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:60,61</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:66,67</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -7296,7 +7296,7 @@
     </unit>
     <unit id="ci.issuance.job">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:62,63</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:68,69</note>
       </notes>
       <segment>
         <source>Pipeline and job</source>
@@ -7305,7 +7305,7 @@
     </unit>
     <unit id="ci.issuance.ref">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:65</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:71</note>
       </notes>
       <segment>
         <source>Ref</source>
@@ -7314,7 +7314,7 @@
     </unit>
     <unit id="ci.issuance.user">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:66,67</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:72,73</note>
       </notes>
       <segment>
         <source>Started by</source>
@@ -7323,7 +7323,7 @@
     </unit>
     <unit id="ci.issuance.issued">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:68,69</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:74,75</note>
       </notes>
       <segment>
         <source>Issued</source>
@@ -7332,7 +7332,7 @@
     </unit>
     <unit id="ci.issuance.expires">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:70,71</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:76,77</note>
       </notes>
       <segment>
         <source>Expires</source>
@@ -7341,7 +7341,7 @@
     </unit>
     <unit id="ci.issuance.requested-scope">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:72,73</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:78,79</note>
       </notes>
       <segment>
         <source>Requested scope</source>
@@ -7350,7 +7350,7 @@
     </unit>
     <unit id="ci.issuance.granted-scope">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:74,75</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:80,81</note>
       </notes>
       <segment>
         <source>Granted scope</source>
@@ -7359,7 +7359,7 @@
     </unit>
     <unit id="ci.issuance.client">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:76,77</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:82,83</note>
       </notes>
       <segment>
         <source>Client</source>
@@ -7368,7 +7368,7 @@
     </unit>
     <unit id="ci.issuance.usage">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:79,81</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:85,87</note>
       </notes>
       <segment>
         <source>Usage</source>
@@ -7377,7 +7377,7 @@
     </unit>
     <unit id="ci.issuance.usage-text">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:81,82</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:87,88</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ u.requests }}"/> requests, last used</source>
@@ -7386,8 +7386,8 @@
     </unit>
     <unit id="ci.issuance.grants">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:89,90</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:91,92</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:95,96</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:97,98</note>
       </notes>
       <segment>
         <source>Grants of the token</source>
@@ -7396,8 +7396,8 @@
     </unit>
     <unit id="ci.issuance.claims">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:92,93</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:93,95</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:98,99</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:99,101</note>
       </notes>
       <segment>
         <source>Claims at the time of the exchange</source>
@@ -7406,7 +7406,7 @@
     </unit>
     <unit id="ci.close">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:96,98</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:102,104</note>
       </notes>
       <segment>
         <source>Close</source>
@@ -7415,7 +7415,7 @@
     </unit>
     <unit id="ci.issuances.revoke-matching">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:161,164</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:167,170</note>
       </notes>
       <segment>
         <source> Revoke matching tokens </source>
@@ -7424,8 +7424,8 @@
     </unit>
     <unit id="ci.issuances.f.issuer">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:167</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:298</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:173</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:311</note>
       </notes>
       <segment>
         <source>Issuer</source>
@@ -7434,8 +7434,8 @@
     </unit>
     <unit id="ci.issuances.f.project-id">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:170</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:299</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:176</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:312</note>
       </notes>
       <segment>
         <source>GitLab project ID</source>
@@ -7444,9 +7444,9 @@
     </unit>
     <unit id="ci.issuances.f.project-path">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:171</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:300</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:389</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:177</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:313</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:402</note>
       </notes>
       <segment>
         <source>Project path</source>
@@ -7455,8 +7455,8 @@
     </unit>
     <unit id="ci.issuances.f.pipeline">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:172</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:301</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:178</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:314</note>
       </notes>
       <segment>
         <source>Pipeline ID</source>
@@ -7465,8 +7465,8 @@
     </unit>
     <unit id="ci.issuances.f.job">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:174</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:302</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:180</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:315</note>
       </notes>
       <segment>
         <source>Job ID</source>
@@ -7475,8 +7475,8 @@
     </unit>
     <unit id="ci.issuances.f.mapping">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:176</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:303</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:182</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:316</note>
       </notes>
       <segment>
         <source>Mapping</source>
@@ -7485,9 +7485,9 @@
     </unit>
     <unit id="ci.issuances.f.state">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:178</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:304</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:390</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:184</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:317</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:403</note>
       </notes>
       <segment>
         <source>State</source>
@@ -7496,9 +7496,9 @@
     </unit>
     <unit id="ci.issuances.f.from">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:180</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:305</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:391</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:186</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:318</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:404</note>
       </notes>
       <segment>
         <source>Issued from</source>
@@ -7507,9 +7507,9 @@
     </unit>
     <unit id="ci.issuances.f.to">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:181</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:306</note>
-        <note category="location">src/app/features/ci/issuance-list.ts:392</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:187</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:319</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:405</note>
       </notes>
       <segment>
         <source>Issued until</source>
@@ -7518,7 +7518,7 @@
     </unit>
     <unit id="ci.issuances.revoke-unsupported">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:188,189</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:194,195</note>
       </notes>
       <segment>
         <source>The bulk revoke acts on the issuer, project ID, pipeline ID, job ID and mapping only. It would revoke more than the list shows while these filters are applied:</source>
@@ -7527,7 +7527,7 @@
     </unit>
     <unit id="ci.issuances.revoke-note">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:193,197</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:199,203</note>
       </notes>
       <segment>
         <source> To revoke in bulk, filter by one issuer and by a project ID, a pipeline ID, a job ID or a mapping, then apply the filters. </source>
@@ -7536,7 +7536,7 @@
     </unit>
     <unit id="ci.issuance.revoked-short">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:233,234</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:246,247</note>
       </notes>
       <segment>
         <source>Revoked</source>
@@ -7545,7 +7545,7 @@
     </unit>
     <unit id="ci.issuance.removed-short">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:237,238</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:250,251</note>
       </notes>
       <segment>
         <source>Removed</source>
@@ -7554,7 +7554,7 @@
     </unit>
     <unit id="ci.issuances.details">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:243,245</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:256,258</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -7563,7 +7563,7 @@
     </unit>
     <unit id="ci.issuances.empty-none">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:293</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:306</note>
       </notes>
       <segment>
         <source>There is no CI token yet.</source>
@@ -7572,7 +7572,7 @@
     </unit>
     <unit id="ci.issuances.empty">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:294</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:307</note>
       </notes>
       <segment>
         <source>No CI token matches.</source>
@@ -7581,7 +7581,7 @@
     </unit>
     <unit id="ci.issuances.state.any">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:319</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:332</note>
       </notes>
       <segment>
         <source>Any</source>
@@ -7590,7 +7590,7 @@
     </unit>
     <unit id="ci.issuances.state.active">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:320</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:333</note>
       </notes>
       <segment>
         <source>Active</source>
@@ -7599,7 +7599,7 @@
     </unit>
     <unit id="ci.issuances.state.inactive">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:321</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:334</note>
       </notes>
       <segment>
         <source>Expired or revoked</source>
@@ -7608,7 +7608,7 @@
     </unit>
     <unit id="ci.issuances.caption">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:323</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:336</note>
       </notes>
       <segment>
         <source>Issued CI tokens</source>
@@ -7617,7 +7617,7 @@
     </unit>
     <unit id="ci.issuances.col.issued">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:325</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:338</note>
       </notes>
       <segment>
         <source>Issued</source>
@@ -7626,7 +7626,7 @@
     </unit>
     <unit id="ci.issuances.col.issuer">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:326</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:339</note>
       </notes>
       <segment>
         <source>Issuer</source>
@@ -7635,7 +7635,7 @@
     </unit>
     <unit id="ci.issuances.col.mappings">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:327</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:340</note>
       </notes>
       <segment>
         <source>Mappings</source>
@@ -7644,7 +7644,7 @@
     </unit>
     <unit id="ci.issuances.col.project">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:328</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:341</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -7653,7 +7653,7 @@
     </unit>
     <unit id="ci.issuances.col.job">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:329</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:342</note>
       </notes>
       <segment>
         <source>Pipeline / job</source>
@@ -7662,7 +7662,7 @@
     </unit>
     <unit id="ci.issuances.col.ref">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:330</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:343</note>
       </notes>
       <segment>
         <source>Ref</source>
@@ -7671,7 +7671,7 @@
     </unit>
     <unit id="ci.issuances.col.state">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:331</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:344</note>
       </notes>
       <segment>
         <source>State</source>
@@ -7680,7 +7680,7 @@
     </unit>
     <unit id="ci.issuances.col.actions">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:332</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:345</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -7689,16 +7689,16 @@
     </unit>
     <unit id="ci.issuances.none-to-revoke">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:444</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:457</note>
       </notes>
       <segment>
         <source>No active token matches the filters.</source>
-        <target>Kein aktiver Token passt zu den Filtern.</target>
+        <target>Kein aktives Token passt zu den Filtern.</target>
       </segment>
     </unit>
     <unit id="ci.issuances.revoke-title">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:448</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:461</note>
       </notes>
       <segment>
         <source>Revoke <ph id="0" equiv="count" disp="count"/> tokens?</source>
@@ -7707,7 +7707,7 @@
     </unit>
     <unit id="ci.issuances.revoke-text">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:450</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:463</note>
       </notes>
       <segment>
         <source>The <ph id="0" equiv="count" disp="count"/> active tokens that match the applied filters stop working at once on every replica. Running jobs that use them fail. This cannot be undone.</source>
@@ -7716,7 +7716,7 @@
     </unit>
     <unit id="ci.issuances.revoke-confirm">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:452</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:465</note>
       </notes>
       <segment>
         <source>Revoke <ph id="0" equiv="count" disp="count"/> tokens</source>
@@ -7725,7 +7725,7 @@
     </unit>
     <unit id="ci.issuances.revoked">
       <notes>
-        <note category="location">src/app/features/ci/issuance-list.ts:456</note>
+        <note category="location">src/app/features/ci/issuance-list.ts:469</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="revoked"/> tokens revoked.</source>
@@ -7747,7 +7747,7 @@
       </notes>
       <segment>
         <source> Every token a job received through the exchange, with the job it was issued to. A record holds no token. Filter to find the tokens of one pipeline or job and revoke them together. </source>
-        <target> Jeder Token, den ein Job durch den Austausch erhalten hat, mit dem Job, für den er ausgestellt wurde. Ein Eintrag enthält keinen Token. Filtern Sie, um die Token einer Pipeline oder eines Jobs zu finden und gemeinsam zu widerrufen.</target>
+        <target> Jedes Token, das ein Job durch den Austausch erhalten hat, mit dem Job, für den es ausgestellt wurde. Ein Eintrag enthält kein Token. Filtern Sie, um die Token einer Pipeline oder eines Jobs zu finden und gemeinsam zu widerrufen.</target>
       </segment>
     </unit>
     <unit id="ci.issuer.heading">
@@ -7882,7 +7882,7 @@
       </notes>
       <segment>
         <source>The tokens issued through this issuer are revoked at once and no job of the instance can exchange a token any more.</source>
-        <target>Die über diesen Aussteller ausgestellten Token werden sofort widerrufen, und kein Job der Instanz kann mehr einen Token austauschen.</target>
+        <target>Die über diesen Aussteller ausgestellten Token werden sofort widerrufen, und kein Job der Instanz kann mehr ein Token austauschen.</target>
       </segment>
     </unit>
     <unit id="ci.issuer.delete-mappings">
@@ -8550,7 +8550,7 @@
       </notes>
       <segment>
         <source> A CI issuer is a GitLab instance whose jobs may exchange their ID token for a short-lived Quader token. Mappings decide what a job receives. </source>
-        <target> Ein CI-Aussteller ist eine GitLab-Instanz, deren Jobs ihren ID-Token gegen einen kurzlebigen Quader-Token tauschen dürfen. Zuordnungen bestimmen, was ein Job erhält.</target>
+        <target> Ein CI-Aussteller ist eine GitLab-Instanz, deren Jobs ihr ID-Token gegen ein kurzlebiges Quader-Token tauschen dürfen. Zuordnungen bestimmen, was ein Job erhält.</target>
       </segment>
     </unit>
     <unit id="ci.issuers.empty">
@@ -9189,7 +9189,7 @@
       </notes>
       <segment>
         <source> A .gitlab-ci.yml fragment for this mapping: the ID token with the audience of the issuer, the exchange and the client configuration. It holds no secret. </source>
-        <target> Ein .gitlab-ci.yml-Ausschnitt für diese Zuordnung: der ID-Token mit der Audience des Ausstellers, der Austausch und die Client-Konfiguration. Er enthält kein Geheimnis.</target>
+        <target> Ein .gitlab-ci.yml-Ausschnitt für diese Zuordnung: das ID-Token mit der Audience des Ausstellers, der Austausch und die Client-Konfiguration. Er enthält kein Geheimnis.</target>
       </segment>
     </unit>
     <unit id="ci.editor.snippet-format">
@@ -9459,7 +9459,7 @@
       </notes>
       <segment>
         <source>No mapping yet. Without a mapping no job receives a token.</source>
-        <target>Noch keine Zuordnung. Ohne Zuordnung erhält kein Job einen Token.</target>
+        <target>Noch keine Zuordnung. Ohne Zuordnung erhält kein Job ein Token.</target>
       </segment>
     </unit>
     <unit id="ci.mappings.disabled">
@@ -9694,7 +9694,7 @@
       </notes>
       <segment>
         <source> Jobs of your GitLab projects exchange their ID token for a short-lived token. The mappings below decide what such a job may do in the repositories of this project. They apply next to the administrators&apos; mappings; yours can never take anything away from theirs. </source>
-        <target> Jobs Ihrer GitLab-Projekte tauschen ihren ID-Token gegen einen kurzlebigen Token. Die folgenden Zuordnungen bestimmen, was ein solcher Job in den Repositories dieses Projekts darf. Sie gelten neben den Zuordnungen der Administratoren; Ihre können deren nie etwas wegnehmen.</target>
+        <target> Jobs Ihrer GitLab-Projekte tauschen ihr ID-Token gegen ein kurzlebiges Token. Die folgenden Zuordnungen bestimmen, was ein solcher Job in den Repositories dieses Projekts darf. Sie gelten neben den Zuordnungen der Administratoren; Ihre können deren nie etwas wegnehmen.</target>
       </segment>
     </unit>
     <unit id="ci.project.issuers">
@@ -9793,7 +9793,7 @@
       </notes>
       <segment>
         <source>On a public issuer anyone can obtain tokens, so a mapping must pin the project or namespace by its ID.</source>
-        <target>Bei einem öffentlichen Aussteller kann jeder Token erhalten, daher muss eine Zuordnung das Projekt oder den Namespace über seine ID festlegen.</target>
+        <target>Bei einem öffentlichen Aussteller kann jeder ein Token erhalten, daher muss eine Zuordnung das Projekt oder den Namespace über seine ID festlegen.</target>
       </segment>
     </unit>
     <unit id="ep.detail.heading">
@@ -11859,8 +11859,8 @@
       <notes>
         <note category="location">src/app/features/guides/guide-format.ts:152</note>
         <note category="location">src/app/features/repositories/repository-list.ts:343</note>
-        <note category="location">src/app/features/search/search-results.ts:231</note>
-        <note category="location">src/app/features/search/search-results.ts:245</note>
+        <note category="location">src/app/features/search/search-results.ts:244</note>
+        <note category="location">src/app/features/search/search-results.ts:258</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -11889,7 +11889,7 @@
         <note category="location">src/app/features/repositories/repository-list.html:69</note>
         <note category="location">src/app/features/repositories/repository-list.ts:281</note>
         <note category="location">src/app/features/repositories/repository-list.ts:350</note>
-        <note category="location">src/app/features/search/search-results.ts:236</note>
+        <note category="location">src/app/features/search/search-results.ts:249</note>
       </notes>
       <segment>
         <source>Class</source>
@@ -14708,7 +14708,7 @@
       </notes>
       <segment>
         <source>The token gets the default limit of technical tokens from the next request on.</source>
-        <target>Der Token erhält ab der nächsten Anfrage das vorgegebene Limit technischer Tokens.</target>
+        <target>Das Token erhält ab der nächsten Anfrage das vorgegebene Limit technischer Tokens.</target>
       </segment>
     </unit>
     <unit id="loggedout.heading">
@@ -14893,7 +14893,7 @@
     </unit>
     <unit id="docs.pending">
       <notes>
-        <note category="location">src/app/features/packages/ansible-contents.ts:22,23</note>
+        <note category="location">src/app/features/packages/ansible-contents.ts:23,24</note>
         <note category="location">src/app/features/packages/ansible-docs.html:7,8</note>
       </notes>
       <segment>
@@ -14903,7 +14903,7 @@
     </unit>
     <unit id="docs.refresh">
       <notes>
-        <note category="location">src/app/features/packages/ansible-contents.ts:23,25</note>
+        <note category="location">src/app/features/packages/ansible-contents.ts:24,26</note>
         <note category="location">src/app/features/packages/ansible-docs.html:8,10</note>
       </notes>
       <segment>
@@ -14913,7 +14913,7 @@
     </unit>
     <unit id="docs.contents.type">
       <notes>
-        <note category="location">src/app/features/packages/ansible-contents.ts:30,31</note>
+        <note category="location">src/app/features/packages/ansible-contents.ts:31,32</note>
       </notes>
       <segment>
         <source>Type</source>
@@ -14922,7 +14922,7 @@
     </unit>
     <unit id="docs.contents.caption">
       <notes>
-        <note category="location">src/app/features/packages/ansible-contents.ts:128</note>
+        <note category="location">src/app/features/packages/ansible-contents.ts:136</note>
       </notes>
       <segment>
         <source>Contents of this version</source>
@@ -14931,7 +14931,7 @@
     </unit>
     <unit id="docs.contents.empty">
       <notes>
-        <note category="location">src/app/features/packages/ansible-contents.ts:129</note>
+        <note category="location">src/app/features/packages/ansible-contents.ts:137</note>
       </notes>
       <segment>
         <source>This version contains no modules, plugins or roles.</source>
@@ -14940,7 +14940,7 @@
     </unit>
     <unit id="docs.col.name">
       <notes>
-        <note category="location">src/app/features/packages/ansible-contents.ts:131</note>
+        <note category="location">src/app/features/packages/ansible-contents.ts:139</note>
         <note category="location">src/app/features/packages/ansible-doc-entry.ts:54</note>
         <note category="location">src/app/features/packages/ansible-doc-entry.ts:62</note>
       </notes>
@@ -14951,7 +14951,7 @@
     </unit>
     <unit id="docs.col.type">
       <notes>
-        <note category="location">src/app/features/packages/ansible-contents.ts:132</note>
+        <note category="location">src/app/features/packages/ansible-contents.ts:140</note>
         <note category="location">src/app/features/packages/ansible-doc-entry.ts:55</note>
         <note category="location">src/app/features/packages/ansible-doc-entry.ts:63</note>
       </notes>
@@ -14962,7 +14962,7 @@
     </unit>
     <unit id="docs.col.short">
       <notes>
-        <note category="location">src/app/features/packages/ansible-contents.ts:133</note>
+        <note category="location">src/app/features/packages/ansible-contents.ts:141</note>
       </notes>
       <segment>
         <source>Short description</source>
@@ -14971,7 +14971,7 @@
     </unit>
     <unit id="docs.contents.all-types">
       <notes>
-        <note category="location">src/app/features/packages/ansible-contents.ts:138</note>
+        <note category="location">src/app/features/packages/ansible-contents.ts:146</note>
       </notes>
       <segment>
         <source>All types (<ph id="0" equiv="count" disp="n"/>)</source>
@@ -15136,7 +15136,7 @@
     <unit id="pkg.meta.external">
       <notes>
         <note category="location">src/app/features/packages/ansible-doc-entry.html:190,191</note>
-        <note category="location">src/app/features/packages/package-version.html:421,422</note>
+        <note category="location">src/app/features/packages/package-version.html:415,416</note>
       </notes>
       <segment>
         <source>(opens another site)</source>
@@ -15453,7 +15453,7 @@
         <note category="location">src/app/features/packages/ansible-import-log.ts:50,51</note>
         <note category="location">src/app/features/system/backups/backups-page.html:227,228</note>
         <note category="location">src/app/features/system/jobs-page.ts:103,104</note>
-        <note category="location">src/app/shared/ui/data-table.ts:125,126</note>
+        <note category="location">src/app/shared/ui/data-table.ts:127,128</note>
       </notes>
       <segment>
         <source> Load more </source>
@@ -16014,7 +16014,7 @@
     <unit id="pkg.ver.never-title">
       <notes>
         <note category="location">src/app/features/packages/package-detail.ts:190</note>
-        <note category="location">src/app/features/packages/package-version.ts:503</note>
+        <note category="location">src/app/features/packages/package-version.ts:506</note>
       </notes>
       <segment>
         <source>No client has downloaded this version through Quader yet.</source>
@@ -16300,7 +16300,7 @@
     <unit id="pkg.col.package">
       <notes>
         <note category="location">src/app/features/packages/package-list.ts:195</note>
-        <note category="location">src/app/features/search/search-results.ts:243</note>
+        <note category="location">src/app/features/search/search-results.ts:256</note>
       </notes>
       <segment>
         <source>Package</source>
@@ -16310,7 +16310,7 @@
     <unit id="pkg.col.format">
       <notes>
         <note category="location">src/app/features/packages/package-list.ts:196</note>
-        <note category="location">src/app/features/search/search-results.ts:246</note>
+        <note category="location">src/app/features/search/search-results.ts:259</note>
       </notes>
       <segment>
         <source>Format</source>
@@ -16320,7 +16320,7 @@
     <unit id="pkg.col.latest">
       <notes>
         <note category="location">src/app/features/packages/package-list.ts:200</note>
-        <note category="location">src/app/features/search/search-results.ts:249</note>
+        <note category="location">src/app/features/search/search-results.ts:262</note>
       </notes>
       <segment>
         <source>Latest</source>
@@ -16330,7 +16330,7 @@
     <unit id="pkg.help.latest">
       <notes>
         <note category="location">src/app/features/packages/package-list.ts:201</note>
-        <note category="location">src/app/features/search/search-results.ts:250</note>
+        <note category="location">src/app/features/search/search-results.ts:263</note>
       </notes>
       <segment>
         <source>The highest stable version you may see. A pre-release is shown only while no stable version exists.</source>
@@ -16340,7 +16340,7 @@
     <unit id="pkg.col.updated">
       <notes>
         <note category="location">src/app/features/packages/package-list.ts:205</note>
-        <note category="location">src/app/features/search/search-results.ts:255</note>
+        <note category="location">src/app/features/search/search-results.ts:268</note>
       </notes>
       <segment>
         <source>Updated</source>
@@ -16350,7 +16350,7 @@
     <unit id="pkg.help.updated">
       <notes>
         <note category="location">src/app/features/packages/package-list.ts:207</note>
-        <note category="location">src/app/features/search/search-results.ts:256</note>
+        <note category="location">src/app/features/search/search-results.ts:269</note>
       </notes>
       <segment>
         <source>When the latest version you may see was published.</source>
@@ -16595,7 +16595,7 @@
     </unit>
     <unit id="pkg.file.sha256">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:205</note>
+        <note category="location">src/app/features/packages/package-version.html:213</note>
       </notes>
       <segment>
         <source>SHA-256</source>
@@ -16604,7 +16604,7 @@
     </unit>
     <unit id="sig.gate.refused-here">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:226,227</note>
+        <note category="location">src/app/features/packages/package-version.html:234,235</note>
         <note category="location">src/app/features/repositories/content/repository-file.ts:109,110</note>
         <note category="location">src/app/shared/signatures/signature-gate.ts:69,70</note>
       </notes>
@@ -16613,18 +16613,9 @@
         <target>Hier verweigert</target>
       </segment>
     </unit>
-    <unit id="pkg.file.download-link">
-      <notes>
-        <note category="location">src/app/features/packages/package-version.html:246,248</note>
-      </notes>
-      <segment>
-        <source>Download</source>
-        <target>Herunterladen</target>
-      </segment>
-    </unit>
     <unit id="clamav.signature">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:256,258</note>
+        <note category="location">src/app/features/packages/package-version.html:250,252</note>
       </notes>
       <segment>
         <source>Detached signature</source>
@@ -16633,7 +16624,7 @@
     </unit>
     <unit id="clamav.signature.present">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:259,260</note>
+        <note category="location">src/app/features/packages/package-version.html:253,254</note>
       </notes>
       <segment>
         <source>Present, <ph id="0" equiv="INTERPOLATION" disp="{{ c.detachedSignature.signatures ?? 0 }}"/> signatures. Quader passes it on; ClamAV checks it.</source>
@@ -16642,7 +16633,7 @@
     </unit>
     <unit id="clamav.signature.none">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:261,263</note>
+        <note category="location">src/app/features/packages/package-version.html:255,257</note>
       </notes>
       <segment>
         <source>None</source>
@@ -16651,7 +16642,7 @@
     </unit>
     <unit id="clamav.members.hint">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:267,268</note>
+        <note category="location">src/app/features/packages/package-version.html:261,262</note>
       </notes>
       <segment>
         <source>The signature count of the header is the total; lines of a member are not always signatures.</source>
@@ -16660,7 +16651,7 @@
     </unit>
     <unit id="clamav.members.removed">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:288,290</note>
+        <note category="location">src/app/features/packages/package-version.html:282,284</note>
       </notes>
       <segment>
         <source>The files of this version were removed; its metadata stays as history.</source>
@@ -16669,7 +16660,7 @@
     </unit>
     <unit id="clamav.members.not-read">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:290,292</note>
+        <note category="location">src/app/features/packages/package-version.html:284,286</note>
       </notes>
       <segment>
         <source>Members not read: the container holds more than the bounds allow.</source>
@@ -16678,7 +16669,7 @@
     </unit>
     <unit id="clamav.details.heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:310,311</note>
+        <note category="location">src/app/features/packages/package-version.html:304,305</note>
       </notes>
       <segment>
         <source>Definitions</source>
@@ -16687,7 +16678,7 @@
     </unit>
     <unit id="clamav.fact.built">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:312,314</note>
+        <note category="location">src/app/features/packages/package-version.html:306,308</note>
       </notes>
       <segment>
         <source>Built</source>
@@ -16696,7 +16687,7 @@
     </unit>
     <unit id="clamav.fact.build-text">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:324,325</note>
+        <note category="location">src/app/features/packages/package-version.html:318,319</note>
       </notes>
       <segment>
         <source>Build time as written</source>
@@ -16705,7 +16696,7 @@
     </unit>
     <unit id="clamav.fact.signatures">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:327,328</note>
+        <note category="location">src/app/features/packages/package-version.html:321,322</note>
       </notes>
       <segment>
         <source>Signatures</source>
@@ -16714,7 +16705,7 @@
     </unit>
     <unit id="clamav.fact.level">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:329,331</note>
+        <note category="location">src/app/features/packages/package-version.html:323,325</note>
       </notes>
       <segment>
         <source>Functionality level</source>
@@ -16723,7 +16714,7 @@
     </unit>
     <unit id="clamav.fact.builder">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:337,338</note>
+        <note category="location">src/app/features/packages/package-version.html:331,332</note>
       </notes>
       <segment>
         <source>Builder</source>
@@ -16732,7 +16723,7 @@
     </unit>
     <unit id="clamav.fact.verification">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:339,340</note>
+        <note category="location">src/app/features/packages/package-version.html:333,334</note>
       </notes>
       <segment>
         <source>Verification</source>
@@ -16741,7 +16732,7 @@
     </unit>
     <unit id="clamav.fact.files-removed">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:342,343</note>
+        <note category="location">src/app/features/packages/package-version.html:336,337</note>
       </notes>
       <segment>
         <source>Files removed</source>
@@ -16750,7 +16741,7 @@
     </unit>
     <unit id="clamav.fact.header-md5">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:349,350</note>
+        <note category="location">src/app/features/packages/package-version.html:343,344</note>
       </notes>
       <segment>
         <source>MD5 in the header</source>
@@ -16759,7 +16750,7 @@
     </unit>
     <unit id="clamav.fact.computed-md5">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:351,352</note>
+        <note category="location">src/app/features/packages/package-version.html:345,346</note>
       </notes>
       <segment>
         <source>MD5 computed by Quader</source>
@@ -16768,7 +16759,7 @@
     </unit>
     <unit id="pkg.image.heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:358,359</note>
+        <note category="location">src/app/features/packages/package-version.html:352,353</note>
       </notes>
       <segment>
         <source>Image</source>
@@ -16777,8 +16768,8 @@
     </unit>
     <unit id="pkg.image.digest">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:360,362</note>
-        <note category="location">src/app/features/packages/package-version.ts:497</note>
+        <note category="location">src/app/features/packages/package-version.html:354,356</note>
+        <note category="location">src/app/features/packages/package-version.ts:500</note>
       </notes>
       <segment>
         <source>Digest</source>
@@ -16787,8 +16778,8 @@
     </unit>
     <unit id="pkg.image.media-type">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:366,367</note>
-        <note category="location">src/app/features/packages/package-version.ts:498</note>
+        <note category="location">src/app/features/packages/package-version.html:360,361</note>
+        <note category="location">src/app/features/packages/package-version.ts:501</note>
       </notes>
       <segment>
         <source>Media type</source>
@@ -16797,7 +16788,7 @@
     </unit>
     <unit id="pkg.image.artifact-type">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:370,371</note>
+        <note category="location">src/app/features/packages/package-version.html:364,365</note>
       </notes>
       <segment>
         <source>Artifact type</source>
@@ -16806,7 +16797,7 @@
     </unit>
     <unit id="pkg.image.total-size">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:373,374</note>
+        <note category="location">src/app/features/packages/package-version.html:367,368</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -16815,7 +16806,7 @@
     </unit>
     <unit id="pkg.image.platforms">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:377,378</note>
+        <note category="location">src/app/features/packages/package-version.html:371,372</note>
       </notes>
       <segment>
         <source>Platforms</source>
@@ -16824,7 +16815,7 @@
     </unit>
     <unit id="pkg.image.not-fetched">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:403,404</note>
+        <note category="location">src/app/features/packages/package-version.html:397,398</note>
       </notes>
       <segment>
         <source>Not fetched</source>
@@ -16833,7 +16824,7 @@
     </unit>
     <unit id="pkg.meta.links">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:412,413</note>
+        <note category="location">src/app/features/packages/package-version.html:406,407</note>
       </notes>
       <segment>
         <source>Links</source>
@@ -16842,7 +16833,7 @@
     </unit>
     <unit id="pkg.meta.authors">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:431,432</note>
+        <note category="location">src/app/features/packages/package-version.html:425,426</note>
       </notes>
       <segment>
         <source>Authors</source>
@@ -16851,7 +16842,7 @@
     </unit>
     <unit id="pkg.meta.frameworks">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:456,457</note>
+        <note category="location">src/app/features/packages/package-version.html:450,451</note>
       </notes>
       <segment>
         <source>Dependencies by target framework</source>
@@ -16860,7 +16851,7 @@
     </unit>
     <unit id="pkg.meta.all-frameworks">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:462,464</note>
+        <note category="location">src/app/features/packages/package-version.html:456,458</note>
       </notes>
       <segment>
         <source>All frameworks</source>
@@ -16869,7 +16860,7 @@
     </unit>
     <unit id="pkg.meta.no-dependencies">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:466,468</note>
+        <note category="location">src/app/features/packages/package-version.html:460,462</note>
       </notes>
       <segment>
         <source>No dependencies.</source>
@@ -16878,9 +16869,9 @@
     </unit>
     <unit id="pkg.meta.facts">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:478,479</note>
-        <note category="location">src/app/features/packages/package-version.html:487,488</note>
-        <note category="location">src/app/features/packages/package-version.html:496,497</note>
+        <note category="location">src/app/features/packages/package-version.html:472,473</note>
+        <note category="location">src/app/features/packages/package-version.html:481,482</note>
+        <note category="location">src/app/features/packages/package-version.html:490,491</note>
       </notes>
       <segment>
         <source>Package details</source>
@@ -16889,7 +16880,7 @@
     </unit>
     <unit id="pkg.meta.engines">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:505,506</note>
+        <note category="location">src/app/features/packages/package-version.html:499,500</note>
       </notes>
       <segment>
         <source>Required runtimes</source>
@@ -16898,7 +16889,7 @@
     </unit>
     <unit id="pkg.repo.heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:513,514</note>
+        <note category="location">src/app/features/packages/package-version.html:507,508</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -17067,9 +17058,9 @@
         <target>Signatur</target>
       </segment>
     </unit>
-    <unit id="pkg.file.download">
+    <unit id="pkg.file.download-link">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:463</note>
+        <note category="location">src/app/features/packages/package-version.ts:492</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -17078,7 +17069,7 @@
     </unit>
     <unit id="pkg.repo.repository">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:491</note>
+        <note category="location">src/app/features/packages/package-version.ts:494</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -17087,7 +17078,7 @@
     </unit>
     <unit id="pkg.repo.class">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:492</note>
+        <note category="location">src/app/features/packages/package-version.ts:495</note>
       </notes>
       <segment>
         <source>Class</source>
@@ -17096,7 +17087,7 @@
     </unit>
     <unit id="pkg.repo.published">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:493</note>
+        <note category="location">src/app/features/packages/package-version.ts:496</note>
       </notes>
       <segment>
         <source>Published</source>
@@ -17105,7 +17096,7 @@
     </unit>
     <unit id="pkg.image.platform">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:496</note>
+        <note category="location">src/app/features/packages/package-version.ts:499</note>
       </notes>
       <segment>
         <source>Platform</source>
@@ -17114,7 +17105,7 @@
     </unit>
     <unit id="pkg.image.size">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:499</note>
+        <note category="location">src/app/features/packages/package-version.ts:502</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -17123,7 +17114,7 @@
     </unit>
     <unit id="pkg.image.platforms-caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:501</note>
+        <note category="location">src/app/features/packages/package-version.ts:504</note>
       </notes>
       <segment>
         <source>Platforms of this image index</source>
@@ -17132,7 +17123,7 @@
     </unit>
     <unit id="pkg.image.not-fetched-title">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:502</note>
+        <note category="location">src/app/features/packages/package-version.ts:505</note>
       </notes>
       <segment>
         <source>No client has fetched this platform through Quader yet, so its manifest and its size are not held.</source>
@@ -17141,7 +17132,7 @@
     </unit>
     <unit id="pkg.image.copy-digest">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:504</note>
+        <note category="location">src/app/features/packages/package-version.ts:507</note>
       </notes>
       <segment>
         <source>Copy digest</source>
@@ -17150,7 +17141,7 @@
     </unit>
     <unit id="pkg.file.caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:505</note>
+        <note category="location">src/app/features/packages/package-version.ts:508</note>
       </notes>
       <segment>
         <source>Files of this version</source>
@@ -17159,7 +17150,7 @@
     </unit>
     <unit id="pkg.repo.caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:506</note>
+        <note category="location">src/app/features/packages/package-version.ts:509</note>
       </notes>
       <segment>
         <source>Repositories that hold this version</source>
@@ -17168,7 +17159,7 @@
     </unit>
     <unit id="pkg.file.copy-sha">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:507</note>
+        <note category="location">src/app/features/packages/package-version.ts:510</note>
       </notes>
       <segment>
         <source>Copy SHA-256</source>
@@ -17177,7 +17168,7 @@
     </unit>
     <unit id="repo.class.local">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:513</note>
+        <note category="location">src/app/features/packages/package-version.ts:516</note>
         <note category="location">src/app/features/packages/version-signatures.ts:88</note>
         <note category="location">src/app/features/repositories/repository-class.ts:9</note>
       </notes>
@@ -17188,7 +17179,7 @@
     </unit>
     <unit id="repo.class.remote">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:514</note>
+        <note category="location">src/app/features/packages/package-version.ts:517</note>
         <note category="location">src/app/features/packages/version-signatures.ts:89</note>
         <note category="location">src/app/features/repositories/repository-class.ts:11</note>
       </notes>
@@ -17199,7 +17190,7 @@
     </unit>
     <unit id="repo.class.virtual">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:515</note>
+        <note category="location">src/app/features/packages/package-version.ts:518</note>
         <note category="location">src/app/features/packages/version-signatures.ts:90</note>
         <note category="location">src/app/features/repositories/repository-class.ts:13</note>
       </notes>
@@ -19263,7 +19254,7 @@
       </notes>
       <segment>
         <source>A personal token lets a tool such as npm act as you; give each tool its own token.</source>
-        <target>Mit einem persönlichen Token handelt ein Werkzeug wie npm in Ihrem Namen; geben Sie jedem Werkzeug einen eigenen Token.</target>
+        <target>Mit einem persönlichen Token handelt ein Werkzeug wie npm in Ihrem Namen; geben Sie jedem Werkzeug ein eigenes Token.</target>
       </segment>
     </unit>
     <unit id="profile.username">
@@ -20733,7 +20724,7 @@
     </unit>
     <unit id="projects-home.heading">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:122</note>
+        <note category="location">src/app/features/projects/projects-home.ts:135</note>
       </notes>
       <segment>
         <source>Projects</source>
@@ -20742,7 +20733,7 @@
     </unit>
     <unit id="projects-home.hint-anonymous">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:129</note>
+        <note category="location">src/app/features/projects/projects-home.ts:142</note>
       </notes>
       <segment>
         <source>The projects with public content. Sign in to see your own.</source>
@@ -20751,7 +20742,7 @@
     </unit>
     <unit id="projects-home.hint">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:131</note>
+        <note category="location">src/app/features/projects/projects-home.ts:144</note>
       </notes>
       <segment>
         <source>Find a project and explore the repositories and packages it holds.</source>
@@ -20760,7 +20751,7 @@
     </unit>
     <unit id="projects.search">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:151</note>
+        <note category="location">src/app/features/projects/projects-home.ts:164</note>
       </notes>
       <segment>
         <source>Filter projects</source>
@@ -20769,7 +20760,7 @@
     </unit>
     <unit id="projects-home.empty-filtered">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:174</note>
+        <note category="location">src/app/features/projects/projects-home.ts:187</note>
       </notes>
       <segment>
         <source>No project matches.</source>
@@ -20778,7 +20769,7 @@
     </unit>
     <unit id="projects-home.empty-anonymous">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:176</note>
+        <note category="location">src/app/features/projects/projects-home.ts:189</note>
       </notes>
       <segment>
         <source>No project is public. Sign in to see your projects.</source>
@@ -20787,7 +20778,7 @@
     </unit>
     <unit id="projects-home.empty">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:177</note>
+        <note category="location">src/app/features/projects/projects-home.ts:190</note>
       </notes>
       <segment>
         <source>You are not a member of a project yet. An Owner of a project adds you with a role.</source>
@@ -20796,7 +20787,7 @@
     </unit>
     <unit id="projects-home.caption-public">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:182</note>
+        <note category="location">src/app/features/projects/projects-home.ts:195</note>
       </notes>
       <segment>
         <source>Public projects</source>
@@ -20805,7 +20796,7 @@
     </unit>
     <unit id="projects-home.caption">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:183</note>
+        <note category="location">src/app/features/projects/projects-home.ts:196</note>
       </notes>
       <segment>
         <source>Your projects</source>
@@ -20814,10 +20805,10 @@
     </unit>
     <unit id="projects.col.project">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:196</note>
-        <note category="location">src/app/features/search/search-results.ts:232</note>
-        <note category="location">src/app/features/search/search-results.ts:244</note>
-        <note category="location">src/app/features/search/search-results.ts:262</note>
+        <note category="location">src/app/features/projects/projects-home.ts:209</note>
+        <note category="location">src/app/features/search/search-results.ts:245</note>
+        <note category="location">src/app/features/search/search-results.ts:257</note>
+        <note category="location">src/app/features/search/search-results.ts:275</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -20826,8 +20817,8 @@
     </unit>
     <unit id="projects-home.col.description">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:198</note>
-        <note category="location">src/app/features/search/search-results.ts:263</note>
+        <note category="location">src/app/features/projects/projects-home.ts:211</note>
+        <note category="location">src/app/features/search/search-results.ts:276</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -20836,8 +20827,8 @@
     </unit>
     <unit id="projects.col.visibility">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:199</note>
-        <note category="location">src/app/features/search/search-results.ts:264</note>
+        <note category="location">src/app/features/projects/projects-home.ts:212</note>
+        <note category="location">src/app/features/search/search-results.ts:277</note>
         <note category="location">src/app/features/upstream/upstream-registries.ts:294</note>
         <note category="location">src/app/features/upstream/upstream-registries.ts:311</note>
       </notes>
@@ -20848,8 +20839,8 @@
     </unit>
     <unit id="projects.col.role">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:202</note>
-        <note category="location">src/app/features/search/search-results.ts:267</note>
+        <note category="location">src/app/features/projects/projects-home.ts:215</note>
+        <note category="location">src/app/features/search/search-results.ts:280</note>
       </notes>
       <segment>
         <source>Your role</source>
@@ -20858,17 +20849,17 @@
     </unit>
     <unit id="projects.help.role">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:203</note>
-        <note category="location">src/app/features/search/search-results.ts:268</note>
+        <note category="location">src/app/features/projects/projects-home.ts:216</note>
+        <note category="location">src/app/features/search/search-results.ts:281</note>
       </notes>
       <segment>
-        <source>Your role in the project; empty when you see it through a system role and are no member.</source>
-        <target>Ihre Rolle im Projekt; leer, wenn Sie es über eine Systemrolle sehen und kein Mitglied sind.</target>
+        <source>Your role in the project; a dash when you see it through a system role and are no member.</source>
+        <target>Ihre Rolle im Projekt; ein Strich, wenn Sie es über eine Systemrolle sehen und kein Mitglied sind.</target>
       </segment>
     </unit>
     <unit id="projects.col.owners">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:206</note>
+        <note category="location">src/app/features/projects/projects-home.ts:219</note>
       </notes>
       <segment>
         <source>Owners</source>
@@ -20877,8 +20868,8 @@
     </unit>
     <unit id="projects.col.repositories">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:207</note>
-        <note category="location">src/app/features/search/search-results.ts:271</note>
+        <note category="location">src/app/features/projects/projects-home.ts:220</note>
+        <note category="location">src/app/features/search/search-results.ts:284</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -20887,8 +20878,8 @@
     </unit>
     <unit id="projects.col.members">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:208</note>
-        <note category="location">src/app/features/search/search-results.ts:272</note>
+        <note category="location">src/app/features/projects/projects-home.ts:221</note>
+        <note category="location">src/app/features/search/search-results.ts:285</note>
       </notes>
       <segment>
         <source>Members</source>
@@ -20897,7 +20888,7 @@
     </unit>
     <unit id="projects.col.storage">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:211</note>
+        <note category="location">src/app/features/projects/projects-home.ts:224</note>
       </notes>
       <segment>
         <source>Storage</source>
@@ -20906,7 +20897,7 @@
     </unit>
     <unit id="projects.help.storage">
       <notes>
-        <note category="location">src/app/features/projects/projects-home.ts:213</note>
+        <note category="location">src/app/features/projects/projects-home.ts:226</note>
       </notes>
       <segment>
         <source>The logical size the project is charged: the full size of every file in its repositories, also where another project holds the same content.</source>
@@ -26303,7 +26294,7 @@
         <note category="location">src/app/features/repositories/repository-list.html:56</note>
         <note category="location">src/app/features/repositories/repository-list.ts:279</note>
         <note category="location">src/app/features/repositories/repository-list.ts:347</note>
-        <note category="location">src/app/features/search/search-results.ts:233</note>
+        <note category="location">src/app/features/search/search-results.ts:246</note>
       </notes>
       <segment>
         <source>Format</source>
@@ -27579,7 +27570,7 @@
     <unit id="repo.help.class">
       <notes>
         <note category="location">src/app/features/repositories/repository-list.ts:351</note>
-        <note category="location">src/app/features/search/search-results.ts:237</note>
+        <note category="location">src/app/features/search/search-results.ts:250</note>
       </notes>
       <segment>
         <source>Local repositories hold what you upload, remote repositories fetch and cache from another registry, virtual repositories combine other repositories behind one address.</source>
@@ -29377,7 +29368,7 @@
     <unit id="search.group.repositories">
       <notes>
         <note category="location">src/app/features/search/search-model.ts:211</note>
-        <note category="location">src/app/features/search/search-results.ts:216</note>
+        <note category="location">src/app/features/search/search-results.ts:229</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -29387,7 +29378,7 @@
     <unit id="search.group.packages">
       <notes>
         <note category="location">src/app/features/search/search-model.ts:212</note>
-        <note category="location">src/app/features/search/search-results.ts:217</note>
+        <note category="location">src/app/features/search/search-results.ts:230</note>
       </notes>
       <segment>
         <source>Packages</source>
@@ -29397,7 +29388,7 @@
     <unit id="search.group.projects">
       <notes>
         <note category="location">src/app/features/search/search-model.ts:213</note>
-        <note category="location">src/app/features/search/search-results.ts:218</note>
+        <note category="location">src/app/features/search/search-results.ts:231</note>
       </notes>
       <segment>
         <source>Projects</source>
@@ -29469,7 +29460,7 @@
     </unit>
     <unit id="search.results.description">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:221</note>
+        <note category="location">src/app/features/search/search-results.ts:234</note>
       </notes>
       <segment>
         <source>What you may read that matches “<ph id="0" equiv="text" disp="this.term()"/>”.</source>
@@ -29478,7 +29469,7 @@
     </unit>
     <unit id="search.results.too-short">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:225</note>
+        <note category="location">src/app/features/search/search-results.ts:238</note>
       </notes>
       <segment>
         <source>Type at least two characters.</source>
@@ -29487,7 +29478,7 @@
     </unit>
     <unit id="search.results.none">
       <notes>
-        <note category="location">src/app/features/search/search-results.ts:226</note>
+        <note category="location">src/app/features/search/search-results.ts:239</note>
       </notes>
       <segment>
         <source>Nothing you may read matches “<ph id="0" equiv="text" disp="this.term()"/>”.</source>
@@ -34017,7 +34008,7 @@
       </notes>
       <segment>
         <source>Write a token into the snippets</source>
-        <target>Einen Token in die Snippets schreiben</target>
+        <target>Ein Token in die Snippets schreiben</target>
       </segment>
     </unit>
     <unit id="setup.cred.paste-hint">
@@ -34026,7 +34017,7 @@
       </notes>
       <segment>
         <source> For a file outside version control. The token stays in this browser: it is checked here and never sent to the server. </source>
-        <target> Für eine Datei außerhalb der Versionsverwaltung. Der Token bleibt in diesem Browser: Er wird hier geprüft und nie an den Server gesendet. </target>
+        <target> Für eine Datei außerhalb der Versionsverwaltung. Das Token bleibt in diesem Browser: Es wird hier geprüft und nie an den Server gesendet. </target>
       </segment>
     </unit>
     <unit id="setup.paste.label">
@@ -34162,7 +34153,7 @@
       </notes>
       <segment>
         <source>The snippets read your token from the variable QUADER_TOKEN.</source>
-        <target>Die Snippets lesen Ihren Token aus der Variable QUADER_TOKEN.</target>
+        <target>Die Snippets lesen Ihr Token aus der Variable QUADER_TOKEN.</target>
       </segment>
     </unit>
     <unit id="setup.class.placeholders">
@@ -34189,7 +34180,7 @@
       </notes>
       <segment>
         <source>The snippets hold the token you paste under More options.</source>
-        <target>Die Snippets enthalten den Token, den Sie unter „Weitere Optionen“ einfügen.</target>
+        <target>Die Snippets enthalten das Token, das Sie unter „Weitere Optionen“ einfügen.</target>
       </segment>
     </unit>
     <unit id="setup.cred.line-env">
@@ -34225,7 +34216,7 @@
       </notes>
       <segment>
         <source>This token is shown once.</source>
-        <target>Dieser Token wird nur einmal angezeigt.</target>
+        <target>Dieses Token wird nur einmal angezeigt.</target>
       </segment>
     </unit>
     <unit id="setup.token.scope-publish">
@@ -34288,7 +34279,7 @@
       </notes>
       <segment>
         <source>Until a token is pasted, the snippets show this placeholder where it will go:</source>
-        <target>Bis ein Token eingefügt ist, zeigen die Snippets diesen Platzhalter an der Stelle, an die er kommt:</target>
+        <target>Bis ein Token eingefügt ist, zeigen die Snippets diesen Platzhalter an der Stelle, an die es kommt:</target>
       </segment>
     </unit>
     <unit id="setup.gate">
@@ -34558,7 +34549,7 @@
       </notes>
       <segment>
         <source>For npm 10, pnpm 10 on npm 10 and Yarn 1. A pipeline step exchanges the job&apos;s ID token for a short-lived Quader token and revokes it again as its last step.</source>
-        <target>Für npm 10, pnpm 10 auf npm 10 und Yarn 1. Ein Pipeline-Schritt tauscht das ID-Token des Jobs gegen einen kurzlebigen Quader-Token und widerruft ihn als letzten Schritt wieder.</target>
+        <target>Für npm 10, pnpm 10 auf npm 10 und Yarn 1. Ein Pipeline-Schritt tauscht das ID-Token des Jobs gegen ein kurzlebiges Quader-Token und widerruft es als letzten Schritt wieder.</target>
       </segment>
     </unit>
     <unit id="setup.snippet.gitlab-native">
@@ -47957,7 +47948,7 @@
     </unit>
     <unit id="scanners.col.pod-database">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:314</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:320</note>
       </notes>
       <segment>
         <source>Database</source>
@@ -47966,7 +47957,7 @@
     </unit>
     <unit id="scanners.col.pod-database-help">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:315</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:321</note>
       </notes>
       <segment>
         <source>The advisory database the pod detects with. Database in use: the one Quader uses now, with how long ago it was built. Older database: the pod is still loading the one in use, which takes under a minute, or its container database cannot load it; that container&apos;s log says why. No database yet: the pod&apos;s first load has not finished.</source>
@@ -47975,7 +47966,7 @@
     </unit>
     <unit id="scanners.caption">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:319</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:325</note>
       </notes>
       <segment>
         <source>Replicas of <ph id="0" equiv="deployment" disp="d"/></source>
@@ -47984,7 +47975,7 @@
     </unit>
     <unit id="scanners.fold">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:325</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:331</note>
       </notes>
       <segment>
         <source>Replicas of <ph id="0" equiv="deployment" disp="d"/> (<ph id="1" equiv="count" disp="n"/>)</source>
@@ -47993,8 +47984,8 @@
     </unit>
     <unit id="scanners.col.name">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:337</note>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:354</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:343</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:360</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -48003,7 +47994,7 @@
     </unit>
     <unit id="scanners.col.node">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:338</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:344</note>
       </notes>
       <segment>
         <source>Node</source>
@@ -48012,7 +48003,7 @@
     </unit>
     <unit id="scanners.col.version">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:339</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:345</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -48021,8 +48012,8 @@
     </unit>
     <unit id="scanners.col.state">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:340</note>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:355</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:346</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:361</note>
       </notes>
       <segment>
         <source>State</source>
@@ -48031,7 +48022,7 @@
     </unit>
     <unit id="scanners.col.since">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:343</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:349</note>
       </notes>
       <segment>
         <source>State changed</source>
@@ -48040,7 +48031,7 @@
     </unit>
     <unit id="scanners.col.since-help">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:344</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:350</note>
       </notes>
       <segment>
         <source>When the replica entered the state it shows, or the reason beside it changed.</source>
@@ -48049,7 +48040,7 @@
     </unit>
     <unit id="scanners.col.heartbeat">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:346</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:352</note>
       </notes>
       <segment>
         <source>Heartbeat</source>
@@ -48058,9 +48049,9 @@
     </unit>
     <unit id="scanners.col.tool">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:348</note>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:349</note>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:356</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:354</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:355</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:362</note>
       </notes>
       <segment>
         <source>Tool</source>
@@ -48069,7 +48060,7 @@
     </unit>
     <unit id="scanners.col.updater-database">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:362</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:368</note>
       </notes>
       <segment>
         <source>Definitions it holds</source>
@@ -48078,7 +48069,7 @@
     </unit>
     <unit id="scanners.col.database">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:363</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:369</note>
       </notes>
       <segment>
         <source>Signature database</source>
@@ -48087,7 +48078,7 @@
     </unit>
     <unit id="scanners.col.slots">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:370</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:376</note>
       </notes>
       <segment>
         <source>Slots</source>
@@ -48096,7 +48087,7 @@
     </unit>
     <unit id="scanners.col.slots-help">
       <notes>
-        <note category="location">src/app/shared/scanner/scanner-replicas.ts:372</note>
+        <note category="location">src/app/shared/scanner/scanner-replicas.ts:378</note>
       </notes>
       <segment>
         <source>The scans the replica runs now, of the scans it runs at a time.</source>
@@ -50738,7 +50729,7 @@
     </unit>
     <unit id="table.empty">
       <notes>
-        <note category="location">src/app/shared/ui/data-table.ts:149</note>
+        <note category="location">src/app/shared/ui/data-table.ts:151</note>
       </notes>
       <segment>
         <source>Nothing to show.</source>
@@ -50747,7 +50738,7 @@
     </unit>
     <unit id="table.help-label">
       <notes>
-        <note category="location">src/app/shared/ui/data-table.ts:302</note>
+        <note category="location">src/app/shared/ui/data-table.ts:324</note>
       </notes>
       <segment>
         <source>About the column <ph id="0" equiv="column" disp="c.label"/></source>

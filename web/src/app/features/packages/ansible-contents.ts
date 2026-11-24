@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { PackageDocEntryHead, PackageDocTree } from '../../api/packages-api';
 import { ApiError } from '../../api/problem';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
+import { NoValue } from '../../shared/ui/no-value';
 import { entryDoc, unavailableText } from './docs-model';
 
 /** The rows shown at first and added by each "Load more" (R-UI-062). */
@@ -15,7 +16,7 @@ export const CONTENTS_PAGE = 100;
  */
 @Component({
   selector: 'quader-ansible-contents',
-  imports: [RouterLink, DataTable],
+  imports: [RouterLink, DataTable, NoValue],
   template: `
     @if (state() === 'pending') {
       <div class="state" data-testid="contents-pending">
@@ -64,7 +65,14 @@ export const CONTENTS_PAGE = 100;
               }
             </th>
             <td translate="no">{{ e.type }}</td>
-            <td translate="no">{{ e.shortDescription }}</td>
+            <!-- A plugin without a short description shows the dash (R-UI-146). -->
+            <td translate="no">
+              @if (e.shortDescription) {
+                {{ e.shortDescription }}
+              } @else {
+                <quader-no-value />
+              }
+            </td>
           </tr>
         }
       </quader-data-table>

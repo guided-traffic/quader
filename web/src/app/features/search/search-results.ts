@@ -158,9 +158,22 @@ const PAGE = 25;
                     </span>
                   </span>
                 </th>
-                <td>{{ descriptionOf(p.key, p.description) }}</td>
+                <td>
+                  @if (descriptionOf(p.key, p.description); as description) {
+                    {{ description }}
+                  } @else {
+                    <quader-no-value />
+                  }
+                </td>
                 <td class="level"><quader-project-level [key]="p.key" [level]="p.visibility" /></td>
-                <td>{{ p.role ? roleLabel(p.role) : '' }}</td>
+                <!-- No role: a caller who sees the project through a system role and is no member (Q-UI-561). -->
+                <td>
+                  @if (p.role) {
+                    {{ roleLabel(p.role) }}
+                  } @else {
+                    <quader-no-value />
+                  }
+                </td>
                 <td class="num">{{ p.repositories }}</td>
                 <td class="num">
                   @if (builtIn(p.key)) {
@@ -265,7 +278,7 @@ export class SearchResults {
     {
       id: 'role',
       label: $localize`:@@projects.col.role:Your role`,
-      help: $localize`:@@projects.help.role:Your role in the project; empty when you see it through a system role and are no member.`,
+      help: $localize`:@@projects.help.role:Your role in the project; a dash when you see it through a system role and are no member.`,
       width: '7rem',
     },
     { id: 'repositories', label: $localize`:@@projects.col.repositories:Repositories`, numeric: true, width: '7rem' },

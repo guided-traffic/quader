@@ -9,8 +9,8 @@
 /** One defect of the layout, as the render report and failures.txt name it. */
 export interface LayoutFinding {
   /**
-   * Which check found it: `icon-apart`, `broken`, `row-offset`, `row-actions`, `stacked-offset`, `label-apart`, `cell-overflow`,
-   * `clipped`, `stacked-fits`, `sideways`, `empty-scroll`.
+   * Which check found it: `icon-apart`, `broken`, `row-offset`, `row-actions`, `stacked-offset`, `stacked-place`, `label-apart`,
+   * `empty-cell`, `cell-overflow`, `clipped`, `stacked-fits`, `sideways`, `empty-scroll`.
    */
   readonly check: string;
   /** The element, as a path of up to four tags with their first two classes. */
@@ -362,6 +362,16 @@ export function layoutFindings(): LayoutFinding[] {
     const t = el.closest('table');
     return !!t && getComputedStyle(t).display !== 'table';
   };
+  // In a block of a stacked list an identifier longer than its field's column of values cannot stand on one line, and breaks there
+  // (Q-UI-1050): an image's media type of 45 characters at 390 px. Measured, not named: one that would fit and broke is a finding.
+  const widerThanItsField = (el: Element): boolean => {
+    if (!el.matches('td') || !stackedTable(el)) return false;
+    const before = getComputedStyle(el, '::before');
+    const name = before.content !== 'none' && before.display !== 'inline' ? parseFloat(before.width) || 0 : 0;
+    const cs = getComputedStyle(el);
+    const room = el.getBoundingClientRect().width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - name;
+    return textRects(el, true).reduce((sum, r) => sum + r.width, 0) > room;
+  };
   const oneLine: readonly [string, string][] = [
     ['status', '.badge, span.ok, span.warn, span.bad, .chip'],
     // Not the toggle of a section's heading (`h2 > button.toggle`): its label is the heading and wraps as a heading does (a
@@ -376,7 +386,7 @@ export function layoutFindings(): LayoutFinding[] {
   for (const [kind, selector] of oneLine) {
     for (const el of Array.from(document.querySelectorAll(selector))) {
       if (!shown(el)) continue;
-      if (kind === 'identifier' && (el.querySelector('.icon-name, .wrap-name') || (el.matches('th') && stackedTable(el)))) continue;
+      if (kind === 'identifier' && (el.querySelector('.icon-name, .wrap-name') || (el.matches('th') && stackedTable(el)) || widerThanItsField(el))) continue;
       if (kind === 'header' && stackedTable(el)) continue;
       const lines = lineCount(textRects(el, true));
       if (lines > 1) add('broken', el, textOf(el), `a ${kind} in ${lines} lines, ${Math.round(el.getBoundingClientRect().width)} px wide`);
@@ -527,6 +537,30 @@ export function layoutFindings(): LayoutFinding[] {
     }
     return null;
   }
+  // Where a value starts: the left of its first text, or of its first box that holds no text of its own and is seen (a control, an
+  // icon, a meter's bar), in reading order. A box that holds text is looked into: its text is where the reader's eye lands.
+  function firstLeft(node: Node): number | null {
+    for (let n = node.firstChild; n; n = n.nextSibling) {
+      if (n.nodeType === Node.TEXT_NODE) {
+        if (!/\S/.test(n.nodeValue ?? '')) continue;
+        range.selectNodeContents(n);
+        const r = Array.from(range.getClientRects()).find((x) => x.width > 0.5 && x.height > 0);
+        if (r) return r.left;
+        continue;
+      }
+      if (n.nodeType !== Node.ELEMENT_NODE) continue;
+      const e = n as Element;
+      if (getComputedStyle(e).display === 'none' || positioned(e) || e.closest('.visually-hidden, .cdk-visually-hidden')) continue;
+      const r = e.getBoundingClientRect();
+      if (e.matches(UNIT) || e.matches('img, svg, input, select, textarea, button') || (!/\S/.test(e.textContent ?? '') && r.width > 0.5 && r.height > 0.5)) {
+        if (r.width > 0.5) return r.left;
+        continue;
+      }
+      const inner = firstLeft(e);
+      if (inner !== null) return inner;
+    }
+    return null;
+  }
   // The column's name of a cell, as it stands: the pseudo-element has no box to measure, so for the measurement it is replaced by
   // a span of the same text in the same place (an inline box of a block cell, an item of a flex or grid cell) and put back in
   // the same task. A mark of no width beside the name wrapped to its own line in a flex cell and measured a line too low.
@@ -534,21 +568,36 @@ export function layoutFindings(): LayoutFinding[] {
   const nameStyle = document.createElement('style');
   nameStyle.textContent = `[${MEASURED}]::before { content: none !important; }`;
   document.head.append(nameStyle);
-  function nameBox(cell: Element): DOMRect | null {
+  // The span takes the pseudo-element's box as well as its text: in the shared table's blocks the name is a cell of its own, as wide as
+  // the list's column of names (Q-UI-1050), and the value stands beside that column, not beside the name's last letter.
+  const NAME_BOX = ['display', 'inline-size', 'box-sizing', 'padding-inline-end', 'vertical-align', 'flex', 'overflow-wrap', 'color'] as const;
+  function nameBox(cell: Element): { text: DOMRect; column: DOMRect } | null {
     const label = cell.getAttribute('data-label') ?? '';
     if (label === '') return null;
+    const before = getComputedStyle(cell, '::before');
     const span = document.createElement('span');
     span.textContent = `${label} `;
-    span.style.color = getComputedStyle(cell, '::before').color;
+    for (const p of NAME_BOX) {
+      // An inline name has no width of its own: its computed width is `auto`, which the span keeps.
+      if (p === 'inline-size' && before.display === 'inline') continue;
+      span.style.setProperty(p, before.getPropertyValue(p));
+    }
     cell.setAttribute(MEASURED, '');
     cell.prepend(span);
     range.setStart(span.firstChild!, 0);
     range.setEnd(span.firstChild!, label.length);
-    const box = range.getBoundingClientRect();
+    const text = range.getBoundingClientRect();
+    const column = span.getBoundingClientRect();
     span.remove();
     cell.removeAttribute(MEASURED);
-    return box;
+    return { text, column };
   }
+  // ---- stacked-place: a field of a stacked list at the same place in every block (R-UI-174, Q-UI-1050) -------------------------
+  // The fields of a stacked row stand a line each, the names in one column and the values in the next, so a reader finds a field at
+  // the same place in every block of the list: every name of a list starts at one x and every value at another, within LINE_TOLERANCE
+  // px, and no two fields of a block share a line. Side by side, as many to a line as fit, "Format" stood beside "Project" in one
+  // block and beside "Class" in the next (T-25's renders, 2026-11-23).
+  const places = new Map<Element, { name: number; value: number; label: string }>();
   for (const row of Array.from(document.querySelectorAll<HTMLTableRowElement>('.quader-data-table.stacked table.data > tbody > tr'))) {
     if (!shown(row)) continue;
     const facts: { cell: Element; box: DOMRect; value: DOMRect | null; name: DOMRect; piece: number | null; room: number }[] = [];
@@ -558,15 +607,35 @@ export function layoutFindings(): LayoutFinding[] {
       for (const unit of Array.from(cell.querySelectorAll(UNIT))) if (outermost(unit) && shown(unit) && !positioned(unit)) parts.push(boxOf(unit));
       const value = parts.filter((r): r is DOMRect => r !== null).reduce<DOMRect | null>((a, b) => (a && a.top <= b.top ? a : b), null);
       const piece = firstPiece(cell);
-      const name = nameBox(cell);
-      if (!name) continue;
-      // The room beside the name: a cell of a block grows to the block's width, so the row's width less the cell's padding and its name.
+      const measured = nameBox(cell);
+      if (!measured) continue;
+      const name = measured.text;
+      // The room beside the name: a cell of a block may grow to the block's width, so the row's width less the cell's padding and the
+      // name's box (its column, in the shared table's blocks).
       const cs = getComputedStyle(cell);
       const rs = getComputedStyle(row);
       const rowWidth = row.getBoundingClientRect().width - parseFloat(rs.paddingLeft) - parseFloat(rs.paddingRight);
-      const nameWidth = name.right - (cell.getBoundingClientRect().left + parseFloat(cs.paddingLeft) + parseFloat(cs.borderLeftWidth));
+      const nameWidth = measured.column.right - (cell.getBoundingClientRect().left + parseFloat(cs.paddingLeft) + parseFloat(cs.borderLeftWidth));
       const room = rowWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - nameWidth;
       facts.push({ cell, box: cell.getBoundingClientRect(), value, name, piece, room });
+      // Where the value starts: the left of its first piece in reading order.
+      const start = firstLeft(cell);
+      if (start !== null) {
+        const table = cell.closest('.quader-data-table');
+        if (table) {
+          const place = { name: name.left, value: start, label: cell.getAttribute('data-label') ?? '' };
+          const known = places.get(table);
+          if (!known) places.set(table, place);
+          else if (Math.abs(place.name - known.name) > LINE_TOLERANCE || Math.abs(place.value - known.value) > LINE_TOLERANCE) {
+            add(
+              'stacked-place',
+              cell,
+              cell.textContent ?? '',
+              `"${place.label}" has its name at ${Math.round(place.name - known.name)} px and its value at ${Math.round(place.value - known.value)} px from where "${known.label}" of the same list has them`,
+            );
+          }
+        }
+      }
     }
     for (const f of facts) {
       // A value whose first piece (its first word, or its first box that does not break: a link of the house, a badge) is wider
@@ -591,6 +660,10 @@ export function layoutFindings(): LayoutFinding[] {
       const [first, ...rest] = line;
       if (!first) return;
       for (const f of rest) {
+        // A field beside another on one line of the block has its place by the widths of the values before it (Q-UI-1050).
+        if (f.cell.closest('.quader-data-table')) {
+          add('stacked-place', f.cell, f.cell.textContent ?? '', `"${f.cell.getAttribute('data-label') ?? ''}" stands beside "${first.cell.getAttribute('data-label') ?? ''}" on one line of the block`);
+        }
         const off = middle(f.name) - middle(first.name);
         if (Math.abs(off) > LINE_TOLERANCE) {
           const firstName = first.cell.getAttribute('data-label') ?? '';
@@ -640,14 +713,24 @@ export function layoutFindings(): LayoutFinding[] {
 
   // ---- clipped: a text cut although there is room beside it (R-UI-173) ----------------------------------------------------
   // An element cut with an ellipsis, or a read-only field's value cut (an address, a command), where the box that holds it has the
-  // room the whole text needs to the element's right; a field with its joined button is measured as one. A field the user types
+  // room the whole text needs to the element's right, up to the next element on its line (a copy button); a field with its joined
+  // button is measured as one. A field the user types
   // into is as wide as its expected input (R-UI-085) and scrolls a longer value.
   const room = (el: Element): number => {
     const box = el.parentElement?.closest('td, th, li, p, div, dd, label, section, form');
     if (!box) return 0;
     const s = getComputedStyle(box);
-    const right = box.getBoundingClientRect().right - parseFloat(s.paddingRight) - parseFloat(s.borderRightWidth);
-    return right - el.getBoundingClientRect().right;
+    let right = box.getBoundingClientRect().right - parseFloat(s.paddingRight) - parseFloat(s.borderRightWidth);
+    // A control after it on its line (a copy button beside a cut digest) holds its room: the room ends where it starts.
+    const own = el.getBoundingClientRect();
+    for (let next = el.nextElementSibling; next; next = next.nextElementSibling) {
+      const r = next.getBoundingClientRect();
+      if (r.width > 0 && r.top < own.bottom && r.bottom > own.top && r.left >= own.right - 1) {
+        right = Math.min(right, r.left);
+        break;
+      }
+    }
+    return right - own.right;
   };
   for (const el of Array.from(document.querySelectorAll<HTMLElement>('main *, [role="dialog"] *'))) {
     const isField = el instanceof HTMLInputElement && el.readOnly && /^(text|url|search|email|)$/.test(el.type) && el.value !== '';
@@ -669,6 +752,26 @@ export function layoutFindings(): LayoutFinding[] {
     const b = button.getBoundingClientRect();
     if (Math.abs(f.top - b.top) > 1 || Math.abs(f.bottom - b.bottom) > 1) {
       add('joined', host, field.value, `the joined button is ${Math.round(b.height)} px high (y ${Math.round(b.top)} to ${Math.round(b.bottom)}), its field ${Math.round(f.height)} px (y ${Math.round(f.top)} to ${Math.round(f.bottom)})`);
+    }
+  }
+
+  // ---- empty-cell: a list's cell without a value that shows nothing (R-UI-146, Q-UI-561) ------------------------------------
+  // A cell without a value is the en dash (`<quader-no-value>`), heard as "None": an empty cell reads as not loaded. A cell of a column
+  // whose header is for assistive technology only (an action, a check box, a download) may stay empty, as a row without that action
+  // has nothing there; so may a cell across the row (an opened row's region). The projects' **Your role** was empty for an
+  // administrator who is no member (2026-11-23).
+  for (const table of Array.from(document.querySelectorAll<HTMLTableElement>('table.data'))) {
+    if (!shown(table) || table.closest('.readme')) continue;
+    const heads = Array.from(table.tHead?.rows[0]?.cells ?? []);
+    for (const row of Array.from(table.tBodies).flatMap((b) => Array.from(b.rows))) {
+      if (row.closest('table') !== table) continue;
+      Array.from(row.cells).forEach((cell, i) => {
+        if (cell.tagName !== 'TD' || cell.colSpan > 1 || cell.matches('.actions')) return;
+        const head = heads[i];
+        if (!head || head.querySelector(':scope > .th-inner > .visually-hidden, :scope > .th-inner > .th-sort > .visually-hidden')) return;
+        if ((cell.textContent ?? '').trim() !== '' || cell.querySelector('*:not(:empty), input, img, svg')) return;
+        add('empty-cell', cell, head.textContent ?? '', `the cell of "${(head.textContent ?? '').trim()}" shows nothing; a cell without a value is the dash`);
+      });
     }
   }
 

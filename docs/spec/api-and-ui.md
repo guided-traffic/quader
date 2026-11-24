@@ -5924,7 +5924,9 @@ Priority: **MVP** · Covers: quader-only
 - `<html lang>` matches the locale (WCAG 3.1.1). Layouts tolerate 35 % longer German text.
 - A missing translation fails the build (`i18nMissingTranslation: error`).
 - An English–German glossary of product terms (for example "permission policy" →
-  "Berechtigungsrichtlinie"; "repository" stays "Repository") is kept with the translation files.
+  "Berechtigungsrichtlinie"; "repository" stays "Repository") is kept with the translation files. A term keeps one
+  grammatical gender in every text: "das Token"
+  ([Q-UI-1052](#q-ui-1052--token-is-neuter-in-every-german-text)).
 
 Configuration:
 
@@ -5942,6 +5944,7 @@ Acceptance criteria:
   redirected to `/ui/de/`; the same request without the session cookie, or with a cookie that is
   not a valid session, is redirected to `/ui/en/`.
 - Removing one German translation unit makes the build fail.
+- Unit test (`formal-german.spec.ts`): no German target uses "Token" as a masculine noun.
 
 ### R-UI-046 · State management with signals
 Priority: **MVP** · Covers: quader-only
@@ -7184,8 +7187,10 @@ page's width. Not chosen by the owner: a row that opens inside the table, and a 
 - **Install** (R-UI-009) at the page's width, before the tabs.
 - **Tabs** (`tab`): **Vulnerabilities** (R-VULN-023), the first tab of a version whose grade is not N/A; for the format `ansible`
   **Documentation** and **Contents** (R-UI-060, R-UI-062); **README** (R-UI-008, when `hasReadme`); **Files** (path with its size and
-  its SHA-256's first twelve characters and copy button under it, the malware scan, the signature, download;
-  [Q-UI-1002](#q-ui-1002--a-versions-files-keep-their-table-the-size-and-the-hash-stand-under-the-path)); **Details** (the format's metadata of R-API-029: an image's digest, media type, artifact
+  its SHA-256's first twelve characters and copy button under it, the path the file's download where it offers one; the malware
+  scan, the signature;
+  [Q-UI-1002](#q-ui-1002--a-versions-files-keep-their-table-the-size-and-the-hash-stand-under-the-path),
+  [Q-UI-1051](#q-ui-1051--a-versions-file-path-is-its-download)); **Details** (the format's metadata of R-API-029: an image's digest, media type, artifact
   type, size and platforms, each platform with its size or "Not fetched" while the repository does not hold it (Q-OCI-221), the links, the authors, the dependency kinds, NuGet's target frameworks and facts, Debian's control
   fields, an Ansible collection's Ansible versions and tags, the required runtimes; then the repositories that hold the version,
   each a link to its page, with its class and when it was published there); **Vulnerabilities** after Details for a version that
@@ -7579,8 +7584,12 @@ Acceptance criteria:
   empty cell holds `<quader-no-value>`, is marked `data-empty`, and is heard as "None"; the service accounts name their project by
   its mark; the projects' counts and size are `num`; the empty texts of the lists say "There is no … yet." unfiltered and
   "No … matches." filtered, and the Bastions' empty state has no button; the jobs and the backups have the list head, chips and
-  the drawer, and no form of their own.
+  the drawer, and no form of their own; the start page shows the dash as the role of a project the caller sees through a system
+  role, and as the description of a project without one.
 - The journeys that name a changed text use the new one (02, 03, 12, 16).
+- The render run's report names no `empty-cell` finding: a list's cell that shows nothing, outside a column whose header is for
+  assistive technology only, is a finding (`projects-details` is rendered as the administrator and the auditor, members of no
+  project).
 
 ### R-UI-150 · A principal is chosen from a search that shows the people it found
 Priority: **MVP** · Covers: quader-only
@@ -8085,19 +8094,20 @@ renders, 2026-11-18).
 - A data table stacks where its columns at their least widths (a wrapping column's declared `width`, a column that never breaks
   at its longest value) need more than its region has, and only there
   ([Q-UI-680](#q-ui-680--a-list-stacks-where-its-columns-at-their-least-widths-do-not-fit-measured-by-the-table-itself)).
-- A stacked row is the name with its actions on the first line, then the other cells side by side, as many to a line as fit, each
-  with its column's name ([Q-UI-681](#q-ui-681--a-stacked-row-puts-its-cells-side-by-side)). Every name stands on its value's first
-  line, and the cells of one line have their first lines on one line; a value of two lines grows downwards
-  ([Q-UI-762](#q-ui-762--the-cells-of-a-stacked-rows-line-stand-on-one-baseline)). A meter takes a line of its own: its column's name,
+- A stacked row is the name with its actions on the first line, then one line per field: its column's name in a column as wide as
+  the list's longest name, at most two fifths of the list, and its value beside it, so a field stands at the same place in every
+  block ([Q-UI-1050](#q-ui-1050--a-stacked-row-is-a-grid-of-names-and-values-one-field-a-line)). Every name stands on its value's
+  first line; a value of two lines grows downwards ([Q-UI-762](#q-ui-762--the-cells-of-a-stacked-rows-line-stand-on-one-baseline)). A meter takes a line of its own: its column's name,
   the bar and its figure on one line, the state under the bar
   ([Q-UI-763](#q-ui-763--a-meter-in-a-stacked-row-is-a-line-of-its-own-name-bar-and-figure-on-one-line)).
 
 Acceptance criteria:
 
 - Unit test: the table stacks where its least width exceeds its region's and not where it fits, measured again when its rows
-  change (`data-table.spec.ts`).
-- The render run's report names no `stacked-fits`, no `stacked-offset` and no `label-apart` finding: a stacked table whose columns
-  would fit is a finding, and so is a stacked row's name off its value's line or off its neighbours' line.
+  change, and a stacked table measures the longest name its rows show for their column of names (`data-table.spec.ts`).
+- The render run's report names no `stacked-fits`, no `stacked-place`, no `stacked-offset` and no `label-apart` finding: a stacked
+  table whose columns would fit is a finding, and so is a field of a stacked list off the place of the list's other fields, two fields
+  on one line of a block, and a stacked row's name off its value's line or off its neighbours' line.
 
 ### R-UI-175 · A control or an icon beside a text stands on the middle of that text's first line
 Priority: **MVP** · Covers: quader-only
@@ -19382,7 +19392,9 @@ rows).
 ### Q-UI-681 · A stacked row puts its cells side by side
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Follows
-the plan's words for W-5: "the stacked form is denser than a line per cell".
+the plan's words for W-5: "the stacked form is denser than a line per cell". **Superseded by
+[Q-UI-1050](#q-ui-1050--a-stacked-row-is-a-grid-of-names-and-values-one-field-a-line)**: side by side, a field stood at another place
+in every block.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -22697,7 +22709,8 @@ scan** and **Signature** (12 rem each) and **Download**: an OCI image's one file
 | (b) The columns as they were | — | — | Blocks at 1,024 px |
 
 **Choice:** (a). The column **Download** of a file that offers none stays empty, as an action cell of a row without an action: no column of
-dashes (point 6 of the same finding, the trust anchors' **Remove** likewise). **Applied in the spec:** R-UI-111. Code:
+dashes (point 6 of the same finding, the trust anchors' **Remove** likewise). Since
+[Q-UI-1051](#q-ui-1051--a-versions-file-path-is-its-download) the column **Download** is gone: the path is the download. **Applied in the spec:** R-UI-111. Code:
 [package-version.html](../../web/src/app/features/packages/package-version.html),
 [anchor-table.ts](../../web/src/app/shared/signatures/anchor-table.ts).
 
@@ -23046,6 +23059,80 @@ projects for a holder of `projects:read` without the repository capability. Both
 admin area: the projects are the main area's. **Rationale:** the start follows the side bar, so it never names a page the side bar
 does not offer. The development agent sees no case for revisiting this. **Applied in the spec:** R-UI-003 (the row of `/admin`,
 unchanged in its words). Tests: [admin-home.spec.ts](../../web/src/app/core/admin-home.spec.ts).
+
+### Q-UI-1050 · A stacked row is a grid of names and values, one field a line
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Supersedes
+[Q-UI-681](#q-ui-681--a-stacked-row-puts-its-cells-side-by-side).
+
+Context: in the stacked rows of every project's repositories at 390 px (T-25's renders, 2026-11-23) **Format** stood beside
+**Project** in one block and beside **Class** in the next, as the values' widths fell: Q-UI-681 put the fields side by side, as many
+to a line as fit, so a field's place followed the widths of the values before it, and the eye found a field at another place in every
+block. Q-UI-681's reason against one field a line, 33 versions 5,136 px high at 1,024 px, was the stacking below 48 rem of every list;
+since [Q-UI-680](#q-ui-680--a-list-stacks-where-its-columns-at-their-least-widths-do-not-fit-measured-by-the-table-itself) a list
+stacks only where its columns do not fit, at 390 px for most lists.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One field a line: its column's name in a column as wide as the list's longest name, at most two fifths of the list, and its value beside it; an empty field left out (chosen) | The data table measures the names its rows show (`--quader-stack-names`); each named cell is a table of two cells, its name and the browser's anonymous cell around its value | Every name of a list at one x and every value at another, in every block; a value of several pieces (a time and a state under it) stays beside its name; the stacked rows of the reference's tables have this form | A block is a line per field: a list of five fields is about twice as high at 390 px as side by side |
+| (b) Fields side by side, as many to a line as fit (Q-UI-681) | A flex row | Dense | A field at another place in every block, the finding |
+| (c) A grid of slots, two or three fields to a line at the wider widths, an empty field kept as a dash in its slot | A container query per width | Dense where there is room, each field in its slot | A dash per empty field in every block; a long value breaks in a slot of a third of the row; a list stacks at 1,024 px only where its columns do not fit, so the room it would save is rare |
+| (d) The columns of names as a percentage of the row | One rule in the stylesheet | No measurement | A table's cell takes a width that calculates with a percentage as none (the first fixture laid the names at half the row); a share wastes room beside short names |
+
+**Choice:** (a), in [data-table.ts](../../web/src/app/shared/ui/data-table.ts) (`measure`) and
+[_list-screens.scss](../../web/src/styles/_list-screens.scss) (Stacked rows). A field without a column's name (`stackLabel: false`, a
+download, a check box) takes a line of its own across the block; a meter (`td.meter-cell`), a state with its icon and a format or a class
+with its icon keep their own layout with the same column of names. In a block a column's cap of the table form does not hold: a
+field takes the line, a value cut with an ellipsis takes its column of values (its copy button beside it), and a version or a media
+type longer than the column of values breaks inside itself there (a database's version, an image's media type at 390 px). The render
+run measures it: `stacked-place` names a field whose name
+or value stands off the x of the list's other fields, or two fields of a block on one line
+([layout.ts](../../web/e2e/renders/layout.ts), fixtures in [layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts)).
+**Rationale:** a stacked block is read by its fields' names; a name at one place in every block is found without reading the line. The
+development agent revisits (c) if a list that stacks at 1,024 px or wider grows long enough to be read by scrolling.
+**Applied in the spec:** R-UI-174. Tests: "R-UI-174 a stacked list measures its longest column name" in
+[data-table.spec.ts](../../web/src/app/shared/ui/data-table.spec.ts), the fixtures of `stacked-place` in layout-checks.spec.ts.
+
+### Q-UI-1051 · A version's file path is its download
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Revises the
+column **Download** of [Q-UI-1002](#q-ui-1002--a-versions-files-keep-their-table-the-size-and-the-hash-stand-under-the-path).
+
+Context: a version's **Files** keep their table at 1,024 px (Q-UI-969, Q-UI-1002), and with the widest signature badge, **Signed ·
+signer not trusted** (180 px; a badge does not break, R-UI-171), the columns needed about 734 px of the 712 the list has there with the
+side bar open: the file of a version a blocked signer signed stood as a block (W9's renders, 2026-11-23). In German the badge is
+"Signiert · Signierer nicht vertrauenswürdig", 269 px, and the button "Herunterladen".
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The path is the link that downloads the file, with the title "Download"; no column **Download**; a file that offers none (refused by a gate, in a system or a disabled repository) shows its path as text (chosen) | The reference's package files | About 612 px in English and 701 px in German with the widest badge; one column less to read | A path that downloads on a click, which a column's word said before |
+| (b) The download as an icon button | A row's icon | About 676 px | 765 px in German; an icon where every other list says **Download** |
+| (c) The malware scan and the signature under the path, as the size and the hash | Q-UI-1002's form | Fits in every language | The two verdicts lose the column a reader runs down for an image's layers |
+| (d) The two verdict columns without their 9 rem | Least width by content | Smallest change | About 700 px with a found malware beside the badge: a few pixels from blocks again; German still blocks |
+
+**Choice:** (a). The link carries the same probe of a download as the button did (`quaderDownload`, Q-UI-753). **Rationale:** the
+column of the word **Download** took a sixth of the list for a word that the file's name can be; the verdicts keep their columns.
+The development agent revisits (c) if a format adds a third verdict column.
+**Applied in the spec:** R-UI-111. Code: [package-version.html](../../web/src/app/features/packages/package-version.html). Tests:
+"R-UI-007 R-API-029 R-UI-111 the Files tab" in [package-version.spec.ts](../../web/src/app/features/packages/package-version.spec.ts); the render state
+`package-version-signatures-untrusted-files` holds the table at 1,024 px.
+
+### Q-UI-1052 · "Token" is neuter in every German text
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: W9's look at the German pages (2026-11-23) found "Token" with two genders: about 36 texts said "das Token", 15 "der Token",
+one page the one and the next page the other.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Neuter, "das Token", in every text and in compounds ("das ID-Token", "kein aktives Token") (chosen) | The form most texts already had | The smaller change; the form of the dictionaries and of most German technical writing | Some readers say "der Token" |
+| (b) Masculine, "der Token" | — | Common in speech | 36 texts to change instead of 15 |
+
+**Choice:** (a), written into the [glossary](../../web/src/locale/GLOSSARY.md) and held by
+[formal-german.spec.ts](../../web/src/app/shared/formal-german.spec.ts), which refuses the masculine forms that have no plural reading.
+**Rationale:** one term, one gender, as one term has one rendering (R-UI-045); the dominant form costs the fewest changed texts. The
+development agent sees no case for revisiting this. **Applied in the spec:** R-UI-045.
 
 ### Q-API-417 · The version list of a package is read a page at a time by a keyset query in the order of publication
 

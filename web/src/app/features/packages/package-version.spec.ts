@@ -140,16 +140,20 @@ describe('The page of a version (R-UI-111)', () => {
     }
   });
 
-  it('R-UI-007 R-API-029 Q-UI-106 the Files tab shows the SHA-256 with a copy button and a Download link on the contentUrl of the file', async () => {
+  it('R-UI-007 R-API-029 R-UI-111 the Files tab shows the SHA-256 with a copy button, and the path is the download of the contentUrl', async () => {
     const r = await open({ tab: 'files' });
     // Q-UI-1002: the first twelve characters under the path, the whole hash as their title and on the copy button.
     const hash = r.root.querySelector('.file-hash code')!;
     expect(text(hash)).toBe('0'.repeat(12));
     expect(hash.getAttribute('title')).toBe('0'.repeat(56) + '5be0c1d2');
     expect(r.root.querySelector('.version-tabs quader-copy-button button')?.getAttribute('aria-label')).toBe('Copy SHA-256');
-    const download = [...r.root.querySelectorAll('a')].find((a) => a.textContent?.trim() === 'Download')!;
+    const download = r.root.querySelector('.version-files th[scope="row"] a.file-path')!;
+    expect(text(download)).toBe('@team-a/ui/-/ui-1.4.0.tgz');
     expect(download.getAttribute('href')).toBe('/api/v1/projects/web/repositories/npm-local/content/@team-a/ui/-/ui-1.4.0.tgz');
     expect(download.hasAttribute('download')).toBe(true);
+    expect(download.getAttribute('title')).toBe('Download');
+    // No column of its own for the download: the path is it (Q-UI-1051).
+    expect([...r.root.querySelectorAll('.version-files thead th')].map((th) => text(th))).toEqual(['File']);
     await expectAccessible(r.root);
   });
 
@@ -165,7 +169,7 @@ describe('The page of a version (R-UI-111)', () => {
             },
       );
     });
-    expect([...r.root.querySelectorAll('a')].some((a) => a.textContent?.trim() === 'Download')).toBe(false);
+    expect(r.root.querySelector('.version-files a[download]')).toBeNull();
     expect([...r.root.querySelectorAll('.version-tabs thead th')].map((th) => text(th))).not.toContain('Download');
     expect(text(r.root.querySelector('[data-testid="install-system"]')!)).toBe("Only Quader's image scanning reads this version; clients cannot install it.");
     expect(command(r)).toBeUndefined();
@@ -179,7 +183,7 @@ describe('The page of a version (R-UI-111)', () => {
         v.version !== '1.4.0' ? v : { ...v, repositories: v.repositories.map((repo) => ({ ...repo, available: false })) },
       );
     });
-    expect([...r.root.querySelectorAll('a')].some((a) => a.textContent?.trim() === 'Download')).toBe(false);
+    expect(r.root.querySelector('.version-files a[download]')).toBeNull();
     expect([...r.root.querySelectorAll('.version-tabs thead th')].map((th) => text(th))).not.toContain('Download');
     expect(text(r.root.querySelector('[data-testid="install-disabled"]')!)).toBe(
       'The repository web/npm-local is disabled: nobody can install this version until it is enabled again.',
@@ -207,8 +211,8 @@ describe('The page of a version (R-UI-111)', () => {
     expect(command(r)).toBe('npm install @team-a/ui@1.4.0');
     expect(r.root.querySelectorAll('quader-install-panel select')).toHaveLength(1);
     expect(r.root.querySelector('[data-testid="install-disabled"]')).toBeNull();
-    // The file is web/npm-local's copy: no Download, and no column for it.
-    expect([...r.root.querySelectorAll('a')].some((a) => a.textContent?.trim() === 'Download')).toBe(false);
+    // The file is web/npm-local's copy: its path is no download.
+    expect(r.root.querySelector('.version-files a[download]')).toBeNull();
   });
 
   it('R-UI-111 the open tab is a query parameter: selecting a tab navigates with ?tab=', async () => {

@@ -92,7 +92,7 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
-  column-gap: var(--quader-space-1);
+  column-gap: 0;
 }
 
 .warn-text {
@@ -175,11 +175,4 @@ ul.plain {
 quader-disclosure {
   display: block;
   margin-block-start: var(--quader-space-4);
-}
-
-// Where a table of the tab stands as blocks (a narrow screen), each name and value pair takes a line of its own, so that every
-// connection's block reads alike: side by side, as the shared rule lets them, short pairs shared a line and long ones did not. The
-// row's action keeps its place beside the name.
-.quader-data-table.stacked tr > td:not(.actions) {
-  flex: 1 1 100%;
 }

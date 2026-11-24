@@ -169,11 +169,19 @@ const projectFilter = async (drawer: Locator): Promise<void> => {
   await drawer.getByRole('combobox', { name: 'Project' }).selectOption(mainProject);
 };
 
-/** The start page as it opens, then with **Show Owners and storage** ticked (Q-UI-1041), which the browser keeps for the viewer. */
+/**
+ * The start page as it opens, then with **Show Owners and storage** ticked (Q-UI-1041), which the browser keeps for the viewer; seen
+ * by the administrator and the auditor, who are members of no project.
+ */
 async function* projectDetails(page: Page): AsyncGenerator<string> {
   const box = page.getByRole('checkbox', { name: 'Show Owners and storage' });
   if (await box.isChecked()) await box.uncheck();
   await expect(page.locator('main thead th', { hasText: 'Owners' })).toHaveCount(0);
+  // The administrator and the auditor are members of no project: **Your role** is the dash in every row (Q-UI-561), the state whose
+  // empty cells the layout check `empty-cell` names (2026-11-23).
+  const roleColumn = (await page.locator('main thead th').allTextContents()).findIndex((t) => t.includes('Your role')) + 1;
+  // Attached, not visible: where the rows stack (1,024 and 390 px) a field without a value leaves its line out.
+  await expect(page.locator(`main tbody tr > :nth-child(${roleColumn}) quader-no-value`).first()).toBeAttached();
   yield '';
   await box.check();
   await expect(page.locator('main thead th', { hasText: 'Owners' })).toHaveCount(1);
@@ -2053,6 +2061,12 @@ async function withGate(page: Page, url: string, gate: Record<string, unknown>):
  * **Signatures** with the gate's decision; for the holder of the triage right the release's dialog, and the version released, by whom,
  * when and why. The member `refused` and the gate are the profile's real answers changed in the browser.
  */
+/** A version's files with the badge of a signer no anchor trusts (R-SIG-035): the state the screen stands for, waited for. */
+async function* untrustedFiles(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main quader-data-table.version-files [data-testid="signature-badge"]').first()).toHaveText(/Signed · signer not trusted/);
+  yield '';
+}
+
 async function* refusedVersionWalk(page: Page): AsyncGenerator<string> {
   const details = `**/api/v1/packages/*/versions/${signedVersions.none}`;
   const report = `**/api/v1/packages/*/versions/${signedVersions.none}/signatures`;
@@ -2326,7 +2340,7 @@ async function* disabledVersion(page: Page): AsyncGenerator<string> {
   yield '';
   await page.getByRole('tab', { name: 'Files' }).click();
   await expect(page.locator('main .version-tabs quader-data-table tbody tr').first()).toBeVisible();
-  await expect(page.locator('main .version-tabs a', { hasText: 'Download' })).toHaveCount(0);
+  await expect(page.locator('main .version-tabs a[download]')).toHaveCount(0);
   yield 'files';
   await page.unroute(details);
 }
@@ -2622,6 +2636,15 @@ export const screens: readonly Screen[] = [
   // The signatures at a version, an image and a file (R-SIG-035, R-SIG-024, R-SIG-010): what a plain user meets; the same for every kind.
   { id: 'package-version-signatures', path: `${ver(P, manyVersionsPackage, signedVersions.public)}?tab=signatures`, kinds: ['plain'], walk: signatureVersions },
   { id: 'package-version-signatures-files', path: `${ver(P, manyVersionsPackage, signedVersions.public)}?tab=files`, kinds: ['plain'], tables: 'quader-data-table.version-files' },
+  // The widest badge in the files' table, **Signed · signer not trusted** (a blocked signer), beside the malware scan's state and the
+  // download: the table keeps its form at 1,024 px (Q-UI-969, Q-UI-1002).
+  {
+    id: 'package-version-signatures-untrusted-files',
+    path: `${ver(P, manyVersionsPackage, signedVersions.blocked)}?tab=files`,
+    kinds: ['plain'],
+    walk: untrustedFiles,
+    tables: 'quader-data-table.version-files',
+  },
   { id: 'package-version-signatures-oci', path: `${ver(P, ociPackage, signedImage.tag)}?tab=signatures`, kinds: ['plain'], walk: signatureImages },
   // A repository's gate at a version, an image and a file (R-SIG-074): what a plain user meets, and the release for an administrator.
   { id: 'package-version-signature-refused', path: `${ver(P, manyVersionsPackage, signedVersions.none)}?tab=files`, kinds: ['plain', 'admin'], walk: refusedVersionWalk },

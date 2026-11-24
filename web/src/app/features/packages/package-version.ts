@@ -2,7 +2,7 @@ import { DownloadLink } from '../../shared/download-link';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { PackageDocTree, PackageVersionDocs, PackagesApi } from '../../api/packages-api';
+import { PackageDocTree, PackageVersion, PackageVersionDocs, PackagesApi } from '../../api/packages-api';
 import { VulnerabilitiesApi, VulnerabilityVersionReport } from '../../api/vulnerabilities-api';
 import { CopyButton } from '../../shared/copy-button';
 import { ErrorNotice } from '../../shared/error-notice';
@@ -460,7 +460,6 @@ export class PackageVersionPage {
     { id: 'path', label: $localize`:@@pkg.file.path:File`, width: '12rem' },
     ...(this.malwareShown() ? [{ id: 'malware', label: $localize`:@@pkg.file.malware:Malware scan`, width: '9rem' }] : []),
     ...(this.signatureShown() ? [{ id: 'signature', label: $localize`:@@pkg.file.signature:Signature`, width: '9rem' }] : []),
-    ...(this.downloadable() ? [{ id: 'download', label: $localize`:@@pkg.file.download:Download`, hideLabel: true }] : []),
   ]);
   /**
    * Whether a file is held by a system repository of the project `upstream` (R-UI-193): its `contentUrl` is the content route of
@@ -483,10 +482,14 @@ export class PackageVersionPage {
     const repo = repositoryOfContent(f.contentUrl);
     return repo !== null && this.disabledHolders().has(repo);
   }
-  /** Some file of the version can be downloaded: the column of the downloads stands (Q-UI-898, Q-UI-965). */
-  protected readonly downloadable = computed(() =>
-    (this.detail()?.files ?? []).some((f) => !this.inSystemRepository(f) && !this.inDisabledRepository(f)),
-  );
+  /**
+   * Whether a file's path is its download (Q-UI-1051): not where the malware scan's gate or a repository's signature gate refuses it
+   * (Q-UI-882, R-SIG-074), and not in a system repository or a disabled one, which answer every download 404 (Q-UI-898, Q-UI-965).
+   */
+  protected offersDownload(f: PackageVersion['files'][number]): boolean {
+    return !(f.malware?.refused === true || f.signatures?.refused === true || this.inSystemRepository(f) || this.inDisabledRepository(f));
+  }
+  protected readonly downloadTitle = $localize`:@@pkg.file.download-link:Download`;
   protected readonly repositoryColumns: readonly TableColumn[] = [
     { id: 'repository', label: $localize`:@@pkg.repo.repository:Repository` },
     { id: 'class', label: $localize`:@@pkg.repo.class:Class` },

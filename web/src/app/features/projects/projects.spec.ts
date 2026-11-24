@@ -71,7 +71,8 @@ describe('The start page holds what the admin area\'s list of projects held (R-U
     expect(heads.filter(([, num]) => num).map(([label]) => label)).toEqual(['Repositories', 'Members', 'Storage']);
     const row = r.root.querySelector('tbody tr')!;
     expect(row.querySelectorAll('td.num')).toHaveLength(3);
-    expect(row.querySelectorAll('td quader-no-value')).toHaveLength(1);
+    // No Owners and, for this caller, no role: each the dash.
+    expect(row.querySelectorAll('td quader-no-value')).toHaveLength(2);
   });
 
   it('R-STOR-049 Q-UI-1041 shows the logical size each project is charged, the exact bytes its title', async () => {

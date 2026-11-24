@@ -171,6 +171,22 @@ test.describe('a cell\'s content running into the next cell (R-UI-173)', () => {
   });
 });
 
+test.describe('a text cut with room beside it (R-UI-173)', () => {
+  // An image's platform digest in a stacked block at 1,024 px: cut where its copy button starts, which holds the room to its right.
+  const digest = (button: string): string =>
+    '<table class="data"><tbody><tr><td style="inline-size: 400px">' +
+    '<code style="display: inline-block; max-inline-size: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: top">' +
+    'sha256:b2b6838dabe5159c6022b1f94626ab13d2615ce27c554a7b94b7cc3d4b20cf0a</code>' +
+    `${button}</td></tr></tbody></table>`;
+
+  test('R-UI-173 a digest cut beside the room of its copy button passes; cut with the room free beside it is found', async ({ page }) => {
+    const beside = await check(page, digest(' <button type="button" class="btn btn-icon" style="inline-size: 90px" aria-label="Copy"><span class="material-icons">content_copy</span></button>'));
+    expect(only(beside, 'clipped'), describe(beside)).toEqual([]);
+    const free = await check(page, digest(''));
+    expect(only(free, 'clipped'), describe(free)).toHaveLength(1);
+  });
+});
+
 test.describe('a button joined to a field (R-UI-175)', () => {
   test('R-UI-175 a joined button that the line rule gave margins of -8 px is 48 px beside a field of 32 and is found', async ({ page }) => {
     const [html, css] = joinedField('margin-block: -8px;');
@@ -285,11 +301,48 @@ test.describe('a table\'s row (R-UI-176)', () => {
      table.data tbody tr::before { content: ''; order: 1; flex-basis: 100%; block-size: 0; }`,
   ];
 
+  // These blocks put their fields side by side, the form of Q-UI-681 before Q-UI-1050: `stacked-place` names that form (its own
+  // fixtures below), and the checks of a field's name and value are measured here apart from it.
+  const sideBySide = (f: LayoutFinding): boolean => f.check !== 'stacked-fits' && f.check !== 'stacked-place';
+
   test('Q-UI-762 a stacked row: names of one line on one line pass, a value of two lines centred against its neighbours is found', async ({ page }) => {
     const centred = await check(page, ...facts('center'));
     expect(only(centred, 'stacked-offset'), describe(centred)).toHaveLength(1);
-    const ok = (await check(page, ...facts('baseline'))).filter((f) => f.check !== 'stacked-fits');
+    const ok = (await check(page, ...facts('baseline'))).filter(sideBySide);
     expect(ok, describe(ok)).toEqual([]);
+  });
+
+  // T-25's repositories at 390 px (2026-11-23), side by side as Q-UI-681 had them: "Format" beside "Project" in the first block and
+  // beside "Class" in the second, as the values' widths fell.
+  const twoBlocks = (fieldCss: string): [string, string] => [
+    `<div class="quader-data-table stacked" style="inline-size:358px"><table class="data" style="display:block;inline-size:auto"><tbody style="display:block">
+       <tr style="display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 20px">
+         <th scope="row" style="flex:1 1 0;display:block">assets</th>
+         <td data-label="Project" style="display:block;order:2">Web frontend</td>
+         <td data-label="Format" style="display:block;order:2">Generic</td>
+         <td data-label="Class" style="display:block;order:2">Local</td>
+       </tr>
+       <tr style="display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 20px">
+         <th scope="row" style="flex:1 1 0;display:block">images</th>
+         <td data-label="Project" style="display:block;order:2">Customer portal release engineering</td>
+         <td data-label="Format" style="display:block;order:2">OCI (Docker)</td>
+         <td data-label="Class" style="display:block;order:2">Local</td>
+       </tr></tbody></table></div>`,
+    `table.data tbody td[data-label]::before { content: attr(data-label) ' '; color: #666; }
+     table.data tbody tr::before { content: ''; order: 1; flex-basis: 100%; block-size: 0; }
+     ${fieldCss}`,
+  ];
+
+  test('R-UI-174 a stacked list whose fields stand side by side, each at another place in each block, is found', async ({ page }) => {
+    const found = await check(page, ...twoBlocks(''));
+    expect(only(found, 'stacked-place').length, describe(found)).toBeGreaterThan(0);
+  });
+
+  test('R-UI-174 the same blocks with a field a line, names in one column and values in the next, pass', async ({ page }) => {
+    const grid = `table.data tbody tr > td { flex: 1 1 100% !important; display: table !important; table-layout: fixed; inline-size: 100%; }
+      table.data tbody td[data-label]::before { content: attr(data-label); display: table-cell; box-sizing: border-box; inline-size: 80px; padding-inline-end: 16px; }`;
+    const found = (await check(page, ...twoBlocks(grid))).filter((f) => f.check !== 'stacked-fits');
+    expect(found, describe(found)).toEqual([]);
   });
 
   test("Q-UI-763 a stacked row: a value under its column's name is found", async ({ page }) => {
@@ -591,11 +644,15 @@ test.describe("the shared patterns with the app's stylesheet (R-UI-176)", () => 
     expect(found, describe(found)).toEqual([]);
   });
 
-  test("Q-UI-762 the guard can fail: the stacked row's facts centred, and the meter as a box after its name", async ({ page }) => {
+  test("R-UI-174 the guard can fail: the stacked row's facts side by side and centred, and the meter as a box after its name", async ({ page }) => {
+    // The form before Q-UI-1050 (Q-UI-681: as many fields to a line as fit, each its name before its value), then centred.
     const before = `.quader-data-table.stacked table.data tbody tr { align-items: center; }
+      .quader-data-table.stacked table.data tbody tr > td:not(.actions) { display: block; flex: 0 1 auto; inline-size: auto; }
+      .quader-data-table.stacked table.data td[data-label]::before { content: attr(data-label) ' '; display: inline; inline-size: auto; padding: 0; }
       .quader-data-table.stacked table.data td.meter-cell:not([data-empty]) { display: block; flex-basis: auto; }`;
     const found = await check(page, stackedFacts, before, true);
     expect(only(found, 'stacked-offset').length, describe(found)).toBeGreaterThan(0);
+    expect(only(found, 'stacked-place').length, describe(found)).toBeGreaterThan(0);
     expect(only(found, 'label-apart'), describe(found)).toHaveLength(1);
   });
 
@@ -614,9 +671,50 @@ test.describe("the shared patterns with the app's stylesheet (R-UI-176)", () => 
     expect(found, describe(found)).toEqual([]);
   });
 
+  // An image's platforms at 390 px: a media type of 45 characters is wider than its field's column of values and breaks there; a tag
+  // of six letters that a box of its own breaks, beside the room it would need, is still found.
+  const identifierFacts = (tag: string): string => `<div class="quader-data-table stacked" style="inline-size:358px"><div class="table-frame"><div class="table-scroll"><table class="data"><tbody>
+      <tr>
+        <th scope="row"><span>linux/amd64</span></th>
+        <td class="media-type" data-label="Media type" translate="no">application/vnd.oci.image.manifest.v1+json</td>
+        <td data-label="Tag" translate="no">${tag}</td>
+      </tr></tbody></table></div></div></div>`;
+  test("R-UI-174 an identifier longer than its field's column of values breaks there; a short one broken with room is found", async ({ page }) => {
+    const css = '.quader-data-table.stacked td.media-type { white-space: normal; overflow-wrap: anywhere; }';
+    const ok = (await check(page, identifierFacts('latest'), css, true)).filter((f) => f.check === 'broken');
+    expect(ok, describe(ok)).toEqual([]);
+    const squeezed = await check(page, identifierFacts('<span style="display:inline-block;inline-size:20px;white-space:normal;overflow-wrap:anywhere">latest</span>'), css, true);
+    expect(only(squeezed, 'broken').map((f) => f.text), describe(squeezed)).toEqual(['latest']);
+  });
+
   test("R-UI-176 the guard can fail: the owner's row without the line rule is found with the app's stylesheet", async ({ page }) => {
     const html = patterns[0]!.html.replace('btn btn-tertiary btn-icon on-line', 'btn btn-tertiary btn-icon');
     expect(only(await check(page, html, '', true), 'off-line')).toHaveLength(1);
+  });
+});
+
+test.describe('a list\'s cell without a value (R-UI-146)', () => {
+  // The start page's projects as an administrator who is a member of none (2026-11-23, `projects-details-details-dark-1440.png`):
+  // **Your role** empty in every row, beside the dashes of the other columns.
+  const projects = (role: string): string =>
+    `<table class="data"><thead><tr>
+       <th scope="col"><span class="th-inner"><span>Project</span></span></th>
+       <th scope="col"><span class="th-inner"><span>Your role</span></span></th>
+       <th scope="col"><span class="th-inner"><span>Owners</span></span></th>
+       <th scope="col"><span class="th-inner"><span class="visually-hidden">Actions</span></span></th>
+     </tr></thead><tbody><tr>
+       <th scope="row"><a href="#">Web frontend</a></th>
+       <td>${role}</td>
+       <td><quader-no-value><span aria-hidden="true">–</span><span class="visually-hidden">None</span></quader-no-value></td>
+       <td class="actions"></td>
+     </tr></tbody></table>`;
+
+  test('R-UI-146 an administrator without membership: an empty role cell is found, the dash passes, an empty action cell is no finding', async ({ page }) => {
+    const empty = await check(page, projects(''));
+    expect(only(empty, 'empty-cell'), describe(empty)).toHaveLength(1);
+    expect(only(empty, 'empty-cell')[0]!.detail).toContain('Your role');
+    const dash = await check(page, projects('<quader-no-value><span aria-hidden="true">–</span><span class="visually-hidden">None</span></quader-no-value>'));
+    expect(only(dash, 'empty-cell'), describe(dash)).toEqual([]);
   });
 });
 

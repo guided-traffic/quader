@@ -61,8 +61,8 @@ describe('The project upstream in the main area (R-UI-190, Q-UI-837)', () => {
     expect(names(r.root)).toEqual(['Upstream', 'Alpha team', 'Web platform']);
     const row = r.root.querySelector('tbody tr')!;
     expect(text(row)).toContain('Built-in');
-    // The Owners and the members are the dash; there is nothing to edit in the row.
-    expect(row.querySelectorAll('quader-no-value').length).toBe(2);
+    // The role, the Owners and the members are the dash; there is nothing to edit in the row.
+    expect(row.querySelectorAll('quader-no-value').length).toBe(3);
     expect(row.querySelectorAll('button')).toHaveLength(0);
   });
 

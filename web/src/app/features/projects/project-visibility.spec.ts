@@ -163,7 +163,8 @@ describe('The start page lists the projects of the caller first (R-UI-054)', () 
     const rows = [...r.root.querySelectorAll('tbody tr')];
     expect(rows.map((row) => text(row.querySelector('th a')!))).toEqual(['Beta', 'Alpha']);
     expect(text(rows[0]!.children[3]!)).toBe('Developer');
-    expect(text(rows[1]!.children[3]!)).toBe('');
+    // No role: the dash (Q-UI-561).
+    expect(rows[1]!.children[3]!.querySelector('quader-no-value')).not.toBeNull();
     expect(rows.map((row) => row.querySelector('[role="img"]')!.getAttribute('aria-label'))).toEqual(['Public', 'Internal']);
   });
 

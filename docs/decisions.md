@@ -12036,10 +12036,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-516 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+519 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 516 questions</summary>
+<summary>Q-UI: 519 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12559,6 +12559,9 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1044](spec/api-and-ui.md#q-ui-1044--an-instance-of-the-ui-development-profile-is-claimed-not-chosen) | An instance of the UI development profile is claimed, not chosen | Decided by the development agent on 2026-11-23 | (a) A claim per instance, the file `<main>/.dev/ui-dev-claims/<n>` with the claiming checkout's path, read and written under an flock(2) lock; a worktree without `UI_INSTANCE` takes the instance it claims or the first free one; a number another existing checkout claims is refused; a claim whose checkout is gone is taken over after its compose project's containers and volumes are removed; an instance that runs without a claim is never picked and is refused when named, `down.sh` may still end it; `make ui-dev-down PURGE=1` ends a claim | — |
 | [Q-UI-1045](spec/api-and-ui.md#q-ui-1045--the-layout-checks-fixtures-run-in-three-engines-and-chromium-sets-text-without-hinting) | The layout checks' fixtures run in three engines, and Chromium sets text without hinting | Decided by the development agent on 2026-11-23 | (a) The checks measure what they name in a way that holds in every engine (`label-apart`: the value's middle below the name's bottom), the fixtures run in Chromium, Firefox and WebKit with no mark for one engine, and Chromium runs with `--font-render-hinting=none` in the fixtures and the renders | — |
 | [Q-UI-1046](spec/api-and-ui.md#q-ui-1046--a-journey-takes-a-pages-words-by-their-message-id-and-the-lint-holds-the-id-and-the-words) | A journey takes a page's words by their message ID, and the lint holds the ID and the words | Decided by the development agent on 2026-11-23 | (a) `ui('<ID>')` reads the unit's source of `messages.xlf` (the German target with `'de'`); a lint rule fails an ID without a plain text and an ID whose words in the code (`$localize` with `:@@ID:`, an element's `i18n="@@ID"`) differ from `messages.xlf`; journeys move to it when they are next changed | — |
+| [Q-UI-1050](spec/api-and-ui.md#q-ui-1050--a-stacked-row-is-a-grid-of-names-and-values-one-field-a-line) | A stacked row is a grid of names and values, one field a line | Decided by the development agent | (a), in [data-table.ts](../web/src/app/shared/ui/data-table.ts) (`measure`) and [_list-screens.scss](../web/src/styles/_list-screens.scss) (Stacked rows). | — |
+| [Q-UI-1051](spec/api-and-ui.md#q-ui-1051--a-versions-file-path-is-its-download) | A version's file path is its download | Decided by the development agent | (a) The path is the link that downloads the file, with the title "Download"; no column **Download**; a file that offers none (refused by a gate, in a system or a disabled repository) shows its path as text | — |
+| [Q-UI-1052](spec/api-and-ui.md#q-ui-1052--token-is-neuter-in-every-german-text) | "Token" is neuter in every German text | Decided by the development agent | (a), written into the [glossary](../web/src/locale/GLOSSARY.md) and held by [formal-german.spec.ts](../web/src/app/shared/formal-german.spec.ts), which refuses the masculine forms that have no plural reading. | — |
 
 </details>
 

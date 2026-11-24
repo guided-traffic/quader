@@ -74,6 +74,8 @@ let nextTableId = 1;
       <quader-empty-state [text]="emptyText()"><ng-content select="[emptyAction]" /></quader-empty-state>
     } @else {
       <div class="table-width" aria-hidden="true"></div>
+      <!-- The names a stacked row labels its fields with, measured for the width of its column of names (R-UI-174, Q-UI-1050). -->
+      <div class="stack-names" aria-hidden="true"></div>
       <div class="table-frame">
         <div class="scroll table-scroll" tabindex="0" role="region" [attr.aria-labelledby]="captionId">
           <table class="data">
@@ -276,7 +278,27 @@ export class DataTable {
     table.style.inlineSize = '0px';
     const need = table.getBoundingClientRect().width;
     table.style.inlineSize = width;
-    host.classList.toggle('stacked', need > region.clientWidth + 0.5);
+    const stacked = need > region.clientWidth + 0.5;
+    host.classList.toggle('stacked', stacked);
+    // A stacked row is a grid of names and values (Q-UI-1050): the column of names is as wide as the longest name its rows show, the
+    // same in every row, so a field stands at the same place in each, and at most two fifths of the room, so a long name breaks before
+    // the values lose their room. The names are measured as a hidden list of the same text; the row's own name (its `th`) stands on
+    // the first line and is none of them. The width is a length, not a share in the stylesheet: a field is a table of two cells, and
+    // a table's cell takes a width with a percentage in a calculation as no width at all.
+    const names = host.querySelector<HTMLElement>(':scope > .stack-names');
+    if (stacked && names) {
+      const cells = host.querySelectorAll(':scope > .table-frame > .table-scroll > table.data > tbody > tr > td[data-label]');
+      const labels = [...new Set(Array.from(cells, (c) => c.getAttribute('data-label') ?? ''))];
+      names.replaceChildren(
+        ...labels.map((l) => {
+          const span = document.createElement('span');
+          span.textContent = l;
+          return span;
+        }),
+      );
+      const longest = Math.ceil(names.getBoundingClientRect().width);
+      host.style.setProperty('--quader-stack-names', `${Math.min(longest, Math.floor(region.clientWidth * 0.4))}px`);
+    }
   }
 
   protected readonly sortedId = computed(() => this.sort()?.column ?? null);

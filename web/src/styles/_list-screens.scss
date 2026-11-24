@@ -376,6 +376,19 @@ td.class-cell .material-icons {
 .quader-data-table {
   display: block;
 
+  // The names a stacked row labels its fields with (R-UI-174, Q-UI-1050): a hidden list the data table measures for the width of
+  // the rows' column of names. Never seen, never in the way: no height, no room taken.
+  .stack-names {
+    position: absolute;
+    display: grid;
+    inline-size: max-content;
+    block-size: 0;
+    overflow: hidden;
+    visibility: hidden;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
   // The reference's table (Q-UI-128): no frame, on the page's fill, hairlines above and below the head and under every row.
   .table-frame {
     background: var(--quader-surface);
@@ -659,9 +672,11 @@ td.class-cell .material-icons {
 
 // Every list (`<quader-data-table>`, unless `[stack]="false"`) shows each row as a block where its columns do not fit (R-UI-174,
 // Q-UI-680): the data table measures its columns at their least widths against its room and sets `stacked`. A block is the name with
-// its description and the row's actions on the first line, then the other cells side by side, as many to a line as fit, each named
-// by its column (Q-UI-681). The head shows only its sort buttons, one row above the blocks (Q-UI-391); the data table gives every
-// cell its column's name in `data-label`, shown before the value, and marks an empty one (`data-empty`), which is left out.
+// its description and the row's actions on the first line, then one line per field: its column's name in a column as wide as the
+// list's longest name, its value beside it, so a field stands at the same place in every block (Q-UI-1050; side by side, as many to
+// a line as fit, "Format" stood beside "Project" in one block and beside "Class" in the next). The head shows only its sort buttons,
+// one row above the blocks (Q-UI-391); the data table gives every cell its column's name in `data-label` and marks an empty one
+// (`data-empty`), which is left out.
 .quader-data-table.stacked {
   .table-scroll {
     max-block-size: none;
@@ -715,10 +730,9 @@ td.class-cell .material-icons {
       display: block;
     }
 
-    // The name and the actions on the first line; the break (`::before`, a line of its own of no height); then the other cells,
-    // each as wide as its name and value, side by side, a long value on a line of its own where it breaks inside itself. The cells
-    // of one line stand on one baseline, the first line of each: a value of two lines grows downwards (R-UI-175, Q-UI-762);
-    // centred, an ended token's "Ended" stood a line above "Limit" and "Last used" beside it.
+    // The name and the actions on the first line; the break (`::before`, a line of its own of no height); then the other cells, a
+    // line each (Q-UI-1050). A field's name and value stand on the baseline of their first line: a value of two lines grows
+    // downwards (R-UI-175, Q-UI-762).
     tbody tr {
       display: flex;
       flex-wrap: wrap;
@@ -760,6 +774,13 @@ td.class-cell .material-icons {
       border-block-end: 0;
     }
 
+    // One line per field (Q-UI-1050): every cell after the first line takes the block's width, whatever a column's cap in a row
+    // (a CI issuer's audiences at 18 rem stood beside its URL).
+    tbody tr > td:not(.actions) {
+      flex: 1 1 100%;
+      max-inline-size: none;
+    }
+
     tbody tr > th[scope='row'] {
       flex: 1 1 0;
       order: 0;
@@ -785,17 +806,41 @@ td.class-cell .material-icons {
       display: flex;
     }
 
+    // A named field is a table of two cells (Q-UI-1050): its column's name in the column of names, as wide as the list's longest
+    // name and at most two fifths of the list (`--quader-stack-names`, a length the data table measures: a table's cell takes a
+    // width that calculates with a percentage as none), and its value in the rest, where it wraps. The value's cell is the browser's
+    // anonymous cell around all the field holds, so a value of several pieces (a time and a state under it, an icon and a word)
+    // stays one value beside its name. Name and value stand on the baseline of their first line (Q-UI-762).
+    td[data-label] {
+      --quader-stack-column: calc(var(--quader-stack-names, 8rem) + var(--quader-space-4));
+
+      display: table;
+      table-layout: fixed;
+      inline-size: 100%;
+      // A cell that lays its name and value out as a grid or a flex row of its own (a state with its icon, a meter) starts its
+      // value at the end of the column of names too: the name's padding is the gap.
+      column-gap: 0;
+    }
+
     td[data-label]::before {
-      content: attr(data-label) ' ';
+      content: attr(data-label);
+      display: table-cell;
+      flex: none;
+      box-sizing: border-box;
+      inline-size: var(--quader-stack-column);
+      padding-inline-end: var(--quader-space-4);
+      vertical-align: baseline;
+      overflow-wrap: break-word;
       color: var(--quader-text-muted);
     }
 
-    // A format or a class with its icon: the column's name on the same middle as the icon and the name.
+    // A format or a class with its icon: the column's name on the same middle as the icon and the name, the pair in the column of
+    // values.
     td.format-cell,
     td.class-cell {
       display: flex;
       align-items: center;
-      gap: var(--quader-space-2);
+      gap: 0;
     }
 
     tbody td :is(.format-name, .class-name, .type-cell) {
@@ -824,14 +869,32 @@ td.class-cell .material-icons {
     // line of its own above the bar.
     td.meter-cell:not([data-empty]) {
       display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
+      grid-template-columns: var(--quader-stack-column) minmax(0, 1fr);
       align-items: start;
-      column-gap: var(--quader-space-2);
+      column-gap: 0;
       flex-basis: 100%;
     }
 
     td.num {
       text-align: start;
+    }
+
+    // A key or an identifier that a table keeps on one line breaks where its field's column of values ends, if it is longer than
+    // the column (Q-UI-1050): on one line it pushed the block past the panel at 390 px (a job's progress). One that fits keeps its line.
+    td[data-label][translate='no'] {
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    // A value cut with an ellipsis takes its field's column of values before it is cut (R-UI-173): its 24 characters are the
+    // measure of a table's column, and a field of a block has the line (an image's platform digests at 1,024 px, Q-UI-1050).
+    td .ellipsis {
+      max-inline-size: 100%;
+    }
+
+    // Its copy button stays beside it on its line (R-UI-175): the value leaves the button's room.
+    td .ellipsis:has(+ quader-copy-button) {
+      max-inline-size: calc(100% - var(--quader-control-height) - var(--quader-space-2));
     }
 
     // In a block a field stands on the line of its column's name, on their common baseline, and keeps its height: its frame would

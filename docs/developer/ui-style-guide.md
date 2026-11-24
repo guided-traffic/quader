@@ -142,9 +142,11 @@ side bar (**Tokens**). The description is one sentence, the header's `descriptio
 - **Where the columns do not fit, the rows stack.** A data table measures its columns at their least widths (a wrapping column's
   `width`, a column that never breaks at its longest value) against its room and shows each row as a block where they do not fit,
   and only there ([Q-UI-680](../spec/api-and-ui.md#q-ui-680--a-list-stacks-where-its-columns-at-their-least-widths-do-not-fit-measured-by-the-table-itself)):
-  the name and its actions on the first line, then the other cells side by side, as many to a line as fit, each named by its
-  column (the table sets `data-label`; `stackLabel: false` where the value says it), a cell without a value ("–") left out
-  ([Q-UI-681](../spec/api-and-ui.md#q-ui-681--a-stacked-row-puts-its-cells-side-by-side)); a row that only carries an expansion of
+  the name and its actions on the first line, then one line per field: its column's name in a column as wide as the list's
+  longest name (at most two fifths of the list) and its value beside it, so a field stands at the same place in every block
+  (the table sets `data-label` and measures the names; `stackLabel: false` where the value says it, which takes the line alone),
+  a cell without a value ("–") left out
+  ([Q-UI-1050](../spec/api-and-ui.md#q-ui-1050--a-stacked-row-is-a-grid-of-names-and-values-one-field-a-line)); a row that only carries an expansion of
   the row above (an opened image's tags, an opened malware find) takes the block's whole width, whatever its content. So a column's least width decides
   where its list stacks: a wrapping column without one is as narrow as its longest word (the start page's description, one word
   a line).
@@ -499,7 +501,7 @@ Before a screen is committed:
 - [ ] Rendered with `make ui-renders` ([web-ui.md](web-ui.md#renders-of-every-screen)) and every changed screen looked at in
       both schemes and at 390 px, as each kind of user that reaches it; the contact sheet lists no failure, no page that scrolls
       sideways at any width and no region that does at 1024 px and wider, that the change brought; no layout finding (an icon apart
-      from its label, a short thing broken, a row off its line or with other actions, a cut text with room, a table stacked though
+      from its label, a short thing broken, a row off its line or with other actions, a cut text with room, a stacked field at another place than in the other blocks, a cell that shows nothing, a table stacked though
       it fits, a page that scrolls into nothing, a control or an icon off its text's line: [the checks](web-ui.md#renders-of-every-screen), R-UI-170 to R-UI-176); and in
       each picture what the checks do not see: a table that ends before the lines above it, a field far wider than its input, two
       words or two styles for one thing, an element that takes the room without being the screen's job.

@@ -79,10 +79,23 @@ const DETAILS_ID = 'projects.details';
               </span>
             </span>
           </th>
-          <td>{{ descriptionOf(p.key, p.description) }}</td>
+          <td>
+            @if (descriptionOf(p.key, p.description); as description) {
+              {{ description }}
+            } @else {
+              <quader-no-value />
+            }
+          </td>
           <td class="level"><quader-project-level [key]="p.key" [level]="p.visibility" /></td>
           @if (!anonymous()) {
-            <td>{{ p.role ? roleLabel(p.role) : '' }}</td>
+            <!-- No role: a caller who sees the project through a system role and is no member (Q-UI-561). -->
+            <td>
+              @if (p.role) {
+                {{ roleLabel(p.role) }}
+              } @else {
+                <quader-no-value />
+              }
+            </td>
           }
           @if (details()) {
             <!-- The Owners by name; the built-in project has none (R-UI-190), and a project without one shows the dash (Q-UI-561). -->
@@ -200,7 +213,7 @@ export class ProjectsHome {
     {
       id: 'role',
       label: $localize`:@@projects.col.role:Your role`,
-      help: $localize`:@@projects.help.role:Your role in the project; empty when you see it through a system role and are no member.`,
+      help: $localize`:@@projects.help.role:Your role in the project; a dash when you see it through a system role and are no member.`,
     },
     // On demand (Q-UI-1041): the Owners wrap, a list of names.
     { id: 'owners', label: $localize`:@@projects.col.owners:Owners` },

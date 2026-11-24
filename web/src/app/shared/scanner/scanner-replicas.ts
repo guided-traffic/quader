@@ -238,16 +238,22 @@ export function scannerReasonText(reason: string): string | null {
       column-gap: var(--quader-space-2);
     }
     // In a row that stands as a block the column's name is the cell's first column, so the state starts on the name's line
-    // (Q-UI-762), as the System page's replicas do.
+    // (Q-UI-762), as the System page's replicas do; the name keeps the width of the list's column of names (Q-UI-1050).
     .quader-data-table.stacked :is(td.state-cell, td.database-cell) {
       display: grid;
       grid-template-columns: auto minmax(0, 1fr);
       align-items: start;
-      column-gap: var(--quader-space-1);
+      column-gap: 0;
     }
     // A version is never broken (Q-UI-428): the column is as wide as it.
     .version {
       white-space: nowrap;
+    }
+    // In a row that stands as a block it breaks inside itself where the column of values ends (Q-UI-1050): a database's version of
+    // 32 characters beside the column of names pushed the block 64 px past the panel at 390 px, as a media type did (W-24).
+    .quader-data-table.stacked .version {
+      white-space: normal;
+      overflow-wrap: anywhere;
     }
     .database {
       display: inline-block;

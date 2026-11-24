@@ -6,6 +6,10 @@ before using a new term in a German text.
 Every German text addresses the reader formally, as "Sie" ("Geben Sie … ein", "Ihre Rolle"), never as "du";
 [formal-german.spec.ts](../app/shared/formal-german.spec.ts) refuses an informal pronoun or imperative in a target.
 
+A term keeps one grammatical gender in every text. "Token" is neuter, "das Token", the form most texts already used when the
+screens' second round found 15 masculine ones beside about 36 neuter ones ([Q-UI-1052](../../../docs/spec/api-and-ui.md#q-ui-1052--token-is-neuter-in-every-german-text)); the same spec
+refuses a masculine "Token" in a target.
+
 | English | German |
 |---|---|
 | permission policy | Berechtigungsrichtlinie |
@@ -18,7 +22,7 @@ Every German text addresses the reader formally, as "Sie" ("Geben Sie … ein", 
 | user, group | Benutzer, Gruppe |
 | service account | Servicekonto |
 | system role | Systemrolle |
-| token (personal, administration) | Token (Persönliche Token, Token-Verwaltung) |
+| token (personal, administration) | das Token, neuter in every text and in compounds (ein Token, kein aktives Token, das ID-Token; Persönliche Token, Token-Verwaltung) |
 | endpoint, exposure rule | Endpunkt, Freigaberegel |
 | audit log | Audit-Protokoll |
 | replica | Replikat |
