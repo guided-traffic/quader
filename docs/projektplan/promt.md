@@ -250,7 +250,7 @@ its bound offers no run, the trend's axis numbers at 390 px, the layout check `c
 a walk in mirror mode for OCI and Debian). **The Go tests' names landed at 02:30** (six commits: 736 names, 157 functions,
 carry a requirement's number or the behaviour alone, no R-ID lost, R-API-083 newly named and so counted by the
 next record; `TestGoTestNamesCarryARequirementNeverADecision` holds it, about 1 to 2 s of the unit job; three
-tests that docs still name no longer exist under any name, left as found). **R2b landed at 03:00** (one commit, migration 00115). **W16 landed at 03:10** (six commits; sixteen entries of section 8 closed or read, the vulnerability scan's bound decided). **R3 landed at 03:30** (one commit). Started at 03:12 in its place: **W18**, small leftovers (the scan's bound in the specification, the token API's upper-case wiring, a stale configuration text, the render `scanners-none`, section 12 C's Sentinel entry, H-842). Started at 03:02 in its place: **W17**, the download limits' leftovers (section 12, part B) and the scale of long lists (H-829, H-1683). Started at 02:32 in its place: **W16**, the open entries of section 8,
+tests that docs still name no longer exist under any name, left as found). **R2b landed at 03:00** (one commit, migration 00115). **W16 landed at 03:10** (six commits; sixteen entries of section 8 closed or read, the vulnerability scan's bound decided). **R3 landed at 03:30** (one commit). **W18 landed at 03:52** (six commits: Q-VULN-268, a pushed image no longer waits for the schedule; the token API's wiring test; the realm's refusal named; a Sentinel failover during a start measured). Started at 03:36 in its place: **T-24 · R5b**, the tab Upstream and the settings of the rules. Started at 03:12 in its place: **W18**, small leftovers (the scan's bound in the specification, the token API's upper-case wiring, a stale configuration text, the render `scanners-none`, section 12 C's Sentinel entry, H-842). Started at 03:02 in its place: **W17**, the download limits' leftovers (section 12, part B) and the scale of long lists (H-829, H-1683). Started at 02:32 in its place: **W16**, the open entries of section 8,
 "Tests and tools", worked down (the red jobs of 2026-11-23 read before their artifacts expire, entries closed
 by tonight's landings, repairs where code is wrong).
 **W13 landed at 01:03** (ten commits; H-1662, the Bastion's gauge, R-ARCH-034's count, the limits'
@@ -459,7 +459,8 @@ Rules while building:
   builder's,** because a builder that is resumed edits its worktree (on 2026-11-22 fourteen integration areas
   of such a run failed to build in the minute a resumed builder changed a signature, and three before them
   ran on a tree in the middle of an edit);
-  **a builder is of a type that has a shell** (Bash): a type without one writes and cannot run a gate, extract
+  **a change that removes or renames a label of a screen searches `web/e2e` for its words and changes the journeys in the
+  same commit** (R2's landing left two broken steps in a journey, 2026-11-24); **a builder is of a type that has a shell** (Bash): a type without one writes and cannot run a gate, extract
   or commit (W10b, 2026-11-23, lost a builder's run to it); and **a reader of a third party's format is proven with a fixture the real tool made, before it lands**
   (the measurement of the signatures with real clients found three defects that every test made in process
   had passed).
@@ -593,16 +594,6 @@ order is what a user or an operator meets first. The state is kept here.
 
 
 
-- **`integration (shard d)` was red in the run of R4's push (2026-11-24; Test and Release 45287679724, read at
-  00:40): `TestQ_VULN_200_APushedImageIsDetectedBeforeTheRedetections` (area `vulnimage`) saw five re-detections
-  before the pushed image's first detection.** Reproduced once on `main` and not on the commit before R4, then
-  passed on `main` too: a timing. The test's second start of the scan task was answered 409 (the first run had
-  not ended), which its helper accepts, so no run began after the push and the database's change, and the run
-  still in progress re-detected the stored images first. R4 adds a task beside it, which lets the first run end
-  later. Repaired at 00:45: the test starts a fresh run (`runFreshScan`, repeated until the task answers 202);
-  the area passed once (61 s). **Open, read and not confirmed:** whether a pass in progress when the database
-  changes should take a push that arrives during it before its re-detections; R-VULN's promise names a pass, so
-  this is a question of the specification, to be read with Q-VULN-200. **Read by W16 on 2026-11-24:** `RunScan` (`internal/vuln/imagescan/service.go`) discovers the manifests and the database in use once at a run's start, so an image pushed during a run waits for the next run, at most one run slice (`vulnerabilities.images.run_slice`, default 10 m), and is then first by Q-VULN-200's order. **Decided by the development agent:** that bound is the promise; it is written into R-VULN-048 and Q-VULN-200 (a discovery between batches would cost a statement a batch for a wait of at most ten minutes). To do: the two sentences of the specification.
 
 
 Several entries below name **F-133**, closed on 2026-11-19: the stall family on the CI runners. Every kind cluster of a machine
@@ -667,7 +658,38 @@ records the recorder that tells such a stall apart).
   lockfile, and re-run 1 was green. The cause is not verified: a failed download of a platform package of an optional dependency is
   the suspect. Read on 2026-11-24 (W16): since eb2be1c1e the job `image (host architecture, no push)` ran in the 31 runs from 45160021052 to 45305430905 and failed in none; its log names every fetch (job 138109104245: 460 `npm http fetch` lines). Open for a recurrence.
 - A disk watcher in the jobs, so that a lost runner can be read, was proposed and not built.
-- **Partly closed; open: the unit test of a removal refused whole, the engine test of a cache miss's first
+
+### Product
+
+- **A mirror without its bound still offers "Run a pass now" (seen by the development agent on 2026-11-24 at R2's
+  renders, `power/repository-settings-npm-mirror-unbounded-unbounded-light-1440.png`):** the status says "No bound"
+  and the button stays active, though the run answers 422 `mirror_unbounded`. And a project's Owner without
+  `write-config` reads "Set one in the mirror settings" there, which only an administrator can (R2's builder). To
+  do: the button disabled with the reason beside it, and the sentence by who reads it.
+
+- **The trend's axis numbers are about 6 px high at 390 px (seen by W15 on 2026-11-24 at the renders of
+  `vulnerabilities` in Chromium, Firefox and WebKit alike):** the numbers 0, 1000 and 2000 scale with the chart's
+  viewBox, which is about half its size at a phone's width, so they are hard to read there. Not an engine's
+  difference. To do: the axis's text at the app's smallest text size whatever the chart's scale.
+
+
+### Closed
+
+- **Closed on 2026-11-24, 03:52, by W18:** `admin-settings-malware-scanners-none-*` rendered in both schemes at 1440, 1024 and 390 px and looked at; `malware-db-no-updater` shows in each, and the walk asserts it before the picture (c05bb5c7f); the description of `malware.scan_listener.url` corrected (3cac949a0). Left for the owner's walk: without an updater the page says the fact twice, once per section. As it stood: **Partly closed; open: a render state of it, looked at: the walk's state `none` of `malwareSettings`
+  (`web/e2e/renders/screens.ts`) takes the database's version away but keeps the scanners' answer of the
+  render seed, which holds a ready updater (`web/e2e/renders/scanners.ts`), so the page's sentence for a
+  missing updater is in no render.** Closed: what the page says in that state, by 8a473bf5a (2026-11-23,
+  Q-UI-1003): the updater's line names it an updater with `malware.updater.url`, and before a first set the
+  section says that no database arrives until an updater is configured and that the task records no failure;
+  held by the component test "Q-UI-1003 before a first set with no updater configured, …"
+  (`web/src/app/features/settings/malware-settings.spec.ts`), which passes. The entry of the UI stack's page
+  in the list Closed points here. As it stood:
+  **The malware settings before the first signature set are not rendered (the reading's row of the ClamAV
+  definitions' setup; checked by reading on 2026-11-23 by the builder of W2, who may not start a UI
+  stack).** By the code the page shows the badge "None yet" with a sentence and no error banner. To do
+  (W9): a render state of it, looked at. Read in the code on 2026-11-24 (W16): the walk's state `scanners-none` keeps the `none` answer and an empty scanner list, so `malware-db-no-updater` should show in `admin/admin-settings-malware-scanners-none-*.png`. To do: look at that picture in the next render run. Seen beside it: `malware.scan_listener.url` (`internal/config/malware.go`) still says empty means the process's own scan listener in the role `all`, which builds no scanner.
+
+- **Closed on 2026-11-24, 03:52, by W18:** the token API's upper-case wiring, by `TestR_AUTHZ_005_ATokenScopesUpperCasePathPatternOverALowerCaseFormatIsRefused` (unit, a real `authz.Engine` over a fake `Source`; it fails when exclude patterns are left out); the two integration cases go with the kit move. As it stood: **Partly closed; open: the unit test of a removal refused whole, the engine test of a cache miss's first
   answer and the token API's unit test of an upper-case path pattern (each waits for the owner's go for new
   formats), and the evidence record that holds no requirement of Ansible Galaxy (not looked into).** Closed:
   the undetermined shadowing check of NuGet's and Ansible Galaxy's data ports, by 916e4cc52 (2026-11-23): the
@@ -694,34 +716,16 @@ records the recorder that tells such a stall apart).
   section 0), since their only use is room for more formats: each moves a behaviour that is tested once
   already to a cheaper tier, which pays only when the kit move deletes the integration cases. **Closed on 2026-11-24 by W16 (ef1c610e6):** the removal refused whole, by `TestR_NUGET_013_ADeleteThatWouldRemoveAFileTheCallerMayNotDeleteIsRefusedWhole` and `TestR_AUTHZ_005_AnNpmRemovalIsRefusedWholeWhenTheCallerMayNotDeleteOneOfItsFiles` (unit, milliseconds, each failing when its rule is taken out); the cache miss's first answer, by the engine's decision `fillHeld` and `TestR_REPO_041_TheFirstAnswerOfASmallMissComesFromTheStoredEntry`; Ansible Galaxy in the record, by the record on `coverage` (e6e3ef60c, all 47 R-ANS). Open: a unit test of the token API's upper-case wiring (`refuseUpperCasePaths`, `internal/api/v1/tokens_api.go`), which needs an authz engine over a repository index that the API's unit tests do not build; the two integration cases go with the kit move.
 
-### Product
-
-- **A mirror without its bound still offers "Run a pass now" (seen by the development agent on 2026-11-24 at R2's
-  renders, `power/repository-settings-npm-mirror-unbounded-unbounded-light-1440.png`):** the status says "No bound"
-  and the button stays active, though the run answers 422 `mirror_unbounded`. And a project's Owner without
-  `write-config` reads "Set one in the mirror settings" there, which only an administrator can (R2's builder). To
-  do: the button disabled with the reason beside it, and the sentence by who reads it.
-
-- **The trend's axis numbers are about 6 px high at 390 px (seen by W15 on 2026-11-24 at the renders of
-  `vulnerabilities` in Chromium, Firefox and WebKit alike):** the numbers 0, 1000 and 2000 scale with the chart's
-  viewBox, which is about half its size at a phone's width, so they are hard to read there. Not an engine's
-  difference. To do: the axis's text at the app's smallest text size whatever the chart's scale.
-
-
-- **Partly closed; open: a render state of it, looked at: the walk's state `none` of `malwareSettings`
-  (`web/e2e/renders/screens.ts`) takes the database's version away but keeps the scanners' answer of the
-  render seed, which holds a ready updater (`web/e2e/renders/scanners.ts`), so the page's sentence for a
-  missing updater is in no render.** Closed: what the page says in that state, by 8a473bf5a (2026-11-23,
-  Q-UI-1003): the updater's line names it an updater with `malware.updater.url`, and before a first set the
-  section says that no database arrives until an updater is configured and that the task records no failure;
-  held by the component test "Q-UI-1003 before a first set with no updater configured, …"
-  (`web/src/app/features/settings/malware-settings.spec.ts`), which passes. The entry of the UI stack's page
-  in the list Closed points here. As it stood:
-  **The malware settings before the first signature set are not rendered (the reading's row of the ClamAV
-  definitions' setup; checked by reading on 2026-11-23 by the builder of W2, who may not start a UI
-  stack).** By the code the page shows the badge "None yet" with a sentence and no error banner. To do
-  (W9): a render state of it, looked at. Read in the code on 2026-11-24 (W16): the walk's state `scanners-none` keeps the `none` answer and an empty scanner list, so `malware-db-no-updater` should show in `admin/admin-settings-malware-scanners-none-*.png`. To do: look at that picture in the next render run. Seen beside it: `malware.scan_listener.url` (`internal/config/malware.go`) still says empty means the process's own scan listener in the role `all`, which builds no scanner.
-### Closed
+- **Closed on 2026-11-24, 03:52, by W18:** R-VULN-034 and R-VULN-048 state the bound of an image pushed during a run (the run slice, default 10 m, with the batch in flight, then its `scan_delay`, then first; Q-VULN-200). Writing it down found Q-VULN-268: the run a push woke ended before the scan delay ran out, and the image waited for the task's `*/5` slot; a run with nothing due now runs again when a discovered manifest becomes due (5f4f6ef66), held by `TestR_VULN_034_ARunWithNothingDueRunsAgainWhenADiscoveredManifestBecomesDue` (unit) and `TestR_VULN_034_APushedImageIsScannedWhenItsScanDelayEndsWithoutTheSchedule` (integration `vulnimage`, about 4 s; it fails without the change). As it stood: **`integration (shard d)` was red in the run of R4's push (2026-11-24; Test and Release 45287679724, read at
+  00:40): `TestQ_VULN_200_APushedImageIsDetectedBeforeTheRedetections` (area `vulnimage`) saw five re-detections
+  before the pushed image's first detection.** Reproduced once on `main` and not on the commit before R4, then
+  passed on `main` too: a timing. The test's second start of the scan task was answered 409 (the first run had
+  not ended), which its helper accepts, so no run began after the push and the database's change, and the run
+  still in progress re-detected the stored images first. R4 adds a task beside it, which lets the first run end
+  later. Repaired at 00:45: the test starts a fresh run (`runFreshScan`, repeated until the task answers 202);
+  the area passed once (61 s). **Open, read and not confirmed:** whether a pass in progress when the database
+  changes should take a push that arrives during it before its re-detections; R-VULN's promise names a pass, so
+  this is a question of the specification, to be read with Q-VULN-200. **Read by W16 on 2026-11-24:** `RunScan` (`internal/vuln/imagescan/service.go`) discovers the manifests and the database in use once at a run's start, so an image pushed during a run waits for the next run, at most one run slice (`vulnerabilities.images.run_slice`, default 10 m), and is then first by Q-VULN-200's order. **Decided by the development agent:** that bound is the promise; it is written into R-VULN-048 and Q-VULN-200 (a discovery between batches would cost a statement a batch for a wait of at most ten minutes). To do: the two sentences of the specification.
 
 - **Closed on 2026-11-24, 03:10, by W16: `integration (shard a)` of run 45226379787 (job 137873881605), not recorded
   before.** `TestFillHook`, case "over two replicas … at most once", saw three upstream GETs: a refusal writes no
@@ -878,7 +882,7 @@ records the recorder that tells such a stall apart).
   before R2 ("… needs a bound."); R2 changed the sentence ("… needs a bound: packages to mirror whose …"). R2's builder
   ran no journey (kind and e2e not run, as its report said). The journey takes the new words; a journey that takes
   its words by message ID (`ui()`, W8) would not have broken, but this message holds an inline code element, which
-  `ui()` does not render. Shown only by the next run of the set.
+  `ui()` does not render. The run of eedf310a4 (45309219887, read at 03:37) failed one step later: the journey typed into the field "Include patterns", which R2 replaced with "Mirror only these packages"; b3533e968 types into the new field. Neither repair was run on a cluster before its push (four builders held the host); the next run of the set shows both. **Rule for the briefs from now:** a change that removes or renames a label of a screen searches `web/e2e` for it and changes the journeys in the same commit.
 
 - **Closed on 2026-11-24, 02:30: a worker panicked when a late claim started its job during the shutdown's wait
   (`integration (shard d)` of Test and Release 45300439644, area `vulnimage`, read at 02:15).** "sync: WaitGroup is
@@ -11069,18 +11073,6 @@ the walk items and the run record); what the code holds beyond the plan has not 
 
 ### C · The walk (W-12 to W-24) and what landed on 2026-11-20
 
-- **Partly closed; open: no real Sentinel failover during a start was run (the 30 s are computed); and the
-  Valkey outage with a replaced packages pod has not run since 2026-11-18, which the next nightly's `npm-ha`
-  runs.** Closed: the drain variant that holds a primary lost, `TestDrainLoad` variant B, passed in the
-  nightlies 44828435420 and 45008950010 (642.6 and 643.9 s); the clone without Sentinels, the case of
-  `TestE12Valkey` whose replica reaches no Sentinel, passed in each of 47 runs of `e2e (push)` from the
-  evening of 2026-11-20 to 2026-11-23 (22.3 s in 45133371730). The outage's place, by d9e79a585 (2026-11-23,
-  Q-HA-487): it is a subtest of `TestNPMHA` (`test/e2e/npm_ha_test.go`), which the nightly's set `npm-ha`
-  selects (`^TestNPMHA($|_)` in `deploy/dev/e2e.sh`), and no longer of `TestNPMHAClosing`, which only a
-  dispatch with `closing` ran; about seven minutes more of the nightly's first lane. As it stood:
-  **The first readiness and Valkey:** no real Sentinel failover during a start was run; the 30 s are computed from the
-  Sentinel settings and the measured failovers. The nightly shows the cases its builder read (the drain variant that holds a
-  primary lost, the outage with a replaced pod, the clone without Sentinels).
 - **`upgrade-release`** (upgrade and rollback from the published release) has not run on a cluster since it was changed: a
   dispatch of the nightly that names `e2e-upgrade` shows it.
   Read on 2026-11-23: its set last ran on 2026-11-19 at 03:22 UTC (dispatch 44451019461, green), before the
@@ -11162,13 +11154,26 @@ the walk items and the run record); what the code holds beyond the plan has not 
   `ansible-galaxy`; a case with the clients follows only if a client is found to treat such a list
   differently. As it stood:
   **Ansible Galaxy:** one name with versions in a local and a remote member is not run with the real clients (H-868); the hub
-  exchange is tested against the stub realm only (H-842).
+  exchange is tested against the stub realm only (H-842). **Read on 2026-11-24 by W18 (1255e5dae):** the realm's token endpoint and the client id `cloud-services` are the service's (a dummy token answers 400 `invalid_grant`, an unknown client 401 `invalid_client`); the 401 had been reported as the upstream's refusal and now names the realm, the stub answers as the service does, held by `TestR_ANS_019_TheRealmsRecordedRefusalsAreUpstreamAuthFailedAndNameTheRealm` (unit); the hub answers 401 at both roots without a token. Open (H-842, H-850): the answer to a valid offline token, the hub accepting it, which root answers `available_versions`, the session and rate limits; only a run with an account shows them.
 
 ### F · Tests a plan named and nobody wrote
 
 Nothing is open here since 2026-11-23; the entries are in the list Closed.
 
 ### Closed
+
+- **Closed on 2026-11-24, 03:52, by W18:** a start during a real Sentinel failover was measured once on the integration stack (the primary's container paused, three Sentinels, `down-after-milliseconds` 3 s, production retry defaults): first answer 6.1 s after the start, from the promoted replica, no start-up error, a fifth of the 30 s bound (Q-HA-332). Not kept as a test (38 s); the flow is held by `TestR_HA_008_StartDuringASentinelFailoverWaitsForTheNewPrimary` (unit). Open: the Valkey outage with a replaced packages pod, which the nightly's `npm-ha` runs. As it stood: **Partly closed; open: no real Sentinel failover during a start was run (the 30 s are computed); and the
+  Valkey outage with a replaced packages pod has not run since 2026-11-18, which the next nightly's `npm-ha`
+  runs.** Closed: the drain variant that holds a primary lost, `TestDrainLoad` variant B, passed in the
+  nightlies 44828435420 and 45008950010 (642.6 and 643.9 s); the clone without Sentinels, the case of
+  `TestE12Valkey` whose replica reaches no Sentinel, passed in each of 47 runs of `e2e (push)` from the
+  evening of 2026-11-20 to 2026-11-23 (22.3 s in 45133371730). The outage's place, by d9e79a585 (2026-11-23,
+  Q-HA-487): it is a subtest of `TestNPMHA` (`test/e2e/npm_ha_test.go`), which the nightly's set `npm-ha`
+  selects (`^TestNPMHA($|_)` in `deploy/dev/e2e.sh`), and no longer of `TestNPMHAClosing`, which only a
+  dispatch with `closing` ran; about seven minutes more of the nightly's first lane. As it stood:
+  **The first readiness and Valkey:** no real Sentinel failover during a start was run; the 30 s are computed from the
+  Sentinel settings and the measured failovers. The nightly shows the cases its builder read (the drain variant that holds a
+  primary lost, the outage with a replaced pod, the clone without Sentinels).
 
 - **Closed on 2026-11-24, 01:50, by W14 (Q-ARCH-1061):** an action `.github/actions/zstd` puts zstd 1.5.7 (pinned with the source's SHA-256 in `tools/versions.env`) on every runner kind before the first cache step: a probe where it is, a restore from the cache, or one build from the verified source (24 s in the runner image under emulation); a failure warns and stays on gzip. What only a run shows: one entry per key in `gh cache list`. zstd in the runners' image (`container-images`, which takes no commit without the owner's word) would make the step a probe. As it stood: **Partly closed; open: every cache entry exists twice without `zstd` on the runners.** Closed: a clients
   image loaded from the cache was read: in the nightly 45008950010, `e2e (npm)` (job 137206249010) logged
