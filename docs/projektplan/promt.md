@@ -700,9 +700,14 @@ records the recorder that tells such a stall apart).
   shows state the server changes by itself refreshes itself while it is seen, one shared mechanism, the rule written into
   the specification and CLAUDE.md.
 
-- **A version page's tab strip scrolls sideways at 390 px in German (seen by the notice's builder on 2026-11-24, 11:20,
-  in the render `package-version-oci-not-checked`):** the strip Dateien, Signaturen, Details, Schwachstellen is wider than
-  the window and shows a horizontal scrollbar under "Schwachstellen". Given to a builder at 11:01.
+- **Three layout findings of the tab strips' renders (2026-11-24, 11:40):** the sessions' time cramped at 1,440 px
+  (`profile-sessions`, 2 px short of one line); the OCI files' signature badge ("Signiert · Signierer nicht
+  vertrauenswürdig") pushes the version page 41 px sideways at 390 px in German; the Debian maintainer's email breaks
+  inside itself in `dl.facts` at 390 px in German. Waiting for the stacked rows' package to land (the same files).
+
+- **An unscanned image's status line still names advisory data (seen by the development agent on 2026-11-24, 11:40, in
+  the render `package-version-oci-schwachstellen`):** under "nicht geprüft" an OCI image reads "Wartet auf Advisory-Daten",
+  the cause the notice's package fixed in the refusal but not in this line. Given to a builder at 11:28.
 
 - **A stacked row breaks a word in the middle at 390 px (seen by the development agent on 2026-11-24, 10:30, in the
   renders of the pull menu):** on a Debian repository's versions at 390 px the label "Veröffentlicht" reads
@@ -711,6 +716,16 @@ records the recorder that tells such a stall apart).
   given to a builder at 10:35.
 
 ### Closed
+
+- **Closed on 2026-11-24, 11:30, by the tab strips' package (Q-UI-1074, R-UI-173):** every tab strip of Quader (nine:
+  a version, a repository, the profile, the packages' views, the search, a CI issuer, System status, Download limits, the
+  usage's views) carries the directive `quaderTabStrip` and scrolls as GitLab's scrolling tabs do: no scrollbar, a fade
+  with a chevron at an edge beyond which tabs lie, the current and a focused tab scrolled clear of the fades; swipe and
+  Shift with the wheel still scroll it. Held by `tab-strip.spec.ts`, a web lint rule that refuses a strip without the
+  directive, and the renders' new check `tab-scrollbar`. Rendered in English and German, both schemes, 1,440, 1,024 and
+  390 px, looked at by the development agent. As it stood: **A version page's tab strip scrolls sideways at 390 px in German (seen by the notice's builder on 2026-11-24, 11:20,
+  in the render `package-version-oci-not-checked`):** the strip Dateien, Signaturen, Details, Schwachstellen is wider than
+  the window and shows a horizontal scrollbar under "Schwachstellen". Given to a builder at 11:01.
 
 - **Closed on 2026-11-24, 11:12, by the notice's package (Q-VULN-272; R-VULN-015, 016, 020):** a missing-data block
   carries what it is missing: for a package the advisory data of its ecosystem; for an image no database yet, a scan not
