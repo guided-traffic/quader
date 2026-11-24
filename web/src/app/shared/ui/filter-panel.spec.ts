@@ -79,7 +79,7 @@ const drawer = () => document.querySelector<HTMLElement>('.quader-drawer [role="
 describe('Filter drawer and the head of a list', () => {
   afterEach(() => document.body.replaceChildren());
 
-  it('R-UI-101 Q-UI-420 R-UI-044 the drawer is closed until Filters opens it: a labelled modal dialog over the page, the list untouched', async () => {
+  it('R-UI-101 R-UI-044 the drawer is closed until Filters opens it: a labelled modal dialog over the page, the list untouched', async () => {
     const { root, settle } = await render();
     expect(drawer()).toBeNull();
     expect(toggle(root).getAttribute('aria-expanded')).toBe('false');
@@ -128,7 +128,7 @@ describe('Filter drawer and the head of a list', () => {
     expect(host.dismissed).toBe(1);
   });
 
-  it('R-UI-101 Q-UI-423 the filters stand open, each a group named by its legend, no folding sections', async () => {
+  it('R-UI-101 the filters stand open, each a group named by its legend, no folding sections', async () => {
     const { host, settle } = await render();
     host.open.set(true);
     await settle();
@@ -155,7 +155,7 @@ describe('Filter drawer and the head of a list', () => {
     expect(toggle(root).textContent).toContain('2');
   });
 
-  it('R-UI-101 Q-UI-420 the apply button submits the form once, closes the drawer and reports no dismissal', async () => {
+  it('R-UI-101 the apply button submits the form once, closes the drawer and reports no dismissal', async () => {
     const { host, settle } = await render();
     host.open.set(true);
     await settle();
@@ -168,7 +168,7 @@ describe('Filter drawer and the head of a list', () => {
     expect(host.dismissed).toBe(0);
   });
 
-  it('R-UI-100 Q-UI-422 a set filter is a chip beside Filters with its name, its value and a button that removes it', async () => {
+  it('R-UI-100 a set filter is a chip beside Filters with its name, its value and a button that removes it', async () => {
     const { root, host, settle } = await render();
     host.chips.set([
       { key: 'format', label: 'Format', value: 'OCI (Docker)' },
@@ -189,7 +189,7 @@ describe('Filter drawer and the head of a list', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
-  it('R-UI-100 Q-UI-421 the search field filters 250 ms after the last key, at once on Enter, and shows a text the list applies', async () => {
+  it('R-UI-100 the search field filters 250 ms after the last key, at once on Enter, and shows a text the list applies', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     try {
       const { root, host, settle } = await render();

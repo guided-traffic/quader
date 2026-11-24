@@ -29,7 +29,7 @@ describe('ServerAddress', () => {
     expect(location.origin).not.toBe('https://packages.example.org');
   });
 
-  it('R-REPO-002 a caller without settings:read and without a readable repository still has an address (Q-UI-75)', async () => {
+  it('R-REPO-002 R-API-022 a caller without settings:read and without a readable repository still has an address', async () => {
     const { address, repos } = setup(['repositories:write-config']);
     repos.repositories = [];
     expect(await address.baseUrl()).toBe('https://quader.example.net');

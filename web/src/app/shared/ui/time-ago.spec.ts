@@ -17,11 +17,11 @@ describe('Time ago', () => {
     [24 * 3_600_000, 'yesterday'],
     [45 * 86_400_000, 'last month'],
     [-29 * 86_400_000, 'in 4 weeks'],
-  ] as const)('R-UI-093 R-UI-103 Q-UI-431 a time %d ms ago reads "%s", the one wording of a relative time', (ms, words) => {
+  ] as const)('R-UI-093 R-UI-103 a time %d ms ago reads "%s", the one wording of a relative time', (ms, words) => {
     expect(timeAgo(before(ms), NOW)).toBe(words);
   });
 
-  it('R-UI-093 Q-UI-378 shows the relative time and the absolute time in brackets, with the machine-readable time', async () => {
+  it('R-UI-093 shows the relative time and the absolute time in brackets, with the machine-readable time', async () => {
     @Component({ imports: [TimeAgo], template: `<p><quader-time-ago [at]="at()" [now]="now" /></p>` })
     class Host {
       readonly at = signal(before(3 * 60_000));
@@ -36,7 +36,7 @@ describe('Time ago', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-103 Q-UI-431 in a list shows the relative time alone, the absolute time as the title of the time element', async () => {
+  it('R-UI-103 in a list shows the relative time alone, the absolute time as the title of the time element', async () => {
     @Component({ imports: [TimeAgo], template: `<p><quader-time-ago [at]="at()" [now]="now" absolute="title" /></p>` })
     class Host {
       readonly at = signal(before(2 * 86_400_000));

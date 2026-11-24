@@ -17,7 +17,7 @@ class Host {
   readonly on = signal(false);
 }
 
-describe('Quader checkbox (Q-UI-126)', () => {
+describe('Quader checkbox', () => {
   async function render() {
     await TestBed.configureTestingModule({ imports: [Host] }).compileComponents();
     const fixture = TestBed.createComponent(Host);
@@ -36,7 +36,7 @@ describe('Quader checkbox (Q-UI-126)', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
-  it('R-UI-145 Q-UI-575 the box is a direct child of its .check-row, which keeps it at its size beside a long label', async () => {
+  it('R-UI-145 the box is a direct child of its .check-row, which keeps it at its size beside a long label', async () => {
     const { boxes } = await render();
     for (const box of boxes) expect(box.parentElement!.matches('label.check-row')).toBe(true);
   });

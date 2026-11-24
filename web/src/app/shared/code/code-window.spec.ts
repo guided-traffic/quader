@@ -4,7 +4,7 @@ import { formatAccent, formatGlyph } from '../format-accent';
 
 const npmrc = 'registry=https://q/api/npm/w/r/\n//q/api/npm/w/r/:_authToken=${QUADER_TOKEN}\n';
 
-describe('code window (R-UI-121, Q-UI-801)', () => {
+describe('code window (R-UI-121)', () => {
   it('R-UI-121 a file is an editor window: its name on the tab, numbered lines, Download and Copy in the bar', async () => {
     const r = await renderScreen(CodeWindow, {
       inputs: { content: npmrc, language: 'ini', fileName: '.npmrc', marks: [{ text: '${QUADER_TOKEN}', kind: 'token' }], snippetId: 'npm.configure.npmrc' },
@@ -55,7 +55,7 @@ describe('code window (R-UI-121, Q-UI-801)', () => {
   });
 });
 
-describe('format accent (Q-UI-803)', () => {
+describe('format accent (R-UI-121)', () => {
   it('R-UI-121 each format of the catalog has its accent pair, a format without one the neutral pair, and an image its own glyph', () => {
     for (const f of ['npm', 'oci', 'nuget', 'deb', 'ansible', 'generic']) expect(formatAccent(f)).toBe(`var(--quader-format-accent-${f})`);
     expect(formatAccent('cargo')).toBe('var(--quader-format-accent)');

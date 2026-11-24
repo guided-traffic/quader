@@ -9,7 +9,7 @@ import { Tooltip } from './tooltip';
 })
 class Host {}
 
-describe('Quader tooltip (Q-UI-126)', () => {
+describe('Quader tooltip', () => {
   async function render() {
     await TestBed.configureTestingModule({ imports: [Host] }).compileComponents();
     const fixture = TestBed.createComponent(Host);

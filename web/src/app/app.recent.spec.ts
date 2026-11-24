@@ -58,7 +58,7 @@ async function render(url: string, options: Options = {}) {
 describe('Recently opened in the side bar (R-UI-167)', () => {
   afterEach(() => new BrowserStorage().clear('local'));
 
-  it('R-UI-167 Q-UI-660 Q-UI-661 a folding group at the end of Your work, folded at first, with the last five repositories the server confirmed, each a link with its project\'s mark', async () => {
+  it('R-UI-167 a folding group at the end of Your work, folded at first, with the last five repositories the server confirmed, each a link with its project\'s mark', async () => {
     const { fixture, root, named, toggle } = await render('/projects', {
       refs: ['web/releases', 'platform/gone', 'web/generic-local', 'web/one', 'web/two', 'web/six'],
     });
@@ -116,7 +116,7 @@ describe('Recently opened in the side bar (R-UI-167)', () => {
     expect(again?.getAttribute('aria-expanded')).toBe('true');
   });
 
-  it('R-UI-167 Q-UI-662 the remembered repositories are confirmed once per session: navigating asks nothing again, a newly opened one is asked alone', async () => {
+  it('R-UI-167 the remembered repositories are confirmed once per session: navigating asks nothing again, a newly opened one is asked alone', async () => {
     const { fixture, root, named } = await render('/projects', { refs: ['web/releases', 'web/generic-local'] });
     expect(named()).toEqual([['web/releases', 'web/generic-local']]);
     await TestBed.inject(Router).navigateByUrl('/guides');

@@ -28,11 +28,11 @@ describe('Breadcrumbs', () => {
     ]);
   });
 
-  it('R-UI-002 Q-UI-1040 the repositories of every project are a page of the main area: a trail of one step, which is not shown', async () => {
+  it('R-UI-002 the repositories of every project are a page of the main area: a trail of one step, which is not shown', async () => {
     expect(await trailAt('/repositories?format=npm')).toEqual([]);
   });
 
-  it('R-UI-002 Q-UI-129 a detail screen of a project reads projects, the project, the section, then the parameter value', async () => {
+  it('R-UI-002 a detail screen of a project reads projects, the project, the section, then the parameter value', async () => {
     expect(await trailAt('/projects/web/repositories/my-repo')).toEqual([
       { label: 'Projects', link: '//projects', literal: false },
       { label: 'web', link: '//projects/web', literal: true },
@@ -41,7 +41,7 @@ describe('Breadcrumbs', () => {
     ]);
   });
 
-  it('Q-UI-129 no step of a project screen links to a route that does not exist', async () => {
+  it('R-UI-002 no step of a project screen links to a route that does not exist', async () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({ providers: [provideRouter(routes), provideHttpClient(), ...provideFakeApis()] });
     const router = TestBed.inject(Router);
@@ -70,7 +70,7 @@ describe('Breadcrumbs', () => {
     }
   });
 
-  it('R-UI-124 Q-UI-553 the guides name a format as people read it, not by its key', async () => {
+  it('R-UI-124 the guides name a format as people read it, not by its key', async () => {
     const catalog = (): void => {
       (TestBed.inject(RepositoriesApi) as FakeRepositoriesApi).formatsResult = [GENERIC_FORMAT, OCI_FORMAT];
     };
@@ -109,7 +109,7 @@ describe('Breadcrumbs', () => {
     ]);
   });
 
-  it('R-UI-002 Q-UI-510 the trail of a folder or a file ends at its repository: the page shows the folders once, in its own path', async () => {
+  it('R-UI-002 R-UI-010 the trail of a folder or a file ends at its repository: the page shows the folders once, in its own path', async () => {
     const trail = await trailAt('/projects/web/repositories/generic-local/files/docs/guide');
     expect(trail.map((c) => c.label)).toEqual(['Projects', 'web', 'Repositories', 'generic-local']);
     expect(trail.at(-1)).toEqual({ label: 'generic-local', link: '//projects/web/repositories/generic-local', literal: true });

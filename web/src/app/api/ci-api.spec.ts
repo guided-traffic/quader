@@ -78,7 +78,7 @@ describe('The CI service (R-API-035, R-UI-036)', () => {
     expect(await pending).toContain('id_tokens:');
   });
 
-  it('R-UI-035 Q-CI-26 a project reads the snippet through its own route', async () => {
+  it('R-UI-035 a project reads the snippet through its own route', async () => {
     const { api, http } = setup();
     const pending = api.snippet('gitlab-com', 'web-publish', 'npm', 'web');
     const req = http.expectOne((r) => r.url === '/api/v1/projects/web/ci/issuers/gitlab-com/snippets/gitlab-ci');

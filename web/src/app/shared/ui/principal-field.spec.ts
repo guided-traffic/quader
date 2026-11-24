@@ -163,7 +163,7 @@ describe('The principal field (R-UI-150)', () => {
     expect(text(root)).toContain('The search failed.');
   });
 
-  it('R-UI-150 inside a project the project lookup answers (Q-AUTHZ-182), with the kinds of the field', async () => {
+  it('R-UI-150 R-API-077 inside a project the project lookup answers, with the kinds of the field', async () => {
     const { fixture, root, options, search, projects } = await render((h) => {
       h.project.set('web');
       h.kinds.set(['user', 'service_account']);
@@ -202,7 +202,7 @@ describe('The principal field (R-UI-150)', () => {
     expect(options()).toHaveLength(0);
   });
 
-  describe('the active match when a newer answer replaces the list (Q-UI-700, Q-UI-701)', () => {
+  describe('the active match when a newer answer replaces the list (R-UI-150)', () => {
     const PEOPLE = [
       { id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a30', username: 'sam', displayName: 'Sam Reader', disabled: false, avatarUrl: null },
       { id: '0192f0c4-7a7e-7b51-9b1e-2f0d6c9e1a31', username: 'sara', displayName: null, disabled: false, avatarUrl: null },
@@ -236,7 +236,7 @@ describe('The principal field (R-UI-150)', () => {
       return { ...r, answer, active };
     }
 
-    it('R-UI-150 Q-UI-700 Q-UI-701 the match walked to stays active under the same id; the pointer resting over the moved list takes nothing', async () => {
+    it('R-UI-150 the match walked to stays active under the same id; the pointer resting over the moved list takes nothing', async () => {
       const r = await walking();
       r.options()[2]!.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, screenX: 20, screenY: 90 }));
       await settle(r.fixture);
@@ -257,7 +257,7 @@ describe('The principal field (R-UI-150)', () => {
       expect(r.host.value()).toEqual(['user:sasha']);
     });
 
-    it('R-UI-150 Q-UI-700 a new list without the match leaves none active; Enter then does what it does without one', async () => {
+    it('R-UI-150 a new list without the match leaves none active; Enter then does what it does without one', async () => {
       const r = await walking();
       await r.key('ArrowDown');
       await r.key('ArrowDown');

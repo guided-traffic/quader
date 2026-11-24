@@ -45,7 +45,7 @@ describe('The built-in project upstream (R-UI-190)', () => {
     expect(systemRepositoryNames()).toEqual(['upstream/scanner-trivy', 'upstream/clamav']);
   });
 
-  it('R-REPO-075 Q-UI-908 clamav is the one system repository that may serve clients, and has Set up client only while it does', () => {
+  it('R-REPO-075 R-UI-193 clamav is the one system repository that may serve clients, and has Set up client only while it does', () => {
     expect(mayServeClients('clamav')).toBe(true);
     expect(mayServeClients('scanner-trivy')).toBe(false);
     expect(mayServeClients(null)).toBe(false);
@@ -53,14 +53,14 @@ describe('The built-in project upstream (R-UI-190)', () => {
     expect(setupCommands('upstream/scanner-trivy', true)).toBeNull();
   });
 
-  it('Q-UI-896 no Set up client leads to a system repository: its commands are null, every other repository\'s its page …/setup', () => {
+  it('R-UI-192 no Set up client leads to a system repository: its commands are null, every other repository\'s its page …/setup', () => {
     expect(setupCommands('upstream/scanner-trivy')).toBeNull();
     expect(setupCommands('upstream/clamav')).toBeNull();
     expect(setupCommands('upstream/npmjs')).toEqual(['/projects', 'upstream', 'repositories', 'npmjs', 'setup']);
     expect(setupCommands('web/scanner-trivy')).toEqual(['/projects', 'web', 'repositories', 'scanner-trivy', 'setup']);
   });
 
-  it('R-UI-193 Q-UI-898 Q-UI-899 Q-UI-902 a qualified name is a system repository\'s in the project upstream only; its mark is one word and its sentence names the work that reads it', () => {
+  it('R-UI-193 a qualified name is a system repository\'s in the project upstream only; its mark is one word and its sentence names the work that reads it', () => {
     expect(isSystemRepositoryName('upstream/scanner-trivy')).toBe(true);
     expect(isSystemRepositoryName('upstream/clamav')).toBe(true);
     expect(isSystemRepositoryName('upstream/docker-hub')).toBe(false);
@@ -72,7 +72,7 @@ describe('The built-in project upstream (R-UI-190)', () => {
     expect(systemClientSentence('scanner-trivy', 'version')).toBe("Only Quader's image scanning reads this version; clients cannot install it.");
   });
 
-  it('Q-UI-895 the built-in project\'s description is the UI\'s localized sentence, whatever is stored; every other project\'s is the stored one', () => {
+  it('R-UI-190 the built-in project\'s description is the UI\'s localized sentence, whatever is stored; every other project\'s is the stored one', () => {
     expect(projectDescription('upstream', 'Stored by the product')).toBe('The public registries this installation offers to every project.');
     expect(projectDescription('web', "The web team's repositories")).toBe("The web team's repositories");
     expect(projectDescription('web', undefined)).toBe('');

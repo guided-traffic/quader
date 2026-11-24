@@ -73,7 +73,7 @@ describe('Disclosure', () => {
     await expectAccessible(root);
   });
 
-  it('Q-UI-552 a fold inside a section is the inline form: the same toggle and chevron without a heading element or a rule', async () => {
+  it('a fold inside a section is the inline form: the same toggle and chevron without a heading element or a rule', async () => {
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({ imports: [InlineHost] }).compileComponents();
     const fixture = TestBed.createComponent(InlineHost);
@@ -94,7 +94,7 @@ describe('Disclosure', () => {
     await expectAccessible(root);
   });
 
-  it('Q-UI-319 Q-UI-967 a Details section opens as the viewer left it, and tells its screen so; another fold is not remembered', async () => {
+  it('R-UI-067 a Details section opens as the viewer left it, and tells its screen so; another fold is not remembered', async () => {
     const memory = new FakeMemory();
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({ imports: [RememberedHost], providers: [{ provide: DisclosureMemory, useValue: memory }] }).compileComponents();
@@ -117,7 +117,7 @@ describe('Disclosure', () => {
     expect(memory.open.size).toBe(0);
   });
 
-  it('Q-UI-967 the open Details are kept per signed-in viewer in the browser, and a page works when the storage is blocked', async () => {
+  it('R-UI-067 the open Details are kept per signed-in viewer in the browser, and a page works when the storage is blocked', async () => {
     new BrowserStorage().clear('local');
     await renderScreen(RememberedHost, {});
     const memory = TestBed.inject(DisclosureMemory);

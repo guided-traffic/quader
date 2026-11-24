@@ -42,7 +42,7 @@ describe('SessionStore', () => {
     expect(b.store.loadError()?.requestId).toBe('rid');
   });
 
-  it('R-UI-004 Q-UI-710 whoami answering session_expired is an ended session, told by the code and not by the status', async () => {
+  it('R-UI-004 whoami answering session_expired is an ended session, told by the code and not by the status', async () => {
     const { store, api } = setup();
     api.whoamiResult = new ApiError(401, { code: 'session_expired' }, null);
     await store.load();
@@ -56,7 +56,7 @@ describe('SessionStore', () => {
     expect(store.state()).toBe('anonymous');
   });
 
-  it('Q-UI-713 after the dialog of an end during use, the next load that meets the ended cookie is a visitor and asks nothing twice', async () => {
+  it('R-UI-004 after the dialog of an end during use, the next load that meets the ended cookie is a visitor and asks nothing twice', async () => {
     const { store, api } = setup();
     await store.load();
     store.markEnded();

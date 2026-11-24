@@ -24,7 +24,7 @@ class TestDialog {
 const dialogEl = () => document.querySelector<HTMLElement>('[role="dialog"]');
 const turn = () => new Promise((resolve) => setTimeout(resolve));
 
-describe('Quader dialog (Q-UI-126)', () => {
+describe('Quader dialog', () => {
   afterEach(() => TestBed.inject(QuaderDialog)['dialog'].closeAll());
 
   it('R-UI-044 is a modal dialog named by its title, with the data injected, and passes axe', async () => {

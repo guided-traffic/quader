@@ -15,12 +15,12 @@ function block(scss: string, selector: RegExp): string {
 }
 
 describe('Shared layout rules (R-UI-145)', () => {
-  it('Q-UI-562 a format, a class and a type with their 20 px icon are centred on the 16 px line of a data table\'s cell', () => {
+  it('R-UI-145 a format, a class and a type with their 20 px icon are centred on the 16 px line of a data table\'s cell', () => {
     const rule = block(listScss, /tbody td :is\(\.format-name, \.class-name, \.type-cell\) \{/);
     expect(rule).toContain('margin-block: calc((1rem - 1.25rem) / 2)');
   });
 
-  it('Q-UI-562, R-UI-175 a control in a cell of every other table is centred on the cell\'s first line of text by the line rule', () => {
+  it('R-UI-175 a control in a cell of every other table is centred on the cell\'s first line of text by the line rule', () => {
     const rule = block(catalogScss, /tbody :is\(th, td\) > :is\(\.btn, quader-copy-button, \.row-actions\) \{/);
     expect(rule).toContain('margin-block: calc((var(--quader-line) - var(--quader-control-height)) / 2)');
     expect(rule).toContain('vertical-align: top');
@@ -33,21 +33,21 @@ describe('Shared layout rules (R-UI-145)', () => {
     expect(block(controlsScss, /^\.on-line \{/m)).toContain('margin-block: calc((var(--quader-line) - var(--quader-control-height)) / 2)');
   });
 
-  it('Q-UI-563 a row\'s header that is an identifier stays on one line, as a cell of one does', () => {
+  it('R-UI-145 a row\'s header that is an identifier stays on one line, as a cell of one does', () => {
     const at = listScss.indexOf("th[scope='row'][translate='no']:not(.wrap-name),");
     expect(at).toBeGreaterThan(-1);
     expect(listScss.slice(at, listScss.indexOf('}', at))).toContain('white-space: nowrap');
   });
 
-  it('Q-UI-563 a visibility level in a cell of its own keeps its icon and its word on one line', () => {
+  it('R-UI-145 a visibility level in a cell of its own keeps its icon and its word on one line', () => {
     expect(block(listScss, /^td:is\(\.level, \.level-cell\) \{/m)).toContain('white-space: nowrap');
   });
 
-  it('Q-UI-575 a check box keeps its size beside a label of several lines', () => {
+  it('R-UI-145 a check box keeps its size beside a label of several lines', () => {
     expect(block(catalogScss, /> input \{/)).toContain('flex: none');
   });
 
-  it('Q-UI-576 the policy editor\'s save bar takes the content\'s bottom padding into itself, so nothing shows below it', () => {
+  it('R-UI-145 the policy editor\'s save bar takes the content\'s bottom padding into itself, so nothing shows below it', () => {
     const rule = block(policyEditorScss, /^\.save-bar \{/m);
     expect(rule).toContain('inset-block-end: calc(-1 * var(--page-end))');
     expect(rule).toContain('margin-block-end: calc(-1 * var(--page-end))');

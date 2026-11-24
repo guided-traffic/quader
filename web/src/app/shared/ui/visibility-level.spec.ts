@@ -33,7 +33,7 @@ class Host {
   readonly locked = signal(false);
 }
 
-describe('The visibility level control (R-UI-053, R-UI-055, Q-UI-228)', () => {
+describe('The visibility level control (R-UI-053, R-UI-055)', () => {
   async function render() {
     await TestBed.configureTestingModule({ imports: [Host] }).compileComponents();
     const fixture = TestBed.createComponent(Host);
@@ -58,7 +58,7 @@ describe('The visibility level control (R-UI-053, R-UI-055, Q-UI-228)', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
-  it('Q-UI-228 choosing an option reports it and the group shares one name, so the arrow keys move within it', async () => {
+  it('R-UI-055 choosing an option reports it and the group shares one name, so the arrow keys move within it', async () => {
     const { fixture, radios, host } = await render();
     const names = new Set(radios().map((r) => r.name));
     expect(names.size).toBe(1);
@@ -91,7 +91,7 @@ describe('The visibility level control (R-UI-053, R-UI-055, Q-UI-228)', () => {
     expect(radios().every((r) => r.closest('fieldset')!.disabled)).toBe(true);
   });
 
-  it('Q-UI-230 the icon has the level name as its accessible label', async () => {
+  it('R-UI-055 the icon has the level name as its accessible label', async () => {
     const { root } = await render();
     const icon = root.querySelector('quader-visibility-icon [role="img"]')!;
     expect(icon.getAttribute('aria-label')).toBe('Internal');

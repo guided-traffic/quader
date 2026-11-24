@@ -27,7 +27,7 @@ async function places(principal = '00000000-0000-0000-0000-000000000001', name =
 
 afterEach(() => vi.useRealTimers());
 
-describe('Frequently visited places (R-UI-096, Q-UI-405)', () => {
+describe('Frequently visited places (R-UI-096)', () => {
   it('R-UI-096 the store is one key per principal ID; a second user of the browser sees none of the first one\'s entries', async () => {
     const first = await places('id-sam', 'sam');
     first.visitRepository('web-frontend', 'npm-vendor');

@@ -39,7 +39,7 @@ describe('Page header and empty state', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-142 Q-UI-550 a list page shows its number of entries as a badge after the heading', async () => {
+  it('R-UI-142 a list page shows its number of entries as a badge after the heading', async () => {
     @Component({
       imports: [PageHeader],
       template: `<quader-page-header heading="Members" [count]="2" /><quader-page-header heading="Groups" />`,
@@ -56,7 +56,7 @@ describe('Page header and empty state', () => {
     expect(groups!.querySelector('.badge')).toBeNull();
   });
 
-  it('Q-UI-664 the actions wrap under the name where the header is narrow, as one row of buttons; no rule of a client row is left', async () => {
+  it('the actions wrap under the name where the header is narrow, as one row of buttons; no rule of a client row is left', async () => {
     await TestBed.configureTestingModule({ imports: [Host] }).compileComponents();
     const fixture = TestBed.createComponent(Host);
     await settle(fixture);

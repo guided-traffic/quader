@@ -222,7 +222,7 @@ describe('project resources over HTTP (R-AUTHZ-026)', () => {
     await all;
   });
 
-  it('Q-AUTHZ-207 a member is written with a plain PUT of the role and no ETag', async () => {
+  it('R-API-047 a member is written with a plain PUT of the role and no ETag', async () => {
     const { http } = setup();
     const api = TestBed.inject(HttpProjectsApi);
     const write = api.setMember('web', 'group:web-leads', 'maintainer');

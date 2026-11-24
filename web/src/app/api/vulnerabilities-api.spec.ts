@@ -37,7 +37,7 @@ describe('The vulnerability service (R-VULN-020, R-VULN-021)', () => {
     http.verify();
   });
 
-  it('Q-UI-130 the project filter, the advisory search and the package prefix reach the list, the summary and the trend', async () => {
+  it('R-VULN-022 the project filter, the advisory search and the package prefix reach the list, the summary and the trend', async () => {
     const { api, http } = setup();
     const list = api.findings({ project: ['shop', 'web'], advisory: 'CVE-2021-23337', packagePrefix: 'lod' })(null, 25);
     const listReq = http.expectOne((r) => r.url === '/api/v1/vulnerabilities/findings');

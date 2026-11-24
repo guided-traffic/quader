@@ -3,7 +3,7 @@ import { KEEP_MAX, breakPieces, commandLines, highlight, isAddress, keepsTogethe
 const kinds = (content: string, language: Parameters<typeof highlight>[1], marks: Parameters<typeof highlight>[2] = []) =>
   highlight(content, language, marks).map((l) => l.segments.filter((s) => s.text.trim() !== '').map((s) => `${s.kind}:${s.text}`));
 
-describe('code syntax (R-UI-121, Q-UI-801)', () => {
+describe('code syntax (R-UI-121)', () => {
   it('R-UI-121 a line is the snippet\'s text, piece for piece: the segments join to it, in every language', () => {
     const samples: [string, Parameters<typeof highlight>[1]][] = [
       ['registry=https://q/api/npm/w/r/\n//q/api/npm/w/r/:_authToken=${QUADER_TOKEN}\n', 'ini'],

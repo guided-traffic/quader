@@ -30,8 +30,8 @@ async function render(inputs: Record<string, unknown>) {
   return renderScreen(ScannerReplicas, { inputs });
 }
 
-describe('The scanner replicas (R-OPS-048, Q-UI-897)', () => {
-  it('Q-UI-897 the System page shows each replica with its node, version, state and why, since when, heartbeat and tool, and passes axe', async () => {
+describe('The scanner replicas (R-OPS-048)', () => {
+  it('R-UI-038 the System page shows each replica with its node, version, state and why, since when, heartbeat and tool, and passes axe', async () => {
     const { root } = await render({ list: list(), kind: 'clamav', view: 'system' });
     const headers = [...root.querySelectorAll('thead th .th-inner > span:first-child')].map((s) => text(s));
     expect(headers.slice(0, 7)).toEqual(['Name', 'Node', 'Version', 'State', 'State changed', 'Heartbeat', 'Tool']);
@@ -49,7 +49,7 @@ describe('The scanner replicas (R-OPS-048, Q-UI-897)', () => {
     await expectAccessible(root);
   });
 
-  it('Q-UI-897 a settings page folds the replicas closed, with the ClamAV version, the database and its date, and the slots', async () => {
+  it('R-MAL-023 a settings page folds the replicas closed, with the ClamAV version, the database and its date, and the slots', async () => {
     const { root } = await render({ list: list(), kind: 'clamav' });
     const fold = root.querySelector('quader-disclosure')!;
     expect(text(fold.querySelector('button')!)).toContain('Replicas of malware-scanner-clamav (2)');
@@ -64,7 +64,7 @@ describe('The scanner replicas (R-OPS-048, Q-UI-897)', () => {
     await expectAccessible(root);
   });
 
-  it('Q-UI-915 the image scanner has the column of the database its pod holds, and a lost replica says so', async () => {
+  it('R-OPS-048 the image scanner has the column of the database its pod holds, and a lost replica says so', async () => {
     const { root } = await render({ list: list(), kind: 'trivy' });
     const headers = [...root.querySelectorAll('thead th .th-inner > span:first-child')].map((s) => text(s));
     expect(headers).toEqual(['Name', 'State', 'Tool', 'Database', 'Slots']);
@@ -73,7 +73,7 @@ describe('The scanner replicas (R-OPS-048, Q-UI-897)', () => {
     expect(text(root.querySelector('tbody tr')!)).toContain('No database yet');
   });
 
-  it('R-VULN-049 Q-OPS-225 Q-UI-915 each image scanner says whether its pod holds the database in use with the age of its build, an older one, or none yet, on the System page too', async () => {
+  it('R-VULN-049 each image scanner says whether its pod holds the database in use with the age of its build, an older one, or none yet, on the System page too', async () => {
     const inUse = 'a1b2c3d4e5f6'.padEnd(64, '0');
     const older = '9f8e7d6c5b4a'.padEnd(64, '1');
     const pods = sampleScanners({
@@ -117,7 +117,7 @@ describe('The scanner replicas (R-OPS-048, Q-UI-897)', () => {
     expect(clamSettings.root.querySelector('td.database-cell')).toBeNull();
   });
 
-  it('Q-UI-915 the installation counts its ready image scanners that do not hold the database in use; lost and starting ones do not count', () => {
+  it('R-OPS-048 the installation counts its ready image scanners that do not hold the database in use; lost and starting ones do not count', () => {
     const current = { version: 'a'.repeat(64), builtAt: '2026-11-21T07:02:00Z' };
     const lag = (items: Parameters<typeof sampleScanners>[0]) => databaseLag(scannerGroups(sampleScanners(items)).find((g) => g.kind === 'trivy')!);
     expect(lag({ items: [sampleScannerReplica({ database: current }), sampleScannerReplica({ instanceUid: 't2', database: current })] })).toEqual({ ready: 2, lagging: 0 });
@@ -177,7 +177,7 @@ describe('The scanner replicas (R-OPS-048, Q-UI-897)', () => {
     expect(waitingScanners(orphan)).toEqual([]);
   });
 
-  it('R-UI-188 Q-UI-913 the updater has no slots: its rows show its state, freshclam\'s version and the set it holds with the age of its daily', async () => {
+  it('R-UI-188 the updater has no slots: its rows show its state, freshclam\'s version and the set it holds with the age of its daily', async () => {
     const { root } = await render({ list: withUpdater(sampleScanners(), { state: 'starting', reason: 'seed' }), kind: 'freshclam', view: 'open' });
     expect(root.querySelector('quader-disclosure')).toBeNull();
     const heads = [...root.querySelectorAll('thead th')].map((th) => text(th).replace('help_outline', '').trim());

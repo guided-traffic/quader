@@ -28,8 +28,8 @@ async function render() {
   return { fixture, host: fixture.componentInstance, root, select: () => root.querySelector('select') as HTMLSelectElement };
 }
 
-describe('The select field (Q-UI-334)', () => {
-  it('Q-UI-334 a select takes the field width of a choice, half the column, unless its place fills a line', async () => {
+describe('The select field (R-UI-085)', () => {
+  it('R-UI-085 a select takes the field width of a choice, half the column, unless its place fills a line', async () => {
     const { fixture, host, root, select } = await render();
     expect([...select().classList]).toEqual(['select-input', 'field-w-name']);
     expect(root.querySelector('quader-select-field')!.classList.contains('full')).toBe(false);
@@ -39,7 +39,7 @@ describe('The select field (Q-UI-334)', () => {
     expect(root.querySelector('quader-select-field')!.classList.contains('full')).toBe(true);
   });
 
-  it('Q-UI-334 while its options load it is the same select, held and busy, its one option saying so', async () => {
+  it('while its options load it is the same select, held and busy, its one option saying so', async () => {
     const { fixture, host, select } = await render();
     host.loading.set('Loading projects…');
     fixture.detectChanges();
@@ -68,8 +68,8 @@ class TextHost {
   readonly value = signal('');
 }
 
-describe('The text field (Q-UI-335)', () => {
-  it('Q-UI-335 a text field takes the width its place names, a number field the width of its number, an area the column', async () => {
+describe('The text field (R-UI-085)', () => {
+  it('R-UI-085 a text field takes the width its place names, a number field the width of its number, an area the column', async () => {
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({ imports: [TextHost] }).compileComponents();
     const fixture = TestBed.createComponent(TextHost);

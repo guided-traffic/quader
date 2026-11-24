@@ -139,7 +139,7 @@ describe('Data table', () => {
     expect(host.mores).toBe(1);
   });
 
-  it('R-UI-020 Q-UI-308 the headers carry the least widths, a narrow column is marked, and a stacked cell names its column', async () => {
+  it('R-UI-020 the headers carry the least widths, a narrow column is marked, and a stacked cell names its column', async () => {
     @Component({
       imports: [DataTable],
       template: `
@@ -184,7 +184,7 @@ describe('Data table', () => {
     expect(heads.map((h) => h.style.inlineSize)).toEqual(['', '', '', '']);
   });
 
-  it('R-UI-146 Q-UI-561 a cell without a value is the dash with the accessible name None, and a stacked row leaves its line out', async () => {
+  it('R-UI-146 a cell without a value is the dash with the accessible name None, and a stacked row leaves its line out', async () => {
     @Component({
       imports: [DataTable, NoValue],
       template: `
@@ -218,7 +218,7 @@ describe('Data table', () => {
     expect(value!.hasAttribute('data-empty')).toBe(false);
   });
 
-  it('Q-UI-330 a column that prefers the room takes what the others leave, and the other columns keep their widths', async () => {
+  it('a column that prefers the room takes what the others leave, and the other columns keep their widths', async () => {
     @Component({
       imports: [DataTable],
       template: `
@@ -297,7 +297,7 @@ describe('Data table', () => {
     ]);
   });
 
-  it('R-UI-174 Q-UI-680 the rows stack where the columns at their least widths need more than the region has, and only there', async () => {
+  it('R-UI-174 the rows stack where the columns at their least widths need more than the region has, and only there', async () => {
     // jsdom lays nothing out: the table's least width and the region's room are what the browser would measure. The table is
     // measured with its width set to nothing (its least), then given its width back.
     let need = 900;
@@ -356,7 +356,7 @@ describe('Data table', () => {
     }
   });
 
-  it('Q-UI-680 a scrollbar that appears beside the rows narrows the region, not the list, and the rows stack then', async () => {
+  it('R-UI-174 a scrollbar that appears beside the rows narrows the region, not the list, and the rows stack then', async () => {
     // The admin area's repositories at 1,280 px (2026-11-21): the window grew and shrank back, the region got its scrollbar
     // while the ruler across the list kept its width, and the table stayed 10 px wider than its region. jsdom has no
     // ResizeObserver: a stand-in hands the observer the widths the browser would report.

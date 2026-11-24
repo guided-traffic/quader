@@ -31,7 +31,7 @@ describe('files API helpers', () => {
     expect(encodePath('@team-a/ui/-/ui 1.0.0.tgz')).toBe('%40team-a/ui/-/ui%201.0.0.tgz');
   });
 
-  it('R-API-025 Q-UI-106 the upload goes to the content route of the repository, on the API origin, segment by segment', () => {
+  it('R-API-025 the upload goes to the content route of the repository, on the API origin, segment by segment', () => {
     expect(contentPath('web/generic-local', 'releases/1.0/app.zip')).toBe(
       '/api/v1/projects/web/repositories/generic-local/content/releases/1.0/app.zip',
     );

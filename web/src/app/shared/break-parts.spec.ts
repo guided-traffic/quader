@@ -2,7 +2,7 @@ import { renderScreen } from '../testing/screen';
 import { ADDRESS_MARKS, IDENTITY_MARKS, KEY_MARKS, PartsText, breakParts } from './break-parts';
 
 describe('breakParts', () => {
-  it('Q-UI-959 an address breaks after its dots, slashes and colons, a run of them staying with the piece before', () => {
+  it('R-UI-145 an address breaks after its dots, slashes and colons, a run of them staying with the piece before', () => {
     expect(breakParts('https://packages.frankfurt.example.com:8443/bastion/', ADDRESS_MARKS)).toEqual([
       'https://',
       'packages.',
@@ -14,12 +14,12 @@ describe('breakParts', () => {
     ]);
   });
 
-  it('Q-UI-567 an audit action\'s key breaks after a dot or an underscore, never inside a word', () => {
+  it('R-UI-145 an audit action\'s key breaks after a dot or an underscore, never inside a word', () => {
     expect(breakParts('bastion.data_key.handed', KEY_MARKS)).toEqual(['bastion.', 'data_', 'key.', 'handed']);
     expect(breakParts('user.groups.claim_missing', KEY_MARKS)).toEqual(['user.', 'groups.', 'claim_', 'missing']);
   });
 
-  it('Q-UI-969 a signer\'s identity breaks after a slash, a dot, an at sign or a comma; a word stays whole', () => {
+  it('R-UI-145 a signer\'s identity breaks after a slash, a dot, an at sign or a comma; a word stays whole', () => {
     const url = 'https://gitlab.example.com/web/chart-render-kit//.gitlab-ci.yml@refs/heads/legacy-build';
     const parts = breakParts(url, IDENTITY_MARKS);
     expect(parts.join('')).toBe(url);
@@ -33,7 +33,7 @@ describe('breakParts', () => {
     ]);
   });
 
-  it('Q-UI-969 a version kept whole stays one piece in a path wherever it stands as a whole, with the marks after it', () => {
+  it('R-UI-145 a version kept whole stays one piece in a path wherever it stands as a whole, with the marks after it', () => {
     const path = 'acme.logging.abstractions/2.0.0-preview.1/acme.logging.abstractions.2.0.0-preview.1.nupkg';
     expect(breakParts(path, IDENTITY_MARKS, '2.0.0-preview.1')).toEqual([
       'acme.',
@@ -63,7 +63,7 @@ describe('breakParts', () => {
     expect(breakParts('a-b]c^d', '-]^')).toEqual(['a-', 'b]', 'c^', 'd']);
   });
 
-  it('Q-UI-969 a value is shown in whole pieces: a hyphen inside a piece is no place to break, the space before a piece stands between them', async () => {
+  it('R-UI-145 a value is shown in whole pieces: a hyphen inside a piece is no place to break, the space before a piece stands between them', async () => {
     const url = await renderScreen(PartsText, {
       inputs: { value: 'https://gitlab.example.com/web/chart-render-kit//.gitlab-ci.yml@refs/heads/legacy-build', marks: IDENTITY_MARKS },
     });

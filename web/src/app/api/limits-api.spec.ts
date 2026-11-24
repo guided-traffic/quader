@@ -22,7 +22,7 @@ function setup(): { api: LimitsApi; http: HttpTestingController } {
 }
 
 describe("A project's maximum (R-LIM-033)", () => {
-  it('Q-API-356 a project without a maximum is read as 200 with maximum null, one with a maximum with its ETag', async () => {
+  it('R-LIM-033 a project without a maximum is read as 200 with maximum null, one with a maximum with its ETag', async () => {
     const { api, http } = setup();
     const none = api.maximum('web');
     http.expectOne('/api/v1/projects/web/limits/maximum').flush({ project: 'web', maximum: null });

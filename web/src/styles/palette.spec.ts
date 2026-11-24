@@ -435,7 +435,7 @@ describe('palette', () => {
     expect(palette.get('--quader-focus-ring')).toEqual([ring, ring]);
   });
 
-  it('R-UI-002 the accent is blue, and green marks a positive status only (Q-UI-96)', () => {
+  it('R-UI-002 the accent is blue, and green marks a positive status only', () => {
     const isGreen = (c: Rgba) => {
       const { hue, saturation } = hueOf(c);
       return saturation > 0.15 && hue >= 75 && hue <= 165;
@@ -478,7 +478,7 @@ describe('palette', () => {
     expect(faint).toEqual([]);
   });
 
-  it('R-UI-002 Q-UI-370 the grades from C to E and N/A are not green: green stays a good sign', () => {
+  it('R-UI-002 R-UI-090 the grades from C to E and N/A are not green: green stays a good sign', () => {
     const isGreen = (c: Rgba) => {
       const { hue, saturation } = hueOf(c);
       return saturation > 0.15 && hue >= 75 && hue <= 165;
@@ -520,7 +520,7 @@ describe('palette', () => {
     expect(apart).toEqual([]);
   });
 
-  it('R-UI-044 Q-UI-226 the logo plate lifts a dark mark off the dark scheme: the mark reaches 3:1 on it, and the plate stands out from every surface', () => {
+  it('R-UI-044 the logo plate lifts a dark mark off the dark scheme: the mark reaches 3:1 on it, and the plate stands out from every surface', () => {
     // Debian's swirl (#a80030, its open use logo) has no variant for a dark ground; on the dark surfaces it is 1.9:1 to 2.3:1.
     const swirl: Rgba = [0xa8, 0x00, 0x30, 1];
     const plate = colour('--quader-logo-plate', 'dark');

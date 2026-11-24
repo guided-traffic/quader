@@ -26,7 +26,7 @@ async function render(format: string) {
 }
 
 describe('formatIcon', () => {
-  it('R-UI-006 R-UI-021 Q-UI-225 Debian, NuGet and OCI show the logo of their owner, OCI the Open Container Initiative mark', () => {
+  it('R-UI-006 R-UI-021 Debian, NuGet and OCI show the logo of their owner, OCI the Open Container Initiative mark', () => {
     expect(formatIcon('deb')).toEqual({ kind: 'logo', src: 'formats/deb/openlogo-nd.svg', dark: null, plate: true });
     expect(formatIcon('nuget')).toEqual({
       kind: 'logo',
@@ -42,13 +42,13 @@ describe('formatIcon', () => {
     });
   });
 
-  it('R-UI-006 R-UI-021 Q-UI-225 npm and Ansible, whose owners do not allow their logos here, the generic format and an unknown one get the neutral glyph', () => {
+  it('R-UI-006 R-UI-021 npm and Ansible, whose owners do not allow their logos here, the generic format and an unknown one get the neutral glyph', () => {
     for (const name of ['npm', 'ansible', 'generic', 'cargo', '']) {
       expect(formatIcon(name)).toEqual({ kind: 'glyph', ligature: 'inventory_2' });
     }
   });
 
-  it('Q-UI-227 every logo file is named in the notices with its owner, source and licence', () => {
+  it('R-UI-001 every logo file is named in the notices with its owner, source and licence', () => {
     const logos = FORMATS.flatMap((f) => files(formatIcon(f)));
     expect(logos.length).toBe(5);
     const named = [...notice.matchAll(/^Files?: (.+)$/gm)].flatMap((m) =>
@@ -63,7 +63,7 @@ describe('formatIcon', () => {
     expect(notice).toContain('Apache License, Version 2.0');
   });
 
-  it('Q-UI-226 no logo carries a script, an event handler, a foreign object or a reference outside its own file', () => {
+  it('R-UI-001 no logo carries a script, an event handler, a foreign object or a reference outside its own file', () => {
     // The files are served at Quader's origin without the page's CSP; opened on their own, an SVG document would run its
     // script there. The owners' files are taken unchanged, so this is checked rather than cleaned.
     const svgs = FORMATS.flatMap((f) => files(formatIcon(f))).filter((p) => p.endsWith('.svg'));
@@ -79,7 +79,7 @@ describe('formatIcon', () => {
 });
 
 describe('FormatIconView', () => {
-  it('R-UI-006 Q-UI-226 a logo is an image with an empty alt and the owner variant for the dark scheme beside it, both hidden from assistive technology', async () => {
+  it('R-UI-006 a logo is an image with an empty alt and the owner variant for the dark scheme beside it, both hidden from assistive technology', async () => {
     const r = await render('oci');
     const imgs = [...r.root.querySelectorAll('img')];
     expect(imgs.map((i) => [i.getAttribute('src'), i.getAttribute('alt'), i.className])).toEqual([
@@ -91,7 +91,7 @@ describe('FormatIconView', () => {
     await expectAccessible(r.root);
   });
 
-  it('R-UI-006 Q-UI-226 a mark without a dark variant stands on the plate, in both schemes the same image', async () => {
+  it('R-UI-006 a mark without a dark variant stands on the plate, in both schemes the same image', async () => {
     const r = await render('deb');
     const imgs = [...r.root.querySelectorAll('img')];
     expect(imgs.length).toBe(1);
@@ -101,7 +101,7 @@ describe('FormatIconView', () => {
     expect(imgs[0]?.classList.contains('logo-on-light')).toBe(false);
   });
 
-  it('R-UI-006 Q-UI-225 a format without a logo shows the neutral glyph, hidden from assistive technology', async () => {
+  it('R-UI-006 a format without a logo shows the neutral glyph, hidden from assistive technology', async () => {
     const r = await render('npm');
     expect(r.root.querySelector('img')).toBeNull();
     const glyph = r.root.querySelector('.material-icons')!;

@@ -64,13 +64,13 @@ describe('QuaderTitleStrategy', () => {
 describe('filesMatcher', () => {
   const seg = (...p: string[]) => p.map((x) => new UrlSegment(x, {}));
 
-  it('R-UI-003 Q-UI-510 takes the segments after `files` as the path, slashes kept (the repository is the parent route)', () => {
+  it('R-UI-003 takes the segments after `files` as the path, slashes kept (the repository is the parent route)', () => {
     const m = filesMatcher(seg('files', '@team-a', 'ui'), null as never, null as never);
     expect(m?.consumed.length).toBe(3);
     expect(m?.posParams?.['filePath']?.path).toBe('@team-a/ui');
   });
 
-  it('R-UI-003 Q-UI-510 matches `files` alone as the root and nothing else', () => {
+  it('R-UI-003 matches `files` alone as the root and nothing else', () => {
     expect(filesMatcher(seg('files'), null as never, null as never)?.posParams?.['filePath']?.path).toBe('');
     expect(filesMatcher(seg('settings'), null as never, null as never)).toBeNull();
     expect(filesMatcher([], null as never, null as never)).toBeNull();

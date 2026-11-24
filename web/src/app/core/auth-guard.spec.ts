@@ -49,8 +49,8 @@ async function render(url: string, publicContent: boolean, session: (api: FakeSe
   return { fixture, root: fixture.nativeElement as HTMLElement, router: TestBed.inject(Router) };
 }
 
-describe('authGuard and an ended session (R-UI-004, Q-UI-710)', () => {
-  it('R-UI-004 Q-UI-710 an ended session lands on the sign-in screen with the notice, also while there is public content', async () => {
+describe('authGuard and an ended session (R-UI-004)', () => {
+  it('R-UI-004 an ended session lands on the sign-in screen with the notice, also while there is public content', async () => {
     const { root, router } = await render('/projects/web/repositories', true, endedCookie);
     expect(router.url).toBe('/login?returnTo=%2Fprojects%2Fweb%2Frepositories');
     expect(root.querySelector('main h1')?.textContent?.trim()).toBe('Sign in');
@@ -59,7 +59,7 @@ describe('authGuard and an ended session (R-UI-004, Q-UI-710)', () => {
     expect(TestBed.inject(SessionStore).state()).toBe('ended');
   });
 
-  it('R-UI-057 Q-UI-710 "Continue without signing in" then leads into a working visitor session', async () => {
+  it('R-UI-057 "Continue without signing in" then leads into a working visitor session', async () => {
     const { fixture, root, router } = await render('/projects/web/repositories', true, endedCookie);
     const link = [...root.querySelectorAll<HTMLAnchorElement>('main a')].find((a) => a.textContent?.includes('Continue without signing in'));
     expect(link).toBeTruthy();
@@ -71,7 +71,7 @@ describe('authGuard and an ended session (R-UI-004, Q-UI-710)', () => {
     expect(root.textContent).not.toContain('Your session has ended');
   });
 
-  it('R-UI-004 Q-UI-710 without public content an ended session lands on the sign-in screen with the notice too', async () => {
+  it('R-UI-004 without public content an ended session lands on the sign-in screen with the notice too', async () => {
     const { root, router } = await render('/admin/users', false, endedCookie);
     expect(router.url).toBe('/login?returnTo=%2Fadmin%2Fusers');
     expect(root.querySelector('main p.ended')).toBeTruthy();
@@ -87,7 +87,7 @@ describe('authGuard and an ended session (R-UI-004, Q-UI-710)', () => {
     expect(root.textContent).not.toContain('Your session has ended');
   });
 
-  it('Q-UI-713 after the dialog of a session that ended during use, "Continue without signing in" is a visitor at once, not the sign-in screen again', async () => {
+  it('R-UI-004 after the dialog of a session that ended during use, "Continue without signing in" is a visitor at once, not the sign-in screen again', async () => {
     const { fixture, root, router } = await render('/projects/web/repositories', true, () => undefined);
     const store = TestBed.inject(SessionStore);
     expect(store.state()).toBe('authenticated');

@@ -15,7 +15,7 @@ class Host {
   readonly asked: boolean[] = [];
 }
 
-describe('The switch (Q-UI-830)', () => {
+describe('The switch', () => {
   it('R-UI-187 is a button with the role switch, its name and aria-checked, and the word On or Off after it hidden from assistive technology', async () => {
     const { fixture, root } = await renderScreen(Host);
     const sw = root.querySelector<HTMLButtonElement>('button[role="switch"]')!;

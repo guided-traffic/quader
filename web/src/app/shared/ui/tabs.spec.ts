@@ -31,7 +31,7 @@ async function render() {
   return { fixture, root, tabs, host: fixture.componentInstance };
 }
 
-describe('Quader tabs (Q-UI-126)', () => {
+describe('Quader tabs', () => {
   it('R-UI-044 is a tablist with the selected tab named for its panel, and passes axe', async () => {
     const { root, tabs } = await render();
     expect(root.querySelector('[role="tablist"]')).toBeTruthy();
