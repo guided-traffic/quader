@@ -315,7 +315,7 @@ func TestR_AUTH_001_EndedSessionOverTheAPI(t *testing.T) {
 	auth.Sessions.IdleTimeout = 2 * time.Second
 	e.start(3, auth)
 
-	t.Run("R-AUTH-001 Q-AUTH-177 with an ended session's cookie the login options load on every replica and a new login replaces the cookie", func(t *testing.T) {
+	t.Run("R-AUTH-001 with an ended session's cookie the login options load on every replica and a new login replaces the cookie", func(t *testing.T) {
 		b := e.browser()
 		b.mustLogin("corp")
 		time.Sleep(2500 * time.Millisecond)
@@ -334,7 +334,7 @@ func TestR_AUTH_001_EndedSessionOverTheAPI(t *testing.T) {
 		}
 	})
 
-	t.Run("R-AUTH-001 R-AUTH-013 Q-AUTH-410 only whoami takes the ended session's cookie away, through the production chain; the next requests carry none", func(t *testing.T) {
+	t.Run("R-AUTH-001 R-AUTH-013 only whoami takes the ended session's cookie away, through the production chain; the next requests carry none", func(t *testing.T) {
 		b := e.browser()
 		b.mustLogin("corp")
 		time.Sleep(2500 * time.Millisecond)

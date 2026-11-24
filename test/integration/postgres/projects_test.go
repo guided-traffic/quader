@@ -96,7 +96,7 @@ func TestProjectsMigration(t *testing.T) {
 		wantState(t, admin, "AI003", "UPDATE quader.project SET key = 'webs' WHERE key = 'web'")
 	})
 
-	t.Run("R-AUTHZ-026 Q-AUTHZ-207 a member is a user or a group with one of the four roles, once per project", func(t *testing.T) {
+	t.Run("R-AUTHZ-026 a member is a user or a group with one of the four roles, once per project", func(t *testing.T) {
 		mustExec(t, admin, "INSERT INTO quader.project_member (project_id, principal_id, role) VALUES ($1, $2, 'owner')", web, lead)
 		mustExec(t, admin, "INSERT INTO quader.project_member (project_id, principal_id, role) VALUES ($1, $2, 'developer')", web, leads)
 		mustExec(t, admin, "INSERT INTO quader.project_member (project_id, principal_id, role) VALUES ($1, $2, 'reader')", mobile, leads)
@@ -106,14 +106,14 @@ func TestProjectsMigration(t *testing.T) {
 		wantState(t, admin, "AI001", "INSERT INTO quader.project_member (project_id, principal_id, role) VALUES ($1, '00000000-0000-0000-0000-000000000002', 'reader')", web)
 	})
 
-	t.Run("R-REPO-002 Q-AUTHZ-206 a repository belongs to a project and its key is unique within it", func(t *testing.T) {
+	t.Run("R-REPO-002 a repository belongs to a project and its key is unique within it", func(t *testing.T) {
 		mustExec(t, admin, "INSERT INTO quader.repositories (key, format, class, project_id) VALUES ('npm', 'npm', 'local', $1)", web)
 		mustExec(t, admin, "INSERT INTO quader.repositories (key, format, class, project_id) VALUES ('npm', 'npm', 'local', $1)", mobile)
 		wantState(t, admin, "23505", "INSERT INTO quader.repositories (key, format, class, project_id) VALUES ('npm', 'npm', 'local', $1)", web)
 		wantState(t, admin, "23502", "INSERT INTO quader.repositories (key, format, class) VALUES ('loose', 'npm', 'local')")
 	})
 
-	t.Run("R-AUTHZ-026 Q-AUTHZ-209 a project service account is named <project>/<name>, a global one has no slash, and the project never changes", func(t *testing.T) {
+	t.Run("R-AUTHZ-026 a project service account is named <project>/<name>, a global one has no slash, and the project never changes", func(t *testing.T) {
 		wantState(t, admin, "AI003", "INSERT INTO quader.service_account (principal_id, project_id) VALUES ($1, $2)", partner, mobile)
 		wantState(t, admin, "AI003", "INSERT INTO quader.service_account (principal_id) VALUES ($1)", partner)
 		wantState(t, admin, "AI003", "INSERT INTO quader.service_account (principal_id, project_id) VALUES ($1, $2)", global, web)
@@ -122,14 +122,14 @@ func TestProjectsMigration(t *testing.T) {
 		wantState(t, admin, "AI003", "UPDATE quader.service_account SET project_id = $2 WHERE principal_id = $1", partner, mobile)
 	})
 
-	t.Run("Q-AUTHZ-175 a project service account is no group member", func(t *testing.T) {
+	t.Run("R-AUTHZ-026 a project service account is no group member", func(t *testing.T) {
 		mustExec(t, admin, "INSERT INTO quader.user_group (principal_id, origin) VALUES ($1, 'admin')", leads)
 		wantState(t, admin, "AI002", "INSERT INTO quader.group_membership (group_id, member_id, source) VALUES ($1, $2, 'manual')", leads, partner)
 		mustExec(t, admin, "INSERT INTO quader.group_membership (group_id, member_id, source) VALUES ($1, $2, 'manual')", leads, global)
 	})
 
 	const webRead, globalRead = "aaaaaaaa-0000-0000-0000-000000000021", "aaaaaaaa-0000-0000-0000-000000000022"
-	t.Run("Q-AUTHZ-209 a project policy is named <project>/<name>; the same name exists in two projects and once instance-wide", func(t *testing.T) {
+	t.Run("R-AUTHZ-026 a project policy is named <project>/<name>; the same name exists in two projects and once instance-wide", func(t *testing.T) {
 		mustExec(t, admin, "INSERT INTO quader.authz_policy (id, name, project_id) VALUES ($1, 'web/npm-read', $2)", webRead, web)
 		mustExec(t, admin, "INSERT INTO quader.authz_policy (id, name, project_id) VALUES (gen_random_uuid(), 'mobile/npm-read', $1)", mobile)
 		mustExec(t, admin, "INSERT INTO quader.authz_policy (id, name) VALUES ($1, 'npm-read')", globalRead)
@@ -139,7 +139,7 @@ func TestProjectsMigration(t *testing.T) {
 		wantState(t, admin, "AI003", "UPDATE quader.authz_policy SET project_id = $2 WHERE id = $1", webRead, mobile)
 	})
 
-	t.Run("Q-AUTHZ-174 the grants of a project policy are in their own table and refused in the global one", func(t *testing.T) {
+	t.Run("R-AUTHZ-026 the grants of a project policy are in their own table and refused in the global one", func(t *testing.T) {
 		mustExec(t, admin, `INSERT INTO quader.authz_project_policy_entry (policy_id, project_id, principal_id, actions) VALUES ($1, $2, $3, ARRAY['read'])`, webRead, web, partner)
 		wantState(t, admin, "AI004", "INSERT INTO quader.authz_policy_entry (policy_id, principal_id, actions) VALUES ($1, $2, ARRAY['read'])", webRead, lead)
 		mustExec(t, admin, "INSERT INTO quader.authz_policy_entry (policy_id, principal_id, actions) VALUES ($1, $2, ARRAY['read'])", globalRead, lead)
@@ -148,7 +148,7 @@ func TestProjectsMigration(t *testing.T) {
 		wantState(t, admin, "23514", `INSERT INTO quader.authz_project_policy_entry (policy_id, project_id, principal_id, actions) VALUES ($1, $2, $3, ARRAY['write'])`, webRead, web, lead)
 	})
 
-	t.Run("Q-AUTHZ-175 a project service account is the principal of no global grant and of a project policy of its own project only", func(t *testing.T) {
+	t.Run("R-AUTHZ-026 a project service account is the principal of no global grant and of a project policy of its own project only", func(t *testing.T) {
 		wantState(t, admin, "AI005", "INSERT INTO quader.authz_role_binding (role, principal_id) VALUES ('auditor', $1)", partner)
 		wantState(t, admin, "AI005", "INSERT INTO quader.authz_policy_entry (policy_id, principal_id, actions) VALUES ($1, $2, ARRAY['read'])", globalRead, partner)
 		mustExec(t, admin, "INSERT INTO quader.authz_role_binding (role, principal_id) VALUES ('auditor', $1)", global)
@@ -158,7 +158,7 @@ func TestProjectsMigration(t *testing.T) {
 		mustExec(t, admin, "DELETE FROM quader.authz_role_binding WHERE principal_id = $1", global)
 	})
 
-	t.Run("Q-AUTHZ-206 a virtual repository names repositories of its own project only", func(t *testing.T) {
+	t.Run("R-AUTHZ-026 a virtual repository names repositories of its own project only", func(t *testing.T) {
 		mustExec(t, admin, "INSERT INTO quader.repositories (key, format, class, project_id) VALUES ('npm-all', 'npm', 'virtual', $1)", web)
 		wantState(t, admin, "AI006", `INSERT INTO quader.virtual_members (virtual_id, position, member_id)
 			SELECT v.id, 0, m.id FROM quader.repositories v, quader.repositories m WHERE v.key = 'npm-all' AND m.key = 'npm' AND m.project_id = $1`, mobile)

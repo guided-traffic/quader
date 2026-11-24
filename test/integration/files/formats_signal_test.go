@@ -38,11 +38,11 @@ func (r *recordedSignals) take() [][2]string {
 	return out
 }
 
-// TestQ_ARCH_259_ThePackageWriterSignalsARaisedPackageOnce: the package writer attaches
+// TestR_ARCH_009_ThePackageWriterSignalsARaisedPackageOnce: the package writer attaches
 // metadata_changed with the engine's payload for every package a transaction raised, once
 // however many writes raise it and whether or not the write names the package, and only
 // when the transaction commits. The format attaches nothing.
-func TestQ_ARCH_259_ThePackageWriterSignalsARaisedPackageOnce(t *testing.T) {
+func TestR_ARCH_009_ThePackageWriterSignalsARaisedPackageOnce(t *testing.T) {
 	f := newFormatsFixture(t)
 	repoID := f.e.number("SELECT id FROM repositories WHERE key = 'probe-local'")
 	signalOf := func(name string) [2]string {

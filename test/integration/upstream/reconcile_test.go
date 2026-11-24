@@ -15,7 +15,7 @@ import (
 func TestR_REPO_067_Reconcile(t *testing.T) {
 	f := newFixture(t)
 
-	t.Run("R-REPO-066 a fresh database ends with the twelve presets off and internal (Q-REPO-388) and the two system repositories", func(t *testing.T) {
+	t.Run("R-REPO-066 a fresh database ends with the twelve presets off and internal and the two system repositories", func(t *testing.T) {
 		n := f.e.Number(`SELECT count(*) FROM repositories r JOIN project p ON p.id = r.project_id JOIN upstream_repository u ON u.repository_id = r.id
 		                 WHERE p.key = 'upstream'`)
 		if n != 14 {
@@ -52,7 +52,7 @@ func TestR_REPO_067_Reconcile(t *testing.T) {
 			t.Errorf("levels %s", lv)
 		}
 	})
-	t.Run("R-REPO-075 Q-REPO-411 Q-REPO-413 clamav is a local repository of the format clamav, private, its clients off", func(t *testing.T) {
+	t.Run("R-REPO-075 clamav is a local repository of the format clamav, private, its clients off", func(t *testing.T) {
 		row := f.e.Text(`SELECT r.class || '/' || r.format || '/' || r.visibility_artifacts || '/' || r.visibility_wiki || '/' || u.kind || '/' || u.clients_enabled
 		                 FROM repositories r JOIN upstream_repository u ON u.repository_id = r.id WHERE r.id = $1`, f.id("clamav"))
 		if row != "local/clamav/private/private/system/false" {
@@ -63,7 +63,7 @@ func TestR_REPO_067_Reconcile(t *testing.T) {
 			t.Fatalf("clamav: %s", f.e.Text("SELECT config::text FROM repositories WHERE id = $1", f.id("clamav")))
 		}
 	})
-	t.Run("Q-REPO-379 the Debian and Ubuntu presets carry their archive keys", func(t *testing.T) {
+	t.Run("R-REPO-062 the Debian and Ubuntu presets carry their archive keys", func(t *testing.T) {
 		if fps := f.config("debian", "{deb,upstreamKeyFingerprints}"); !strings.Contains(fps, "04B54C3CDCA79751B16BC6B5225629DF75B188BD") {
 			t.Errorf("debian keys %s", fps)
 		}
@@ -127,7 +127,7 @@ func TestR_REPO_067_Reconcile(t *testing.T) {
 			t.Error("R-REPO-011 the move of the upstream invalidated nothing")
 		}
 	})
-	t.Run("Q-REPO-377 step 2 an account goes when the product moves its host", func(t *testing.T) {
+	t.Run("step 2 an account goes when the product moves its host", func(t *testing.T) {
 		cat := catalogWith(t, func(_ catalog.ID, ps []catalog.UpstreamPreset) []catalog.UpstreamPreset {
 			for i := range ps {
 				if ps[i].ID == "npmjs" {
@@ -166,7 +166,7 @@ func TestR_REPO_067_Reconcile(t *testing.T) {
 	})
 
 	f.listVirtual("web", "galaxy-all", "ansible", "galaxy")
-	t.Run("Q-REPO-376 step 5 a preset the catalog no longer declares is retired and keeps its rows", func(t *testing.T) {
+	t.Run("step 5 a preset the catalog no longer declares is retired and keeps its rows", func(t *testing.T) {
 		cat := catalogWith(t, func(id catalog.ID, ps []catalog.UpstreamPreset) []catalog.UpstreamPreset {
 			if id == "ansible" {
 				return nil

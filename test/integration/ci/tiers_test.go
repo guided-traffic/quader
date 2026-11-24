@@ -81,7 +81,7 @@ func (e *tierEnv) setEnabled(project, name string, enabled bool) {
 	e.settled()
 }
 
-func TestQ_CI_47_AProjectTierDoesNotChangeWhatAnotherTierGives(t *testing.T) {
+func TestR_CI_009_AProjectTierDoesNotChangeWhatAnotherTierGives(t *testing.T) {
 	e := newTierEnv(t)
 	a, b := e.a, e.b
 	// data-short ends its own contribution after 1 s, shop-broken's template names a claim the token lacks, and
@@ -162,7 +162,7 @@ func TestQ_CI_47_AProjectTierDoesNotChangeWhatAnotherTierGives(t *testing.T) {
 }
 
 // Q-CI-47: a token in which no system mapping contributes belongs to its project mapping, whose disable revokes it.
-func TestQ_CI_47_AProjectMappingThatOwnsATokenRevokesIt(t *testing.T) {
+func TestR_CI_009_AProjectMappingThatOwnsATokenRevokesIt(t *testing.T) {
 	e := newTierEnv(t)
 	e.addProjectMapping("web", projectReader("web", "web-reader"))
 	ce := ciEnvOf(e.env, xIssuer)

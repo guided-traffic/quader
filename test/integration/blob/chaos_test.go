@@ -412,7 +412,7 @@ func TestUploadMeetsDeletingRow(t *testing.T) {
 }
 
 func TestDownloadVerificationOnTheStore(t *testing.T) {
-	t.Run("Q-STOR-6 an object overwritten with other bytes of the same length is detected, marked corrupt and repaired by the next upload", func(t *testing.T) {
+	t.Run("R-STOR-013 an object overwritten with other bytes of the same length is detected, marked corrupt and repaired by the next upload", func(t *testing.T) {
 		ctx := context.Background()
 		e := newS3(t, "verify")
 		p := newPG(t)

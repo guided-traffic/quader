@@ -136,7 +136,7 @@ func TestR_OCI_003_TheVersionCheck(t *testing.T) {
 			t.Fatalf("%d %v %s", a.Code, a.Header(), a.Body.String())
 		}
 	})
-	t.Run("Q-OCI-20 on an endpoint that admits requests without a credential, the version check itself answers the challenge to a caller without one", func(t *testing.T) {
+	t.Run("on an endpoint that admits requests without a credential, the version check itself answers the challenge to a caller without one", func(t *testing.T) {
 		if a := e.do("default", "", "GET", "/v2/_token", ""); a.Code != http.StatusOK {
 			t.Fatalf("the anonymous token: %d %s", a.Code, a.Body.String())
 		}

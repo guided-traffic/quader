@@ -142,7 +142,7 @@ func TestR_REPO_060_MoveARepository(t *testing.T) {
 			t.Error("not moved back")
 		}
 	})
-	t.Run("Q-REPO-232 a global policy's key selector keeps an Owner from moving the repository, not an administrator", func(t *testing.T) {
+	t.Run("a global policy's key selector keeps an Owner from moving the repository, not an administrator", func(t *testing.T) {
 		// The administrator's grant is held by the repository's ID and would follow it into mobile, whose other Owners
 		// cannot remove it: only a holder of repositories:write-config carries it there.
 		const policies = "/api/v1/permission-policies"

@@ -9,9 +9,9 @@ import (
 	"github.com/guided-traffic/quader/internal/formats/ansible/collection/collectiontest"
 )
 
-// TestQ_ANS_91_ACollectionWithAContainedLinkPublishesAndIsServedUnchanged: a collection whose archive holds a symbolic link inside it,
+// TestR_ANS_010_ACollectionWithAContainedLinkPublishesAndIsServedUnchanged: a collection whose archive holds a symbolic link inside it,
 // as ansible.posix's does, is accepted by a publish, and its archive is served byte for byte as it was published (R-ANS-010).
-func TestQ_ANS_91_ACollectionWithAContainedLinkPublishesAndIsServedUnchanged(t *testing.T) {
+func TestR_ANS_010_ACollectionWithAContainedLinkPublishesAndIsServedUnchanged(t *testing.T) {
 	e := newEnv(t)
 	s := spec("1.0.0")
 	s.Files["tests/utils/shippable/remote.sh"] = "#!/bin/sh\necho remote\n"

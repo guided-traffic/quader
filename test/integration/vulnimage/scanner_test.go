@@ -303,7 +303,7 @@ func TestR_VULN_042_TheImagesOfADisabledRepositoryAreNotScanned(t *testing.T) {
 // for disabled. The test makes that window last: it switches the repository on in its row alone, which no replica learns of, so the job
 // takes the image and the listener refuses the pull as one of a disabled repository. The scan is put off as repository_disabled without an
 // attempt (before Q-VULN-226 it ended layer_missing and spent one), and the switch through the API, which every replica follows, scans it.
-func TestQ_VULN_226_AScanRefusedForARepositoryTheListenerHoldsDisabledSpendsNoAttempt(t *testing.T) {
+func TestR_VULN_034_AScanRefusedForARepositoryTheListenerHoldsDisabledSpendsNoAttempt(t *testing.T) {
 	f := newFlowWith(t, options{laterWorker: true})
 	f.push("app", "1.0", newImage(t))
 	path := "/api/v1/projects/" + testenv.DefaultProject + "/repositories/" + repoKey
@@ -382,7 +382,7 @@ func TestR_VULN_041_AnImageIsAnalysedBeforeAnyDatabaseExists(t *testing.T) {
 // R-HA-067, Q-ARCH-563: a replica of the role all builds no image scanner: it opens no scanner's listener and no scan listener, and with
 // no scanner named its image scanning's job ends at once with the result "no image scanner is configured" and touches no row (the UI
 // development profile runs this role). About 2 s.
-func TestQ_ARCH_563_TheRoleAllBuildsNoImageScanner(t *testing.T) {
+func TestR_ARCH_036_TheRoleAllBuildsNoImageScanner(t *testing.T) {
 	st := testenv.NewStack(t, testenv.StackOptions{Name: "vulnall", TLS: true, Env: []string{
 		"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off", "QUADER_VULNERABILITIES_SOURCES_KEV_MODE=off",
 		"QUADER_MAINTENANCE_TASKS=" + taskOff, "QUADER_VULNERABILITIES_IMAGES_SCAN_DELAY=0s", "QUADER_JOBS_POLL_INTERVAL=200ms",

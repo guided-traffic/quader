@@ -174,7 +174,7 @@ func TestR_AUTH_014_RotationHold(t *testing.T) {
 		t.Fatalf("login: %d %s", resp.StatusCode, body)
 	}
 
-	t.Run("R-AUTH-014 Q-AUTH-14 the first replica that notices a rotation opens the hold: every replica answers 503 break_glass_rotating and earlier sessions end", func(t *testing.T) {
+	t.Run("R-AUTH-014 the first replica that notices a rotation opens the hold: every replica answers 503 break_glass_rotating and earlier sessions end", func(t *testing.T) {
 		time.Sleep(10 * time.Millisecond)
 		writeFile(t, pwFile, bgRotated+"\n")
 		if err := a.login.BreakGlass().CheckRotation(context.Background()); err != nil {

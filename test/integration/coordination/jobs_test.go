@@ -261,7 +261,7 @@ func TestJobs(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-STOR-13 an exclusive key admits one job; a conflicting enqueue returns the existing one", func(t *testing.T) {
+	t.Run("R-STOR-024 an exclusive key admits one job; a conflicting enqueue returns the existing one", func(t *testing.T) {
 		first, err := web.enqueueTx(ctx, jobs.EnqueueSpec{Kind: "it.gated", DedupKey: "gc"})
 		if err != nil || !first.Created {
 			t.Fatalf("first: %+v %v", first, err)
@@ -432,7 +432,7 @@ func TestJobs(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-OPS-12 a worker claims only while its replica is ready", func(t *testing.T) {
+	t.Run("R-OPS-001 a worker claims only while its replica is ready", func(t *testing.T) {
 		// Only worker a is gated by ready; b keeps claiming, so stop b for this
 		// subtest by letting it drain.
 		b.worker.Drain(ctx)

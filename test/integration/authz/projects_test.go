@@ -114,7 +114,7 @@ func TestR_AUTHZ_026_AnOwnerWritesThePoliciesOfItsProject(t *testing.T) {
 		wantStatus(t, f.cl.Do(alice, "POST", web, projectPolicyBody("x", []string{"npm-internal"})), 422, "unknown_repository")
 		wantStatus(t, f.cl.Do(alice, "POST", web, projectPolicyBody("x", []string{"mobile/npm-internal"})), 422, "invalid_pattern")
 	})
-	t.Run("Q-AUTHZ-209 R-API-033 npm-read of mobile and a global npm-read exist beside it, a bare key being accepted in a project policy", func(t *testing.T) {
+	t.Run("R-API-033 npm-read of mobile and a global npm-read exist beside it, a bare key being accepted in a project policy", func(t *testing.T) {
 		wantStatus(t, f.cl.Do(admin, "POST", "/api/v1/projects/mobile/policies", projectPolicyBody("npm-read", []string{"npm-internal"}, entry("user:bob", "read"))), 201, "")
 		global := policyBody("npm-read", entry("user:carol", "read"))
 		global["resources"] = map[string]any{"repositories": []string{"it/npm-internal"}}
@@ -123,7 +123,7 @@ func TestR_AUTHZ_026_AnOwnerWritesThePoliciesOfItsProject(t *testing.T) {
 			t.Fatalf("%d policies", n)
 		}
 	})
-	t.Run("Q-AUTHZ-216 R-API-033 a bare key in a global policy is invalid_pattern", func(t *testing.T) {
+	t.Run("R-API-033 a bare key in a global policy is invalid_pattern", func(t *testing.T) {
 		bare := policyBody("bare")
 		bare["resources"] = map[string]any{"repositories": []string{"npm-internal"}}
 		wantStatus(t, f.cl.Do(admin, "POST", policies, bare), 422, "invalid_pattern")
@@ -277,7 +277,7 @@ func TestR_AUTHZ_026_RolesDecideOnEveryReplica(t *testing.T) {
 			t.Errorf("replica %s: bob reads web", r.name)
 		}
 	}
-	t.Run("Q-AUTHZ-215 the credentials of a member", func(t *testing.T) {
+	t.Run("the credentials of a member", func(t *testing.T) {
 		idx, err := p.a.engine.Begin(context.Background(), owner)
 		if err != nil {
 			t.Fatal(err)

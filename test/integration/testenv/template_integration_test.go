@@ -25,7 +25,7 @@ import (
 var uuidText = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 
 func TestStacksAreClonesOfTheTemplate(t *testing.T) {
-	t.Run("Q-ARCH-581 two stacks differ in every identity row of system_state", func(t *testing.T) {
+	t.Run("two stacks differ in every identity row of system_state", func(t *testing.T) {
 		a, b := NewStack(t, StackOptions{Name: "tplid"}), NewStack(t, StackOptions{Name: "tplid"})
 		for _, key := range identityKeys {
 			q := `SELECT value #>> '{}' FROM system_state WHERE key = $1`
@@ -41,7 +41,7 @@ func TestStacksAreClonesOfTheTemplate(t *testing.T) {
 			t.Errorf("both keyspaces begin with %s", ka[:12])
 		}
 	})
-	t.Run("Q-ARCH-581 a clone's migration bookkeeping is the newest embedded step", func(t *testing.T) {
+	t.Run("a clone's migration bookkeeping is the newest embedded step", func(t *testing.T) {
 		s := NewStack(t, StackOptions{Name: "tplbook"})
 		steps, err := postgres.EmbeddedSteps()
 		if err != nil {
@@ -58,7 +58,7 @@ func TestStacksAreClonesOfTheTemplate(t *testing.T) {
 			t.Errorf("the checksum of %s is %s, want the embedded file's %x", newest.Name, got, newest.Checksum)
 		}
 	})
-	t.Run("Q-ARCH-581 the template is a template that takes no connections and carries the harness's mark", func(t *testing.T) {
+	t.Run("the template is a template that takes no connections and carries the harness's mark", func(t *testing.T) {
 		NewStack(t, StackOptions{Name: "tplmark"})
 		tpl := stackTemplate(t, databaseConfig(t, t.TempDir(), "unused"), false)
 		var template, allow bool
@@ -80,7 +80,7 @@ func TestTemplateFollowsTheMigrations(t *testing.T) {
 	// Whatever a subtest leaves, the template of the embedded migrations is there again for the tests after it.
 	t.Cleanup(func() { stackTemplate(t, cfg, true) })
 
-	t.Run("Q-ARCH-581 a migration added during development: two processes that start at once make its template once and drop the old one; "+
+	t.Run("a migration added during development: two processes that start at once make its template once and drop the old one; "+
 		"a stack that still clones the old one makes it again", func(t *testing.T) {
 		// A step no server has seen: neither process finds the template, both ask for the lock, one builds, the other finds its result.
 		changed := withStep(t, "it_template_probe_"+RandHex(4), "CREATE TABLE it_template_probe (id integer);\n")
@@ -143,7 +143,7 @@ func TestTemplateFollowsTheMigrations(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-ARCH-581 a migration that fails leaves neither a template nor its build", func(t *testing.T) {
+	t.Run("a migration that fails leaves neither a template nor its build", func(t *testing.T) {
 		// One step that fails at once: what is left after a failure does not depend on how far the migration came.
 		broken := fstest.MapFS{"00001_it_template_broken.sql": {Data: []byte("SELECT * FROM it_no_such_table;\n")}}
 		want, err := templateName(broken, day)

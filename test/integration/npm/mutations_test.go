@@ -236,7 +236,7 @@ func TestR_NPM_017_UnpublishSequence(t *testing.T) {
 			t.Fatalf("%d tombstones", e.tombstones("npm-local", "@acme/ui"))
 		}
 	})
-	t.Run("npm.unpublish is audited with its journal entry for a restore's replay (Q-NPM-12)", func(t *testing.T) {
+	t.Run("npm.unpublish is audited with its journal entry for a restore's replay (R-NPM-047)", func(t *testing.T) {
 		if e.events("npm.unpublish", "@acme/ui", "") != 1 {
 			t.Fatalf("%d events", e.events("npm.unpublish", "@acme/ui", ""))
 		}

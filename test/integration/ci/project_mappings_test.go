@@ -54,7 +54,7 @@ func webPublish(name string, priority int) map[string]any {
 		grants(inline("web-npm", []string{"@acme/*"}, "read", "deploy")), map[string]any{"issuer": "gitlab-main"})
 }
 
-func TestQ_CI_26_AProjectOwnerManagesTheMappingsOfItsProject(t *testing.T) {
+func TestR_CI_019_AProjectOwnerManagesTheMappingsOfItsProject(t *testing.T) {
 	p := newProjectEnv(t)
 	a, b := p.a, p.b
 	path := projectMappings("web")
@@ -81,7 +81,7 @@ func TestQ_CI_26_AProjectOwnerManagesTheMappingsOfItsProject(t *testing.T) {
 		t.Errorf("the event carries project %v, tier %v", d["project"], d["tier"])
 	}
 
-	t.Run("Q-CI-26 the bounds of a project mapping", func(t *testing.T) {
+	t.Run("R-CI-019 the bounds of a project mapping", func(t *testing.T) {
 		pinned := all(eq("project_id", "4242"))
 		for name, tc := range map[string]struct {
 			body  map[string]any
@@ -142,7 +142,7 @@ func TestQ_CI_26_AProjectOwnerManagesTheMappingsOfItsProject(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-CI-26 @any and patterns mean the project's repositories, its own policies bind", func(t *testing.T) {
+	t.Run("R-CI-019 @any and patterns mean the project's repositories, its own policies bind", func(t *testing.T) {
 		body := mapping("web-reader", 300, all(eq("project_id", "4242")), map[string]any{
 			"policies": []string{"ci-read"},
 			"inline":   []any{map[string]any{"repositories": []string{"@any", "web-*"}, "packages": map[string]any{"include": []string{"*"}}, "actions": []string{"read"}}},
@@ -154,7 +154,7 @@ func TestQ_CI_26_AProjectOwnerManagesTheMappingsOfItsProject(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-CI-26 tiers combine by union, so a priority is unique per tier and not per issuer", func(t *testing.T) {
+	t.Run("R-CI-019 tiers combine by union, so a priority is unique per tier and not per issuer", func(t *testing.T) {
 		wantStatus(t, p.do(a, "POST", mappingsOf("gitlab-main"), readOnlyMapping("sys-read", 100, all(eq("project_id", "4242")), "data/other-npm")), 201, "")
 		wantStatus(t, p.bob(a, "POST", path, webPublish("web-second", 100)), 409, "priority_taken")
 		wantStatus(t, p.bob(a, "POST", path, webPublish("web-publish", 400)), 409, "already_exists")
@@ -167,7 +167,7 @@ func TestQ_CI_26_AProjectOwnerManagesTheMappingsOfItsProject(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-CI-26 a project Owner sees only its tier", func(t *testing.T) {
+	t.Run("R-CI-019 a project Owner sees only its tier", func(t *testing.T) {
 		l := p.bob(b, "GET", path, nil)
 		wantStatus(t, l, 200, "")
 		if got := strings.Join(names(t, l), ","); got != "web-publish,web-reader" {
@@ -197,7 +197,7 @@ func TestQ_CI_26_AProjectOwnerManagesTheMappingsOfItsProject(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-CI-26 the dry run of a project Owner traces its tier only", func(t *testing.T) {
+	t.Run("R-CI-019 the dry run of a project Owner traces its tier only", func(t *testing.T) {
 		r := p.bob(a, "POST", "/api/v1/projects/web/ci/issuers/gitlab-main/evaluate", map[string]any{"claims": map[string]any{"project_id": "4242", "ref_protected": "true"}})
 		wantStatus(t, r, 200, "")
 		got := r.JSON(t)
@@ -214,7 +214,7 @@ func TestQ_CI_26_AProjectOwnerManagesTheMappingsOfItsProject(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-CI-26 a system administrator who edits a project's mapping keeps the bounds of its tier", func(t *testing.T) {
+	t.Run("R-CI-019 a system administrator who edits a project's mapping keeps the bounds of its tier", func(t *testing.T) {
 		// R-CI-009: a name is unique within a tier, so the issuer's routes (the system tier) do not address the project's mapping.
 		wantStatus(t, p.do(a, "GET", mappingsOf("gitlab-main")+"/web-publish", nil), 404, "not_found")
 		body := p.do(a, "GET", path+"/gitlab-main/web-publish", nil).JSON(t)
@@ -222,7 +222,7 @@ func TestQ_CI_26_AProjectOwnerManagesTheMappingsOfItsProject(t *testing.T) {
 		wantStatus(t, p.do(a, "PUT", path+"/gitlab-main/web-publish", body, "If-Match", "*"), 422, "groups_not_allowed_in_project")
 	})
 
-	t.Run("Q-CI-26 replace and delete under the project route", func(t *testing.T) {
+	t.Run("R-CI-019 replace and delete under the project route", func(t *testing.T) {
 		body := p.bob(a, "GET", path+"/gitlab-main/web-publish", nil).JSON(t)
 		body["description"] = "edited by the project Owner"
 		wantStatus(t, p.bob(a, "PUT", path+"/gitlab-main/web-publish", body), 428, "precondition_required")
@@ -238,7 +238,7 @@ func TestQ_CI_26_AProjectOwnerManagesTheMappingsOfItsProject(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-AUTHZ-208 only an Owner of the project reaches its CI routes, a lower role does not", func(t *testing.T) {
+	t.Run("R-AUTHZ-026 only an Owner of the project reaches its CI routes, a lower role does not", func(t *testing.T) {
 		p.epoch = p.addMember("web", p.aliceID, "maintainer")
 		for _, op := range []struct{ method, path string }{{"GET", path}, {"POST", path}, {"GET", path + "/gitlab-main/web-publish"}} {
 			r := p.as(a, p.alicePAT, op.method, op.path, webPublish("web-late", 500))
@@ -251,7 +251,7 @@ func TestQ_CI_26_AProjectOwnerManagesTheMappingsOfItsProject(t *testing.T) {
 	})
 }
 
-func TestQ_CI_26_AProjectWithCIMappingsIsNotEmpty(t *testing.T) {
+func TestR_CI_019_AProjectWithCIMappingsIsNotEmpty(t *testing.T) {
 	p := newProjectEnv(t)
 	a := p.a
 	wantStatus(t, p.do(a, "POST", "/api/v1/projects", map[string]any{"key": "solo", "displayName": "Solo"}), 201, "")
@@ -276,7 +276,7 @@ func TestQ_CI_26_AProjectWithCIMappingsIsNotEmpty(t *testing.T) {
 	wantStatus(t, p.do(a, "POST", projectMappings("ghost"), body), 404, "not_found")
 }
 
-func TestQ_CI_26_ACreateAndTheDeleteOfAProjectSerialize(t *testing.T) {
+func TestR_CI_019_ACreateAndTheDeleteOfAProjectSerialize(t *testing.T) {
 	p := newProjectEnv(t)
 	a := p.a
 	wantStatus(t, p.do(a, "POST", "/api/v1/projects", map[string]any{"key": "race", "displayName": "Race"}), 201, "")

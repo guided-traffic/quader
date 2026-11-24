@@ -129,7 +129,7 @@ func TestR_AUTHZ_005_FilesDecideNpmItemsOnTheirPackage(t *testing.T) {
 			t.Fatalf("the recursive listing holds %v", got)
 		}
 	})
-	t.Run("Q-AUTHZ-160 a path the format places in no package, a scope folder, is closed to a grant that narrows names", func(t *testing.T) {
+	t.Run("a path the format places in no package, a scope folder, is closed to a grant that narrows names", func(t *testing.T) {
 		if ans := get("/files/it/npm-local/@acme/"); ans.Status != 404 {
 			t.Fatalf("%d %s", ans.Status, ans.Body)
 		}
@@ -268,7 +268,7 @@ func TestR_REPO_005_NameExcludeOfAnNpmRepositoryUnderFiles(t *testing.T) {
 			t.Fatalf("the scope lists %v", got)
 		}
 	})
-	t.Run("R-REPO-005 Q-AUTHZ-162 the items API deletes an excluded package for content:bypass only", func(t *testing.T) {
+	t.Run("R-REPO-005 the items API deletes an excluded package for content:bypass only", func(t *testing.T) {
 		path := "/api/v1/projects/it/repositories/npm-local/items?path=@hidden/x/-/x-1.0.0.tgz"
 		if ans := e.st.Do(a, "GET", path, e.tokA, nil); ans.Status != 200 {
 			t.Fatalf("the items API shows the item: %d %s", ans.Status, ans.Body)
@@ -285,7 +285,7 @@ func TestR_REPO_005_NameExcludeOfAnNpmRepositoryUnderFiles(t *testing.T) {
 			t.Fatal("the cleanup did not unpublish the version")
 		}
 	})
-	t.Run("Q-AUTHZ-162 a disabled repository's items are deleted for content:bypass only", func(t *testing.T) {
+	t.Run("R-STOR-018 a disabled repository's items are deleted for content:bypass only", func(t *testing.T) {
 		patch(`{"disabled":true}`)
 		path := "/api/v1/projects/it/repositories/npm-local/items?path=@hidden/y/-/y-1.0.0.tgz"
 		testenv.WaitFor(t, "the disabled flag", 10*time.Second, func() bool {

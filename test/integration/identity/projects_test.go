@@ -65,7 +65,7 @@ func TestR_AUTH_020_ProjectServiceAccountsOfTheDomain(t *testing.T) {
 		return a.manager.CreateProjectServiceAccount(ctx, admin, project, principal.NewServiceAccount{Name: name})
 	}
 
-	t.Run("R-AUTH-020 Q-AUTHZ-209 the name is unique within the project, the same name lives in every project and instance-wide", func(t *testing.T) {
+	t.Run("R-AUTH-020 the name is unique within the project, the same name lives in every project and instance-wide", func(t *testing.T) {
 		sa, err := create("partner", "web")
 		if err != nil || sa.Project != "web" || sa.Name != "web/partner" || sa.Object() != web("partner") {
 			t.Fatalf("%+v %v", sa, err)
@@ -150,7 +150,7 @@ func TestR_AUTH_020_ProjectServiceAccountsOfTheDomain(t *testing.T) {
 			t.Fatalf("%+v %v", byProject, err)
 		}
 	})
-	t.Run("Q-AUTHZ-175 a project service account is no group member, an instance-wide one is", func(t *testing.T) {
+	t.Run("R-AUTHZ-026 a project service account is no group member, an instance-wide one is", func(t *testing.T) {
 		if _, err := a.manager.CreateGroup(ctx, admin, principal.NewGroup{Name: "devs"}); err != nil {
 			t.Fatal(err)
 		}
@@ -165,7 +165,7 @@ func TestR_AUTH_020_ProjectServiceAccountsOfTheDomain(t *testing.T) {
 			t.Fatalf("%d memberships of the project account", n)
 		}
 	})
-	t.Run("Q-AUTHZ-177 R-AUTH-027 a token an Owner issues names no system item, has admin false and expires", func(t *testing.T) {
+	t.Run("R-AUTH-027 a token an Owner issues names no system item, has admin false and expires", func(t *testing.T) {
 		sa, err := a.manager.GetProjectServiceAccount(ctx, web("partner"))
 		if err != nil {
 			t.Fatal(err)
@@ -297,7 +297,7 @@ func TestR_AUTH_020_ProjectServiceAccountsOfTheDomain(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
-	t.Run("Q-AUTHZ-175 the schema refuses a project service account in a group, whatever the code does", func(t *testing.T) {
+	t.Run("R-AUTHZ-026 the schema refuses a project service account in a group, whatever the code does", func(t *testing.T) {
 		sa, err := create("two", "web")
 		if err != nil {
 			t.Fatal(err)
@@ -311,7 +311,7 @@ func TestR_AUTH_020_ProjectServiceAccountsOfTheDomain(t *testing.T) {
 			t.Fatal("the insert was accepted")
 		}
 	})
-	t.Run("Q-AUTHZ-209 the schema keeps the qualified name and the project of an account together", func(t *testing.T) {
+	t.Run("R-AUTHZ-026 the schema keeps the qualified name and the project of an account together", func(t *testing.T) {
 		own := func(name string) string {
 			id := principal.NewID()
 			e.exec(`INSERT INTO principal (id, kind, name) VALUES ($1::uuid, 'service_account', $2)`, id, name)
@@ -375,7 +375,7 @@ func TestR_AUTHZ_026_ProjectServiceAccountsOverHTTP(t *testing.T) {
 			t.Fatalf("%v", got)
 		}
 	})
-	t.Run("Q-AUTHZ-175 a project account joins no group over HTTP", func(t *testing.T) {
+	t.Run("a project account joins no group over HTTP", func(t *testing.T) {
 		want(t, s.call(post, "/api/v1/groups", fx.adminToken, map[string]any{"name": "devs"}), 201, "")
 		want(t, s.call(patch, "/api/v1/groups/devs/members", fx.adminToken, map[string]any{"add": []string{"sa:web/partner"}}), 422, "project_account_not_groupable")
 		want(t, s.call(patch, "/api/v1/groups/devs/members", fx.adminToken, map[string]any{"add": []string{"sa:partner"}}), 200, "")
@@ -409,7 +409,7 @@ func TestR_AUTHZ_026_OwnerServiceAccountsAndTokens(t *testing.T) {
 	wandaTok, devonTok := a.ownerToken(wanda), a.ownerToken(devon)
 	s := a.serve(e, nil)
 
-	t.Run("R-AUTHZ-026 Q-AUTHZ-169 an Owner creates an account of its project and only of it", func(t *testing.T) {
+	t.Run("R-AUTHZ-026 an Owner creates an account of its project and only of it", func(t *testing.T) {
 		rp := s.call(post, "/api/v1/projects/web/service-accounts", wandaTok, map[string]any{"name": "web-ci", "description": "builds"})
 		want(t, rp, 201, "")
 		if str(rp.json(t), "project") != "web" {
@@ -431,7 +431,7 @@ func TestR_AUTHZ_026_OwnerServiceAccountsAndTokens(t *testing.T) {
 		}
 		want(t, s.call(get, "/api/v1/service-accounts/web-ci", fx.adminToken, nil), 404, "")
 	})
-	t.Run("Q-AUTHZ-177 the description changes inside the project only", func(t *testing.T) {
+	t.Run("the description changes inside the project only", func(t *testing.T) {
 		// R-AUTH-020: the write names the revision it read; an account the caller cannot read has none to name.
 		tag := s.call(get, "/api/v1/projects/web/service-accounts/web-ci", wandaTok, nil).Header.Get("ETag")
 		if tag == "" {
@@ -441,7 +441,7 @@ func TestR_AUTHZ_026_OwnerServiceAccountsAndTokens(t *testing.T) {
 		want(t, s.call(patch, "/api/v1/projects/web/service-accounts/ext-bot", wandaTok, map[string]any{"description": "x"}, "If-Match", "*"), 404, "")
 		want(t, s.call(patch, "/api/v1/projects/web/service-accounts/shop-bot", wandaTok, map[string]any{"description": "x"}, "If-Match", "*"), 404, "")
 	})
-	t.Run("Q-AUTHZ-177 R-AUTH-027 R-AUTH-045 a technical token is capped, carries no capability and may be bound to an endpoint", func(t *testing.T) {
+	t.Run("R-AUTH-027 R-AUTH-045 a technical token is capped, carries no capability and may be bound to an endpoint", func(t *testing.T) {
 		path := "/api/v1/projects/web/service-accounts/web-ci/technical-tokens"
 		rp := s.call(post, path, wandaTok, map[string]any{"name": "ci", "ttlSeconds": 3600, "scope": map[string]any{"inherit": true, "endpoints": []string{"customers"}}})
 		want(t, rp, 201, "")
@@ -471,7 +471,7 @@ func TestR_AUTHZ_026_OwnerServiceAccountsAndTokens(t *testing.T) {
 		// A name is the system that uses the token: it follows ^[a-z0-9][a-z0-9-]{0,62}$.
 		want(t, s.call(post, path, wandaTok, map[string]any{"name": "Nightly Mirror"}), 422, "validation_failed")
 	})
-	t.Run("Q-AUTH-192 a token an Owner issues is not self-rotatable, so it never outlives the cap", func(t *testing.T) {
+	t.Run("R-AUTH-027 a token an Owner issues is not self-rotatable, so it never outlives the cap", func(t *testing.T) {
 		path := "/api/v1/projects/web/service-accounts/web-ci/technical-tokens"
 		rp := s.call(post, path, wandaTok, map[string]any{"name": "renews-itself", "ttlSeconds": 3600, "selfRotatable": true})
 		want(t, rp, 422, "validation_failed")
@@ -482,7 +482,7 @@ func TestR_AUTHZ_026_OwnerServiceAccountsAndTokens(t *testing.T) {
 		// An administrator of quader still issues one (R-AUTH-030).
 		want(t, s.call(post, path, fx.adminToken, map[string]any{"name": "renews-itself", "ttlSeconds": 3600, "selfRotatable": true}), 201, "")
 	})
-	t.Run("Q-AUTHZ-177 the tokens of the project's accounts are seen and revoked, no others", func(t *testing.T) {
+	t.Run("the tokens of the project's accounts are seen and revoked, no others", func(t *testing.T) {
 		toks := list(t, s.call(get, "/api/v1/tokens?owner=sa:web/web-ci", wandaTok, nil))
 		if len(toks) < 2 {
 			t.Fatalf("%v", toks)

@@ -299,7 +299,7 @@ func TestR_BAK_031_EncryptedConnectionsBackedUpAndRestored(t *testing.T) {
 		}
 	})
 
-	t.Run("R-BAK-031 Q-BAK-66 verify --deep counts the encrypted pool objects as not authenticated; with --key-ring it reads them, and a flipped bit is digest_mismatch", func(t *testing.T) {
+	t.Run("R-BAK-031 verify --deep counts the encrypted pool objects as not authenticated; with --key-ring it reads them, and a flipped bit is digest_mismatch", func(t *testing.T) {
 		v := &verify.Verifier{Store: r.tgt, Layout: format.Layout{Prefix: r.cfg.Target.Prefix}, Log: quiet}
 		rep, err := v.Verify(ctx, backup.VerifyOptions{Latest: true, Deep: true})
 		if err != nil || rep.NotAuthenticated != 3 {

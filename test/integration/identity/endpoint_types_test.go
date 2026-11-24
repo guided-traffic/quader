@@ -49,7 +49,7 @@ func TestR_EP_011_TheServiceRefusesABindingTheTypeCannotUse(t *testing.T) {
 		}
 	})
 
-	t.Run("R-EP-011 Q-AUTH-182 a rotation refuses a binding the type cannot use and leaves the old token as it was", func(t *testing.T) {
+	t.Run("R-EP-011 a rotation refuses a binding the type cannot use and leaves the old token as it was", func(t *testing.T) {
 		// A personal token bound to customers cannot be created any more; one made before the check existed can be rotated no better.
 		old := a.pat(alice)
 		e.exec(`UPDATE api_token SET scope = $2::text::jsonb WHERE id = $1::uuid`, old.Record.ID, boundToCustomers)

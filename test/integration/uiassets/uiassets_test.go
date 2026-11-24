@@ -254,7 +254,7 @@ func TestR_HA_020_SharedUIAssets(t *testing.T) {
 		return hex.EncodeToString(sum[:])
 	}
 
-	t.Run("R-HA-020 a name two builds fill with other bytes: renewed only by the build whose bytes it holds, replaced when they went stale (Q-UI-142)", func(t *testing.T) {
+	t.Run("R-HA-020 a name two builds fill with other bytes: renewed only by the build whose bytes it holds, replaced when they went stale", func(t *testing.T) {
 		if rowOf("en") != digest(a, "en") {
 			t.Fatalf("the row of en/chunk-TRANSLAT.js holds %s, want A's bytes %s (A published first)", rowOf("en"), digest(a, "en"))
 		}
@@ -279,7 +279,7 @@ func TestR_HA_020_SharedUIAssets(t *testing.T) {
 		wantFile(t, st, rd, "en", "chunk-TRANSLAT.js", b.file(t, "en", "chunk-TRANSLAT.js"))
 	})
 
-	t.Run("R-HA-020 R-STOR-013 a row whose blob is damaged takes the bytes of a build that has the name, whoever published it first (Q-UI-142)", func(t *testing.T) {
+	t.Run("R-HA-020 R-STOR-013 a row whose blob is damaged takes the bytes of a build that has the name, whoever published it first", func(t *testing.T) {
 		if rowOf("de") != digest(a, "de") {
 			t.Fatalf("the row of de/chunk-TRANSLAT.js holds %s, want A's bytes", rowOf("de"))
 		}

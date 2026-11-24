@@ -167,7 +167,7 @@ func TestR_STOR_051_AConnectionsLifeAndItsFixedProperties(t *testing.T) {
 			t.Fatalf("a configuration naming the retired id: %v", err)
 		}
 	})
-	t.Run("Q-STOR-250 the copies the migration recorded for the blobs that existed are bound to the element default at its first start", func(t *testing.T) {
+	t.Run("the copies the migration recorded for the blobs that existed are bound to the element default at its first start", func(t *testing.T) {
 		p := newPG(t)
 		d := blob.Digest{0xab, 0xcd}
 		stmts := []string{

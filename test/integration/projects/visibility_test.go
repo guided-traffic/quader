@@ -387,7 +387,7 @@ func TestR_AUTHZ_037_RestrictedLevels(t *testing.T) {
 			t.Error("settings.visibility.changed does not carry the set before and after")
 		}
 	})
-	t.Run("Q-AUTHZ-284 the default is never restricted, and a restricted level never becomes the default", func(t *testing.T) {
+	t.Run("the default is never restricted, and a restricted level never becomes the default", func(t *testing.T) {
 		wantStatus(t, patchSettings(map[string]any{"restrictedLevels": []string{"private"}}), 422, "default_level_restricted")
 		wantStatus(t, patchSettings(map[string]any{"defaultLevel": "public"}), 422, "default_level_restricted")
 		if err := f.e.TryExec("UPDATE visibility_settings SET restricted_levels = '{private}'"); err == nil {
@@ -412,7 +412,7 @@ func TestR_AUTHZ_037_RestrictedLevels(t *testing.T) {
 		wantStatus(t, create(f.admin, "npm-admin", "public"), 201, "")
 		wantStatus(t, repoPatch(f.admin, "npm-owner", map[string]any{"artifacts": "public"}), 200, "")
 	})
-	t.Run("Q-AUTHZ-285 an existing object keeps a restricted level and is lowered, but not raised to it again", func(t *testing.T) {
+	t.Run("an existing object keeps a restricted level and is lowered, but not raised to it again", func(t *testing.T) {
 		wantStatus(t, f.do(f.alice, "PATCH", base+"/web/repositories/npm-open", map[string]any{"description": "kept public"}, "If-Match", "*", "Content-Type", "application/merge-patch+json"), 200, "")
 		wantStatus(t, repoPatch(f.alice, "npm-open", map[string]any{"artifacts": "public", "wiki": "internal"}), 200, "")
 		if got := f.levels("web", "npm-open"); got != "public/internal" {
@@ -422,7 +422,7 @@ func TestR_AUTHZ_037_RestrictedLevels(t *testing.T) {
 		wantStatus(t, repoPatch(f.alice, "npm-open", map[string]any{"artifacts": "internal", "wiki": "internal"}), 200, "")
 		wantProblem(t, repoPatch(f.alice, "npm-open", map[string]any{"artifacts": "public"}), 403, "visibility_level_restricted")
 	})
-	t.Run("Q-AUTHZ-286 an absent level takes the highest level the Owner may choose, and none left is refused", func(t *testing.T) {
+	t.Run("an absent level takes the highest level the Owner may choose, and none left is refused", func(t *testing.T) {
 		wantStatus(t, patchSettings(map[string]any{"defaultLevel": "public", "restrictedLevels": []string{"internal"}}), 200, "")
 		wantStatus(t, f.do(f.admin, "PUT", base+"/web/visibility", map[string]any{"level": "internal"}, "If-Match", "*"), 200, "")
 		wantStatus(t, create(f.alice, "npm-absent", ""), 201, "")

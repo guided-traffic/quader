@@ -13,7 +13,7 @@ import (
 // Q-AUTH-209: a token and a service account state whether the owner holds the administrator role now, so that the screens can say
 // that administrator rights are inactive and offer the choice only where it can take effect. The state is read from the role
 // bindings at the time of the read, directly and through a group, for the list and for the single reads.
-func TestQ_AUTH_209_TheRecordsStateWhetherTheOwnerIsAnAdministrator(t *testing.T) {
+func TestR_AUTH_028_TheRecordsStateWhetherTheOwnerIsAnAdministrator(t *testing.T) {
 	e := newEnv(t)
 	a := e.newReplica("a", replicaOpts{valkey: vkLive, auditDB: true})
 	fx := e.newFixture(a)

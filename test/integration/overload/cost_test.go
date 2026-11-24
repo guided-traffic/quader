@@ -28,7 +28,7 @@ func TestHeldDownloadCost(t *testing.T) {
 	// every size is above that maximum.
 	for _, size := range []int{5 << 20, 8 << 20} {
 		name := fmt.Sprintf("f%d.bin", size)
-		t.Run(fmt.Sprintf("Q-ARCH-328 R-ARCH-005 %d KiB held downloads", size>>10), func(t *testing.T) {
+		t.Run(fmt.Sprintf("R-ARCH-005 %d KiB held downloads", size>>10), func(t *testing.T) {
 			// A replica of its own per size, so the pooled buffers of another size are not counted.
 			r := in.start(t, fmt.Sprintf("cost%d", size>>10), fmt.Sprintf("QUADER_RUNTIME_MEMORY_LIMIT_BYTES=%d", 8<<30), "GOGC=10",
 				"QUADER_CACHE_RENDITION_BYTES=0", "QUADER_PROXY_METADATA_CACHE_BYTES=0", "QUADER_PROXY_MERGED_METADATA_CACHE_BYTES=0",

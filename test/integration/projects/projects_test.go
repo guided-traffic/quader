@@ -46,7 +46,7 @@ func TestR_AUTHZ_026_ProjectLifecycleOverHTTP(t *testing.T) {
 			t.Errorf("the event names the project: %d", n)
 		}
 	})
-	t.Run("R-AUTHZ-026 a read answers the ETag, and a conditional read still answers the body (Q-AUTHZ-202)", func(t *testing.T) {
+	t.Run("R-AUTHZ-026 a read answers the ETag, and a conditional read still answers the body", func(t *testing.T) {
 		for range 2 { // both replicas
 			g := f.do(f.admin, "GET", base+"/web", nil)
 			wantStatus(t, g, 200, "")
@@ -197,10 +197,10 @@ func TestR_AUTHZ_026_KeyValidationAndImmutability(t *testing.T) {
 	})
 }
 
-// TestQ_AUTHZ_209_KeysAndNamesNeedNoOverlapRule: the names of a project's objects carry its key and a `/`, which no
+// TestR_AUTHZ_026_KeysAndNamesNeedNoOverlapRule: the names of a project's objects carry its key and a `/`, which no
 // key holds, so a key that starts another key or the name of a service account of no project is just a key
 // (Q-AUTHZ-209: the prefix and its overlap rule went).
-func TestQ_AUTHZ_209_KeysAndNamesNeedNoOverlapRule(t *testing.T) {
+func TestR_AUTHZ_026_KeysAndNamesNeedNoOverlapRule(t *testing.T) {
 	f := newFixture(t)
 	f.create("web")
 	f.create("web-app")

@@ -237,7 +237,7 @@ func TestR_STOR_026_OrphanSweep(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-STOR-262 a connection whose marker names another installation is left alone", func(t *testing.T) {
+	t.Run("a connection whose marker names another installation is left alone", func(t *testing.T) {
 		m := newMemConns(t, p, 5)
 		orphan := orphanAt(0x42, 50)
 		m.b.Set(key(orphan), memData(16, 50), old)
@@ -262,7 +262,7 @@ func TestR_STOR_026_OrphanSweep(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-STOR-261 under the deletion pause the sweep adopts and deletes nothing, ends paused and saves no checkpoint past the pause", func(t *testing.T) {
+	t.Run("under the deletion pause the sweep adopts and deletes nothing, ends paused and saves no checkpoint past the pause", func(t *testing.T) {
 		m := newMemConns(t, p, 5)
 		data := memData(1024, 40)
 		d := commit(t, m.store, data)
@@ -286,7 +286,7 @@ func TestR_STOR_026_OrphanSweep(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-STOR-263 the staging step aborts old multipart uploads and removes what no live session of the connection stands for", func(t *testing.T) {
+	t.Run("the staging step aborts old multipart uploads and removes what no live session of the connection stands for", func(t *testing.T) {
 		m := newMemConns(t, p, 5)
 		maxAge := m.cfg.Uploads.SessionMaxAge
 		stale := time.Now().Add(-maxAge - time.Hour)

@@ -437,7 +437,7 @@ func TestR_NPM_038_TheAuditSettingsThroughTheAPI(t *testing.T) {
 		}
 	})
 
-	t.Run("the member is a member of every class: a local repository takes local or disabled (R-VULN-017, Q-ARCH-341)", func(t *testing.T) {
+	t.Run("the member is a member of every class: a local repository takes local or disabled (R-VULN-017)", func(t *testing.T) {
 		for i, audit := range []map[string]any{{"mode": "disabled"}, {"mode": "local"}} {
 			a := create("npm-audit-local-"+strconv.Itoa(i), "local", map[string]any{"audit": audit})
 			if a.Status != 201 {
@@ -450,7 +450,7 @@ func TestR_NPM_038_TheAuditSettingsThroughTheAPI(t *testing.T) {
 		}
 	})
 
-	t.Run("mode local is a value of npm.audit.mode and the boolean is gone (R-VULN-017, Q-ARCH-341)", func(t *testing.T) {
+	t.Run("mode local is a value of npm.audit.mode and the boolean is gone (R-VULN-017)", func(t *testing.T) {
 		a := create("npm-audit-enum", "remote", map[string]any{"audit": map[string]any{"local": true}})
 		if a.Status != 422 {
 			t.Errorf("%d %s", a.Status, a.Body)

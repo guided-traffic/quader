@@ -175,7 +175,7 @@ func TestR_STOR_087_TheJobsOnAnEncryptedConnection(t *testing.T) {
 		readAllOf(t, s, d, data[d])
 	})
 
-	t.Run("R-STOR-087 Q-STOR-314 the orphan sweep adopts an object of a live blob without a copy row, reports one whose record names an unknown key, and deletes an orphan after min_age", func(t *testing.T) {
+	t.Run("R-STOR-087 the orphan sweep adopts an object of a live blob without a copy row, reports one whose record names an unknown key, and deletes an orphan after min_age", func(t *testing.T) {
 		adopted := digests[4]
 		p.exec(t, `DELETE FROM quader.blob_copies WHERE sha256 = $1 AND connection_id = 'archive'`, adopted.Bytes())
 		archive, _ := s.Connections().Get("archive")
@@ -244,7 +244,7 @@ func TestR_STOR_087_TheJobsOnAnEncryptedConnection(t *testing.T) {
 		}
 	})
 
-	t.Run("R-STOR-087 Q-STOR-308 a second encrypted connection is filled from the first: new bodies under its own key, both read back", func(t *testing.T) {
+	t.Run("R-STOR-087 a second encrypted connection is filled from the first: new bodies under its own key, both read back", func(t *testing.T) {
 		c := blobtest.New()
 		sv, cfgV := encStore(t, p, h, func(c *config.Storage) { c.Connections[0].Drain = true }, a, b, c)
 		if res := reconcileRun(t, newReconciler(t, p, sv, cfgV, nil)); res.Copied != 10 {

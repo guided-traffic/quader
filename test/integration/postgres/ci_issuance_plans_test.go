@@ -151,19 +151,19 @@ func TestCIIssuanceIndexes(t *testing.T) {
 		return out
 	}
 
-	t.Run("Q-CI-53 the list without a filter walks ci_issuances_issued and does not sort", func(t *testing.T) {
+	t.Run("R-CI-020 the list without a filter walks ci_issuances_issued and does not sort", func(t *testing.T) {
 		p := plan(t, "ci_issuances.sql", "CiIssuanceList", none)
 		if !strings.Contains(p, "ci_issuances_issued") || strings.Contains(p, "Sort") {
 			t.Errorf("plan:\n%s", p)
 		}
 	})
-	t.Run("Q-CI-53 the list of a small issuer walks ci_issuances_issuer_issued and does not sort", func(t *testing.T) {
+	t.Run("R-CI-020 the list of a small issuer walks ci_issuances_issuer_issued and does not sort", func(t *testing.T) {
 		p := plan(t, "ci_issuances.sql", "CiIssuanceList", with("issuer", "gitlab-b"))
 		if !strings.Contains(p, "ci_issuances_issuer_issued") || strings.Contains(p, "Sort") {
 			t.Errorf("plan:\n%s", p)
 		}
 	})
-	t.Run("Q-CI-53 the project's list finds its records through the GIN index", func(t *testing.T) {
+	t.Run("R-CI-020 the project's list finds its records through the GIN index", func(t *testing.T) {
 		p := plan(t, "ci_issuances.sql", "CiIssuanceListForProject", map[string]any{
 			"project_id": planProject, "issuer": "", "job_id": "", "active": "", "after_us": int64(0), "after_id": planToken, "max_rows": int32(101),
 		})
@@ -171,7 +171,7 @@ func TestCIIssuanceIndexes(t *testing.T) {
 			t.Errorf("plan:\n%s", p)
 		}
 	})
-	t.Run("Q-CI-53 the question of a mapping's tokens reads unexpired records only", func(t *testing.T) {
+	t.Run("R-CI-020 the question of a mapping's tokens reads unexpired records only", func(t *testing.T) {
 		p := plan(t, "ci_mappings.sql", "CiMappingHasIssuances", map[string]any{"issuer_id": planIssuerA, "id": planMapping})
 		if !strings.Contains(p, "ci_issuances_expiry") && !strings.Contains(p, "ci_issuances_issued") {
 			t.Errorf("plan reads neither expiry nor issue index:\n%s", p)
@@ -180,7 +180,7 @@ func TestCIIssuanceIndexes(t *testing.T) {
 			t.Errorf("the mapping of an expired record counts: %d", got)
 		}
 	})
-	t.Run("Q-CI-53 the usage of a token reads the window of its life by the primary key of the partition", func(t *testing.T) {
+	t.Run("R-CI-020 the usage of a token reads the window of its life by the primary key of the partition", func(t *testing.T) {
 		mustExec(t, admin, `INSERT INTO audit_event (id, occurred_at, action, category, outcome, actor_type, token_id)
 			SELECT gen_random_uuid(), now() + g * interval '10 seconds', 'npm.install', 'package', 'success', 'ci',
 			       CASE WHEN g % 100 = 0 THEN $1::uuid ELSE gen_random_uuid() END

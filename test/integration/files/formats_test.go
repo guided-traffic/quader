@@ -451,7 +451,7 @@ func TestR_ARCH_007_FormatRoutesCarryTheContentHeaders(t *testing.T) {
 			t.Fatalf("answer %d disposition %q", res.status, res.header.Get("Content-Disposition"))
 		}
 	})
-	t.Run("Q-ARCH-258 a Volatile route that returns package-derived bytes has the metadata policy and no file name", func(t *testing.T) {
+	t.Run("a Volatile route that returns package-derived bytes has the metadata policy and no file name", func(t *testing.T) {
 		res := f.r.get("reader", "/api/probe/it/probe-local/left-pad/leak")
 		if res.status != 200 {
 			t.Fatalf("answer %d %s", res.status, res.body)

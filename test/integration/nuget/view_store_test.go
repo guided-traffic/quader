@@ -62,10 +62,10 @@ func nupkgWith(t *testing.T, files map[string][]byte) []byte {
 	return buf.Bytes()
 }
 
-// TestQ_NUGET_48_TheDataPortReadsTheViewFromPostgreSQL drives the reads of the package view against the NuGet
+// TestR_API_029_TheDataPortReadsTheViewFromPostgreSQL drives the reads of the package view against the NuGet
 // tables: the summaries, the details with the README out of the stored package, the two searches, and the
 // versions a repository serves, in the order the contract defines (R-API-029, R-EP-016, Q-NUGET-48).
-func TestQ_NUGET_48_TheDataPortReadsTheViewFromPostgreSQL(t *testing.T) {
+func TestR_API_029_TheDataPortReadsTheViewFromPostgreSQL(t *testing.T) {
 	e := newEnv(t)
 	db, err := postgres.Open(context.Background(), e.st.DatabaseConfig(), "nuget-view", "web", testenv.Quiet())
 	if err != nil {

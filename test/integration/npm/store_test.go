@@ -21,11 +21,11 @@ import (
 // The data port the composition root binds is the interface the format declares.
 var _ npm.Store = (*npmdata.Store)(nil)
 
-// TestQ_ARCH_193_TheDataPortWritesTagsAndTombstones drives the writes that the work
+// TestR_ARCH_009_TheDataPortWritesTagsAndTombstones drives the writes that the work
 // package of dist-tags and unpublish calls (R-NPM-016, R-NPM-017, R-NPM-008) against
 // PostgreSQL: the tags map is stored as given, modified_at moves forward, a tombstone
 // outlives the version row it came from and refuses its number.
-func TestQ_ARCH_193_TheDataPortWritesTagsAndTombstones(t *testing.T) {
+func TestR_ARCH_009_TheDataPortWritesTagsAndTombstones(t *testing.T) {
 	e := newEnv(t)
 	a := e.replica("web-a")
 	e.mustPublish(a, "npm-local", e.tokA, pkg{Name: "ported", Version: "1.0.0"})

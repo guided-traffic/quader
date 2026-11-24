@@ -151,7 +151,7 @@ func TestR_EP_018_FormatsOnAnEndpointWithRules(t *testing.T) {
 			}
 		}
 	})
-	t.Run("R-EP-018 R-EP-013 Q-EP-57 a write is the read-only refusal of every write on the endpoint", func(t *testing.T) {
+	t.Run("R-EP-018 R-EP-013 a write is the read-only refusal of every write on the endpoint", func(t *testing.T) {
 		a := e.send(r.cust, customersHost, "PUT", "/api/opaque/it/opaque-local/left-pad", e.botAdminSAT, []byte("{}"), "Quader-Authz-Min-Epoch", epoch)
 		if a.Status != http.StatusForbidden || !strings.Contains(string(a.Body), errs.CodeEndpointReadOnly) {
 			t.Fatalf("%d %s", a.Status, a.Body)
@@ -189,7 +189,7 @@ func TestR_EP_018_FormatsOnAnEndpointWithRules(t *testing.T) {
 			}
 		}
 	})
-	t.Run("R-EP-016 Q-EP-61 a check without versions judges the stored versions, with their dist-tags", func(t *testing.T) {
+	t.Run("R-EP-016 a check without versions judges the stored versions, with their dist-tags", func(t *testing.T) {
 		const repo = `(SELECT id FROM repositories WHERE key = 'npm-customers')`
 		e.stack.Exec(`INSERT INTO packages (repo_id, name, display_name) VALUES (` + repo + `, '@acme/sdk', '@acme/sdk')`)
 		pkg := `(SELECT id FROM packages WHERE repo_id = ` + repo + ` AND name = '@acme/sdk')`
@@ -270,7 +270,7 @@ func TestR_EP_018_FormatsOnAnEndpointWithRules(t *testing.T) {
 			t.Fatalf("%d %s", a.Status, a.Body)
 		}
 	})
-	t.Run("R-EP-016 Q-EP-62 a check lists the stored versions and tags only of packages the caller may read", func(t *testing.T) {
+	t.Run("R-EP-016 a check lists the stored versions and tags only of packages the caller may read", func(t *testing.T) {
 		const repo = `(SELECT id FROM repositories WHERE key = 'npm-customers')`
 		e.stack.Exec(`INSERT INTO packages (repo_id, name, display_name) VALUES (` + repo + `, '@platform/sdk', '@platform/sdk')`)
 		pkg := `(SELECT id FROM packages WHERE repo_id = ` + repo + ` AND name = '@platform/sdk')`

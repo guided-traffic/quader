@@ -81,7 +81,7 @@ func TestR_VULN_048_TheScannerDetectsWithTheDatabaseItsLoaderReadAndARunWaitsWhi
 
 // Q-VULN-200: after a new database the images that were never detected go first: with one call at a time, an image pushed after five
 // stored ones were detected under the first database is detected before their re-detections under the second. About 4 s.
-func TestQ_VULN_200_APushedImageIsDetectedBeforeTheRedetections(t *testing.T) {
+func TestR_VULN_048_APushedImageIsDetectedBeforeTheRedetections(t *testing.T) {
 	f := newFlowWith(t, options{workerEnv: []string{"QUADER_VULNERABILITIES_IMAGES_CONCURRENCY=1"}})
 	for i := range 5 {
 		f.push("stored-"+string(rune('a'+i)), "1.0", variant(t, i+1))

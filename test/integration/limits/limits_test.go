@@ -193,7 +193,7 @@ func TestR_LIM_026_AuditRefusesNothingAndEnforceRefuses(t *testing.T) {
 	e.awaitRows(t, "a would_limit event of audit", `SELECT count(*) FROM usage_limit_event WHERE mode = 'audit' AND subject_ref = $1`, e.readerPrincipl)
 	e.setMode(t, "enforce")
 	e.awaitIndex(t)
-	t.Run("Q-LIM-27 in enforce package_write refuses the writes beyond its burst", func(t *testing.T) {
+	t.Run("R-API-016 in enforce package_write refuses the writes beyond its burst", func(t *testing.T) {
 		var last testenv.Answer
 		for i := range 4 {
 			last = e.st.Do(e.r, "PUT", "/files/it/"+rFiles+"/e"+strconv.Itoa(i)+".bin", e.admin, e.file, "Content-Type", "application/octet-stream")

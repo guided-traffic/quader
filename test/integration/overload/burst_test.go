@@ -32,14 +32,14 @@ func TestBurstBesideEmptyCaches(t *testing.T) {
 	const path = filesRoot + "big.bin"
 	const n = 300
 
-	t.Run("R-ARCH-005 Q-ARCH-328 the slots are not reduced by the caches' budgets while the caches are empty", func(t *testing.T) {
+	t.Run("R-ARCH-005 the slots are not reduced by the caches' budgets while the caches are empty", func(t *testing.T) {
 		// 0.8 × 0.85 × 1 GiB over 640 KiB is 1,114; the budgets of the default caches would leave 77.
 		if slots := r.metric(t, "quader_http_memory_slots"); slots < 1000 {
 			t.Fatalf("quader_http_memory_slots = %.0f, want about 1,114 (77 when the budgets were reserved)", slots)
 		}
 	})
 
-	t.Run("R-ARCH-005 Q-ARCH-328 300 downloads held at once are all served: nothing is shed although the budgets of the caches would have left 77 slots", func(t *testing.T) {
+	t.Run("R-ARCH-005 300 downloads held at once are all served: nothing is shed although the budgets of the caches would have left 77 slots", func(t *testing.T) {
 		const shedSeries = `quader_http_requests_shed_total{endpoint="default",reason="memory_slots"}`
 		base := r.completed(t)
 		downloads := make([]*slow, n)

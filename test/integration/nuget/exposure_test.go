@@ -406,7 +406,7 @@ func TestR_NUGET_034_SearchThroughAVirtualRepositoryOnAnEndpointWithRules(t *tes
 			}
 		})
 	}
-	t.Run("R-NUGET-034 Q-AUTHZ-163 the token scoped to the virtual key does not open the member on its own", func(t *testing.T) {
+	t.Run("R-NUGET-034 the token scoped to the virtual key does not open the member on its own", func(t *testing.T) {
 		a := x.st.DoAt(r.Addr("customers"), customersHost, "GET", "/api/nuget/it/nuget-internal/v3/search?q=acme", x.acmeScoped, nil, "Quader-Authz-Min-Epoch", x.epoch)
 		if a.Status != http.StatusNotFound {
 			t.Fatalf("the member addressed on its own: %d %s", a.Status, a.Body)

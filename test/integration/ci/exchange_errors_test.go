@@ -58,7 +58,7 @@ func TestR_CI_008_EveryReasonOfTheErrorTable(t *testing.T) {
 		{"a parameter sent twice", "invalid_request", "malformed_request", 400, func() testenv.Answer {
 			return x.post(a, formType, []byte(form(good()).Encode()+"&grant_type="+"urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange"))
 		}},
-		{"an empty subject_token (Q-CI-41)", "invalid_request", "malformed_request", 400, func() testenv.Answer { return x.exchange(a, "") }},
+		{"an empty subject_token", "invalid_request", "malformed_request", 400, func() testenv.Answer { return x.exchange(a, "") }},
 		{"no grant_type", "invalid_request", "malformed_request", 400, func() testenv.Answer {
 			v := form(good())
 			v.Del("grant_type")
@@ -107,13 +107,13 @@ func TestR_CI_008_EveryReasonOfTheErrorTable(t *testing.T) {
 		{"a scope key that names no repository", "invalid_scope", "scope_not_granted", 400, func() testenv.Answer {
 			return x.exchange(a, good(), "scope", "read:it/npm-nowhere")
 		}},
-		{"a bare key in the scope names no project (R-CI-007, Q-AUTHZ-216)", "invalid_scope", "scope_malformed", 400, func() testenv.Answer {
+		{"a bare key in the scope names no project (R-CI-007)", "invalid_scope", "scope_malformed", 400, func() testenv.Answer {
 			return x.exchange(a, good(), "scope", "read:npm-internal")
 		}},
 		{"a scope the grants do not hold", "invalid_scope", "scope_not_granted", 400, func() testenv.Answer {
 			return x.exchange(a, good(), "scope", "deploy:it/nuget-internal")
 		}},
-		{"a requested ttl below ci.token.min_ttl (Q-CI-41)", "invalid_request", "ttl_below_minimum", 400, func() testenv.Answer {
+		{"a requested ttl below ci.token.min_ttl", "invalid_request", "ttl_below_minimum", 400, func() testenv.Answer {
 			return x.exchange(a, good(), "ttl", "5")
 		}},
 		{"not a JWS", "invalid_request", "subject_token_malformed", 400, func() testenv.Answer { return x.exchange(a, "not-a-token") }},
@@ -128,7 +128,7 @@ func TestR_CI_008_EveryReasonOfTheErrorTable(t *testing.T) {
 		{"ci_issuer naming another issuer", "invalid_request", "issuer_mismatch", 400, func() testenv.Answer {
 			return x.exchange(a, good(), "ci_issuer", "gitlab-other")
 		}},
-		{"HS256 with the public key as the secret (Q-CI-24)", "invalid_request", "algorithm_not_allowed", 400, func() testenv.Answer {
+		{"HS256 with the public key as the secret (R-CI-004)", "invalid_request", "algorithm_not_allowed", 400, func() testenv.Answer {
 			return x.exchange(a, x.mint(oidcstub.MintOptions{Alg: "HS256"}))
 		}},
 		{"a typ the issuer does not allow", "invalid_request", "token_type_not_allowed", 400, func() testenv.Answer {

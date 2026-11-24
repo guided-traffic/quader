@@ -103,7 +103,7 @@ func TestR_CI_010_TheSaveTimeRulesOverHTTP(t *testing.T) {
 		})
 	}
 
-	t.Run("Q-CI-30 a request that breaks several rules lists every one with its pointer", func(t *testing.T) {
+	t.Run("R-CI-002 a request that breaks several rules lists every one with its pointer", func(t *testing.T) {
 		r := e.do(a, "POST", mappingsOf("gitlab-main"), mapping("mm", 1, pinned, map[string]any{"policies": []string{"nope"}, "groups": []string{"nobody"}}))
 		wantStatus(t, r, 422, "unknown_policy")
 		if f := problemFields(t, r); len(f) != 2 {

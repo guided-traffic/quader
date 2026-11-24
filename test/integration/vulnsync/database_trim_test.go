@@ -17,7 +17,7 @@ import (
 // before the bound, and nothing else: not the layer in use however old it is, not the manifest the run read, not a file at or after the
 // bound, not the tag, not another image's files, not another repository's, not a file in the trash. The bound is a time the test sets;
 // no file is older than its row says. Paging by the last path returns the same names.
-func TestQ_VULN_194_TheTrimNamesTheOldFilesOfTheImageThatAreNotInUse(t *testing.T) {
+func TestR_VULN_044_TheTrimNamesTheOldFilesOfTheImageThatAreNotInUse(t *testing.T) {
 	st := testenv.NewStack(t, testenv.StackOptions{Name: "dbtrim"})
 	st.Repository(testenv.DefaultProject+"/scanner-db", "remote", "oci", "")
 	st.Repository(testenv.DefaultProject+"/elsewhere", "remote", "oci", "")

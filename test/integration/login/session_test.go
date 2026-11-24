@@ -283,7 +283,7 @@ func TestR_AUTH_010_IdleTimeoutAcrossReplicas(t *testing.T) {
 	auth.Sessions.IdleTimeout = 2 * time.Second
 	e.start(3, auth)
 
-	t.Run("R-AUTH-010 Q-AUTH-13 after idle_timeout without a request every replica answers 401 session_expired and the row ends idle", func(t *testing.T) {
+	t.Run("R-AUTH-010 after idle_timeout without a request every replica answers 401 session_expired and the row ends idle", func(t *testing.T) {
 		b := e.browser()
 		b.mustLogin("corp")
 		for range 3 {

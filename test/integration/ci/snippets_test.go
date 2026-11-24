@@ -90,7 +90,7 @@ func TestR_API_035_TheGitLabCISnippetOfAMapping(t *testing.T) {
 	})
 }
 
-func TestQ_CI_26_AProjectOwnerReadsTheSnippetOfItsMappings(t *testing.T) {
+func TestR_CI_019_AProjectOwnerReadsTheSnippetOfItsMappings(t *testing.T) {
 	p := newProjectEnv(t)
 	a := p.a
 	wantStatus(t, p.bob(a, "POST", projectMappings("web"), webPublish("web-publish", 100)), 201, "")

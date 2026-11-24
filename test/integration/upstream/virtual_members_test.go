@@ -187,7 +187,7 @@ func TestR_REPO_071_R_REPO_072_ATeamResolvesThroughAPlaceholderAndThroughTheMemb
 		}
 	})
 
-	t.Run("R-REPO-071 Q-REPO-389 a virtual repository moves with its member of upstream and reads it back there", func(t *testing.T) {
+	t.Run("R-REPO-071 a virtual repository moves with its member of upstream and reads it back there", func(t *testing.T) {
 		a := e.do("PATCH", "/api/v1/projects/web/repositories/npm-new", e.admin, []byte(`{"virtual":{"members":["upstream/npmjs"]}}`),
 			"Content-Type", "application/merge-patch+json", "If-Match", "*")
 		if a.Status != 200 {

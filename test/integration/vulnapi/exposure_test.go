@@ -65,7 +65,7 @@ func TestR_VULN_028_AVersionRuleOfAnEndpointNarrowsEveryAnswerByVersion(t *testi
 				wantCount++
 			}
 		}
-		t.Run("R-VULN-028 R-EP-014 Q-VULN-81 "+tc.name, func(t *testing.T) {
+		t.Run("R-VULN-028 R-EP-014 "+tc.name, func(t *testing.T) {
 			a := through("GET", base+"findings?limit=50", tc.tok, nil)
 			if a.Status != 200 {
 				t.Fatalf("list: %d %s", a.Status, a.Body)

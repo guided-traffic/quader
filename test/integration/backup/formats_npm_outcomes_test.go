@@ -219,7 +219,7 @@ func TestR_NPM_047_ReinstateRefusesWhatItMustNotBringBack(t *testing.T) {
 		}
 	}
 
-	t.Run("R-NPM-047 R-NPM-008 a version the stored bytes of which differ from the tombstone is not brought back (Q-NPM-8)", func(t *testing.T) {
+	t.Run("R-NPM-047 R-NPM-008 a version the stored bytes of which differ from the tombstone is not brought back", func(t *testing.T) {
 		e.st.Exec(`UPDATE npm_versions SET integrity = 'sha512-other' FROM package_versions pv WHERE pv.id = version_id AND pv.version = '1.1.0'`)
 		refuse(t, errs.Conflict, reinstate(repoNPMLocal, name, "1.1.0"), "journal", "1.1.0")
 		e.st.Exec(`UPDATE npm_versions SET integrity = $1 FROM package_versions pv WHERE pv.id = version_id AND pv.version = '1.1.0'`, ints["1.1.0"])

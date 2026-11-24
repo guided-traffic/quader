@@ -93,11 +93,11 @@ func TestR_AUTHZ_026_DeleteRetriesForNewPolicies(t *testing.T) {
 	})
 }
 
-// TestQ_AUTHZ_209_DeleteSparesThePoliciesOfTheSameNameElsewhere: the policies of a project are named within it and
+// TestR_AUTHZ_026_DeleteSparesThePoliciesOfTheSameNameElsewhere: the policies of a project are named within it and
 // stored as <project>/<name> (Q-AUTHZ-209), so the delete of web removes web's x and never the global x or mobile's x
 // (Q-AUTHZ-204), also when a policy of web is replaced under its name between the list and the deletion: the
 // replacement belongs to web and goes in a further round.
-func TestQ_AUTHZ_209_DeleteSparesThePoliciesOfTheSameNameElsewhere(t *testing.T) {
+func TestR_AUTHZ_026_DeleteSparesThePoliciesOfTheSameNameElsewhere(t *testing.T) {
 	f := newFixture(t)
 	f.create("web")
 	f.create("mobile")

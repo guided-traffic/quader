@@ -68,7 +68,7 @@ func TestR_AUTHZ_026_Members(t *testing.T) {
 			t.Errorf("before %s, after %s", f.detail("authz.project.member_changed", "before"), f.detail("authz.project.member_changed", "after"))
 		}
 	})
-	t.Run("R-AUTHZ-026 a member write leaves the project's version alone (Q-AUTHZ-185)", func(t *testing.T) {
+	t.Run("R-AUTHZ-026 a member write leaves the project's version alone", func(t *testing.T) {
 		if got := f.do(f.admin, "GET", base+"/web", nil); got.Header.Get("ETag") != `"1"` || got.JSON(t)["members"] != float64(2) {
 			t.Errorf("ETag %s, members %v", got.Header.Get("ETag"), got.JSON(t)["members"])
 		}
@@ -97,29 +97,29 @@ func TestR_AUTHZ_026_Members(t *testing.T) {
 	})
 }
 
-// TestQ_AUTHZ_217_TheLastOwner: the last membership with the role owner, a group among them, is removed or demoted
+// TestR_AUTHZ_026_TheLastOwner: the last membership with the role owner, a group among them, is removed or demoted
 // only by a holder of projects:write (409 last_owner otherwise); two Owners who remove each other at once run one
 // after the other under the project's lock: one removal commits, and the second request is refused as what its caller
 // is when it is decided (409 last_owner, or the 404 of a non-member once its own removal is in force).
-func TestQ_AUTHZ_217_TheLastOwner(t *testing.T) {
+func TestR_AUTHZ_026_TheLastOwner(t *testing.T) {
 	f := newFixture(t)
 	f.create("web")
 	wantStatus(t, f.member("web", "group:web-leads", "owner"), 201, "")
 	epoch := fmt.Sprint(f.epoch())
-	t.Run("Q-AUTHZ-217 the Owner group's member cannot remove or demote the only Owner", func(t *testing.T) {
+	t.Run("R-AUTHZ-026 the Owner group's member cannot remove or demote the only Owner", func(t *testing.T) {
 		wantStatus(t, f.do(f.alice, "DELETE", base+"/web/members/group:web-leads", nil, authz.HeaderMinEpoch, epoch), 409, "last_owner")
 		wantStatus(t, f.do(f.alice, "PUT", base+"/web/members/group:web-leads", map[string]any{"role": "maintainer"}, authz.HeaderMinEpoch, epoch), 409, "last_owner")
 		if f.events("authz.project.member_removed")+f.events("authz.project.member_changed") != 0 {
 			t.Error("a refused write recorded an event")
 		}
 	})
-	t.Run("Q-AUTHZ-217 with a second Owner it can", func(t *testing.T) {
+	t.Run("R-AUTHZ-026 with a second Owner it can", func(t *testing.T) {
 		r := f.do(f.alice, "PUT", base+"/web/members/user:bob", map[string]any{"role": "owner"}, authz.HeaderMinEpoch, epoch)
 		wantStatus(t, r, 201, "")
 		wantStatus(t, f.do(f.alice, "PUT", base+"/web/members/group:web-leads", map[string]any{"role": "developer"}, authz.HeaderMinEpoch, fmt.Sprint(r.Epoch())), 200, "")
 		wantStatus(t, f.member("web", "group:web-leads", "owner"), 200, "")
 	})
-	t.Run("Q-AUTHZ-217 two Owners who remove each other at once: one removal commits, the other is refused as what its caller then is", func(t *testing.T) {
+	t.Run("R-AUTHZ-026 two Owners who remove each other at once: one removal commits, the other is refused as what its caller then is", func(t *testing.T) {
 		// The spec (Q-AUTHZ-217, R-AUTHZ-026): the loser answers 409 last_owner while the index its request is decided on
 		// still holds its role, and the 404 of a non-member once the winner's removal of its membership is in force there.
 		// Either way exactly one removal commits and the winner stays the only Owner.
@@ -172,7 +172,7 @@ func TestQ_AUTHZ_217_TheLastOwner(t *testing.T) {
 			}
 		}
 	})
-	t.Run("Q-AUTHZ-217 an administrator of quader removes the last Owner and leaves the project without one", func(t *testing.T) {
+	t.Run("R-AUTHZ-026 an administrator of quader removes the last Owner and leaves the project without one", func(t *testing.T) {
 		f.e.Exec("DELETE FROM project_member WHERE project_id = (SELECT id FROM project WHERE key = 'web')")
 		wantStatus(t, f.member("web", "user:alice", "owner"), 201, "")
 		wantStatus(t, f.do(f.admin, "DELETE", base+"/web/members/user:alice", nil), 204, "")

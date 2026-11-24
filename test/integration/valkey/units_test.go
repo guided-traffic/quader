@@ -63,11 +63,11 @@ func TestR_LIM_017_TheTakeLoadsItsScriptAgainAfterTheServerLostIt(t *testing.T) 
 	}
 }
 
-// TestQ_LIM_110_AGiveBackTakesBackWhatATakeCountedAndAPeekAddsNothing: the script of the take, with the least-privilege ACL of the
+// TestR_LIM_017_AGiveBackTakesBackWhatATakeCountedAndAPeekAddsNothing: the script of the take, with the least-privilege ACL of the
 // stack, checks a window that is only peeked without adding to it, and the give-back takes an admitted take's units back from its
 // window, never below 0: step 9a's uncached bytes and an upstream request a parallel lease refused (R-LIM-022), an endpoint's class
 // after stage 7 refused (R-EP-015). Milliseconds.
-func TestQ_LIM_110_AGiveBackTakesBackWhatATakeCountedAndAPeekAddsNothing(t *testing.T) {
+func TestR_LIM_017_AGiveBackTakesBackWhatATakeCountedAndAPeekAddsNothing(t *testing.T) {
 	c := newClient(t, stackConfig(t, 2*time.Second))
 	waitAvailable(t, c)
 	counters := cluster.NewLimitCounters(c.Valkey)

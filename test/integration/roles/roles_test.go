@@ -364,10 +364,10 @@ func TestR_EP_010_PackagesIgnoresASessionCookie(t *testing.T) {
 	}
 }
 
-// TestQ_ARCH_294_ApiExplainsAVirtualRepositoryWithoutContactingTheUpstream: the explanation (R-REPO-019) on api reads the
+// TestR_ARCH_001_ApiExplainsAVirtualRepositoryWithoutContactingTheUpstream: the explanation (R-REPO-019) on api reads the
 // remote member's state through the read-only view: a miss before packages filled the cache, a hit after, and the upstream
 // sees only the one request packages made.
-func TestQ_ARCH_294_ApiExplainsAVirtualRepositoryWithoutContactingTheUpstream(t *testing.T) {
+func TestR_ARCH_001_ApiExplainsAVirtualRepositoryWithoutContactingTheUpstream(t *testing.T) {
 	in := newInstallation(t)
 	api, packages := in.start("api"), in.start("packages")
 	explain := func() map[string]string {
@@ -442,10 +442,10 @@ func (in *installation) signIn(r *testenv.Replica) (cookies, csrf string) {
 	return sess + "; " + session.CookieCSRF + "=" + token, token
 }
 
-// TestQ_UI_106_ContentRoutesAreOfTheApiFamily: the UI's content routes (R-API-025) are served by the roles of the api family
+// TestR_API_025_ContentRoutesAreOfTheApiFamily: the UI's content routes (R-API-025) are served by the roles of the api family
 // from the files service over the serve-check host of Q-ARCH-301, for the session only, and are an unknown path on packages,
 // which serves /files/ for tokens (R-ARCH-005).
-func TestQ_UI_106_ContentRoutesAreOfTheApiFamily(t *testing.T) {
+func TestR_API_025_ContentRoutesAreOfTheApiFamily(t *testing.T) {
 	in := newInstallation(t)
 	api, packages, web := in.start("api"), in.start("packages"), in.start("web")
 	cookie, csrf := in.signIn(api)
@@ -488,10 +488,10 @@ func TestQ_UI_106_ContentRoutesAreOfTheApiFamily(t *testing.T) {
 	}
 }
 
-// TestQ_OPS_165_FetchShareCountsTheReplicasThatFill: the proxy's fetch share divides by the live replicas that fill client
+// TestR_REPO_040_FetchShareCountsTheReplicasThatFill: the proxy's fetch share divides by the live replicas that fill client
 // misses, whatever their role and pool (R-REPO-040, Q-ARCH-297): a second packages replica and a web replica raise it, an api
 // replica does not.
-func TestQ_OPS_165_FetchShareCountsTheReplicasThatFill(t *testing.T) {
+func TestR_REPO_040_FetchShareCountsTheReplicasThatFill(t *testing.T) {
 	in := newInstallation(t)
 	quick := []string{"QUADER_SYSTEM_HEARTBEAT_INTERVAL=1s", "QUADER_SYSTEM_HEARTBEAT_STALE_AFTER=5s"}
 	start := func(role, pool string) *testenv.Replica {

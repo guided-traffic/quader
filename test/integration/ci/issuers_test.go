@@ -404,7 +404,7 @@ func TestR_CI_005_AnIssuerIsSelectedByTheExactIssClaim(t *testing.T) {
 	}
 }
 
-func TestQ_CI_26_AProjectOwnerListsTheIssuersReadOnly(t *testing.T) {
+func TestR_CI_019_AProjectOwnerListsTheIssuersReadOnly(t *testing.T) {
 	d := startDouble(t, oidcstub.Config{})
 	e := newEnv(t, options{valkey: true})
 	a := e.web("web-a")

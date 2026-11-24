@@ -139,7 +139,7 @@ func TestR_CI_020_TheIssuanceRecordsAndTheBulkRevoke(t *testing.T) {
 
 // Q-CI-26: a project Owner lists the records of tokens whose mappings include one of its project's, and
 // sees its project's mappings only; an Owner of another project sees none.
-func TestQ_CI_26_AProjectOwnerListsTheTokensOfItsMappings(t *testing.T) {
+func TestR_CI_019_AProjectOwnerListsTheTokensOfItsMappings(t *testing.T) {
 	e := newCIEnv(t, false, "acme-read")
 	sys := e.maps["acme-read"]
 	carol := e.stack.User("carol")

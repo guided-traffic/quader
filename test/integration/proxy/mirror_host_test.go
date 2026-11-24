@@ -125,7 +125,7 @@ func TestR_REPO_057_AFillOfTheMirrorWritesThePopulateEventWithTheSystemAsActorAn
 	pass := mirror.Pass{JobID: "job-7", Ceiling: 2}
 	ctx := context.Background()
 
-	t.Run("R-REPO-057 Q-REPO-145 a fill stores the artifact and the populate event names the system and the reason mirror", func(t *testing.T) {
+	t.Run("R-REPO-057 a fill stores the artifact and the populate event names the system and the reason mirror", func(t *testing.T) {
 		res, err := mh.Fill(ctx, rem.Repo, pass, discover.Item{Path: "pkg/a/-/a-1.tgz", Version: "1"})
 		if err != nil || res.Present || res.Bytes != int64(len("tarball-a")) {
 			t.Fatalf("%+v %v", res, err)

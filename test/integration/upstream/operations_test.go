@@ -73,7 +73,7 @@ func TestR_REPO_073_TheOperationsOfTheWellKnownRepositories(t *testing.T) {
 		}
 		wantStatus(t, f.do(f.admin, "GET", items+"/nope", nil), 404, "repository_not_found")
 	})
-	t.Run("Q-AUTHZ-303 Q-API-362 the auditor reads and is refused the writes; a caller without the capability gets 403", func(t *testing.T) {
+	t.Run("R-AUTHZ-041 the auditor reads and is refused the writes; a caller without the capability gets 403", func(t *testing.T) {
 		wantStatus(t, f.do(f.auditor, "GET", items, nil), 200, "")
 		wantStatus(t, f.do(f.auditor, "PUT", items+"/npmjs/state", map[string]any{"state": "on"}), 403, "")
 		wantStatus(t, f.do(f.alice, "GET", items, nil), 403, "")
@@ -112,7 +112,7 @@ func TestR_REPO_073_TheOperationsOfTheWellKnownRepositories(t *testing.T) {
 		wantStatus(t, f.do(f.admin, "PUT", items+"/ubuntu-ports/state", map[string]any{"state": "on"}), 409, "upstream_retired")
 		wantStatus(t, f.do(f.admin, "PUT", items+"/scanner-trivy/state", map[string]any{"state": "on"}), 409, "managed_by_product")
 	})
-	t.Run("Q-API-364 the member picker's read answers an Owner the state and the level, and nothing else", func(t *testing.T) {
+	t.Run("R-API-083 the member picker's read answers an Owner the state and the level, and nothing else", func(t *testing.T) {
 		const picker = "/api/v1/formats/%s/upstream-repositories"
 		wantStatus(t, f.do(stack.Person{}, "GET", fmt.Sprintf(picker, "npm"), nil), 401, "")
 		wantStatus(t, f.do(dave, "GET", fmt.Sprintf(picker, "npm"), nil), 403, "")
@@ -133,7 +133,7 @@ func TestR_REPO_073_TheOperationsOfTheWellKnownRepositories(t *testing.T) {
 			t.Errorf("R-REPO-070 neither scanner-trivy nor the retired ubuntu-ports is a member to choose: %v", keys)
 		}
 	})
-	t.Run("Q-REPO-384 Switch all on switches on what is off and not retired, internal, and leaves the active ones' levels", func(t *testing.T) {
+	t.Run("R-REPO-068 Switch all on switches on what is off and not retired, internal, and leaves the active ones' levels", func(t *testing.T) {
 		// quay is lowered to private and switched on: an active repository's level is an administrator's, which Switch all on keeps.
 		wantStatus(t, f.do(f.admin, "PUT", items+"/quay/visibility", map[string]any{"level": "private"}), 200, "")
 		wantStatus(t, f.do(f.admin, "PUT", items+"/quay/state", map[string]any{"state": "on"}), 200, "")

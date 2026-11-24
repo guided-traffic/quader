@@ -7,11 +7,11 @@ import (
 	"testing"
 )
 
-// TestQ_AUTHZ_172_AuditorFindsNuGetPackages: the search of a NuGet repository counts
+// TestR_AUTHZ_011_AuditorFindsNuGetPackages: the search of a NuGet repository counts
 // and lists every package for the auditor, directly and through a group bound in the
 // configuration, and nothing for a token without the capability (R-AUTHZ-011,
 // R-AUTHZ-016, Q-AUTHZ-172).
-func TestQ_AUTHZ_172_AuditorFindsNuGetPackages(t *testing.T) {
+func TestR_AUTHZ_011_AuditorFindsNuGetPackages(t *testing.T) {
 	e := newAuditorEnv(t)
 	search := func(token string) (int, string) {
 		t.Helper()
@@ -19,7 +19,7 @@ func TestQ_AUTHZ_172_AuditorFindsNuGetPackages(t *testing.T) {
 		return a.Status, string(a.Body)
 	}
 	for _, who := range []struct{ name, token string }{{"a user bound to auditor", e.tokAud}, {"a member of a group bound through authz.role_bindings", e.tokMem}} {
-		t.Run("Q-AUTHZ-172 "+who.name+" finds the package", func(t *testing.T) {
+		t.Run("R-AUTHZ-011 "+who.name+" finds the package", func(t *testing.T) {
 			if s, b := search(who.token); s != 200 || !strings.Contains(b, `"Acme.Widgets"`) || !strings.Contains(b, `"totalHits":1`) {
 				t.Fatalf("search: %d %s", s, b)
 			}

@@ -288,7 +288,7 @@ func TestReplicaRegistryRoles(t *testing.T) {
 		return fill.Get()
 	}
 
-	t.Run("R-OPS-003 Q-OPS-161 every role value of the cut is stored as given, the pool next to it", func(t *testing.T) {
+	t.Run("R-OPS-003 every role value of the cut is stored as given, the pool next to it", func(t *testing.T) {
 		register("roles-api", "api", "")
 		register("roles-pk", "packages", "")
 		pooled = register("roles-pk-ep", "packages", "ep-customers")
@@ -307,14 +307,14 @@ func TestReplicaRegistryRoles(t *testing.T) {
 		}
 	})
 
-	t.Run("R-REPO-040 Q-ARCH-297 the fetch share counts packages, web and all with their pools, never api or worker", func(t *testing.T) {
+	t.Run("R-REPO-040 the fetch share counts packages, web and all with their pools, never api or worker", func(t *testing.T) {
 		// web (host), packages, packages of a pool and all: four. api, worker and a worker pool hold no share.
 		if n := count(); n != 4 {
 			t.Fatalf("n = %d, want 4", n)
 		}
 	})
 
-	t.Run("R-REPO-040 Q-ARCH-297 a lost replica leaves the count and a new one joins it", func(t *testing.T) {
+	t.Run("R-REPO-040 a lost replica leaves the count and a new one joins it", func(t *testing.T) {
 		pooled.StopHeartbeat() // as a killed process: the row stays and ages
 		e.exec(`UPDATE replica SET heartbeat_at = now() - interval '1 hour' WHERE name = 'roles-pk-ep'`)
 		if n := count(); n != 3 {

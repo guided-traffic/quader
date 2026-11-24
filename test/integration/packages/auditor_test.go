@@ -45,14 +45,14 @@ func newAuditorEnv(t *testing.T) *auditorEnv {
 	return e
 }
 
-// TestQ_AUTHZ_172_AuditorReadsNpmMetadata: the auditor, directly and through a
+// TestR_AUTHZ_011_AuditorReadsNpmMetadata: the auditor, directly and through a
 // group bound in the configuration, lists the repositories, reads the npm package
 // document and the configuration, and downloads, publishes, tags, deletes and
 // changes nothing (R-AUTHZ-011, Q-AUTHZ-172).
-func TestQ_AUTHZ_172_AuditorReadsNpmMetadata(t *testing.T) {
+func TestR_AUTHZ_011_AuditorReadsNpmMetadata(t *testing.T) {
 	e := newAuditorEnv(t)
 	for _, who := range []struct{ name, token string }{{"a user bound to auditor", e.tokAud}, {"a member of a group bound through authz.role_bindings", e.tokMem}} {
-		t.Run("Q-AUTHZ-172 "+who.name+" reads the metadata", func(t *testing.T) {
+		t.Run("R-AUTHZ-011 "+who.name+" reads the metadata", func(t *testing.T) {
 			repos := e.get(who.token, "/api/v1/repositories")
 			if repos.Status != 200 || !strings.Contains(string(repos.Body), `"npm-local"`) || !strings.Contains(string(repos.Body), `"generic-local"`) {
 				t.Fatalf("repositories: %d %s", repos.Status, repos.Body)
@@ -87,7 +87,7 @@ func TestQ_AUTHZ_172_AuditorReadsNpmMetadata(t *testing.T) {
 				}
 			}
 		})
-		t.Run("Q-AUTHZ-172 "+who.name+" downloads, publishes, tags and deletes nothing", func(t *testing.T) {
+		t.Run("R-AUTHZ-011 "+who.name+" downloads, publishes, tags and deletes nothing", func(t *testing.T) {
 			for _, p := range []string{"/api/npm/it/npm-local/left-pad/-/left-pad-1.0.0.tgz", "/files/it/generic-local/a/b.bin", "/files/it/npm-local/left-pad/-/left-pad-1.0.0.tgz"} {
 				if a := e.get(who.token, p); a.Status != 404 {
 					t.Errorf("GET %s: %d %s", p, a.Status, a.Body)

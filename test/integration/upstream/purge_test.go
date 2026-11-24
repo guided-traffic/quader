@@ -20,12 +20,12 @@ func TestR_REPO_067_ThePurgeOfARetiredRepository(t *testing.T) {
 	                   VALUES (decode(repeat('ab', 32), 'hex'), decode(repeat('cd', 32), 'hex'), 'registry') RETURNING id`)
 	f.e.Exec(`INSERT INTO signature_attachments (repo_id, signature_id, location, source) VALUES ($1, $2, 'x#/signatures/0', 'document')`, id, sig)
 	f.listVirtual("web", "galaxy-all", "ansible", "galaxy")
-	t.Run("Q-REPO-376 a repository that is not retired is not purged", func(t *testing.T) {
+	t.Run("a repository that is not retired is not purged", func(t *testing.T) {
 		if err := f.e.TryExec("SELECT upstream_repository_purge($1)", id); err == nil || !strings.Contains(err.Error(), "AI010") {
 			t.Fatalf("err = %v", err)
 		}
 	})
-	t.Run("Q-REPO-376 the purge removes the content and keeps the rows and the member that names it", func(t *testing.T) {
+	t.Run("the purge removes the content and keeps the rows and the member that names it", func(t *testing.T) {
 		f.e.Exec("UPDATE upstream_repository SET retired_at = now() WHERE repository_id = $1", id)
 		f.e.Exec("SELECT upstream_repository_purge($1)", id)
 		if f.e.Number("SELECT count(*) FROM remote_url_map WHERE repo_id = $1", id) != 0 {

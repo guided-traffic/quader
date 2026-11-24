@@ -15,7 +15,7 @@ func TestContentRoutes(t *testing.T) {
 	const content = "/api/v1/projects/it/repositories/generic-local/content/"
 	session := []string{sessionMarker, "1"}
 
-	t.Run("R-API-025 Q-UI-106 an upload through the content route is the file /files/ serves, on another replica too", func(t *testing.T) {
+	t.Run("R-API-025 an upload through the content route is the file /files/ serves, on another replica too", func(t *testing.T) {
 		res := a.do("ci", "PUT", content+"ui/a%20b.txt", strings.NewReader("hello"), session...)
 		if res.status != 201 {
 			t.Fatalf("upload: %d %s", res.status, res.body)
@@ -46,7 +46,7 @@ func TestContentRoutes(t *testing.T) {
 		}
 	})
 
-	t.Run("R-API-025 Q-UI-106 a token is answered like an unknown path, and so is a request without a credential", func(t *testing.T) {
+	t.Run("R-API-025 a token is answered like an unknown path, and so is a request without a credential", func(t *testing.T) {
 		for _, method := range []string{"GET", "HEAD"} {
 			if res := a.do("ci", method, content+"ui/a%20b.txt", nil); res.status != 404 {
 				t.Errorf("%s with a token: %d %s", method, res.status, res.body)
@@ -86,7 +86,7 @@ func TestContentRoutes(t *testing.T) {
 		}
 	})
 
-	t.Run("R-API-025 Q-UI-106 an upload above ui.deploy.max_upload_bytes answers 413 and stores nothing", func(t *testing.T) {
+	t.Run("R-API-025 an upload above ui.deploy.max_upload_bytes answers 413 and stores nothing", func(t *testing.T) {
 		big := strings.Repeat("x", contentLimit+1)
 		res := a.do("ci", "PUT", content+"ui/big.bin", strings.NewReader(big), session...)
 		if res.status != 413 {

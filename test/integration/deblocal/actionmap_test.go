@@ -115,7 +115,7 @@ func TestR_AUTHZ_007_DebActionMap(t *testing.T) {
 			t.Errorf("without read: %d", r.Status)
 		}
 	})
-	t.Run("R-AUTHZ-007 a read narrowed to packages.include reads the files it names and no index (Q-DEB-20)", func(t *testing.T) {
+	t.Run("R-AUTHZ-007 a read narrowed to packages.include reads the files it names and no index", func(t *testing.T) {
 		if r := e.get("dists/stable/InRelease", a.acmeReader); r.Status != 404 {
 			t.Errorf("InRelease: %d, want 404", r.Status)
 		}

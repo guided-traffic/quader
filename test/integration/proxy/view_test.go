@@ -44,7 +44,7 @@ func TestViewReadsWhatTheEngineStored(t *testing.T) {
 	ctx := context.Background()
 	rq := func(path string, kind proxy.Kind) proxy.Request { return r.request(rem, path, kind) }
 
-	t.Run("Q-ARCH-294 before any fill the view finds nothing and asks nobody", func(t *testing.T) {
+	t.Run("R-ARCH-001 before any fill the view finds nothing and asks nobody", func(t *testing.T) {
 		if _, ok, err := view.Cached(ctx, rq("pkg/there/-/there-1.tgz", proxy.Artifact)); err != nil || ok {
 			t.Fatalf("Cached = %v, %v", ok, err)
 		}
@@ -56,7 +56,7 @@ func TestViewReadsWhatTheEngineStored(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-ARCH-294 after the engine filled, the view reads the artifact and the entry, like the engine", func(t *testing.T) {
+	t.Run("R-ARCH-001 after the engine filled, the view reads the artifact and the entry, like the engine", func(t *testing.T) {
 		if s := r.metadata(rem, "pkg/there"); s.status != 200 {
 			t.Fatalf("metadata %d", s.status)
 		}
@@ -83,7 +83,7 @@ func TestViewReadsWhatTheEngineStored(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-ARCH-294 the view sees the circuit the engine opened and the offline mode of the settings", func(t *testing.T) {
+	t.Run("R-ARCH-001 the view sees the circuit the engine opened and the offline mode of the settings", func(t *testing.T) {
 		_ = r.metadata(rem, "pkg/busy")
 		_ = r.metadata(rem, "pkg/busy")
 		waitFor(t, "the circuit to open", 2*time.Second, func() bool { return r.metric("quader_remote_upstream_up", "repo", "view") == 0 })

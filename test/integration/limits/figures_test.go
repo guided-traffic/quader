@@ -206,7 +206,7 @@ func TestR_LIM_025_RefusedRequestsBlockTheBudgetKeyAndNothingElse(t *testing.T) 
 	e.rule(t, rFiles, every("anonymous"), map[string]any{"refusedPerHour": 3})
 	missing := "/files/it/" + rFiles + "/missing.bin"
 
-	t.Run("Q-LIM-7 a reader's misses are not refused requests", func(t *testing.T) {
+	t.Run("R-LIM-008 a reader's misses are not refused requests", func(t *testing.T) {
 		for range 5 {
 			if a := e.st.Do(e.r, "GET", missing, e.reader, nil); a.Status != 404 {
 				t.Fatalf("a miss: %d", a.Status)
@@ -341,7 +341,7 @@ func TestR_LIM_017_ARefusedRequestFillsNoRequestWindowAndAHammeringCallerIsNotBl
 		}
 	})
 
-	t.Run("R-LIM-008 R-LIM-025 Q-LIM-58 a caller that keeps sending gets its figure's rate, counts no refused request and is not blocked", func(t *testing.T) {
+	t.Run("R-LIM-008 R-LIM-025 a caller that keeps sending gets its figure's rate, counts no refused request and is not blocked", func(t *testing.T) {
 		// 3 s of 20 requests a second at a figure of one a second and refusedPerHour 5: under the taken-back rule the ~55 refusals
 		// would have blocked the token within the first second.
 		admitted, limited := 0, 0

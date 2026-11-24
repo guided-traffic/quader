@@ -148,7 +148,7 @@ func TestR_STOR_081_ASessionOnAnEncryptedConnectionInPostgres(t *testing.T) {
 			t.Error("the copy row does not name the storage key and the keyed name")
 		}
 	})
-	t.Run("R-STOR-081 Q-STOR-318 the claim refuses a session whose counter would pass the bound, and the request answers 409 session_exhausted", func(t *testing.T) {
+	t.Run("R-STOR-081 the claim refuses a session whose counter would pass the bound, and the request answers 409 session_exhausted", func(t *testing.T) {
 		sess, err := svc.Start(ctx, w.p.repo, w.sc)
 		if err != nil {
 			t.Fatal(err)

@@ -39,7 +39,7 @@ func TestR_VULN_011_PipelineAnswersLikeTheStatementsOneByOne(t *testing.T) {
 	t.Cleanup(func() { _ = tx.Rollback(ctx) })
 	alone := q.New(tx)
 
-	t.Run("R-VULN-011 Q-VULN-82 several statements, rows and none, in the order of the steps", func(t *testing.T) {
+	t.Run("R-VULN-011 several statements, rows and none, in the order of the steps", func(t *testing.T) {
 		var (
 			a, b, none []q.VulnAffectedForNamesRow
 			complete   bool
@@ -78,13 +78,13 @@ func TestR_VULN_011_PipelineAnswersLikeTheStatementsOneByOne(t *testing.T) {
 		}
 	})
 
-	t.Run("R-VULN-011 Q-VULN-82 no step is no round trip", func(t *testing.T) {
+	t.Run("R-VULN-011 no step is no round trip", func(t *testing.T) {
 		if err := q.Pipeline(ctx, tx); err != nil {
 			t.Fatal(err)
 		}
 	})
 
-	t.Run("R-VULN-011 Q-VULN-82 a step that issues another statement the second time is refused", func(t *testing.T) {
+	t.Run("R-VULN-011 a step that issues another statement the second time is refused", func(t *testing.T) {
 		calls := 0
 		err := q.Pipeline(ctx, tx, func(p *q.Queries) error {
 			calls++
@@ -100,7 +100,7 @@ func TestR_VULN_011_PipelineAnswersLikeTheStatementsOneByOne(t *testing.T) {
 		}
 	})
 
-	t.Run("R-VULN-011 Q-VULN-82 the statements that take the item answer like the ones that take the name", func(t *testing.T) {
+	t.Run("R-VULN-011 the statements that take the item answer like the ones that take the name", func(t *testing.T) {
 		e.publish("npm-vendor", "pipe-a", "1.0.0") // the version has a finding, and the first publish claims the name
 		item := e.st.Number(`SELECT pv.lead_item_id FROM package_versions pv JOIN packages p ON p.id = pv.package_id JOIN repositories r ON r.id = p.repo_id
 			WHERE r.key = 'npm-vendor' AND p.name = 'pipe-a'`)
@@ -149,7 +149,7 @@ func TestR_VULN_011_PipelineRefusesOtherArgumentsAndReportsAFailedStatement(t *t
 	}
 	t.Cleanup(func() { _ = conn.Close(ctx) })
 
-	t.Run("R-VULN-011 Q-VULN-82 other arguments the second time", func(t *testing.T) {
+	t.Run("R-VULN-011 other arguments the second time", func(t *testing.T) {
 		tx, err := conn.Begin(ctx)
 		if err != nil {
 			t.Fatal(err)
@@ -176,7 +176,7 @@ func TestR_VULN_011_PipelineRefusesOtherArgumentsAndReportsAFailedStatement(t *t
 		}
 	})
 
-	t.Run("R-VULN-011 Q-VULN-82 a failing statement fails the pipeline and aborts the transaction", func(t *testing.T) {
+	t.Run("R-VULN-011 a failing statement fails the pipeline and aborts the transaction", func(t *testing.T) {
 		tx, err := conn.Begin(ctx)
 		if err != nil {
 			t.Fatal(err)

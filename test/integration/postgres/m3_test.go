@@ -63,7 +63,7 @@ func TestM3Migrations(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-NUGET-12 the migration creates no extension and no trigram index", func(t *testing.T) {
+	t.Run("R-NUGET-010 the migration creates no extension and no trigram index", func(t *testing.T) {
 		if n := scalar[int](t, admin, "SELECT count(*) FROM pg_extension WHERE extname = 'pg_trgm'"); n != 0 {
 			t.Errorf("pg_trgm is installed (%d rows)", n)
 		}

@@ -34,7 +34,7 @@ func TestR_REPO_075_TheSwitchOfClamAVDefinitionUpdates(t *testing.T) {
 		}
 		wantStatus(t, f.do(f.admin, "PUT", items+"/clamav/visibility", map[string]any{"level": "internal"}), 409, "managed_by_product")
 	})
-	t.Run("Q-API-382 only clamav has the switch", func(t *testing.T) {
+	t.Run("R-API-083 only clamav has the switch", func(t *testing.T) {
 		wantStatus(t, f.do(f.admin, "PUT", items+"/scanner-trivy/clients", map[string]any{"enabled": true}), 409, "managed_by_product")
 		wantStatus(t, f.do(f.admin, "PUT", items+"/npmjs/clients", map[string]any{"enabled": true}), 409, "managed_by_product")
 		wantStatus(t, f.do(f.auditor, "PUT", items+"/clamav/clients", map[string]any{"enabled": true}), 403, "")

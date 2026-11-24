@@ -104,7 +104,7 @@ func TestR_REPO_069_TheProductKeepsTheProjectUpstream(t *testing.T) {
 			t.Errorf("a member of another project: %v", err)
 		}
 	})
-	t.Run("R-REPO-071 Q-REPO-379 a Debian virtual repository takes upstream/debian: the preset carries the keys the member check reads", func(t *testing.T) {
+	t.Run("R-REPO-071 a Debian virtual repository takes upstream/debian: the preset carries the keys the member check reads", func(t *testing.T) {
 		f.e.RepoIn("web", "deb-all", "virtual", "deb")
 		r := f.do(f.admin, "PATCH", "/api/v1/projects/web/repositories/deb-all", map[string]any{
 			"deb":     map[string]any{"suites": []string{"stable"}, "components": []string{"main"}, "architectures": []string{"amd64"}},
@@ -115,7 +115,7 @@ func TestR_REPO_069_TheProductKeepsTheProjectUpstream(t *testing.T) {
 			t.Errorf("want the member taken with member_inactive (not switched on), not refused: %s", r.Body)
 		}
 	})
-	t.Run("Q-AUTHZ-301 a caller sees the project through a repository it reads; holders of projects:read see it first (Q-UI-837)", func(t *testing.T) {
+	t.Run("R-AUTHZ-041 a caller sees the project through a repository it reads; holders of projects:read see it first (R-UI-190)", func(t *testing.T) {
 		keys := func(person string) string {
 			r := f.cl.Do(person, "GET", "/api/v1/projects", nil)
 			wantStatus(t, r, 200, "")

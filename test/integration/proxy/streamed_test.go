@@ -12,11 +12,11 @@ import (
 	"github.com/guided-traffic/quader/internal/proxy/proxytest"
 )
 
-// TestQ_REPO_331_TheStreamedFirstAnswerOfAMissIsADownload: the client that leads the fetch of an artifact gets the body while it
+// TestR_STOR_015_TheStreamedFirstAnswerOfAMissIsADownload: the client that leads the fetch of an artifact gets the body while it
 // arrives, not through Serve, which counts the stored answers (R-STOR-015). That answer is a download as much as the later ones: the
 // engine hands the stored item to Request.Streamed once the client has the whole body and the item is stored. A hit and a ranged
 // miss are answered through Serve and do not call it; a HEAD of a miss stores nothing and calls nothing.
-func TestQ_REPO_331_TheStreamedFirstAnswerOfAMissIsADownload(t *testing.T) {
+func TestR_STOR_015_TheStreamedFirstAnswerOfAMissIsADownload(t *testing.T) {
 	e := newEnv(t)
 	up := e.upstream()
 	big := proxytest.Body("big", 256<<10) // beyond the withheld tail: streamed while it is fetched

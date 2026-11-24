@@ -23,7 +23,7 @@ func TestReplicaOfTheHarness(t *testing.T) {
 		}
 		return ""
 	}
-	t.Run("Q-ARCH-582 a web replica drains for no time unless the test sets a delay, and the test's delay wins", func(t *testing.T) {
+	t.Run("a web replica drains for no time unless the test sets a delay, and the test's delay wins", func(t *testing.T) {
 		s := NewStack(t, StackOptions{Name: "drain"})
 		if line := drained(t, s.Start(t, ReplicaOptions{Name: "web-default"})); line != "" {
 			t.Errorf("the harness's replica drained: %s", line)
@@ -36,7 +36,7 @@ func TestReplicaOfTheHarness(t *testing.T) {
 			t.Errorf("a stack whose Env sets 300ms: drain line %q", line)
 		}
 	})
-	t.Run("Q-ARCH-582 a replica whose options name no UI serves the committed placeholder page and publishes no UI file", func(t *testing.T) {
+	t.Run("a replica whose options name no UI serves the committed placeholder page and publishes no UI file", func(t *testing.T) {
 		s := NewStack(t, StackOptions{Name: "uiph"})
 		r := s.Start(t, ReplicaOptions{Name: "web-ui"})
 		a := s.Do(r, "GET", "/ui/", "", nil)

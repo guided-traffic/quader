@@ -192,7 +192,7 @@ func TestR_CUR_004_AVirtualRepositoryWalksPastARefusingMember(t *testing.T) {
 			t.Errorf("the upstream was asked %d times for the tarball, want once (by the delivering member)", n)
 		}
 	})
-	t.Run("R-CUR-004 Q-CUR-8 with only the refusing member the answer is its 403, naming it", func(t *testing.T) {
+	t.Run("R-CUR-004 with only the refusing member the answer is its 403, naming it", func(t *testing.T) {
 		refusal(t, r.get(rep, alone, p.Name+"/-/"+file, r.tokA), refusing, p.Name, v)
 	})
 	t.Run("R-CUR-004 two refusals within a minute write one event and count 2 in the request list", func(t *testing.T) {

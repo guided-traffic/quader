@@ -109,7 +109,7 @@ func TestR_AUTHZ_010_BindingsFromTheConfiguration(t *testing.T) {
 		wantStatus(t, f.cl.Do(me, "DELETE", roleBindings+"/auditor/user%3Acarol", nil, f.current()...), 404, "not_found")
 	})
 
-	t.Run("Q-AUTHZ-171 PUT of a configuration binding answers 200 and leaves it to the configuration", func(t *testing.T) {
+	t.Run("R-AUTHZ-022 PUT of a configuration binding answers 200 and leaves it to the configuration", func(t *testing.T) {
 		r := f.cl.Do(me, "PUT", roleBindings+"/admin/group%3Agh-ops", nil, f.current()...)
 		wantStatus(t, r, 200, "")
 		if r.JSON(t)["source"] != "configuration" {
@@ -141,7 +141,7 @@ func TestR_AUTHZ_010_BindingsFromTheConfiguration(t *testing.T) {
 		wantStatus(t, f.cl.Do(dave.Name, "POST", policies, policyBody("daves-policy", entry("group:team-web", "read")), f.current()...), 201, "")
 	})
 
-	t.Run("Q-AUTHZ-171 a binding the API made is taken over when it is declared", func(t *testing.T) {
+	t.Run("R-AUTHZ-022 a binding the API made is taken over when it is declared", func(t *testing.T) {
 		wantStatus(t, f.cl.Do(me, "PUT", roleBindings+"/auditor/sa%3Aci-bot", nil, f.current()...), 201, "")
 		if err := testenv.DeclareRoleBindings(f.e.Cfg, declared("admin", "group", "gh-ops"), declared("auditor", "user", "bob"),
 			declared("auditor", "service_account", "ci-bot")); err != nil {

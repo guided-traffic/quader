@@ -188,7 +188,7 @@ func TestE1_14_CustomerEndpoint(t *testing.T) {
 				}
 			})
 
-			t.Run("R-EP-013 Q-EP-12 an administrator token bound to customers sees no more than the rules expose", func(t *testing.T) {
+			t.Run("R-EP-013 an administrator token bound to customers sees no more than the rules expose", func(t *testing.T) {
 				for _, r := range e.reps {
 					if a := e.onCustomers(r, file, e.botAdminSAT); a.Status != 200 {
 						t.Fatalf("%s exposed: %d %s", r.name, a.Status, a.Body)

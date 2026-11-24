@@ -103,7 +103,7 @@ func TestTemplateName(t *testing.T) {
 		return n
 	}
 	base := name(steps, "20261123")
-	t.Run("Q-ARCH-581 the same files on the same day name the same template, and the name is the harness's", func(t *testing.T) {
+	t.Run("the same files on the same day name the same template, and the name is the harness's", func(t *testing.T) {
 		if again := name(steps, "20261123"); again != base {
 			t.Fatalf("%s, then %s", base, again)
 		}
@@ -111,7 +111,7 @@ func TestTemplateName(t *testing.T) {
 			t.Fatalf("%s or its build does not match the harness's pattern", base)
 		}
 	})
-	t.Run("Q-ARCH-581 a changed migration, a further step and another day each name another template", func(t *testing.T) {
+	t.Run("a changed migration, a further step and another day each name another template", func(t *testing.T) {
 		changed := fstest.MapFS{"00001_first.sql": steps["00001_first.sql"], "00002_second.sql": {Data: []byte("CREATE TABLE b (id bigint);\n")}}
 		more := fstest.MapFS{
 			"00001_first.sql": steps["00001_first.sql"], "00002_second.sql": steps["00002_second.sql"],
@@ -123,7 +123,7 @@ func TestTemplateName(t *testing.T) {
 			}
 		}
 	})
-	t.Run("Q-ARCH-581 no other database of the stacks' PostgreSQL has a name of the harness's templates, and none is dropped", func(t *testing.T) {
+	t.Run("no other database of the stacks' PostgreSQL has a name of the harness's templates, and none is dropped", func(t *testing.T) {
 		for _, other := range []string{
 			"postgres", "quader", "template0", "template1", "quader_it_0123456789", "quader_ittpl_0123456789",
 			"quader_uploads_tmpl_abc", "quader_ittpl_20261123_0123456789abcdef_copy", "x" + base,

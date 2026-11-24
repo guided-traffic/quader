@@ -88,7 +88,7 @@ func TestR_CI_016_TheLifetimeOfACIToken(t *testing.T) {
 	t.Run("R-CI-016 an ID token with less than ci.token.min_ttl left is subject_token_expires_too_soon", func(t *testing.T) {
 		wantOAuth(t, x.exchange(a, x.mint(oidcstub.MintOptions{Claims: map[string]any{"exp": time.Now().Unix() + 1}})), 400, "invalid_request", "subject_token_expires_too_soon")
 	})
-	t.Run("Q-CI-41 a requested ttl below ci.token.min_ttl is the caller's error, ttl_below_minimum", func(t *testing.T) {
+	t.Run("R-CI-008 a requested ttl below ci.token.min_ttl is the caller's error, ttl_below_minimum", func(t *testing.T) {
 		a := x.exchange(a, x.mint(oidcstub.MintOptions{}), "ttl", "1")
 		wantOAuth(t, a, 400, "invalid_request", "ttl_below_minimum")
 		if !strings.Contains(a.JSON(t)["error_description"].(string), "ci.token.min_ttl") {
