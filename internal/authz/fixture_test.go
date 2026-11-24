@@ -256,6 +256,9 @@ type fakeChanges struct {
 		at    time.Time
 	}
 	polled time.Time
+	// confirming is a poll that runs all the time and finds the epochs unchanged: it confirms the installed index at every
+	// look, as the change-log poll of a replica whose database does not change does (R-AUTHZ-028).
+	confirming bool
 }
 
 func (c *fakeChanges) AddListener(l cluster.Listener) { c.listeners = append(c.listeners, l) }
@@ -275,7 +278,7 @@ func (c *fakeChanges) AreaState(area string) (int64, time.Time) {
 func (c *fakeChanges) FreshWithin(d time.Duration) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return !c.polled.IsZero() && time.Since(c.polled) < d
+	return c.confirming || (!c.polled.IsZero() && time.Since(c.polled) < d)
 }
 
 func (c *fakeChanges) Notify(meta.Tx, string, int, any) error { return nil }
@@ -305,13 +308,17 @@ func testConfig() config.Authz {
 }
 
 // newTestEngine builds an engine over a fixture and installs its index without
-// the background loops.
+// the background loops. Its change-log poll confirms the index at every look: the
+// fixture does not change behind the index, so a test that runs longer than
+// max_staleness (a sweep over many subjects under the race detector on a loaded
+// runner) is decided, not refused authz_stale. The staleness bound itself is
+// tested with startedEngine, whose poll the test drives.
 func newTestEngine(t testing.TB, f *fixture, mod func(*Options)) *Engine {
 	t.Helper()
 	src := &fakeSource{}
 	src.set(f.s)
 	o := Options{
-		Source: src, Changes: &fakeChanges{}, Config: testConfig(), RetryBudget: time.Second, Formats: testRegistry(),
+		Source: src, Changes: &fakeChanges{confirming: true}, Config: testConfig(), RetryBudget: time.Second, Formats: testRegistry(),
 	}
 	if mod != nil {
 		mod(&o)

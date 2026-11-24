@@ -376,7 +376,7 @@ func manyProjects(t testing.TB, projects int) (*Engine, Subject, Coordinate) {
 		}
 	}
 	f.member("project-"+last.Project, idDave, "developer")
-	e := newTestEngine(t, f, func(o *Options) { o.Config.Cache.MaxStaleness = time.Hour })
+	e := newTestEngine(t, f, nil)
 	return e, userSub(idDave, "dave", groups...), Coordinate{Repository: last, Package: "p", Kind: KindWrite, Actions: []Action{Deploy}}
 }
 

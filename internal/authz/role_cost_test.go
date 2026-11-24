@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/guided-traffic/quader/internal/qname"
 )
@@ -36,7 +35,7 @@ func membershipsFixture(t testing.TB, n int) (*Engine, Subject, []qname.Repo) {
 			f.member(id, idDave, "reader")
 		}
 	}
-	e := newTestEngine(t, f, func(o *Options) { o.Config.Cache.MaxStaleness = time.Hour })
+	e := newTestEngine(t, f, nil)
 	keys[0], keys[projects-1] = keys[projects-1], keys[0]
 	return e, userSub(idDave, "dave", "group-a", "group-b"), keys
 }

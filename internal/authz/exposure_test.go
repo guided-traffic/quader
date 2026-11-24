@@ -485,13 +485,7 @@ func ceilingRules(t testing.TB, include func(i int) (string, string)) (*Engine, 
 		first, second := include(i)
 		f.exposure(ruleDef{endpoint: "customers", name: fmt.Sprintf("r%04d", i), repo: "generic-local", dims: paths(first, second)})
 	}
-	// The test measures the decision, not the staleness bound: building 1,000
-	// rules and 2,000 decisions can outlast the 10 s of testConfig under the race
-	// detector on a loaded machine, and the engine then answers deny.stale.
-	e := newTestEngine(t, f, func(o *Options) {
-		o.Ceiling = exposureCeiling()
-		o.Config.Cache.MaxStaleness = time.Hour
-	})
+	e := newTestEngine(t, f, func(o *Options) { o.Ceiling = exposureCeiling() })
 	return e, onEP(botSub, "customers"), read("generic-local", "", "nowhere/x/y.bin")
 }
 
