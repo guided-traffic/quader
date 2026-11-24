@@ -250,7 +250,7 @@ its bound offers no run, the trend's axis numbers at 390 px, the layout check `c
 a walk in mirror mode for OCI and Debian). **The Go tests' names landed at 02:30** (six commits: 736 names, 157 functions,
 carry a requirement's number or the behaviour alone, no R-ID lost, R-API-083 newly named and so counted by the
 next record; `TestGoTestNamesCarryARequirementNeverADecision` holds it, about 1 to 2 s of the unit job; three
-tests that docs still name no longer exist under any name, left as found). **R2b landed at 03:00** (one commit, migration 00115). **W16 landed at 03:10** (six commits; sixteen entries of section 8 closed or read, the vulnerability scan's bound decided). **R3 landed at 03:30** (one commit). **W17 at 04:58:** its help text landed; the index of the versions' order waits as the branch
+tests that docs still name no longer exist under any name, left as found). **R2b landed at 03:00** (one commit, migration 00115). **W16 landed at 03:10** (six commits; sixteen entries of section 8 closed or read, the vulnerability scan's bound decided). **R3 landed at 03:30** (one commit). **R5b landed at 05:13** (one commit). Started at 05:00: **the repair of `upgrade-release`** (section 8). **W17 at 04:58:** its help text landed; the index of the versions' order waits as the branch
 `w17-version-sort-key` for the owner's word on a fresh database of his installation (section 12 E). **The screens' third round landed at 04:27** (two commits; Q-UI-1060 to Q-UI-1062: a mirror without its bound disables its run and says why, the trend's axis readable at 390 px, the layout check `cramped` with five screens repaired, a walk of a stored OCI and Debian mirror; left: a list row a real mirror pass filled). `vuln-perf` dispatched at 03:53 (HA and Performance 45315614490), beside five runs of Test and Release still
 going (the neighbours' record of W14 names them); the place W18 freed stays empty: every open entry of sections 8
 and 12 is in a running package, waits for a recurrence, or needs the owner (an account, his cluster). **W18 landed at 03:52** (six commits: Q-VULN-268, a pushed image no longer waits for the schedule; the token API's wiring test; the realm's refusal named; a Sentinel failover during a start measured). Started at 03:36 in its place: **T-24 · R5b**, the tab Upstream and the settings of the rules. Started at 03:12 in its place: **W18**, small leftovers (the scan's bound in the specification, the token API's upper-case wiring, a stale configuration text, the render `scanners-none`, section 12 C's Sentinel entry, H-842). Started at 03:02 in its place: **W17**, the download limits' leftovers (section 12, part B) and the scale of long lists (H-829, H-1683). Started at 02:32 in its place: **W16**, the open entries of section 8,
@@ -327,9 +327,8 @@ starts from it and from his word how the work goes on, not from the order of the
   WebKit were taken back"): reverted today, to come back with markings that hold on the runner.
 - **The repair of the evidence record's publish**: landed at 22:51 (Q-ARCH-1040); the release v0.115.0 made
   the branch `coverage` with its four files and the badge shows 82.1% (closed in section 8).
-- **One single set of the nightly workflow, dispatched alone in a pipeline window with no code push beside
-  it:** `upgrade-release` (`drain-roles` ran alone at 22:24 and closed its entry; `vuln-perf` ran at 03:53 and
-  closed F-121); the two
+- **The nightly sets:** `drain-roles` ran alone at 22:24 and closed its entry; `vuln-perf` ran at 03:53 and closed
+  F-121; `upgrade-release` ran at 04:21 and failed before it upgraded (section 8, a builder on it since 05:00); the two
   changed nightly sets `npm-ha` and `nuget-ha` have not run since their change either.
 - **What W4 did not do**: landed at 23:12 with the integration tests' environment and ports and the mirror's
   back-off bound (section 8, Closed); F-126 stays open with a new reading.
@@ -591,6 +590,13 @@ order is what a user or an operator meets first. The state is kept here.
 
 ### Tests and tools
 
+- **`upgrade-release` fails before it upgrades (2026-11-24; HA and Performance 45318634839, job 138192925847, the set
+  dispatched alone at 04:21, read at 05:00).** `helm install` of v0.119.0 ended "quader-api not ready … Progress
+  deadline exceeded", and the return to the dev release the same way. The api pods stopped at the object store's
+  start-up check: `quader-blobs/quader` still held the `_connection` marker of the installation before it (R-STOR-051
+  refuses a location of another installation, rightly). The set resets Valkey between the installations and not the
+  object store. Given to a builder at 05:00 (the test's environment, never the check).
+
 - **`e2e (bastion)` was red once on a runner that could not reach github.com (2026-11-24; Test and Release
   45302495247, job 138140910820, read at 03:23):** `deploy/dev/charts.sh` timed out seven times connecting to
   github.com:443 (20 s each) fetching `haproxy-ingress-0.16.3.tgz`, before anything of Quader ran. An outage of the
@@ -649,6 +655,16 @@ records the recorder that tells such a stall apart).
 - A disk watcher in the jobs, so that a lost runner can be read, was proposed and not built.
 
 ### Product
+
+- **The tab Upstream's versions stack at 1,024 px (seen by the development agent on 2026-11-24 at R5b's renders,
+  `admin/repository-npm-remote-upstream-lookup-dark-1024.png`):** a package's version list falls into stacked blocks of
+  five lines each at 1,024 px, so 24 versions fill several screens; it is the list a user scrolls most on that tab.
+  To do: the version table keeps its columns at 1,024 px (fewer columns, the verdicts and the rule in the row's
+  menu or a second line), held by the layout walk at that width.
+- **The catalogue may say "Not stored" of versions an OCI remote holds (seen by R5b's builder on 2026-11-24, not
+  verified):** with the server's own answers, `image-cache`'s lookup of `tools/agent` shows tags 1.9, 2.0 and 2.1 as
+  not stored, though the render seed pulls them through that remote. To do: read the catalogue's `stored` of an OCI
+  remote against its tags (R3, Q-CUR-61), with a test of a pulled tag.
 
 None open (2026-11-24).
 
@@ -3222,7 +3238,7 @@ The work queue of T-24 (the planner's cut; the contracts and files of each packa
 | T-24 · R4 · Downloads and the queue | the queue's store, dispatch, run and retries; failures in precise words; the probe as a row; bulks with their preview and bounds; the charge; the rows of clients' failed fetches | C | landed at 00:18 on 2026-11-24 (one commit, Q-CUR-80 to Q-CUR-85, gaps H-1840 and H-1841, H-1725 and H-1728 now live): the job kind `remote-download`, the task `remote-downloads-dispatch`, failures as class, step, code, address, status and excerpt, a probe as a row, clients' failed fetches as rows, one version charged to the person, the queue's API; left for R3: a section's bulk (`400 catalogue_not_offered`) and a package preview's counts; left for R2's landing: its decider in `RemoteDownloadsServices.Decider` (the stub delivers everything); not covered: the cancel of a running row and the 30-minute bound by an integration test |
 | T-24 · R2b · Requests and examination | requests; the examination a request starts; allow and decline; discard; the retention task; the journal | R2, R4 | landed at 03:00 on 2026-11-24 (one commit, migration 00115, Q-CUR-140 to Q-CUR-148, gap H-1842; H-1727 and H-1729 now live): requests with the examination they start, allow through the rules' store with the download at once, decline, withdraw, discard, the task `remote-examination-cleanup`, the journal's replay of a discard; a repair for every format (Q-CUR-147): a download ahead of a version the rules do not deliver stores it instead of ending refused; left: the gauge `quader_remote_delivery_requests_open`, the check of an ask against the upstream until R3 wires `requests.Options.Lookup` |
 | T-24 · R5a · The tab strip and the tab Downloads | the three addresses; the queue's states, failures and retry | R4 | landed at 00:53 on 2026-11-24 (one commit, Q-CUR-130 to Q-CUR-133; the renders looked at by the development agent): the strip with the content tab and **Downloads** (`Downloads · 2 failed`), no tab Upstream until R5b, the states as buttons with counts, the failure class as a select, a row's whole failure with the upstream's excerpt as plain text, retry and cancel by role, a refresh every 5 s while rows wait or run; not tried: the mark "Not delivered here" until R2's decider is wired, the German texts on a screen |
-| T-24 · R5b · The tab Upstream and the settings | search, levels, versions, rules, requests, the bulk's preview, the settings' section, the glossary's rows; renders in both schemes, wide and narrow | R2, R3, R2b, R5a | after them |
+| T-24 · R5b · The tab Upstream and the settings | search, levels, versions, rules, requests, the bulk's preview, the settings' section, the glossary's rows; renders in both schemes, wide and narrow | R2, R3, R2b, R5a | landed at 05:13 on 2026-11-24 (one commit, Q-CUR-150 to Q-CUR-155; renders looked at by the development agent): the tab **Upstream** (search and lookup in one field kept in the address, levels as a breadcrumb, a package with its versions, their delivery, rule, cache and verdicts, download one / every version / a sub-section with the bulk's preview, allow and block, ask, the requests set apart, withdraw, decline, the catalogue's refusals in sentences) and the settings section **Delivery** (the mode, the examination switch, the retention); not run: a journey on kind (R6); not built: **Read the index** (Q-CUR-62) |
 | T-24 · R6 · Clients and documents | one end-to-end case per format in that format's own leg; the manual and the developer pages | R5b | last |
 
 What the tests cost by the specification: a format adds about 4 s of integration and 10 s in its own end-to-end
