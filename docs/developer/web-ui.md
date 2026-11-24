@@ -139,12 +139,14 @@ through the dev server works only against a Quader whose base URL is `https://lo
 - The outbound clients trust the profile's CA and may reach the loopback addresses (`proxy.outbound.tls.ca_files`,
   `proxy.outbound.address_policy.allow_cidrs`), so that Quader reaches the provider; a remote repository of this profile can
   therefore reach a service on this machine, which an installation's default egress policy refuses (R-REPO-038).
-- One certificate for every link of the image scanning. The role `all` calls its own scanner and pulls from its own scan listener
-  on loopback ports; both ends present `server.crt` and verify the other against the profile's CA, named in
-  `server.internal_tls.ca_file` (R-ARCH-038; a TLS start refuses to begin without it), under `127.0.0.1`, which `server.crt` lists
-  with the usages server and client authentication. No name of a kind of pod is required (empty in the role `all`, Q-ARCH-553), so
-  any certificate of the profile's CA is admitted, `postgres.crt` and `s3.crt` too; an installation admits only the worker at the
-  scanner and only the scanners at the scan listener ([helm-chart.md](helm-chart.md#the-scanner)).
+- No link of the scanning runs. The role `all` builds no scanner of any kind
+  ([Q-ARCH-563](../spec/architecture.md#q-arch-563--the-role-all-builds-no-image-scanner)), and `deploy/ui-dev/config.sh` names no
+  scanner and opens no scan listener, so the images read `pending_scan`; the scanner replicas the screens show are rows the render
+  seed writes (`web/e2e/renders/scanners.ts`). `server.internal_tls.ca_file` names the profile's CA all the same: a link started
+  beside the profile presents `server.crt` and verifies the other end under `127.0.0.1`, which `server.crt` lists with the usages
+  server and client authentication, and in the role `all` no name of a kind of pod is required (Q-ARCH-553), so any certificate of
+  the profile's CA is admitted; an installation admits only the worker at the scanner and only the scanners at the scan listener
+  ([helm-chart.md](helm-chart.md#the-scanner)).
 - The public Sigstore root is not refreshed (`signatures.trust_root.refresh: false`): the profile's root is the snapshot the
   release embeds, and no request goes to `tuf-repo-cdn.sigstore.dev`; the walk of **Settings › Signatures** answers a refreshed
   root in the browser ([Q-UI-1047](../spec/api-and-ui.md#q-ui-1047--the-ui-development-profile-keeps-the-releases-sigstore-root-and-the-walk-answers-a-refreshed-one)).

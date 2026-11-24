@@ -552,13 +552,12 @@ Priority: **P1** · Covers: quader-only
   `vuln`, and the chart issues the profile's four pairs (five in the profile `vuln`, which runs `<fullname>-malware-scanner-clamav` too) from the dev CA's Issuer of `deploy/dev/pki.yaml` (`tls.certManager.issuerRef` in `values-dev.yaml`), with
   `localhost` and `127.0.0.1` as extra names for the tests that reach a pod through a port-forward. Its database is `upstream/scanner-trivy` through the profile's
   network, or a local repository of the profile for a run without the internet.
-- **The UI development profile** (`make ui-dev-backend`, the role `all`, Q-ARCH-531): one process holds the worker, `packages` and the
-  scanner; the worker calls its own scanner listener over loopback, and the scanner pulls from its own scan listener, through the same
-  client, listener, token and checks as in the chart, with its one pair. The unset `scanner.url` and `registry.url` mean exactly that in
-  `all`, and the unset `client_name` and `scan_clients` let the CA alone admit the process's own calls
-  ([architecture.md](architecture.md#q-arch-553--the-role-all-keeps-one-pair-the-integration-harness-issues-one-per-role) Q-ARCH-553). The scanner's readiness check is reported there, not
-  gating, so a development process without the analyser binary stays ready
-  ([architecture.md](architecture.md#q-arch-551--in-the-role-all-the-scanners-check-is-reported-not-gating) Q-ARCH-551).
+- **The UI development profile** (`make ui-dev-backend`, the role `all`): one process holds the worker and `packages` and builds no
+  scanner of any kind ([architecture.md](architecture.md#q-arch-563--the-role-all-builds-no-image-scanner) Q-ARCH-563, which replaced
+  the in-process scanner of Q-ARCH-531 and the reported check of Q-ARCH-551). Its configuration names no `scanner.url` and opens no scan
+  listener, so no link of the scanning runs there and the image scanning's job ends at once; the unset `client_name` and `scan_clients`
+  would let the CA alone admit a link started beside it
+  ([architecture.md](architecture.md#q-arch-553--the-role-all-keeps-one-pair-the-integration-harness-issues-one-per-role) Q-ARCH-553).
 - **The integration stack** (`test/integration/testenv`): the stack starts a replica of the role `scanner` in process beside `web` and
   `worker`, each with a pair of its role (the scanner's of its kind, `vuln-scanner-trivy` or `malware-scanner-clamav`) that the harness issues from the stack's CA and the names of the links set as in the chart
   (Q-ARCH-553), and the `web` replica opens the scan listener; the scanning's tests replace the analyser at the

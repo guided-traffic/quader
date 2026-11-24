@@ -38,9 +38,10 @@ server:
     certificates:
       - cert_file: "$certs/server.crt"
         key_file: "$certs/server.key"
-  # The links of the image scanning (R-ARCH-038): the role all's worker calls its own scanner and the scanner pulls from its own
-  # scan listener, both on a loopback port, each end presenting server.crt and verifying the other against the profile's CA under
-  # 127.0.0.1, which server.crt lists. No names of the kinds of pod: in the role all the CA alone admits (Q-ARCH-553).
+  # The trust anchor of the links between quader's pods (R-ARCH-038). The role all builds no scanner of any kind (Q-ARCH-563) and
+  # this file names none and opens no scan listener, so no link of the scanning runs in the profile; the screens' scanner replicas
+  # are rows the render seed writes (web/e2e/renders/scanners.ts). A link started beside it would present server.crt and verify the
+  # other end against the profile's CA under 127.0.0.1, which server.crt lists; in the role all the CA alone admits (Q-ARCH-553).
   internal_tls:
     ca_file: "$certs/ca.crt"
 database:
