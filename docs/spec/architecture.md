@@ -2979,7 +2979,9 @@ shapes, [bastion.md](bastion.md) R-BAS-086) are specified on their pages. Two mo
     API, a registry without), each with canned answers its upstream gave, the search, level and package it reads, a name the upstream
     does not have and a page size that makes every call page; the capabilities decide which calls must answer, and a case whose upstream
     does not answer the search as the format expects (`ExpectSearchUnavailable`) holds the call to a `*discover.UnavailableError`. A
-    version the catalogue answers is in the format's canon (`testformat.CatalogueRawVersions` fails it).
+    version the catalogue answers is in the format's canon (`testformat.CatalogueRawVersions` fails it). A case that names a level its
+    upstream does not have (`UnknownLevel`, with `UnknownSuggestion`) holds `Children` to a page that lists nothing, says `Unknown`, names
+    the suggestion and reads the upstream at most three times ([remote-curation.md](remote-curation.md) Q-CUR-165).
 23. The delivery rules (R-CUR-003, R-CUR-004), for a format with the class remote: against a host whose rule set refuses one version of
     the fixture's package, no document of the format lists that version, its file answers `403` with `Cache-Control: no-store` and the
     code (or the refusal's text) in the format's shape, and a package whose every version is refused answers that refusal at its

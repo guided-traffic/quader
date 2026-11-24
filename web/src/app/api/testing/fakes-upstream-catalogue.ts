@@ -116,7 +116,7 @@ export class FakeUpstreamCatalogueApi extends UpstreamCatalogueApi {
 
   override async level(repository: string, path: readonly string[]): Promise<UpstreamLevelPage> {
     this.calls.push(`level ${path.join('/')}`);
-    return this.levels[path.join('/')] ?? { levels: [], packages: [], total: 0, nextCursor: null, done: true, withheld: null, withheldNote: null };
+    return this.levels[path.join('/')] ?? { levels: [], packages: [], total: 0, nextCursor: null, done: true, withheld: null, withheldNote: null, unknown: null };
   }
 
   override async package(repository: string, name: string, cursor: string | null, filter: string): Promise<UpstreamPackage> {

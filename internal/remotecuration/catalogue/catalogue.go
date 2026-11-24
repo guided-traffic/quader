@@ -232,6 +232,9 @@ func (e *Engine) Children(ctx context.Context, t Target, rq discover.LevelReques
 			p.Levels = p.Levels[:min(len(p.Levels), rq.Limit)]
 		}
 		p.Packages = cutHits(p.Packages, rq.Limit)
+		if p.Unknown != nil && len(p.Levels)+len(p.Packages) > 0 {
+			p.Unknown = nil // a level that lists something is known, whatever the format said (Q-CUR-165)
+		}
 		return p, nil
 	})
 	return page, err
@@ -524,6 +527,10 @@ func assign(v any, into any) error {
 			return errors.New("catalogue: the cached level page is of another type")
 		}
 		p.Levels, p.Packages = append([]string(nil), p.Levels...), append([]discover.Hit(nil), p.Packages...)
+		if p.Unknown != nil {
+			u := *p.Unknown
+			p.Unknown = &u
+		}
 		*dst = p
 	case *discover.PackageInfo:
 		p, ok := v.(discover.PackageInfo)

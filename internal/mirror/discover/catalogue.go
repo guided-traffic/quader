@@ -3,6 +3,9 @@ package discover
 import (
 	"context"
 	"errors"
+	"net/http"
+	"net/url"
+	"slices"
 	"time"
 )
 
@@ -101,6 +104,79 @@ type LevelPage struct {
 	Total    int
 	Cursor   Cursor
 	Done     bool
+	// Unknown says that the upstream does not have the level, told apart from a level it has that lists nothing (R-CUR-007,
+	// Q-CUR-165); nil where the level lists something or where the upstream does not tell the two apart. A page with it lists nothing.
+	Unknown *UnknownLevel
+}
+
+// UnknownLevel is why a level lists nothing: the upstream does not have it. A format sets it where its upstream tells an unknown level
+// from an empty one at a constant cost (one or two requests besides the listing), or where the level's name breaks the format's naming
+// rule, which is certain, so that no request asks for it.
+type UnknownLevel struct {
+	// Rule is the naming rule the level's name breaks, "" when it keeps the format's rule; Forbidden holds the characters of the name
+	// the rule does not allow, each once, in the order the name has them.
+	Rule      NameRule
+	Forbidden string
+	// Suggestion is a level of the upstream the name may have meant: the name made to keep the rule as the format's rule makes it,
+	// asked for once and found; "" when there is none.
+	Suggestion string
+}
+
+// NameRule names a rule of a format's level names that the screen says in words (R-CUR-018): a closed set across the formats.
+type NameRule string
+
+// The naming rules.
+const (
+	// NameRuleLowercaseDigits: lowercase letters and digits only (a Docker Hub namespace).
+	NameRuleLowercaseDigits NameRule = "lowercaseDigits"
+	// NameRuleLowercaseDigitsUnderscore: lowercase letters, digits and underscores only (an Ansible Galaxy namespace).
+	NameRuleLowercaseDigitsUnderscore NameRule = "lowercaseDigitsUnderscore"
+)
+
+// Forbidden returns the characters of name that allowed rejects, each once, in the order name has them; "" when it keeps the rule.
+func Forbidden(name string, allowed func(rune) bool) string {
+	var out []rune
+	for _, r := range name {
+		if !allowed(r) && !slices.Contains(out, r) {
+			out = append(out, r)
+		}
+	}
+	return string(out)
+}
+
+// Exists asks with a HEAD (no body, [Head]) whether a resource of the upstream is there, for a format that tells an unknown level from
+// an empty one: exists for a 2xx or a 3xx answer (a redirect names where it is), not for a 404 or a 410; for any other answer known is
+// false, and the format makes no claim.
+func Exists(ctx context.Context, u Upstream, target *url.URL) (exists, known bool, err error) {
+	res, err := Head(ctx, u, target, "application/json")
+	if err != nil {
+		return false, false, err
+	}
+	switch {
+	case res.Status >= 200 && res.Status < 400:
+		return true, true, nil
+	case res.Status == http.StatusNotFound || res.Status == http.StatusGone:
+		return false, true, nil
+	}
+	return false, false, nil
+}
+
+// EmptyOrUnknown is the page of a level that lists nothing, after asking the upstream's accounts of its name in turn ([Exists]): unknown
+// when every account answers that the upstream does not have it, empty as soon as one has it or answers something else (no claim). A
+// format whose upstream keeps users and organizations apart names both (Quay).
+func EmptyOrUnknown(ctx context.Context, u Upstream, accounts ...*url.URL) (LevelPage, error) {
+	empty := LevelPage{Done: true}
+	for _, a := range accounts {
+		exists, known, err := Exists(ctx, u, a)
+		if err != nil {
+			return LevelPage{}, err
+		}
+		if exists || !known {
+			return empty, nil
+		}
+	}
+	empty.Unknown = &UnknownLevel{}
+	return empty, nil
 }
 
 // VersionsRequest asks for one page of a package's versions.

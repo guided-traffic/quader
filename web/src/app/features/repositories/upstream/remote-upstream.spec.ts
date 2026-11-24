@@ -285,7 +285,7 @@ describe('The tab Upstream of a remote repository', () => {
       format: 'deb',
       fake: (c) => {
         c.capsAnswer = catalogueCaps({ search: 'index', levels: ['suite', 'component', 'architecture'], searchNote: 'As apt search.' });
-        c.levels[''] = { levels: ['trixie', 'bookworm'], packages: [], total: 2, nextCursor: null, done: true, withheld: null, withheldNote: null };
+        c.levels[''] = { levels: ['trixie', 'bookworm'], packages: [], total: 2, nextCursor: null, done: true, withheld: null, withheldNote: null, unknown: null };
       },
     });
     const bar = root.querySelector<HTMLElement>('[data-testid="upstream-levels"]')!;
@@ -296,6 +296,37 @@ describe('The tab Upstream of a remote repository', () => {
     ]);
     // The index search of Debian has Names only.
     expect(text(root.querySelector('form.search')!)).toContain('Names only');
+  });
+
+  it('R-CUR-018 R-CUR-007 a level the upstream does not have says so, with the rule its name breaks and the level it may have meant', async () => {
+    const { root } = await open({
+      format: 'oci',
+      url: '/projects/web/repositories/npmjs/upstream?level=guided-traffic',
+      fake: (c) => {
+        c.capsAnswer = catalogueCaps({ search: 'upstream', levels: ['namespace'], searchNote: 'Docker Hub search.' });
+        c.levels['guided-traffic'] = {
+          levels: [], packages: [], total: 0, nextCursor: null, done: true, withheld: null, withheldNote: null,
+          unknown: { upstream: 'Docker Hub', rule: 'lowercaseDigits', forbidden: '-', suggestion: 'guidedtraffic' },
+        };
+      },
+    });
+    const empty = root.querySelector<HTMLElement>('quader-empty-state')!;
+    expect(text(empty)).toContain('Docker Hub has no namespace “guided-traffic”. Docker Hub allows only lowercase letters and digits in this name, no “-”.');
+    expect(text(empty)).not.toContain('This level lists no package.');
+    const link = empty.querySelector<HTMLAnchorElement>('[data-testid="upstream-suggestion"]')!;
+    expect(text(link)).toBe('Did you mean “guidedtraffic”?');
+    expect(link.getAttribute('href')).toBe('/projects/web/repositories/npmjs/upstream?level=guidedtraffic');
+    await expectAccessible(root);
+
+    const plain = await open({ format: 'oci', url: '/projects/web/repositories/npmjs/upstream?level=guidedtraffik', fake: (c) => {
+      c.capsAnswer = catalogueCaps({ search: 'upstream', levels: ['namespace'], searchNote: 'Docker Hub search.' });
+      c.levels['guidedtraffik'] = {
+        levels: [], packages: [], total: 0, nextCursor: null, done: true, withheld: null, withheldNote: null,
+        unknown: { upstream: 'Docker Hub', rule: null, forbidden: null, suggestion: null },
+      };
+    } });
+    expect(text(plain.root.querySelector('quader-empty-state')!)).toBe('Docker Hub has no namespace “guidedtraffik”.');
+    expect(plain.root.querySelector('[data-testid="upstream-suggestion"]')).toBeNull();
   });
 
   it('R-CUR-015 a holder of manage allows a request as its package with every version, and declines another with a reason', async () => {
@@ -374,6 +405,12 @@ describe('The tab Upstream of a remote repository', () => {
     expect(target('upstream.mode.only-allowed.name')).toBe('Nur Erlaubtes');
     expect(target('upstream.mode.all-except-blocked.name')).toBe('Alles außer Gesperrtem');
     expect(target('requests.decline')).toBe('Ablehnen …');
+    // A level the upstream does not have (Q-CUR-165): "Docker Hub kennt keinen Namespace „guided-traffic“."
+    const ph = (id: number, name: string): string => `<ph id="${id}" equiv="${name}" disp="${name}"/>`;
+    expect(target('upstream.unknown.namespace')).toBe(`${ph(0, 'upstream')} kennt keinen Namespace „${ph(1, 'name')}“.`);
+    expect(target('upstream.rule.lowercase-digits')).toBe(`${ph(0, 'upstream')} erlaubt in diesem Namen nur Kleinbuchstaben und Ziffern, kein ${ph(1, 'chars')}.`);
+    expect(target('upstream.rule.char')).toBe(`„${ph(0, 'char')}“`);
+    expect(target('upstream.unknown.suggestion')).toBe(`Meinten Sie „${ph(0, 'name')}“?`);
   });
 });
 

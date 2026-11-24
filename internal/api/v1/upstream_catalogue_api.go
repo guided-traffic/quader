@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"net/http"
+	"net/url"
 	"slices"
 	"strconv"
 	"time"
@@ -206,10 +207,35 @@ func (s *Server) ListUpstreamLevel(w http.ResponseWriter, r *http.Request, proje
 	}
 	out := map[string]any{
 		"levels": listOf(page.Levels), "packages": pkgs, "total": nullTotal(page.Total), "nextCursor": catalogueCursor(page.Cursor, page.Done),
-		"done": page.Done, "withheld": nil, "withheldNote": nil,
+		"done": page.Done, "withheld": nil, "withheldNote": nil, "unknown": unknownLevel(c, page.Unknown),
 	}
 	withholding(out, c, withheld)
 	writeJSON(w, r, http.StatusOK, out)
+}
+
+// unknownLevel is the answer's `unknown` (Q-CUR-165): nil for a level the upstream has or does not tell apart, else why it lists
+// nothing with the name a person knows the upstream by.
+func unknownLevel(c catalogueCall, u *discover.UnknownLevel) any {
+	if u == nil {
+		return nil
+	}
+	return map[string]any{
+		"upstream": upstreamName(c.repo.Format, c.t.Upstream), "rule": nullString(string(u.Rule)),
+		"forbidden": nullString(u.Forbidden), "suggestion": nullString(u.Suggestion),
+	}
+}
+
+// upstreamName is the display name of the format's preset whose URL the repository has ("Docker Hub"), else the host of its URL.
+func upstreamName(format, upstream string) string {
+	if e, ok := catalog.Default().Lookup(format); ok {
+		if p, ok := e.PresetFor(upstream); ok {
+			return p.DisplayName
+		}
+	}
+	if u, err := url.Parse(upstream); err == nil && u.Host != "" {
+		return u.Host
+	}
+	return upstream
 }
 
 // withholding adds the count and the sentence of the hits a reader does not see (Q-CUR-14).

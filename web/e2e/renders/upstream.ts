@@ -289,7 +289,7 @@ async function answerNpm(p: Page, over: { caps?: (r: Route) => Promise<void>; se
     if (q === 'zzqx') return json(r, { hits: [], total: 0, nextCursor: null, done: true, truncated: false, note: null, withheld: null, withheldNote: null });
     return json(r, { hits: npmHits(), total: 11235, nextCursor: 'bW9yZQ', done: false, truncated: true, note: null, withheld: null, withheldNote: null });
   }));
-  await p.route(levelsUrl, (r) => json(r, { levels: [], packages: [], total: null, nextCursor: null, done: true, withheld: null, withheldNote: null }));
+  await p.route(levelsUrl, (r) => json(r, { levels: [], packages: [], total: null, nextCursor: null, done: true, withheld: null, withheldNote: null, unknown: null }));
   await p.route(packageUrl, over.pkg ?? ((r) => json(r, npmPackage(new URL(r.request().url()).searchParams.get('name') ?? 'gitlab-ai-provider'))));
   await p.route(verdictsUrl, (r) => json(r, verdicts(r.request().postDataJSON())));
   await p.route(requestsUrl, (r) => {
@@ -445,6 +445,46 @@ export async function* upstreamLookupWalk(p: Page): AsyncGenerator<string> {
   await p.unrouteAll({ behavior: 'ignoreErrors' });
 }
 
+// ---- OCI: a namespace Docker Hub does not have ----
+
+const hubCaps = {
+  ...ghcrCaps,
+  search: 'upstream',
+  searchNote: "Docker Hub's repository search, which its operator does not document; an official image is library/<name>.",
+  searchReason: null,
+  levels: ['namespace'],
+  levelsReason: null,
+  sizes: 'known',
+  hosts: ['hub.docker.com'],
+};
+
+const emptyLevel = { levels: [], packages: [], total: 0, nextCursor: null, done: true, withheld: null, withheldNote: null, unknown: null };
+
+const hubLevels: Record<string, Record<string, unknown>> = {
+  '': emptyLevel,
+  // The owner's namespace typed with the hyphen of his domain (2026-11-24): no Docker Hub namespace holds one (Q-CUR-165).
+  'guided-traffic': { ...emptyLevel, unknown: { upstream: 'Docker Hub', rule: 'lowercaseDigits', forbidden: '-', suggestion: 'guidedtraffic' } },
+  guidedtraffik: { ...emptyLevel, unknown: { upstream: 'Docker Hub', rule: null, forbidden: null, suggestion: null } },
+};
+
+/**
+ * An OCI remote of Docker Hub at a namespace entered by name that Docker Hub does not have: with a hyphen, which no namespace holds,
+ * the rule and the namespace it may have meant; then a name that keeps the rule and that Docker Hub does not know (Q-CUR-165).
+ */
+export async function* upstreamUnknownLevelWalk(p: Page): AsyncGenerator<string> {
+  await p.unrouteAll({ behavior: 'ignoreErrors' });
+  await p.route(capsUrl, (r) => json(r, hubCaps));
+  await p.route(requestsUrl, (r) => json(r, { items: [], nextCursor: null }));
+  await p.route(levelsUrl, (r) => json(r, hubLevels[decodeURIComponent(new URL(r.request().url()).searchParams.get('level') ?? '')] ?? emptyLevel));
+  await open(p, '?level=guided-traffic');
+  await expect(p.locator(`${tab} [data-testid="upstream-suggestion"]`)).toBeVisible();
+  yield 'rule';
+  await open(p, '?level=guidedtraffik');
+  await expect(p.locator(`${tab} quader-empty-state`)).toBeVisible();
+  yield 'unknown';
+  await p.unrouteAll({ behavior: 'ignoreErrors' });
+}
+
 // ---- Debian: suites and the index search ----
 
 const debCaps = {
@@ -464,8 +504,8 @@ const debCaps = {
 };
 
 const debLevels: Record<string, Record<string, unknown>> = {
-  '': { levels: ['trixie', 'trixie-updates', 'trixie-security', 'bookworm'], packages: [], total: 4, nextCursor: null, done: true, withheld: null, withheldNote: null },
-  trixie: { levels: ['main', 'contrib', 'non-free', 'non-free-firmware'], packages: [], total: 4, nextCursor: null, done: true, withheld: null, withheldNote: null },
+  '': { levels: ['trixie', 'trixie-updates', 'trixie-security', 'bookworm'], packages: [], total: 4, nextCursor: null, done: true, withheld: null, withheldNote: null, unknown: null },
+  trixie: { levels: ['main', 'contrib', 'non-free', 'non-free-firmware'], packages: [], total: 4, nextCursor: null, done: true, withheld: null, withheldNote: null, unknown: null },
 };
 
 function debHits(): Record<string, unknown>[] {

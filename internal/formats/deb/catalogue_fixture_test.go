@@ -119,11 +119,18 @@ func (t *catalogueTwin) CatalogueRows(_ context.Context, _ int64, name string) (
 }
 
 // catalogueFixture is check 22's fixture (R-CUR-007, R-DEB-036): the search "docker" over the parsed index (two names, a page of
-// one), the level trixie/stable/amd64 and the versions of docker-secrets-engine (three).
+// one), the level trixie/stable/amd64 and the versions of docker-secrets-engine (three), and the suite trixy, which the upstream does
+// not have: neither its InRelease nor its Release is there (Q-CUR-165).
 func catalogueFixture() *formattest.CatalogueFixture {
+	inRelease, err := os.ReadFile(filepath.Join("testdata", "catalogue", "trixie-InRelease"))
+	if err != nil {
+		panic(err)
+	}
 	return &formattest.CatalogueFixture{Cases: []formattest.CatalogueCase{{
 		Name: "a remote with a parsed index", Base: "https://download.docker.com/linux/debian/", Limit: 1,
 		Search: "docker", Level: []string{"trixie", "stable", "amd64"}, Package: "docker-secrets-engine", Absent: "absent-package",
+		Documents:    map[string][]byte{"dists/trixie/InRelease": inRelease},
+		UnknownLevel: []string{"trixy"},
 		Seed: func(h *formattest.Host) error {
 			twin, err := newCatalogueTwin()
 			if err != nil {

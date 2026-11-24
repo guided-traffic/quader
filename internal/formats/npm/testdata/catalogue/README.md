@@ -9,3 +9,13 @@ Answers the public registry and its replication host gave on 2026-11-24, kept as
 | `scope-tufjs-1.json` | `GET https://replicate.npmjs.com/registry/_all_docs?startkey="@tufjs/"&endkey="@tufjs/\ufff0"&limit=3` |
 | `scope-tufjs-2.json` | the same with `startkey="@tufjs/cli"&limit=4` |
 | `left-pad.json` | the full document of `left-pad` as test/npmstub/testdata/recorded holds it (two versions) |
+
+## A scope the registry does not have (Q-CUR-165)
+
+Answers of 2026-11-24, 08:23 local time. A `HEAD` of a scope's account answered the status of its `GET`.
+
+| File | Request | Answer |
+|---|---|---|
+| `scope-guidedtraffic.json` | `GET https://replicate.npmjs.com/registry/_all_docs?startkey="@guidedtraffic/"&endkey="@guidedtraffic/￰"&limit=3` | 200, no rows: the key range does not tell an unknown scope from an empty one |
+| `org-guidedtraffic.json` | `GET https://registry.npmjs.org/-/org/guidedtraffic/package` | 404 `Scope not found` |
+| (not kept) | `GET https://registry.npmjs.org/-/org/tufjs/package` | 200; a user's scope answers 200 as well (`/-/org/sindresorhus/package`) |

@@ -7951,7 +7951,8 @@ export interface paths {
          * List a level of the upstream of a remote repository
          * @description One page of a level (R-CUR-007, R-CUR-009): the levels below it and the packages directly in it, each package with the
          *     repository's state. A level is its path joined by `/`, each part URL-encoded; none is the root. Where a level's own names are not
-         *     listable (npm's scopes, Docker Hub's namespaces), the root lists nothing and a level is entered by its name. In the mode
+         *     listable (npm's scopes, Docker Hub's namespaces), the root lists nothing and a level is entered by its name. A level the upstream
+         *     does not have answers `unknown`, with the naming rule its name breaks and a suggestion where there is one (Q-CUR-165). In the mode
          *     `onlyAllowed` a caller who may not set rules sees only the delivered packages, with `withheld`. `400 catalogue_not_offered` where
          *     the upstream lists no levels. Needs `read`; a local or virtual repository answers `400 not_applicable`.
          */
@@ -16632,6 +16633,28 @@ export interface components {
             done: boolean;
             withheld: number | null;
             withheldNote: string | null;
+            /**
+             * @description The upstream does not have this level, told apart from a level it has that lists nothing (Q-CUR-165); `null` where the
+             *     level lists something or where the upstream does not tell the two apart.
+             */
+            unknown: components["schemas"]["UpstreamUnknownLevel"] | null;
+        };
+        /**
+         * @description Why a level lists nothing: the upstream does not have it (R-CUR-007, Q-CUR-165). `rule` and `forbidden` are set when the
+         *     level's name breaks the format's naming rule, which is certain, so that nothing asked the upstream for it; `suggestion` is a
+         *     level of the upstream the name may have meant, the name made to keep the rule, asked for once and found.
+         */
+        UpstreamUnknownLevel: {
+            /** @description The name a person knows the upstream by, not translated; the display name of the repository's preset ("Docker Hub"), else the host of its URL. */
+            upstream: string;
+            /**
+             * @description `lowercaseDigits`: lowercase letters and digits only (a Docker Hub namespace); `lowercaseDigitsUnderscore`: lowercase letters, digits and underscores only (an Ansible Galaxy namespace).
+             * @enum {string|null}
+             */
+            rule: "lowercaseDigits" | "lowercaseDigitsUnderscore" | null;
+            /** @description The characters of the name the rule does not allow, each once, in the order the name has them. */
+            forbidden: string | null;
+            suggestion: string | null;
         };
         /**
          * @description A version of a package as the upstream tells it without a download, with the repository's state: `delivery` (the rules'
@@ -33462,7 +33485,8 @@ export interface operations {
                      *       "nextCursor": null,
                      *       "done": true,
                      *       "withheld": null,
-                     *       "withheldNote": null
+                     *       "withheldNote": null,
+                     *       "unknown": null
                      *     }
                      */
                     "application/json": components["schemas"]["UpstreamLevelPage"];

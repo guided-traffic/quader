@@ -8,6 +8,8 @@ export type UpstreamCatalogue = Schema<'UpstreamCatalogue'>;
 export type UpstreamHit = Schema<'UpstreamHit'>;
 export type UpstreamSearchPage = Schema<'UpstreamSearchPage'>;
 export type UpstreamLevelPage = Schema<'UpstreamLevelPage'>;
+/** Why a level lists nothing: the upstream does not have it, with the naming rule its name breaks and a suggestion (Q-CUR-165). */
+export type UpstreamUnknownLevel = Schema<'UpstreamUnknownLevel'>;
 /** A package looked up by its exact name with one page of its versions (R-CUR-009). */
 export type UpstreamPackage = Schema<'UpstreamPackage'>;
 /** A version as the upstream tells it, with the repository's state (R-CUR-009). */

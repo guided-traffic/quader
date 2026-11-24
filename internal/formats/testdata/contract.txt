@@ -1045,6 +1045,7 @@ discover.LevelPage: field Done bool
 discover.LevelPage: field Levels []string
 discover.LevelPage: field Packages []Hit
 discover.LevelPage: field Total int
+discover.LevelPage: field Unknown *UnknownLevel
 discover.LevelRef: field Path []string
 discover.LevelRequest: field Cursor Cursor
 discover.LevelRequest: field Level LevelRef
@@ -1055,6 +1056,7 @@ discover.Lister: method MirrorNames(context.Context, Upstream, PageRequest) (Pag
 discover.Lister: method MirrorPlan(context.Context, Upstream, string) (Plan, error)
 discover.Method: method Valid() bool
 discover.Method: type string
+discover.NameRule: type string
 discover.PackageInfo: field Cursor Cursor
 discover.PackageInfo: field Description string
 discover.PackageInfo: field Done bool
@@ -1104,6 +1106,9 @@ discover.UnavailableError: field Reason string
 discover.UnavailableError: field Shape bool
 discover.UnavailableError: method Error() string
 discover.UnavailableError: method Is(error) bool
+discover.UnknownLevel: field Forbidden string
+discover.UnknownLevel: field Rule NameRule
+discover.UnknownLevel: field Suggestion string
 discover.Upstream: method Artifact(context.Context, string, int64) ([]byte, bool, error)
 discover.Upstream: method Base() *url.URL
 discover.Upstream: method Document(context.Context, string, string) ([]byte, bool, error)
@@ -1130,6 +1135,8 @@ discover.MaxVersionsOnPage: value = 100
 discover.MethodFeed: value Method = "feed"
 discover.MethodListing: value Method = "listing"
 discover.MethodNames: value Method = "names"
+discover.NameRuleLowercaseDigits: value NameRule = "lowercaseDigits"
+discover.NameRuleLowercaseDigitsUnderscore: value NameRule = "lowercaseDigitsUnderscore"
 discover.PassFull: value PassKind = "full"
 discover.PassIncremental: value PassKind = "incremental"
 discover.SearchIndex: value SearchKind = "index"

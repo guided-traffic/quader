@@ -147,6 +147,55 @@ func fullName(ns, name string) (string, bool) {
 	return full, true
 }
 
+// namespaceChar is a character a Galaxy namespace holds: lowercase letters, digits and underscores (collection.ValidPart, the rule
+// ansible-galaxy and the Galaxy apply to a collection's namespace).
+func namespaceChar(r rune) bool { return r >= 'a' && r <= 'z' || r >= '0' && r <= '9' || r == '_' }
+
+// namespaceAccount is the namespace's own document, `v3/namespaces/{name}/`: 200 for a namespace the Galaxy has, 404 for one it does
+// not (recorded on 2026-11-24, testdata/catalogue/README.md). The collection index answers an unknown namespace with an empty page.
+func namespaceAccount(ctx context.Context, u discover.Upstream, ns string) (*url.URL, error) {
+	return apiURL(ctx, u, "namespaces/"+url.PathEscape(ns)+"/", nil)
+}
+
+// namespaceKnown is the page of a namespace whose first page lists nothing: unknown when its document answers 404 (Q-CUR-165). The
+// document's address is the listing's, beside its collections/, so the root document is not read again.
+func namespaceKnown(ctx context.Context, u discover.Upstream, listing *url.URL, ns string) (discover.LevelPage, error) {
+	account := *listing
+	account.Path = strings.TrimSuffix(listing.Path, "collections/") + "namespaces/" + ns + "/"
+	account.RawPath, account.RawQuery = "", ""
+	return discover.EmptyOrUnknown(ctx, u, &account)
+}
+
+// namespaceByRule is the page of a namespace whose name holds a character no Galaxy namespace holds: unknown, asked for nothing, with
+// the name made to keep the rule as the suggestion when the Galaxy has it (one request, Q-CUR-165). A hyphen becomes an underscore,
+// as a GitHub organisation's name becomes a namespace (netbox-community, netbox_community); every other such character is dropped.
+func namespaceByRule(ctx context.Context, u discover.Upstream, ns, bad string) (discover.LevelPage, error) {
+	unknown := &discover.UnknownLevel{Rule: discover.NameRuleLowercaseDigitsUnderscore, Forbidden: bad}
+	s := strings.Map(func(r rune) rune {
+		switch {
+		case r == '-':
+			return '_'
+		case namespaceChar(r):
+			return r
+		}
+		return -1
+	}, ns)
+	if collection.ValidPart(s) {
+		account, err := namespaceAccount(ctx, u, s)
+		if err != nil {
+			return discover.LevelPage{}, err
+		}
+		exists, _, err := discover.Exists(ctx, u, account)
+		if err != nil {
+			return discover.LevelPage{}, err
+		}
+		if exists {
+			unknown.Suggestion = s
+		}
+	}
+	return discover.LevelPage{Done: true, Unknown: unknown}, nil
+}
+
 // Children implements [discover.Catalogue]: the root lists the Galaxy's namespaces (`v3/namespaces/`), a namespace its collections from
 // the collection index with the filter namespace.
 func (remoteAdapter) Children(ctx context.Context, u discover.Upstream, rq discover.LevelRequest) (discover.LevelPage, error) {
@@ -159,7 +208,11 @@ func (remoteAdapter) Children(ctx context.Context, u discover.Upstream, rq disco
 	case 0:
 		target, err = apiURL(ctx, u, "namespaces/", q)
 	case 1:
-		q.Set("namespace", strings.ToLower(rq.Level.Path[0]))
+		ns := strings.ToLower(rq.Level.Path[0])
+		if bad := discover.Forbidden(ns, namespaceChar); bad != "" {
+			return namespaceByRule(ctx, u, ns, bad)
+		}
+		q.Set("namespace", ns)
 		target, err = apiURL(ctx, u, "collections/", q)
 	default:
 		return discover.LevelPage{}, errs.E(errs.Invalid, errs.CodeValidation, "A level of a Galaxy is one namespace.")
@@ -185,6 +238,9 @@ func (remoteAdapter) Children(ctx context.Context, u discover.Upstream, rq disco
 	}
 	if err := json.Unmarshal(p.Data, &rows); err != nil {
 		return discover.LevelPage{}, invalidDocument("a listing", "the data is not a list")
+	}
+	if len(rq.Level.Path) == 1 && offset == 0 && p.Meta.Count == 0 && len(rows) == 0 {
+		return namespaceKnown(ctx, u, target, strings.ToLower(rq.Level.Path[0]))
 	}
 	out := discover.LevelPage{Total: p.Meta.Count}
 	for _, r := range rows {

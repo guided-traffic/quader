@@ -10,3 +10,13 @@ Answers the public Galaxy gave on 2026-11-24, kept as they came, for the fixture
 | `gal-ns-0.json`, `gal-ns-2.json`, `gal-ns-4.json` | `GET https://galaxy.ansible.com/api/v3/collections/?limit=2&namespace=osism&offset=0`, `2` and `4`: the final body of its redirect to the collection index |
 | `gal-versions.json` | the version list of osism.sonic, `limit=100&offset=0` |
 | `gal-collection.json` | the collection document of osism.sonic |
+
+## A namespace the Galaxy does not have (Q-CUR-165)
+
+Answers of 2026-11-24, 08:23 local time. A `HEAD` of a namespace's document answered the status of its `GET`.
+
+| File | Request | Answer |
+|---|---|---|
+| `gal-ns-guidedtraffic.json` | `GET https://galaxy.ansible.com/api/v3/collections/?limit=2&namespace=guidedtraffic&offset=0`: the final body of its redirect to the collection index | 200, count 0 |
+| `gal-namespace-guidedtraffic.json` | `GET https://galaxy.ansible.com/api/v3/namespaces/guidedtraffic/` | 404 |
+| `gal-namespace-netbox_community.json` | `GET https://galaxy.ansible.com/api/v3/namespaces/netbox_community/` | 200: the namespace of the GitHub organisation netbox-community |

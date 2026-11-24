@@ -1,6 +1,7 @@
 package ansible
 
 import (
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -32,6 +33,8 @@ func catalogueFixture() *formattest.CatalogueFixture {
 			ns + "0":     {Body: read("gal-ns-0.json")},
 			ns + "2":     {Body: read("gal-ns-2.json")},
 			ns + "4":     {Body: read("gal-ns-4.json")},
+			api + "collections/?limit=2&namespace=guidedtraffic&offset=0": {Body: read("gal-ns-guidedtraffic.json")},
+			api + "namespaces/guidedtraffic/":                             {Status: http.StatusNotFound, Body: read("gal-namespace-guidedtraffic.json")},
 		},
 		Documents: map[string][]byte{
 			RootDocument + "\x00" + documentVariant:                             read("gal-root.json"),
@@ -39,6 +42,8 @@ func catalogueFixture() *formattest.CatalogueFixture {
 			CollectionDocumentPath("osism", "sonic") + "\x00" + documentVariant: read("gal-collection.json"),
 		},
 		Search: "keycloak_realm", Level: []string{"osism"}, Package: "osism.sonic", Absent: "osism.absent",
+		// The collection index answers a namespace the Galaxy does not have with an empty page; its document answers 404 (Q-CUR-165).
+		UnknownLevel: []string{"guidedtraffic"},
 	}, {
 		// A Galaxy that answers the keyword search with 404 has none for the cache period (R-ANS-047).
 		Name: "a Galaxy without the keyword search", Base: "https://galaxy.example/api/", Limit: 2,

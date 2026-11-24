@@ -2584,6 +2584,12 @@ adapter without it. The contract's surface grew by additions that keep version 1
 to [Q-CUR-65](spec/remote-curation.md#q-cur-65--a-bulk-and-a-preview-read-the-catalogue-a-preview-is-one-page-of-the-bulks-bound));
 `internal/formats/testdata/contract.txt` holds them.
 
+**Built: a level the upstream does not have (2026-11-24, after the owner's report "Die Suche nach meinem namespace scheitert.").** A
+further addition that keeps version 11: `discover.LevelPage.Unknown` (`*discover.UnknownLevel` with `Rule`, `Forbidden` and
+`Suggestion`) and `discover.NameRule` with its two values. A format that tells a level its upstream does not have from an empty one sets
+it at a constant cost, a format that cannot sets nothing and answers as before; kit check 22 holds a case's `UnknownLevel`
+([Q-CUR-165](spec/remote-curation.md#q-cur-165--a-level-the-upstream-does-not-have-says-so-with-the-formats-naming-rule-and-one-suggestion-built-from-it)).
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -10133,10 +10139,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-CUR
 
-76 questions on [spec/remote-curation.md](spec/remote-curation.md).
+77 questions on [spec/remote-curation.md](spec/remote-curation.md).
 
 <details>
-<summary>Q-CUR: 76 questions</summary>
+<summary>Q-CUR: 77 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10216,6 +10222,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-CUR-162](spec/remote-curation.md#q-cur-162--a-debian-index-apt-fetched-by-its-hash-is-parsed) | A Debian index APT fetched by its hash is parsed | Decided by the development agent on 2026-11-24 | (a) The commit of a by-hash file below a `binary-<arch>` directory enqueues the parse of that directory's `Packages`; the job reads the index the current release names for it by its SHA-256 | — |
 | [Q-CUR-163](spec/remote-curation.md#q-cur-163--the-background-engine-of-the-role-api-shares-the-caches-of-its-read-only-view) | The background engine of the role api shares the caches of its read-only view | Decided by the development agent on 2026-11-24 | (a) The engine takes the view (`proxy.Options.View`) and reads the state and the negative L1 through the view's two caches | — |
 | [Q-CUR-164](spec/remote-curation.md#q-cur-164--the-catalogue-keeps-a-page-that-found-nothing-only-when-it-asked-the-upstream) | The catalogue keeps a page that found nothing only when it asked the upstream | Decided by the development agent on 2026-11-24 | (a) A page that found nothing is kept only when a request of the call reached the network; the engine sees it in the budget's `Spend`, which the lent upstream calls before every request | — |
+| [Q-CUR-165](spec/remote-curation.md#q-cur-165--a-level-the-upstream-does-not-have-says-so-with-the-formats-naming-rule-and-one-suggestion-built-from-it) | A level the upstream does not have says so, with the format's naming rule and one suggestion built from it | Decided by the development agent on 2026-11-24 | 1 (a), 2 as stated, 3 (a), 4 (a). | [ADR-277](#adr-277--a-remote-repository-can-be-curated-delivery-rules-in-two-modes-an-upstream-catalogue-downloads-ahead-and-their-queue-requests-with-examination) |
 
 </details>
 

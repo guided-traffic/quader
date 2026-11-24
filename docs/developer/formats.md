@@ -650,7 +650,8 @@ the item store, [oci.md](oci.md#upload-sessions-r-stor-011); the in-memory host 
    A format with the class `remote` also declares its upstream catalogue (`Descriptor.Catalogue`) and its version canon
    (`Descriptor.VersionCanon`), implements `formats.Catalogue` on its remote adapter in its `catalogue.go` (`Register` refuses a remote
    adapter without it), gives kit check 22 its `Catalogue` fixture of answers its real upstream gave (one case per upstream whose
-   capabilities differ, in `testdata/catalogue/`), and adds its rows to `TestR_CUR_007_EveryRemoteFormatDeclaresItsCatalogue` and
+   capabilities differ, in `testdata/catalogue/`; where it has levels and its upstream tells a level it does not have from an empty one,
+   the case's `UnknownLevel` with the recorded answers, [Q-CUR-165](../spec/remote-curation.md#q-cur-165--a-level-the-upstream-does-not-have-says-so-with-the-formats-naming-rule-and-one-suggestion-built-from-it)), and adds its rows to `TestR_CUR_007_EveryRemoteFormatDeclaresItsCatalogue` and
    `TestR_CUR_006_EveryRemoteFormatHasItsVersionCanon` in [catalogue_test.go](../../internal/formats/all/catalogue_test.go)
    ([remote-curation.md](../spec/remote-curation.md) R-CUR-023).
    Give every route at least one example; a name that two routes could both match needs a `Route.Match` that tells them apart.

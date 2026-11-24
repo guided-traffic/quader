@@ -4,9 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/mirror/discover"
 )
 
@@ -48,4 +52,119 @@ func TestR_OCI_038_DockerHubsSearchFallsBackWhenItsAnswerIsNotAPage(t *testing.T
 			}
 		})
 	}
+}
+
+// canned is an upstream that answers the recorded answers of testdata/catalogue by URL (404 for any other) and records what it is asked.
+type canned struct {
+	base    string
+	answers map[string]discover.Response
+	asked   []string
+}
+
+func (c *canned) Base() *url.URL          { u, _ := url.Parse(c.base); return u }
+func (*canned) Settings() json.RawMessage { return nil }
+func (*canned) Document(context.Context, string, string) ([]byte, bool, error) {
+	return nil, false, nil
+}
+
+func (*canned) Artifact(context.Context, string, int64) ([]byte, bool, error) { return nil, false, nil }
+
+func (c *canned) Get(_ context.Context, u *url.URL, _ string, _ int64) (*discover.Response, error) {
+	c.asked = append(c.asked, u.String())
+	if a, ok := c.answers[u.String()]; ok {
+		return &a, nil
+	}
+	return &discover.Response{Status: http.StatusNotFound}, nil
+}
+
+func recorded(t *testing.T, status int, name string) discover.Response {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join("testdata", "catalogue", name))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return discover.Response{Status: status, Body: b}
+}
+
+// TestR_CUR_007_ALevelTheRegistryDoesNotHaveIsUnknown: a Docker Hub, Quay or GitLab level that lists nothing says whether the operator
+// has it, from the answers the operators gave on 2026-11-24 (Q-CUR-165). Docker Hub's listing answers an unknown namespace with an empty
+// page and its account (`/v2/users/{namespace}`) with 404; a name with a character no namespace holds is not asked for, and the name
+// without it is suggested when Docker Hub has it; a namespace that is there and lists nothing stays empty; an underscore is asked for.
+// Milliseconds, answers of a few bytes.
+func TestR_CUR_007_ALevelTheRegistryDoesNotHaveIsUnknown(t *testing.T) {
+	const hub = "https://hub.docker.com/v2/"
+	children := func(t *testing.T, c *canned, level string) discover.LevelPage {
+		t.Helper()
+		p, err := remoteAdapter{}.Children(context.Background(), c, discover.LevelRequest{Level: discover.LevelRef{Path: []string{level}}, Limit: 5})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
+	t.Run("R-CUR-007 a Docker Hub namespace it does not have", func(t *testing.T) {
+		c := &canned{base: "https://registry-1.docker.io/", answers: map[string]discover.Response{
+			hub + "namespaces/guidedtraffik/repositories?page=1&page_size=5": recorded(t, 200, "hub-ns-guidedtraffik.json"),
+			hub + "users/guidedtraffik":                                      recorded(t, 404, "hub-user-guidedtraffik.json"),
+		}}
+		p := children(t, c, "guidedtraffik")
+		if p.Unknown == nil || *p.Unknown != (discover.UnknownLevel{}) || len(c.asked) != 2 {
+			t.Fatalf("page %+v, unknown %+v, asked %v", p, p.Unknown, c.asked)
+		}
+	})
+	t.Run("R-CUR-007 a hyphen is no Docker Hub namespace's and is not asked for", func(t *testing.T) {
+		c := &canned{base: "https://registry-1.docker.io/", answers: map[string]discover.Response{
+			// What the owner's installation asked on 2026-11-24 and Docker Hub answered: 200 with nothing.
+			hub + "namespaces/guided-traffic/repositories?page=1&page_size=5": recorded(t, 200, "hub-ns-guided-traffic.json"),
+			hub + "users/guidedtraffic":                                       {Status: http.StatusPermanentRedirect, Header: http.Header{"Location": {"/v2/orgs/guidedtraffic"}}},
+		}}
+		p := children(t, c, "Guided-Traffic")
+		want := discover.UnknownLevel{Rule: discover.NameRuleLowercaseDigits, Forbidden: "-", Suggestion: "guidedtraffic"}
+		if p.Unknown == nil || *p.Unknown != want || len(c.asked) != 1 || c.asked[0] != hub+"users/guidedtraffic" {
+			t.Fatalf("unknown %+v, asked %v", p.Unknown, c.asked)
+		}
+	})
+	t.Run("R-CUR-007 no suggestion where the name without the forbidden character is unknown too", func(t *testing.T) {
+		c := &canned{base: "https://registry-1.docker.io/", answers: map[string]discover.Response{
+			hub + "users/guidedtraffik": recorded(t, 404, "hub-user-guidedtraffik.json"),
+		}}
+		p := children(t, c, "guided.traffik")
+		want := discover.UnknownLevel{Rule: discover.NameRuleLowercaseDigits, Forbidden: "."}
+		if p.Unknown == nil || *p.Unknown != want || len(c.asked) != 1 {
+			t.Fatalf("unknown %+v, asked %v", p.Unknown, c.asked)
+		}
+	})
+	t.Run("R-CUR-007 a Docker Hub namespace that is there and lists nothing is empty", func(t *testing.T) {
+		c := &canned{base: "https://registry-1.docker.io/", answers: map[string]discover.Response{
+			hub + "namespaces/guidedtraffic/repositories?page=1&page_size=5": recorded(t, 200, "hub-ns-guidedtraffik.json"),
+			hub + "users/guidedtraffic":                                      {Status: http.StatusPermanentRedirect},
+		}}
+		if p := children(t, c, "guidedtraffic"); p.Unknown != nil || !p.Done {
+			t.Fatalf("page %+v", p)
+		}
+	})
+	t.Run("R-CUR-007 an underscore is asked for", func(t *testing.T) {
+		c := &canned{base: "https://registry-1.docker.io/"}
+		children(t, c, "old_name")
+		if len(c.asked) == 0 || c.asked[0] != hub+"namespaces/old_name/repositories?page=1&page_size=5" {
+			t.Fatalf("asked %v", c.asked)
+		}
+	})
+	t.Run("R-CUR-007 a Quay organization that lists no public image is empty", func(t *testing.T) {
+		c := &canned{base: "https://quay.io/", answers: map[string]discover.Response{
+			"https://quay.io/api/v1/repository?namespace=coreos&public=true": recorded(t, 200, "quay-ns-guidedtraffic.json"),
+			"https://quay.io/api/v1/organization/coreos":                     recorded(t, 200, "quay-org-coreos.json"),
+		}}
+		if p := children(t, c, "coreos"); p.Unknown != nil || len(c.asked) != 2 {
+			t.Fatalf("page %+v, asked %v", p, c.asked)
+		}
+	})
+	t.Run("R-CUR-007 another 404 of the project API is no unknown project", func(t *testing.T) {
+		c := &canned{base: "https://registry.gitlab.com/", answers: map[string]discover.Response{
+			"https://gitlab.com/api/v4/projects/group%2Fproject/registry/repositories?page=1&per_page=5": {Status: 404, Body: []byte(`{"message":"404 Not found"}`)},
+		}}
+		_, err := remoteAdapter{}.Children(context.Background(), c, discover.LevelRequest{Level: discover.LevelRef{Path: []string{"group/project"}}, Limit: 5})
+		if e, ok := errs.As(err); !ok || e.Code != errs.CodeCatalogueNotFound {
+			t.Fatalf("err = %v", err)
+		}
+	})
 }

@@ -490,6 +490,12 @@ Priority: **P1** · Covers: ART-044
       Total    int
       Cursor   Cursor
       Done     bool
+      Unknown  *UnknownLevel // the upstream does not have the level (Q-CUR-165); nil where it lists something or cannot tell
+  }
+  type UnknownLevel struct {
+      Rule       NameRule // the naming rule the name breaks ("lowercaseDigits", "lowercaseDigitsUnderscore"); "" when it keeps it
+      Forbidden  string   // the name's characters the rule does not allow
+      Suggestion string   // the name made to keep the rule, asked once and found; "" for none
   }
   type VersionsRequest struct {
       Cursor Cursor
@@ -522,6 +528,14 @@ Priority: **P1** · Covers: ART-044
   Ansible Galaxy's namespace level is the collection index its listing reads with a `namespace` filter. `Package` reads what `MirrorPlan`
   reads for the package, without storing it. A bulk download (R-CUR-010) expands through `Package` and `Children`, never through a second
   lister.
+- **A level the upstream does not have** ([Q-CUR-165](#q-cur-165--a-level-the-upstream-does-not-have-says-so-with-the-formats-naming-rule-and-one-suggestion-built-from-it))
+  is told from one that lists nothing where the upstream tells them apart, at a constant cost: a first page that lists nothing asks at
+  most two accounts of the name (`discover.Exists`, a `HEAD`) and sets `Unknown`. Docker Hub (`/v2/users/{name}`), Quay (its organization
+  and its user), npm's public registry (`/-/org/{scope}/package`), the Galaxy (`v3/namespaces/{name}/`), GitLab (the message
+  `404 Project Not Found`) and Debian (the suite's `InRelease` or `Release`, its `Components` and `Architectures`) do; NuGet has no levels
+  and a registry without a preset lists only its root. A name that breaks the part of the format's naming rule that is certain is not
+  asked for (a Docker Hub namespace's characters outside `[a-z0-9_]`, a Galaxy namespace's outside `[a-z0-9_]`): the page names the rule
+  and the forbidden characters, and the one name the rule makes of it when the upstream has it (one request).
 - **The version canon** (`catalog.VersionCanon`, `Canonical(version string) (string, bool)`) is declared beside the catalogue by every
   format with the class remote (R-CUR-006); `Register` refuses a remote format without it.
 - **Formats that come later** declare their catalogue in the same change that brings their remote class; R-CUR-023 shows what four of
@@ -535,7 +549,13 @@ Acceptance criteria:
 - Unit (kit check 22, `internal/formats/formattest`, milliseconds per format, a fake upstream in process answering canned documents of a
   few kilobytes from the format's fixture): each declared call answers a page whose names the format's rule accepts, a cursor that
   continues, `Done` at the end, and `ErrNotOffered` for an undeclared call; an answer above the bound of R-CUR-008 fails with
-  `catalogue_answer_too_large`; no call reaches a host outside the upstream, its `extraHosts` and the declared `Hosts`.
+  `catalogue_answer_too_large`; no call reaches a host outside the upstream, its `extraHosts` and the declared `Hosts`; a level the
+  case names as unknown (`UnknownLevel`, recorded answers of the real upstream) answers `Unknown` and nothing listed within three reads
+  of the upstream, with the expected suggestion (Q-CUR-165).
+- Unit (each format with levels, milliseconds, the recorded answers): an unknown level, a level that is there and lists nothing, a name
+  that breaks the rule with and without a suggestion (`TestR_CUR_007_ALevelTheRegistryDoesNotHaveIsUnknown` in `internal/formats/oci`,
+  `TestR_CUR_007_AGalaxyNamespaceItDoesNotHaveIsUnknown`, `TestR_CUR_007_ADebianLevelTheUpstreamDoesNotHaveIsUnknown`); the engine keeps
+  such a page and drops `Unknown` from a page that lists something (`TestR_CUR_007_AnUnknownLevelIsKeptAndAPageWithEntriesIsKnown`).
 
 ### R-CUR-008 · The catalogue's calls: no cache fill, a budget of their own, short caching, bounds
 Priority: **P1** · Covers: ART-044
@@ -598,7 +618,7 @@ Below `/api/v1/projects/{projectKey}/repositories/{repoKey}` (tag `remote-curati
 |---|---|
 | `upstream` | the capabilities (R-CUR-007) for this repository, the mode, the counts of rules, open requests (for those who may see them) and of the queue by state, and `"hosts"` |
 | `upstream/search?q=&namesOnly=&level=&cursor=&limit=` | a page of hits; `400 catalogue_not_offered` where the capability is `none` |
-| `upstream/levels?level=&cursor=&limit=` | a page of a level (`level` is the path joined by `/`, each part URL-encoded) |
+| `upstream/levels?level=&cursor=&limit=` | a page of a level (`level` is the path joined by `/`, each part URL-encoded); `unknown` when the upstream does not have it: `upstream` (the preset's display name, else the URL's host), `rule`, `forbidden`, `suggestion` (Q-CUR-165) |
 | `upstream/package?name=&cursor=&limit=&filter=` | the package and a page of its versions; `404 catalogue_not_found` when the upstream does not have it |
 | `upstream/vulnerabilities` (`POST`, `{"name", "versions": [≤ 50]}`) | the vulnerability verdict of each version that is not stored, computed as the miss gate computes it (`Evaluator.EvaluateMiss`, nothing written, [vulnerability-scanning.md](vulnerability-scanning.md) R-VULN-015); a format the vulnerability scanning does not cover answers `"notCovered": true` (R-CUR-014) |
 
@@ -1138,7 +1158,11 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
     the address carries `q`, `name`, `level` and `namesOnly`, so the refusal's link of R-CUR-004 (`?name=`) opens the package
     ([Q-CUR-151](#q-cur-151--one-field-searches-and-looks-up-the-address-holds-the-query-the-levels-are-a-breadcrumb-and-links)). The
     levels: a breadcrumb under **Upstream** and the children as links; a root that lists nothing (an npm scope, a Docker Hub namespace,
-    Q-CUR-63) offers a field named by the level's kind to enter one by its name; **Download this sub-section…** at a level that lists
+    Q-CUR-63) offers a field named by the level's kind to enter one by its name; a level the upstream does not have says so by its kind
+    ("Docker Hub has no namespace “guided-traffic”."), with the rule its name breaks ("Docker Hub allows only lowercase letters and
+    digits in this name, no “-”.") and **Did you mean “guidedtraffic”?** as a link where the upstream has the name the rule makes
+    ([Q-CUR-165](#q-cur-165--a-level-the-upstream-does-not-have-says-so-with-the-formats-naming-rule-and-one-suggestion-built-from-it));
+    **Download this sub-section…** at a level that lists
     packages, for those who decide. The results: **Package** (name, the description cut to one line with the whole as its title),
     **Latest**, **State** (**Allowed**, **Delivered**, **Blocked**, **Not allowed**, **Requested**), **Cache** (**Stored** where the
     repository holds a version: the API answers no count, Q-CUR-61). A package opens in place: its description where nothing showed it,
@@ -2634,6 +2658,61 @@ that find nothing show in the database's load.
 [catalogue.go](../../internal/remotecuration/catalogue/catalogue.go); held by `TestR_CUR_008_TheCatalogueEngine` (unit), by
 `TestR_DEB_036_TheCatalogueSearchesTheIndexesTheRemoteParsed` (area `debremote`, which now looks the package up before the parse and waits
 on the catalogue) and by the leg `deb` (`TestDebCuration_R_CUR_004_…`, which waits on the catalogue instead of the database rows).
+
+### Q-CUR-165 · A level the upstream does not have says so, with the format's naming rule and one suggestion built from it
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below after the owner's report of 08:05 ("Die
+Suche nach meinem namespace scheitert."); the owner reviews it at the walkthrough.
+
+Context: on the owner's installation the tab **Upstream** of the Docker Hub remote, at the namespace entered by name `guided-traffic`,
+said "This level lists no package." Docker Hub's namespace is `guidedtraffic`: its namespaces hold no hyphen, and its listing
+(`/v2/namespaces/{namespace}/repositories`) answers a namespace it does not have with `200` and an empty page, not a `404`. Measured on
+2026-11-24 with public requests (the formats' `testdata/catalogue/README.md`): the same holds for Quay's listing, npm's key range of a
+scope on the replication host and the Galaxy's collection index; each operator has an account of the name that answers `404` for one it
+does not have: Docker Hub `/v2/users/{name}` (`200` a user, `308` to `/v2/orgs/{name}` an organization; `/v2/namespaces/{name}` answers
+`405`), Quay `/api/v1/organization/{name}` and `/api/v1/users/{name}` (an organization answers only the first, a user only the second),
+npm `/-/org/{scope}/package` (`200` for an organization's and a user's scope, `404 Scope not found`), the Galaxy `v3/namespaces/{name}/`.
+GitLab's project API answers `404` with the message `404 Project Not Found`; a Debian archive has a suite when it has its `InRelease` or
+`Release`, whose `Components` and `Architectures` name the rest.
+
+Decision 1, where the difference lives:
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `discover.LevelPage.Unknown` (`*UnknownLevel`: the rule the name breaks, its forbidden characters, a suggestion), set by the format; the API's `unknown` with the upstream's display name; the screen's sentence by the level's kind (chosen) | A field of the contract's page | One screen branch for every format; the engine keeps such a page like any page an asked upstream answered; a format that cannot tell sets nothing and the screen says what it said | A field every format may set, held by kit check 22 where its fixture names an unknown level |
+| (b) `404 catalogue_not_found` for an unknown level | An error | No new field | An error is not kept by the cache, so every look at the same wrong name spends the budget again; the screen shows the shared error notice with **Retry**, which a wrong name does not need; a suggestion has no place |
+| (c) A sentence of the format in English | Free text | No closed set | Not translated; the German screen would carry English |
+
+Decision 2, what it costs: a level that lists nothing on its first page asks at most two accounts of its name besides the listing, by
+`HEAD` (`discover.Exists`; Quay's two, Debian's `InRelease` and `Release`, which the stored copy answers without a request), and only
+then; a level that lists something costs nothing more. Kit check 22 holds the bound: at most three reads of the upstream.
+
+Decision 3, the naming rule before any request:
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Only what is certain is refused unasked: a Docker Hub namespace's characters outside `[a-z0-9_]` (its rule is lowercase letters and digits; the underscore of its oldest namespaces and their lengths are not certain, so a name with one is asked for), a Galaxy namespace's outside `[a-z0-9_]`; npm's scope keeps the name parser's refusal (`400`) (chosen) | The rule's certain part | No request for a name no namespace can have, the owner's case among them | A Docker Hub name of three characters is asked for |
+| (b) Docker Hub's whole rule, 4 to 30 lowercase letters and digits | Stricter | One request fewer for a short name | A namespace of the registry's first years that breaks today's rule could not be browsed |
+
+Decision 4, how far the suggestion goes:
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One candidate made by the format's rule from the name, asked once and named only when the upstream has it: Docker Hub drops the forbidden characters (`guided-traffic` → `guidedtraffic`), the Galaxy turns a hyphen into an underscore and drops the rest (`netbox-community` → `netbox_community`, the namespace of that GitHub organisation); none for a name that keeps the rule (chosen) | One request, only after a rule break | A suggestion that is never wrong (the upstream has it); constant cost | No help for a typo that keeps the rule |
+| (b) The upstream's search for the name | Fuzzy | Finds typos | Docker Hub's search for `guided-traffic` answered `apache/traffic_*` and none of the owner's; a page of guesses for one request more |
+| (c) No suggestion | Nothing | No request | The owner's case needs the one word the rule implies |
+
+**Choice:** 1 (a), 2 as stated, 3 (a), 4 (a). **Rationale:** the person entered a name and needs to know whether it is wrong or the
+level empty, in the words of the level's kind and, where the format has a rule, the rule; the screen stays one branch and the cost one
+constant per format. The development agent would revisit 3 (b) if Docker Hub documents that no namespace breaks its rule, and 4 (b) if
+a person reports a typo the rule does not catch.
+
+**Applied in the spec:** R-CUR-007 (the page and its acceptance), R-CUR-009 (`unknown`), R-CUR-018 (the screen); ADR-277 (the contract's addition);
+[formats/oci.md](formats/oci.md) R-OCI-038, [formats/npm.md](formats/npm.md) R-NPM-049, [formats/ansible.md](formats/ansible.md)
+R-ANS-047, [formats/debian.md](formats/debian.md) R-DEB-036; [architecture.md](architecture.md) check 22. Code: `UnknownLevel`,
+`Forbidden`, `Exists` and `EmptyOrUnknown` in [discover/catalogue.go](../../internal/mirror/discover/catalogue.go); each format's
+`catalogue.go`; `unknownLevel` in [upstream_catalogue_api.go](../../internal/api/v1/upstream_catalogue_api.go); `unknownLevelText`,
+`nameRuleText` and `suggestionText` in [upstream-words.ts](../../web/src/app/features/repositories/upstream/upstream-words.ts).
 
 ### Q-CUR-80 · A download of one version runs before the catalogue: the call that names its files is a contract interface of its own
 

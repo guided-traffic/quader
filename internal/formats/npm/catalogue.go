@@ -145,6 +145,13 @@ func scopeOf(l discover.LevelRef) (string, bool) {
 	return "@" + s, true
 }
 
+// scopeAccount is the registry's list of the packages a scope's owner may publish, `GET /-/org/{scope}/package` on the registry; a HEAD
+// of it tells whether the registry has the scope (Q-CUR-165).
+func scopeAccount(base *url.URL, scope string) *url.URL {
+	s := strings.TrimPrefix(scope, "@")
+	return &url.URL{Scheme: base.Scheme, Host: base.Host, Path: "/-/org/" + s + "/package", RawPath: "/-/org/" + url.PathEscape(s) + "/package"}
+}
+
 // scopeCursor is the position in a scope's key range: the last name answered.
 type scopeCursor struct {
 	After string `json:"after"`
@@ -206,6 +213,12 @@ func (remoteAdapter) Children(ctx context.Context, u discover.Upstream, rq disco
 			continue
 		}
 		page.Packages = append(page.Packages, discover.Hit{Name: n.String()})
+	}
+	if cur.After == "" && len(page.Packages) == 0 {
+		// The key range lists nothing for a scope the registry does not have either; its scope account, `/-/org/{scope}/package`,
+		// answers 200 for an organization's and a user's scope and 404 "Scope not found" for one it does not have (recorded on
+		// 2026-11-24, testdata/catalogue/README.md).
+		return discover.EmptyOrUnknown(ctx, u, scopeAccount(u.Base(), scope))
 	}
 	if !more || len(page.Packages) == 0 {
 		page.Done = true

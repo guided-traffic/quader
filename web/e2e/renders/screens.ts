@@ -40,7 +40,15 @@ import { clamavDatabases, clamavRegistry, clamavRow, definitionsExpected, defini
 import { damagedBlobs, noDamagedBlob, oneConnection, secondUnreachable, severalConnections, twoConnectionFacts } from './storage';
 import { auditDataKeys, bastionsHandover, bastionsRead, forbiddenLink, seededBastion } from './bastions';
 import { downloadsWalk } from './downloads';
-import { upstreamDebWalk, upstreamExpected, upstreamLookupWalk, upstreamOwnWalk, upstreamTabWalk, upstreamVersions } from './upstream';
+import {
+  upstreamDebWalk,
+  upstreamExpected,
+  upstreamLookupWalk,
+  upstreamOwnWalk,
+  upstreamTabWalk,
+  upstreamUnknownLevelWalk,
+  upstreamVersions,
+} from './upstream';
 
 /**
  * Every screen of the app (web/src/app/app.routes.ts and the route files of the feature areas), with the parameters of the
@@ -2685,10 +2693,11 @@ export const screens: readonly Screen[] = [
   { id: 'repository-oci-probed-downloads', path: `${O}/repositories/${probedCache.key}/downloads`, kinds: ['power'] },
   // The tab Upstream of a remote (R-CUR-018): as the seed's offline remote opens it, then answered in the browser as an npm remote
   // in mode onlyAllowed with every state (upstream.ts); an OCI remote of ghcr.io that offers only the lookup by name; a Debian remote's
-  // suites and its index search; and the OCI remote whose upstream is this installation, with the server's own answers. A package's
-  // versions keep the form of a table from 1,024 px on (Q-CUR-157).
+  // suites and its index search; a Docker Hub namespace Docker Hub does not have (Q-CUR-165); and the OCI remote whose upstream is this
+  // installation, with the server's own answers. A package's versions keep the form of a table from 1,024 px on (Q-CUR-157).
   { id: 'repository-npm-remote-upstream', path: `${P}/repositories/npmjs/upstream`, kinds: all, walk: upstreamTabWalk, expected: upstreamExpected, de: true, tables: upstreamVersions },
   { id: 'repository-oci-upstream-lookup', path: `${O}/repositories/docker-hub-remote/upstream`, kinds: ['power'], walk: upstreamLookupWalk, expected: upstreamExpected, tables: upstreamVersions },
+  { id: 'repository-oci-upstream-unknown-level', path: `${O}/repositories/docker-hub-remote/upstream`, kinds: ['power'], walk: upstreamUnknownLevelWalk, de: true },
   { id: 'repository-deb-upstream', path: `${O}/repositories/debian/upstream`, kinds: ['power'], walk: upstreamDebWalk, tables: upstreamVersions },
   { id: 'repository-oci-upstream-own', path: `${O}/repositories/${remoteCache.key}/upstream`, kinds: ['power', 'admin'], walk: upstreamOwnWalk, tables: upstreamVersions },
   { id: 'repository-npm-virtual', path: `${P}/repositories/npm`, kinds: all },

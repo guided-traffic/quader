@@ -9,16 +9,19 @@ import (
 
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/deb/control"
 	"github.com/guided-traffic/quader/internal/formats/deb/rows"
 	"github.com/guided-traffic/quader/internal/formats/deb/version"
 	"github.com/guided-traffic/quader/internal/mirror/discover"
+	"github.com/guided-traffic/quader/internal/openpgp"
 )
 
 // The upstream catalogue of a Debian remote (remote-curation.md R-CUR-007, formats/debian.md R-DEB-036). The archive format has no search
 // and no listing: apt search is local, over the Packages indexes. Quader answers the same over the indexes the remote has parsed
 // (R-DEB-023): the words AND-ed, each a case-insensitive substring of the name, its Provides or its short description, or of the name
 // and Provides only (Q-CUR-16); the levels suite, component and architecture of the releases it holds; a package's rows with their
-// sizes and digests. Nothing is read from the upstream.
+// sizes and digests. Nothing is read from the upstream but the release of a suite whose level lists nothing, which tells a suite,
+// a component or an architecture the upstream does not have from one Quader holds no index of (Q-CUR-165).
 
 // CatalogueStore is the upstream catalogue's part of the data port.
 type CatalogueStore interface {
@@ -182,6 +185,9 @@ func (a remoteAdapter) Children(ctx context.Context, u discover.Upstream, rq dis
 		if err != nil {
 			return discover.LevelPage{}, err
 		}
+		if len(hits) == 0 && len(rq.Cursor) == 0 {
+			return levelKnown(ctx, u, rq.Level.Path)
+		}
 		return discover.LevelPage{Packages: hits, Total: -1, Cursor: next, Done: done}, nil
 	}
 	suites, err := st.CatalogueSuites(ctx, repoID)
@@ -221,8 +227,57 @@ func (a remoteAdapter) Children(ctx context.Context, u discover.Upstream, rq dis
 		names = append(names, n)
 	}
 	sort.Strings(names)
+	if len(names) == 0 && len(rq.Level.Path) > 0 {
+		return levelKnown(ctx, u, rq.Level.Path)
+	}
 	page, next, done := pageStrings(names, rq.Cursor, pageSize(rq.Limit, discover.MaxLevelEntries))
 	return discover.LevelPage{Levels: page, Total: len(names), Cursor: next, Done: done}, nil
+}
+
+// levelKnown is the page of a suite, a component or an architecture that lists nothing (Q-CUR-165): unknown when the upstream has no
+// release of the suite (neither InRelease nor Release, the stored copy first, as the remote reads them; at most two requests), or when
+// the release's Components or Architectures field does not name the component or the architecture; empty otherwise, and where the
+// release does not say (a flat repository has no Components).
+func levelKnown(ctx context.Context, u discover.Upstream, path []string) (discover.LevelPage, error) {
+	empty := discover.LevelPage{Total: 0, Done: true}
+	unknown := discover.LevelPage{Total: 0, Done: true, Unknown: &discover.UnknownLevel{}}
+	text, found, err := suiteRelease(ctx, u, suiteDir(path[0]))
+	switch {
+	case err != nil:
+		return discover.LevelPage{}, err
+	case !found:
+		return unknown, nil
+	case len(path) < 2 || text == nil:
+		return empty, nil
+	}
+	p, err := control.Parse(text)
+	if err != nil {
+		return empty, nil //nolint:nilerr // a release that does not parse says nothing about the level; the remote's own read reports it
+	}
+	if comps := strings.Fields(p.Value("Components")); len(comps) > 0 && !containsString(comps, path[1]) {
+		return unknown, nil
+	}
+	if archs := strings.Fields(p.Value("Architectures")); len(path) == 3 && len(archs) > 0 && !containsString(archs, path[2]) {
+		return unknown, nil
+	}
+	return empty, nil
+}
+
+// suiteRelease reads the release of a suite's directory through the catalogue's upstream: the signed text of its InRelease, else its
+// Release; found is false when the upstream has neither. text is nil for an InRelease that is no cleartext message.
+func suiteRelease(ctx context.Context, u discover.Upstream, dir string) (text []byte, found bool, err error) {
+	doc, found, err := u.Document(ctx, joinDir(dir, FileInRelease), "")
+	if err != nil {
+		return nil, false, err
+	}
+	if found {
+		text, err := openpgp.ClearText(doc, openpgp.Limits{})
+		if err != nil {
+			return nil, true, nil //nolint:nilerr // the release is there; whether it reads is the remote's to report
+		}
+		return text, true, nil
+	}
+	return u.Document(ctx, joinDir(dir, FileRelease), "")
 }
 
 // pageStrings pages a list held whole by an offset cursor.

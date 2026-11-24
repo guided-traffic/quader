@@ -99,21 +99,30 @@ func clampLimit(limit, bound int) int {
 
 // getJSON reads a JSON answer of an operator's API through the catalogue's upstream; found is false for a 404.
 func getJSON(ctx context.Context, u discover.Upstream, target *url.URL, into any) (found bool, header http.Header, err error) {
-	resp, err := u.Get(ctx, target, "application/json", 0)
+	found, resp, err := getJSONAnswer(ctx, u, target, into)
+	if resp == nil {
+		return false, nil, err
+	}
+	return found, resp.Header, err
+}
+
+// getJSONAnswer is getJSON with the whole answer, whose body a 404 may still tell something by (GitLab's "404 Project Not Found").
+func getJSONAnswer(ctx context.Context, u discover.Upstream, target *url.URL, into any) (found bool, resp *discover.Response, err error) {
+	resp, err = u.Get(ctx, target, "application/json", 0)
 	if err != nil {
 		return false, nil, err
 	}
 	switch {
 	case resp.Status == http.StatusNotFound:
-		return false, resp.Header, nil
+		return false, resp, nil
 	case resp.Status != http.StatusOK:
-		return false, resp.Header, errs.E(errs.UpstreamFailed, errs.CodeUpstreamError, fmt.Sprintf("The registry's API answered %d.", resp.Status))
+		return false, resp, errs.E(errs.UpstreamFailed, errs.CodeUpstreamError, fmt.Sprintf("The registry's API answered %d.", resp.Status))
 	}
 	lim := untrusted.DefaultLimits().Tighten(untrusted.Limits{DocumentBytes: int64(len(resp.Body)) + 1})
 	if err := untrusted.UnmarshalJSON(resp.Body, lim, into); err != nil {
-		return false, resp.Header, errs.E(errs.UpstreamFailed, errs.CodeUpstreamError, "The registry's API answer is not the expected JSON.")
+		return false, resp, errs.E(errs.UpstreamFailed, errs.CodeUpstreamError, "The registry's API answer is not the expected JSON.")
 	}
-	return true, resp.Header, nil
+	return true, resp, nil
 }
 
 // Search implements [discover.Catalogue]: Docker Hub's and Quay's search; every other upstream answers discover.ErrNotOffered.
@@ -300,8 +309,54 @@ func catalogChildren(ctx context.Context, u discover.Upstream, rq discover.Level
 	return out, nil
 }
 
-// hubNamespace lists a namespace of Docker Hub, `GET /v2/namespaces/{namespace}/repositories` on the Hub API.
+// hubNameChar is a character a Docker Hub namespace holds: its operator's rule for the name of a user or an organization is lowercase
+// letters and digits (4 to 30 of them).
+func hubNameChar(r rune) bool { return r >= 'a' && r <= 'z' || r >= '0' && r <= '9' }
+
+// hubCertainChar is a character a name is asked for with: the rule's, and the underscore, which the registry's oldest namespaces may
+// hold (its first index took [a-z0-9_]), so that only what no namespace can hold is refused before a request (Q-CUR-165). The length
+// is not checked, for the same reason.
+func hubCertainChar(r rune) bool { return hubNameChar(r) || r == '_' }
+
+// hubAccount is the Hub API's account of a namespace, `GET /v2/users/{namespace}`: 200 for a user, 308 to /v2/orgs/{namespace} for an
+// organization, 404 for a name Docker Hub does not have (recorded on 2026-11-24, testdata/catalogue/README.md). The listing of a
+// namespace answers an unknown one with an empty page, not a 404, so the account is what tells the two apart.
+func hubAccount(ns string) *url.URL {
+	return &url.URL{Scheme: "https", Host: hubAPI, Path: "/v2/users/" + ns}
+}
+
+// hubByRule is the page of a namespace whose name holds a character no Docker Hub namespace holds: unknown, asked for nothing, with
+// the name without those characters as the suggestion when Docker Hub has it (one request, Q-CUR-165).
+func hubByRule(ctx context.Context, u discover.Upstream, ns, bad string) (discover.LevelPage, error) {
+	unknown := &discover.UnknownLevel{Rule: discover.NameRuleLowercaseDigits, Forbidden: bad}
+	if s := dropRunes(ns, bad); s != "" {
+		exists, _, err := discover.Exists(ctx, u, hubAccount(s))
+		if err != nil {
+			return discover.LevelPage{}, err
+		}
+		if exists {
+			unknown.Suggestion = s
+		}
+	}
+	return discover.LevelPage{Done: true, Unknown: unknown}, nil
+}
+
+// dropRunes is s without the characters of drop.
+func dropRunes(s, drop string) string {
+	return strings.Map(func(r rune) rune {
+		if strings.ContainsRune(drop, r) {
+			return -1
+		}
+		return r
+	}, s)
+}
+
+// hubNamespace lists a namespace of Docker Hub, `GET /v2/namespaces/{namespace}/repositories` on the Hub API. A name that breaks the
+// namespaces' rule is not asked for; a first page that lists nothing asks the namespace's account whether Docker Hub has it.
 func hubNamespace(ctx context.Context, u discover.Upstream, ns string, rq discover.LevelRequest) (discover.LevelPage, error) {
+	if bad := discover.Forbidden(ns, hubCertainChar); bad != "" {
+		return hubByRule(ctx, u, ns, bad)
+	}
 	limit := clampLimit(rq.Limit, hubPageMax)
 	page := pageOf(rq.Cursor)
 	target := &url.URL{Scheme: "https", Host: hubAPI, Path: "/v2/namespaces/" + ns + "/repositories", RawQuery: url.Values{
@@ -322,7 +377,10 @@ func hubNamespace(ctx context.Context, u discover.Upstream, ns string, rq discov
 		return discover.LevelPage{}, err
 	}
 	if !found {
-		return discover.LevelPage{}, errs.E(errs.NotFound, errs.CodeCatalogueNotFound, "Docker Hub has no namespace "+ns+".")
+		return discover.LevelPage{Done: true, Unknown: &discover.UnknownLevel{}}, nil
+	}
+	if page == 1 && a.Count == 0 && len(a.Results) == 0 {
+		return discover.EmptyOrUnknown(ctx, u, hubAccount(ns))
 	}
 	out := discover.LevelPage{Total: a.Count}
 	for _, r := range a.Results {
@@ -369,6 +427,12 @@ func quayNamespace(ctx context.Context, u discover.Upstream, ns string, rq disco
 	if _, _, err := getJSON(ctx, u, originURL(u.Base(), "/api/v1/repository", q), &a); err != nil {
 		return discover.LevelPage{}, err
 	}
+	if cur.Token == "" && cur.Skip == 0 && len(a.Repositories) == 0 {
+		// The listing answers an unknown namespace with an empty list; Quay's organization and user accounts answer 404 for a name it
+		// does not have (recorded on 2026-11-24).
+		return discover.EmptyOrUnknown(ctx, u, originURL(u.Base(), "/api/v1/organization/"+url.PathEscape(ns), nil),
+			originURL(u.Base(), "/api/v1/users/"+url.PathEscape(ns), nil))
+	}
 	rows := a.Repositories
 	skip := min(cur.Skip, len(rows))
 	rows = rows[skip:]
@@ -413,13 +477,22 @@ func gitlabProject(ctx context.Context, u discover.Upstream, project string, rq 
 		Path      string `json:"path"`
 		CreatedAt string `json:"created_at"`
 	}
-	found, h, err := getJSON(ctx, u, target, &rows)
+	found, resp, err := getJSONAnswer(ctx, u, target, &rows)
 	if err != nil {
 		return discover.LevelPage{}, err
 	}
 	if !found {
+		// GitLab names what it does not have: "404 Project Not Found" for a project it has not or does not show without a token
+		// (recorded on 2026-11-24); another 404 is a project whose registry it does not show.
+		var m struct {
+			Message string `json:"message"`
+		}
+		if json.Unmarshal(resp.Body, &m) == nil && m.Message == "404 Project Not Found" {
+			return discover.LevelPage{Done: true, Unknown: &discover.UnknownLevel{}}, nil
+		}
 		return discover.LevelPage{}, errs.E(errs.NotFound, errs.CodeCatalogueNotFound, "GitLab has no public project "+project+" with a registry.")
 	}
+	h := resp.Header
 	out := discover.LevelPage{Total: -1}
 	if t, err := strconv.Atoi(h.Get("X-Total")); err == nil {
 		out.Total = t

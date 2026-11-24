@@ -3,7 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom, map } from 'rxjs';
 import { ApiError } from '../../../api/problem';
-import { UpstreamCatalogue, UpstreamCatalogueApi, UpstreamHit } from '../../../api/upstream-catalogue-api';
+import { UpstreamCatalogue, UpstreamCatalogueApi, UpstreamHit, UpstreamUnknownLevel } from '../../../api/upstream-catalogue-api';
 import { SessionStore } from '../../../core/session-store';
 import { ErrorNotice } from '../../../shared/error-notice';
 import { asApiError, valueOf } from '../../../shared/paged-resource';
@@ -16,7 +16,16 @@ import { DeliveryRequestsPanel } from './delivery-requests-panel';
 import { DeliveryRulesData, DeliveryRulesDialog } from './delivery-rules-dialog';
 import { UpstreamActions } from './upstream-actions';
 import { UpstreamPackageView, groupedCount } from './upstream-package';
-import { catalogueState, levelKindText, modeSentence, sectionExample, stateBadge } from './upstream-words';
+import {
+  catalogueState,
+  levelKindText,
+  modeSentence,
+  nameRuleText,
+  sectionExample,
+  stateBadge,
+  suggestionText,
+  unknownLevelText,
+} from './upstream-words';
 
 /** One page of packages the tab lists: a search's hits or a level's packages, with what the answer says about them. */
 interface ListPage {
@@ -26,6 +35,8 @@ interface ListPage {
   readonly truncated: boolean;
   readonly withheld: number | null;
   readonly next: string | null;
+  /** The upstream does not have the level (Q-CUR-165); null for a search and for a level it has or does not tell apart. */
+  readonly unknown: UpstreamUnknownLevel | null;
 }
 
 /** The query of the tab, in its address (R-CUR-018): a search text, a package looked up by name, a level, names only. */
@@ -213,10 +224,18 @@ export class RemoteUpstream {
       let next: ListPage;
       if (listing === 'search') {
         const p = await this.api.search(this.repository(), { q, namesOnly, cursor });
-        next = { hits: p.hits, levels: [], total: p.total, truncated: p.truncated, withheld: p.withheld, next: p.done ? null : p.nextCursor };
+        next = { hits: p.hits, levels: [], total: p.total, truncated: p.truncated, withheld: p.withheld, next: p.done ? null : p.nextCursor, unknown: null };
       } else {
         const p = await this.api.level(this.repository(), level, cursor);
-        next = { hits: p.packages, levels: p.levels, total: p.total, truncated: false, withheld: p.withheld, next: p.done ? null : p.nextCursor };
+        next = {
+          hits: p.packages,
+          levels: p.levels,
+          total: p.total,
+          truncated: false,
+          withheld: p.withheld,
+          next: p.done ? null : p.nextCursor,
+          unknown: p.unknown,
+        };
       }
       if (generation !== this.generation) return;
       const before = this.page();
@@ -357,8 +376,23 @@ export class RemoteUpstream {
 
   protected emptyText(): string {
     if (this.listing() === 'search') return $localize`:@@upstream.results.empty:No package of the upstream matches “${this.q()}:query:”.`;
+    const unknown = this.page()?.unknown;
+    const path = this.level();
+    if (unknown && path.length > 0) {
+      const said = unknownLevelText(this.kindAt(path.length - 1), unknown.upstream, path.at(-1) ?? '');
+      const rule = nameRuleText(unknown.rule, unknown.upstream, unknown.forbidden);
+      return rule ? `${said} ${rule}` : said;
+    }
     return $localize`:@@upstream.level.empty:This level lists no package.`;
   }
+
+  /** The level the entered name may have meant (Q-CUR-165): the current path with its last part replaced; null without one. */
+  protected readonly suggestion = computed(() => {
+    const s = this.page()?.unknown?.suggestion;
+    const path = this.level();
+    if (!s || path.length === 0) return null;
+    return { text: suggestionText(s), path: [...path.slice(0, -1), s] };
+  });
 
   /** The label of the search field: a search of the upstream, of Quader's index, or a lookup by exact name. */
   protected readonly fieldLabel = computed(() => {

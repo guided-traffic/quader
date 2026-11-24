@@ -5428,6 +5428,27 @@ func (e UpstreamTestResultErrorCode) Valid() bool {
 	}
 }
 
+// Defines values for UpstreamUnknownLevelRule.
+const (
+	UpstreamUnknownLevelRuleLessThannil               UpstreamUnknownLevelRule = "<nil>"
+	UpstreamUnknownLevelRuleLowercaseDigits           UpstreamUnknownLevelRule = "lowercaseDigits"
+	UpstreamUnknownLevelRuleLowercaseDigitsUnderscore UpstreamUnknownLevelRule = "lowercaseDigitsUnderscore"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamUnknownLevelRule enum.
+func (e UpstreamUnknownLevelRule) Valid() bool {
+	switch e {
+	case UpstreamUnknownLevelRuleLessThannil:
+		return true
+	case UpstreamUnknownLevelRuleLowercaseDigits:
+		return true
+	case UpstreamUnknownLevelRuleLowercaseDigitsUnderscore:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for UpstreamVersionStored.
 const (
 	UpstreamVersionStoredNone  UpstreamVersionStored = "none"
@@ -16138,13 +16159,17 @@ type UpstreamHitStored string
 
 // UpstreamLevelPage One page of a level (R-CUR-007, R-CUR-009).
 type UpstreamLevelPage struct {
-	Done         bool          `json:"done"`
-	Levels       []string      `json:"levels"`
-	NextCursor   *string       `json:"nextCursor"`
-	Packages     []UpstreamHit `json:"packages"`
-	Total        *int          `json:"total"`
-	Withheld     *int          `json:"withheld"`
-	WithheldNote *string       `json:"withheldNote"`
+	Done       bool          `json:"done"`
+	Levels     []string      `json:"levels"`
+	NextCursor *string       `json:"nextCursor"`
+	Packages   []UpstreamHit `json:"packages"`
+	Total      *int          `json:"total"`
+
+	// Unknown The upstream does not have this level, told apart from a level it has that lists nothing (Q-CUR-165); `null` where the
+	// level lists something or where the upstream does not tell the two apart.
+	Unknown      *UpstreamUnknownLevel `json:"unknown"`
+	Withheld     *int                  `json:"withheld"`
+	WithheldNote *string               `json:"withheldNote"`
 }
 
 // UpstreamPackage A package looked up by its exact name and one page of its versions (R-CUR-007, R-CUR-009).
@@ -16510,6 +16535,24 @@ type UpstreamTestResult struct {
 
 // UpstreamTestResultErrorCode defines model for UpstreamTestResult.Error.Code.
 type UpstreamTestResultErrorCode string
+
+// UpstreamUnknownLevel Why a level lists nothing: the upstream does not have it (R-CUR-007, Q-CUR-165). `rule` and `forbidden` are set when the
+// level's name breaks the format's naming rule, which is certain, so that nothing asked the upstream for it; `suggestion` is a
+// level of the upstream the name may have meant, the name made to keep the rule, asked for once and found.
+type UpstreamUnknownLevel struct {
+	// Forbidden The characters of the name the rule does not allow, each once, in the order the name has them.
+	Forbidden *string `json:"forbidden"`
+
+	// Rule `lowercaseDigits`: lowercase letters and digits only (a Docker Hub namespace); `lowercaseDigitsUnderscore`: lowercase letters, digits and underscores only (an Ansible Galaxy namespace).
+	Rule       *UpstreamUnknownLevelRule `json:"rule"`
+	Suggestion *string                   `json:"suggestion"`
+
+	// Upstream The name a person knows the upstream by, not translated; the display name of the repository's preset ("Docker Hub"), else the host of its URL.
+	Upstream string `json:"upstream"`
+}
+
+// UpstreamUnknownLevelRule `lowercaseDigits`: lowercase letters and digits only (a Docker Hub namespace); `lowercaseDigitsUnderscore`: lowercase letters, digits and underscores only (an Ansible Galaxy namespace).
+type UpstreamUnknownLevelRule string
 
 // UpstreamVersion A version of a package as the upstream tells it without a download, with the repository's state: `delivery` (the rules'
 // decision), `stored` (`none` or `whole`), `queued` and `request` (R-CUR-009). The version is canonical (R-CUR-006).

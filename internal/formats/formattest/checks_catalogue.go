@@ -21,7 +21,8 @@ import (
 // process that answers the fixture's canned documents, each call the repository's capabilities offer answers pages whose names the
 // format's name rule accepts, whose cursor continues and that end Done (a search may end Truncated at its window); a call they do not
 // offer answers discover.ErrNotOffered, and so does every call the format's declaration gives a reason for; a package lookup answers
-// canonical versions and a name the upstream does not have Found false; an answer above the catalogue's bound fails with
+// canonical versions and a name the upstream does not have Found false; a level the upstream does not have, where the case names one,
+// answers a page that lists nothing and says Unknown within three reads of the upstream (Q-CUR-165); an answer above the catalogue's bound fails with
 // catalogue_answer_too_large; and no call reaches a host outside the upstream and the hosts the capabilities declare.
 const CheckCatalogue Check = 22
 
@@ -49,6 +50,11 @@ type CatalogueCase struct {
 	Absent  string
 	// Limit is the page size of every call, small enough that the search, the level and the versions each take more than one page.
 	Limit int
+	// UnknownLevel is the path of a level the upstream does not have, for an upstream that tells an unknown level from an empty one:
+	// Children answers a page that lists nothing with Unknown set, reading the upstream at most maxUnknownReads times (Q-CUR-165), and
+	// naming UnknownSuggestion as its suggestion ("" for none). Empty for an upstream that does not tell the two apart.
+	UnknownLevel      []string
+	UnknownSuggestion string
 	// ExpectSearchUnavailable says that the case's upstream does not answer the search as the format expects (a registry without the
 	// route, an undocumented endpoint that changed): Search answers a *discover.UnavailableError, which the engine turns into "no search"
 	// for its cache period (R-CUR-008).
@@ -336,6 +342,40 @@ func (r *run) catalogueLevel(ctx context.Context, cat formats.Catalogue, u *fake
 	}
 	if entries == 0 {
 		failf("the level %v lists nothing", c.Level)
+	}
+	r.catalogueUnknownLevel(ctx, cat, u, c, limit, failf)
+}
+
+// maxUnknownReads bounds what telling an unknown level from an empty one costs: the listing and at most two accounts of the name (Quay's
+// organization and user, Debian's InRelease and Release), a constant per format (Q-CUR-165).
+const maxUnknownReads = 3
+
+// catalogueUnknownLevel asks the case's unknown level: a page that lists nothing, says Unknown and names the expected suggestion.
+func (r *run) catalogueUnknownLevel(ctx context.Context, cat formats.Catalogue, u *fakeCatalogueUpstream, c CatalogueCase, limit int, failf func(string, ...any)) {
+	if len(c.UnknownLevel) == 0 {
+		return
+	}
+	u.mu.Lock()
+	before := u.reads
+	u.mu.Unlock()
+	p, err := cat.Children(ctx, u, discover.LevelRequest{Level: discover.LevelRef{Path: c.UnknownLevel}, Limit: limit})
+	u.mu.Lock()
+	reads := u.reads - before
+	u.mu.Unlock()
+	switch {
+	case err != nil:
+		failf("Children of the unknown level %v: %v", c.UnknownLevel, err)
+	case p.Unknown == nil:
+		failf("Children of the unknown level %v does not say it is unknown (it lists %d entries)", c.UnknownLevel, len(p.Levels)+len(p.Packages))
+	case len(p.Levels)+len(p.Packages) > 0:
+		failf("Children of the unknown level %v lists %d entries beside Unknown", c.UnknownLevel, len(p.Levels)+len(p.Packages))
+	case p.Unknown.Suggestion != c.UnknownSuggestion:
+		failf("Children of the unknown level %v suggests %q, want %q", c.UnknownLevel, p.Unknown.Suggestion, c.UnknownSuggestion)
+	case p.Unknown.Rule == "" && p.Unknown.Forbidden != "":
+		failf("Children of the unknown level %v names forbidden characters %q without a rule", c.UnknownLevel, p.Unknown.Forbidden)
+	}
+	if reads > maxUnknownReads {
+		failf("Children of the unknown level %v read the upstream %d times, at most %d tell an unknown level from an empty one", c.UnknownLevel, reads, maxUnknownReads)
 	}
 }
 

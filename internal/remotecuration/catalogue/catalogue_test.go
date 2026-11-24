@@ -364,3 +364,58 @@ func TestR_CUR_008_TheCatalogueEngine(t *testing.T) {
 		}
 	})
 }
+
+// unknownCatalogue answers a level as a format that tells an unknown level from an empty one: one request, then the page it holds.
+type unknownCatalogue struct {
+	fakeCatalogue
+	page discover.LevelPage
+}
+
+func (c *unknownCatalogue) Children(ctx context.Context, u discover.Upstream, _ discover.LevelRequest) (discover.LevelPage, error) {
+	if _, err := u.Get(ctx, u.Base(), "", 0); err != nil {
+		return discover.LevelPage{}, err
+	}
+	p := c.page
+	if p.Unknown != nil {
+		unknown := *p.Unknown
+		p.Unknown = &unknown
+	}
+	return p, nil
+}
+
+// TestR_CUR_007_AnUnknownLevelIsKeptAndAPageWithEntriesIsKnown: a level the format says the upstream does not have is kept for the
+// period like any page an asked upstream answered, and handed out as a copy; a page that lists something is known whatever the format
+// set (Q-CUR-165). A fake format and a fake upstream in process; milliseconds, no data.
+func TestR_CUR_007_AnUnknownLevelIsKeptAndAPageWithEntriesIsKnown(t *testing.T) {
+	ctx := context.Background()
+	t0 := time.Date(2026, 11, 24, 10, 0, 0, 0, time.UTC)
+	tgt := Target{RepoID: 7, Repo: "it/oci-remote", Format: "oci", Upstream: "https://registry-1.docker.io/"}
+	rq := discover.LevelRequest{Level: discover.LevelRef{Path: []string{"guided-traffic"}}}
+
+	t.Run("R-CUR-007 an unknown level is kept for the period and copied", func(t *testing.T) {
+		l := &fakeLender{}
+		cat := &unknownCatalogue{page: discover.LevelPage{Done: true, Unknown: &discover.UnknownLevel{
+			Rule: discover.NameRuleLowercaseDigits, Forbidden: "-", Suggestion: "guidedtraffic",
+		}}}
+		e := newEngine(t, cat, l, defaults(), func() time.Time { return t0 })
+		first, err := e.Children(ctx, tgt, rq)
+		if err != nil || first.Unknown == nil || first.Unknown.Suggestion != "guidedtraffic" {
+			t.Fatalf("%+v %v", first, err)
+		}
+		first.Unknown.Suggestion = "changed by a caller"
+		second, err := e.Children(ctx, tgt, rq)
+		if err != nil || second.Unknown == nil || second.Unknown.Suggestion != "guidedtraffic" {
+			t.Fatalf("the cached page is %+v %v", second.Unknown, err)
+		}
+		if gets, _ := l.totals(); gets != 1 {
+			t.Fatalf("two identical calls sent %d requests, want 1", gets)
+		}
+	})
+	t.Run("R-CUR-007 a page that lists something is known", func(t *testing.T) {
+		cat := &unknownCatalogue{page: discover.LevelPage{Packages: []discover.Hit{{Name: "a/b"}}, Done: true, Unknown: &discover.UnknownLevel{}}}
+		e := newEngine(t, cat, &fakeLender{}, defaults(), func() time.Time { return t0 })
+		if p, err := e.Children(ctx, tgt, rq); err != nil || p.Unknown != nil {
+			t.Fatalf("%+v %v", p, err)
+		}
+	})
+}

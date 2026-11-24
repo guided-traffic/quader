@@ -68,6 +68,54 @@ export function levelKindText(kind: string): string {
   }
 }
 
+/**
+ * A level the upstream does not have, in one sentence by the level's kind (R-CUR-018, Q-CUR-165): "Docker Hub has no namespace
+ * “guided-traffic”." The upstream's name is a product name or a host and is not translated.
+ */
+export function unknownLevelText(kind: string, upstream: string, name: string): string {
+  switch (kind) {
+    case 'scope':
+      return $localize`:@@upstream.unknown.scope:${upstream}:upstream: has no scope “${name}:name:”.`;
+    case 'namespace':
+      return $localize`:@@upstream.unknown.namespace:${upstream}:upstream: has no namespace “${name}:name:”.`;
+    case 'project':
+      return $localize`:@@upstream.unknown.project:${upstream}:upstream: has no public project “${name}:name:”.`;
+    case 'suite':
+      return $localize`:@@upstream.unknown.suite:${upstream}:upstream: has no suite “${name}:name:”.`;
+    case 'component':
+      return $localize`:@@upstream.unknown.component:${upstream}:upstream: has no component “${name}:name:” in this suite.`;
+    case 'architecture':
+      return $localize`:@@upstream.unknown.architecture:${upstream}:upstream: has no architecture “${name}:name:” in this suite.`;
+    default:
+      return $localize`:@@upstream.unknown.level:${upstream}:upstream: has no level “${name}:name:”.`;
+  }
+}
+
+/**
+ * The naming rule a level's name breaks, built from the rule and the characters it forbids (R-CUR-018, Q-CUR-165): "Docker Hub allows
+ * only lowercase letters and digits in this name, no “-”." Null for a rule the screen does not know.
+ */
+export function nameRuleText(rule: string | null, upstream: string, forbidden: string | null): string | null {
+  const chars = [...(forbidden ?? '')].map((char) => $localize`:@@upstream.rule.char:“${char}:char:”`).join(', ');
+  switch (rule) {
+    case 'lowercaseDigits':
+      return chars
+        ? $localize`:@@upstream.rule.lowercase-digits:${upstream}:upstream: allows only lowercase letters and digits in this name, no ${chars}:chars:.`
+        : $localize`:@@upstream.rule.lowercase-digits-only:${upstream}:upstream: allows only lowercase letters and digits in this name.`;
+    case 'lowercaseDigitsUnderscore':
+      return chars
+        ? $localize`:@@upstream.rule.lowercase-digits-underscore:${upstream}:upstream: allows only lowercase letters, digits and underscores in this name, no ${chars}:chars:.`
+        : $localize`:@@upstream.rule.lowercase-digits-underscore-only:${upstream}:upstream: allows only lowercase letters, digits and underscores in this name.`;
+    default:
+      return null;
+  }
+}
+
+/** The link to a level the name may have meant (Q-CUR-165): "Did you mean “guidedtraffic”?" */
+export function suggestionText(name: string): string {
+  return $localize`:@@upstream.unknown.suggestion:Did you mean “${name}:name:”?`;
+}
+
 /** The flags of a hit or a version that the screen names (R-CUR-007); a flag it does not know is shown as the upstream's word. */
 export function flagText(flag: string): string {
   switch (flag) {

@@ -151,6 +151,10 @@
         (more)="more()"
         (retry)="retryList()"
       >
+        @if (suggestion(); as s) {
+          <!-- A level the upstream does not have, and the name made to keep the format's rule that it has (Q-CUR-165). -->
+          <a emptyAction data-testid="upstream-suggestion" [routerLink]="[]" [queryParams]="levelLink(s.path)" queryParamsHandling="merge">{{ s.text }}</a>
+        }
         @for (h of page()?.hits ?? []; track h.name) {
           <tr>
             <th scope="row" class="wrap-name">

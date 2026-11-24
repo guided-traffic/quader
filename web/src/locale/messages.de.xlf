@@ -29487,7 +29487,7 @@
     </unit>
     <unit id="upstream.cache.stored">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:189,190</note>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:193,194</note>
         <note category="location">src/app/features/repositories/upstream/upstream-package.html:122,123</note>
       </notes>
       <segment>
@@ -29497,7 +29497,7 @@
     </unit>
     <unit id="upstream.cache.not-stored">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:191,193</note>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:195,197</note>
         <note category="location">src/app/features/repositories/upstream/upstream-package.html:124,126</note>
       </notes>
       <segment>
@@ -29507,7 +29507,7 @@
     </unit>
     <unit id="upstream.start.search-image">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:213,215</note>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:217,219</note>
       </notes>
       <segment>
         <source>Search the upstream, or look an image up by its full name, to see its tags.</source>
@@ -29516,7 +29516,7 @@
     </unit>
     <unit id="upstream.start.lookup-image">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:215,217</note>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:219,221</note>
       </notes>
       <segment>
         <source>Look an image up by its full name to see its tags.</source>
@@ -29525,7 +29525,7 @@
     </unit>
     <unit id="upstream.start.search">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:218,220</note>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:222,224</note>
       </notes>
       <segment>
         <source>Search the upstream, or look a package up by its exact name, to see its versions.</source>
@@ -29534,7 +29534,7 @@
     </unit>
     <unit id="upstream.start.lookup">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:220,223</note>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:224,227</note>
       </notes>
       <segment>
         <source>Look a package up by its exact name to see its versions.</source>
@@ -29543,7 +29543,7 @@
     </unit>
     <unit id="upstream.loading">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:225,227</note>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:229,231</note>
       </notes>
       <segment>
         <source>Reading what the upstream offers.</source>
@@ -29552,7 +29552,7 @@
     </unit>
     <unit id="upstream.results.caption">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:164</note>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:175</note>
       </notes>
       <segment>
         <source>Packages of the upstream that match the search</source>
@@ -29561,7 +29561,7 @@
     </unit>
     <unit id="upstream.level.caption">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:165</note>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:176</note>
       </notes>
       <segment>
         <source>Packages of the upstream at this level</source>
@@ -29570,7 +29570,7 @@
     </unit>
     <unit id="upstream.col.latest">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:169</note>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:180</note>
       </notes>
       <segment>
         <source>Latest</source>
@@ -29579,7 +29579,7 @@
     </unit>
     <unit id="upstream.col.state">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:170</note>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:181</note>
       </notes>
       <segment>
         <source>State</source>
@@ -29588,7 +29588,7 @@
     </unit>
     <unit id="upstream.col.stored">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:171</note>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:182</note>
       </notes>
       <segment>
         <source>Cache</source>
@@ -29597,7 +29597,7 @@
     </unit>
     <unit id="upstream.preview.title-section">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:311</note>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:330</note>
       </notes>
       <segment>
         <source>The sub-section <ph id="0" equiv="section" disp="path.join(&apos; / &apos;)"/></source>
@@ -29606,7 +29606,7 @@
     </unit>
     <unit id="upstream.row.open">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:330</note>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:349</note>
       </notes>
       <segment>
         <source>Versions of <ph id="0" equiv="name" disp="h.name"/></source>
@@ -29615,7 +29615,7 @@
     </unit>
     <unit id="upstream.results.total-window">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:344</note>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:363</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="total" disp="groupedCount(p.total)"/> hits; the upstream shows at most the first <ph id="1" equiv="window" disp="groupedCount(window)"/></source>
@@ -29624,7 +29624,7 @@
     </unit>
     <unit id="upstream.results.total">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:346</note>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:365</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="total" disp="groupedCount(p.total)"/> hits</source>
@@ -29633,7 +29633,7 @@
     </unit>
     <unit id="upstream.results.withheld-one">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:354</note>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:373</note>
       </notes>
       <segment>
         <source>1 hit is not allowed in this repository; look a package up by its exact name to ask for it.</source>
@@ -29642,7 +29642,7 @@
     </unit>
     <unit id="upstream.results.withheld">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:355</note>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:374</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> hits are not allowed in this repository; look a package up by its exact name to ask for it.</source>
@@ -29651,7 +29651,7 @@
     </unit>
     <unit id="upstream.results.empty">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:359</note>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:378</note>
       </notes>
       <segment>
         <source>No package of the upstream matches “<ph id="0" equiv="query" disp="this.q()"/>”.</source>
@@ -29660,7 +29660,7 @@
     </unit>
     <unit id="upstream.level.empty">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:360</note>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:386</note>
       </notes>
       <segment>
         <source>This level lists no package.</source>
@@ -29669,7 +29669,7 @@
     </unit>
     <unit id="upstream.search.label">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:367</note>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:401</note>
       </notes>
       <segment>
         <source>Search the upstream</source>
@@ -29678,7 +29678,7 @@
     </unit>
     <unit id="upstream.search.label-index">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:369</note>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:403</note>
       </notes>
       <segment>
         <source>Search the index</source>
@@ -29687,7 +29687,7 @@
     </unit>
     <unit id="upstream.lookup.label">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:371</note>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:405</note>
       </notes>
       <segment>
         <source>Look up by name</source>
@@ -30432,9 +30432,126 @@
         <target>Architektur</target>
       </segment>
     </unit>
+    <unit id="upstream.unknown.scope">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:78</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="upstream" disp="upstream"/> has no scope “<ph id="1" equiv="name" disp="name"/>”.</source>
+        <target><ph id="0" equiv="upstream" disp="upstream"/> kennt keinen Scope „<ph id="1" equiv="name" disp="name"/>“.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.unknown.namespace">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:80</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="upstream" disp="upstream"/> has no namespace “<ph id="1" equiv="name" disp="name"/>”.</source>
+        <target><ph id="0" equiv="upstream" disp="upstream"/> kennt keinen Namespace „<ph id="1" equiv="name" disp="name"/>“.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.unknown.project">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:82</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="upstream" disp="upstream"/> has no public project “<ph id="1" equiv="name" disp="name"/>”.</source>
+        <target><ph id="0" equiv="upstream" disp="upstream"/> kennt kein öffentliches Projekt „<ph id="1" equiv="name" disp="name"/>“.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.unknown.suite">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:84</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="upstream" disp="upstream"/> has no suite “<ph id="1" equiv="name" disp="name"/>”.</source>
+        <target><ph id="0" equiv="upstream" disp="upstream"/> kennt keine Suite „<ph id="1" equiv="name" disp="name"/>“.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.unknown.component">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:86</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="upstream" disp="upstream"/> has no component “<ph id="1" equiv="name" disp="name"/>” in this suite.</source>
+        <target><ph id="0" equiv="upstream" disp="upstream"/> kennt keine Komponente „<ph id="1" equiv="name" disp="name"/>“ in dieser Suite.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.unknown.architecture">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:88</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="upstream" disp="upstream"/> has no architecture “<ph id="1" equiv="name" disp="name"/>” in this suite.</source>
+        <target><ph id="0" equiv="upstream" disp="upstream"/> kennt keine Architektur „<ph id="1" equiv="name" disp="name"/>“ in dieser Suite.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.unknown.level">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:90</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="upstream" disp="upstream"/> has no level “<ph id="1" equiv="name" disp="name"/>”.</source>
+        <target><ph id="0" equiv="upstream" disp="upstream"/> kennt keine Ebene „<ph id="1" equiv="name" disp="name"/>“.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.rule.char">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:99</note>
+      </notes>
+      <segment>
+        <source>“<ph id="0" equiv="char" disp="char"/>”</source>
+        <target>„<ph id="0" equiv="char" disp="char"/>“</target>
+      </segment>
+    </unit>
+    <unit id="upstream.rule.lowercase-digits">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:103</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="upstream" disp="upstream"/> allows only lowercase letters and digits in this name, no <ph id="1" equiv="chars" disp="chars"/>.</source>
+        <target><ph id="0" equiv="upstream" disp="upstream"/> erlaubt in diesem Namen nur Kleinbuchstaben und Ziffern, kein <ph id="1" equiv="chars" disp="chars"/>.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.rule.lowercase-digits-only">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:104</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="upstream" disp="upstream"/> allows only lowercase letters and digits in this name.</source>
+        <target><ph id="0" equiv="upstream" disp="upstream"/> erlaubt in diesem Namen nur Kleinbuchstaben und Ziffern.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.rule.lowercase-digits-underscore">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:107</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="upstream" disp="upstream"/> allows only lowercase letters, digits and underscores in this name, no <ph id="1" equiv="chars" disp="chars"/>.</source>
+        <target><ph id="0" equiv="upstream" disp="upstream"/> erlaubt in diesem Namen nur Kleinbuchstaben, Ziffern und Unterstriche, kein <ph id="1" equiv="chars" disp="chars"/>.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.rule.lowercase-digits-underscore-only">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:108</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="upstream" disp="upstream"/> allows only lowercase letters, digits and underscores in this name.</source>
+        <target><ph id="0" equiv="upstream" disp="upstream"/> erlaubt in diesem Namen nur Kleinbuchstaben, Ziffern und Unterstriche.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.unknown.suggestion">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:116</note>
+      </notes>
+      <segment>
+        <source>Did you mean “<ph id="0" equiv="name" disp="name"/>”?</source>
+        <target>Meinten Sie „<ph id="0" equiv="name" disp="name"/>“?</target>
+      </segment>
+    </unit>
     <unit id="upstream.flag.deprecated">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:75</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:123</note>
       </notes>
       <segment>
         <source>Deprecated</source>
@@ -30443,7 +30560,7 @@
     </unit>
     <unit id="upstream.flag.yanked">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:77</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:125</note>
       </notes>
       <segment>
         <source>Yanked</source>
@@ -30452,7 +30569,7 @@
     </unit>
     <unit id="upstream.flag.unlisted">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:79</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:127</note>
       </notes>
       <segment>
         <source>Unlisted</source>
@@ -30461,7 +30578,7 @@
     </unit>
     <unit id="upstream.flag.prerelease">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:81</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:129</note>
       </notes>
       <segment>
         <source>Pre-release</source>
@@ -30470,7 +30587,7 @@
     </unit>
     <unit id="upstream.flag.official">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:83</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:131</note>
       </notes>
       <segment>
         <source>Official</source>
@@ -30479,7 +30596,7 @@
     </unit>
     <unit id="upstream.flag.verified">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:85</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:133</note>
       </notes>
       <segment>
         <source>Verified publisher</source>
@@ -30488,7 +30605,7 @@
     </unit>
     <unit id="upstream.flag.vulnerable">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:87</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:135</note>
       </notes>
       <segment>
         <source>Vulnerable</source>
@@ -30497,7 +30614,7 @@
     </unit>
     <unit id="upstream.flag.insecure">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:89</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:137</note>
       </notes>
       <segment>
         <source>Insecure</source>
@@ -30506,7 +30623,7 @@
     </unit>
     <unit id="upstream.flag.unsigned-index">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:91</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:139</note>
       </notes>
       <segment>
         <source>Unsigned index</source>
@@ -30515,7 +30632,7 @@
     </unit>
     <unit id="upstream.verdict.none-known">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:104</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:152</note>
       </notes>
       <segment>
         <source>No known vulnerability</source>
@@ -30524,7 +30641,7 @@
     </unit>
     <unit id="upstream.verdict.malicious">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:108</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:156</note>
       </notes>
       <segment>
         <source>Known as malicious</source>
@@ -30533,7 +30650,7 @@
     </unit>
     <unit id="upstream.verdict.triage">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:110</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:158</note>
       </notes>
       <segment>
         <source>Blocked in triage</source>
@@ -30542,7 +30659,7 @@
     </unit>
     <unit id="upstream.verdict.missing-data">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:112</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:160</note>
       </notes>
       <segment>
         <source>Vulnerability data incomplete</source>
@@ -30551,7 +30668,7 @@
     </unit>
     <unit id="upstream.verdict.blocked">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:114</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:162</note>
       </notes>
       <segment>
         <source>Blocked: vulnerability</source>
@@ -30560,7 +30677,7 @@
     </unit>
     <unit id="upstream.verdict.not-covered.deb">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:128</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:176</note>
       </notes>
       <segment>
         <source>Debian packages are not analysed for vulnerabilities.</source>
@@ -30569,7 +30686,7 @@
     </unit>
     <unit id="upstream.verdict.not-covered.ansible">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:130</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:178</note>
       </notes>
       <segment>
         <source>Ansible collections are not analysed for vulnerabilities.</source>
@@ -30578,7 +30695,7 @@
     </unit>
     <unit id="upstream.verdict.not-covered.oci">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:132</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:180</note>
       </notes>
       <segment>
         <source>An image is analysed for vulnerabilities once its platforms are stored.</source>
@@ -30587,7 +30704,7 @@
     </unit>
     <unit id="upstream.verdict.not-covered">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:134</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:182</note>
       </notes>
       <segment>
         <source>This repository&apos;s versions are not analysed for vulnerabilities.</source>
@@ -30596,7 +30713,7 @@
     </unit>
     <unit id="upstream.state.offline-until">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:170</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:218</note>
       </notes>
       <segment>
         <source>The upstream is assumed offline until <ph id="0" equiv="time" disp="clockAfter(wait)"/>; Quader retries then.</source>
@@ -30605,7 +30722,7 @@
     </unit>
     <unit id="upstream.state.offline-retry">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:171</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:219</note>
       </notes>
       <segment>
         <source>The upstream is busy with a client&apos;s fetch or assumed offline; try again in a moment.</source>
@@ -30614,7 +30731,7 @@
     </unit>
     <unit id="upstream.state.offline-mode">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:173</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:221</note>
       </notes>
       <segment>
         <source>This repository is in offline mode: it asks its upstream nothing.</source>
@@ -30623,7 +30740,7 @@
     </unit>
     <unit id="upstream.state.budget-wait">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:176</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:224</note>
       </notes>
       <segment>
         <source>The upstream catalogue&apos;s budget is used up; try again in <ph id="0" equiv="seconds" disp="wait"/> s.</source>
@@ -30632,7 +30749,7 @@
     </unit>
     <unit id="upstream.state.budget">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:177</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:225</note>
       </notes>
       <segment>
         <source>The upstream catalogue&apos;s budget is used up; try again in a minute.</source>
@@ -30641,7 +30758,7 @@
     </unit>
     <unit id="upstream.state.too-large-package">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:180</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:228</note>
       </notes>
       <segment>
         <source>This package&apos;s document is larger than the catalogue reads; Quader does not read it for browsing.</source>
@@ -30650,7 +30767,7 @@
     </unit>
     <unit id="upstream.state.too-large">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:181</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:229</note>
       </notes>
       <segment>
         <source>The upstream&apos;s answer is larger than the catalogue reads; Quader does not read it for browsing.</source>
@@ -30659,7 +30776,7 @@
     </unit>
     <unit id="upstream.state.not-offered">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:183</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:231</note>
       </notes>
       <segment>
         <source>The upstream of this repository does not answer this.</source>
