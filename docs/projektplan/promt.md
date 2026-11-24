@@ -250,7 +250,9 @@ its bound offers no run, the trend's axis numbers at 390 px, the layout check `c
 a walk in mirror mode for OCI and Debian). **The Go tests' names landed at 02:30** (six commits: 736 names, 157 functions,
 carry a requirement's number or the behaviour alone, no R-ID lost, R-API-083 newly named and so counted by the
 next record; `TestGoTestNamesCarryARequirementNeverADecision` holds it, about 1 to 2 s of the unit job; three
-tests that docs still name no longer exist under any name, left as found). **R2b landed at 03:00** (one commit, migration 00115). **W16 landed at 03:10** (six commits; sixteen entries of section 8 closed or read, the vulnerability scan's bound decided). **R3 landed at 03:30** (one commit). **R5b landed at 05:13** (one commit). **R6 landed at 07:30: T-24 is built whole** (the four defects its client cases found are repaired, among them the tab Upstream on the role `api`). Started at 05:12: **T-24 · R6** (one end-to-end case per format, a journey of the tab Upstream, the manual) and **the tab Upstream's two findings** (the versions stacking at 1,024 px, `stored` of an OCI remote). Started at 05:00: **the repair of `upgrade-release`** (section 8). **W17 at 04:58:** its help text landed; the index of the versions' order waits as the branch
+tests that docs still name no longer exist under any name, left as found). **R2b landed at 03:00** (one commit, migration 00115). **W16 landed at 03:10** (six commits; sixteen entries of section 8 closed or read, the vulnerability scan's bound decided). **R3 landed at 03:30** (one commit). **R5b landed at 05:13** (one commit). The owner's installation runs v0.122.1 (read at 07:33, every Deployment ready), which holds R3's panic of the
+role `api`: the tab Upstream fails there until the release of 28fb247be. Started at 07:32: **the catalogue's cache of a
+not-found** (section 8). **R6 landed at 07:30: T-24 is built whole** (the four defects its client cases found are repaired, among them the tab Upstream on the role `api`). Started at 05:12: **T-24 · R6** (one end-to-end case per format, a journey of the tab Upstream, the manual) and **the tab Upstream's two findings** (the versions stacking at 1,024 px, `stored` of an OCI remote). Started at 05:00: **the repair of `upgrade-release`** (section 8). **W17 at 04:58:** its help text landed; the index of the versions' order waits as the branch
 `w17-version-sort-key` for the owner's word on a fresh database of his installation (section 12 E). **The screens' third round landed at 04:27** (two commits; Q-UI-1060 to Q-UI-1062: a mirror without its bound disables its run and says why, the trend's axis readable at 390 px, the layout check `cramped` with five screens repaired, a walk of a stored OCI and Debian mirror; left: a list row a real mirror pass filled). `vuln-perf` dispatched at 03:53 (HA and Performance 45315614490), beside five runs of Test and Release still
 going (the neighbours' record of W14 names them); the place W18 freed stays empty: every open entry of sections 8
 and 12 is in a running package, waits for a recurrence, or needs the owner (an account, his cluster). **W18 landed at 03:52** (six commits: Q-VULN-268, a pushed image no longer waits for the schedule; the token API's wiring test; the realm's refusal named; a Sentinel failover during a start measured). Started at 03:36 in its place: **T-24 · R5b**, the tab Upstream and the settings of the rules. Started at 03:12 in its place: **W18**, small leftovers (the scan's bound in the specification, the token API's upper-case wiring, a stale configuration text, the render `scanners-none`, section 12 C's Sentinel entry, H-842). Started at 03:02 in its place: **W17**, the download limits' leftovers (section 12, part B) and the scale of long lists (H-829, H-1683). Started at 02:32 in its place: **W16**, the open entries of section 8,
@@ -335,9 +337,16 @@ starts from it and from his word how the work goes on, not from the order of the
 - **Single open entries without a package**, each in section 8 with its "To do": the cancel through
   poolers that are not peers (H-1662); the trace of the Bastion's answers by kind;
   `TestConcurrentWritersOnOnePath` (F-126, a recurrence to read); and every other entry of sections 8 and 12 that names no package.
-- **For the owner's word: a fresh database of his installation for the branch `w17-version-sort-key`**
-  (migration 00116 refuses version rows; his installation holds four). On his yes the branch lands with the release
-  and the installation's database is started afresh through his deployment repository.
+- **The branch `w17-version-sort-key` does not land as built: its migration 00116 breaks every upgrade.** The
+  owner agreed at 07:40 to a fresh database; it was made through his deployment repository (40d0ffd of
+  `wds18-flux-apps`: the database `quader2`, the blob prefix `quader2`, the Valkey key prefix `quader2:`; Helm
+  upgrade v99 at 07:46, every Deployment ready). Seconds after the start the malware updater stored the three ClamAV
+  definitions as versions (`main` 63, `daily` 28192, `bytecode` 339), so `quader2` holds version rows too, as every
+  running installation does: 00116, which refuses any version row, would refuse every upgrade (R-HA-020, the set
+  `upgrade-release`), not only his. To do: the sort key written for existing rows by the product (a background
+  migration or a column the reads tolerate empty until it is filled), so that an upgrade with data passes; the
+  branch's measurements and tests stand. The Bastion's token belonged to the database before: the owner issues a
+  new one in the installation (his act).
 - **With the owner** (the list of that name in section 8 and his walk): the decisions the development
   agent took today, each a decision block on its page and listed in the run record; the README's badge
   on the branch `coverage` instead of `main`, told to him at 16:11.
@@ -663,15 +672,16 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
-- **The catalogue caches a "not found" for 300 s on each replica (recorded by R6's builder on 2026-11-24):** a Debian
-  lookup made before the remote's index is parsed stays empty for up to five minutes (R-CUR-008's cache period). To do:
-  decide whether a not-found of a format that searches its own index is cached at all, or only until the index's next
-  parse.
 
 
 None open (2026-11-24).
 
 ### Closed
+
+- **Closed on 2026-11-24, 07:55 (Q-CUR-164): the catalogue cached a "not found" for 300 s on each replica.** A page that found nothing is kept only when the call sent a request to the upstream (the engine sees it in the budget's `Spend`); an upstream's not-found keeps the period that protects its budget; Debian, which answers from its parsed indexes, finds a package as soon as its index is parsed. Held by `TestR_CUR_008_TheCatalogueEngine` (unit) and `TestR_DEB_036_TheCatalogueSearchesTheIndexesTheRemoteParsed` (area `debremote`, 1.6 s), which looks the package up before the parse and waits on the catalogue; the `deb` leg's case waits on the catalogue too (compiled, not run on kind). As it stood: **The catalogue caches a "not found" for 300 s on each replica (recorded by R6's builder on 2026-11-24):** a Debian
+  lookup made before the remote's index is parsed stays empty for up to five minutes (R-CUR-008's cache period). To do:
+  decide whether a not-found of a format that searches its own index is cached at all, or only until the index's next
+  parse.
 
 - **Closed on 2026-11-24, 06:45:** verified and repaired (Q-CUR-156): `CatalogueStoredVersions` read only version rows, and an OCI remote keeps its tags as cache entries, so every pulled tag and the preview's stored count read none; it now adds the listed tags under the rules of `oci_remote_tags`, read per tag from the page's packages (1.4 ms against 1.1 s through the view, measured on 400,000 tag entries), held by `TestR_CUR_009_TheCatalogueSaysStoredOfATagARemotePulledThrough` (area `ociremote`, about 2.3 s). npm verified unaffected; NuGet, Debian and Ansible Galaxy write version rows (read in the code, no case asserts it). As it stood: **The catalogue may say "Not stored" of versions an OCI remote holds (seen by R5b's builder on 2026-11-24, not
   verified):** with the server's own answers, `image-cache`'s lookup of `tools/agent` shows tags 1.9, 2.0 and 2.1 as
