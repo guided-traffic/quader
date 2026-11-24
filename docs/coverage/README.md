@@ -1,7 +1,7 @@
 # Coverage
 
 > **As of:** 2026-10-29 · **Stage:** specification, every question decided, no code yet · **Yardstick:**
-> [feature catalog](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/README.md) · **Design:** [specification](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/spec/README.md)
+> [feature catalog](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/README.md) · **Design:** [specification](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/spec/README.md)
 
 This page answers two questions: how much of the feature catalog Quader implements, and how much
 of it the specification already designs. The per-feature list, with each feature's status and the
@@ -17,7 +17,7 @@ regenerated.
 <!-- coverage-gen:begin headline -->
 | Number | Value | Kind |
 |---|---|---|
-| **Implemented** | **24.6%** (550 of 2,239 catalog features) | measured from passing tests that name requirements (Q-ROAD-4) |
+| **Implemented** | **24.5%** (549 of 2,239 catalog features) | measured from passing tests that name requirements (Q-ROAD-4) |
 | **MVP features covered by spec requirements** | **100%** (395 of 395) | measured from `Covers:` lines |
 | P1 features covered by spec requirements | 67.9% (349 of 514) | measured from `Covers:` lines |
 | In-scope features covered (MVP, P1, P2, Later) | 37.1% (805 of 2,167) | measured from `Covers:` lines |
@@ -29,11 +29,11 @@ regenerated.
 **What the owner constraints of 2026-10-28 changed.** The tables were regenerated on 2026-10-29,
 after the spec pages took in the constraints of that day: HA PostgreSQL, HA Valkey with Sentinel
 and S3; a load spread over many replicas with node drains that cause no outage; a configurable
-backup job; and no ReadWriteMany volume ([docs/spec/README.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/spec/README.md#owner-constraints)).
+backup job; and no ReadWriteMany volume ([docs/spec/README.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/spec/README.md#owner-constraints)).
 Against the previous generation of 2026-10-28:
 
 - spec requirements: 553 on 12 pages, up from 491 on 11; the new page is
-  [backup-and-restore.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/spec/backup-and-restore.md);
+  [backup-and-restore.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/spec/backup-and-restore.md);
 - requirements covering no catalog feature: 81, up from 54;
 - catalog features listed in a `Covers:` line: 662, up from 658. The four new ones are P2 backup
   and migration entries (OPS-032, OPS-034, OPS-035 and OPS-039);
@@ -51,12 +51,12 @@ see [Honesty notes](#honesty-notes).
 <!-- coverage-gen:begin priority -->
 | Priority | Features | Specified | Open | Specified share | Covered by an MVP requirement | Implemented |
 |---|---:|---:|---:|---:|---:|---:|
-| **MVP** | 395 | 395 | 0 | 100% | 395 | 370 |
-| **P1** | 514 | 349 | 165 | 67.9% | 68 | 133 |
+| **MVP** | 395 | 395 | 0 | 100% | 395 | 367 |
+| **P1** | 514 | 349 | 165 | 67.9% | 68 | 135 |
 | **P2** | 884 | 59 | 825 | 6.7% | 12 | 46 |
 | **Later** | 374 | 2 | 372 | 0.5% | 0 | 1 |
 | **Out of scope** | 72 | 0 | 72 | 0% | 0 | 0 |
-| **Total** | 2,239 | 805 | 1,434 | 36.0% | 475 | 550 |
+| **Total** | 2,239 | 805 | 1,434 | 36.0% | 475 | 549 |
 <!-- coverage-gen:end priority -->
 
 The column *Covered by an MVP requirement* shows where the spec pulls work forward: 55 P1 features
@@ -148,7 +148,7 @@ Per-format pages (38 pages, 782 features, 191 specified):
 
 ## What MVP means
 
-MVP is the scope of the first release. The [priority rubric](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/README.md#priority-rubric)
+MVP is the scope of the first release. The [priority rubric](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/README.md#priority-rubric)
 in the catalog defines it, and the summary here is no substitute:
 
 - npm and NuGet, each with local, remote (pull-through) and virtual repositories;
@@ -168,10 +168,10 @@ P1 is the work directly after the MVP: Docker/OCI, Maven, PyPI, Go, Helm charts 
 repositories, webhooks, retention and cleanup policies, the search API, build metadata basics,
 configuration as code and further CI OIDC providers. One P1 item ships in the first release
 anyway, because MVP acceptance tests depend on it: the local class of generic repositories
-([roadmap Q-ROAD-1](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/coverage/roadmap.md#q-road-1--generic-local-repositories-in-m1)). Backup and restore
+([roadmap Q-ROAD-1](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/coverage/roadmap.md#q-road-1--generic-local-repositories-in-m1)). Backup and restore
 used to be the second such item. Since 2026-10-28 they are MVP, together with the platform backup
 layer and the revocation journal
-([roadmap Q-ROAD-2](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/coverage/roadmap.md#q-road-2--backup-and-restore-in-the-beta)).
+([roadmap Q-ROAD-2](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/coverage/roadmap.md#q-road-2--backup-and-restore-in-the-beta)).
 
 P2, *Later* and *Out of scope* are defined by the same rubric.
 *Out of scope* entries stay in the catalog only so its inventory is complete. Nothing is planned
@@ -187,17 +187,17 @@ table.
 <!-- coverage-gen:begin audiences -->
 | Audience | MVP entries | MVP and P1 entries | Implemented | Most open entries (MVP and P1) |
 |---|---|---|---:|---|
-| **npm-only team** | 211 of 211 specified, 0 open (100%) | 322 of 370 specified, 48 open (87.0%) | 239 | Search and query language 21; Builds and CI integration 15; Repositories 9 |
-| **.NET team** | 209 of 209 specified, 0 open (100%) | 312 of 360 specified, 48 open (86.7%) | 236 | Search and query language 21; Builds and CI integration 15; Repositories 9 |
-| **platform/ops team** | 269 of 269 specified, 0 open (100%) | 448 of 468 specified, 20 open (95.7%) | 306 | Repositories 9; Operations, monitoring and configuration 4; High availability and deployment 3 |
+| **npm-only team** | 211 of 211 specified, 0 open (100%) | 322 of 370 specified, 48 open (87.0%) | 238 | Search and query language 21; Builds and CI integration 15; Repositories 9 |
+| **.NET team** | 209 of 209 specified, 0 open (100%) | 312 of 360 specified, 48 open (86.7%) | 235 | Search and query language 21; Builds and CI integration 15; Repositories 9 |
+| **platform/ops team** | 269 of 269 specified, 0 open (100%) | 448 of 468 specified, 20 open (95.7%) | 305 | Repositories 9; Operations, monitoring and configuration 4; High availability and deployment 3 |
 
 Pages counted per audience:
 
 | Audience | Who | Catalog pages counted |
 |---|---|---|
-| **npm-only team** | publishes and installs npm packages from workstations and GitLab CI | [formats/npm.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/formats/npm.md), [formats/README.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/formats/README.md), [repositories.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/repositories.md), [remote-repositories.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/remote-repositories.md), [artifacts.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/artifacts.md), [search-and-query.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/search-and-query.md), [builds-and-ci.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/builds-and-ci.md), [identity-and-access.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/identity-and-access.md), [authentication-providers.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/authentication-providers.md), [access-tokens.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/access-tokens.md), [oidc-ci-integration.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/oidc-ci-integration.md), [ui-inventory.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/ui-inventory.md) |
-| **.NET team** | publishes and restores NuGet packages from workstations and GitLab CI | [formats/nuget.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/formats/nuget.md), [formats/README.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/formats/README.md), [repositories.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/repositories.md), [remote-repositories.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/remote-repositories.md), [artifacts.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/artifacts.md), [search-and-query.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/search-and-query.md), [builds-and-ci.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/builds-and-ci.md), [identity-and-access.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/identity-and-access.md), [authentication-providers.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/authentication-providers.md), [access-tokens.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/access-tokens.md), [oidc-ci-integration.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/oidc-ci-integration.md), [ui-inventory.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/ui-inventory.md) |
-| **platform/ops team** | runs Quader on Kubernetes and administers it | [ha-and-deployment.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/ha-and-deployment.md), [operations-and-monitoring.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/operations-and-monitoring.md), [storage-and-blobs.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/storage-and-blobs.md), [retention-and-cleanup.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/retention-and-cleanup.md), [repositories.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/repositories.md), [remote-repositories.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/remote-repositories.md), [identity-and-access.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/identity-and-access.md), [authentication-providers.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/authentication-providers.md), [access-tokens.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/access-tokens.md), [oidc-ci-integration.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/oidc-ci-integration.md), [api-admin-operations.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/api-admin-operations.md), [events-and-extensibility.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/events-and-extensibility.md), [ui-inventory.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/ui-inventory.md) |
+| **npm-only team** | publishes and installs npm packages from workstations and GitLab CI | [formats/npm.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/formats/npm.md), [formats/README.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/formats/README.md), [repositories.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/repositories.md), [remote-repositories.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/remote-repositories.md), [artifacts.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/artifacts.md), [search-and-query.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/search-and-query.md), [builds-and-ci.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/builds-and-ci.md), [identity-and-access.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/identity-and-access.md), [authentication-providers.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/authentication-providers.md), [access-tokens.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/access-tokens.md), [oidc-ci-integration.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/oidc-ci-integration.md), [ui-inventory.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/ui-inventory.md) |
+| **.NET team** | publishes and restores NuGet packages from workstations and GitLab CI | [formats/nuget.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/formats/nuget.md), [formats/README.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/formats/README.md), [repositories.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/repositories.md), [remote-repositories.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/remote-repositories.md), [artifacts.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/artifacts.md), [search-and-query.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/search-and-query.md), [builds-and-ci.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/builds-and-ci.md), [identity-and-access.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/identity-and-access.md), [authentication-providers.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/authentication-providers.md), [access-tokens.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/access-tokens.md), [oidc-ci-integration.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/oidc-ci-integration.md), [ui-inventory.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/ui-inventory.md) |
+| **platform/ops team** | runs Quader on Kubernetes and administers it | [ha-and-deployment.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/ha-and-deployment.md), [operations-and-monitoring.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/operations-and-monitoring.md), [storage-and-blobs.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/storage-and-blobs.md), [retention-and-cleanup.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/retention-and-cleanup.md), [repositories.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/repositories.md), [remote-repositories.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/remote-repositories.md), [identity-and-access.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/identity-and-access.md), [authentication-providers.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/authentication-providers.md), [access-tokens.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/access-tokens.md), [oidc-ci-integration.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/oidc-ci-integration.md), [api-admin-operations.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/api-admin-operations.md), [events-and-extensibility.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/events-and-extensibility.md), [ui-inventory.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/ui-inventory.md) |
 
 Pages counted for no audience (41, 267 MVP and P1 entries): [Distribution and release lifecycle](checklist.md#distribution-and-release-lifecycle-dist), [Security scanning and curation](checklist.md#security-scanning-and-curation-sec), [Content API operation catalog](checklist.md#content-api-operation-catalog-api), [Docker image format](checklist.md#docker-image-format-pkg-docker), [OCI images and artifacts](checklist.md#oci-images-and-artifacts-pkg-oci), [Helm chart format](checklist.md#helm-chart-format-pkg-helm), [Maven package format](checklist.md#maven-package-format-pkg-maven), [PyPI package format](checklist.md#pypi-package-format-pkg-pypi), [Go modules format](checklist.md#go-modules-format-pkg-go), [Generic format](checklist.md#generic-format-pkg-generic), [Ansible collection format](checklist.md#ansible-collection-format-pkg-ansible), [Bazel modules package format](checklist.md#bazel-modules-package-format-pkg-bazel), [Gradle, Ivy, sbt and Eclipse P2 formats](checklist.md#gradle-ivy-sbt-and-eclipse-p2-formats-pkg-jvm), [Beyond the baseline: further formats and capabilities](checklist.md#beyond-the-baseline-further-formats-and-capabilities-beyond); plus 27 pages without MVP or P1 entries.
 <!-- coverage-gen:end audiences -->
@@ -213,9 +213,9 @@ What the open entries are, on 2026-10-29:
   - Build metadata: all 15 P1 entries are open, because the page that will own build records is
     not written yet. The development agent decided that build records get their own page,
     `builds.md` with prefix `R-BLD`. The page is written before P1 build work starts, in milestone
-    M9 of the [roadmap](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/coverage/roadmap.md). This one decision answers three questions, each with option
-    (a): Q-AUTHZ-8 in [authorization.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/spec/authorization.md), Q-API-5 in
-    [api-and-ui.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/spec/api-and-ui.md) and Q-STOR-3 in [storage.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/spec/storage.md).
+    M9 of the [roadmap](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/coverage/roadmap.md). This one decision answers three questions, each with option
+    (a): Q-AUTHZ-8 in [authorization.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/spec/authorization.md), Q-API-5 in
+    [api-and-ui.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/spec/api-and-ui.md) and Q-STOR-3 in [storage.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/spec/storage.md).
 
   The remaining 12 open entries fall into three groups:
   - Eight repository settings that matter only once other formats arrive:
@@ -240,8 +240,8 @@ What the open entries are, on 2026-10-29:
   - general settings, the container registry addressing method and reverse-proxy rules
     (OPS-057, OPS-062, OPS-063);
   - role and environment operations of the administration API (ADMAPI-019, ADMAPI-066,
-    ADMAPI-068). [authorization.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/spec/authorization.md) and
-    [api-and-ui.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/spec/api-and-ui.md) defer them to P2 together with roles and
+    ADMAPI-068). [authorization.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/spec/authorization.md) and
+    [api-and-ui.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/spec/api-and-ui.md) defer them to P2 together with roles and
     environments. They stay open here because the catalog labels them P1;
   - 10 of the repository entries listed for the npm team: the eight format-specific settings
     and the two project entries. FMT-010 and FMT-014 are not counted here, because this audience
@@ -249,16 +249,16 @@ What the open entries are, on 2026-10-29:
 
 ## How the numbers are produced
 
-1. **Catalog entries.** Every heading `### <ID> · <Title>` under [docs/features/](https://github.com/guided-traffic/quader/tree/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features)
+1. **Catalog entries.** Every heading `### <ID> · <Title>` under [docs/features/](https://github.com/guided-traffic/quader/tree/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features)
    whose next line is `Priority: **<P>**`, where P is MVP, P1, P2, Later or Out of scope. Lines
    inside fenced code blocks are ignored, so the format examples in the catalog README and the
    spec README are not entries.
-2. **Requirements.** Every heading `### R-<…>-<n> · <Title>` under [docs/spec/](https://github.com/guided-traffic/quader/tree/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/spec) whose
+2. **Requirements.** Every heading `### R-<…>-<n> · <Title>` under [docs/spec/](https://github.com/guided-traffic/quader/tree/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/spec) whose
    next line is `Priority: **<P>** · Covers: <ID>, <ID>, …` or `Covers: quader-only`. Other
    headings on spec pages (decided questions `Q-…`, gaps `H-…`, examples) are not requirements.
 3. **Status.** A feature is *specified* when its ID appears in the `Covers:` line of at least one
    requirement, and *open* otherwise. *Implemented* follows the rule of
-   [roadmap Q-ROAD-4](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/coverage/roadmap.md#q-road-4--how-the-coverage-generator-learns-implementation-status):
+   [roadmap Q-ROAD-4](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/coverage/roadmap.md#q-road-4--how-the-coverage-generator-learns-implementation-status):
    - A requirement is implemented when a test whose name carries the requirement ID passes on
      `main`. The generator reads that from CI's `go test -json` output and the end-to-end
      reports.
@@ -271,7 +271,7 @@ What the open entries are, on 2026-10-29:
    that stands in for a requirement not built yet). Only the pipeline writes the record: the
    release job publishes it, with this page and the checklist rendered from it, onto the branch
    `coverage` ([this page there](https://github.com/guided-traffic/quader/blob/coverage/docs/coverage/README.md),
-   [Q-ARCH-811](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/spec/architecture.md#q-arch-811--the-pipeline-writes-the-evidence-record-and-the-coverage-badge-onto-the-branch-coverage-main-holds-neither)).
+   [Q-ARCH-811](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/spec/architecture.md#q-arch-811--the-pipeline-writes-the-evidence-record-and-the-coverage-badge-onto-the-branch-coverage-main-holds-neither)).
    On `main` the tables show what the specification covers and no implementation status.
 4. **Shares.** Plain counts: each feature counts once, whatever its size. The in-scope share
    leaves out *Out of scope* entries.
@@ -303,7 +303,7 @@ What the open entries are, on 2026-10-29:
 pipeline's form), and `-links`
 checks the relative links and anchors of every Markdown file. The modes, the test naming rule
 and the report formats are in
-[docs/developer/coverage.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/developer/coverage.md).
+[docs/developer/coverage.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/developer/coverage.md).
 
 ## Honesty notes
 
@@ -315,11 +315,11 @@ and the report formats are in
   checks that a `Covers:` ID exists. It does not check that the requirement designs everything the
   feature describes. A feature that a requirement covers only in part still counts as specified.
   Nobody has spot-checked coverage claims for this page.
-- **Cross-format entries.** Entries on the [formats page](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/formats/README.md) apply to
+- **Cross-format entries.** Entries on the [formats page](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/formats/README.md) apply to
   every format. FMT-013 says explicitly that its MVP priority applies to the npm and NuGet rows
   only, and every other row keeps its own format's priority. R-AUTH-033 *Client authentication
   matrix* in
-  [identity-and-authentication.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/spec/identity-and-authentication.md#r-auth-033--client-authentication-matrix),
+  [identity-and-authentication.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/spec/identity-and-authentication.md#r-auth-033--client-authentication-matrix),
   which covers FMT-013, follows the same split. Its table *Authentication styles across formats*
   maps every client style of FMT-013 to the one authentication stage (R-AUTH-001) and settles the
   npm and NuGet rows at MVP. A client that cannot authenticate is served only as the anonymous
@@ -350,20 +350,20 @@ and the report formats are in
   | Roles | P2 (IAM-054 global roles, IAM-055 project roles) | P1: role operations (ADMAPI-019, ADMAPI-066) |
   | Environments | P2 (IAM-063) | P1: environment operations (ADMAPI-068); REPO-013 also assigns environments |
 
-  The spec follows the P1 side for projects (R-AUTHZ-026, raised to MVP and moved into the beta on 2026-11-02 as phase 5a of [BETA.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/projektplan/BETA.md#phase-5a--projects-and-delegated-administration)) and the identity page's P2 for roles and
-  environments. [authorization.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/spec/authorization.md) and
-  [api-and-ui.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/spec/api-and-ui.md) defer ADMAPI-019, ADMAPI-066 and ADMAPI-068 to P2, each
+  The spec follows the P1 side for projects (R-AUTHZ-026, raised to MVP and moved into the beta on 2026-11-02 as phase 5a of [BETA.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/projektplan/BETA.md#phase-5a--projects-and-delegated-administration)) and the identity page's P2 for roles and
+  environments. [authorization.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/spec/authorization.md) and
+  [api-and-ui.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/spec/api-and-ui.md) defer ADMAPI-019, ADMAPI-066 and ADMAPI-068 to P2, each
   with a reason, and the fixed system roles of R-AUTHZ-010 cover P1. Five of the open P1 entries
   come from this disagreement:
   - The three deferred ADMAPI entries stay open on purpose until the catalog's priority follows
     the spec.
   - REPO-013 and REPO-045 are assigned to R-AUTHZ-026 by
-    [repositories-and-proxy.md](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/spec/repositories-and-proxy.md), but no requirement lists them
+    [repositories-and-proxy.md](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/spec/repositories-and-proxy.md), but no requirement lists them
     in its `Covers:` line yet. The roadmap places that addition in M10.
 - **Every design decision is the development agent's until the walkthrough.** The development
   agent decided each question on the spec pages and in the roadmap by selecting one of the
   documented options. The owner reviews the choices at the
-  [walkthrough](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/coverage/roadmap.md#owner-walkthrough) after the MVP milestones. A choice the owner
+  [walkthrough](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/coverage/roadmap.md#owner-walkthrough) after the MVP milestones. A choice the owner
   overturns there can move requirements between priorities, and with them every number on this
   page, without any change to the catalog.
 - **Audiences are approximated at page level.** A page counts in full for an audience even when
@@ -401,5 +401,5 @@ collapsing through Valkey), before any extrapolation.
 ## Related pages
 
 - [checklist.md](checklist.md): every catalog feature with its status and covering requirements.
-- [Feature catalog](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/features/README.md): entry format and priority rubric.
-- [Specification](https://github.com/guided-traffic/quader/blob/5757ad2d73a34343e236469dd0404b9f085fe3ca/docs/spec/README.md): owner constraints, design invariants, requirement format.
+- [Feature catalog](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/features/README.md): entry format and priority rubric.
+- [Specification](https://github.com/guided-traffic/quader/blob/a6ab346ede252062fc8c90787e8fb16b0aadb4e3/docs/spec/README.md): owner constraints, design invariants, requirement format.
