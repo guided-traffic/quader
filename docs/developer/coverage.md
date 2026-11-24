@@ -89,6 +89,16 @@ with one decision on top (below).
   does not define is reported as unknown, in either form. `TestIDsInTestNames` in
   [coverage_test.go](../../internal/tools/coverage/coverage_test.go) holds the cases. A criterion suffix such as `/2` is ignored today;
   Q-ROAD-4 names it as the answer if one name per requirement proves too coarse.
+- A test name carries the requirement it stands for, never a decision's number: no `Q-…`, `Q_…` or `ADR-…` in a test
+  function, a subtest or a table row a subtest takes its name from. The generator reads only `R-` IDs, so a decision's
+  number counts for nothing and hides which requirement the test holds; a test that holds none is named by its behaviour
+  alone, and the decision is cited in a comment. `TestGoTestNamesCarryARequirementNeverADecision` in
+  [testnames_test.go](../../internal/tools/coverage/testnames_test.go) holds the rule for every Go test of the repository (the
+  web interface's specs have the rule of [web-ui.md](web-ui.md)): it parses each package's `_test.go` files, follows a subtest's
+  name into a literal table of the same function and into the rows of a named row type wherever the package builds them (a
+  table handed to a helper), and fails naming file, line and name. It reads the about 2,300 files one directory per
+  goroutine: 0.25 s without the race detector, 1.2 s in the unit job's mode (`-race -covermode=atomic -coverpkg=./...`) on
+  20 cores, measured on 2026-11-24.
 
 ```go
 func TestImportRules(t *testing.T) {
@@ -314,6 +324,7 @@ hosts do (`#same`, `#same-1`), and does not descend into `node_modules`, `.git` 
 | [readme.go](../../internal/tools/coverage/readme.go) | The four marked blocks of `coverage/README.md`, the audience page lists. |
 | [links.go](../../internal/tools/coverage/links.go) | The `-links` mode, heading anchors. |
 | [decisions.go](../../internal/tools/coverage/decisions.go) | The index of decided questions in `decisions.md` and the rows `-check` names. |
+| [testnames_test.go](../../internal/tools/coverage/testnames_test.go) | The rule that no Go test name carries a decision's number, over the repository's `_test.go` files. |
 
 To change the audience page lists, edit `audiences()` in `readme.go`; the generator fails when a
 listed page has no entries.

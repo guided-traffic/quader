@@ -92,7 +92,9 @@ A test that verifies a requirement carries the requirement ID in a subtest name,
 `t.Run("R-ARCH-002 forbidden import names the edge", …)`. The coverage generator reads the IDs from the
 `go test -json` stream ([coverage.md](coverage.md)). Go replaces spaces by underscores in the name; the
 ID survives. A function name may carry it in the underscore form, `TestR_API_053_Name`, which names
-`R-API-053` ([coverage.md](coverage.md#implementation-status-the-test-naming-rule)).
+`R-API-053` ([coverage.md](coverage.md#implementation-status-the-test-naming-rule)). A test name never carries a
+decision's number (`Q-…`, `Q_…`, `ADR-…`): it names the requirement the test holds, or the behaviour alone when it holds
+none, and a decision is cited in a comment. `go test ./internal/tools/coverage/` fails on a Go test name that breaks it.
 
 A latency target in microseconds is not a per-change assertion on a shared machine: the per-change run asserts the
 allocations, and the median where the race detector is off (`make test` runs with it, so there only the allocations), and the p99 is enforced with `QUADER_PERF_GATE=1` by `make test-performance` (for example
