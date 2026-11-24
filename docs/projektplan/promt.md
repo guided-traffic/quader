@@ -669,8 +669,19 @@ records the recorder that tells such a stall apart).
   lockfile, and re-run 1 was green. The cause is not verified: a failed download of a platform package of an optional dependency is
   the suspect. Read on 2026-11-24 (W16): since eb2be1c1e the job `image (host architecture, no push)` ran in the 31 runs from 45160021052 to 45305430905 and failed in none; its log names every fetch (job 138109104245: 460 `npm http fetch` lines). Open for a recurrence.
 - A disk watcher in the jobs, so that a lost runner can be read, was proposed and not built.
+- **The development machine's disk ran full (2026-11-24, 07:39 to 08:46):** Go's build cache had grown to about 1.6 TiB
+  (Go trims only entries unused for five days and has no size limit; every builder worktree has a path of its own and
+  compiles every package of the module again). Docker's VM could no longer write and hung; it was restarted at about
+  09:00, every integration and UI stack stopped with it, and the four builders were told to bring theirs up again and to
+  repeat what ran in that window. Kept from now on by a job of the machine outside the repository (every 30 minutes:
+  entries unused for a day go, down to three hours above 150 GiB, the whole cache below 50 GiB free). A test or a lint
+  that failed between 07:39 and 09:00 is no finding of the code.
 
 ### Product
+
+- **`UI layout checks` of R6's push failed on the date (2026-11-24; Test and Release 45340888441, read at 08:38):**
+  `cramped` on `clamav-databases` at 1,024 px, "8 days Outdated" in two lines; the age grows with the calendar, so the
+  finding comes and goes by the day. Given at 08:39, with the pale tooltip of the dark scheme, to a builder.
 
 - **The tooltip is pale in the dark scheme (seen by the toasts' builder on 2026-11-24):** Quader's tooltip uses
   `--quader-inverse-surface`, where GitLab's tooltip uses the same strong-feedback grey as its toast
@@ -688,19 +699,19 @@ records the recorder that tells such a stall apart).
   aggregate, the 25 days of a permanent failure, and his requirement written into the specification and held per
   path (a client's fill, a mirror pass, a download ahead from the browser, an examination).
 
-- **A level the upstream does not know reads as an empty level (owner, 2026-11-24, 08:05, with a screenshot: "Die Suche
+- **The upstream search's hint is English in the German build (seen by the development agent on 2026-11-24, 09:10, in
+  the renders of the unknown level):** under "Upstream durchsuchen" the OCI remote reads "Docker Hub's repository search,
+  which its operator does not document; an official image is library/<name>." The text comes from the format, not from
+  the UI's translations, and it speaks to an operator, not to a user who wants an image. Waiting for a builder's place.
+
+### Closed
+
+- **Closed on 2026-11-24, 09:15, by the unknown level's package (Q-CUR-165):** a level that lists nothing now says whether the upstream has it. Docker Hub (`/v2/users/{n}`), Quay (organization and user accounts), npm (`/-/org/{scope}/package`), the Galaxy (`v3/namespaces/{n}/`), GitLab (`404 Project Not Found`) and Debian (the suite's `InRelease`/`Release`) answer it at a constant cost of at most two `HEAD` requests, held by the format kit's check 22 with answers recorded on 2026-11-24; a Docker Hub or Galaxy namespace with a character outside `[a-z0-9_]` is refused without a request. The screen says "Docker Hub kennt keinen Namespace „guided-traffic“." with the rule, and "Meinten Sie „guidedtraffic“?" where the upstream has the name the rule makes; no fuzzy search (Docker Hub's search answered `apache/traffic_*` for his name). The contract grows by `discover.LevelPage.Unknown` (version 11 kept, ADR-277). Renders in English and German, both schemes, 1,440, 1,024 and 390 px: no finding, looked at by the development agent. The owner's case shows once the next release reaches his installation. As it stood: A level the upstream does not know reads as an empty level (owner, 2026-11-24, 08:05, with a screenshot: "Die Suche
   nach meinem namespace scheitert.").** On his installation (v0.122.3) the Docker Hub remote's level "guided-traffic"
   showed "Diese Ebene listet kein Paket.": Docker Hub's namespace is `guidedtraffic` (namespaces hold no hyphen; 30
   repositories), and its API answers an unknown namespace with 200 and an empty list. Told to him at once. Given to a
   builder at 08:07: the catalogue tells an unknown level from an empty one where the protocol allows, the screen says
   so in words with a hint from the format's naming rule, and a name the rule refuses costs no request.
-
-
-
-
-None open (2026-11-24).
-
-### Closed
 
 - **Closed on 2026-11-24, 08:35, by the toasts' package (Q-UI-1063):** every notice is GitLab's toast, taken from its design system's source: `#3a383f` with white text in both schemes, 8 px round, a shadow, the action a bold link, "×" named Close as an icon button; at the window's bottom right as the owner said, across the window below 576 px, above the overlays; a new confirmation replaces the one shown, a notice with an action and an error keep their own; the live regions announce each; the 8 s pause under the pointer or the focus; the upstream registries' warnings join their confirmation. Held by `notices.spec.ts` and the render walk `admin-upstream-toasts` (three states, German too), looked at by the development agent. Left: the tooltip uses the pale inverse surface in the dark scheme where GitLab uses the same grey; the error toast keeps Quader's error pair. As it stood: **The toast notices are ugly (owner, 2026-11-24, 07:58, with a screenshot of the page Upstream registries in German
   and dark: "Was sind dass denn für hässlich Notifications?").** Three pale grey boxes stacked at the bottom left over
@@ -3416,9 +3427,13 @@ Forschritt, Download-Geschwindigkeit abgebildet. Es werden nur Downloads von Ups
 laufenden Downloads werden auch die letzten 100 abgeschlossenen Downloads abgebildet zu sammen mit ihrer Download-Dauer
 und der durchschnittlichen Geschwindigkeit"; his screenshot is a desktop app's download panel, taken as the pattern
 only: a header button with a download icon opening a panel with a filter, the running and the finished downloads, each
-row an icon of its kind, the name and version, the size, actions). State: a planner writes the specification since
-08:22 (where fills happen and which count, the carrier of live progress across replicas, the bounded list of the last
-100, who sees it, the panel, the API); built when a builder's place is free.
+row an icon of its kind, the name and version, the size, actions). State: specified by a planner from 08:22 to 08:45
+(where fills happen and which count, the carrier of live progress across replicas, the bounded list of the last 100, who
+sees it, the panel, the API); cut in two packages, A the backend and its API (its first commit the specification and the
+OpenAPI contract), B the top-bar button and the panel. Package A given to a builder at 09:20, in the place the
+unknown level's package left; B follows once A's contract is on main. Three of its choices go to
+the owner in one line each: the existing drawer from the right instead of a panel hung from the button, the auditor sees
+the panel too (`content:metadata-read`), and metadata documents such as Debian indexes are not listed.
 
 ### Owner walk of 2026-11-18: the frontend
 
