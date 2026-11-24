@@ -691,15 +691,6 @@ records the recorder that tells such a stall apart).
   reads the same host; and a bulk that fails before its first row is visible nowhere. Given to a builder at 11:05, for
   every format's catalogue host.
 
-- **The owner's rule: no view needs a reload (2026-11-24, 11:05): "Ich hoffe das unsere Frontend bereits automatisch
-  updates fetched und von mir zu keinem Zeitpunkt erwartet wird dass ich F5 drücke um eine Ansicht zu aktualisieren."**
-  Read at 11:10: of the screens that show state that changes by itself, only the tab Downloads, the mirror status, the
-  Debian index state, the jobs, the system status and dashboard, backups, storage, a job's progress and the top bar's
-  downloads poll; the rest (an image's scan state, the version and package lists, the Upstream tab's states, the
-  vulnerability and malware pages, signatures, ...) show what they read once. Given to a builder at 11:05: every view that
-  shows state the server changes by itself refreshes itself while it is seen, one shared mechanism, the rule written into
-  the specification and CLAUDE.md.
-
 - **Three layout findings of the German renders at 390 px (2026-11-24, 11:40 and 12:00, seen by the tab strips' and the
   stacked rows' builders):** the OCI files' signature badge ("Signiert · Signierer nicht vertrauenswürdig") pushes the
   version page 41 px sideways (`package-version-oci`, `package-version-signatures-files`); a fact's long value (the
@@ -713,6 +704,26 @@ records the recorder that tells such a stall apart).
   the cause the notice's package fixed in the refusal but not in this line. Given to a builder at 11:28.
 
 ### Closed
+
+- **Closed on 2026-11-24, 11:53, by the live views' package (R-UI-213, Q-UI-1075; H-1847, H-1848):** one shared helper,
+  `live()` in `core/live-refresh.ts`, makes a view re-read itself while the window is visible and the view is shown: at
+  once on return to the tab, with a back-off on failure up to five minutes, never two reads at a time, and at once after
+  the user's own action. The re-reads happen in place, so rows, opened rows, menus, focus, typed text and Load more survive
+  and a failed read keeps what is shown. Every screen whose state the server changes uses it: 3 s while a scan, check or
+  download runs, 30 s for lists clients change, 60 s for pages and summaries (the audit table of R-UI-213); the old polls of
+  System status, Jobs, Backups, Storage, the dashboard, mirror status, the Debian indexes and the banner moved onto it, and
+  Jobs and Backups no longer empty their lists on each refresh. Forms, editors and screens only people change through the
+  UI stay as they are. An idle view costs one or two requests a minute; open as gaps: no "what changed since" answer
+  (H-1847) and a failed signature check keeping a version page on fast reads (H-1848). The rule stands in CLAUDE.md's
+  product section. Vitest with fake timers, under 2 s; renders in English and German looked at by the development agent.
+  As it stood: **The owner's rule: no view needs a reload (2026-11-24, 11:05): "Ich hoffe das unsere Frontend bereits automatisch
+  updates fetched und von mir zu keinem Zeitpunkt erwartet wird dass ich F5 drücke um eine Ansicht zu aktualisieren."**
+  Read at 11:10: of the screens that show state that changes by itself, only the tab Downloads, the mirror status, the
+  Debian index state, the jobs, the system status and dashboard, backups, storage, a job's progress and the top bar's
+  downloads poll; the rest (an image's scan state, the version and package lists, the Upstream tab's states, the
+  vulnerability and malware pages, signatures, ...) show what they read once. Given to a builder at 11:05: every view that
+  shows state the server changes by itself refreshes itself while it is seen, one shared mechanism, the rule written into
+  the specification and CLAUDE.md.
 
 - **Closed on 2026-11-24, 11:48, by the stacked rows' package (Q-UI-1068, Q-UI-1069):** a stacked row's column of names
   is never narrower than the longest word of its names, so a name wraps only between words ("Veröffentlicht" on one
