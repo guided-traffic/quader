@@ -8,7 +8,8 @@
 -- left out as well (signatures.md R-SIG-024, Q-VULN-269), because cosign's older layout and Docker's attestation manifests carry an image
 -- configuration: a manifest the format recorded as an attachment by its content (oci_manifests.attachment: no image layer, a layer or a type
 -- of R-SIG-023, such as the in-toto layer of Docker's attestation manifest), a referrer by its subject, and a manifest that is the object of
--- a signature in the repository. VulnImageManifests and VulnImageGradeScans count the children of an index by the same selection.
+-- a signature in the repository. VulnImageManifests and VulnImageGradeScans count the children of an index by the same selection, and
+-- VulnImageVerdict lets what it leaves out pass the missing-data rule of a pull.
 INSERT INTO vuln_image_scan (repo_id, name, digest, not_before)
 SELECT m.repo_id, m.name, m.digest, now() + make_interval(secs => sqlc.arg(delay_seconds)::float8)
   FROM oci_manifests m
@@ -218,13 +219,24 @@ UPDATE vuln_finding SET components = sqlc.arg(components)::jsonb
    AND advisory_id = sqlc.arg(advisory_id)::text AND components <> sqlc.arg(components)::jsonb;
 
 -- name: VulnImageVerdict :one
--- What a pull of a manifest needs to know (R-VULN-015): the finding that blocks the manifest in the repository, if any, and how far the
--- manifest has been scanned. One statement, the finding's unique index and the scan row's key.
+-- What a pull of a manifest needs to know (R-VULN-015): the finding that blocks the manifest in the repository, if any, how far the
+-- manifest has been scanned, and whether it is an image to scan at all. image is VulnImageDiscover's selection of the manifest's row: an
+-- index, an attachment (Docker's attestation manifest), a referrer, a signature and an artifact that is no container image are no image
+-- and are never scanned, so the missing-data rule does not hold them (Q-VULN-271); the platform image a client fetches next is gated on its
+-- own. A manifest the repository holds no row of (a remote's miss by digest, before its fetch) counts as an image: what it is is not known
+-- yet. One statement, the finding's unique index and the keys of the scan row and of the manifest row.
 SELECT COALESCE(blk.id::text, '')::text AS finding_id, COALESCE(blk.advisory_id, '')::text AS advisory_id,
        COALESCE(blk.kind, '')::text AS kind, COALESCE(blk.status, '')::text AS status, COALESCE(s.state, '')::text AS scan_state,
-       (s.db_digest IS NOT NULL)::boolean AS detected
+       (s.db_digest IS NOT NULL)::boolean AS detected,
+       (m.digest IS NULL
+        OR (m.media_type IN ('application/vnd.oci.image.manifest.v1+json', 'application/vnd.docker.distribution.manifest.v2+json')
+            AND COALESCE(m.artifact_type, '') IN ('', 'application/vnd.oci.image.config.v1+json', 'application/vnd.docker.container.image.v1+json')
+            AND m.subject IS NULL AND NOT m.attachment
+            AND NOT EXISTS (SELECT 1 FROM signatures g JOIN signature_attachments a ON a.signature_id = g.id
+                             WHERE g.object_sha256 = m.digest AND a.repo_id = m.repo_id)))::boolean AS image
   FROM (SELECT 1) AS one
   LEFT JOIN vuln_image_scan s ON s.repo_id = sqlc.arg(repo_id)::bigint AND s.name = sqlc.arg(name)::text AND s.digest = sqlc.arg(digest)
+  LEFT JOIN oci_manifests m ON m.repo_id = sqlc.arg(repo_id)::bigint AND m.name = sqlc.arg(name)::text AND m.digest = sqlc.arg(digest)
   LEFT JOIN LATERAL (
         SELECT f.id, f.advisory_id, f.kind, f.status
           FROM vuln_finding f

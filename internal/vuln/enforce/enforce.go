@@ -302,8 +302,9 @@ type ImagePull struct {
 }
 
 // GateImage is the gate of a pull of an image manifest (R-VULN-015): a finding of the manifest that blocks refuses it, and with
-// onMissingData block so does a manifest that has not been scanned against a database yet. A manifest list passes: its children are pulled
-// and gated one by one, each platform on its own findings.
+// onMissingData block so does an image that has not been scanned against a database yet. A manifest that is no image to scan (an index,
+// Docker's attestation manifest, a signature) is never scanned, so the missing-data rule does not hold it (Q-VULN-271): an index passes,
+// and its platform images are pulled and gated one by one, each on its own findings and its own scan.
 func (e *Enforcer) GateImage(ctx context.Context, im ImagePull) error {
 	if e == nil || e.o.States == nil || e.o.Images == nil {
 		return nil
@@ -321,7 +322,7 @@ func (e *Enforcer) GateImage(ctx context.Context, im ImagePull) error {
 	if err != nil {
 		return err
 	}
-	block := vuln.Verdict(p, v.Row, advisory.DataState{Complete: v.Detected})
+	block := vuln.Verdict(p, v.Row, advisory.DataState{Complete: v.Detected || !v.Image})
 	addressed := im.Addressed
 	if addressed == "" {
 		addressed = im.Repo.Name.String()

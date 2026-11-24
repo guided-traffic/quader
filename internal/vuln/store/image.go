@@ -264,6 +264,9 @@ type ImageVerdict struct {
 	// at some time, also when a later one failed.
 	ScanState string
 	Detected  bool
+	// Image says that the manifest is an image to scan (VulnImageDiscover's selection), or one the repository holds no row of yet; an
+	// index, an attachment, a referrer, a signature and an artifact that is no container image are not (Q-VULN-271).
+	Image bool
 }
 
 // Verdict reads the finding that blocks a manifest and how far the manifest has been scanned, in one statement.
@@ -277,7 +280,7 @@ func (s *Images) Verdict(ctx context.Context, repoID int64, name string, digest 
 		if r.FindingID != "" {
 			out.Row = vuln.BlockRow{FindingID: r.FindingID, AdvisoryID: r.AdvisoryID, Kind: advisory.Kind(r.Kind), Status: vuln.Status(r.Status)}
 		}
-		out.ScanState, out.Detected = r.ScanState, r.Detected
+		out.ScanState, out.Detected, out.Image = r.ScanState, r.Detected, r.Image
 		return nil
 	})
 	return out, err

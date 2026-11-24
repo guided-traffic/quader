@@ -37,12 +37,18 @@ type selection struct {
 
 func newSelection(t *testing.T) *selection {
 	t.Helper()
+	return newSelectionWith(t, `{"vulnerabilities":{"onMissingData":"allow"}}`)
+}
+
+// newSelectionWith is newSelection with the repository's settings.
+func newSelectionWith(t *testing.T, settings string) *selection {
+	t.Helper()
 	st := testenv.NewStack(t, testenv.StackOptions{Name: "vulnselect", Env: []string{
 		"QUADER_VULNERABILITIES_SOURCES_OSV_MODE=off", "QUADER_VULNERABILITIES_SOURCES_KEV_MODE=off", "QUADER_MAINTENANCE_TASKS=" + taskOff,
 	}})
 	rita := st.User("rita")
 	st.Bind("admin", rita)
-	st.Repository(repoKey, "local", "oci", `{"vulnerabilities":{"onMissingData":"allow"}}`)
+	st.Repository(repoKey, "local", "oci", settings)
 	// A database in use, as its sync records it: an image whose platforms are all scanned is evaluated.
 	st.Exec(`INSERT INTO vuln_source_state (source, ecosystem, state, etag, synced_at, full_synced_at) VALUES ('trivy', 'OCI', 'complete', $1, now(), now())`, dbDigest(1))
 	f := &flow{t: t, st: st, adm: st.Token(rita, scope.Scope{Inherit: true, Admin: true})}
@@ -224,6 +230,39 @@ func TestR_VULN_034_AnImageIsItsPlatformImagesAndAnAttestationIsNoImageToScan(t 
 	}
 	if g := s.listGrade("library/ubuntu"); g == nil || g.Grade != "N/A" || g.Evaluation != "scan_failed" {
 		t.Fatalf("the package list grades the image %+v with a platform failed", g)
+	}
+}
+
+// R-VULN-015, Q-VULN-269: with onMissingData block a pull of Docker Hub's shape is gated at its platform images. The index, by tag and by
+// digest, and an attestation manifest pass by themselves, since neither is an image to scan; a platform image is refused with
+// vulnerability_data_missing until its detection has finished, and served after. Integration, about 3 s, bytes.
+func TestR_VULN_015_AnIndexAndAnAttestationPassTheGateAndThePlatformImageIsGated(t *testing.T) {
+	s := newSelectionWith(t, `{"vulnerabilities":{"onMissingData":"block"}}`)
+	images, attestations := s.multiPlatform("library/ubuntu")
+	if _, err := s.images.Discover(t.Context(), 0, 100); err != nil {
+		t.Fatal(err)
+	}
+	pull := func(ref, accept string) testenv.Answer {
+		t.Helper()
+		return s.do("GET", v2("library/ubuntu")+"/manifests/"+ref, nil, "Accept", accept)
+	}
+	tag := pull("1.0", indexType)
+	if tag.Status != http.StatusOK {
+		t.Fatalf("the index by tag: %d %s", tag.Status, tag.Body)
+	}
+	index := tag.Header.Get("Docker-Content-Digest")
+	for _, ref := range []string{index, attestations[0], attestations[1]} {
+		if a := pull(ref, indexType+","+manifestType); a.Status != http.StatusOK {
+			t.Fatalf("%s: %d %s", ref, a.Status, a.Body)
+		}
+	}
+	a := pull(images[0], manifestType)
+	if a.Status != http.StatusForbidden || !strings.Contains(string(a.Body), `"DENIED"`) || !strings.Contains(string(a.Body), "blocks what it cannot evaluate") {
+		t.Fatalf("a platform image not scanned yet: %d %s %v", a.Status, a.Body, a.Header)
+	}
+	s.scanned("library/ubuntu", images[0])
+	if a := pull(images[0], manifestType); a.Status != http.StatusOK {
+		t.Fatalf("a scanned platform image: %d %s", a.Status, a.Body)
 	}
 }
 

@@ -12661,10 +12661,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-VULN
 
-187 questions on [spec/vulnerability-scanning.md](spec/vulnerability-scanning.md).
+188 questions on [spec/vulnerability-scanning.md](spec/vulnerability-scanning.md).
 
 <details>
-<summary>Q-VULN: 187 questions</summary>
+<summary>Q-VULN: 188 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12855,6 +12855,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-VULN-268](spec/vulnerability-scanning.md#q-vuln-268--a-run-with-nothing-due-runs-again-when-a-discovered-manifest-becomes-due) | A run with nothing due runs again when a discovered manifest becomes due | Decided by the development agent | (a) A run that finds nothing due asks for the first `not_before` of a discovered row still waiting (`pending`, no code) and enqueues itself for that moment | — |
 | [Q-VULN-269](spec/vulnerability-scanning.md#q-vuln-269--an-attachment-is-no-image-to-scan-and-an-image-is-its-stored-platform-images) | An attachment is no image to scan, and an image is its stored platform images | Decided by the development agent | (a) The discovery leaves out what the format recorded as an attachment (`oci_manifests.attachment`, R-SIG-063), a referrer and a signature's object; a row such a manifest has is dropped by the next run; a tag's state is that of the children the repository stores that the same selection scans, the index alone only while none is stored | — |
 | [Q-VULN-270](spec/vulnerability-scanning.md#q-vuln-270--a-terminal-failure-waits-for-what-judged-it-to-change-not-for-a-time) | A terminal failure waits for what judged it to change, not for a time | Decided by the development agent | (a) The row names what judged it (`judged`: `limits:<the four bounds>` for a code of a bound, `release:<version>` for a code of reading) and is due when that is none of the worker's current judges | — |
+| [Q-VULN-271](spec/vulnerability-scanning.md#q-vuln-271--a-manifest-that-is-no-image-to-scan-passes-the-missing-data-rule) | A manifest that is no image to scan passes the missing-data rule | Decided by the development agent | (a) The gate's statement applies the discovery's selection (R-VULN-034, Q-VULN-269) to the manifest's row: what it leaves out passes the missing-data rule, a blocking finding still refuses; a manifest without a row counts as an image | — |
 
 </details>
 <!-- coverage-gen:end decisions -->

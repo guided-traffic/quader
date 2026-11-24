@@ -689,12 +689,17 @@ which the signature gate writes at the commit: Docker's attestation manifests wi
 no referrer and no signature's object; `VulnImageDropAttachments`, in the discovery's transaction, drops a row such a manifest got before.
 A tag's state is that of its **platform images** (`VulnImageManifests` for the version view, `VulnImageGradeScans` for the grades and the
 list): for an index the children the repository stores that the same selection scans, so an attestation and a platform a remote has not
-fetched do not count; the index stands alone only while none is stored. The selection is written in all three statements. **A terminal
+fetched do not count; the index stands alone only while none is stored. The selection is written in all three statements and in
+`VulnImageVerdict` (below). **A terminal
 failure** names what judged it (`vuln_image_scan.judged`, [judged.go](../../internal/vuln/imagescan/judged.go), Q-VULN-270): the four bounds
 for a code of a bound, the release for a code of reading; `VulnImageDue` and `VulnImageUnanalysed` take it again when it is none of the
 worker's `Judges` (wired from `vulnerabilities.images` and `buildinfo`), with no back-off and whatever its attempts. The result enters the lifecycle of findings
 through `evaluate.Service.ApplyImage`, so an image's finding differs from a package's only in its version (the manifest digest) and its
-`components`. A pull is gated by `enforce.GateImage` through the Host port `RefuseImage` (Q-VULN-138). **The working space is the scanner's
+`components`. A pull is gated by `enforce.GateImage` through the Host port `RefuseImage` (Q-VULN-138), on what `VulnImageVerdict` reads
+in one statement: the blocking finding, whether a detection has finished, and `image`, the discovery's selection applied to the manifest's
+row (Q-VULN-271). A manifest that is no image to scan (an index, an attestation, a signature) is never held by `onMissingData: block`, so
+`docker pull` gets the index and is gated at the platform image it fetches next; a manifest the repository holds no row of (a remote's miss
+by digest, before the fetch) counts as an image. **The working space is the scanner's
 spool** (Q-VULN-145): an analysis holds the image plus 64 MiB, a detection 64 MiB, before its first file; the worker writes nothing of a scan
 to its disk, and the chart checks no worker spool for the image scanning (Q-HA-318, revisited).
 
