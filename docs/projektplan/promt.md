@@ -242,7 +242,9 @@ Q-ARCH-1040; its release shows the rest); `drain-roles` ran alone at 22:24, gree
 **T-25 landed at 22:58** (one commit; Q-UI-1040 to Q-UI-1043; the renders looked at by the development agent;
 the browser journeys it rewrote run first in the pipeline's e2e legs). Started at 22:53 in the freed place: **T-24 · R4** (downloads ahead and the queue; R3 waits for R2's landing,
 since it wires R2's decider). R4 landed at 00:18 (one commit; section 10). Started at 00:22 in its place: **T-24 · R5a** (the tab strip and the
-tab Downloads, on R4's API). R5a landed at 00:53 (one commit; section 10). **W13 landed at 01:03** (ten commits; H-1662, the Bastion's gauge, R-ARCH-034's count, the limits'
+tab Downloads, on R4's API). R5a landed at 00:53 (one commit; section 10). **R2 landed at 01:45; the screens' render findings, W15 and W14 at 01:50** (one, two and two commits; R2b and
+the renames of the web's test names wait for a place; R3 and the renames of the Go tests started at 01:50).
+**W13 landed at 01:03** (ten commits; H-1662, the Bastion's gauge, R-ARCH-034's count, the limits'
 flush waits by `quader_limits_flushes_total`, E1.14's burst, `search-field.spec.ts`, an offline render seed).
 Started at 00:57 in its place: **W14**, the shape of the test suite and
 the CI caches (section 12, part A whole, and the cache entries without `zstd`). Started at 01:05 in W13's place: **W15**, renders and
@@ -794,14 +796,6 @@ records the recorder that tells such a stall apart).
   `vulnerabilities` in Chromium, Firefox and WebKit alike):** the numbers 0, 1000 and 2000 scale with the chart's
   viewBox, which is about half its size at a phone's width, so they are hard to read there. Not an engine's
   difference. To do: the axis's text at the app's smallest text size whatever the chart's scale.
-- **A narrow list's stacked rows place their fields by the width that is left (seen by the development agent on
-  2026-11-23 at T-25's renders, `all-repositories-chips-light-390.png`).** In the stacked rows of the shared
-  table at 390 px, "Format" stands beside "Project" in one row and beside "Class" in the next, as the values'
-  widths fall, so the eye finds a field at another place in every row. Shared behaviour of the table, not of
-  T-25. To do: the stacked row keeps one place per field (a grid of label and value), held by a layout check.
-- **The column "Your role" of the projects list is empty where the caller has no role (seen the same evening,
-  `projects-details-details-dark-1440.png`, as `ada`).** Every other column of the same rows shows "–" for no
-  value. To do: the same "–", and the layout check's state of an administrator without membership.
 
 - **Partly closed; open: (5) the gap H-591, the finalize's check by size, which stays on its security page.**
   Closed: (1) by d89e83052, the scrub (`TestR_STOR_027_TheScrubAgainstTheDatabase`), and 392a7c823, the orphan
@@ -844,6 +838,16 @@ records the recorder that tells such a stall apart).
   stack).** By the code the page shows the badge "None yet" with a sentence and no error banner. To do
   (W9): a render state of it, looked at.
 ### Closed
+
+- **Closed on 2026-11-24, 01:50, by the same package: "Your role" shows the dash for no role** (R-UI-146), and the layout check `empty-cell` refuses a list cell that shows nothing (it found two more, fixed); German "das Token" throughout (Q-UI-1052, glossary, `formal-german.spec.ts`); the signature column at 1,024 px holds as a table, the file's path being its download (Q-UI-1051). As it stood: **The column "Your role" of the projects list is empty where the caller has no role (seen the same evening,
+  `projects-details-details-dark-1440.png`, as `ada`).** Every other column of the same rows shows "–" for no
+  value. To do: the same "–", and the layout check's state of an administrator without membership.
+
+- **Closed on 2026-11-24, 01:50, by the screens' render findings: a narrow list's stacked rows place each field at one place.** A stacked row is one field a line, the names in a column measured by the table (at most two fifths of the list) and the values beside it (Q-UI-1050, replacing Q-UI-681; a stacked block is about twice as high at 390 px, which Q-UI-1050 weighs); the layout check `stacked-place` holds it with a fixture of T-25's rows; a full render run of 459 screens found 0 layout findings. As it stood: **A narrow list's stacked rows place their fields by the width that is left (seen by the development agent on
+  2026-11-23 at T-25's renders, `all-repositories-chips-light-390.png`).** In the stacked rows of the shared
+  table at 390 px, "Format" stands beside "Project" in one row and beside "Class" in the next, as the values'
+  widths fall, so the eye finds a field at another place in every row. Shared behaviour of the table, not of
+  T-25. To do: the stacked row keeps one place per field (a grid of label and value), held by a layout check.
 
 - **Closed on 2026-11-24 by W15 (Q-CUR-134): a failure's details no longer say a step twice.** The class and the step
   stand in words with their value as code in the muted second line the shared table gives a technical name
@@ -10977,47 +10981,6 @@ the walk items and the run record); what the code holds beyond the plan has not 
 
 ### A · The shape of the test suite (refactor)
 
-- **Partly closed; open: a push that touches one format, the unit tests per format and a second nightly are
-  not measured; the three measurements wait for the owner's go for new formats (his words of 2026-11-23 in
-  section 0), since their only use is room for more formats.** Closed: the nearest limit, shard b at 40.9 of
-  its 45 minutes, by d32107f9a (2026-11-21), which cut a fourth shard. The page's sentence, by d8963d569
-  (2026-11-23): `docs/developer/test-cost.md` no longer says that the path filter would not skip NuGet's leg,
-  and names the rule of Q-ARCH-540 for a push that touches one format. As it stood:
-  **What a format costs, measured on 2026-11-20** ([test-cost.md](../developer/test-cost.md); two pushes and one full nightly,
-  read from the runs' reports, nothing run for it). A push costs 396.0 runner minutes (Test and Release 44693590111), a full
-  nightly 682.9 (44625277245). One format with a client costs 21.2 to 38.0 runner minutes per push, 28.6 on average: 12.6
-  set-up, 8.7 behaviour that is the same for every format, 7.2 what its own client does. Per nightly npm costs 99.1, NuGet
-  31.4, OCI 13.7, Debian 3.5, Ansible and generic nothing. With today's structure 25 formats would be about 939 runner minutes
-  per push and about 1,244 per nightly (computed from the mean of the five, not measured). **The nearest limit:** integration
-  shard b runs 40.9 of its 45 minutes, and an average format adds 6.0. Not measured: a push that touches one format only (both
-  pushes touched shared code), the unit tests per format, a second nightly.
-- **Partly closed; open: items (1), (2) but for the repeat in `nuget-ha`, (3) to (5), (6) but for the fold of
-  `vuln-pooler`, and (7), each a measured cost with nothing designed; (1), (3), the kit move's half of (4),
-  (5) and (7) wait for the owner's go for new formats (his words of 2026-11-23 in section 0), since their only
-  use is room for more formats.** Closed: (8), by 08d6f014b (2026-11-20): `e2e (bastion)` is skipped and takes
-  no runner unless the change touches the Bastion (the job's condition on `e2e-scope` in
-  `.github/workflows/release.yml`). (2)'s repeat, by d9e79a585 (2026-11-23, Q-HA-488): `TestNuGetHA` keeps
-  drain variant A under the npm and the NuGet load and leaves the PostgreSQL switchover and the Valkey
-  failover to `TestNPMHA` of the same night (`test/e2e/nuget_ha_test.go`), about ten minutes less a night,
-  computed, while the Valkey outage with a replaced pod adds about seven to `npm-ha` (Q-HA-487); the next
-  nightly shows both. (6)'s fold of `vuln-pooler`, by decision: Q-VULN-267 of
-  `docs/spec/vulnerability-scanning.md` keeps the probe of variant D in its own set, since no pooler leg under
-  load runs the profile `vuln` and the fold would be a new test environment. As it stood:
-  **Where the minutes are, ranked** (the measured minutes of what would move; what a cheaper tier saves is not measured, and
-  nothing is designed): (1) the fixed cost of every kind leg, 95.1 of the 172.6 e2e minutes of a push and 240.6 of 658.1 of a
-  nightly, `make dev-up` alone 154 to 186 s per leg; (2) drain, switchover, failover and pod crash under a client's load,
-  repeated across 12 nightly legs, 331.2 minutes: the four drain-load legs 87.6, `npm-ha` with `nuget-ha` 78.6 (`nuget-ha` runs
-  the three scenarios of `npm-ha` again), `npm-ha-soak` 41.3; (3) behaviour that is the same for every format inside the five
-  formats' e2e legs, 21.0 per push, the mirror's clients-first test alone 11.0 across npm, NuGet and OCI; (4) the formats'
-  integration packages, 30.2 per push; (5) the render set, 32.7 per push, 54.5 % of its shots are screens named after a format,
-  an average format adds 183 s; (6) `vuln-long` and `vuln-pooler`, 50.2 per nightly; (7) client images loaded per leg, 11.9 per
-  push and 24.2 per nightly; (8) the leg `e2e (bastion)` takes a runner for 2.2 minutes when it has nothing to run. Refuted as
-  a large cost: the three integration stacks (3.0 minutes per push). **Cut first, by the owner's decision of 2026-11-20:** a
-  format's leg runs on a push only when its own code changed (built; a push of shared code alone is about 308 runner
-  minutes instead of 396, about 508 instead of 939 with 25 formats, computed). The rest is not decided.
-- **A code push during a nightly costs the nightly its numbers** (F-164: ten kind legs of Test and Release beside a load leg
-  made it six to nine times slower). The latency conditions of the load legs are only as good as the runner is quiet; either
-  the nightly holds the runners, or its latency conditions compare against a measurement of the same run.
 - **Partly closed; open: the blind spots themselves (a control beside a framed box, absolutely placed elements
   and text drawn by CSS, the states the set does not render, an offset of 1 px or less).** Closed: the two
   newest checks and `joined` each have cases that fail without them (`web/e2e/renders/layout-checks.spec.ts`),
@@ -11150,7 +11113,14 @@ the walk items and the run record); what the code holds beyond the plan has not 
   differently. As it stood:
   **Ansible Galaxy:** one name with versions in a local and a remote member is not run with the real clients (H-868); the hub
   exchange is tested against the stub realm only (H-842).
-- **Partly closed; open: every cache entry exists twice without `zstd` on the runners.** Closed: a clients
+
+### F · Tests a plan named and nobody wrote
+
+Nothing is open here since 2026-11-23; the entries are in the list Closed.
+
+### Closed
+
+- **Closed on 2026-11-24, 01:50, by W14 (Q-ARCH-1061):** an action `.github/actions/zstd` puts zstd 1.5.7 (pinned with the source's SHA-256 in `tools/versions.env`) on every runner kind before the first cache step: a probe where it is, a restore from the cache, or one build from the verified source (24 s in the runner image under emulation); a failure warns and stays on gzip. What only a run shows: one entry per key in `gh cache list`. zstd in the runners' image (`container-images`, which takes no commit without the owner's word) would make the step a probe. As it stood: **Partly closed; open: every cache entry exists twice without `zstd` on the runners.** Closed: a clients
   image loaded from the cache was read: in the nightly 45008950010, `e2e (npm)` (job 137206249010) logged
   "client-images: loaded quader-e2e-clients:dev from .out/client-images/npm.tar in 4 s; nothing built, nothing
   fetched", and 12 more legs of five nightlies since 2026-11-19 restored theirs from a leg of the same run.
@@ -11161,11 +11131,49 @@ the walk items and the run record); what the code holds beyond the plan has not 
   **The CI caches:** a clients image loaded from the cache instead of built has not been read in a log since they landed
   (Q-ARCH-520 to Q-ARCH-526); every cache entry exists twice without `zstd` on the runners.
 
-### F · Tests a plan named and nobody wrote
+- **Closed on 2026-11-24, 01:50, by W14 (Q-ARCH-1062): F-164.** Every large leg of the nightly records, after its test step, which jobs of Test and Release ran on `large` or `self-hosted` runners inside that window (`tools/neighbours`, `neighbours.md` in the artifact and the job summary, a notice when a kind leg ran beside it); it fails nothing and holds no push (nightly 45008950010: 21 of 23 large legs had a push's kind legs beside them). What only a run shows: that the step finds its job and reads the step's times while the job runs. As it stood: **A code push during a nightly costs the nightly its numbers** (F-164: ten kind legs of Test and Release beside a load leg
+  made it six to nine times slower). The latency conditions of the load legs are only as good as the runner is quiet; either
+  the nightly holds the runners, or its latency conditions compare against a measurement of the same run.
 
-Nothing is open here since 2026-11-23; the entries are in the list Closed.
+- **Closed on 2026-11-24, 01:50, by W14 (Q-ARCH-1063):** each of the ranked costs (1) to (6) decided with what brings it back (a kind leg's fixed cost stays, a cheaper start needs a registry mirror in the runners' cluster, which is the owner's; the drain legs stay; the clients-first cases stay; no per-format choice of integration areas; the layout job is cut in two when a green run passes 60 of its 75 minutes; `vuln-long` stays); (7) and the kit move's packages wait with the formats, by the owner's rule of 2026-11-23. As it stood: **Partly closed; open: items (1), (2) but for the repeat in `nuget-ha`, (3) to (5), (6) but for the fold of
+  `vuln-pooler`, and (7), each a measured cost with nothing designed; (1), (3), the kit move's half of (4),
+  (5) and (7) wait for the owner's go for new formats (his words of 2026-11-23 in section 0), since their only
+  use is room for more formats.** Closed: (8), by 08d6f014b (2026-11-20): `e2e (bastion)` is skipped and takes
+  no runner unless the change touches the Bastion (the job's condition on `e2e-scope` in
+  `.github/workflows/release.yml`). (2)'s repeat, by d9e79a585 (2026-11-23, Q-HA-488): `TestNuGetHA` keeps
+  drain variant A under the npm and the NuGet load and leaves the PostgreSQL switchover and the Valkey
+  failover to `TestNPMHA` of the same night (`test/e2e/nuget_ha_test.go`), about ten minutes less a night,
+  computed, while the Valkey outage with a replaced pod adds about seven to `npm-ha` (Q-HA-487); the next
+  nightly shows both. (6)'s fold of `vuln-pooler`, by decision: Q-VULN-267 of
+  `docs/spec/vulnerability-scanning.md` keeps the probe of variant D in its own set, since no pooler leg under
+  load runs the profile `vuln` and the fold would be a new test environment. As it stood:
+  **Where the minutes are, ranked** (the measured minutes of what would move; what a cheaper tier saves is not measured, and
+  nothing is designed): (1) the fixed cost of every kind leg, 95.1 of the 172.6 e2e minutes of a push and 240.6 of 658.1 of a
+  nightly, `make dev-up` alone 154 to 186 s per leg; (2) drain, switchover, failover and pod crash under a client's load,
+  repeated across 12 nightly legs, 331.2 minutes: the four drain-load legs 87.6, `npm-ha` with `nuget-ha` 78.6 (`nuget-ha` runs
+  the three scenarios of `npm-ha` again), `npm-ha-soak` 41.3; (3) behaviour that is the same for every format inside the five
+  formats' e2e legs, 21.0 per push, the mirror's clients-first test alone 11.0 across npm, NuGet and OCI; (4) the formats'
+  integration packages, 30.2 per push; (5) the render set, 32.7 per push, 54.5 % of its shots are screens named after a format,
+  an average format adds 183 s; (6) `vuln-long` and `vuln-pooler`, 50.2 per nightly; (7) client images loaded per leg, 11.9 per
+  push and 24.2 per nightly; (8) the leg `e2e (bastion)` takes a runner for 2.2 minutes when it has nothing to run. Refuted as
+  a large cost: the three integration stacks (3.0 minutes per push). **Cut first, by the owner's decision of 2026-11-20:** a
+  format's leg runs on a push only when its own code changed (built; a push of shared code alone is about 308 runner
+  minutes instead of 396, about 508 instead of 939 with 25 formats, computed). The rest is not decided.
 
-### Closed
+- **Closed on 2026-11-24, 01:50, by W14 (Q-ARCH-1060; `test-cost.md` section 14):** measured from the runs of 2026-11-20 to 23: no push of 71 touched one format alone (9 of 682 commits); the five formats' unit packages are 20.7 % of the unit time, about 21 s of the job a format; a second and a third nightly 747 and 764 runner minutes. The tiers below e2e stay whole on every push; revisit when one push in ten touches one format, or when lane 3 becomes the longest. As it stood: **Partly closed; open: a push that touches one format, the unit tests per format and a second nightly are
+  not measured; the three measurements wait for the owner's go for new formats (his words of 2026-11-23 in
+  section 0), since their only use is room for more formats.** Closed: the nearest limit, shard b at 40.9 of
+  its 45 minutes, by d32107f9a (2026-11-21), which cut a fourth shard. The page's sentence, by d8963d569
+  (2026-11-23): `docs/developer/test-cost.md` no longer says that the path filter would not skip NuGet's leg,
+  and names the rule of Q-ARCH-540 for a push that touches one format. As it stood:
+  **What a format costs, measured on 2026-11-20** ([test-cost.md](../developer/test-cost.md); two pushes and one full nightly,
+  read from the runs' reports, nothing run for it). A push costs 396.0 runner minutes (Test and Release 44693590111), a full
+  nightly 682.9 (44625277245). One format with a client costs 21.2 to 38.0 runner minutes per push, 28.6 on average: 12.6
+  set-up, 8.7 behaviour that is the same for every format, 7.2 what its own client does. Per nightly npm costs 99.1, NuGet
+  31.4, OCI 13.7, Debian 3.5, Ansible and generic nothing. With today's structure 25 formats would be about 939 runner minutes
+  per push and about 1,244 per nightly (computed from the mean of the five, not measured). **The nearest limit:** integration
+  shard b runs 40.9 of its 45 minutes, and an average format adds 6.0. Not measured: a push that touches one format only (both
+  pushes touched shared code), the unit tests per format, a second nightly.
 
 Entries of this section that are closed, each with what closed it and what holds it; nothing is deleted from
 the plan.
