@@ -256,8 +256,14 @@ What was red at 19:49 (Test and Release on 928e2a6e7 and every run since 08:32; 
   runner's stalls as overrun (the bounds add the measured stalls of the process; a real 600 ms overrun still fails).
 - **UI layout checks** — three render findings (the untrusted signer's badge offsets the row at 1440 px, the malware cell's date in two
   lines at 390 px, the signature gate's fixture route answered twice); a builder fixes them with renders.
-- **Nightly** — npm-ha and drain-roles (tarballs answered 429 and slow under load), alerts (`QuaderControlConnectionWaits` fired in
-  maintenance), vuln-pooler (`kind load` of a multi-platform image); a builder reads each to its cause.
+- **Nightly** (read to the causes, landed at 20:50): npm-ha and drain-roles have no product cause: the scheduled nightly ran at
+  12:25 UTC beside six push runs (12 kind legs), the node at 31.5 of 32 cores; tarballs slowed to ~23 s, the technical profile's 50
+  parallel downloads per token filled and the rest waited 10 s for a 429 (R-LIM-024); the last green npm-ha used the same ~14 cores
+  for the same load. A stall with neighbours opens no finding ([e2e.md](../developer/e2e.md)); both are dispatched alone at night.
+  alerts: `QuaderControlConnectionWaits` read a 5-minute p95 with `for: 5m` and fired on the four switchovers of a node rotation, earlier
+  than R-OPS-046's five minutes; now `for: 10m` (Q-OPS-425), held by a promtool test of the rotation. vuln-pooler: `kind load` of a
+  multi-platform index fails on a containerd image store; `deploy/dev/up.sh` saves and loads the node's platform only (ClamAV and
+  the analyser).
 
 ### State at the stop of 2026-11-24
 
