@@ -233,9 +233,10 @@ func TestOCI_R_BAS_051_ThroughABastion(t *testing.T) {
 	s := ociBastionSite()
 	t.Cleanup(func() { removeOCIBastion(t, s) })
 
-	// The release is installed while the image is built and pushed: neither waits for the other.
-	ready := startOCIBastion(t, fx, s)
-
+	// The image is pushed before the release's install begins: the install adds the Bastion's Ingress, at which HAProxy Ingress reloads, and
+	// the old worker closes the connections it keeps alive. A push running beside the install reused one of them for its manifest and failed
+	// with "use of closed network connection" (Test and Release 45222735716: the reload at 17:29:30.645, the PUT of the manifest after it),
+	// and the client did not repeat the PUT. The overlap saved the push's few seconds.
 	pub := fx.client(t, 0, ociDocker, "bastion-push")
 	pub.login(ociRegistryHost(t))
 	name := fx.name("bastion")
@@ -252,6 +253,7 @@ func TestOCI_R_BAS_051_ThroughABastion(t *testing.T) {
 	pub.push(ref)
 	digest := fx.digestOf(t, ociLocalKey, name, "1")
 	pushed := time.Since(start)
+	ready := startOCIBastion(t, fx, s)
 	ready()
 	installTook := time.Since(start)
 
