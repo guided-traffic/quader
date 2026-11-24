@@ -312,9 +312,9 @@ test('R-UI-021 R-UI-083 R-REPO-050 the Mirror group of a remote npm repository i
       await expectAccessible(page, `creation form, Mirror group, mirror (${scheme})`);
     }
     // The pattern the server asks for removes the notice; it is typed here, not sent.
-    await page.getByRole('textbox', { name: 'Include patterns' }).fill('@types/*');
+    await page.getByRole('textbox', { name: 'Mirror only these packages' }).fill('@types/*');
     await expect(page.getByText('A mirror of a well-known public registry needs a bound:')).toHaveCount(0);
-    await page.getByRole('textbox', { name: 'Include patterns' }).fill('');
+    await page.getByRole('textbox', { name: 'Mirror only these packages' }).fill('');
     await mode(/^Pull-through/).check();
     await expect(interval).toHaveCount(0);
   });
