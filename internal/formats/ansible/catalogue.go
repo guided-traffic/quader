@@ -29,7 +29,7 @@ const noGalaxySearch = "This Galaxy does not answer the keyword search; list a n
 // CatalogueCaps implements [discover.Catalogue]: the keyword search until the upstream says it has none, the namespaces as the level.
 func (remoteAdapter) CatalogueCaps(context.Context, discover.Upstream) (discover.CatalogueCaps, error) {
 	return discover.CatalogueCaps{
-		Search: discover.SearchUpstream, SearchNote: "The Galaxy ranks the namespace, the name, the tags and the description of the highest version.",
+		Search: discover.SearchUpstream, SearchHint: discover.SearchHintGalaxy,
 		Levels: []string{"namespace"}, Sizes: "perVersion",
 	}, nil
 }
@@ -102,7 +102,7 @@ func (remoteAdapter) Search(ctx context.Context, u discover.Upstream, q discover
 		return discover.SearchPage{}, err
 	}
 	if !found {
-		return discover.SearchPage{}, &discover.UnavailableError{Reason: noGalaxySearch}
+		return discover.SearchPage{}, &discover.UnavailableError{Reason: noGalaxySearch, Hint: discover.SearchHintGalaxyNoSearch}
 	}
 	var rows []struct {
 		CollectionVersion struct {

@@ -1025,8 +1025,7 @@ discover.CatalogueCaps: field Hosts []string
 discover.CatalogueCaps: field Levels []string
 discover.CatalogueCaps: field LevelsReason string
 discover.CatalogueCaps: field Search SearchKind
-discover.CatalogueCaps: field SearchNote string
-discover.CatalogueCaps: field SearchReason string
+discover.CatalogueCaps: field SearchHint SearchHint
 discover.CatalogueCaps: field SearchWindow int
 discover.CatalogueCaps: field Sizes string
 discover.Cursor: alias json.RawMessage
@@ -1091,6 +1090,8 @@ discover.Response: field Status int
 discover.Scope: field Admits func(string) bool
 discover.Scope: field Exclude []string
 discover.Scope: field Include []string
+discover.SearchHint: method Valid() bool
+discover.SearchHint: type string
 discover.SearchKind: type string
 discover.SearchPage: field Cursor Cursor
 discover.SearchPage: field Done bool
@@ -1103,6 +1104,7 @@ discover.SearchQuery: field Level LevelRef
 discover.SearchQuery: field Limit int
 discover.SearchQuery: field NamesOnly bool
 discover.SearchQuery: field Text string
+discover.UnavailableError: field Hint SearchHint
 discover.UnavailableError: field Reason string
 discover.UnavailableError: field Shape bool
 discover.UnavailableError: method Error() string
@@ -1140,6 +1142,20 @@ discover.NameRuleLowercaseDigits: value NameRule = "lowercaseDigits"
 discover.NameRuleLowercaseDigitsUnderscore: value NameRule = "lowercaseDigitsUnderscore"
 discover.PassFull: value PassKind = "full"
 discover.PassIncremental: value PassKind = "incremental"
+discover.SearchHintAptIndex: value SearchHint = "aptIndex"
+discover.SearchHintDockerHub: value SearchHint = "dockerHub"
+discover.SearchHintDockerHubUnavailable: value SearchHint = "dockerHubUnavailable"
+discover.SearchHintGHCR: value SearchHint = "ghcr"
+discover.SearchHintGalaxy: value SearchHint = "galaxy"
+discover.SearchHintGalaxyNoSearch: value SearchHint = "galaxyNoSearch"
+discover.SearchHintGitLab: value SearchHint = "gitlab"
+discover.SearchHintNoSearch: value SearchHint = "noSearch"
+discover.SearchHintNpmNoSearch: value SearchHint = "npmNoSearch"
+discover.SearchHintNpmRegistry: value SearchHint = "npmRegistry"
+discover.SearchHintNuGetNoSearch: value SearchHint = "nugetNoSearch"
+discover.SearchHintNuGetSearch: value SearchHint = "nugetSearch"
+discover.SearchHintOCIRegistry: value SearchHint = "ociRegistry"
+discover.SearchHintQuay: value SearchHint = "quay"
 discover.SearchIndex: value SearchKind = "index"
 discover.SearchNone: value SearchKind = "none"
 discover.SearchUpstream: value SearchKind = "upstream"

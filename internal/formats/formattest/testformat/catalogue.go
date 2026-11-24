@@ -17,7 +17,7 @@ var _ formats.Catalogue = remoteAdapter{}
 // CatalogueCaps implements discover.Catalogue.
 func (remoteAdapter) CatalogueCaps(context.Context, discover.Upstream) (discover.CatalogueCaps, error) {
 	return discover.CatalogueCaps{
-		Search: discover.SearchNone, SearchReason: "the kit's test format has no upstream to search",
+		Search: discover.SearchNone, SearchHint: discover.SearchHintNoSearch,
 		LevelsReason: "the kit's test format has no levels", Sizes: "unknown",
 	}, nil
 }

@@ -212,8 +212,8 @@ func (r *run) catalogueCase(cat formats.Catalogue, c CatalogueCase) {
 		failf("the declaration gives a reason for no search and the capabilities say %q", caps.Search)
 	case decl.NoLevels != "" && len(caps.Levels) > 0:
 		failf("the declaration gives a reason for no levels and the capabilities list %v", caps.Levels)
-	case caps.Search == discover.SearchNone && caps.SearchReason == "":
-		failf("the capabilities say no search without a reason")
+	case !caps.SearchHint.Valid():
+		failf("the capabilities' search hint is %q, want one of discover.SearchHints (the screen says a sentence for each)", caps.SearchHint)
 	case caps.Sizes != "known" && caps.Sizes != "perVersion" && caps.Sizes != "unknown":
 		failf("the capabilities' sizes are %q, want known, perVersion or unknown", caps.Sizes)
 	}
@@ -258,8 +258,8 @@ func (r *run) catalogueSearch(ctx context.Context, cat formats.Catalogue, u *fak
 	}
 	if c.ExpectSearchUnavailable {
 		var ue *discover.UnavailableError
-		if _, err := cat.Search(ctx, u, q); !errors.As(err, &ue) || ue.Reason == "" {
-			failf("the case's upstream does not answer the search and Search answers %v, want a *discover.UnavailableError with a reason", err)
+		if _, err := cat.Search(ctx, u, q); !errors.As(err, &ue) || ue.Reason == "" || !ue.Hint.Valid() {
+			failf("the case's upstream does not answer the search and Search answers %v, want a *discover.UnavailableError with a reason and a hint", err)
 		}
 		return
 	}

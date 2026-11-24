@@ -653,7 +653,11 @@ the item store, [oci.md](oci.md#upload-sessions-r-stor-011); the in-memory host 
    (`Descriptor.VersionCanon`), implements `formats.Catalogue` on its remote adapter in its `catalogue.go` (`Register` refuses a remote
    adapter without it), gives kit check 22 its `Catalogue` fixture of answers its real upstream gave (one case per upstream whose
    capabilities differ, in `testdata/catalogue/`; where it has levels and its upstream tells a level it does not have from an empty one,
-   the case's `UnknownLevel` with the recorded answers, [Q-CUR-165](../spec/remote-curation.md#q-cur-165--a-level-the-upstream-does-not-have-says-so-with-the-formats-naming-rule-and-one-suggestion-built-from-it)), and adds its rows to `TestR_CUR_007_EveryRemoteFormatDeclaresItsCatalogue` and
+   the case's `UnknownLevel` with the recorded answers, [Q-CUR-165](../spec/remote-curation.md#q-cur-165--a-level-the-upstream-does-not-have-says-so-with-the-formats-naming-rule-and-one-suggestion-built-from-it)),
+   names the hint under the search field for each of its upstreams as a code (a `discover.SearchHint` constant and its place in
+   `discover.SearchHints`, the API's enum `UpstreamCatalogue.searchHint` and the sentence in English and German in `searchHintText` of
+   [upstream-words.ts](../../web/src/app/features/repositories/upstream/upstream-words.ts),
+   [Q-CUR-166](../spec/remote-curation.md#q-cur-166--the-hint-under-the-upstream-search-is-a-code-the-screen-says-in-its-language)), and adds its rows to `TestR_CUR_007_EveryRemoteFormatDeclaresItsCatalogue` and
    `TestR_CUR_006_EveryRemoteFormatHasItsVersionCanon` in [catalogue_test.go](../../internal/formats/all/catalogue_test.go)
    ([remote-curation.md](../spec/remote-curation.md) R-CUR-023).
    Give every route at least one example; a name that two routes could both match needs a `Route.Match` that tells them apart.

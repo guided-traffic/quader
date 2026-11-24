@@ -132,8 +132,8 @@ func (s *Server) GetUpstreamCatalogue(w http.ResponseWriter, r *http.Request, pr
 	}
 	set := c.repo.Delivery()
 	writeJSON(w, r, http.StatusOK, map[string]any{
-		"search": caps.Search, "searchWindow": nullInt(caps.SearchWindow), "searchNote": nullString(caps.SearchNote),
-		"searchReason": nullString(caps.SearchReason), "levels": listOf(caps.Levels), "levelsReason": nullString(caps.LevelsReason),
+		"search": caps.Search, "searchWindow": nullInt(caps.SearchWindow), "searchHint": nullString(string(caps.SearchHint)),
+		"levels": listOf(caps.Levels), "levelsReason": nullString(caps.LevelsReason),
 		"sizes": caps.Sizes, "hosts": listOf(caps.Hosts), "mode": set.Mode(), "rules": set.Len(), "openRequests": open,
 		"queue":       map[string]int64{"waiting": counts.Waiting, "running": counts.Running, "failed": counts.Failed, "done": counts.Done},
 		"maySetRules": c.manager,

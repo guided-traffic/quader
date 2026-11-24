@@ -398,9 +398,9 @@ Priority: **P1** · Covers: ART-044
 
   | Capability | Meaning |
   |---|---|
-  | `search: upstream` | the upstream answers a text query (npm `-/v1/search`, NuGet's search resource, the Galaxy's keyword search, a preset's registry API); `searchWindow` is the deepest hit it reaches, `searchNote` what it matches |
+  | `search: upstream` | the upstream answers a text query (npm `-/v1/search`, NuGet's search resource, the Galaxy's keyword search, a preset's registry API); `searchWindow` is the deepest hit it reaches, `searchHint` the code of what a person can type and find |
   | `search: index` | Quader answers a text query over an index it holds of the upstream (Debian's `Packages` and `Translation-en` of the suites read) |
-  | `search: none` | no text search; `searchReason` says why in one sentence |
+  | `search: none` | no text search; `searchHint` the code of why and of what to enter instead |
   | `levels: [<kind>…]` | the levels above a package, outermost first (`scope`; `namespace`; `suite`, `component`, `architecture`), each listable; empty with `levelsReason` |
   | `lookup` | a package by its exact name; every format has it (the floor) |
   | `versions` | the versions of a package with what the upstream tells of each without a download: `published`, `size` (`sizes: known \| perVersion \| unknown`), flags (`deprecated`, `yanked`, `unlisted`, `prerelease`), platforms, a digest |
@@ -450,8 +450,7 @@ Priority: **P1** · Covers: ART-044
   type CatalogueCaps struct {
       Search       SearchKind // "upstream", "index", "none"
       SearchWindow int        // deepest hit the upstream's search reaches; 0 when it says nothing
-      SearchNote   string     // what a query matches, one sentence
-      SearchReason string     // why there is none, one sentence
+      SearchHint   SearchHint // the code of the sentence under the search field (Q-CUR-166); the screen writes it
       Levels       []string   // outermost first
       LevelsReason string
       Sizes        string     // "known", "perVersion", "unknown"
@@ -1131,9 +1130,11 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
   - For those who may set rules and while open entries exist, the section **Requests** first, set apart (a bordered panel with its count):
     each entry's subject, who asked or how often clients were refused, the examination's state and verdicts, and **Allow** and
     **Decline**; an asker sees **Your requests** in the same place.
-  - The search: a field as wide as a name, the toggle **Names only** where the format has it (Debian), the sentence of what it matches
-    (`searchNote`); where the capability is `none`, the field becomes **Look up by name** and one sentence says why ("ghcr.io offers no
-    search and no listing of images; look an image up by its full name.").
+  - The search: a field as wide as a name, the toggle **Names only** where the format has it (Debian), and under it one sentence in the
+    screen's language of what a person can type and find, by the code `searchHint` ("Search for an image name, for example nginx;
+    official images are under library/<name>."); where the capability is `none`, the field becomes **Look up by name** and the sentence
+    says why and what to enter instead ("ghcr.io offers no search; enter an image's full name, for example stefanprodan/podinfo.").
+    The sentences per code are [Q-CUR-166](#q-cur-166--the-hint-under-the-upstream-search-is-a-code-the-screen-says-in-its-language)'s.
   - Where the format has levels, a level bar beside the results (the breadcrumb of the level, its children as a list); for Debian the
     suites the remote knows and **Read the index** for a suite or component whose index is not read yet (a download ahead of the index
     documents, R-DEB-036).
@@ -1272,7 +1273,7 @@ A format without search (OCI on ghcr.io), the upstream down:
 
 ```text
 │ Look up an image [ fluxcd/flux-cli          ]                                                         │
-│ ghcr.io offers no search and no listing of images; look an image up by its full name.                 │
+│ ghcr.io offers no search; enter an image's full name, for example stefanprodan/podinfo.               │
 │ ⚠ The upstream is assumed offline until 10:42 (3 failures: upstream_unreachable); Quader retries then. │
 ```
 
@@ -1280,7 +1281,9 @@ Debian, a suite read and one not read:
 
 ```text
 │ Suites: trixie ▸ main ▸ amd64        trixie-security (index not read) [Read the index]               │
-│ Search the index [ libssl           ] [x] Names only     (as apt search: names, provides, descriptions)│
+│ Search the index [ libssl           ] [x] Names only                                                 │
+│ Search for words of a package's name or short description, for example nginx; Quader                 │
+│ searches only the suites whose index it has read.                                                    │
 │ ▾ libssl3t64   Secure Sockets Layer toolkit - shared libraries                                         │
 │     3.5.1-1+deb13u1  amd64  2,412,448 bytes  Delivered  Not stored  [Download]                        │
 ```
@@ -2467,7 +2470,8 @@ sentences the server writes per upstream.
 
 **Choice:** (a). The sentence of the budget says "the upstream catalogue's budget": the API's refusal does not say whether the
 repository's or the person's ran out. **Rationale:** the development agent would revisit the server's sentences if the API answers them
-as codes.
+as codes. Revisited for the sentence under the search field by [Q-CUR-166](#q-cur-166--the-hint-under-the-upstream-search-is-a-code-the-screen-says-in-its-language): `searchNote` and `searchReason` became the code
+`searchHint`, which the screen says in its language.
 
 **Applied in the spec:** R-CUR-018 (the states). Code:
 [upstream-words.ts](../../web/src/app/features/repositories/upstream/upstream-words.ts).
@@ -2713,6 +2717,69 @@ R-ANS-047, [formats/debian.md](formats/debian.md) R-DEB-036; [architecture.md](a
 `Forbidden`, `Exists` and `EmptyOrUnknown` in [discover/catalogue.go](../../internal/mirror/discover/catalogue.go); each format's
 `catalogue.go`; `unknownLevel` in [upstream_catalogue_api.go](../../internal/api/v1/upstream_catalogue_api.go); `unknownLevelText`,
 `nameRuleText` and `suggestionText` in [upstream-words.ts](../../web/src/app/features/repositories/upstream/upstream-words.ts).
+
+### Q-CUR-166 · The hint under the upstream search is a code the screen says in its language
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below after its own look at the renders of the
+unknown level (09:10); the owner reviews it at the walkthrough.
+
+Context: under "Upstream durchsuchen" the German screen of a Docker Hub remote read "Docker Hub's repository search, which its operator
+does not document; an official image is library/<name>." The capabilities carried `searchNote` and `searchReason`, English sentences
+each format wrote per upstream, and the screen showed them as written (Q-CUR-155). They spoke to an operator (how the upstream's
+interface is documented, how it ranks) rather than to a person who wants a package, and none was translated. The texts as they stood:
+npm "The registry ranks names, descriptions, keywords and maintainers; a query takes 2 to 64 characters." (and "This npm registry does
+not answer searches." while off); NuGet "The upstream searches listed packages only; id:, packageid:, owner: and tags: narrow a query." and
+"This NuGet upstream has no search resource; look a package up by its exact ID."; OCI on Docker Hub the sentence above (and "Docker Hub's
+search did not answer as expected; look an image up by its name or list a namespace." while off), on Quay "Quay's search of public
+repositories by name and description.", on ghcr.io "ghcr.io offers no search and no listing of images; look an image up by its full
+name.", on GitLab "GitLab's registry offers no search; look an image up by its full name or list a project's images.", on a registry
+without a preset "This registry offers no search; look an image up by its full name."; Ansible Galaxy "The Galaxy ranks the namespace,
+the name, the tags and the description of the highest version." (and "This Galaxy does not answer the keyword search; list a namespace or
+look a collection up by its exact name." while off); Debian "Quader searches the indexes the remote has read, as apt search does: every
+word in the name, its Provides or its short description; a suite whose indexes are not read is not searched."
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A code: `discover.CatalogueCaps.SearchHint` from a closed list in the leaf (`discover.SearchHints`), one per upstream whose hint differs; `UnavailableError.Hint` for a search the engine turns off; the API's `searchHint` enum replaces `searchNote` and `searchReason`; the screen writes the sentence per code with `$localize` (chosen) | The screen speaks, as for the unknown level (Q-CUR-165) | Every sentence is in the screen's language and written for a person: what to type, an example, and where there is no search what to enter instead; a format adds its codes and the screen a sentence each, a constant per format | A new upstream's hint needs a code in the leaf, the API's enum and the screen; a Go test holds the enum to the leaf, kit check 22 a format's caps to the list |
+| (b) The server writes the sentence in the language of `Accept-Language` | Server-side translation | One field, no enum | A second catalogue of German texts in Go beside the screen's, which nothing else in the API has; the glossary and the formal-German check would not reach it |
+| (c) Code and parameters (an example name from the format) | Code plus values | The example comes from the format | The example is the screen's wording, not a fact of the upstream; one field more for no gain |
+| (d) No hint | Nothing under the field | Nothing to translate | Docker Hub's `library/<name>`, npm's 2 to 64 characters, NuGet's `id:` and why there is no search are lost |
+
+**Choice:** (a). The codes and their sentences:
+
+| Code | Upstream | English | German |
+|---|---|---|---|
+| `dockerHub` | OCI, Docker Hub | Search for an image name, for example nginx; official images are under library/<name>. | Suchen Sie nach einem Image-Namen, z. B. nginx; offizielle Images liegen unter library/<Name>. |
+| `dockerHubUnavailable` | OCI, Docker Hub's search off for the cache period (R-CUR-008) | Docker Hub's search is not available at the moment; enter an image's full name, for example library/nginx, or open a namespace. | Die Suche von Docker Hub ist zurzeit nicht verfügbar; geben Sie den vollständigen Namen eines Images ein, z. B. library/nginx, oder öffnen Sie einen Namespace. |
+| `quay` | OCI, Quay | Search for an image name or a word of the description, for example prometheus. | Suchen Sie nach einem Image-Namen oder einem Wort aus der Beschreibung, z. B. prometheus. |
+| `ghcr` | OCI, ghcr.io | ghcr.io offers no search; enter an image's full name, for example stefanprodan/podinfo. | ghcr.io bietet keine Suche; geben Sie den vollständigen Namen eines Images ein, z. B. stefanprodan/podinfo. |
+| `gitlab` | OCI, GitLab | GitLab's registry offers no search; open a project to see its images, or enter an image's full name. | Die Registry von GitLab bietet keine Suche; öffnen Sie ein Projekt, um seine Images zu sehen, oder geben Sie den vollständigen Namen eines Images ein. |
+| `ociRegistry` | OCI, a registry without a preset | This registry offers no search; enter an image's full name. | Diese Registry bietet keine Suche; geben Sie den vollständigen Namen eines Images ein. |
+| `npmRegistry` | npm | Search for a package name, a keyword or a maintainer, for example express; a search takes 2 to 64 characters. | Suchen Sie nach einem Paketnamen, einem Schlüsselwort oder einem Maintainer, z. B. express; eine Suche umfasst 2 bis 64 Zeichen. |
+| `npmNoSearch` | npm, a registry without the search route | This registry offers no search; enter a package's exact name, for example express. | Diese Registry bietet keine Suche; geben Sie den genauen Namen eines Pakets ein, z. B. express. |
+| `nugetSearch` | NuGet | Search for a package ID or a word of the description, for example Serilog; id:, owner: and tags: narrow the search. | Suchen Sie nach einer Paket-ID oder einem Wort aus der Beschreibung, z. B. Serilog; id:, owner: und tags: grenzen die Suche ein. |
+| `nugetNoSearch` | NuGet, a service index without a search resource | This NuGet upstream offers no search; enter a package's exact ID, for example Serilog. | Dieser NuGet-Upstream bietet keine Suche; geben Sie die genaue ID eines Pakets ein, z. B. Serilog. |
+| `galaxy` | Ansible Galaxy | Search for a namespace, a collection name, a tag or a word of the description, for example docker. | Suchen Sie nach einem Namespace, einem Collection-Namen, einem Tag oder einem Wort aus der Beschreibung, z. B. docker. |
+| `galaxyNoSearch` | Ansible Galaxy without the keyword search | This Galaxy offers no search; open a namespace or enter a collection's exact name, for example community.general. | Diese Galaxy bietet keine Suche; öffnen Sie einen Namespace oder geben Sie den genauen Namen einer Collection ein, z. B. community.general. |
+| `aptIndex` | Debian | Search for words of a package's name or short description, for example nginx; Quader searches only the suites whose index it has read. | Suchen Sie nach Wörtern aus dem Namen oder der Kurzbeschreibung eines Pakets, z. B. nginx; Quader durchsucht nur die Suites, deren Index es gelesen hat. |
+| `noSearch` | an upstream without a search and without a hint of its own (the engine's fallback for a search turned off without one) | This upstream offers no search; enter a package's exact name. | Dieser Upstream bietet keine Suche; geben Sie den genauen Namen eines Pakets ein. |
+
+The upstream's own name (Docker Hub, ghcr.io, GitLab) is not translated. `searchHint` is null where a format names none or one the API
+does not know; the screen then shows no sentence. `levelsReason`, a page's `note` and the detail of `400 catalogue_not_offered` stay
+English sentences of the API: the screen shows none of them (the refusal has its own sentence, Q-CUR-155). The contract's version stays
+11: two fields of `discover.CatalogueCaps` became one and `discover.UnavailableError` gained one, no method changed its meaning or left,
+and every format moved in the same change (ADR-277). **Rationale:** a hint a person reads is in the screen's language and says what to
+type, as the unknown level's sentence does; the development agent would revisit (b) if the API ever answers more than a handful of
+server-written sentences a screen shows.
+
+**Applied in the spec:** R-CUR-007 (the capabilities and their Go block), R-CUR-018 (the search and the sketches); Q-CUR-155 (the note
+that it was revisited); [formats/oci.md](formats/oci.md) R-OCI-038, [formats/npm.md](formats/npm.md) R-NPM-049,
+[formats/nuget.md](formats/nuget.md) R-NUGET-035, [formats/ansible.md](formats/ansible.md) R-ANS-047, [formats/debian.md](formats/debian.md)
+R-DEB-036; the API's `UpstreamCatalogue.searchHint`. Code: `SearchHint` in
+[discover/catalogue.go](../../internal/mirror/discover/catalogue.go); each format's `catalogue.go`; the engine's `turnOff` in
+[catalogue.go](../../internal/remotecuration/catalogue/catalogue.go); kit check 22 in
+[checks_catalogue.go](../../internal/formats/formattest/checks_catalogue.go); `searchHintText` in
+[upstream-words.ts](../../web/src/app/features/repositories/upstream/upstream-words.ts).
 
 ### Q-CUR-80 · A download of one version runs before the catalogue: the call that names its files is a contract interface of its own
 

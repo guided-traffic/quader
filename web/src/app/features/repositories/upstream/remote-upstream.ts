@@ -21,6 +21,7 @@ import {
   levelKindText,
   modeSentence,
   nameRuleText,
+  searchHintText,
   sectionExample,
   stateBadge,
   suggestionText,
@@ -121,6 +122,8 @@ export class RemoteUpstream {
     const c = this.caps();
     return !!c && c.search !== 'none';
   });
+  /** The sentence under the search field, in the screen's language, by the code the server sends (Q-CUR-166). */
+  protected readonly hintText = computed(() => searchHintText(this.caps()?.searchHint));
   /** The levels above a package, outermost first; none where the upstream lists none. */
   protected readonly levelKinds = computed(() => this.caps()?.levels ?? []);
   protected readonly hasLevels = computed(() => this.levelKinds().length > 0 && !this.caps()?.levelsReason);

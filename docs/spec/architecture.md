@@ -2983,7 +2983,9 @@ shapes, [bastion.md](bastion.md) R-BAS-086) are specified on their pages. Two mo
     declared catalogue hosts. As built, a fixture names one case per upstream whose capabilities differ (a preset with its operator's
     API, a registry without), each with canned answers its upstream gave, the search, level and package it reads, a name the upstream
     does not have and a page size that makes every call page; the capabilities decide which calls must answer, and a case whose upstream
-    does not answer the search as the format expects (`ExpectSearchUnavailable`) holds the call to a `*discover.UnavailableError`. A
+    does not answer the search as the format expects (`ExpectSearchUnavailable`) holds the call to a `*discover.UnavailableError`. The
+    capabilities and that error name a search hint of `discover.SearchHints`, the code of the sentence the screen shows under the
+    search field ([remote-curation.md](remote-curation.md) Q-CUR-166). A
     version the catalogue answers is in the format's canon (`testformat.CatalogueRawVersions` fails it). A case that names a level its
     upstream does not have (`UnknownLevel`, with `UnknownSuggestion`) holds `Children` to a page that lists nothing, says `Unknown`, names
     the suggestion and reads the upstream at most three times ([remote-curation.md](remote-curation.md) Q-CUR-165).

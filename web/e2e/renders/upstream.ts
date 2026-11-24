@@ -43,8 +43,7 @@ function npmCaps(over: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     search: 'upstream',
     searchWindow: 5250,
-    searchNote: 'The registry ranks names, descriptions, keywords and maintainers; a query takes 2 to 64 characters.',
-    searchReason: null,
+    searchHint: 'npmRegistry',
     levels: ['scope'],
     levelsReason: null,
     sizes: 'unknown',
@@ -390,8 +389,7 @@ export const upstreamExpected = [
 const ghcrCaps = {
   search: 'none',
   searchWindow: null,
-  searchNote: null,
-  searchReason: 'ghcr.io offers no search and no listing of images; look an image up by its full name.',
+  searchHint: 'ghcr',
   levels: [],
   levelsReason: 'ghcr.io lists no namespaces.',
   sizes: 'perVersion',
@@ -450,8 +448,7 @@ export async function* upstreamLookupWalk(p: Page): AsyncGenerator<string> {
 const hubCaps = {
   ...ghcrCaps,
   search: 'upstream',
-  searchNote: "Docker Hub's repository search, which its operator does not document; an official image is library/<name>.",
-  searchReason: null,
+  searchHint: 'dockerHub',
   levels: ['namespace'],
   levelsReason: null,
   sizes: 'known',
@@ -490,8 +487,7 @@ export async function* upstreamUnknownLevelWalk(p: Page): AsyncGenerator<string>
 const debCaps = {
   search: 'index',
   searchWindow: null,
-  searchNote: 'Quader searches the indexes it has read, as apt search does: names, Provides and the short descriptions.',
-  searchReason: null,
+  searchHint: 'aptIndex',
   levels: ['suite', 'component', 'architecture'],
   levelsReason: null,
   sizes: 'known',

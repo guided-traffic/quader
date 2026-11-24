@@ -5179,6 +5179,63 @@ func (e UpstreamCatalogueSearch) Valid() bool {
 	}
 }
 
+// Defines values for UpstreamCatalogueSearchHint.
+const (
+	UpstreamCatalogueSearchHintAptIndex             UpstreamCatalogueSearchHint = "aptIndex"
+	UpstreamCatalogueSearchHintDockerHub            UpstreamCatalogueSearchHint = "dockerHub"
+	UpstreamCatalogueSearchHintDockerHubUnavailable UpstreamCatalogueSearchHint = "dockerHubUnavailable"
+	UpstreamCatalogueSearchHintGalaxy               UpstreamCatalogueSearchHint = "galaxy"
+	UpstreamCatalogueSearchHintGalaxyNoSearch       UpstreamCatalogueSearchHint = "galaxyNoSearch"
+	UpstreamCatalogueSearchHintGhcr                 UpstreamCatalogueSearchHint = "ghcr"
+	UpstreamCatalogueSearchHintGitlab               UpstreamCatalogueSearchHint = "gitlab"
+	UpstreamCatalogueSearchHintLessThannil          UpstreamCatalogueSearchHint = "<nil>"
+	UpstreamCatalogueSearchHintNoSearch             UpstreamCatalogueSearchHint = "noSearch"
+	UpstreamCatalogueSearchHintNpmNoSearch          UpstreamCatalogueSearchHint = "npmNoSearch"
+	UpstreamCatalogueSearchHintNpmRegistry          UpstreamCatalogueSearchHint = "npmRegistry"
+	UpstreamCatalogueSearchHintNugetNoSearch        UpstreamCatalogueSearchHint = "nugetNoSearch"
+	UpstreamCatalogueSearchHintNugetSearch          UpstreamCatalogueSearchHint = "nugetSearch"
+	UpstreamCatalogueSearchHintOciRegistry          UpstreamCatalogueSearchHint = "ociRegistry"
+	UpstreamCatalogueSearchHintQuay                 UpstreamCatalogueSearchHint = "quay"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamCatalogueSearchHint enum.
+func (e UpstreamCatalogueSearchHint) Valid() bool {
+	switch e {
+	case UpstreamCatalogueSearchHintAptIndex:
+		return true
+	case UpstreamCatalogueSearchHintDockerHub:
+		return true
+	case UpstreamCatalogueSearchHintDockerHubUnavailable:
+		return true
+	case UpstreamCatalogueSearchHintGalaxy:
+		return true
+	case UpstreamCatalogueSearchHintGalaxyNoSearch:
+		return true
+	case UpstreamCatalogueSearchHintGhcr:
+		return true
+	case UpstreamCatalogueSearchHintGitlab:
+		return true
+	case UpstreamCatalogueSearchHintLessThannil:
+		return true
+	case UpstreamCatalogueSearchHintNoSearch:
+		return true
+	case UpstreamCatalogueSearchHintNpmNoSearch:
+		return true
+	case UpstreamCatalogueSearchHintNpmRegistry:
+		return true
+	case UpstreamCatalogueSearchHintNugetNoSearch:
+		return true
+	case UpstreamCatalogueSearchHintNugetSearch:
+		return true
+	case UpstreamCatalogueSearchHintOciRegistry:
+		return true
+	case UpstreamCatalogueSearchHintQuay:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for UpstreamCatalogueSizes.
 const (
 	CatalogueSizesKnown      UpstreamCatalogueSizes = "known"
@@ -16114,11 +16171,13 @@ type UpstreamCatalogue struct {
 	// Search upstream: the upstream answers a text query; index: Quader answers it over an index it holds; none: no search.
 	Search UpstreamCatalogueSearch `json:"search"`
 
-	// SearchNote What a query matches, one sentence.
-	SearchNote *string `json:"searchNote"`
-
-	// SearchReason Why there is no search, one sentence.
-	SearchReason *string `json:"searchReason"`
+	// SearchHint The code of the sentence the screen shows under the search field, in its own language (Q-CUR-166): what a person can type
+	// and find where the upstream or Quader's index searches, or why there is no search and what to enter instead. `dockerHub`,
+	// `quay`, `ghcr`, `gitlab` and `ociRegistry` are an OCI remote's (by its preset, or a registry without one);
+	// `dockerHubUnavailable` Docker Hub's search while it is off for the cache period (R-CUR-008); `npmRegistry` and
+	// `npmNoSearch` npm's; `nugetSearch` and `nugetNoSearch` NuGet's; `galaxy` and `galaxyNoSearch` Ansible Galaxy's; `aptIndex`
+	// Debian's; `noSearch` an upstream without a search and without a hint of its own. Null where the format names none.
+	SearchHint *UpstreamCatalogueSearchHint `json:"searchHint"`
 
 	// SearchWindow The deepest hit the upstream's search reaches; null when it says nothing.
 	SearchWindow *int                   `json:"searchWindow"`
@@ -16130,6 +16189,14 @@ type UpstreamCatalogueMode string
 
 // UpstreamCatalogueSearch upstream: the upstream answers a text query; index: Quader answers it over an index it holds; none: no search.
 type UpstreamCatalogueSearch string
+
+// UpstreamCatalogueSearchHint The code of the sentence the screen shows under the search field, in its own language (Q-CUR-166): what a person can type
+// and find where the upstream or Quader's index searches, or why there is no search and what to enter instead. `dockerHub`,
+// `quay`, `ghcr`, `gitlab` and `ociRegistry` are an OCI remote's (by its preset, or a registry without one);
+// `dockerHubUnavailable` Docker Hub's search while it is off for the cache period (R-CUR-008); `npmRegistry` and
+// `npmNoSearch` npm's; `nugetSearch` and `nugetNoSearch` NuGet's; `galaxy` and `galaxyNoSearch` Ansible Galaxy's; `aptIndex`
+// Debian's; `noSearch` an upstream without a search and without a hint of its own. Null where the format names none.
+type UpstreamCatalogueSearchHint string
 
 // UpstreamCatalogueSizes defines model for UpstreamCatalogue.Sizes.
 type UpstreamCatalogueSizes string

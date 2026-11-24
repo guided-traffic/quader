@@ -41,8 +41,7 @@ const (
 func (remoteAdapter) CatalogueCaps(_ context.Context, u discover.Upstream) (discover.CatalogueCaps, error) {
 	caps := discover.CatalogueCaps{
 		Search: discover.SearchUpstream, SearchWindow: searchWindow,
-		SearchNote: "The registry ranks names, descriptions, keywords and maintainers; a query takes 2 to 64 characters.",
-		Sizes:      "unknown",
+		SearchHint: discover.SearchHintNpmRegistry, Sizes: "unknown",
 	}
 	if isPublicRegistry(u.Base()) {
 		caps.Levels, caps.Hosts = []string{"scope"}, []string{replicationHost}
@@ -94,7 +93,7 @@ func (remoteAdapter) Search(ctx context.Context, u discover.Upstream, q discover
 	switch res.Status {
 	case 200:
 	case 404, 405, 501:
-		return discover.SearchPage{}, &discover.UnavailableError{Reason: noSearch}
+		return discover.SearchPage{}, &discover.UnavailableError{Reason: noSearch, Hint: discover.SearchHintNpmNoSearch}
 	default:
 		return discover.SearchPage{}, errs.E(errs.UpstreamFailed, errs.CodeUpstreamError, fmt.Sprintf("The registry answered %d to the search.", res.Status))
 	}

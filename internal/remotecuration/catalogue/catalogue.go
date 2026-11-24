@@ -117,6 +117,7 @@ type Engine struct {
 
 type offEntry struct {
 	reason string
+	hint   discover.SearchHint
 	until  time.Time
 }
 
@@ -161,10 +162,14 @@ func (e *Engine) Caps(ctx context.Context, t Target) (discover.CatalogueCaps, er
 	}); err != nil {
 		return discover.CatalogueCaps{}, err
 	}
-	if why, off := e.isOff(t, CallSearch); off && caps.Search != discover.SearchNone {
-		caps.Search, caps.SearchReason, caps.SearchWindow, caps.SearchNote = discover.SearchNone, why, 0, ""
+	if o, off := e.isOff(t, CallSearch); off && caps.Search != discover.SearchNone {
+		caps.Search, caps.SearchHint, caps.SearchWindow = discover.SearchNone, o.hint, 0
 	}
-	caps.SearchNote, caps.SearchReason, caps.LevelsReason = cut(caps.SearchNote), cut(caps.SearchReason), cut(caps.LevelsReason)
+	if !caps.SearchHint.Valid() {
+		// A format that names no hint, or one the API does not know, shows nothing rather than a code the screen cannot say.
+		caps.SearchHint = ""
+	}
+	caps.LevelsReason = cut(caps.LevelsReason)
 	return caps, nil
 }
 
@@ -182,7 +187,8 @@ func (e *Engine) Search(ctx context.Context, t Target, q discover.SearchQuery) (
 	}
 	if caps.Search == discover.SearchNone {
 		e.o.Metrics.count(t.Repo, CallSearch, OutcomeNotOffered)
-		return discover.SearchPage{}, notOffered(caps.SearchReason, "This repository's upstream offers no search; look a package up by its exact name.")
+		o, _ := e.isOff(t, CallSearch)
+		return discover.SearchPage{}, notOffered(o.reason, "This repository's upstream offers no search; look a package up by its exact name.")
 	}
 	cat, err := e.catalogue(t)
 	if err != nil {
@@ -382,7 +388,7 @@ func (e *Engine) fail(t Target, call string, err error, st Settings, ctx context
 	var unavailable *discover.UnavailableError
 	switch {
 	case errors.As(err, &unavailable):
-		e.turnOff(t, call, unavailable.Reason, st.CacheTTL)
+		e.turnOff(t, call, offEntry{reason: unavailable.Reason, hint: unavailable.Hint}, st.CacheTTL)
 		outcome := OutcomeNotOffered
 		if unavailable.Shape {
 			outcome = OutcomeShape
@@ -423,8 +429,9 @@ func (e *Engine) fail(t Target, call string, err error, st Settings, ctx context
 	return errs.E(errs.UpstreamFailed, errs.CodeUpstreamError, "The upstream's answer could not be read for the catalogue: "+cut(err.Error()))
 }
 
-// turnOff turns a capability off for the cache period: the next calls answer catalogue_not_offered with the reason, and the caps say it.
-func (e *Engine) turnOff(t Target, call, reason string, ttl time.Duration) {
+// turnOff turns a capability off for the cache period: the next calls answer catalogue_not_offered with the reason, and the caps name
+// the hint (SearchHintNoSearch where the format named none).
+func (e *Engine) turnOff(t Target, call string, o offEntry, ttl time.Duration) {
 	if ttl <= 0 {
 		ttl = time.Minute // the cache keeps nothing; a minute still spares the upstream a request a call
 	}
@@ -441,22 +448,26 @@ func (e *Engine) turnOff(t Target, call, reason string, ttl time.Duration) {
 			clear(e.off)
 		}
 	}
-	e.off[offKey(t, call)] = offEntry{reason: reason, until: now.Add(ttl)}
+	if o.hint == "" {
+		o.hint = discover.SearchHintNoSearch
+	}
+	o.until = now.Add(ttl)
+	e.off[offKey(t, call)] = o
 	e.cache.dropCaps(t)
 }
 
-func (e *Engine) isOff(t Target, call string) (string, bool) {
+func (e *Engine) isOff(t Target, call string) (offEntry, bool) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	o, ok := e.off[offKey(t, call)]
 	if !ok {
-		return "", false
+		return offEntry{}, false
 	}
 	if e.o.Now().After(o.until) {
 		delete(e.off, offKey(t, call))
-		return "", false
+		return offEntry{}, false
 	}
-	return o.reason, true
+	return o, true
 }
 
 func offKey(t Target, call string) string {

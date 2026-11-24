@@ -7890,10 +7890,10 @@ export interface paths {
         /**
          * The upstream catalogue's capabilities of a remote repository
          * @description What a person can see of the repository's upstream (remote-curation.md R-CUR-007, R-CUR-009): how it searches (by the upstream,
-         *     by Quader over an index it holds, or not, with the reason), the levels above a package (or why there are none), whether the
+         *     by Quader over an index it holds, or not, with the code of the hint under the search field), the levels above a package (or why there are none), whether the
          *     upstream tells a version's size, and the hosts besides the upstream's the catalogue reaches (from the preset only, R-CUR-008); with
          *     the delivery mode, the number of rules, the open requests (to those who may set rules) and the queue's rows by state. A capability
-         *     whose upstream did not answer as expected is `none` with its sentence for the cache period. Needs `read` on the repository; a
+         *     whose upstream did not answer as expected is `none` with its hint for the cache period. Needs `read` on the repository; a
          *     repository hidden from the caller answers `404`, a local or virtual one `400 not_applicable`.
          */
         get: operations["getUpstreamCatalogue"];
@@ -16545,10 +16545,16 @@ export interface components {
             search: "upstream" | "index" | "none";
             /** @description The deepest hit the upstream's search reaches; null when it says nothing. */
             searchWindow: number | null;
-            /** @description What a query matches, one sentence. */
-            searchNote: string | null;
-            /** @description Why there is no search, one sentence. */
-            searchReason: string | null;
+            /**
+             * @description The code of the sentence the screen shows under the search field, in its own language (Q-CUR-166): what a person can type
+             *     and find where the upstream or Quader's index searches, or why there is no search and what to enter instead. `dockerHub`,
+             *     `quay`, `ghcr`, `gitlab` and `ociRegistry` are an OCI remote's (by its preset, or a registry without one);
+             *     `dockerHubUnavailable` Docker Hub's search while it is off for the cache period (R-CUR-008); `npmRegistry` and
+             *     `npmNoSearch` npm's; `nugetSearch` and `nugetNoSearch` NuGet's; `galaxy` and `galaxyNoSearch` Ansible Galaxy's; `aptIndex`
+             *     Debian's; `noSearch` an upstream without a search and without a hint of its own. Null where the format names none.
+             * @enum {string|null}
+             */
+            searchHint: "dockerHub" | "dockerHubUnavailable" | "quay" | "ghcr" | "gitlab" | "ociRegistry" | "npmRegistry" | "npmNoSearch" | "nugetSearch" | "nugetNoSearch" | "galaxy" | "galaxyNoSearch" | "aptIndex" | "noSearch" | null;
             /** @description The kinds of the levels above a package, outermost first (scope; namespace; project; suite, component, architecture). */
             levels: string[];
             /** @description Why the upstream lists no levels; null where the root lists packages or levels. */
@@ -33326,8 +33332,7 @@ export interface operations {
                      * @example {
                      *       "search": "upstream",
                      *       "searchWindow": 5250,
-                     *       "searchNote": "The registry ranks names, descriptions, keywords and maintainers; a query takes 2 to 64 characters.",
-                     *       "searchReason": null,
+                     *       "searchHint": "npmRegistry",
                      *       "levels": [
                      *         "scope"
                      *       ],

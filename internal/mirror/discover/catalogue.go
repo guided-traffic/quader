@@ -30,19 +30,66 @@ const (
 	SearchUpstream SearchKind = "upstream"
 	// SearchIndex: Quader answers the query over an index it holds of the upstream (Debian's Packages and Translation-en).
 	SearchIndex SearchKind = "index"
-	// SearchNone: no text search; CatalogueCaps.SearchReason says why.
+	// SearchNone: no text search; CatalogueCaps.SearchHint says why and what to enter instead.
 	SearchNone SearchKind = "none"
 )
+
+// SearchHint is the code of the sentence the screen shows under the search field (R-CUR-007, Q-CUR-166): what a person can type and
+// find, or why there is no search and what to enter instead. The screen writes the sentence in its own language; the server sends no
+// sentence. A format names the codes of its upstreams here, and the screen a sentence for each.
+type SearchHint string
+
+// The hints.
+const (
+	// SearchHintDockerHub: an image name, an official image under library/<name> (OCI, Docker Hub).
+	SearchHintDockerHub SearchHint = "dockerHub"
+	// SearchHintDockerHubUnavailable: Docker Hub's search did not answer as expected and is off for the cache period (R-CUR-008).
+	SearchHintDockerHubUnavailable SearchHint = "dockerHubUnavailable"
+	// SearchHintQuay: an image name or a word of its description (OCI, Quay).
+	SearchHintQuay SearchHint = "quay"
+	// SearchHintGHCR: no search; an image's full name (OCI, ghcr.io).
+	SearchHintGHCR SearchHint = "ghcr"
+	// SearchHintGitLab: no search; a project's images or an image's full name (OCI, GitLab).
+	SearchHintGitLab SearchHint = "gitlab"
+	// SearchHintOCIRegistry: no search; an image's full name (OCI, a registry without a preset).
+	SearchHintOCIRegistry SearchHint = "ociRegistry"
+	// SearchHintNpmRegistry: a package name, a keyword or a maintainer, 2 to 64 characters (npm).
+	SearchHintNpmRegistry SearchHint = "npmRegistry"
+	// SearchHintNpmNoSearch: the registry does not answer the search route (npm).
+	SearchHintNpmNoSearch SearchHint = "npmNoSearch"
+	// SearchHintNuGetSearch: a package ID or a word of its description; id:, owner: and tags: narrow it (NuGet).
+	SearchHintNuGetSearch SearchHint = "nugetSearch"
+	// SearchHintNuGetNoSearch: the service index names no search resource; a package's exact ID (NuGet).
+	SearchHintNuGetNoSearch SearchHint = "nugetNoSearch"
+	// SearchHintGalaxy: a namespace, a collection name, a tag or a word of the description (Ansible Galaxy).
+	SearchHintGalaxy SearchHint = "galaxy"
+	// SearchHintGalaxyNoSearch: the Galaxy does not answer the keyword search (Ansible Galaxy).
+	SearchHintGalaxyNoSearch SearchHint = "galaxyNoSearch"
+	// SearchHintAptIndex: words of a package's name or short description, over the suites whose index Quader read (Debian).
+	SearchHintAptIndex SearchHint = "aptIndex"
+	// SearchHintNoSearch: no search; a package's exact name. The hint of a format without one of its own.
+	SearchHintNoSearch SearchHint = "noSearch"
+)
+
+// SearchHints returns every hint, in the order of the API's enum.
+func SearchHints() []SearchHint {
+	return []SearchHint{
+		SearchHintDockerHub, SearchHintDockerHubUnavailable, SearchHintQuay, SearchHintGHCR, SearchHintGitLab, SearchHintOCIRegistry,
+		SearchHintNpmRegistry, SearchHintNpmNoSearch, SearchHintNuGetSearch, SearchHintNuGetNoSearch, SearchHintGalaxy,
+		SearchHintGalaxyNoSearch, SearchHintAptIndex, SearchHintNoSearch,
+	}
+}
+
+// Valid reports whether h is one of the hints.
+func (h SearchHint) Valid() bool { return slices.Contains(SearchHints(), h) }
 
 // CatalogueCaps are a repository's catalogue capabilities, read per repository because one format's upstreams differ (R-CUR-007).
 type CatalogueCaps struct {
 	Search SearchKind
 	// SearchWindow is the deepest hit the upstream's search reaches; 0 when it says nothing.
 	SearchWindow int
-	// SearchNote says what a query matches, one sentence.
-	SearchNote string
-	// SearchReason says why there is no search, one sentence.
-	SearchReason string
+	// SearchHint names the sentence under the search field: what a query finds, or why there is none (Q-CUR-166).
+	SearchHint SearchHint
 	// Levels are the kinds of the levels above a package, outermost first ("scope"; "namespace"; "suite", "component",
 	// "architecture"); empty with LevelsReason.
 	Levels       []string
@@ -235,10 +282,12 @@ var ErrNotOffered = errors.New("discover: the upstream does not offer this catal
 // UnavailableError is a format's answer that the repository's upstream does not answer a catalogue call as the format expects (R-CUR-008):
 // an npm registry without the search route (404, 405, 501), a Galaxy without the keyword search (404), or an undocumented endpoint whose
 // answer is not a page of the expected shape (Docker Hub's repository search). The engine turns the capability off for its cache
-// period, answers the call with 400 catalogue_not_offered and Reason, and says Reason in the capabilities until the period ends.
+// period, answers the call with 400 catalogue_not_offered and Reason, and names Hint in the capabilities until the period ends.
 type UnavailableError struct {
-	// Reason is the sentence a person reads, one sentence, no URL and no credential.
+	// Reason is the sentence of the API's refusal and of the log, one sentence, no URL and no credential.
 	Reason string
+	// Hint is the search's hint while the engine has the capability off (Q-CUR-166); SearchHintNoSearch where it is empty.
+	Hint SearchHint
 	// Shape says that the answer was not of the expected shape (counted as outcome shape), not that the route is absent.
 	Shape bool
 }

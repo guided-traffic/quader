@@ -2709,7 +2709,7 @@ the protocol research of 2026-11-23:
 
 | Capability | NuGet |
 |---|---|
-| Search | `upstream`: the service index's `SearchQueryService` (the resource R-NUGET-016 forwards to), with `q` as typed (the field syntax `id:`, `packageid:`, `owner:`, `tags:` passes), `prerelease=true`, `semVerLevel=2.0.0`, `take=50`; nuget.org caps `skip` at 3,000, so the window is 3,050 hits (`Truncated` beyond); unlisted packages never appear (the protocol's rule). An upstream without the resource has `search: none` |
+| Search | `upstream`: the service index's `SearchQueryService` (the resource R-NUGET-016 forwards to), with `q` as typed (the field syntax `id:`, `packageid:`, `owner:`, `tags:` passes), `prerelease=true`, `semVerLevel=2.0.0`, `take=50`; nuget.org caps `skip` at 3,000, so the window is 3,050 hits (`Truncated` beyond); unlisted packages never appear (the protocol's rule). An upstream without the resource has `search: none`. The hint under the search field ([Q-CUR-166](../remote-curation.md#q-cur-166--the-hint-under-the-upstream-search-is-a-code-the-screen-says-in-its-language)) is `nugetSearch`, or `nugetNoSearch` without the resource |
 | Levels | none: IDs are flat ("NuGet IDs have no levels; search for a prefix with `id:`."). Dotted prefixes and nuget.org's reserved prefixes are a naming rule, not a listing |
 | Lookup and versions | the registration index and its pages (`listed`, `published`, `deprecation`, `vulnerabilities`) with the flat container's version list, which names unlisted versions too (`unlisted` flag); the stored documents when the remote holds them |
 | Sizes | `unknown`: nuget.org's registrations carry no `packageSize`; only a catalog leaf does, one request per version, which the catalogue does not send |

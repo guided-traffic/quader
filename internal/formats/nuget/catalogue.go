@@ -37,11 +37,11 @@ func (remoteAdapter) CatalogueCaps(ctx context.Context, u discover.Upstream) (di
 		return discover.CatalogueCaps{}, err
 	}
 	if d == nil || d.Search == nil {
-		caps.Search, caps.SearchReason = discover.SearchNone, "This NuGet upstream has no search resource; look a package up by its exact ID."
+		caps.Search, caps.SearchHint = discover.SearchNone, discover.SearchHintNuGetNoSearch
 		return caps, nil
 	}
 	caps.Search, caps.SearchWindow = discover.SearchUpstream, catalogueWindow
-	caps.SearchNote = "The upstream searches listed packages only; id:, packageid:, owner: and tags: narrow a query."
+	caps.SearchHint = discover.SearchHintNuGetSearch
 	if host := d.Search.Hostname(); !strings.EqualFold(host, u.Base().Hostname()) {
 		caps.Hosts = []string{strings.ToLower(host)}
 	}

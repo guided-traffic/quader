@@ -55,9 +55,7 @@ func (a remoteAdapter) catalogueStore(u discover.Upstream) (CatalogueStore, int6
 // CatalogueCaps implements [discover.Catalogue].
 func (remoteAdapter) CatalogueCaps(context.Context, discover.Upstream) (discover.CatalogueCaps, error) {
 	return discover.CatalogueCaps{
-		Search: discover.SearchIndex,
-		SearchNote: "Quader searches the indexes the remote has read, as apt search does: every word in the name, its Provides or its short " +
-			"description; a suite whose indexes are not read is not searched.",
+		Search: discover.SearchIndex, SearchHint: discover.SearchHintAptIndex,
 		Levels: []string{"suite", "component", "architecture"}, Sizes: "known",
 	}, nil
 }

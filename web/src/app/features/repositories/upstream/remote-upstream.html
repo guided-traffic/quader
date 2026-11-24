@@ -40,7 +40,7 @@
         autocomplete="off"
         spellcheck="false"
         [value]="text()"
-        [attr.aria-describedby]="'upstream-text-note'"
+        [attr.aria-describedby]="hintText() ? 'upstream-text-note' : null"
         (input)="text.set($any($event.target).value)"
       />
       @if (searches()) {
@@ -55,7 +55,9 @@
         <ng-container i18n="@@upstream.search.names-only">Names only</ng-container>
       </quader-checkbox>
     }
-    <p class="hint" id="upstream-text-note" translate="no">{{ c.search === 'none' ? c.searchReason : c.searchNote }}</p>
+    @if (hintText(); as hint) {
+      <p class="hint" id="upstream-text-note" data-testid="upstream-search-hint">{{ hint }}</p>
+    }
   </form>
 
   @if (lookupName(); as name) {

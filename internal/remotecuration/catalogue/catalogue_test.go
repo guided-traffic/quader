@@ -79,6 +79,8 @@ func (l *fakeLender) totals() (gets, artifacts int) {
 // fakeCatalogue answers through the upstream: a search reads one document, a package reads one, and the search fails by shape on demand.
 type fakeCatalogue struct {
 	shape bool
+	// hint is the hint of the shape failure.
+	hint discover.SearchHint
 }
 
 func (fakeCatalogue) CatalogueCaps(context.Context, discover.Upstream) (discover.CatalogueCaps, error) {
@@ -87,7 +89,7 @@ func (fakeCatalogue) CatalogueCaps(context.Context, discover.Upstream) (discover
 
 func (c *fakeCatalogue) Search(ctx context.Context, u discover.Upstream, _ discover.SearchQuery) (discover.SearchPage, error) {
 	if c.shape {
-		return discover.SearchPage{}, &discover.UnavailableError{Reason: "The search did not answer as expected.", Shape: true}
+		return discover.SearchPage{}, &discover.UnavailableError{Reason: "The search did not answer as expected.", Hint: c.hint, Shape: true}
 	}
 	if _, err := u.Get(ctx, u.Base(), "", 0); err != nil {
 		return discover.SearchPage{}, err
@@ -285,19 +287,31 @@ func TestR_CUR_008_TheCatalogueEngine(t *testing.T) {
 	t.Run("R-CUR-008 a shape failure of the search turns it off for the period, and it comes back after", func(t *testing.T) {
 		now := t0
 		l := &fakeLender{}
-		cat := &fakeCatalogue{shape: true}
+		cat := &fakeCatalogue{shape: true, hint: discover.SearchHintDockerHubUnavailable}
 		e := newEngine(t, cat, l, defaults(), func() time.Time { return now })
 		if _, err := e.Search(ctx, tgt, discover.SearchQuery{Text: "x"}); code(err) != errs.CodeCatalogueNotOffered {
 			t.Fatalf("the shape failure: %v", err)
 		}
+		if _, err := e.Search(ctx, tgt, discover.SearchQuery{Text: "x"}); code(err) != errs.CodeCatalogueNotOffered || !strings.Contains(err.Error(), "did not answer as expected") {
+			t.Fatalf("a search within the period answers %v, want catalogue_not_offered with the format's reason", err)
+		}
 		caps, err := e.Caps(ctx, tgt)
-		if err != nil || caps.Search != discover.SearchNone || caps.SearchReason == "" {
+		if err != nil || caps.Search != discover.SearchNone || caps.SearchHint != discover.SearchHintDockerHubUnavailable {
 			t.Fatalf("caps within the period: %+v %v", caps, err)
 		}
 		cat.shape = false
 		now = now.Add(301 * time.Second)
 		if caps, _ := e.Caps(ctx, tgt); caps.Search != discover.SearchUpstream {
 			t.Fatalf("caps after the period: %+v", caps)
+		}
+	})
+	t.Run("R-CUR-007 a search turned off without a hint of the format's names the hint noSearch", func(t *testing.T) {
+		e := newEngine(t, &fakeCatalogue{shape: true}, &fakeLender{}, defaults(), func() time.Time { return t0 })
+		if _, err := e.Search(ctx, tgt, discover.SearchQuery{Text: "x"}); code(err) != errs.CodeCatalogueNotOffered {
+			t.Fatalf("the shape failure: %v", err)
+		}
+		if caps, err := e.Caps(ctx, tgt); err != nil || caps.SearchHint != discover.SearchHintNoSearch {
+			t.Fatalf("caps within the period: %+v %v", caps, err)
 		}
 	})
 	t.Run("R-CUR-009 a package the upstream does not have answers 404 catalogue_not_found", func(t *testing.T) {

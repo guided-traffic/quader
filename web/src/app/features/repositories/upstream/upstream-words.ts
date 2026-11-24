@@ -48,6 +48,50 @@ export function decidedByText(delivery: DeliveryDecision): string | null {
   return $localize`:@@upstream.state.rule:Rule: ${by.subject}:subject:`;
 }
 
+/** The code of the hint under the search field (R-CUR-007, Q-CUR-166). */
+export type SearchHint = NonNullable<UpstreamCatalogue['searchHint']>;
+
+/**
+ * The sentence under the search field, by the code the server sends (R-CUR-007, R-CUR-018, Q-CUR-166): what a person can type and
+ * find, or why the upstream has no search and what to enter instead. The upstream's own name (Docker Hub, ghcr.io, GitLab) is not
+ * translated. Null where the server names no hint.
+ */
+export function searchHintText(hint: SearchHint | null | undefined): string | null {
+  switch (hint) {
+    case 'dockerHub':
+      return $localize`:@@upstream.hint.docker-hub:Search for an image name, for example nginx; official images are under library/<name>.`;
+    case 'dockerHubUnavailable':
+      return $localize`:@@upstream.hint.docker-hub-unavailable:Docker Hub's search is not available at the moment; enter an image's full name, for example library/nginx, or open a namespace.`;
+    case 'quay':
+      return $localize`:@@upstream.hint.quay:Search for an image name or a word of the description, for example prometheus.`;
+    case 'ghcr':
+      return $localize`:@@upstream.hint.ghcr:ghcr.io offers no search; enter an image's full name, for example stefanprodan/podinfo.`;
+    case 'gitlab':
+      return $localize`:@@upstream.hint.gitlab:GitLab's registry offers no search; open a project to see its images, or enter an image's full name.`;
+    case 'ociRegistry':
+      return $localize`:@@upstream.hint.oci-registry:This registry offers no search; enter an image's full name.`;
+    case 'npmRegistry':
+      return $localize`:@@upstream.hint.npm-registry:Search for a package name, a keyword or a maintainer, for example express; a search takes 2 to 64 characters.`;
+    case 'npmNoSearch':
+      return $localize`:@@upstream.hint.npm-no-search:This registry offers no search; enter a package's exact name, for example express.`;
+    case 'nugetSearch':
+      return $localize`:@@upstream.hint.nuget-search:Search for a package ID or a word of the description, for example Serilog; id:, owner: and tags: narrow the search.`;
+    case 'nugetNoSearch':
+      return $localize`:@@upstream.hint.nuget-no-search:This NuGet upstream offers no search; enter a package's exact ID, for example Serilog.`;
+    case 'galaxy':
+      return $localize`:@@upstream.hint.galaxy:Search for a namespace, a collection name, a tag or a word of the description, for example docker.`;
+    case 'galaxyNoSearch':
+      return $localize`:@@upstream.hint.galaxy-no-search:This Galaxy offers no search; open a namespace or enter a collection's exact name, for example community.general.`;
+    case 'aptIndex':
+      return $localize`:@@upstream.hint.apt-index:Search for words of a package's name or short description, for example nginx; Quader searches only the suites whose index it has read.`;
+    case 'noSearch':
+      return $localize`:@@upstream.hint.no-search:This upstream offers no search; enter a package's exact name.`;
+    case null:
+    case undefined:
+      return null;
+  }
+}
+
 /** The kind of a level above a package, as a noun (R-CUR-007): scope, namespace, project, suite, component, architecture. */
 export function levelKindText(kind: string): string {
   switch (kind) {

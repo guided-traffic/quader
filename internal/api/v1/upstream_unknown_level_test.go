@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"slices"
 	"testing"
 
 	_ "github.com/guided-traffic/quader/internal/formats/all" // the formats' presets
@@ -34,5 +35,27 @@ func TestR_CUR_009_AnUnknownLevelNamesTheUpstream(t *testing.T) {
 	bare, ok := unknownLevel(call, &discover.UnknownLevel{}).(map[string]any)
 	if !ok || bare["rule"] != nil || bare["forbidden"] != nil || bare["suggestion"] != nil {
 		t.Fatalf("R-CUR-009 a bare unknown = %v", bare)
+	}
+}
+
+// TestR_CUR_007_TheSearchHintsOfTheAPIAreTheCatalogues: the API's enum of `searchHint` lists every code a format may name and no
+// other, so that the screen has a sentence for each (Q-CUR-166). Microseconds on the shared parse.
+func TestR_CUR_007_TheSearchHintsOfTheAPIAreTheCatalogues(t *testing.T) {
+	prop := specDocument(t).Components.Schemas["UpstreamCatalogue"].Value.Properties["searchHint"]
+	if prop == nil {
+		t.Fatal("R-CUR-007 UpstreamCatalogue has no searchHint")
+	}
+	var got []string
+	for _, v := range prop.Value.Enum {
+		if s, ok := v.(string); ok {
+			got = append(got, s)
+		}
+	}
+	var want []string
+	for _, h := range discover.SearchHints() {
+		want = append(want, string(h))
+	}
+	if !slices.Equal(got, want) {
+		t.Fatalf("R-CUR-007 the API's searchHint enum is %v, the catalogue's codes are %v", got, want)
 	}
 }

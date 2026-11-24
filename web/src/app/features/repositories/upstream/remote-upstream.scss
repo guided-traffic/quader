@@ -33,6 +33,11 @@
     margin: 0;
     max-inline-size: var(--quader-settings-measure);
   }
+
+  // Under the toggle Names only the hint keeps the gap it has under the field, so that it does not read as the toggle's own text.
+  .names-only + .hint {
+    margin-block-start: var(--quader-space-2);
+  }
 }
 
 .lookup + * {

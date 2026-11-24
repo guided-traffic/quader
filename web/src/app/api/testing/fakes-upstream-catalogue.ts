@@ -25,8 +25,7 @@ export function catalogueCaps(over: Partial<UpstreamCatalogue> = {}): UpstreamCa
   return {
     search: 'upstream',
     searchWindow: 5250,
-    searchNote: 'The registry ranks names, descriptions, keywords and maintainers.',
-    searchReason: null,
+    searchHint: 'npmRegistry',
     levels: ['scope'],
     levelsReason: null,
     sizes: 'unknown',

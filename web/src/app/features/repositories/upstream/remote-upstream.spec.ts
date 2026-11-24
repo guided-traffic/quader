@@ -1,4 +1,5 @@
 import german from '../../../../locale/messages.de.xlf' with { loader: 'text' };
+import { clearTranslations, loadTranslations } from '@angular/localize';
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { vi } from 'vitest';
@@ -30,7 +31,7 @@ import { expectAccessible, renderScreen, settle, text, waitUntil } from '../../.
 import { contentShapeOf } from '../content/content-shape';
 import { RepositoryContent } from '../content/repository-content';
 import { RemoteUpstream } from './remote-upstream';
-import { catalogueState, clockAfter } from './upstream-words';
+import { catalogueState, clockAfter, searchHintText } from './upstream-words';
 
 const REMOTE = { key: 'npmjs', project: 'web', class: 'remote', format: 'npm', description: '', remote: { url: 'https://registry.npmjs.org', cacheFillAction: 'read' } };
 const LOCAL = { key: 'npm-local', project: 'web', class: 'local', format: 'npm', description: '' };
@@ -250,13 +251,13 @@ describe('The tab Upstream of a remote repository', () => {
       format: 'oci',
       url: '/projects/web/repositories/npmjs/upstream?name=lodash',
       fake: (c) => {
-        c.capsAnswer = catalogueCaps({ search: 'none', searchNote: null, searchReason: 'ghcr.io offers no search and no listing of images; look an image up by its full name.', levels: [], levelsReason: 'No listing.' });
+        c.capsAnswer = catalogueCaps({ search: 'none', searchHint: 'ghcr', levels: [], levelsReason: 'No listing.' });
         c.notCovered = true;
       },
     });
     const form = root.querySelector<HTMLElement>('form.search')!;
     expect(text(form)).toContain('Look up by name');
-    expect(text(form)).toContain('ghcr.io offers no search and no listing of images; look an image up by its full name.');
+    expect(text(form.querySelector('[data-testid="upstream-search-hint"]')!)).toBe('ghcr.io offers no search; enter an image\'s full name, for example stefanprodan/podinfo.');
     expect(button(form, 'Look up')).toBeDefined();
     expect([...form.querySelectorAll('button')].some((b) => text(b) === 'Search')).toBe(false);
     expect(catalogue.calls.some((c) => c.startsWith('search'))).toBe(false);
@@ -284,7 +285,7 @@ describe('The tab Upstream of a remote repository', () => {
     const { root } = await open({
       format: 'deb',
       fake: (c) => {
-        c.capsAnswer = catalogueCaps({ search: 'index', levels: ['suite', 'component', 'architecture'], searchNote: 'As apt search.' });
+        c.capsAnswer = catalogueCaps({ search: 'index', levels: ['suite', 'component', 'architecture'], searchHint: 'aptIndex' });
         c.levels[''] = { levels: ['trixie', 'bookworm'], packages: [], total: 2, nextCursor: null, done: true, withheld: null, withheldNote: null, unknown: null };
       },
     });
@@ -303,7 +304,7 @@ describe('The tab Upstream of a remote repository', () => {
       format: 'oci',
       url: '/projects/web/repositories/npmjs/upstream?level=guided-traffic',
       fake: (c) => {
-        c.capsAnswer = catalogueCaps({ search: 'upstream', levels: ['namespace'], searchNote: 'Docker Hub search.' });
+        c.capsAnswer = catalogueCaps({ search: 'upstream', levels: ['namespace'], searchHint: 'dockerHub' });
         c.levels['guided-traffic'] = {
           levels: [], packages: [], total: 0, nextCursor: null, done: true, withheld: null, withheldNote: null,
           unknown: { upstream: 'Docker Hub', rule: 'lowercaseDigits', forbidden: '-', suggestion: 'guidedtraffic' },
@@ -319,7 +320,7 @@ describe('The tab Upstream of a remote repository', () => {
     await expectAccessible(root);
 
     const plain = await open({ format: 'oci', url: '/projects/web/repositories/npmjs/upstream?level=guidedtraffik', fake: (c) => {
-      c.capsAnswer = catalogueCaps({ search: 'upstream', levels: ['namespace'], searchNote: 'Docker Hub search.' });
+      c.capsAnswer = catalogueCaps({ search: 'upstream', levels: ['namespace'], searchHint: 'dockerHub' });
       c.levels['guidedtraffik'] = {
         levels: [], packages: [], total: 0, nextCursor: null, done: true, withheld: null, withheldNote: null,
         unknown: { upstream: 'Docker Hub', rule: null, forbidden: null, suggestion: null },
@@ -391,6 +392,26 @@ describe('The tab Upstream of a remote repository', () => {
     await settle(fixture);
     expect(rules.calls).toContain('remove rule-1');
     await expectAccessible(d);
+  });
+
+  it('R-CUR-018 R-CUR-007 the hint under the search field is the German sentence for its code in the German build', () => {
+    const xml = (s: string): string =>
+      s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
+    const unit = /<unit id="(upstream\.hint\.[^"]+)">[\s\S]*?<target>([\s\S]*?)<\/target>/g;
+    const translations = Object.fromEntries([...german.matchAll(unit)].map((m) => [m[1]!, xml(m[2]!)]));
+    expect(Object.keys(translations)).toHaveLength(14);
+    loadTranslations(translations);
+    try {
+      expect(searchHintText('dockerHub')).toBe('Suchen Sie nach einem Image-Namen, z. B. nginx; offizielle Images liegen unter library/<Name>.');
+      expect(searchHintText('npmRegistry')).toBe(
+        'Suchen Sie nach einem Paketnamen, einem Schlüsselwort oder einem Maintainer, z. B. express; eine Suche umfasst 2 bis 64 Zeichen.',
+      );
+      expect(searchHintText('ghcr')).toBe('ghcr.io bietet keine Suche; geben Sie den vollständigen Namen eines Images ein, z. B. stefanprodan/podinfo.');
+      expect(searchHintText(null)).toBeNull();
+    } finally {
+      clearTranslations();
+    }
+    expect(searchHintText('dockerHub')).toBe('Search for an image name, for example nginx; official images are under library/<name>.');
   });
 
   it('R-CUR-018 the German texts follow the glossary: erlauben, sperren, beantragen, ablehnen, verwerfen, In den Cache laden, the two modes', () => {

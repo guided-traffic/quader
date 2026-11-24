@@ -109,7 +109,7 @@ var _ formats.Catalogue = relayRemote{}
 // CatalogueCaps implements discover.Catalogue.
 func (relayRemote) CatalogueCaps(context.Context, discover.Upstream) (discover.CatalogueCaps, error) {
 	return discover.CatalogueCaps{
-		Search: discover.SearchNone, SearchReason: "a format of the endpoint tests",
+		Search: discover.SearchNone, SearchHint: discover.SearchHintNoSearch,
 		LevelsReason: "a format of the endpoint tests", Sizes: "unknown",
 	}, nil
 }

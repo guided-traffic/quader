@@ -104,6 +104,7 @@ refuses a masculine "Token" in a target.
 | request (an ask for an allow), requested, decline, withdraw (a request), discard (what was fetched for examination) | beantragen, Antrag, Beantragt, ablehnen, zurückziehen, verwerfen |
 | download ahead (into the cache, before a client asks), fetch for examination, stored for examination, the tab Upstream, upstream catalogue | In den Cache laden, zur Prüfung holen, Zur Prüfung gespeichert, der Reiter Upstream, Upstream-Katalog |
 | test connection, upstream URL, negative cache | Verbindung testen, Upstream-URL, negativer Cache |
+| keyword (npm), maintainer (npm), package ID (NuGet), short description (Debian), the hint under the upstream search ("offers no search", "enter an image's full name") | Schlüsselwort, Maintainer, Paket-ID, Kurzbeschreibung ("bietet keine Suche", "geben Sie den vollständigen Namen eines Images ein") |
 | licence (of the software the build bundles, its notices) | Lizenz (der eingebundenen Software, Hinweise) |
 | project switcher, start page of the projects ("Your work"), recently visited (projects) | Projektwechsler, "Ihre Arbeit", Zuletzt besucht |
 | storage (the logical size a project is charged), physical size | Speicher (logische Größe, die dem Projekt angerechnet wird), physische Größe |

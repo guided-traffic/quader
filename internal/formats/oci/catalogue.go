@@ -59,24 +59,26 @@ func (remoteAdapter) CatalogueCaps(ctx context.Context, u discover.Upstream) (di
 	switch presetOf(u.Base()) {
 	case presetDockerHub:
 		return discover.CatalogueCaps{
-			Search: discover.SearchUpstream, SearchNote: "Docker Hub's repository search, which its operator does not document; an official image is library/<name>.",
+			Search: discover.SearchUpstream, SearchHint: discover.SearchHintDockerHub,
 			Levels: []string{"namespace"}, Sizes: "known", Hosts: []string{hubAPI},
 		}, nil
 	case presetQuay:
 		return discover.CatalogueCaps{
-			Search: discover.SearchUpstream, SearchNote: "Quay's search of public repositories by name and description.",
+			Search: discover.SearchUpstream, SearchHint: discover.SearchHintQuay,
 			Levels: []string{"namespace"}, Sizes: "perVersion",
 		}, nil
 	case presetGHCR:
-		why := "ghcr.io offers no search and no listing of images; look an image up by its full name."
-		return discover.CatalogueCaps{Search: discover.SearchNone, SearchReason: why, LevelsReason: why, Sizes: "unknown"}, nil
+		return discover.CatalogueCaps{
+			Search: discover.SearchNone, SearchHint: discover.SearchHintGHCR,
+			LevelsReason: "ghcr.io offers no search and no listing of images; look an image up by its full name.", Sizes: "unknown",
+		}, nil
 	case presetGitLab:
 		return discover.CatalogueCaps{
-			Search: discover.SearchNone, SearchReason: "GitLab's registry offers no search; look an image up by its full name or list a project's images.",
+			Search: discover.SearchNone, SearchHint: discover.SearchHintGitLab,
 			Levels: []string{"project"}, Sizes: "unknown", Hosts: []string{gitlabAPI},
 		}, nil
 	}
-	caps := discover.CatalogueCaps{Search: discover.SearchNone, SearchReason: "This registry offers no search; look an image up by its full name.", Sizes: "unknown"}
+	caps := discover.CatalogueCaps{Search: discover.SearchNone, SearchHint: discover.SearchHintOCIRegistry, Sizes: "unknown"}
 	offered, err := catalogOffered(ctx, u)
 	if err != nil {
 		return discover.CatalogueCaps{}, err
@@ -158,7 +160,7 @@ func hubSearch(ctx context.Context, u discover.Upstream, q discover.SearchQuery)
 		} `json:"results"`
 	}
 	if resp.Status != http.StatusOK || json.Unmarshal(resp.Body, &a) != nil || a.Results == nil {
-		return discover.SearchPage{}, &discover.UnavailableError{Reason: hubShape, Shape: true}
+		return discover.SearchPage{}, &discover.UnavailableError{Reason: hubShape, Hint: discover.SearchHintDockerHubUnavailable, Shape: true}
 	}
 	out := discover.SearchPage{Total: -1}
 	if a.Count != nil {
