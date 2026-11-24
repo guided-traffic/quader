@@ -680,7 +680,36 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
-- **A bulk download of a Docker Hub image fails at once, and nothing shows it (owner, 2026-11-24, 11:05, on the UI
+- **Three layout findings of the German renders at 390 px (2026-11-24, 11:40 and 12:00, seen by the tab strips' and the
+  stacked rows' builders):** the OCI files' signature badge ("Signiert · Signierer nicht vertrauenswürdig") pushes the
+  version page 41 px sideways (`package-version-oci`, `package-version-signatures-files`); a fact's long value (the
+  Debian maintainer's email) breaks inside itself beside a wider German term in `dl.facts` (`package-version-deb`,
+  `package-version-ansible`, tab Details); the allowed-finding rule of `policy-new` matches only the English "Add
+  selector". (The sessions' cramped time at 1,440 px, seen at 11:40, was fixed by the stacked rows' package.) Given to a
+  builder at 11:48.
+
+- **The trend's basis sentence stays English on the German dashboard (seen by the status line's builder on 2026-11-24,
+  12:20):** "A finding counts under its current severity…" is a sentence the server sends. Given to a builder at 12:01, with every other server sentence the UI shows as is.
+
+- **A failed bulk's engine sentence is English in the German build, and its opened view says "0 von 0" (seen by the
+  development agent on 2026-11-24, 12:10, in the renders of the bulk's package):** under "Die Versionsliste von … konnte
+  nicht gelesen werden" stands "Unerwartete Antwort des Upstreams: The download failed at the step status. The upstream
+  document points to …"; the bulk's own view still reads "0 von 0 gefundenen Versionen sind eingereiht" where the list
+  shows a dash. Given to a builder at 11:57.
+
+### Closed
+
+- **Closed on 2026-11-24, 12:22, by the bulk's package (Q-CUR-167, Q-CUR-168):** the bulk's walk of the versions
+  (`downloadUpstream`) reached only the format's mirror hosts, while the tab's catalogue also reaches the preset's
+  catalogue hosts, and Docker Hub lists tags on `hub.docker.com`; the walk now reaches what the catalogue reaches, without a
+  credential, and a row's own fetch reaches no more. Only Docker Hub failed; GitLab's walk had been sending the
+  repository's credential to `gitlab.com`'s project API (an `extraHosts` entry with `sendCredentials`) and no longer does;
+  the other formats read their lists on hosts both paths reach. `GET download-bulks` lists a repository's bulks, and the
+  tab Downloads shows them above the rows with state, counters, the failure in words, Cancel or Start again, on the tab's
+  poll; the start notice says the bulk reads its versions first and links to it. Held by an integration case in
+  `ociremote` with a stub of the Hub API (about 3 s), which failed before the fix with the owner's error word for word,
+  and four tab specs; checked against the real Docker Hub on a UI instance (two tags of `guidedtraffic/valkey-operator`
+  queued and done); renders in English and German looked at by the development agent. As it stood: **A bulk download of a Docker Hub image fails at once, and nothing shows it (owner, 2026-11-24, 11:05, on the UI
   development profile, with screenshots: "Ich versuche hier einen Beispiel download zu starten.
   guidedtraffic/valkey-operator Aber es läd nichts.").** The toast said "The bulk download is queued; its rows wait in the
   tab Downloads", the tab read "There is no download yet", the top bar's panel "Running (0)". Read in the profile's
@@ -690,20 +719,6 @@ records the recorder that tells such a stall apart).
   extraHosts." Two defects: the bulk's walk of the versions asks a host the remote may not reach, though the tab's search
   reads the same host; and a bulk that fails before its first row is visible nowhere. Given to a builder at 11:05, for
   every format's catalogue host.
-
-- **Three layout findings of the German renders at 390 px (2026-11-24, 11:40 and 12:00, seen by the tab strips' and the
-  stacked rows' builders):** the OCI files' signature badge ("Signiert · Signierer nicht vertrauenswürdig") pushes the
-  version page 41 px sideways (`package-version-oci`, `package-version-signatures-files`); a fact's long value (the
-  Debian maintainer's email) breaks inside itself beside a wider German term in `dl.facts` (`package-version-deb`,
-  `package-version-ansible`, tab Details); the allowed-finding rule of `policy-new` matches only the English "Add
-  selector". (The sessions' cramped time at 1,440 px, seen at 11:40, was fixed by the stacked rows' package.) Given to a
-  builder at 11:48.
-
-- **An unscanned image's status line still names advisory data (seen by the development agent on 2026-11-24, 11:40, in
-  the render `package-version-oci-schwachstellen`):** under "nicht geprüft" an OCI image reads "Wartet auf Advisory-Daten",
-  the cause the notice's package fixed in the refusal but not in this line. Given to a builder at 11:28.
-
-### Closed
 
 - **Closed on 2026-11-24, 11:53, by the live views' package (R-UI-213, Q-UI-1075; H-1847, H-1848):** one shared helper,
   `live()` in `core/live-refresh.ts`, makes a view re-read itself while the window is visible and the view is shown: at
