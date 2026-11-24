@@ -118,7 +118,7 @@ test.describe('a label kept on one line (R-UI-171)', () => {
     expect(only(found, 'broken'), describe(found)).toHaveLength(0);
   });
 
-  test('Q-UI-810 an inline fold\'s toggle is a button: its broken label is found, named by its label and not by the anchor Angular leaves', async ({ page }) => {
+  test('R-UI-171 an inline fold\'s toggle is a button: its broken label is found, named by its label and not by the anchor Angular leaves', async ({ page }) => {
     // As the shared disclosure builds it: the chevron, the label, and the comment of its `@if (note())` block.
     const fold =
       '<div class="box"><div class="disclosure"><button type="button" class="inline-toggle" aria-expanded="false">' +
@@ -305,7 +305,7 @@ test.describe('a table\'s row (R-UI-176)', () => {
   // fixtures below), and the checks of a field's name and value are measured here apart from it.
   const sideBySide = (f: LayoutFinding): boolean => f.check !== 'stacked-fits' && f.check !== 'stacked-place';
 
-  test('Q-UI-762 a stacked row: names of one line on one line pass, a value of two lines centred against its neighbours is found', async ({ page }) => {
+  test('R-UI-174 a stacked row: names of one line on one line pass, a value of two lines centred against its neighbours is found', async ({ page }) => {
     const centred = await check(page, ...facts('center'));
     expect(only(centred, 'stacked-offset'), describe(centred)).toHaveLength(1);
     const ok = (await check(page, ...facts('baseline'))).filter(sideBySide);
@@ -345,7 +345,7 @@ test.describe('a table\'s row (R-UI-176)', () => {
     expect(found, describe(found)).toEqual([]);
   });
 
-  test("Q-UI-763 a stacked row: a value under its column's name is found", async ({ page }) => {
+  test("R-UI-174 a stacked row: a value under its column's name is found", async ({ page }) => {
     const meter = '<div style="display:flex;flex-direction:column"><span><span style="display:inline-block;inline-size:64px;block-size:6px;background:#888"></span> 22%</span><span class="badge">Close to the limit</span></div>';
     const apart = await check(page, ...facts('baseline', meter));
     expect(only(apart, 'label-apart'), describe(apart)).toHaveLength(1);
@@ -354,7 +354,7 @@ test.describe('a table\'s row (R-UI-176)', () => {
     expect(only(audience, 'label-apart'), describe(audience)).toHaveLength(1);
   });
 
-  test("Q-UI-762 a stacked row: a value whose first piece is wider than the room beside its name may start under it", async ({ page }) => {
+  test("R-UI-174 a stacked row: a value whose first piece is wider than the room beside its name may start under it", async ({ page }) => {
     // A media type that does not break, and a link that is a box of its own (a repository's long key in the search results).
     const word = (await check(page, ...facts('baseline', '<span>application/vnd.oci.image.manifest.v1+json</span>'))).filter((f) => f.check === 'label-apart');
     expect(word, describe(word)).toEqual([]);
@@ -528,7 +528,7 @@ test.describe('a control or an icon beside its text (R-UI-170, R-UI-175)', () =>
 
 // ---- The tolerance (Q-UI-722) ----------------------------------------------------------------------------------------------------
 
-test('Q-UI-722 a unit centred by the line rule is within 1 px of its text\'s middle at every text size and line the app uses', async ({ page }) => {
+test('R-UI-175 a unit centred by the line rule is within 1 px of its text\'s middle at every text size and line the app uses', async ({ page }) => {
   // Every text size and line height of the tokens, every unit height; the unit centred as R-UI-175 asks (margins of half the
   // difference). What remains is the rounding of the font's ascent and descent to whole pixels and of the boxes to 1/64 px.
   const sizes = [12, 13, 14, 16];
@@ -557,7 +557,7 @@ test('Q-UI-722 a unit centred by the line rule is within 1 px of its text\'s mid
   expect(worst).toBeLessThanOrEqual(1);
 });
 
-test('Q-UI-722 an offset of 1.5 px is found, one of 0.5 px is not', async ({ page }) => {
+test('R-UI-175 an offset of 1.5 px is found, one of 0.5 px is not', async ({ page }) => {
   const at = (shift: number): string =>
     `<div class="r"><span class="material-icons" style="font-size:16px;margin-block:calc((1lh - 16px) / 2);position:relative;top:${shift}px">lock</span><span>platform</span></div>`;
   const css = '.r { display: flex; align-items: flex-start; gap: 8px; line-height: 1rem; } .r .material-icons { line-height: 1rem; }';
@@ -639,7 +639,7 @@ test.describe("the shared patterns with the app's stylesheet (R-UI-176)", () => 
         <td class="meter-cell" data-label="Now"><span style="display:flex;flex-direction:column;gap:2px"><span style="display:flex;align-items:flex-start;gap:8px"><span style="flex:1 1 4rem;max-inline-size:8rem;block-size:6px;margin-block:calc((var(--quader-line) - 6px) / 2);background:#888"></span><span>22%</span></span><span class="badge warn" style="align-self:flex-start"><span class="material-icons" aria-hidden="true">warning</span>Close to the limit</span></span></td>
         <td class="actions"><button type="button" class="btn btn-tertiary">Issue new secret</button></td>
       </tr></tbody></table></div></div></div>`;
-  test("Q-UI-762 a stacked row's facts with the app's stylesheet: names on one line, the meter on its name's line", async ({ page }) => {
+  test("R-UI-174 a stacked row's facts with the app's stylesheet: names on one line, the meter on its name's line", async ({ page }) => {
     const found = (await check(page, stackedFacts, '', true)).filter((f) => f.check !== 'stacked-fits');
     expect(found, describe(found)).toEqual([]);
   });
@@ -666,7 +666,7 @@ test.describe("the shared patterns with the app's stylesheet (R-UI-176)", () => 
         <td class="level-cell" data-label="Visibility"><quader-visibility-icon><span class="material-icons inline" role="img" aria-label="Private">lock</span></quader-visibility-icon>Private</td>
         <td data-label="Last activity">1 hour ago</td>
       </tr></tbody></table></div></div></div>`;
-  test("Q-UI-762 a stacked row's format, class and visibility level with the app's stylesheet: the names on one line", async ({ page }) => {
+  test("R-UI-174 a stacked row's format, class and visibility level with the app's stylesheet: the names on one line", async ({ page }) => {
     const found = (await check(page, levelFacts, '', true)).filter((f) => f.check !== 'stacked-fits');
     expect(found, describe(found)).toEqual([]);
   });
@@ -718,10 +718,10 @@ test.describe('a list\'s cell without a value (R-UI-146)', () => {
   });
 });
 
-test.describe('the bound of an allowed finding (Q-UI-995)', () => {
+test.describe('the bound of an allowed finding', () => {
   const region = (px: string): LayoutFinding => ({ check: 'sideways', what: 'pre.code-block', text: '', detail: `the region scrolls ${px} px sideways`, count: 1 });
 
-  test('Q-UI-995 a code block that scrolls a long line is allowed, and one wider than a few screens fails its screen', () => {
+  test('a code block that scrolls a long line is allowed, and one wider than a few screens fails its screen', () => {
     expect(judge('repository-settings-npm-local', [region('1240')]).defects).toEqual([]);
     expect(judge('repository-settings-npm-local', [region(String(CODE_BLOCK_SCROLL))]).defects).toEqual([]);
     // The Debian remote's stored document of 2026-11-20 to 2026-11-23: a keyring of 77,000 characters on one line.

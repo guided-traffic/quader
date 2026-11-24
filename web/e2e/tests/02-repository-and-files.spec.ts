@@ -85,7 +85,7 @@ test('R-UI-010 R-UI-011 R-UI-012 R-UI-080 create, upload on the repository page,
   expect(replicas.size, `replicas that answered: ${[...replicas]}`).toBeGreaterThanOrEqual(2);
 });
 
-test('R-UI-066 Q-UI-426 Q-UI-1042 a list of repositories, a project\'s and every project\'s, offers Set up client for a row and no address', async ({ page, admin }) => {
+test('R-UI-066 a list of repositories, a project\'s and every project\'s, offers Set up client for a row and no address', async ({ page, admin }) => {
   const key = unique('ui-address');
   const created = await admin.post(repositories(), {
     data: { key, class: 'local', format: 'generic', description: 'client address field' },

@@ -46,7 +46,7 @@ async function remoteForm(page: import('@playwright/test').Page, key: string): P
   await expect(page.getByRole('heading', { name: 'Upstream', level: 2 })).toBeVisible();
 }
 
-test('R-REPO-059 R-UI-021 Q-UI-104 Q-UI-105 the status of a mirror, pause, resume and a pass on request', async ({ page, replicas, admin }) => {
+test('R-REPO-059 R-UI-021 the status of a mirror, pause, resume and a pass on request', async ({ page, replicas, admin }) => {
   await signInLocal(page);
   const remoteOf = async () => ((await (await admin.get(repositoryApi(mirrorKey))).json()) as { remote?: Remote }).remote;
   const state = page.getByTestId('mirror-state');
