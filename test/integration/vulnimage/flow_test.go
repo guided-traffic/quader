@@ -340,16 +340,14 @@ func (f *flow) runScan() {
 	}
 }
 
-// runFreshScan starts a run of the scan task that begins after the call: a run still in progress answers 409 and would not see what the
-// test changed since it began (a new image, a new database), so the start is repeated until the task accepts a new run.
-func (f *flow) runFreshScan() {
+// waitIdle waits until no run of the scan task is queued or running. A run discovers the manifests and reads the database in use once,
+// at its start (Q-VULN-200): a test that changes either and then asks for the order of one run must not leave a run that began before
+// the change, or one queued behind it by an earlier push, to work first. Nothing enqueues the task meanwhile: its schedule is off, and a
+// run with nothing due enqueues itself only while a discovered manifest waits out a scan delay, 0 s unless a test sets one.
+func (f *flow) waitIdle() {
 	f.t.Helper()
-	testenv.WaitFor(f.t, "a new run of the scan task accepted", 30*time.Second, func() bool {
-		a := f.st.Do(f.api, "POST", "/api/v1/system/tasks/vuln-image-scan/run", f.adm, nil)
-		if a.Status != http.StatusAccepted && a.Status != http.StatusConflict {
-			f.t.Fatalf("start the scan: %d %s", a.Status, a.Body)
-		}
-		return a.Status == http.StatusAccepted
+	testenv.WaitFor(f.t, "no run of the scan task queued or running", 30*time.Second, func() bool {
+		return f.st.Number(`SELECT count(*) FROM job WHERE kind = 'vuln-image-scan' AND state IN ('queued', 'running')`) == 0
 	})
 }
 

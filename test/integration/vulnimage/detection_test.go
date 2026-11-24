@@ -80,7 +80,9 @@ func TestR_VULN_048_TheScannerDetectsWithTheDatabaseItsLoaderReadAndARunWaitsWhi
 }
 
 // Q-VULN-200: after a new database the images that were never detected go first: with one call at a time, an image pushed after five
-// stored ones were detected under the first database is detected before their re-detections under the second. About 4 s.
+// stored ones were detected under the first database is detected before their re-detections under the second. The order holds for a
+// run that knows the push: a run that began before it reads the new database at its start and re-detects the stored images first, as
+// Q-VULN-200 bounds it, so the database changes only once no run of the task is queued or running. About 4 s.
 func TestR_VULN_048_APushedImageIsDetectedBeforeTheRedetections(t *testing.T) {
 	f := newFlowWith(t, options{workerEnv: []string{"QUADER_VULNERABILITIES_IMAGES_CONCURRENCY=1"}})
 	for i := range 5 {
@@ -90,9 +92,10 @@ func TestR_VULN_048_APushedImageIsDetectedBeforeTheRedetections(t *testing.T) {
 	testenv.WaitFor(t, "the five stored images detected", 60*time.Second, func() bool {
 		return f.st.Number(`SELECT count(*) FROM vuln_image_scan WHERE state = 'scanned'`) == 5
 	})
+	f.waitIdle()
 	f.setDB(dbDigest(2))
 	f.push("pushed", "1.0", variant(t, 9))
-	f.runFreshScan()
+	f.runScan()
 	testenv.WaitFor(t, "every image detected under the second database", 60*time.Second, func() bool {
 		return f.st.Number(`SELECT count(*) FROM vuln_image_scan WHERE state = 'scanned' AND db_digest = $1`, dbDigest(2)) == 6
 	})
