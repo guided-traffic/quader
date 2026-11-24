@@ -276,6 +276,9 @@ What was red at 19:49 (Test and Release on 928e2a6e7 and every run since 08:32; 
 - **Releases**: 0.123.0 and 0.124.0 came out of the night's pushes; 0.124.0 runs on `wds18-k8s-main` (both HelmReleases Ready,
   the migration job through 00119, every pod Running; read at 21:30).
 
+- **Nightly dispatched** at 22:27 on c8f72cdcb (run 45490907494), every leg of the schedule, once the push runs' kind legs had
+  ended, so that npm-ha and drain-roles run without neighbours.
+
 ### State at the stop of 2026-11-24
 
 Read this first. The run that began at 22:21 on 2026-11-23 ended its starts at 12:25 on 2026-11-24 by the owner's word
