@@ -11951,6 +11951,20 @@ chart sets none) is far above the bound; `minReadySeconds: 10` comes after it.
 value: above it a start would wait out the split election of Q-HA-181 and more. The bound counts from the client's start at step
 7, so the time of steps 8 and 9 is part of it.
 
+**Measured with real Sentinels on 2026-11-24** (a measurement, not a test, by the rule "Tests stay runnable" of the repository's
+`CLAUDE.md`): on instance 2 of the integration stack (three Sentinels, `down-after-milliseconds` 3 s, `failover-timeout` 15 s), the
+primary's container was paused with `docker pause`, so it accepted connections and answered nothing, and a client of
+`internal/cluster` started at once with the production defaults of the retry (`connect_timeout` 2 s, `sentinel_query_timeout` 0.3 s,
+`reconnect.max_backoff` 5 s). It had no start-up error, got its first answer 6.1 s after its start from the promoted replica and was
+bound to it: a fifth of the bound, and below the 18.5 s computed above for the slowest failover measured on a cluster (a primary pod
+force-deleted, 10 s, with `down-after-milliseconds` 5 s where the stack has 3 s). One run; the election's random delay makes the next one differ by a second or two.
+It was not kept as a test: the failover took seconds, but returning the stack to its initial layout (the old primary back as a replica,
+the Sentinels' view of it, a failover back) took another 31 s, 38 s in all, and the flow it would hold is held in milliseconds by
+`TestR_HA_008_StartDuringASentinelFailoverWaitsForTheNewPrimary` (unit, `internal/cluster`, a stand-in Sentinel that first names a
+primary that never answers). To repeat it: the case `TestFailover` of `test/integration/valkey` shows the helpers (`sentinelPrimary`,
+`waitSentinelReplica`, `restoreLayout`); `QUADER_TEST_VALKEY_CONTAINERS` names the containers in the order of
+`QUADER_TEST_VALKEY_NODES`.
+
 **Rationale:** the default follows from the numbers above; the setting exists for the one thing Quader cannot know, the failover
 time of a Valkey it does not run. Revisit when a start during an ordinary failover reaches the bound (the WARN line while the
 Sentinels fail over), or when the measured failover times change (a new Valkey operator, other Sentinel settings).
