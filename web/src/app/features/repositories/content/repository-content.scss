@@ -2,15 +2,30 @@
 // folder is repository-lists.scss, the view of one file repository-file.scss: one sheet per component, so that no component
 // carries the rules of the others and each stays under the 4 kB budget of a component's styles.
 
-.resolves {
-  margin: 0 0 var(--quader-space-2);
-  color: var(--quader-text-muted);
+// The tab Details (Q-UI-1067): each fact with its name above it, as a further address has had it (Q-UI-320).
+.repository-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quader-space-4);
 }
 
-// Details of the repository (Q-UI-313, Q-UI-319) and of a file (Q-UI-514): closed, at the end of the main view.
-.details {
-  display: block;
-  margin-block-start: var(--quader-space-6);
+.detail {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--quader-space-1);
+  margin: 0;
+  min-inline-size: 0;
+
+  // An upstream's address is read whole and wraps anywhere where the window is narrow.
+  code {
+    max-inline-size: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  quader-address-field {
+    align-self: stretch;
+  }
 }
 
 .content-note {
@@ -129,14 +144,6 @@
   align-items: center;
   gap: var(--quader-space-2);
   margin-block-start: var(--quader-space-3);
-}
-
-// A further address in Details, with its name above it (Q-UI-320).
-.other-address {
-  display: flex;
-  flex-direction: column;
-  gap: var(--quader-space-1);
-  margin: 0 0 var(--quader-space-3);
 }
 
 // A file's actions at the end of its path's row (Q-UI-514).

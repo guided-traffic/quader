@@ -167,6 +167,20 @@ async function* rowOpened(page: Page): AsyncGenerator<string> {
 }
 
 /**
+ * The menu of a version's commands (Q-UI-1066): the first item opened, then the button of its first version clicked, so that the panel
+ * hangs from it with a section and a command per client of the format.
+ */
+async function* commandMenuOpen(page: Page): AsyncGenerator<string> {
+  await page.locator('main .name-cell button[aria-expanded="false"]').first().click();
+  const versions = page.locator('main .collapse-region.open quader-repository-item-versions');
+  await expect(versions.locator('table.data tbody tr').first()).toBeVisible();
+  await versions.locator('tbody quader-client-command-menu button').first().click();
+  const panel = page.locator('.client-command-panel');
+  await expect(panel.locator('quader-address-field input, quader-code-window').first()).toBeVisible();
+  yield 'menu';
+}
+
+/**
  * The page Repositories of the project upstream (R-UI-192): as it opens, with the section of its system repositories closed; with
  * the section opened by its toggle; and, closed again, with a filter text that matches one of them, which opens the section and
  * counts the match while the list above says that none of its rows matches.
@@ -2620,11 +2634,12 @@ async function* auditEvent(page: Page): AsyncGenerator<string> {
 }
 
 /**
- * The repository page's **Details** opened, then the page loaded again: the section is open as the reader left it (R-UI-067,
- * Q-UI-319, Q-UI-967), kept in the browser per user and screen.
+ * A file's **Details** opened, then the page loaded again: the section is open as the reader left it (R-UI-067, Q-UI-319,
+ * Q-UI-967), kept in the browser per user and screen. (The repository page's Details is a tab since Q-UI-1067.)
  */
 async function* detailsRemembered(page: Page): AsyncGenerator<string> {
-  const toggle = page.locator('main quader-disclosure.details > .disclosure button.toggle');
+  // The file's own Details, not its section Signatures, which is a closed section of the same look.
+  const toggle = page.locator('main quader-disclosure.details > .disclosure').getByRole('button', { name: 'Details', exact: true });
   // Every width's load is a first visit (render.spec.ts): the section starts closed, whatever the width before left open.
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await toggle.click();
@@ -2695,8 +2710,11 @@ export const screens: readonly Screen[] = [
   { id: 'repositories-upstream', path: '/ui/projects/upstream/repositories', kinds: ['admin'], walk: systemRepositories },
   { id: 'repositories-upstream-plain', path: '/ui/projects/upstream/repositories', kinds: ['plain'] },
   { id: 'repository-npm-local', path: `${P}/repositories/npm-internal`, kinds: all },
-  // Details stays open across a visit (Q-UI-319, Q-UI-967).
-  { id: 'repository-details-remembered', path: `${P}/repositories/npmjs`, kinds: ['power'], walk: detailsRemembered },
+  // The tab Details, the last of the strip (Q-UI-1067): a local repository's address for downloads by path, a remote's upstream and
+  // address, a virtual one's members.
+  { id: 'repository-npm-local-details', path: `${P}/repositories/npm-internal/details`, kinds: all, de: true },
+  { id: 'repository-oci-remote-details', path: `${O}/repositories/docker-hub-remote/details`, kinds: ['plain', 'admin'], de: true },
+  { id: 'repository-npm-virtual-details', path: `${P}/repositories/npm/details`, kinds: ['power'] },
   { id: 'repository-npm-remote', path: `${P}/repositories/npmjs`, kinds: all },
   // The tab Downloads of a remote (R-CUR-018): its queue as the seed left it, then a queue of every state answered in the browser,
   // a failed row opened to its whole failure, and a bulk's rows (downloads.ts). The OCI remote whose tag a probe downloaded has a
@@ -2731,6 +2749,11 @@ export const screens: readonly Screen[] = [
   // platforms of its list, partial, and no client download.
   { id: 'repository-oci-probed', path: `${O}/repositories/${probedCache.key}`, kinds: all, walk: rowOpened },
   { id: 'repository-deb', path: `${O}/repositories/${longDebKey}`, kinds: all },
+  // The menu of a version's commands (Q-UI-1066), hung from its button: an OCI remote's tag (Pull), an npm package's version and a
+  // Debian package's version (Install).
+  { id: 'repository-oci-cache-menu', path: `${O}/repositories/${remoteCache.key}`, kinds: ['power'], walk: commandMenuOpen, de: true },
+  { id: 'repository-npm-vendor-menu', path: `${P}/repositories/npm-vendor`, kinds: ['plain'], walk: commandMenuOpen, de: true },
+  { id: 'repository-deb-menu', path: `${O}/repositories/${longDebKey}`, kinds: ['power'], walk: commandMenuOpen, de: true },
   { id: 'repository-nuget-virtual', path: `${O}/repositories/nuget`, kinds: all },
   { id: 'repository-ansible', path: `${O}/repositories/collections`, kinds: all },
   { id: 'packages', path: `${P}/packages`, kinds: all, walk: filtersOpen(packageChips) },
@@ -2772,6 +2795,8 @@ export const screens: readonly Screen[] = [
   { id: 'files-many', path: `${P}/repositories/assets/files/icons/material`, kinds: ['plain'], walk: manyEntries },
   { id: 'files-empty-folder', path: `${P}/repositories/assets/files/drafts`, kinds: all },
   { id: 'files-file', path: `${P}/repositories/assets/files/README.md`, kinds: all, walk: fileView },
+  // Details stays open across a visit (Q-UI-319, Q-UI-967).
+  { id: 'file-details-remembered', path: `${P}/repositories/assets/files/README.md`, kinds: ['power'], walk: detailsRemembered },
   // A file of a disabled repository: no Download, no address, one sentence (Q-UI-965).
   { id: 'files-file-disabled', path: `${P}/repositories/assets/files/README.md`, kinds: all, walk: disabledFile },
   { id: 'files-file-long', path: `${P}/repositories/assets/files/${deepFolder}/sprite-with-every-icon-of-the-design-system-for-the-customer-portal.svg`, kinds: ['plain'] },

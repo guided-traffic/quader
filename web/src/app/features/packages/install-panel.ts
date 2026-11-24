@@ -8,7 +8,7 @@ import { PackageVersion } from '../../api/packages-api';
 import { ClientChoice, clientsOf } from '../setup/clients';
 import { InstallCommand } from './install-command';
 
-export { COLLAPSE_AFTER_LINES } from './install-command';
+export { COLLAPSE_AFTER_LINES } from './client-command';
 
 /** The qualified name of the repository of ClamAV's definitions (R-REPO-075). */
 const CLAMAV_REF = upstreamName(CLAMAV_KEY);

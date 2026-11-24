@@ -454,9 +454,9 @@ describe('The strip of a remote repository with the tab Upstream', () => {
 
   it('R-CUR-018 Upstream carries the count of open requests for those who may answer them, and the tab shows the catalogue', async () => {
     const content = await page(REMOTE, { open: 3 });
-    expect([...content.root.querySelectorAll('quader-remote-tabs a.tab-link')].map((a) => text(a))).toEqual(['Packages', 'Upstream 3', 'Downloads']);
+    expect([...content.root.querySelectorAll('quader-repository-tabs a.tab-link')].map((a) => text(a))).toEqual(['Packages', 'Upstream 3', 'Downloads', 'Details']);
     const { root } = await page(REMOTE, { tab: 'upstream', open: 2 });
-    const links = [...root.querySelectorAll<HTMLAnchorElement>('quader-remote-tabs a.tab-link')];
+    const links = [...root.querySelectorAll<HTMLAnchorElement>('quader-repository-tabs a.tab-link')];
     expect(links[1]!.getAttribute('aria-current')).toBe('page');
     expect(text(links[1]!)).toBe('Upstream 2');
     expect(root.querySelector('quader-remote-upstream')).not.toBeNull();

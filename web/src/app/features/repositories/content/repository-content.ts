@@ -30,7 +30,6 @@ import { JobProgress } from '../../../shared/job-progress';
 import { asApiError, valueOf } from '../../../shared/paged-resource';
 import { PageHeader } from '../../../shared/ui/page-header';
 import { AddressField } from '../../../shared/address-field';
-import { Disclosure } from '../../../shared/ui/disclosure';
 import { FrequentPlaces } from '../../../core/frequent-places';
 import { clientAddress } from '../repository-model';
 import { classIcon, classLabel } from '../repository-class';
@@ -42,7 +41,7 @@ import { ItemSort, RepositoryItems } from './repository-items';
 import { FormatIconView } from '../../../shared/format-icon';
 import { RemoteDownloadCounts } from '../../../api/remote-downloads-api';
 import { RemoteDownloads } from '../downloads/remote-downloads';
-import { RemoteTab, RemoteTabs } from './remote-tabs';
+import { RepositoryTab, RepositoryTabs } from './repository-tabs';
 // >>> T-24 upstream
 import { UpstreamCatalogue } from '../../../api/upstream-catalogue-api';
 import { RemoteUpstream } from '../upstream/remote-upstream';
@@ -74,7 +73,6 @@ export const TYPE_TO_CONFIRM_ABOVE = 100;
     CopyButton,
     ErrorNotice,
     AddressField,
-    Disclosure,
     JobProgress,
     PageHeader,
     RepositoryFile,
@@ -82,7 +80,7 @@ export const TYPE_TO_CONFIRM_ABOVE = 100;
     RepositoryItems,
     ClamavDatabases,
     DownloadLink,
-    RemoteTabs,
+    RepositoryTabs,
     RemoteDownloads,
     RemoteUpstream,
   ],
@@ -108,8 +106,11 @@ export class RepositoryContent {
   /** Query parameters (R-UI-003): the filter and the sort of a package format's list. */
   readonly q = input<string | undefined>();
   readonly sort = input<string | undefined>();
-  /** The tab of a remote repository's page, from the route's data (R-CUR-018): its content, `upstream` or `downloads`. */
-  readonly tab = input<RemoteTab>('content');
+  /**
+   * The tab of the page, from the route's data: its content, `upstream` or `downloads` of a remote repository (R-CUR-018), or
+   * `details` (Q-UI-1067).
+   */
+  readonly tab = input<RepositoryTab>('content');
 
   protected readonly ref = computed(() => repoRef(this.project(), this.key()));
   /**
@@ -183,14 +184,29 @@ export class RepositoryContent {
   /** The repository is disabled: the full document and the reader's view say so alike (R-REPO-010), so every reader's page knows it. */
   protected readonly disabled = computed(() => this.repository()?.disabled ?? false);
 
-  // ---- The tabs of a remote repository (remote-curation.md R-CUR-018, Q-CUR-1, Q-CUR-150) ----
+  // ---- The tabs (R-UI-052; remote-curation.md R-CUR-018, Q-CUR-1, Q-CUR-150; Q-UI-1067) ----
 
   /**
-   * A remote repository's page has the tab strip: its content, **Upstream** and **Downloads**. The catalogue and the queue answer a
-   * signed-in reader only, and one tab is no strip (Q-UI-652), so a visitor without a session sees the content alone; a local or
-   * virtual repository has no strip.
+   * A remote repository's page has the tabs **Upstream** and **Downloads** beside its content. The catalogue and the queue answer a
+   * signed-in reader only, so a visitor without a session has neither; a local or virtual repository has neither.
    */
   protected readonly remoteTabs = computed(() => this.repository()?.class === 'remote' && this.session.state() === 'authenticated');
+  /**
+   * The tab **Details**, the last (Q-UI-1067): where the repository has a further address, an upstream or members for this reader.
+   * Without them there is no tab, and the content alone has no strip, for one tab is no strip (Q-UI-652).
+   */
+  protected readonly hasDetails = computed(() => !!this.upstream() || this.members().length > 0 || this.otherAddresses().length > 0);
+  /** The strip: two tabs or more. */
+  protected readonly tabStrip = computed(() => this.remoteTabs() || this.hasDetails());
+  /**
+   * Whether the page knows that it has no Details: the reader's view carries its addresses; the full document's address is built from
+   * the catalog and the server's base URL, which may answer after the repository.
+   */
+  private readonly detailsKnown = computed(() => {
+    const r = this.repository();
+    if (!r) return false;
+    return isConsumerView(r) || (!this.formats.isLoading() && !this.baseUrl.isLoading());
+  });
   /** The action a client's fill needs here: the full document has it, a reader's view does not (then `read`, the default). */
   protected readonly fillAction = computed<'read' | 'deploy'>(() => {
     const r = this.repository();
@@ -202,9 +218,9 @@ export class RepositoryContent {
   protected readonly requestCount = signal<number | null | undefined>(undefined);
 
   /** The tab the strip marks: the content's for a folder or a file too. */
-  protected readonly currentTab = computed<RemoteTab>(() => {
+  protected readonly currentTab = computed<RepositoryTab>(() => {
     const v = this.view();
-    return v === 'downloads' || v === 'upstream' ? v : 'content';
+    return v === 'downloads' || v === 'upstream' || v === 'details' ? v : 'content';
   });
 
   protected upstreamRead(caps: UpstreamCatalogue): void {
@@ -213,15 +229,18 @@ export class RepositoryContent {
   }
 
   /**
-   * The repository's addresses: the consumer view carries them; the full document does not, so the address is built from the
-   * server's base URL and the format, as the settings page does.
+   * The repository's addresses: the consumer view carries them; the full document does not, so they are built from the server's base
+   * URL as the settings page builds them: the format's address, then the address for downloads by path where it differs, in the
+   * consumer view's order (R-REPO-002), so that a reader of the full document finds the same Details as anyone else.
    */
   protected readonly addresses = computed<readonly string[]>(() => {
     const r = this.repository();
     if (!r) return [];
     if (isConsumerView(r)) return r.addresses;
     const a = clientAddress(valueOf(this.baseUrl), this.descriptor(), this.ref());
-    return a ? [a] : [];
+    if (!a) return [];
+    const files = this.filesAddress();
+    return files && files !== a ? [a, files] : [a];
   });
   /**
    * The client address, the first of the repository's addresses, is Set up client's (R-UI-169). The API lists the address of the
@@ -249,8 +268,6 @@ export class RepositoryContent {
     return clientAddress(valueOf(this.baseUrl), (valueOf(this.formats) ?? []).find((f) => f.name === 'generic'), this.ref());
   });
   protected readonly actionsLabel = $localize`:@@repo.content.more:More actions`;
-  protected readonly detailsHeading = $localize`:@@repo.content.details:Details`;
-  protected readonly detailsText = $localize`:@@repo.content.details-text2:Further addresses, and where this repository fetches from or what it resolves from.`;
 
   protected readonly filter = computed(() => this.q() ?? '');
   protected readonly order = computed<ItemSort>(() => {
@@ -280,9 +297,10 @@ export class RepositoryContent {
     return e ? asApiError(e) : null;
   });
   /** What the page shows below the header: the packages, a folder, a file, or nothing yet. */
-  protected readonly view = computed<'items' | 'folder' | 'file' | 'loading' | 'downloads' | 'upstream'>(() => {
+  protected readonly view = computed<'items' | 'folder' | 'file' | 'loading' | 'downloads' | 'upstream' | 'details'>(() => {
     if (this.tab() === 'downloads') return 'downloads';
     if (this.tab() === 'upstream') return 'upstream';
+    if (this.tab() === 'details') return 'details';
     if (!this.showsFiles()) return 'items';
     if (this.path() === '') return 'folder';
     const item = this.item();
@@ -382,6 +400,11 @@ export class RepositoryContent {
       // A route without the data `tab` (a folder, a file) binds no tab: only the two tabs of a remote lead away.
       const tab = this.tab();
       if ((tab !== 'downloads' && tab !== 'upstream') || !this.repository() || !known || this.remoteTabs()) return;
+      untracked(() => void this.router.navigate(['/projects', this.project(), 'repositories', this.key()], { replaceUrl: true }));
+    });
+    // The address of the tab Details of a repository that has none for this reader leads to its content (Q-UI-1067).
+    effect(() => {
+      if (this.tab() !== 'details' || !this.detailsKnown() || this.hasDetails()) return;
       untracked(() => void this.router.navigate(['/projects', this.project(), 'repositories', this.key()], { replaceUrl: true }));
     });
   }

@@ -112,6 +112,7 @@ refuses a masculine "Token" in a target.
 | blob, snapshot, pod (as in the backups screen) | Blob, Snapshot, Pod |
 | avatar | Avatar |
 | pull (an image), image index, multi-platform image | ziehen, Image-Index, Multi-Plattform-Image |
+| Pull, Install, Download (the button beside a version that opens its commands, Q-UI-1066) | Pull (the owner's word and the command's, `docker pull`), Installieren, Herunterladen |
 | image (OCI), tag, digest, media type, artifact type, platform (of an image index), image pull secret | Image, Tag, Digest, Medientyp, Artefakttyp, Plattform, Image-Pull-Secret |
 | signing key (primary, next, withheld, retired), fingerprint, certificate (public) | Signaturschlüssel (primär, nächster, zurückgehalten, außer Dienst), Fingerabdruck, öffentliches Zertifikat |
 | promote (a next key), reinstate (a withheld key), confirm the retirement | hochstufen, wieder einsetzen, Außerdienststellung bestätigen |

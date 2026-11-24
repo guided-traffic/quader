@@ -51,3 +51,16 @@
   margin: 0;
   color: var(--quader-text-muted);
 }
+
+// In the menu of a version (Q-UI-1066) the field asks for its command's width, which sizes the panel, and then takes the panel's
+// width: a command longer than the panel scrolls inside its field, from its start. The sentence while it loads is muted, as a note.
+:host(.in-menu) .command-field {
+  inline-size: calc((var(--command-chars) + 2) * 1ch + 4.5rem);
+  min-inline-size: 100%;
+  max-inline-size: 100%;
+}
+
+.command-loading {
+  margin: 0;
+  color: var(--quader-text-muted);
+}

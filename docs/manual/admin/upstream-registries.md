@@ -189,7 +189,7 @@ While closed:
   after the key, without **Set up client**; the row's menu keeps **Settings**, **Files** and, for `scanner-trivy`,
   **Vulnerabilities**.
 - The search finds them, in the suggestions under the search field and on the tab **Repositories** of the results, with the same badge.
-- On their own pages there is no **Set up client**, no address for downloads by path in **Details**, no pull command in an opened image
+- On their own pages there is no **Set up client**, no address for downloads by path on the tab **Details**, no **Pull** beside an image or a tag
   and no copy button in a folder. The page of one of their files has no **Download** and no download address; one sentence says which of
   Quader's work reads it. **Details** keeps the request of the file through the API with curl, which the API answers. A package's install
   panel never offers them, and a version only they hold says why instead of showing a command.

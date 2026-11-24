@@ -43,19 +43,53 @@
     </ng-container>
   </quader-page-header>
 
-  @if (remoteTabs()) {
-    <!-- A remote repository's views are tabs, each with its address (R-CUR-018, Q-CUR-1): the content, Upstream and Downloads. -->
-    <quader-remote-tabs
+  @if (tabStrip()) {
+    <!-- The page's views are tabs, each with its address: the content, Upstream and Downloads of a remote repository (R-CUR-018,
+         Q-CUR-1), and Details, always the last (Q-UI-1067). -->
+    <quader-repository-tabs
       [project]="project()"
       [key]="key()"
       [contentLabel]="shape().itemsLabel"
       [current]="currentTab()"
-      [counts]="currentTab() === 'content' ? null : queueCounts()"
+      [remote]="remoteTabs()"
+      [details]="hasDetails()"
+      [counts]="currentTab() === 'content' || currentTab() === 'details' ? null : queueCounts()"
       [requestCount]="currentTab() === 'upstream' ? requestCount() : undefined"
     />
   }
 
-  @if (view() === 'downloads') {
+  @if (view() === 'details') {
+    <!-- Details (Q-UI-1067): the further addresses, each with its name above its field (Q-UI-320), the upstream a remote repository
+         caches and the members a virtual one resolves from. -->
+    @if (hasDetails()) {
+      <div class="repository-details">
+        @for (a of otherAddresses(); track a.value) {
+          <p class="detail">
+            <span class="field-label">{{ a.label }}</span>
+            <quader-address-field [value]="a.value" [label]="a.label" [copyLabel]="a.copyLabel" />
+          </p>
+        }
+        @if (upstream(); as u) {
+          <p class="detail">
+            <span class="field-label" i18n="@@repo.content.upstream">Caches</span>
+            <code translate="no">{{ u }}</code>
+          </p>
+        }
+        @if (members().length > 0) {
+          <p class="detail">
+            <span class="field-label" i18n="@@repo.content.resolves-from">Resolves from</span>
+            <span>
+              @for (m of members(); track m; let last = $last) {
+                <a [routerLink]="['/projects', project(), 'repositories', m]" translate="no">{{ m }}</a>@if (!last) {,&ngsp;}
+              }
+            </span>
+          </p>
+        }
+      </div>
+    } @else {
+      <p role="status" i18n="@@repo.loading">Loading.</p>
+    }
+  } @else if (view() === 'downloads') {
     @if (remoteTabs()) {
       <quader-remote-downloads [repository]="ref()" [fillAction]="fillAction()" (countsChange)="queueCounts.set($event)" />
     }
@@ -222,29 +256,5 @@
         }
       }
     }
-  }
-
-  @if ((view() === 'items' || (isGeneric() && path() === '')) && (upstream() || members().length > 0 || otherAddresses().length > 0)) {
-    <quader-disclosure class="details" remember="repository.details" [heading]="detailsHeading" [hint]="detailsText">
-      @for (a of otherAddresses(); track a.value) {
-        <p class="other-address">
-          <span class="field-label">{{ a.label }}</span>
-          <quader-address-field [value]="a.value" [label]="a.label" [copyLabel]="a.copyLabel" />
-        </p>
-      }
-      @if (upstream(); as u) {
-        <p class="resolves">
-          <ng-container i18n="@@repo.content.upstream">Caches</ng-container>&ngsp;<code translate="no">{{ u }}</code>
-        </p>
-      }
-      @if (members().length > 0) {
-        <p class="resolves">
-          <ng-container i18n="@@repo.content.resolves-from">Resolves from</ng-container>&ngsp;
-          @for (m of members(); track m; let last = $last) {
-            <a [routerLink]="['/projects', project(), 'repositories', m]" translate="no">{{ m }}</a>@if (!last) {,&ngsp;}
-          }
-        </p>
-      }
-    </quader-disclosure>
   }
 }

@@ -1117,9 +1117,12 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
 - **Tabs on a remote repository's page** (R-UI-052 changed, Q-CUR-1): under the header a tab strip (`tab-nav`, links with
   `aria-current="page"`, as the page **System status** has, R-UI-164) with **Packages** (**Images** for OCI; the content as today), **Upstream**
   and **Downloads**, each with its address: `…/repositories/{key}`, `…/repositories/{key}/upstream`, `…/repositories/{key}/downloads`;
-  the document title and the breadcrumb end with the tab. A local or virtual repository shows no tab strip, and the address of its
-  tab Downloads (and of its tab Upstream) leads to its content. A tab's filters stay in its address. A visitor without a session, whom
-  the catalogue and the queue do not answer, sees no strip, because one tab is no strip
+  the document title and the breadcrumb end with the tab. **Details** follows them, the last tab of every repository's page that has
+  details ([Q-UI-1067](api-and-ui.md#q-ui-1067--details-is-the-last-tab-of-a-repositorys-page-not-a-section-under-its-list)). A local or
+  virtual repository has no **Upstream** and no **Downloads**, and the address of its tab Downloads (and of its tab Upstream) leads to its
+  content. A tab's filters stay in its address. A visitor without a session, whom
+  the catalogue and the queue do not answer, sees neither **Upstream** nor **Downloads**, and no strip where **Details** is not there
+  either, because one tab is no strip
   ([Q-CUR-150](#q-cur-150--the-strip-holds-the-content-upstream-and-downloads-for-every-signed-in-reader-the-strip-counts-the-open-requests-itself), which replaces
   Q-CUR-130). The label **Upstream** carries the count of open requests for those who may set rules (`Upstream 3`); **Downloads** the count
   of failed rows when there are any (`Downloads · 2 failed`).
@@ -2359,7 +2362,7 @@ total.
 entries of a repository exceed a page often.
 
 **Applied in the spec:** R-CUR-018 (the tab strip), [api-and-ui.md](api-and-ui.md) R-UI-052. Code:
-[remote-tabs.ts](../../web/src/app/features/repositories/content/remote-tabs.ts).
+[repository-tabs.ts](../../web/src/app/features/repositories/content/repository-tabs.ts) (named remote-tabs.ts until Q-UI-1067).
 
 ### Q-CUR-151 · One field searches and looks up; the address holds the query; the levels are a breadcrumb and links
 

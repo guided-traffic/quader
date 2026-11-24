@@ -29,8 +29,8 @@ Every remote repository of every format (npm, NuGet, OCI, Debian, Ansible Galaxy
 
 ## The tab Upstream
 
-When you are signed in, a remote repository's page has three tabs under its title: its content (**Packages**, **Images** or **Files**),
-**Upstream** and **Downloads**. **Upstream** shows what the registry the repository caches offers, whether it is stored here or not, and
+When you are signed in, a remote repository's page has these tabs under its title: its content (**Packages**, **Images** or **Files**),
+**Upstream**, **Downloads** and, last, **Details** with the upstream it caches and its other addresses. **Upstream** shows what the registry the repository caches offers, whether it is stored here or not, and
 what this repository delivers of it.
 
 - **The line at the top** says what the repository delivers: "Delivers everything except what is blocked." or "Delivers only what is

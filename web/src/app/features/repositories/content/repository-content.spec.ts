@@ -9,11 +9,14 @@ import { FilesApi } from '../../../api/files-api';
 import { SessionApi } from '../../../api/session-api';
 import { FakeSessionApi } from '../../../api/testing/fakes';
 import { FrequentPlaces } from '../../../core/frequent-places';
+import { spokenText } from '../../../testing/axe';
 import { browserStorage, expectAccessible, renderScreen, settle, text } from '../../../testing/screen';
 import { RepositoryContent } from './repository-content';
 import { RepositoryItems } from './repository-items';
 import { contentShapeOf } from './content-shape';
 import { Component, signal } from '@angular/core';
+import { ComponentFixture } from '@angular/core/testing';
+import { Router } from '@angular/router';
 
 interface RepoDoc {
   readonly key: string;
@@ -23,6 +26,7 @@ interface RepoDoc {
   readonly description?: string;
   readonly disabled?: boolean;
   readonly virtual?: { members: string[] };
+  readonly remote?: { url: string };
 }
 
 async function open(repo: RepoDoc, setup?: (fakes: {
@@ -45,7 +49,18 @@ async function open(repo: RepoDoc, setup?: (fakes: {
   return r;
 }
 
-const OCI_REPO: RepoDoc = { key: 'oci-local', project: 'web', class: 'local', format: 'oci', description: 'Images of the web team' };
+/** Clicks a version's button and returns the panel it opened (Q-UI-1066): the overlay hangs it outside the page's element. */
+async function openMenu(r: { fixture: ComponentFixture<unknown> }, trigger: HTMLButtonElement): Promise<HTMLElement> {
+  trigger.click();
+  await settle(r.fixture);
+  expect(trigger.getAttribute('aria-expanded')).toBe('true');
+  return document.getElementById(trigger.getAttribute('aria-controls')!)!;
+}
+
+/** The one-line commands of a panel, a section's field each. */
+const commands = (panel: Element): string[] => [...panel.querySelectorAll<HTMLInputElement>('quader-address-field input')].map((i) => i.value);
+
+const OCI_REPO: RepoDoc ={ key: 'oci-local', project: 'web', class: 'local', format: 'oci', description: 'Images of the web team' };
 const NPM_REPO: RepoDoc = { key: 'npm-local', project: 'web', class: 'local', format: 'npm', description: 'Internal packages' };
 
 describe('Repository content page', () => {
@@ -70,26 +85,40 @@ describe('Repository content page', () => {
     const rows = [...r.root.querySelectorAll('quader-repository-item-versions tbody tr')];
     expect(rows[0]?.textContent).toContain('1.2.0');
     expect(rows[0]?.textContent).toContain('sha256:');
-    expect((r.root.querySelector<HTMLInputElement>('quader-repository-item-versions quader-address-field input')?.value ?? r.root.querySelector('quader-repository-item-versions pre')?.textContent)).toMatch(/^docker pull \S*web\/oci-local\/team\/app:1\.2\.0$/);
+    // No box of a command stands in the opened row: each tag has its button Pull (Q-UI-1066).
+    expect(r.root.querySelector('quader-repository-item-versions quader-address-field, quader-install-command')).toBeNull();
+    const panel = await openMenu(r, rows[0]!.querySelector<HTMLButtonElement>('quader-client-command-menu button')!);
+    expect(commands(panel)[0]).toMatch(/^docker pull \S*web\/oci-local\/team\/app:1\.2\.0$/);
     await expectAccessible(r.root);
+    await expectAccessible(panel);
   });
 
-  it('R-UI-052 the pull command follows the tag chosen in the list and switches between docker and podman', async () => {
+  it('R-UI-052 a tag\'s Pull opens the commands of that tag, a section per client, and the image row\'s Pull those of its latest tag', async () => {
     const r = await open(OCI_REPO, ({ packages }) => ociFixture(packages));
-    r.root.querySelector<HTMLButtonElement>('.name-cell button[aria-expanded]')!.click();
-    await settle(r.fixture);
     const setup = r.get(ClientSetupApi) as FakeClientSetupApi;
+    const imageRow = [...r.root.querySelectorAll('tbody tr')].find((tr) => tr.textContent?.includes('team/app'))!;
+    const latest = imageRow.querySelector<HTMLButtonElement>('quader-client-command-menu button')!;
+    expect(spokenText(latest)).toBe('1.2.0: Pull');
+    // Nothing is asked before the panel opens.
+    expect(setup.calls).toEqual([]);
+    const forLatest = await openMenu(r, latest);
+    expect([...forLatest.querySelectorAll('.menu-heading')].map((h) => text(h))).toEqual(['Docker CLI (with Buildx)', 'Podman']);
+    expect(commands(forLatest).map((c) => c.split(' ').slice(0, 2).join(' '))).toEqual(['docker pull', 'podman pull']);
+    expect(commands(forLatest).every((c) => c.endsWith('team/app:1.2.0'))).toBe(true);
+    latest.click();
+    await settle(r.fixture);
+
+    imageRow.querySelector<HTMLButtonElement>('.name-cell button[aria-expanded]')!.click();
+    await settle(r.fixture);
     const rows = [...r.root.querySelectorAll('quader-repository-item-versions tbody tr')];
-    rows.at(-1)!.querySelector<HTMLButtonElement>('button[aria-pressed]')!.click();
-    await settle(r.fixture);
-    expect(setup.calls.at(-1)?.query).toMatchObject({ client: 'docker', version: '1.1.0', credentials: 'none' });
-    const client = r.root.querySelector<HTMLSelectElement>('quader-repository-item-versions select')!;
-    client.value = 'podman';
-    client.dispatchEvent(new Event('change', { bubbles: true }));
-    await settle(r.fixture);
-    expect(setup.calls.at(-1)?.query).toMatchObject({ client: 'podman', version: '1.1.0' });
-    expect(setup.calls.at(-1)?.repository).toBe('web/oci-local');
-    expect(setup.calls.every((c) => c.query.credentials === 'none')).toBe(true);
+    setup.calls = [];
+    const older = await openMenu(r, rows.at(-1)!.querySelector<HTMLButtonElement>('quader-client-command-menu button')!);
+    expect(setup.calls.map((c) => c.query)).toEqual([
+      expect.objectContaining({ client: 'docker', version: '1.1.0', credentials: 'none' }),
+      expect.objectContaining({ client: 'podman', version: '1.1.0', credentials: 'none' }),
+    ]);
+    expect(setup.calls.every((c) => c.repository === 'web/oci-local')).toBe(true);
+    expect(commands(older)[1]).toMatch(/^podman pull \S*web\/oci-local\/team\/app:1\.1\.0$/);
   });
 
   it('R-UI-052 R-UI-094 R-UI-143 an npm repository shows the packages with the grade of their latest version and the install command of the version, and grades each version of an opened row, in the words of the versions table', async () => {
@@ -116,8 +145,13 @@ describe('Repository content page', () => {
     const vulnerabilities = r.get(VulnerabilitiesApi) as FakeVulnerabilitiesApi;
     expect(vulnerabilities.calls).toEqual(expect.arrayContaining(['packageReport pkg_01JBQ6V7S3K9 in web/npm-local']));
     expect(text(r.root.querySelector('quader-repository-item-versions quader-grade .grade-text')!)).toBe('Grade C · 5 findings · 1 fixable');
-    expect((r.root.querySelector<HTMLInputElement>('quader-repository-item-versions quader-address-field input')?.value ?? r.root.querySelector('quader-repository-item-versions pre')?.textContent)).toBe('npm install @team-a/ui@1.4.0');
+    const version = [...r.root.querySelectorAll('quader-repository-item-versions tbody tr')].find((tr) => tr.querySelector('th')?.textContent?.trim() === '1.4.0')!.querySelector<HTMLButtonElement>('quader-client-command-menu button')!;
+    expect(spokenText(version)).toBe('1.4.0: Install');
+    const panel = await openMenu(r, version);
+    expect([...panel.querySelectorAll('.menu-heading')].map((h) => text(h))).toEqual(['npm', 'pnpm', 'Yarn Berry (2 and later)', 'Yarn Classic (1.x)']);
+    expect(commands(panel)[0]).toBe('npm install @team-a/ui@1.4.0');
     await expectAccessible(r.root);
+    await expectAccessible(panel);
   });
 
   it('R-UI-094 the column of grades sorts the list by grade, worst first descending, after the name', async () => {
@@ -254,7 +288,7 @@ describe('Repository content page', () => {
     expect([...clamav.root.querySelectorAll('a, button')].some((b) => text(b) === 'Set up client')).toBe(false);
   });
 
-  it('R-UI-193 the images of a system repository have no pull command and no Show command, and its Details no address for downloads by path', async () => {
+  it('R-UI-193 the images of a system repository have no pull command and no button Pull, and no address for downloads by path', async () => {
     const trivy = 'https://quader.example.net/v2/upstream/scanner-trivy/';
     const files = 'https://quader.example.net/files/upstream/scanner-trivy/';
     const r = await open({ key: 'scanner-trivy', project: 'upstream', class: 'remote', format: 'oci', description: 'Image scanning database' }, ({ catalog, packages }) => {
@@ -270,11 +304,13 @@ describe('Repository content page', () => {
     await settle(r.fixture);
     const versions = r.root.querySelector('quader-repository-item-versions')!;
     expect(versions.querySelectorAll('tbody tr').length).toBeGreaterThan(0);
-    expect(versions.querySelector('.command-panel, quader-install-command')).toBeNull();
-    expect(text(versions)).not.toContain('Show command');
-    expect([...versions.querySelectorAll('thead th')].map((th) => text(th))).not.toContain('Actions');
+    expect(r.root.querySelector('quader-client-command-menu, quader-install-command')).toBeNull();
+    expect(text(r.root)).not.toContain('Pull');
+    expect([...r.root.querySelectorAll('thead th')].map((th) => text(th))).not.toContain('Actions');
     expect((r.get(ClientSetupApi) as FakeClientSetupApi).calls).toEqual([]);
     expect(r.root.querySelector('quader-address-field')).toBeNull();
+    // The consumer view has no upstream and the address for downloads by path is not offered: no tab Details.
+    expect([...r.root.querySelectorAll('quader-repository-tabs a.tab-link')].map((a) => text(a))).toEqual(['Images', 'Upstream', 'Downloads']);
     expect(text(r.root)).not.toContain('Address for downloads by path');
     await expectAccessible(r.root);
   });
@@ -341,10 +377,16 @@ describe('Repository content page', () => {
     );
   });
 
-  it('R-UI-052 a virtual repository names what it resolves from and a remote one says it lists what clients fetched', async () => {
-    const virtual = await open({ key: 'npm-all', project: 'web', class: 'virtual', format: 'npm', virtual: { members: ['npm-local', 'npm-remote'] } });
-    expect(text(virtual.root)).toContain('Resolves from');
-    expect(virtual.root.querySelector<HTMLAnchorElement>('.resolves a[href$="/repositories/npm-remote"]')).not.toBeNull();
+  it('R-UI-052 a virtual repository names what it resolves from on its tab Details and a remote one says it lists what clients fetched', async () => {
+    const virtual = await open(
+      { key: 'npm-all', project: 'web', class: 'virtual', format: 'npm', virtual: { members: ['npm-local', 'npm-remote'] } },
+      undefined,
+      undefined,
+      { tab: 'details' },
+    );
+    const details = virtual.root.querySelector('.repository-details')!;
+    expect(text(details)).toMatch(/Resolves from ?npm-local, npm-remote/);
+    expect(details.querySelector<HTMLAnchorElement>('a[href$="/repositories/npm-remote"]')).not.toBeNull();
     const remote = await open({ key: 'npm-cache', project: 'web', class: 'remote', format: 'npm' });
     expect(text(remote.root)).toContain('Only what clients have fetched through this repository is listed here, what it downloaded after a client asked about a version, and, in mirror mode, what a pass has fetched.');
   });
@@ -388,23 +430,65 @@ describe('Repository content page', () => {
     await expectAccessible(r.root);
   });
 
-  it('R-UI-052 R-UI-169 the header holds no address; Details names the address for downloads by path, which Set up client does not show', async () => {
+  it('R-UI-052 R-UI-169 the header holds no address; the tab Details names the address for downloads by path, which Set up client does not show', async () => {
     const npm = 'https://quader.example.net/api/npm/web/npm-local/';
     const files = 'https://quader.example.net/files/web/npm-local/';
-    const r = await open(NPM_REPO, ({ catalog }) => {
-      // The consumer view of a reader: the protocol address first, the raw file address after it (R-REPO-010).
-      catalog.get = async () => ({
-        value: { key: 'npm-local', class: 'local', format: 'npm', description: 'Internal packages', layout: 'npm', addresses: [npm, files] },
-        etag: '"1"',
-      });
-    });
+    const r = await open(
+      NPM_REPO,
+      ({ catalog }) => {
+        // The consumer view of a reader: the protocol address first, the raw file address after it (R-REPO-010).
+        catalog.get = async () => ({
+          value: { key: 'npm-local', class: 'local', format: 'npm', description: 'Internal packages', layout: 'npm', addresses: [npm, files] },
+          etag: '"1"',
+        });
+      },
+      undefined,
+      { tab: 'details' },
+    );
     expect(r.root.querySelector('quader-page-header quader-address-field')).toBeNull();
     expect(text(r.root)).not.toContain(npm);
-    const details = r.root.querySelector('quader-disclosure')!;
+    const details = r.root.querySelector('.repository-details')!;
     expect(details.querySelector<HTMLInputElement>('quader-address-field input')?.value).toBe(files);
     expect(text(details)).toContain('Address for downloads by path (curl, wget)');
     expect(details.querySelector('quader-address-field button')?.getAttribute('aria-label')).toBe('Copy address for downloads by path');
     await expectAccessible(r.root);
+  });
+
+  it('R-UI-052 Details is a tab of its own, the last, with its address, in place of a section under the list', async () => {
+    // The full document of an Owner: the address for downloads by path is built as the reader's view lists it.
+    const local = await open(NPM_REPO);
+    const links = [...local.root.querySelectorAll<HTMLAnchorElement>('quader-repository-tabs a.tab-link')];
+    expect(links.map((a) => text(a))).toEqual(['Packages', 'Details']);
+    expect(links[0]!.getAttribute('aria-current')).toBe('page');
+    expect(links[1]!.getAttribute('href')).toBe('/projects/web/repositories/npm-local/details');
+    expect(local.root.querySelector('quader-disclosure, .repository-details')).toBeNull();
+    expect(local.root.querySelector('quader-repository-items')).not.toBeNull();
+
+    const tab = await open(NPM_REPO, undefined, undefined, { tab: 'details' });
+    const current = [...tab.root.querySelectorAll<HTMLAnchorElement>('quader-repository-tabs a.tab-link')];
+    expect(current[1]!.getAttribute('aria-current')).toBe('page');
+    expect(tab.root.querySelector('quader-repository-items')).toBeNull();
+    expect(text(tab.root.querySelector('.repository-details')!)).toContain('Address for downloads by path (curl, wget)');
+    expect(tab.root.querySelector<HTMLInputElement>('.repository-details quader-address-field input')?.value).toMatch(/\/files\/web\/npm-local\/?$/);
+    await expectAccessible(tab.root);
+
+    // A remote repository's strip ends with Details, after Upstream and Downloads; its Details names the upstream.
+    const remote = await open({ key: 'npm-cache', project: 'web', class: 'remote', format: 'npm', remote: { url: 'https://registry.npmjs.org' } }, undefined, undefined, { tab: 'details' });
+    expect([...remote.root.querySelectorAll('quader-repository-tabs a.tab-link')].map((a) => text(a))).toEqual(['Packages', 'Upstream', 'Downloads', 'Details']);
+    expect(text(remote.root.querySelector('.repository-details')!)).toMatch(/Caches ?https:\/\/registry\.npmjs\.org/);
+  });
+
+  it('R-UI-052 a repository without details has no strip, and the address of its tab Details leads to its content', async () => {
+    const r = await renderScreen(RepositoryContent, {
+      inputs: { project: 'web', key: 'generic-local', tab: 'details' },
+      setup: (get) => {
+        (get(RepositoriesApi) as FakeRepositoriesApi).formatsResult = [GENERIC_FORMAT];
+        (get(FilesApi) as FakeFilesApi).children = () => async () => ({ items: [], nextCursor: null });
+      },
+    });
+    await settle(r.fixture);
+    expect(r.root.querySelector('quader-repository-tabs')).toBeNull();
+    expect(r.get(Router).url).toBe('/projects/web/repositories/generic-local');
   });
 
   it('R-UI-052 a disabled repository offers no Set up client and says that it is disabled', async () => {

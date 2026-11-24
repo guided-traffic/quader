@@ -12119,10 +12119,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-528 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+530 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 528 questions</summary>
+<summary>Q-UI: 530 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12654,6 +12654,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1063](spec/api-and-ui.md#q-ui-1063--feedback-outside-forms-is-the-references-toast-at-the-bottom-right-one-confirmation-at-a-time) | Feedback outside forms is the reference's toast at the bottom right, one confirmation at a time | Decided by the development agent on 2026-11-24 | (a); every notice of the `Notifier` is the reference's toast. | — |
 | [Q-UI-1064](spec/api-and-ui.md#q-ui-1064--an-age-and-its-badge-are-one-value-that-never-breaks) | An age and its badge are one value that never breaks | Decided by the development agent on 2026-11-24 | (a), and the same for a word that stands in a time's place (`.no-time`: **Never**, **Not used yet** of the token lists and a Bastion's tokens): the German pass of the renders found "Noch nicht verwendet" in two lines at 1,440 px beside the token's column with 74 px to spare. | — |
 | [Q-UI-1065](spec/api-and-ui.md#q-ui-1065--the-tooltip-is-the-references-the-toasts-grey-above-the-element-with-an-arrow) | The tooltip is the reference's: the toast's grey, above the element, with an arrow | Decided by the development agent on 2026-11-24 | (a) The reference's tooltip whole: the strong feedback pair, its measures, its arrow, above first and under where the window has no room above | — |
+| [Q-UI-1066](spec/api-and-ui.md#q-ui-1066--a-versions-commands-are-a-menu-hung-from-a-button-with-the-formats-client-verb) | A version's commands are a menu hung from a button with the format's client verb | Decided by the development agent on 2026-11-24 | (c), the panel (a), the button in both rows. | — |
+| [Q-UI-1067](spec/api-and-ui.md#q-ui-1067--details-is-the-last-tab-of-a-repositorys-page-not-a-section-under-its-list) | Details is the last tab of a repository's page, not a section under its list | Decided by the development agent on 2026-11-24 | (a) **Details** a tab with its address (`…/details`), always the last, on every repository of every format and class that has details for its reader; a page that would have only its content keeps no strip, and its address `…/details` leads to the content | — |
 
 </details>
 

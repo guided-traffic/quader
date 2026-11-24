@@ -8,6 +8,8 @@ import { PagedResource } from '../../../shared/paged-resource';
 import { DataTable, TableColumn, TableSort } from '../../../shared/ui/data-table';
 import { GradeLabel } from '../../../shared/vulnerability/grade';
 import { gradeRank } from '../../../shared/vulnerability/grade-words';
+import { systemClosed } from '../../../core/system-clients';
+import { ClientCommandMenu } from '../../packages/client-command-menu';
 import { packageCommands } from '../../packages/package-links';
 import { ContentShape, emptyContentText } from './content-shape';
 import { RepositoryItemVersions } from './repository-item-versions';
@@ -25,14 +27,14 @@ export const GRADE_SORT_MAX = 1000;
 /**
  * The items of a repository of a package format (R-UI-052): its images or packages, with a filter and paging on the server
  * (R-API-029; `repository` expands a virtual repository to its members, and a remote repository answers with what it has cached),
- * the latest version, the number of versions, the grade of each item's latest version (R-UI-094), and a row that opens the item's
- * versions with their install command. The filter and the sort live in the URL (R-UI-003), owned by the content page. The column of
+ * the latest version, the number of versions, the grade of each item's latest version (R-UI-094), the button of the latest version's
+ * commands (Pull, Install; Q-UI-1066), and a row that opens the item's versions, each with the same button. The filter and the sort live in the URL (R-UI-003), owned by the content page. The column of
  * grades appears only when the answer carries them (Q-UI-377), and sorting by it loads the list up to 1,000 entries and sorts in the
  * browser, worst last ascending and first descending (Q-UI-373).
  */
 @Component({
   selector: 'quader-repository-items',
-  imports: [TimeAgo, DecimalPipe, RouterLink, DataTable, GradeLabel, RepositoryItemVersions],
+  imports: [TimeAgo, DecimalPipe, RouterLink, DataTable, GradeLabel, RepositoryItemVersions, ClientCommandMenu],
   template: `
     <div class="toolbar">
       <div class="filter">
@@ -97,6 +99,19 @@ export const GRADE_SORT_MAX = 1000;
             <quader-time-ago [at]="p.updatedAt" absolute="title" />
           </td>
           <td class="num">{{ p.downloadCount | number }}</td>
+          <!-- The commands of the item's latest version, the version of the column Latest, without opening the row (Q-UI-1066); none
+               where no client is answered (Q-UI-898, Q-UI-965). -->
+          @if (!closed()) {
+            <td class="actions">
+              <quader-client-command-menu
+                [format]="p.format"
+                [name]="p.name"
+                [version]="p.latestVersion"
+                [repository]="repository()"
+                [verb]="shape().commandVerb"
+              />
+            </td>
+          }
         </tr>
         <tr class="expansion">
           <td [attr.colspan]="columns().length">
@@ -136,8 +151,11 @@ export class RepositoryItems {
    * `other` who may not, `none` for a disabled repository. It offers no button: **Set up client** is the header's.
    */
   readonly fill = input<'publisher' | 'other' | 'none'>('other');
-  /** The repository is disabled: an opened item offers no install or pull command (Q-UI-965). */
+  /** The repository is disabled: no row offers an install or pull command (Q-UI-965). */
   readonly disabled = input(false);
+  /** No client reaches the items: a system repository that answers no client (Q-UI-898), or a disabled one. */
+  private readonly system = systemClosed(() => this.repository());
+  protected readonly closed = computed(() => this.system() || this.disabled());
   readonly filterChange = output<string>();
   readonly sortParamChange = output<ItemSort>();
 
@@ -188,6 +206,7 @@ export class RepositoryItems {
       { id: 'updatedAt', label: $localize`:@@repo.content.col.updated:Updated`, sortable: true },
       { id: 'downloads', label: $localize`:@@repo.content.col.downloads:Downloads`, numeric: true },
     );
+    if (!this.closed()) columns.push({ id: 'actions', label: $localize`:@@repo.col.actions:Actions`, hideLabel: true });
     return columns;
   });
 

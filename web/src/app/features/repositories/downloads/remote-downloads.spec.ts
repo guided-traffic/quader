@@ -241,34 +241,35 @@ describe('The tab strip of a remote repository', () => {
     return r;
   }
 
-  it('R-CUR-018 a remote repository has the strip of its content, Upstream and Downloads with addresses, the failed count on Downloads', async () => {
+  it('R-CUR-018 a remote repository has the strip of its content, Upstream, Downloads and Details with addresses, the failed count on Downloads', async () => {
     const { root } = await page(REMOTE, { failed: 2 });
-    const links = [...root.querySelectorAll<HTMLAnchorElement>('quader-remote-tabs a.tab-link')];
-    expect(links.map((a) => text(a))).toEqual(['Packages', 'Upstream', 'Downloads · 2 failed']);
+    const links = [...root.querySelectorAll<HTMLAnchorElement>('quader-repository-tabs a.tab-link')];
+    expect(links.map((a) => text(a))).toEqual(['Packages', 'Upstream', 'Downloads · 2 failed', 'Details']);
     expect(links[0]!.getAttribute('aria-current')).toBe('page');
     expect(links[0]!.getAttribute('href')).toBe('/projects/web/repositories/npmjs');
     expect(links[1]!.getAttribute('href')).toBe('/projects/web/repositories/npmjs/upstream');
     expect(links[2]!.getAttribute('href')).toBe('/projects/web/repositories/npmjs/downloads');
+    expect(links[3]!.getAttribute('href')).toBe('/projects/web/repositories/npmjs/details');
     await expectAccessible(root);
   });
 
   it('R-CUR-018 the tab Downloads shows the queue under the strip, with Downloads current, and no content list', async () => {
     const { root } = await page(REMOTE, { tab: 'downloads' });
-    const links = [...root.querySelectorAll<HTMLAnchorElement>('quader-remote-tabs a.tab-link')];
+    const links = [...root.querySelectorAll<HTMLAnchorElement>('quader-repository-tabs a.tab-link')];
     expect(links[2]!.getAttribute('aria-current')).toBe('page');
     expect(root.querySelector('quader-remote-downloads')).not.toBeNull();
     expect(root.querySelector('quader-repository-items')).toBeNull();
   });
 
-  it('R-CUR-018 a local repository has no strip, and the address of its tab Downloads leads to its content', async () => {
+  it('R-CUR-018 a local repository has no tab Downloads, and the address of its tab Downloads leads to its content', async () => {
     const { root, get } = await page(LOCAL, { tab: 'downloads' });
-    expect(root.querySelector('quader-remote-tabs')).toBeNull();
+    expect([...root.querySelectorAll('quader-repository-tabs a.tab-link')].map((a) => text(a))).not.toContain('Downloads');
     expect(root.querySelector('quader-remote-downloads')).toBeNull();
     expect(get(Router).url).toBe('/projects/web/repositories/npm-local');
   });
 
-  it('R-CUR-018 a visitor without a session sees a remote repository without the strip: the queue answers signed-in readers only', async () => {
+  it('R-CUR-018 a visitor without a session sees a remote repository without Upstream and Downloads: the queue answers signed-in readers only', async () => {
     const { root } = await page(REMOTE, { anonymous: true });
-    expect(root.querySelector('quader-remote-tabs')).toBeNull();
+    expect([...root.querySelectorAll('quader-repository-tabs a.tab-link')].map((a) => text(a))).not.toContain('Downloads');
   });
 });

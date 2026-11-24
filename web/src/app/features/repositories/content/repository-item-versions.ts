@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
+import { Component, computed, effect, inject, input, resource, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TimeAgo } from '../../../shared/ui/time-ago';
 import { PackageSummary, PackageVersionSummary, PackagesApi } from '../../../api/packages-api';
@@ -10,7 +10,7 @@ import { CopyButton } from '../../../shared/copy-button';
 import { PagedResource } from '../../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
 import { GradeLabel } from '../../../shared/vulnerability/grade';
-import { InstallCommand } from '../../packages/install-command';
+import { ClientCommandMenu } from '../../packages/client-command-menu';
 import { VersionSize } from '../../packages/version-size';
 import { versionCommands } from '../../packages/package-links';
 import { ContentShape } from './content-shape';
@@ -20,33 +20,16 @@ const VERSIONS_PAGE = 20;
 
 /**
  * The versions of one item of a repository's content page, opened in its row (R-UI-052): for an image its tags with digest, size and
- * pushed time, for a package its versions; the grade of each in this repository (R-UI-094), and the install or pull command for the version chosen in the
- * list. The command is the server's install snippet (R-API-030) for this repository, so it carries this installation's real address. A
- * system repository of the project `upstream` has no command: it answers no client (Q-UI-898).
+ * pushed time, for a package its versions; the grade of each in this repository (R-UI-094), and at the end of each row the button with
+ * the format's client verb (**Pull**, **Install**) that opens the version's commands, one per client (`<quader-client-command-menu>`,
+ * Q-UI-1066). A command is the server's install snippet (R-API-030) for this repository, so it carries this installation's real
+ * address. A system repository of the project `upstream` and a disabled repository have no command: they answer no client (Q-UI-898,
+ * Q-UI-965).
  */
 @Component({
   selector: 'quader-repository-item-versions',
-  imports: [TimeAgo, RouterLink, CopyButton, DataTable, GradeLabel, InstallCommand, VersionSize],
+  imports: [TimeAgo, RouterLink, CopyButton, DataTable, GradeLabel, ClientCommandMenu, VersionSize],
   template: `
-    <!-- A system repository answers every client's request 404: its versions have no install or pull command, and no row offers
-         Show command (Q-UI-898). -->
-    @if (!closed()) {
-      <div class="command-panel">
-        <p class="command-title">
-          {{ shape().commandLabel }}
-          @if (selected(); as v) {
-            &ngsp;<code translate="no">{{ pkg().name }} {{ v }}</code>
-          }
-        </p>
-        <quader-install-command
-          [format]="pkg().format"
-          [name]="pkg().name"
-          [version]="selected()"
-          [repository]="repository()"
-        />
-      </div>
-    }
-
     <quader-data-table
       [caption]="caption()"
       [columns]="columns()"
@@ -60,7 +43,7 @@ const VERSIONS_PAGE = 20;
       (retry)="versions.more()"
     >
       @for (v of versions.items(); track v.version) {
-        <tr [attr.aria-current]="v.version === selected() ? 'true' : null">
+        <tr>
           <th scope="row">
             <a [routerLink]="versionLink(v.version)" translate="no">{{ v.version }}</a>
             @if (v.prerelease) {
@@ -89,17 +72,17 @@ const VERSIONS_PAGE = 20;
               }
             </td>
           }
+          <!-- A system repository and a disabled one answer every client's request 404: their versions have no command, and no row
+               offers the button (Q-UI-898, Q-UI-965). -->
           @if (!closed()) {
             <td class="actions">
-              <button
-                type="button"
-                class="btn btn-tertiary"
-                [attr.aria-pressed]="v.version === selected()"
-                (click)="select(v.version)"
-              >
-                <span class="visually-hidden">{{ v.version }}: </span>
-                <span i18n="@@repo.content.show-command">Show command</span>
-              </button>
+              <quader-client-command-menu
+                [format]="pkg().format"
+                [name]="pkg().name"
+                [version]="v.version"
+                [repository]="repository()"
+                [verb]="shape().commandVerb"
+              />
             </td>
           }
         </tr>
@@ -110,19 +93,6 @@ const VERSIONS_PAGE = 20;
     :host {
       display: block;
       padding: var(--quader-space-3) 0 var(--quader-space-3) var(--quader-space-6);
-    }
-    .command-panel {
-      margin-block-end: var(--quader-space-3);
-      padding: var(--quader-space-3);
-      border: 1px solid var(--quader-border);
-      border-radius: var(--quader-radius-m);
-    }
-    .command-title {
-      margin: 0 0 var(--quader-space-2);
-      font-weight: 600;
-    }
-    .command-title code {
-      font-weight: 400;
     }
     .digest-cell {
       white-space: nowrap;
@@ -159,9 +129,6 @@ export class RepositoryItemVersions {
   readonly scanned = input(false);
 
   protected readonly versions = new PagedResource<PackageVersionSummary>(VERSIONS_PAGE);
-  private readonly chosen = signal<string | null>(null);
-  /** The version the command is for: the one the reader chose, else the package's latest. */
-  protected readonly selected = computed(() => this.chosen() ?? this.pkg().latestVersion);
 
   /** The grade of every version in this repository, in one request for the item (R-VULN-039). */
   protected readonly report = resource({
@@ -204,7 +171,6 @@ export class RepositoryItemVersions {
       const repository = this.repository();
       const digest = this.shape().digest;
       untracked(() => {
-        this.chosen.set(null);
         void this.versions.start(
           this.api.versions(id, { repository: [repository], sort: '-publishedAt', include: digest ? ['digest'] : [] }),
         );
@@ -214,10 +180,6 @@ export class RepositoryItemVersions {
 
   protected gradeOf(version: string): VulnerabilityGrade | undefined {
     return this.gradeByVersion().get(version);
-  }
-
-  protected select(version: string): void {
-    this.chosen.set(version);
   }
 
   /** `sha256:abc…` keeps the algorithm and a stretch a person can compare; the copy button has the whole digest. */

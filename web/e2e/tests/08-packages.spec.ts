@@ -158,9 +158,16 @@ test('E2.8 R-UI-006 R-UI-008 R-UI-016 the published version in the list, its san
     await expect(page.getByRole('heading', { name: repoKey, level: 1 })).toBeVisible();
     const row = page.getByRole('table', { name: 'Packages' }).getByRole('row', { name: new RegExp(pkgName) });
     await row.getByRole('button', { name: `Show the versions of ${pkgName}` }).click();
-    // A one-line command is a field with its joined copy button (Q-UI-320).
-    await expect(page.locator('quader-repository-item-versions quader-address-field input')).toHaveValue(new RegExp(`install ${pkgName}@${version}`));
-    await expectAccessible(page, 'repository content, package and its version');
+    // The version's button Install opens its commands, a section per client; a one-line command is a field with its joined copy
+    // button (Q-UI-1066, Q-UI-320). Escape closes it and gives the focus back to the button.
+    const install = page.locator('quader-repository-item-versions').getByRole('button', { name: `${version}: Install` });
+    await install.click();
+    const menu = page.getByRole('dialog', { name: `Install ${pkgName} ${version}` });
+    await expect(menu.getByRole('textbox', { name: 'Command for npm' })).toHaveValue(new RegExp(`install ${pkgName}@${version}`));
+    await expectAccessible(page, 'repository content, package and the commands of its version');
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+    await expect(install).toBeFocused();
     // The header's Set up client opens the repository's page Set up client (Q-UI-321, R-UI-120).
     await page.getByRole('link', { name: 'Set up client', exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/repositories/${repoKey}/setup`));

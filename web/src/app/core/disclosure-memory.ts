@@ -4,7 +4,7 @@ import { BrowserStorage } from './storage';
 
 /**
  * Which **Details** sections the viewer left open (R-UI-067, Q-UI-319, Q-UI-967): one entry per screen and section (`file.details`,
- * `repository.details`), in the browser's local storage, keyed by the signed-in principal like the side bar's state (NavState), so
+ * `package.details`), in the browser's local storage, keyed by the signed-in principal like the side bar's state (NavState), so
  * that two people on one browser keep their own. Only an open section is kept: closed is every section's default. A convenience of
  * one viewer: blocked or cleared storage leaves every section closed at the next visit, and the page works as before; an anonymous
  * visitor's choice lasts for the tab.

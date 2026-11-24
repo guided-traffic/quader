@@ -26,8 +26,11 @@ export interface ContentShape {
   readonly publishedLabel: string;
   /** A version has a content digest worth showing (an image tag). */
   readonly digest: boolean;
-  /** The heading of the command for a chosen version: Pull command, Install command. */
-  readonly commandLabel: string;
+  /**
+   * The word of the button beside a version that opens its commands (Q-UI-1066): the format's client verb, `Pull` for an image,
+   * `Download` for a file, `Install` for a package.
+   */
+  readonly commandVerb: string;
   /** Says that this format's versions are not matched against advisories (shown instead of a column of findings). */
   readonly notScannedText: string;
 }
@@ -54,7 +57,7 @@ export function contentShapeOf(format: string, repositoryClass = ''): ContentSha
         ? $localize`:@@repo.content.oci.fetched:Fetched`
         : $localize`:@@repo.content.oci.published:Pushed`,
       digest: true,
-      commandLabel: $localize`:@@repo.content.oci.command:Pull command`,
+      commandVerb: $localize`:@@repo.content.oci.verb:Pull`,
       notScannedText: $localize`:@@repo.content.no-scanning:This package type is not scanned for vulnerabilities yet.`,
     };
   }
@@ -69,6 +72,7 @@ export function contentShapeOf(format: string, repositoryClass = ''): ContentSha
         : $localize`:@@repo.content.files.empty3:This repository holds no files yet.`,
       fillText: fill,
       othersFillText: remote ? fill : $localize`:@@repo.content.files.fill-others:Members who may upload to it fill it with their client.`,
+      commandVerb: $localize`:@@repo.content.files.verb:Download`,
     };
   }
   const fill = remote ? fetched : $localize`:@@repo.content.fill:Publish a package with your client; Set up client shows how.`;
@@ -86,7 +90,7 @@ export function contentShapeOf(format: string, repositoryClass = ''): ContentSha
     emptyFilteredText: $localize`:@@repo.content.empty-filtered:No package matches the filter.`,
     publishedLabel: $localize`:@@repo.content.published:Published`,
     digest: false,
-    commandLabel: $localize`:@@repo.content.command:Install command`,
+    commandVerb: $localize`:@@repo.content.verb:Install`,
     notScannedText: $localize`:@@repo.content.no-scanning:This package type is not scanned for vulnerabilities yet.`,
   };
 }

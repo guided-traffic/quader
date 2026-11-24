@@ -102,6 +102,14 @@ export const PROJECT_REPOSITORIES_ROUTES: Routes = [
         loadComponent: loadContent,
       },
       {
+        // The tab Details of every repository (R-UI-052, Q-UI-1067), the last of the strip: the same page with the further addresses,
+        // the upstream and the members. A repository that has none for its reader leads to its content.
+        path: 'details',
+        title: $localize`:@@route.repositories.details.title:Details`,
+        data: { tab: 'details' },
+        loadComponent: loadContent,
+      },
+      {
         // Set up client (R-UI-120): the snippets and the guide of this repository; the client is a query parameter.
         path: 'setup',
         title: $localize`:@@route.setup.title:Set up client`,

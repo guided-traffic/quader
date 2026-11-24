@@ -3673,6 +3673,7 @@ selected tab live in query parameters; a version of a package is an object with 
 | `/projects/{project}/repositories/{key}` (`?q=&sort=`) | Content of the repository; for a generic repository the root of its files | R-UI-052 |
 | `/projects/{project}/repositories/{key}/upstream` (`?q=&name=&level=&namesOnly=`) | The tab Upstream of a remote repository: the search, the levels and the packages of its upstream, the requests, the rules; a local or virtual repository's address leads to its content | [remote-curation.md](remote-curation.md) R-CUR-018 |
 | `/projects/{project}/repositories/{key}/downloads` (`?state=&failure=&bulk=`) | The tab Downloads of a remote repository: its download queue; a local or virtual repository's address leads to its content | [remote-curation.md](remote-curation.md) R-CUR-018 |
+| `/projects/{project}/repositories/{key}/details` | The tab Details of a repository, the last: its further addresses, the upstream it caches, the members it resolves from; a repository without details for its reader leads to its content | R-UI-052, Q-UI-1067 |
 | `/projects/{project}/repositories/{key}/setup` (`?client=&bastion=`) | Set up client: the snippets and the guide of the repository | R-UI-120 |
 | `/projects/{project}/repositories/{key}/files/{path…}` | A folder or a file of the repository; `…/files` alone is the root | R-UI-010 |
 | `/projects/{project}/repositories/{key}/trash` | Trash can of the repository (P1, specified, not built) | R-UI-014 |
@@ -4047,11 +4048,15 @@ not a screen per format ([content-shape.ts](../../web/src/app/features/repositor
   caller who can read the configuration (`repositories:read-config`, or the Owner of the project) and a `more_vert` menu with
   **Files** (every format but generic, whose content is its files, Q-UI-511) and **Vulnerabilities** (not for generic and virtual).
 - Where the content is narrow, the actions go under the heading, the sentence and the badges, on one line.
-- No tabs on a local or a virtual repository: the content (captioned Images, Packages or Files) follows the header. A remote
-  repository has the tabs of [remote-curation.md](remote-curation.md) R-CUR-018 (the owner's word of 2026-11-23, Q-CUR-1): its content
-  (Packages or Images), **Upstream** and **Downloads**, each with its address, for every signed-in reader; a visitor without a session
-  sees no strip ([Q-CUR-150](remote-curation.md#q-cur-150--the-strip-holds-the-content-upstream-and-downloads-for-every-signed-in-reader-the-strip-counts-the-open-requests-itself)). **Set up client** opens the repository's page
-  Set up client (`…/repositories/<key>/setup`, R-UI-120); it is the page's one way to the setup (Q-UI-321).
+- Tabs under the header, each with its address (`tab-nav`, links with `aria-current="page"`): the content (captioned Images,
+  Packages or Files) at `…/repositories/{key}`; for a remote repository the tabs of [remote-curation.md](remote-curation.md) R-CUR-018
+  (the owner's word of 2026-11-23, Q-CUR-1), **Upstream** and **Downloads**, for every signed-in reader (a visitor without a session
+  has neither, [Q-CUR-150](remote-curation.md#q-cur-150--the-strip-holds-the-content-upstream-and-downloads-for-every-signed-in-reader-the-strip-counts-the-open-requests-itself));
+  and **Details** at `…/repositories/{key}/details`, always the last, on a repository of every format and class that has details
+  for its reader (the owner's word of 2026-11-24, [Q-UI-1067](#q-ui-1067--details-is-the-last-tab-of-a-repositorys-page-not-a-section-under-its-list)).
+  One tab is no strip (Q-UI-652): a repository whose page would have only its content (a local generic repository) shows none, and
+  the address of a tab the page does not have leads to its content. **Set up client** opens the repository's page Set up client
+  (`…/repositories/<key>/setup`, R-UI-120); it is the page's one way to the setup (Q-UI-321).
 - A package format (npm, NuGet, OCI, Debian, every format with a view adapter) lists its items from `GET /api/v1/packages` with
   `repository=<qualified name>` and `format=<format>`, the filter `q` (query, server-side, name and description; a field as wide as
   a name, Q-UI-520) and the sort `name` or `updatedAt`, paged with "Load more". The column **Vulnerabilities** appears only for a
@@ -4063,11 +4068,18 @@ not a screen per format ([content-shape.ts](../../web/src/app/features/repositor
   `…/vulnerabilities?repository=…` report, one request each per opened item.
 - The row of an item opens in place (`collapse-region`) to its versions: for an image, the tags with digest (`include=digest`), size and
   pushed time; for a package, its versions with size and published time; each with the grade of the version in this repository.
-  Above the versions, the install command of the version chosen in the list (default: the item's latest version) from the install
-  snippet of R-API-030 for this repository and the client picked in the panel (`credentials=none`, so it never holds a token): `docker
-  pull`/`podman pull` with this installation's real address for OCI, the install command of the format elsewhere. The item's name links
-  to the package's page (R-UI-007), a version's name to the version's page (R-UI-111). A long name wraps inside itself beside its
-  chevron, and its row starts where its neighbours do (Q-UI-520).
+  No box of a command stands in the list. At the end of each version's row, and of each item's row for its latest version, a button
+  with the format's client verb and a chevron (**Pull** for an image, **Install** for a package, **Download** for a file;
+  [Q-UI-1066](#q-ui-1066--a-versions-commands-are-a-menu-hung-from-a-button-with-the-formats-client-verb)) opens a menu hung from the
+  button, as GitLab's **Code** menu: a section per client of the format, headed by the client's name, each with the version's command
+  as a read-only field and its joined copy button (a command of several lines as the snippet's window). A command is the install
+  snippet of R-API-030 for this repository and that client (`credentials=none`, so it never holds a token), asked when the menu
+  opens: `docker pull`/`podman pull` with this installation's real address for OCI, the install command of the format elsewhere.
+  The menu is a non-modal dialog named by the verb, the item and the version; it takes the focus, keeps Tab inside, and Escape, a
+  click outside and the button close it with the focus back on the button; as wide as its longest command (24 to 48 rem, Q-UI-455) and never wider than the window less
+  16 px each side. A system repository that answers no client and a disabled repository have no such button (Q-UI-898, Q-UI-965).
+  The item's name links to the package's page (R-UI-007), a version's name to the version's page (R-UI-111). A long name wraps inside
+  itself beside its chevron, and its row starts where its neighbours do (Q-UI-520).
 - A generic repository's content is its files: the page is the root folder of R-UI-010, and a folder or a file is the page at
   `…/files/{path…}`. A package format's raw files are a detail on demand: **Files** in the header's menu opens their root (`…/files`)
   with a way back to the list and a sentence that says what they are (Q-UI-511).
@@ -4076,12 +4088,13 @@ not a screen per format ([content-shape.ts](../../web/src/app/features/repositor
   clients have fetched appears. An OCI remote lists the images and tags its cache holds, from the same list API as a local one
   (R-OCI-036, Q-OCI-215): the note says that only the cached tags appear (those clients pulled and those a mirror pass fetched), the
   column of the tag's time is **Fetched** and not Pushed, and an empty remote says that it has cached no images yet (Q-UI-217).
-- **Details** at the end of the list of a package format and of the root of a generic repository, closed (the disclosure of
-  Q-UI-322), when the repository has one of these: the raw file address, labelled **Address for downloads by path (curl, wget)**
-  (the API's `addresses` list the format's protocol address first and the raw file address after it where the two differ,
-  R-REPO-002; the UI labels by that order and names no path of its own, R-ARCH-007), the upstream a remote repository caches (its
-  URL), and the members a virtual repository resolves from, each linked to its content page as far as the caller may read them (the
-  consumer view of R-REPO-010 has neither).
+- The tab **Details** (Q-UI-1067) holds, each under its name, what the repository has of these: the raw file address, labelled
+  **Address for downloads by path (curl, wget)** with its copy button (the API's `addresses` list the format's protocol address
+  first and the raw file address after it where the two differ, R-REPO-002; the UI labels by that order and names no path of its own,
+  R-ARCH-007; for the full document of R-REPO-010 the UI builds the two addresses from the catalog in that order), **Caches** with the
+  upstream a remote repository caches (its URL), and **Resolves from** with the members a virtual repository resolves from, each
+  linked to its content page as far as the caller may read them (the consumer view of R-REPO-010 has neither). The tab exists when the
+  repository has one of them for its reader.
 - An empty repository says what fills it and for whom, and offers no button: **Set up client** is the header's (R-UI-144,
   Q-UI-555). A caller who may publish reads "This repository holds no packages yet. Publish a package with your client; Set up
   client shows how." (push an image; upload files), anyone else who fills it, a remote repository that it fills as clients fetch
@@ -4094,12 +4107,15 @@ not a screen per format ([content-shape.ts](../../web/src/app/features/repositor
 Acceptance criteria:
 
 - `/projects/web` opens the repositories of the project; the sidebar lists Repositories first; the project switcher and the start page lead there.
-- `/projects/web/repositories/<oci-key>` lists the images; opening one shows its tags with digest, size and pushed time and a
-  `docker pull <host>/web/<oci-key>/<image>:<tag>` copy; Podman in the client picker switches it to `podman pull`.
+- `/projects/web/repositories/<oci-key>` lists the images; opening one shows its tags with digest, size and pushed time, and a tag's
+  **Pull** opens a menu with the sections **Docker CLI (with Buildx)** and **Podman**, each a copyable
+  `docker pull <host>/web/<oci-key>/<image>:<tag>` or `podman pull …`; Escape closes it and the focus is on **Pull** again.
 - `/projects/web/repositories/<oci-remote-key>`, after a pull through it, lists the pulled image with its tag, the digest and a **Fetched** time; before any pull it says
   that the repository has cached no images yet (R-OCI-036, Q-UI-217).
-- `/projects/web/repositories/<npm-key>` lists the packages with the grade of their latest version, and the open version
-  row shows `npm install <name>@<version>`; a reader without `repositories:read-config` sees no Settings action.
+- `/projects/web/repositories/<npm-key>` lists the packages with the grade of their latest version, and a version's **Install**
+  shows `npm install <name>@<version>` in its section **npm**; a reader without `repositories:read-config` sees no Settings action.
+- `/projects/web/repositories/<npm-key>` has the tabs **Packages** and **Details**; `…/details` shows the address for downloads by
+  path, and a remote repository's strip reads **Packages**, **Upstream**, **Downloads**, **Details**.
 - The Edit action of the repository list and the Settings action of the content page open `…/settings`, and leaving it with unsaved changes asks first.
 - A generic repository shows its files; a folder's name leads to `…/files/<folder>` and a file's name to `…/files/<path>`.
 - The client address and **Set up client** stand on one line of the header at 1440 px.
@@ -4139,8 +4155,8 @@ own and no tree across the repositories of a project.
   (SHA-256, SHA-512, SHA-1, MD5) with a copy button, the download statistics (**Downloads**, **Last download**, **Last downloader**,
   read when Details opens), the item as the API describes it and the equivalent `curl` requests (INV-17). A file of a disabled
   repository, which answers every download 404 (R-REPO-005), has no **Download**, no download address and no download with `curl`;
-  one muted sentence says why where the address stood, and its folder's rows have no address to copy and an opened image no
-  command ([Q-UI-965](#q-ui-965--a-disabled-repository-offers-no-download-address-or-command-and-says-why-once)). Properties (P1, R-API-026)
+  one muted sentence says why where the address stood, and its folder's rows have no address to copy and no image or version a
+  button **Pull** or **Install** ([Q-UI-965](#q-ui-965--a-disabled-repository-offers-no-download-address-or-command-and-says-why-once)). Properties (P1, R-API-026)
   and Effective permissions (P1, R-API-034) are not built yet. The link from a file to its package version appears when the API
   reports one; it reports none today (`package` is always null).
 - What a plain reader sees: the list, a folder, a file, Download and the copy buttons. Every operation of R-UI-011 is offered only to
@@ -8867,10 +8883,10 @@ nacharbeiten. Das ist alles wichtig und muss umgesetzt werden." A system reposit
 `isSystemRepositoryName` of `upstream-project.ts`, Q-UI-893).
 
 - **No address, download or command** ([Q-UI-898](#q-ui-898--nothing-offers-what-a-system-repository-refuses-no-address-no-download-no-command)):
-  the admin area's row has no copy button and its menu no **Copy client address**; its content page's **Details** has no address for
+  the admin area's row has no copy button and its menu no **Copy client address**; its content page's tab **Details** has no address for
   downloads by path; a file's row in its folders has no copy button (and the folder's table no column for it); the page of one of its
   files has no **Download**, no download address and no **Download with curl** (the item's own request with curl stays, which the
-  management API answers); the opened row of one of its images has no pull command and no **Show command**; a package's install panel
+  management API answers); no row of one of its images or tags has the button **Pull** (Q-UI-1066); a package's install panel
   never offers it, and a version's **Files** tab offers no **Download** for a file it holds.
 - **Why, once** ([Q-UI-899](#q-ui-899--where-a-download-or-a-command-is-left-out-one-sentence-names-the-work-that-reads-it)): where the
   download address of a file stood, and in the install panel of a version that only system repositories hold, one muted sentence:
@@ -22422,7 +22438,7 @@ and screen whether it was opened"); the owner reviews it at the walkthrough.
 **Choice:** (a), for every closed section headed **Details** (the repository page, a file, a package, the settings of a repository and
 of a project, a user, a service account, an upstream registry) and the report's **About these counts** (Q-UI-966). The groups of a
 settings page and the folds inside a section are not remembered: they open as their screen says. The renders open every screen as a
-first visit; their walk `repository-details-remembered` keeps the state for one load.
+first visit; their walk `file-details-remembered` (the repository page's until its Details became a tab, Q-UI-1067) keeps the state for one load.
 
 **Rationale:** R-UI-067 names the unit (user and screen) and Q-UI-319 the place (the browser); a section is the finest grain a reader
 notices. The development agent would revisit (c) if the owner wants it to follow the account.
@@ -23254,6 +23270,112 @@ place above the element if a tooltip is found to cover the control the user need
 first, the text in its box beside the arrow), [palette.spec.ts](../../web/src/styles/palette.spec.ts) (the strong feedback pair, which
 the tooltip now reads). Rendered: `profile-tokens-tooltip` (the token's **Rotate** focused), in English and German. Docs:
 [design-language.md](../developer/design-language.md) (the controls' table, the palette), [web-ui.md](../developer/web-ui.md).
+
+### Q-UI-1066 · A version's commands are a menu hung from a button with the format's client verb
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+The request is the owner's (2026-11-24, 09:50, with a picture of `upstream/docker-hub` and one of GitLab's **Code** menu): "Der Kaste
+„Pull-Befehl" ist einfach mitten drin und passt dort nicht gut hinein. Der Pull-Befehl soll viel mehr in ein overlay wie in
+screenshot 2 abgebildet überführt werden. Neben einer Version des Artefakts gibt es einen Button, aktuell „Befehl anzeigen" (Scheiß
+Name) und wenn man da drauf klickt, öffnet das Overlay und man kann dort den jeweiligen Befehl entnehmen. Der Button sollte eher
+„Info" oder „Pull" heißen. Das gilt natürlich für alle Registry-Typen".
+
+Context: an opened row of a repository's list held a bordered box **Pull command** (**Install command**) with a client select and the
+command of one version, above the versions table, whose rows had a quiet button **Show command** that only changed which version the box
+showed. The box stood between the item and its versions for every format, and the button's word did not say what it did. GitLab's
+**Code** button opens a panel under it: sections with a bold heading, each a read-only field with its joined copy button.
+
+**The button's word.**
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Info** for every format | One word, the owner's first | Short, the same everywhere | Says nothing of what the panel holds (commands); "Info" is the word of a page of facts, and the version's page is that page already (R-UI-111) |
+| (b) **Pull** for every format | The owner's second word | The OCI client's verb | npm, NuGet, Debian and Ansible Galaxy clients do not pull; a reader of a Debian repository reads "pull" as git's |
+| (c) The format's client verb with a chevron, as GitLab's **Code ▾**: **Pull** for an image, **Install** for a package (npm, NuGet, Debian, Ansible Galaxy, every package format), **Download** for a file (chosen) | `commandVerb` of the format's words (content-shape.ts) | Says what the commands in the panel do, in the words of the format's client (`docker pull`, `npm install`, `apt-get install`); the owner's **Pull** where it is the client's word; the chevron says that it opens something, as GitLab's does | Three words, not one; a new format names its verb (one line) |
+| (d) A neutral noun, **Commands ▾** or **Use ▾** | One word that is no client's | The same everywhere | Longer than the verbs and vaguer; a reader of an image looks for "pull" |
+
+**What the panel holds.**
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A section per client of the format, its heading the client's name, its field the command with the joined copy button, all at once (chosen) | GitLab's **Clone with SSH** and **Clone with HTTPS** | Every client's command is one click and one copy away; no choice to make and no state to keep; the same panel for one client (Debian, Ansible Galaxy, generic) and for four (npm) | One request per client when the panel opens (two for OCI, three for NuGet, four for npm) |
+| (b) A segmented group of the clients above one field, the last choice remembered per device | GitLab's **SSH \| HTTPS** groups | One request at a time | npm's four names (**Yarn Berry (2 and later)**) do not fit a group at 390 px; a choice before the copy; the remembered choice hides the other clients |
+| (c) The client select of the old box inside the panel | What was there | Nothing new | A form control in a menu, and two steps for a command |
+
+**Where the button stands.** At the end of every version's row (the column of actions, its label for assistive technology only), and
+at the end of every item's row for the item's latest version, the version of its column **Latest** (chosen): the version copied most
+often is one click away without opening the row. Only in the versions' rows was weighed and left: the common case would take two clicks.
+
+**What the panel is.** A non-modal dialog (`role="dialog"`, named "Pull library/ubuntu 26.10"), hung from the button by the CDK's
+connected overlay: below it with its end on the button's end, above it where the window has no room below, and pushed into the window
+16 px from every edge; as wide as its longest command, so that a command is read whole where there is room (Q-UI-455), from 24 to
+48 rem and never wider than the window less 32 px, so at 390 px it fits without a sideways scroll; it is placed again as it grows; a
+command longer than its field scrolls inside the field from its start. It takes the focus as it opens and keeps Tab inside; Escape, a
+click outside it and the button close it, and the focus goes back to the button, unless the click outside landed on another control,
+which keeps its focus. A menu of the CDK (`role="menu"`) was not taken: a menu holds menu items, and this panel holds fields and copy
+buttons. Each section is a group named by its heading. A command is asked when the panel opens (`credentials=none`, R-API-030); a
+command of several lines is the snippet's window collapsed after three lines (Q-UI-801), as on the version's page.
+
+**Choice:** (c), the panel (a), the button in both rows. German: **Pull** (the owner's word and the command's; the glossary's "ziehen"
+stays the word of running text), **Installieren**, **Herunterladen**; the field is **Befehl für npm**, its copy button **Befehl für npm
+kopieren**.
+
+**Rationale:** the owner's two words each fit one format and miss the others; the client's verb is what each format's reader looks for,
+and the chevron makes it GitLab's button. A section per client is GitLab's panel and leaves nothing to choose. The development agent
+would revisit (b) of the panel if a format comes with more than four clients, so that the panel would be taller than a phone's window.
+
+**Applied in the spec:** R-UI-052 (the versions, the row of an item, the acceptance criteria), R-UI-010 and R-UI-193 (no button where no
+client is answered). Code: [client-command-menu.ts](../../web/src/app/features/packages/client-command-menu.ts),
+[client-command.ts](../../web/src/app/features/packages/client-command.ts) (one client's command, which the version page's
+`install-command.ts` now uses too), `commandVerb` of [content-shape.ts](../../web/src/app/features/repositories/content/content-shape.ts),
+[repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts),
+[repository-items.ts](../../web/src/app/features/repositories/content/repository-items.ts). Tests:
+[client-command-menu.spec.ts](../../web/src/app/features/packages/client-command-menu.spec.ts) (open, the sections, the copy, Escape,
+the button and a click outside with the focus back),
+[repository-content.spec.ts](../../web/src/app/features/repositories/content/repository-content.spec.ts) (a tag's and an image row's
+**Pull**, an npm version's **Install**, none in a system repository), the journey `08-packages`. Rendered: `repository-oci-cache-menu`,
+`repository-npm-vendor-menu`, `repository-deb-menu`, in English and German. Docs: [repositories.md](../manual/user/repositories.md#the-content-of-a-repository),
+[web-ui.md](../developer/web-ui.md), the glossary.
+
+### Q-UI-1067 · Details is the last tab of a repository's page, not a section under its list
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+The tab and its place are the owner's (2026-11-24, 09:50): "Das Details welches unten abgebildet ist, gehört in einen eigenen Reiter. An
+letzter Position."
+
+Context: a repository's further addresses, the upstream a remote caches and the members a virtual repository resolves from stood in a
+closed section **Details** under the list (Q-UI-313, Q-UI-319). Only a remote repository had tabs (R-CUR-018); a local or virtual one had
+none, and one tab is no strip (Q-UI-652). The section's facts depend on the reader: the reader's view of R-REPO-010 carries the
+addresses and neither the upstream nor the members; the full document carried the members and the upstream, and the page built only the
+format's address from it, so an Owner never saw the address for downloads by path that every other reader saw.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) **Details** a tab with its address (`…/details`), always the last, on every repository of every format and class that has details for its reader; a page that would have only its content keeps no strip, and its address `…/details` leads to the content (chosen) | One rule for every page; the strip a local or virtual repository gains is its content and **Details** | The owner's tab and place; a deep link; nothing empty is offered | A local generic repository has no tab **Details** (its only address is its client address, which Set up client shows), so a strip is not on every page |
+| (b) The tab on every page, with a sentence where there is nothing | The strip everywhere | Every page alike | An empty tab on every local generic repository, for every reader |
+| (c) The section kept, open, above the list | No tab | Seen at once | Not what the owner asked; the list moves down by the section's height |
+
+**Choice:** (a). With it, the full document's addresses are built from the catalog as the reader's view lists them, the format's
+address first and the address for downloads by path after it where they differ (R-REPO-002), so the tab holds the same address for an
+Owner as for a reader. The tab shows each fact under its name (**Address for downloads by path (curl, wget)** with its copy button,
+**Caches**, **Resolves from**), as a further address had it in the section (Q-UI-320). The section's remembered state
+(`repository.details`, Q-UI-967) ends with it; the render walk of a remembered **Details** takes a file's.
+
+**Rationale:** the owner named the place; one tab is no strip stays true (Q-UI-652), so a page gains a strip only where it has a second
+view. The development agent would revisit (b) if a fact every repository has (its creation, its storage) joins **Details**: then the tab
+is on every page.
+
+**Applied in the spec:** R-UI-052 (the tabs, the tab Details, the acceptance criteria), R-UI-193, [remote-curation.md](remote-curation.md)
+R-CUR-018 (the strip ends with **Details**). Code: [repository-tabs.ts](../../web/src/app/features/repositories/content/repository-tabs.ts)
+(the strip of every repository, formerly the remote's), [repository-content.ts](../../web/src/app/features/repositories/content/repository-content.ts)
+(`hasDetails`, `tabStrip`, the view `details`, the way from an address without details to the content), the route `details` of
+[repositories.routes.ts](../../web/src/app/features/repositories/repositories.routes.ts). Tests:
+[repository-content.spec.ts](../../web/src/app/features/repositories/content/repository-content.spec.ts) (the strip of a local and of a
+remote repository, the tab's facts, the address of a repository without details),
+[remote-downloads.spec.ts](../../web/src/app/features/repositories/downloads/remote-downloads.spec.ts) and
+[remote-upstream.spec.ts](../../web/src/app/features/repositories/upstream/remote-upstream.spec.ts) (the remote's strip ends with
+**Details**). Rendered: `repository-npm-local-details`, `repository-oci-remote-details`, `repository-npm-virtual-details`. Docs:
+[repositories.md](../manual/user/repositories.md#the-content-of-a-repository), [web-ui.md](../developer/web-ui.md).
 
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 

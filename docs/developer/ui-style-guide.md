@@ -342,7 +342,7 @@ No list shows an address field ([Q-UI-426](../spec/api-and-ui.md#q-ui-426--a-pro
   the owner's rule of W-20). The header of the page Set up client shows the client address, beside the snippets that use it. The
   repository's own page leads there with **Set up client**, first of its header's actions, and has no address field in its header;
   the start page, the side bar and the repository's settings show no address. The one further address, **Address for downloads by
-  path (curl, wget)**, stays in the repository page's **Details** with its visible label, because Set up client does not show it;
+  path (curl, wget)**, stays on the repository page's tab **Details** with its visible label, because Set up client does not show it;
   two fields without a label make the user guess (Q-UI-320).
 - **Measures.** Height `--quader-control-height` (32 px); text `--quader-font-mono` at 0.875rem; padding `--quader-space-1`
   `--quader-space-3`; border 1 px `--quader-control-border` (hover `--quader-control-border-hover`, focus the ring of the other
