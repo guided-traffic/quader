@@ -271,6 +271,11 @@ What was red at 19:49 (Test and Release on 928e2a6e7 and every run since 08:32; 
   multi-platform index fails on a containerd image store; `deploy/dev/up.sh` saves and loads the node's platform only (ClamAV and
   the analyser).
 
+- **web (Angular)** on a34ab9e5c: the UI fix moved the untrusted signer's note and left the translation files' location note stale
+  (`make web-i18n-check`); regenerated in ee8e41c2c. The UI builder's gates had not held `make web-i18n-check`.
+- **Releases**: 0.123.0 and 0.124.0 came out of the night's pushes; 0.124.0 runs on `wds18-k8s-main` (both HelmReleases Ready,
+  the migration job through 00119, every pod Running; read at 21:30).
+
 ### State at the stop of 2026-11-24
 
 Read this first. The run that began at 22:21 on 2026-11-23 ended its starts at 12:25 on 2026-11-24 by the owner's word
