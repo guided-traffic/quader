@@ -43,7 +43,7 @@ const tabs = (root: HTMLElement) => [...root.querySelectorAll<HTMLAnchorElement>
 const current = (root: HTMLElement) => tabs(root).filter((a) => a.getAttribute('aria-current') === 'page').map((a) => text(a));
 const button = (root: HTMLElement, label: string) => [...root.querySelectorAll<HTMLButtonElement>('button')].filter((b) => text(b) === label);
 
-describe('The page System status (R-UI-164, Q-UI-650)', () => {
+describe('The page System status (R-UI-164)', () => {
   afterEach(() => vi.useRealTimers());
 
   it('R-UI-164 R-UI-196 has one header with the title System status and the tabs Status, Jobs, Backups and Storage, each with its own address', async () => {
@@ -150,7 +150,7 @@ describe('The page System status (R-UI-164, Q-UI-650)', () => {
     expect(jobs.filterCalls.at(-1)).toEqual({ kind: [], state: [] });
   });
 
-  it('Q-UI-652 R-UI-196 a caller without settings:read who follows a link to the jobs sees them without a strip of one tab, and no tab Storage', async () => {
+  it('R-UI-164 R-UI-196 a caller without settings:read who follows a link to the jobs sees them without a strip of one tab, and no tab Storage', async () => {
     const h = await harness([]);
     const root = await open(h, '/admin/system/jobs');
     expect(root.querySelector('nav.tab-nav')).toBeNull();

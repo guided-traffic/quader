@@ -39,7 +39,7 @@ async function routed(url: string, capabilities?: string[]): Promise<HTMLElement
 }
 
 describe('Repository list', () => {
-  it('R-UI-020 Q-UI-330 Q-UI-1042 the list of every project has the columns repository, project, format and class, the level as the icon before the key, and no address field, and has no serious violation', async () => {
+  it('R-UI-020 the list of every project has the columns repository, project, format and class, the level as the icon before the key, and no address field, and has no serious violation', async () => {
     const { root } = await renderScreen(RepositoryList);
     const t = text(root);
     expect(t).toContain('generic-local');
@@ -64,7 +64,7 @@ describe('Repository list', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-145 Q-UI-563 the columns of the list of every project take their widths from their content: the repository and the project wrap and share the room, the rest is as wide as its values', async () => {
+  it('R-UI-145 the columns of the list of every project take their widths from their content: the repository and the project wrap and share the room, the rest is as wide as its values', async () => {
     const { root } = await renderScreen(RepositoryList);
     const heads = [...root.querySelectorAll<HTMLElement>('thead th')];
     // No column is pinned to its least while another takes every pixel (the project broke into three lines beside an empty column).
@@ -74,7 +74,7 @@ describe('Repository list', () => {
     for (const cell of empty) expect(cell.parentElement!.hasAttribute('data-empty')).toBe(true);
   });
 
-  it('R-UI-145 Q-UI-562 a format and a class are each one element, the icon and the name, centred on the line of the cell by the shared table', async () => {
+  it('R-UI-145 a format and a class are each one element, the icon and the name, centred on the line of the cell by the shared table', async () => {
     const { root } = await renderScreen(RepositoryList);
     const row = root.querySelector('tbody tr')!;
     // _list-screens.scss gives `.format-name` and `.class-name` in a data table's cell the negative margin that keeps a 20 px icon
@@ -84,7 +84,7 @@ describe('Repository list', () => {
     expect(row.closest('quader-data-table table.data tbody')).toBeTruthy();
   });
 
-  it('R-UI-169 Q-UI-426 Q-UI-1042 a row of the list of every project offers Set up client, and no copy of the address', async () => {
+  it('R-UI-169 a row of the list of every project offers Set up client, and no copy of the address', async () => {
     const { root, fixture } = await renderScreen(RepositoryList);
     const row = [...root.querySelectorAll('tbody tr')].find((tr) => text(tr).includes('generic-local'))!;
     const setup = row.querySelector<HTMLAnchorElement>('td.actions a.row-setup')!;
@@ -169,7 +169,7 @@ describe('Repository list', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-020 R-UI-146 Q-UI-573 Q-UI-1042 "New repository" stands on a project\'s list for who may write repository configuration, and on the list of every project for nobody', async () => {
+  it('R-UI-020 R-UI-146 "New repository" stands on a project\'s list for who may write repository configuration, and on the list of every project for nobody', async () => {
     const admin = await routed('/projects/web/repositories');
     const create = [...admin.querySelectorAll('a')].find((a) => text(a) === 'New repository')!;
     expect(create.getAttribute('href')).toBe('/projects/web/repositories/new');

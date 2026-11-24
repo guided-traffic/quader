@@ -26,7 +26,7 @@ describe('Guides', () => {
     await expectAccessible(r.root);
   });
 
-  it('R-UI-124 Q-UI-430 a tile leads to the repositories of its format, built from the parts of the repository list: virtual first, Set up client per row', async () => {
+  it('R-UI-124 a tile leads to the repositories of its format, built from the parts of the repository list: virtual first, Set up client per row', async () => {
     const r = await renderScreen(GuideFormat, { inputs: { format: 'npm' }, setup: catalog });
     expect(text(r.root.querySelector('h1')!)).toBe('npm repositories');
     expect([...r.root.querySelectorAll('thead th')].map((th) => text(th))).toEqual(['Repository', 'Project', 'Class', 'Actions']);
@@ -48,7 +48,7 @@ describe('Guides', () => {
     await expectAccessible(r.root);
   });
 
-  it('R-UI-193 Q-UI-901 a system repository of upstream is not among the repositories clients can use; a registry of upstream is', async () => {
+  it('R-UI-193 a system repository of upstream is not among the repositories clients can use; a registry of upstream is', async () => {
     const r = await renderScreen(GuideFormat, {
       inputs: { format: 'npm' },
       setup: (get) => {
@@ -117,7 +117,7 @@ describe('Guides', () => {
     await expectAccessible(r.root);
   });
 
-  it('R-UI-125 Q-UI-971 every cell of a table carries its column\'s name, which a narrow page shows when the rows stand as blocks', async () => {
+  it('R-UI-125 every cell of a table carries its column\'s name, which a narrow page shows when the rows stand as blocks', async () => {
     const r = await renderScreen(GuideView, {
       inputs: {
         sections: [

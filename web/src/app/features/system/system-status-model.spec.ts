@@ -60,7 +60,7 @@ describe('system status model', () => {
     expect(g?.pools[0]?.warnings).toContain('fewer-than-two-ready');
   });
 
-  it('R-UI-038 Q-UI-107 the groups are api, packages and worker in that order, whatever the replicas are', () => {
+  it('R-UI-038 the groups are api, packages and worker in that order, whatever the replicas are', () => {
     expect(roleGroups(sampleInfo(), []).map((g) => g.role)).toEqual(['api', 'packages', 'worker']);
     expect(roleGroups(sampleInfo(), [web('a', 'n1')]).map((g) => g.role)).toEqual(['api', 'packages', 'worker']);
   });
@@ -75,7 +75,7 @@ describe('system status model', () => {
     expect(lost.map((g) => g.role)).toEqual(['api', 'packages', 'worker', 'all']);
   });
 
-  it('R-UI-038 Q-UI-107 a replica lands in the group of its own role', () => {
+  it('R-UI-038 a replica lands in the group of its own role', () => {
     const groups = roleGroups(sampleInfo(), [web('a', 'n1'), packages('p', 'n2'), worker('w', 'n3')]);
     expect(groups.map((g) => [g.role, g.replicas.map((r) => r.name)])).toEqual([
       ['api', ['a']],
@@ -122,7 +122,7 @@ describe('system status model', () => {
     expect(w?.pools[1]?.warnings).toContain('no-live-pool');
   });
 
-  it('R-UI-038 Q-UI-107 the bridge role web and the development role all have a group only while a replica reports them', () => {
+  it('R-UI-038 the bridge role web and the development role all have a group only while a replica reports them', () => {
     expect(roleGroups(sampleInfo(), [web('a', 'n1')]).map((g) => g.role)).not.toContain('web');
     expect(roleGroups(sampleInfo(), [web('a', 'n1', { roles: ['web'] })]).map((g) => g.role)).toEqual([
       'api',
@@ -152,7 +152,7 @@ describe('system status model', () => {
     expect(failingChecks(r)).toEqual([]);
   });
 
-  describe('the header (R-UI-038, Q-UI-600 to Q-UI-603)', () => {
+  describe('the header (R-UI-038)', () => {
     /** A healthy split installation: two ready replicas of each main role on two nodes. */
     const healthy = () => [
       web('a1', 'n1'),
@@ -170,7 +170,7 @@ describe('system status model', () => {
       expect(status(healthy())).toEqual({ level: 'ok', conditions: [] });
     });
 
-    it('R-UI-038 Q-UI-600 a replica that drains during an update informs and is no error', () => {
+    it('R-UI-038 a replica that drains during an update informs and is no error', () => {
       const replicas = [...healthy(), web('a0', 'n1', { state: 'draining', version: '0.1.0' }), web('a3', 'n2', { state: 'starting' })];
       const st = status(replicas);
       expect(st.level).toBe('info');
@@ -178,7 +178,7 @@ describe('system status model', () => {
       expect(alarms(st)).toEqual([]);
     });
 
-    it('R-UI-038 Q-UI-602 a replica lost without draining while its role has ready replicas is a warning with its last heartbeat', () => {
+    it('R-UI-038 a replica lost without draining while its role has ready replicas is a warning with its last heartbeat', () => {
       const lost = web('a0', 'n3', { lost: true, heartbeatAt: '2026-11-18T09:12:00Z' });
       const st = status([...healthy(), lost, worker('w0', null, { lost: true, heartbeatAt: '2026-11-18T08:00:00Z' })]);
       expect(st.level).toBe('warning');
@@ -186,7 +186,7 @@ describe('system status model', () => {
       expect(LOST_REPLICA_LEVEL).toBe('warning');
     });
 
-    it('R-UI-038 Q-UI-602 a role without a ready replica is red, also when its only replica was lost', () => {
+    it('R-UI-038 a role without a ready replica is red, also when its only replica was lost', () => {
       const replicas = healthy().filter((r) => roleOf(r) !== 'worker');
       replicas.push(worker('w1', 'n1', { lost: true }));
       const st = status(replicas);
@@ -195,7 +195,7 @@ describe('system status model', () => {
       expect(kinds(replicas)).toEqual(['no-ready-replica', 'lost', 'not-drain-safe']);
     });
 
-    it('R-UI-038 Q-UI-602 a role whose replicas only drain or start has no ready replica and is red', () => {
+    it('R-UI-038 a role whose replicas only drain or start has no ready replica and is red', () => {
       const replicas = [...healthy().filter((r) => roleOf(r) !== 'api'), web('a1', 'n1', { state: 'draining' })];
       expect(status(replicas).conditions[0]).toEqual({ kind: 'no-ready-replica', level: 'error', roles: ['api'] });
     });
@@ -212,7 +212,7 @@ describe('system status model', () => {
       expect(status(replicas)).toEqual({ level: 'warning', conditions: [{ kind: 'degraded', level: 'warning' }] });
     });
 
-    it('R-UI-038 Q-UI-603 one healthy replica of the role all is not a fault: it is not drain-safe, which only informs', () => {
+    it('R-UI-038 one healthy replica of the role all is not a fault: it is not drain-safe, which only informs', () => {
       const all = [sampleReplica({ name: 'dev', instanceUid: 'dev', node: null, roles: ['all'] })];
       const st = status(all);
       expect(st.level).toBe('info');

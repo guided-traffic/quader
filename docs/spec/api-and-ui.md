@@ -13912,7 +13912,7 @@ Context: the profile's list of the caller's own tokens already said **Administra
 
 **Choice:** (a). The notice is the existing one; the table no longer takes the owner's role as an input. **Rationale:** the fact belongs to the record the notice is about. The development agent would revisit it if a list of tokens grows to a page size where one extra query per page costs measurably.
 
-**Applied in the spec:** R-UI-029, R-UI-030. Code: `TokenTable.adminInactive`. Tests: `Q-UI-221` in [token-admin.spec.ts](../../web/src/app/features/tokens/token-admin.spec.ts).
+**Applied in the spec:** R-UI-029, R-UI-030. Code: `TokenTable.adminInactive`. Tests: the case "R-UI-030 the list of other people's tokens says which administrator tokens have inactive rights" in [token-admin.spec.ts](../../web/src/app/features/tokens/token-admin.spec.ts).
 
 ### Q-UI-222 · Which settings pages are one column now, and what a section's save button is called
 
@@ -13946,7 +13946,7 @@ Context: [Q-UI-222](#q-ui-222--which-settings-pages-are-one-column-now-and-what-
 
 **Choice:** (a). The user's attribute note stays: name and email come from the identity provider and are replaced at the next sign-in; the fields are read-only for a caller without `identities:write` and for the break-glass account. The endpoint's configuration comes from the configuration file and is read-only, as before. **Rationale:** the guide asks that a value that cannot change is a read-only field and that no key-value list holds what could be fields; a table or a list of rows is content and stays a table. The development agent would revisit the endpoint's split if the owner wants the whole configuration closed.
 
-**Applied in the spec:** R-UI-024, R-UI-025, R-UI-026, R-EP-017. Code: `UserDetail`, `EndpointDetail`, `GroupDetail`, `PrincipalRoles`. Tests: the `Q-UI-223` cases in [users.spec.ts](../../web/src/app/features/users/users.spec.ts) and [endpoints.spec.ts](../../web/src/app/features/endpoints/endpoints.spec.ts).
+**Applied in the spec:** R-UI-024, R-UI-025, R-UI-026, R-EP-017. Code: `UserDetail`, `EndpointDetail`, `GroupDetail`, `PrincipalRoles`. Tests: the cases "R-UI-024 the user is one column" and "R-EP-017 the configuration is read-only fields in one column" in [users.spec.ts](../../web/src/app/features/users/users.spec.ts) and [endpoints.spec.ts](../../web/src/app/features/endpoints/endpoints.spec.ts).
 
 ### Q-UI-224 · The policy editor and the issuer page keep their structure and lose the cards and the delete in the header
 
@@ -13962,7 +13962,7 @@ Context: the policy editor has a table of contents, a sticky preview and a revie
 
 **Choice:** (a). **Rationale:** a destructive action belongs at the end under its own sentence (the guide), and a group of fields is a section, not a box. The tabs of the issuer hold different objects (settings, keys, mappings, tokens), unlike the repository's settings, whose tabs are the groups of one document and wait for the owner's reference ([Q-UI-222](#q-ui-222--which-settings-pages-are-one-column-now-and-what-a-sections-save-button-is-called)). The development agent would revisit it if the owner wants the policy's groups closed at first.
 
-**Applied in the spec:** R-UI-027, R-UI-035. Code: `PolicyEditor`, `IssuerDetail`, `IssuerCreate`, `IssuerForm`. Tests: the `Q-UI-224` case in [policy-editor.spec.ts](../../web/src/app/features/permissions/policy-editor.spec.ts), the issuer cases of [ci-issuer-screens.spec.ts](../../web/src/app/features/ci/ci-issuer-screens.spec.ts).
+**Applied in the spec:** R-UI-027, R-UI-035. Code: `PolicyEditor`, `IssuerDetail`, `IssuerCreate`, `IssuerForm`. Tests: the case "R-UI-027 the groups are sections without a card" in [policy-editor.spec.ts](../../web/src/app/features/permissions/policy-editor.spec.ts), the issuer cases of [ci-issuer-screens.spec.ts](../../web/src/app/features/ci/ci-issuer-screens.spec.ts).
 
 ### Q-UI-225 · A format shows its owner's logo where the owner's terms allow it, else the neutral glyph
 
@@ -14014,7 +14014,7 @@ offered commercially (H-877).
 **Applied in the spec:** R-UI-001 (the icon bullet), R-UI-006, R-UI-007, R-UI-021; the notes on Q-UI-1, Q-UI-114, Q-UI-178
 and Q-UI-201. Documented in [ui-style-guide.md](../developer/ui-style-guide.md), [design-language.md](../developer/design-language.md)
 and [web-ui.md](../developer/web-ui.md). Code: [format-icon.ts](../../web/src/app/shared/format-icon.ts),
-[web/public/formats/](../../web/public/formats/NOTICE.txt). Tests: the `Q-UI-225` cases in
+[web/public/formats/](../../web/public/formats/NOTICE.txt). Tests: the R-UI-006 cases of the owner's logo and the neutral glyph in
 [format-icon.spec.ts](../../web/src/app/shared/format-icon.spec.ts), [package-list.spec.ts](../../web/src/app/features/packages/package-list.spec.ts),
 [package-detail.spec.ts](../../web/src/app/features/packages/package-detail.spec.ts), and the tiles' test of
 [repository-format-chooser.spec.ts](../../web/src/app/features/repositories/repository-format-chooser.spec.ts) (the chooser since R-UI-080).
@@ -14057,7 +14057,7 @@ an owner asks for the logo to be a link.
 
 **Applied in the spec:** R-UI-001 (the icon bullet). Code: [format-icon.ts](../../web/src/app/shared/format-icon.ts),
 [_icons.scss](../../web/src/styles/_icons.scss), [_tokens.scss](../../web/src/styles/_tokens.scss) (`--quader-logo-plate`),
-`package-list.scss`, `package-detail.scss`, `repository-wizard.scss`. Tests: the `Q-UI-226` cases in
+`package-list.scss`, `package-detail.scss`, `repository-wizard.scss`. Tests: the cases of the logo files and the logo plate (R-UI-001, R-UI-006, R-UI-044) in
 [format-icon.spec.ts](../../web/src/app/shared/format-icon.spec.ts) and [palette.spec.ts](../../web/src/styles/palette.spec.ts),
 `spokenText` in [axe.ts](../../web/src/app/testing/axe.ts).
 
@@ -14083,7 +14083,7 @@ drops Inter's licence (Q-UI-144). The development agent revisits (c) if an owner
 
 **Applied in the spec:** none beyond Q-UI-225. Code: [NOTICE.txt](../../web/public/formats/NOTICE.txt),
 [build-embed.mjs](../../web/scripts/build-embed.mjs), the README's licence section. Tests: `TestR_UI_001_ThirdPartyNotices`
-([notices_test.go](../../internal/webui/notices_test.go)), the `Q-UI-227` case in
+([notices_test.go](../../internal/webui/notices_test.go)), the case "R-UI-001 every logo file is named in the notices" in
 [format-icon.spec.ts](../../web/src/app/shared/format-icon.spec.ts).
 
 ### Q-UI-228 · A level is chosen in a radio group of three, each with its icon and a sentence
@@ -17632,7 +17632,7 @@ The repository list's row menu offers **Files** too, for every format (for a gen
 revisits (b) if users of a format look for its files often enough that the menu is a detour.
 
 **Applied in the spec:** R-UI-052, R-UI-010. Code: [repository-content.html](../../web/src/app/features/repositories/content/repository-content.html),
-[repository-list.html](../../web/src/app/features/repositories/repository-list.html). Test: `Q-UI-511` in
+[repository-list.html](../../web/src/app/features/repositories/repository-list.html). Test: "R-UI-052 a package format keeps its packages as the page" in
 [repository-files.spec.ts](../../web/src/app/features/repositories/content/repository-files.spec.ts).
 
 ### Q-UI-512 · The operations stand where they act, and only for who may use them
@@ -17681,7 +17681,7 @@ folder is the file search's job (R-UI-015, R-API-028, P1). The development agent
 folder of many entries is a common place to look a name up.
 
 **Applied in the spec:** R-UI-010. Code: `FILES_PAGE` in
-[repository-files.ts](../../web/src/app/features/repositories/content/repository-files.ts). Test: `Q-UI-513` in
+[repository-files.ts](../../web/src/app/features/repositories/content/repository-files.ts). Test: "R-UI-010 a folder with 450 entries shows the first 200" in
 [repository-files.spec.ts](../../web/src/app/features/repositories/content/repository-files.spec.ts).
 
 ### Q-UI-514 · A file's page is its name, Download, its address and its facts; the rest is Details
@@ -17702,7 +17702,7 @@ Status: **Decided by the development agent** — selected from the options below
 SHA-256 and the API's view are for who checks a file. The development agent revisits it if users ask for the other checksums often.
 
 **Applied in the spec:** R-UI-010. Code: [repository-file.ts](../../web/src/app/features/repositories/content/repository-file.ts).
-Test: `Q-UI-514` in [repository-files.spec.ts](../../web/src/app/features/repositories/content/repository-files.spec.ts).
+Test: "R-UI-010 a file shows its name once" in [repository-files.spec.ts](../../web/src/app/features/repositories/content/repository-files.spec.ts).
 
 ### Q-UI-515 · A copy or a move chooses its target repository from a list and its folder by browsing it
 
@@ -17789,7 +17789,7 @@ packages of a repository "Nov 18, 2026" (seen in the walk of 2026-11-18).
 helpers themselves is not this decision's.
 
 **Applied in the spec:** R-UI-010. Code: `since` in [repository-files.ts](../../web/src/app/features/repositories/content/repository-files.ts).
-Test: `Q-UI-518` in [repository-files.spec.ts](../../web/src/app/features/repositories/content/repository-files.spec.ts).
+Test: "R-UI-010 a list writes when a file changed relative to now" in [repository-files.spec.ts](../../web/src/app/features/repositories/content/repository-files.spec.ts).
 
 ### Q-UI-519 · Every link into Browse leads to the repository's page or to the file's page
 
@@ -17862,7 +17862,7 @@ screens.
 
 **Applied in the spec:** R-UI-010. Code: the path in [repository-content.html](../../web/src/app/features/repositories/content/repository-content.html)
 (`between`, `here`) and `.files-head`, `.files-trail` in [repository-content.scss](../../web/src/app/features/repositories/content/repository-content.scss).
-Tests: `Q-UI-521` in [repository-files.spec.ts](../../web/src/app/features/repositories/content/repository-files.spec.ts); the render
+Tests: "R-UI-010 a folder deep in the path shows its path once" in [repository-files.spec.ts](../../web/src/app/features/repositories/content/repository-files.spec.ts); the render
 `files-deep` with its walk.
 
 ### Q-UI-540 · The visibility section of the general settings is open and has one save for both settings
@@ -18125,7 +18125,7 @@ Context: seen by the builder of the guides on 2026-11-18: the trail read `Guides
 **Rationale:** the catalog names the formats (`GET /api/v1/formats`, `displayName`); the UI should not keep a copy. No revisit condition.
 
 **Applied in the spec:** R-UI-124. Code: `formatDisplayName` in [guides.routes.ts](../../web/src/app/features/guides/guides.routes.ts),
-`collect` in [breadcrumbs.ts](../../web/src/app/core/breadcrumbs.ts). Test: `Q-UI-553` in
+`collect` in [breadcrumbs.ts](../../web/src/app/core/breadcrumbs.ts). Test: "R-UI-124 the guides name a format as people read it" in
 [breadcrumbs.spec.ts](../../web/src/app/core/breadcrumbs.spec.ts).
 
 ### Q-UI-554 · Where the header is narrow, the page's actions share the line of Set up client

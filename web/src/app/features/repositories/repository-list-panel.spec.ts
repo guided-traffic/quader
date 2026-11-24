@@ -12,7 +12,7 @@ async function open(inputs: Record<string, unknown> = {}) {
 }
 
 describe('Repository list head and filter drawer (R-UI-020)', () => {
-  it('R-UI-020 Q-UI-420 the drawer is closed until Filters opens it; it holds project, format, class and state, and passes axe', async () => {
+  it('R-UI-020 R-UI-101 the drawer is closed until Filters opens it; it holds project, format, class and state, and passes axe', async () => {
     const { fixture, root } = await open();
     expect(filterDrawer()).toBeNull();
     const drawer = await openFilters(fixture, root);
@@ -22,7 +22,7 @@ describe('Repository list head and filter drawer (R-UI-020)', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-002 Q-UI-420 the head is one row above the list (search, Filters), and no "Recently opened" stands above it', async () => {
+  it('R-UI-002 R-UI-100 the head is one row above the list (search, Filters), and no "Recently opened" stands above it', async () => {
     const { root } = await renderScreen(RepositoryList, {
       setup: (get) => {
         vi.spyOn(get(Router), 'navigate').mockResolvedValue(true);
@@ -41,7 +41,7 @@ describe('Repository list head and filter drawer (R-UI-020)', () => {
     expect(root.textContent).not.toContain('Recently opened');
   });
 
-  it('Q-UI-421 the search field puts the key or description into the query', async () => {
+  it('R-UI-100 the search field puts the key or description into the query', async () => {
     const { fixture, root, router } = await open();
     await searchList(fixture, root, ' npm ');
     const [, extras] = (router.navigate as ReturnType<typeof vi.fn>).mock.calls.at(-1)!;
@@ -62,14 +62,14 @@ describe('Repository list head and filter drawer (R-UI-020)', () => {
     expect(filterDrawer()).toBeNull();
   });
 
-  it('Q-UI-422 an applied filter is a chip beside Filters, counted on the button, and the drawer stays closed', async () => {
+  it('R-UI-100 an applied filter is a chip beside Filters, counted on the button, and the drawer stays closed', async () => {
     const { root } = await open({ class: 'local', format: 'generic' });
     expect(filterDrawer()).toBeNull();
     expect(root.querySelector('button.filter-toggle .filter-count')?.textContent).toBe('2');
     expect(chipTexts(root)).toEqual(['Format: Generic', 'Class: Local']);
   });
 
-  it('Q-UI-422 removing a chip removes only its filter', async () => {
+  it('R-UI-100 removing a chip removes only its filter', async () => {
     const { fixture, root, router } = await open({ class: 'local', format: 'generic' });
     root.querySelector<HTMLButtonElement>('button[aria-label="Remove the filter Class: Local"]')!.click();
     await settle(fixture);
@@ -95,7 +95,7 @@ describe('Repository list head and filter drawer (R-UI-020)', () => {
     ]);
   });
 
-  it('R-UI-020 Q-UI-1042 the project filter chooses among the projects the caller sees, by display name, and its chip names the project', async () => {
+  it('R-UI-020 the project filter chooses among the projects the caller sees, by display name, and its chip names the project', async () => {
     const { fixture, root, router } = await open({ project: 'web' });
     expect(chipTexts(root)).toEqual(['Project: Web platform']);
     const drawer = await openFilters(fixture, root);

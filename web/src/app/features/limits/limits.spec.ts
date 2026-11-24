@@ -53,7 +53,7 @@ describe('Download limits in the admin area (R-UI-177 to R-UI-182)', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
-  it('R-UI-177 R-UI-179 Q-UI-758 the administrator sees Add rule and Switch to Enforce…; a name opens its rule, Delete is the one action', async () => {
+  it('R-UI-177 R-UI-179 the administrator sees Add rule and Switch to Enforce…; a name opens its rule, Delete is the one action', async () => {
     const { root } = await renderScreen(RulesWithMode, { capabilities: WRITER });
     expect(buttonByText(root, 'Add rule')).toBeTruthy();
     expect(buttonByText(root, 'Switch to Enforce…')).toBeTruthy();
@@ -66,7 +66,7 @@ describe('Download limits in the admin area (R-UI-177 to R-UI-182)', () => {
     expect(text(user.querySelector('td.actions')!)).toContain('Delete');
   });
 
-  it('R-UI-182 Q-UI-733 Switch to Enforce shows the last 24 hours first and switches with If-Match', async () => {
+  it('R-UI-182 Switch to Enforce shows the last 24 hours first and switches with If-Match', async () => {
     const { fixture, root, get } = await renderScreen(RulesWithMode, { capabilities: WRITER });
     buttonByText(root, 'Switch to Enforce…').click();
     await settle(fixture);

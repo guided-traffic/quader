@@ -110,7 +110,7 @@ describe('Groups (R-UI-025)', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
-  it('Q-UI-222 the group is edited in place: Save changes waits for a change, the origin is read-only, Delete is under Advanced', async () => {
+  it('R-UI-025 the group is edited in place: Save changes waits for a change, the origin is read-only, Delete is under Advanced', async () => {
     const { fixture, root } = await renderScreen(GroupDetail, { inputs: { name: 'platform' } });
     expect(root.querySelector('.settings > form')).toBeTruthy();
     const save = buttonByText(root, 'Save changes') as HTMLButtonElement;

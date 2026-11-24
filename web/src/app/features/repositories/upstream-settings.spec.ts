@@ -105,7 +105,7 @@ describe('The upstream settings of a remote repository (F-54, R-UI-021, R-UI-082
       expect(upstreamOf(up({ authMode: 'none', username: 'x', password: SECRET }), defaults, 'sparse')).toEqual({});
     });
 
-    it('R-UI-021 Q-UI-80 the cache periods are written only where they differ from the format default; an offline switch writes availability', () => {
+    it('R-UI-021 the cache periods are written only where they differ from the format default; an offline switch writes availability', () => {
       expect(upstreamOf(up({ metadataTtl: 7200, notFoundTtl: 1800 }), defaults, 'sparse')).toEqual({});
       expect(upstreamOf(up({ metadataTtl: 60, notFoundTtl: null }), defaults, 'sparse')).toEqual({
         cache: { metadataTtlSeconds: 60 },
@@ -356,7 +356,7 @@ describe('The upstream settings of a remote repository (F-54, R-UI-021, R-UI-082
       expect(r.root.querySelector('quader-mirror-settings')).toBeNull();
     });
 
-    it('R-UI-021 Q-UI-122 the mirror bound notice follows the URL entered: the well-known upstream is refused, another one is saved with a warning', async () => {
+    it('R-UI-021 the mirror bound notice follows the URL entered: the well-known upstream is refused, another one is saved with a warning', async () => {
       const r = await remoteStep([GENERIC_FORMAT, NPM], 'npm');
       const radio = r.root.querySelector<HTMLInputElement>('input[name="remote-mode"][value="mirror"]')!;
       radio.checked = true;
@@ -496,7 +496,7 @@ describe('The upstream settings of a remote repository (F-54, R-UI-021, R-UI-082
       expect(control(r.root, 'f-remote-password').getAttribute('aria-describedby')).toContain('d-remote-credential-hosts');
     });
 
-    it('R-UI-082 Q-UI-346 a token service on a host the repository may not reach is named, and Allow adds it and tests again', async () => {
+    it('R-UI-082 a token service on a host the repository may not reach is named, and Allow adds it and tests again', async () => {
       const r = await section(OCI_FORMAT, {
         setup: (fake) => {
           fake.upstreamTestResult = sampleUpstreamTestResult({
@@ -563,7 +563,7 @@ describe('The upstream settings of a remote repository (F-54, R-UI-021, R-UI-082
       expect(page.root.querySelector('.upstream-details #f-remote-availability-mode')).not.toBeNull();
     });
 
-    it('R-UI-082 R-REPO-065 Q-UI-766 Upstream details holds the background download, checked; unchecked it is written as off, a stored off reads back', async () => {
+    it('R-UI-082 R-REPO-065 Upstream details holds the background download, checked; unchecked it is written as off, a stored off reads back', async () => {
       const r = await section(OCI_FORMAT);
       const box = r.root.querySelector<HTMLInputElement>('.upstream-details #f-remote-downloadOnProbe')!;
       expect(box).not.toBeNull();
@@ -739,7 +739,7 @@ describe('The upstream settings of a remote repository (F-54, R-UI-021, R-UI-082
       expect(doc(fake).remote?.password).toBeUndefined();
     });
 
-    it('R-UI-021 Q-UI-80 a period set back to its default and the offline switch are patched as null and as availability', async () => {
+    it('R-UI-021 a period set back to its default and the offline switch are patched as null and as availability', async () => {
       const { r, fake } = await open();
       type(control(r.root, 'f-remote-cache-metadataTtlSeconds'), '7200');
       const offline = control(r.root, 'f-remote-availability-mode');
@@ -791,7 +791,7 @@ describe('The upstream settings of a remote repository (F-54, R-UI-021, R-UI-082
       expect(document.activeElement).toBe(control(r.root, 'f-remote-url'));
     });
 
-    it('R-UI-021 Q-UI-122 on the edit form the mirror notice follows the URL typed, not only the stored one', async () => {
+    it('R-UI-021 on the edit form the mirror notice follows the URL typed, not only the stored one', async () => {
       const repo = stored({ url: 'https://registry.npmjs.org/', authMode: 'none', mode: 'pullThrough' });
       const { r } = await open(repo);
       await openSection(r.fixture, r.root, 'Mirror');

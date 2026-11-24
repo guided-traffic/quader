@@ -412,7 +412,7 @@ describe('The creation form of a repository', () => {
     expect(created(r.fake, 'npm-virtual').virtual).toEqual({ members: ['npm-local', 'npm-remote'], deployTarget: 'npm-local' });
   });
 
-  it('R-UI-080 R-UI-043 Q-UI-552 Show as API request shows the body with a typed password masked and the curl on the base URL', async () => {
+  it('R-UI-080 R-UI-043 Show as API request shows the body with a typed password masked and the curl on the base URL', async () => {
     const r = await openForm('npm');
     await chooseClass(r, 'remote');
     type($<HTMLSelectElement>(r, '#f-remote-authMode'), 'bearer');
@@ -446,7 +446,7 @@ describe('The creation form of a repository', () => {
     expect($<HTMLTextAreaElement>(r, '#f-adminNotes').value).toBe('');
   });
 
-  it('R-UI-085 Q-UI-551 every field takes the width of its kind of input; the description is a sentence, as wide as the key above it', async () => {
+  it('R-UI-085 every field takes the width of its kind of input; the description is a sentence, as wide as the key above it', async () => {
     const r = await openForm('npm');
     expect($(r, '#f-key').classList.contains('field-w-name')).toBe(true);
     expect($(r, '#f-description').classList.contains('field-w-name')).toBe(true);
@@ -481,7 +481,7 @@ describe('The creation form of a repository', () => {
     expect(r.get(DraftStore).take<{ cls: string }>()?.cls).toBe('remote');
   });
 
-  it('R-UI-021 R-REPO-001 Q-UI-1040 the project is the address\'s, named under the title and never chosen', async () => {
+  it('R-UI-021 R-REPO-001 the project is the address\'s, named under the title and never chosen', async () => {
     const r = await openForm('npm', { formats: [PACKAGE_FORMAT] });
     expect(r.root.querySelector('#f-project')).toBeNull();
     expect(text(r.root.querySelector('.page-header-description')!)).toBe('In the project web.');
@@ -492,7 +492,7 @@ describe('The creation form of a repository', () => {
     expect(created(r.fake, 'npm-local')?.project).toBe('web');
   });
 
-  describe('a default that arrives while the person is in its field (Q-UI-702)', () => {
+  describe('a default that arrives while the person is in its field (R-UI-084)', () => {
     /**
      * Renders and lets every answer but the held one arrive. `settle` waits for the app to be stable, which a held answer of
      * `getRepositoryDefaults` (a resource) keeps it from being.
@@ -517,7 +517,7 @@ describe('The creation form of a repository', () => {
     const focus = (el: HTMLElement): boolean => el.dispatchEvent(new Event('focus'));
     const leave = (el: HTMLElement): boolean => el.dispatchEvent(new Event('blur'));
 
-    it('R-UI-084 Q-UI-342 Q-UI-702 a person who clicks straight into the empty key gets no suggestion under their hands; it is written when they leave the key untouched', async () => {
+    it('R-UI-084 a person who clicks straight into the empty key gets no suggestion under their hands; it is written when they leave the key untouched', async () => {
       const r = await renderScreen(RepositoryCreate, {
         inputs: { format: 'npm' },
         setup: (get) => ((get(RepositoriesApi) as FakeRepositoriesApi).formatsResult = [PACKAGE_FORMAT]),
@@ -540,7 +540,7 @@ describe('The creation form of a repository', () => {
       expect(r.fixture.componentInstance.hasUnsavedChanges()).toBe(false);
     });
 
-    it('R-UI-084 Q-UI-342 Q-UI-702 a suggestion that arrives between the focus and the first character never joins the typed key', async () => {
+    it('R-UI-084 a suggestion that arrives between the focus and the first character never joins the typed key', async () => {
       const r = await openForm('npm', { formats: [PACKAGE_FORMAT] });
       const key = $(r, '#f-key');
       expect(key.value).toBe('npm-local');
@@ -563,7 +563,7 @@ describe('The creation form of a repository', () => {
       expect(created(r.fake, 'npm-mine')).toBeDefined();
     });
 
-    it('R-UI-084 Q-UI-342 Q-UI-702 a key left untouched takes the class’s suggestion when it is left', async () => {
+    it('R-UI-084 a key left untouched takes the class’s suggestion when it is left', async () => {
       const r = await openForm('npm', { formats: [PACKAGE_FORMAT] });
       const key = $(r, '#f-key');
       const release = holdDefaults(r.fake);
@@ -580,7 +580,7 @@ describe('The creation form of a repository', () => {
       expect(r.fixture.componentInstance.hasUnsavedChanges()).toBe(false);
     });
 
-    it('R-UI-084 Q-UI-702 a cache period that arrives while its field has the focus is shown once the field is left', async () => {
+    it('R-UI-084 a cache period that arrives while its field has the focus is shown once the field is left', async () => {
       const r = await openForm('npm', {
         formats: [PACKAGE_FORMAT],
         setup: (fake) =>
@@ -606,7 +606,7 @@ describe('The creation form of a repository', () => {
       expect(period.value).toBe('600');
     });
 
-    it('R-UI-084 Q-UI-702 a mirror interval that arrives while its field has the focus is shown once the field is left', async () => {
+    it('R-UI-084 a mirror interval that arrives while its field has the focus is shown once the field is left', async () => {
       const r = await openForm('npm', { formats: [PACKAGE_FORMAT] });
       await openAdvanced(r);
       const release = holdDefaults(r.fake);

@@ -80,7 +80,7 @@ const mainTable = (root: HTMLElement) => root.querySelector(':scope > quader-dat
 const sectionTable = (root: HTMLElement) => section(root)!.querySelector('quader-data-table');
 
 describe('The system repositories of the project upstream (R-UI-192)', () => {
-  it('R-UI-192 Q-UI-891 Q-UI-892 the list holds no system repository; they stand below it in the closed section System repositories, counted, said in one sentence, without Set up client', async () => {
+  it('R-UI-192 the list holds no system repository; they stand below it in the closed section System repositories, counted, said in one sentence, without Set up client', async () => {
     const { root, harness } = await open('/projects/upstream/repositories');
     expect(keys(mainTable(root))).toEqual(['debian', 'docker-hub', 'npmjs']);
     // Every registry keeps Set up client in the list.
@@ -134,7 +134,7 @@ describe('The system repositories of the project upstream (R-UI-192)', () => {
     expect(await menuOf('clamav')).toEqual(['Settings', 'Files', 'Versions']);
   });
 
-  it('R-UI-192 Q-UI-894 the filter covers both tables: a match there opens the section and is counted; no match there leaves it closed at 0', async () => {
+  it('R-UI-192 the filter covers both tables: a match there opens the section and is counted; no match there leaves it closed at 0', async () => {
     const trivy = await open('/projects/upstream/repositories?q=TRIVY');
     expect(text(mainTable(trivy.root)!)).toContain('No repository matches.');
     expect(toggle(trivy.root).getAttribute('aria-expanded')).toBe('true');
@@ -158,7 +158,7 @@ describe('The system repositories of the project upstream (R-UI-192)', () => {
     ]);
   });
 
-  it('R-UI-193 Q-UI-896 Q-UI-902 Q-UI-1042 the list of every project lists the system repositories with the badge System and without Set up client', async () => {
+  it('R-UI-193 the list of every project lists the system repositories with the badge System and without Set up client', async () => {
     const { root, harness } = await open('/repositories?project=upstream');
     const row = (key: string) => [...root.querySelectorAll('tbody tr')].find((tr) => text(tr.querySelector('th a')!) === key)!;
     const badges = (key: string) => [...row(key).querySelectorAll('th .badge')].map((b) => text(b));
@@ -190,7 +190,7 @@ describe('The system repositories of the project upstream (R-UI-192)', () => {
     expect(section(root)).toBeNull();
   });
 
-  it('R-UI-192 Q-UI-908 with ClamAV definition updates on, the row of clamav has Set up client, and scanner-trivy still none', async () => {
+  it('R-UI-192 with ClamAV definition updates on, the row of clamav has Set up client, and scanner-trivy still none', async () => {
     const { root } = await open('/projects/upstream/repositories', { clamavOn: true });
     const setups = [...sectionTable(root)!.querySelectorAll<HTMLAnchorElement>('a.row-setup')].map((a) => a.getAttribute('href'));
     expect(setups).toEqual(['/projects/upstream/repositories/clamav/setup']);

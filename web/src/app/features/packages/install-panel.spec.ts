@@ -138,7 +138,7 @@ describe('Install command panel', () => {
     expect(text(r.root)).toContain('no install instructions for this package type yet');
   });
 
-  it('R-UI-193 Q-UI-898 Q-UI-899 a system repository is never offered: a version only it holds says why and asks for no command, one beside it is left out of the picker', async () => {
+  it('R-UI-193 a system repository is never offered: a version only it holds says why and asks for no command, one beside it is left out of the picker', async () => {
     const at = '2026-11-21T06:30:12.000Z';
     const only = await renderScreen(InstallPanel, {
       inputs: {
@@ -164,7 +164,7 @@ describe('Install command panel', () => {
     expect(beside.root.querySelector('.setup-link a')?.getAttribute('href')).toContain('/projects/web/repositories/npm-local/setup');
   });
 
-  it('Q-UI-965 a version held only by disabled repositories names them in one sentence and asks for no command', async () => {
+  it('R-UI-111 a version held only by disabled repositories names them in one sentence and asks for no command', async () => {
     const at = '2026-11-21T06:30:12.000Z';
     const many = await open({
       repositories: [

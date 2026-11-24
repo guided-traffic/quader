@@ -85,7 +85,7 @@ describe('Bastions screen (R-BAS-007)', () => {
     expect(byName('far away')).toContain('next month');
   });
 
-  it('Q-UI-959 a URL and an address break only after a dot, a slash or a colon, and every character stays', () => {
+  it('R-BAS-007 a URL and an address break only after a dot, a slash or a colon, and every character stays', () => {
     // The card's marks with the shared helper (break-parts.ts), which the card's PartsText shows piece by piece.
     const card = { breakParts: (value: string) => breakParts(value, ADDRESS_MARKS) };
     expect(card.breakParts('https://packages.frankfurt.example.com:8443/bastion/')).toEqual([
@@ -463,7 +463,7 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
     expect(reasons(root, 'partners')).toBeNull();
   });
 
-  it('R-BAS-071 Q-BAS-300 an encrypted connection is judged by its handover reasons like a plain one: one a Bastion can read shows nothing, one it cannot names its reason and the link', async () => {
+  it('R-BAS-071 an encrypted connection is judged by its handover reasons like a plain one: one a Bastion can read shows nothing, one it cannot names its reason and the link', async () => {
     const encrypted = (name: string, over: Partial<DownloadLinkConnection> = {}): DownloadLinkConnection =>
       linkConnection({ name, encrypted: true, usable: false, reasons: [{ code: 'encrypted', detail: null }], ...over });
     const { root } = await renderScreen(BastionList, {
@@ -533,7 +533,7 @@ describe('Direct reads from the object store on a Bastion card (R-BAS-071)', () 
     expect(toggle(root, 'partners')!.getAttribute('aria-checked')).toBe('false');
   });
 
-  it('R-BAS-071 Q-UI-960 who may only read sees the state as the settings pages say it, and the reasons, and is offered no switch', async () => {
+  it('R-BAS-071 who may only read sees the state as the settings pages say it, and the reasons, and is offered no switch', async () => {
     const { root } = await renderScreen(BastionList, {
       capabilities: ['endpoints:read', 'settings:read'],
       setup: (g) => {

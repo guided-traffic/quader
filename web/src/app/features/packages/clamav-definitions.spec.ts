@@ -4,7 +4,7 @@ const DAY = 86_400_000;
 const now = Date.parse('2026-11-21T12:00:00Z');
 
 describe('The ClamAV definitions on the package screens (R-UI-194, R-CLAMAV-003)', () => {
-  it('R-UI-194 Q-UI-912 daily is Outdated past 7 days, as ClamAV warns, and main and bytecode never are', () => {
+  it('R-UI-194 daily is Outdated past 7 days, as ClamAV warns, and main and bytecode never are', () => {
     const at = (ms: number): string => new Date(now - ms).toISOString();
     expect(isOutdated('daily', at(7 * DAY + 1000), now)).toBe(true);
     expect(isOutdated('daily', at(7 * DAY), now)).toBe(false);
@@ -43,7 +43,7 @@ describe('The ClamAV definitions on the package screens (R-UI-194, R-CLAMAV-003)
     expect(clamavFacts({ name: 'left-pad' })).toBeNull();
   });
 
-  it('R-UI-194 Q-MAL-82 names a set main, daily, bytecode, and orders the version in use first', () => {
+  it('R-UI-194 names a set main, daily, bytecode, and orders the version in use first', () => {
     expect(setName([{ database: 'bytecode', version: '339' }, { database: 'daily', version: '28190' }, { database: 'main', version: '63' }])).toBe(
       'main-63.daily-28190.bytecode-339',
     );

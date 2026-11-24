@@ -39,7 +39,7 @@ describe('The results page of the search (R-UI-098)', () => {
     await expectAccessible(r.root);
   });
 
-  it('R-UI-098 R-UI-102 Q-UI-430 the Repositories tab is built from the parts of the repository list: the visibility icon before the key, the project by its mark and name, format and class, no address', async () => {
+  it('R-UI-098 R-UI-102 the Repositories tab is built from the parts of the repository list: the visibility icon before the key, the project by its mark and name, format and class, no address', async () => {
     const r = await open('generic');
     const rows = [...r.root.querySelectorAll('tbody tr')];
     expect(rows.length).toBeGreaterThan(0);
@@ -104,7 +104,7 @@ describe('The results page of the search (R-UI-098)', () => {
     expect(short.repos.listFilters.filter((f) => f.q !== undefined)).toEqual([]);
   });
 
-  it('R-UI-193 Q-UI-902 a system repository is found and carries the badge System; a repository of upstream that clients use does not', async () => {
+  it('R-UI-193 a system repository is found and carries the badge System; a repository of upstream that clients use does not', async () => {
     const r = await open('upstream', undefined, (get) => {
       const repos = get(RepositoriesApi) as FakeRepositoriesApi;
       repos.repositories = [

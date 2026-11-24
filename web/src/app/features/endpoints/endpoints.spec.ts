@@ -75,7 +75,7 @@ describe('Endpoint screen', () => {
     expect(served.root.querySelector('[role="img"][aria-label="This endpoint does not serve this address."]')).toBeNull();
   });
 
-  it('Q-UI-331 the rule list is the shared data table: rule, repository, packages and paths, versions, pre-releases, enabled, the row actions; versions and pre-releases give way first; the rows stack', async () => {
+  it('R-EP-017 the rule list is the shared data table: rule, repository, packages and paths, versions, pre-releases, enabled, the row actions; versions and pre-releases give way first; the rows stack', async () => {
     const { root } = await renderScreen(EndpointDetail, { inputs: { endpoint: 'customers' } });
     const table = root.querySelector<HTMLElement>('quader-data-table')!;
     expect(table.classList.contains('stack')).toBe(true);
@@ -87,7 +87,7 @@ describe('Endpoint screen', () => {
     expect(row.querySelector('th[scope="row"] a')?.getAttribute('href')).toBe('/admin/endpoints/customers/rules/releases');
   });
 
-  it('Q-UI-223 the configuration is read-only fields in one column, not a key-value list', async () => {
+  it('R-EP-017 the configuration is read-only fields in one column, not a key-value list', async () => {
     const { root } = await renderScreen(EndpointDetail, { inputs: { endpoint: 'customers' } });
     expect(root.querySelector('dl.facts')).toBeNull();
     for (const name of ['baseUrl', 'exposure', 'surface', 'hosts', 'credentials']) {
@@ -375,7 +375,7 @@ describe('Exposure rule editor', () => {
     expect(r.endpoints.replaced.at(-1)?.etag).toBe('"2"');
   });
 
-  it('R-EP-017 Q-UI-334 the repository select is held and says so while the repositories load, then offers them', async () => {
+  it('R-EP-017 the repository select is held and says so while the repositories load, then offers them', async () => {
     let release!: () => void;
     const r = await create((_, repos) => (release = holdCalls(repos, 'listAll')), true);
     const select = r.root.querySelector<HTMLSelectElement>('#f-repository')!;
@@ -392,7 +392,7 @@ describe('Exposure rule editor', () => {
     expect(select.options.length).toBeGreaterThan(1);
   });
 
-  it('R-UI-193 Q-UI-901 the repository select offers no system repository of upstream, whose clients every endpoint answers 404; a registry of upstream it offers', async () => {
+  it('R-UI-193 the repository select offers no system repository of upstream, whose clients every endpoint answers 404; a registry of upstream it offers', async () => {
     const r = await create((_, repos) => {
       repos.repositories.push(
         { key: 'docker-hub', project: 'upstream', class: 'remote', format: 'oci' },

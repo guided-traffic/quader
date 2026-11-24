@@ -47,7 +47,7 @@ describe('Service accounts (R-UI-026, R-UI-181)', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
-  it('Q-UI-424 R-UI-181 a project\'s account names its project, a repository\'s account its repository and its level; an instance account has the dash', async () => {
+  it('R-UI-181 a project\'s account names its project, a repository\'s account its repository and its level; an instance account has the dash', async () => {
     const { root } = await renderScreen(ServiceAccountList, {
       setup: (get) => {
         const identity = get(IdentityApi) as FakeIdentityApi;
@@ -190,7 +190,7 @@ describe('Service accounts (R-UI-026, R-UI-181)', () => {
     expect([...technicalSection(root).querySelectorAll('thead th')].map((h) => text(h))).not.toContain('Expires');
   });
 
-  it('R-UI-181 Q-AUTH-416 an expired token says Expired and gets a new secret through the form without its name', async () => {
+  it('R-UI-181 an expired token says Expired and gets a new secret through the form without its name', async () => {
     const { fixture, root, get } = await renderScreen(ServiceAccountDetail, {
       ...asRole(['admin'], ['identities:read']),
       setup: (api: Get) => {
@@ -224,7 +224,7 @@ describe('Service accounts (R-UI-026, R-UI-181)', () => {
     expect((get(TokensApi) as FakeTokensApi).calls).toContain('revoke 00000000-0000-7000-8000-0000000000c2');
   });
 
-  it('G5-51 Q-UI-1007 the row menu edits a technical token\'s description with its ETag and deletes the token after the question', async () => {
+  it('R-UI-181 G5-51 the row menu edits a technical token\'s description with its ETag and deletes the token after the question', async () => {
     const { fixture, root, get } = await renderScreen(ServiceAccountDetail, asRole(['admin'], ['identities:read', 'identities:write', 'tokens:revoke']));
     const fake = get(TechnicalTokensApi) as FakeTechnicalTokensApi;
     const name = sampleTechnicalToken().name;
@@ -264,7 +264,7 @@ describe('Service accounts (R-UI-026, R-UI-181)', () => {
     expect(technicalSection(root).querySelector('button[aria-label^="Actions for"]')).toBeNull();
   });
 
-  it('R-UI-181 Q-UI-333 the technical tokens are a quiet section, open while the account holds one', async () => {
+  it('R-UI-026 R-UI-181 the technical tokens are a quiet section, open while the account holds one', async () => {
     const closed = await renderScreen(ServiceAccountDetail, { inputs: { name: 'ci-bot' } });
     expect(technicalSection(closed.root).querySelector('.toggle')!.getAttribute('aria-expanded')).toBe('false');
     const open = await renderScreen(ServiceAccountDetail, asRole(['admin'], ['identities:read']));
@@ -287,7 +287,7 @@ describe('Service accounts (R-UI-026, R-UI-181)', () => {
     expect((get(TechnicalTokensApi) as FakeTechnicalTokensApi).lastRequest?.scope).toEqual({ inherit: true, endpoints: ['customers'] });
   });
 
-  describe('Q-UI-220 administrator rights in the form of a technical token', () => {
+  describe('R-UI-026 administrator rights in the form of a technical token', () => {
     const withAccount = (isAdmin: boolean, roles: AuthzMe['roles'], project: string | null = null) => ({
       inputs: project ? { name: 'ci-bot', project } : { name: 'ci-bot' },
       capabilities: ['identities:read', 'identities:write'],
@@ -329,7 +329,7 @@ describe('Service accounts (R-UI-026, R-UI-181)', () => {
     });
   });
 
-  it('Q-UI-222 the page is one column: no card, the description edited in place with Save changes, Advanced last', async () => {
+  it('R-UI-026 the page is one column: no card, the description edited in place with Save changes, Advanced last', async () => {
     const { fixture, root } = await renderScreen(ServiceAccountDetail, { inputs: { name: 'ci-bot' } });
     expect(root.querySelector('.settings > .card')).toBeNull();
     const save = buttonByText(root, 'Save changes') as HTMLButtonElement;

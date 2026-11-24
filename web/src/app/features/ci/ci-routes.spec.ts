@@ -40,7 +40,7 @@ async function open(h: RouterTestingHarness, url: string): Promise<HTMLElement> 
   return h.routeNativeElement as HTMLElement;
 }
 
-describe('The routes of the CI area (R-UI-035, R-UI-036, Q-CI-26)', () => {
+describe('The routes of the CI area (R-UI-035, R-UI-036)', () => {
   let h: RouterTestingHarness;
 
   describe('of the administrators', () => {
@@ -82,7 +82,7 @@ describe('The routes of the CI area (R-UI-035, R-UI-036, Q-CI-26)', () => {
       h = await harness([{ path: ':project/ci', children: PROJECT_CI_ROUTES }], []);
     });
 
-    it('Q-CI-26 the overview, the dry run and the editor take the project from the path and the issuer from the query', async () => {
+    it('R-UI-035 the overview, the dry run and the editor take the project from the path and the issuer from the query', async () => {
       expect(text(await open(h, '/web/ci'))).toContain('Issuers you can use');
       const tester = await open(h, '/web/ci/test?issuer=gitlab-com');
       expect(tester.querySelector('.subject')!.textContent).toContain('web');
@@ -92,7 +92,7 @@ describe('The routes of the CI area (R-UI-035, R-UI-036, Q-CI-26)', () => {
       expect(text(created)).not.toContain('Add a group');
     });
 
-    it('Q-CI-26 an existing project mapping opens by its name, with the issuer in the query', async () => {
+    it('R-UI-035 an existing project mapping opens by its name, with the issuer in the query', async () => {
       const editor = await open(h, '/web/ci/mappings/web-x?issuer=gitlab-com');
       // The mapping does not exist in the fake: the load error shows, which proves the parameters were bound.
       expect(text(editor)).toContain('does not exist');

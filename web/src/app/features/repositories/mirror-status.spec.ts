@@ -58,7 +58,7 @@ const facts = (root: Element): Record<string, string> =>
 const stateOf = (root: HTMLElement) => root.querySelector('[data-testid="mirror-state"]')!;
 
 describe('Mirror status panel', () => {
-  describe('the state in words (R-UI-021, R-REPO-056, Q-UI-104)', () => {
+  describe('the state in words (R-UI-021, R-REPO-056)', () => {
     const states: readonly [MirrorStatus['state'], string, Partial<MirrorStatus>][] = [
       ['off', 'Off', { mode: 'pullThrough', lastCompletePass: null, nextPassAt: null }],
       ['paused', 'Paused', {}],
@@ -289,7 +289,7 @@ describe('Mirror status panel', () => {
     });
   });
 
-  describe('the buttons (Q-UI-105, Q-UI-120)', () => {
+  describe('the buttons (R-UI-021)', () => {
     it('R-UI-021 a caller who may change the repository sees Pause and Run; a paused mirror shows Resume instead of Pause', async () => {
       const running = await render([sampleMirrorStatus()]);
       expect(button(running.r.root, 'Pause')).toBeDefined();
@@ -307,7 +307,7 @@ describe('Mirror status panel', () => {
       expect(stateOf(r.root)).not.toBeNull();
     });
 
-    it('R-UI-021 Pause and Resume ask the parent, which patches the document with If-Match (Q-UI-105)', async () => {
+    it('R-UI-021 Pause and Resume ask the parent, which patches the document with If-Match', async () => {
       const { r } = await render([sampleMirrorStatus()]);
       const pause = firstValueFrom(outputToObservable(r.fixture.componentInstance.setPaused));
       button(r.root, 'Pause').click();
@@ -325,7 +325,7 @@ describe('Mirror status panel', () => {
     });
   });
 
-  describe('run a pass (R-REPO-056, Q-UI-121)', () => {
+  describe('run a pass (R-REPO-056)', () => {
     it('R-UI-021 R-REPO-056 "Run a pass now" posts {"full": false} with an idempotency key, announces the queued job with its link and reads the status again', async () => {
       const { r, fake } = await render([sampleMirrorStatus(), sampleMirrorStatus({ state: 'running', pass: PASS })]);
       button(r.root, 'Run a pass now').click();

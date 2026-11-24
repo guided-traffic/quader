@@ -106,7 +106,7 @@ describe('Sign-in screen', () => {
     }
   });
 
-  it('R-UI-004 Q-UI-125 autoRedirect navigates at once, unless ?auto_sign_in=false waives it and shows the break-glass form', async () => {
+  it('R-UI-004 autoRedirect navigates at once, unless ?auto_sign_in=false waives it and shows the break-glass form', async () => {
     const auto = await open('/login', (api) => (api.optionsResult = { ...api.optionsResult, autoRedirect: 'corp' }));
     expect(auto.assign).toHaveBeenCalledTimes(1);
     TestBed.resetTestingModule();
@@ -121,7 +121,7 @@ describe('Sign-in screen', () => {
     expect(other.assign).toHaveBeenCalledTimes(1);
   });
 
-  it('Q-UI-125 with the break-glass form the providers follow below "or sign in with", the form first', async () => {
+  it('R-UI-004 R-AUTH-009 with the break-glass form the providers follow below "or sign in with", the form first', async () => {
     const { root } = await open('/login?auto_sign_in=false', (api) => (api.optionsResult = { ...api.optionsResult, autoRedirect: 'corp' }));
     const order = [...root.querySelectorAll('form.local, .divider, .providers')].map((e) => e.className.split(' ')[0]);
     expect(order).toEqual(['local', 'divider', 'providers']);
@@ -159,7 +159,7 @@ describe('Sign-in screen', () => {
     expect(link?.getAttribute('href')).toBe('/browse');
   });
 
-  it('R-UI-004 Q-UI-710 Q-UI-711 ?ended=1 says that the session has ended, then leaves the address so a reload does not say it again', async () => {
+  it('R-UI-004 ?ended=1 says that the session has ended, then leaves the address so a reload does not say it again', async () => {
     const { root } = await open('/login?returnTo=%2Fprojects%2Fweb&ended=1', (api) => {
       api.optionsResult = { ...api.optionsResult, publicContent: true };
     });
@@ -172,7 +172,7 @@ describe('Sign-in screen', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
-  it('R-UI-004 Q-UI-710 the notice is the fixed sentence for the value 1 only, and absent without the parameter', async () => {
+  it('R-UI-004 the notice is the fixed sentence for the value 1 only, and absent without the parameter', async () => {
     for (const url of ['/login?returnTo=%2Fprojects', '/login?ended=yes', '/login?ended=Your%20account%20was%20deleted']) {
       TestBed.resetTestingModule();
       const { root } = await open(url);
@@ -182,13 +182,13 @@ describe('Sign-in screen', () => {
     }
   });
 
-  it('R-UI-004 Q-UI-710 without public content the screen with the notice offers no way around signing in', async () => {
+  it('R-UI-004 without public content the screen with the notice offers no way around signing in', async () => {
     const { root } = await open('/login?returnTo=%2Fprojects&ended=1');
     expect(root.querySelector('main p.ended')).toBeTruthy();
     expect(root.textContent).not.toContain('Continue without signing in');
   });
 
-  it('Q-UI-712 an ended session waives autoRedirect while there is public content, and only then', async () => {
+  it('R-UI-004 an ended session waives autoRedirect while there is public content, and only then', async () => {
     const choice = await open('/login?returnTo=%2Fprojects&ended=1', (api) => {
       api.optionsResult = { ...api.optionsResult, autoRedirect: 'corp', publicContent: true };
     });

@@ -8,7 +8,7 @@ import { TokenAdmin } from './token-admin';
 const overlay = (): HTMLElement => document.querySelector('.cdk-overlay-container') as HTMLElement;
 
 describe('Token administration (R-UI-030)', () => {
-  it('R-UI-030 Q-UI-332 lists all active tokens with owner, scope, expiry, last use and the revoke action, and passes axe', async () => {
+  it('R-UI-030 lists all active tokens with owner, scope, expiry, last use and the revoke action, and passes axe', async () => {
     const { root } = await renderScreen(TokenAdmin);
     const rows = root.querySelectorAll('tbody tr');
     expect(rows).toHaveLength(1);
@@ -38,7 +38,7 @@ describe('Token administration (R-UI-030)', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
-  it('Q-UI-221 Q-AUTH-209 Q-AUTH-428 the list of other people\'s tokens says which administrator tokens have inactive rights, and nothing where the role is not shown', async () => {
+  it('R-UI-030 the list of other people\'s tokens says which administrator tokens have inactive rights, and nothing where the role is not shown', async () => {
     const adminScope = { inherit: true, admin: true, repositories: [], system: [] };
     const hidden = sampleToken({ id: 't4', description: 'role not shown', scope: adminScope });
     delete hidden.ownerIsAdmin;
@@ -141,7 +141,7 @@ describe('Token administration (R-UI-030)', () => {
     ]);
   });
 
-  it('R-UI-043 the empty 202 (unknown value or no admin role, Q-AUTH-6) is not reported as a revocation', async () => {
+  it('R-UI-043 the empty 202 (unknown value or no admin role) is not reported as a revocation', async () => {
     const notices = await revokeValue(null);
     expect(notices).toHaveLength(1);
     expect(notices[0]).not.toContain('was revoked');

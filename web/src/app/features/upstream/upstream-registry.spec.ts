@@ -122,7 +122,7 @@ describe("A well-known repository's page (R-UI-188)", () => {
     expect(text(unused.root)).toContain('Not in use by the malware scan.');
   });
 
-  it('R-UI-188 Q-UI-903 R-CLAMAV-006 the section ClamAV definition updates: off shows the switch alone; on shows the address, the level and the one line', async () => {
+  it('R-UI-188 R-CLAMAV-006 the section ClamAV definition updates: off shows the switch alone; on shows the address, the level and the one line', async () => {
     const { fixture, root, api } = await render('clamav');
     expect(text(root.querySelector('h2')!)).toBe('ClamAV definition updates');
     const toggle = root.querySelector<HTMLButtonElement>('[role="switch"]')!;
@@ -148,7 +148,7 @@ describe("A well-known repository's page (R-UI-188)", () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-188 Q-REPO-415 the fold Visibility says what a ClamAV needs at each level and sets the level; below Public the line carries the token', async () => {
+  it('R-UI-188 the fold Visibility says what a ClamAV needs at each level and sets the level; below Public the line carries the token', async () => {
     const { fixture, root, api } = await render('clamav', {
       setup: (a) => a.set('clamav', { clients: { enabled: true, address: CLAMAV_ENDPOINT, certificateAddresses: [] }, visibility: 'public', fixed: ['state', 'address', 'account'] }),
     });
@@ -164,7 +164,7 @@ describe("A well-known repository's page (R-UI-188)", () => {
     expect(text(root.querySelector('.clamav-setup')!)).toContain('PrivateMirror https://clamav:${QUADER_TOKEN}@quader.example.com/api/clamav/upstream/clamav');
   });
 
-  it('R-UI-188 Q-UI-905 R-CLAMAV-010 the certificate lines and the certificate variant show only while an endpoint admits client certificates', async () => {
+  it('R-UI-188 R-CLAMAV-010 the certificate lines and the certificate variant show only while an endpoint admits client certificates', async () => {
     const certAddress = 'https://clamav.quader.example.com/api/clamav/upstream/clamav';
     const none = await render('clamav', {
       setup: (a) => a.set('clamav', { clients: { enabled: true, address: CLAMAV_ENDPOINT, certificateAddresses: [] }, visibility: 'internal', fixed: ['state', 'address', 'account'] }),
@@ -192,7 +192,7 @@ describe("A well-known repository's page (R-UI-188)", () => {
     await expectAccessible(some.root);
   });
 
-  it('R-REPO-075 Q-UI-903 where the installation allows no public level, switching on says Internal, and the section warns', async () => {
+  it('R-UI-188 R-REPO-075 where the installation allows no public level, switching on says Internal, and the section warns', async () => {
     const { fixture, root, api } = await render('clamav', {
       publicAvailable: false,
       setup: (a) => (a.publicAllowed = false),
@@ -261,7 +261,7 @@ describe("A well-known repository's page (R-UI-188)", () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-188 Q-UI-913 the section Updater lists the updater\'s replicas, or says why there is none, and leads to the versions', async () => {
+  it('R-UI-188 the section Updater lists the updater\'s replicas, or says why there is none, and leads to the versions', async () => {
     const withRow = await renderScreen(UpstreamRegistry, {
       inputs: { key: 'clamav' },
       setup: (get) => ((get(SystemApi) as FakeSystemApi).scannersResult = withUpdater(sampleScanners())),

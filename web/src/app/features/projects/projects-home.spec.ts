@@ -62,7 +62,7 @@ describe('Start page', () => {
     expect(description(anonymous.root)).toBe('The projects with public content. Sign in to see your own.');
   });
 
-  it('Q-UI-414 the start page has no package search of its own: the top bar\'s field is the one search', async () => {
+  it('R-UI-098 the start page has no package search of its own: the top bar\'s field is the one search', async () => {
     const { root } = await renderScreen(ProjectsHome);
     // The one field of the page filters its list of projects (Q-UI-421); none searches packages.
     expect([...root.querySelectorAll('input[type="search"]')].map((i) => i.getAttribute('aria-label'))).toEqual(['Filter projects']);

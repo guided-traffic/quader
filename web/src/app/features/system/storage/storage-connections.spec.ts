@@ -57,7 +57,7 @@ describe('The tab Storage of System status (R-UI-196)', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-196 Q-UI-933 a connection unreachable on 1 of 3 replicas says so, a detached one warns with the blobs only it holds, and the line names both', async () => {
+  it('R-UI-196 a connection unreachable on 1 of 3 replicas says so, a detached one warns with the blobs only it holds, and the line names both', async () => {
     const { root } = await renderScreen(StoragePage, {
       setup: (get) =>
         (fake(get).connectionsResult = [

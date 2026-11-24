@@ -15,7 +15,7 @@ import {
 const SCHEMA = RICH_SETTINGS_SCHEMA as SettingSchema;
 
 describe('Settings schema model', () => {
-  it('Q-UI-335 a member takes the field width of its kind: a period a duration, a size bytes, a count a number, a URL or a long string the column, any other string a name', () => {
+  it('R-UI-085 a member takes the field width of its kind: a period a duration, a size bytes, a count a number, a URL or a long string the column, any other string a name', () => {
     expect(widthOf('metadataTtlSeconds', { type: 'integer' }, 'number')).toBe('duration');
     expect(widthOf('timeout', { type: 'string' }, 'text')).toBe('duration');
     expect(widthOf('maxBodySize', { type: 'string' }, 'text')).toBe('bytes');
@@ -65,7 +65,7 @@ describe('Settings schema model', () => {
     expect(audit.children[4]).toMatchObject({ integer: true, fallback: 2 });
   });
 
-  it('R-NPM-038 Q-UI-970 a local npm repository is not offered forwarding: no mode Forward, no Provider URL, no Timeout; remote and virtual are', () => {
+  it('R-NPM-038 a local npm repository is not offered forwarding: no mode Forward, no Provider URL, no Timeout; remote and virtual are', () => {
     // npm's audit member as internal/formats/npm/settings.schema.json declares it.
     const npm = {
       type: 'object',
@@ -117,7 +117,7 @@ describe('Settings schema model', () => {
     expect(settingNodes(onlyRemote, 'local', 'npm')).toEqual([]);
   });
 
-  it('R-UI-021 Q-UI-80 the written member leaves out what equals the default and the objects that empties; required and unknown members stay', () => {
+  it('R-UI-021 the written member leaves out what equals the default and the objects that empties; required and unknown members stay', () => {
     expect(
       pruneDefaults(SCHEMA, {
         latestGuard: true,

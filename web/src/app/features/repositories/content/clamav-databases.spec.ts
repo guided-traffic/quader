@@ -5,7 +5,7 @@ import { expectAccessible, renderScreen, text } from '../../../testing/screen';
 import { ClamavDatabases } from './clamav-databases';
 
 describe('The databases of the ClamAV definitions (R-UI-194)', () => {
-  it('R-UI-194 Q-UI-912 lists bytecode, daily and main with the version in use and its age, no Outdated on main or bytecode, and names the set in use and the one before it', async () => {
+  it('R-UI-194 lists bytecode, daily and main with the version in use and its age, no Outdated on main or bytecode, and names the set in use and the one before it', async () => {
     const { root } = await renderScreen(ClamavDatabases, {
       inputs: { repository: 'upstream/clamav', now: CLAMAV_NOW },
       setup: (get) => clamavFixture(get(PackagesApi) as FakePackagesApi),
@@ -28,7 +28,7 @@ describe('The databases of the ClamAV definitions (R-UI-194)', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-194 Q-UI-912 a daily built more than 7 days ago carries Outdated, with the reason as its note and the badge\'s tooltip', async () => {
+  it('R-UI-194 a daily built more than 7 days ago carries Outdated, with the reason as its note and the badge\'s tooltip', async () => {
     const { root } = await renderScreen(ClamavDatabases, {
       inputs: { repository: 'upstream/clamav', now: CLAMAV_NOW },
       setup: (get) => clamavFixture(get(PackagesApi) as FakePackagesApi, { dailyDays: 8 }),

@@ -36,7 +36,7 @@ describe('package links', () => {
     expect(packageCommands('web', 'nuget', 'Contoso.Logging')).toEqual(['/projects', 'web', 'packages', 'nuget', 'Contoso.Logging']);
   });
 
-  it('R-UI-111 Q-UI-451 a version page appends @ and the version to the last segment, and the matchers tell the two pages apart', () => {
+  it('R-UI-111 a version page appends @ and the version to the last segment, and the matchers tell the two pages apart', () => {
     expect(versionCommands('web', 'npm', '@team-a/ui', '1.4.0')).toEqual(['/projects', 'web', 'packages', 'npm', '@team-a', 'ui@1.4.0']);
     expect(versionCommands('web', 'oci', 'portal/web', 'latest')).toEqual(['/projects', 'web', 'packages', 'oci', 'portal', 'web@latest']);
     expect(versionCommands('web', 'deb', 'hello', '1:2.10-3+b1')).toEqual(['/projects', 'web', 'packages', 'deb', 'hello@1:2.10-3+b1']);

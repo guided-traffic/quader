@@ -7,7 +7,7 @@ const names = (root: HTMLElement): (string | undefined)[] =>
   [...root.querySelectorAll('tbody tr th a')].map((a) => a.textContent?.trim());
 
 describe('Endpoint list table (R-EP-017)', () => {
-  it('R-UI-145 Q-UI-569 the sentence under the title is the header\'s description, as on every page', async () => {
+  it('R-UI-145 the sentence under the title is the header\'s description, as on every page', async () => {
     const { root } = await renderScreen(EndpointList);
     const description = root.querySelector('quader-page-header .page-header-description')!;
     expect(description.textContent).toContain('Endpoints come from the configuration file.');

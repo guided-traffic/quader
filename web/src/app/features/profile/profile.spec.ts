@@ -53,7 +53,7 @@ describe('Profile (R-UI-029)', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
-  it('Q-UI-333 the profile is one column: identity as read-only fields, then quiet sections, Preferences open and Groups open only with a claim notice', async () => {
+  it('R-UI-029 the profile is one column: identity as read-only fields, then quiet sections, Preferences open and Groups open only with a claim notice', async () => {
     const { root } = await renderScreen(Profile);
     expect(root.querySelector('section.card, dl.facts')).toBeNull();
     const sections = [...root.querySelectorAll('quader-disclosure')].map((d) => ({
@@ -68,7 +68,7 @@ describe('Profile (R-UI-029)', () => {
     expect(root.querySelector<HTMLInputElement>('input[name="username"]')?.readOnly).toBe(true);
   });
 
-  it('Q-UI-334 the Language and Theme selects of Preferences take one field width, whatever their options say', async () => {
+  it('R-UI-085 the Language and Theme selects of Preferences take one field width, whatever their options say', async () => {
     const { root } = await renderScreen(Profile);
     const widths = [...root.querySelectorAll('quader-select-field select')].map((s) => [...s.classList].filter((c) => c.startsWith('field-w-')));
     expect(widths).toEqual([['field-w-name'], ['field-w-name']]);
@@ -321,7 +321,7 @@ describe('Personal tokens (R-UI-029)', () => {
     expect(root.querySelector('quader-token-secret')).toBeTruthy();
   });
 
-  it('R-UI-029 Q-UI-429 an owner\'s token list shows token, scope, expiry, last use, created (narrow) and the row\'s actions; no created via', async () => {
+  it('R-UI-029 an owner\'s token list shows token, scope, expiry, last use, created (narrow) and the row\'s actions; no created via', async () => {
     const { root } = await renderScreen(ProfileTokens);
     const table = root.querySelector('quader-token-table quader-data-table')!;
     const heads = [...table.querySelectorAll<HTMLElement>('thead th')];

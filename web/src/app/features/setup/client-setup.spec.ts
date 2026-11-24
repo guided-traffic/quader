@@ -161,7 +161,7 @@ describe('Set up client', () => {
     expect(text(r.root.querySelector('.credential')!)).toContain('The snippets read it from QUADER_TOKEN.');
   });
 
-  describe('the client (Q-UI-482)', () => {
+  describe('the client (R-UI-120)', () => {
     it('R-UI-120 a format with several clients offers them in one control, preselecting the one the link names', async () => {
       const r = await open({ project: 'web', key: 'npm-local', client: 'pnpm' });
       const select = r.root.querySelector<HTMLSelectElement>('select#setup-client')!;
@@ -541,7 +541,7 @@ describe('Set up client of a system repository (R-UI-190)', () => {
     expect(r.setup.calls).toEqual([]);
   });
 
-  it('R-UI-190 Q-UI-908 while ClamAV definition updates is on, the page of upstream/clamav is its client setup', async () => {
+  it('R-UI-190 while ClamAV definition updates is on, the page of upstream/clamav is its client setup', async () => {
     const r = await open(
       { project: 'upstream', key: 'clamav' },
       {

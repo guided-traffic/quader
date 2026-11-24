@@ -67,7 +67,7 @@ describe('The signatures at a version (R-SIG-035)', () => {
 });
 
 describe('The page Signatures under Security audit (R-SIG-038)', () => {
-  it('R-SIG-038 Q-UI-1005 an empty list says there are no invalid signatures; the page is named Signatures and has no strip of views', async () => {
+  it('R-SIG-038 an empty list says there are no invalid signatures; the page is named Signatures and has no strip of views', async () => {
     const { root } = await renderScreen(SignatureFindings);
     expect(text(root)).toContain('No invalid signatures.');
     expect(text(root.querySelector('h1')!)).toBe('Signatures');

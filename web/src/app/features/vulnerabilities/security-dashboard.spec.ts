@@ -67,8 +67,8 @@ const bar = (r: { root: HTMLElement }) => [...r.root.querySelectorAll('quader-se
 const navigate = () => vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
 const searchField = (root: HTMLElement) => root.querySelector<HTMLInputElement>('.list-search input')!;
 
-describe('The security dashboard (Q-UI-130, R-VULN-022, R-UI-158, R-UI-159)', () => {
-  it('Q-UI-130 Q-UI-380 shows every project as the link of each qualified repository name, the counts and the trend over all of them, and passes axe', async () => {
+describe('The security dashboard (R-VULN-022, R-UI-158, R-UI-159)', () => {
+  it('R-VULN-022 shows every project as the link of each qualified repository name, the counts and the trend over all of them, and passes axe', async () => {
     const r = await openDashboard();
     expect(text(r.root.querySelector('h1')!)).toBe('Security dashboard');
     const headers = [...r.root.querySelectorAll('thead th')].map((th) => text(th));
@@ -90,7 +90,7 @@ describe('The security dashboard (Q-UI-130, R-VULN-022, R-UI-158, R-UI-159)', ()
     await expectAccessible(r.root);
   });
 
-  it('R-UI-193 Q-UI-901 the repository filter offers no system repository of upstream, whose scanning the product keeps off, unless the address names it', async () => {
+  it('R-UI-193 the repository filter offers no system repository of upstream, whose scanning the product keeps off, unless the address names it', async () => {
     const offered = async (inputs: Record<string, unknown>) => {
       const r = await renderScreen(VulnerabilityReport, {
         inputs,
@@ -129,7 +129,7 @@ describe('The security dashboard (Q-UI-130, R-VULN-022, R-UI-158, R-UI-159)', ()
     }
   });
 
-  it('R-UI-159 Q-UI-625 a line says what the counts and the trend cover, with and without a project, repository or format filter', async () => {
+  it('R-UI-159 a line says what the counts and the trend cover, with and without a project, repository or format filter', async () => {
     const all = await openDashboard();
     expect(text(all.root)).toContain('The counts and the trend cover every project.');
     const scoped = await openDashboard({ project: 'shop', severity: 'critical' });
@@ -140,7 +140,7 @@ describe('The security dashboard (Q-UI-130, R-VULN-022, R-UI-158, R-UI-159)', ()
     expect(text(searched.root)).toContain('The counts and the trend cover every project.');
   });
 
-  it('Q-UI-130 a project filter of the URL reaches the list, the counts and the trend, shows as a chip with the project\'s name, and keeps in the count links', async () => {
+  it('R-UI-159 a project filter of the URL reaches the list, the counts and the trend, shows as a chip with the project\'s name, and keeps in the count links', async () => {
     const r = await openDashboard({ project: 'shop' });
     expect(r.fake.listed.at(-1)?.project).toEqual(['shop']);
     expect(rows(r)).toHaveLength(1);
@@ -156,7 +156,7 @@ describe('The security dashboard (Q-UI-130, R-VULN-022, R-UI-158, R-UI-159)', ()
     expect(nav).toHaveBeenCalledWith([], { queryParams: { project: null }, queryParamsHandling: 'merge' });
   });
 
-  it('R-UI-159 Q-UI-624 the project is chosen in the drawer from the projects by mark and name, never typed as a key', async () => {
+  it('R-UI-159 the project is chosen in the drawer from the projects by mark and name, never typed as a key', async () => {
     const r = await openDashboard();
     const drawer = await openFilters(r.fixture, r.root);
     const category = [...drawer.querySelectorAll('quader-filter-category')].find((c) => text(c).startsWith('Project'))!;
@@ -177,12 +177,12 @@ describe('The security dashboard (Q-UI-130, R-VULN-022, R-UI-158, R-UI-159)', ()
     expect(chipTexts(r.root).some((c) => c.startsWith('Project'))).toBe(false);
   });
 
-  it('Q-UI-130 a malformed project key in the URL never reaches the API', async () => {
+  it('R-UI-159 a malformed project key in the URL never reaches the API', async () => {
     const r = await openDashboard({ project: ['Not A Key', 'shop'] });
     expect(r.fake.listed.at(-1)?.project).toEqual(['shop']);
   });
 
-  it('R-UI-159 Q-UI-623 a whole advisory identifier in the search is the advisory filter in its canonical spelling, any other text the text search', async () => {
+  it('R-UI-159 a whole advisory identifier in the search is the advisory filter in its canonical spelling, any other text the text search', async () => {
     const r = await openDashboard();
     const nav = navigate();
     await searchList(r.fixture, r.root, ' cve-2021-44906 ');
@@ -200,7 +200,7 @@ describe('The security dashboard (Q-UI-130, R-VULN-022, R-UI-158, R-UI-159)', ()
     expect(again).toHaveBeenLastCalledWith([], { queryParams: { advisory: null, q: null }, queryParamsHandling: 'merge' });
   });
 
-  it('R-UI-159 Q-UI-623 the search by an alias finds the finding through the API, the field shows the identifier and no chip says it twice', async () => {
+  it('R-UI-159 the search by an alias finds the finding through the API, the field shows the identifier and no chip says it twice', async () => {
     const r = await openDashboard({ advisory: 'CVE-2021-44906' });
     expect(r.fake.listed.at(-1)?.advisory).toBe('CVE-2021-44906');
     expect(rows(r)).toHaveLength(1);
@@ -224,7 +224,7 @@ describe('The security dashboard (Q-UI-130, R-VULN-022, R-UI-158, R-UI-159)', ()
     expect(nav).toHaveBeenLastCalledWith([], expect.objectContaining({ queryParams: expect.objectContaining({ advisory: null, q: null, project: null }) }));
   });
 
-  it('Q-UI-130 a project cell narrows the list to that project', async () => {
+  it('R-UI-159 a project cell narrows the list to that project', async () => {
     const r = await openDashboard();
     const link = [...rows(r)[0]!.querySelectorAll<HTMLAnchorElement>('a')].find((a) => a.getAttribute('href')?.includes('project='))!;
     expect(link.getAttribute('href')).toMatch(/project=(shop|web)/);
@@ -243,7 +243,7 @@ describe('The security dashboard (Q-UI-130, R-VULN-022, R-UI-158, R-UI-159)', ()
     expect(reader.root.querySelector('a[href^="/admin"]')).toBeNull();
   });
 
-  it('Q-UI-130 a holder of vulnerabilities:triage selects findings and changes their status; a reader does not', async () => {
+  it('R-VULN-022 a holder of vulnerabilities:triage selects findings and changes their status; a reader does not', async () => {
     const triager = await openDashboard({}, AUDITOR);
     expect(triager.root.querySelector('tbody input[type="checkbox"]')).toBeTruthy();
     expect(buttonByText(triager.root, 'Select all loaded findings')).toBeTruthy();
@@ -258,7 +258,7 @@ describe('The security dashboard (Q-UI-130, R-VULN-022, R-UI-158, R-UI-159)', ()
     await expectAccessible(reader.root);
   });
 
-  it('Q-UI-130 a project\'s report has no project link in its rows and no scope line, and its links stay in the project', async () => {
+  it('R-VULN-022 a project\'s report has no project link in its rows and no scope line, and its links stay in the project', async () => {
     const r = await renderScreen(VulnerabilityReport, inProject({ capabilities: ['vulnerabilities:triage'] }, '/projects/web/vulnerabilities'));
     expect([...r.root.querySelectorAll('th')].map((th) => text(th))).not.toContain('Project');
     expect(text(r.root)).not.toContain('The counts and the trend cover');
@@ -266,7 +266,7 @@ describe('The security dashboard (Q-UI-130, R-VULN-022, R-UI-158, R-UI-159)', ()
     expect(r.root.querySelector('a[href^="/projects/web/vulnerabilities/findings/"]')).toBeTruthy();
   });
 
-  it('Q-UI-130 the dashboard is usable after the list changes: a filter change restarts the list', async () => {
+  it('R-VULN-022 the dashboard is usable after the list changes: a filter change restarts the list', async () => {
     const r = await openDashboard();
     await r.fixture.componentRef.setInput('project', 'web');
     await settle(r.fixture);
@@ -275,10 +275,10 @@ describe('The security dashboard (Q-UI-130, R-VULN-022, R-UI-158, R-UI-159)', ()
   });
 });
 
-describe('Where the security dashboard lives and who sees it (R-UI-158, Q-AUTHZ-295)', () => {
+describe('Where the security dashboard lives and who sees it (R-UI-158)', () => {
   const homeSection = () => TestBed.inject(Navigation).area('home')?.sections.find((s) => s.id === 'security-audit');
 
-  it('R-UI-158 R-UI-168 Q-UI-1005 the block Security audit, a second context title after Your work, holds Security dashboard, Malware and Signatures for a holder of content:metadata-read, the auditor and the administrator', async () => {
+  it('R-UI-158 R-UI-168 the block Security audit, a second context title after Your work, holds Security dashboard, Malware and Signatures for a holder of content:metadata-read, the auditor and the administrator', async () => {
     await renderScreen(VulnerabilityReport, { capabilities: AUDITOR });
     expect(TestBed.inject(Navigation).area('home')?.sections.map((s) => s.label)).toEqual(['Your work', 'Security audit']);
     const section = homeSection();
@@ -292,7 +292,7 @@ describe('Where the security dashboard lives and who sees it (R-UI-158, Q-AUTHZ-
     expect(SECURITY_DASHBOARD_CAPABILITY).toBe('content:metadata-read');
   });
 
-  it('R-UI-158 Q-AUTHZ-295 a caller without content:metadata-read has no block Security audit, also a holder of vulnerabilities:triage alone (security-admin)', async () => {
+  it('R-UI-158 a caller without content:metadata-read has no block Security audit, also a holder of vulnerabilities:triage alone (security-admin)', async () => {
     await renderScreen(VulnerabilityReport, { capabilities: [] });
     expect(homeSection()).toBeUndefined();
     await renderScreen(VulnerabilityReport, { capabilities: ['vulnerabilities:triage', 'settings:read', 'audit:read'] });
@@ -307,7 +307,7 @@ describe('Where the security dashboard lives and who sees it (R-UI-158, Q-AUTHZ-
     expect(routes).toContain('/admin/advisory-sources');
   });
 
-  it('R-UI-158 Q-UI-621 the Admin button follows the admin area: shown to an auditor, not to a caller whose capabilities are the dashboard\'s alone', async () => {
+  it('R-UI-158 the Admin button follows the admin area: shown to an auditor, not to a caller whose capabilities are the dashboard\'s alone', async () => {
     await renderScreen(VulnerabilityReport, { capabilities: AUDITOR });
     expect(TestBed.inject(Navigation).hasAdminArea()).toBe(true);
     await renderScreen(VulnerabilityReport, { capabilities: ['content:metadata-read', 'vulnerabilities:triage'] });
@@ -326,7 +326,7 @@ describe('Where the security dashboard lives and who sees it (R-UI-158, Q-AUTHZ-
   });
 });
 
-describe('The guard of the security dashboard (R-UI-158, Q-UI-622)', () => {
+describe('The guard of the security dashboard (R-UI-158)', () => {
   async function guard(capabilities: string[]): Promise<true | string> {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({ providers: [provideRouter([]), ...provideFakeApis()] });
@@ -344,13 +344,13 @@ describe('The guard of the security dashboard (R-UI-158, Q-UI-622)', () => {
     expect(await guard(['content:metadata-read'])).toBe(true);
   });
 
-  it('R-UI-158 Q-UI-622 answers Page not found at the same address to everyone else, a security administrator included', async () => {
+  it('R-UI-158 answers Page not found at the same address to everyone else, a security administrator included', async () => {
     expect(await guard([])).toBe('/not-found');
     expect(await guard(['vulnerabilities:triage', 'settings:read'])).toBe('/not-found');
   });
 });
 
-describe('advisoryIdOf (Q-UI-623)', () => {
+describe('advisoryIdOf (R-UI-159)', () => {
   it('returns a whole identifier of every family in its canonical spelling, and null for anything else', () => {
     expect(advisoryIdOf(' cve-2021-23337 ')).toBe('CVE-2021-23337');
     expect(advisoryIdOf('mal-2026-1234')).toBe('MAL-2026-1234');

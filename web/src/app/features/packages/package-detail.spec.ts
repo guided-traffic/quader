@@ -71,7 +71,7 @@ describe('The package page: its versions (R-UI-110)', () => {
     await expectAccessible(r.root);
   });
 
-  it('R-UI-110 Q-UI-453 a row carries its distribution tags and the pre-release mark beside the version, and no digest', async () => {
+  it('R-UI-110 a row carries its distribution tags and the pre-release mark beside the version, and no digest', async () => {
     const r = await open();
     const row = (v: string) => rows(r).find((tr) => text(tr.querySelector('th a')!) === v)!;
     expect([...row('1.4.0').querySelectorAll('th .badge')].map((b) => text(b))).toEqual(['latest']);
@@ -90,7 +90,7 @@ describe('The package page: its versions (R-UI-110)', () => {
     expect(text(cells('1.3.0')[2]!)).toBe('Never');
   });
 
-  it('R-UI-111 Q-UI-451 a version links to its own page, the version after an @ in the last segment of the address', async () => {
+  it('R-UI-111 a version links to its own page, the version after an @ in the last segment of the address', async () => {
     const r = await open();
     const hrefs = rows(r).map((tr) => tr.querySelector('th a')!.getAttribute('href'));
     expect(hrefs).toEqual([
@@ -128,7 +128,7 @@ describe('The package page: its versions (R-UI-110)', () => {
     expect(headers(unscanned)).not.toContain('Vulnerabilities');
   });
 
-  it('R-UI-110 Q-UI-452 the filter narrows the rows as one types, by version and by tag, and the address follows without a new entry', async () => {
+  it('R-UI-110 the filter narrows the rows as one types, by version and by tag, and the address follows without a new entry', async () => {
     const r = await open();
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     filter(r).value = 'beta';
@@ -144,7 +144,7 @@ describe('The package page: its versions (R-UI-110)', () => {
     expect(text(r.root.querySelector('.pkg-versions')!)).toContain('No version matches “zzz”.');
   });
 
-  it('R-UI-110 Q-UI-452 the columns sort in the browser and the sort is the address\'s; the default is left out of it', async () => {
+  it('R-UI-110 the columns sort in the browser and the sort is the address\'s; the default is left out of it', async () => {
     const r = await open();
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     const sortButton = (label: string) =>
@@ -160,7 +160,7 @@ describe('The package page: its versions (R-UI-110)', () => {
     expect(navigate).toHaveBeenLastCalledWith([], { queryParams: { sort: 'version' }, queryParamsHandling: 'merge' });
   });
 
-  it('R-UI-110 Q-UI-452 shows 50 versions at first and 50 more with each Show more; a new search starts at 50 again', async () => {
+  it('R-UI-110 shows 50 versions at first and 50 more with each Show more; a new search starts at 50 again', async () => {
     const r = await open({}, (fake) => {
       many(fake);
       for (let i = 35; i < 120; i++) {
@@ -175,7 +175,7 @@ describe('The package page: its versions (R-UI-110)', () => {
     expect(rows(r)).toHaveLength(VERSION_PAGE);
   });
 
-  it('R-UI-110 Q-UI-457 the column Repositories appears only where the versions are held by different repositories', async () => {
+  it('R-UI-110 the column Repositories appears only where the versions are held by different repositories', async () => {
     const same = await open();
     expect(headers(same)).not.toContain('Repositories');
     const differ = await open({}, (fake) => {
@@ -258,7 +258,7 @@ describe('The package page: its versions (R-UI-110)', () => {
     expect(docs.getAttribute('href')).toBe('/projects/web/packages/ansible/acme.tools@1.2.0?tab=documentation');
   });
 
-  it('R-UI-194 Q-UI-904 a database of the ClamAV definitions shows its versions with their state, the version in use first', async () => {
+  it('R-UI-194 a database of the ClamAV definitions shows its versions with their state, the version in use first', async () => {
     const r = await open({ format: 'clamav' }, (fake) => clamavFixture(fake), 'daily');
     expect(versions(r)).toEqual(['28190', '28189', '28188']);
     expect(rows(r).map((tr) => text(tr.querySelector('th .version-cell')!).replace('check_circle', '').trim())).toEqual([

@@ -52,7 +52,7 @@ describe('Snippet words', () => {
   // (292 / 32), which only runs of capitals and of "m" and "w" reach.
   const FOLD_LABEL_MAX = 32;
 
-  it('Q-UI-810 every fold label of every format and client fits one line at 390 px, in English and in German', () => {
+  it('R-UI-171 every fold label of every format and client fits one line at 390 px, in English and in German', () => {
     const folds = foldUnits();
     expect(folds.map((u) => u.id)).toContain('setup.more');
     expect(folds.length).toBeGreaterThanOrEqual(11);
@@ -60,7 +60,7 @@ describe('Snippet words', () => {
     expect(tooLong).toEqual([]);
   });
 
-  it('Q-UI-810 every fold the page shows for a snippet the API renders is one of those labels', () => {
+  it('R-UI-171 every fold the page shows for a snippet the API renders is one of those labels', () => {
     const folds = foldUnits().filter((u) => u.id !== 'setup.more');
     const shown = new Set<string>();
     for (const ids of Object.values(RENDERED_SNIPPET_IDS)) {

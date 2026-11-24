@@ -87,14 +87,14 @@ describe('The page of a version (R-UI-111)', () => {
     expect(command(r)).toBe('npm install @team-a/ui@1.3.0');
   });
 
-  it('R-UI-111 R-UI-008 Q-UI-456 without a grade the tabs are README, Files and Details, the README first', async () => {
+  it('R-UI-111 R-UI-008 without a grade the tabs are README, Files and Details, the README first', async () => {
     const r = await open();
     expect(tabLabels(r)).toEqual(['README', 'Files', 'Details']);
     expect(r.root.querySelector('quader-package-readme .readme h1')?.textContent).toBe('@team-a/ui');
     expect(r.fake.readmeCalls).toEqual(['pkg_01JBQ6V7S3K9@1.4.0']);
   });
 
-  it('R-UI-111 Q-UI-456 a graded version opens on Vulnerabilities; one that is not scanned keeps the tab after Details', async () => {
+  it('R-UI-111 a graded version opens on Vulnerabilities; one that is not scanned keeps the tab after Details', async () => {
     const report = (grade: ReturnType<typeof sampleGrade>) => ({
       packageId: 'pkg_01JBQ6V7S3K9',
       version: '1.4.0',
@@ -157,7 +157,7 @@ describe('The page of a version (R-UI-111)', () => {
     await expectAccessible(r.root);
   });
 
-  it('R-UI-193 Q-UI-898 Q-UI-899 a version a system repository alone holds offers no Download and no command, and says why', async () => {
+  it('R-UI-193 a version a system repository alone holds offers no Download and no command, and says why', async () => {
     const r = await open({ tab: 'files' }, (fake) => {
       fake.versionList = fake.versionList.map((v) =>
         v.version !== '1.4.0'
@@ -176,7 +176,7 @@ describe('The page of a version (R-UI-111)', () => {
     await expectAccessible(r.root);
   });
 
-  it('R-UI-111 Q-UI-965 a version its disabled repository alone serves offers no Download and no command, and says why in one sentence', async () => {
+  it('R-UI-111 a version its disabled repository alone serves offers no Download and no command, and says why in one sentence', async () => {
     // web/npm-local is disabled, and web/npm-all reaches the version only through it: neither serves it (R-REPO-019).
     const r = await open({ tab: 'files' }, (fake) => {
       fake.versionList = fake.versionList.map((v) =>
@@ -193,7 +193,7 @@ describe('The page of a version (R-UI-111)', () => {
     await expectAccessible(r.root);
   });
 
-  it('R-UI-111 Q-UI-965 a disabled repository beside one that serves the version is left out of the picker, and its file offers no Download', async () => {
+  it('R-UI-111 a disabled repository beside one that serves the version is left out of the picker, and its file offers no Download', async () => {
     const r = await open({ tab: 'files' }, (fake) => {
       fake.versionList = fake.versionList.map((v) =>
         v.version !== '1.4.0'
@@ -288,7 +288,7 @@ describe('The page of a version (R-UI-111)', () => {
     const copyButtons = (r: Opened) => [...r.root.querySelectorAll<HTMLButtonElement>('.version-tabs quader-copy-button button')];
     const nameOf = (b: HTMLElement) => b.getAttribute('aria-label') ?? text(b);
 
-    it('R-UI-111 R-OCI-031 Q-UI-225 R-UI-006 the tag leads the title, the digest is a detail; the header shows the OCI logo beside the format by its name', async () => {
+    it('R-UI-111 R-OCI-031 R-UI-006 the tag leads the title, the digest is a detail; the header shows the OCI logo beside the format by its name', async () => {
       const r = await image();
       expect(text(r.root.querySelector('h1')!)).toBe('team/app 1.2.0');
       expect(text(r.root.querySelector('.version-facts')!)).not.toContain('sha256:');
@@ -364,7 +364,7 @@ describe('The page of a version (R-UI-111)', () => {
       expect(text(platforms.querySelector('tbody tr')!.children[3]!)).toBe('–None');
     });
 
-    it('R-API-080 Q-OCI-221 an index of a remote counts the platforms fetched so far, and the others say they are not fetched', async () => {
+    it('R-API-080 an index of a remote counts the platforms fetched so far, and the others say they are not fetched', async () => {
       const r = await image({ tab: 'details' }, (fake) => {
         for (const v of fake.versionList) {
           if (v.format === 'oci') {

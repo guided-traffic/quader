@@ -39,7 +39,7 @@ async function render(setup?: (system: FakeSystemApi, enc: FakeEncryptionApi, se
 const text = (root: HTMLElement): string => root.textContent?.replace(/\s+/g, ' ') ?? '';
 
 describe('System status screen', () => {
-  it('R-UI-145 Q-UI-570 Q-UI-560 the version names the revision by its short form with the full hash as its title, and the schema version and its badge stand apart', async () => {
+  it('R-UI-145 the version names the revision by its short form with the full hash as its title, and the schema version and its badge stand apart', async () => {
     const revision = '3897aa47708f8a0c1b2d3e4f5a6b7c8d9e0f1a2b';
     const { root } = await render((system) => (system.infoResult = sampleInfo({ version: { version: 'dev', revision, goVersion: 'go1.27.4' } })));
     const code = root.querySelector('section[aria-labelledby="card-install"] code.revision')!;
@@ -53,7 +53,7 @@ describe('System status screen', () => {
     expect(schema.textContent!.replace(/\s+/g, ' ')).toMatch(/^ ?12 check_circle/);
   });
 
-  it('R-UI-145 Q-UI-560 a replica\'s state is a badge, its icon and its word with a capital in one element', async () => {
+  it('R-UI-145 a replica\'s state is a badge, its icon and its word with a capital in one element', async () => {
     const { root } = await render();
     const state = root.querySelector('section.role tbody tr td:nth-child(4) > .state > :is(.ok, .bad, .badge)')!;
     expect(state.firstElementChild!.classList).toContain('material-icons');
@@ -73,7 +73,7 @@ describe('System status screen', () => {
     expect(root.querySelectorAll('table th[scope="row"]').length).toBeGreaterThan(1);
   });
 
-  it('R-UI-038 Q-UI-107 groups the replicas by role in the order api, packages, worker, and by pool within a role', async () => {
+  it('R-UI-038 groups the replicas by role in the order api, packages, worker, and by pool within a role', async () => {
     const { root } = await render((system) => {
       const sample = (name: string, roleName: string, node: string, pool: string | null = null) =>
         sampleReplica({ name, instanceUid: name, node, pool, roles: [roleName as 'api' | 'packages' | 'worker'] });
@@ -122,7 +122,7 @@ describe('System status screen', () => {
     expect(root.querySelector('section.role#role-web')).toBeNull();
   });
 
-  it('R-UI-038 Q-UI-107 a group web appears during the upgrade across the cut and says so with its replicas', async () => {
+  it('R-UI-038 a group web appears during the upgrade across the cut and says so with its replicas', async () => {
     const { root } = await render((system) => {
       system.replicasResult = [
         sampleReplica({ name: 'quader-api-0', instanceUid: 'a' }),
@@ -134,7 +134,7 @@ describe('System status screen', () => {
     expect(text(root)).toContain('quader-web-0');
   });
 
-  it('R-UI-038 Q-UI-107 no live packages replica is reported by the group', async () => {
+  it('R-UI-038 no live packages replica is reported by the group', async () => {
     const { root } = await render();
     expect(text(root)).toContain('No live packages replica');
   });
@@ -188,7 +188,7 @@ describe('System status screen', () => {
     expect(text(root)).toContain('Not drain-safe');
   });
 
-  describe('an update, a lost replica and a single replica (R-UI-038, Q-UI-600 to Q-UI-603)', () => {
+  describe('an update, a lost replica and a single replica (R-UI-038)', () => {
     /** Two ready replicas of each main role on two nodes, and the summary the server folds from them. */
     function installation(system: FakeSystemApi, extra: Replica[] = []) {
       const one = (name: string, role: 'api' | 'packages' | 'worker', node: string, over: Partial<Replica> = {}) =>
@@ -218,7 +218,7 @@ describe('System status screen', () => {
     }
     const summary = (root: HTMLElement) => root.querySelector<HTMLElement>('p.summary')!;
 
-    it('R-UI-038 Q-UI-600 a replica that drains during an update is shown as draining and leaves the header ready', async () => {
+    it('R-UI-038 a replica that drains during an update is shown as draining and leaves the header ready', async () => {
       const { root } = await render((system) =>
         installation(system, [
           sampleReplica({
@@ -241,7 +241,7 @@ describe('System status screen', () => {
       expect(text(row)).not.toContain('Failing checks');
     });
 
-    it('R-UI-038 Q-UI-602 a replica lost without draining is a warning with its last heartbeat, and its row stays as lost', async () => {
+    it('R-UI-038 a replica lost without draining is a warning with its last heartbeat, and its row stays as lost', async () => {
       const { root } = await render((system) =>
         installation(system, [
           sampleReplica({ name: 'quader-api-crashed', instanceUid: 'crashed', node: 'n3', lost: true, heartbeatAt: '2026-11-18T09:12:00Z' }),
@@ -258,7 +258,7 @@ describe('System status screen', () => {
       expect(row.querySelector('.warn .material-icons')).toBeTruthy();
     });
 
-    it('R-UI-038 Q-UI-603 one healthy replica of the role all reads all roles ready; not drain-safe only informs', async () => {
+    it('R-UI-038 one healthy replica of the role all reads all roles ready; not drain-safe only informs', async () => {
       const { root } = await render((system) => {
         system.replicasResult = [sampleReplica({ name: 'quader-dev', instanceUid: 'dev', roles: ['all'], node: null })];
         system.infoResult = sampleInfo({
@@ -328,7 +328,7 @@ describe('System status screen', () => {
     vi.useRealTimers();
   });
 
-  it('R-OPS-048 Q-UI-897 the scanner replicas are one more group of rows after the roles, a sub-group per kind with its tool, and a kind with no ready replica is a warning of the header', async () => {
+  it('R-UI-038 R-OPS-048 the scanner replicas are one more group of rows after the roles, a sub-group per kind with its tool, and a kind with no ready replica is a warning of the header', async () => {
     const { root } = await render((system) => {
       system.scannersResult = sampleScanners({
         items: [
@@ -352,7 +352,7 @@ describe('System status screen', () => {
     expect(summary).not.toContain('No ready replica of vuln-scanner-trivy');
   });
 
-  it('Q-UI-915 the image scanners say per pod which database it holds, and the group informs while ready pods do not hold the database in use', async () => {
+  it('R-UI-038 the image scanners say per pod which database it holds, and the group informs while ready pods do not hold the database in use', async () => {
     const current = { version: 'a1b2c3d4e5f6'.padEnd(64, '0'), builtAt: '2026-11-21T07:02:00Z' };
     const behind = await render((system) => {
       system.scannersResult = sampleScanners({
@@ -377,7 +377,7 @@ describe('System status screen', () => {
     expect(text(behind.root.querySelector('p.summary')!)).not.toContain('vuln-scanner-trivy');
   });
 
-  it('Q-UI-915 while every ready image scanner holds the database in use, the group has no note', async () => {
+  it('R-UI-038 while every ready image scanner holds the database in use, the group has no note', async () => {
     const current = { version: 'a1b2c3d4e5f6'.padEnd(64, '0'), builtAt: '2026-11-21T07:02:00Z' };
     const current2 = await render((system) => {
       system.scannersResult = sampleScanners({
@@ -387,7 +387,7 @@ describe('System status screen', () => {
     expect(current2.root.querySelector('[data-testid="scanner-database-lag"]')).toBeNull();
   });
 
-  it('R-OPS-048 Q-UI-897 the role all runs no scanner pod, and the page says so instead of an empty table', async () => {
+  it('R-UI-038 R-OPS-048 the role all runs no scanner pod, and the page says so instead of an empty table', async () => {
     const { root } = await render((system) => {
       system.replicasResult = [sampleReplica({ name: 'quader-all-0', roles: ['all'] })];
       system.scannersResult = sampleScanners({
@@ -414,7 +414,7 @@ describe('System status screen', () => {
     expect(root.querySelectorAll('section.role').length).toBe(3);
   });
 
-  it('R-UI-038 Q-UI-144 the installation card links the notices of the bundled software next to the version', async () => {
+  it('R-UI-038 the installation card links the notices of the bundled software next to the version', async () => {
     const { root } = await render();
     const link = root.querySelector<HTMLAnchorElement>('section[aria-labelledby="card-install"] a[href="3rdpartylicenses.txt"]');
     expect(link?.textContent?.trim()).toBe('3rdpartylicenses.txt');

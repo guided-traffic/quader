@@ -30,7 +30,7 @@ describe('Policy list (R-UI-027)', () => {
 });
 
 describe('Policy editor (R-UI-027)', () => {
-  it('Q-UI-224 the groups are sections without a card, and Delete policy is last under Advanced', async () => {
+  it('R-UI-027 the groups are sections without a card, and Delete policy is last under Advanced', async () => {
     const { root } = await renderScreen(PolicyEditor, { inputs: { name: 'team-web-publish' } });
     expect(root.querySelector('section.card')).toBeNull();
     const toggles = [...root.querySelectorAll('.toggle')].map((e) => text(e));

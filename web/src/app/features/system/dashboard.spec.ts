@@ -51,7 +51,7 @@ function installation(s: FakeSystemApi, first: Replica[] = []) {
   });
 }
 
-describe('Admin dashboard (Q-OPS-175)', () => {
+describe('Admin dashboard (R-UI-038)', () => {
   it('R-UI-038 shows the instance, each role with its load, the dependencies with their checks, and the counts', async () => {
     const { root } = await render((s) =>
       installation(s, [
@@ -77,7 +77,7 @@ describe('Admin dashboard (Q-OPS-175)', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
-  it('R-UI-145 Q-UI-572 every row of a component\'s card is built one way: CPU and Memory are rows of its list with their bar inside', async () => {
+  it('R-UI-145 every row of a component\'s card is built one way: CPU and Memory are rows of its list with their bar inside', async () => {
     const { root } = await render((s) => {
       s.replicasResult = [sampleReplica({ runtime: sampleRuntime({ requests: 200, windowSeconds: 10 }) })];
     });
@@ -112,14 +112,14 @@ describe('Admin dashboard (Q-OPS-175)', () => {
     expect(t).not.toContain('Active tokens');
   });
 
-  it('R-UI-038 a role without a replica says so instead of showing zeros, and the instance is red (Q-UI-602)', async () => {
+  it('R-UI-038 a role without a replica says so instead of showing zeros, and the instance is red', async () => {
     const { root } = await render((s) => (s.replicasResult = [sampleReplica()]));
     expect(text(root)).toContain('No replica of this role is running.');
     expect(text(root)).toContain('No ready replica of the role packages, worker');
     expect(root.querySelector('.instance-bar .state.bad')).toBeTruthy();
   });
 
-  it('R-UI-038 Q-UI-600 a replica that drains during an update leaves the instance ready and says that replicas are replaced', async () => {
+  it('R-UI-038 a replica that drains during an update leaves the instance ready and says that replicas are replaced', async () => {
     const { root } = await render((s) =>
       installation(s, [sampleReplica({ name: 'quader-api-old', instanceUid: 'old', state: 'draining', version: '0.1.0' })]),
     );
@@ -129,7 +129,7 @@ describe('Admin dashboard (Q-OPS-175)', () => {
     expect(bar.querySelector('.state.bad, .state.warn')).toBeNull();
   });
 
-  it('R-UI-038 Q-UI-602 a replica lost without draining while its role is ready is a warning that says when', async () => {
+  it('R-UI-038 a replica lost without draining while its role is ready is a warning that says when', async () => {
     const { root } = await render((s) =>
       installation(s, [sampleReplica({ name: 'quader-api-crashed', instanceUid: 'crashed', lost: true, heartbeatAt: '2026-11-18T09:12:00Z' })]),
     );
@@ -148,7 +148,7 @@ describe('Admin dashboard (Q-OPS-175)', () => {
     expect([...root.querySelectorAll('.card-head h3')].map((h) => h.textContent?.trim())).toContain('all');
   });
 
-  it('R-UI-038 Q-UI-604 a role whose replicas name no node shows no Nodes row instead of 0', async () => {
+  it('R-UI-038 a role whose replicas name no node shows no Nodes row instead of 0', async () => {
     const { root } = await render((s) => {
       s.replicasResult = [sampleReplica({ roles: ['all'], node: null })];
       s.infoResult = { ...s.infoResult, replicas: { live: 1, ready: 1, versions: { dev: 1 }, roles: { all: { live: 1, ready: 1, degraded: 0, nodes: 0 } } } };
@@ -159,7 +159,7 @@ describe('Admin dashboard (Q-OPS-175)', () => {
     expect(text(root.querySelector<HTMLElement>('.instance-bar')!)).toContain('All roles ready');
   });
 
-  describe('the state of the backup (R-UI-165, Q-UI-654)', () => {
+  describe('the state of the backup (R-UI-165)', () => {
     /** The row Last backup of the card Operations, or null. */
     const backupRow = (root: HTMLElement) =>
       [...root.querySelectorAll<HTMLElement>('section[aria-labelledby="dash-ops"] dl.kv > div')].find((d) => d.querySelector('dt')?.textContent?.trim() === 'Last backup') ?? null;

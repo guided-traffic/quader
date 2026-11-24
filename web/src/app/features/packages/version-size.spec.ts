@@ -45,7 +45,7 @@ describe('Version size', () => {
     expect(root.querySelector('[title]')?.getAttribute('title')).toContain('no platform of this image has been fetched');
   });
 
-  it('R-API-080 Q-OCI-221 a size that counts only the platforms fetched so far reads "at least" and says what it leaves out', async () => {
+  it('R-API-080 a size that counts only the platforms fetched so far reads "at least" and says what it leaves out', async () => {
     const root = await render(1_048_576, true);
     expect(text(root)).toContain('1.0 MiB');
     expect(root.textContent).toContain('≥');

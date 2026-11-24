@@ -40,7 +40,7 @@ describe('Users list (R-UI-024)', () => {
     expect(root.textContent).not.toContain('Load more');
   });
 
-  it('R-UI-024 Q-UI-421 a search starts a new traversal', async () => {
+  it('R-UI-024 R-UI-100 a search starts a new traversal', async () => {
     const { fixture, root } = await renderScreen(UserList);
     await searchList(fixture, root, 'bob');
     const rows = root.querySelectorAll('tbody tr');
@@ -92,7 +92,7 @@ describe('User detail (R-UI-024)', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
-  it('Q-UI-223 the user is one column: name and email edited in place, ID and origin read-only, Save changes waits for a change, Advanced last', async () => {
+  it('R-UI-024 the user is one column: name and email edited in place, ID and origin read-only, Save changes waits for a change, Advanced last', async () => {
     const { fixture, root } = await renderScreen(UserDetail, { inputs: { username: 'alice' } });
     expect(root.querySelector('.settings > .card')).toBeNull();
     const save = buttonByText(root, 'Save changes') as HTMLButtonElement;
@@ -106,7 +106,7 @@ describe('User detail (R-UI-024)', () => {
     expect(headings[headings.length - 1]).toMatch(/Advanced$/);
   });
 
-  it('R-AUTH-008 Q-UI-610 a missing group claim opens Groups with a notice: the provider, the reason in words, since when, and what clear does', async () => {
+  it('R-UI-024 R-AUTH-008 a missing group claim opens Groups with a notice: the provider, the reason in words, since when, and what clear does', async () => {
     const { root } = await renderScreen(UserDetail, {
       inputs: { username: 'alice' },
       setup: (g) => {
@@ -127,7 +127,7 @@ describe('User detail (R-UI-024)', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
-  it('R-AUTH-008 Q-UI-610 with keep the notice says the synchronized groups are kept; without a missing claim Groups stays closed and silent', async () => {
+  it('R-UI-024 R-AUTH-008 with keep the notice says the synchronized groups are kept; without a missing claim Groups stays closed and silent', async () => {
     const keep = await renderScreen(UserDetail, {
       inputs: { username: 'alice' },
       setup: (g) => {
@@ -197,7 +197,7 @@ describe('User detail (R-UI-024)', () => {
     expect(root.querySelector('dd quader-avatar img')?.getAttribute('src')).toMatch(/^data:image\/svg\+xml/);
   });
 
-  it('R-UI-024 Q-UI-333 the break-glass account, read with tokens:read and no Advanced action, shows its tokens and no section Advanced', async () => {
+  it('R-UI-024 the break-glass account, read with tokens:read and no Advanced action, shows its tokens and no section Advanced', async () => {
     const { root } = await renderScreen(UserDetail, {
       inputs: { username: 'break-glass' },
       capabilities: ['identities:read', 'tokens:read'],
@@ -257,7 +257,7 @@ describe('User detail (R-UI-024)', () => {
     expect(revoke.classList.contains('btn-danger')).toBe(true);
   });
 
-  it('R-UI-024 Q-UI-333 the tokens are a quiet section like the page\'s other sections, open while the user holds a token', async () => {
+  it('R-UI-024 the tokens are a quiet section like the page\'s other sections, open while the user holds a token', async () => {
     const { root, fixture } = await renderScreen(UserDetail, { inputs: { username: 'alice' } });
     await settle(fixture);
     expect(root.querySelector('section.tokens, h2#user-tokens')).toBeNull();
@@ -266,7 +266,7 @@ describe('User detail (R-UI-024)', () => {
     expect(tokens.querySelector('.toggle')?.getAttribute('aria-expanded')).toBe('true');
   });
 
-  it('R-UI-024 Q-UI-333 revoking the user\'s last token leaves the section Tokens open with its empty line', async () => {
+  it('R-UI-024 revoking the user\'s last token leaves the section Tokens open with its empty line', async () => {
     const { root, fixture } = await renderScreen(UserDetail, { inputs: { username: 'alice' } });
     await settle(fixture);
     const tokens = [...root.querySelectorAll('quader-disclosure')].find((d) => d.querySelector('.heading')?.textContent?.includes('Tokens'))!;
@@ -280,7 +280,7 @@ describe('User detail (R-UI-024)', () => {
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
   });
 
-  it('R-UI-024 Q-UI-333 another user on the same page starts with the section Tokens closed when he holds none', async () => {
+  it('R-UI-024 another user on the same page starts with the section Tokens closed when he holds none', async () => {
     const { root, fixture } = await renderScreen(UserDetail, { inputs: { username: 'alice' } });
     await settle(fixture);
     const expanded = (): string | null | undefined =>

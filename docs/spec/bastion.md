@@ -3459,7 +3459,7 @@ stands for every connection whose `handoverUsable` is false, plain or encrypted,
 page too ([api-and-ui.md](api-and-ui.md) Q-UI-958). The clause "the connection is encrypted" is gone: the settings' answer never names
 `encrypted` among `handoverReasons` (R-STOR-096; `decide` in [links.go](../../internal/downloadlinks/links.go), checked on the joined tree).
 The Vitest cases: an encrypted connection a Bastion can read has no line, one it cannot names its reason with the link
-(`bastions.spec.ts`, "Q-BAS-300 an encrypted connection is judged by its handover reasons like a plain one").
+(`bastions.spec.ts`, "R-BAS-071 an encrypted connection is judged by its handover reasons like a plain one").
 
 ### R-BAS-072 · The Bastion offers to take a handover on a miss
 Priority: **P1** · Covers: quader-only

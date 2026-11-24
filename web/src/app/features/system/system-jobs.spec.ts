@@ -263,7 +263,7 @@ describe('Jobs screen', () => {
     expect(text(root)).toContain('ecosystems: 2');
   });
 
-  it('R-UI-038 R-UI-145 Q-UI-560 a state is a badge, its icon and its word with a capital in one element, and the kind and the replica are not let break', async () => {
+  it('R-UI-038 R-UI-145 a state is a badge, its icon and its word with a capital in one element, and the kind and the replica are not let break', async () => {
     const { root } = await open({}, (jobs) => {
       jobs.jobList = [sampleJob({ kind: 'gc-full', state: 'succeeded', replica: 'ms2022.local-39645' })];
     });
@@ -280,7 +280,7 @@ describe('Jobs screen', () => {
     expect(text(replica)).toBe('ms2022.local-39645');
   });
 
-  it('R-UI-038 R-UI-146 Q-UI-566 the filters are the head of every list: Filters, the drawer and the chips; no form of its own', async () => {
+  it('R-UI-038 R-UI-146 the filters are the head of every list: Filters, the drawer and the chips; no form of its own', async () => {
     const { root, fixture, router } = await open({ kind: 'gc,gc-full', state: ['failed'] });
     expect(root.querySelector('quader-list-head')).toBeTruthy();
     expect(root.querySelector('form.toolbar')).toBeNull();

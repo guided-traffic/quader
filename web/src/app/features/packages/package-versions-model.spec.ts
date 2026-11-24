@@ -46,7 +46,7 @@ const rows = versionRows(listed, grades, [
 const order = (rs: readonly { version: string }[]) => rs.map((r) => r.version);
 
 describe('The versions table of a package (R-UI-110)', () => {
-  it('R-UI-110 Q-UI-453 a row carries the tags that point at it, its grade, and its place in the version order', () => {
+  it('R-UI-110 a row carries the tags that point at it, its grade, and its place in the version order', () => {
     expect(rows.map((r) => [r.version, r.tags, r.grade?.grade ?? null, r.order])).toEqual([
       ['3.0.0-rc.1', ['next'], null, 0],
       ['2.1.0', ['latest', 'lts'], 'A', 1],
@@ -55,7 +55,7 @@ describe('The versions table of a package (R-UI-110)', () => {
     ]);
   });
 
-  it('R-UI-110 Q-UI-452 the search finds a version by a part of it or by a tag, case-insensitive; an empty search keeps every row', () => {
+  it('R-UI-110 the search finds a version by a part of it or by a tag, case-insensitive; an empty search keeps every row', () => {
     expect(order(filterVersions(rows, '2.'))).toEqual(['2.1.0', '2.0.0']);
     expect(order(filterVersions(rows, 'RC'))).toEqual(['3.0.0-rc.1']);
     expect(order(filterVersions(rows, 'latest'))).toEqual(['2.1.0']);
@@ -63,7 +63,7 @@ describe('The versions table of a package (R-UI-110)', () => {
     expect(filterVersions(rows, '9.9')).toEqual([]);
   });
 
-  it('R-UI-110 Q-UI-452 every column sorts both ways; equal keys keep the highest version first', () => {
+  it('R-UI-110 every column sorts both ways; equal keys keep the highest version first', () => {
     expect(order(sortVersions(rows, DEFAULT_VERSION_SORT))).toEqual(['3.0.0-rc.1', '2.1.0', '2.0.0', '1.0.0']);
     expect(order(sortVersions(rows, { column: 'version', direction: 'asc' }))).toEqual(['1.0.0', '2.0.0', '2.1.0', '3.0.0-rc.1']);
     expect(order(sortVersions(rows, { column: 'published', direction: 'desc' }))).toEqual(['3.0.0-rc.1', '2.0.0', '2.1.0', '1.0.0']);
@@ -99,7 +99,7 @@ describe('The versions table of a package (R-UI-110)', () => {
     expect(versionSortParam(DEFAULT_VERSION_SORT)).toBeNull();
   });
 
-  it('R-UI-110 Q-UI-457 the column Repositories is there only when the rows differ, and names a repository of the project by its key', () => {
+  it('R-UI-110 the column Repositories is there only when the rows differ, and names a repository of the project by its key', () => {
     expect(repositoriesDiffer(rows)).toBe(false);
     const mixed = versionRows([summary('1.0.0'), summary('2.0.0', { repositories: ['web/npm-local', 'web/npm-remote'] })], new Map(), []);
     expect(repositoriesDiffer(mixed)).toBe(true);
@@ -113,7 +113,7 @@ describe('The versions table of a package (R-UI-110)', () => {
     expect(distTagsOf(undefined)).toEqual([]);
   });
 
-  it('R-UI-112 Q-UI-454 the grade reads as its total and its fixable findings, in the language of the build', () => {
+  it('R-UI-112 the grade reads as its total and its fixable findings, in the language of the build', () => {
     expect(gradeSummaryText(sampleGrade('E', { critical: 13, high: 160, medium: 113, low: 14, none: 2, unknown: 843 }, { fixable: 112 }), 'en')).toBe(
       '1,145 findings · 112 fixable',
     );

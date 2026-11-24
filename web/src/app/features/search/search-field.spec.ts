@@ -181,7 +181,7 @@ describe('What the opened field offers (R-UI-096)', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-158 Q-UI-626 an auditor gets the security dashboard among the places and the pages of the main area, unmarked; a plain user does not', async () => {
+  it('R-UI-158 an auditor gets the security dashboard among the places and the pages of the main area, unmarked; a plain user does not', async () => {
     const auditor = (get: Get): void => {
       (get(SessionApi) as FakeSessionApi).meResult = {
         capabilities: ['audit:read', 'settings:read', 'content:metadata-read', 'vulnerabilities:triage'],
@@ -205,13 +205,13 @@ describe('What the opened field offers (R-UI-096)', () => {
     expect(said(options(plain.root))).not.toContain('Security dashboard');
   });
 
-  it('R-UI-096 Q-UI-1040 an anonymous visitor gets Projects, Repositories and Guides only', async () => {
+  it('R-UI-096 an anonymous visitor gets Projects, Repositories and Guides only', async () => {
     const { root, fixture } = await render('anonymous');
     await open(fixture, root);
     expect(said(options(root))).toEqual(['Projects', 'Repositories', 'Guides']);
   });
 
-  it('R-UI-096 Q-UI-406 the frequently visited repositories show after one name= request, in their order, and only those it returned; the others stay stored', async () => {
+  it('R-UI-096 the frequently visited repositories show after one name= request, in their order, and only those it returned; the others stay stored', async () => {
     const now = Date.now();
     const stored = {
       repositories: [
@@ -277,7 +277,7 @@ describe('Live suggestions (R-UI-097)', () => {
     await settle(fixture);
   });
 
-  it('R-UI-097 Q-UI-407 the groups of an instance administrator: the main area first, then Admin pages, Users and Groups behind a line, each marked', async () => {
+  it('R-UI-097 the groups of an instance administrator: the main area first, then Admin pages, Users and Groups behind a line, each marked', async () => {
     const { root, fixture } = await render('ada', {
       setup: (get) => {
         const s = get(SearchApi) as FakeSearchApi;
@@ -316,7 +316,7 @@ describe('Live suggestions (R-UI-097)', () => {
     expect(TestBed.inject(Router).url).toBe('/search?q=web&kind=repository');
   });
 
-  it('R-UI-193 Q-UI-902 a system repository is suggested with the badge System, heard in its name; a team\'s repository of the same key is not marked', async () => {
+  it('R-UI-193 a system repository is suggested with the badge System, heard in its name; a team\'s repository of the same key is not marked', async () => {
     const { root, fixture } = await render('ada', {
       setup: (get) => {
         (get(SearchApi) as FakeSearchApi).repositories = [
@@ -438,7 +438,7 @@ describe('Live suggestions (R-UI-097)', () => {
   });
 });
 
-describe('The active entry when a newer answer replaces the list (R-UI-097, Q-UI-700, Q-UI-701)', () => {
+describe('The active entry when a newer answer replaces the list (R-UI-097)', () => {
   const NPM_CACHE = { project: 'web', key: 'npm-cache', format: 'npm', class: 'remote' as const };
   const activeName = (root: HTMLElement): string | null => {
     const id = input(root).getAttribute('aria-activedescendant');
@@ -472,7 +472,7 @@ describe('The active entry when a newer answer replaces the list (R-UI-097, Q-UI
     await settle(r.fixture);
   }
 
-  it('R-UI-097 Q-UI-700 the entry the reader walked to stays active where the new list holds it, under the same name, and Enter opens it', async () => {
+  it('R-UI-097 the entry the reader walked to stays active where the new list holds it, under the same name, and Enter opens it', async () => {
     const r = await walking();
     press(r.root, 'ArrowDown');
     press(r.root, 'ArrowDown');
@@ -492,7 +492,7 @@ describe('The active entry when a newer answer replaces the list (R-UI-097, Q-UI
     expect(TestBed.inject(Router).url).toBe('/projects/web/repositories/npm-all');
   });
 
-  it('R-UI-097 R-UI-098 Q-UI-700 a new list without the entry leaves none active, and Enter opens the results page', async () => {
+  it('R-UI-097 R-UI-098 a new list without the entry leaves none active, and Enter opens the results page', async () => {
     const r = await walking();
     press(r.root, 'ArrowDown');
     press(r.root, 'ArrowDown');
@@ -509,7 +509,7 @@ describe('The active entry when a newer answer replaces the list (R-UI-097, Q-UI
     expect(TestBed.inject(Router).url).toBe('/search?q=npm-');
   });
 
-  it('R-UI-097 R-UI-098 Q-UI-700 a new list that is empty leaves none active, says so, and Enter opens the results page', async () => {
+  it('R-UI-097 R-UI-098 a new list that is empty leaves none active, says so, and Enter opens the results page', async () => {
     const r = await walking();
     press(r.root, 'ArrowDown');
     await settle(r.fixture);
@@ -527,7 +527,7 @@ describe('The active entry when a newer answer replaces the list (R-UI-097, Q-UI
     expect(TestBed.inject(Router).url).toBe('/search?q=npm-');
   });
 
-  it('R-UI-097 Q-UI-701 a list that changes under a resting pointer keeps the keyboard’s entry; the pointer takes one when it moves', async () => {
+  it('R-UI-097 a list that changes under a resting pointer keeps the keyboard’s entry; the pointer takes one when it moves', async () => {
     const r = await walking();
     move(options(r.root)[0]!, 10, 10);
     await settle(r.fixture);
@@ -546,7 +546,7 @@ describe('The active entry when a newer answer replaces the list (R-UI-097, Q-UI
     expect(activeName(r.root)).toBe('npm-local · web');
   });
 
-  it('R-UI-097 Q-UI-700 Q-UI-701 a held Down that meets a new list goes on from where its entry now stands; a held Enter acts once', async () => {
+  it('R-UI-097 a held Down that meets a new list goes on from where its entry now stands; a held Enter acts once', async () => {
     const r = await walking();
     press(r.root, 'ArrowDown');
     press(r.root, 'ArrowDown', { repeat: true });

@@ -68,8 +68,8 @@ const stateOf = (root: HTMLElement) =>
   root.querySelector('[data-testid="mirror-state"]')?.getAttribute('data-state');
 const control = (root: ParentNode, id: string) => root.querySelector<HTMLInputElement>(`#${id}`)!;
 
-describe('The section Mirror of the settings page: status, pause, resume, run (R-UI-021, R-REPO-056, Q-UI-104, Q-UI-105)', () => {
-  it('R-UI-021 Q-UI-119 a remote stored in mode mirror shows the status above the settings', async () => {
+describe('The section Mirror of the settings page: status, pause, resume, run (R-UI-021, R-REPO-056)', () => {
+  it('R-UI-021 a remote stored in mode mirror shows the status above the settings', async () => {
     const { r, fake } = await open();
     expect(fake.mirrorStatusCalls).toBe(1);
     expect(stateOf(r.root)).toBe('scheduled');
@@ -111,7 +111,7 @@ describe('The section Mirror of the settings page: status, pause, resume, run (R
     expect(r.root.querySelector('quader-mirror-status')).toBeNull();
   });
 
-  describe('who sees the buttons (Q-UI-120)', () => {
+  describe('who sees the buttons (R-UI-021)', () => {
     it('R-UI-021 R-REPO-056 an administrator with write-config sees Pause and Run', async () => {
       const { r } = await open();
       expect(button(r.root, 'Pause')).toBeDefined();
@@ -134,7 +134,7 @@ describe('The section Mirror of the settings page: status, pause, resume, run (R
     });
   });
 
-  describe('pause and resume patch the document with If-Match (Q-UI-105)', () => {
+  describe('pause and resume patch the document with If-Match (R-UI-021)', () => {
     it('R-UI-021 R-REPO-056 Pause sends {"remote":{"mirror":{"paused":true}}} with the loaded ETag and reads the status again', async () => {
       const { r, fake } = await open();
       fake.mirrorStatuses = [sampleMirrorStatus(), sampleMirrorStatus({ state: 'paused' })];
@@ -226,7 +226,7 @@ describe('The section Mirror of the settings page: status, pause, resume, run (R
       expect(control(r.root, 'f-remote-mirror-intervalSeconds').value).toBe('600');
     });
 
-    it('R-UI-021 a refused pause (Q-REPO-142 and others) is shown as an error and changes nothing', async () => {
+    it('R-UI-021 a refused pause is shown as an error and changes nothing', async () => {
       const { r, fake } = await open();
       fake.patch = async () => {
         throw new ApiError(403, { code: 'forbidden' }, null);

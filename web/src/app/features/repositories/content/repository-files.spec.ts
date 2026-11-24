@@ -67,7 +67,7 @@ describe('The files of a repository', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-010 Q-UI-510 Q-UI-521 a folder deep in the path shows its path once: Files, each folder a link, the last one the page with the copy button after it', async () => {
+  it('R-UI-010 a folder deep in the path shows its path once: Files, each folder a link, the last one the page with the copy button after it', async () => {
     const { root } = await open('generic-local', 'releases/1.0');
     const trail = root.querySelector('nav[aria-label="Folder path"]')!;
     // The collapsed control of the folders in between is in the DOM; a container query shows it or the folders by the width.
@@ -83,7 +83,7 @@ describe('The files of a repository', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-010 Q-UI-518 a list writes when a file changed relative to now, with the absolute time as its title', async () => {
+  it('R-UI-010 a list writes when a file changed relative to now, with the absolute time as its title', async () => {
     const { root } = await open('generic-local', undefined);
     const time = rows(root)[1]!.querySelector('time')!;
     expect(time.getAttribute('datetime')).toBe('2026-10-28T09:14:03Z');
@@ -92,7 +92,7 @@ describe('The files of a repository', () => {
     expect(time.getAttribute('title')).toMatch(/2026/);
   });
 
-  it('R-UI-010 Q-UI-513 a folder with 450 entries shows the first 200, Load more loads the next, and the filter says it searches only what is loaded', async () => {
+  it('R-UI-010 a folder with 450 entries shows the first 200, Load more loads the next, and the filter says it searches only what is loaded', async () => {
     const { root, fixture, files } = await open('big', undefined, (f, catalog) => {
       catalog.repositories = [...catalog.repositories, { key: 'big', project: 'web', class: 'local', format: 'generic' } as never];
       const nodes: FakeNode[] = Array.from({ length: 450 }, (_, i) => ({ path: `f${String(i).padStart(3, '0')}.bin`, kind: 'file', size: 1 }));
@@ -223,7 +223,7 @@ describe('The files of a repository', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/projects', 'web', 'repositories', 'generic-local', 'files', 'releases', '1.0']);
   });
 
-  it('R-UI-010 Q-UI-514 a file shows its name once, as the last segment of its path with its icon, Download through the content route, its download address and its facts; the checksums, the statistics and the API are in Details', async () => {
+  it('R-UI-010 a file shows its name once, as the last segment of its path with its icon, Download through the content route, its download address and its facts; the checksums, the statistics and the API are in Details', async () => {
     const { root, fixture } = await open('generic-local', 'releases/1.0/app.zip');
     const here = root.querySelector('nav[aria-label="Folder path"] .here-name')!;
     expect(here.querySelector('.entry-icon')?.textContent).toBe('description');
@@ -252,7 +252,7 @@ describe('The files of a repository', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-193 Q-UI-965 a file of a disabled repository offers no Download, no download address and no download with curl, and says why once; so does a reader\'s view', async () => {
+  it('R-UI-010 R-UI-193 a file of a disabled repository offers no Download, no download address and no download with curl, and says why once; so does a reader\'s view', async () => {
     for (const consumer of [false, true]) {
       const { root, fixture } = await open('generic-local', 'releases/1.0/app.zip', (_, catalog) => {
         catalog.repositories = catalog.repositories.map((r) => (r.key === 'generic-local' ? { ...r, disabled: true } : r));
@@ -275,7 +275,7 @@ describe('The files of a repository', () => {
     }
   });
 
-  it('R-UI-193 Q-UI-965 a folder of a disabled repository offers no file address to copy, and has no column for it', async () => {
+  it('R-UI-010 R-UI-193 a folder of a disabled repository offers no file address to copy, and has no column for it', async () => {
     const { root } = await open('generic-local', undefined, (_, catalog) => {
       catalog.repositories = catalog.repositories.map((r) => (r.key === 'generic-local' ? { ...r, disabled: true } : r));
     });
@@ -289,7 +289,7 @@ describe('The files of a repository', () => {
     expect(text(root.querySelector('.file-actions')!)).not.toContain('Delete');
   });
 
-  it('R-MAL-024 Q-UI-882 a file the malware scan refuses offers no Download, and says why; one that waits keeps it', async () => {
+  it('R-MAL-024 a file the malware scan refuses offers no Download, and says why; one that waits keeps it', async () => {
     const refused = await open('generic-local', 'readme.txt', (files) => {
       files.tree.set('web/generic-local', [
         { path: 'readme.txt', kind: 'file', size: 120, malware: malwareStatus({ state: 'infected', signature: 'Eicar-Test-Signature', refused: true }) },
@@ -303,7 +303,7 @@ describe('The files of a repository', () => {
     expect(text(pending.root.querySelector('.file-actions')!)).toContain('Download');
   });
 
-  it('Q-UI-511 a package format keeps its packages as the page and offers its raw files under Files, with a way back; it takes no upload', async () => {
+  it('R-UI-052 a package format keeps its packages as the page and offers its raw files under Files, with a way back; it takes no upload', async () => {
     const page = await open('npm-local', undefined);
     page.root.querySelector<HTMLButtonElement>('button[aria-label="More actions"]')!.click();
     await settle(page.fixture);

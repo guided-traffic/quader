@@ -108,7 +108,7 @@ describe('Packages list', () => {
     expect(link.getAttribute('href')).toBe('/projects/web/packages/npm/@team-a/ui');
   });
 
-  it('R-UI-006 Q-UI-225 a format is shown as icon and text, never as icon alone: the owner logo or the neutral glyph, and the name said once', async () => {
+  it('R-UI-006 a format is shown as icon and text, never as icon alone: the owner logo or the neutral glyph, and the name said once', async () => {
     const r = await open();
     const typeOf = (name: string) =>
       rows(r).find((row) => text(row.querySelector('th a')!) === name)!.querySelector('.type-cell')!;
@@ -151,7 +151,7 @@ describe('Packages list', () => {
     expect(unknown.fake.listFilters.at(-1)?.sort).toBe('name');
   });
 
-  it('R-UI-006 Q-UI-420 the head searches by name or description; the drawer offers package type, repository, keyword and created', async () => {
+  it('R-UI-006 R-UI-100 R-UI-101 the head searches by name or description; the drawer offers package type, repository, keyword and created', async () => {
     const r = await open();
     expect(r.root.querySelector('.list-search input')?.getAttribute('aria-label')).toBe('Filter packages');
     const drawer = await openFilters(r.fixture, r.root);
@@ -161,7 +161,7 @@ describe('Packages list', () => {
     await expectAccessible(r.root);
   });
 
-  it('Q-UI-421 the search field sends the text to the query', async () => {
+  it('R-UI-100 the search field sends the text to the query', async () => {
     const r = await open();
     const navigate = navigateSpy();
     await searchList(r.fixture, r.root, ' logging ');

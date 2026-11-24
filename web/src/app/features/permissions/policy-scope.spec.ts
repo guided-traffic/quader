@@ -13,7 +13,7 @@ describe('A policy is global unless it says otherwise (R-UI-041, R-AUTHZ-026)', 
     expect(newLink(root).getAttribute('href')).toBe('/admin/permissions/new');
   });
 
-  it('R-UI-041 Q-UI-129 the list names the project of each policy in a column and links to the project\'s screen', async () => {
+  it('R-UI-041 the list names the project of each policy in a column and links to the project\'s screen', async () => {
     const { root } = await renderScreen(PolicyList);
     expect([...root.querySelectorAll('th[scope="col"]')].map((h) => text(h))).toContainEqual(expect.stringMatching(/^Project/));
   });

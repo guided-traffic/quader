@@ -43,7 +43,7 @@ describe('The usage overview (R-UI-183)', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
-  it('Q-UI-732 the bar is never green and the state comes with its word', async () => {
+  it('R-UI-183 the bar is never green and the state comes with its word', async () => {
     const { root } = await renderScreen(UsageOverview, { capabilities: ['usage:read'] });
     expect(rowOf(root, 'Alice Example').querySelector('.fill.warn')).toBeTruthy();
     expect(rowOf(root, '2001:db8:1:2::/64').querySelector('.fill.bad')).toBeTruthy();
@@ -158,7 +158,7 @@ describe("A caller's usage (R-UI-184) and a user's own (R-UI-185)", () => {
     expect(text(root)).toContain('50 GB per hour from the upstream, upstream requests per hour: 2,000');
   });
 
-  it('R-UI-193 Q-UI-901 Explain for a repository suggests no system repository of upstream, whose limits apply to no caller', async () => {
+  it('R-UI-193 Explain for a repository suggests no system repository of upstream, whose limits apply to no caller', async () => {
     const { fixture, root } = await renderScreen(LimitExplain, {
       setup: (get) => {
         (get(RepositoriesApi) as FakeRepositoriesApi).repositories = [
@@ -237,7 +237,7 @@ describe("A caller's usage (R-UI-184) and a user's own (R-UI-185)", () => {
     expect(text(root)).toContain('You have not downloaded anything in the last 24 hours.');
   });
 
-  it('Q-UI-754 the history is three charts of one axis each, with a read-out by key and a table', async () => {
+  it('R-UI-184 the history is three charts of one axis each, with a read-out by key and a table', async () => {
     const { fixture, root } = await renderScreen(UsageDetailPage, { capabilities: ['usage:read'], inputs: { kind: 'user', id: 'alice' } });
     expect(root.querySelectorAll('quader-usage-history svg').length).toBe(3);
     const charts = root.querySelector<HTMLElement>('quader-usage-history .charts')!;

@@ -71,7 +71,7 @@ describe('The gate of a repository in its settings (R-SIG-074, R-SIG-061)', () =
     await expectAccessible(root);
   });
 
-  it('R-SIG-074 Q-SIG-76 on with any anchor: the warning that the public Sigstore counts, and the stored state with its dashboard link', async () => {
+  it('R-SIG-074 on with any anchor: the warning that the public Sigstore counts, and the stored state with its dashboard link', async () => {
     const { root } = await section({ onlyVerified: true, anchors: [] });
     expect(box(root).checked).toBe(true);
     expect(words(root.querySelector('[data-testid="gate-any-warning"]')!)).toBe(
@@ -113,7 +113,7 @@ describe('The gate of a repository in its settings (R-SIG-074, R-SIG-061)', () =
     expect(ticks[1]!.disabled).toBe(true);
   });
 
-  it('R-SIG-074 Q-SIG-80 a Debian repository says why it offers nothing; checks switched off say that the setting does not apply', async () => {
+  it('R-SIG-074 R-SIG-063 a Debian repository says why it offers nothing; checks switched off say that the setting does not apply', async () => {
     const deb = await section({}, { format: 'deb' });
     expect(text(deb.root.querySelector('[data-testid="gate-deb"]')!)).toBe(
       "apt checks the signature of this repository's index, not of a package. This setting is not available for Debian repositories.",

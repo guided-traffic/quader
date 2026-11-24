@@ -36,7 +36,7 @@ describe("The repository's section Download links (R-UI-201)", () => {
     expect(text(r.root.querySelector('[data-testid="repo-links-virtual"]')!)).toBe('A member that does not allow it is delivered by Quader.');
   });
 
-  it('R-UI-201 Q-UI-956 with the installation switched off the box stays usable, says when the choice takes effect, and saves', async () => {
+  it('R-UI-201 with the installation switched off the box stays usable, says when the choice takes effect, and saves', async () => {
     const r = await section({}, false);
     const saved = vi.spyOn(r.fixture.componentInstance.save, 'emit');
     expect(box(r.root)?.checked).toBe(true);
@@ -50,7 +50,7 @@ describe("The repository's section Download links (R-UI-201)", () => {
     expect(saved.mock.calls).toEqual([[false]]);
   });
 
-  it('R-UI-201 Q-UI-956 a format not every client of which checks is disabled and unchecked, and says why', async () => {
+  it('R-UI-201 a format not every client of which checks is disabled and unchecked, and says why', async () => {
     const r = await section({ format: 'npm', formatLabel: 'npm' });
     expect(box(r.root)?.checked).toBe(false);
     expect(box(r.root)?.disabled).toBe(true);

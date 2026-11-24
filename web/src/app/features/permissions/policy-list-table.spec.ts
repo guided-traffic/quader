@@ -17,7 +17,7 @@ describe('Policy list table and filter panel (R-UI-027, R-UI-020)', () => {
     expect(root.querySelector('th[aria-sort]')!.getAttribute('aria-sort')).toBe('descending');
   });
 
-  it('R-UI-027 Q-UI-422 a link with a principal shows the filter as a chip beside Filters, counted on the button', async () => {
+  it('R-UI-027 R-UI-100 a link with a principal shows the filter as a chip beside Filters, counted on the button', async () => {
     const { root } = await renderScreen(PolicyList, { inputs: { principal: 'user:alice' } });
     expect(chipTexts(root)).toEqual(['Principal: alice']);
     expect(root.querySelector('button.filter-toggle .filter-count')?.textContent).toBe('1');

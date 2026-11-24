@@ -6,8 +6,8 @@ import { orderRules } from './limit-rules';
 import { keyFromName } from './profile-editor';
 import { overridesOf } from './rule-dialog';
 
-describe('Download limits: figures and callers (R-UI-178, R-UI-179, Q-UI-736)', () => {
-  it('Q-UI-736 shows bytes as decimal MB and GB and reads a field back to bytes, rounded down', () => {
+describe('Download limits: figures and callers (R-UI-178, R-UI-179)', () => {
+  it('R-UI-178 shows bytes as decimal MB and GB and reads a field back to bytes, rounded down', () => {
     expect(toField('cachedBytesPerHour', 300_000_000_000)).toBe('300');
     expect(toField('cachedBytesPerSecond', 200_000_000)).toBe('200');
     expect(toField('requestsPerHour', 50000)).toBe('50000');
@@ -44,14 +44,14 @@ describe('Download limits: figures and callers (R-UI-178, R-UI-179, Q-UI-736)', 
     ]);
   });
 
-  it('Q-UI-752 writes only the figures the person changed against the profile', () => {
+  it('R-UI-179 writes only the figures the person changed against the profile', () => {
     const base = PROFILE_FIGURES['restricted']!;
     const figures = { ...base, uncachedBytesPerHour: 20_000_000_000, parallelDownloads: 6 };
     expect(overridesOf(figures, new Set(['uncachedBytesPerHour', 'parallelDownloads']), base)).toEqual({ uncachedBytesPerHour: 20_000_000_000 });
     expect(overridesOf({ ...base, bytesPerDay: null }, new Set(['bytesPerDay']), base)).toEqual({ bytesPerDay: null });
   });
 
-  it('R-LIM-013 Q-UI-751 orders the rules as resolution tries them: single callers, groups, kinds', () => {
+  it('R-LIM-013 R-UI-179 orders the rules as resolution tries them: single callers, groups, kinds', () => {
     const order = orderRules(sampleInstanceRules()).map((r) => r.who.kind);
     expect(order.slice(0, 2).sort()).toEqual(['address', 'user']);
     expect(order[2]).toBe('group');

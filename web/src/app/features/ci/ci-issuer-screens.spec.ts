@@ -68,7 +68,7 @@ describe('The CI issuer list (R-UI-035)', () => {
   });
 });
 
-describe('The rows of the mappings (R-UI-163, Q-UI-643)', () => {
+describe('The rows of the mappings (R-UI-163)', () => {
   it('R-UI-163 a writer finds Edit, Test and Delete in the menu Actions for the mapping, and its name opens it', async () => {
     const { root, fixture, get } = await renderScreen(MappingList, { inputs: { issuer: 'gitlab-com' } });
     const row = [...root.querySelectorAll('tbody tr')].find((r) => text(r).includes('team-a-release'))!;
@@ -100,7 +100,7 @@ describe('The rows of the mappings (R-UI-163, Q-UI-643)', () => {
   });
 });
 
-describe('A CI issuer (R-UI-035, R-CI-001, R-CI-002, Q-CI-16)', () => {
+describe('A CI issuer (R-UI-035, R-CI-001, R-CI-002)', () => {
   it('R-UI-035 opens on the mappings and offers settings, keys, mappings and issuances as tabs', async () => {
     const { root } = await renderScreen(IssuerDetail, { inputs: { issuer: 'gitlab-com' } });
     const labels = [...root.querySelectorAll('[role="tab"]')].map((t) => text(t));
@@ -112,7 +112,7 @@ describe('A CI issuer (R-UI-035, R-CI-001, R-CI-002, Q-CI-16)', () => {
     await expectAccessible(root);
   });
 
-  it('Q-CI-16 an issuer of the configuration is read-only and names the configuration as its source', async () => {
+  it('R-CI-001 an issuer of the configuration is read-only and names the configuration as its source', async () => {
     const { root, fixture } = await renderScreen(IssuerDetail, { inputs: { issuer: 'corp-gitlab', tab: 'settings' } });
     await settle(fixture);
     expect(text(root)).toContain('declared in the installation');
@@ -309,7 +309,7 @@ describe('The issued CI tokens (R-UI-035, R-CI-020)', () => {
     expect(ci(get).issuances).toHaveLength(2);
   });
 
-  it('R-CI-020, Q-CI-52 a record whose token went with its mapping reads as removed, not as expired', async () => {
+  it('R-CI-020 a record whose token went with its mapping reads as removed, not as expired', async () => {
     const { root } = await renderScreen(IssuancesPage, {
       setup: (g) => (ci(g).issuances = [sampleIssuance({ active: false, state: 'removed' })]),
     });

@@ -6,7 +6,7 @@ const bold = (name: string, q: string): string =>
     .map((s) => (s.match ? `[${s.text}]` : s.text))
     .join('');
 
-describe('The highlight of a suggestion (R-UI-097, Q-UI-409)', () => {
+describe('The highlight of a suggestion (R-UI-097)', () => {
   it('R-UI-097 every occurrence of each term is bold, case-insensitively, and the rest of the name stays as it is', () => {
     expect(bold('npm-vendor', 'vend')).toBe('npm-[vend]or');
     expect(bold('NPM-Vendor', 'npm VEND')).toBe('[NPM]-[Vend]or');

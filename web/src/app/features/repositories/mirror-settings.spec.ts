@@ -265,7 +265,7 @@ describe('Mirror settings of a remote repository', () => {
       expect(control(r.root, 'f-remote-mirror-intervalSeconds').value).toBe('3600');
     });
 
-    it('R-UI-021 Q-REPO-142 a caller without repositories:write-config (a project Owner) sees the group read-only and cannot create a mirror', async () => {
+    it('R-UI-021 R-REPO-050 a caller without repositories:write-config (a project Owner) sees the group read-only and cannot create a mirror', async () => {
       const r = await remoteForm([NPM], 'npm', { capabilities: [] });
       expect(text(r.root.querySelector('quader-mirror-settings')!)).toContain(
         'Only an administrator of the installation can switch a remote repository to mirror',
@@ -353,7 +353,7 @@ describe('Mirror settings of a remote repository', () => {
       return { r, tab, fake: r.get(RepositoriesApi) as FakeRepositoriesApi };
     }
 
-    it('R-UI-021 Q-UI-104 a remote of a format with mirror: true has a Mirror tab; a local one, and a remote of a format without mirror, do not', async () => {
+    it('R-UI-021 a remote of a format with mirror: true has a Mirror tab; a local one, and a remote of a format without mirror, do not', async () => {
       expect((await open(stored('pullThrough'))).tab).toBeDefined();
       const local = await open({ ...stored('pullThrough'), key: 'npm-l', class: 'local', remote: undefined });
       expect(local.tab).toBeUndefined();
@@ -397,7 +397,7 @@ describe('Mirror settings of a remote repository', () => {
       expect(fake.patches[0]?.patch).toEqual({ remote: { mirror: { intervalSeconds: null } } });
     });
 
-    it('R-UI-021 Q-REPO-142 a project Owner sees the section read-only except Pause, and Turn off sends the mode back to pullThrough', async () => {
+    it('R-UI-021 R-REPO-050 a project Owner sees the section read-only except Pause, and Turn off sends the mode back to pullThrough', async () => {
       const { r, fake } = await open(stored('mirror', { intervalSeconds: 7200 }), { projectAdmin: true });
       const section = r.root.querySelector('quader-mirror-settings')!;
       expect(text(section)).toContain('Only an administrator of the installation');

@@ -34,7 +34,7 @@ describe('Audit log', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-037 R-UI-145 Q-UI-560 Q-UI-564 the outcome is a badge, its icon and its word with a capital in one element', async () => {
+  it('R-UI-037 R-UI-145 the outcome is a badge, its icon and its word with a capital in one element', async () => {
     const { root } = await open();
     const outcomes = [...root.querySelectorAll('tbody tr')].map((r) => r.querySelector('td :is(.ok, .bad, .warn)'));
     expect(outcomes.map((o) => o?.className)).toEqual(['ok', 'warn']);
@@ -42,7 +42,7 @@ describe('Audit log', () => {
     for (const o of outcomes) expect(o!.firstElementChild!.classList).toContain('material-icons');
   });
 
-  it('R-UI-037 R-UI-145 Q-UI-567 an action\'s key breaks after its dots and underscores only, never inside a word', async () => {
+  it('R-UI-037 R-UI-145 an action\'s key breaks after its dots and underscores only, never inside a word', async () => {
     const { root } = await open({}, (audit) => (audit.eventList = [sampleEvent({ action: 'user.groups.claim_missing' })]));
     const key = root.querySelector('tbody th .action-key')!;
     expect(key.textContent).toBe('user.groups.claim_missing');
@@ -55,7 +55,7 @@ describe('Audit log', () => {
     ]);
   });
 
-  it('R-UI-037 Q-UI-972 an opened event sets the actor\'s kind apart under its name, and an action without a name shows its key once, breaking after a dot or an underscore', async () => {
+  it('R-UI-037 an opened event sets the actor\'s kind apart under its name, and an action without a name shows its key once, breaking after a dot or an underscore', async () => {
     const event = sampleEvent({ action: 'storage.object_lock.retention_extended' });
     // The event of the address is the one opened (the row's button navigates there).
     const { root } = await open({ event: event.id }, (audit) => (audit.eventList = [event]));
@@ -71,7 +71,7 @@ describe('Audit log', () => {
     expect(actor.firstElementChild).not.toBe(kind);
   });
 
-  it('R-UI-037 R-UI-145 Q-UI-568 a target the entry knows by name shows the name, its kind and identifier under it; another its identifier on one line', async () => {
+  it('R-UI-037 R-UI-145 a target the entry knows by name shows the name, its kind and identifier under it; another its identifier on one line', async () => {
     const own = sampleEvent({
       id: 'own',
       action: 'user.groups.claim_missing',
@@ -100,7 +100,7 @@ describe('Audit log', () => {
     expect(text(root)).toContain('future.thing.happened');
   });
 
-  it('R-UI-037 Q-AUTH-402 the outcome warning shows the warning icon and word, never the failure icon; the filter offers it', async () => {
+  it('R-UI-037 the outcome warning shows the warning icon and word, never the failure icon; the filter offers it', async () => {
     const { root, fixture } = await open({}, (audit) => {
       audit.eventList = [sampleEvent({ action: 'user.groups.claim_missing', category: 'identity', outcome: 'warning', reason: 'absent' })];
     });
@@ -217,7 +217,7 @@ describe('Audit log', () => {
     expect(pre).toContain('"after"');
   });
 
-  it('R-UI-037 Q-UI-997 a time is relative with the moment as its title, which follows the locale and switches to UTC with the toggle', async () => {
+  it('R-UI-037 a time is relative with the moment as its title, which follows the locale and switches to UTC with the toggle', async () => {
     const local = await open();
     const utc = await open({ utc: '1' });
     const localTime = local.root.querySelector('tbody time')!;
@@ -228,7 +228,7 @@ describe('Audit log', () => {
     expect((utc.root.querySelector('#a-utc') as HTMLInputElement).checked).toBe(true);
   });
 
-  it('Q-UI-997 Q-UI-568 an actor without a name is its identifier on one line, cut in its column with the whole as its title, and a kind breaks after its underscore', async () => {
+  it('R-UI-037 R-UI-145 an actor without a name is its identifier on one line, cut in its column with the whole as its title, and a kind breaks after its underscore', async () => {
     // The job ui-layout met such an event (vulnerability.source.imported by an account of a system job): its UUID whole made the log
     // fall to blocks at 1,440 px.
     const id = '01a208c6-2bda-776d-a125-d83c6b9ca7ac';
@@ -253,7 +253,7 @@ describe('Audit log', () => {
     expect(text(kind)).toContain('vulnerability_source');
   });
 
-  it('Q-UI-997 the log keeps five columns: the address stands under the actor, the project under the target', async () => {
+  it('R-UI-037 the log keeps five columns: the address stands under the actor, the project under the target', async () => {
     const { root } = await open();
     const heads = [...root.querySelectorAll('table thead th')].map((th) => text(th as HTMLElement));
     expect(heads.map((h) => h.replace(/help_outline|Help.*$/, '').trim())).toEqual(['Time', 'Actor', 'Action', 'Target', 'Outcome']);
@@ -262,7 +262,7 @@ describe('Audit log', () => {
     expect(root.querySelector('tbody td.target .target-project quader-project-link')).toBeTruthy();
   });
 
-  it('Q-UI-998 the resource, its kind and its identifier, is a filter of the drawer, a chip, and reaches the API', async () => {
+  it('R-UI-037 the resource, its kind and its identifier, is a filter of the drawer, a chip, and reaches the API', async () => {
     const { root, fixture, router } = await open();
     const drawer = await openFilters(fixture, root);
     type(drawer.querySelector<HTMLInputElement>('#a-resource-type')!, 'bastion');

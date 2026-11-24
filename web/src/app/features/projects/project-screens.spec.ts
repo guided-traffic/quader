@@ -128,7 +128,7 @@ describe('The project policy editor (R-UI-041, R-AUTHZ-026)', () => {
   });
 });
 
-describe('A project service account (R-UI-041, Q-AUTHZ-175, Q-AUTHZ-177)', () => {
+describe('A project service account (R-UI-041)', () => {
   const seed = (get: Get): void => {
     projectOwner()(get);
     (get(IdentityApi) as FakeIdentityApi).accounts = [
@@ -286,7 +286,7 @@ describe('Session helpers and messages of the project screens (R-UI-041, R-UI-04
     expect(helpFor('/projects/web/ci/mappings/new?issuer=a')).toEqual(['/help', 'admin', 'gitlab-ci']);
   });
 
-  it('Q-AUTHZ-217 the fake models a project: the key pattern, an existing key and the last Owner', async () => {
+  it('the fake models a project: the key pattern, an existing key and the last Owner', async () => {
     TestBed.resetTestingModule();
     const { get } = await renderScreen(RepositoryCreate);
     const api = get(ProjectsApi) as FakeProjectsApi;

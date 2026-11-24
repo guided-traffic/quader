@@ -29,7 +29,7 @@ function row(root: HTMLElement, name: string): HTMLTableRowElement {
 }
 
 describe('Upstream registries (R-UI-187)', () => {
-  it('R-UI-187 Q-UI-900 groups the twelve registries by format in catalog order and puts scanner-trivy under System repositories, the name of the project\'s page', async () => {
+  it('R-UI-187 groups the twelve registries by format in catalog order and puts scanner-trivy under System repositories, the name of the project\'s page', async () => {
     const { root } = await render();
     expect(text(root.querySelector('h1')!)).toBe('Upstream registries 12');
     const groups = [...root.querySelectorAll('tr.group-row .format-name > span')].map((name) => text(name));
@@ -53,7 +53,7 @@ describe('Upstream registries (R-UI-187)', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-187 Q-UI-903 switching ClamAV definition updates on asks with the address and Public, sends PUT …/clamav/clients, and shows the level', async () => {
+  it('R-UI-187 switching ClamAV definition updates on asks with the address and Public, sends PUT …/clamav/clients, and shows the level', async () => {
     const { fixture, root, api } = await render();
     const toggle = row(root, 'ClamAV definitions').querySelector<HTMLButtonElement>('[role="switch"]')!;
     expect(toggle.getAttribute('aria-checked')).toBe('false');

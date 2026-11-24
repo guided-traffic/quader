@@ -183,7 +183,7 @@ describe('The backups screen: runs (R-UI-048)', () => {
     expect(stateView('copying', true).tone).toBe('warn');
   });
 
-  it('R-UI-048 R-UI-146 Q-UI-566 filters by operation and state through the query parameters, shown as chips beside Filters', async () => {
+  it('R-UI-048 R-UI-146 filters by operation and state through the query parameters, shown as chips beside Filters', async () => {
     const { root, get, fixture } = await renderScreen(BackupsPage, { inputs: { operation: 'create', state: 'interrupted' } });
     const api = fake(get);
     expect(api.filterCalls.at(-1)).toEqual({ operation: 'create', state: 'interrupted' });
@@ -200,7 +200,7 @@ describe('The backups screen: runs (R-UI-048)', () => {
     expect(selects.map((s) => s.value)).toEqual(['create', 'interrupted']);
   });
 
-  it('R-UI-048 R-UI-146 Q-UI-566 Apply filters puts the drawer\'s values into the address, and a chip removes its filter alone', async () => {
+  it('R-UI-048 R-UI-146 Apply filters puts the drawer\'s values into the address, and a chip removes its filter alone', async () => {
     const { root, get, fixture } = await renderScreen(BackupsPage, {
       inputs: { operation: 'create' },
       setup: (g) => vi.spyOn(g(Router), 'navigate').mockResolvedValue(true),

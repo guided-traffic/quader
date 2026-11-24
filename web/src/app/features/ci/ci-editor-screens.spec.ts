@@ -100,7 +100,7 @@ describe('The mapping editor (R-UI-035, R-CI-009 to R-CI-013)', () => {
     expect(navigate).toHaveBeenCalledWith(['/admin/ci', 'gitlab-com', 'mappings', 'team-b-release'], expect.objectContaining({ replaceUrl: true }));
   });
 
-  it('R-UI-035 Q-UI-334 the policy picker is one text field from the start: held and saying so while its list loads, then suggesting the names', async () => {
+  it('R-UI-035 the policy picker is one text field from the start: held and saying so while its list loads, then suggesting the names', async () => {
     let releasePolicies!: () => void;
     const { root, fixture } = await renderScreen(MappingEditor, {
       inputs: { issuer: 'gitlab-com' },
@@ -145,7 +145,7 @@ describe('The mapping editor (R-UI-035, R-CI-009 to R-CI-013)', () => {
     expect(text(root.querySelector('quader-principal-field .chips')!)).toContain('web-leads');
   });
 
-  it('R-UI-035 Q-UI-334 a policy list that cannot be read leaves the same field for typed names', async () => {
+  it('R-UI-035 a policy list that cannot be read leaves the same field for typed names', async () => {
     const { root, fixture } = await renderScreen(MappingEditor, {
       inputs: { issuer: 'gitlab-com' },
       setup: (g) => {
@@ -397,10 +397,10 @@ describe('The mapping editor keeps a draft across a re-authentication (R-UI-042)
   });
 });
 
-describe('The mapping editor of a project (Q-CI-26, R-CI-019)', () => {
+describe('The mapping editor of a project (R-CI-019)', () => {
   const inputs = { project: 'web', issuer: 'gitlab-com' };
 
-  it('Q-CI-26 R-CI-009 names the mapping within the project without a prefix, offers the project repositories and policies, and offers no groups', async () => {
+  it('R-CI-009 names the mapping within the project without a prefix, offers the project repositories and policies, and offers no groups', async () => {
     const { root } = await renderScreen(MappingEditor, { inputs, capabilities: [], setup: projectAdmin() });
     expect(root.querySelector<HTMLInputElement>('input[name="name"]')!.value).toBe('');
     expect(text(root)).toContain('Unique within the project web and cannot be changed later.');
@@ -410,7 +410,7 @@ describe('The mapping editor of a project (Q-CI-26, R-CI-019)', () => {
     expect(suggestions(root)).not.toContain('team-web-publish');
   });
 
-  it('Q-CI-26 Q-UI-334 without an issuer in the address, the issuer select is held while the issuers load and then starts at "Choose an issuer"', async () => {
+  it('R-UI-035 without an issuer in the address, the issuer select is held while the issuers load and then starts at "Choose an issuer"', async () => {
     let release!: () => void;
     const { root, fixture } = await renderScreen(MappingEditor, {
       inputs: { project: 'web' },
@@ -431,7 +431,7 @@ describe('The mapping editor of a project (Q-CI-26, R-CI-019)', () => {
     expect(select.value).toBe('');
   });
 
-  it('Q-CI-26 saves through the project route, never sends groups, and keeps the project repositories as the quick choices', async () => {
+  it('R-UI-035 saves through the project route, never sends groups, and keeps the project repositories as the quick choices', async () => {
     const { root, fixture, get } = await renderScreen(MappingEditor, { inputs, capabilities: [], setup: projectAdmin() });
     ci(get).projectPolicies['web'] = ['web-read'];
     typeInto(root, 'Name', 'web-publish');
@@ -451,7 +451,7 @@ describe('The mapping editor of a project (Q-CI-26, R-CI-019)', () => {
     expect(stored.grants.inline?.[0]?.repositories).toEqual(['generic-local']);
   });
 
-  it('Q-CI-26 the reasons of the project bounds are explained next to the member', async () => {
+  it('R-UI-035 the reasons of the project bounds are explained next to the member', async () => {
     const { root, fixture, get } = await renderScreen(MappingEditor, { inputs, capabilities: [], setup: projectAdmin() });
     typeInto(root, 'Name', 'publish');
     type(valueArea(root), '4242');
@@ -471,7 +471,7 @@ describe('The mapping editor of a project (Q-CI-26, R-CI-019)', () => {
     expect(text(root)).toContain('cannot carry groups');
   });
 
-  it('R-UI-035 Q-CI-26 a project Owner is offered the CI snippet and reads it through the project route', async () => {
+  it('R-UI-035 a project Owner is offered the CI snippet and reads it through the project route', async () => {
     const { root, fixture, get } = await renderScreen(MappingEditor, {
       inputs: { project: 'web', issuer: 'gitlab-com', mapping: 'web-x' },
       capabilities: [],
@@ -685,7 +685,7 @@ describe('The claim tester (R-UI-036, R-CI-019)', () => {
     expect(text(root)).toContain('Matched: team-a-release');
   });
 
-  it('R-UI-036 Q-UI-334 a project\'s tester holds the issuer select while the issuers load, then asks for a choice', async () => {
+  it('R-UI-036 a project\'s tester holds the issuer select while the issuers load, then asks for a choice', async () => {
     let release!: () => void;
     const { root, fixture } = await renderScreen(ClaimTester, {
       inputs: { project: 'web' },
@@ -727,8 +727,8 @@ describe('The claim tester (R-UI-036, R-CI-019)', () => {
 
 });
 
-describe('The CI identity of a project (R-UI-035, Q-CI-26)', () => {
-  it('Q-CI-26 shows the issuers read-only, the project mappings with the project editor, the dry run and the project issuances', async () => {
+describe('The CI identity of a project (R-UI-035)', () => {
+  it('R-UI-035 shows the issuers read-only, the project mappings with the project editor, the dry run and the project issuances', async () => {
     const { root, fixture } = await renderScreen(ProjectCi, {
       inputs: { project: 'web' },
       capabilities: [],
@@ -759,13 +759,13 @@ describe('The CI identity of a project (R-UI-035, Q-CI-26)', () => {
 
 });
 
-describe('The project sidebar links to the CI identity (Q-CI-26, Q-UI-129)', () => {
+describe('The project sidebar links to the CI identity (R-UI-035, R-UI-002)', () => {
   const offered = (get: Get): boolean =>
     projectEntries('web', get(SessionStore))
       .flatMap((e) => (e.kind === 'group' ? e.items : [e]))
       .some((i) => i.route === '/projects/web/ci');
 
-  it('Q-CI-26 an Owner of the project and a holder of ci:read are offered it, others are not', async () => {
+  it('R-UI-035 an Owner of the project and a holder of ci:read are offered it, others are not', async () => {
     const admin = await renderScreen(ProjectCi, { inputs: { project: 'web' }, capabilities: [], setup: projectAdmin() });
     expect(offered(admin.get)).toBe(true);
     const auditor = await renderScreen(ProjectCi, { inputs: { project: 'web' }, capabilities: ['projects:read', 'ci:read'] });

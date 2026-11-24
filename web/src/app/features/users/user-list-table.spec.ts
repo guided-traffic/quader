@@ -22,7 +22,7 @@ describe('Users list table and filter panel (R-UI-024, R-UI-020)', () => {
     expect(root.querySelectorAll('th button.th-sort')).toHaveLength(1);
   });
 
-  it('R-UI-024 Q-UI-422 the applied filters are chips, counted on Filters; "Clear all" resets them and the list', async () => {
+  it('R-UI-024 R-UI-100 the applied filters are chips, counted on Filters; "Clear all" resets them and the list', async () => {
     const { fixture, root } = await renderScreen(UserList);
     let drawer = await openFilters(fixture, root);
     typeInto(drawer, 'Status', 'disabled');
@@ -38,7 +38,7 @@ describe('Users list table and filter panel (R-UI-024, R-UI-020)', () => {
     expect(root.querySelectorAll('tbody tr')).toHaveLength(2);
   });
 
-  it('Q-UI-422 removing a chip removes only its filter; the drawer closed without Apply keeps the applied filters', async () => {
+  it('R-UI-100 removing a chip removes only its filter; the drawer closed without Apply keeps the applied filters', async () => {
     const { fixture, root } = await renderScreen(UserList);
     let drawer = await openFilters(fixture, root);
     typeInto(drawer, 'Status', 'active');

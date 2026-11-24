@@ -2,7 +2,7 @@ import { sampleInfo, sampleReplica, sampleRuntime } from '../../api/testing/fake
 import { checkSummary, lastBackup, roleLoad, share } from './dashboard-model';
 import { roleGroups } from './system-status-model';
 
-describe('Admin dashboard model (Q-OPS-175)', () => {
+describe('Admin dashboard model (R-UI-038)', () => {
   it('R-UI-038 sums a role\'s load over its live replicas and takes the worst p95', () => {
     const replicas = [
       sampleReplica({ name: 'a', instanceUid: 'a', runtime: sampleRuntime({ requests: 100, errors: 5, windowSeconds: 10, latencyMs: { p50: 2, p95: 20, p99: 30 }, cpuCores: 0.5, inFlight: 2 }) }),
@@ -31,7 +31,7 @@ describe('Admin dashboard model (Q-OPS-175)', () => {
     expect(api?.p95Ms).toBeNull();
   });
 
-  it('R-UI-038 Q-UI-604 the nodes of a role are counted where its ready replicas name them, and unknown where none does', () => {
+  it('R-UI-038 the nodes of a role are counted where its ready replicas name them, and unknown where none does', () => {
     const named = [sampleReplica({ name: 'a', instanceUid: 'a', node: 'n1' }), sampleReplica({ name: 'b', instanceUid: 'b', node: 'n2' })];
     expect(roleGroups(sampleInfo(), named).map(roleLoad)[0]?.nodes).toBe(2);
     const unnamed = [sampleReplica({ name: 'a', instanceUid: 'a', node: null })];

@@ -73,7 +73,7 @@ describe('PackageMemory', () => {
     }
   });
 
-  it('Q-UI-129 the memory is kept per project: another project starts empty, and outside a project there is none', async () => {
+  it('R-UI-006 the memory is kept per project: another project starts empty, and outside a project there is none', async () => {
     const m = await memory();
     m.addRecent({ format: 'npm', name: 'left-pad' });
     const router = TestBed.inject(Router);

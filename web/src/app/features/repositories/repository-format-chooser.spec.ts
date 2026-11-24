@@ -64,7 +64,7 @@ describe('The format chooser of a new repository (R-UI-080)', () => {
     await expectAccessible(r.root);
   });
 
-  it('R-UI-080 Q-UI-1040 the tiles lead to the form of the page\'s project', async () => {
+  it('R-UI-080 the tiles lead to the form of the page\'s project', async () => {
     const r = await chooser('/projects/data/repositories/new');
     expect(tiles(r.root)[1]!.getAttribute('href')).toBe('/projects/data/repositories/new/npm');
   });

@@ -111,7 +111,7 @@ describe('Admin area › Settings › Storage: Download links (R-UI-200)', () =>
     );
   });
 
-  it('R-UI-200 Q-UI-954 when no connection can serve a link the reasons stand above the switch, which stays usable', async () => {
+  it('R-UI-200 when no connection can serve a link the reasons stand above the switch, which stays usable', async () => {
     const { root } = await render(ADMIN, (api) => {
       api.current = downloadLinkSettings({
         enabled: true,
@@ -184,7 +184,7 @@ describe('Admin area › Settings › Storage: Download links (R-UI-200)', () =>
     expect(root.querySelector('quader-error-notice')).toBeNull();
   });
 
-  it('R-UI-200 Q-UI-952 Test link sends the address as typed and shows the link, the command and what to expect; nothing is saved', async () => {
+  it('R-UI-200 Test link sends the address as typed and shows the link, the command and what to expect; nothing is saved', async () => {
     const { fixture, root, api } = await render(ADMIN);
     type(field(root, 'links-address-default'), 'https://objects.example.com');
     await settle(fixture);
@@ -200,7 +200,7 @@ describe('Admin area › Settings › Storage: Download links (R-UI-200)', () =>
     expect(text(result)).toContain('Valid for 60 seconds.');
   });
 
-  it('R-STOR-096 Q-UI-958 Q-UI-990 an encrypted connection has its address and its test link for a Bastion, says no client gets a link and a Bastion reads with each file\'s key, and saves its address', async () => {
+  it('R-UI-200 R-STOR-096 an encrypted connection has its address and its test link for a Bastion, says no client gets a link and a Bastion reads with each file\'s key, and saves its address', async () => {
     const { fixture, root, api } = await render(ADMIN, (fake) => {
       mixed(fake);
       // A store that ignores the overrides fails a client's link, which an encrypted connection never serves: that reason does not stand
@@ -283,7 +283,7 @@ describe('Admin area › Settings › Storage: Download links (R-UI-200)', () =>
     expect([...root.querySelectorAll('button')].map((b) => text(b))).not.toContain('Test link (default)');
   });
 
-  it('R-UI-200 Q-UI-950 the side bar offers Storage as the fifth page of Settings', async () => {
+  it('R-UI-200 the side bar offers Storage as the fifth page of Settings', async () => {
     const { get } = await render(ADMIN);
     const routes = areaItems(get(Navigation).area('admin')).map((i) => i.route);
     expect(routes.indexOf('/admin/settings/storage')).toBe(routes.indexOf('/admin/settings/signatures') + 1);

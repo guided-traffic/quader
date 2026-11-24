@@ -32,8 +32,8 @@ function asMember(role: 'reader' | 'developer' | 'maintainer' | 'owner') {
   };
 }
 
-describe('Project members (R-UI-041, Q-AUTHZ-207, Q-AUTHZ-217)', () => {
-  it('Q-AUTHZ-207 R-UI-150 R-UI-163 an Owner adds a member found by the lookup with a role, changes it and removes it with the row\'s word Remove', async () => {
+describe('Project members (R-UI-041)', () => {
+  it('R-UI-041 R-UI-150 R-UI-163 an Owner adds a member found by the lookup with a role, changes it and removes it with the row\'s word Remove', async () => {
     const { fixture, root, get } = await renderScreen(ProjectMembersPage, {
       inputs: { project: 'web' },
       capabilities: [],
@@ -61,7 +61,7 @@ describe('Project members (R-UI-041, Q-AUTHZ-207, Q-AUTHZ-217)', () => {
     expect(text(members)).not.toContain('bob');
   });
 
-  it('R-UI-041 Q-UI-214 a member shows its display name, its user name, its source and who the caller is', async () => {
+  it('R-UI-041 a member shows its display name, its user name, its source and who the caller is', async () => {
     const { root } = await renderScreen(ProjectMembersPage, {
       inputs: { project: 'web' },
       capabilities: [],
@@ -84,7 +84,7 @@ describe('Project members (R-UI-041, Q-AUTHZ-207, Q-AUTHZ-217)', () => {
     expect(row.querySelector('td[data-label="Role"] select')).toBeTruthy();
   });
 
-  it('R-UI-142 Q-UI-550 the list has the head of every list and no tab strip; the number of members follows the heading', async () => {
+  it('R-UI-142 the list has the head of every list and no tab strip; the number of members follows the heading', async () => {
     const { root } = await renderScreen(ProjectMembersPage, {
       inputs: { project: 'web' },
       capabilities: [],
@@ -111,7 +111,7 @@ describe('Project members (R-UI-041, Q-AUTHZ-207, Q-AUTHZ-217)', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-041 Q-UI-214 R-UI-142 the search narrows the list by name and the column headers sort it', async () => {
+  it('R-UI-041 R-UI-142 the search narrows the list by name and the column headers sort it', async () => {
     const { fixture, root } = await renderScreen(ProjectMembersPage, {
       inputs: { project: 'web' },
       capabilities: [],
@@ -144,7 +144,7 @@ describe('Project members (R-UI-041, Q-AUTHZ-207, Q-AUTHZ-217)', () => {
     expect(text(members)).toContain('No member matches.');
   });
 
-  it('Q-AUTHZ-217 removing or demoting the last Owner is refused and the refusal is shown', async () => {
+  it('R-UI-041 removing or demoting the last Owner is refused and the refusal is shown', async () => {
     const { fixture, root, get } = await renderScreen(ProjectMembersPage, {
       inputs: { project: 'web' },
       capabilities: [],
@@ -160,7 +160,7 @@ describe('Project members (R-UI-041, Q-AUTHZ-207, Q-AUTHZ-217)', () => {
     expect((get(ProjectsApi) as FakeProjectsApi).memberLists['web']![0]!.role).toBe('owner');
   });
 
-  it('Q-AUTHZ-207 a Reader sees the members and the roles as text', async () => {
+  it('R-UI-041 a Reader sees the members and the roles as text', async () => {
     const { root } = await renderScreen(ProjectMembersPage, {
       inputs: { project: 'web' },
       capabilities: [],

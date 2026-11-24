@@ -40,7 +40,7 @@ describe('The start page holds what the admin area\'s list of projects held (R-U
   beforeEach(() => new BrowserStorage().clear('local'));
   afterEach(() => new BrowserStorage().clear('local'));
 
-  it('R-UI-041 R-UI-146 Q-UI-1041 a holder of projects:read adds Owners and Storage on demand; the role stays, and axe passes', async () => {
+  it('R-UI-041 R-UI-146 a holder of projects:read adds Owners and Storage on demand; the role stays, and axe passes', async () => {
     const r = await renderScreen(ProjectsHome, {
       setup: (get) => {
         (get(ProjectsApi) as FakeProjectsApi).projects = [
@@ -60,7 +60,7 @@ describe('The start page holds what the admin area\'s list of projects held (R-U
     await expectAccessible(r.root);
   });
 
-  it('R-UI-146 Q-UI-574 Q-UI-561 Q-UI-1041 the counts and the size stand at their column\'s end; no Owners is the dash', async () => {
+  it('R-UI-146 the counts and the size stand at their column\'s end; no Owners is the dash', async () => {
     const r = await renderScreen(ProjectsHome, {
       setup: (get) => {
         (get(ProjectsApi) as FakeProjectsApi).projects = [sampleProject({ key: 'data', displayName: 'Data', owners: [], members: 0 })];
@@ -75,7 +75,7 @@ describe('The start page holds what the admin area\'s list of projects held (R-U
     expect(row.querySelectorAll('td quader-no-value')).toHaveLength(2);
   });
 
-  it('R-STOR-049 Q-UI-1041 shows the logical size each project is charged, the exact bytes its title', async () => {
+  it('R-UI-041 R-STOR-049 shows the logical size each project is charged, the exact bytes its title', async () => {
     const r = await renderScreen(ProjectsHome, {
       setup: (get) => {
         (get(ProjectsApi) as FakeProjectsApi).projects = [
@@ -96,7 +96,7 @@ describe('The start page holds what the admin area\'s list of projects held (R-U
     expect(cells(web)[column]!.getAttribute('title')).toBe(`${3 * 1024 ** 3} B`);
   });
 
-  it('Q-UI-1041 the choice is kept for the viewer, and a plain user is offered no such columns', async () => {
+  it('R-UI-041 the choice is kept for the viewer, and a plain user is offered no such columns', async () => {
     const first = await renderScreen(ProjectsHome);
     await showDetails(first);
     const again = await renderScreen(ProjectsHome);
@@ -143,7 +143,7 @@ describe('The start page holds what the admin area\'s list of projects held (R-U
   });
 });
 
-describe('Project settings (R-UI-041, Q-UI-129)', () => {
+describe('Project settings (R-UI-041)', () => {
   it('R-UI-041 shows the facts of the project and passes axe', async () => {
     const { root } = await renderScreen(ProjectSettings, { inputs: { project: 'web' } });
     expect(root.querySelector<HTMLInputElement>('input[name="displayName"]')!.value).toBe('Web platform');
@@ -172,7 +172,7 @@ describe('Project settings (R-UI-041, Q-UI-129)', () => {
     expect(value.getAttribute('title')).toContain('also where another project holds the same content');
   });
 
-  it('R-UI-041 Q-UI-215 the settings are edited in place: the key is read-only and Save changes waits for a change', async () => {
+  it('R-UI-041 the settings are edited in place: the key is read-only and Save changes waits for a change', async () => {
     const { fixture, root, get } = await renderScreen(ProjectSettings, { inputs: { project: 'web' } });
     expect(root.querySelector<HTMLInputElement>('input[name="key"]')!.readOnly).toBe(true);
     const save = buttonByText(root, 'Save changes') as HTMLButtonElement;
@@ -201,7 +201,7 @@ describe('Project settings (R-UI-041, Q-UI-129)', () => {
     expect(overlay().querySelector('quader-conflict-dialog')).toBeTruthy();
   });
 
-  it('R-UI-041 Q-UI-215 a settings section folds and says whether it is open', async () => {
+  it('R-UI-041 a settings section folds and says whether it is open', async () => {
     const { fixture, root } = await renderScreen(ProjectSettings, { inputs: { project: 'web' } });
     const toggle = buttonByText(root, 'Advanced');
     const region = root.querySelector<HTMLElement>(`#${toggle.getAttribute('aria-controls')}`)!;
@@ -282,8 +282,8 @@ describe('Project settings (R-UI-041, Q-UI-129)', () => {
   });
 });
 
-describe('The lists of a project (R-UI-041, R-AUTHZ-026, Q-UI-129)', () => {
-  it('Q-UI-129 an Owner creates policies in the project and service accounts', async () => {
+describe('The lists of a project (R-UI-041, R-AUTHZ-026)', () => {
+  it('R-UI-041 an Owner creates policies in the project and service accounts', async () => {
     const { root } = await renderScreen(ProjectPoliciesPage, {
       inputs: { project: 'web' },
       capabilities: [],
@@ -301,7 +301,7 @@ describe('The lists of a project (R-UI-041, R-AUTHZ-026, Q-UI-129)', () => {
     expect(text(accounts.root)).toContain('The project has no service account yet.');
   });
 
-  it('Q-UI-129 the auditor reads and every create action says what is missing', async () => {
+  it('R-UI-041 the auditor reads and every create action says what is missing', async () => {
     const { root } = await renderScreen(ProjectPoliciesPage, {
       inputs: { project: 'web' },
       capabilities: ['projects:read', 'policies:read'],

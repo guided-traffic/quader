@@ -120,7 +120,7 @@ describe('Repository content page', () => {
     await expectAccessible(r.root);
   });
 
-  it('R-UI-094 Q-UI-373 the column of grades sorts the list by grade, worst first descending, after the name', async () => {
+  it('R-UI-094 the column of grades sorts the list by grade, worst first descending, after the name', async () => {
     const r = await open(NPM_REPO, ({ packages }) => {
       const grades = [sampleGrade('A', { low: 2 }), sampleGrade('E', { critical: 7 }), sampleGrade('N/A')];
       packages.packages = packages.packages.map((p, i) => ({ ...p, repositories: ['web/npm-local'], vulnerabilityGrade: grades[i % grades.length] }));
@@ -154,7 +154,7 @@ describe('Repository content page', () => {
     expect(packages.listFilters.at(-1)).toMatchObject({ include: ['vulnerabilities'] });
   });
 
-  it('R-UI-094 Q-UI-377 a list without grades has no column of grades', async () => {
+  it('R-UI-094 a list without grades has no column of grades', async () => {
     const r = await open(NPM_REPO, ({ packages }) => {
       packages.packages = packages.packages.map((p) => ({ ...p, repositories: ['web/npm-local'] }));
     });
@@ -220,7 +220,7 @@ describe('Repository content page', () => {
     expect([...reader.root.querySelectorAll('a, button')].filter((b) => text(b) === 'Set up client')).toHaveLength(1);
   });
 
-  it('R-UI-192 Q-UI-896 the page of a system repository offers no client action: no Set up client, no upload, no sentence about clients', async () => {
+  it('R-UI-192 the page of a system repository offers no client action: no Set up client, no upload, no sentence about clients', async () => {
     const trivy = await open(
       { key: 'scanner-trivy', project: 'upstream', class: 'remote', format: 'oci', description: 'Image scanning database' },
       ({ packages }) => {
@@ -254,7 +254,7 @@ describe('Repository content page', () => {
     expect([...clamav.root.querySelectorAll('a, button')].some((b) => text(b) === 'Set up client')).toBe(false);
   });
 
-  it('R-UI-193 Q-UI-898 the images of a system repository have no pull command and no Show command, and its Details no address for downloads by path', async () => {
+  it('R-UI-193 the images of a system repository have no pull command and no Show command, and its Details no address for downloads by path', async () => {
     const trivy = 'https://quader.example.net/v2/upstream/scanner-trivy/';
     const files = 'https://quader.example.net/files/upstream/scanner-trivy/';
     const r = await open({ key: 'scanner-trivy', project: 'upstream', class: 'remote', format: 'oci', description: 'Image scanning database' }, ({ catalog, packages }) => {
@@ -279,7 +279,7 @@ describe('Repository content page', () => {
     await expectAccessible(r.root);
   });
 
-  it('R-UI-193 Q-UI-898 Q-UI-899 a file of a system repository offers no Download, no download address and no download with curl, and says why in one sentence; its folder copies no address', async () => {
+  it('R-UI-193 a file of a system repository offers no Download, no download address and no download with curl, and says why in one sentence; its folder copies no address', async () => {
     const at = async (filePath: string) => {
       const r = await renderScreen(RepositoryContent, {
         inputs: { project: 'upstream', key: 'clamav', filePath },
@@ -323,7 +323,7 @@ describe('Repository content page', () => {
     expect([...folder.root.querySelectorAll('quader-data-table thead th')].map((th) => text(th))).toEqual(['Name', 'Size', 'Last change']);
   });
 
-  it('R-UI-144 Q-UI-555 an empty package repository shows Set up client once, in its header, and its empty state says what fills it and for whom', async () => {
+  it('R-UI-144 an empty package repository shows Set up client once, in its header, and its empty state says what fills it and for whom', async () => {
     const owner = await open(NPM_REPO, ({ packages }) => {
       packages.packages = [];
     });
@@ -422,7 +422,7 @@ describe('Repository content page', () => {
     expect([...reader.root.querySelectorAll('.page-header-actions a')].map((a) => a.textContent?.trim())).not.toContain('Settings');
   });
 
-  it('R-UI-169 Q-UI-664 R-UI-126 the header has no address field: Set up client, where the address stands, is the first of its actions, in the one style of that action', async () => {
+  it('R-UI-169 R-UI-126 the header has no address field: Set up client, where the address stands, is the first of its actions, in the one style of that action', async () => {
     const r = await open(NPM_REPO);
     const header = r.root.querySelector('quader-page-header')!;
     expect(header.querySelector('quader-address-field, input')).toBeNull();

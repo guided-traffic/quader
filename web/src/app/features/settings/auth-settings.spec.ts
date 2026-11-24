@@ -72,7 +72,7 @@ describe('Authentication settings (R-UI-031)', () => {
     expect(api.stored.etag).toBe('"101"');
   });
 
-  it('Q-UI-222 each group has its own Save changes: saving one sends only its members and keeps the other group\'s edits', async () => {
+  it('R-UI-031 each group has its own Save changes: saving one sends only its members and keeps the other group\'s edits', async () => {
     const { fixture, root, get } = await renderScreen(AuthSettings);
     const api = get(AuthSettingsApi) as FakeAuthSettingsApi;
     expect(saveButton(root, 'new users are external').disabled).toBe(true);

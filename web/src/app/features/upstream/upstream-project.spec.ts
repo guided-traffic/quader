@@ -35,7 +35,7 @@ function projects(get: <A>(token: abstract new (...args: never[]) => A) => A): v
 
 const names = (root: HTMLElement): string[] => [...root.querySelectorAll('tbody th[scope="row"] a')].map((a) => text(a));
 
-describe('The project upstream in the main area (R-UI-190, Q-UI-837)', () => {
+describe('The project upstream in the main area (R-UI-190)', () => {
   it('R-UI-190 the start page lists Upstream first with Built-in, above a project of the caller that sorts before it, and its mark is an arrow', async () => {
     const { root } = await renderScreen(ProjectsHome, { setup: projects });
     expect(names(root)).toEqual(['Upstream', 'Alpha team', 'Web platform']);
@@ -49,7 +49,7 @@ describe('The project upstream in the main area (R-UI-190, Q-UI-837)', () => {
     await expectAccessible(root);
   });
 
-  it('R-UI-190 Q-UI-1041 with the administrator\'s columns Upstream stays first, without Owners or members', async () => {
+  it('R-UI-041 R-UI-190 with the administrator\'s columns Upstream stays first, without Owners or members', async () => {
     const r = await renderScreen(ProjectsHome, {
       setup: (get) => {
         projects(get);

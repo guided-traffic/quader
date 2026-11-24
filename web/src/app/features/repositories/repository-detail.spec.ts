@@ -202,7 +202,7 @@ describe('Repository edit form', () => {
     expect(r.fixture.componentInstance.hasUnsavedChanges()).toBe(false);
   });
 
-  it('R-UI-021 Q-UI-80 setting a value back to its default removes it from the document, and a stored default is no change', async () => {
+  it('R-UI-021 setting a value back to its default removes it from the document, and a stored default is no change', async () => {
     const r = await open(withNpmLocal({ latestGuard: false }), 'npm-local');
     const fake = r.get(RepositoriesApi) as FakeRepositoriesApi;
     await openTab(r, 'npm settings');
