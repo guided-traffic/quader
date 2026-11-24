@@ -10133,10 +10133,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-CUR
 
-69 questions on [spec/remote-curation.md](spec/remote-curation.md).
+70 questions on [spec/remote-curation.md](spec/remote-curation.md).
 
 <details>
-<summary>Q-CUR: 69 questions</summary>
+<summary>Q-CUR: 70 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10209,6 +10209,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-CUR-153](spec/remote-curation.md#q-cur-153--the-requests-panel-answers-by-a-rows-menu-and-dialogs-the-rule-list-is-a-dialog-that-adds-sub-sections) | The requests panel answers by a row's menu and dialogs; the rule list is a dialog that adds sub-sections | Decided by the development agent on 2026-11-24 | (a) A bordered panel **Requests** with the count; each entry its subject, who asked (with the askers' notes) or how often clients were refused, the time, the examination (its row's state, **Examined 39.2.0** with **Verdicts** to the version page, or why it did not start); **Allow…** and **Decline…** in the entry's menu, each a dialog with its choices; a reader's **Your requests** with the state, a decline's reason and **Withdraw**; **Rules** opens the rule list as a dialog that adds a sub-section's rule (pattern and effect) and removes any, read only for `repositories:read-config` | — |
 | [Q-CUR-154](spec/remote-curation.md#q-cur-154--the-section-delivery-saves-remotedelivery-alone-and-leads-to-the-rules-on-the-tab-upstream) | The section Delivery saves `remote.delivery` alone and leads to the rules on the tab Upstream | Decided by the development agent on 2026-11-24 | (a) A component of its own that patches `remote.delivery` with the page's `ETag`, after **Mirror** on every remote but a system repository, opened by the address's `#delivery` (the tab's **Change**), with a link to the tab Upstream for the rules | — |
 | [Q-CUR-155](spec/remote-curation.md#q-cur-155--the-catalogues-own-states-are-sentences-of-the-screen-the-upstreams-own-sentences-stand-as-the-upstream-wrote-them) | The catalogue's own states are sentences of the screen; the upstream's own sentences stand as the upstream wrote them | Decided by the development agent on 2026-11-24 | (a) The three refusals, the offline mode and a call not offered as the screen's own translated sentences in a warning line, the time computed from `Retry-After`; the server's sentences shown as written; the catalogue's reads never repeated by the client | — |
+| [Q-CUR-156](spec/remote-curation.md#q-cur-156--an-oci-remotes-stored-tags-are-the-tags-its-package-screens-list) | An OCI remote's stored tags are the tags its package screens list | Decided by the development agent on 2026-11-24 | (a) The statement adds an OCI remote's tag entries, each kept by the view's rules written as checks per entry from the page's packages, as the version list's `PackageViewTagPageDesc` does | — |
 
 </details>
 

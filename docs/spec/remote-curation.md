@@ -603,6 +603,9 @@ Below `/api/v1/projects/{projectKey}/repositories/{repoKey}` (tag `remote-curati
   As built, `stored` is `none` or `partial` for a hit and a package and `none` or `whole` for a version, and a stored version's gate
   verdicts are read from the package API's version view, not repeated in the row; `examination` waits for R2b
   ([Q-CUR-61](#q-cur-61--a-rows-stored-state-is-what-the-repository-holds-the-stored-versions-verdicts-stay-the-version-views)).
+  The versions a repository holds are the ones its package screens list: its version rows, and for an OCI remote the tags it lists,
+  which are cache entries and no version rows (R-OCI-036,
+  [Q-CUR-156](#q-cur-156--an-oci-remotes-stored-tags-are-the-tags-its-package-screens-list)).
 - **What a reader sees in mode `onlyAllowed`.** A caller who may not set rules sees in search and level answers only the hits whose
   package is delivered, with `"withheld": <count>` and the sentence "N hits are not allowed in this repository; look a package up by its
   exact name to ask for it." A lookup by exact name answers every package with its versions and its state, so the person can ask for it
@@ -2428,6 +2431,31 @@ as codes.
 
 **Applied in the spec:** R-CUR-018 (the states). Code:
 [upstream-words.ts](../../web/src/app/features/repositories/upstream/upstream-words.ts).
+
+### Q-CUR-156 · An OCI remote's stored tags are the tags its package screens list
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below when R5b's renders showed the tags an OCI
+remote had pulled as not stored; the owner reviews it at the walkthrough.
+
+Context: `stored` (R-CUR-009, Q-CUR-61) was read from the live rows of `package_versions`. An OCI remote writes none: a tag it holds is
+its cache entry `<name>/_tags/<tag>` (R-OCI-036, Q-OCI-121), listed by the view `oci_remote_tags` when a client fetched it, a download
+ahead stored its image or a mirror holds the repository. So every tag of an OCI remote answered `none`, the image `none`, and the preview
+of a download ahead counted no tag as stored. npm, NuGet, Debian and Ansible Galaxy remotes write version rows at a fill and were not
+affected.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The statement adds an OCI remote's tag entries, each kept by the view's rules written as checks per entry from the page's packages, as the version list's `PackageViewTagPageDesc` does (chosen) | One statement, two branches | The catalogue's `stored` is what the package screens list and open; measured 1.4 ms for three names among 400,000 tag entries, 28 ms for 200 names of 40 tags each | The view's rules stand in a third place |
+| (b) The statement reads `package_version_listing` | The view as it is | The rules in one place | The planner reads every tag entry of every OCI remote before it joins the names: 1.1 s for three names, measured the same day |
+| (c) An OCI remote writes version rows for its tags | As the other formats | One branch | A tag moves and expires as a cache entry; a second record of it to keep in step, against Q-OCI-121 |
+
+**Choice:** (a). **Rationale:** the screen opens a stored version's page (Q-CUR-61), so what the catalogue calls stored must be what the
+version list holds. The development agent would revisit (b) if the view can be read from a package's side without reading every tag
+entry.
+
+**Applied in the spec:** R-CUR-009 (as built). Code:
+[upstream_catalogue.sql](../../internal/meta/postgres/queries/upstream_catalogue.sql) `CatalogueStoredVersions`. Test:
+`TestR_CUR_009_TheCatalogueSaysStoredOfATagARemotePulledThrough` (area `ociremote`).
 
 ### Q-CUR-80 · A download of one version runs before the catalogue: the call that names its files is a contract interface of its own
 

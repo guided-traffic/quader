@@ -189,6 +189,19 @@ SELECT p.name, v.version
   FROM packages p
   JOIN package_versions v ON v.package_id = p.id AND v.trashed_at IS NULL
  WHERE p.repo_id = $1::bigint AND p.name = ANY($2::text[])
+UNION ALL
+SELECT p.name, e.tag::text AS version
+  FROM packages p
+  JOIN remote_cache_entries e ON e.repo_id = p.repo_id AND e.tag_name = p.name
+   AND e.kind = 'metadata' AND e.variant = '' AND e.upstream_gone_at IS NULL
+ WHERE p.repo_id = $1::bigint AND p.name = ANY($2::text[])
+   AND EXISTS (SELECT 1 FROM repositories r WHERE r.id = p.repo_id AND r.class = 'remote' AND r.format = 'oci')
+   AND EXISTS (SELECT 1 FROM oci_manifests om WHERE om.repo_id = e.repo_id AND om.name = e.tag_name AND om.digest = e.blob_sha256 OFFSET 0)
+   AND (EXISTS (SELECT 1 FROM mirror_state ms WHERE ms.repo_id = e.repo_id OFFSET 0)
+        OR e.background_sha256 = e.blob_sha256
+        OR EXISTS (SELECT 1 FROM items i JOIN item_download_stats s ON s.item_id = i.id
+                    WHERE i.repo_id = e.repo_id AND i.path = e.tag_name || '/_manifests/sha256:' || encode(e.blob_sha256, 'hex')
+                      AND i.trashed_at IS NULL AND s.downloads > 0 OFFSET 0))
 `
 
 type CatalogueStoredVersionsParams struct {
@@ -203,6 +216,12 @@ type CatalogueStoredVersionsRow struct {
 
 // The upstream catalogue's state of a row (remote-curation.md R-CUR-009): which versions of the packages of a page the remote repository
 // holds. One statement per answer, by the packages' unique (repo_id, name) and the live versions' index.
+// The versions are those of package_version_listing, the ones the package screens list and open (Q-CUR-61): the live rows of
+// package_versions, and the tags of a remote OCI repository, which are its cache entries and no version rows (R-OCI-036, Q-CUR-156),
+// each entry kept by the rules of the view oci_remote_tags (00113), written here as checks per entry from the package's side. Read
+// through the view, the planner reads every tag entry of every OCI remote before it joins the page's names (measured on 2026-11-24:
+// 1.1 s for three names among 400,000 tag entries, 1.4 ms written this way, 28 ms for 200 names of 40 tags each). A change of the
+// view's rules changes them here too, as in package_view.sql's PackageViewTagPageDesc.
 func (q *Queries) CatalogueStoredVersions(ctx context.Context, arg CatalogueStoredVersionsParams) ([]CatalogueStoredVersionsRow, error) {
 	rows, err := q.db.Query(ctx, catalogueStoredVersions, arg.RepoID, arg.Names)
 	if err != nil {

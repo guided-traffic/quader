@@ -163,7 +163,7 @@ Debian long descriptions and **Read the index**):
 | [background_download.go](../../internal/formathost/background_download.go) | the bulk's planner over the catalogue: `Versions` pages `Package`, `Packages` pages `Children` of the section's level |
 | `catalogue.go` of [npm](../../internal/formats/npm/catalogue.go), [nuget](../../internal/formats/nuget/catalogue.go), [oci](../../internal/formats/oci/catalogue.go), [deb](../../internal/formats/deb/catalogue.go), [ansible](../../internal/formats/ansible/catalogue.go) | each format's `formats.Catalogue`; OCI's capabilities by preset (Docker Hub's Hub API with its fallback, Quay's API, GitLab's project API, ghcr.io's tags list only, a registry's `_catalog`), its presets' `CatalogueHosts` in [format.go](../../internal/formats/oci/format.go); Debian's over the data port's `CatalogueStore` |
 | [catalogue_store.go](../../internal/formatdata/deb/catalogue_store.go), [remote_parse.go](../../internal/formatdata/deb/remote_parse.go) | the Debian rows the catalogue reads; the parse keeps `provides`, the short description and `description_md5` |
-| [upstream_catalogue.sql](../../internal/meta/postgres/queries/upstream_catalogue.sql) | the stored versions of a page; Debian's directories, indexes, search and rows |
+| [upstream_catalogue.sql](../../internal/meta/postgres/queries/upstream_catalogue.sql) | the stored versions of a page: the version rows, and an OCI remote's listed tags with the view `oci_remote_tags`'s rules written per entry (Q-CUR-156); Debian's directories, indexes, search and rows |
 | [checks_catalogue.go](../../internal/formats/formattest/checks_catalogue.go) | kit check 22 and its fixture types; `testformat.CatalogueRawVersions` |
 | [upstream_catalogue_api.go](../../internal/api/v1/upstream_catalogue_api.go), `api/openapi.yaml` (`# >>> T-24 catalogue`) | the five operations and each row's state; the verdicts over [vuln.MissVerdicts](../../internal/vuln/miss_verdicts.go) and `evaluate.Service.Covers` |
 | [remote_downloads_api.go](../../internal/api/v1/remote_downloads_api.go) | R4's rest: the preview's counts (`preview`) and a section's start (`sectionOffered`) |
@@ -181,11 +181,12 @@ Tests and what they cost (each run once):
 | `TestR_CUR_008_TheCatalogueReadsWithoutStoringAndAnswersFromItsCache` (area `npm`) | integration | about 1.8 s | the stub's corpus, its new search route |
 | `TestR_CUR_009_TheRowsCarryTheRepositorysStateAndAReaderSeesWhatIsDelivered` (area `npm`) | integration | about 0.9 s | the stub's corpus, one tarball |
 | `TestR_DEB_036_TheCatalogueSearchesTheIndexesTheRemoteParsed` (area `debremote`) | integration | about 1.5 s | the stub archive |
+| `TestR_CUR_009_TheCatalogueSaysStoredOfATagARemotePulledThrough` (area `ociremote`) | integration | about 2.3 s | the stub's image `acme/b`: one index of 1.3 KB pulled |
 | `TestR_CUR_010_ASubSectionIsPreviewedAndDownloadedThroughTheCatalogue` (area `ansibleremote`) | integration | about 3.2 s | two archives of the stub's corpus |
 | the preview's counts in `TestR_CUR_010_ADownloadAheadOfOneVersionAndOfAPackage` (area `npm`) | integration | unchanged | unchanged |
 
-What a leg gains: the unit job well under a second; the integration shards about 7.5 s (npm 2.7 s, debremote 1.5 s, ansibleremote
-3.2 s). A new format adds its `catalogue.go`, a kit fixture of a few kilobytes and no integration case of its own unless its catalogue
+What a leg gains: the unit job well under a second; the integration shards about 9.8 s (npm 2.7 s, debremote 1.5 s, ansibleremote
+3.2 s, ociremote 2.3 s). A new format adds its `catalogue.go`, a kit fixture of a few kilobytes and no integration case of its own unless its catalogue
 reads rows of its own (as Debian's).
 
 ## R4 · Downloads ahead and the queue
