@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-// tools/nightly-load-guard.sh says before a push whether load legs of the nightly run (decision 22 of the reading of 2026-11-23): a
+// tools/nightly-load-guard.sh says whether load legs of the nightly run (docs/developer/releasing.md#a-code-push-during-a-nightly): a
 // push of code beside them cost them their numbers (F-164). It reads the runs and their jobs through gh, stubbed here with recorded
 // answers.
 

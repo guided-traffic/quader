@@ -212,8 +212,10 @@ func setsOfJob(j job) []string {
 	return out
 }
 
-// runnerKinds are the cache kinds of a job's runners: "ubuntu-24.04" for the GitHub-hosted runners (zstd), "self-hosted" for
-// both self-hosted classes (gzip, the same runner image). A runs-on that is a matrix value gives the kinds of every value.
+// runnerKinds are the cache kinds of a job's runners: "ubuntu-24.04" for the GitHub-hosted runners, "self-hosted" for both
+// self-hosted classes (the same runner image). Both put the pinned zstd on PATH (Q-ARCH-1061), so an entry is shared; a kind whose
+// zstd step failed falls back to gzip and an entry of its own, which is why the rows stay per kind. A runs-on that is a matrix
+// value gives the kinds of every value.
 func runnerKinds(j job) []string {
 	labels := []string{j.RunsOn}
 	if m := regexp.MustCompile(`^\$\{\{ matrix\.([A-Za-z0-9_-]+) \}\}$`).FindStringSubmatch(j.RunsOn); m != nil {

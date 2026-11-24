@@ -96,6 +96,10 @@ jobs:
         timeout-minutes: 9
         uses: ./.github/actions/build-tools
 
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Set up Go
         timeout-minutes: 5
         uses: actions/setup-go@v7
@@ -174,6 +178,10 @@ jobs:
       - name: Load the tool pins
         uses: ./.github/actions/load-pins
 
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Set up Go
         timeout-minutes: 5
         uses: actions/setup-go@v7
@@ -212,6 +220,10 @@ jobs:
 
       - name: Load the tool pins
         uses: ./.github/actions/load-pins
+
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         timeout-minutes: 5
@@ -252,6 +264,10 @@ jobs:
       - name: Load the tool pins
         uses: ./.github/actions/load-pins
 
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Set up Go
         timeout-minutes: 5
         uses: actions/setup-go@v7
@@ -290,6 +306,10 @@ jobs:
 
       - name: Load the tool pins
         uses: ./.github/actions/load-pins
+
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         timeout-minutes: 5
@@ -340,6 +360,10 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
+
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         timeout-minutes: 5
@@ -392,6 +416,10 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
+
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         timeout-minutes: 5
@@ -462,6 +490,10 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Set up Go
         timeout-minutes: 5
         uses: actions/setup-go@v7
@@ -514,6 +546,10 @@ jobs:
           set -euo pipefail
           # Node.js 26 links libatomic.so.1, which the runner image does not ship (Q-ARCH-218).
           .github/scripts/apt-install.sh libatomic1
+
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Node.js
         timeout-minutes: 5
@@ -596,6 +632,10 @@ jobs:
           set -euo pipefail
           # Node.js 26 links libatomic.so.1, which the runner image does not ship (Q-ARCH-218).
           .github/scripts/apt-install.sh libatomic1
+
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Node.js
         timeout-minutes: 5
@@ -749,6 +789,10 @@ jobs:
         id: day
         run: echo "day=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
 
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Restore the ClamAV database
         id: clamav_db
         timeout-minutes: 5
@@ -795,6 +839,10 @@ jobs:
 
       - name: Load the tool pins
         uses: ./.github/actions/load-pins
+
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         timeout-minutes: 5
@@ -879,6 +927,10 @@ jobs:
         timeout-minutes: 9
         uses: ./.github/actions/build-tools
 
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Install the pinned Docker Buildx
         timeout-minutes: 16
         uses: ./.github/actions/install-buildx
@@ -946,6 +998,10 @@ jobs:
         with:
           commands: jq
 
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Install the pinned Docker Buildx
         timeout-minutes: 16
         uses: ./.github/actions/install-buildx
@@ -986,6 +1042,10 @@ jobs:
       - name: Install build tools
         timeout-minutes: 9
         uses: ./.github/actions/build-tools
+
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Install the pinned Docker Buildx
         timeout-minutes: 16
@@ -1074,6 +1134,10 @@ jobs:
 
       - name: Load the tool pins
         uses: ./.github/actions/load-pins
+
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         timeout-minutes: 5
@@ -1177,6 +1241,10 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
@@ -1274,6 +1342,10 @@ jobs:
 
       - name: Load the tool pins
         uses: ./.github/actions/load-pins
+
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         uses: actions/setup-go@v7
@@ -1397,9 +1469,10 @@ jobs:
   # only looks its key up (about a minute of a runner); on a miss it builds the set once, every fetch bounded and retried, and
   # saves the tar, and the legs restore it. The reason (2026-11-23): when the inputs of the NuGet image had changed, the three legs
   # of one push that need it (e2e-ci, e2e-nuget, e2e-vuln) built it side by side, each against the same slow Ubuntu archive, and
-  # each ran into its step's limit of 30 minutes without a test. Two runner kinds, because the self-hosted runners compress the
-  # Actions cache with gzip and the GitHub-hosted ones with zstd, and an entry of one kind is invisible to the other: `self-hosted`
-  # builds for the legs on `large` (the same runner image), `ubuntu-24.04` for the GitHub-hosted legs. A failed row leaves its
+  # each ran into its step's limit of 30 minutes without a test. Two runner kinds: `self-hosted` for the legs on `large` (the same
+  # runner image), `ubuntu-24.04` for the GitHub-hosted legs. Both kinds put the pinned zstd on PATH (Q-ARCH-1061), so the second
+  # row of a set finds the entry the first wrote and only looks it up; a row whose zstd step failed writes a gzip entry of its own
+  # kind, which the legs of that kind then still find. A failed row leaves its
   # reason as an artifact; the legs still start and fail at their load step with that sentence. Runs beside the job image,
   # which the legs need as well, so a hit adds no wall time.
   client-images:
@@ -1427,6 +1500,10 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
+
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Install the pinned Docker Buildx
         timeout-minutes: 16
@@ -1492,6 +1569,10 @@ jobs:
 
       - name: Load the tool pins
         uses: ./.github/actions/load-pins
+
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         uses: actions/setup-go@v7
@@ -1712,6 +1793,10 @@ jobs:
       - name: Load the tool pins
         uses: ./.github/actions/load-pins
 
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
@@ -1890,6 +1975,10 @@ jobs:
       - name: Load the tool pins
         uses: ./.github/actions/load-pins
 
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
@@ -2058,6 +2147,10 @@ jobs:
 
       - name: Load the tool pins
         uses: ./.github/actions/load-pins
+
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         uses: actions/setup-go@v7
@@ -2230,6 +2323,10 @@ jobs:
       - name: Load the tool pins
         uses: ./.github/actions/load-pins
 
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
@@ -2400,6 +2497,10 @@ jobs:
 
       - name: Load the tool pins
         uses: ./.github/actions/load-pins
+
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         uses: actions/setup-go@v7
@@ -2594,6 +2695,10 @@ jobs:
       - name: Load the tool pins
         uses: ./.github/actions/load-pins
 
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
@@ -2779,6 +2884,10 @@ jobs:
 
       - name: Load the tool pins
         uses: ./.github/actions/load-pins
+
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         uses: actions/setup-go@v7
@@ -2989,6 +3098,10 @@ jobs:
       - name: Load the tool pins
         uses: ./.github/actions/load-pins
 
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
@@ -3173,6 +3286,10 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
@@ -3233,6 +3350,10 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
@@ -3278,6 +3399,10 @@ jobs:
           go-version-file: go.mod
           cache: false
 
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Install actionlint at the pin
         timeout-minutes: 8
         uses: ./.github/actions/go-tool
@@ -3315,6 +3440,10 @@ jobs:
       - name: Load the tool pins
         uses: ./.github/actions/load-pins
 
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
@@ -3341,6 +3470,10 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
+
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         timeout-minutes: 5
@@ -3385,6 +3518,10 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         uses: actions/setup-go@v7
@@ -3499,6 +3636,10 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
@@ -3569,6 +3710,10 @@ jobs:
           set -euo pipefail
           # Node.js 26 links libatomic.so.1, which the runner image does not ship (Q-ARCH-218).
           .github/scripts/apt-install.sh libatomic1
+
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Node.js
         timeout-minutes: 5

@@ -136,6 +136,11 @@ jobs:
         timeout-minutes: 9
         uses: ./.github/actions/build-tools
 
+      - name: Put the pinned zstd on PATH
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Install the pinned Docker Buildx
         if: steps.leg.outputs.run == 'true'
         timeout-minutes: 16
@@ -181,9 +186,9 @@ jobs:
   # every leg that needs them, which builds none itself. On a hit a row only looks its key up (about a minute of a runner); on a
   # miss it builds the set once, every fetch bounded and retried, and saves the tar. The reason: on 2026-11-23 (45158700734) eight
   # legs of this workflow built the same NuGet image side by side against a slow Ubuntu archive, and seven ran into the step's limit
-  # of 30 minutes without a test. Two runner kinds, because the self-hosted runners compress the Actions cache with gzip and the
-  # GitHub-hosted ones with zstd, and an entry of one kind is invisible to the other: `self-hosted` builds for the legs on `large`
-  # (the same runner image), `ubuntu-24.04` for the GitHub-hosted legs. Like the job image it asks select-leg with no sets: a
+  # of 30 minutes without a test. Two runner kinds: `self-hosted` for the legs on `large` (the same runner image), `ubuntu-24.04` for
+  # the GitHub-hosted legs; both put the pinned zstd on PATH (Q-ARCH-1061), so the second row of a set finds the first's entry,
+  # and a row whose zstd step failed writes a gzip entry its own kind's legs still find. Like the job image it asks select-leg with no sets: a
   # dispatch of any part looks every set up (a lookup, or a build that the next run then finds), and a scheduled run that defers to
   # a recent full run skips it with its legs. A failed row leaves its reason as an artifact; the legs still start and fail at their
   # load step with that sentence. Runs beside the job image, which the legs need as well, so a hit adds no wall time.
@@ -228,6 +233,11 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
+
+      - name: Put the pinned zstd on PATH
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Install the pinned Docker Buildx
         if: steps.leg.outputs.run == 'true'
@@ -319,6 +329,11 @@ jobs:
         with:
           version: ${{ env.KUBECTL_VERSION }}
 
+      - name: Put the pinned zstd on PATH
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Install the pinned kind
         if: steps.leg.outputs.run == 'true'
         timeout-minutes: 10
@@ -384,6 +399,11 @@ jobs:
           sets: ${{ inputs.sets }}
           token: ${{ github.token }}
 
+      - name: Put the pinned zstd on PATH
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Set up Go
         if: steps.leg.outputs.run == 'true'
         timeout-minutes: 5
@@ -442,6 +462,11 @@ jobs:
         if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/load-pins
 
+      - name: Put the pinned zstd on PATH
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Set up Go
         if: steps.leg.outputs.run == 'true'
         uses: actions/setup-go@v7
@@ -480,12 +505,22 @@ jobs:
         if: steps.leg.outputs.run == 'true'
         run: make test-performance
 
+      # Who ran on the shared runners beside this leg (Q-ARCH-1062): its times are read with this record.
+      - name: The jobs of Test and Release that ran beside this leg
+        if: always() && steps.leg.outputs.run == 'true'
+        timeout-minutes: 3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: go run ./tools/neighbours -step 'make test-performance' -out .out/neighbours.md
+
       - name: Upload the go test -json report
         if: always() && steps.leg.outputs.run == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: test-performance
-          path: .out/test-performance.json
+          path: |
+            .out/test-performance.json
+            .out/neighbours.md
           if-no-files-found: warn
           retention-days: 30
 
@@ -536,6 +571,11 @@ jobs:
         if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/load-pins
 
+      - name: Put the pinned zstd on PATH
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Set up Go
         if: steps.leg.outputs.run == 'true'
         uses: actions/setup-go@v7
@@ -584,6 +624,14 @@ jobs:
           set +a
           QUADER_PERF_GATE=1 go test -count=1 -p 1 -tags integration -timeout 115m -run 'TestR_VULN_028' -json ./perf/vuln/... | tee .out/test-vuln-perf.json
 
+      # Who ran on the shared runners beside this leg (Q-ARCH-1062): its times are read with this record.
+      - name: The jobs of Test and Release that ran beside this leg
+        if: always() && steps.leg.outputs.run == 'true'
+        timeout-minutes: 3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: go run ./tools/neighbours -step 'The performance run' -out .out/neighbours.md
+
       - name: Upload the report (perf-vuln.json), the go test -json stream and the replicas' logs of a failed run
         if: always() && steps.leg.outputs.run == 'true'
         uses: actions/upload-artifact@v7
@@ -593,6 +641,7 @@ jobs:
             .out/perf-vuln.json
             .out/test-vuln-perf.json
             .out/perf-vuln-logs/
+            .out/neighbours.md
           if-no-files-found: warn
           retention-days: 30
 
@@ -614,6 +663,11 @@ jobs:
               echo "Every value of the run is in the artifact vuln-perf (perf-vuln.json), and the replicas' logs of the failed run beside it (perf-vuln-logs)."
             else
               echo "The run ended before it wrote its report (perf-vuln.json is missing); see the job log."
+            fi
+            if [ -f .out/neighbours.md ]; then
+              # The jobs of Test and Release beside the run (Q-ARCH-1062): a miss with a kind leg beside it is read with them.
+              echo
+              cat .out/neighbours.md
             fi
           } > "$body"
           gh issue create --title "Performance regression: vulnerability scanning (R-VULN-028), run ${GITHUB_RUN_ID}" --body-file "$body"
@@ -671,6 +725,11 @@ jobs:
       - name: Load the tool pins
         if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/load-pins
+
+      - name: Put the pinned zstd on PATH
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         if: steps.leg.outputs.run == 'true'
@@ -767,6 +826,14 @@ jobs:
         if: steps.leg.outputs.run == 'true'
         timeout-minutes: 60
         run: make e2e SET=npm-ha-soak
+
+      # Who ran on the shared runners beside this leg (Q-ARCH-1062): its times are read with this record.
+      - name: The jobs of Test and Release that ran beside this leg
+        if: always() && steps.leg.outputs.run == 'true'
+        timeout-minutes: 3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: go run ./tools/neighbours -step 'make e2e SET=' -out .out/e2e/neighbours.md
 
       - name: Upload the go test -json report
         if: always() && steps.leg.outputs.run == 'true'
@@ -868,6 +935,11 @@ jobs:
       - name: Load the tool pins
         if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/load-pins
+
+      - name: Put the pinned zstd on PATH
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         if: steps.leg.outputs.run == 'true'
@@ -1015,6 +1087,14 @@ jobs:
         timeout-minutes: 60
         run: make e2e SET=${{ matrix.set }}
 
+      # Who ran on the shared runners beside this leg (Q-ARCH-1062): its times are read with this record.
+      - name: The jobs of Test and Release that ran beside this leg
+        if: always() && steps.leg.outputs.run == 'true'
+        timeout-minutes: 3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: go run ./tools/neighbours -step 'make e2e SET=' -out .out/e2e/neighbours.md
+
       - name: Upload the go test -json report
         if: always() && steps.leg.outputs.run == 'true'
         uses: actions/upload-artifact@v7
@@ -1131,6 +1211,11 @@ jobs:
         if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/load-pins
 
+      - name: Put the pinned zstd on PATH
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Set up Go
         if: steps.leg.outputs.run == 'true'
         uses: actions/setup-go@v7
@@ -1236,6 +1321,14 @@ jobs:
         if: steps.leg.outputs.run == 'true'
         timeout-minutes: 80
         run: make e2e SET=${{ matrix.set }}
+
+      # Who ran on the shared runners beside this leg (Q-ARCH-1062): its times are read with this record.
+      - name: The jobs of Test and Release that ran beside this leg
+        if: always() && steps.leg.outputs.run == 'true'
+        timeout-minutes: 3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: go run ./tools/neighbours -step 'make e2e SET=' -out .out/e2e/neighbours.md
 
       - name: Upload the go test -json report
         if: always() && steps.leg.outputs.run == 'true'
@@ -1348,6 +1441,11 @@ jobs:
         if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/load-pins
 
+      - name: Put the pinned zstd on PATH
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Set up Go
         if: steps.leg.outputs.run == 'true'
         uses: actions/setup-go@v7
@@ -1457,6 +1555,14 @@ jobs:
         if: steps.leg.outputs.run == 'true'
         timeout-minutes: 80
         run: make e2e SET=${{ matrix.set }}
+
+      # Who ran on the shared runners beside this leg (Q-ARCH-1062): its times are read with this record.
+      - name: The jobs of Test and Release that ran beside this leg
+        if: always() && steps.leg.outputs.run == 'true'
+        timeout-minutes: 3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: go run ./tools/neighbours -step 'make e2e SET=' -out .out/e2e/neighbours.md
 
       - name: Upload the go test -json report
         if: always() && steps.leg.outputs.run == 'true'
@@ -1552,6 +1658,11 @@ jobs:
         if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/load-pins
 
+      - name: Put the pinned zstd on PATH
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Set up Go
         if: steps.leg.outputs.run == 'true'
         uses: actions/setup-go@v7
@@ -1661,6 +1772,14 @@ jobs:
         if: steps.leg.outputs.run == 'true'
         timeout-minutes: 80
         run: make e2e SET=${{ matrix.set }}
+
+      # Who ran on the shared runners beside this leg (Q-ARCH-1062): its times are read with this record.
+      - name: The jobs of Test and Release that ran beside this leg
+        if: always() && steps.leg.outputs.run == 'true'
+        timeout-minutes: 3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: go run ./tools/neighbours -step 'make e2e SET=' -out .out/e2e/neighbours.md
 
       - name: Upload the go test -json report
         if: always() && steps.leg.outputs.run == 'true'
@@ -1758,6 +1877,11 @@ jobs:
       - name: Load the tool pins
         if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/load-pins
+
+      - name: Put the pinned zstd on PATH
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         if: steps.leg.outputs.run == 'true'
@@ -1862,6 +1986,14 @@ jobs:
         timeout-minutes: 80
         run: make e2e SET=${{ matrix.set }}
 
+      # Who ran on the shared runners beside this leg (Q-ARCH-1062): its times are read with this record.
+      - name: The jobs of Test and Release that ran beside this leg
+        if: always() && steps.leg.outputs.run == 'true'
+        timeout-minutes: 3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: go run ./tools/neighbours -step 'make e2e SET=' -out .out/e2e/neighbours.md
+
       - name: Upload the go test -json report
         if: always() && steps.leg.outputs.run == 'true'
         uses: actions/upload-artifact@v7
@@ -1958,6 +2090,11 @@ jobs:
       - name: Load the tool pins
         if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/load-pins
+
+      - name: Put the pinned zstd on PATH
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         if: steps.leg.outputs.run == 'true'
@@ -2062,6 +2199,14 @@ jobs:
         timeout-minutes: 60
         run: make e2e SET=${{ matrix.set }}
 
+      # Who ran on the shared runners beside this leg (Q-ARCH-1062): its times are read with this record.
+      - name: The jobs of Test and Release that ran beside this leg
+        if: always() && steps.leg.outputs.run == 'true'
+        timeout-minutes: 3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: go run ./tools/neighbours -step 'make e2e SET=' -out .out/e2e/neighbours.md
+
       - name: Upload the go test -json report
         if: always() && steps.leg.outputs.run == 'true'
         uses: actions/upload-artifact@v7
@@ -2148,6 +2293,11 @@ jobs:
       - name: Load the tool pins
         if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/load-pins
+
+      - name: Put the pinned zstd on PATH
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         if: steps.leg.outputs.run == 'true'
@@ -2252,6 +2402,14 @@ jobs:
         timeout-minutes: 60
         run: make e2e SET=${{ matrix.set }}
 
+      # Who ran on the shared runners beside this leg (Q-ARCH-1062): its times are read with this record.
+      - name: The jobs of Test and Release that ran beside this leg
+        if: always() && steps.leg.outputs.run == 'true'
+        timeout-minutes: 3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: go run ./tools/neighbours -step 'make e2e SET=' -out .out/e2e/neighbours.md
+
       - name: Upload the go test -json report
         if: always() && steps.leg.outputs.run == 'true'
         uses: actions/upload-artifact@v7
@@ -2338,6 +2496,11 @@ jobs:
       - name: Load the tool pins
         if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/load-pins
+
+      - name: Put the pinned zstd on PATH
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         if: steps.leg.outputs.run == 'true'
@@ -2460,6 +2623,14 @@ jobs:
         timeout-minutes: 60
         run: make e2e SET=${{ matrix.set }}
 
+      # Who ran on the shared runners beside this leg (Q-ARCH-1062): its times are read with this record.
+      - name: The jobs of Test and Release that ran beside this leg
+        if: always() && steps.leg.outputs.run == 'true'
+        timeout-minutes: 3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: go run ./tools/neighbours -step 'make e2e SET=' -out .out/e2e/neighbours.md
+
       - name: Upload the go test -json report
         if: always() && steps.leg.outputs.run == 'true'
         uses: actions/upload-artifact@v7
@@ -2546,6 +2717,11 @@ jobs:
       - name: Load the tool pins
         if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/load-pins
+
+      - name: Put the pinned zstd on PATH
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         if: steps.leg.outputs.run == 'true'
@@ -2653,6 +2829,14 @@ jobs:
         timeout-minutes: 60
         run: make e2e SET=${{ matrix.set }}
 
+      # Who ran on the shared runners beside this leg (Q-ARCH-1062): its times are read with this record.
+      - name: The jobs of Test and Release that ran beside this leg
+        if: always() && steps.leg.outputs.run == 'true'
+        timeout-minutes: 3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: go run ./tools/neighbours -step 'make e2e SET=' -out .out/e2e/neighbours.md
+
       - name: Upload the go test -json report
         if: always() && steps.leg.outputs.run == 'true'
         uses: actions/upload-artifact@v7
@@ -2747,6 +2931,11 @@ jobs:
       - name: Load the tool pins
         if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/load-pins
+
+      - name: Put the pinned zstd on PATH
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         if: steps.leg.outputs.run == 'true'
@@ -2945,6 +3134,11 @@ jobs:
       - name: Load the tool pins
         if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/load-pins
+
+      - name: Put the pinned zstd on PATH
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         if: steps.leg.outputs.run == 'true'
@@ -3156,6 +3350,11 @@ jobs:
       - name: Load the tool pins
         if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/load-pins
+
+      - name: Put the pinned zstd on PATH
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         if: steps.leg.outputs.run == 'true'
@@ -3406,6 +3605,11 @@ jobs:
         if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/load-pins
 
+      - name: Put the pinned zstd on PATH
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Set up Go
         if: steps.leg.outputs.run == 'true'
         uses: actions/setup-go@v7
@@ -3533,6 +3737,14 @@ jobs:
         timeout-minutes: 100
         run: make e2e SET=${{ matrix.set }}
 
+      # Who ran on the shared runners beside this leg (Q-ARCH-1062): its times are read with this record.
+      - name: The jobs of Test and Release that ran beside this leg
+        if: always() && steps.leg.outputs.run == 'true' && matrix.runner == 'large'
+        timeout-minutes: 3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: go run ./tools/neighbours -step 'make e2e SET=' -out .out/e2e/neighbours.md
+
       - name: Upload the go test -json report
         if: always() && steps.leg.outputs.run == 'true'
         uses: actions/upload-artifact@v7
@@ -3628,6 +3840,11 @@ jobs:
       - name: Load the tool pins
         if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/load-pins
+
+      - name: Put the pinned zstd on PATH
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         if: steps.leg.outputs.run == 'true'
@@ -3737,6 +3954,14 @@ jobs:
         timeout-minutes: 40
         run: make e2e SET=backup-pitr QUADER_E2E_REPORT=.out/test-e2e-backup-pitr.json
 
+      # Who ran on the shared runners beside this leg (Q-ARCH-1062): its times are read with this record.
+      - name: The jobs of Test and Release that ran beside this leg
+        if: always() && steps.leg.outputs.run == 'true'
+        timeout-minutes: 3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: go run ./tools/neighbours -out .out/e2e/neighbours.md
+
       - name: Upload the go test -json report
         if: always() && steps.leg.outputs.run == 'true'
         uses: actions/upload-artifact@v7
@@ -3832,6 +4057,11 @@ jobs:
       - name: Load the tool pins
         if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/load-pins
+
+      - name: Put the pinned zstd on PATH
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         if: steps.leg.outputs.run == 'true'
@@ -3956,6 +4186,14 @@ jobs:
           free -g
           docker system df
 
+      # Who ran on the shared runners beside this leg (Q-ARCH-1062): its times are read with this record.
+      - name: The jobs of Test and Release that ran beside this leg
+        if: always() && steps.leg.outputs.run == 'true'
+        timeout-minutes: 3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: go run ./tools/neighbours -step 'make e2e SET=' -out .out/e2e/neighbours.md
+
       - name: Upload the go test -json report
         if: always() && steps.leg.outputs.run == 'true'
         uses: actions/upload-artifact@v7
@@ -4044,6 +4282,11 @@ jobs:
       - name: Load the tool pins
         if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/load-pins
+
+      - name: Put the pinned zstd on PATH
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         if: steps.leg.outputs.run == 'true'
@@ -4256,6 +4499,11 @@ jobs:
       - name: Load the tool pins
         if: steps.leg.outputs.run == 'true'
         uses: ./.github/actions/load-pins
+
+      - name: Put the pinned zstd on PATH
+        if: steps.leg.outputs.run == 'true'
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
 
       - name: Set up Go
         if: steps.leg.outputs.run == 'true'

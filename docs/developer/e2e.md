@@ -421,6 +421,10 @@ sampler run in the unit tests against fabricated cgroup trees of both classes ([
 
 How to read one:
 
+0. **Who of Test and Release ran beside it?** A leg of the nightly on `large` carries `neighbours.md` beside `evidence/` (and in its job
+   summary): the jobs of every push's run whose time on a `large` or `self-hosted` runner overlapped its test step, with the minutes
+   inside the window ([A code push during a nightly](releasing.md#a-code-push-during-a-nightly), Q-ARCH-1062). Kind legs there are the
+   first neighbours to look for in step 2; with none, a stall is more likely the leg's own.
 1. **Was the machine starved?** The `total_us` columns count stall microseconds, so the difference of two rows is the stall inside that window, whatever
    the ten-second average smooths. A second of `some` close to 1,000,000 microseconds means a runnable task waited the whole second.
    ```shell

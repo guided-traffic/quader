@@ -60,6 +60,10 @@ jobs:
           host="$(tools/sbom-generator/registry.sh start)"
           echo "host=${host}" >> "$GITHUB_OUTPUT"
 
+      - name: Put the pinned zstd on PATH
+        timeout-minutes: 5
+        uses: ./.github/actions/zstd
+
       - name: Install the pinned Docker Buildx
         timeout-minutes: 16
         uses: ./.github/actions/install-buildx

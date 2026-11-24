@@ -83,7 +83,7 @@ func installsPackages(s step) bool {
 
 // downloads names what a step fetches from the network outside the job's main make target, or "" when it fetches nothing of
 // that kind: the package install, the actions that download a toolchain, the Go modules and tools (from the cache or the module
-// proxy), the clients and Quader images, go install, the ClamAV database and npm ci.
+// proxy), the clients and Quader images, the pinned zstd (its source archive on a miss), go install, the ClamAV database and npm ci.
 func downloads(s step) string {
 	if installsPackages(s) {
 		return "OS packages"
@@ -91,6 +91,7 @@ func downloads(s step) string {
 	actions := []string{
 		"actions/setup-go@", "actions/setup-node@", "azure/setup-helm@", "azure/setup-kubectl@", "./.github/actions/install-buildx",
 		"./.github/actions/go-modules", "./.github/actions/go-tool", "./.github/actions/client-images", "./.github/actions/quader-image",
+		"./.github/actions/zstd",
 	}
 	for _, a := range actions {
 		if strings.HasPrefix(s.Uses, a) {

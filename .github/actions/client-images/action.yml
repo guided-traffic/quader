@@ -8,11 +8,11 @@
 #   build: 'false'  a leg: it restores the tar and loads it, and builds nothing. Without a tar it fails with one sentence that names
 #                   the images and, from the builder's artifact, the fetch that failed and after how many attempts.
 #
-# So a run builds each set at most once per runner kind (the self-hosted runners compress the cache with gzip, the GitHub-hosted
-# ones with zstd, and an entry of one kind is invisible to the other), and the legs that need it wait for that one build
-# instead of each building it beside the others. A leg that uses this sets QUADER_E2E_<SET>_CLIENTS_IMAGE_BUILD=0, so
-# deploy/dev/e2e.sh loads the images into kind and does not build them again. The tar is deleted afterwards: the images are in
-# Docker, and a large leg has no disk to spare.
+# So a run builds each set at most once per runner kind (with the pinned zstd on PATH on both kinds, Q-ARCH-1061, the entry is one
+# and the second kind's row finds it; a kind whose zstd step failed writes and reads a gzip entry of its own), and the legs that
+# need it wait for that one build instead of each building it beside the others. A leg that uses this sets
+# QUADER_E2E_<SET>_CLIENTS_IMAGE_BUILD=0, so deploy/dev/e2e.sh loads the images into kind and does not build them again. The tar
+# is deleted afterwards: the images are in Docker, and a large leg has no disk to spare.
 # Run after actions/checkout and the Go setup (the key builds the forwarder); in build mode after Buildx is set up with the
 # docker driver and Docker Hub is logged in.
 name: Client images of the acceptance suites

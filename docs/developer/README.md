@@ -167,6 +167,7 @@ quader/
 ├── go.mod                    # go 1.27.4; sqlc and oapi-codegen as tool directives
 ├── tools/versions.env        # pins of every tool and image that is not a Go module or an npm package
 ├── tools/github-download.sh  # downloads a GitHub release asset, with the job's token when there is one (Q-ARCH-356)
+├── tools/neighbours/         # a nightly leg's record of the jobs of Test and Release that ran beside it on the shared runners (Q-ARCH-1062)
 ├── tools/sbom-generator/     # the BuildKit SBOM generator that runs the pinned syft (registry.sh serves it during the release build), and check-pins.sh for make versions-check
 ├── Containerfile             # the release image: web build, cross-compiled Go build, distroless final stage
 ├── package.json              # release tooling only (semantic-release); its lockfile is package-lock.json, web/ has its own
@@ -258,6 +259,7 @@ quader/
 │   ├── actions/load-pins/      # loads tools/versions.env into the job
 │   ├── actions/build-tools/    # make, the C compiler and the commands a job names, when the runner lacks them (apt-install.sh)
 │   ├── actions/install-buildx/ # the pinned Docker Buildx, verified and cached under .bin (Q-ARCH-355)
+│   ├── actions/zstd/           # the pinned zstd on PATH before a job's first cache step, built once from the verified source (Q-ARCH-1061)
 │   └── actions/select-leg/     # decides whether a leg of the nightly runs: the sets of a dispatch, a recent full run on the schedule
 ├── hack/                     # verify-release-tooling.mjs: the release notes of .releaserc.json rendered
 ├── test/coverage/            # report.sh: merges the unit and integration profiles into the badge

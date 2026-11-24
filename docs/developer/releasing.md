@@ -503,8 +503,18 @@ inputs determine, from where, and what caches it; the development agent read it 
 
 All entries live in the GitHub Actions cache of the repository: 10 GB, entries not read for 7 days are deleted, and beyond 10 GB the
 least recently used go first. A run on a pull request reads the entries of `main` and writes its own, which only that pull request
-reads. The self-hosted runners have no `zstd`, so the cache compresses with gzip there and with zstd on the GitHub-hosted runners: the
-same key is then two entries, one per runner kind, and each fills on its own first miss.
+reads. `actions/cache` compresses with zstd when `zstd` is on PATH and with gzip otherwise, and the method is part of an entry's version.
+The self-hosted runners' image has no `zstd` and the GitHub-hosted image has 1.5.7, so every key was two entries, one per runner kind,
+each filled on its own first miss. Since [Q-ARCH-1061](../spec/architecture.md#q-arch-1061--the-actions-cache-writes-zstd-on-every-runner-kind-from-a-zstd-built-at-its-pin)
+every job runs [.github/actions/zstd](../../.github/actions/zstd/action.yml) before its first step that uses the cache: it keeps a zstd
+on PATH that reports `ZSTD_VERSION` of [tools/versions.env](../../tools/versions.env) (the hosted image's), else restores the program
+from the cache (key `zstd-<version>-<os>-<arch>-<digest>`, about a megabyte), else downloads the release's source archive, checks it
+against `ZSTD_SHA256`, builds it with `make zstd-release` as the hosted image does (about 6 s on 8 cores) and saves it; `zstdmt` and
+`unzstd`, the names tar is given, are links to it. So an entry is one entry on both kinds. The step is bounded at 5 minutes and fails
+nothing: a failure is a warning, and that job's entries are gzip ones of its own kind, as before. Whether the entries are shared is
+read in the first runs: the cache list (`gh cache list`) then shows one entry per key, the self-hosted jobs' logs `zstd 1.5.7 restored
+from the cache` or `built`. `zstd` in the runners' image at the pin would make the step a probe of milliseconds there too; that image is
+another repository and the owner's to change.
 
 | Cache | Key | Path | Measured size | On a miss | On a hit, not contacted |
 |---|---|---|---|---|---|
@@ -525,11 +535,17 @@ one of its pins or the forwarder for a clients image. To drop one by hand: `gh c
 <key>` (all of its versions, on every ref). A change of [client-images.sh](../../.github/scripts/client-images.sh) rebuilds every set
 once, because the script is one of the inputs.
 
-The budget, with one entry per key and runner kind: the Go modules 0.33 GB, the clients images about 2.4 GB (on GitHub-hosted runners
-npm and NuGet, 0.86 GB zstd; on the self-hosted runners all five, 1.58 GB gzip), the Go tools about 0.1 GB, the npm caches about 0.3 GB,
+The budget, measured with one entry per key and runner kind before Q-ARCH-1061: the Go modules 0.33 GB, the clients images about 2.4 GB
+(on GitHub-hosted runners npm and NuGet, 0.86 GB zstd; on the self-hosted runners all five, 1.58 GB gzip), the Go tools about 0.1 GB, the npm caches about 0.3 GB,
 the buildx archives 0.04 GB, Trivy's daily database 0.13 GB a day for up to a week. About 4 GB in all; a change of every input at once
 adds about 3 GB until the old entries age out. Before the change the repository held 4.4 GB, 2.5 GB of it setup-go entries, which are no
-longer written and age out within a week.
+longer written and age out within a week. With one zstd entry per key (Q-ARCH-1061) the keys both kinds use (the modules, npm's clients image,
+the tools, the npm caches) are held once, about 0.9 GB less, computed from the sizes above, provided both kinds resolve the same
+path (the version of an entry also hashes its path: `$HOME/go/pkg/mod/cache/download` and `~/.npm` under `/home/runner` on both: the
+runners' image runs as `runner` with that home, read from the image on 2026-11-24; that the jobs' environment does not move it is
+read in the first runs); the self-hosted kind's gzip entries are not read any more and age out within a week. A key the
+hosted kind holds in zstd already is a hit for the self-hosted jobs at once; a key only the self-hosted kind used (the OCI, APT and
+Ansible clients images) misses there once.
 
 ### Coverage
 
@@ -720,14 +736,35 @@ A red long leg does not hold the release: it is recorded as an open finding inst
 #### A code push during a nightly
 
 A push of code starts the kind legs of Test and Release on the runners the nightly's load legs measure on; ten of them beside a load
-leg made it six to nine times slower (F-164). So no code is pushed while a load leg runs (decision 22 of the reading of 2026-11-23),
-and a latency miss is read with the recorder ([Reading a stall](e2e.md#reading-a-stall)) before it is called the product's; no test is
-relabelled. Before a push, `make nightly-load-guard` ([nightly-load-guard.sh](../../tools/nightly-load-guard.sh)) lists the jobs of a
-nightly in progress that are load legs (`Latency`, `Vulnerability scanning performance`, and the sets of an HA scenario, a drain, a fault,
-a failover, a crash, a soak, a pooler or a long run) and exits 1 while one runs or waits; it exits 2 when `gh` cannot tell, and does not
-guess. A push of documents with `[skip ci]` starts nothing and may go at any time. Held by
-`TestNightlyLoadGuardNamesTheLoadLegsThatRun` ([nightlyguard_test.go](../../internal/tools/ciworkflows/nightlyguard_test.go), recorded
-answers of `gh`). What it does not do: stop a push (nothing on the remote refuses one), or hold a push by someone who does not run it.
+leg made it six to nine times slower (F-164). A push is still made at any time, and the run never waits for a nightly (the owner's
+standing rules; the half of decision 22 of the reading of 2026-11-23 that held a push was taken back the same day). Instead **every leg
+of the nightly on the `large` runners records who ran beside it** ([Q-ARCH-1062](../spec/architecture.md#q-arch-1062--a-nightly-leg-records-the-jobs-of-test-and-release-that-ran-beside-it-and-nothing-holds-a-push)):
+after its test step, whatever became of it, the step "The jobs of Test and Release that ran beside this leg" runs
+[tools/neighbours](../../tools/neighbours/main.go), which reads through the Actions API (the job's token, `actions:
+read`) the window of the leg's test step (`make e2e SET=…`, `make test-performance`, the vulnerability performance run; for `backup` the
+job's own) and every job of Test and Release whose time on a `large` or `self-hosted` runner overlapped it. It writes the record to the
+job summary and to `neighbours.md` in the leg's artifact (`.out/e2e/neighbours.md` in `e2e-artifacts-<set>`, `.out/neighbours.md` in
+`test-performance` and `vuln-perf`, and into the regression issue of a failed vulnerability performance run), and raises a notice on
+the run when a kind leg ran beside it:
+
+```text
+neighbours: 6 kind legs on large (78.0 runner minutes inside the window) and 30 other jobs on self-hosted (213.0) of 4 runs of Test and Release.
+```
+
+(the numbers of `e2e (ha-faults)` in the nightly 45008950010 of 2026-11-22, red, computed afterwards from the jobs of the runs of that
+day; 21 of its 23 `large` legs had kind legs of a push beside them.) A latency miss is read with this record and the recorder's samples
+([Reading a stall](e2e.md#reading-a-stall)) before it is called the product's; a miss with a kind leg beside it is noted and opens
+nothing, and no test is relabelled. The record never fails a leg: an API that does not answer is a sentence in it. A GitHub-hosted leg
+shares no machine with a push's legs and records nothing. Held by the three tests of
+[neighbours/main_test.go](../../tools/neighbours/main_test.go) (an Actions API served in process, unit, milliseconds) and
+`TestEveryLargeLegOfTheNightlyRecordsItsNeighbours` ([neighbours_test.go](../../internal/tools/ciworkflows/neighbours_test.go)).
+
+`make nightly-load-guard` ([nightly-load-guard.sh](../../tools/nightly-load-guard.sh)) tells whether a load leg runs now
+(`Latency`, `Vulnerability scanning performance`, and the sets of an HA scenario, a drain, a fault, a failover, a crash, a soak, a pooler
+or a long run): it exits 1 while one runs or waits and 2 when `gh` cannot tell. It is for the one case where the quiet matters: a single
+set the development agent dispatches itself to measure is dispatched with no push beside it. A push of documents with `[skip ci]`
+starts nothing. Held by `TestNightlyLoadGuardNamesTheLoadLegsThatRun` ([nightlyguard_test.go](../../internal/tools/ciworkflows/nightlyguard_test.go),
+recorded answers of `gh`).
 
 #### Dispatching a branch
 

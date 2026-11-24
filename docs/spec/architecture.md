@@ -11409,6 +11409,74 @@ case of [coverage_test.go](../../internal/tools/coverage/coverage_test.go). Else
 [coverage.md](../developer/coverage.md#the-record-on-the-branch-coverage), [releasing.md](../developer/releasing.md#release-flow),
 [data-and-secret-flow.md](../security/data-and-secret-flow.md).
 
+### Q-ARCH-1061 · The Actions cache writes zstd on every runner kind, from a zstd built at its pin
+
+Status: **Decided by the development agent** (2026-11-24) — selected from the options below; the owner reviews it at the walkthrough.
+Refines [Q-ARCH-523](#q-arch-523--the-go-module-cache-the-download-cache-keyed-by-gosum-completed-by-every-job-saved-by-the-first-that-missed)
+and [Q-ARCH-638](#q-arch-638--a-run-builds-each-set-of-clients-images-once-in-a-job-of-its-own-and-the-legs-only-load-it).
+
+Context: `actions/cache` compresses an entry with zstd when `zstd --version` answers on PATH and with gzip otherwise, and the method is
+part of the entry's version. The self-hosted runners' image (`guidedtraffic/actions-runner`, Ubuntu 24.04) has no zstd, the
+GitHub-hosted Ubuntu 24.04 image has zstd 1.5.7, built by its image scripts from the release's source archive. So every key was two
+entries, one per runner kind, each filled on its own first miss: the Go modules (165 MB gzip, 161 MB zstd), the clients images
+(NuGet 803 against 737 MB, OCI 335 against 320 MB), the tools, the npm caches. Two versions of one tool, by the owner's rule, are
+the finding: the newer one goes everywhere. The runners' image is another repository that takes no commit without the owner's word.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) zstd in the runners' image (one line of its package list) | Every self-hosted job has it | Nothing per job | Another repository, the owner's word each time; the image's Ubuntu package is 1.5.5, not the hosted image's 1.5.7 |
+| (b) Each job installs `zstd` with `apt-install.sh` | The Ubuntu package | Two lines | An index update of the Ubuntu archive in every job (24 to 51 s measured, and the archive is the host that hung a gating job for 19 minutes, F-158); 1.5.5 against the hosted 1.5.7 |
+| (c) A composite action puts zstd at a pin on PATH before the job's first cache step: the hosted image's own when it reports the pin, else the program restored from the cache, else built once from the release's source archive (SHA-256 pinned) as the hosted image builds it, and saved (chosen) | `ZSTD_VERSION` and `ZSTD_SHA256` in `tools/versions.env` | One version on both kinds, read from the one pin file; no archive of Ubuntu; a hit costs a restore of about a megabyte; a failure leaves the job on gzip with a warning and fails nothing | A step in about 60 jobs; a build of about 6 s on 8 cores (24 s in the runners' image under emulation on the development machine) once per week of the cache and per runner kind |
+| (d) Hide the hosted runners' zstd, so both kinds write gzip | One entry per key | No download at all | The older, larger and slower format everywhere, against the rule that the newer version goes everywhere; a PATH trick on a runner the repository does not own |
+
+**Choice:** (c). Each job runs `.github/actions/zstd` (timeout 5 minutes: a stalled restore of the program is a miss after a minute,
+the download has 60 s, the build 120 s) before its first step that uses the cache (`go-modules`, `go-tool`, `client-images`,
+`install-buildx`, `actions/setup-node` with `cache:`, `actions/cache`), under the same condition; before the Go setup where the module
+cache follows it, since that step must stay right after the setup. The rows of the job `client-images` stay per runner kind: with one
+entry the second kind's row finds the first's and only looks it up, and a row whose zstd step failed writes a gzip entry that its own
+kind's legs, on gzip as well, still find. **Rationale:** (c) solves it inside this repository and follows the pin rule: one version,
+pinned once, the hosted image's version, and a check that the archive is the release's. (a) remains the cheaper end state and is named
+to the owner: `zstd` in the package list of `container-images/actions-runner/Containerfile` would make the step a probe of a few
+milliseconds on the self-hosted runners too, provided the image's version equals the pin (else the step still builds the pin). The
+development agent revisits (c) if the image carries zstd at the pin, or if the build fails on the runners. **Applied:**
+[.github/actions/zstd](../../.github/actions/zstd/action.yml) and its [install.sh](../../.github/actions/zstd/install.sh), the pins,
+every workflow job that uses the cache. Tests: `TestEveryCacheStepRunsAfterThePinnedZstd`,
+`TestTheCacheActionsAreTheOnesTheZstdRuleKnows`, `TestThePinnedZstdIsBuiltFromTheVerifiedSourceOnceAndNeverFailsAJob` (a source archive
+of one Makefile, unit, about 2 s) and `TestTheZstdPinHasItsDigest` ([zstd_test.go](../../internal/tools/ciworkflows/zstd_test.go)).
+Elsewhere: [releasing.md, The caches](../developer/releasing.md#the-caches).
+
+### Q-ARCH-1062 · A nightly leg records the jobs of Test and Release that ran beside it, and nothing holds a push
+
+Status: **Decided by the development agent** (2026-11-24) — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: F-164: ten kind legs of Test and Release beside a load leg of the nightly made it six to nine times slower; the latency
+conditions of the load legs are only as good as the runners are quiet. The owner's rules: a push is made at any time, and the run
+never waits for a nightly (the half of decision 22 of the reading of 2026-11-23 that held a push was taken back that day). The
+schedule fires 6.5 to 8.5 hours late, in the middle of a day of landings: in the nightly 45008950010 21 of the 23 legs on `large` had
+kind legs of a push beside them, the three red ones among them (test-cost.md section 14).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The kind legs of Test and Release wait while a load leg of the nightly runs (a job that polls before them) | The load legs measure on quiet runners | Clean numbers | A push's kind legs wait for hours (lane 1 is about four), against the owner's rules; the evidence record of the push waits with them |
+| (b) The nightly holds the runners (a lane takes every `large` runner) | Quiet runners | Clean numbers | The `self-hosted` jobs share the nodes too; a push still starts; the runner pool is the owner's cluster |
+| (c) Every leg on `large` records after its test step which jobs of Test and Release ran on a `large` or `self-hosted` runner inside its window, with the minutes; the record goes to the summary, the artifact and a notice (chosen) | A miss is read with its neighbours | Nothing waits; the reading that F-164 needed is in the leg itself, and a miss with a kind leg beside it is noted and opens nothing, as decided on 2026-11-23 | The numbers of a leg with neighbours are still not the product's; the record says so, it does not repair them |
+| (d) The latency conditions compare against a measurement of the same run (a baseline taken in the leg) | Relative bounds | Robust to neighbours | Every condition of R-ARCH-027 and R-VULN-028 is absolute; a relative bound is a change of the requirement, not of the pipeline |
+
+**Choice:** (c), with `make nightly-load-guard` kept for the one case where the quiet is the point: a single set the development agent
+dispatches itself to measure goes with no push beside it. **Rationale:** (c) is the only option that keeps both rules of the owner and
+gives the reader of a red load leg the fact F-164 had to be dug out for. The window is the test step's (the step `make e2e SET=…`,
+`make test-performance`, the vulnerability performance run; for `backup`, whose two sets are two steps, the job's own), read through
+the Actions API from the job's own record, so the set-up before it does not count. A GitHub-hosted leg shares no machine with a
+push's legs and records nothing. The record never fails a leg: an API that does not answer is a sentence in it. The development agent
+revisits (d) with the owner if the records show that most nights' load legs ran beside a push. **Applied:**
+[tools/neighbours](../../tools/neighbours/main.go) and the step "The jobs of Test and Release that ran beside this
+leg" of every `large` job of [performance.yml](../../.github/workflows/performance.yml) (the record in `.out/e2e/neighbours.md`, in
+`test-performance` and in `vuln-perf`, and in the regression issue of a failed vulnerability performance run). Tests: the three of
+[neighbours/main_test.go](../../tools/neighbours/main_test.go) (an Actions API in process, unit, milliseconds) and
+`TestEveryLargeLegOfTheNightlyRecordsItsNeighbours` ([neighbours_test.go](../../internal/tools/ciworkflows/neighbours_test.go)).
+Elsewhere: [releasing.md, A code push during a nightly](../developer/releasing.md#a-code-push-during-a-nightly),
+[e2e.md, Reading a stall](../developer/e2e.md#reading-a-stall).
+
 ### Q-ARCH-446 · A response to a request whose body is unread is sent first, then the body is read and discarded within a bound
 
 Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.

@@ -638,7 +638,7 @@ dev-drain: ## Drain a node under k6 load with cursor-persisting jobs; fails on a
 	deploy/dev/drain.sh
 
 .PHONY: nightly-load-guard
-nightly-load-guard: ## Before a code push: exit 1 while load legs of the nightly run, 2 when gh cannot tell (tools/nightly-load-guard.sh; docs/developer/releasing.md#a-code-push-during-a-nightly)
+nightly-load-guard: ## Before a dispatch that measures: exit 1 while load legs of the nightly run, 2 when gh cannot tell (tools/nightly-load-guard.sh; docs/developer/releasing.md#a-code-push-during-a-nightly)
 	tools/nightly-load-guard.sh
 
 .PHONY: e2e

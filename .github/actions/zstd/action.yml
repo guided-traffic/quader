@@ -1,0 +1,78 @@
+# Puts zstd at its pin (ZSTD_VERSION of tools/versions.env) on PATH before a step of the job reads or writes the GitHub Actions
+# cache (Q-ARCH-1061). actions/cache compresses an entry with zstd when `zstd` is on PATH and with gzip otherwise, and the
+# compression is part of the entry's version: the self-hosted runners' image has no zstd, the GitHub-hosted image has 1.5.7
+# built from the release's source, so every key used to be two entries, gzip on the one kind and zstd on the other, each filled
+# on its own first miss. With the pin on PATH on both kinds an entry is one entry.
+#
+# The probe keeps a zstd on PATH that reports the pin (the GitHub-hosted image's, or this action's from an earlier step of the
+# job), so a second call costs a few milliseconds. Otherwise the binary is restored from the cache under a key of the pin, the
+# digest and the platform; a miss downloads the release's source archive (tools/github-download.sh, bounded), checks its SHA-256
+# against the pin and builds the program as the GitHub-hosted image builds it (`make zstd-release`, about 6 s on 8 cores),
+# then saves it. zstdmt and unzstd, the names actions/cache calls through tar, are links to it. Every failure is a warning and
+# leaves the job on gzip, as before: the cache works either way, only the entry is then the job's runner kind's own.
+# Run after actions/checkout, with timeout-minutes: 5, before the first step of the job that uses the cache (go-modules, go-tool,
+# client-images, install-buildx, actions/setup-node with `cache:`, actions/cache) and under the same condition
+# (internal/tools/ciworkflows TestEveryCacheStepRunsAfterThePinnedZstd).
+name: Pinned zstd
+description: Put the zstd of tools/versions.env on PATH, so that the Actions cache writes and reads one zstd entry per key on every runner kind
+runs:
+  using: composite
+  steps:
+    - name: Check the zstd on PATH
+      id: probe
+      shell: bash
+      run: |
+        set -uo pipefail
+        pins="$GITHUB_WORKSPACE/tools/versions.env"
+        want="$(sed -n 's/^ZSTD_VERSION=//p' "$pins" 2>/dev/null)"
+        digest="$(sed -n 's/^ZSTD_SHA256=//p' "$pins" 2>/dev/null)"
+        if [ -z "$want" ] || [ -z "$digest" ]; then
+          echo "::warning::ZSTD_VERSION or ZSTD_SHA256 is missing from tools/versions.env: the cache of this job stays on what the runner has"
+          echo "present=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        have="$(zstd --quiet --version 2>/dev/null || true)"
+        have="${have#v}"
+        if [ "$have" = "$want" ]; then
+          echo "zstd ${have} on PATH ($(command -v zstd)) is the pin"
+          echo "present=true" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        echo "zstd on PATH: ${have:-none}; the pin is ${want}"
+        {
+          echo "present=false"
+          echo "version=${want}"
+          echo "digest=${digest}"
+          echo "dir=.bin/zstd-${want}"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Restore the pinned zstd
+      id: restore
+      if: steps.probe.outputs.present != 'true'
+      uses: actions/cache/restore@v6
+      env:
+        # A stalled restore of a binary of about a megabyte is a miss after a minute, not after the default 10: with the
+        # download's 60 s and the build's 120 s the step ends inside the 5 minutes the jobs give it.
+        SEGMENT_DOWNLOAD_TIMEOUT_MINS: '1'
+      with:
+        path: ${{ steps.probe.outputs.dir }}
+        key: zstd-${{ steps.probe.outputs.version }}-${{ runner.os }}-${{ runner.arch }}-${{ steps.probe.outputs.digest }}
+
+    - name: Build the pinned zstd after a miss and put it on PATH
+      id: install
+      if: steps.probe.outputs.present != 'true'
+      shell: bash
+      env:
+        WANT: ${{ steps.probe.outputs.version }}
+        DIGEST: ${{ steps.probe.outputs.digest }}
+        DIR: ${{ steps.probe.outputs.dir }}
+        # Read by tools/github-download.sh, which sends it to github.com only (Q-ARCH-356).
+        GITHUB_TOKEN: ${{ github.token }}
+      run: '"$GITHUB_ACTION_PATH/install.sh"'
+
+    - name: Save the pinned zstd
+      if: steps.install.outputs.built == 'true'
+      uses: actions/cache/save@v6
+      with:
+        path: ${{ steps.probe.outputs.dir }}
+        key: zstd-${{ steps.probe.outputs.version }}-${{ runner.os }}-${{ runner.arch }}-${{ steps.probe.outputs.digest }}

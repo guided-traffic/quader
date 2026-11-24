@@ -147,7 +147,8 @@ EOF
 # ci, access-long and backup, QUADER_E2E_OIDCSTUB), the Bastion's chart (deployed by deploy/dev/bastion.sh alone), the UI
 # development profile of the layout checks (deploy/ui-dev and its sign-in provider test/devidp), the other workflows and the
 # nightly's leg selection, and the configuration and scripts of jobs that start no cluster (golangci-lint, the two Trivy scans and
-# the report of the scan of the images the chart runs, Renovate, semantic-release, actionlint). A compile error in a file here that a
+# the report of the scan of the images the chart runs, Renovate, semantic-release, actionlint), and the nightly's record of a leg's
+# neighbours (tools/neighbours, which only performance.yml runs). A compile error in a file here that a
 # leg would build is the lint job's (golangci-lint builds every tag).
 no_format_leg() {
   cat <<'EOF'
@@ -167,6 +168,7 @@ _test\.go$
 ^\.github/actions/select-leg/
 ^(\.golangci\.yml|\.trivyignore\.yaml|\.trivyignore-upstream\.yaml|renovate\.json|\.releaserc\.json|\.github/actionlint\.yaml)$
 ^\.github/scripts/upstream-image-report\.sh$
+^tools/neighbours/
 EOF
 }
 

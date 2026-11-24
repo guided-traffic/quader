@@ -9127,10 +9127,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-ARCH
 
-277 questions on [spec/architecture.md](spec/architecture.md).
+279 questions on [spec/architecture.md](spec/architecture.md).
 
 <details>
-<summary>Q-ARCH: 277 questions</summary>
+<summary>Q-ARCH: 279 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9411,6 +9411,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ARCH-811](spec/architecture.md#q-arch-811--the-pipeline-writes-the-evidence-record-and-the-coverage-badge-onto-the-branch-coverage-main-holds-neither) | The pipeline writes the evidence record and the coverage badge onto the branch `coverage`; `main` holds neither | Decided by the development agent | (c), with the record whole as set out above, and (b) for a test that holds a refusal. | — |
 | [Q-ARCH-1040](spec/architecture.md#q-arch-1040--a-commit-on-the-branch-coverage-holds-the-record-and-the-badge-alone) | A commit on the branch `coverage` holds the record and the badge alone | Decided by the development agent | (c) The four files and nothing else; the branch's head as the only parent; the pages' links to the rest of the repository at the record's commit on GitHub; (ii) `badges/coverage.json` | — |
 | [Q-ARCH-1041](spec/architecture.md#q-arch-1041--a-statement-whose-cancel-request-is-dropped-ends-when-the-server-sees-its-client-gone) | A statement whose cancel request is dropped ends when the server sees its client gone | Decided by the development agent on 2026-11-24 | (a) `database.session.client_connection_check_interval` (1 s by default), sent as a startup parameter on direct connections and a role default through a transaction-mode pooler, verified by preflight like the other session settings | — |
+| [Q-ARCH-1061](spec/architecture.md#q-arch-1061--the-actions-cache-writes-zstd-on-every-runner-kind-from-a-zstd-built-at-its-pin) | The Actions cache writes zstd on every runner kind, from a zstd built at its pin | Decided by the development agent | (c) A composite action puts zstd at a pin on PATH before the job's first cache step: the hosted image's own when it reports the pin, else the program restored from the cache, else built once from the release's source archive (SHA-256 pinned) as the hosted image builds it, and saved | — |
+| [Q-ARCH-1062](spec/architecture.md#q-arch-1062--a-nightly-leg-records-the-jobs-of-test-and-release-that-ran-beside-it-and-nothing-holds-a-push) | A nightly leg records the jobs of Test and Release that ran beside it, and nothing holds a push | Decided by the development agent | (c), with `make nightly-load-guard` kept for the one case where the quiet is the point: a single set the development agent dispatches itself to measure goes with no push beside it. | — |
 
 </details>
 
