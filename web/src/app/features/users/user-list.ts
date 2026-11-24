@@ -42,6 +42,12 @@ import { QuaderAvatar } from '../../shared/ui/avatar';
   ],
   templateUrl: './user-list.html',
   styleUrl: '../../shared/access/access.scss',
+  // An e-mail address is one identifier: it broke at its hyphen ("priya@ui-" / "dev.invalid") at 1,024 px (the check cramped, Q-UI-1060).
+  styles: `
+    .email {
+      white-space: nowrap;
+    }
+  `,
 })
 export class UserList {
   private readonly api = inject(IdentityApi);
@@ -86,7 +92,7 @@ export class UserList {
 
   protected readonly caption = $localize`:@@users.caption:Users`;
   protected readonly columns: readonly TableColumn[] = [
-    { id: 'username', label: $localize`:@@users.col.user:User`, sortable: true, width: '10rem' },
+    { id: 'username', label: $localize`:@@users.col.user:User`, sortable: true },
     { id: 'email', label: $localize`:@@users.col.email:Email` },
     {
       id: 'origin',

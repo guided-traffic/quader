@@ -11063,7 +11063,8 @@ the walk items and the run record); what the code holds beyond the plan has not 
   2026-11-24 by the screens' package of round 3: the check `cramped` (`web/e2e/renders/layout.ts`, R-UI-173) with W-5's
   row as its fixture and four more cases (`make ui-layout-test`, three engines, six cases of about 0.25 to 0.9 s each,
   no stack); its first run of the whole set found five screens, of which three were repaired (the sessions' "This
-  session" under the time, the admin area's users with a column of names of 10 rem instead of 14, the storage page's
+  session" under the time, the admin area's users with the e-mail as one identifier that does not break and no least width of 14 rem on the
+  column of names, the storage page's
   scrub as its share with the period as a muted second line) and two (the audit log, the tokens) were columns that also
   hold long values that wrap, which the check now passes by a case of its own; the run after the repairs had no
   finding. The check measures each table's cells once per picture and sets a wrapped short cell on one line for a

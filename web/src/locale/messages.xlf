@@ -38151,7 +38151,7 @@
     <unit id="users.status">
       <notes>
         <note category="location">src/app/features/users/user-list.html:16</note>
-        <note category="location">src/app/features/users/user-list.ts:76</note>
+        <note category="location">src/app/features/users/user-list.ts:82</note>
       </notes>
       <segment>
         <source>Status</source>
@@ -38160,7 +38160,7 @@
     <unit id="users.origin">
       <notes>
         <note category="location">src/app/features/users/user-list.html:17</note>
-        <note category="location">src/app/features/users/user-list.ts:77</note>
+        <note category="location">src/app/features/users/user-list.ts:83</note>
       </notes>
       <segment>
         <source>Origin</source>
@@ -38169,7 +38169,7 @@
     <unit id="users.group">
       <notes>
         <note category="location">src/app/features/users/user-list.html:21,22</note>
-        <note category="location">src/app/features/users/user-list.ts:78</note>
+        <note category="location">src/app/features/users/user-list.ts:84</note>
       </notes>
       <segment>
         <source>Group</source>
@@ -38178,7 +38178,7 @@
     <unit id="users.admin">
       <notes>
         <note category="location">src/app/features/users/user-list.html:26</note>
-        <note category="location">src/app/features/users/user-list.ts:79</note>
+        <note category="location">src/app/features/users/user-list.ts:85</note>
       </notes>
       <segment>
         <source>Administrator</source>
@@ -38187,7 +38187,7 @@
     <unit id="users.external">
       <notes>
         <note category="location">src/app/features/users/user-list.html:27</note>
-        <note category="location">src/app/features/users/user-list.ts:81</note>
+        <note category="location">src/app/features/users/user-list.ts:87</note>
       </notes>
       <segment>
         <source>External</source>
@@ -38219,7 +38219,7 @@
     </unit>
     <unit id="users.search">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:66</note>
+        <note category="location">src/app/features/users/user-list.ts:72</note>
       </notes>
       <segment>
         <source>Filter users</source>
@@ -38227,7 +38227,7 @@
     </unit>
     <unit id="users.empty-none">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:68</note>
+        <note category="location">src/app/features/users/user-list.ts:74</note>
       </notes>
       <segment>
         <source>There is no user yet.</source>
@@ -38235,7 +38235,7 @@
     </unit>
     <unit id="users.empty">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:69</note>
+        <note category="location">src/app/features/users/user-list.ts:75</note>
       </notes>
       <segment>
         <source>No user matches.</source>
@@ -38243,7 +38243,7 @@
     </unit>
     <unit id="users.caption">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:87</note>
+        <note category="location">src/app/features/users/user-list.ts:93</note>
       </notes>
       <segment>
         <source>Users</source>
@@ -38251,7 +38251,7 @@
     </unit>
     <unit id="users.col.user">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:89</note>
+        <note category="location">src/app/features/users/user-list.ts:95</note>
       </notes>
       <segment>
         <source>User</source>
@@ -38259,7 +38259,7 @@
     </unit>
     <unit id="users.col.email">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:90</note>
+        <note category="location">src/app/features/users/user-list.ts:96</note>
       </notes>
       <segment>
         <source>Email</source>
@@ -38267,7 +38267,7 @@
     </unit>
     <unit id="users.col.origin">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:93</note>
+        <note category="location">src/app/features/users/user-list.ts:99</note>
       </notes>
       <segment>
         <source>Origin</source>
@@ -38275,7 +38275,7 @@
     </unit>
     <unit id="users.help.origin">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:94</note>
+        <note category="location">src/app/features/users/user-list.ts:100</note>
       </notes>
       <segment>
         <source>How the account came to exist: at first sign-in through the identity provider, created by an administrator, provisioned by SCIM, or the built-in break-glass account.</source>
@@ -38283,7 +38283,7 @@
     </unit>
     <unit id="users.col.status">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:96</note>
+        <note category="location">src/app/features/users/user-list.ts:102</note>
       </notes>
       <segment>
         <source>Status</source>
@@ -38291,7 +38291,7 @@
     </unit>
     <unit id="users.col.last-login">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:97</note>
+        <note category="location">src/app/features/users/user-list.ts:103</note>
       </notes>
       <segment>
         <source>Last sign-in</source>
@@ -38299,10 +38299,10 @@
     </unit>
     <unit id="users.any">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:101</note>
         <note category="location">src/app/features/users/user-list.ts:107</note>
-        <note category="location">src/app/features/users/user-list.ts:114</note>
-        <note category="location">src/app/features/users/user-list.ts:119</note>
+        <note category="location">src/app/features/users/user-list.ts:113</note>
+        <note category="location">src/app/features/users/user-list.ts:120</note>
+        <note category="location">src/app/features/users/user-list.ts:125</note>
       </notes>
       <segment>
         <source>Any</source>
@@ -38310,7 +38310,7 @@
     </unit>
     <unit id="users.status.active">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:102</note>
+        <note category="location">src/app/features/users/user-list.ts:108</note>
       </notes>
       <segment>
         <source>Active</source>
@@ -38318,7 +38318,7 @@
     </unit>
     <unit id="users.status.disabled">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:103</note>
+        <note category="location">src/app/features/users/user-list.ts:109</note>
       </notes>
       <segment>
         <source>Disabled</source>
@@ -38326,7 +38326,7 @@
     </unit>
     <unit id="users.status.locked">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:104</note>
+        <note category="location">src/app/features/users/user-list.ts:110</note>
       </notes>
       <segment>
         <source>Locked</source>
@@ -38334,7 +38334,7 @@
     </unit>
     <unit id="users.admin.yes">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:115</note>
+        <note category="location">src/app/features/users/user-list.ts:121</note>
       </notes>
       <segment>
         <source>Administrators</source>
@@ -38342,7 +38342,7 @@
     </unit>
     <unit id="users.admin.no">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:116</note>
+        <note category="location">src/app/features/users/user-list.ts:122</note>
       </notes>
       <segment>
         <source>Not administrators</source>
@@ -38350,7 +38350,7 @@
     </unit>
     <unit id="users.external.yes">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:120</note>
+        <note category="location">src/app/features/users/user-list.ts:126</note>
       </notes>
       <segment>
         <source>External users</source>
@@ -38358,7 +38358,7 @@
     </unit>
     <unit id="users.external.no">
       <notes>
-        <note category="location">src/app/features/users/user-list.ts:121</note>
+        <note category="location">src/app/features/users/user-list.ts:127</note>
       </notes>
       <segment>
         <source>Not external</source>

@@ -23050,8 +23050,9 @@ when set on one line, so nothing wrapped) and a short value in a column of long 
 as the list gives it, and its short values wrap at that width as its long ones do). A text counts as short up to 40 characters; the
 finding names the columns that have the room. That run found it on five screens; three are repaired in the same change: the sessions' "This
 session" wrapped under the time in a column of 11 rem at 1,440 px (it stands under the time at every width now); the admin area's users,
-whose e-mail broke at its hyphen at 1,024 px beside a column of names with a least width of 14 rem (10 rem now, the avatar and a name of
-about fifteen letters); the storage page's scrub, "96 % read within 30 days" in two lines in its 6.5 rem beside a State column kept at 11
+whose e-mail broke at its hyphen at 1,024 px beside a column of names with a least width of 14 rem (the e-mail is one identifier now and
+does not break, and the column of names has no least width of its own: at 10 rem the next run, its times one word longer, found the same
+row by 11 px); the storage page's scrub, "96 % read within 30 days" in two lines in its 6.5 rem beside a State column kept at 11
 rem for "Filling 63 % of the blobs" (the share on its line, the period as the cell's muted second line; a Scrub of 11 rem stacked the
 table at 1,440 px). The audit log (an action's name, by 5 and 10 px) and the admin area's tokens (an owner's path, by 14 px) passed once
 the two cases were in: their columns also hold values longer than a summary that wrap (the tokens' owners, paths of about 80 characters;
