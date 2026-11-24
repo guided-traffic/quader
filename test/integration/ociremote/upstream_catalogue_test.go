@@ -33,7 +33,7 @@ func TestR_CUR_009_TheCatalogueSaysStoredOfATagARemotePulledThrough(t *testing.T
 		pkg, _ = p["stored"].(string)
 		return pkg, tags
 	}
-	pkg, tags := state()
+	_, tags := state()
 	if _, ok := tags["latest"]; !ok || len(tags) < 2 {
 		t.Fatalf("the upstream lists the tags %v of acme/b, want latest and at least one more", tags)
 	}
@@ -41,7 +41,8 @@ func TestR_CUR_009_TheCatalogueSaysStoredOfATagARemotePulledThrough(t *testing.T
 	if a := e.do(rep, http.MethodHead, rAnon, "acme/b/manifests/latest"); a.Status != http.StatusOK {
 		t.Fatalf("HEAD of the tag: %d", a.Status)
 	}
-	if pkg, tags = state(); pkg != "none" || tags["latest"] != "none" {
+	pkg, tags := state()
+	if pkg != "none" || tags["latest"] != "none" {
 		t.Errorf("after a HEAD: the image %q, latest %q, want none and none", pkg, tags["latest"])
 	}
 
