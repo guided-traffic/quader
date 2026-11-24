@@ -650,6 +650,13 @@ None open (2026-11-24).
 
 ### Closed
 
+- **Closed on 2026-11-24, 04:58: `integration (shard b)` was red from R3's landing on (Test and Release 45313821227
+  and 45315568516, read at 04:53).** The area `endpoints` panicked at its start: its test format `relay` has the
+  class remote, and R3's registration refuses a remote adapter without a catalogue (Q-CUR-109). R3's builder ran
+  the five formats' areas and not this one, whose format registers itself. The relay's adapter declares the
+  catalogue's floor (no search, no levels, no package known, no download ahead); the area passed once (17 s). No
+  other format under `test/` registers the class remote.
+
 - **Closed on 2026-11-24, 04:20: F-121, the nightly performance run's V-7b on a loaded runner.** The set `vuln-perf` dispatched at 03:53 (HA and Performance 45315614490, job 138184137655, green) met every target: V-7a p99 31.9 ms and V-7b p99 146.6 ms against 300 ms, V-4 4.67 ms against 5, V-5a 0.28 ms, V-5b one statement a download. It did not run alone: its neighbours' record names 8 kind legs on `large` (38.2 runner minutes inside its window) and 8 other jobs of 4 runs of Test and Release; so V-7b holds beside neighbours too, and the misses of 2026-11-10 (314.7 and 611 ms) stay unexplained by the product. Reopen if V-7b misses again; the notes of `perf-vuln.json` name the slowest requests then. As it stood: **Partly closed; open: the one run itself, a dispatch of the set alone in a pipeline window with no push
   beside it (decision 3 of the reading of 2026-11-23), and its reading against V-7b.** Closed: what that run
   records, by 1b2e20ffb (2026-11-23): the notes of V-7a and V-7b in `perf-vuln.json` name the five slowest
