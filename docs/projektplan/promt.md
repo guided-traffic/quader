@@ -680,7 +680,30 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
-- **The pull command is a box in the middle of the list, and Details is a section under it (owner, 2026-11-24, 09:50,
+- **A stacked row breaks a word in the middle at 390 px (seen by the development agent on 2026-11-24, 10:30, in the
+  renders of the pull menu):** on a Debian repository's versions at 390 px the label "Veröffentlicht" reads
+  "Veröffentli" / "cht"; the stacked rows' label column lets a long German word break inside itself. Together with the
+  token list that stacks at 1,024 px on a reused UI instance as its "Created" age grows (the layout package's leftover),
+  given to a builder at 10:35.
+
+- **With `onMissingData: block`, a pull of an image index is refused (seen in the code by the image scan's builder on
+  2026-11-24, 09:19; not run):** `GateImage` asks for a scan row of every manifest, an index never has one, so
+  `Detected` stays false, against its own comment "a manifest list passes". Dormant: the default is `allow`. Given to a
+  builder at 09:55, once the image scan's package (which touches the same statements) was on main.
+
+### Closed
+
+- **Closed on 2026-11-24, 10:12, by the pull menu's package (Q-UI-1066, Q-UI-1067):** the box "Pull-Befehl" and the
+  link "Befehl anzeigen" are gone from the repository page of every format. Beside each version, and beside each package
+  for its latest version, a button with the format's client verb and a chevron (Pull for images, Install for npm, NuGet,
+  Debian, Ansible and every other package format, Download for generic; German Pull, Installieren, Herunterladen) opens a
+  menu hung from it as GitLab's "Code" menu: one section per client with a read-only field and a copy button, as wide as
+  its longest command (24 to 48 rem, never wider than the window), closed by Escape, a click outside or the button, the
+  focus back on the button. "Info" was weighed and not taken: it does not say the menu holds commands. Details is the last
+  tab of every repository's page that has details, at `…/details`; an Owner now sees the address for downloads by path
+  as every reader does. Tests: five Vitest cases, the journey `08-packages` changed (not run, it needs a cluster);
+  rendered in English and German, both schemes, 1,440, 1,024 and 390 px, looked at by the development agent. As it
+  stood: **The pull command is a box in the middle of the list, and Details is a section under it (owner, 2026-11-24, 09:50,
   with a screenshot of `upstream/docker-hub` and one of GitLab's "Code" menu): "Das Details welches unten abgebildet
   ist, gehört in einen eigenen Reiter. An letzter Position. Der Kaste „Pull-Befehl" ist einfach mitten drin und passt
   dort nicht gut hinein. Der Pull-Befehl soll viel mehr in ein overlay wie in screenshot 2 abgebildet überführt werden.
@@ -689,13 +712,6 @@ records the recorder that tells such a stall apart).
   oder „Pull" heißen. Das gilt natürlich für alle Registry-Typen".** Given to a builder at 09:55: Details a tab of its
   own, the last, on every repository's page; the client's command in a menu hung from a button beside each version,
   GitLab's "Code" menu as the pattern, for every format.
-
-- **With `onMissingData: block`, a pull of an image index is refused (seen in the code by the image scan's builder on
-  2026-11-24, 09:19; not run):** `GateImage` asks for a scan row of every manifest, an index never has one, so
-  `Detected` stays false, against its own comment "a manifest list passes". Dormant: the default is `allow`. Given to a
-  builder at 09:55, once the image scan's package (which touches the same statements) was on main.
-
-### Closed
 
 - **Closed on 2026-11-24, 10:08, by the layout and tooltip package (Q-UI-1064, Q-UI-1065):** the finding of run
   45340888441 on `clamav-databases` at 1,024 px came and went with the date, because the column Built shows that day's
