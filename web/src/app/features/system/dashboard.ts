@@ -1,5 +1,6 @@
 import { DatePipe, DecimalPipe, NgTemplateOutlet } from '@angular/common';
-import { Component, computed, effect, inject, resource, signal } from '@angular/core';
+import { Component, computed, inject, resource, signal } from '@angular/core';
+import { live } from '../../core/live-refresh';
 import { RouterLink } from '@angular/router';
 import { BackupsApi } from '../../api/backups-api';
 import { StorageApi } from '../../api/storage-api';
@@ -133,11 +134,8 @@ export class Dashboard {
   });
 
   constructor() {
-    effect((onCleanup) => {
-      if (this.paused()) return;
-      const timer = setInterval(() => this.reload(), REFRESH_INTERVAL_MS);
-      onCleanup(() => clearInterval(timer));
-    });
+    // Read again while the page is seen and not paused, at once when it is seen again (R-UI-213).
+    live({ reload: () => this.reload(), every: () => REFRESH_INTERVAL_MS, when: () => !this.paused() });
   }
 
   protected reload(): void {

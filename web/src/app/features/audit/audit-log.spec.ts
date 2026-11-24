@@ -305,4 +305,25 @@ describe('Audit log', () => {
     expect(root.querySelector('section.detail')?.textContent).toContain('does not exist');
     await expectAccessible(root);
   });
+
+  it('R-UI-213 the log is read again every 30 s with its range moved to now, in place: a new event appears and the rows shown stay', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const { root, fixture, audit } = await open();
+      const rows = root.querySelectorAll('tbody tr');
+      const calls = audit.filterCalls.length;
+      const before = audit.filterCalls.at(-1)!;
+      audit.eventList = [sampleEvent({ id: 'evt-new', action: 'auth.login', category: 'auth' }), ...audit.eventList];
+      vi.advanceTimersByTime(30_000);
+      await settle(fixture);
+      expect(audit.filterCalls.length).toBe(calls + 1);
+      const after = audit.filterCalls.at(-1)!;
+      expect(after.to! >= before.to!).toBe(true);
+      expect({ ...after, from: '', to: '' }).toEqual({ ...before, from: '', to: '' });
+      expect(root.querySelectorAll('tbody tr')).toHaveLength(rows.length + 1);
+      expect(root.querySelectorAll('tbody tr')[1]).toBe(rows[0]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

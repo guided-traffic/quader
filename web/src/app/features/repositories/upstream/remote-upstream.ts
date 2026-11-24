@@ -5,6 +5,7 @@ import { firstValueFrom, map } from 'rxjs';
 import { ApiError } from '../../../api/problem';
 import { UpstreamCatalogue, UpstreamCatalogueApi, UpstreamHit, UpstreamUnknownLevel } from '../../../api/upstream-catalogue-api';
 import { SessionStore } from '../../../core/session-store';
+import { LIVE_IDLE_MS, live, refreshResource } from '../../../core/live-refresh';
 import { ErrorNotice } from '../../../shared/error-notice';
 import { asApiError, valueOf } from '../../../shared/paged-resource';
 import { Checkbox } from '../../../shared/ui/checkbox';
@@ -108,6 +109,11 @@ export class RemoteUpstream {
     if (c) this.lastCaps = c;
     return c ?? this.lastCaps;
   });
+  /** The counts the tab reads every minute (R-UI-213): the requests panel reads its entries again when they change. */
+  protected readonly capsStamp = computed(() => {
+    const c = this.caps();
+    return c ? JSON.stringify([c.openRequests, c.queue]) : '';
+  });
   protected readonly capsFailure = computed(() => {
     const e = this.capsRead.error();
     return e ? asApiError(e) : null;
@@ -151,6 +157,8 @@ export class RemoteUpstream {
     return f ? catalogueState(f) : null;
   });
   private generation = 0;
+  /** The pages the list holds: one after a new query, one more for each **Load more**. */
+  private pages = 0;
   private shownKey = '';
   protected readonly opened = signal<ReadonlySet<string>>(new Set());
 
@@ -195,6 +203,15 @@ export class RemoteUpstream {
       const c = valueOf(this.capsRead);
       if (c) untracked(() => this.capsChange.emit(c));
     });
+    // The tab is read again every minute while it is seen (R-UI-213): the counts of the strip (open requests, the queue) and the
+    // state of the rows the list shows. An open package reads its own versions, faster while one of them downloads.
+    live({
+      reload: async () => {
+        const repository = this.repository();
+        await Promise.all([refreshResource(this.capsRead, () => this.api.caps(repository)), this.refreshList()]);
+      },
+      every: () => LIVE_IDLE_MS,
+    });
     // The field shows what the address holds: a search's text, else the name looked up.
     effect(() => {
       const value = this.q() || this.lookupName();
@@ -216,6 +233,24 @@ export class RemoteUpstream {
     });
   }
 
+  /** One page of a search or of a level, as the list shows it. */
+  private async readPage(listing: 'search' | 'level', q: string, level: readonly string[], namesOnly: boolean, cursor: string | null): Promise<ListPage> {
+    if (listing === 'search') {
+      const p = await this.api.search(this.repository(), { q, namesOnly, cursor });
+      return { hits: p.hits, levels: [], total: p.total, truncated: p.truncated, withheld: p.withheld, next: p.done ? null : p.nextCursor, unknown: null };
+    }
+    const p = await this.api.level(this.repository(), level, cursor);
+    return {
+      hits: p.packages,
+      levels: p.levels,
+      total: p.total,
+      truncated: false,
+      withheld: p.withheld,
+      next: p.done ? null : p.nextCursor,
+      unknown: p.unknown,
+    };
+  }
+
   private async load(listing: 'search' | 'level', q: string, level: readonly string[], namesOnly: boolean, fresh: boolean): Promise<void> {
     const generation = fresh ? ++this.generation : this.generation;
     const cursor = fresh ? null : (this.page()?.next ?? null);
@@ -224,22 +259,7 @@ export class RemoteUpstream {
     }
     this.listLoading.set(true);
     try {
-      let next: ListPage;
-      if (listing === 'search') {
-        const p = await this.api.search(this.repository(), { q, namesOnly, cursor });
-        next = { hits: p.hits, levels: [], total: p.total, truncated: p.truncated, withheld: p.withheld, next: p.done ? null : p.nextCursor, unknown: null };
-      } else {
-        const p = await this.api.level(this.repository(), level, cursor);
-        next = {
-          hits: p.packages,
-          levels: p.levels,
-          total: p.total,
-          truncated: false,
-          withheld: p.withheld,
-          next: p.done ? null : p.nextCursor,
-          unknown: p.unknown,
-        };
-      }
+      const next = await this.readPage(listing, q, level, namesOnly, cursor);
       if (generation !== this.generation) return;
       const before = this.page();
       this.page.set(
@@ -247,6 +267,7 @@ export class RemoteUpstream {
           ? next
           : { ...next, hits: [...before.hits, ...next.hits], levels: [...before.levels, ...next.levels], withheld: (before.withheld ?? 0) + (next.withheld ?? 0) },
       );
+      this.pages = fresh || !before ? 1 : this.pages + 1;
       // A new query closes the rows; a read after a write keeps what is open.
       const key = `${listing} ${q} ${level.join('/')} ${namesOnly}`;
       if (fresh && key !== this.shownKey) this.opened.set(new Set());
@@ -260,6 +281,27 @@ export class RemoteUpstream {
     } finally {
       if (generation === this.generation) this.listLoading.set(false);
     }
+  }
+
+  /**
+   * The list's first page again, in place (R-UI-213): Quader's state of each row (delivered, stored, requested) is added at answer
+   * time and never cached by the catalogue (R-CUR-008), so the read shows a download or a rule that took effect. A list of one page
+   * takes the page whole; one the person extended with **Load more** keeps its rows and their order and only changes the rows the
+   * first page names. A failure keeps the rows and is thrown (the back-off of `live`).
+   */
+  private async refreshList(): Promise<void> {
+    const listing = this.listing();
+    const before = this.page();
+    if (listing === null || !before || this.listLoading()) return;
+    const generation = this.generation;
+    const first = await this.readPage(listing, this.q(), this.level(), this.namesOnly(), null);
+    if (generation !== this.generation || this.page() !== before || this.listLoading()) return;
+    if (this.pages <= 1) {
+      this.page.set(first);
+      return;
+    }
+    const hits = new Map(first.hits.map((h) => [h.name, h]));
+    this.page.set({ ...before, hits: before.hits.map((h) => hits.get(h.name) ?? h) });
   }
 
   protected more(): void {

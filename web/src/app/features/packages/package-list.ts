@@ -9,6 +9,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { LIVE_IDLE_MS, live } from '../../core/live-refresh';
 import { Router, RouterLink } from '@angular/router';
 import { PackageFilters, PackageSort, PackageSummary, PackagesApi } from '../../api/packages-api';
 import { collectAll } from '../../api/pagination';
@@ -227,6 +228,8 @@ export class PackageList {
         void this.list.start(this.api.list(filters));
       });
     });
+    // Clients push and pull packages: the rows shown are read again every minute in place while the list is seen (R-UI-213).
+    live({ reload: () => this.list.refresh(), every: () => LIVE_IDLE_MS });
     // A list opened without any query lands on the default saved view, once.
     effect(() => {
       const view = this.memory.defaultView();

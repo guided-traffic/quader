@@ -104,7 +104,7 @@ describe('The page System status (R-UI-164)', () => {
   });
 
   it('R-UI-164 the pause holds across the tabs while the page is open and stops each tab\'s timer (WCAG 2.2.2)', async () => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     const h = await harness();
     let root = await open(h, '/admin/system');
     const system = TestBed.inject(SystemApi) as FakeSystemApi;

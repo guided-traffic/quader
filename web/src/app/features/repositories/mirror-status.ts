@@ -10,6 +10,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { LIVE_SLOW_MS, live } from '../../core/live-refresh';
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { RouterLink } from '@angular/router';
 import { newIdempotencyKey } from '../../api/client';
@@ -554,7 +555,6 @@ export class MirrorStatusPanel {
   });
 
   private generation = 0;
-  private timer: ReturnType<typeof setTimeout> | undefined;
 
   constructor() {
     this.destroyed.onDestroy(() => this.stop());
@@ -562,6 +562,20 @@ export class MirrorStatusPanel {
       this.key();
       this.refresh();
       untracked(() => this.load());
+    });
+    // Read again in place (R-UI-213): every few seconds while a pass runs, every half minute while none does, so a pass the schedule
+    // starts shows without a reload. A failed read keeps the status shown.
+    live({
+      reload: async () => {
+        if (this.status() === null) return;
+        const run = this.generation;
+        const status = await this.api.mirrorStatus(this.key());
+        if (run === this.generation) this.status.set(status);
+      },
+      every: () => {
+        const s = this.status();
+        return s && mirrorActive(s.state) ? this.intervalMs() : LIVE_SLOW_MS;
+      },
     });
   }
 
@@ -582,7 +596,6 @@ export class MirrorStatusPanel {
 
   private stop(): void {
     this.generation++;
-    clearTimeout(this.timer);
   }
 
   private async poll(run: number): Promise<void> {
@@ -590,9 +603,6 @@ export class MirrorStatusPanel {
       const status = await this.api.mirrorStatus(this.key());
       if (run !== this.generation) return;
       this.status.set(status);
-      if (mirrorActive(status.state)) {
-        this.timer = setTimeout(() => void this.poll(run), this.intervalMs());
-      }
     } catch (e) {
       if (run === this.generation) this.failure.set(asApiError(e));
     }

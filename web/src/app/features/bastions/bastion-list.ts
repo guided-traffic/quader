@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { LIVE_IDLE_MS, live } from '../../core/live-refresh';
 import { QuaderDialog } from '../../shared/ui/dialog';
 import { firstValueFrom } from 'rxjs';
 import { Bastion, BastionsApi } from '../../api/bastions-api';
@@ -73,6 +74,17 @@ export class BastionList {
 
   constructor() {
     void this.load();
+    // A Bastion's state (seen, its handovers) changes without the viewer: read again every minute in place (R-UI-213); a card keeps
+    // a token it shows once, as with every load.
+    live({
+      reload: async () => {
+        if (!this.loaded()) return;
+        const items = await this.api.list();
+        this.items.set(items);
+        await this.loadConnections(items);
+      },
+      every: () => LIVE_IDLE_MS,
+    });
   }
 
   /** Reads the list again; the cards stay on screen meanwhile, so a card keeps a token it shows once. */

@@ -15,7 +15,7 @@
 }
 
 <!-- The requests, set apart and first for those who decide; an asker's own entries in the same place (R-CUR-015, R-CUR-018). -->
-<quader-delivery-requests-panel [project]="project()" [format]="format()" [openCount]="caps()?.openRequests ?? null" />
+<quader-delivery-requests-panel [project]="project()" [format]="format()" [openCount]="caps()?.openRequests ?? null" [revision]="capsStamp()" />
 
 @if (capsState(); as sentence) {
   <p class="banner-warning" role="status" data-testid="upstream-state">

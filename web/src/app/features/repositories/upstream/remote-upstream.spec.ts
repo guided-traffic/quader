@@ -435,6 +435,44 @@ describe('The tab Upstream of a remote repository', () => {
   });
 });
 
+describe('The tab Upstream reads itself again (R-UI-213)', () => {
+  it('R-UI-213 an open package is read every 3 s while one of its versions downloads, every minute after, in place', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const queued = { id: '00000000-0000-0000-0000-0000000000a1', state: 'running' as const, origin: 'person', attempts: 1, maxAttempts: 3, nextAttemptAt: null };
+      const { root, fixture, catalogue } = await open({
+        manage: true,
+        url: '/projects/web/repositories/npmjs/upstream?name=lodash',
+        fake: (c) => {
+          c.packages['lodash'] = upstreamPackage({ versions: [upstreamVersion({ version: '4.17.21', queued }), upstreamVersion({ version: '4.17.20' })] });
+        },
+      });
+      const reads = () => catalogue.calls.filter((c) => c === 'package lodash').length;
+      const row = versionRow(root, '4.17.21');
+      expect(text(row)).toContain('Running');
+      const first = reads();
+      vi.advanceTimersByTime(3_000);
+      await settle(fixture);
+      expect(reads()).toBe(first + 1);
+      // The download ended: the cache holds the version, and the row says so in place.
+      catalogue.packages['lodash'] = upstreamPackage({ versions: [upstreamVersion({ version: '4.17.21', stored: 'whole' }), upstreamVersion({ version: '4.17.20' })] });
+      vi.advanceTimersByTime(3_000);
+      await settle(fixture);
+      expect(reads()).toBe(first + 2);
+      expect(versionRow(root, '4.17.21')).toBe(row);
+      expect(text(row)).not.toContain('Running');
+      vi.advanceTimersByTime(3_000);
+      await settle(fixture);
+      expect(reads()).toBe(first + 2);
+      vi.advanceTimersByTime(57_000);
+      await settle(fixture);
+      expect(reads()).toBe(first + 3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe('The strip of a remote repository with the tab Upstream', () => {
   async function page(repo: object, options: { tab?: 'content' | 'upstream'; open?: number } = {}) {
     const r = await renderScreen(RepositoryContent, {

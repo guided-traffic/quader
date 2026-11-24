@@ -1,4 +1,5 @@
 import { Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { LIVE_SLOW_MS, live } from '../../core/live-refresh';
 import { Router } from '@angular/router';
 import { Job, JobState, JobsApi, jobActive } from '../../api/jobs-api';
 import { describeProblem } from '../../core/http/problem-messages';
@@ -160,10 +161,12 @@ export class JobsPage {
         this.load();
       });
     });
-    effect((onCleanup) => {
-      if (this.refresh.paused() || !this.hasActive()) return;
-      const timer = setInterval(() => this.load(), JOBS_REFRESH_MS);
-      onCleanup(() => clearInterval(timer));
+    // The jobs shown are read again in place (R-UI-213): every 5 s while one of them runs, every half minute while none does (a new
+    // job appears), while the page is seen and not paused.
+    live({
+      reload: () => this.list.refresh(),
+      every: () => (this.hasActive() ? JOBS_REFRESH_MS : LIVE_SLOW_MS),
+      when: () => !this.refresh.paused(),
     });
   }
 

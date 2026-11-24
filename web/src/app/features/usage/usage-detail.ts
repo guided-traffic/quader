@@ -1,5 +1,6 @@
 import { formatDate } from '@angular/common';
 import { ChangeDetectionStrategy, Component, LOCALE_ID, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { LIVE_IDLE_MS, live } from '../../core/live-refresh';
 import { Router, RouterLink } from '@angular/router';
 import { LimitBlock, LimitsApi, UsageDetail, UsagePeriod, UsageScope, UsageSubject, UsageSubjectKind } from '../../api/limits-api';
 import { ApiError } from '../../api/problem';
@@ -194,6 +195,16 @@ export class UsageDetailPage {
       this.activePeriod();
       this.project();
       untracked(() => void this.load());
+    });
+    // The meters move with every download: read again every minute in place while the page is seen (R-UI-213).
+    live({
+      reload: async () => {
+        if (this.detail() === null) return;
+        const key = `${this.kind()} ${this.id()} ${this.activePeriod()} ${this.project()}`;
+        const detail = await this.api.subjectUsage(this.usageScope(), this.kind() as UsageSubjectKind, this.id(), this.activePeriod());
+        if (key === `${this.kind()} ${this.id()} ${this.activePeriod()} ${this.project()}`) this.detail.set(detail);
+      },
+      every: () => LIVE_IDLE_MS,
     });
   }
 

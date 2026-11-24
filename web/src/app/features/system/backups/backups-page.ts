@@ -1,6 +1,7 @@
 import { DocumentBlock } from '../../../shared/document-block';
 import { DatePipe } from '@angular/common';
 import { Component, DestroyRef, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
+import { live } from '../../../core/live-refresh';
 import { Router, RouterLink } from '@angular/router';
 import {
   BACKUP_OPERATIONS,
@@ -145,11 +146,8 @@ export class BackupsPage {
         this.loadRuns();
       });
     });
-    effect((onCleanup) => {
-      if (this.pageRefresh.paused()) return;
-      const timer = setInterval(() => this.refresh(), REFRESH_INTERVAL_MS);
-      onCleanup(() => clearInterval(timer));
-    });
+    // Read again while the page is seen and not paused, at once when it is seen again (R-UI-213).
+    live({ reload: () => this.refresh(), every: () => REFRESH_INTERVAL_MS, when: () => !this.pageRefresh.paused() });
   }
 
   private loadRuns(): void {
@@ -163,7 +161,8 @@ export class BackupsPage {
     this.now.set(Date.now());
     this.status.reload();
     if (this.selectedId() !== null) this.detail.reload();
-    if (this.runs.items().length <= RUNS_PAGE_SIZE) this.loadRuns();
+    // The runs shown are read again in place: the rows, the open run and what **Load more** added stay (R-UI-213).
+    void this.runs.refresh().catch(() => undefined);
   }
 
   /** The drawer's fields back to the filters the list shows. */

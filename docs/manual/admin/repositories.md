@@ -233,7 +233,7 @@ On the page of a remote repository that is stored in mode **Mirror**, the sectio
 
 The state is a word with an icon; the colour only adds to it. Under it:
 
-- **Pass in progress**: the kind (full or incremental), the discovery method, when it started, the names discovered, the packages done, pending and failed, the items and bytes stored, whether the discovery has finished, and its job. While a pass is in progress (**Running** or **Waiting**) the status is read again every 5 seconds; leaving the tab stops that.
+- **Pass in progress**: the kind (full or incremental), the discovery method, when it started, the names discovered, the packages done, pending and failed, the items and bytes stored, whether the discovery has finished, and its job. While a pass is in progress (**Running** or **Waiting**) the status is read again every 5 seconds, otherwise every 30 seconds, so a pass the schedule starts shows without a reload; leaving the tab stops that.
 - **Last complete pass**: the outcome (**Complete**, **Partial**, stopped at a storage bound, not run because the repository is offline, or stopped before the end), kind, method, start and end, the counts, and whether the discovery saw everything with the upstream's note when it did not.
 - **Next pass**: when it is due, or that it starts at the next dispatch (within a minute), or that none is planned (**Off**, **Paused**); and when the last full pass was.
 - **Last error**: the code, the message (it names hosts, never a URL or a credential), the time and the failures in a row.

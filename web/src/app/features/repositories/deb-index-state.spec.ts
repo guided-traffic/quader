@@ -64,7 +64,7 @@ describe('Debian index state panel', () => {
     expect(text(r.root)).toContain('No suite has packages yet');
   });
 
-  it('R-DEB-014 while a suite waits for its build the state is read again, and the polling ends once every suite is current', async () => {
+  it('R-DEB-014 R-UI-213 while a suite waits for its build the state is read again, and the reads slow to every 30 s once every suite is current', async () => {
     const { r, fake } = await render(undefined, { intervalMs: 10 });
     const reads = () => fake.calls.filter((c) => c === 'indexState').length;
     const first = reads();

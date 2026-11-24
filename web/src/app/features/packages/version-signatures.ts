@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output, resource } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, resource, untracked } from '@angular/core';
+import { refreshResource } from '../../core/live-refresh';
 import { repositoryOfContent } from '../../api/files-api';
 import { PackageFile } from '../../api/packages-api';
 import { SignatureRepositoryReport, SignaturesApi } from '../../api/signatures-api';
@@ -80,6 +81,8 @@ export class VersionSignatures {
     loader: ({ params }) => this.api.version(params.id, params.version),
   });
   protected readonly report = computed(() => valueOf(this.answer));
+  /** What the page's own read says of the files' signatures; when it changes, the details here are read again (R-UI-213). */
+  private readonly filesStamp = computed(() => JSON.stringify(this.files().map((f) => f.signatures ?? null)));
   protected readonly failure = computed(() => {
     const e = this.answer.error();
     return e ? asApiError(e) : null;
@@ -100,6 +103,19 @@ export class VersionSignatures {
       sha256: f.sha256,
       refusedReason: f.signatures?.refusedReason ?? null,
     }));
+  }
+
+  constructor() {
+    let shown: string | null = null;
+    effect(() => {
+      const stamp = this.filesStamp();
+      untracked(() => {
+        if (shown !== null && shown !== stamp && this.answer.hasValue()) {
+          void refreshResource(this.answer, () => this.api.version(this.packageId(), this.version())).catch(() => undefined);
+        }
+        shown = stamp;
+      });
+    });
   }
 
   protected reload(): void {

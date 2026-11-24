@@ -1,5 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, WritableSignal, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { LIVE_IDLE_MS, live } from '../../core/live-refresh';
 import { DIALOG_DATA, DialogClose, DialogTitle, QuaderDialog } from '../../shared/ui/dialog';
 import { CiApi, CiIssuance, CiIssuanceDetail, IssuanceFilters, CiRevokeRequest } from '../../api/ci-api';
 import { collectAll } from '../../api/pagination';
@@ -356,6 +357,8 @@ export class IssuanceList {
       this.project();
       untracked(() => void this.apply());
     });
+    // Pipelines exchange tokens all the time: the issuances shown are read again every minute in place (R-UI-213).
+    live({ reload: () => this.list.refresh(), every: () => LIVE_IDLE_MS });
   }
 
   private filters(): IssuanceFilters {

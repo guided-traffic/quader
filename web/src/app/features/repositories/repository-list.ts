@@ -11,6 +11,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { LIVE_IDLE_MS, live } from '../../core/live-refresh';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { newIdempotencyKey } from '../../api/client';
 import { JobReference, RepositoriesApi, RepositoryFilters, RepositorySummary, refOf } from '../../api/repositories-api';
@@ -299,6 +300,9 @@ export class RepositoryList {
         void this.list.start(this.api.list(filters));
       });
     });
+    // The rows carry what the server changes (the size, the last push, a disabled repository): read again every minute in place
+    // while the list is seen (R-UI-213).
+    live({ reload: () => this.list.refresh(), every: () => LIVE_IDLE_MS });
     // The section of the system repositories follows each change of the filters, and the arrival of its rows: open where a filter
     // matches one of them, closed where none or no filter is set; the reader's own toggle holds until the next change (Q-UI-894).
     effect(() => {

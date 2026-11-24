@@ -1,5 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { LIVE_SLOW_MS, live } from '../../core/live-refresh';
 import { RouterLink } from '@angular/router';
 import { newIdempotencyKey } from '../../api/client';
 import { DebApi, DebIndexState, DebSuiteState } from '../../api/deb-api';
@@ -211,13 +212,23 @@ export class DebIndexStatePanel {
   protected readonly waiting = computed(() => (this.state()?.suites ?? []).some((s) => s.state === 'pending'));
 
   private generation = 0;
-  private timer: ReturnType<typeof setTimeout> | undefined;
 
   constructor() {
     this.destroyed.onDestroy(() => this.stop());
     effect(() => {
       this.key();
       untracked(() => this.load());
+    });
+    // Read again in place (R-UI-213): every few seconds while a suite waits for its build, every half minute after, so a push that
+    // changes a suite shows without a reload. A failed read keeps the state shown.
+    live({
+      reload: async () => {
+        if (this.state() === null) return;
+        const run = this.generation;
+        const state = await this.api.indexState(this.key());
+        if (run === this.generation) this.state.set(state);
+      },
+      every: () => (this.waiting() ? this.intervalMs() : LIVE_SLOW_MS),
     });
   }
 
@@ -244,7 +255,6 @@ export class DebIndexStatePanel {
 
   private stop(): void {
     this.generation++;
-    clearTimeout(this.timer);
   }
 
   private async poll(run: number): Promise<void> {
@@ -252,9 +262,6 @@ export class DebIndexStatePanel {
       const state = await this.api.indexState(this.key());
       if (run !== this.generation) return;
       this.state.set(state);
-      if (state.suites.some((s) => s.state === 'pending')) {
-        this.timer = setTimeout(() => void this.poll(run), this.intervalMs());
-      }
     } catch (e) {
       if (run === this.generation) this.failure.set(asApiError(e));
     }

@@ -1,5 +1,6 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, DestroyRef, computed, effect, inject, resource, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, resource, signal } from '@angular/core';
+import { live } from '../../../core/live-refresh';
 import { RouterLink } from '@angular/router';
 import { JobsApi, Task } from '../../../api/jobs-api';
 import { ApiError } from '../../../api/problem';
@@ -131,11 +132,8 @@ export class StoragePage {
 
   constructor() {
     this.pageRefresh.register(() => this.refresh(), inject(DestroyRef));
-    effect((onCleanup) => {
-      if (this.pageRefresh.paused()) return;
-      const timer = setInterval(() => this.refresh(), REFRESH_INTERVAL_MS);
-      onCleanup(() => clearInterval(timer));
-    });
+    // Read again while the page is seen and not paused, at once when it is seen again (R-UI-213).
+    live({ reload: () => this.refresh(), every: () => REFRESH_INTERVAL_MS, when: () => !this.pageRefresh.paused() });
   }
 
   protected refresh(): void {

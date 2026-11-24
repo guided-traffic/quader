@@ -1,5 +1,6 @@
 import { formatDate } from '@angular/common';
 import { ChangeDetectionStrategy, Component, LOCALE_ID, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { LIVE_IDLE_MS, live } from '../../core/live-refresh';
 import { Router } from '@angular/router';
 import { LimitsApi, UsageDetail, UsagePeriod } from '../../api/limits-api';
 import { ApiError } from '../../api/problem';
@@ -125,6 +126,16 @@ export class ProfileUsage {
     effect(() => {
       this.activePeriod();
       untracked(() => void this.load());
+    });
+    // The meters move with every download: read again every minute in place while the page is seen (R-UI-213).
+    live({
+      reload: async () => {
+        if (this.detail() === null) return;
+        const period = this.activePeriod();
+        const detail = await this.api.myUsage(period);
+        if (period === this.activePeriod()) this.detail.set(detail);
+      },
+      every: () => LIVE_IDLE_MS,
     });
   }
 

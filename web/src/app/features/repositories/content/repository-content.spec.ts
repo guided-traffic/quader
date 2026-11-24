@@ -17,6 +17,7 @@ import { contentShapeOf } from './content-shape';
 import { Component, signal } from '@angular/core';
 import { ComponentFixture } from '@angular/core/testing';
 import { Router } from '@angular/router';
+import { vi } from 'vitest';
 
 interface RepoDoc {
   readonly key: string;
@@ -545,5 +546,36 @@ describe('Repository content page', () => {
     await settle(missing.fixture);
     expect(remembered(missing)).toEqual(['web/npm-local']);
     browserStorage.clear('local');
+  });
+
+  it('R-UI-213 the images are read again every 30 s in place: a pushed image appears, an open row stays open and its tags follow a push', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const r = await open(OCI_REPO, ({ packages }) => ociFixture(packages));
+      const packages = r.get(PackagesApi) as FakePackagesApi;
+      const imageRow = () => [...r.root.querySelectorAll('tbody tr')].find((tr) => tr.textContent?.includes('team/app'))!;
+      const row = imageRow();
+      const opener = row.querySelector<HTMLButtonElement>('.name-cell button[aria-expanded]')!;
+      opener.click();
+      await settle(r.fixture);
+      const tags = () => [...r.root.querySelectorAll('quader-repository-item-versions tbody tr')].map((tr) => tr.querySelector('th, td')?.textContent?.trim());
+      expect(tags()).toEqual(['1.2.0', '1.1.0']);
+      const app = packages.packages.find((p) => p.name === 'team/app')!;
+      const tag = packages.versionList.find((v) => v.packageId === app.id && v.version === '1.2.0')!;
+      // A client pushes the tag 1.3.0 and a second image.
+      packages.versionList = [...packages.versionList, { ...tag, version: '1.3.0', publishedAt: '2026-11-24T10:00:00.000Z' }];
+      packages.packages = [
+        ...packages.packages.map((p) => (p.id === app.id ? { ...p, latestVersion: '1.3.0', versionCount: p.versionCount + 1, updatedAt: '2026-11-24T10:00:00.000Z' } : p)),
+        { ...app, id: 'pkg_pushed', name: 'team/worker' },
+      ];
+      vi.advanceTimersByTime(30_000);
+      await settle(r.fixture);
+      expect(text(r.root.querySelector('quader-repository-items tbody')!)).toContain('team/worker');
+      expect(imageRow()).toBe(row);
+      expect(opener.getAttribute('aria-expanded')).toBe('true');
+      expect(tags()).toEqual(['1.3.0', '1.2.0', '1.1.0']);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

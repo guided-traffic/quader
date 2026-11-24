@@ -1,7 +1,8 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, inject, input, resource } from '@angular/core';
+import { LIVE_IDLE_MS, live, refreshResource } from '../../../core/live-refresh';
 import { RouterLink } from '@angular/router';
-import { PackagesApi } from '../../../api/packages-api';
+import { PackageSummary, PackagesApi } from '../../../api/packages-api';
 import { collectAll } from '../../../api/pagination';
 import { splitRef } from '../../../api/repositories-api';
 import { asApiError, valueOf } from '../../../shared/paged-resource';
@@ -18,6 +19,11 @@ import {
   setName,
 } from '../../packages/clamav-definitions';
 import { packageCommands, versionCommands } from '../../packages/package-links';
+
+/** What tells that a database got a version or lost one. */
+function stampOf(packages: readonly PackageSummary[]): string {
+  return packages.map((p) => `${p.name} ${p.versionCount} ${p.latestVersion} ${p.updatedAt}`).join('\n');
+}
 
 /** One database of the list: its version in use with its build time, and the version of the set before it. */
 export interface DatabaseRow {
@@ -140,19 +146,41 @@ export class ClamavDatabases {
 
   protected readonly rows = resource({
     params: () => this.repository(),
-    loader: async ({ params }): Promise<DatabaseRow[]> => {
-      const packages = await collectAll(this.api.list({ repository: [params], format: [CLAMAV_FORMAT], sort: 'name' }));
-      return Promise.all(
-        packages.map(async (p): Promise<DatabaseRow> => {
-          const versions = await collectAll(this.api.versions(p.id, { repository: [params], include: ['state'], sort: '-version' }));
-          const inUse = versions.find((v) => v.state === 'in_use')?.version ?? null;
-          const previous = versions.find((v) => v.state === 'previous')?.version ?? null;
-          const facts = inUse ? clamavFacts((await this.api.version(p.id, inUse)).metadata) : null;
-          return { name: p.name, versionCount: p.versionCount, inUse, previous, builtAt: facts?.builtAt ?? null };
-        }),
-      );
-    },
+    loader: async ({ params }): Promise<DatabaseRow[]> => this.read(params, await this.databases(params)),
   });
+  /** The databases as the list named them at the last full read: the live read compares its own list with it. */
+  private shownStamp = '';
+
+  constructor() {
+    // The updater stores a new set every few hours (R-UI-213): the list of databases, one request, is read every minute, and the
+    // versions and the set in use only when it says a database changed.
+    live({
+      reload: async () => {
+        const repository = this.repository();
+        const packages = await this.databases(repository);
+        if (stampOf(packages) === this.shownStamp && this.rows.hasValue()) return;
+        await refreshResource(this.rows, () => this.read(repository, packages));
+      },
+      every: () => LIVE_IDLE_MS,
+    });
+  }
+
+  private databases(repository: string): Promise<PackageSummary[]> {
+    return collectAll(this.api.list({ repository: [repository], format: [CLAMAV_FORMAT], sort: 'name' }));
+  }
+
+  private read(repository: string, packages: readonly PackageSummary[]): Promise<DatabaseRow[]> {
+    this.shownStamp = stampOf(packages);
+    return Promise.all(
+      packages.map(async (p): Promise<DatabaseRow> => {
+        const versions = await collectAll(this.api.versions(p.id, { repository: [repository], include: ['state'], sort: '-version' }));
+        const inUse = versions.find((v) => v.state === 'in_use')?.version ?? null;
+        const previous = versions.find((v) => v.state === 'previous')?.version ?? null;
+        const facts = inUse ? clamavFacts((await this.api.version(p.id, inUse)).metadata) : null;
+        return { name: p.name, versionCount: p.versionCount, inUse, previous, builtAt: facts?.builtAt ?? null };
+      }),
+    );
+  }
   protected readonly valueRows = computed(() => valueOf(this.rows));
   protected readonly failure = computed(() => {
     const e = this.rows.error();

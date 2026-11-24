@@ -343,21 +343,44 @@ describe('Jobs screen', () => {
     await expectAccessible(failing.root);
   });
 
-  it('R-UI-038 R-UI-164 the page\'s pause stops the automatic refresh of the jobs (WCAG 2.2.2)', async () => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+  it('R-UI-038 R-UI-164 R-UI-213 the jobs are read again in place every 5 s while one runs, every 30 s while none does, and not while paused (WCAG 2.2.2)', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     try {
-      const { root, fixture, jobs } = await open();
-      const calls = jobs.filterCalls.length;
+      let reads = 0;
+      const { root, fixture, jobs } = await open({}, (j) => {
+        // Each page is read from the jobs as they are now, as the server answers.
+        const list = j.jobs.bind(j);
+        j.jobs = (filters) => (cursor, limit) => {
+          reads++;
+          return list(filters)(cursor, limit);
+        };
+      });
+      const rows = root.querySelectorAll('tbody tr');
+      const calls = reads;
       vi.advanceTimersByTime(5_000);
       await settle(fixture);
-      expect(jobs.filterCalls.length).toBe(calls + 1);
+      expect(reads).toBe(calls + 1);
+      // In place: the same rows.
+      expect(root.querySelectorAll('tbody tr')[0]).toBe(rows[0]);
       // The control is the page's header's (system-page.spec.ts); the tab has none of its own.
       expect(root.querySelector('button[aria-pressed]')).toBeNull();
       TestBed.inject(SystemRefresh).togglePause();
       await settle(fixture);
       vi.advanceTimersByTime(30_000);
       await settle(fixture);
-      expect(jobs.filterCalls.length).toBe(calls + 1);
+      expect(reads).toBe(calls + 1);
+
+      // Nothing runs any more: the next read comes after 30 s, not 5 s.
+      jobs.jobList = jobs.jobList.map((j) => ({ ...j, state: 'succeeded' as const }));
+      TestBed.inject(SystemRefresh).togglePause();
+      await settle(fixture);
+      expect(reads).toBe(calls + 2);
+      vi.advanceTimersByTime(5_000);
+      await settle(fixture);
+      expect(reads).toBe(calls + 2);
+      vi.advanceTimersByTime(25_000);
+      await settle(fixture);
+      expect(reads).toBe(calls + 3);
     } finally {
       vi.useRealTimers();
     }

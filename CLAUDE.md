@@ -73,6 +73,10 @@ repository type, but allow detailed settings."
 - **A title names the thing:** "New Ansible repository", "New OCI repository", "New NuGet repository", not "New repository".
 - **A search never leads into the admin area** (owner, 2026-11-12): a search from the main area ends in the main area. Only a live
   suggestion that is marked as a page of the admin area, and shown only to an instance administrator, may lead there.
+- **No view needs a reload** (owner, 2026-11-24: "… von mir zu keinem Zeitpunkt erwartet wird dass ich F5 drücke um eine Ansicht zu
+  aktualisieren"): a view that shows what the server changes without the viewer's act reads it again by itself, in place, while it is
+  seen, fast while something on it runs ([R-UI-213](docs/spec/api-and-ui.md#r-ui-213--no-view-needs-a-reload), `live()` of
+  `web/src/app/core/live-refresh.ts`).
 - **Every UI change is rendered and looked at before it lands** (rule 11 of [promt.md](docs/projektplan/promt.md)): both schemes, wide and
   narrow, realistic data. The renders are never committed.
 

@@ -53,6 +53,18 @@ export class PagedList<T> {
     private readonly limit: number = DEFAULT_PAGE_LIMIT,
   ) {}
 
+  /**
+   * A traversal that has read `items` up to `nextCursor` already: a list read again in place (R-UI-213) continues from where the
+   * new read stopped, so **Load more** after it neither repeats nor skips a row.
+   */
+  static resumed<T>(fetchPage: PageFetcher<T>, limit: number, items: readonly T[], nextCursor: string | null): PagedList<T> {
+    const list = new PagedList(fetchPage, limit);
+    list.started = true;
+    list._items = items;
+    list.nextCursor = nextCursor;
+    return list;
+  }
+
   get items(): readonly T[] {
     return this._items;
   }

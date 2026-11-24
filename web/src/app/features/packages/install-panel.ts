@@ -93,10 +93,13 @@ export class InstallPanel {
     return ref ? setupCommands(ref, ref === CLAMAV_REF && !this.clamavClosed()) : null;
   });
 
+  /** Which version is shown, by value: the page reads the version again while it is open (R-UI-213), which is no other version. */
+  private readonly shownVersion = computed(() => `${this.version().packageId}@${this.version().version}`);
+
   constructor() {
-    // Another version or another package starts from the defaults again.
+    // Another version or another package starts from the defaults again; the same version read again keeps the choice.
     effect(() => {
-      this.version();
+      this.shownVersion();
       untracked(() => this.chosenRepository.set(null));
     });
   }

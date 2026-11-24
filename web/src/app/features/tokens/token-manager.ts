@@ -1,4 +1,5 @@
 import { Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { LIVE_IDLE_MS, live } from '../../core/live-refresh';
 import { Checkbox } from '../../shared/ui/checkbox';
 import { DialogClose, DialogRef, DialogTitle, QuaderDialog } from '../../shared/ui/dialog';
 import { firstValueFrom } from 'rxjs';
@@ -219,6 +220,8 @@ export class TokenManager {
       this.showAll();
       untracked(() => void this.reload());
     });
+    // A token's last use and its expiry move without the owner: the tokens shown are read again every minute in place (R-UI-213).
+    live({ reload: () => this.list.refresh(), every: () => LIVE_IDLE_MS });
     // Another owner on the same page starts closed again; its own tokens open the section.
     effect(() => {
       this.owner();

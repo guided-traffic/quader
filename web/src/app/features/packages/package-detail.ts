@@ -1,4 +1,5 @@
 import { DecimalPipe } from '@angular/common';
+import { LIVE_IDLE_MS, live, refreshResource } from '../../core/live-refresh';
 import { Component, computed, effect, inject, input, linkedSignal, resource, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { PackagesApi } from '../../api/packages-api';
@@ -40,6 +41,11 @@ import { CLAMAV_FORMAT, clamavState, stateRank, stateText } from './clamav-defin
  * row links to the version's own page (R-UI-111). The README of the latest version follows the table, the facts of the package
  * are its Details. Search and sort are the `q` and `sort` parameters of the address.
  */
+/** Two answers name the same version. */
+function sameVersion(a: { id: string; version: string } | undefined, b: { id: string; version: string } | undefined): boolean {
+  return a === b || (!!a && !!b && a.id === b.id && a.version === b.version);
+}
+
 @Component({
   selector: 'quader-package-detail',
   imports: [
@@ -89,19 +95,28 @@ export class PackageDetail {
   /** A database of the ClamAV definitions: its versions show their state, the version in use first (R-UI-194, Q-UI-904). */
   protected readonly clamav = computed(() => this.format() === CLAMAV_FORMAT);
   /** The latest version's details: its distribution tags, which are the package's, and whether it has a README. */
-  protected readonly latest = resource({
-    params: () => {
+  /** The latest version by value: reading the package again (R-UI-213) is no new latest version unless it changed. */
+  private readonly latestKey = computed(
+    () => {
       const p = this.pkg();
       return p ? { id: p.id, version: p.latestVersion } : undefined;
     },
+    { equal: sameVersion },
+  );
+  protected readonly latest = resource({
+    params: () => this.latestKey(),
     loader: ({ params }) => this.api.version(params.id, params.version),
   });
-  protected readonly readme = resource({
-    params: () => {
+  private readonly readmeKey = computed(
+    () => {
       const d = valueOf(this.latest);
       // The README of an Ansible collection is the first page of its documentation, on the version's page (R-UI-060).
       return d?.hasReadme && d.format !== 'ansible' ? { id: d.packageId, version: d.version } : undefined;
     },
+    { equal: sameVersion },
+  );
+  protected readonly readme = resource({
+    params: () => this.readmeKey(),
     loader: ({ params }) => this.api.readme(params.id, params.version),
   });
   /**
@@ -206,7 +221,36 @@ export class PackageDetail {
       : null;
   });
 
+  /** What the package's summary says changed: a version, the latest, a download. The list of versions is read again only then. */
+  private readonly stamp = computed(() => {
+    const p = this.pkg();
+    return p ? `${p.versionCount} ${p.latestVersion} ${p.updatedAt} ${p.downloadCount}` : '';
+  });
+
   constructor() {
+    // The package is read again every minute while the page is seen (R-UI-213): its summary and the grades, one request each, and
+    // its versions (a request per 500) only when the summary says a version was added, removed or downloaded.
+    live({
+      reload: async () => {
+        const id = this.pkg()?.id;
+        if (!id) return;
+        const before = this.stamp();
+        await refreshResource(this.summary, () => this.api.lookup(this.format(), this.name()));
+        const reads: Promise<void>[] = [];
+        if (this.report.hasValue()) {
+          reads.push(refreshResource(this.report, () => this.vulnerabilityApi.packageReport(id).catch(() => null)));
+        }
+        if (this.stamp() !== before || this.clamav()) {
+          reads.push(
+            refreshResource(this.versions, () =>
+              collectAll(this.api.versions(id, { sort: '-version', ...(this.clamav() ? { include: ['state'] } : {}) })),
+            ),
+          );
+        }
+        await Promise.all(reads);
+      },
+      every: () => LIVE_IDLE_MS,
+    });
     // Opening the page records it in "recently opened" (R-UI-007).
     effect(() => {
       const s = valueOf(this.summary);

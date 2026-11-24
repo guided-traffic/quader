@@ -101,6 +101,10 @@ The project switcher is the button with the project's name at the top of a proje
 
 The side bar is pinned on wide screens. **Collapse sidebar** at its foot hides it, and the menu button in the top bar brings it back; Quader remembers the choice in this browser. On a narrow screen it opens over the content and closes with Escape, a click beside it, or when you pick an entry. Groups such as **Identity** and **Recently opened** fold and unfold with a click on their heading, and Quader remembers that too.
 
+### Screens keep themselves current
+
+You never need to reload a page to see what changed. A screen that shows what Quader changes by itself (a package a client pushed, a scan that finished, a download from an upstream, a new entry of the audit log) reads it again while you look at it: every few seconds while something on it runs, such as a scan that has not answered yet, and every half minute or minute otherwise. The rows stay where they are, a row you opened stays open, and what you type is never replaced. A tab in the background reads nothing and catches up as soon as you return to it. Forms are the exception: if someone else saved a change while you edit, Quader shows both versions when you save.
+
 ## Language and theme
 
 Quader is available in English and German.

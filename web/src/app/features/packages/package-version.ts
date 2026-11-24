@@ -50,6 +50,7 @@ import { VersionSignatures } from './version-signatures';
 import { contentPath } from '../../api/files-api';
 import { systemRepositoryNames, upstreamName, CLAMAV_KEY } from '../../core/upstream-project';
 import { systemClosed } from '../../core/system-clients';
+import { LIVE_FAST_MS, LIVE_IDLE_MS, live, refreshResource } from '../../core/live-refresh';
 import { Disclosure } from '../../shared/ui/disclosure';
 import {
   ClamavState,
@@ -62,6 +63,11 @@ import {
   stateText,
   verificationText,
 } from './clamav-definitions';
+
+/** Two answers name the same version. */
+function sameVersion(a: { id: string; version: string } | undefined, b: { id: string; version: string } | undefined): boolean {
+  return a === b || (!!a && !!b && a.id === b.id && a.version === b.version);
+}
 
 export type VersionTab = 'vulnerabilities' | 'documentation' | 'contents' | 'readme' | 'files' | 'signatures' | 'details' | 'import-log';
 
@@ -151,12 +157,20 @@ export class PackageVersionPage {
     loader: ({ params }) => this.api.version(params.id, params.version),
   });
   protected readonly detail = computed(() => valueOf(this.details));
-  protected readonly readme = resource({
-    params: () => {
+  /**
+   * The README's version, equal by value: the page reads the version again while it is open (R-UI-213), and a new answer of the same
+   * version must not ask for its README again.
+   */
+  private readonly readmeKey = computed(
+    () => {
       const d = this.detail();
       // The README of an Ansible collection is the first page of its Documentation tab (R-UI-060), not a tab of its own.
       return d?.hasReadme && d.format !== 'ansible' ? { id: d.packageId, version: d.version } : undefined;
     },
+    { equal: sameVersion },
+  );
+  protected readonly readme = resource({
+    params: () => this.readmeKey(),
     loader: ({ params }) => this.api.readme(params.id, params.version),
   });
 
@@ -244,11 +258,15 @@ export class PackageVersionPage {
   });
   /** The version whose tree was asked for: the tree is read once per version and kept while the user looks at another tab. */
   private readonly docsAsked = signal<string | null>(null);
-  protected readonly docs = resource({
-    params: () => {
+  private readonly docsVersion = computed(
+    () => {
       const d = this.detail();
       return d && this.docsAsked() === this.docsKey() ? { id: d.packageId, version: d.version } : undefined;
     },
+    { equal: sameVersion },
+  );
+  protected readonly docs = resource({
+    params: () => this.docsVersion(),
     loader: ({ params }) => this.api.docs(params.id, params.version),
   });
   /** The whole tree; null while it loads, and after a refusal (then the tabs are gone). */
@@ -262,8 +280,18 @@ export class PackageVersionPage {
   protected readonly tabs = computed<readonly TabEntry[]>(() =>
     this.docsGone() ? this.announcedTabs().filter((t) => t.id !== 'documentation' && t.id !== 'contents') : this.announcedTabs(),
   );
+  /** The version the page shows, by value. */
+  private readonly shownVersion = computed(() => `${this.format()}\n${this.name()}\n${this.version()}`);
+  /**
+   * The tab the page opened on without a tab in its address, fixed once the version and its scanning have answered: the page reads
+   * the version again while it is open (R-UI-213), and a scan that finishes meanwhile adds the tab Vulnerabilities in front, which
+   * must not switch the tab the person reads.
+   */
+  private readonly landingTab = signal<{ readonly key: string; readonly id: VersionTab } | null>(null);
   protected readonly activeIndex = computed(() => {
-    const i = this.tabs().findIndex((t) => t.id === this.tab());
+    const landing = this.landingTab();
+    const wanted = this.tab() ?? (landing?.key === this.shownVersion() ? landing.id : undefined);
+    const i = this.tabs().findIndex((t) => t.id === wanted);
     return i < 0 ? 0 : i;
   });
   /**
@@ -354,13 +382,17 @@ export class PackageVersionPage {
    * The collections a collection version depends on that this installation holds (Q-UI-245): each of them is a link to its page, the
    * others stay muted text. One lookup per dependency, which rejects for a package that no visible repository holds.
    */
-  protected readonly heldDependencies = resource({
-    params: () => {
+  private readonly dependencyNames = computed(
+    () => {
       const d = this.detail();
       if (d?.format !== 'ansible') return undefined;
       const names = stringRecord(d.metadata['dependencies']).map(([name]) => name);
       return names.length > 0 ? names : undefined;
     },
+    { equal: (a, b) => (a ?? []).join('\n') === (b ?? []).join('\n') && (a === undefined) === (b === undefined) },
+  );
+  protected readonly heldDependencies = resource({
+    params: () => this.dependencyNames(),
     loader: async ({ params }): Promise<ReadonlySet<string>> => {
       const held = new Set<string>();
       await Promise.all(
@@ -518,7 +550,45 @@ export class PackageVersionPage {
     virtual: $localize`:@@repo.class.virtual:Virtual`,
   };
 
+  /**
+   * Something of the version has not answered yet (R-UI-213): a file's malware scan, a signature check, or an image's vulnerability
+   * scan. The page reads the version again every few seconds until it has, and every minute after. A check that failed reads
+   * as **not checked** like one that waits (the API does not tell them apart), and keeps the fast reads.
+   */
+  protected readonly inFlight = computed(() => {
+    const d = this.detail();
+    if (!d) return false;
+    const signaturePending = (s: SignatureStatus | undefined): boolean => s?.state === 'not_checked' || s?.refusedReason === 'pending';
+    if (signaturePending(d.signatures)) return true;
+    if (d.files.some((f) => f.malware?.state === 'pending' || signaturePending(f.signatures))) return true;
+    return (this.vulnerabilityReport()?.repositories ?? []).some(
+      (r) => r.evaluation === 'pending_scan' || (r.images ?? []).some((i) => i.state === 'pending'),
+    );
+  });
+
   constructor() {
+    effect(() => {
+      const key = this.shownVersion();
+      const settled = this.details.hasValue() && !this.vulnerabilities.isLoading() && !this.summary.isLoading();
+      const first = this.tabs()[0]?.id;
+      untracked(() => {
+        if (settled && first && this.landingTab()?.key !== key) this.landingTab.set({ key, id: first });
+      });
+    });
+    live({
+      reload: async () => {
+        const id = valueOf(this.summary)?.id;
+        if (!id) return;
+        const version = this.version();
+        await Promise.all([
+          refreshResource(this.details, () => this.api.version(id, version)),
+          this.vulnerabilities.hasValue()
+            ? refreshResource(this.vulnerabilities, () => this.vulnerabilityApi.versionReport(id, version).catch(() => null))
+            : Promise.resolve(),
+        ]);
+      },
+      every: () => (this.inFlight() ? LIVE_FAST_MS : LIVE_IDLE_MS),
+    });
     // Opening the page records the package in "recently opened" (R-UI-007).
     effect(() => {
       const s = valueOf(this.summary);

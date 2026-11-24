@@ -1,5 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, effect, inject, input, untracked } from '@angular/core';
+import { LIVE_SLOW_MS, live } from '../../core/live-refresh';
 import { AnsibleApi, AnsibleImportTask } from '../../api/ansible-api';
 import { ErrorNotice } from '../../shared/error-notice';
 import { PagedResource } from '../../shared/paged-resource';
@@ -96,6 +97,8 @@ export class AnsibleImportLog {
       this.version();
       untracked(() => this.load());
     });
+    // A publish of the version again adds an import: the tasks shown are read again every half minute in place (R-UI-213).
+    live({ reload: () => this.list.refresh(), every: () => LIVE_SLOW_MS });
   }
 
   protected label(task: AnsibleImportTask): string {

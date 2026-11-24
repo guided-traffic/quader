@@ -311,7 +311,7 @@ describe('System status screen', () => {
   });
 
   it('R-UI-038 R-UI-164 the page\'s pause stops the automatic refresh of the tab (WCAG 2.2.2)', async () => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     const { fixture } = await render();
     const system = TestBed.inject(SystemApi) as FakeSystemApi;
     const spy = vi.spyOn(system, 'info');

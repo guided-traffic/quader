@@ -248,7 +248,7 @@ describe('Mirror status panel', () => {
   });
 
   describe('polling', () => {
-    it('R-UI-021 reads the status again while a pass runs and stops when it has ended', async () => {
+    it('R-UI-021 R-UI-213 reads the status again while a pass runs and slows to every 30 s when it has ended', async () => {
       const { r, fake } = await render(
         [
           sampleMirrorStatus({ state: 'running', pass: PASS }),
@@ -265,7 +265,7 @@ describe('Mirror status panel', () => {
       expect(fake.mirrorStatusCalls).toBe(3);
     });
 
-    it('R-UI-021 reads a mirror that is not running once, and stops polling when the panel is left', async () => {
+    it('R-UI-021 R-UI-213 reads a mirror that is not running once in its first 30 s, and stops polling when the panel is left', async () => {
       const idle = await render([sampleMirrorStatus()], { intervalMs: 15 });
       await wait(80);
       expect(idle.fake.mirrorStatusCalls).toBe(1);

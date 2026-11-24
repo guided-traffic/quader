@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, LOCALE_ID, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { LIVE_IDLE_MS, live } from '../../core/live-refresh';
 import { upstreamFirst } from '../../core/upstream-project';
 import { Router, RouterLink } from '@angular/router';
 import {
@@ -122,6 +123,8 @@ export class UsageOverview {
   protected readonly loading = signal(false);
   protected readonly failure = signal<ApiError | null>(null);
   private generation = 0;
+  /** The pages the list holds: one after a load, one more for each **Load more**. */
+  private pages = 0;
 
   /** The staged values of the drawer. */
   protected readonly stagedKinds = signal<readonly UsageSubjectKind[]>([]);
@@ -198,6 +201,20 @@ export class UsageOverview {
     effect(() => {
       if (this.scope() === 'instance') untracked(() => void this.loadProjects());
     });
+    // Downloads count up all the time: the first page is read again every minute in place while the page is seen (R-UI-213). A list
+    // extended with **Load more** stays as it is until its query changes.
+    live({
+      reload: async () => {
+        if (!this.loaded() || this.loading() || this.pages > 1) return;
+        const generation = this.generation;
+        const page = await this.api.usage(this.usageScope(), this.query(), null);
+        if (generation !== this.generation || this.loading()) return;
+        this.rows.set(page.items);
+        this.next.set(page.nextCursor);
+        this.mode.set(page.mode);
+      },
+      every: () => LIVE_IDLE_MS,
+    });
   }
 
   private async loadProjects(): Promise<void> {
@@ -223,6 +240,7 @@ export class UsageOverview {
       this.next.set(page.nextCursor);
       this.mode.set(page.mode);
       this.loaded.set(true);
+      this.pages = 1;
     } catch (e) {
       if (generation !== this.generation) return;
       this.failure.set(asApiError(e));
@@ -241,6 +259,7 @@ export class UsageOverview {
       const page = await this.api.usage(this.usageScope(), this.query(), cursor);
       if (generation !== this.generation) return;
       this.rows.update((r) => [...r, ...page.items]);
+      this.pages++;
       this.next.set(page.nextCursor);
     } catch (e) {
       this.failure.set(asApiError(e));

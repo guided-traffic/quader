@@ -97,6 +97,32 @@ describe('BannerStore', () => {
     expect(api.bannerReads).toBe(whileOneWatcher);
   });
 
+  it('R-UI-033 R-UI-213 the banner is not read while the window is hidden, and at once when it is seen again', async () => {
+    vi.useFakeTimers();
+    const setVisibility = (state: 'visible' | 'hidden'): void => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
+      document.dispatchEvent(new Event('visibilitychange'));
+    };
+    try {
+      const { store, api } = setup();
+      const watcher = destroyRef();
+      store.watch(watcher.ref);
+      await vi.advanceTimersByTimeAsync(0);
+      const reads = api.bannerReads;
+      setVisibility('hidden');
+      TestBed.tick();
+      await vi.advanceTimersByTimeAsync(3 * BANNER_POLL_MS);
+      expect(api.bannerReads).toBe(reads);
+      setVisibility('visible');
+      TestBed.tick();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(api.bannerReads).toBe(reads + 1);
+      watcher.destroy();
+    } finally {
+      setVisibility('visible');
+    }
+  });
+
   it('R-UI-033 adopt shows what a save answered without waiting for the poll', () => {
     const { store } = setup();
     store.adopt({ enabled: true, message: 'Now' }, { mode: 'read_only', cacheFill: false, message: 'Frozen' });

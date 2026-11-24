@@ -9,6 +9,7 @@ import { DataTable, TableColumn, TableSort } from '../../../shared/ui/data-table
 import { GradeLabel } from '../../../shared/vulnerability/grade';
 import { gradeRank } from '../../../shared/vulnerability/grade-words';
 import { systemClosed } from '../../../core/system-clients';
+import { LIVE_SLOW_MS, live } from '../../../core/live-refresh';
 import { ClientCommandMenu } from '../../packages/client-command-menu';
 import { packageCommands } from '../../packages/package-links';
 import { ContentShape, emptyContentText } from './content-shape';
@@ -234,6 +235,8 @@ export class RepositoryItems {
         void (byGrade ? this.loadForGrade(fetcher) : this.list.start(fetcher));
       });
     });
+    // A client's push or pull adds an item or a version, a scan changes a grade: the rows shown are read again in place (R-UI-213).
+    live({ reload: () => this.list.refresh(), every: () => LIVE_SLOW_MS });
   }
 
   /** The whole list up to GRADE_SORT_MAX entries, so that the browser sorts it by grade (Q-UI-373). */

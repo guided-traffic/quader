@@ -533,26 +533,28 @@ export class FakePackagesApi extends PackagesApi {
   override list(filters: PackageFilters): PageFetcher<PackageSummary> {
     this.listFilters.push(filters);
     const q = filters.q?.toLowerCase();
-    let items = this.packages
-      .filter((p) => !filters.format?.length || filters.format.includes(p.format))
-      .filter((p) => !filters.repository?.length || p.repositories.some((r) => filters.repository?.includes(r)))
-      .filter((p) => !q || p.name.toLowerCase().includes(q) || (p.description ?? '').toLowerCase().includes(q))
-      .filter((p) => !filters.namePrefix || p.name.startsWith(filters.namePrefix))
-      .filter((p) => !filters.keyword || p.keywords.includes(filters.keyword))
-      .filter((p) => !filters.createdFrom || p.createdAt >= filters.createdFrom)
-      .filter((p) => !filters.createdTo || p.createdAt < filters.createdTo);
-    const sort = filters.sort ?? 'name';
-    const desc = sort.startsWith('-');
-    const field = sort.replace('-', '') as 'name' | 'createdAt' | 'updatedAt';
-    items = [...items].sort((a, b) => (desc ? -1 : 1) * a[field].localeCompare(b[field]));
-    const fetch = pages(items);
+    // Each page reads the packages as they are then, as the server does: a list read again in place (R-UI-213) sees a push.
+    const read = (): PackageSummary[] => {
+      const items = this.packages
+        .filter((p) => !filters.format?.length || filters.format.includes(p.format))
+        .filter((p) => !filters.repository?.length || p.repositories.some((r) => filters.repository?.includes(r)))
+        .filter((p) => !q || p.name.toLowerCase().includes(q) || (p.description ?? '').toLowerCase().includes(q))
+        .filter((p) => !filters.namePrefix || p.name.startsWith(filters.namePrefix))
+        .filter((p) => !filters.keyword || p.keywords.includes(filters.keyword))
+        .filter((p) => !filters.createdFrom || p.createdAt >= filters.createdFrom)
+        .filter((p) => !filters.createdTo || p.createdAt < filters.createdTo);
+      const sort = filters.sort ?? 'name';
+      const desc = sort.startsWith('-');
+      const field = sort.replace('-', '') as 'name' | 'createdAt' | 'updatedAt';
+      return [...items].sort((a, b) => (desc ? -1 : 1) * a[field].localeCompare(b[field]));
+    };
     return async (cursor, limit) => {
       if (this.listError) {
         const e = this.listError;
         this.listError = null;
         throw e;
       }
-      return fetch(cursor, limit);
+      return pages(read())(cursor, limit);
     };
   }
 
@@ -579,7 +581,8 @@ export class FakePackagesApi extends PackagesApi {
           return b.publishedAt.localeCompare(a.publishedAt);
       }
     };
-    const items = this.versionList
+    // Each page reads the versions as they are then, as the server does: a list read again in place (R-UI-213) sees a push.
+    const read = (): PackageVersionSummary[] => this.versionList
       .filter((v) => v.packageId === packageId)
       .filter((v) => filters.prerelease === undefined || v.prerelease === filters.prerelease)
       .map(
@@ -597,7 +600,7 @@ export class FakePackagesApi extends PackagesApi {
         }),
       )
       .sort(order);
-    return pages(items);
+    return (cursor, limit) => pages(read())(cursor, limit);
   }
 
   override async version(packageId: string, v: string): Promise<PackageVersion> {

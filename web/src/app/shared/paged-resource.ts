@@ -1,6 +1,6 @@
 import { ResourceRef, signal } from '@angular/core';
 import { ApiError } from '../api/problem';
-import { PagedList, PageFetcher } from '../api/pagination';
+import { DEFAULT_PAGE_LIMIT, Page, PagedList, PageFetcher } from '../api/pagination';
 
 /** Wraps any failure of a list call in an `ApiError`, so that `<quader-error-notice>` can show it. */
 export function asApiError(e: unknown): ApiError {
@@ -53,6 +53,43 @@ export class PagedResource<T> {
   /** Starts the current traversal again from the first page. */
   async reload(): Promise<void> {
     if (this.fetcher) await this.start(this.fetcher, this.limit);
+  }
+
+  /**
+   * Reads the rows shown again in place (R-UI-213): the pages of the current traversal from the first, until as many rows as are shown
+   * have been read again or the list ends, and then replaces the rows at once. Nothing is cleared while it reads, so the rows, the
+   * open rows (kept by the screen per row's key), the focus and the scroll stay; a row that is gone goes, a new one appears in its
+   * place. A failure leaves the rows and the error as they are and is thrown (the back-off of `live`). An answer is dropped when a
+   * new traversal or **Load more** started meanwhile; no read starts while one of those runs or before the first page arrived. `next`
+   * is the same query asked anew, for a query whose bounds move with the clock; it becomes the traversal's.
+   */
+  async refresh(next?: PageFetcher<T>): Promise<void> {
+    if (!this.fetcher || this.loading() || !this.loaded()) return;
+    // A list whose query moves with the clock (the audit log's last 24 hours) reads with the query of now, the same filters.
+    const fetcher = next ?? this.fetcher;
+    const generation = this.generation;
+    const list = this.list;
+    const before = this.items();
+    const shown = before.length;
+    const limit = this.limit ?? DEFAULT_PAGE_LIMIT;
+    const items: T[] = [];
+    let cursor: string | null = null;
+    const seen = new Set<string>();
+    do {
+      const page: Page<T> = await fetcher(cursor, limit);
+      if (generation !== this.generation || list !== this.list || this.loading() || this.items() !== before) return;
+      items.push(...page.items);
+      cursor = page.nextCursor;
+      if (cursor !== null) {
+        if (seen.has(cursor)) throw new Error('pagination: the server repeated a cursor');
+        seen.add(cursor);
+      }
+    } while (cursor !== null && items.length < shown);
+    this.fetcher = fetcher;
+    this.list = PagedList.resumed(fetcher, limit, items, cursor);
+    this.items.set(items);
+    this.hasMore.set(cursor !== null);
+    this.error.set(null);
   }
 
   /** Loads the next page of the current traversal. */

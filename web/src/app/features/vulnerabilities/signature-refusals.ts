@@ -1,6 +1,7 @@
 import { personName } from '../../shared/person-name';
 import { DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
+import { LIVE_IDLE_MS, live } from '../../core/live-refresh';
 import { Router, RouterLink } from '@angular/router';
 import { ApiError } from '../../api/problem';
 import { splitRef } from '../../api/repositories-api';
@@ -311,6 +312,8 @@ export class SignatureRefusals {
         void this.list.start(this.api.refusals(filters));
       });
     });
+    // A refused download adds a row: the rows shown are read again every minute in place (R-UI-213).
+    live({ reload: () => this.list.refresh(), every: () => LIVE_IDLE_MS });
   }
 
   /** A release names a digest only: the artifact of a refused download of the same bytes, where the list shows one (H-1239). */

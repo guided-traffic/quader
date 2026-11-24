@@ -12,6 +12,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { LIVE_SLOW_MS, live } from '../../core/live-refresh';
 import { Router, RouterLink } from '@angular/router';
 import { AUDIT_CATEGORIES, AuditApi, AuditEvent, AuditFilters } from '../../api/audit-api';
 import { filesCommands } from '../../core/project-links';
@@ -155,8 +156,10 @@ export class AuditLog {
   protected readonly timeZone = computed(() => (this.utc() === '1' ? 'UTC' : undefined));
 
   /** The API filter for the current URL; a preset is resolved against `now`. */
-  protected readonly filters = computed<AuditFilters & { from: string; to: string }>(() => {
-    const now = this.now();
+  protected readonly filters = computed<AuditFilters & { from: string; to: string }>(() => this.filtersAt(this.now()));
+
+  /** The filter of the URL at the time `now`: a preset, and a custom range without an end, end at `now`. */
+  private filtersAt(now: number): AuditFilters & { from: string; to: string } {
     const preset = this.preset();
     const span = PRESETS[preset];
     const from =
@@ -178,7 +181,8 @@ export class AuditLog {
       resourceId: this.resourceId(),
       outcome: this.outcome(),
     };
-  });
+  }
+
   protected readonly filtered = computed(
     () =>
       !!(
@@ -234,6 +238,12 @@ export class AuditLog {
       const filters = this.filters();
       // A preset moves with the clock; the explicit refresh and a filter change reload.
       untracked(() => void this.list.start(this.api.events(filters), AUDIT_PAGE_SIZE));
+    });
+    // New events arrive all the time: the rows shown are read again every half minute with the range moved to now, in place, so an
+    // open event, the scroll and the filters stay (R-UI-213). A custom range with an end stays where it is.
+    live({
+      reload: () => this.list.refresh(this.api.events(untracked(() => this.filtersAt(Date.now())))),
+      every: () => LIVE_SLOW_MS,
     });
     effect(() => this.restage());
     // An event opened from the list takes the focus, so the page brings it into view where it stands above the log (Q-UI-997).

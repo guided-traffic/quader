@@ -202,6 +202,11 @@ export class DeliveryRequestsPanel {
   readonly format = input.required<string>();
   /** The repository's open entries as the capabilities count them, for those who may set rules. */
   readonly openCount = input<number | null>(null);
+  /**
+   * The tab's counts as it read them last (R-UI-213): when they change (a request came in, an allow queued a download), the entries
+   * are read again in place.
+   */
+  readonly revision = input('');
 
   protected readonly rows = signal<readonly DeliveryRequest[]>([]);
   protected readonly next = signal<string | null>(null);
@@ -224,6 +229,14 @@ export class DeliveryRequestsPanel {
       this.actions.changed();
       if (!repository || !known) return;
       untracked(() => void this.load(true));
+    });
+    let shown: string | null = null;
+    effect(() => {
+      const revision = this.revision();
+      untracked(() => {
+        if (shown !== null && shown !== revision && !this.loading()) void this.load(true);
+        shown = revision;
+      });
     });
   }
 

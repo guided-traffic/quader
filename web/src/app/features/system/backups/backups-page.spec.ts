@@ -78,7 +78,7 @@ describe('The backups screen: status (R-UI-048)', () => {
   });
 
   it('R-UI-048 shows the phase and the growing blob count of a run in progress, and refreshes without a reload', async () => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     const running = sampleRun({
       id: RUN_ACTIVE,
       state: 'copying',
@@ -127,7 +127,7 @@ describe('The backups screen: status (R-UI-048)', () => {
   });
 
   it('R-UI-048 R-UI-164 the page\'s pause stops the automatic refresh and its Refresh now reloads the tab', async () => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     const { root, fixture, get } = await renderScreen(BackupsPage);
     const api = fake(get);
     const before = api.summaryCalls;

@@ -1,5 +1,6 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject, input, output, resource, signal } from '@angular/core';
+import { LIVE_IDLE_MS, live, refreshResource } from '../../core/live-refresh';
 import { SEVERITIES, VulnerabilitiesApi, VulnerabilitySeverity, VulnerabilityTrend } from '../../api/vulnerabilities-api';
 import { ErrorNotice } from '../../shared/error-notice';
 import { asApiError, valueOf } from '../../shared/paged-resource';
@@ -218,13 +219,31 @@ export class ReportTrend {
 
   protected readonly trend = resource({
     params: () => ({ project: this.project(), repository: this.repository(), format: this.format(), range: this.range(), refresh: this.refresh() }),
-    loader: ({ params }) => {
-      const to = new Date();
-      const from = new Date(to.getTime() - (Number(params.range) - 1) * 86_400_000);
-      const day = (d: Date): string => d.toISOString().slice(0, 10);
-      return this.api.trend({ from: day(from), to: day(to), project: params.project, repository: params.repository, format: params.format });
-    },
+    loader: ({ params }) => this.read(params),
   });
+
+  constructor() {
+    // Today's point moves with every scan: read again every minute in place while the page is seen (R-UI-213).
+    live({
+      reload: () =>
+        refreshResource(this.trend, () =>
+          this.read({ project: this.project(), repository: this.repository(), format: this.format(), range: this.range() }),
+        ),
+      every: () => LIVE_IDLE_MS,
+    });
+  }
+
+  private read(params: {
+    readonly project: readonly string[];
+    readonly repository: readonly string[];
+    readonly format: readonly string[];
+    readonly range: TrendRange;
+  }) {
+    const to = new Date();
+    const from = new Date(to.getTime() - (Number(params.range) - 1) * 86_400_000);
+    const day = (d: Date): string => d.toISOString().slice(0, 10);
+    return this.api.trend({ from: day(from), to: day(to), project: params.project, repository: params.repository, format: params.format });
+  }
   protected readonly failure = computed(() => {
     const e = this.trend.error();
     return e ? asApiError(e) : null;

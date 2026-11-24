@@ -1,7 +1,8 @@
 import { PackagesApi } from '../../../api/packages-api';
 import { CLAMAV_NOW, clamavFixture } from '../../../api/testing/fakes-clamav';
 import { FakePackagesApi } from '../../../api/testing/fakes-packages';
-import { expectAccessible, renderScreen, text } from '../../../testing/screen';
+import { expectAccessible, renderScreen, settle, text } from '../../../testing/screen';
+import { vi } from 'vitest';
 import { ClamavDatabases } from './clamav-databases';
 
 describe('The databases of the ClamAV definitions (R-UI-194)', () => {
@@ -37,5 +38,31 @@ describe('The databases of the ClamAV definitions (R-UI-194)', () => {
     expect(text(daily.querySelector('th')!)).toContain('ClamAV warns about a database older than 7 days.');
     expect(daily.querySelector('.badge.warn')!.getAttribute('title')).toBe('ClamAV warns about a database older than 7 days.');
     expect(root.querySelectorAll('.badge.warn')).toHaveLength(1);
+  });
+
+  it('R-UI-213 the list of databases is read every minute, and the versions and the set in use only when it changed', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const { root, fixture, get } = await renderScreen(ClamavDatabases, {
+        inputs: { repository: 'upstream/clamav', now: CLAMAV_NOW },
+        setup: (get) => clamavFixture(get(PackagesApi) as FakePackagesApi),
+      });
+      const fake = get(PackagesApi) as FakePackagesApi;
+      const versionReads = () => fake.versionFilters.length;
+      const lists = fake.listFilters.length;
+      const before = versionReads();
+      vi.advanceTimersByTime(60_000);
+      await settle(fixture);
+      expect(fake.listFilters.length).toBe(lists + 1);
+      expect(versionReads()).toBe(before);
+      // The updater stored a new daily: the list says so, and the set in use is read again.
+      fake.packages = fake.packages.map((p) => (p.name === 'daily' ? { ...p, versionCount: p.versionCount + 1, updatedAt: '2026-11-24T10:00:00Z' } : p));
+      vi.advanceTimersByTime(60_000);
+      await settle(fixture);
+      expect(versionReads()).toBe(before + 3);
+      expect(root.querySelectorAll('tbody tr')).toHaveLength(3);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

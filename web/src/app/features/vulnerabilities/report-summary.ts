@@ -1,6 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { Component, computed, inject, input, resource } from '@angular/core';
+import { LIVE_IDLE_MS, live, refreshResource } from '../../core/live-refresh';
 import { RouterLink } from '@angular/router';
 import { OPEN_STATUSES, VulnerabilitiesApi, VulnerabilitySourceState, VulnerabilitySummary } from '../../api/vulnerabilities-api';
 import { SessionStore } from '../../core/session-store';
@@ -126,6 +127,18 @@ export class ReportSummary {
     const e = this.summary.error();
     return e ? asApiError(e) : null;
   });
+
+  constructor() {
+    // A scan or an advisory sync changes the counts: read again every minute in place while the page is seen (R-UI-213).
+    live({
+      reload: () =>
+        Promise.all([
+          refreshResource(this.summary, () => this.api.summary({ project: this.project(), repository: this.repository(), format: this.format() })),
+          this.sources.hasValue() ? refreshResource(this.sources, () => this.api.sources()) : Promise.resolve(),
+        ]),
+      every: () => LIVE_IDLE_MS,
+    });
+  }
 
   private readonly scope = computed<Record<string, readonly string[]>>(() => {
     const out: Record<string, readonly string[]> = {};

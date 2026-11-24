@@ -17,6 +17,7 @@ import { formatSize } from '../../packages/format-size';
 import { versionCommands } from '../../packages/package-links';
 import { downloadStateText } from '../downloads/download-words';
 import { UpstreamActions } from './upstream-actions';
+import { LIVE_FAST_MS, LIVE_IDLE_MS, live } from '../../../core/live-refresh';
 import { catalogueState, decidedByText, flagText, notCoveredText, stateBadge, verdictText } from './upstream-words';
 
 /** What a version row offers (R-CUR-018): one is the row's word, several are its menu (R-UI-163). */
@@ -116,6 +117,9 @@ export class UpstreamPackageView {
     ...(this.hasActions() ? [{ id: 'actions', label: $localize`:@@upstream.col.actions:Actions`, hideLabel: true }] : []),
   ]);
 
+  /** A download of a version shown waits or runs: the versions are read every few seconds until it has ended (R-UI-213). */
+  protected readonly downloading = computed(() => this.versions().some((v) => v.queued !== null));
+
   constructor() {
     effect(() => {
       const name = this.name();
@@ -123,6 +127,32 @@ export class UpstreamPackageView {
       this.actions.changed();
       untracked(() => void this.load(name, filter, true));
     });
+    live({ reload: () => this.refresh(), every: () => (this.downloading() ? LIVE_FAST_MS : LIVE_IDLE_MS) });
+  }
+
+  /**
+   * The versions shown again, in place (R-UI-213): the pages from the first until as many versions as are shown, then the rows at
+   * once, so the open menu, the focus and the filter stay. A failure keeps the rows and is thrown (the back-off of `live`).
+   */
+  private async refresh(): Promise<void> {
+    if (this.loading() || this.pkg() === null) return;
+    const generation = this.generation;
+    const name = this.name();
+    const filter = this.appliedFilter();
+    const shown = this.versions().length;
+    const versions: UpstreamVersion[] = [];
+    let cursor: string | null = null;
+    let page: UpstreamPackage;
+    do {
+      page = await this.api.package(this.actions.repository(), name, cursor, filter);
+      if (generation !== this.generation || this.loading()) return;
+      versions.push(...page.versions.filter((v) => !versions.some((x) => x.version === v.version)));
+      cursor = page.done ? null : page.nextCursor;
+    } while (cursor !== null && versions.length < shown);
+    this.pkg.set(page);
+    this.versions.set(versions);
+    this.next.set(cursor);
+    void this.readVerdicts(name, versions.filter((v) => !this.verdicts().has(v.version)), generation);
   }
 
   private async load(name: string, filter: string, fresh: boolean): Promise<void> {

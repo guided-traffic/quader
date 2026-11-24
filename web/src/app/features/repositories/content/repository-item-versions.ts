@@ -1,4 +1,5 @@
 import { Component, computed, effect, inject, input, resource, untracked } from '@angular/core';
+import { refreshResource } from '../../../core/live-refresh';
 import { RouterLink } from '@angular/router';
 import { TimeAgo } from '../../../shared/ui/time-ago';
 import { PackageSummary, PackageVersionSummary, PackagesApi } from '../../../api/packages-api';
@@ -131,8 +132,19 @@ export class RepositoryItemVersions {
   protected readonly versions = new PagedResource<PackageVersionSummary>(VERSIONS_PAGE);
 
   /** The grade of every version in this repository, in one request for the item (R-VULN-039). */
+  /** The item's ID alone: the list above reads its rows again (R-UI-213), and a new row object is no new item. */
+  private readonly pkgId = computed(() => this.pkg().id);
+  /**
+   * What the list above says changed about the item: a version added or removed, the latest, the grade. When it changes, the versions
+   * shown here are read again in place; the list above is the one that is live, so an open row costs no requests of its own.
+   */
+  private readonly stamp = computed(() => {
+    const p = this.pkg();
+    const g = p.vulnerabilityGrade;
+    return `${p.versionCount} ${p.latestVersion} ${p.updatedAt} ${g?.grade ?? ''} ${g?.checkedAt ?? ''}`;
+  });
   protected readonly report = resource({
-    params: () => (this.scanned() && this.session.state() !== 'anonymous' ? { id: this.pkg().id, repository: this.repository() } : undefined),
+    params: () => (this.scanned() && this.session.state() !== 'anonymous' ? { id: this.pkgId(), repository: this.repository() } : undefined),
     loader: ({ params }) => this.vulnerabilities.packageReport(params.id, [params.repository]),
   });
   private readonly gradeByVersion = computed(() => {
@@ -166,8 +178,16 @@ export class RepositoryItemVersions {
   protected readonly closed = computed(() => this.system() || this.disabled());
 
   constructor() {
+    let shownStamp: string | null = null;
     effect(() => {
-      const id = this.pkg().id;
+      const stamp = this.stamp();
+      untracked(() => {
+        if (shownStamp !== null && shownStamp !== stamp) void this.readAgain();
+        shownStamp = stamp;
+      });
+    });
+    effect(() => {
+      const id = this.pkgId();
       const repository = this.repository();
       const digest = this.shape().digest;
       untracked(() => {
@@ -176,6 +196,17 @@ export class RepositoryItemVersions {
         );
       });
     });
+  }
+
+  /** The versions and their grades again, in place; a failure keeps what is shown, and the next change of the row tries again. */
+  private async readAgain(): Promise<void> {
+    try {
+      await this.versions.refresh();
+      const params = { id: this.pkgId(), repository: this.repository() };
+      if (this.report.hasValue()) await refreshResource(this.report, () => this.vulnerabilities.packageReport(params.id, [params.repository]));
+    } catch {
+      // Keep what is shown.
+    }
   }
 
   protected gradeOf(version: string): VulnerabilityGrade | undefined {

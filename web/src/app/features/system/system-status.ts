@@ -1,5 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, DestroyRef, computed, effect, inject, resource, signal, viewChild } from '@angular/core';
+import { live } from '../../core/live-refresh';
 import { newIdempotencyKey } from '../../api/client';
 // >>> M1 ui-a
 import { Job, JobsApi } from '../../api/jobs-api';
@@ -200,11 +201,8 @@ export class SystemStatus {
 
   constructor() {
     this.refresh.register(() => this.reload(), inject(DestroyRef));
-    effect((onCleanup) => {
-      if (this.refresh.paused()) return;
-      const timer = setInterval(() => this.reload(), REFRESH_INTERVAL_MS);
-      onCleanup(() => clearInterval(timer));
-    });
+    // Read again while the page is seen and not paused, at once when it is seen again (R-UI-213).
+    live({ reload: () => this.reload(), every: () => REFRESH_INTERVAL_MS, when: () => !this.refresh.paused() });
     effect(() => {
       const v = this.valkey();
       const now = Date.now();

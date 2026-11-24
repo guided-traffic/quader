@@ -6,6 +6,7 @@ import { Child, FilesApi } from '../../../api/files-api';
 import { Notifier } from '../../../core/notifier';
 import { filesCommands } from '../../../core/project-links';
 import { systemClosed } from '../../../core/system-clients';
+import { LIVE_SLOW_MS, live } from '../../../core/live-refresh';
 import { CopyButton } from '../../../shared/copy-button';
 import { PagedResource } from '../../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
@@ -208,6 +209,8 @@ export class RepositoryFiles {
         void this.list.start(this.files.children(repository, path, FILES_PAGE), FILES_PAGE);
       });
     });
+    // A client's upload or delete changes the folder: its entries shown are read again in place, the filter stays (R-UI-213).
+    live({ reload: () => this.list.refresh(), every: () => LIVE_SLOW_MS });
   }
 
   private fullPath(c: Child): string {

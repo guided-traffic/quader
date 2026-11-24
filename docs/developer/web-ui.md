@@ -978,6 +978,51 @@ builds per locale, `/ui/…` on the dev server (UI-A-49); it appends `purpose=re
 **Secrets** never enter these services (R-UI-043): token values live in component signals only. `core/storage.ts` is for non-secret
 convenience data and answers as if empty when the browser blocks storage.
 
+## Live views (R-UI-213)
+
+Nobody reloads a page to see what the server changed ([R-UI-213](../spec/api-and-ui.md#r-ui-213--no-view-needs-a-reload),
+[Q-UI-1075](../spec/api-and-ui.md#q-ui-1075--a-view-is-live-by-one-shared-poll-that-reads-in-place-and-only-while-it-is-seen)). A view
+whose state a client, a scanner, a job or another replica changes declares itself live in its constructor:
+
+```ts
+live({
+  reload: () => this.list.refresh(),                                  // reads again in place; throws on failure
+  every: () => (this.downloading() ? LIVE_FAST_MS : LIVE_IDLE_MS),     // a signal-read interval; null = no reads
+  when: () => !this.refresh.paused(),                                  // optional: a pause, a tab that is not open
+});
+```
+
+| Piece | File | Does |
+|---|---|---|
+| `live(options)` | [core/live-refresh.ts](../../web/src/app/core/live-refresh.ts) | Reads every `every()` ms while the window is seen ([page-visibility.ts](../../web/src/app/core/page-visibility.ts)) and `when()` holds; at once when the window is seen again or `when()` turns true; doubles the wait after each failed read up to `LIVE_MAX_BACKOFF_MS` (5 min); never two reads at once; ends with the view. The first read stays the view's own. Returns `now()` (read at once after the person's own act) and `failures` |
+| `LIVE_FAST_MS`, `LIVE_SLOW_MS`, `LIVE_IDLE_MS` | the same | 3 s while something on the view runs; 30 s for a list clients change; 60 s for a page or a summary |
+| `PagedResource.refresh(next?)` | [shared/paged-resource.ts](../../web/src/app/shared/paged-resource.ts) | Reads the rows shown again from the first page, as many as are shown, and swaps them at once; **Load more** continues after them (`PagedList.resumed`); a failure keeps rows and error as they are and throws; dropped when `start`, `more`, `replace` or `remove` ran meanwhile. `next` is the same query asked anew (the audit log's range moved to now) |
+| `refreshResource(ref, read)` | [core/live-refresh.ts](../../web/src/app/core/live-refresh.ts) | Reads a `resource()`'s value again and `set`s it: no loading state, the value stays on a failure (thrown), an answer is dropped when the resource changed meanwhile |
+
+What keeps a read invisible, checked for every live view:
+
+- **Rows tracked by their key** (`@for (… ; track row.id)`), never by `$index` or the object: the row's element, its open menu and the
+  focus inside it survive the swap. Expanded rows live in a `Set` of keys.
+- **A child that takes the row as an input keys on its ID.** A new row object is no new item: `computed(() => this.pkg().id)` for the
+  child's own reads, and a stamp of what the row says changed (`versionCount`, `latestVersion`, `updatedAt`, the grade) to read the
+  child again only then ([repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts),
+  [version-signatures.ts](../../web/src/app/features/packages/version-signatures.ts),
+  [version-findings.ts](../../web/src/app/features/vulnerabilities/version-findings.ts)).
+- **A resource's parameters that derive from a value read again compare by value**: `computed(…, { equal })` around the
+  parameters, or the resource loads again (a README, an Ansible documentation tree) at every read
+  ([package-version.ts](../../web/src/app/features/packages/package-version.ts), [package-detail.ts](../../web/src/app/features/packages/package-detail.ts)).
+  The same for an `effect` that resets a choice when "the version" changes ([install-panel.ts](../../web/src/app/features/packages/install-panel.ts)).
+- **Nothing the person typed is written by a read**: a field's draft is its own signal, set only when the address changes.
+- **No live region announces a read.** A component with one keeps its own limit (`JobProgress`).
+- **A cheap question first** where the full read is expensive: a package's page reads its summary and reads its versions only when the
+  summary changed; the ClamAV databases read the list of databases and the versions only when it changed.
+- **Forms and editors are not live**: a concurrent change meets the conflict dialog on save.
+
+The views that are live, their intervals and what each costs are the table of R-UI-213. A view's polling of its own (`setInterval`,
+a `setTimeout` chain) is not added any more; the top bar's Downloads (R-UI-210, R-UI-211), the tab Downloads (R-CUR-018) and
+`JobProgress` keep theirs. Tests use fake timers (`vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })`) and a fake whose
+pages read the data at call time (as `FakePackagesApi.list` and `versions` do), so a read again sees what changed.
+
 ## Shell, design tokens and the list components
 
 Decision [Q-UI-68](../spec/api-and-ui.md#q-ui-68--layout-of-the-application-shell-and-the-list-screens); requirements

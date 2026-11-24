@@ -123,6 +123,15 @@ export class VersionFindings {
       const filters = this.filters();
       untracked(() => void this.list.start(this.api.findings(filters)));
     });
+    // The page reads its report again while it is open (R-UI-213): when the counts change, the findings shown are read again in place.
+    let shown: string | null = null;
+    effect(() => {
+      const stamp = JSON.stringify(this.counts());
+      untracked(() => {
+        if (shown !== null && shown !== stamp) void this.list.refresh().catch(() => undefined);
+        shown = stamp;
+      });
+    });
   }
 
   protected severityName(s: BarSeverity): string {

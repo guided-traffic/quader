@@ -1,5 +1,6 @@
-import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Banner, MaintenanceMode, SystemApi } from '../api/system-api';
+import { PageVisibility } from './page-visibility';
 import { SessionStore } from './session-store';
 
 /** The banner and the mode are read again this often, so a saved change shows on every screen within a minute (R-UI-033). */
@@ -16,13 +17,14 @@ export interface Notice {
 /**
  * The system banner (`GET /api/v1/system/banner`, public: the sign-in page shows it) and the read-only maintenance mode
  * (`GET /api/v1/system/maintenance`, for a signed-in caller). Every screen that shows them calls [watch], which reads them at once and
- * then every [BANNER_POLL_MS] until the screen is gone. A failed read keeps what was shown: a notice is no reason for an error
- * of its own.
+ * then every [BANNER_POLL_MS] until the screen is gone, while the window is seen, and at once when it is seen again (R-UI-213). A
+ * failed read keeps what was shown: a notice is no reason for an error of its own.
  */
 @Injectable({ providedIn: 'root' })
 export class BannerStore {
   private readonly api = inject(SystemApi);
   private readonly session = inject(SessionStore);
+  private readonly visibility = inject(PageVisibility);
 
   private readonly _banner = signal<Banner | null>(null);
   private readonly _maintenance = signal<MaintenanceMode | null>(null);
@@ -49,7 +51,11 @@ export class BannerStore {
   /** Starts reading for the lifetime of `destroyed`; the polling ends with the last watcher. */
   watch(destroyed: DestroyRef): void {
     this.watchers++;
-    if (this.watchers === 1) this.timer = setInterval(() => void this.refresh(), BANNER_POLL_MS);
+    if (this.watchers === 1) {
+      this.timer = setInterval(() => {
+        if (this.visibility.visible()) void this.refresh();
+      }, BANNER_POLL_MS);
+    }
     void this.refresh();
     destroyed.onDestroy(() => {
       this.watchers--;
@@ -57,6 +63,18 @@ export class BannerStore {
         clearInterval(this.timer);
         this.timer = undefined;
       }
+    });
+  }
+
+  constructor() {
+    // A window seen again reads at once what changed while it was hidden.
+    let seen = this.visibility.visible();
+    effect(() => {
+      const visible = this.visibility.visible();
+      untracked(() => {
+        if (visible && !seen && this.watchers > 0) void this.refresh();
+        seen = visible;
+      });
     });
   }
 

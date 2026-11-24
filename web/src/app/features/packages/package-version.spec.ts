@@ -6,6 +6,8 @@ import { clamavFixture } from '../../api/testing/fakes-clamav';
 import { CLAMAV_ENDPOINT, FakeUpstreamApi } from '../../api/testing/fakes-upstream';
 import { UpstreamApi } from '../../api/upstream-api';
 import { FakeVulnerabilitiesApi, sampleGrade } from '../../api/testing/fakes-vulnerabilities';
+import { malwareStatus } from '../../api/testing/fakes-malware';
+import { vi } from 'vitest';
 import { VulnerabilitiesApi } from '../../api/vulnerabilities-api';
 import { spokenText } from '../../testing/axe';
 import { expectAccessible, inProject, renderScreen, settle, text } from '../../testing/screen';
@@ -503,5 +505,66 @@ describe('The page of a version (R-UI-111)', () => {
       expect(root.querySelector('.clamav-fold button')!.getAttribute('aria-expanded')).toBe('false');
       await expectAccessible(root);
     });
+  });
+
+  it('R-UI-213 a file whose malware scan has not answered is read every 3 s until it has, then every minute, and the open tab and the chosen repository stay', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const pending = (fake: FakePackagesApi, state: 'pending' | 'clean') => {
+        fake.versionList = fake.versionList.map((v) =>
+          v.packageId === 'pkg_01JBQ6V7S3K9' && v.version === '1.4.0'
+            ? { ...v, files: v.files.map((f) => ({ ...f, malware: malwareStatus({ state, scannedAt: state === 'clean' ? '2026-11-24T10:00:00Z' : null }) })) }
+            : v,
+        );
+      };
+      const r = await open({ tab: 'files' }, (fake) => pending(fake, 'pending'));
+      const reads = vi.spyOn(r.fake, 'version');
+      const malwareCell = () => text(r.root.querySelector('quader-malware-status')!);
+      expect(malwareCell()).toContain('Checking');
+      const tab = r.root.querySelector('[role="tab"][aria-selected="true"]');
+      vi.advanceTimersByTime(3_000);
+      await settle(r.fixture);
+      expect(reads).toHaveBeenCalledTimes(1);
+      pending(r.fake, 'clean');
+      vi.advanceTimersByTime(3_000);
+      await settle(r.fixture);
+      expect(reads).toHaveBeenCalledTimes(2);
+      expect(malwareCell()).toContain('No malware found');
+      // In place: the same tab element, still the open one.
+      expect(r.root.querySelector('[role="tab"][aria-selected="true"]')).toBe(tab);
+      vi.advanceTimersByTime(3_000);
+      await settle(r.fixture);
+      expect(reads).toHaveBeenCalledTimes(2);
+      vi.advanceTimersByTime(57_000);
+      await settle(r.fixture);
+      expect(reads).toHaveBeenCalledTimes(3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('R-UI-213 a scan that finishes while the page is open adds its tab in its place, and the tab the page opened on stays open', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const report = (grade: ReturnType<typeof sampleGrade>) => ({
+        packageId: 'pkg_01JBQ6V7S3K9',
+        version: '1.4.0',
+        repositories: [{ repository: 'web/npm-local', evaluation: grade.evaluation, blocked: false, blockReason: null, findings: [], grade }],
+      });
+      let vulns: FakeVulnerabilitiesApi | undefined;
+      const r = await open({}, (_, v) => {
+        vulns = v;
+        v.versionReports.set('pkg_01JBQ6V7S3K9/1.4.0', report(sampleGrade('N/A')));
+      });
+      const selected = () => text(r.root.querySelector('[role="tab"][aria-selected="true"]')!);
+      expect(selected()).toBe('README');
+      vulns!.versionReports.set('pkg_01JBQ6V7S3K9/1.4.0', report(sampleGrade('B', { medium: 2 }, { fixable: 1 })));
+      vi.advanceTimersByTime(60_000);
+      await settle(r.fixture);
+      expect(tabLabels(r)).toEqual(['Vulnerabilities', 'README', 'Files', 'Details']);
+      expect(selected()).toBe('README');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

@@ -1,4 +1,5 @@
 import { Component, computed, effect, inject, input, resource, signal, untracked } from '@angular/core';
+import { LIVE_IDLE_MS, live } from '../../core/live-refresh';
 import { Router, RouterLink } from '@angular/router';
 import { RepositoriesApi, refOf, splitRef } from '../../api/repositories-api';
 import { SIGNATURE_FINDING_KINDS, SignatureFinding, SignatureFindingFilters, SignatureFindingKind, SignaturesApi } from '../../api/signatures-api';
@@ -237,6 +238,8 @@ export class SignatureFindings {
         void this.list.start(this.api.findings(filters));
       });
     });
+    // A signature check adds findings: the rows shown are read again every minute in place (R-UI-213).
+    live({ reload: () => this.list.refresh(), every: () => LIVE_IDLE_MS });
   }
 
   /** The artifact a finding's signature covers: its package and version, else its file, else the npm subject's name. */

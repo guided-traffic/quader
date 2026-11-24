@@ -4675,8 +4675,8 @@ Priority: **MVP** · Covers: UI-031
   **No bound** is a mirror of a well-known registry stored without its bound, which does not run, and plans no next pass,
   [remote-curation.md](remote-curation.md) Q-CUR-43), the pass
   in progress with its counts and its job, the last complete pass, the next pass, the last error, the rate-limit waits and the
-  bound. While a pass is in progress (`running`, `waiting`) the status is read again every 5 s, and no longer once the section
-  is closed or the page left. A caller who may change the repository (the permission of Save, Q-UI-120) has **Pause** and **Resume**, which `PATCH`
+  bound. While a pass is in progress (`running`, `waiting`) the status is read again every 5 s, every 30 s while none is (a pass the
+  schedule starts shows without a reload, R-UI-213), and no longer once the section is closed or the page left. A caller who may change the repository (the permission of Save, Q-UI-120) has **Pause** and **Resume**, which `PATCH`
   `remote.mirror.paused` with `If-Match` and nothing else of the form (a 412 opens the conflict dialog of R-UI-042), and **Run a
   pass now** (`POST …/mirror/run`, and **Run a full pass** from its menu), which shows the queued job with a link to the jobs of
   the kind `mirror-pass`; `409 mirror_pass_running` shows the running job instead of an error, and `mirror_off`,
@@ -4720,7 +4720,7 @@ Acceptance criteria:
   `{"remote": {"mirror": {"paused": true}}}` with the loaded `If-Match` and the state reads Paused, **Resume** reverts it, a
   caller who neither holds `repositories:write-config` nor is Owner of the project sees the status and no button, and **Run a
   pass now** answers with the job of its 202 or, after a 409 `mirror_pass_running`, with the running job. While the state is
-  running or waiting the status is read every 5 s, and no read follows once the section is closed.
+  running or waiting the status is read every 5 s, otherwise every 30 s (R-UI-213), and no read follows once the section is closed.
 - The settings page of `nuget-local` without a `nuget.deleteMode` shows "unlist"; after
   `PATCH /api/v1/projects/web/repositories/nuget-local` with `If-Match` and `{"nuget": {"deleteMode": "delete"}}`
   it shows "delete".
@@ -9193,6 +9193,91 @@ Acceptance criteria (Vitest, in [upstream-downloads-panel.spec.ts](../../web/src
 each outcome shows its badge and words; a duration of 0.4 s reads "< 1 s" without an average; **Hide all** stores the newest end and
 hides those rows, a later download shows, **Show again** brings them back; without storage there is no **Hide all**; the empty states
 read as above and the foot links the manual.
+
+### R-UI-213 · No view needs a reload
+Priority: **P1** · Covers: quader-only
+
+The owner, 2026-11-24, 11:05, whole: "Ich hoffe das unsere Frontend bereits automatisch updates fetched und von mir zu keinem Zeitpunkt
+erwartet wird dass ich F5 drücke um eine Ansicht zu aktualisieren." Nobody presses F5 to see what the server changed: every view that
+shows state the server changes without the viewer's own act reads it again by itself.
+
+*Built*: [live-refresh.ts](../../web/src/app/core/live-refresh.ts) (`live()`, `refreshResource()`), `PagedResource.refresh()` in
+[paged-resource.ts](../../web/src/app/shared/paged-resource.ts) with `PagedList.resumed()`, the window's visibility
+[page-visibility.ts](../../web/src/app/core/page-visibility.ts); how a view becomes live is on the developer page
+[web-ui.md](../developer/web-ui.md#live-views-r-ui-213).
+
+- **When a view reads again** ([Q-UI-1075](#q-ui-1075--a-view-is-live-by-one-shared-poll-that-reads-in-place-and-only-while-it-is-seen)):
+  every interval the view names while the window is seen (`document.visibilityState`) and the view is shown; at once when the window
+  is seen again after it was hidden, or a paused refresh is resumed; never while hidden or paused. The view's own first read stays its
+  own; reads never overlap. The intervals:
+  - **fast, 3 s** (`LIVE_FAST_MS`) while something on the view runs: a scan that has not answered, a download that waits or runs;
+    the existing fast reads keep their own (a job 2 s, the jobs list and a mirror pass 5 s, a Debian suite's build 3 s);
+  - **30 s** (`LIVE_SLOW_MS`) for a list that a client's push or pull, a scan or the queue changes;
+  - **60 s** (`LIVE_IDLE_MS`) for a page or a summary that changes in minutes: a version's page, a package's page, the tab Upstream,
+    the security dashboards, the ClamAV databases;
+  - the pages of System status keep their 15 s with **Pause automatic refresh** (R-UI-164, WCAG 2.2.2), now only while seen.
+- **Back-off.** A read that fails doubles the wait before the next (3 s, 6 s, 12 s …; 30 s, 60 s …), up to 5 minutes
+  (`LIVE_MAX_BACKOFF_MS`) or the view's own interval where that is longer; a read that answers restores the interval.
+- **In place, without flicker.** A read replaces what it read only when its answer is there: a list keeps its rows (tracked by their
+  key), a row the person opened stays open, an open menu, the focus and the scroll stay, **Load more** continues after what was read
+  again, and a field the person types in is never reset. A failed read keeps what is shown and shows no error; the next read tries
+  again. A list the person extended with **Load more** is read again as far as it is shown. An answer that arrives after the view's
+  query changed is dropped. A version's page keeps the tab it opened on when a finished scan adds the tab Vulnerabilities in front.
+- **No announcement storm.** A read again sets no live region; a region that already announces (a job's progress, R-UI-042) keeps its
+  own limit, and text that did not change is not written again.
+- **After the person's own act** (a download started, an allow or a block, a release, a rescan, a run of a pass), the affected view
+  reads at once, as each act already did (the tab Upstream after a write, a version's page after a release, the mirror after **Run a
+  pass now**); a live read that runs meanwhile is followed by the act's own.
+- **Forms are not live.** A settings page, an editor or a dialog holds what the person types; a change another person saved meanwhile
+  meets the conflict dialog on save (412, R-UI-042).
+- **What is live** (the audit of 2026-11-24). Every other screen shows what only a person changes through the UI (members, roles,
+  policies, groups, users, service accounts, CI issuers and mappings, endpoints and their rules, limits, settings, upstream registries,
+  the guides, the manual, the search's results), and shows another person's change at the next navigation.
+
+  | Screen | Interval | What changes it |
+  |---|---|---|
+  | A repository's content: its packages or images; the versions of a row opened in it | 30 s; an open row's versions when its row says it changed | a push, a pull through a remote, a grade |
+  | A generic repository's folder | 30 s | an upload, a delete by a client |
+  | A version's page: files, malware scan, signatures, vulnerabilities, the tab Signatures | 3 s while a scan or check has not answered, 60 s after | the scanners, the checks |
+  | A package's page | 60 s: its summary and grades; its versions when the summary changed | a push, a download, a grade |
+  | The tab Upstream: the strip's counts, the list's rows, the requests panel | 60 s; the panel when the counts change | a download, a request, an allow |
+  | A package opened in the tab Upstream | 3 s while one of its versions downloads, 60 s after | the queue |
+  | The tab Downloads, the top bar's Downloads | as built (R-CUR-018, R-UI-210, R-UI-211) | the queue |
+  | The ClamAV databases | 60 s: the list of databases; the versions and the set when it changed | the updater |
+  | Vulnerabilities (summary, trend, findings), Advisory sources | 60 s | a scan, a sync |
+  | Malware finds | 30 s | a scan |
+  | Signature findings, refused downloads | 60 s | a check, a refused download |
+  | Packages, Repositories (lists) | 60 s | a push, a size, a disabled repository |
+  | Audit log | 30 s, the range moved to now | every act |
+  | Mirror status, a Debian repository's indexes | 5 s and 3 s while a pass or a build runs, 30 s after | the schedule, a push |
+  | Jobs | 5 s while one runs, 30 s while none does | the job runner |
+  | System status, Backups, Storage, the admin dashboard | 15 s, pausable | the replicas |
+  | An Ansible repository's import tasks, a version's import log | 30 s | a publish |
+  | CI issuances, tokens (profile, administration) | 60 s | an exchange, a token's use |
+  | Usage (own, a subject's, the overview's first page), Bastions | 60 s | downloads, a Bastion's state |
+  | The banner and the maintenance mode | 30 s, only while seen | an administrator's save |
+
+- **What it costs the server**, per open tab and minute: an idle view one or two requests (a list one; a version's page, a package's
+  page and the tab Upstream two, and one more per package opened in the tab Upstream); while something runs, 20 a minute per fast
+  view (a version's page with a pending scan reads the version and its report: 40). The top bar adds the banner and the mode (four a
+  minute) and, for an administrator, the Downloads summary (six). A hidden tab costs nothing. A list read again costs as many pages as
+  it shows ([H-1847](#h-1847--a-live-list-reads-its-rows-again-there-is-no-answer-of-what-changed)).
+
+Acceptance criteria (Vitest, with fake timers in milliseconds): [live-refresh.spec.ts](../../web/src/app/core/live-refresh.spec.ts),
+about 0.7 s: a view reads every interval while seen, not while hidden, at once when seen again; failed reads double the wait up to
+the bound and an answer restores it; the interval follows what the view runs (fast, none, slow); no read while not shown or paused,
+one at once when shown again; the person's act reads at once and starts the wait anew; a read keeps the rows, the open row, the focus
+and the typed text and continues **Load more**; a failed read keeps the rows without an error; a read of a list whose query changed
+meanwhile is dropped; a resource read again keeps its value, keeps it on a failure and drops a stale answer. One case per kind of
+screen, each about 0.1 s: a version's page reads every 3 s while a file's malware scan has not answered and every minute after, and a
+finished scan keeps the open tab ([package-version.spec.ts](../../web/src/app/features/packages/package-version.spec.ts)); a
+repository's images read again in place with a pushed image, an open row and its new tag
+([repository-content.spec.ts](../../web/src/app/features/repositories/content/repository-content.spec.ts)); an open upstream package
+every 3 s while a version downloads ([remote-upstream.spec.ts](../../web/src/app/features/repositories/upstream/remote-upstream.spec.ts));
+the ClamAV databases' cheap read first ([clamav-databases.spec.ts](../../web/src/app/features/repositories/content/clamav-databases.spec.ts));
+the audit log's moving range ([audit-log.spec.ts](../../web/src/app/features/audit/audit-log.spec.ts)); the jobs in place, at 5 s and
+30 s, and paused ([system-jobs.spec.ts](../../web/src/app/features/system/system-jobs.spec.ts)); the banner not read while hidden
+([banner-store.spec.ts](../../web/src/app/core/banner-store.spec.ts)).
 
 ## Deferred
 
@@ -23706,6 +23791,31 @@ lines in a column of 11 rem by the clock's hour, as Q-UI-1064 found the ages: th
 ([profile-sessions.ts](../../web/src/app/features/profile/profile-sessions.ts)). Rendered: the full run in English (486 screens; its one finding of this change, `cramped` beside the signature releases' **Released**, made
 the exception above, and the screens re-rendered without a finding), `profile-tokens` and `profile-sessions` in both languages, and every screen without a walk in German at 390 px.
 
+### Q-UI-1075 · A view is live by one shared poll that reads in place, and only while it is seen
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's rule of R-UI-213. Eight views polled on their own, each with its own timer and rule, most only while something
+ran and some in a hidden tab too; every other view showed what it read once.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One helper `live()`: a view names its interval (fast while something runs, slow while nothing does); the helper reads while the window is seen and the view shown, at once on return, with back-off; the reads replace in place (`PagedResource.refresh`, `refreshResource`) (chosen) | Polling, as the views that polled already did | Nothing new on the server; a hidden tab costs nothing; one rule for every view, tested once | Up to the interval behind; a list reads again what it shows |
+| (b) A server-sent event stream of changes | Push | Fresh at once | A stream per tab through the edge and every replica, and an event for every change of every kind of row; nothing like it exists (Q-UI-1073 (b)) |
+| (c) A "what changed since" endpoint, polled | One cheap call per view, the list read only on a change | Cheapest at idle | A change counter for every list a reader may see, scoped like the list (H-1847) |
+| (d) Read again by restarting the view's list or resource | The existing `reload()` | No new code | The list empties and fills again (rows, open rows and focus lost); a failed read replaces the rows with an error |
+
+**Choice:** (a). The existing polls move onto it where that is a pure simplification (System status, Jobs, Backups, Storage, the admin
+dashboard, Mirror status, a Debian repository's indexes, the banner); the top bar's Downloads (R-UI-210, R-UI-211) and the tab Downloads
+(R-CUR-018) keep their own. **Rationale:** the only option that needs nothing on the server and keeps every view's state; the views
+that changed most often already polled, and (d) is what made the jobs list and the backups' runs jump every few seconds. A view whose
+change is cheap to detect (a package's summary, the list of ClamAV databases) reads that first and the rest only on a change. The
+development agent would revisit (c) when the idle cost of many open tabs shows in the replicas' request rate, and (b) if the app gains
+an event stream to the browser.
+
+**Applied in the spec:** R-UI-213; R-UI-021's status read (every 30 s while no pass runs). Code:
+[live-refresh.ts](../../web/src/app/core/live-refresh.ts), [paged-resource.ts](../../web/src/app/shared/paged-resource.ts).
+
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 
 Status: **Decided by the owner, 2026-11-23** (T-25, 19:30, whole: "Ich finde Projects und Repositories haben im Admin-Mneü nichts
@@ -24038,6 +24148,23 @@ order of publication (0.03 s in the order of the versions), the package list 0.1
 the second part; they would have to follow every rule of what a caller may see (the scope's rows, withheld versions, a remote's listing
 rules that change with a download), and none is built.
 
+
+### H-1847 · A live list reads its rows again; there is no answer of what changed
+
+A live view (R-UI-213) reads again what it shows: a list as many pages as are shown, a version's page its version and its report,
+whether anything changed or not. The server has no answer of the kind "what changed in this list since my last read" (Q-UI-1075 (c)),
+so an idle tab costs one or two requests a minute per view, and a list extended with **Load more** to ten pages costs ten. Live today in
+every live view; real with many open tabs (a hundred people with a repository open: some 200 list reads a minute at idle). Two views
+read a cheap summary first and the rest only on a change (a package's page, the ClamAV databases). A change counter per repository and
+kind of row, scoped like the list a reader may see, would let a view ask one cheap question instead.
+
+### H-1848 · A signature check that failed keeps a version's page on the fast reads
+
+A version's page reads every 3 s while a file's malware scan has not answered, an image's scan waits, or a signature reads
+**not checked** (R-UI-213). The state `not_checked` stands for a check that waits and for one that failed (R-SIG-034,
+`SignatureBadgeState`), so a version whose check failed keeps its page on the fast reads (40 requests a minute of that tab) for as long
+as it is open and seen. Live today for a version whose signature check failed; it costs requests, not correctness. A state of its own
+for a failed check in the badge would let the page drop to its 60 s.
 
 ### H-43 · General API rate limits are per replica
 
