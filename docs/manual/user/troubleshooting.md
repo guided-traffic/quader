@@ -105,7 +105,7 @@ When Quader refuses to hand out a version it answers `403` and says why. npm pri
 | Code | Cause | Fix |
 |---|---|---|
 | `vulnerability_blocked` | A finding of this version in the repository that stores it blocks it: it is a known malicious package, or a triager of your installation blocked it | Use another version (the advisory page names the fixed one, if there is one). Only a triager can lift the block, by dismissing the finding or setting it back to confirmed; the next request then succeeds. An answer is never cached |
-| `vulnerability_data_missing` | The repository refuses what it cannot check yet, and Quader has not imported the advisory data of this ecosystem | Retry after the first import has finished; ask an administrator when it does not |
+| `vulnerability_data_missing` | The repository refuses what it cannot check yet. The text says what is missing: for a package, the advisory data of its ecosystem has not been imported yet; for an image, its vulnerability scan has not finished yet, its scan failed and is tried again, it exceeds the scanning's limits, its content could not be read, or no vulnerability database for images has been imported yet | Follow the text: an image not scanned yet pulls a minute later, a scan tried again a few minutes later; for an image the scan cannot read or that exceeds the limits, and for missing advisory data that does not arrive, ask an administrator |
 
 A request through a virtual repository ends at the member that stores the blocked version: Quader does not serve the same version from another member. The same version in another repository has a finding of its own and may download.
 
@@ -230,7 +230,7 @@ Each code with its status and meaning. `GET /api/v1/problems/<code>` gives the d
 | `shadows_remote_package` | 403 | A first publish would replace a package a remote repository serves |
 | `populate_not_permitted` | 403 | Not cached, and you may not fetch it from the upstream |
 | `vulnerability_blocked` | 403 | A finding of this version blocks it in this repository (a known malicious package, or a block set in triage) |
-| `vulnerability_data_missing` | 403 | The repository blocks what it cannot check, and the advisory data was never imported |
+| `vulnerability_data_missing` | 403 | The repository blocks what it cannot check: a package's advisory data was never imported, or an image is not scanned yet or could not be scanned; the text says which |
 | `malware_found` | 403 | The malware scan found a signature in the file and no auditor released it |
 | `malware_not_checked` | 403 | Only checked artifacts can be downloaded here, and the malware scan could not check the file |
 | `malware_weakening_refused` | 403 | Switching a repository's malware setting off needs an administrator or someone who triages vulnerabilities |

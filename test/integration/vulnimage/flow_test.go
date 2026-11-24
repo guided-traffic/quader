@@ -353,9 +353,10 @@ func (f *flow) waitIdle() {
 
 type versionReport struct {
 	Repositories []struct {
-		Evaluation string `json:"evaluation"`
-		Blocked    bool   `json:"blocked"`
-		Findings   []struct {
+		Evaluation  string `json:"evaluation"`
+		Blocked     bool   `json:"blocked"`
+		MissingData string `json:"missingData"`
+		Findings    []struct {
 			ID            string   `json:"id"`
 			Advisory      string   `json:"advisory"`
 			Version       string   `json:"version"`

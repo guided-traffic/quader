@@ -16,6 +16,7 @@ export type VulnerabilityKind = Schema<'VulnerabilityKind'>;
 export type VulnerabilityStatus = Schema<'VulnerabilityStatus'>;
 export type VulnerabilityBlockReason = Schema<'VulnerabilityBlockReason'>;
 export type VulnerabilityVersionBlockReason = Schema<'VulnerabilityVersionBlockReason'>;
+export type VulnerabilityMissingData = Schema<'VulnerabilityMissingData'>;
 export type VulnerabilityDismissalReason = Schema<'VulnerabilityDismissalReason'>;
 export type VulnerabilityResolvedReason = Schema<'VulnerabilityResolvedReason'>;
 export type VulnerabilityEvaluation = Schema<'VulnerabilityEvaluation'>;

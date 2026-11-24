@@ -71,7 +71,9 @@ type RepositoryVersion struct {
 	SyncedAt    *time.Time
 	Blocked     bool
 	BlockReason vuln.BlockReason
-	Findings    []Finding
+	// Missing is what a missing_data block is missing (R-VULN-015): the advisory data of a package, or the database or the scan of an image.
+	Missing  vuln.MissingCause
+	Findings []Finding
 	// Images are the manifests an image version stands for, one per platform, each with how far it has been scanned; nil for a package.
 	Images []ImageState
 	// Grade is the version's grade in the repository (R-VULN-038).
@@ -91,6 +93,10 @@ type ImageState struct {
 	// EOSL says that the distribution no longer provides security updates, so that an absence of findings says little.
 	EOSL     bool
 	Packages int
+	// Detected and Judged are what the gate of a pull reads of the scan row (R-VULN-015): whether a detection has finished at some time,
+	// and what a terminal failure was judged under.
+	Detected bool
+	Judged   string
 }
 
 func imagesOf(all []store.ImageManifest, repoID int64) []ImageState {
@@ -103,7 +109,7 @@ func imagesOf(all []store.ImageManifest, repoID int64) []ImageState {
 		if state == "" {
 			state = store.ImageScanPending
 		}
-		out = append(out, ImageState{Digest: m.Digest, Platform: m.Platform, State: state, ErrorCode: m.ErrorCode, ScannedAt: m.ScannedAt, OSFamily: m.OSFamily, OSName: m.OSName, EOSL: m.EOSL, Packages: m.Packages})
+		out = append(out, ImageState{Digest: m.Digest, Platform: m.Platform, State: state, ErrorCode: m.ErrorCode, ScannedAt: m.ScannedAt, OSFamily: m.OSFamily, OSName: m.OSName, EOSL: m.EOSL, Packages: m.Packages, Detected: m.Detected, Judged: m.Judged})
 	}
 	return out
 }
@@ -119,6 +125,40 @@ func manifestDigests(all []store.ImageManifest, version string) []string {
 		}
 	}
 	return out
+}
+
+// imageMissing is what the missing-data rule of a pull would name for an image version (R-VULN-015, vuln.ImageMissingCause): "" when the
+// detection of every platform image the repository stores has finished. A tag that stands for no stored image yet is not scanned yet: the
+// platform image a client fetches next is. Of several, the one an operator must act on comes first, then a scan tried again, then one not
+// scanned yet.
+func imageMissing(images []ImageState, databaseImported bool) vuln.MissingCause {
+	if len(images) == 0 {
+		return vuln.ImageMissingCause(databaseImported, false, "")
+	}
+	var out vuln.MissingCause
+	for _, m := range images {
+		if m.Detected {
+			continue
+		}
+		c := vuln.ImageMissingCause(databaseImported, m.State == store.ImageScanFailed, m.Judged)
+		if out == "" || missingRank(c) > missingRank(out) {
+			out = c
+		}
+	}
+	return out
+}
+
+// missingRank orders the causes of an image for the version's notice: what needs an operator before what passes on its own.
+func missingRank(c vuln.MissingCause) int {
+	switch c {
+	case vuln.MissingImageDatabase:
+		return 4
+	case vuln.MissingImageOverLimits, vuln.MissingImageUnreadable:
+		return 3
+	case vuln.MissingImageScanRetried:
+		return 2
+	}
+	return 1
 }
 
 // imageEvaluation refines the state of an evaluated image version by how far its manifests have been scanned: an image whose scan has not
@@ -211,10 +251,19 @@ func (s *Service) Version(ctx context.Context, sc Scope, format, name, version s
 			rv.SyncedAt = info.SyncedAt
 		}
 		// The verdict of the download: the finding that blocks, else the missing data. An ecosystem whose data is complete is
-		// asked as complete; a version that is not evaluated has no missing data to block on.
+		// asked as complete; a version that is not evaluated has no missing data to block on. An image is held as the gate of its
+		// pull holds it: while a platform image's detection has never finished, named by the state of that scan.
 		state := advisory.DataState{Complete: info.Complete || !covered}
+		var missing vuln.MissingCause
+		if format == imageFormat {
+			missing = imageMissing(rv.Images, info.Complete)
+			state.Complete = missing == "" || rv.Evaluation == vuln.EvaluationNotCovered || rv.Evaluation == vuln.EvaluationInternal
+		}
 		b := vuln.Verdict(p, s.blockingRow(p, rv.Findings), state)
-		rv.Blocked, rv.BlockReason = b.Active(), b.Reason
+		rv.Blocked, rv.BlockReason, rv.Missing = b.Active(), b.Reason, b.Missing
+		if missing != "" && b.Reason == vuln.BlockMissingData {
+			rv.Missing = missing
+		}
 		rv.Grade = gradeIn(rv.Repository, rv.Evaluation, open[id], rv.Images, info.SyncedAt)
 		out = append(out, rv)
 	}

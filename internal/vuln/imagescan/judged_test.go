@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/vuln"
 	"github.com/guided-traffic/quader/internal/vuln/store"
 )
 
@@ -45,5 +46,25 @@ func TestR_VULN_034_ATerminalFailureNamesWhatJudgedItAndWaitsForNoTime(t *testin
 	// Without the bounds wired a terminal failure still names a judge: an empty one would read as a failure that may pass, with no wait.
 	if got := (Judges{}).judgedUnder(CodeTooManyEntries); got != LimitsJudge(ContentLimits{}) {
 		t.Fatalf("judged %q without bounds", got)
+	}
+}
+
+// R-VULN-015, R-VULN-034: the gate of a pull reads the class of a terminal failure from what it was judged under, so every code a judge is
+// written for reads back as its class: a code of a bound as over the limits, a code of reading as unreadable, a failure that may pass as
+// tried again. Unit, microseconds.
+func TestR_VULN_015_TheGateReadsTheClassOfAFailureFromItsJudge(t *testing.T) {
+	judges := Judges{Limits: LimitsJudge(ContentLimits{MaxLayers: 256}), Release: "0.123.0"}
+	for code, want := range map[string]vuln.MissingCause{
+		CodeImageTooLarge: vuln.MissingImageOverLimits, CodeTooManyLayers: vuln.MissingImageOverLimits,
+		CodeDecompressedSize: vuln.MissingImageOverLimits, CodeTooManyEntries: vuln.MissingImageOverLimits,
+		CodeLayerFormat: vuln.MissingImageUnreadable, CodePathTraversal: vuln.MissingImageUnreadable, CodeDigestMismatch: vuln.MissingImageUnreadable,
+		CodeManifestInvalid: vuln.MissingImageUnreadable, CodeReportTooLarge: vuln.MissingImageUnreadable,
+	} {
+		if got := vuln.ImageMissingCause(true, true, judges.judgedUnder(code)); got != want || !got.Terminal() {
+			t.Errorf("%s: %s, want %s", code, got, want)
+		}
+	}
+	if got := vuln.ImageMissingCause(true, true, ""); got != vuln.MissingImageScanRetried || got.Terminal() {
+		t.Errorf("a failure that may pass: %s", got)
 	}
 }

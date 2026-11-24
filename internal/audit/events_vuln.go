@@ -59,12 +59,15 @@ func init() {
 	})
 	// A download refused, or counted in the mode report (R-VULN-015, R-VULN-016). reason is malicious, triage or
 	// missing_data; enforced is false in the mode report; stored says whether the version was in the repository, false for
-	// a remote miss refused before the fetch. advisory is absent for missing_data.
+	// a remote miss refused before the fetch. advisory is absent for missing_data; missingData says what it is missing (vuln.MissingCause:
+	// a package's advisory data, or an image's database or scan), and scanError is the code of R-VULN-034 of an image's failed scan.
 	Register(EventType{
 		Name: EventVulnDownloadBlocked, Category: CategoryContent, Mode: Async,
 		Schema: `{"type":"object","properties":{` +
 			`"package":{"type":"string"},"version":{"type":"string"},"advisory":{"type":"string"},` +
-			`"reason":{"type":"string","enum":["malicious","triage","missing_data"]},"enforced":{"type":"boolean"},"stored":{"type":"boolean"}},` +
+			`"reason":{"type":"string","enum":["malicious","triage","missing_data"]},"enforced":{"type":"boolean"},"stored":{"type":"boolean"},` +
+			`"missingData":{"type":"string","enum":["advisory_data","image_database","image_not_scanned","image_scan_retried","image_over_limits","image_unreadable"]},` +
+			`"scanError":{"type":"string"}},` +
 			`"required":["package","version","reason","enforced","stored"],"additionalProperties":false}`,
 	})
 	// A public advisory names a claimed internal name (R-VULN-010): the sign of a dependency-confusion attempt.

@@ -264,6 +264,9 @@ type ImageVerdict struct {
 	// at some time, also when a later one failed.
 	ScanState string
 	Detected  bool
+	// ErrorCode is the code of R-VULN-034 of a failed scan, Judged what a terminal one was judged under (empty for a failure that may
+	// pass); both empty otherwise.
+	ErrorCode, Judged string
 	// Image says that the manifest is an image to scan (VulnImageDiscover's selection), or one the repository holds no row of yet; an
 	// index, an attachment, a referrer, a signature and an artifact that is no container image are not (Q-VULN-271).
 	Image bool
@@ -280,7 +283,7 @@ func (s *Images) Verdict(ctx context.Context, repoID int64, name string, digest 
 		if r.FindingID != "" {
 			out.Row = vuln.BlockRow{FindingID: r.FindingID, AdvisoryID: r.AdvisoryID, Kind: advisory.Kind(r.Kind), Status: vuln.Status(r.Status)}
 		}
-		out.ScanState, out.Detected, out.Image = r.ScanState, r.Detected, r.Image
+		out.ScanState, out.Detected, out.Image, out.ErrorCode, out.Judged = r.ScanState, r.Detected, r.Image, r.ErrorCode, r.Judged
 		return nil
 	})
 	return out, err
@@ -295,6 +298,10 @@ type ImageManifest struct {
 	OSFamily, OSName string
 	EOSL             bool
 	Packages         int
+	// Detected says that a detection of the manifest has finished at some time, Judged what a terminal failure was judged under: what the
+	// gate of a pull reads (R-VULN-015).
+	Detected bool
+	Judged   string
 }
 
 // Manifests lists what a tag stands for in the repositories.
@@ -307,7 +314,7 @@ func (s *Images) Manifests(ctx context.Context, repos []int64, name, tag string)
 		}
 		out = make([]ImageManifest, 0, len(rows))
 		for _, r := range rows {
-			m := ImageManifest{RepoID: r.RepoID, Digest: r.Digest, Platform: r.Platform, State: r.State, ErrorCode: r.ErrorCode, OSFamily: r.OsFamily, OSName: r.OsName, EOSL: r.OsEosl, Packages: int(r.Packages)}
+			m := ImageManifest{RepoID: r.RepoID, Digest: r.Digest, Platform: r.Platform, State: r.State, ErrorCode: r.ErrorCode, OSFamily: r.OsFamily, OSName: r.OsName, EOSL: r.OsEosl, Packages: int(r.Packages), Detected: r.Detected, Judged: r.Judged}
 			if r.ScannedUs > 0 {
 				at := microTime(r.ScannedUs)
 				m.ScannedAt = &at

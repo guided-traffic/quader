@@ -372,8 +372,8 @@ func TestR_VULN_020_R_VULN_039_PackageViews(t *testing.T) {
 	}
 }
 
-// TestR_VULN_015_MissingData: onMissingData block shows a version of an ecosystem without data blocked as missing_data, and the
-// version is pending_data.
+// TestR_VULN_015_MissingData: onMissingData block shows a version of an ecosystem without data blocked as missing_data, missing its
+// advisory data, and the version is pending_data.
 func TestR_VULN_015_MissingData(t *testing.T) {
 	e := newEnv(t)
 	e.addVersion("npm-strict", "pkg", "1.0.0")
@@ -385,6 +385,7 @@ func TestR_VULN_015_MissingData(t *testing.T) {
 			Repository, Evaluation string
 			Blocked                bool
 			BlockReason            *string
+			MissingData            *string
 		}
 	}
 	_ = json.Unmarshal(a.Body, &v)
@@ -394,11 +395,12 @@ func TestR_VULN_015_MissingData(t *testing.T) {
 	for _, r := range v.Repositories {
 		switch r.Repository {
 		case "it/npm-strict":
-			if r.Evaluation != "pending_data" || !r.Blocked || r.BlockReason == nil || *r.BlockReason != "missing_data" {
+			if r.Evaluation != "pending_data" || !r.Blocked || r.BlockReason == nil || *r.BlockReason != "missing_data" ||
+				r.MissingData == nil || *r.MissingData != "advisory_data" {
 				t.Errorf("npm-strict = %+v", r)
 			}
 		default:
-			if r.Evaluation != "pending_data" || r.Blocked {
+			if r.Evaluation != "pending_data" || r.Blocked || r.MissingData != nil {
 				t.Errorf("%s = %+v", r.Repository, r)
 			}
 		}

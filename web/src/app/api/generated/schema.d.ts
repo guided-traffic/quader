@@ -13115,11 +13115,20 @@ export interface components {
         VulnerabilityBlockReason: "malicious" | "triage";
         /**
          * @description Why a version's download is refused in a repository (R-VULN-015): a finding blocks it (`malicious`, `triage`), or the
-         *     repository sets `onMissingData: block` and the ecosystem's advisory data was never imported completely
-         *     (`missing_data`, no finding behind it).
+         *     repository sets `onMissingData: block` and what the version is checked against is not there yet (`missing_data`, no
+         *     finding behind it; `missingData` says what).
          * @enum {string}
          */
         VulnerabilityVersionBlockReason: "malicious" | "triage" | "missing_data";
+        /**
+         * @description What a `missing_data` block is missing (R-VULN-015, R-VULN-016). A package: `advisory_data`, its ecosystem's advisory data
+         *     has not been imported completely. An image: `image_database`, no vulnerability database for images has been imported yet;
+         *     `image_not_scanned`, the scan of a platform image has not finished yet; `image_scan_retried`, it failed for a reason that
+         *     may pass and is tried again; `image_over_limits`, it stopped at a bound of the scanning and waits for an operator to raise
+         *     it; `image_unreadable`, its content could not be read and waits for a release that reads it (R-VULN-034).
+         * @enum {string}
+         */
+        VulnerabilityMissingData: "advisory_data" | "image_database" | "image_not_scanned" | "image_scan_retried" | "image_over_limits" | "image_unreadable";
         /** @enum {string} */
         VulnerabilityDismissalReason: "not_exploitable" | "false_positive" | "risk_accepted" | "mitigated" | "test_only";
         /** @enum {string} */
@@ -14886,6 +14895,7 @@ export interface components {
                 syncedAt?: string | null;
                 blocked: boolean;
                 blockReason: components["schemas"]["VulnerabilityVersionBlockReason"] | null;
+                missingData?: components["schemas"]["VulnerabilityMissingData"] | null;
                 findings: components["schemas"]["VulnerabilityFinding"][];
                 /** @description For a version of the format oci, the manifests the version stands for, one per platform. */
                 images?: components["schemas"]["VulnerabilityImageState"][];

@@ -82,6 +82,11 @@ The seam of the repository's settings change is `repository.Hooks.OnUpdated(ctx,
 `Policy.QueryEnforce()` and `QueryBlockMalicious()` are the `$3` and `$4` of the lateral join of R-VULN-015 (the join runs while the repository is scanned, also in the mode
 `report`, so that the would-be block can be counted); `vuln.Verdict(policy, BlockRow, DataState)` decides: a blocking row, else `missing_data` when `onMissingData` is `block` and the
 ecosystem is not complete, else nothing; `Block.Refused()` is false in the mode `report`. `Block.Code()` is the problem code (`vulnerability_blocked` or `vulnerability_data_missing`).
+A `missing_data` block carries what it is missing, `Block.Missing` ([missing.go](../../internal/vuln/missing.go) `vuln.MissingCause`, Q-VULN-272):
+`advisory_data` for a package, `image_database` for an image while the data state of `OCI` is not complete; the image gate replaces it by
+`vuln.ImageMissingCause(databaseImported, failed, judged)`, the state of the manifest's scan row, with the row's code in `Block.ScanError`.
+`enforce.missingText` words each cause with what the client does next (the table of R-VULN-016), `record` writes `missingData` and
+`scanError` into the audit event, and the version report sets the API's `missingData` from the same cause.
 `Policy.BlockReasonOf(kind, status)` is the same rule for the API's `blocked` and `blockReason`, so the report and the download agree.
 
 ### Format contract
@@ -696,10 +701,14 @@ for a code of a bound, the release for a code of reading; `VulnImageDue` and `Vu
 worker's `Judges` (wired from `vulnerabilities.images` and `buildinfo`), with no back-off and whatever its attempts. The result enters the lifecycle of findings
 through `evaluate.Service.ApplyImage`, so an image's finding differs from a package's only in its version (the manifest digest) and its
 `components`. A pull is gated by `enforce.GateImage` through the Host port `RefuseImage` (Q-VULN-138), on what `VulnImageVerdict` reads
-in one statement: the blocking finding, whether a detection has finished, and `image`, the discovery's selection applied to the manifest's
-row (Q-VULN-271). A manifest that is no image to scan (an index, an attestation, a signature) is never held by `onMissingData: block`, so
-`docker pull` gets the index and is gated at the platform image it fetches next; a manifest the repository holds no row of (a remote's miss
-by digest, before the fetch) counts as an image. **The working space is the scanner's
+in one statement: the blocking finding, whether a detection has finished, the row's state, `error_code` and `judged`, and `image`, the
+discovery's selection applied to the manifest's row (Q-VULN-271). A manifest that is no image to scan (an index, an attestation, a signature)
+is never held by `onMissingData: block`, nor is an image of a repository that is not covered, so `docker pull` gets the index and is gated at
+the platform image it fetches next; a manifest the repository holds no row of (a remote's miss by digest, before the fetch) counts as an image.
+The refusal names the cause by the row (Q-VULN-272): no database, not scanned yet, tried again, or a terminal failure whose class is the
+prefix of `judged` (`vuln.JudgedLimitsPrefix`, `vuln.JudgedReleasePrefix`, which `imagescan.LimitsJudge` and `ReleaseJudge` write). The
+version view reads `detected` and `judged` of every platform image from `VulnImageManifests` and holds the tag as the gate holds a pull
+(`report.imageMissing`: the cause an operator must act on first). **The working space is the scanner's
 spool** (Q-VULN-145): an analysis holds the image plus 64 MiB, a detection 64 MiB, before its first file; the worker writes nothing of a scan
 to its disk, and the chart checks no worker spool for the image scanning (Q-HA-318, revisited).
 

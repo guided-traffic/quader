@@ -317,34 +317,32 @@ func (s *Server) GetPackageVersionVulnerabilities(w http.ResponseWriter, r *http
 		httpserver.Problem(w, r, err)
 		return
 	}
-	out := gen.VulnerabilityVersionReport{PackageId: id, Version: version}
-	out.Repositories = make([]struct {
+	// repositoryItem is the generated element of the answer's repositories, an anonymous struct.
+	type repositoryItem = struct {
 		BlockReason *gen.VulnerabilityVersionBlockReason `json:"blockReason"`
 		Blocked     bool                                 `json:"blocked"`
 		Evaluation  gen.VulnerabilityEvaluation          `json:"evaluation"`
 		Findings    []gen.VulnerabilityFinding           `json:"findings"`
 		Grade       gen.VulnerabilityGrade               `json:"grade"`
 		Images      *[]gen.VulnerabilityImageState       `json:"images,omitempty"`
+		MissingData *gen.VulnerabilityMissingData        `json:"missingData,omitempty"`
 		Repository  string                               `json:"repository"`
 		SyncedAt    *time.Time                           `json:"syncedAt,omitempty"`
-	}, 0, len(repos))
+	}
+	out := gen.VulnerabilityVersionReport{PackageId: id, Version: version}
+	out.Repositories = make([]repositoryItem, 0, len(repos))
 	for _, rv := range repos {
-		item := struct {
-			BlockReason *gen.VulnerabilityVersionBlockReason `json:"blockReason"`
-			Blocked     bool                                 `json:"blocked"`
-			Evaluation  gen.VulnerabilityEvaluation          `json:"evaluation"`
-			Findings    []gen.VulnerabilityFinding           `json:"findings"`
-			Grade       gen.VulnerabilityGrade               `json:"grade"`
-			Images      *[]gen.VulnerabilityImageState       `json:"images,omitempty"`
-			Repository  string                               `json:"repository"`
-			SyncedAt    *time.Time                           `json:"syncedAt,omitempty"`
-		}{
+		item := repositoryItem{
 			Blocked: rv.Blocked, Evaluation: gen.VulnerabilityEvaluation(rv.Evaluation), Repository: rv.Repository, SyncedAt: rv.SyncedAt,
 			Findings: make([]gen.VulnerabilityFinding, 0, len(rv.Findings)), Grade: toGrade(rv.Grade),
 		}
 		if rv.Blocked && rv.BlockReason != "" {
 			b := gen.VulnerabilityVersionBlockReason(rv.BlockReason)
 			item.BlockReason = &b
+		}
+		if rv.Blocked && rv.Missing != "" {
+			m := gen.VulnerabilityMissingData(rv.Missing)
+			item.MissingData = &m
 		}
 		for _, f := range rv.Findings {
 			item.Findings = append(item.Findings, toFinding(f))

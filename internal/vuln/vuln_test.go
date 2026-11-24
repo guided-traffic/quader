@@ -221,6 +221,18 @@ func TestR_VULN_015_Verdict(t *testing.T) {
 		if !b.Refused() || b.Reason != BlockMissingData || b.Code() != errs.CodeVulnerabilityDataMissing || b.FindingID != "" {
 			t.Errorf("%+v", b)
 		}
+		// What is missing is named by the format: a package's advisory data, an image's database.
+		if b.Missing != MissingAdvisoryData {
+			t.Errorf("a package misses %q", b.Missing)
+		}
+		images := blockMissing
+		images.Ecosystem = advisory.EcosystemOCI
+		if b := Verdict(images, BlockRow{}, missing); b.Missing != MissingImageDatabase {
+			t.Errorf("an image misses %q", b.Missing)
+		}
+		if b := Verdict(blockMissing, row, missing); b.Missing != "" {
+			t.Errorf("a finding's block names missing data: %+v", b)
+		}
 	})
 	t.Run("stale data is not missing", func(t *testing.T) {
 		if b := Verdict(blockMissing, BlockRow{}, advisory.DataState{Complete: true, Stale: true}); b.Active() {

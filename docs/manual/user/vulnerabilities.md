@@ -103,6 +103,12 @@ first, 25 at a time; **Load more** adds the next 25. Select a segment of the car
 The versions table of the package shows the grade of each version. The page of a version reads **Blocked in** and the repository
 when the version is blocked there.
 
+A repository can refuse what it cannot check yet. The reason then says what is missing, and a sentence after it what happens next: for a
+package **advisory data not yet available**; for an image **the image has not been scanned for vulnerabilities yet** (it can be pulled once
+its scan has finished, usually within a minute), **the vulnerability scan of the image did not finish and is tried again**, **the image
+exceeds the limits of the scan and cannot be scanned** or **the scan could not read the content of the image** (these two need an
+administrator), or **no vulnerability database for images has been imported yet**. A client that pulls or downloads it is told the same.
+
 ## Advisory sources
 
 If you may read the settings, the button **Advisory sources** beside **Export CSV** at the top of the report opens the table of sources: per source and ecosystem its mode, whether its data is current or stale, when it was last synchronised, the failed runs in a row with the last error, the number of records, rejected records and ranges Quader cannot compare, and the next run. With the permission to change settings you can start a synchronisation from there.

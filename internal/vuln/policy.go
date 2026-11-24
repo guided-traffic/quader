@@ -91,6 +91,10 @@ type Block struct {
 	// FindingID and AdvisoryID name the blocking finding and its canonical advisory; empty for missing_data.
 	FindingID  string
 	AdvisoryID string
+	// Missing is what a missing_data block is missing, and ScanError the code of R-VULN-034 of an image's failed scan; both empty for
+	// every other reason.
+	Missing   MissingCause
+	ScanError string
 	// Enforced is false in the mode report: the condition holds and nothing is refused.
 	Enforced bool
 }
@@ -116,7 +120,8 @@ func (b Block) Code() string {
 //  1. a policy that is not Enabled blocks nothing;
 //  2. a blocking row decides, with the reason [Policy.BlockReasonOf] gives;
 //  3. else, with onMissingData block and an ecosystem whose data is not complete, the reason is missing_data (stale data
-//     does not count as missing);
+//     does not count as missing), missing the advisory data or, for images, the database; the gate of an image names the state of its
+//     scan instead ([ImageMissingCause]);
 //  4. in the mode report the verdict is returned with Enforced false.
 //
 // data is the state of Policy.Ecosystem as States answers it; the caller does not look it up for a version without a
@@ -132,7 +137,7 @@ func Verdict(p Policy, row BlockRow, data advisory.DataState) Block {
 		}
 	}
 	if p.OnMissingData == MissingBlock && !data.Complete {
-		return Block{Reason: BlockMissingData, Enforced: enforced}
+		return Block{Reason: BlockMissingData, Missing: dataCause(p.Ecosystem), Enforced: enforced}
 	}
 	return Block{}
 }

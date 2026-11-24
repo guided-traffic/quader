@@ -4,7 +4,7 @@ import { VulnerabilityFinding, VulnerabilityVersionReport } from '../../api/vuln
 import { GradeCard } from '../../shared/vulnerability/grade-card';
 import { BAR_SEVERITIES, BarQueries, BarSeverity } from '../../shared/vulnerability/severity-bar';
 import { VersionFindings } from './version-findings';
-import { blockReasonLabel } from './vuln-labels';
+import { blockReasonLabel, missingDataLabel, missingDataNext } from './vuln-labels';
 
 /** The query of each segment of the card's bar: the tab's severity filter, merged into the page's address (Q-UI-379). */
 const BAR_QUERIES = Object.fromEntries(BAR_SEVERITIES.map((s) => [s, { severity: s }])) as unknown as BarQueries;
@@ -33,7 +33,8 @@ export function blockedRepositories(report: VulnerabilityVersionReport | null): 
 /**
  * The *Vulnerabilities* tab of the package page (R-VULN-023): per readable repository that holds the selected version its grade
  * card (R-UI-093: the grade, its rule, the counts as a bar, when it was checked; N/A with why it is not evaluated), a block with
- * its reason (*malicious package*, or *blocked in triage* with the finding that blocks), and the open findings with severity,
+ * its reason (*malicious package*, *blocked in triage* with the finding that blocks, or what a missing-data block is missing with
+ * what happens next: a package's advisory data, an image's database or the state of its scan), and the open findings with severity,
  * identifier, status and fixed versions, each linking to the finding, 25 at a time from the findings API and narrowed by the bar's
  * segments (`<quader-version-findings>`, Q-UI-379). The report is the API's (`GET …/versions/{version}/vulnerabilities`); the page
  * shows nothing it does not carry.
@@ -65,7 +66,10 @@ export function blockedRepositories(report: VulnerabilityVersionReport | null): 
               <span>
                 <strong i18n="@@pkg.vuln.blocked">Blocked.</strong>
                 <ng-container i18n="@@pkg.vuln.blocked-reason">Downloads of this version are refused. Reason:</ng-container>
-                {{ repo.blockReason ? reason(repo.blockReason) : '' }}.
+                {{ reasonOf(repo) }}.
+                @if (repo.blockReason === 'missing_data' && missingNext(repo.missingData); as next) {
+                  {{ next }}
+                }
                 @for (f of blocking(repo.findings); track f.id) {
                   <a [routerLink]="['/projects', f.project, 'vulnerabilities', 'findings', f.id]" translate="no">{{ f.advisory }}</a>
                 }
@@ -96,7 +100,13 @@ export class PackageVulnerabilities {
   /** The severity the card's bar narrowed the findings to (the address's `severity`), or null. */
   readonly severity = input<BarSeverity | null>(null);
 
-  protected reason = blockReasonLabel;
+  protected readonly missingNext = missingDataNext;
+
+  /** The reason of a repository's block: a missing_data block by what it is missing (R-VULN-015), else the reason's label. */
+  protected reasonOf(repo: VulnerabilityVersionReport['repositories'][number]): string {
+    if (!repo.blockReason) return '';
+    return repo.blockReason === 'missing_data' ? missingDataLabel(repo.missingData) : blockReasonLabel(repo.blockReason);
+  }
   protected readonly openCount = openCount;
   protected readonly barQueries = BAR_QUERIES;
 

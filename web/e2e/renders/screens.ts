@@ -1,4 +1,4 @@
-import { Locator, Page, expect } from '@playwright/test';
+import { Locator, Page, Route, expect } from '@playwright/test';
 import {
   Kind,
   kinds,
@@ -2565,6 +2565,53 @@ const unavailableNotice = [
 ];
 
 /**
+ * The *Vulnerabilities* tab of an image its repository refuses while it is not checked (R-VULN-015, R-VULN-016, Q-VULN-272): the notice
+ * names what the pull is missing and what happens next, first a platform image not scanned yet, then one whose scan stopped at a bound of
+ * the scanning, the longest of the reasons. The render database scans no image, so the report is answered in the browser.
+ */
+async function* imageNotChecked(page: Page): AsyncGenerator<string> {
+  const report = (url: URL): boolean => url.pathname.endsWith('/versions/1.4.0/vulnerabilities');
+  const answer = (missingData: string, state: string, errorCode?: string) => (route: Route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        packageId: 'render',
+        version: '1.4.0',
+        repositories: [
+          {
+            repository: `${mainProject}/images`,
+            evaluation: state === 'failed' ? 'scan_failed' : 'pending_scan',
+            blocked: true,
+            blockReason: 'missing_data',
+            missingData,
+            findings: [],
+            grade: {
+              grade: 'N/A', open: { critical: 0, high: 0, medium: 0, low: 0, none: 0, unknown: 0 }, fixable: 0, eosl: false, checkedAt: null,
+              evaluation: state === 'failed' ? 'scan_failed' : 'pending_scan', repository: `${mainProject}/images`,
+            },
+            images: [
+              { digest: `sha256:${'a1'.repeat(32)}`, platform: 'linux/amd64', state, ...(errorCode ? { errorCode } : {}), scannedAt: null },
+              { digest: `sha256:${'b2'.repeat(32)}`, platform: 'linux/arm64', state: 'pending', scannedAt: null },
+            ],
+          },
+        ],
+      }),
+    });
+  for (const [missingData, state, errorCode, name] of [
+    ['image_not_scanned', 'pending', undefined, 'not-scanned'],
+    ['image_over_limits', 'failed', 'image_too_large', 'over-limits'],
+  ] as const) {
+    await page.unroute(report);
+    await page.route(report, answer(missingData, state, errorCode));
+    await page.reload();
+    await expect(page.locator('quader-package-vulnerabilities .banner-warning')).toBeVisible();
+    yield name;
+  }
+  await page.unroute(report);
+}
+
+/**
  * The report of a project whose advisory data is stale for one ecosystem and not imported for another (R-VULN-022, Q-UI-966): an
  * administrator reads the banners with their link to the advisory sources; a reader who cannot act on them finds the same facts in
  * the report's closed section **About these counts**, with the coverage line.
@@ -2780,6 +2827,8 @@ export const screens: readonly Screen[] = [
   // The tab's findings narrowed by a segment of the card's bar (Q-UI-379).
   { id: 'package-version-npm-graded-critical', path: `${ver(P, gradedPackage, gradedPackage.version)}?severity=critical`, kinds: ['plain'] },
   { id: 'package-version-oci', path: ver(P, ociPackage, '1.4.0'), kinds: all, tables: 'quader-data-table.version-files' },
+  // An image refused while it is not checked: the notice names the state of its scan and what happens next (Q-VULN-272).
+  { id: 'package-version-oci-not-checked', path: `${ver(P, ociPackage, '1.4.0')}?tab=vulnerabilities`, kinds: ['plain'], walk: imageNotChecked, de: true },
   // The image a remote cached (W-24): its versions, and the tags whose index it holds one platform of and none of, with their platforms.
   { id: 'package-oci-cache', path: pkg(O, { format: 'oci', name: remoteImage.name }), kinds: all },
   { id: 'package-version-oci-cache-partial', path: `${ver(O, { format: 'oci', name: remoteImage.name }, remoteImage.partial)}?tab=details`, kinds: all },

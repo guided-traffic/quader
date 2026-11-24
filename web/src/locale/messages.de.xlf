@@ -46081,7 +46081,7 @@
     </unit>
     <unit id="pkg.vuln.none-repositories">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/package-vulnerabilities.ts:48,50</note>
+        <note category="location">src/app/features/vulnerabilities/package-vulnerabilities.ts:49,51</note>
       </notes>
       <segment>
         <source>No repository you can read holds this version.</source>
@@ -46090,7 +46090,7 @@
     </unit>
     <unit id="pkg.vuln.blocked">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/package-vulnerabilities.ts:66,67</note>
+        <note category="location">src/app/features/vulnerabilities/package-vulnerabilities.ts:67,68</note>
       </notes>
       <segment>
         <source>Blocked.</source>
@@ -46099,7 +46099,7 @@
     </unit>
     <unit id="pkg.vuln.blocked-reason">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/package-vulnerabilities.ts:67,68</note>
+        <note category="location">src/app/features/vulnerabilities/package-vulnerabilities.ts:68,69</note>
       </notes>
       <segment>
         <source>Downloads of this version are refused. Reason:</source>
@@ -46108,7 +46108,7 @@
     </unit>
     <unit id="pkg.vuln.unavailable">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/package-vulnerabilities.ts:87,91</note>
+        <note category="location">src/app/features/vulnerabilities/package-vulnerabilities.ts:91,95</note>
       </notes>
       <segment>
         <source>The vulnerability report of this version is not available.</source>
@@ -47040,7 +47040,7 @@
     </unit>
     <unit id="vuln.severity.critical">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:21</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:22</note>
       </notes>
       <segment>
         <source>Critical</source>
@@ -47049,7 +47049,7 @@
     </unit>
     <unit id="vuln.severity.high">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:23</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:24</note>
       </notes>
       <segment>
         <source>High</source>
@@ -47058,7 +47058,7 @@
     </unit>
     <unit id="vuln.severity.medium">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:25</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:26</note>
       </notes>
       <segment>
         <source>Medium</source>
@@ -47067,7 +47067,7 @@
     </unit>
     <unit id="vuln.severity.low">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:27</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:28</note>
       </notes>
       <segment>
         <source>Low</source>
@@ -47076,7 +47076,7 @@
     </unit>
     <unit id="vuln.severity.none">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:29</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:30</note>
       </notes>
       <segment>
         <source>None</source>
@@ -47085,7 +47085,7 @@
     </unit>
     <unit id="vuln.severity.unknown">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:31</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:32</note>
       </notes>
       <segment>
         <source>Unknown</source>
@@ -47094,7 +47094,7 @@
     </unit>
     <unit id="vuln.status.needs-triage">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:56</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:57</note>
       </notes>
       <segment>
         <source>Needs triage</source>
@@ -47103,7 +47103,7 @@
     </unit>
     <unit id="vuln.status.confirmed">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:58</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:59</note>
       </notes>
       <segment>
         <source>Confirmed</source>
@@ -47112,7 +47112,7 @@
     </unit>
     <unit id="vuln.status.blocked">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:60</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:61</note>
       </notes>
       <segment>
         <source>Blocked</source>
@@ -47121,7 +47121,7 @@
     </unit>
     <unit id="vuln.status.dismissed">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:62</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:63</note>
       </notes>
       <segment>
         <source>Dismissed</source>
@@ -47130,7 +47130,7 @@
     </unit>
     <unit id="vuln.status.resolved">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:64</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:65</note>
       </notes>
       <segment>
         <source>Resolved</source>
@@ -47139,7 +47139,7 @@
     </unit>
     <unit id="vuln.block-reason.malicious">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:72</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:73</note>
       </notes>
       <segment>
         <source>malicious package</source>
@@ -47148,7 +47148,7 @@
     </unit>
     <unit id="vuln.block-reason.missing-data">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:74</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:75</note>
       </notes>
       <segment>
         <source>advisory data not yet available</source>
@@ -47157,16 +47157,115 @@
     </unit>
     <unit id="vuln.block-reason.triage">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:76</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:77</note>
       </notes>
       <segment>
         <source>blocked in triage</source>
         <target>in der Triage gesperrt</target>
       </segment>
     </unit>
+    <unit id="vuln.missing-data.image-database">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:89</note>
+      </notes>
+      <segment>
+        <source>no vulnerability database for images has been imported yet</source>
+        <target>für Images wurde noch keine Schwachstellendatenbank importiert</target>
+      </segment>
+    </unit>
+    <unit id="vuln.missing-data.image-not-scanned">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:91</note>
+      </notes>
+      <segment>
+        <source>the image has not been scanned for vulnerabilities yet</source>
+        <target>das Image wurde noch nicht auf Schwachstellen gescannt</target>
+      </segment>
+    </unit>
+    <unit id="vuln.missing-data.image-scan-retried">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:93</note>
+      </notes>
+      <segment>
+        <source>the vulnerability scan of the image did not finish and is tried again</source>
+        <target>der Schwachstellenscan des Images wurde nicht abgeschlossen und wird wiederholt</target>
+      </segment>
+    </unit>
+    <unit id="vuln.missing-data.image-over-limits">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:95</note>
+      </notes>
+      <segment>
+        <source>the image exceeds the limits of the scan and cannot be scanned</source>
+        <target>das Image überschreitet die Grenzen des Scans und kann nicht gescannt werden</target>
+      </segment>
+    </unit>
+    <unit id="vuln.missing-data.image-unreadable">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:97</note>
+      </notes>
+      <segment>
+        <source>the scan could not read the content of the image</source>
+        <target>der Scan konnte den Inhalt des Images nicht lesen</target>
+      </segment>
+    </unit>
+    <unit id="vuln.missing-data.next.advisory-data">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:107</note>
+      </notes>
+      <segment>
+        <source>Downloads are served once the advisory data has been imported.</source>
+        <target>Downloads werden ausgeliefert, sobald die Advisory-Daten importiert sind.</target>
+      </segment>
+    </unit>
+    <unit id="vuln.missing-data.next.image-database">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:109</note>
+      </notes>
+      <segment>
+        <source>Pulls are served once the database has been imported and the image scanned. Ask an administrator if this persists.</source>
+        <target>Das Image kann gezogen werden, sobald die Datenbank importiert und das Image gescannt ist. Wenden Sie sich an einen Administrator, wenn das so bleibt.</target>
+      </segment>
+    </unit>
+    <unit id="vuln.missing-data.next.image-not-scanned">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:111</note>
+      </notes>
+      <segment>
+        <source>Pulls are served once its scan has finished, usually within a minute.</source>
+        <target>Das Image kann gezogen werden, sobald sein Scan abgeschlossen ist, meist innerhalb einer Minute.</target>
+      </segment>
+    </unit>
+    <unit id="vuln.missing-data.next.image-scan-retried">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:113</note>
+      </notes>
+      <segment>
+        <source>Try again in a few minutes. Ask an administrator if this persists.</source>
+        <target>Versuchen Sie es in einigen Minuten erneut. Wenden Sie sich an einen Administrator, wenn das so bleibt.</target>
+      </segment>
+    </unit>
+    <unit id="vuln.missing-data.next.image-over-limits">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:115</note>
+      </notes>
+      <segment>
+        <source>Ask an administrator: the limits of the image scanning can be raised.</source>
+        <target>Wenden Sie sich an einen Administrator: Die Grenzen der Image-Analyse lassen sich anheben.</target>
+      </segment>
+    </unit>
+    <unit id="vuln.missing-data.next.image-unreadable">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:117</note>
+      </notes>
+      <segment>
+        <source>Ask an administrator.</source>
+        <target>Wenden Sie sich an einen Administrator.</target>
+      </segment>
+    </unit>
     <unit id="vuln.kind.malicious">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:82</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:125</note>
       </notes>
       <segment>
         <source>Malicious package</source>
@@ -47175,7 +47274,7 @@
     </unit>
     <unit id="vuln.kind.vulnerability">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:83</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:126</note>
       </notes>
       <segment>
         <source>Vulnerability</source>
@@ -47184,7 +47283,7 @@
     </unit>
     <unit id="vuln.dismissal.not-exploitable">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:89</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:132</note>
       </notes>
       <segment>
         <source>Not exploitable</source>
@@ -47193,7 +47292,7 @@
     </unit>
     <unit id="vuln.dismissal.false-positive">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:91</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:134</note>
       </notes>
       <segment>
         <source>False positive</source>
@@ -47202,7 +47301,7 @@
     </unit>
     <unit id="vuln.dismissal.risk-accepted">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:93</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:136</note>
       </notes>
       <segment>
         <source>Risk accepted</source>
@@ -47211,7 +47310,7 @@
     </unit>
     <unit id="vuln.dismissal.mitigated">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:95</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:138</note>
       </notes>
       <segment>
         <source>Mitigated elsewhere</source>
@@ -47220,7 +47319,7 @@
     </unit>
     <unit id="vuln.dismissal.test-only">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:97</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:140</note>
       </notes>
       <segment>
         <source>Test code only</source>
@@ -47229,7 +47328,7 @@
     </unit>
     <unit id="vuln.resolved.no-longer-affected">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:104</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:147</note>
       </notes>
       <segment>
         <source>The version is no longer affected</source>
@@ -47238,7 +47337,7 @@
     </unit>
     <unit id="vuln.resolved.withdrawn">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:106</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:149</note>
       </notes>
       <segment>
         <source>The advisory was withdrawn</source>
@@ -47247,7 +47346,7 @@
     </unit>
     <unit id="vuln.resolved.removed">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:108</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:151</note>
       </notes>
       <segment>
         <source>The version was removed</source>
@@ -47256,7 +47355,7 @@
     </unit>
     <unit id="vuln.resolved.scanning-disabled">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:110</note>
+        <note category="location">src/app/features/vulnerabilities/vuln-labels.ts:153</note>
       </notes>
       <segment>
         <source>Scanning was switched off</source>

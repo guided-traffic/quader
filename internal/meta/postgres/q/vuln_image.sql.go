@@ -665,7 +665,7 @@ SELECT g.repo_id::bigint AS repo_id, ('sha256:' || encode(g.digest, 'hex'))::tex
        COALESCE(s.state, '')::text AS state, COALESCE(s.error_code, '')::text AS error_code,
        COALESCE((extract(epoch FROM s.scanned_at) * 1000000)::bigint, 0)::bigint AS scanned_us,
        COALESCE(s.os_family, '')::text AS os_family, COALESCE(s.os_name, '')::text AS os_name, COALESCE(s.os_eosl, false)::boolean AS os_eosl,
-       COALESCE(s.packages, 0)::int AS packages
+       COALESCE(s.packages, 0)::int AS packages, (s.db_digest IS NOT NULL)::boolean AS detected, COALESCE(s.judged, '')::text AS judged
   FROM images g
   LEFT JOIN vuln_image_scan s ON s.repo_id = g.repo_id AND s.name = g.name AND s.digest = g.digest
  WHERE g.child OR NOT EXISTS (SELECT 1 FROM images c WHERE c.repo_id = g.repo_id AND c.child)
@@ -689,9 +689,12 @@ type VulnImageManifestsRow struct {
 	OsName    string
 	OsEosl    bool
 	Packages  int32
+	Detected  bool
+	Judged    string
 }
 
-// The manifests a tag stands for in the repositories, with how far each is scanned: the version views of the report (R-VULN-020). The tag
+// The manifests a tag stands for in the repositories, with how far each is scanned (detected and judged as the gate of a pull reads them,
+// R-VULN-015): the version views of the report (R-VULN-020). The tag
 // item's blob is the manifest it points at (R-OCI-007); the tag of a remote repository is its cache entry (R-OCI-036). For an index these
 // are its platform images (Q-VULN-269): the children the repository stores that VulnImageDiscover's selection scans. A child that is an
 // attachment (Docker's attestation manifest, platform unknown/unknown) is no image of the tag, and a child a remote has not fetched is not
@@ -716,6 +719,8 @@ func (q *Queries) VulnImageManifests(ctx context.Context, arg VulnImageManifests
 			&i.OsName,
 			&i.OsEosl,
 			&i.Packages,
+			&i.Detected,
+			&i.Judged,
 		); err != nil {
 			return nil, err
 		}
@@ -1073,7 +1078,7 @@ func (q *Queries) VulnImageUpsertAdvisory(ctx context.Context, arg VulnImageUpse
 const vulnImageVerdict = `-- name: VulnImageVerdict :one
 SELECT COALESCE(blk.id::text, '')::text AS finding_id, COALESCE(blk.advisory_id, '')::text AS advisory_id,
        COALESCE(blk.kind, '')::text AS kind, COALESCE(blk.status, '')::text AS status, COALESCE(s.state, '')::text AS scan_state,
-       (s.db_digest IS NOT NULL)::boolean AS detected,
+       (s.db_digest IS NOT NULL)::boolean AS detected, COALESCE(s.error_code, '')::text AS error_code, COALESCE(s.judged, '')::text AS judged,
        (m.digest IS NULL
         OR (m.media_type IN ('application/vnd.oci.image.manifest.v1+json', 'application/vnd.docker.distribution.manifest.v2+json')
             AND COALESCE(m.artifact_type, '') IN ('', 'application/vnd.oci.image.config.v1+json', 'application/vnd.docker.container.image.v1+json')
@@ -1109,6 +1114,8 @@ type VulnImageVerdictRow struct {
 	Status     string
 	ScanState  string
 	Detected   bool
+	ErrorCode  string
+	Judged     string
 	Image      bool
 }
 
@@ -1117,7 +1124,8 @@ type VulnImageVerdictRow struct {
 // index, an attachment (Docker's attestation manifest), a referrer, a signature and an artifact that is no container image are no image
 // and are never scanned, so the missing-data rule does not hold them (Q-VULN-271); the platform image a client fetches next is gated on its
 // own. A manifest the repository holds no row of (a remote's miss by digest, before its fetch) counts as an image: what it is is not known
-// yet. One statement, the finding's unique index and the keys of the scan row and of the manifest row.
+// yet. error_code and judged say why a scan failed and whether it is tried again, for the text of the refusal. One statement, the
+// finding's unique index and the keys of the scan row and of the manifest row.
 func (q *Queries) VulnImageVerdict(ctx context.Context, arg VulnImageVerdictParams) (VulnImageVerdictRow, error) {
 	row := q.db.QueryRow(ctx, vulnImageVerdict,
 		arg.RepoID,
@@ -1134,6 +1142,8 @@ func (q *Queries) VulnImageVerdict(ctx context.Context, arg VulnImageVerdictPara
 		&i.Status,
 		&i.ScanState,
 		&i.Detected,
+		&i.ErrorCode,
+		&i.Judged,
 		&i.Image,
 	)
 	return i, err

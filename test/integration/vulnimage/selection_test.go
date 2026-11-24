@@ -235,7 +235,8 @@ func TestR_VULN_034_AnImageIsItsPlatformImagesAndAnAttestationIsNoImageToScan(t 
 
 // R-VULN-015, Q-VULN-269: with onMissingData block a pull of Docker Hub's shape is gated at its platform images. The index, by tag and by
 // digest, and an attestation manifest pass by themselves, since neither is an image to scan; a platform image is refused with
-// vulnerability_data_missing until its detection has finished, and served after. Integration, about 3 s, bytes.
+// vulnerability_data_missing, told it is not scanned yet, until its detection has finished, and served after; the version view of the tag
+// says the same. Integration, about 3 s, bytes.
 func TestR_VULN_015_AnIndexAndAnAttestationPassTheGateAndThePlatformImageIsGated(t *testing.T) {
 	s := newSelectionWith(t, `{"vulnerabilities":{"onMissingData":"block"}}`)
 	images, attestations := s.multiPlatform("library/ubuntu")
@@ -257,12 +258,21 @@ func TestR_VULN_015_AnIndexAndAnAttestationPassTheGateAndThePlatformImageIsGated
 		}
 	}
 	a := pull(images[0], manifestType)
-	if a.Status != http.StatusForbidden || !strings.Contains(string(a.Body), `"DENIED"`) || !strings.Contains(string(a.Body), "blocks what it cannot evaluate") {
+	if a.Status != http.StatusForbidden || !strings.Contains(string(a.Body), `"DENIED"`) ||
+		!strings.Contains(string(a.Body), "has not been scanned for vulnerabilities yet") || strings.Contains(string(a.Body), "advisory data") {
 		t.Fatalf("a platform image not scanned yet: %d %s %v", a.Status, a.Body, a.Header)
+	}
+	// The version view says what the pull says: blocked, the image not scanned yet.
+	if r := s.versionReport("library/ubuntu", "1.0").Repositories[0]; !r.Blocked || r.MissingData != "image_not_scanned" {
+		t.Fatalf("the version view of a tag whose platform images are not scanned: %+v", r)
 	}
 	s.scanned("library/ubuntu", images[0])
 	if a := pull(images[0], manifestType); a.Status != http.StatusOK {
 		t.Fatalf("a scanned platform image: %d %s", a.Status, a.Body)
+	}
+	s.scanned("library/ubuntu", images[1])
+	if r := s.versionReport("library/ubuntu", "1.0").Repositories[0]; r.Blocked || r.MissingData != "" {
+		t.Fatalf("the version view with both platform images scanned: %+v", r)
 	}
 }
 

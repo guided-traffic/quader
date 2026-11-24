@@ -212,7 +212,8 @@ for every well-known repository), or a mirror reached by a redirect within the e
 ### H-814 · The first pull of a remote image is served before it is scanned
 
 A scan is asynchronous, and a pull-through serves the manifest it fetched. Unless the repository sets `onMissingData: block`, the first client
-of a new image gets it before any finding exists. The setting refuses it instead, at the cost of a failed first pull.
+of a new image gets it before any finding exists. The setting refuses it instead, at the cost of a failed first pull, whose text tells the
+client that the image is not scanned yet and to try again in a minute (R-VULN-016, Q-VULN-272).
 
 ### H-815 · The database has no malicious-package source
 

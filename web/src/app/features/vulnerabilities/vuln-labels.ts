@@ -3,6 +3,7 @@ import {
   VulnerabilityDismissalReason,
   VulnerabilityFinding,
   VulnerabilityKind,
+  VulnerabilityMissingData,
   VulnerabilityResolvedReason,
   VulnerabilitySeverity,
   VulnerabilityStatus,
@@ -74,6 +75,48 @@ export function blockReasonLabel(r: VulnerabilityBlockReason | VulnerabilityVers
       return $localize`:@@vuln.block-reason.missing-data:advisory data not yet available`;
     default:
       return $localize`:@@vuln.block-reason.triage:blocked in triage`;
+  }
+}
+
+/**
+ * What a `missing_data` block is missing (R-VULN-015, `missingData` of the version report), as the reason after "Reason:": a package's
+ * advisory data, or for an image the database or the state of its scan, so that an image waiting for its scan is not told that advisory
+ * data is missing. Without a cause it is the block reason's own label.
+ */
+export function missingDataLabel(m: VulnerabilityMissingData | null | undefined): string {
+  switch (m) {
+    case 'image_database':
+      return $localize`:@@vuln.missing-data.image-database:no vulnerability database for images has been imported yet`;
+    case 'image_not_scanned':
+      return $localize`:@@vuln.missing-data.image-not-scanned:the image has not been scanned for vulnerabilities yet`;
+    case 'image_scan_retried':
+      return $localize`:@@vuln.missing-data.image-scan-retried:the vulnerability scan of the image did not finish and is tried again`;
+    case 'image_over_limits':
+      return $localize`:@@vuln.missing-data.image-over-limits:the image exceeds the limits of the scan and cannot be scanned`;
+    case 'image_unreadable':
+      return $localize`:@@vuln.missing-data.image-unreadable:the scan could not read the content of the image`;
+    default:
+      return blockReasonLabel('missing_data');
+  }
+}
+
+/** What happens next for a `missing_data` block, one sentence after the reason; null without a cause. */
+export function missingDataNext(m: VulnerabilityMissingData | null | undefined): string | null {
+  switch (m) {
+    case 'advisory_data':
+      return $localize`:@@vuln.missing-data.next.advisory-data:Downloads are served once the advisory data has been imported.`;
+    case 'image_database':
+      return $localize`:@@vuln.missing-data.next.image-database:Pulls are served once the database has been imported and the image scanned. Ask an administrator if this persists.`;
+    case 'image_not_scanned':
+      return $localize`:@@vuln.missing-data.next.image-not-scanned:Pulls are served once its scan has finished, usually within a minute.`;
+    case 'image_scan_retried':
+      return $localize`:@@vuln.missing-data.next.image-scan-retried:Try again in a few minutes. Ask an administrator if this persists.`;
+    case 'image_over_limits':
+      return $localize`:@@vuln.missing-data.next.image-over-limits:Ask an administrator: the limits of the image scanning can be raised.`;
+    case 'image_unreadable':
+      return $localize`:@@vuln.missing-data.next.image-unreadable:Ask an administrator.`;
+    default:
+      return null;
   }
 }
 

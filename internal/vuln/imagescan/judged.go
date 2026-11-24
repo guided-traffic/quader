@@ -1,6 +1,10 @@
 package imagescan
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/guided-traffic/quader/internal/vuln"
+)
 
 // What a terminal failure of a scan was judged under (R-VULN-034, Q-VULN-270). A code the same bytes cannot get past is not retried after a
 // time: the same image under the same bounds and the same reading fails the same way, and a retry costs a pull. It is due again when what
@@ -23,12 +27,12 @@ type Judges struct {
 
 // LimitsJudge is the fingerprint of the bounds of the image scanning, as a terminal failure of a bound records it.
 func LimitsJudge(l ContentLimits) string {
-	return fmt.Sprintf("limits:max_layers=%d,max_image_size=%d,max_uncompressed_size=%d,max_entries=%d",
+	return fmt.Sprintf(vuln.JudgedLimitsPrefix+"max_layers=%d,max_image_size=%d,max_uncompressed_size=%d,max_entries=%d",
 		l.MaxLayers, l.MaxImageBytes, l.MaxUncompressedBytes, l.MaxEntries)
 }
 
 // ReleaseJudge is the judge of a terminal failure of reading under a release.
-func ReleaseJudge(version string) string { return "release:" + version }
+func ReleaseJudge(version string) string { return vuln.JudgedReleasePrefix + version }
 
 // boundCode reports whether a terminal code is one of a bound, judged by the bounds rather than by the release.
 func boundCode(code string) bool {

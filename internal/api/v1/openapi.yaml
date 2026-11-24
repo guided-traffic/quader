@@ -28739,8 +28739,17 @@ components:
       enum: [malicious, triage, missing_data]
       description: |
         Why a version's download is refused in a repository (R-VULN-015): a finding blocks it (`malicious`, `triage`), or the
-        repository sets `onMissingData: block` and the ecosystem's advisory data was never imported completely
-        (`missing_data`, no finding behind it).
+        repository sets `onMissingData: block` and what the version is checked against is not there yet (`missing_data`, no
+        finding behind it; `missingData` says what).
+    VulnerabilityMissingData:
+      type: string
+      enum: [advisory_data, image_database, image_not_scanned, image_scan_retried, image_over_limits, image_unreadable]
+      description: |
+        What a `missing_data` block is missing (R-VULN-015, R-VULN-016). A package: `advisory_data`, its ecosystem's advisory data
+        has not been imported completely. An image: `image_database`, no vulnerability database for images has been imported yet;
+        `image_not_scanned`, the scan of a platform image has not finished yet; `image_scan_retried`, it failed for a reason that
+        may pass and is tried again; `image_over_limits`, it stopped at a bound of the scanning and waits for an operator to raise
+        it; `image_unreadable`, its content could not be read and waits for a release that reads it (R-VULN-034).
     VulnerabilityDismissalReason:
       type: string
       enum: [not_exploitable, false_positive, risk_accepted, mitigated, test_only]
@@ -31426,6 +31435,10 @@ components:
               blockReason:
                 oneOf:
                   - $ref: "#/components/schemas/VulnerabilityVersionBlockReason"
+                  - type: "null"
+              missingData:
+                oneOf:
+                  - $ref: "#/components/schemas/VulnerabilityMissingData"
                   - type: "null"
               findings: {type: array, maxItems: 1000, items: {$ref: "#/components/schemas/VulnerabilityFinding"}}
               images:

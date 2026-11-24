@@ -6268,6 +6268,36 @@ func (e VulnerabilityKind) Valid() bool {
 	}
 }
 
+// Defines values for VulnerabilityMissingData.
+const (
+	AdvisoryData     VulnerabilityMissingData = "advisory_data"
+	ImageDatabase    VulnerabilityMissingData = "image_database"
+	ImageNotScanned  VulnerabilityMissingData = "image_not_scanned"
+	ImageOverLimits  VulnerabilityMissingData = "image_over_limits"
+	ImageScanRetried VulnerabilityMissingData = "image_scan_retried"
+	ImageUnreadable  VulnerabilityMissingData = "image_unreadable"
+)
+
+// Valid indicates whether the value is a known member of the VulnerabilityMissingData enum.
+func (e VulnerabilityMissingData) Valid() bool {
+	switch e {
+	case AdvisoryData:
+		return true
+	case ImageDatabase:
+		return true
+	case ImageNotScanned:
+		return true
+	case ImageOverLimits:
+		return true
+	case ImageScanRetried:
+		return true
+	case ImageUnreadable:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for VulnerabilityResolvedReason.
 const (
 	AdvisoryWithdrawn VulnerabilityResolvedReason = "advisory_withdrawn"
@@ -17696,6 +17726,13 @@ type VulnerabilityImageStateState string
 // VulnerabilityKind `malicious` for the OpenSSF malicious-packages records (identifier prefix `MAL-`), else `vulnerability`.
 type VulnerabilityKind string
 
+// VulnerabilityMissingData What a `missing_data` block is missing (R-VULN-015, R-VULN-016). A package: `advisory_data`, its ecosystem's advisory data
+// has not been imported completely. An image: `image_database`, no vulnerability database for images has been imported yet;
+// `image_not_scanned`, the scan of a platform image has not finished yet; `image_scan_retried`, it failed for a reason that
+// may pass and is tried again; `image_over_limits`, it stopped at a bound of the scanning and waits for an operator to raise
+// it; `image_unreadable`, its content could not be read and waits for a release that reads it (R-VULN-034).
+type VulnerabilityMissingData string
+
 // VulnerabilityPackageReport defines model for VulnerabilityPackageReport.
 type VulnerabilityPackageReport struct {
 	PackageId string `json:"packageId"`
@@ -17896,8 +17933,8 @@ type VulnerabilityTrend struct {
 }
 
 // VulnerabilityVersionBlockReason Why a version's download is refused in a repository (R-VULN-015): a finding blocks it (`malicious`, `triage`), or the
-// repository sets `onMissingData: block` and the ecosystem's advisory data was never imported completely
-// (`missing_data`, no finding behind it).
+// repository sets `onMissingData: block` and what the version is checked against is not there yet (`missing_data`, no
+// finding behind it; `missingData` says what).
 type VulnerabilityVersionBlockReason string
 
 // VulnerabilityVersionReport What the scanning says of one version in every readable repository that holds it (R-VULN-020).
@@ -17923,8 +17960,9 @@ type VulnerabilityVersionReport struct {
 		Grade VulnerabilityGrade `json:"grade"`
 
 		// Images For a version of the format oci, the manifests the version stands for, one per platform.
-		Images     *[]VulnerabilityImageState `json:"images,omitempty"`
-		Repository string                     `json:"repository"`
+		Images      *[]VulnerabilityImageState `json:"images,omitempty"`
+		MissingData *VulnerabilityMissingData  `json:"missingData,omitempty"`
+		Repository  string                     `json:"repository"`
 
 		// SyncedAt The data's `syncedAt` for an evaluated version.
 		SyncedAt *time.Time `json:"syncedAt,omitempty"`

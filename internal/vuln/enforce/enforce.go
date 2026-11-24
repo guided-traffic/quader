@@ -253,6 +253,12 @@ func (e *Enforcer) record(ctx context.Context, d Download, pkg, version string) 
 	if d.Block.AdvisoryID != "" {
 		details["advisory"] = d.Block.AdvisoryID
 	}
+	if d.Block.Missing != "" {
+		details["missingData"] = string(d.Block.Missing)
+	}
+	if d.Block.ScanError != "" {
+		details["scanError"] = d.Block.ScanError
+	}
 	body, err := json.Marshal(details)
 	if err != nil { // cannot happen: strings and booleans
 		return
@@ -304,12 +310,18 @@ type ImagePull struct {
 // GateImage is the gate of a pull of an image manifest (R-VULN-015): a finding of the manifest that blocks refuses it, and with
 // onMissingData block so does an image that has not been scanned against a database yet. A manifest that is no image to scan (an index,
 // Docker's attestation manifest, a signature) is never scanned, so the missing-data rule does not hold it (Q-VULN-271): an index passes,
-// and its platform images are pulled and gated one by one, each on its own findings and its own scan.
+// and its platform images are pulled and gated one by one, each on its own findings and its own scan. Neither does it hold an image of a
+// repository that is not covered (matchPublicAdvisories never), as for every other format. The refusal names the cause by the state of
+// the image's scan (vuln.ImageMissingCause), not by advisory data.
 func (e *Enforcer) GateImage(ctx context.Context, im ImagePull) error {
 	if e == nil || e.o.States == nil || e.o.Images == nil {
 		return nil
 	}
-	p := e.PolicyOf(im.Repo)
+	return e.gateImage(ctx, e.PolicyOf(im.Repo), im)
+}
+
+// gateImage is GateImage for a resolved policy.
+func (e *Enforcer) gateImage(ctx context.Context, p vuln.Policy, im ImagePull) error {
 	if !p.Enabled {
 		return nil
 	}
@@ -322,7 +334,14 @@ func (e *Enforcer) GateImage(ctx context.Context, im ImagePull) error {
 	if err != nil {
 		return err
 	}
-	block := vuln.Verdict(p, v.Row, advisory.DataState{Complete: v.Detected || !v.Image})
+	block := vuln.Verdict(p, v.Row, advisory.DataState{Complete: v.Detected || !v.Image || !p.Covered})
+	if block.Reason == vuln.BlockMissingData {
+		failed := v.ScanState == store.ImageScanFailed
+		block.Missing = vuln.ImageMissingCause(e.o.States.State(advisory.EcosystemOCI).Complete, failed, v.Judged)
+		if failed {
+			block.ScanError = v.ErrorCode
+		}
+	}
 	addressed := im.Addressed
 	if addressed == "" {
 		addressed = im.Repo.Name.String()
@@ -408,11 +427,11 @@ func refusal(baseURL string, d Download, pkg, version string) error {
 	if d.Block.FindingID != "" {
 		opts = append(opts, errs.WithExtension("findingId", d.Block.FindingID))
 	}
-	text := fmt.Sprintf("Quader blocked %s in %s: %s. Details: %s", name, d.Addressed, reasonText(d.Block), link(baseURL, d))
+	text := fmt.Sprintf("Quader blocked %s in %s: %s. Details: %s", name, d.Addressed, reasonText(d.Block, d.Ecosystem), link(baseURL, d))
 	return errs.E(errs.Forbidden, d.Block.Code(), oneLine(text), opts...)
 }
 
-func reasonText(b vuln.Block) string {
+func reasonText(b vuln.Block, ecosystem string) string {
 	var s string
 	switch b.Reason {
 	case vuln.BlockMalicious:
@@ -420,12 +439,43 @@ func reasonText(b vuln.Block) string {
 	case vuln.BlockTriage:
 		s = "blocked in triage"
 	default:
-		return "no advisory data has been imported for this ecosystem yet and the repository blocks what it cannot evaluate"
+		return missingText(b, ecosystem)
 	}
 	if b.AdvisoryID != "" {
 		s += " (" + b.AdvisoryID + ")"
 	}
 	return s
+}
+
+// missingText words a missing_data block by its cause (R-VULN-016): what is missing and what the client does next. An image is
+// told the state of its scan, a package that its ecosystem's advisory data is not there yet.
+func missingText(b vuln.Block, ecosystem string) string {
+	code := ""
+	if b.ScanError != "" {
+		code = " (" + b.ScanError + ")"
+	}
+	switch b.Missing {
+	case vuln.MissingImageNotScanned:
+		return "the image has not been scanned for vulnerabilities yet, and the repository refuses unscanned images; try again in a minute"
+	case vuln.MissingImageScanRetried:
+		return "the vulnerability scan of the image did not finish" + code + " and is tried again, and the repository refuses unscanned images; " +
+			"try again in a few minutes, and ask an administrator if it stays refused"
+	case vuln.MissingImageOverLimits:
+		return "the image cannot be scanned for vulnerabilities, it exceeds the scanning's limits" + code +
+			", and the repository refuses unscanned images; ask an administrator"
+	case vuln.MissingImageUnreadable:
+		return "the image cannot be scanned for vulnerabilities, its content could not be read" + code +
+			", and the repository refuses unscanned images; ask an administrator"
+	case vuln.MissingImageDatabase:
+		return "no vulnerability database for images has been imported yet, and the repository refuses unscanned images; " +
+			"try again later, and ask an administrator if it stays refused"
+	}
+	of := "its ecosystem"
+	if ecosystem != "" {
+		of = ecosystem
+	}
+	return "no advisory data for " + of + " has been imported yet, and the repository refuses what it cannot check; " +
+		"try again later, and ask an administrator if it stays refused"
 }
 
 // link is the UI page the text points to: the finding when there is one, the advisory page for a miss without a finding, the
