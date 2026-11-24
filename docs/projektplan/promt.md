@@ -592,8 +592,8 @@ order is what a user or an operator meets first. The state is kept here.
 
 - **Two red jobs of R5b's push (2026-11-24; Test and Release 45324445298, read at 06:25):** `UI layout checks`: the
   renders `repository-npm-remote-upstream` as power and admin ended with eight `cramped` findings at 1440 px (the
-  version and its Pre-release badge in two lines beside 76 px no row uses); the check landed after R5b's own render run,
-  and the builder of the tab's findings repairs it with the version table. `integration (shard a)`:
+  version and its Pre-release badge in two lines beside 76 px no row uses); the check landed after R5b's own render run;
+  closed at 06:45 with the version table (Q-CUR-157). `integration (shard a)`:
   `TestR_REPO_056_AStatusFollowsARunningPassAndEveryReplicaAnswersTheSame` saw two replicas answer a mirror's status
   with different `bound.usedBytes` (0 and 106,996). **Closed at 06:40 (Q-REPO-482):** both answer from one statement
   over the folded counter `repository_usage.logical_bytes`, and a worker's fold landed in the 8 ms between the two
@@ -663,19 +663,21 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
-- **The tab Upstream's versions stack at 1,024 px (seen by the development agent on 2026-11-24 at R5b's renders,
-  `admin/repository-npm-remote-upstream-lookup-dark-1024.png`):** a package's version list falls into stacked blocks of
-  five lines each at 1,024 px, so 24 versions fill several screens; it is the list a user scrolls most on that tab.
-  To do: the version table keeps its columns at 1,024 px (fewer columns, the verdicts and the rule in the row's
-  menu or a second line), held by the layout walk at that width.
-- **The catalogue may say "Not stored" of versions an OCI remote holds (seen by R5b's builder on 2026-11-24, not
-  verified):** with the server's own answers, `image-cache`'s lookup of `tools/agent` shows tags 1.9, 2.0 and 2.1 as
-  not stored, though the render seed pulls them through that remote. To do: read the catalogue's `stored` of an OCI
-  remote against its tags (R3, Q-CUR-61), with a test of a pulled tag.
 
 None open (2026-11-24).
 
 ### Closed
+
+- **Closed on 2026-11-24, 06:45:** verified and repaired (Q-CUR-156): `CatalogueStoredVersions` read only version rows, and an OCI remote keeps its tags as cache entries, so every pulled tag and the preview's stored count read none; it now adds the listed tags under the rules of `oci_remote_tags`, read per tag from the page's packages (1.4 ms against 1.1 s through the view, measured on 400,000 tag entries), held by `TestR_CUR_009_TheCatalogueSaysStoredOfATagARemotePulledThrough` (area `ociremote`, about 2.3 s). npm verified unaffected; NuGet, Debian and Ansible Galaxy write version rows (read in the code, no case asserts it). As it stood: **The catalogue may say "Not stored" of versions an OCI remote holds (seen by R5b's builder on 2026-11-24, not
+  verified):** with the server's own answers, `image-cache`'s lookup of `tools/agent` shows tags 1.9, 2.0 and 2.1 as
+  not stored, though the render seed pulls them through that remote. To do: read the catalogue's `stored` of an OCI
+  remote against its tags (R3, Q-CUR-61), with a test of a pulled tag.
+
+- **Closed on 2026-11-24, 06:45:** the version list is three columns and the actions (Q-CUR-157): the published time and size under the version, the deciding rule under the delivery, the verdict under the cache state; a table from 1,024 px for every kind of user (the npm lookup page 2,800 px tall instead of 4,095), held by the screens' `tables` check; `row-offset` takes a badge on a line of its own above a cell's text as that cell's first line (two fixtures); the `cramped` findings of R5b's push are gone with it (20 upstream renders, 0 findings). As it stood: **The tab Upstream's versions stack at 1,024 px (seen by the development agent on 2026-11-24 at R5b's renders,
+  `admin/repository-npm-remote-upstream-lookup-dark-1024.png`):** a package's version list falls into stacked blocks of
+  five lines each at 1,024 px, so 24 versions fill several screens; it is the list a user scrolls most on that tab.
+  To do: the version table keeps its columns at 1,024 px (fewer columns, the verdicts and the rule in the row's
+  menu or a second line), held by the layout walk at that width.
 
 - **Closed on 2026-11-24, 06:25: the two red jobs of the morning, both in the tests, no product defect.**
   `integration (shard d)` (45322629378): a run queued behind the detection of the stored images began between the
