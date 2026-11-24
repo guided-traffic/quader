@@ -250,7 +250,9 @@ its bound offers no run, the trend's axis numbers at 390 px, the layout check `c
 a walk in mirror mode for OCI and Debian). **The Go tests' names landed at 02:30** (six commits: 736 names, 157 functions,
 carry a requirement's number or the behaviour alone, no R-ID lost, R-API-083 newly named and so counted by the
 next record; `TestGoTestNamesCarryARequirementNeverADecision` holds it, about 1 to 2 s of the unit job; three
-tests that docs still name no longer exist under any name, left as found). **R2b landed at 03:00** (one commit, migration 00115). **W16 landed at 03:10** (six commits; sixteen entries of section 8 closed or read, the vulnerability scan's bound decided). **R3 landed at 03:30** (one commit). **W18 landed at 03:52** (six commits: Q-VULN-268, a pushed image no longer waits for the schedule; the token API's wiring test; the realm's refusal named; a Sentinel failover during a start measured). Started at 03:36 in its place: **T-24 · R5b**, the tab Upstream and the settings of the rules. Started at 03:12 in its place: **W18**, small leftovers (the scan's bound in the specification, the token API's upper-case wiring, a stale configuration text, the render `scanners-none`, section 12 C's Sentinel entry, H-842). Started at 03:02 in its place: **W17**, the download limits' leftovers (section 12, part B) and the scale of long lists (H-829, H-1683). Started at 02:32 in its place: **W16**, the open entries of section 8,
+tests that docs still name no longer exist under any name, left as found). **R2b landed at 03:00** (one commit, migration 00115). **W16 landed at 03:10** (six commits; sixteen entries of section 8 closed or read, the vulnerability scan's bound decided). **R3 landed at 03:30** (one commit). **The screens' third round landed at 04:27** (two commits; Q-UI-1060 to Q-UI-1062: a mirror without its bound disables its run and says why, the trend's axis readable at 390 px, the layout check `cramped` with five screens repaired, a walk of a stored OCI and Debian mirror; left: a list row a real mirror pass filled). `vuln-perf` dispatched at 03:53 (HA and Performance 45315614490), beside five runs of Test and Release still
+going (the neighbours' record of W14 names them); the place W18 freed stays empty: every open entry of sections 8
+and 12 is in a running package, waits for a recurrence, or needs the owner (an account, his cluster). **W18 landed at 03:52** (six commits: Q-VULN-268, a pushed image no longer waits for the schedule; the token API's wiring test; the realm's refusal named; a Sentinel failover during a start measured). Started at 03:36 in its place: **T-24 · R5b**, the tab Upstream and the settings of the rules. Started at 03:12 in its place: **W18**, small leftovers (the scan's bound in the specification, the token API's upper-case wiring, a stale configuration text, the render `scanners-none`, section 12 C's Sentinel entry, H-842). Started at 03:02 in its place: **W17**, the download limits' leftovers (section 12, part B) and the scale of long lists (H-829, H-1683). Started at 02:32 in its place: **W16**, the open entries of section 8,
 "Tests and tools", worked down (the red jobs of 2026-11-23 read before their artifacts expire, entries closed
 by tonight's landings, repairs where code is wrong).
 **W13 landed at 01:03** (ten commits; H-1662, the Bastion's gauge, R-ARCH-034's count, the limits'
@@ -324,9 +326,9 @@ starts from it and from his word how the work goes on, not from the order of the
   WebKit were taken back"): reverted today, to come back with markings that hold on the runner.
 - **The repair of the evidence record's publish**: landed at 22:51 (Q-ARCH-1040); the release v0.115.0 made
   the branch `coverage` with its four files and the badge shows 82.1% (closed in section 8).
-- **Two single sets of the nightly workflow, each dispatched alone in a pipeline window with no code
-  push beside it:** `upgrade-release` and the vulnerability performance set (`drain-roles` ran alone at
-  22:24 and closed its entry); the two
+- **One single set of the nightly workflow, dispatched alone in a pipeline window with no code push beside
+  it:** `upgrade-release` (`drain-roles` ran alone at 22:24 and closed its entry; `vuln-perf` ran at 03:53 and
+  closed F-121); the two
   changed nightly sets `npm-ha` and `nuget-ha` have not run since their change either.
 - **What W4 did not do**: landed at 23:12 with the integration tests' environment and ports and the mirror's
   back-off bound (section 8, Closed); F-126 stays open with a new reading.
@@ -628,23 +630,6 @@ records the recorder that tells such a stall apart).
   20 (H-795 below).
   Read on 2026-11-23: the upload probes' 502 of the drain legs of 2026-11-19 to 22 are no stall but the cut
   `test/e2e/drain_transfers_test.go` makes on purpose (H-795, in the list Closed).
-- **Partly closed; open: the one run itself, a dispatch of the set alone in a pipeline window with no push
-  beside it (decision 3 of the reading of 2026-11-23), and its reading against V-7b.** Closed: what that run
-  records, by 1b2e20ffb (2026-11-23): the notes of V-7a and V-7b in `perf-vuln.json` name the five slowest
-  requests of each list with their start, time and `X-Request-Id`, the CPU stall of the job's cgroup and the
-  garbage collections that ended while each ran, and the note of V-7a holds the autovacuum's counters of
-  `vuln_finding` before and after the lists (`perf/vuln/perf_test.go`; how to read them is "Reading a slow V-7
-  on a runner" in `docs/developer/vulnerabilities.md`). The package vets with the tag `integration`; what it
-  writes is first seen in that run. As it stood:
-  **F-121 · The nightly performance run misses V-7b on a loaded runner** (runs 42571414393 with p99 314.7 ms and 42595813923 with
-  610.957 ms against 300 ms; V-7a 17 to 60 ms in the same runs; both shared the nodes with other kind legs). Not a regression of the
-  path that [Q-VULN-81](../spec/vulnerability-scanning.md) decided: on the integration stack the run's 100 requests give a p99 of
-  76 ms, every request runs exactly two statements, and the test now asserts them, so a regression of the path fails before a
-  runner does. Open: the cause of the two slow requests on the runner is not measured (a neighbour, the replica's garbage
-  collection, or the autovacuum of the 100,000 rows the run inserts without an `ANALYZE`). Next step: a run of `vuln-perf` alone on
-  the large class (after the kind legs, as [Q-ARCH-325](../spec/architecture.md) set) that logs the slowest five requests with
-  their request IDs; revisit if V-7b misses there as well, which would make it the reference environment's number
-  ([H-491](../security/vulnerability-scanning.md#h-491--the-performance-run-is-not-the-reference-environment)). Read on 2026-11-24 (W16): no run of `vuln-perf` since 1b2e20ffb; the next step stands.
 - **F-95 · One Angular unit test failed once in 1,080, its name not recorded** (seen once, on a loaded host). Done when the
   failing test is identified and its cause fixed; until then a recurrence is reported with the test's name and output.
 - A job can stay queued for hours when the ARC listener loses its assignment (P-13, 2026-11-10, `assigned job=0` after a broker
@@ -664,6 +649,24 @@ records the recorder that tells such a stall apart).
 None open (2026-11-24).
 
 ### Closed
+
+- **Closed on 2026-11-24, 04:20: F-121, the nightly performance run's V-7b on a loaded runner.** The set `vuln-perf` dispatched at 03:53 (HA and Performance 45315614490, job 138184137655, green) met every target: V-7a p99 31.9 ms and V-7b p99 146.6 ms against 300 ms, V-4 4.67 ms against 5, V-5a 0.28 ms, V-5b one statement a download. It did not run alone: its neighbours' record names 8 kind legs on `large` (38.2 runner minutes inside its window) and 8 other jobs of 4 runs of Test and Release; so V-7b holds beside neighbours too, and the misses of 2026-11-10 (314.7 and 611 ms) stay unexplained by the product. Reopen if V-7b misses again; the notes of `perf-vuln.json` name the slowest requests then. As it stood: **Partly closed; open: the one run itself, a dispatch of the set alone in a pipeline window with no push
+  beside it (decision 3 of the reading of 2026-11-23), and its reading against V-7b.** Closed: what that run
+  records, by 1b2e20ffb (2026-11-23): the notes of V-7a and V-7b in `perf-vuln.json` name the five slowest
+  requests of each list with their start, time and `X-Request-Id`, the CPU stall of the job's cgroup and the
+  garbage collections that ended while each ran, and the note of V-7a holds the autovacuum's counters of
+  `vuln_finding` before and after the lists (`perf/vuln/perf_test.go`; how to read them is "Reading a slow V-7
+  on a runner" in `docs/developer/vulnerabilities.md`). The package vets with the tag `integration`; what it
+  writes is first seen in that run. As it stood:
+  **F-121 · The nightly performance run misses V-7b on a loaded runner** (runs 42571414393 with p99 314.7 ms and 42595813923 with
+  610.957 ms against 300 ms; V-7a 17 to 60 ms in the same runs; both shared the nodes with other kind legs). Not a regression of the
+  path that [Q-VULN-81](../spec/vulnerability-scanning.md) decided: on the integration stack the run's 100 requests give a p99 of
+  76 ms, every request runs exactly two statements, and the test now asserts them, so a regression of the path fails before a
+  runner does. Open: the cause of the two slow requests on the runner is not measured (a neighbour, the replica's garbage
+  collection, or the autovacuum of the 100,000 rows the run inserts without an `ANALYZE`). Next step: a run of `vuln-perf` alone on
+  the large class (after the kind legs, as [Q-ARCH-325](../spec/architecture.md) set) that logs the slowest five requests with
+  their request IDs; revisit if V-7b misses there as well, which would make it the reference environment's number
+  ([H-491](../security/vulnerability-scanning.md#h-491--the-performance-run-is-not-the-reference-environment)). Read on 2026-11-24 (W16): no run of `vuln-perf` since 1b2e20ffb; the next step stands.
 
 - **Closed on 2026-11-24, 03:52, by W18:** `admin-settings-malware-scanners-none-*` rendered in both schemes at 1440, 1024 and 390 px and looked at; `malware-db-no-updater` shows in each, and the walk asserts it before the picture (c05bb5c7f); the description of `malware.scan_listener.url` corrected (3cac949a0). Left for the owner's walk: without an updater the page says the fact twice, once per section. As it stood: **Partly closed; open: a render state of it, looked at: the walk's state `none` of `malwareSettings`
   (`web/e2e/renders/screens.ts`) takes the database's version away but keeps the scanners' answer of the
