@@ -279,6 +279,9 @@ What was red at 19:49 (Test and Release on 928e2a6e7 and every run since 08:32; 
 - **Nightly dispatched** at 22:27 on c8f72cdcb (run 45490907494), every leg of the schedule, once the push runs' kind legs had
   ended, so that npm-ha and drain-roles run without neighbours.
 
+- **Test and Release green** on ee8e41c2c (run 45480741707, every job), the first green run of `main` since 08:19; no job of the
+  night was re-run.
+
 ### State at the stop of 2026-11-24
 
 Read this first. The run that began at 22:21 on 2026-11-23 ended its starts at 12:25 on 2026-11-24 by the owner's word
