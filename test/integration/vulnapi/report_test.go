@@ -373,7 +373,7 @@ func TestR_VULN_020_R_VULN_039_PackageViews(t *testing.T) {
 }
 
 // TestR_VULN_015_MissingData: onMissingData block shows a version of an ecosystem without data blocked as missing_data, missing its
-// advisory data, and the version is pending_data.
+// advisory data, and the version is pending_data; with allow it is not blocked and still names the advisory data it is missing.
 func TestR_VULN_015_MissingData(t *testing.T) {
 	e := newEnv(t)
 	e.addVersion("npm-strict", "pkg", "1.0.0")
@@ -400,7 +400,8 @@ func TestR_VULN_015_MissingData(t *testing.T) {
 				t.Errorf("npm-strict = %+v", r)
 			}
 		default:
-			if r.Evaluation != "pending_data" || r.Blocked || r.MissingData != nil {
+			// Not blocked, and still named by what it is missing, so that its page says why it is not checked.
+			if r.Evaluation != "pending_data" || r.Blocked || r.MissingData == nil || *r.MissingData != "advisory_data" {
 				t.Errorf("%s = %+v", r.Repository, r)
 			}
 		}

@@ -16,8 +16,26 @@ func SummaryFilter(repos []int64, hasRepos bool, formats []string) store.Filter 
 	return store.Filter{Repos: repos, HasRepos: hasRepos, Formats: formats, Statuses: vuln.OpenStatuses()}
 }
 
-// Coverage counts the readable repositories by the evaluation state of their scanning.
-type Coverage struct{ Evaluated, PendingData, Internal, NotCovered int64 }
+// Coverage counts the readable repositories by the evaluation state of their scanning. A repository that waits for its data is
+// counted by what it waits for: a repository of packages for the advisory data of its ecosystem (PendingData), a repository of images
+// for the vulnerability database for images (PendingDatabase), so that neither is told it waits for the other's.
+type Coverage struct{ Evaluated, PendingData, PendingDatabase, Internal, NotCovered int64 }
+
+// add counts one repository of the ecosystem by its evaluation state.
+func (c *Coverage) add(e vuln.Evaluation, ecosystem string) {
+	switch {
+	case e == vuln.EvaluationEvaluated:
+		c.Evaluated++
+	case e == vuln.EvaluationPendingData && ecosystem == advisory.EcosystemOCI:
+		c.PendingDatabase++
+	case e == vuln.EvaluationPendingData:
+		c.PendingData++
+	case e == vuln.EvaluationInternal:
+		c.Internal++
+	default:
+		c.NotCovered++
+	}
+}
 
 // DataAge is the state of one ecosystem's advisory data.
 type DataAge struct {
@@ -70,16 +88,7 @@ func (s *Service) Summary(ctx context.Context, sc Scope, f store.Filter) (Summar
 		if f.HasRepos && !slices.Contains(f.Repos, id) {
 			continue
 		}
-		switch s.evaluation(ctx, r, "", data) {
-		case vuln.EvaluationEvaluated:
-			out.Coverage.Evaluated++
-		case vuln.EvaluationPendingData:
-			out.Coverage.PendingData++
-		case vuln.EvaluationInternal:
-			out.Coverage.Internal++
-		default:
-			out.Coverage.NotCovered++
-		}
+		out.Coverage.add(s.evaluation(ctx, r, "", data), r.VulnerabilityEcosystem())
 	}
 	for _, eco := range s.ecosystems(data) {
 		d := data[eco]

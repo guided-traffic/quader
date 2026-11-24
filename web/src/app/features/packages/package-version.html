@@ -38,7 +38,7 @@
       <span class="dot-separated">
         @if (grade(); as g) {
           <a class="facts-grade" [routerLink]="[]" [queryParams]="{ tab: 'vulnerabilities' }" queryParamsHandling="merge">
-            <quader-grade [grade]="g" />
+            <quader-grade [grade]="g" [image]="format() === 'oci'" />
           </a>
         }
         <span
@@ -152,7 +152,7 @@
           @switch (t.id) {
             @case ('vulnerabilities') {
               @if (activeTab() === 'vulnerabilities') {
-                <quader-package-vulnerabilities [report]="vulnerabilityReport()" [packageName]="d.name" [severity]="severityFilter()" />
+                <quader-package-vulnerabilities [report]="vulnerabilityReport()" [packageName]="d.name" [image]="format() === 'oci'" [severity]="severityFilter()" />
               }
             }
             @case ('documentation') {

@@ -71,7 +71,8 @@ type RepositoryVersion struct {
 	SyncedAt    *time.Time
 	Blocked     bool
 	BlockReason vuln.BlockReason
-	// Missing is what a missing_data block is missing (R-VULN-015): the advisory data of a package, or the database or the scan of an image.
+	// Missing is what a version that is not checked is missing (R-VULN-001, R-VULN-015), blocked or not: the advisory data of a package,
+	// or the database or the scan of an image; with a missing_data block it is what the block is missing.
 	Missing  vuln.MissingCause
 	Findings []Finding
 	// Images are the manifests an image version stands for, one per platform, each with how far it has been scanned; nil for a package.
@@ -146,6 +147,22 @@ func imageMissing(images []ImageState, databaseImported bool) vuln.MissingCause 
 		}
 	}
 	return out
+}
+
+// notChecked is what a version that is not checked is missing (R-VULN-001, R-VULN-015), whether or not its repository blocks it: the
+// cause the version page names under "not scanned", and the cause of a missing_data block, which is the same. A package waiting for
+// its data misses its ecosystem's advisory data; an image the cause imageMissing read from its scan rows. "" for a version that is
+// checked, internal or not covered, and for an image whose scans have all finished once (a rescan under way keeps its findings).
+func notChecked(image bool, e vuln.Evaluation, imageCause vuln.MissingCause) vuln.MissingCause {
+	switch {
+	case e == vuln.EvaluationEvaluated || e == vuln.EvaluationInternal || e == vuln.EvaluationNotCovered:
+		return ""
+	case image:
+		return imageCause
+	case e == vuln.EvaluationPendingData:
+		return vuln.MissingAdvisoryData
+	}
+	return ""
 }
 
 // missingRank orders the causes of an image for the version's notice: what needs an operator before what passes on its own.
@@ -260,10 +277,8 @@ func (s *Service) Version(ctx context.Context, sc Scope, format, name, version s
 			state.Complete = missing == "" || rv.Evaluation == vuln.EvaluationNotCovered || rv.Evaluation == vuln.EvaluationInternal
 		}
 		b := vuln.Verdict(p, s.blockingRow(p, rv.Findings), state)
-		rv.Blocked, rv.BlockReason, rv.Missing = b.Active(), b.Reason, b.Missing
-		if missing != "" && b.Reason == vuln.BlockMissingData {
-			rv.Missing = missing
-		}
+		rv.Blocked, rv.BlockReason = b.Active(), b.Reason
+		rv.Missing = notChecked(format == imageFormat, rv.Evaluation, missing)
 		rv.Grade = gradeIn(rv.Repository, rv.Evaluation, open[id], rv.Images, info.SyncedAt)
 		out = append(out, rv)
 	}

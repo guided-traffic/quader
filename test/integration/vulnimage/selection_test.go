@@ -189,7 +189,9 @@ func TestR_VULN_034_AnImageIsItsPlatformImagesAndAnAttestationIsNoImageToScan(t 
 	if got := s.scanRows("library/ubuntu"); !slices.Equal(got, want) {
 		t.Fatalf("scan rows %q, want the two platform images alone, pending", got)
 	}
-	if r := s.versionReport("library/ubuntu", "1.0"); r.Repositories[0].Evaluation != "pending_scan" || len(r.Repositories[0].Images) != 2 {
+	// The repository does not block (onMissingData allow), and the view still says what the tag is missing: its scan.
+	if r := s.versionReport("library/ubuntu", "1.0"); r.Repositories[0].Evaluation != "pending_scan" || len(r.Repositories[0].Images) != 2 ||
+		r.Repositories[0].Blocked || r.Repositories[0].MissingData != "image_not_scanned" {
 		t.Fatalf("while both wait: %+v", r.Repositories[0])
 	}
 

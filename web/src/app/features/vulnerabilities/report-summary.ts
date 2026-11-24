@@ -208,8 +208,32 @@ export class ReportSummary {
   protected readonly coverageText = computed(() => {
     const c = valueOf(this.summary)?.coverage;
     if (!c) return null;
-    return $localize`:@@vuln.coverage:Coverage of the repositories you can read: ${c.evaluated}:scanned: scanned, ${c.internal}:internal: internal names only, ${c.pendingData}:pending: waiting for advisory data, ${c.notCovered}:notCovered: not covered.`;
+    // A repository of images waits for the database for images, not for advisory data (Q-VULN-273); its part is there while one does.
+    return c.pendingDatabase > 0
+      ? $localize`:@@vuln.coverage.with-database:Coverage of the repositories you can read: ${c.evaluated}:scanned: scanned, ${c.internal}:internal: internal names only, ${c.pendingData}:pending: waiting for advisory data, ${c.pendingDatabase}:pendingDatabase: waiting for the vulnerability database for images, ${c.notCovered}:notCovered: not covered.`
+      : $localize`:@@vuln.coverage:Coverage of the repositories you can read: ${c.evaluated}:scanned: scanned, ${c.internal}:internal: internal names only, ${c.pendingData}:pending: waiting for advisory data, ${c.notCovered}:notCovered: not covered.`;
   });
+}
+
+/** The ecosystem of the vulnerability database for images (the trivy source's): its banner names the database, not advisory data. */
+const IMAGE_ECOSYSTEM = 'OCI';
+
+/** The banner's line about the vulnerability database for images: not imported yet, or stale; null while it is current. */
+function imageDatabaseNotice(d: VulnerabilitySummary['data'][number], now: number): DataNotice | null {
+  if (d.state === 'empty') {
+    return {
+      key: `${d.ecosystem}:empty`,
+      text: $localize`:@@vuln.banner.image-database-pending:No vulnerability database for images has been imported yet. Images are not scanned until it has.`,
+    };
+  }
+  if (d.stale) {
+    const age = d.syncedAt ? timeAgo(d.syncedAt, now) : '–';
+    return {
+      key: `${d.ecosystem}:stale`,
+      text: $localize`:@@vuln.banner.image-database-stale:The vulnerability database for images is stale, it was last synchronised ${age}:age:.`,
+    };
+  }
+  return null;
 }
 
 /** Builds the banner's lines from the summary's data ages and the sources' failures (exported for the specs). */
@@ -220,7 +244,10 @@ export function dataNotices(
 ): DataNotice[] {
   const out: DataNotice[] = [];
   for (const d of summary.data) {
-    if (d.state === 'empty') {
+    if (d.ecosystem === IMAGE_ECOSYSTEM) {
+      const notice = imageDatabaseNotice(d, now);
+      if (notice) out.push(notice);
+    } else if (d.state === 'empty') {
       out.push({
         key: `${d.ecosystem}:empty`,
         text: $localize`:@@vuln.banner.pending:The advisory data of ${d.ecosystem}:ecosystem: has not been imported completely yet. Versions of ${d.ecosystem}:ecosystemAgain: are not evaluated until it has.`,

@@ -17761,7 +17761,8 @@ type VulnerabilityImageStateState string
 // VulnerabilityKind `malicious` for the OpenSSF malicious-packages records (identifier prefix `MAL-`), else `vulnerability`.
 type VulnerabilityKind string
 
-// VulnerabilityMissingData What a `missing_data` block is missing (R-VULN-015, R-VULN-016). A package: `advisory_data`, its ecosystem's advisory data
+// VulnerabilityMissingData What a version that is not checked is missing (R-VULN-001, R-VULN-015, R-VULN-016): the cause of its N/A and, with a
+// `missing_data` block, of the block. A package: `advisory_data`, its ecosystem's advisory data
 // has not been imported completely. An image: `image_database`, no vulnerability database for images has been imported yet;
 // `image_not_scanned`, the scan of a platform image has not finished yet; `image_scan_retried`, it failed for a reason that
 // may pass and is tried again; `image_over_limits`, it stopped at a bound of the scanning and waits for an operator to raise
@@ -17937,10 +17938,15 @@ type VulnerabilitySummary struct {
 
 	// Coverage The readable repositories by the evaluation state of their scanning.
 	Coverage struct {
-		Evaluated   int `json:"evaluated"`
-		Internal    int `json:"internal"`
-		NotCovered  int `json:"notCovered"`
+		Evaluated  int `json:"evaluated"`
+		Internal   int `json:"internal"`
+		NotCovered int `json:"notCovered"`
+
+		// PendingData Repositories of packages waiting for the advisory data of their ecosystem.
 		PendingData int `json:"pendingData"`
+
+		// PendingDatabase Repositories of images waiting for the vulnerability database for images.
+		PendingDatabase int `json:"pendingDatabase"`
 	} `json:"coverage"`
 	Data []struct {
 		Ecosystem string                        `json:"ecosystem"`
@@ -17995,9 +18001,13 @@ type VulnerabilityVersionReport struct {
 		Grade VulnerabilityGrade `json:"grade"`
 
 		// Images For a version of the format oci, the manifests the version stands for, one per platform.
-		Images      *[]VulnerabilityImageState `json:"images,omitempty"`
-		MissingData *VulnerabilityMissingData  `json:"missingData,omitempty"`
-		Repository  string                     `json:"repository"`
+		Images *[]VulnerabilityImageState `json:"images,omitempty"`
+
+		// MissingData What the version is missing while it is not checked (`pending_data`, `pending_scan`, `scan_failed`), whether or not the
+		// repository blocks it; with a `missing_data` block it is what the block is missing. Absent for a version that is
+		// checked, internal or not covered, and for an image whose every platform image has been scanned once.
+		MissingData *VulnerabilityMissingData `json:"missingData,omitempty"`
+		Repository  string                    `json:"repository"`
 
 		// SyncedAt The data's `syncedAt` for an evaluated version.
 		SyncedAt *time.Time `json:"syncedAt,omitempty"`

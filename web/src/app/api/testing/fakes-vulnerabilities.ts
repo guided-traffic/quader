@@ -217,7 +217,7 @@ export class FakeVulnerabilitiesApi extends VulnerabilitiesApi {
     { ecosystem: 'npm', state: 'complete', stale: false, syncedAt: ago(0.1) },
     { ecosystem: 'NuGet', state: 'complete', stale: false, syncedAt: ago(0.1) },
   ];
-  coverage: VulnerabilitySummary['coverage'] = { evaluated: 3, pendingData: 0, internal: 1, notCovered: 2 };
+  coverage: VulnerabilitySummary['coverage'] = { evaluated: 3, pendingData: 0, pendingDatabase: 0, internal: 1, notCovered: 2 };
   sourceStates: VulnerabilitySourceState[] = [
     sampleSource({ ecosystem: 'npm' }),
     sampleSource({ ecosystem: 'NuGet' }),

@@ -86,7 +86,12 @@ A `missing_data` block carries what it is missing, `Block.Missing` ([missing.go]
 `advisory_data` for a package, `image_database` for an image while the data state of `OCI` is not complete; the image gate replaces it by
 `vuln.ImageMissingCause(databaseImported, failed, judged)`, the state of the manifest's scan row, with the row's code in `Block.ScanError`.
 `enforce.missingText` words each cause with what the client does next (the table of R-VULN-016), `record` writes `missingData` and
-`scanError` into the audit event, and the version report sets the API's `missingData` from the same cause.
+`scanError` into the audit event, and the version report sets the API's `missingData` from the same cause. The version report names it for
+every version that is not checked, blocked or not (`report.notChecked`, Q-VULN-273): a package waiting for its data `advisory_data`, an image
+the cause `imageMissing` reads from its scan rows; the version page's grade card words an image's N/A by it (`gradeRule` in
+[grade-words.ts](../../web/src/app/shared/vulnerability/grade-words.ts)), and a list, which has no such field, by the evaluation, with
+`pending_data` of an image as the database for images. The summary's coverage counts a repository of images waiting for that database
+as `pendingDatabase`, apart from `pendingData` (`Coverage.add` in [summary.go](../../internal/vuln/report/summary.go)).
 `Policy.BlockReasonOf(kind, status)` is the same rule for the API's `blocked` and `blockReason`, so the report and the download agree.
 
 ### Format contract

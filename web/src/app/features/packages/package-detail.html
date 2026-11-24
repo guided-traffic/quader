@@ -83,7 +83,7 @@
           @if (graded()) {
             <td>
               @if (v.grade; as g) {
-                <quader-grade [grade]="g" />
+                <quader-grade [grade]="g" [image]="format() === 'oci'" />
               } @else {
                 <span class="muted">–</span>
               }

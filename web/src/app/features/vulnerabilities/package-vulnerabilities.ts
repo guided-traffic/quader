@@ -56,7 +56,8 @@ export function blockedRepositories(report: VulnerabilityVersionReport | null): 
             [grade]="repo.grade"
             [packageName]="packageName()"
             [findingVersions]="findingVersions(repo, r.version)"
-            [image]="repo.images !== undefined"
+            [image]="image() || repo.images !== undefined"
+            [missing]="repo.missingData"
             [barQueries]="barQueries"
             [activeSeverity]="severity()"
           />
@@ -97,6 +98,11 @@ export class PackageVulnerabilities {
   readonly report = input<VulnerabilityVersionReport | null>(null);
   /** The package's name, for the link of the grade card to the findings. */
   readonly packageName = input('');
+  /**
+   * The version is an image (the format is OCI): the card words its N/A by the database for images or its scan, also where the report
+   * carries no `images` (an installation whose image scanning is off).
+   */
+  readonly image = input(false);
   /** The severity the card's bar narrowed the findings to (the address's `severity`), or null. */
   readonly severity = input<BarSeverity | null>(null);
 

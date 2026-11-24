@@ -86,6 +86,7 @@ func (s *Server) GetVulnerabilitySummary(w http.ResponseWriter, r *http.Request,
 	}
 	out.ByKind.Vulnerability, out.ByKind.Malicious = sum.Vulnerability, sum.Malicious
 	out.Coverage.Evaluated, out.Coverage.PendingData = int(sum.Coverage.Evaluated), int(sum.Coverage.PendingData)
+	out.Coverage.PendingDatabase = int(sum.Coverage.PendingDatabase)
 	out.Coverage.Internal, out.Coverage.NotCovered = int(sum.Coverage.Internal), int(sum.Coverage.NotCovered)
 	out.Data = make([]struct {
 		Ecosystem string                            `json:"ecosystem"`
@@ -340,7 +341,7 @@ func (s *Server) GetPackageVersionVulnerabilities(w http.ResponseWriter, r *http
 			b := gen.VulnerabilityVersionBlockReason(rv.BlockReason)
 			item.BlockReason = &b
 		}
-		if rv.Blocked && rv.Missing != "" {
+		if rv.Missing != "" {
 			m := gen.VulnerabilityMissingData(rv.Missing)
 			item.MissingData = &m
 		}

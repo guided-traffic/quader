@@ -6724,7 +6724,13 @@ Priority: **P1** · Covers: quader-only
 
 - **The text** is the grade and the count that decides it, as R-VULN-038 words it: "E · 13 Critical", "C · OS end of life",
   "S · no known vulnerabilities", "N/A · not scanned"; the letter at weight 600. **The rule** is the sentence of R-VULN-038's
-  table; for S of an image "No known vulnerabilities, and the OS is supported", for N/A the evaluation state in words.
+  table; for S of an image "No known vulnerabilities, and the OS is supported", for N/A why it is not checked: a package by its
+  evaluation state ("Waiting for advisory data"), an image by what its scan is missing, never as advisory data ("Waiting for the
+  vulnerability database for images", "Waiting for its scan", "The scan did not finish and is tried again", "The image exceeds the
+  limits of the scan", "The scan could not read the image"). The card of a version's page reads the cause from `missingData` of the
+  version report; a list's tooltip, which has only the evaluation, says an image's `pending_data` as the database for images
+  ([Q-VULN-273](vulnerability-scanning.md#q-vuln-273--a-version-that-is-not-checked-names-what-it-is-missing-blocked-or-not)).
+  `<quader-grade>` and `<quader-grade-card>` take `image` (the format is OCI) and the card `missing`.
   **Revised on 2026-11-18 (owner, walk objection W-9): beside its shield the letter is not written a second time.** The shield
   carries the letter; the text beside it is the count that decides ("13 Critical", "OS end of life", "no known vulnerabilities",
   "not scanned"), in a list, on a version's row and facts line, and on the card. A screen reader still hears "Grade E · 13

@@ -2613,18 +2613,28 @@ async function* imageNotChecked(page: Page): AsyncGenerator<string> {
   await page.unroute(report);
 }
 
+/** A version's tab Vulnerabilities as it opens, its grade card shown, and no other tab. */
+async function* vulnerabilitiesTab(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('quader-package-vulnerabilities quader-grade-card').first()).toBeVisible();
+  yield '';
+}
+
 /**
  * The report of a project whose advisory data is stale for one ecosystem and not imported for another (R-VULN-022, Q-UI-966): an
  * administrator reads the banners with their link to the advisory sources; a reader who cannot act on them finds the same facts in
- * the report's closed section **About these counts**, with the coverage line.
+ * the report's closed section **About these counts**, with the coverage line. The database for images is not imported either, and is
+ * named as what it is, never as advisory data, in its banner and in the coverage line's part for the repositories of images waiting
+ * for it (Q-VULN-273).
  */
 async function* staleAdvisories(page: Page): AsyncGenerator<string> {
   const summary = '**/api/v1/vulnerabilities/summary?**';
   await answerWith(page, summary, (b) => ({
     ...b,
+    coverage: { ...(b['coverage'] as Record<string, number>), pendingDatabase: 1 },
     data: [
       { ecosystem: 'npm', state: 'complete', stale: true, syncedAt: new Date(Date.now() - 9 * 86_400_000).toISOString() },
       { ecosystem: 'NuGet', state: 'empty', stale: false, syncedAt: null },
+      { ecosystem: 'OCI', state: 'empty', stale: false, syncedAt: null },
     ],
   }));
   yield '';
@@ -2831,6 +2841,9 @@ export const screens: readonly Screen[] = [
   { id: 'package-version-oci', path: ver(P, ociPackage, '1.4.0'), kinds: all, tables: 'quader-data-table.version-files', de: true },
   // An image refused while it is not checked: the notice names the state of its scan and what happens next (Q-VULN-272).
   { id: 'package-version-oci-not-checked', path: `${ver(P, ociPackage, '1.4.0')}?tab=vulnerabilities`, kinds: ['plain'], walk: imageNotChecked, de: true },
+  // An image the render database has no database for images to scan with, in a repository that does not block it: the card says it
+  // waits for that database, never for advisory data (Q-VULN-273). The tab alone: the other tabs are package-version-oci's.
+  { id: 'package-version-oci-unscanned', path: `${ver(P, ociPackage, '1.4.0')}?tab=vulnerabilities`, kinds: ['plain'], walk: vulnerabilitiesTab, de: true },
   // The image a remote cached (W-24): its versions, and the tags whose index it holds one platform of and none of, with their platforms.
   { id: 'package-oci-cache', path: pkg(O, { format: 'oci', name: remoteImage.name }), kinds: all },
   { id: 'package-version-oci-cache-partial', path: `${ver(O, { format: 'oci', name: remoteImage.name }, remoteImage.partial)}?tab=details`, kinds: all },
@@ -2895,8 +2908,9 @@ export const screens: readonly Screen[] = [
   { id: 'files-signature-refused', path: `${P}/repositories/${signedFile.repo}/files/${signedFile.folder}/${signedFile.name}`, kinds: ['plain', 'admin'], walk: refusedFileWalk },
   { id: 'files-signatures', path: `${P}/repositories/${signedFile.repo}/files/${signedFile.folder}/${signedFile.name}`, kinds: ['plain'], walk: signatureFile },
   { id: 'vulnerabilities', path: `${P}/vulnerabilities`, kinds: all, walk: filtersOpen(findingChips), tables: 'quader-vulnerability-report > quader-data-table' },
-  // Stale and missing advisory data: the administrator's banners, the reader's closed section (Q-UI-966).
-  { id: 'vulnerabilities-stale', path: `${P}/vulnerabilities`, kinds: ['plain', 'admin'], walk: staleAdvisories },
+  // Stale and missing advisory data: the administrator's banners, the reader's closed section (Q-UI-966); the database for images by
+  // its own name (Q-VULN-273).
+  { id: 'vulnerabilities-stale', path: `${P}/vulnerabilities`, kinds: ['plain', 'admin'], walk: staleAdvisories, de: true },
   // A filter is a chip beside Filters; the list sorts by Detected at every width, at 390 px from the sort row above its stacked rows (Q-UI-391).
   { id: 'vulnerabilities-filtered', path: `${P}/vulnerabilities?severity=high`, kinds: admins, walk: sortByDetection, tables: 'quader-vulnerability-report > quader-data-table' },
   { id: 'members', path: `${P}/members`, kinds: all },

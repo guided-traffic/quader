@@ -13149,7 +13149,8 @@ export interface components {
          */
         VulnerabilityVersionBlockReason: "malicious" | "triage" | "missing_data";
         /**
-         * @description What a `missing_data` block is missing (R-VULN-015, R-VULN-016). A package: `advisory_data`, its ecosystem's advisory data
+         * @description What a version that is not checked is missing (R-VULN-001, R-VULN-015, R-VULN-016): the cause of its N/A and, with a
+         *     `missing_data` block, of the block. A package: `advisory_data`, its ecosystem's advisory data
          *     has not been imported completely. An image: `image_database`, no vulnerability database for images has been imported yet;
          *     `image_not_scanned`, the scan of a platform image has not finished yet; `image_scan_retried`, it failed for a reason that
          *     may pass and is tried again; `image_over_limits`, it stopped at a bound of the scanning and waits for an operator to raise
@@ -14814,7 +14815,10 @@ export interface components {
             /** @description The readable repositories by the evaluation state of their scanning. */
             coverage: {
                 evaluated: number;
+                /** @description Repositories of packages waiting for the advisory data of their ecosystem. */
                 pendingData: number;
+                /** @description Repositories of images waiting for the vulnerability database for images. */
+                pendingDatabase: number;
                 internal: number;
                 notCovered: number;
             };
@@ -14923,6 +14927,11 @@ export interface components {
                 syncedAt?: string | null;
                 blocked: boolean;
                 blockReason: components["schemas"]["VulnerabilityVersionBlockReason"] | null;
+                /**
+                 * @description What the version is missing while it is not checked (`pending_data`, `pending_scan`, `scan_failed`), whether or not the
+                 *     repository blocks it; with a `missing_data` block it is what the block is missing. Absent for a version that is
+                 *     checked, internal or not covered, and for an image whose every platform image has been scanned once.
+                 */
                 missingData?: components["schemas"]["VulnerabilityMissingData"] | null;
                 findings: components["schemas"]["VulnerabilityFinding"][];
                 /** @description For a version of the format oci, the manifests the version stands for, one per platform. */

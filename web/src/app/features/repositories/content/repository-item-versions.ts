@@ -69,7 +69,7 @@ const VERSIONS_PAGE = 20;
           @if (scanned()) {
             <td>
               @if (gradeOf(v.version); as g) {
-                <quader-grade [grade]="g" />
+                <quader-grade [grade]="g" [image]="pkg().format === 'oci'" />
               }
             </td>
           }
