@@ -570,7 +570,9 @@ Priority: **P1** · Covers: ART-044
 - **Second hosts.** A registry whose search or listing lives on another host than its protocol endpoint (Docker Hub's `hub.docker.com`,
   GitLab's `gitlab.com` API) is declared by the format's preset as `catalogueHosts` (`catalog.UpstreamPreset`, new), each with whether it
   receives the repository's credential; a person never types such a host. A remote whose URL is no preset's has no second host. Every
-  declared host passes the egress address policy at connect time like the upstream's.
+  declared host passes the egress address policy at connect time like the upstream's. The expansion of a bulk (R-CUR-010) reads the
+  same catalogue and reaches the same hosts, also without the credential; the fetch of a row's files does not
+  ([Q-CUR-167](#q-cur-167--a-bulks-expansion-reaches-the-hosts-the-catalogue-reaches-a-rows-fetch-reaches-no-more)).
 - **An undocumented endpoint** is used only where its operator's documented interface has no equal (Docker Hub's repository search,
   `GET /v2/search/repositories/`, [formats/oci.md](formats/oci.md) R-OCI-038). The call keeps working without it: an answer that is not a
   page of the expected shape (any status but `200`, a body that does not parse) turns the capability to `search: none` with the sentence
@@ -661,7 +663,8 @@ Priority: **P1** · Covers: RMT-027
   The preview of a version or a package is one catalogue call (`Package`); of a section the level's count where the upstream tells it
   (Debian's index rows, a Galaxy namespace's count, a Docker Hub namespace's count), else `null`; a section of an upstream that lists no
   levels answers `400 catalogue_not_offered`. A package's bulk is expanded through the catalogue's `Package`, a section's through its
-  `Children` and `Package`, with the bulk's bounds ([Q-CUR-65](#q-cur-65--a-bulk-and-a-preview-read-the-catalogue-a-preview-is-one-page-of-the-bulks-bound),
+  `Children` and `Package`, on the hosts the tab Upstream's catalogue reaches (a preset's catalogue hosts among them,
+  [Q-CUR-167](#q-cur-167--a-bulks-expansion-reaches-the-hosts-the-catalogue-reaches-a-rows-fetch-reaches-no-more)), with the bulk's bounds ([Q-CUR-65](#q-cur-65--a-bulk-and-a-preview-read-the-catalogue-a-preview-is-one-page-of-the-bulks-bound),
   which replaces the mirror plan's expansion of [Q-CUR-80](#q-cur-80--a-download-of-one-version-runs-before-the-catalogue-the-call-that-names-its-files-is-a-contract-interface-of-its-own)).
 - **Bounds of a bulk**, each a value in the form that the person may lower: `maxVersions` (`proxy.downloads.max_versions_per_bulk`,
   10,000 by default), `maxBytes` (`proxy.downloads.max_bytes_per_bulk`, 100 GiB), `includePrereleases` (true), and for a package
@@ -704,6 +707,10 @@ Acceptance criteria:
 - Integration, one download ahead per format (areas `nuget`, `ociremote`, `debremote`, `ansibleremote`, `TestR_CUR_010_…`, about 3 s
   each): one version is stored; for OCI the platforms of `oci.platforms` with their layers; for Debian the file a parsed index lists,
   verified against its digest.
+- Integration (area `ociremote`, `TestR_CUR_010_ABulkOfADockerHubRemoteReadsTheTagsWhereTheCatalogueReadsThem`, about 2 s, a stub of
+  Docker Hub's API on `hub.docker.com` with five tags): a Docker Hub remote's bulk of an image with `maxVersions: 2` reads the tags on the
+  catalogue host, which is no `extraHosts` entry, and queues the two newest; `GET download-bulks` lists it as the person's (Q-CUR-167,
+  Q-CUR-168).
 
 ### R-CUR-011 · The download queue of a remote repository
 Priority: **P1** · Covers: RMT-027
@@ -853,6 +860,7 @@ Below `/api/v1/projects/{projectKey}/repositories/{repoKey}` (tag `remote-curati
 | `POST downloads/{id}/retry` | a `failed` or `cancelled` row waits again with its attempts reset; a row of origin `client` becomes a download ahead of that file's version by the caller (R-CUR-010) | `200` with the row; `409 not_retryable` for another state |
 | `POST downloads/retry` | `{"class"?, "bulk"?}`: every failed row of the repository that matches, at most 10,000 | `200` `{"retried": <n>}` |
 | `POST downloads/{id}/cancel` | a waiting row is `cancelled`; a running row stops after its current file | `200` |
+| `GET download-bulks?cursor=&limit=` | the repository's bulks, newest first, each as `GET download-bulks/{id}` answers it ([Q-CUR-168](#q-cur-168--the-tab-downloads-lists-the-repositorys-bulks-over-its-rows-a-failed-one-says-what-failed-and-starts-again)) | `200`, cursor paging |
 | `GET download-bulks/{id}` | the bulk with its counters and the counts of its rows by state | `200` |
 | `POST download-bulks/{id}/cancel` | stops the expansion and cancels its waiting rows | `200` |
 
@@ -860,6 +868,9 @@ Below `/api/v1/projects/{projectKey}/repositories/{repoKey}` (tag `remote-curati
   "startedBy": {"id", "name"} | null, "bulk", "request", "files", "stored", "present", "refused", "bytes", "failure", "createdAt",
   "startedAt", "finishedAt", "delivery"}` (`delivery` as in R-CUR-009, so an examined row says it is not delivered). `startedBy` names a
   person to those who may set rules and to that person; to other readers it reads `{"id": null, "name": null}` with `origin`.
+- A bulk's representation: `{"id", "level", "subject", "origin", "state", "bounds", "versionsFound", "versionsQueued", "failure",
+  "startedBy", "createdAt", "finishedAt", "rows"}`; `origin` is `person`, `request` (a request's examination) or `allow` (Q-CUR-141);
+  `failure` is the expansion's, in a row's form; `rows` counts its rows by state.
 - Retry and cancel write `remote.download.retried` and `remote.download.cancelled` (R-CUR-019).
 
 Acceptance criteria:
@@ -1211,8 +1222,16 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
     **Retry** or **Cancel** by its state, in its action cell
     ([Q-CUR-132](#q-cur-132--a-row-offers-retry-or-cancel-by-its-state-to-whom-the-api-lets-change-it-and-a-bulks-line-stands-over-its-rows)).
     The origin **Bulk** links to `?bulk=<id>`, which shows the bulk's line over its rows: what it downloads, its state, "38 of 38
-    versions found are queued", its rows by state, its bounds, who started it, **Cancel bulk** and **Show every download**. The
-    refresh reads as many rows as are shown, so **Load more** and the opened rows stay
+    versions found are queued", its rows by state, its bounds, who started it, **Cancel bulk** and **Show every download**.
+    Over the head, once the repository has a bulk, a table **Bulk downloads**, newest first, five and **Load more**: what it downloads
+    (a link to `?bulk=<id>`, who started it and when under it), its state, "2 of 100 queued" with its rows by state, and where its
+    expansion failed the cause in words ("Docker Hub's version list could not be read", the upstream's preset name where the reader
+    has the remote's address, else "The upstream's …"), then the class and the engine's sentence; a bound's note stands muted. Its
+    one action is **Cancel** while it expands or its rows wait, and **Start again** for a person's failed bulk to who may start one;
+    the bulk of the address shows the same failure and action. The table **Downloads** of the rows stands under it, and the notice of
+    a start says that the bulk reads the versions first and leads to the bulk
+    ([Q-CUR-168](#q-cur-168--the-tab-downloads-lists-the-repositorys-bulks-over-its-rows-a-failed-one-says-what-failed-and-starts-again)). The
+    refresh reads as many rows and bulks as are shown, and runs while a bulk shown expands or waits, so **Load more** and the opened rows stay
     ([Q-CUR-133](#q-cur-133--the-tab-reads-the-queue-again-while-the-repository-has-a-row-that-waits-or-runs-keeping-what-is-shown)).
     The excerpt is shown to every reader of the repository, as the API answers it
     ([H-1728](../security/remote-curation.md#h-1728--the-excerpt-of-an-upstreams-error-answer-is-shown-to-every-reader-of-the-repository)).
@@ -2302,7 +2321,9 @@ and the API lists no bulks, only one bulk by its ID. R-UI-163 gives a row with o
 
 **Choice:** (a). **Rationale:** R-CUR-018's "and **Retry**" in the opened row and the action cell are one job; the action cell keeps it
 where every other list has it. The development agent would revisit the check of the fill if the API answers each row's actions, and (c)
-if bulks become many per repository.
+if bulks become many per repository. **Revisited for (c)** on 2026-11-24 by
+[Q-CUR-168](#q-cur-168--the-tab-downloads-lists-the-repositorys-bulks-over-its-rows-a-failed-one-says-what-failed-and-starts-again):
+a bulk that failed before its first row was reached from nowhere.
 
 **Applied in the spec:** R-CUR-018 (the tab Downloads, "As built").
 
@@ -2788,6 +2809,70 @@ R-DEB-036; the API's `UpstreamCatalogue.searchHint`. Code: `SearchHint` in
 [catalogue.go](../../internal/remotecuration/catalogue/catalogue.go); kit check 22 in
 [checks_catalogue.go](../../internal/formats/formattest/checks_catalogue.go); `searchHintText` in
 [upstream-words.ts](../../web/src/app/features/repositories/upstream/upstream-words.ts).
+
+### Q-CUR-167 · A bulk's expansion reaches the hosts the catalogue reaches; a row's fetch reaches no more
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below after the owner's report of 11:05 on the
+UI development profile; the owner reviews it at the walkthrough.
+
+Context: the owner started "Download every version…" of `guidedtraffic/valkey-operator` on `upstream/docker-hub`. The preview listed 100
+versions; the bulk failed within seconds with `foreign_host_denied` at the step `status`: "The upstream document points to the host
+hub.docker.com, which is neither the upstream of the repository upstream/docker-hub nor one of its extraHosts." No row was queued. The
+tab's catalogue (`formathost.CatalogueUpstream`) reaches the upstream, its `extraHosts`, the mirror's hosts of the format and the
+preset's `catalogueHosts`; the expansion's planner (`MirrorHost.planner` over `downloadUpstream`) built its upstream with the mirror's
+hosts only, so a read on a catalogue host was refused before it was sent. Which formats it hit: only OCI's Docker Hub preset, whose
+tags list is on `hub.docker.com`. OCI's GitLab preset reads `gitlab.com`, an `extraHosts` entry of that preset with `sendCredentials`, so
+its expansion passed and sent the repository's credential to the project API, where the tab's catalogue sends none. Quay's and
+ghcr.io's lists, npm's registry and replication host (a mirror host), NuGet's search and registrations (`*.nuget.org`, the preset's
+`extraHosts`), the Galaxy's API and Debian's indexes are on hosts both paths reach.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The expansion's upstream reaches the hosts of `catalogueHosts` (the mirror's hosts and the preset's catalogue hosts), as hosts without a credential; a row's run keeps the mirror's hosts (chosen) | One list of hosts for the catalogue, whoever reads it | The bulk reads what the preview read; a catalogue host never receives the credential, also on GitLab; a fetch of an artifact reaches no new host | The expansion still spends no unit of the catalogue's budget (R-CUR-008), as before |
+| (b) The expansion calls the catalogue's engine (`catalogue.Engine`) with its lender, cache and budget | The tab's path itself | The budget and the cache are shared | A section's bulk of thousands of packages would be throttled by the per-repository budget of browsing (120 a minute) and fail as `bound`; R-CUR-010 names the worker's upstream |
+| (c) The presets add their catalogue hosts to `extraHosts` | Data, no code | Nothing to build | A catalogue host would then be reachable by every fetch and receive the credential where `sendCredentials` is set: the widening the rule forbids |
+
+**Choice:** (a). `downloadUpstream` takes `catalogueHosts` when it builds the upstream of an expansion (no row), and the format's mirror
+hosts for a row's run. **Rationale:** a catalogue host is declared for listings, and both readers of the listings must reach it the same
+way; the development agent would revisit (b) if bulks are found to load an upstream's API beyond what its operator tolerates.
+
+**Applied in the spec:** R-CUR-008 (second hosts), R-CUR-010 (the expansion and its acceptance). Code: `downloadUpstream` in
+[background_download.go](../../internal/formathost/background_download.go); the test
+`TestR_CUR_010_ABulkOfADockerHubRemoteReadsTheTagsWhereTheCatalogueReadsThem` in
+[remote_downloads_test.go](../../test/integration/ociremote/remote_downloads_test.go) with the stub of
+[hub_api_test.go](../../test/integration/ociremote/hub_api_test.go).
+
+### Q-CUR-168 · The tab Downloads lists the repository's bulks over its rows; a failed one says what failed and starts again
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below after the owner's report of 11:05; it
+revisits (c) of [Q-CUR-132](#q-cur-132--a-row-offers-retry-or-cancel-by-its-state-to-whom-the-api-lets-change-it-and-a-bulks-line-stands-over-its-rows).
+The owner reviews it at the walkthrough.
+
+Context: the owner's bulk failed before it queued a row. The tab showed "There is no download yet.", the top bar's panel "Running (0)",
+and the notice of the start had promised "its rows wait in the tab Downloads". A bulk was reachable only from a row's origin **Bulk**,
+and the API listed no bulks.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `GET download-bulks` lists a repository's bulks newest first; the tab shows them in a table over its rows (five and **Load more**), with the state, the counters, the failure in words and one action; the notice of a start says that the bulk reads the versions first and leads to the bulk (chosen) | Every bulk at a glance | A bulk that failed before its first row is seen with its cause; a running one shows "Finding versions" before its rows exist | One more list on the tab; an API of its own |
+| (b) A failed bulk becomes a row of the queue | No new list | The rows table shows it | A row is one version of one package (R-CUR-011); a bulk is not, and its counters would not fit the columns |
+| (c) Only the notice leads to the bulk (`?bulk=<id>`) | No list | Small | Whoever comes later, or misses the notice, sees nothing again |
+
+**Choice:** (a). The failure in words is what failed of the expansion: the list of a package's versions or of a sub-section's packages,
+of the upstream by its preset's name where the reader has the remote's address ("Docker Hub's version list could not be read"), else
+"The upstream's …", then the class in words and the engine's sentence. **Start again** is offered for a person's failed bulk (not a
+request's or an allow's, which their own flow starts) to who may start a bulk, unless the upstream lists no such level
+(`catalogue_not_offered`); it starts a new bulk with the failed one's level, subject and bounds through `POST downloads`, the act and the
+audit event of a start, rather than a retry that would reset a bulk's state. The list is read on the tab's own refresh and keeps the
+tab refreshing while a bulk shown expands or waits. The top bar's panel lists downloads from upstreams: a bulk's expansion fetches no
+file, so the panel shows the bulk's rows once they run, and the failure stays the tab's. **Rationale:** a person who started something
+must find it whatever happened to it; the development agent would revisit (b) if bulks grow into the hundreds per repository.
+
+**Applied in the spec:** R-CUR-012 (the list and the bulk's representation with `origin`), R-CUR-018 (the tab, as built). Code:
+`ListRemoteDownloadBulks` in [remote_downloads_api.go](../../internal/api/v1/remote_downloads_api.go), `PGStore.ListBulks` in
+[store_pg.go](../../internal/remotecuration/queue/store_pg.go), the tab in
+[remote-downloads.ts](../../web/src/app/features/repositories/downloads/remote-downloads.ts), the notice in
+[upstream-actions.ts](../../web/src/app/features/repositories/upstream/upstream-actions.ts).
 
 ### Q-CUR-80 · A download of one version runs before the catalogue: the call that names its files is a contract interface of its own
 

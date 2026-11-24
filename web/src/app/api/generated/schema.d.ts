@@ -7870,6 +7870,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * List the bulk downloads of a remote repository
+         * @description The repository's bulk downloads (R-CUR-010, R-CUR-012), newest first, each with its counters, its failure and the counts of its
+         *     rows by state: a bulk whose expansion failed before it queued a row is seen here, where no row names it (Q-CUR-168). Cursor
+         *     pagination (R-API-010). Needs `read` on the repository; a repository hidden from the caller answers `404`, a local or virtual one
+         *     `400 not_applicable`. `startedBy` names a person only to those who may set rules and to that person.
+         */
+        get: operations["listRemoteDownloadBulks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks/{bulkId}": {
         parameters: {
             query?: never;
@@ -16713,6 +16741,12 @@ export interface components {
             /** @enum {string} */
             level: "package" | "section";
             subject: string;
+            /**
+             * @description Who started the bulk: `person` (a person's bulk of a package or a sub-section), `request` (the examination of a package a
+             *     request starts) or `allow` (the newest versions an allow downloads, Q-CUR-141).
+             * @enum {string}
+             */
+            origin: "person" | "request" | "allow";
             /** @enum {string} */
             state: "expanding" | "queued" | "done" | "bounded" | "cancelled" | "failed";
             bounds: components["schemas"]["RemoteDownloadBounds"];
@@ -16728,6 +16762,10 @@ export interface components {
             rows: {
                 [key: string]: number;
             };
+        };
+        RemoteDownloadBulkPage: {
+            items: components["schemas"]["RemoteDownloadBulk"][];
+            nextCursor: string | null;
         };
         /** @description The answer of a start (R-CUR-010): the row of one version, or the bulk of a package or a sub-section. */
         RemoteDownloadStarted: {
@@ -33556,6 +33594,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RemoteDownload"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listRemoteDownloadBulks: {
+        parameters: {
+            query?: {
+                /** @description Page size, 1 to `api.page_size_max` (R-API-010). */
+                limit?: components["parameters"]["Limit"];
+                /** @description The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for. */
+                cursor?: components["parameters"]["Cursor"];
+            };
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of bulks. */
+            200: {
+                headers: {
+                    Link: components["headers"]["Link"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemoteDownloadBulkPage"];
                 };
             };
             400: components["responses"]["BadRequest"];

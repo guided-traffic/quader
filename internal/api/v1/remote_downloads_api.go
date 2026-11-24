@@ -459,8 +459,12 @@ func (s *Server) bulkView(ctx context.Context, acc *edge.Access, t downloadTarge
 	if rows == nil {
 		rows = map[string]int64{}
 	}
+	origin := "person"
+	if o := b.RowOrigin(); o != remotecuration.OriginBulk {
+		origin = string(o)
+	}
 	return map[string]any{
-		"id": b.ID, "level": b.Level, "subject": b.Subject, "state": b.State,
+		"id": b.ID, "level": b.Level, "subject": b.Subject, "origin": origin, "state": b.State,
 		"bounds":        downloadBounds{MaxVersions: b.MaxVersions, MaxBytes: b.MaxBytes, IncludePrereleases: b.IncludePrereleases},
 		"versionsFound": b.VersionsFound, "versionsQueued": b.VersionsQueued, "failure": failureView(b.Failure),
 		"startedBy": s.starter(ctx, acc, t, b.StartedBy), "createdAt": b.CreatedAt.UTC(), "finishedAt": nullTime(b.FinishedAt), "rows": rows,
@@ -720,6 +724,55 @@ func (s *Server) GetRemoteDownloadBulk(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 	writeJSON(w, r, http.StatusOK, s.bulkView(ctx, acc, t, b, rows))
+}
+
+// ListRemoteDownloadBulks implements GET …/download-bulks (R-CUR-012, Q-CUR-168): the repository's bulks newest first, so that a bulk
+// whose expansion failed before it queued a row is seen.
+func (s *Server) ListRemoteDownloadBulks(w http.ResponseWriter, r *http.Request, projectKey gen.ProjectKey, repoKey string, _ gen.ListRemoteDownloadBulksParams) {
+	key := qname.Repo{Project: projectKey, Key: repoKey}
+	ctx, svc, acc, t, err := s.downloadSetup(r.Context(), key)
+	var lq ListQuery
+	if err == nil {
+		lq, err = ParseList(r, ListSpec{}, s.o.API.Config)
+	}
+	f := queue.BulkFilter{RepoID: t.ID, Limit: lq.Limit + 1}
+	if err == nil && lq.After != nil {
+		f.After, err = bulkCursor(lq.After)
+	}
+	var bulks []queue.Bulk
+	var rows map[string]map[string]int64
+	if err == nil {
+		bulks, rows, err = svc.Reader().ListBulks(ctx, f)
+	}
+	if err != nil {
+		httpserver.Problem(w, r, errs.Wrap(err, "api.listRemoteDownloadBulks"))
+		return
+	}
+	var next *string
+	if len(bulks) > lq.Limit {
+		bulks = bulks[:lq.Limit]
+		last := bulks[len(bulks)-1]
+		c := lq.EncodeCursor([]string{last.CreatedAt.UTC().Format(time.RFC3339Nano), last.ID})
+		next = &c
+		w.Header().Set("Link", "<"+nextURL(r, c)+`>; rel="next"`)
+	}
+	items := make([]map[string]any, 0, len(bulks))
+	for _, b := range bulks {
+		items = append(items, s.bulkView(ctx, acc, t, b, rows[b.ID]))
+	}
+	writeJSON(w, r, http.StatusOK, map[string]any{"items": items, "nextCursor": next})
+}
+
+// bulkCursor reads the keyset position of the bulks' list: the last bulk's creation time and ID.
+func bulkCursor(key []string) (*queue.Bulk, error) {
+	if len(key) != 2 {
+		return nil, invalidCursor()
+	}
+	at, err := time.Parse(time.RFC3339Nano, key[0])
+	if err != nil {
+		return nil, invalidCursor()
+	}
+	return &queue.Bulk{CreatedAt: at, ID: key[1]}, nil
 }
 
 // CancelRemoteDownloadBulk implements POST …/download-bulks/{bulkId}/cancel (R-CUR-012).

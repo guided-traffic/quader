@@ -41,6 +41,8 @@ const (
 	secretEnv = "QUADER_CAC_OCIREMOTE_IT_PASSWORD"
 	// The hosts of the stub as Docker Hub names them.
 	hubRegistry, hubRealm, hubCDN = "registry-1.docker.io", "auth.docker.io", "production.cloudfront.docker.com"
+	// hubAPIHost is the catalogue host of the Docker Hub preset (R-CUR-008): its API answers an image's tags with their sizes.
+	hubAPIHost = "hub.docker.com"
 )
 
 // The repositories of the installation.
@@ -62,11 +64,13 @@ type renv struct {
 	// stub answers as the three loopback names, hub as Docker Hub's three.
 	stub, hub *ocistub.Server
 	run, hrun *ocistub.Running
-	dial      map[string]string
-	reader    string
-	admin     string
-	mu        sync.Mutex
-	tokens    map[string]cachedToken
+	// hubAPI answers as Docker Hub's API on hubAPIHost.
+	hubAPI *hubAPIStub
+	dial   map[string]string
+	reader string
+	admin  string
+	mu     sync.Mutex
+	tokens map[string]cachedToken
 }
 
 type options struct {
@@ -79,7 +83,7 @@ type options struct {
 
 func newEnv(t *testing.T, o options) *renv {
 	t.Helper()
-	ss, err := ocistub.NewSelfSigned(append(append([]string(nil), ocistub.LoopbackHosts...), hubRegistry, hubRealm, hubCDN)...)
+	ss, err := ocistub.NewSelfSigned(append(append([]string(nil), ocistub.LoopbackHosts...), hubRegistry, hubRealm, hubCDN, hubAPIHost)...)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,6 +109,8 @@ func newEnv(t *testing.T, o options) *renv {
 	for k, v := range e.hrun.DialOverride() {
 		e.dial[k] = v
 	}
+	e.hubAPI = startHubAPI(t, ss.ServerConfig())
+	e.dial[hubAPIHost+":443"] = e.hubAPI.addr
 
 	ca := testenv.WriteFile(t, t.TempDir(), "stub-ca.pem", string(ss.CAPEM))
 	e.st = testenv.NewStack(t, testenv.StackOptions{Name: "ociremote", Valkey: o.valkey, Env: append([]string{

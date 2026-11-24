@@ -109,6 +109,16 @@ export class UpstreamActions {
     return { label: $localize`:@@upstream.show-downloads:Show downloads`, run: () => void this.router.navigate(commands) };
   }
 
+  /** The tab Downloads opened on one bulk (`?bulk=`): its state, its counters and its failure, and its rows once it queued them. */
+  private showBulk(id: string): { label: string; run: () => void } {
+    const slash = this.repository().indexOf('/');
+    const commands = ['/projects', this.repository().slice(0, slash), 'repositories', this.repository().slice(slash + 1), 'downloads'];
+    return {
+      label: $localize`:@@upstream.show-bulk:Show bulk download`,
+      run: () => void this.router.navigate(commands, { queryParams: { bulk: id } }),
+    };
+  }
+
   /** **Download** or **Download for examination** of one version (R-CUR-010, R-CUR-014): one row of the queue, charged to the caller. */
   async downloadVersion(s: Required<Subject>, delivered: boolean): Promise<void> {
     const out = await this.run(s, () =>
@@ -125,14 +135,19 @@ export class UpstreamActions {
 
   /** **Download every version…** of a package, or **Download this sub-section…**: the preview first, then the bulk (R-CUR-010). */
   async downloadBulk(request: RemoteDownloadRequest, title: string): Promise<void> {
-    const ref = this.dialog.open<DownloadPreviewDialog, DownloadPreviewData, boolean>(DownloadPreviewDialog, {
+    const ref = this.dialog.open<DownloadPreviewDialog, DownloadPreviewData, string>(DownloadPreviewDialog, {
       data: { repository: this.repository(), request, title },
       width: '36rem',
     });
-    const started = await firstValueFrom(ref.closed);
-    if (!started) return;
+    const bulk = await firstValueFrom(ref.closed);
+    if (bulk === undefined || bulk === null) return;
     this.changed.update((n) => n + 1);
-    this.notifier.status($localize`:@@upstream.download.bulk-queued:The bulk download is queued; its rows wait in the tab Downloads.`, this.showDownloads());
+    // The bulk has no row yet: it reads the versions from the upstream first and queues them then, or fails with the cause, which the
+    // tab Downloads shows on the bulk (Q-CUR-168).
+    this.notifier.status(
+      $localize`:@@upstream.download.bulk-started:The bulk download has started; Quader reads its versions first, then queues them.`,
+      bulk ? this.showBulk(bulk) : this.showDownloads(),
+    );
   }
 
   /** **Allow** or **Block** a subject: the rule of the package (every version, future ones included), of a version, or of a pattern. */

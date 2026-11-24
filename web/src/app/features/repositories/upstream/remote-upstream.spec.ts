@@ -195,10 +195,19 @@ describe('The tab Upstream of a remote repository', () => {
     versions.dispatchEvent(new Event('change'));
     await settle(fixture);
     expect(downloads.previews.at(-1)).toEqual({ level: 'package', name: 'lodash', maxVersions: 2 });
+    const status = vi.spyOn(TestBed.inject(Notifier), 'status');
     button(d, 'Start download').click();
     await settle(fixture);
     expect(downloads.starts.at(-1)).toEqual({ level: 'package', name: 'lodash', maxVersions: 2 });
     await waitUntil(fixture, () => !document.querySelector('.quader-dialog'), 'the preview to close');
+    // The bulk has no row yet: the notice says that it reads the versions first and leads to the bulk itself (Q-CUR-168).
+    await waitUntil(fixture, () => status.mock.calls.length > 0, 'the notice of the start');
+    const [words, action] = status.mock.calls.at(-1)!;
+    expect(words).toBe('The bulk download has started; Quader reads its versions first, then queues them.');
+    expect(action?.label).toBe('Show bulk download');
+    action!.run();
+    await settle(fixture);
+    expect(TestBed.inject(Router).url).toBe(`/projects/web/repositories/npmjs/downloads?bulk=${downloads.bulks.at(-1)!.id}`);
   });
 
   it('R-CUR-018 R-CUR-009 a reader in mode onlyAllowed reads the withheld hits, its own requests, and requests a version; no rules, no bulk', async () => {

@@ -27,7 +27,7 @@ function count(n: number): string {
  * The preview of a bulk download (remote-curation.md R-CUR-010, R-CUR-018): what will be fetched (versions, packages, bytes, the
  * versions whose size the upstream does not tell), what is stored already and what is not delivered here (fetched for examination),
  * the bounds as fields with their values, which may only be lowered, and **Start download**. A changed bound is previewed again
- * before the start. Closes with `true` once the bulk is queued.
+ * before the start. Closes with the started bulk's ID, which expands into rows while the tab Downloads shows it (Q-CUR-168).
  */
 @Component({
   selector: 'quader-download-preview-dialog',
@@ -157,7 +157,7 @@ function count(n: number): string {
 export class DownloadPreviewDialog {
   private readonly api = inject(RemoteDownloadsApi);
   protected readonly data = inject<DownloadPreviewData>(DIALOG_DATA);
-  private readonly ref = inject<DialogRef<boolean, DownloadPreviewDialog>>(DialogRef);
+  private readonly ref = inject<DialogRef<string, DownloadPreviewDialog>>(DialogRef);
 
   /** The bounds the person lowered; null keeps the installation's. */
   protected readonly maxVersions = signal<number | null>(null);
@@ -226,8 +226,8 @@ export class DownloadPreviewDialog {
     this.starting.set(true);
     this.startFailure.set(null);
     try {
-      await this.api.start(this.data.repository, this.request(), newIdempotencyKey());
-      this.ref.close(true);
+      const started = await this.api.start(this.data.repository, this.request(), newIdempotencyKey());
+      this.ref.close(started.bulk?.id ?? '');
     } catch (e) {
       this.startFailure.set(asApiError(e));
     } finally {

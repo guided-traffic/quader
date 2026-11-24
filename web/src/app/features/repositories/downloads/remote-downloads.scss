@@ -198,3 +198,33 @@ tr.expansion > td {
 .row-facts {
   margin-block-start: var(--quader-space-3);
 }
+
+// The repository's bulks over its rows (Q-CUR-168), and the title of the rows under them: two lists, each named.
+.bulks {
+  margin-block-end: var(--quader-space-6);
+}
+
+.bulks-title {
+  margin: 0 0 var(--quader-space-2);
+  font-size: var(--quader-heading-3);
+  line-height: 1.4;
+}
+
+// A bulk's title is a link to its rows and breaks inside a long name.
+th.wrap-name > a {
+  overflow-wrap: anywhere;
+}
+
+// What failed in words stands first, the class and the engine's sentence under it.
+.failure-lead {
+  display: block;
+  font-weight: 600;
+}
+
+.bulk-failure {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--quader-space-1);
+  overflow-wrap: anywhere;
+}

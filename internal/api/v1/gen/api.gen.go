@@ -3202,6 +3202,27 @@ func (e RemoteDownloadBulkLevel) Valid() bool {
 	}
 }
 
+// Defines values for RemoteDownloadBulkOrigin.
+const (
+	BulkOriginAllow   RemoteDownloadBulkOrigin = "allow"
+	BulkOriginPerson  RemoteDownloadBulkOrigin = "person"
+	BulkOriginRequest RemoteDownloadBulkOrigin = "request"
+)
+
+// Valid indicates whether the value is a known member of the RemoteDownloadBulkOrigin enum.
+func (e RemoteDownloadBulkOrigin) Valid() bool {
+	switch e {
+	case BulkOriginAllow:
+		return true
+	case BulkOriginPerson:
+		return true
+	case BulkOriginRequest:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RemoteDownloadBulkState.
 const (
 	BulkStateBounded   RemoteDownloadBulkState = "bounded"
@@ -13421,6 +13442,10 @@ type RemoteDownloadBulk struct {
 	Id         openapi_types.UUID      `json:"id"`
 	Level      RemoteDownloadBulkLevel `json:"level"`
 
+	// Origin Who started the bulk: `person` (a person's bulk of a package or a sub-section), `request` (the examination of a package a
+	// request starts) or `allow` (the newest versions an allow downloads, Q-CUR-141).
+	Origin RemoteDownloadBulkOrigin `json:"origin"`
+
 	// Rows The bulk's rows by state.
 	Rows           map[string]int64        `json:"rows"`
 	StartedBy      *RemoteDownloadStarter  `json:"startedBy"`
@@ -13433,8 +13458,18 @@ type RemoteDownloadBulk struct {
 // RemoteDownloadBulkLevel defines model for RemoteDownloadBulk.Level.
 type RemoteDownloadBulkLevel string
 
+// RemoteDownloadBulkOrigin Who started the bulk: `person` (a person's bulk of a package or a sub-section), `request` (the examination of a package a
+// request starts) or `allow` (the newest versions an allow downloads, Q-CUR-141).
+type RemoteDownloadBulkOrigin string
+
 // RemoteDownloadBulkState defines model for RemoteDownloadBulk.State.
 type RemoteDownloadBulkState string
+
+// RemoteDownloadBulkPage defines model for RemoteDownloadBulkPage.
+type RemoteDownloadBulkPage struct {
+	Items      []RemoteDownloadBulk `json:"items"`
+	NextCursor *string              `json:"nextCursor"`
+}
 
 // RemoteDownloadCounts defines model for RemoteDownloadCounts.
 type RemoteDownloadCounts struct {
@@ -19200,6 +19235,15 @@ type PutDeliveryRuleParams struct {
 	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
 }
 
+// ListRemoteDownloadBulksParams defines parameters for ListRemoteDownloadBulks.
+type ListRemoteDownloadBulksParams struct {
+	// Limit Page size, 1 to `api.page_size_max` (R-API-010).
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor The `nextCursor` of the previous page. Opaque; valid only with the filters and sort it was issued for.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
 // CancelRemoteDownloadBulkParams defines parameters for CancelRemoteDownloadBulk.
 type CancelRemoteDownloadBulkParams struct {
 	// IdempotencyKey 1 to 255 printable ASCII characters, preferably a UUID (R-API-014).
@@ -22039,6 +22083,9 @@ type ServerInterface interface {
 	// DeleteDeliveryRule Remove a delivery rule
 	// (DELETE /api/v1/projects/{projectKey}/repositories/{repoKey}/delivery-rules/{ruleId})
 	DeleteDeliveryRule(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, ruleId openapi_types.UUID)
+	// ListRemoteDownloadBulks List the bulk downloads of a remote repository
+	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks)
+	ListRemoteDownloadBulks(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, params ListRemoteDownloadBulksParams)
 	// GetRemoteDownloadBulk Read a bulk download
 	// (GET /api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks/{bulkId})
 	GetRemoteDownloadBulk(w http.ResponseWriter, r *http.Request, projectKey ProjectKey, repoKey string, bulkId string)
@@ -31516,6 +31563,70 @@ func (siw *ServerInterfaceWrapper) DeleteDeliveryRule(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DeleteDeliveryRule(w, r, projectKey, repoKey, ruleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListRemoteDownloadBulks operation middleware
+func (siw *ServerInterfaceWrapper) ListRemoteDownloadBulks(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectKey" -------------
+	var projectKey ProjectKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectKey", r.PathValue("projectKey"), &projectKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectKey", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "repoKey" -------------
+	var repoKey string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "repoKey", r.PathValue("repoKey"), &repoKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "repoKey", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListRemoteDownloadBulksParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListRemoteDownloadBulks(w, r, projectKey, repoKey, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -41861,6 +41972,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/{downloadId}", wrapper.GetRemoteDownload)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/{downloadId}/retry", wrapper.RetryRemoteDownload)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/downloads/{downloadId}/cancel", wrapper.CancelRemoteDownload)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks", wrapper.ListRemoteDownloadBulks)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks/{bulkId}", wrapper.GetRemoteDownloadBulk)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks/{bulkId}/cancel", wrapper.CancelRemoteDownloadBulk)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/projects/{projectKey}/repositories/{repoKey}/upstream", wrapper.GetUpstreamCatalogue)

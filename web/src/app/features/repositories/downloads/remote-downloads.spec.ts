@@ -57,9 +57,11 @@ function queue(fake: FakeRemoteDownloadsApi): void {
   fake.bulks = [downloadBulk({ id: 'b-1', subject: '@acme/a' })];
 }
 
-async function open(options: { manage?: boolean; url?: string; rows?: (fake: FakeRemoteDownloadsApi) => void } = {}) {
+async function open(
+  options: { manage?: boolean; url?: string; rows?: (fake: FakeRemoteDownloadsApi) => void; upstreamName?: string } = {},
+) {
   const r = await renderScreen(RemoteDownloads, {
-    inputs: { repository: 'web/npmjs' },
+    inputs: { repository: 'web/npmjs', ...(options.upstreamName ? { upstreamName: options.upstreamName } : {}) },
     setup: async (get) => {
       const session = get(SessionApi) as FakeSessionApi;
       session.meResult = { capabilities: [], roles: [] };
@@ -73,7 +75,35 @@ async function open(options: { manage?: boolean; url?: string; rows?: (fake: Fak
 }
 
 function rowOf(root: HTMLElement, name: string): HTMLTableRowElement {
-  return [...root.querySelectorAll<HTMLTableRowElement>('tbody tr:not(.expansion)')].find((tr) => tr.querySelector('th')?.textContent?.includes(name))!;
+  return [...root.querySelectorAll<HTMLTableRowElement>('[data-testid="download-rows"] tbody tr:not(.expansion)')].find((tr) =>
+    tr.querySelector('th')?.textContent?.includes(name),
+  )!;
+}
+
+/** The bulk the owner started on 2026-11-24: its expansion failed before it queued a row (the catalogue host was refused). */
+function refusedBulk() {
+  return downloadBulk({
+    id: 'b-hub',
+    subject: 'guidedtraffic/valkey-operator',
+    state: 'failed',
+    versionsFound: 0,
+    versionsQueued: 0,
+    rows: {},
+    startedBy: { id: SELF, name: 'Alice' },
+    finishedAt: '2026-11-24T10:05:03Z',
+    failure: downloadFailure({
+      class: 'upstream_unexpected',
+      step: 'status',
+      code: 'foreign_host_denied',
+      file: null,
+      address: null,
+      status: null,
+      excerpt: null,
+      attempt: 0,
+      detail:
+        'The download failed at the step status. The upstream document points to the host hub.docker.com, which is neither the upstream of the repository upstream/docker-hub nor one of its extraHosts.',
+    }),
+  });
 }
 
 describe('The tab Downloads of a remote repository', () => {
@@ -179,6 +209,94 @@ describe('The tab Downloads of a remote repository', () => {
     await settle(fixture);
     expect(fake.calls).toContain('cancel-bulk web/npmjs b-1');
     await expectAccessible(root);
+  });
+
+  it('R-CUR-018 R-CUR-012 a bulk that failed before its first row stands over the rows with its cause in words, and a holder of manage starts it again', async () => {
+    const { root, fixture, fake } = await open({
+      manage: true,
+      upstreamName: 'Docker Hub',
+      rows: (f) => {
+        f.rows = [];
+        f.bulks = [downloadBulk({ id: 'b-old', subject: '@acme/a', state: 'done', rows: { done: 3 } }), refusedBulk()];
+      },
+    });
+    const bulks = root.querySelector<HTMLElement>('[data-testid="download-bulks"]')!;
+    expect(text(bulks)).toContain('Bulk downloads');
+    const [failed, done] = [...bulks.querySelectorAll<HTMLTableRowElement>('tbody tr')] as [HTMLTableRowElement, HTMLTableRowElement];
+    expect(text(failed)).toContain('Every version of guidedtraffic/valkey-operator');
+    expect(text(failed)).toContain('Started by You');
+    expect(text(failed)).toContain('Failed');
+    expect(text(failed)).not.toContain('0 of 0');
+    expect(text(failed)).toContain("Docker Hub's version list could not be read");
+    expect(text(failed)).toContain('Unexpected answer of the upstream: The download failed at the step status.');
+    expect(text(failed)).toContain('hub.docker.com');
+    // The rows below say that there is none, and the bulk's title leads to the bulk.
+    expect(text(root.querySelector('[data-testid="download-rows"]')!)).toContain('There is no download yet.');
+    expect(failed.querySelector('a')?.getAttribute('href')).toContain('bulk=b-hub');
+    // A done bulk offers nothing; the failed one starts again with its level, its subject and its bounds.
+    expect(done.querySelector('button')).toBeNull();
+    expect(text(done)).toContain('3 of 3 queued');
+    const status = vi.spyOn(TestBed.inject(Notifier), 'status');
+    failed.querySelector<HTMLButtonElement>('button')!.click();
+    await settle(fixture);
+    expect(fake.starts.at(-1)).toEqual({
+      level: 'package',
+      name: 'guidedtraffic/valkey-operator',
+      maxVersions: 100,
+      maxBytes: 107374182400,
+      includePrereleases: true,
+    });
+    expect(status).toHaveBeenCalledWith(
+      'The bulk download of guidedtraffic/valkey-operator starts again: Quader reads its versions from the upstream.',
+    );
+    await expectAccessible(root);
+  });
+
+  it('R-CUR-018 R-CUR-012 a reader sees a failed bulk with the upstream named plainly and cannot start it again; no bulk, no list', async () => {
+    const { root } = await open({ rows: (f) => ((f.rows = []), (f.bulks = [refusedBulk()])) });
+    const bulks = root.querySelector<HTMLElement>('[data-testid="download-bulks"]')!;
+    expect(text(bulks)).toContain("The upstream's version list could not be read");
+    expect(bulks.querySelector('button')).toBeNull();
+    const none = await open({ rows: (f) => ((f.rows = []), (f.bulks = [])) });
+    expect(none.root.querySelector('[data-testid="download-bulks"]')).toBeNull();
+  });
+
+  it('R-CUR-018 R-CUR-012 the bulk the address names says what failed and starts again; the list of bulks gives way to it', async () => {
+    const { root, fixture, fake } = await open({
+      manage: true,
+      url: '/projects/web/repositories/npmjs/downloads?bulk=b-hub',
+      rows: (f) => ((f.rows = []), (f.bulks = [refusedBulk()])),
+    });
+    expect(root.querySelector('[data-testid="download-bulks"]')).toBeNull();
+    const bulk = root.querySelector<HTMLElement>('[data-testid="download-bulk"]')!;
+    expect(text(bulk)).toContain("The upstream's version list could not be read");
+    expect(text(bulk)).toContain('Unexpected answer of the upstream: The download failed at the step status.');
+    [...bulk.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent?.includes('Start again'))!.click();
+    await settle(fixture);
+    await settle(fixture);
+    expect(fake.starts.at(-1)).toMatchObject({ level: 'package', name: 'guidedtraffic/valkey-operator' });
+    // The new bulk is listed; the address no longer names the failed one.
+    expect(TestBed.inject(Router).url).toBe('/projects/web/repositories/npmjs/downloads');
+  });
+
+  it('R-CUR-018 R-CUR-012 the tab reads the bulks again while one expands, and shows its failure without a reload', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+    try {
+      const expanding = downloadBulk({ id: 'b-hub', subject: 'guidedtraffic/valkey-operator', state: 'expanding', versionsFound: 0, versionsQueued: 0, rows: {} });
+      const { root, fixture, fake } = await open({ rows: (f) => ((f.rows = []), (f.bulks = [expanding])) });
+      expect(text(root.querySelector('[data-testid="download-bulks"]')!)).toContain('Finding versions');
+      fake.bulks = [refusedBulk()];
+      vi.advanceTimersByTime(DOWNLOADS_REFRESH_MS);
+      await settle(fixture);
+      expect(text(root.querySelector('[data-testid="download-bulks"]')!)).toContain("The upstream's version list could not be read");
+      // A failed bulk is no reason to read again.
+      const reads = fake.calls.filter((c) => c.startsWith('bulks ')).length;
+      vi.advanceTimersByTime(DOWNLOADS_REFRESH_MS * 3);
+      await settle(fixture);
+      expect(fake.calls.filter((c) => c.startsWith('bulks ')).length).toBe(reads);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('R-CUR-018 R-UI-211 the name of the address shows the rows of that package, and Show every download clears it', async () => {

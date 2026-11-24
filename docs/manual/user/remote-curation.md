@@ -119,11 +119,18 @@ a cache while it is being built and to find out why a client's fetch failed.
   started; on the downloads of clients and probes if you may fetch that version through the repository; and on every row if you are a
   Maintainer or Owner of the project or an administrator, who also see **Retry all failed**, which retries every failed download of the
   kind **Failure** shows.
-- **Bulk** opens the rows of one bulk download (every version of a package) with its line above them: how many versions it found and
-  queued, its rows by state, its bounds, and **Cancel bulk** for the person who started it and for Maintainers, Owners and
-  administrators. **Show every download** returns to the whole queue.
-- While something waits or runs, the tab reads the queue again every five seconds; **Pause automatic refresh** stops that until you
-  resume it.
+- **Bulk downloads**, above the filters once the repository has one, lists its bulk downloads, newest first: what each downloads, who
+  started it and when, its state (**Finding versions** while Quader reads the upstream's list of versions, **Queued** while its rows
+  wait or run, **Done**, **Stopped at a bound**, **Cancelled**, **Failed**), how many versions it queued of those it found, and its
+  rows by state. A bulk reads the versions first and queues its rows after that, so a bulk that fails before its first row is seen only
+  here: its line says what could not be read ("Docker Hub's version list could not be read") and why, in Quader's words. **Start
+  again** starts a failed bulk anew with the same bounds, for Maintainers, Owners and administrators; **Cancel** stops one that
+  still runs.
+- **Bulk** (a row's origin) and the name of a bulk in **Bulk downloads** open the rows of that bulk with its line above them: how many
+  versions it found and queued, its rows by state, its bounds, what failed, and **Cancel bulk** for the person who started it and for
+  Maintainers, Owners and administrators, or **Start again** for a failed one. **Show every download** returns to the whole queue.
+- While something waits or runs, or a bulk is still finding versions, the tab reads the queue again every five seconds; **Pause
+  automatic refresh** stops that until you resume it.
 
 By default, finished and cancelled downloads leave the list a week after they ended, failed ones after 30 days.
 

@@ -1680,8 +1680,10 @@ async function* toastsWalk(page: Page): AsyncGenerator<string> {
       notifier: { status(text: string, action?: { label: string; run(): void }): void; alert(text: string): void };
     };
     host.notifier.status(
-      de ? 'Der Sammeldownload ist eingereiht; seine Zeilen warten im Reiter Downloads.' : 'The bulk download is queued; its rows wait in the tab Downloads.',
-      { label: de ? 'Downloads anzeigen' : 'Show downloads', run: () => undefined },
+      de
+        ? 'Der Sammeldownload hat begonnen; Quader liest zuerst seine Versionen und reiht sie dann ein.'
+        : 'The bulk download has started; Quader reads its versions first, then queues them.',
+      { label: de ? 'Sammeldownload anzeigen' : 'Show bulk download', run: () => undefined },
     );
     host.notifier.alert(
       de ? 'Die Zwischenablage ist nicht verfügbar. Markieren Sie den Text und kopieren Sie ihn.' : 'The clipboard is not available. Select the text and copy it.',

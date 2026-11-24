@@ -236,6 +236,12 @@ func probeOf(row queue.Row) formats.Probe {
 // downloadUpstream is the upstream of one run: a pass's, with the window of a background run (Host.BackgroundUpstream), whose
 // requests carry the row's charge and record their fills for system:background-download with the reason of the work. The row, nil for
 // the catalogue's calls of a bulk's expansion, names the downloads of the fills (operations-and-observability.md R-OPS-049).
+//
+// The hosts besides the upstream's and its extraHosts that the upstream reaches are, for a row, the mirror's hosts of the format, and
+// for the expansion (row nil) the hosts the tab Upstream's catalogue reaches (catalogueHosts: those and the catalogue hosts of the
+// preset, Docker Hub's API host hub.docker.com and the API of the GitLab preset): the expansion reads the catalogue the tab reads, so
+// it reaches what the tab reaches, and the fetch of a row's artifacts reaches no more than before (R-CUR-008, R-CUR-010, Q-CUR-167).
+// None of those hosts receives the repository's credential.
 func (m *MirrorHost) downloadUpstream(repo repository.Repository, jobID string, charge *limits.Charge, fill filler, row *queue.Row) (*backgroundUpstream, error) {
 	rem, err := proxy.NewRemote(repo)
 	if err != nil {
@@ -244,6 +250,9 @@ func (m *MirrorHost) downloadUpstream(repo repository.Repository, jobID string, 
 	var hostsOf func(*url.URL) []string
 	if lister, ok := m.Lister(repo.Format); ok {
 		hostsOf = lister.MirrorHosts
+	}
+	if row == nil {
+		hostsOf = func(base *url.URL) []string { return catalogueHosts(m, repo, base) }
 	}
 	share := proxy.BackgroundShare(rem.Settings.Limits.MaxConcurrentFetches, rem.Settings.Mirror.Concurrency)
 	pu, err := m.newPassUpstream(repo, rem, mirror.Pass{JobID: jobID, Ceiling: share}, hostsOf)

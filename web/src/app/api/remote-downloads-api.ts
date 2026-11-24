@@ -20,6 +20,8 @@ export type RemoteDownloadPage = Schema<'RemoteDownloadPage'>;
 export type RemoteDownloadCounts = Schema<'RemoteDownloadCounts'>;
 /** A bulk download with its counters and its rows by state (R-CUR-010, R-CUR-012). */
 export type RemoteDownloadBulk = Schema<'RemoteDownloadBulk'>;
+/** One page of a repository's bulk downloads, newest first (Q-CUR-168). */
+export type RemoteDownloadBulkPage = Schema<'RemoteDownloadBulkPage'>;
 /** A download ahead of a client: one version, every version of a package, or a sub-section, with a bulk's bounds (R-CUR-010). */
 export type RemoteDownloadRequest = Omit<Schema<'RemoteDownloadRequest'>, 'includePrereleases'> & { readonly includePrereleases?: boolean };
 /** What a download ahead would fetch, before it is started (R-CUR-010). */
@@ -86,6 +88,8 @@ export abstract class RemoteDownloadsApi {
   ): Promise<number>;
   /** `POST …/downloads/{id}/cancel`: the row after the cancel. */
   abstract cancel(repository: string, id: string, idempotencyKey: string): Promise<RemoteDownload>;
+  /** `GET …/download-bulks`: one page of the repository's bulks, newest first (Q-CUR-168). */
+  abstract listBulks(repository: string, cursor: string | null, limit: number): Promise<RemoteDownloadBulkPage>;
   /** `GET …/download-bulks/{id}`. */
   abstract bulk(repository: string, id: string): Promise<RemoteDownloadBulk>;
   /** `POST …/download-bulks/{id}/cancel`: the bulk after the cancel. */
@@ -132,6 +136,12 @@ export class HttpRemoteDownloadsApi extends RemoteDownloadsApi {
 
   async cancel(repository: string, id: string, idempotencyKey: string): Promise<RemoteDownload> {
     return (await this.client.post<RemoteDownload>(`${base(repository)}/downloads/${encodeURIComponent(id)}/cancel`, undefined, { idempotencyKey })).body;
+  }
+
+  async listBulks(repository: string, cursor: string | null, limit: number): Promise<RemoteDownloadBulkPage> {
+    const params: Record<string, string | number> = { limit };
+    if (cursor !== null) params['cursor'] = cursor;
+    return (await this.client.getJson<RemoteDownloadBulkPage>(`${base(repository)}/download-bulks`, { params })).body;
   }
 
   async bulk(repository: string, id: string): Promise<RemoteDownloadBulk> {

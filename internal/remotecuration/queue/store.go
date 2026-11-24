@@ -67,6 +67,9 @@ type Reader interface {
 	GetRow(ctx context.Context, id string, repoID int64) (Row, bool, error)
 	// GetBulk reads one bulk with its rows' counts by state.
 	GetBulk(ctx context.Context, id string, repoID int64) (Bulk, map[string]int64, bool, error)
+	// ListBulks returns one page of a repository's bulks, newest first, with the counts of each one's rows by state, by the bulk's ID
+	// (Q-CUR-168).
+	ListBulks(ctx context.Context, f BulkFilter) ([]Bulk, map[string]map[string]int64, error)
 	// Waiting is the count of waiting rows of a repository.
 	Waiting(ctx context.Context, repoID int64) (int, error)
 }
@@ -95,6 +98,14 @@ type Filter struct {
 	State, Class, Origin, BulkID, Name string
 	// After is the last row of the previous page; nil for the first.
 	After *Row
+	Limit int
+}
+
+// BulkFilter selects a page of a repository's bulks (GET download-bulks).
+type BulkFilter struct {
+	RepoID int64
+	// After is the last bulk of the previous page (its creation time and ID); nil for the first.
+	After *Bulk
 	Limit int
 }
 

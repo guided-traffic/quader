@@ -9,6 +9,7 @@ import {
   DOWNLOAD_FAILURE_CLASSES,
   RemoteDownload,
   RemoteDownloadBulk,
+  RemoteDownloadRequest,
   RemoteDownloadCounts,
   RemoteDownloadFailureClass,
   RemoteDownloadFilters,
@@ -39,6 +40,9 @@ import {
 /** How often the tab reads the queue again while a row waits or runs (R-CUR-018; WCAG 2.2.2: with a pause control). */
 export const DOWNLOADS_REFRESH_MS = 5_000;
 
+/** The bulks the tab shows at first and adds per **Show more** (Q-CUR-168). */
+export const BULKS_PAGE = 5;
+
 /** The states the tab offers as filters, with the counts of the list's answer (R-CUR-018). Cancelled rows are under All. */
 const FILTER_STATES = ['waiting', 'running', 'failed', 'done'] as const;
 type FilterState = (typeof FILTER_STATES)[number];
@@ -49,8 +53,10 @@ type FilterState = (typeof FILTER_STATES)[number];
  * in the address (`state`, `failure`, `bulk`, `name`). A row names its subject, its origin, its state with the attempt, its progress and its
  * failure in one line, and opens in place to the whole failure: the step, the code, the address without its query, the upstream's
  * status, the excerpt of its answer and Quader's sentence. A row offers **Retry** or **Cancel** to whoever may (R-CUR-005); a
- * holder of `manage` retries every failed row that matches. The list reads itself again every five seconds while a row waits or
- * runs, until **Pause automatic refresh** (the form of the page System status, Q-UI-651).
+ * holder of `manage` retries every failed row that matches. Above the rows, the repository's bulk downloads, newest first, each with
+ * its state, its counters and, where its expansion failed, the cause in words, so that a bulk that failed before it queued a row is
+ * seen (Q-CUR-168); a failed bulk of a person can be started again. The list reads itself again every five seconds while a row waits
+ * or runs or a bulk expands, until **Pause automatic refresh** (the form of the page System status, Q-UI-651).
  */
 @Component({
   selector: 'quader-remote-downloads',
@@ -72,6 +78,11 @@ export class RemoteDownloads {
    * view does not, and then the default, `read`, is asked.
    */
   readonly fillAction = input<'read' | 'deploy'>('read');
+  /**
+   * The name of the upstream preset the remote's address is (Docker Hub), for a bulk's failure in words; null names the upstream
+   * plainly. Only the full document has the address.
+   */
+  readonly upstreamName = input<string | null>(null);
   /** The queue's counts after every answer, for the tab's label in the strip (`Downloads · 2 failed`). */
   readonly countsChange = output<RemoteDownloadCounts>();
 
@@ -129,6 +140,22 @@ export class RemoteDownloads {
     return e ? asApiError(e) : null;
   });
 
+  // ---- The repository's bulks (Q-CUR-168) ----
+
+  protected readonly bulkList = signal<readonly RemoteDownloadBulk[]>([]);
+  protected readonly bulkListLoaded = signal(false);
+  protected readonly bulkListLoading = signal(false);
+  protected readonly bulkListError = signal<ApiError | null>(null);
+  private readonly bulkListCursor = signal<string | null>(null);
+  protected readonly bulkListHasMore = computed(() => this.bulkListCursor() !== null);
+  private bulkGeneration = 0;
+  /** The list of bulks stands over the rows where the address names neither a bulk nor a package, once the repository has one. */
+  protected readonly showsBulkList = computed(
+    () => this.bulkId() === null && this.name() === null && (this.bulkList().length > 0 || this.bulkListError() !== null),
+  );
+  protected readonly bulksCaption = $localize`:@@downloads.bulks.caption:Bulk downloads of this repository, newest first`;
+  protected readonly bulkBusy = signal<ReadonlySet<string>>(new Set());
+
   private readonly self = computed(() => this.session.whoami()?.principal.id ?? null);
   /**
    * What the caller may do in the repository (R-CUR-005): `manage` (the roles Maintainer and Owner) or the system role `admin`, and
@@ -149,11 +176,15 @@ export class RemoteDownloads {
   protected readonly manager = computed(() => valueOf(this.rights)?.manage ?? false);
   private readonly mayFill = computed(() => valueOf(this.rights)?.fill ?? false);
 
-  /** The list reads itself again while the repository has a row that waits or runs, or a bulk expands. */
+  /** The list reads itself again while the repository has a row that waits or runs, or a bulk shown expands or waits. */
   protected readonly live = computed(() => {
     const c = this.counts();
     const b = this.bulk();
-    return (c !== null && c.waiting + c.running > 0) || (b !== null && (b.state === 'expanding' || b.state === 'queued'));
+    return (
+      (c !== null && c.waiting + c.running > 0) ||
+      (b !== null && bulkActive(b)) ||
+      (this.showsBulkList() && this.bulkList().some(bulkActive))
+    );
   });
 
   protected readonly states = FILTER_STATES;
@@ -186,6 +217,16 @@ export class RemoteDownloads {
     ...(this.hasActions() ? [{ id: 'actions', label: $localize`:@@downloads.col.actions:Actions`, hideLabel: true }] : []),
   ]);
 
+  /** A bulk, its state, its versions with its rows by state, and its failure, which wraps; the actions only while a bulk offers one. */
+  protected readonly bulkHasActions = computed(() => this.bulkList().some((b) => this.bulkAction(b) !== null));
+  protected readonly bulkColumns = computed<readonly TableColumn[]>(() => [
+    { id: 'bulk', label: $localize`:@@downloads.bulks.col.bulk:Bulk download`, width: '14rem' },
+    { id: 'state', label: $localize`:@@downloads.col.state:State` },
+    { id: 'versions', label: $localize`:@@downloads.bulks.col.versions:Versions` },
+    { id: 'failure', label: $localize`:@@downloads.col.failure:Failure`, width: '18rem' },
+    ...(this.bulkHasActions() ? [{ id: 'actions', label: $localize`:@@downloads.col.actions:Actions`, hideLabel: true }] : []),
+  ]);
+
   constructor() {
     effect(() => {
       const repository = this.repository();
@@ -194,6 +235,10 @@ export class RemoteDownloads {
         this.opened.set(new Set());
         void this.load(repository, filters, true);
       });
+    });
+    effect(() => {
+      const repository = this.repository();
+      untracked(() => void this.loadBulks(repository, true));
     });
     effect((onCleanup) => {
       if (this.paused() || !this.live()) return;
@@ -231,10 +276,57 @@ export class RemoteDownloads {
     }
   }
 
-  /** The automatic refresh and the one after an action: the rows, and the bulk the list shows. */
+  /** The automatic refresh and the one after an action: the rows, the bulk the list shows, and the repository's bulks. */
   protected refresh(): void {
     void this.load(this.repository(), this.filters(), false);
     if (this.bulkId()) this.bulkRead.reload();
+    else void this.loadBulks(this.repository(), false);
+  }
+
+  /** Reads the repository's bulks again, as many as are shown (at least one page); a new repository starts over. */
+  private async loadBulks(repository: string, fresh: boolean): Promise<void> {
+    const generation = fresh ? ++this.bulkGeneration : this.bulkGeneration;
+    if (fresh) {
+      this.bulkList.set([]);
+      this.bulkListCursor.set(null);
+      this.bulkListLoaded.set(false);
+    }
+    const limit = Math.min(MAX_PAGE_LIMIT, Math.max(BULKS_PAGE, this.bulkList().length));
+    this.bulkListLoading.set(true);
+    try {
+      const page = await this.api.listBulks(repository, null, limit);
+      if (generation !== this.bulkGeneration) return;
+      this.bulkList.set(page.items);
+      this.bulkListCursor.set(page.nextCursor);
+      this.bulkListError.set(null);
+      this.bulkListLoaded.set(true);
+    } catch (e) {
+      if (generation === this.bulkGeneration) this.bulkListError.set(asApiError(e));
+    } finally {
+      if (generation === this.bulkGeneration) this.bulkListLoading.set(false);
+    }
+  }
+
+  protected retryBulks(): void {
+    void this.loadBulks(this.repository(), true);
+  }
+
+  protected async moreBulks(): Promise<void> {
+    const cursor = this.bulkListCursor();
+    if (cursor === null || this.bulkListLoading()) return;
+    const generation = this.bulkGeneration;
+    this.bulkListLoading.set(true);
+    try {
+      const page = await this.api.listBulks(this.repository(), cursor, BULKS_PAGE);
+      if (generation !== this.bulkGeneration) return;
+      const seen = new Set(this.bulkList().map((b) => b.id));
+      this.bulkList.update((list) => [...list, ...page.items.filter((b) => !seen.has(b.id))]);
+      this.bulkListCursor.set(page.nextCursor);
+    } catch (e) {
+      if (generation === this.bulkGeneration) this.bulkListError.set(asApiError(e));
+    } finally {
+      if (generation === this.bulkGeneration) this.bulkListLoading.set(false);
+    }
   }
 
   protected retryList(): void {
@@ -414,21 +506,97 @@ export class RemoteDownloads {
   /** **Cancel bulk** while it expands or its rows wait: the person who started it, a holder of `manage`, the administrator. */
   protected readonly offersCancelBulk = computed(() => {
     const b = this.bulk();
-    if (!b || (b.state !== 'expanding' && b.state !== 'queued')) return false;
-    return this.manager() || (!!b.startedBy?.id && b.startedBy.id === this.self());
+    return !!b && this.bulkAction(b) === 'cancel';
   });
 
-  protected async cancelBulk(): Promise<void> {
+  /** **Start again** of the bulk the address names, where it failed (Q-CUR-168). */
+  protected readonly offersStartAgain = computed(() => {
     const b = this.bulk();
-    if (!b) return;
+    return !!b && this.bulkAction(b) === 'again';
+  });
+
+  /**
+   * A bulk's one action (R-UI-163): **Cancel** while it expands or its rows wait, to the person who started it, a holder of `manage`
+   * and the administrator (R-CUR-012); **Start again** for a person's bulk whose expansion failed, to whoever may start a bulk
+   * (`manage`, R-CUR-010), unless the upstream lists no such level. The server decides again.
+   */
+  protected bulkAction(b: RemoteDownloadBulk): 'cancel' | 'again' | null {
+    if (bulkActive(b)) return this.manager() || (!!b.startedBy?.id && b.startedBy.id === this.self()) ? 'cancel' : null;
+    if (b.state === 'failed' && b.origin === 'person' && b.failure?.code !== 'catalogue_not_offered' && this.manager()) return 'again';
+    return null;
+  }
+
+  protected bulkActionLabel(b: RemoteDownloadBulk): string {
+    return this.bulkAction(b) === 'again'
+      ? $localize`:@@downloads.bulk.start-again:Start again`
+      : $localize`:@@downloads.cancel:Cancel`;
+  }
+
+  protected isBulkBusy(b: RemoteDownloadBulk): boolean {
+    return this.bulkBusy().has(b.id);
+  }
+
+  protected async actOnBulk(b: RemoteDownloadBulk): Promise<void> {
+    const kind = this.bulkAction(b);
+    if (kind === null || this.isBulkBusy(b)) return;
+    this.bulkBusy.update((s) => new Set([...s, b.id]));
     try {
-      await this.api.cancelBulk(this.repository(), b.id, newIdempotencyKey());
-      this.notifier.status($localize`:@@downloads.bulk.cancelled:The bulk download of ${b.subject}:subject: is cancelled.`);
+      if (kind === 'cancel') {
+        await this.api.cancelBulk(this.repository(), b.id, newIdempotencyKey());
+        this.notifier.status($localize`:@@downloads.bulk.cancelled:The bulk download of ${b.subject}:subject: is cancelled.`);
+      } else {
+        await this.api.start(this.repository(), bulkRequest(b), newIdempotencyKey());
+        this.notifier.status(
+          $localize`:@@downloads.bulk.started-again:The bulk download of ${b.subject}:subject: starts again: Quader reads its versions from the upstream.`,
+        );
+        if (this.bulkId()) this.clearBulk();
+      }
     } catch (e) {
       this.notifier.alert(describeProblem(asApiError(e)).text);
     } finally {
+      this.bulkBusy.update((s) => {
+        const next = new Set(s);
+        next.delete(b.id);
+        return next;
+      });
       this.refresh();
     }
+  }
+
+  /** The action of the bulk the address names: **Cancel bulk** or **Start again**. */
+  protected async actOnShownBulk(): Promise<void> {
+    const b = this.bulk();
+    if (b) await this.actOnBulk(b);
+  }
+
+  /**
+   * What failed of a bulk, in words (Q-CUR-168): its expansion reads the upstream's list of a package's versions or of a sub-section's
+   * packages, so the failure says which list of which upstream could not be read; null for a bulk a bound stopped, whose note is no
+   * failure.
+   */
+  protected bulkFailureLead(b: RemoteDownloadBulk): string | null {
+    const f = b.failure;
+    if (!f || f.class === 'bound') return null;
+    const name = this.upstreamName();
+    if (b.level === 'package') {
+      return name
+        ? $localize`:@@downloads.bulk.failed-versions-of:${name}:upstream:'s version list could not be read`
+        : $localize`:@@downloads.bulk.failed-versions:The upstream's version list could not be read`;
+    }
+    return name
+      ? $localize`:@@downloads.bulk.failed-section-of:${name}:upstream:'s list of the sub-section could not be read`
+      : $localize`:@@downloads.bulk.failed-section:The upstream's list of the sub-section could not be read`;
+  }
+
+  /** A bulk's rows by state in one line: "Running 1 · Waiting 2". */
+  protected bulkRowsLine(b: RemoteDownloadBulk): string {
+    return this.bulkRows(b)
+      .map((x) => `${downloadStateText(x.state)} ${x.n}`)
+      .join(' · ');
+  }
+
+  protected bulkLinkLabel(b: RemoteDownloadBulk): string {
+    return $localize`:@@downloads.bulk.open:The downloads of the bulk: ${this.bulkTitle(b)}:title:`;
   }
 
   /** What a bulk downloads: every version of a package, or a sub-section of the upstream. */
@@ -436,6 +604,24 @@ export class RemoteDownloads {
     return b.level === 'package'
       ? $localize`:@@downloads.bulk.package:Every version of ${b.subject}:subject:`
       : $localize`:@@downloads.bulk.section:The sub-section ${b.subject}:subject:`;
+  }
+
+  /** A bulk's state as the rows' badges show theirs: failed in the error's colour, done in the positive one, the rest neutral. */
+  protected bulkBadge(b: RemoteDownloadBulk): { readonly cls: string; readonly icon: string } {
+    switch (b.state) {
+      case 'failed':
+        return { cls: 'bad', icon: 'error' };
+      case 'done':
+        return { cls: 'ok', icon: 'check_circle' };
+      case 'expanding':
+        return { cls: 'badge', icon: 'sync' };
+      case 'queued':
+        return { cls: 'badge', icon: 'hourglass_empty' };
+      case 'cancelled':
+        return { cls: 'badge', icon: 'cancel' };
+      case 'bounded':
+        return { cls: 'badge', icon: 'check' };
+    }
   }
 
   protected bulkStateText(b: RemoteDownloadBulk): string {
@@ -455,6 +641,11 @@ export class RemoteDownloads {
     }
   }
 
+  /** The versions of a bulk in a line of its own: "2 of 100 queued". */
+  protected bulkVersions(b: RemoteDownloadBulk): string {
+    return $localize`:@@downloads.bulks.versions:${b.versionsQueued}:queued: of ${b.versionsFound}:found: queued`;
+  }
+
   protected bulkCounts(b: RemoteDownloadBulk): string {
     return $localize`:@@downloads.bulk.counts:${b.versionsQueued}:queued: of ${b.versionsFound}:found: versions found are queued`;
   }
@@ -470,4 +661,15 @@ export class RemoteDownloads {
     const order: readonly RemoteDownloadState[] = ['running', 'waiting', 'failed', 'done', 'cancelled'];
     return order.map((state) => ({ state, n: b.rows[state] ?? 0 })).filter((x) => x.n > 0);
   }
+}
+
+/** A bulk that expands or whose rows wait: the tab reads itself again while one is shown. */
+function bulkActive(b: RemoteDownloadBulk): boolean {
+  return b.state === 'expanding' || b.state === 'queued';
+}
+
+/** The start of a bulk again with its level, its subject and its bounds (R-CUR-010): what the preview of the tab Upstream started. */
+function bulkRequest(b: RemoteDownloadBulk): RemoteDownloadRequest {
+  const bounds = { maxVersions: b.bounds.maxVersions, maxBytes: b.bounds.maxBytes, includePrereleases: b.bounds.includePrereleases };
+  return b.level === 'package' ? { level: 'package', name: b.subject, ...bounds } : { level: 'section', section: b.subject, ...bounds };
 }

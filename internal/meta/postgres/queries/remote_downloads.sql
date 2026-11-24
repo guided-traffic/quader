@@ -260,6 +260,24 @@ UPDATE remote_download_bulks b
    AND NOT EXISTS (SELECT 1 FROM remote_download d WHERE d.bulk_id = b.id AND d.state IN ('waiting', 'running'))
 RETURNING b.id::text AS id;
 
+-- name: RemoteDownloadBulkList :many
+-- One page of a repository's bulks (GET download-bulks, Q-CUR-168): newest first; the cursor is the last bulk's creation time and id.
+SELECT to_jsonb(b.*)::text AS doc
+  FROM remote_download_bulks b
+ WHERE b.repo_id = sqlc.arg(repo_id)::bigint
+   AND (sqlc.arg(after_id)::text = ''
+        OR (extract(epoch FROM b.created_at) * 1000000)::bigint < sqlc.arg(after_us)::bigint
+        OR ((extract(epoch FROM b.created_at) * 1000000)::bigint = sqlc.arg(after_us)::bigint AND b.id::text < sqlc.arg(after_id)::text))
+ ORDER BY b.created_at DESC, b.id::text DESC
+ LIMIT sqlc.arg(max_rows)::int;
+
+-- name: RemoteDownloadBulksStateCounts :many
+-- The rows of the bulks of a page by state (GET download-bulks).
+SELECT bulk_id::text AS bulk_id, state, count(*)::bigint AS n
+  FROM remote_download
+ WHERE bulk_id = ANY(sqlc.arg(bulk_ids)::text[]::uuid[])
+ GROUP BY bulk_id, state;
+
 -- name: RemoteDownloadBulkStateCounts :many
 -- The rows of a bulk by state (GET download-bulks/{id}).
 SELECT state, count(*)::bigint AS n FROM remote_download WHERE bulk_id = sqlc.arg(bulk_id)::text::uuid GROUP BY state;

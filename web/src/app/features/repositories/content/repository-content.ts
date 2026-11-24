@@ -181,6 +181,16 @@ export class RepositoryContent {
     const r = this.repository();
     return r && !isConsumerView(r) && r.class === 'remote' ? (r.remote?.url ?? null) : null;
   });
+  /**
+   * The name of the format's upstream preset whose address the remote has ("Docker Hub"), for the tab Downloads' failure of a bulk in
+   * words (Q-CUR-168); null for an upstream that is no preset's, and for a reader without the full document.
+   */
+  protected readonly upstreamName = computed<string | null>(() => {
+    const url = this.upstream();
+    if (!url) return null;
+    const same = (a: string): boolean => a.replace(/\/+$/, '').toLowerCase() === url.replace(/\/+$/, '').toLowerCase();
+    return this.descriptor()?.upstreamPresets.find((p) => same(p.url))?.displayName ?? null;
+  });
   /** The repository is disabled: the full document and the reader's view say so alike (R-REPO-010), so every reader's page knows it. */
   protected readonly disabled = computed(() => this.repository()?.disabled ?? false);
 

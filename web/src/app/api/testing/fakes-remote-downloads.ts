@@ -3,6 +3,7 @@ import { ApiError } from '../problem';
 import {
   RemoteDownload,
   RemoteDownloadBulk,
+  RemoteDownloadBulkPage,
   RemoteDownloadCounts,
   RemoteDownloadFailure,
   RemoteDownloadFailureClass,
@@ -68,6 +69,7 @@ export function downloadBulk(over: Partial<RemoteDownloadBulk> = {}): RemoteDown
     id: '01900000-0000-7000-8000-0000000000b1',
     level: 'package',
     subject: 'lodash',
+    origin: 'person',
     state: 'queued',
     bounds: { maxVersions: 100, maxBytes: 107374182400, includePrereleases: true },
     versionsFound: 3,
@@ -134,6 +136,15 @@ export class FakeRemoteDownloadsApi extends RemoteDownloadsApi {
     this.calls.push(`cancel ${repository} ${id}`);
     if (this.actError) throw this.actError;
     return this.change(id, { state: 'cancelled' });
+  }
+
+  /** The bulks newest first: the order of `bulks` reversed, as `start` appends. */
+  override async listBulks(repository: string, cursor: string | null, limit: number): Promise<RemoteDownloadBulkPage> {
+    this.calls.push(`bulks ${repository}`);
+    const all = [...this.bulks].reverse();
+    const start = cursor === null ? 0 : Number(cursor);
+    const items = all.slice(start, start + limit);
+    return { items, nextCursor: start + limit < all.length ? String(start + limit) : null };
   }
 
   override async bulk(repository: string, id: string): Promise<RemoteDownloadBulk> {

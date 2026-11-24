@@ -121,6 +121,50 @@ func (q *Queries) RemoteDownloadBulkInsert(ctx context.Context, arg RemoteDownlo
 	return doc, err
 }
 
+const remoteDownloadBulkList = `-- name: RemoteDownloadBulkList :many
+SELECT to_jsonb(b.*)::text AS doc
+  FROM remote_download_bulks b
+ WHERE b.repo_id = $1::bigint
+   AND ($2::text = ''
+        OR (extract(epoch FROM b.created_at) * 1000000)::bigint < $3::bigint
+        OR ((extract(epoch FROM b.created_at) * 1000000)::bigint = $3::bigint AND b.id::text < $2::text))
+ ORDER BY b.created_at DESC, b.id::text DESC
+ LIMIT $4::int
+`
+
+type RemoteDownloadBulkListParams struct {
+	RepoID  int64
+	AfterID string
+	AfterUs int64
+	MaxRows int32
+}
+
+// One page of a repository's bulks (GET download-bulks, Q-CUR-168): newest first; the cursor is the last bulk's creation time and id.
+func (q *Queries) RemoteDownloadBulkList(ctx context.Context, arg RemoteDownloadBulkListParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, remoteDownloadBulkList,
+		arg.RepoID,
+		arg.AfterID,
+		arg.AfterUs,
+		arg.MaxRows,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var doc string
+		if err := rows.Scan(&doc); err != nil {
+			return nil, err
+		}
+		items = append(items, doc)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const remoteDownloadBulkLock = `-- name: RemoteDownloadBulkLock :many
 SELECT to_jsonb(b.*)::text AS doc
   FROM remote_download_bulks b
@@ -263,6 +307,40 @@ func (q *Queries) RemoteDownloadBulksSettled(ctx context.Context) ([]string, err
 			return nil, err
 		}
 		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const remoteDownloadBulksStateCounts = `-- name: RemoteDownloadBulksStateCounts :many
+SELECT bulk_id::text AS bulk_id, state, count(*)::bigint AS n
+  FROM remote_download
+ WHERE bulk_id = ANY($1::text[]::uuid[])
+ GROUP BY bulk_id, state
+`
+
+type RemoteDownloadBulksStateCountsRow struct {
+	BulkID string
+	State  string
+	N      int64
+}
+
+// The rows of the bulks of a page by state (GET download-bulks).
+func (q *Queries) RemoteDownloadBulksStateCounts(ctx context.Context, bulkIds []string) ([]RemoteDownloadBulksStateCountsRow, error) {
+	rows, err := q.db.Query(ctx, remoteDownloadBulksStateCounts, bulkIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []RemoteDownloadBulksStateCountsRow{}
+	for rows.Next() {
+		var i RemoteDownloadBulksStateCountsRow
+		if err := rows.Scan(&i.BulkID, &i.State, &i.N); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

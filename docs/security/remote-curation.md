@@ -49,6 +49,10 @@ who can make Quader download how much, and what is kept of content that no clien
   `gitlab.com` for GitLab, the replication host of the public npm registry that the mirror already reads). A person never names a host:
   a repository whose URL is no preset's has no catalogue host, so a second host cannot be used for a request forgery (R-CUR-008,
   Q-CUR-15). Every host passes the egress address policy at connect time ([egress.md](egress.md)).
+- A bulk download's expansion reads the same catalogue and reaches the same hosts, a catalogue host without the repository's
+  credential, also where an `extraHosts` entry with `sendCredentials` names the same host (GitLab's `gitlab.com`); the fetch of a
+  queued version's files reaches only the upstream, its `extraHosts` and the format's mirror hosts, so a catalogue host never serves an
+  artifact (Q-CUR-167).
 - A redirect of a catalogue request follows the redirect rules of the remote (R-REPO-039), as a discovery request of a mirror does
   ([H-525](egress.md#h-525--a-redirect-of-a-discovery-request-is-followed-to-any-host-the-egress-policy-admits)).
 - Docker Hub's repository search is an endpoint its operator does not document; it is used with a fallback that turns the search off

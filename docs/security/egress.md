@@ -149,7 +149,8 @@ registry, the npm registry, nuget.org, the Debian and Ubuntu archives, Ansible G
 
 Specified on 2026-11-23, not built ([remote-curation.md](remote-curation.md)): the catalogue of a remote reaches the upstream, its `extraHosts` and the
 catalogue hosts its preset declares (`hub.docker.com`, `gitlab.com`, npm's replication host); a person names no host. Every request passes
-the address policy at connect time like the remote's own, through the same lent upstream as a mirror's discovery below.
+the address policy at connect time like the remote's own, through the same lent upstream as a mirror's discovery below. A bulk
+download's expansion reaches the same hosts; the fetch of its rows does not (Q-CUR-167).
 
 ## Requests of a mirror's discovery
 

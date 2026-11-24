@@ -44,3 +44,42 @@ func TestR_CUR_010_ADownloadAheadOfATagStoresTheImageOfTheListedPlatforms(t *tes
 		t.Errorf("the download ahead queued %d probe rows", n)
 	}
 }
+
+// R-CUR-010, R-CUR-008: a bulk of every version of an image of a Docker Hub remote is expanded through the catalogue, which reads the
+// tags on Docker Hub's API host (hub.docker.com, the preset's catalogue host), not on the registry: the bulk reaches that host as the
+// tab Upstream does and queues its rows, although the host is no extraHosts entry of the repository. The rows are not awaited; what
+// they fetch is R-CUR-011's. Integration tier, about 2 s, the API stub's tags of acme/a.
+func TestR_CUR_010_ABulkOfADockerHubRemoteReadsTheTagsWhereTheCatalogueReadsThem(t *testing.T) {
+	e := newEnv(t, options{env: []string{"QUADER_JOBS_POLL_INTERVAL=200ms"}})
+	rep := e.st.Start(t, testenv.ReplicaOptions{Name: "all-1", Role: "all", DialOverride: e.dial})
+	path := "/api/v1/projects/" + testenv.DefaultProject + "/repositories/" + rHub
+	a := e.st.Do(rep, http.MethodPost, path+"/downloads", e.admin, map[string]any{"level": "package", "name": "acme/a", "maxVersions": 2})
+	if a.Status != http.StatusAccepted {
+		t.Fatalf("the bulk: %d %s", a.Status, a.Body)
+	}
+	id := a.JSON(t)["bulk"].(map[string]any)["id"].(string)
+	var bulk map[string]any
+	testenv.WaitFor(t, "the bulk expanded", 30*time.Second, func() bool {
+		_ = e.st.Do(rep, http.MethodPost, "/api/v1/system/tasks/remote-downloads-dispatch/run", e.admin, nil)
+		bulk = e.st.Do(rep, http.MethodGet, path+"/download-bulks/"+id, e.admin, nil).JSON(t)
+		return bulk["state"] != "expanding"
+	})
+	if bulk["state"] == "failed" || bulk["versionsQueued"] != float64(2) {
+		t.Fatalf("the bulk of acme/a: %v", bulk)
+	}
+	if n := e.st.Number(`SELECT count(*) FROM remote_download WHERE bulk_id = $1::uuid AND version IN ('2.0', '1.2')`, id); n != 2 {
+		t.Errorf("the bulk queued %d rows of the two newest tags, want 2", n)
+	}
+	if e.hubAPI.requests.Load() == 0 {
+		t.Error("the catalogue host of Docker Hub was not asked")
+	}
+	// The repository's bulks list it (Q-CUR-168), as the person's, with its counters.
+	l := e.st.Do(rep, http.MethodGet, path+"/download-bulks?limit=1", e.admin, nil)
+	items, _ := l.JSON(t)["items"].([]any)
+	if l.Status != http.StatusOK || len(items) != 1 {
+		t.Fatalf("the list of bulks: %d %s", l.Status, l.Body)
+	}
+	if got := items[0].(map[string]any); got["id"] != id || got["origin"] != "person" || got["versionsQueued"] != float64(2) {
+		t.Errorf("the listed bulk: %v", got)
+	}
+}

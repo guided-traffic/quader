@@ -446,6 +446,44 @@ func (s *PGStore) GetBulk(ctx context.Context, id string, repoID int64) (b Bulk,
 	return b, counts, found, err
 }
 
+// ListBulks implements [Reader].
+func (s *PGStore) ListBulks(ctx context.Context, f BulkFilter) (out []Bulk, counts map[string]map[string]int64, err error) {
+	p := q.RemoteDownloadBulkListParams{RepoID: f.RepoID, MaxRows: int32(min(max(f.Limit, 1), 1000))} //nolint:gosec // bounded
+	if f.After != nil {
+		p.AfterUs, p.AfterID = f.After.CreatedAt.UnixMicro(), f.After.ID
+	}
+	err = s.read(ctx, func(qs *q.Queries) error {
+		docs, e := qs.RemoteDownloadBulkList(ctx, p)
+		if e != nil {
+			return e
+		}
+		out, counts = make([]Bulk, 0, len(docs)), map[string]map[string]int64{}
+		ids := make([]string, 0, len(docs))
+		for _, doc := range docs {
+			b, e := decodeBulk(doc)
+			if e != nil {
+				return e
+			}
+			out, ids = append(out, b), append(ids, b.ID)
+		}
+		if len(ids) == 0 {
+			return nil
+		}
+		rows, e := qs.RemoteDownloadBulksStateCounts(ctx, ids)
+		if e != nil {
+			return e
+		}
+		for _, r := range rows {
+			if counts[r.BulkID] == nil {
+				counts[r.BulkID] = map[string]int64{}
+			}
+			counts[r.BulkID][r.State] = r.N
+		}
+		return nil
+	})
+	return out, counts, err
+}
+
 // Waiting implements [Reader].
 func (s *PGStore) Waiting(ctx context.Context, repoID int64) (n int, err error) {
 	err = s.read(ctx, func(qs *q.Queries) error {

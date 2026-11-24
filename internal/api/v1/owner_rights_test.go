@@ -109,9 +109,10 @@ var ownerRightsReads = map[string]string{
 	"getRepositoryMirror": "decided through the decision point with the scope (requireMirrorReader)",
 	"listDeliveryRules":   "decided through the decision point with the scope (requireRuleReader, R-CUR-005)",
 	// >>> T-24 downloads
-	"listRemoteDownloads":   "read on the repository through the decision point with the scope (downloadSetup, R-CUR-005)",
-	"getRemoteDownload":     "as listRemoteDownloads",
-	"getRemoteDownloadBulk": "as listRemoteDownloads",
+	"listRemoteDownloads":     "read on the repository through the decision point with the scope (downloadSetup, R-CUR-005)",
+	"getRemoteDownload":       "as listRemoteDownloads",
+	"getRemoteDownloadBulk":   "as listRemoteDownloads",
+	"listRemoteDownloadBulks": "as listRemoteDownloads",
 	// <<< T-24 downloads
 	// >>> T-24 requests
 	"listDeliveryRequests": "read on the repository through the decision point with the scope (requestSetup, R-CUR-005); a caller " +

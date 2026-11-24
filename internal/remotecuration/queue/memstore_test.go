@@ -254,6 +254,10 @@ func (m *memStore) GetBulk(_ context.Context, id string, _ int64) (Bulk, map[str
 	return *b, nil, true, nil
 }
 
+func (m *memStore) ListBulks(context.Context, BulkFilter) ([]Bulk, map[string]map[string]int64, error) {
+	return nil, nil, nil
+}
+
 func (m *memStore) Waiting(_ context.Context, repoID int64) (int, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

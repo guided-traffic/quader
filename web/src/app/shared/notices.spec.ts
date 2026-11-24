@@ -104,7 +104,7 @@ describe('Notices', () => {
   it('R-UI-042 runs an action and closes its toast; an error shows its icon in the alert region', async () => {
     const { fixture, root, notifier } = await render();
     const run = vi.fn();
-    notifier.status('The bulk download is queued; its rows wait in the tab Downloads.', { label: 'Show downloads', run });
+    notifier.status('The bulk download has started: Quader reads the versions from the upstream and queues them.', { label: 'Show bulk download', run });
     notifier.alert('The clipboard is not available. Select the text and copy it.');
     await settle(fixture);
     const alert = root.querySelector('[role="alert"] .toast.alert');

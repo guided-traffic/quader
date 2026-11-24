@@ -5,10 +5,13 @@ import { Page, expect } from '@playwright/test';
  * only where a probe or a client fetched (no upstream of the internet is reachable for certain), so the walk answers the list in the
  * browser with the rows a cache that is being built shows: a running and a waiting row, a bulk's rows, a client's failure repeated
  * fourteen times, a failure with a long sentence and the 512 bytes of an upstream's error page, a row stopped at a bound and a
- * cancelled one. Nothing is changed on the server.
+ * cancelled one; above them the repository's bulks (Q-CUR-168): one that finds versions, one whose rows run, and one whose expansion
+ * failed before it queued a row, with the engine's long sentence. Nothing is changed on the server.
  */
 
 const BULK = '0193a1b2-0000-7000-8000-0000000000b1';
+const BULK_FAILED = '0193a1b2-0000-7000-8000-0000000000b2';
+const BULK_EXPANDING = '0193a1b2-0000-7000-8000-0000000000b3';
 
 /** The time `minutes` from now, RFC 3339: the rows' times stay relative to the run. */
 function at(minutes: number): string {
@@ -163,6 +166,7 @@ const bulk = {
   id: BULK,
   level: 'package',
   subject: '@acme/design-tokens',
+  origin: 'person',
   state: 'queued',
   bounds: { maxVersions: 100, maxBytes: 107374182400, includePrereleases: true },
   versionsFound: 38,
@@ -174,15 +178,55 @@ const bulk = {
   rows: { running: 2, waiting: 10, done: 26 },
 };
 
+/** The bulk of the owner's report of 2026-11-24: its expansion failed before its first row, at a host the repository may not reach. */
+const failedBulk = {
+  ...bulk,
+  id: BULK_FAILED,
+  subject: '@customer-portal/release-candidates-for-the-frontend-design-system-components',
+  state: 'failed',
+  versionsFound: 0,
+  versionsQueued: 0,
+  rows: {},
+  createdAt: at(-5),
+  finishedAt: at(-5),
+  failure: failure({
+    class: 'upstream_unexpected',
+    step: 'status',
+    code: 'foreign_host_denied',
+    attempt: 0,
+    at: at(-5),
+    detail:
+      'The download failed at the step status. The upstream document points to the host replicate.registry.example.com, which is neither the upstream of the repository web/npmjs nor one of its extraHosts.',
+  }),
+};
+
+/** A sub-section's bulk that is still finding versions: nothing queued yet. */
+const expandingBulk = {
+  ...bulk,
+  id: BULK_EXPANDING,
+  level: 'section',
+  subject: '@acme',
+  state: 'expanding',
+  versionsFound: 0,
+  versionsQueued: 0,
+  rows: {},
+  createdAt: at(-1),
+};
+
+const bulks = [expandingBulk, failedBulk, bulk];
+
 const listUrl = (url: URL): boolean => /^\/api\/v1\/projects\/[^/]+\/repositories\/[^/]+\/downloads$/.test(url.pathname);
 const bulkUrl = (url: URL): boolean => /^\/api\/v1\/projects\/[^/]+\/repositories\/[^/]+\/download-bulks\/[^/]+$/.test(url.pathname);
+const bulksUrl = (url: URL): boolean => /^\/api\/v1\/projects\/[^/]+\/repositories\/[^/]+\/download-bulks$/.test(url.pathname);
+const rowsOfTab = 'main quader-remote-downloads [data-testid="download-rows"] tbody tr:not(.expansion)';
 
 /**
- * The tab as it opens (the seed's own queue: in a fresh database the empty state), then with the queue of a cache that is being
- * built, a failed row opened to its whole failure, a bulk's rows under its line, and the rows of one package (`?name=`).
+ * The tab as it opens (the seed's own queue: in a fresh database the empty state), then with the bulks and the queue of a cache
+ * that is being built, a failed row opened to its whole failure, a bulk's rows under its line, the bulk that failed before its first
+ * row, and the rows of one package (`?name=`).
  */
 export async function* downloadsWalk(p: Page): AsyncGenerator<string> {
-  await expect(p.locator('main quader-remote-downloads quader-data-table')).toBeVisible();
+  await expect(p.locator('main quader-remote-downloads [data-testid="download-rows"]')).toBeVisible();
   yield '';
   await p.route(listUrl, (route) => {
     if (route.request().method() !== 'GET') return route.fallback();
@@ -192,23 +236,35 @@ export async function* downloadsWalk(p: Page): AsyncGenerator<string> {
     const items = queueRows().filter((r) => (!bulkOnly || r['bulk'] === bulkOnly) && (!nameOnly || r['name'] === nameOnly));
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(page(items, !bulkOnly && !nameOnly)) });
   });
-  await p.route(bulkUrl, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(bulk) }));
+  await p.route(bulkUrl, (route) => {
+    const id = new URL(route.request().url()).pathname.split('/').at(-1);
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(bulks.find((b) => b.id === id) ?? bulk) });
+  });
+  await p.route(bulksUrl, (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: bulks, nextCursor: null }) }),
+  );
   await p.reload();
-  await expect(p.locator('main quader-remote-downloads tbody tr:not(.expansion)')).toHaveCount(9);
+  await expect(p.locator(rowsOfTab)).toHaveCount(9);
+  await expect(p.locator('main [data-testid="download-bulks"] tbody tr')).toHaveCount(3);
   yield 'queue';
   // The controls by their place, not their words: the German pass walks the tab too (UI_RENDERS_LOCALE=de).
   await p.locator('main quader-remote-downloads button[aria-controls="dl-0193a1b2-0000-7000-8000-000000000005"]').click();
   await expect(p.locator('main quader-remote-downloads .collapse-region.open pre.excerpt')).toBeVisible();
   yield 'failure';
-  await p.locator('main quader-remote-downloads td a[href*="bulk="]').first().click();
+  await p.locator('main quader-remote-downloads [data-testid="download-rows"] td a[href*="bulk="]').first().click();
   await expect(p.locator('main [data-testid="download-bulk"] h2')).toBeVisible();
-  await expect(p.locator('main quader-remote-downloads tbody tr:not(.expansion)')).toHaveCount(3);
+  await expect(p.locator(rowsOfTab)).toHaveCount(3);
   yield 'bulk';
+  // The bulk whose expansion failed before its first row, as the notice of its start leads to it: its cause and Start again.
+  await p.goto(`${new URL(p.url()).pathname}?bulk=${BULK_FAILED}`);
+  await expect(p.locator('main [data-testid="download-bulk"] .bulk-failure')).toBeVisible();
+  yield 'bulk-failed';
   // The rows of one package, as the link Show in queue of the top bar's downloads panel opens the tab (R-UI-211).
   await p.goto(`${new URL(p.url()).pathname}?name=${encodeURIComponent('typescript')}`);
   await expect(p.locator('main [data-testid="download-name-filter"]')).toBeVisible();
-  await expect(p.locator('main quader-remote-downloads tbody tr:not(.expansion)')).toHaveCount(1);
+  await expect(p.locator(rowsOfTab)).toHaveCount(1);
   yield 'name';
   await p.unroute(listUrl);
   await p.unroute(bulkUrl);
+  await p.unroute(bulksUrl);
 }

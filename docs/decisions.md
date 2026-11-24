@@ -10202,10 +10202,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-CUR
 
-78 questions on [spec/remote-curation.md](spec/remote-curation.md).
+80 questions on [spec/remote-curation.md](spec/remote-curation.md).
 
 <details>
-<summary>Q-CUR: 78 questions</summary>
+<summary>Q-CUR: 80 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10287,6 +10287,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-CUR-164](spec/remote-curation.md#q-cur-164--the-catalogue-keeps-a-page-that-found-nothing-only-when-it-asked-the-upstream) | The catalogue keeps a page that found nothing only when it asked the upstream | Decided by the development agent on 2026-11-24 | (a) A page that found nothing is kept only when a request of the call reached the network; the engine sees it in the budget's `Spend`, which the lent upstream calls before every request | — |
 | [Q-CUR-165](spec/remote-curation.md#q-cur-165--a-level-the-upstream-does-not-have-says-so-with-the-formats-naming-rule-and-one-suggestion-built-from-it) | A level the upstream does not have says so, with the format's naming rule and one suggestion built from it | Decided by the development agent on 2026-11-24 | 1 (a), 2 as stated, 3 (a), 4 (a). | [ADR-277](#adr-277--a-remote-repository-can-be-curated-delivery-rules-in-two-modes-an-upstream-catalogue-downloads-ahead-and-their-queue-requests-with-examination) |
 | [Q-CUR-166](spec/remote-curation.md#q-cur-166--the-hint-under-the-upstream-search-is-a-code-the-screen-says-in-its-language) | The hint under the upstream search is a code the screen says in its language | Decided by the development agent on 2026-11-24 | (a) A code: `discover.CatalogueCaps.SearchHint` from a closed list in the leaf (`discover.SearchHints`), one per upstream whose hint differs; `UnavailableError.Hint` for a search the engine turns off; the API's `searchHint` enum replaces `searchNote` and `searchReason`; the screen writes the sentence per code with `$localize` | [ADR-277](#adr-277--a-remote-repository-can-be-curated-delivery-rules-in-two-modes-an-upstream-catalogue-downloads-ahead-and-their-queue-requests-with-examination) |
+| [Q-CUR-167](spec/remote-curation.md#q-cur-167--a-bulks-expansion-reaches-the-hosts-the-catalogue-reaches-a-rows-fetch-reaches-no-more) | A bulk's expansion reaches the hosts the catalogue reaches; a row's fetch reaches no more | Decided by the development agent on 2026-11-24 | (a) The expansion's upstream reaches the hosts of `catalogueHosts` (the mirror's hosts and the preset's catalogue hosts), as hosts without a credential; a row's run keeps the mirror's hosts | — |
+| [Q-CUR-168](spec/remote-curation.md#q-cur-168--the-tab-downloads-lists-the-repositorys-bulks-over-its-rows-a-failed-one-says-what-failed-and-starts-again) | The tab Downloads lists the repository's bulks over its rows; a failed one says what failed and starts again | Decided by the development agent on 2026-11-24 | (a) `GET download-bulks` lists a repository's bulks newest first; the tab shows them in a table over its rows (five and **Load more**), with the state, the counters, the failure in words and one action; the notice of a start says that the bulk reads the versions first and leads to the bulk | — |
 
 </details>
 

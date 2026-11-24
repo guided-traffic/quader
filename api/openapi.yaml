@@ -20422,6 +20422,56 @@ paths:
           $ref: "#/components/responses/Internal"
         "503":
           $ref: "#/components/responses/Unavailable"
+  /api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks:
+    parameters:
+      - $ref: "#/components/parameters/ProjectKey"
+      - name: repoKey
+        in: path
+        required: true
+        description: The repository key (R-REPO-002).
+        schema:
+          type: string
+          pattern: "^[a-z0-9]+(?:(?:[._]|__|-+)[a-z0-9]+)*$"
+          minLength: 2
+          maxLength: 64
+    get:
+      operationId: listRemoteDownloadBulks
+      tags: [remote-curation]
+      summary: List the bulk downloads of a remote repository
+      description: |
+        The repository's bulk downloads (R-CUR-010, R-CUR-012), newest first, each with its counters, its failure and the counts of its
+        rows by state: a bulk whose expansion failed before it queued a row is seen here, where no row names it (Q-CUR-168). Cursor
+        pagination (R-API-010). Needs `read` on the repository; a repository hidden from the caller answers `404`, a local or virtual one
+        `400 not_applicable`. `startedBy` names a person only to those who may set rules and to that person.
+      x-quader-permission:
+        authenticated: true
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: One page of bulks.
+          headers:
+            Link:
+              $ref: "#/components/headers/Link"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteDownloadBulkPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/Internal"
+        "503":
+          $ref: "#/components/responses/Unavailable"
   /api/v1/projects/{projectKey}/repositories/{repoKey}/download-bulks/{bulkId}:
     parameters:
       - $ref: "#/components/parameters/ProjectKey"
@@ -34090,7 +34140,7 @@ components:
       type: object
       additionalProperties: false
       description: A bulk download (R-CUR-010, R-CUR-012), expanded into rows within its bounds.
-      required: [id, level, subject, state, bounds, versionsFound, versionsQueued, failure, startedBy, createdAt, finishedAt, rows]
+      required: [id, level, subject, origin, state, bounds, versionsFound, versionsQueued, failure, startedBy, createdAt, finishedAt, rows]
       properties:
         id:
           type: string
@@ -34101,6 +34151,13 @@ components:
           x-enum-varnames: [BulkLevelPackage, BulkLevelSection]
         subject:
           type: string
+        origin:
+          type: string
+          description: |
+            Who started the bulk: `person` (a person's bulk of a package or a sub-section), `request` (the examination of a package a
+            request starts) or `allow` (the newest versions an allow downloads, Q-CUR-141).
+          enum: [person, request, allow]
+          x-enum-varnames: [BulkOriginPerson, BulkOriginRequest, BulkOriginAllow]
         state:
           type: string
           enum: [expanding, queued, done, bounded, cancelled, failed]
@@ -34131,6 +34188,17 @@ components:
           additionalProperties:
             type: integer
             format: int64
+    RemoteDownloadBulkPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RemoteDownloadBulk"
+        nextCursor:
+          type: [string, "null"]
     RemoteDownloadStarted:
       type: object
       additionalProperties: false

@@ -1,5 +1,79 @@
 <p class="downloads-note" i18n="@@downloads.note">What this repository downloads ahead of its clients, and the fetches of clients that failed, with the cause in the upstream's own words.</p>
 
+@if (showsBulkList()) {
+  <!-- The repository's bulks, newest first, above its rows (Q-CUR-168): a bulk whose expansion failed before it queued a row is seen
+       here with its cause, and a person's failed bulk starts again. The title opens the bulk with its rows. -->
+  <section class="bulks" aria-labelledby="dl-bulks-title" data-testid="download-bulks">
+    <h2 id="dl-bulks-title" class="bulks-title" i18n="@@downloads.bulks.title">Bulk downloads</h2>
+    <quader-data-table
+      [caption]="bulksCaption"
+      [columns]="bulkColumns()"
+      [loaded]="bulkListLoaded()"
+      [loading]="bulkListLoading()"
+      [error]="bulkListError()"
+      [empty]="bulkList().length === 0"
+      [emptyText]="emptyText"
+      [hasMore]="bulkListHasMore()"
+      (more)="moreBulks()"
+      (retry)="retryBulks()"
+    >
+      @for (b of bulkList(); track b.id) {
+        <tr>
+          <th scope="row" class="wrap-name">
+            <a [routerLink]="[]" [queryParams]="bulkLink(b.id)" queryParamsHandling="merge" [attr.aria-label]="bulkLinkLabel(b)">{{ bulkTitle(b) }}</a>
+            <span class="secondary"
+              ><span class="dot-separated">
+                @if (starterText(b.startedBy); as who) {
+                  <span><ng-container i18n="@@downloads.bulk.started-by">Started by {{ who }}</ng-container></span>
+                }
+                <span><quader-time-ago [at]="b.createdAt" absolute="title" /></span> </span
+            ></span>
+          </th>
+          <td class="keep">
+            @let badge = bulkBadge(b);
+            <span [class]="badge.cls"><span class="material-icons" aria-hidden="true">{{ badge.icon }}</span>{{ bulkStateText(b) }}</span>
+          </td>
+          <td class="keep">
+            @if (b.versionsFound > 0 || b.versionsQueued > 0) {
+              <span>{{ bulkVersions(b) }}</span>
+            } @else {
+              <quader-no-value />
+            }
+            @if (bulkRowsLine(b); as line) {
+              <span class="secondary">{{ line }}</span>
+            }
+          </td>
+          <td class="failure-cell">
+            @if (b.failure; as f) {
+              @if (bulkFailureLead(b); as lead) {
+                <span class="failure-lead">{{ lead }}</span>
+                <span class="secondary">{{ classText(f.class) }}:&ngsp;{{ f.detail }}</span>
+              } @else {
+                <span class="secondary">{{ f.detail }}</span>
+              }
+            } @else {
+              <quader-no-value />
+            }
+          </td>
+          @if (bulkHasActions()) {
+            <td class="actions">
+              @if (bulkAction(b)) {
+                <button class="btn btn-tertiary" type="button" [disabled]="isBulkBusy(b)" (click)="actOnBulk(b)">
+                  {{ bulkActionLabel(b) }}<span class="visually-hidden" translate="no">&ngsp;{{ b.subject }}</span>
+                </button>
+              }
+            </td>
+          }
+        </tr>
+      }
+    </quader-data-table>
+  </section>
+}
+
+@if (showsBulkList()) {
+  <h2 class="bulks-title rows-title" i18n="@@downloads.rows.title">Downloads</h2>
+}
+
 <!-- The head of the list (R-CUR-018): the counts by state are the filter, Failure filters by class; the list's own actions at the
      row's end. Each filter is in the address, so a link opens the same view. -->
 <div class="downloads-head">
@@ -59,10 +133,13 @@
         <h2 id="dl-bulk-title" class="bulk-title">
           {{ bulkTitle(b) }}
         </h2>
-        <span class="badge">{{ bulkStateText(b) }}</span>
+        @let badge = bulkBadge(b);
+        <span [class]="badge.cls"><span class="material-icons" aria-hidden="true">{{ badge.icon }}</span>{{ bulkStateText(b) }}</span>
         <span class="bulk-actions">
           @if (offersCancelBulk()) {
-            <button class="btn btn-default on-line" type="button" (click)="cancelBulk()" i18n="@@downloads.bulk.cancel">Cancel bulk</button>
+            <button class="btn btn-default on-line" type="button" [disabled]="isBulkBusy(b)" (click)="actOnShownBulk()" i18n="@@downloads.bulk.cancel">Cancel bulk</button>
+          } @else if (offersStartAgain()) {
+            <button class="btn btn-default on-line" type="button" [disabled]="isBulkBusy(b)" (click)="actOnShownBulk()" i18n="@@downloads.bulk.start-again">Start again</button>
           }
           <button class="btn btn-tertiary on-line" type="button" (click)="clearBulk()" i18n="@@downloads.bulk.show-all">Show every download</button>
         </span>
@@ -81,9 +158,14 @@
         <span><quader-time-ago [at]="b.createdAt" absolute="title" /></span>
       </p>
       @if (b.failure; as f) {
-        <p class="bulk-failure">
-          <span class="bad"><span class="material-icons" aria-hidden="true">error</span>{{ classText(f.class) }}</span>&ngsp;<span>{{ f.detail }}</span>
-        </p>
+        @if (bulkFailureLead(b); as lead) {
+          <p class="bulk-failure">
+            <span class="failure-lead">{{ lead }}</span>
+            <span>{{ classText(f.class) }}:&ngsp;{{ f.detail }}</span>
+          </p>
+        } @else {
+          <p class="bulk-failure muted">{{ f.detail }}</p>
+        }
       }
     } @else {
       <p role="status" i18n="@@downloads.bulk.loading">Loading the bulk download.</p>
@@ -92,6 +174,7 @@
 }
 
 <quader-data-table
+  data-testid="download-rows"
   [caption]="caption"
   [columns]="columns()"
   [loaded]="loaded()"
