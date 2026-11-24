@@ -159,8 +159,8 @@ func TestShutdownSaysWhatItWaitsFor(t *testing.T) {
 		}
 		w.o.Config.LeaseDuration = time.Minute
 		ctx, rj := w.register(Job{ID: "01a1f040-a79d", Kind: KindSystemProbe, Queue: "default"}, time.Now())
-		w.runWG.Add(1)
-		go func() { <-ctx.Done(); w.forget(rj); w.runWG.Done() }()
+		w.runs.add()
+		go func() { <-ctx.Done(); w.forget(rj); w.runs.done() }()
 
 		run := &Run{w: w}
 		w.Drain(context.Background())
@@ -180,4 +180,45 @@ func TestShutdownSaysWhatItWaitsFor(t *testing.T) {
 			t.Fatalf("the release is not logged:\n%s", logs.String())
 		}
 	})
+}
+
+// TestR_ARCH_024_AJobStartedWhileTheShutdownWaitsDoesNotPanic holds the count of running attempts against what a sync.WaitGroup
+// refuses: an attempt that starts from zero while a waiter of the shutdown is returning from its wait (a claim that was in flight at
+// the drain). Many short attempts start and end while waiters come and go; a WaitGroup panics here, the count must not.
+func TestR_ARCH_024_AJobStartedWhileTheShutdownWaitsDoesNotPanic(t *testing.T) {
+	var c runCount
+	var wg sync.WaitGroup
+	stop := make(chan struct{})
+	for range 4 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case <-stop:
+					return
+				default:
+					<-c.idleCh()
+				}
+			}
+		}()
+	}
+	for range 20000 {
+		c.add()
+		c.done()
+	}
+	close(stop)
+	wg.Wait()
+	select {
+	case <-c.idleCh():
+	default:
+		t.Fatal("no attempt runs, but the count does not say idle")
+	}
+	c.add()
+	select {
+	case <-c.idleCh():
+		t.Fatal("an attempt runs, but the count says idle")
+	default:
+	}
+	c.done()
 }

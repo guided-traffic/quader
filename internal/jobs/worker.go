@@ -92,7 +92,7 @@ type Worker struct {
 	root   context.Context
 	cancel context.CancelCauseFunc
 	loops  sync.WaitGroup
-	runWG  sync.WaitGroup
+	runs   runCount
 
 	mu       sync.Mutex
 	running  map[string]*runningJob
@@ -260,8 +260,7 @@ var settleLogAfter = 5 * time.Second
 // Settle waits for the running jobs to finish (R-ARCH-024 step 3). A wait longer than settleLogAfter is logged once with the
 // kind and ID of every job still running, so a stop that takes the whole server phase says what held it.
 func (w *Worker) Settle(ctx context.Context) error {
-	done := make(chan struct{})
-	go func() { w.runWG.Wait(); close(done) }()
+	done := w.runs.idleCh()
 	t := time.NewTimer(settleLogAfter)
 	defer t.Stop()
 	for {
@@ -301,10 +300,8 @@ func (w *Worker) Quiesce(ctx context.Context) {
 		sort.Strings(released)
 		w.log.Info("running jobs released for shutdown", "jobs", strings.Join(released, ", "))
 	}
-	done := make(chan struct{})
-	go func() { w.runWG.Wait(); close(done) }()
 	select {
-	case <-done:
+	case <-w.runs.idleCh():
 	case <-ctx.Done():
 	}
 }
@@ -323,7 +320,7 @@ func (w *Worker) Stop(ctx context.Context) error {
 		stopSub()
 	}
 	done := make(chan struct{})
-	go func() { w.loops.Wait(); w.runWG.Wait(); close(done) }()
+	go func() { w.loops.Wait(); <-w.runs.idleCh(); close(done) }()
 	select {
 	case <-done:
 		return nil
@@ -420,7 +417,7 @@ func (w *Worker) claim() {
 
 func (w *Worker) start(j Job, claimSent time.Time) {
 	ctx, rj := w.register(j, claimSent)
-	w.runWG.Add(1)
+	w.runs.add()
 	w.m.claimed.WithLabelValues(j.Kind).Inc()
 	w.m.running.WithLabelValues(j.Kind).Inc()
 	go w.execute(ctx, rj)
@@ -451,7 +448,7 @@ func (w *Worker) setResult(rj *runningJob, result string) {
 // execute runs one attempt and settles the job.
 func (w *Worker) execute(ctx context.Context, rj *runningJob) {
 	j := rj.job
-	defer w.runWG.Done()
+	defer w.runs.done()
 	started := time.Now()
 	spec, _ := w.o.Registry.Kind(j.Kind)
 	if spec.Timeout > 0 {
@@ -734,4 +731,46 @@ func (w *Worker) heartbeat() {
 			rj.validUntil = sent.Add(w.o.Config.LeaseDuration)
 		}
 	}
+}
+
+// runCount counts the attempts that run; the channel idleCh returns is closed while none runs (R-ARCH-024). A sync.WaitGroup
+// cannot hold this count: a claim that was in flight when the drain began starts its job while Settle or Quiesce may be returning
+// from Wait, and a WaitGroup refuses an Add from zero during that return with a panic ("WaitGroup is reused before previous Wait
+// has returned", Test and Release 45300439644, area vulnimage).
+type runCount struct {
+	mu   sync.Mutex
+	n    int
+	idle chan struct{}
+}
+
+// add books one more running attempt.
+func (c *runCount) add() {
+	c.mu.Lock()
+	if c.n == 0 {
+		c.idle = make(chan struct{})
+	}
+	c.n++
+	c.mu.Unlock()
+}
+
+// done books the end of a running attempt.
+func (c *runCount) done() {
+	c.mu.Lock()
+	c.n--
+	if c.n == 0 {
+		close(c.idle)
+	}
+	c.mu.Unlock()
+}
+
+// idleCh returns a channel that is closed once no attempt runs: at once when none runs now.
+func (c *runCount) idleCh() <-chan struct{} {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.n == 0 {
+		ch := make(chan struct{})
+		close(ch)
+		return ch
+	}
+	return c.idle
 }
