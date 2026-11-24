@@ -277,8 +277,8 @@ case "$set_name" in
   ansible-closing) run='^TestAnsibleClosing'; ANSIBLE_CLIENTS=1; export QUADER_E2E_ANSIBLESTUB=1 QUADER_E2E_ANSIBLE_CLOSING=1 ;;
   # <<< F0 ansible
   # >>> M6a upgrade
-  # The upgrade tests (R-HA-020, docs/developer/e2e.md#the-upgrade-tests): the release is removed, the database and Valkey are
-  # emptied, a release is installed, upgraded to the chart of the working tree and the image under test under npm ci, npm publish
+  # The upgrade tests (R-HA-020, docs/developer/e2e.md#the-upgrade-tests): the release is removed, the database, Valkey and the
+  # installation's object-store locations are emptied, a release is installed, upgraded to the chart of the working tree and the image under test under npm ci, npm publish
   # and dotnet restore loops through a virtual repository over a remote and a local repository, and a browser journey; the cluster
   # ends with the current dev release again. Two client pods of each kind, the two counting test upstreams, and the browser tier on
   # the host (npm ci in web/, npx playwright install chromium). The sets are cut by what they test (Q-HA-314):

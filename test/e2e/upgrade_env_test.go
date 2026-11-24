@@ -238,9 +238,16 @@ func upPodsExist(t testing.TB) bool {
 	return err != nil || strings.TrimSpace(out) != ""
 }
 
-// resetInstallation removes the release, empties the database (a release of another schema cannot be installed on this one)
-// and Valkey, and leaves the dependencies of the dev profile (PostgreSQL, Valkey, S3, the IdP, the test upstreams) running.
-// The blobs in the object store stay: they are addressed by content and nothing references them.
+// upgradeStoreLocations are the object-store locations an installation of the dev profile owns, bucket and prefix: its
+// connection's (values-dev.yaml storage.connections[0] with the binary's default prefix; the marker of R-STOR-051, the blobs
+// and the revocation journal lie there) and its backup target's (storage.backup.target, default prefix; the target marker of
+// R-BAK-002 names the installation too). Both markers name the installation by the id in its database, so a new database
+// is a new installation, which either marker refuses.
+var upgradeStoreLocations = [][2]string{{"quader-blobs", "quader/"}, {"quader-backups", "quader/"}}
+
+// resetInstallation removes the release and leaves what a fresh installation finds: an empty database (a release of another
+// schema cannot be installed on this one), an empty Valkey and empty object-store locations (emptyStoreLocations). The
+// dependencies of the dev profile (PostgreSQL, Valkey, S3 and its buckets, the IdP, the test upstreams) stay running.
 func resetInstallation(t testing.TB) {
 	t.Helper()
 	if out, err := upHelm(t, "uninstall", 10*time.Minute, "uninstall", "quader", "-n", cfg.namespace, "--wait", "--ignore-not-found"); err != nil {
@@ -254,9 +261,47 @@ func resetInstallation(t testing.TB) {
 		}
 	}
 	script(t, "valkey-cli.sh", "FLUSHALL")
+	emptyStoreLocations(t)
 	// the administrator token and the fixtures of an earlier installation are gone with the database
 	adminOnce = sync.Once{}
 	adminTok, adminErr = "", nil
+}
+
+// emptyStoreLocations deletes every version and delete marker below each of upgradeStoreLocations, as an operator does before
+// a location is given to a new installation ("Remove the object quader/_connection only if that installation is gone",
+// R-STOR-051): the installation that wrote them is gone with its database. Leaving the markers made the next installation
+// refuse to start (the release to start from, and the return to the dev release after it); leaving the blobs would hand a new
+// installation objects no row of its database names. A location that is empty already takes one listing. The buckets and
+// their versioning stay (s3.yaml).
+func emptyStoreLocations(t testing.TB) {
+	t.Helper()
+	var sh strings.Builder
+	// One page of at most 1000 versions or delete markers per round, deleted with one request; the listing starts over until
+	// none is left. The query yields "Objects": null for an empty page, which holds no "Key".
+	sh.WriteString(`purge() {
+  n=0 r=0
+  for kind in Versions DeleteMarkers; do
+    while :; do
+      r=$((r + 1))
+      [ "$r" -le 500 ] || { echo "$1/$2 still lists objects after $n deletions in 500 rounds"; exit 1; }
+      s3api list-object-versions --bucket "$1" --prefix "$2" --max-items 1000 --output json \
+        --query "{Objects: $kind[].{Key: Key, VersionId: VersionId}}" >/tmp/batch.json
+      c=$(grep -c '"Key"' /tmp/batch.json || true)
+      [ "$c" -gt 0 ] || break
+      s3api delete-objects --bucket "$1" --delete file:///tmp/batch.json >/tmp/deleted.json
+      if grep -q '"Errors"' /tmp/deleted.json; then cat /tmp/deleted.json; exit 1; fi
+      n=$((n + c))
+    done
+  done
+  s3api list-object-versions --bucket "$1" --prefix "$2" --max-items 1 --output json >/tmp/left.json
+  if grep -q '"Key"' /tmp/left.json; then echo "$1/$2 still holds objects after $n were deleted:"; cat /tmp/left.json; exit 1; fi
+  echo "$1/$2: deleted $n versions and delete markers; the location is empty"
+}
+`)
+	for _, loc := range upgradeStoreLocations {
+		fmt.Fprintf(&sh, "purge %s %s\n", loc[0], loc[1])
+	}
+	devS3Job(t, "upgrade-empty-store", sh.String())
 }
 
 // installPrior installs the release from the chart repository with the dev values of its own tag.

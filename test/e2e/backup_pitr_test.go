@@ -115,9 +115,9 @@ func pitrHelm(t testing.TB, label string, extra ...string) {
 	}
 }
 
-// pitrS3Job runs the script in the aws-cli image against the dev SeaweedFS with its login and CA, as a Job of the main namespace, and
+// devS3Job runs the script in the aws-cli image against the dev SeaweedFS with its login and CA, as a Job of the main namespace, and
 // returns the log. It fails the test when the Job fails.
-func pitrS3Job(t testing.TB, name, script string) string {
+func devS3Job(t testing.TB, name, script string) string {
 	t.Helper()
 	image := readVersionPin(t, "DEV_AWSCLI_IMAGE")
 	manifest := fmt.Sprintf(`{"apiVersion":"batch/v1","kind":"Job","metadata":{"name":%q},"spec":{"backoffLimit":0,"ttlSecondsAfterFinished":3600,"template":{"spec":{
@@ -397,7 +397,7 @@ func TestBackupPITR_R_HA_025_R_HA_023_R_HA_054_PointInTimeRestoreOfThePlatformLa
 	})
 
 	step("R-HA-025 step 7: deletions resume, and the object written after t was not deleted while they were paused", func(t *testing.T) {
-		logs := pitrS3Job(t, "pitr-orphan-check", fmt.Sprintf(`s3api head-object --bucket quader-blobs --key %q >/dev/null && echo "present %s"`, st.post.key(), st.post.key()))
+		logs := devS3Job(t, "pitr-orphan-check", fmt.Sprintf(`s3api head-object --bucket quader-blobs --key %q >/dev/null && echo "present %s"`, st.post.key(), st.post.key()))
 		if !strings.Contains(logs, "present "+st.post.key()) {
 			t.Errorf("the object written after t was deleted while the deletion pause was set")
 		}

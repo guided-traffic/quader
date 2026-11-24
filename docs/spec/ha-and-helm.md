@@ -8579,7 +8579,12 @@ Status: **Decided by the development agent** — selected from the options below
 [Q-HA-311](#q-ha-311--the-rolling-upgrade-starts-from-the-newest-release-before-the-commit-that-the-chart-repository-lists), and the
 test across the cut, which installed v0.16.0, is removed
 ([Q-HA-313](#q-ha-313--the-upgrade-across-the-cut-is-no-longer-tested-and-r-ha-064-loses-its-end-to-end-criterion)); the revisit
-condition below met the rename to Quader, after which no release before the cut is published at all.
+condition below met the rename to Quader, after which no release before the cut is published at all. **Amended** on 2026-11-24: the
+reset empties the installation's object-store locations too. The marker of [storage.md](storage.md) R-STOR-051 in the connection's
+location and the backup target's marker (R-BAK-002) name the installation by the id its database holds, so the installation after a
+reset is another one, and the old markers refused it: from v0.96.0 on, every `helm install` after the reset and the return to the dev
+release after it ended in "Progress deadline exceeded" with the replicas refusing the location (the set `upgrade-release` of
+2026-11-24, run 45318634839).
 
 Context: R-HA-020's and R-HA-064's acceptance criteria upgrade from a release that was published, not from a build of the working
 tree, so the test needs that release's chart, its image and the dev values it was installed with. Releases publish the chart to
@@ -8589,7 +8594,7 @@ upgrade is to run the migration Job on the schema of the older release, and ther
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The published artifacts, a reset installation (chosen) | `helm install quader quader --repo <repository> --version <x.y.z>` with the image `guidedtraffic/quader:<x.y.z>` (pulled by the kind nodes) and the dev values of the tag (`git show <tag>:deploy/dev/...`); before it the release is removed and the database and Valkey are emptied | The upgrade starts from what a user runs: the published chart, the published image; no build of an old tree; the old release is installed with the values its own repository used | Needs the tags in the checkout, network access to two registries, and a reset of the dev installation, whose data the set does not keep |
+| (a) The published artifacts, a reset installation (chosen) | `helm install quader quader --repo <repository> --version <x.y.z>` with the image `guidedtraffic/quader:<x.y.z>` (pulled by the kind nodes) and the dev values of the tag (`git show <tag>:deploy/dev/...`); before it the release is removed and the database, Valkey and the installation's object-store locations are emptied | The upgrade starts from what a user runs: the published chart, the published image; no build of an old tree; the old release is installed with the values its own repository used | Needs the tags in the checkout, network access to two registries, and a reset of the dev installation, whose data the set does not keep |
 | (b) Build the old release from its tag | `git worktree` of the tag, `make image`, `helm install` from the directory | Works offline | Builds a second tree with the toolchain of today (one version of every tool), and tests an artifact no user has |
 | (c) A second kind cluster or namespace for the old release | The old release in a namespace of its own, with its own database | Leaves the dev installation alone | The dependencies (PostgreSQL, Valkey, S3, the IdP, the edge) are cluster-wide singletons of the dev profile; a second set doubles the 17 GB the machine has, and the edge and the client pods would address two installations |
 | (d) Migrate the database back | Roll the schema back to the old release's | Keeps the data | There are no down migrations (R-HA-019) |
@@ -8597,8 +8602,9 @@ upgrade is to run the migration Job on the schema of the older release, and ther
 **Choice:** (a).
 
 **Rationale:** the criterion is about the transition a user performs, so its input is the published release. The reset costs a few
-minutes and only the dev installation's rows, which every set builds again from its fixtures (they are idempotent); the object
-store keeps its blobs, which nothing references. The set ends by returning the cluster to the current dev release
+minutes and only the dev installation's rows, which every set builds again from its fixtures (they are idempotent). The new
+installation starts where a fresh one starts: the connection's location and the backup target's location are emptied (every version and
+delete marker below their prefixes), as an operator empties a location before another installation takes it; the buckets stay. The set ends by returning the cluster to the current dev release
 (`restoreCurrentRelease`), so the sets after it find what they expect. Revisited when a release stops being installable by the
 dev stack (a dependency that its dev values need and the stack no longer provides): then the oldest start is the oldest release
 the stack serves, and the cut test needs its own stack.

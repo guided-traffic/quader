@@ -4041,8 +4041,12 @@ The tests replace the installation, so they are sets of their own and end by put
 
 1. **Reset** ([upgrade_env_test.go](../../test/e2e/upgrade_env_test.go) `resetInstallation`): `helm uninstall quader`, `DROP DATABASE quader WITH (FORCE)` and
    `CREATE DATABASE quader OWNER quader` on the primary of `quader-db`, and `FLUSHALL` on Valkey (`valkey-cli.sh`). There are no down migrations, and the upgrade is to run the
-   migration Job on the schema of the older release, so the older release gets an empty database and migrates it itself. The object store keeps its blobs; they are addressed by content and nothing
-   references them. PostgreSQL, Valkey, S3, the IdP, the test upstreams and the Secrets of the dev profile stay.
+   migration Job on the schema of the older release, so the older release gets an empty database and migrates it itself. Then
+   `emptyStoreLocations` deletes every version and delete marker below `quader/` of the buckets `quader-blobs` (the connection's location: the
+   marker `_connection` of R-STOR-051, the blobs, the revocation journal) and `quader-backups` (the backup target's, with its marker), in one Job
+   with the aws-cli image (`devS3Job`). Both markers name the installation by the id in its database, so after the reset a new installation
+   meets them and refuses to start ([Q-HA-95](../spec/ha-and-helm.md#q-ha-95--how-the-upgrade-tests-get-and-install-the-older-release)).
+   PostgreSQL, Valkey, S3 with its buckets, the IdP, the test upstreams and the Secrets of the dev profile stay.
 2. **The release to start from.** `upgrade` installs the chart of the working tree with the image of `make image-marked`
    (`guidedtraffic/quader:dev-marked`, `QUADER_IMAGE_MARKED`). `upgrade-release` installs a published release (`installPrior`): the chart `quader` at the version of the tag from the Helm
    repository the release pipeline publishes to (`https://guided-traffic.github.io/quader/`), the image `guidedtraffic/quader:<version>` (the kind nodes pull it from Docker Hub themselves), and the dev values of that

@@ -10,8 +10,8 @@ package e2e
 //     rows "Rolling upgrade" and "Rollback" of R-HA-052: the newest published release before the working tree (Q-HA-311) is
 //     upgraded in one helm upgrade with the migration Job and rolled back, under the loops.
 //
-// Both replace the installation: they remove the release, empty the database and Valkey, install the release to start from,
-// and at the end return the cluster to the current dev release (deploy/dev/e2e.sh).
+// Both replace the installation: they remove the release, empty the database, Valkey and the installation's object-store
+// locations (resetInstallation), install the release to start from, and at the end return the cluster to the current dev release (deploy/dev/e2e.sh).
 
 import (
 	"os"
