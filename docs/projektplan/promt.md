@@ -227,8 +227,55 @@ stay runnable, simple by default with details on demand ([CLAUDE.md](../../CLAUD
   22:21 the same day** (owner, whole: "Bitte führe den Plan fort: docs/projektplan/promt.md. Bitte verwende
   Subagents von typ Opus 5.5 high"): the run goes on from the list of section 1, with at most four builders,
   each on the model he named at effort high.
+- **Wind down and write down the state** (owner, 2026-11-24, 12:25, whole: "wir müssen jetzt langsam fertig werden
+  und den aktuellen Stand dokumentieren."). Read as the rule of 2026-11-23, 17:15: from that minute no builder, planner
+  or research is started; the three builders running then were told to finish their brief without extensions (the
+  audit of server sentences cut to the trend's sentence plus a list); what they deliver is landed after its gates; the
+  state stands in [section 1](#1--find-the-next-phase), "State at the stop of 2026-11-24". The rule stands until he says
+  how the work goes on.
 
 ## 1 · Find the next phase
+
+### State at the stop of 2026-11-24
+
+Read this first. The run that began at 22:21 on 2026-11-23 ended its starts at 12:25 on 2026-11-24 by the owner's word
+(section 0). Nothing new is begun; this is what stands.
+
+**Landed between 22:21 and 12:25** (each closed in [section 8](#8--open-findings) or
+[section 10](#10--owner-tasks-of-2026-11-07-the-next-registries) with what holds it):
+- T-24 whole (R2, R3, R4, R2b, R5a, R5b, R6), T-25, the evidence record's publish, the rest of the Go tests, W13, W17
+  (the versions' order by an index, upgradable: migration 00116 with a background fill), W18, the screens' third round.
+- The owner's points of the morning: the toasts at the bottom right; an unknown Docker Hub namespace says so and offers
+  `guidedtraffic`; an image reads checked once its platform images are scanned, attestations are no images, the owner's
+  requirement of a scan at once after every fill written down (R-VULN-050, R-MAL-035); **T-26**, the download overview
+  for administrators (backend and top-bar panel); the pull command as a menu beside each version and Details as the last
+  tab; a bulk of a Docker Hub remote reads its versions where the catalogue reads them and the tab Downloads shows every
+  bulk with its cause; **no view needs a reload** (R-UI-213, `live()`; the rule is in CLAUDE.md).
+- Findings: the search hint in the screen's language; the date-dependent ClamAV cell and GitLab's tooltip; a pull of an
+  image index under `block`; the missing-data notice by its real cause; tab strips without a scrollbar; names in stacked
+  rows that never break inside a word and time columns of a fixed width; an image's status line by its cause.
+
+**In work at 12:25, to be landed when it reports** (each entry in section 8, Product):
+- three German layout findings at 390 px (the signature badge, `dl.facts`, `policy-new`'s rule);
+- a failed bulk's engine sentence and the download queue's failures in the screen's language;
+- the trend's basis sentence on the vulnerability dashboard, with a list of every other server sentence the UI shows as
+  is (the list becomes findings, not built).
+
+**Open after the stop:**
+- **The owner's installation** runs v0.122.x; everything above reaches it with the next release (0.123.0, since the
+  versions' order is a `feat:`). Not read: whether that release is out and runs on `wds18-k8s-main` (pipeline window
+  17:00–20:00). His own acts: a new Bastion token in the installation (the database was started afresh as `quader2` at
+  07:46); the old database `quader` and the objects under `quader-blobs/quader/` go only on his word.
+- **CI**: no Test and Release run was read after 08:38 (outside the windows); the runs of today's pushes are read from
+  17:00. The journey `08-packages` was changed for the pull menu and has not run.
+- **Three choices of T-26 he may reverse** (told in one line each): the drawer from the right instead of a panel hung
+  from the button; the auditor sees the panel too; metadata documents such as Debian indexes are not listed.
+- **Not measured:** the write load of the download overview under the reference load; the request cost of the live views
+  at many open tabs (gap H-1847, no "what changed since" answer).
+- **The development machine**: its disk ran full at 07:39 (Go's build cache, 1.6 TiB); a job of the machine trims the
+  cache every 30 minutes since 08:50 (section 8, Tests and tools). Docker was restarted at 09:00; the UI development
+  profile (instance 1, `https://localhost:4200/ui/`) runs a backend built from `main` after T-26 landed (migration 00118).
+- The entries of section 8 that wait for a recurrence (F-126, F-95, the stall without a neighbour) and those of section 12.
 
 ### State at the stop of 2026-11-23
 
@@ -698,6 +745,19 @@ records the recorder that tells such a stall apart).
   shows a dash. Given to a builder at 11:57.
 
 ### Closed
+
+- **Closed on 2026-11-24, 12:32, by the status line's package (Q-VULN-273; R-VULN-020, 021, 022, 038, R-UI-091):** an
+  image that is not checked names its cause in every place that explains "not checked": the version report's `missingData`
+  is filled whenever a version is not checked, blocked or not; the grade card says "Wartet auf die Schwachstellendatenbank
+  für Images", "Wartet auf ihre Prüfung", "Die Prüfung wurde nicht abgeschlossen und wird wiederholt", "Das Image
+  überschreitet die Grenzen der Prüfung" or "Die Prüfung konnte das Image nicht lesen"; the lists' tooltips and the
+  security report's banner name the database for images, and the report counts the image repositories waiting for it
+  apart (`coverage.pendingDatabase`). Packages keep "Wartet auf Advisory-Daten". Two Go unit tests, two integration cases
+  extended, six Vitest cases, a render screen `package-version-oci-unscanned`, renders in both languages looked at by the
+  development agent. As it stood: **An unscanned image's status line still names advisory data (seen by the development agent on 2026-11-24, 11:40, in
+  the render `package-version-oci-schwachstellen`):** under "nicht geprüft" an OCI image reads "Wartet auf Advisory-Daten",
+  the cause the notice's package fixed in the refusal but not in this line. Given to a builder at 11:28.
+
 
 - **Closed on 2026-11-24, 12:22, by the bulk's package (Q-CUR-167, Q-CUR-168):** the bulk's walk of the versions
   (`downloadUpstream`) reached only the format's mirror hosts, while the tab's catalogue also reaches the preset's
