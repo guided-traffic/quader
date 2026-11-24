@@ -242,8 +242,10 @@ Q-ARCH-1040; its release shows the rest); `drain-roles` ran alone at 22:24, gree
 **T-25 landed at 22:58** (one commit; Q-UI-1040 to Q-UI-1043; the renders looked at by the development agent;
 the browser journeys it rewrote run first in the pipeline's e2e legs). Started at 22:53 in the freed place: **T-24 · R4** (downloads ahead and the queue; R3 waits for R2's landing,
 since it wires R2's decider). R4 landed at 00:18 (one commit; section 10). Started at 00:22 in its place: **T-24 · R5a** (the tab strip and the
-tab Downloads, on R4's API). R5a landed at 00:53 (one commit; section 10). **R2 landed at 01:45; the screens' render findings, W15 and W14 at 01:50** (one, two and two commits; R2b and
-the renames of the web's test names wait for a place; R3 and the renames of the Go tests started at 01:50).
+tab Downloads, on R4's API). R5a landed at 00:53 (one commit; section 10). **R2 landed at 01:45; the screens' render findings, W15 and W14 at 01:50** (one, two and two commits; R3 and the renames of the Go tests started at 01:50; R2b and the renames of the web's test names at 01:55). **The web's test names landed at 02:06** (four commits: 436 titles in
+121 files carry a requirement's number or the behaviour alone, no R-ID lost, four R-IDs newly named by web
+titles as the builder's judgement — R-API-022, R-API-047, R-API-077, R-SIG-063 —, and the rule
+`web/scripts/test-names-rule.mjs` in the web lint refuses a decision's number in a title).
 **W13 landed at 01:03** (ten commits; H-1662, the Bastion's gauge, R-ARCH-034's count, the limits'
 flush waits by `quader_limits_flushes_total`, E1.14's burst, `search-field.spec.ts`, an offline render seed).
 Started at 00:57 in its place: **W14**, the shape of the test suite and
