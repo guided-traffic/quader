@@ -173,6 +173,45 @@ func scaledBudget() shutdownBudget {
 	}
 }
 
+// The steps of the stall probe: it sleeps stallStep at a time and counts what it woke later than stallResolution after it
+// asked for as a stall.
+const (
+	stallStep       = 10 * time.Millisecond
+	stallResolution = 5 * time.Millisecond
+)
+
+// measureStalls measures, from its call until the returned function is called, how long the test process was kept from
+// running: a goroutine sleeps in steps of stallStep and adds up how much later it woke than it asked, beyond the timer's own
+// lateness of up to stallResolution. On a quiet machine the sum is near zero. On a loaded CI runner the process is kept off
+// the CPU for hundreds of milliseconds at a time (the unit job logs a Decide of 10 ms of CPU time that took up to 430 ms of
+// wall clock), and every timer and every wait of a shutdown is late by the same stalls. A bound on the time a shutdown
+// takes adds the measured stalls to its fixed allowance, so a stall of the machine is not read as an overrun of the plan,
+// while a phase that waits past its deadline adds to the shutdown's time and not to the probe's.
+func measureStalls() (stop func() time.Duration) {
+	done := make(chan struct{})
+	result := make(chan time.Duration, 1)
+	go func() {
+		var sum time.Duration
+		for {
+			select {
+			case <-done:
+				result <- sum
+				return
+			default:
+			}
+			asked := time.Now()
+			time.Sleep(stallStep)
+			if late := time.Since(asked) - stallStep - stallResolution; late > 0 {
+				sum += late
+			}
+		}
+	}()
+	return func() time.Duration {
+		close(done)
+		return <-result
+	}
+}
+
 func TestShutdownBudgetEndToEnd(t *testing.T) {
 	t.Run("R-HA-011 a worker with the derived timeout quiesces its jobs near the end of the timeout and exits inside the grace period, although a component ignores its context", func(t *testing.T) {
 		// grace 7 s, drain 1 s -> derived timeout 1 s; a worker skips the drain.
@@ -187,12 +226,13 @@ func TestShutdownBudgetEndToEnd(t *testing.T) {
 		t.Cleanup(func() { close(comp.release) })
 		h.app.comps = append(h.app.comps, comp)
 
+		stalls := measureStalls()
 		begin := time.Now()
 		err := h.app.Shutdown(context.Background())
-		took := time.Since(begin)
-		// timeout 1 s + margin 0.8 s - slack 0.1 s = 1.7 s, plus scheduling noise.
-		if took > 1700*time.Millisecond+400*time.Millisecond {
-			t.Errorf("Shutdown took %s, want it inside the plan of 1.7 s", took)
+		took, stalled := time.Since(begin), stalls()
+		// timeout 1 s + margin 0.8 s - slack 0.1 s = 1.7 s, plus scheduling noise and the stalls of the machine.
+		if took > 1700*time.Millisecond+400*time.Millisecond+stalled {
+			t.Errorf("Shutdown took %s with %s of stalls, want it inside the plan of 1.7 s", took, stalled)
 		}
 		if took >= 7*time.Second {
 			t.Errorf("Shutdown took %s, longer than the grace period", took)
@@ -201,8 +241,8 @@ func TestShutdownBudgetEndToEnd(t *testing.T) {
 			t.Errorf("the stuck component is not reported: %v", err)
 		}
 		q := time.Unix(0, comp.quiesced.Load())
-		if off := q.Sub(begin); off < 300*time.Millisecond || off > 700*time.Millisecond {
-			t.Errorf("jobs quiesced %s after the signal, want near timeout - quiesce margin = 0.4 s", off)
+		if off := q.Sub(begin); off < 300*time.Millisecond || off > 700*time.Millisecond+stalled {
+			t.Errorf("jobs quiesced %s after the signal with %s of stalls, want near timeout - quiesce margin = 0.4 s", off, stalled)
 		}
 	})
 
@@ -225,10 +265,11 @@ func TestShutdownBudgetEndToEnd(t *testing.T) {
 		case <-time.After(5 * time.Second):
 			t.Fatal("the request did not arrive")
 		}
+		stalls := measureStalls()
 		begin := time.Now()
 		_ = h.app.Shutdown(context.Background())
-		if took := time.Since(begin); took > 1700*time.Millisecond+400*time.Millisecond {
-			t.Errorf("Shutdown took %s, the commit grace pushed it past the plan of 1.7 s", took)
+		if took, stalled := time.Since(begin), stalls(); took > 1700*time.Millisecond+400*time.Millisecond+stalled {
+			t.Errorf("Shutdown took %s with %s of stalls, the commit grace pushed it past the plan of 1.7 s", took, stalled)
 		}
 	})
 }
@@ -282,16 +323,18 @@ func TestShutdownReleaseWrites(t *testing.T) {
 		t.Cleanup(func() { close(comp.release) })
 		h.app.comps = append(h.app.comps, comp)
 
+		stalls := measureStalls()
 		begin := time.Now()
 		err := h.app.Shutdown(context.Background())
+		took, stalled := time.Since(begin), stalls()
 		if err != nil {
 			t.Errorf("the release write was cut by the shutdown: %v", err)
 		}
 		if !comp.finished.Load() {
 			t.Error("the release write did not finish before the process stopped waiting for it")
 		}
-		if took := time.Since(begin); took > 3*time.Second+600*time.Millisecond+400*time.Millisecond {
-			t.Errorf("Shutdown took %s, past the plan", took)
+		if took > 3*time.Second+600*time.Millisecond+400*time.Millisecond+stalled {
+			t.Errorf("Shutdown took %s with %s of stalls, past the plan", took, stalled)
 		}
 	})
 }
@@ -337,15 +380,17 @@ func TestShutdownWorkerEndsWhenItsJobsAreReleased(t *testing.T) {
 		engine := &quiescedEngine{}
 		h.app.comps = append(h.app.comps, engine, jobsComp)
 
+		stalls := measureStalls()
 		begin := time.Now()
-		if err := h.app.Shutdown(context.Background()); err != nil {
+		err := h.app.Shutdown(context.Background())
+		took, stalled := time.Since(begin), stalls()
+		if err != nil {
 			t.Fatalf("Shutdown: %v", err)
 		}
-		took := time.Since(begin)
-		// The release comes at 1.6 s; before the change the stop waited for 2.4 s. The 0.5 s above the release leave room for a
-		// loaded machine and stay below the old instant.
-		if took > 2100*time.Millisecond {
-			t.Errorf("Shutdown took %s, want it to end shortly after the release at 1.6 s, not at the engines' quiesce instant of 2.4 s", took)
+		// The release comes at 1.6 s; before the change the stop waited for 2.4 s. The 0.5 s above the release leave room for
+		// scheduling noise and stay below the old instant; the stalls of the machine come on top.
+		if took > 2100*time.Millisecond+stalled {
+			t.Errorf("Shutdown took %s with %s of stalls, want it to end shortly after the release at 1.6 s, not at the engines' quiesce instant of 2.4 s", took, stalled)
 		}
 		if engine.quiesced.Load() == 0 {
 			t.Error("the engine was not quiesced")
@@ -399,9 +444,10 @@ func TestShutdownDrainStepIsBoundedByThePlan(t *testing.T) {
 			t.Cleanup(func() { close(comp.release) })
 			h.app.comps = append(h.app.comps, comp)
 
+			stalls := measureStalls()
 			begin := time.Now()
 			err := h.app.Shutdown(context.Background())
-			took := time.Since(begin)
+			took, stalled := time.Since(begin), stalls()
 			if err != nil {
 				t.Errorf("Shutdown = %v, want a clean exit", err)
 			}
@@ -409,8 +455,8 @@ func TestShutdownDrainStepIsBoundedByThePlan(t *testing.T) {
 				t.Error("the close phase never reached the flush: the drain took the time of the later phases")
 			}
 			drain, _ := time.ParseDuration(tc.drain)
-			if limit := drain + time.Second + 800*time.Millisecond + 400*time.Millisecond; took > limit {
-				t.Errorf("Shutdown took %s, want it inside the plan of %s", took, limit)
+			if limit := drain + time.Second + 800*time.Millisecond + 400*time.Millisecond + stalled; took > limit {
+				t.Errorf("Shutdown took %s with %s of stalls, want it inside the plan of %s", took, stalled, limit)
 			}
 			if !strings.Contains(h.logs.String(), "components were still draining at the end of the drain step") {
 				t.Errorf("the drain that did not return is not named in the log:\n%s", h.logs.String())
