@@ -209,15 +209,24 @@ func TestR_VULN_041_EveryAnswerOfTheScannerMapsToItsCodeAttemptAndWait(t *testin
 	})
 	t.Run("a cancelled job closes the call and is no scan error", func(t *testing.T) {
 		s := newScannerStub(t)
-		ended := make(chan struct{})
+		taken, ended := make(chan struct{}), make(chan struct{})
 		s.answer = func(_ http.ResponseWriter, r *http.Request) {
 			_, _ = io.Copy(io.Discard, r.Body)
+			close(taken)
 			<-r.Context().Done()
 			close(ended)
 		}
 		ctx, cancel := context.WithCancelCause(t.Context())
 		cause := errors.New("drain")
-		go func() { time.Sleep(50 * time.Millisecond); cancel(cause) }()
+		// The job is cancelled while the scanner holds the call. A cancel after a fixed time came, on a loaded machine, before
+		// the TLS handshake had ended: the call never reached the scanner, so it could not see it end.
+		go func() {
+			select {
+			case <-taken:
+			case <-ctx.Done():
+			}
+			cancel(cause)
+		}()
 		_, err := s.client(t).Analyse(ctx, testCall())
 		if !errors.Is(err, cause) {
 			t.Fatalf("%v", err)
