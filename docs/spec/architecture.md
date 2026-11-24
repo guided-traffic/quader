@@ -1418,9 +1418,10 @@ package formats
 // (ADR-230, signatures.md R-SIG-044, Q-SIG-67, Q-SIG-180): SignatureAdapter.AttestationSubjects names the stored items Quader attests, the
 // declaration says what it attests or why nothing (Attests, AttestsNone), and NoSignatures takes both reasons. Version 11 is the upstream
 // catalogue's (ADR-277, remote-curation.md R-CUR-006, R-CUR-007, Q-CUR-12): a format with the class remote declares its catalogue
-// (Descriptor.Catalogue, the lookup by exact name at least) and its version canon (Descriptor.VersionCanon). A format declares the
-// literal it was written against.
-const ContractVersion = 11
+// (Descriptor.Catalogue, the lookup by exact name at least) and its version canon (Descriptor.VersionCanon). Version 12 is the stored
+// sort key's (ADR-278, api-and-ui.md R-API-029, Q-API-429): ViewAdapter.SortKey gives the key of the format's order of versions, which
+// the host stores with every version row. A format declares the literal it was written against.
+const ContractVersion = 12
 
 // The types of other packages under the names a format spells them: one type each, no mirrors
 // (Q-ARCH-188, Q-ARCH-189). A format imports this package and nothing else of the core.
@@ -2093,6 +2094,9 @@ type ViewAdapter interface {
 	// Compare is a total order over the versions the format stores (negative: a is older than b); a string that is no
 	// version sorts before every version, and equal strings compare equal.
 	Compare(a, b string) int
+	// SortKey is the stored sort key of a version (Q-API-429): bytes.Compare of two keys has the sign of Compare wherever Compare is
+	// not zero, and two different strings have two different keys (internal/formats/versionkey).
+	SortKey(version string) []byte
 	Describe(ctx context.Context, ports DataPorts, vs []ViewVersion, want ViewFields, visible func(version string) bool) (map[VersionID]ViewData, error)
 	Find(ctx context.Context, ports DataPorts, f ViewFind, limit int) ([]VersionID, error)
 	// Withheld returns the ids of the stored versions the format does not serve (R-NPM-047).
@@ -2826,7 +2830,8 @@ Priority: **MVP** · Covers: FMT-001, FMT-002, FMT-003
   - an external process would add a network hop to every package request.
 - At start-up, `Register` panics, and the process exits, on any of these:
   - a duplicate or reserved ID;
-  - a `ContractVersion` mismatch (the contract is frozen since the end of M3, E3.3 and ADR-141, at 11 since the declaration of the
+  - a `ContractVersion` mismatch (the contract is frozen since the end of M3, E3.3 and ADR-141, at 12 since the stored sort key of a
+    version, ADR-278 and [api-and-ui.md](api-and-ui.md) Q-API-429, after 11 of the declaration of the
     upstream catalogue and the version canon, ADR-277 and [remote-curation.md](remote-curation.md) R-CUR-007, after 10 of the receipt
     attestations, ADR-230, 9 of the signature gate per repository, ADR-231, 8 of the signatures, ADR-228, 7 of the probes, ADR-207,
     6 of the download limits, ADR-206, 5 of the fetch of a version, ADR-205, 4 of the upstream presets, ADR-198, 3 of the upload sessions, ADR-178, and 2 of the project model, ADR-156; a change that raises it moves every

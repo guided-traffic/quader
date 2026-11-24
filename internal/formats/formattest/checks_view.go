@@ -1,6 +1,7 @@
 package formattest
 
 import (
+	"bytes"
 	"context"
 	"slices"
 
@@ -32,6 +33,7 @@ func (r *run) view() {
 		}
 	}
 	r.viewCompare(a, v.Versions)
+	r.viewSortKey(a, v.Versions)
 	r.viewEmpty(a)
 	if v.Seed == nil {
 		r.failf("the View fixture has no Seed: Stored cannot be checked over a package")
@@ -84,6 +86,27 @@ func (r *run) viewCompare(a formats.ViewAdapter, vs []string) {
 				if a.Compare(x, y) < 0 && a.Compare(y, z) < 0 && a.Compare(x, z) >= 0 {
 					r.failf("%q < %q < %q, but Compare(%q, %q) = %d: the order is not transitive", x, y, z, x, z, a.Compare(x, z))
 				}
+			}
+		}
+	}
+}
+
+// viewSortKey checks that the stored sort key orders the sample and a string that is no version as Compare does (Q-API-429):
+// bytes.Compare of two keys has the sign of Compare where Compare is not zero, and two different strings have two keys.
+func (r *run) viewSortKey(a formats.ViewAdapter, vs []string) {
+	all := append([]string{junkVersion}, vs...)
+	for _, x := range all {
+		for _, y := range all {
+			if x == y {
+				continue
+			}
+			kx, ky := a.SortKey(x), a.SortKey(y)
+			if bytes.Equal(kx, ky) {
+				r.failf("SortKey(%q) and SortKey(%q) are one key: two different strings have two keys", x, y)
+				continue
+			}
+			if c := sign(a.Compare(x, y)); c != 0 && sign(bytes.Compare(kx, ky)) != c {
+				r.failf("SortKey(%q) and SortKey(%q) do not order as Compare = %d: bytes.Compare of the keys has the sign of Compare", x, y, c)
 			}
 		}
 	}

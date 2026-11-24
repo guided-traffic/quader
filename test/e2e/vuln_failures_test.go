@@ -21,6 +21,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/guided-traffic/quader/internal/formats/npm"
 )
 
 // vulnNPMBulk holds the packages the evaluation test seeds: it is created by the test and emptied by it.
@@ -69,6 +71,15 @@ var (
 // bulkSQL is the list of an SQL array literal.
 func bulkSQL(v []string) string { return "ARRAY['" + strings.Join(v, "','") + "']" }
 
+// bulkKeys is the array of the stored sort keys of npm versions, which the host writes with a version row (Q-API-429).
+func bulkKeys(vs []string) string {
+	keys := make([]string, len(vs))
+	for i, v := range vs {
+		keys[i] = fmt.Sprintf(`'\x%x'::bytea`, npm.New().View().SortKey(v))
+	}
+	return "ARRAY[" + strings.Join(keys, ",") + "]"
+}
+
 // TestVulnLong_R_VULN_011_SwitchoverDuringEvaluation is the criterion of R-VULN-011 and R-HA-052 for the evaluation: a PostgreSQL
 // switchover while a `vuln-evaluate` job works off the queued advisories leaves no finding twice and none lost. The repository
 // npm-vuln-bulk stores `names` packages with four versions each (seeded in the table, as a mirror or a long-lived repository
@@ -94,8 +105,9 @@ func TestVulnLong_R_VULN_011_SwitchoverDuringEvaluation(t *testing.T) {
 	sql(t, fmt.Sprintf(`WITH p AS (
 		INSERT INTO quader.packages (repo_id, name, display_name)
 		SELECT %s, %[2]s, %[2]s FROM generate_series(0, %[3]d) i RETURNING id)
-		INSERT INTO quader.package_versions (package_id, version, display_version) SELECT p.id, v, v FROM p, unnest(%[4]s) v`,
-		repo, bulkNameQuery, names-1, bulkSQL(bulkVersions)))
+		INSERT INTO quader.package_versions (package_id, version, display_version, sort_key, prerelease)
+		SELECT p.id, x.v, x.v, x.k, false FROM p, unnest(%[4]s, %[5]s) AS x(v, k)`,
+		repo, bulkNameQuery, names-1, bulkSQL(bulkVersions), bulkKeys(bulkVersions)))
 	t.Logf("seeded %d packages with %d versions in %s", names, len(bulkVersions), time.Since(seeded).Round(time.Millisecond))
 
 	// the source holds `names` new filler records: the packages above are their packages

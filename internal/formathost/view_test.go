@@ -29,6 +29,7 @@ func (s *viewAdapterStub) Stored(_ context.Context, _ formats.DataPorts, q forma
 }
 
 func (viewAdapterStub) Compare(a, b string) int { return len(a) - len(b) }
+func (viewAdapterStub) SortKey(v string) []byte { return append([]byte{byte(len(v))}, v...) }
 func (s *viewAdapterStub) Describe(_ context.Context, _ formats.DataPorts, vs []formats.ViewVersion, want formats.ViewFields, visible func(string) bool) (map[formats.VersionID]formats.ViewData, error) {
 	s.want, s.got = want, vs
 	return map[formats.VersionID]formats.ViewData{vs[0].ID: {Description: "d", Keywords: []string{"k"}, HasReadme: visible("1")}}, nil

@@ -62,9 +62,10 @@ func insert(st *testenv.Stack, repo string, p seedPackage) {
 	}
 	for _, sv := range p.versions {
 		v := version.MustParse(sv.v)
-		st.Exec(`INSERT INTO package_versions (package_id, version, display_version, trashed_at)
-		         SELECT p.id, $3, $4, CASE WHEN $5::boolean THEN now() END FROM packages p JOIN repositories r ON r.id = p.repo_id
-		          WHERE r.key = $1 AND p.name = $2`, repo, lower, v.URLForm(), v.FullNormalized(), sv.trashed)
+		key, pre := st.VersionKey("nuget", v.URLForm())
+		st.Exec(`INSERT INTO package_versions (package_id, version, display_version, trashed_at, sort_key, prerelease)
+		         SELECT p.id, $3, $4, CASE WHEN $5::boolean THEN now() END, $6, $7 FROM packages p JOIN repositories r ON r.id = p.repo_id
+		          WHERE r.key = $1 AND p.name = $2`, repo, lower, v.URLForm(), v.FullNormalized(), sv.trashed, key, pre)
 		st.Exec(`INSERT INTO nuget_version (version_id, repository_id, lower_id, declared_id, original_version, sort_key,
 		                                    is_prerelease, is_semver2, listed, published_at, package_types, metadata, search_doc, origin)
 		         SELECT pv.id, r.id, $2, $3, $4, $5, $6, $7, $8, now(), $9, $10::text::jsonb,
@@ -479,9 +480,10 @@ func TestR_AUTHZ_016_ARowByRowScanCrossesItsBatches(t *testing.T) {
 	e.st.Exec(`INSERT INTO packages (repo_id, name, display_name)
 	           SELECT r.id, 'bulk.p' || lpad(i::text, 4, '0'), 'Bulk.P' || lpad(i::text, 4, '0')
 	             FROM repositories r, generate_series(1, $1::int) AS i WHERE r.key = 'nuget-search'`, n)
-	e.st.Exec(`INSERT INTO package_versions (package_id, version, display_version)
-	           SELECT p.id, '1.0.0', '1.0.0' FROM packages p JOIN repositories r ON r.id = p.repo_id
-	            WHERE r.key = 'nuget-search' AND p.name LIKE 'bulk.p%'`)
+	key, _ := testenv.VersionKey(e.t, "nuget", "1.0.0")
+	e.st.Exec(`INSERT INTO package_versions (package_id, version, display_version, sort_key, prerelease)
+	           SELECT p.id, '1.0.0', '1.0.0', $1, false FROM packages p JOIN repositories r ON r.id = p.repo_id
+	            WHERE r.key = 'nuget-search' AND p.name LIKE 'bulk.p%'`, key)
 	e.st.Exec(`INSERT INTO nuget_version (version_id, repository_id, lower_id, declared_id, original_version, sort_key,
 	                                      is_prerelease, is_semver2, published_at, metadata, search_doc, origin)
 	           SELECT pv.id, p.repo_id, p.name, p.display_name, '1.0.0', $1, false, false, now(), '{}'::jsonb,

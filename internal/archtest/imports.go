@@ -210,6 +210,9 @@ func formatAllowed() []string {
 		// The vocabulary of the curation of a remote and its compiled delivery rules, leaves: a format filters its documents by the rules
 		// of the request's repository and refuses a package they do not deliver (remote-curation.md R-CUR-003, Q-CUR-41).
 		"internal/remotecuration", "internal/remotecuration/rules",
+		// The encoding of a version's stored sort key, a leaf: a format's view adapter gives the key of its order of versions
+		// (api-and-ui.md R-API-029, Q-API-429).
+		"internal/formats/versionkey",
 	}
 }
 

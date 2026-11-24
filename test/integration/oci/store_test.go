@@ -331,7 +331,8 @@ func (e *env) tag(name, tag, seed string) int64 {
 	e.t.Helper()
 	pkg := e.st.Number(`INSERT INTO packages (repo_id, name, display_name) VALUES ($1, $2, $2) ON CONFLICT (repo_id, name) DO UPDATE SET name = excluded.name RETURNING id`, e.repoID, name)
 	item := e.item(name+"/_tags/"+tag, seed)
-	v := e.st.Number(`INSERT INTO package_versions (package_id, version, display_version, lead_item_id) VALUES ($1, $2, $2, $3) RETURNING id`, pkg, tag, item)
+	key, _ := testenv.VersionKey(e.t, "oci", tag)
+	v := e.st.Number(`INSERT INTO package_versions (package_id, version, display_version, lead_item_id, sort_key, prerelease) VALUES ($1, $2, $2, $3, $4, false) RETURNING id`, pkg, tag, item, key)
 	e.st.Exec("UPDATE items SET version_id = $1 WHERE id = $2", v, item)
 	return v
 }

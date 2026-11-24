@@ -1,8 +1,11 @@
 package tagorder
 
 import (
+	"bytes"
 	"slices"
 	"testing"
+
+	"github.com/guided-traffic/quader/internal/formats/versionkey"
 )
 
 // Mechanism of R-OCI-031, not a proof of its criteria: it checks the tag order or one step of the view; the criteria are the
@@ -78,5 +81,29 @@ func FuzzR_OCI_031_Compare(f *testing.F) {
 		if (ab < 0) != (ba > 0) || (ab == 0) != (a == b) {
 			t.Fatalf("Compare(%q, %q) = %d, reverse %d", a, b, ab, ba)
 		}
+		if k := bytes.Compare(versionkey.Of(Key(a), true, a), versionkey.Of(Key(b), true, b)); (k < 0) != (ab < 0) || (k > 0) != (ab > 0) {
+			t.Fatalf("Compare(%q, %q) = %d, the keys order %d", a, b, ab, k)
+		}
 	})
+}
+
+// Mechanism of R-OCI-031 (Q-API-429): the stored sort key of a tag, Key and the tag's bytes, orders as Compare does.
+func TestKeyOrdersAsCompare(t *testing.T) {
+	tags := []string{
+		"1", "v1", "01", "1.0", "1.0.0", "v1.0", "1-a", "1-rc1", "2", "latest", "Latest", "_x", "0", "1.2.3", "1.10", "1.9",
+		"99999999999999999999999999", "1-alpine", "1.0.1", "1.0.0.1", "1.0-rc1", "1.0-RC.2", "1.0-alpha", "1.0-beta.3", "1.0-pre", "1.0-dev12",
+		"1.0-alpine", "1.0-rcx", "1.0-rc1-x", "1.0-develop", "v2.9.0-rc2", "v2.9.0-beta.1", "20240315", "edge", "main", "1.29.3-perl",
+	}
+	for _, a := range tags {
+		for _, b := range tags {
+			if a == b {
+				continue
+			}
+			ka, kb := versionkey.Of(Key(a), true, a), versionkey.Of(Key(b), true, b)
+			c, k := Compare(a, b), bytes.Compare(ka, kb)
+			if (c < 0) != (k < 0) || (c > 0) != (k > 0) {
+				t.Errorf("Compare(%q, %q) = %d, the keys %x and %x order %d", a, b, c, ka, kb, k)
+			}
+		}
+	}
 }

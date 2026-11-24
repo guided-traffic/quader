@@ -282,3 +282,17 @@ func mustJSON(t testing.TB, b []byte, v any) {
 		t.Fatalf("%v\n%s", err, b)
 	}
 }
+
+// versions writes n tiny version rows of an npm package by SQL, the g-th named name(g) and created g seconds from now, with the sort
+// key and the pre-release flag the host stores (testenv.VersionKey).
+func (e *env) versions(pkg string, n int, name func(g int) string) {
+	e.t.Helper()
+	vs := make([]string, n)
+	for g := range n {
+		vs[g] = name(g + 1)
+	}
+	keys, pres := testenv.VersionKeys(e.t, "npm", vs)
+	e.st.Exec(`INSERT INTO package_versions (package_id, version, display_version, created_at, sort_key, prerelease)
+		SELECT $1::bigint, x.v, x.v, now() + make_interval(secs => x.g::int), x.k, x.pre
+		  FROM unnest($2::text[], $3::bytea[], $4::boolean[]) WITH ORDINALITY AS x(v, k, pre, g)`, pkg, vs, keys, pres)
+}

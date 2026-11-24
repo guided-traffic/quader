@@ -82,6 +82,8 @@ type writerDeps struct {
 	remove ItemRemover
 	// check decides every file a removal of the request takes; set for the writer of Host.Write.
 	check func(ctx context.Context, files []string) error
+	// order is the sort key and the pre-release answer of the writer's format (Q-API-429).
+	order versionOrder
 	// areas are the notification areas the writer's format declared.
 	areas []string
 	// guard decides the paths a hook cascades to for the request's subject; set for the writer of Host.Write.
@@ -153,7 +155,10 @@ func versionRows(vs []packages.Version) []formats.VersionRow {
 }
 
 func (w *writer) InsertVersion(ctx context.Context, pkg formats.PackageRef, v formats.NewVersion) (formats.VersionID, error) {
-	nv := packages.NewVersion{Version: v.Version, DisplayVersion: v.DisplayVersion, Attributes: v.Attributes, CreatedBy: v.CreatedBy}
+	nv := packages.NewVersion{
+		Version: v.Version, DisplayVersion: v.DisplayVersion, Attributes: v.Attributes, CreatedBy: v.CreatedBy,
+		SortKey: w.d.order.key(v.Version), Prerelease: w.d.order.pre(v.Version),
+	}
 	if v.LeadItem != nil {
 		nv.LeadItem = v.LeadItem.ID
 	}

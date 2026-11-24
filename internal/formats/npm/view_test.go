@@ -1,6 +1,7 @@
 package npm
 
 import (
+	"bytes"
 	"context"
 	"slices"
 	"testing"
@@ -238,5 +239,37 @@ func TestR_API_029_NPMHasAViewAdapter(t *testing.T) {
 	}
 	if err := formats.Validate(f); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// Mechanism of R-API-029, not a proof of its criteria: the stored sort key orders npm versions as Compare does, build metadata and
+// numbers beyond 2^53 included, and a string that is no version first.
+func TestR_API_029_TheNPMSortKeyOrdersAsCompare(t *testing.T) {
+	a := viewAdapter{}
+	keyOrdersAsCompare(t, a.Compare, a.SortKey, []string{
+		"0.9.0", "1.0.0-alpha", "1.0.0-alpha.1", "1.0.0-alpha.beta", "1.0.0-beta.2", "1.0.0-beta.11", "1.0.0-rc.1", "1.0.0-0",
+		"1.0.0-x.9007199254740993", "1.0.0-x.9007199254740992", "1.0.0", "1.0.0+a", "1.0.0+b", "1.0.0+1", "1.0.0+a.b", "1.0.0+10",
+		"1.0.1", "1.10.0", "2.0.0", "9007199254740991.0.0", "not-a-version", "v1.0.0", "", "1.0", "\x00",
+	})
+}
+
+// keyOrdersAsCompare fails for every pair of the corpus whose keys do not order as compare does, or that share a key (Q-API-429).
+func keyOrdersAsCompare(t *testing.T, compare func(a, b string) int, key func(string) []byte, corpus []string) {
+	t.Helper()
+	for _, x := range corpus {
+		for _, y := range corpus {
+			if x == y {
+				continue
+			}
+			kx, ky := key(x), key(y)
+			if bytes.Equal(kx, ky) {
+				t.Errorf("%q and %q share the key %x", x, y, kx)
+				continue
+			}
+			c, k := compare(x, y), bytes.Compare(kx, ky)
+			if (c < 0 && k >= 0) || (c > 0 && k <= 0) {
+				t.Errorf("Compare(%q, %q) = %d, the keys %x and %x order %d", x, y, c, kx, ky, k)
+			}
+		}
 	}
 }

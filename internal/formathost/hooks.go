@@ -12,6 +12,7 @@ import (
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/files"
 	"github.com/guided-traffic/quader/internal/formats"
+	"github.com/guided-traffic/quader/internal/formats/versionkey"
 	"github.com/guided-traffic/quader/internal/items"
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/packages"
@@ -42,16 +43,38 @@ func (d Deps) writerForEvent(tx meta.Tx, repo formats.RepoRef, format string) (f
 // signal of a package it raised (Q-ARCH-259).
 func (d Deps) newWriter(tx meta.Tx, rq *formats.Request, bound *formats.RepoRef, format string) (formats.PackageWriter, error) {
 	var desc formats.Descriptor
+	order := orderOf(nil)
 	if f, ok := d.lookup(format); ok {
 		desc = f.Descriptor()
+		order = orderOf(f)
 	}
 	pw, err := packages.NewWriter(tx, desc.PropertyPrefix, packages.WithRaised(packageRaised(d.Signals)))
 	if err != nil {
 		return nil, err
 	}
 	return &writer{w: pw, tx: tx, req: rq, bound: bound, d: writerDeps{
-		own: d.Ownership, auto: d.AutoClaim, signals: d.Signals, areas: desc.NotifyAreas,
+		own: d.Ownership, auto: d.AutoClaim, signals: d.Signals, areas: desc.NotifyAreas, order: order,
 	}}, nil
+}
+
+// versionOrder is what the writer stores of a version's place in its format's order (R-API-029, Q-API-429): the sort key of the
+// format's view adapter and its answer whether the version is a pre-release. A format without a view adapter has no order of its
+// versions and lists none: its key is that of a string that is no version, the version's bytes.
+type versionOrder struct {
+	key func(string) []byte
+	pre func(string) bool
+}
+
+func orderOf(f formats.Format) versionOrder {
+	o := versionOrder{key: func(v string) []byte { return versionkey.Of(nil, false, v) }, pre: func(string) bool { return false }}
+	if f == nil {
+		return o
+	}
+	if a := f.View(); a != nil {
+		o.key = a.SortKey
+	}
+	o.pre = prereleaseOf(f)
+	return o
 }
 
 func (d Deps) lookup(id string) (formats.Format, bool) {

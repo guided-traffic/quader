@@ -1,6 +1,7 @@
 package version
 
 import (
+	"bytes"
 	"slices"
 	"testing"
 )
@@ -111,4 +112,30 @@ func FuzzCompare(f *testing.F) {
 			t.Fatalf("Compare(%q, %q) != 0", a, a)
 		}
 	})
+}
+
+// The stored sort key of R-DEB-002 (Q-API-429): the key and its version's bytes order as Compare does over the versions of the tests
+// above, and two versions Compare finds equal share the key's encoding.
+func TestSortKeyOrdersAsCompare(t *testing.T) {
+	corpus := []string{
+		"1.0~rc1", "1.0", "1.0-1", "1.0+b1", "1.1~", "1.1", "1:0.1", "2.10-3", "0:2.10-3", "1.00", "1.0-01", "1:1", "01:1", "1.0-0",
+		"1.1", "1.9", "1.10", "2.10-4", "2.9", "1.0a", "1.0b", "1.0~", "1.0~~", "1.0~a", "1.0~b", "1.0.1", "1.0+1", "a", "b", "1.2.3",
+		"1:0", "9:1", "10:0", "0.9-1", "0.9-1.1", "1~1", "1~1a", "1a", "1+", "1.0-1~bpo1", "2.9.14+dfsg-1.3", "2.9.14+dfsg-1.3+b1",
+		"1.0-9", "1.0-10", "007", "8", "", "~", "1:2.0-1-2", "1.0a0", "1.0.a",
+	}
+	key := func(s string) []byte { return append(SortKey(s), s...) }
+	for _, x := range corpus {
+		for _, y := range corpus {
+			if x == y {
+				continue
+			}
+			c, k := Compare(x, y), bytes.Compare(SortKey(x), SortKey(y))
+			if (c < 0) != (k < 0) || (c > 0) != (k > 0) {
+				t.Errorf("Compare(%q, %q) = %d, the encodings order %d", x, y, c, k)
+			}
+			if bytes.Equal(key(x), key(y)) {
+				t.Errorf("%q and %q share a key", x, y)
+			}
+		}
+	}
 }

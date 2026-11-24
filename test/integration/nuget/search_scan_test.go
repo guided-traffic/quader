@@ -29,8 +29,9 @@ func TestR_NUGET_034_TheStoreReadsTheScanAsOneStatement(t *testing.T) {
 	st.Exec(`INSERT INTO packages (repo_id, name, display_name)
 		SELECT r.id, 'acme.p' || lpad(i::text, 5, '0'), 'Acme.P' || lpad(i::text, 5, '0')
 		  FROM repositories r, generate_series(1, $2) AS i WHERE r.key = $1`, "nuget-scan", n)
-	st.Exec(`INSERT INTO package_versions (package_id, version, display_version)
-		SELECT p.id, $2, $3 FROM packages p JOIN repositories r ON r.id = p.repo_id WHERE r.key = $1`, "nuget-scan", v.URLForm(), v.FullNormalized())
+	key, _ := testenv.VersionKey(t, "nuget", v.URLForm())
+	st.Exec(`INSERT INTO package_versions (package_id, version, display_version, sort_key, prerelease)
+		SELECT p.id, $2, $3, $4, false FROM packages p JOIN repositories r ON r.id = p.repo_id WHERE r.key = $1`, "nuget-scan", v.URLForm(), v.FullNormalized(), key)
 	st.Exec(`INSERT INTO nuget_version (version_id, repository_id, lower_id, declared_id, original_version, sort_key,
 		                                is_prerelease, is_semver2, listed, published_at, package_types, metadata, search_doc, origin)
 		SELECT pv.id, r.id, p.name, p.display_name, '1.0.0', $2, false, false, true, now(), ARRAY['dependency'], '{}'::jsonb,

@@ -4196,11 +4196,15 @@ Measured on 2026-11-23 on the integration stack with 100,000 tag entries of one 
 [api-and-ui.md](../api-and-ui.md) Q-API-417 and Q-API-428 a page of the image's 50 tags took 16.6 s, the first and a middle one alike, and
 a page of the repository's package list 11 s (load average 49 to 23 on 20 cores); after them a page of 50 tags takes 43 ms and a page in
 the middle 40 ms, and a page of 500 tags 35 ms (load average 19): one keyset query that reads no tag entry past its
-limit, which `TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit` holds, within R-API-010's budget. **What is left:** the package
-list still reads every tag entry of an image, to count its versions (`version_count`) and to find its latest tag by the format's order:
-0.99 s for the page of the repository's package list (`PackageViewList` 0.74 s, `PackageViewVersionNames` 0.42 s, both with
-`auto_explain` measuring). Live today; real for a mirror of a registry with many tags. The remedy is a count and a latest tag kept by the
-commit and the fill, for every format ([api-and-ui.md](../api-and-ui.md) H-1683); it is not built.
+limit, which `TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit` holds, within R-API-010's budget. Measured again on 2026-11-24
+with 100,000 tags that point at 100,000 different manifests: the package list 1.24 s, the page in the order of the tags 0.58 s; since
+[api-and-ui.md](../api-and-ui.md) Q-API-429 (a tag entry stores the key of the tag order, `tag_sort_key`; the latest tag is the first
+visible entry of its index; the downloads are summed for the page's images from the files that were downloaded) the package list
+0.41 s and the page in the order of the tags 23 ms (load average 11 to 16). **What is left:** the package list still reads every tag
+entry of an image once, with the checks of the listing rules per entry, to count its tags (`version_count`) and its first and last fetch:
+under `EXPLAIN ANALYZE` the statement took 0.49 s, 0.27 s of it reading the 100,001 entries, 0.18 s sorting them for the count (an
+external merge of 6.5 MB) and 0.2 ms the downloads. Live today; real for a mirror of a registry with many tags. The remedy is a count kept by the commit and the
+fill ([api-and-ui.md](../api-and-ui.md#h-1683--the-version-list-of-a-package-several-repositories-hold-in-the-order-of-publication-reads-every-version-and-the-package-list-counts-every-version) H-1683); it is not built.
 
 ### Q-OCI-100 · Everything below `/v2/` is one handler and one match, on the patterns `/v2` and `/v2/{rest...}`
 

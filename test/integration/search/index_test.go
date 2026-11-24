@@ -26,7 +26,8 @@ func TestR_API_064_ThePackageStatementsUseTheirIndexes(t *testing.T) {
 	st.Exec(`INSERT INTO packages (repo_id, name, display_name)
 	         SELECT r.id, n, n FROM repositories r, unnest(ARRAY['@acme/ui-kit', '@acme/kit-ui', 'microsoft.extensions.logging']) n
 	          WHERE r.key = 'npm-a'`)
-	st.Exec(`INSERT INTO package_versions (package_id, version, display_version) SELECT id, '1.0.0', '1.0.0' FROM packages`)
+	key, _ := testenv.VersionKey(t, "npm", "1.0.0")
+	st.Exec(`INSERT INTO package_versions (package_id, version, display_version, sort_key, prerelease) SELECT id, '1.0.0', '1.0.0', $1, false FROM packages`, key)
 	st.Exec(`ANALYZE packages`)
 	st.Exec(`ANALYZE package_versions`)
 

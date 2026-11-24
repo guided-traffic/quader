@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/guided-traffic/quader/internal/errs"
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/npm/rows"
 	"github.com/guided-traffic/quader/internal/formats/npm/semver"
+	"github.com/guided-traffic/quader/internal/formats/versionkey"
 )
 
 // viewPort is the part of the data port the package view reads (R-API-029): the
@@ -76,6 +78,51 @@ func (viewAdapter) Compare(a, b string) int {
 		return c
 	}
 	return strings.Compare(a, b)
+}
+
+// SortKey is the stored key of Compare's order (Q-API-429): the three numbers, the pre-release (a release above every pre-release of
+// its numbers, then identifier by identifier, numbers by value before other identifiers by their bytes, a shorter list first), the build
+// metadata in the same form (none first), then the string itself.
+func (viewAdapter) SortKey(version string) []byte {
+	v, err := semver.Parse(version)
+	if err != nil {
+		return versionkey.Of(nil, false, version)
+	}
+	k := make([]byte, 0, 16+len(version))
+	for _, n := range []uint64{v.Major, v.Minor, v.Patch} {
+		k = versionkey.Number(k, strconv.FormatUint(n, 10))
+	}
+	if len(v.Pre) == 0 {
+		k = append(k, 0x02)
+	} else {
+		k = appendIdentifiers(append(k, 0x01), v.Pre)
+	}
+	return versionkey.Of(appendIdentifiers(k, v.Build), true, version)
+}
+
+// appendIdentifiers appends dot-separated identifiers as SemVer orders them: a number (0x01 and its value) before any other identifier
+// (0x02 and its bytes), and 0x00 at the end, so a list that is the prefix of another sorts first.
+func appendIdentifiers(k []byte, ids []string) []byte {
+	for _, id := range ids {
+		if numeric(id) {
+			k = versionkey.Number(append(k, 0x01), id)
+			continue
+		}
+		k = versionkey.Text(append(k, 0x02), id)
+	}
+	return append(k, 0x00)
+}
+
+func numeric(s string) bool {
+	if s == "" {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // Describe reads the manifests of the versions. The summary fields come from the

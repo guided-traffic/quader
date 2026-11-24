@@ -75,3 +75,35 @@ func (s *Stack) RowsRead(sql string) map[string]float64 {
 	walk(doc[0].Plan)
 	return out
 }
+
+// SubPlanLoops runs a statement under EXPLAIN (ANALYZE, FORMAT JSON) and returns the most loops any of its subplans ran: a subplan per
+// row of a table runs once per row, which a test bounds by the rows the statement returns.
+func (s *Stack) SubPlanLoops(sql string) float64 {
+	s.tb.Helper()
+	var doc []struct {
+		Plan json.RawMessage `json:"Plan"`
+	}
+	if err := json.Unmarshal([]byte(s.Text("EXPLAIN (ANALYZE, FORMAT JSON) "+sql)), &doc); err != nil || len(doc) != 1 {
+		s.tb.Fatalf("the plan of %s: %v", sql, err)
+	}
+	most := 0.0
+	var walk func(raw json.RawMessage)
+	walk = func(raw json.RawMessage) {
+		var n struct {
+			Parent string            `json:"Parent Relationship"`
+			Loops  float64           `json:"Actual Loops"`
+			Plans  []json.RawMessage `json:"Plans"`
+		}
+		if json.Unmarshal(raw, &n) != nil {
+			return
+		}
+		if n.Parent == "SubPlan" {
+			most = max(most, n.Loops)
+		}
+		for _, c := range n.Plans {
+			walk(c)
+		}
+	}
+	walk(doc[0].Plan)
+	return most
+}

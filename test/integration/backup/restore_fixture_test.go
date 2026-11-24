@@ -59,7 +59,8 @@ func seedSource(t *testing.T, s *testenv.Stack, files, bulkAudit int, ring *secr
 		}
 	}
 	pkg := s.Number("INSERT INTO packages (repo_id, name, display_name, rev_seq) VALUES ($1, 'pkg', 'pkg', 6) RETURNING id", repoID)
-	ver := s.Number("INSERT INTO package_versions (package_id, version, display_version, lead_item_id) VALUES ($1, '1.0.0', '1.0.0', $2) RETURNING id", pkg, leadItem)
+	key, _ := testenv.VersionKey(t, "generic", "1.0.0")
+	ver := s.Number("INSERT INTO package_versions (package_id, version, display_version, lead_item_id, sort_key, prerelease) VALUES ($1, '1.0.0', '1.0.0', $2, $3, false) RETURNING id", pkg, leadItem, key)
 	s.Exec("UPDATE items SET version_id = $1 WHERE id = $2", ver, leadItem)
 
 	// A job running, one being cancelled, one queued and one done at the snapshot.

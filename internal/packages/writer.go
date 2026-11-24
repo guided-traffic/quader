@@ -181,9 +181,12 @@ func (w *Writer) InsertVersion(ctx context.Context, pkg Ref, v NewVersion) (int6
 	if v.DisplayVersion == "" {
 		v.DisplayVersion = v.Version
 	}
+	if len(v.SortKey) == 0 {
+		return 0, errs.E(errs.Internal, errs.CodeInternal, "packages: a version without its sort key")
+	}
 	ids, err := w.qs.InsertPackageVersion(ctx, q.InsertPackageVersionParams{
 		PackageID: pkg.ID, Version: v.Version, DisplayVersion: v.DisplayVersion, LeadItemID: v.LeadItem,
-		Attributes: attrs, CreatedBy: v.CreatedBy,
+		Attributes: attrs, CreatedBy: v.CreatedBy, SortKey: v.SortKey, Prerelease: v.Prerelease,
 	})
 	if err != nil {
 		return 0, err

@@ -3,7 +3,11 @@
 // including the end of the string) and digits (numerically). It is a leaf: the format, its data port and the virtual merge share it.
 package version
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/guided-traffic/quader/internal/formats/versionkey"
+)
 
 // Version is a version split into its three parts.
 type Version struct {
@@ -134,3 +138,60 @@ func verrevcmp(a, b string) int {
 }
 
 func isDigit(c byte) bool { return c >= '0' && c <= '9' }
+
+// The bytes of a non-digit run in [SortKey]: '~' before the end of the run, the end before a letter, a letter before any other
+// character (written as 0xFE and the character, above every letter).
+const (
+	keyTilde = 0x01
+	keyEnd   = 0x02
+	keyOther = 0xFE
+)
+
+// SortKey is the encoding of a version's place in the order of [Compare], for the stored sort key of internal/formats/versionkey
+// (Q-API-429): the epoch as a number, then the upstream version and the revision, each as its runs. Two versions Compare finds equal
+// ("2.10-3", "0:2.10-3") have the same encoding; the caller appends the string itself. A 0x00 byte, which no version of R-DEB-002 holds
+// and which verrevcmp weighs like the end of a run, is written as any other character.
+func SortKey(s string) []byte {
+	v := Parse(s)
+	epoch := strings.TrimLeft(v.Epoch, "0")
+	for i := 0; i < len(epoch); i++ {
+		if !isDigit(epoch[i]) {
+			epoch = epoch[:i]
+			break
+		}
+	}
+	k := make([]byte, 0, 2*len(s)+16)
+	k = versionkey.Number(k, epoch)
+	k = appendRuns(k, v.Upstream)
+	return appendRuns(k, v.Revision)
+}
+
+// appendRuns appends a part as verrevcmp reads it: pairs of a non-digit run, ended by keyEnd, and a digit run as a number, at least one
+// pair, and keyEnd after the last. A run of the other part that goes on where this part ended meets keyEnd: '~' sorts below it and every
+// other character above it, which is verrevcmp's end of a string. A part that is a prefix of another in this form is the same part, so
+// the revision that follows never changes the order of two upstream versions.
+func appendRuns(k []byte, s string) []byte {
+	i := 0
+	for {
+		for ; i < len(s) && !isDigit(s[i]); i++ {
+			switch c := s[i]; {
+			case c == '~':
+				k = append(k, keyTilde)
+			case c >= 'a' && c <= 'z', c >= 'A' && c <= 'Z':
+				k = append(k, c)
+			default:
+				k = append(k, keyOther, c)
+			}
+		}
+		k = append(k, keyEnd)
+		j := i
+		for j < len(s) && isDigit(s[j]) {
+			j++
+		}
+		k = versionkey.Number(k, s[i:j])
+		i = j
+		if i >= len(s) {
+			return append(k, keyEnd)
+		}
+	}
+}

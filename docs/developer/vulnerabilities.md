@@ -272,8 +272,8 @@ Files: [internal/vuln/match/affects.go](../../internal/vuln/match/affects.go) (t
 - **The remote miss.** `Service.EvaluateMiss` returns the whole verdict (Q-VULN-38) and writes nothing.
 - **The npm remote fill** now records the version (Q-VULN-37): see [npm.md](npm.md#remote-fills-record-the-version). A tarball cached before that gets its
   rows in the full evaluation: `backfill.go` reads the cached files of the ecosystem's remote repositories that have no version (`VulnUnversionedItems`, 500 per transaction,
-  a cursor over item ids), asks the adapter (`ArtifactClassifier`, npm: [vuln_backfill.go](../../internal/formats/npm/vuln_backfill.go)) for the package and version of each path, and writes the rows
-  through `packages.Writer` (Q-VULN-67, H-497).
+  a cursor over item ids), asks the adapter (`ArtifactClassifier`, npm: [vuln_backfill.go](../../internal/formats/npm/vuln_backfill.go)) for the package and version of each path and for the
+  version's sort key and pre-release answer (`ArtifactOrder`, Q-API-429), and writes the rows through `packages.Writer` (Q-VULN-67, H-497).
 - **Kind, merge, re-key.** `VulnAffectedForNames` returns the kind of the record the entry belongs to; `matchVersion` makes a match malicious when a record of the group whose entry affects the
   version is (Q-VULN-65). `apply` takes the findings of a version in id order, re-keys a finding whose advisory joined a group, resolved ones too, and `merge`s it into the finding of the new identifier when
   there is one: the stronger status (`strength`: blocked, confirmed, needs_triage, dismissed; a resolved finding counts as its status before), the history moved (`MergeInto`), the audit event

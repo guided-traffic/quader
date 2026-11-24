@@ -12,7 +12,7 @@ their own sections below: [Conformance kit](#conformance-kit) and [Untrusted con
 ## What has to be in your head first
 
 - **A format is a Go package that implements `formats.Format` and imports almost nothing.** The archtest allowlist
-  ([imports.go](../../internal/archtest/imports.go)) lets a format import the contract, `formats/catalog`, `formats/untrusted`, `errs`,
+  ([imports.go](../../internal/archtest/imports.go)) lets a format import the contract, `formats/catalog`, `formats/untrusted`, `formats/versionkey`, `errs`,
   `config` and `observability`. Core types reach it as aliases of the contract (`formats.Action`, `formats.Path`, `formats.Tx`) and
   as fields of the request (`rq.Subject`, `rq.Index`, `rq.Repo`), so it never names `authz`, `repository` or `meta`.
 
@@ -33,7 +33,7 @@ only writer is `Member` (Q-ARCH-252, [Q-AUTHZ-165](../spec/authorization.md)).
   check before a handler sees the request; `Host.Ingest().Commit` runs the hook in the item's transaction.
 - **A format with no routes has no prefix.** generic's protocol is `/files/` ([Q-GENERIC-7](../spec/formats/generic.md)); `/files/` is the
   raw view of every repository and is served by the generic layer, not by the dispatcher.
-- **The contract is frozen** since the end of M3 (version 1; version 2 since the project model, ADR-156; version 8 since the signatures, ADR-228; version 9 since the gate per repository, ADR-231; version 10 since the receipt attestations, ADR-230 and Q-SIG-180; version 11 since the declaration of the upstream catalogue and the version canon, ADR-277 and [remote-curation.md](remote-curation.md#c--contracts)) ([ADR-141](../decisions.md#adr-141--the-format-contract-is-frozen-at-version-1)):
+- **The contract is frozen** since the end of M3 (version 1; version 2 since the project model, ADR-156; version 8 since the signatures, ADR-228; version 9 since the gate per repository, ADR-231; version 10 since the receipt attestations, ADR-230 and Q-SIG-180; version 11 since the declaration of the upstream catalogue and the version canon, ADR-277 and [remote-curation.md](remote-curation.md#c--contracts); version 12 since the stored sort key of a version, ADR-278 and [Q-API-429](../spec/api-and-ui.md#q-api-429--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row)) ([ADR-141](../decisions.md#adr-141--the-format-contract-is-frozen-at-version-1)):
   every change of its exported surface, an addition included, is an ADR, and
   [testdata/contract.txt](../../internal/formats/testdata/contract.txt) is regenerated in the same change (see [Changing the contract](#changing-the-contract)).
 - **Unbound seams fail closed.** `Claim` and `AutoClaim` refuse until the composition root binds the ownership rule and the namespace auto
@@ -83,17 +83,19 @@ only writer is `Member` (Q-ARCH-252, [Q-AUTHZ-165](../spec/authorization.md)).
 ## The package view
 
 A format that has package screens (R-API-029) returns a `formats.ViewAdapter` from `View()`; `Base.View()` is nil, and a format without one is not
-listed on the screens. The adapter orders the versions (`Compare`; "is a pre-release" is the exposure adapter's `Prerelease`, which the host's view bridge asks, Q-ARCH-257), reads what the screens show of a version beyond the generic rows
+listed on the screens. The adapter orders the versions (`Compare`; "is a pre-release" is the exposure adapter's `Prerelease`, which the host's view bridge asks, Q-ARCH-257), gives the
+stored sort key of that order (`SortKey`, built with [versionkey](../../internal/formats/versionkey/versionkey.go): bytewise the order of `Compare`, a string that is
+no version first, two strings two keys; the host's package writer stores it and the pre-release answer with every version row, Q-API-429), reads what the screens show of a version beyond the generic rows
 (`Describe`: description, keywords, licenses, the README flag, the metadata and, when asked, the README), answers the two searches that need the format's
 data (`Find`) and names the stored versions it does not serve (`Withheld`). It runs no SQL: it reaches its tables through the data port the host hands it
 (`formats.DataPorts`, the part of `Host` that is `FormatData`). `Validate` refuses a view without package names. The read model that calls the adapter, and
-the bridge to it (`formathost.NewViewAdapters`), are in [packages.md](packages.md). To give a format a view: implement the six methods in `view.go` of the
+the bridge to it (`formathost.NewViewAdapters`), are in [packages.md](packages.md). To give a format a view: implement the seven methods in `view.go` of the
 format, add the statements to the format's data package and the matching methods to its port, and add the port interface the adapter asserts (`viewPort` in
-[npm view.go](../../internal/formats/npm/view.go)). `Stored` is the sixth method: what one local or remote repository serves of one package, newest first (arrival for a hosted repository, publish time for a
+[npm view.go](../../internal/formats/npm/view.go)). `Stored` is the seventh method: what one local or remote repository serves of one package, newest first (arrival for a hosted repository, publish time for a
 remote one, otherwise `Compare` descending), and its tags only when the query asks (the catalog says the format has tags). "Serves" means answerable by a request for
 the exact version, so unlisted and deprecated versions count and withheld ones do not (Q-EP-67). The dry run of an endpoint's exposure rules calls it when a check
 names no versions (R-EP-016, Q-EP-61); the bridge is `formathost.ViewAdapters.Stored`, which is the `authz.StoredPackages` of the rule service, and it asks neither a
-virtual repository nor a format without an adapter. Kit check 11 holds the adapter (`Compare` a total order over the fixture's sample versions, `Withheld` and
+virtual repository nor a format without an adapter. Kit check 11 holds the adapter (`Compare` a total order over the fixture's sample versions, `SortKey` ordering them and a string that is no version as `Compare` does with one key per string, `Withheld` and
 `Stored` over an empty repository and over a seeded package).
 
 ## The registry

@@ -16,3 +16,10 @@ func (f *Format) ArtifactVersion(path string) (pkg, version string, ok bool) {
 	}
 	return info.Package, info.Version, true
 }
+
+// ArtifactOrder is what the host stores with the version row the backfill writes besides the version, as the host's package writer
+// stores it for a fill: the format's sort key and its pre-release answer (Q-API-429).
+func (f *Format) ArtifactOrder(version string) ([]byte, bool) {
+	pre, ok := f.exposure.Prerelease(version)
+	return viewAdapter{}.SortKey(version), ok && pre
+}

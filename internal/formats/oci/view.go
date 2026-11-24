@@ -9,6 +9,7 @@ import (
 	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/oci/rows"
 	"github.com/guided-traffic/quader/internal/formats/oci/tagorder"
+	"github.com/guided-traffic/quader/internal/formats/versionkey"
 )
 
 // The package screens of the format (R-OCI-031, R-API-029): an image name is a package and its tags are its versions, newest first by
@@ -44,6 +45,13 @@ func (viewAdapter) Compare(a, b string) int {
 		return 1
 	}
 	return tagorder.Compare(a, b)
+}
+
+// SortKey is the stored key of Compare's order (Q-API-429): a string that is no tag first, then the key of the tag order. A remote
+// repository's tags are cache entries whose key PostgreSQL derives from the tag (oci_tag_sort_key, migration 00116); both give the same
+// bytes for every tag, which the listing test of R-OCI-036 checks.
+func (viewAdapter) SortKey(tag string) []byte {
+	return versionkey.Of(tagorder.Key(tag), ValidTag(tag), tag)
 }
 
 // Stored lists the tags a local repository serves of an image name, newest push first, for the exposure check of an endpoint. A remote

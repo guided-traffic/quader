@@ -2590,6 +2590,29 @@ further addition that keeps version 11: `discover.LevelPage.Unknown` (`*discover
 it at a constant cost, a format that cannot sets nothing and answers as before; kit check 22 holds a case's `UnknownLevel`
 ([Q-CUR-165](spec/remote-curation.md#q-cur-165--a-level-the-upstream-does-not-have-says-so-with-the-formats-naming-rule-and-one-suggestion-built-from-it)).
 
+### ADR-278 · The order of a format's versions is a sort key stored with every version row
+
+**Status:** Decided by the development agent — owner review at the walkthrough
+([Q-API-429](spec/api-and-ui.md#q-api-429--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row)). It changes the
+frozen format contract: contract version 12.
+
+**Context.** The version list in the order of the versions and the latest version of every listed package read every version's name and
+ordered it in the service by the format's `Compare`: with 100,000 versions of one package 0.4 s a page and 0.66 s the package list, with
+100,000 tags of a remote image 0.58 s and 1.24 s (measured on 2026-11-24, [packages.md](developer/packages.md#a-package-with-100000-versions-h-1683-measured)).
+No statement can sort by a format's `Compare`.
+
+**Decision.**
+- A format's view adapter gives the sort key of its order (`ViewAdapter.SortKey`, [versionkey](../internal/formats/versionkey/versionkey.go)):
+  bytewise the order of `Compare`, a string that is no version first, two strings two keys. Kit check 11 holds it to `Compare`.
+- The host's package writer stores the key and the format's pre-release answer with every version row; a remote OCI repository's tag
+  entries derive the same key in PostgreSQL from the stored tag (migration 00116, compared byte for byte by an integration test).
+- A page in the order of the versions is one keyset statement per holder on an index; the latest version of a listed package is the first
+  visible entry of an index of its releases, else of its pre-releases; the package list sums the downloads of the page's packages alone.
+
+**Consequences.** Every format with a view implements `SortKey`; a database that holds version rows written without a key is started
+afresh (pre-alpha); the order of publication of a package several repositories hold, and the count of a package's versions in the list,
+still read every version (H-1683).
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -8974,10 +8997,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-API
 
-154 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
+155 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
 
 <details>
-<summary>Q-API: 154 questions</summary>
+<summary>Q-API: 155 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9135,6 +9158,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-API-406](spec/api-and-ui.md#q-api-406--a-connection-of-the-list-carries-the-answering-replicas-settings-and-its-states-are-an-open-string) | A connection of the list carries the answering replica's settings, and its states are an open string | Decided by the development agent while building package F | (a) `settings` (region, path style, the three checksum modes, batch delete, storage class, server-side encryption, scrub bytes per second), `drainedAt` and `retiredAt` join the member list; what describes the answering replica's element is `null` for a connection it does not configure; `state` and a storage key's `state` are strings whose values the description lists | — |
 | [Q-API-417](spec/api-and-ui.md#q-api-417--the-version-list-of-a-package-is-read-a-page-at-a-time-by-a-keyset-query-in-the-order-of-publication) | The version list of a package is read a page at a time by a keyset query in the order of publication | Decided by the development agent | (a) A package that one repository of the scope holds, in the order of publication: one keyset statement on (creation time, version compared bytewise) with a limit, in the order of an index (`package_versions_listing`; a remote OCI repository's tags by `remote_cache_entries_tag_time`, Q-OCI-267); the rows with sizes and downloads are read for the page's versions alone. A package several repositories hold, and the order of the format's versions, read every visible version's name, one cheap row each, and sort in the service | — |
 | [Q-API-428](spec/api-and-ui.md#q-api-428--the-package-views-statements-run-without-the-servers-jit-compilation) | The package view's statements run without the server's JIT compilation | Decided by the development agent | (a) `set_config('jit', 'off', true)` as the first statement of every transaction of the view's service | — |
+| [Q-API-429](spec/api-and-ui.md#q-api-429--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row) | The order of a format's versions is a sort key stored with every version row | Decided by the development agent | (a) A sort key of the format's order stored with every version row | [ADR-278](#adr-278--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row) |
 
 </details>
 
