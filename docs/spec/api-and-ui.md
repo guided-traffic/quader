@@ -8247,7 +8247,8 @@ The editor is a page (`/admin/limits/profiles/new`, `/admin/limits/profiles/{key
   value that is not a whole number of bytes after conversion is rounded down.
 - A help line per group, one sentence: what happens at the limit ("At the limit a request is answered 429 with the time to wait.",
   "Above the rate a download is slowed down; above the hourly amount the next download is refused before it starts.", "With the
-  upstream budget used up, what is cached is still served.", "A further download waits up to 10 seconds."), and under **From the
+  upstream budget used up, what is cached is still served.", "A further download waits up to 10 seconds, then is refused, or at
+  once while a server holds many waiting downloads.", the wait and the share of R-LIM-024), and under **From the
   cache** the note that a very low rate makes a large file take longer than some clients wait in total.
 - Unlimited cannot be edited: its page shows the figures read-only with "Unlimited is always unlimited."
 - **Save** sends `PUT` (or `POST`) with `If-Match`; a `412` opens the conflict dialog of R-UI-042.

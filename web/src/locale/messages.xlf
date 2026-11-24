@@ -11113,7 +11113,7 @@
         <note category="location">src/app/features/limits/figures.ts:66</note>
       </notes>
       <segment>
-        <source>A further download waits up to 10 seconds.</source>
+        <source>A further download waits up to 10 seconds, then is refused, or at once while a server holds many waiting downloads.</source>
       </segment>
     </unit>
     <unit id="limits.group.refused">

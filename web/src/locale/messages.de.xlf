@@ -12478,8 +12478,8 @@
         <note category="location">src/app/features/limits/figures.ts:66</note>
       </notes>
       <segment>
-        <source>A further download waits up to 10 seconds.</source>
-        <target>Ein weiterer Download wartet bis zu 10 Sekunden.</target>
+        <source>A further download waits up to 10 seconds, then is refused, or at once while a server holds many waiting downloads.</source>
+        <target>Ein weiterer Download wartet bis zu 10 Sekunden und wird dann abgelehnt, oder sofort, solange ein Server viele wartende Downloads hält.</target>
       </segment>
     </unit>
     <unit id="limits.group.refused">

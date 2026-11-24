@@ -63,7 +63,7 @@ export function figureGroups(): readonly FigureGroup[] {
     {
       id: 'downloads',
       heading: $localize`:@@limits.group.downloads:Downloads`,
-      help: $localize`:@@limits.group.downloads-help:A further download waits up to 10 seconds.`,
+      help: $localize`:@@limits.group.downloads-help:A further download waits up to 10 seconds, then is refused, or at once while a server holds many waiting downloads.`,
       figures: ['parallelDownloads', 'bytesPerDay'],
     },
     {
