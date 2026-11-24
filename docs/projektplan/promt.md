@@ -250,7 +250,8 @@ its bound offers no run, the trend's axis numbers at 390 px, the layout check `c
 a walk in mirror mode for OCI and Debian). **The Go tests' names landed at 02:30** (six commits: 736 names, 157 functions,
 carry a requirement's number or the behaviour alone, no R-ID lost, R-API-083 newly named and so counted by the
 next record; `TestGoTestNamesCarryARequirementNeverADecision` holds it, about 1 to 2 s of the unit job; three
-tests that docs still name no longer exist under any name, left as found). **R2b landed at 03:00** (one commit, migration 00115). **W16 landed at 03:10** (six commits; sixteen entries of section 8 closed or read, the vulnerability scan's bound decided). **R3 landed at 03:30** (one commit). **The screens' third round landed at 04:27** (two commits; Q-UI-1060 to Q-UI-1062: a mirror without its bound disables its run and says why, the trend's axis readable at 390 px, the layout check `cramped` with five screens repaired, a walk of a stored OCI and Debian mirror; left: a list row a real mirror pass filled). `vuln-perf` dispatched at 03:53 (HA and Performance 45315614490), beside five runs of Test and Release still
+tests that docs still name no longer exist under any name, left as found). **R2b landed at 03:00** (one commit, migration 00115). **W16 landed at 03:10** (six commits; sixteen entries of section 8 closed or read, the vulnerability scan's bound decided). **R3 landed at 03:30** (one commit). **W17 at 04:58:** its help text landed; the index of the versions' order waits as the branch
+`w17-version-sort-key` for the owner's word on a fresh database of his installation (section 12 E). **The screens' third round landed at 04:27** (two commits; Q-UI-1060 to Q-UI-1062: a mirror without its bound disables its run and says why, the trend's axis readable at 390 px, the layout check `cramped` with five screens repaired, a walk of a stored OCI and Debian mirror; left: a list row a real mirror pass filled). `vuln-perf` dispatched at 03:53 (HA and Performance 45315614490), beside five runs of Test and Release still
 going (the neighbours' record of W14 names them); the place W18 freed stays empty: every open entry of sections 8
 and 12 is in a running package, waits for a recurrence, or needs the owner (an account, his cluster). **W18 landed at 03:52** (six commits: Q-VULN-268, a pushed image no longer waits for the schedule; the token API's wiring test; the realm's refusal named; a Sentinel failover during a start measured). Started at 03:36 in its place: **T-24 · R5b**, the tab Upstream and the settings of the rules. Started at 03:12 in its place: **W18**, small leftovers (the scan's bound in the specification, the token API's upper-case wiring, a stale configuration text, the render `scanners-none`, section 12 C's Sentinel entry, H-842). Started at 03:02 in its place: **W17**, the download limits' leftovers (section 12, part B) and the scale of long lists (H-829, H-1683). Started at 02:32 in its place: **W16**, the open entries of section 8,
 "Tests and tools", worked down (the red jobs of 2026-11-23 read before their artifacts expire, entries closed
@@ -335,6 +336,9 @@ starts from it and from his word how the work goes on, not from the order of the
 - **Single open entries without a package**, each in section 8 with its "To do": the cancel through
   poolers that are not peers (H-1662); the trace of the Bastion's answers by kind;
   `TestConcurrentWritersOnOnePath` (F-126, a recurrence to read); and every other entry of sections 8 and 12 that names no package.
+- **For the owner's word: a fresh database of his installation for the branch `w17-version-sort-key`**
+  (migration 00116 refuses version rows; his installation holds four). On his yes the branch lands with the release
+  and the installation's database is started afresh through his deployment repository.
 - **With the owner** (the list of that name in section 8 and his walk): the decisions the development
   agent took today, each a decision block on its page and listed in the run record; the README's badge
   on the branch `coverage` instead of `main`, told to him at 16:11.
@@ -11099,14 +11103,14 @@ the walk items and the run record); what the code holds beyond the plan has not 
   runs before the request check, so a request it admits and the check refuses still counts there; the profile editor's help
   text on waiting downloads was not touched; the client cases of Debian, npm and Ansible Galaxy were not run again; every run
   on the kind cluster was on `linux/arm64`. `package_write` (burst 400) would not hold a push of two platforms with more than
-  about 65 distinct layers each (Q-LIM-56).
+  about 65 distinct layers each (Q-LIM-56). **Closed on 2026-11-24 by W17:** the help text, "A further download waits up to 10 seconds, then is refused, or at once while a server holds many waiting downloads." (R-UI-178, Q-LIM-60), in German too, rendered at three widths in both schemes. Open: `package_write` for a push of two platforms of more than about 65 distinct layers each (Q-LIM-56), not measured.
 - **Partly closed; open: `package_write` as a stand-in until upload figures exist (Q-LIM-27, which the owner
   put after the first step) and a screen for a technical token's description and removal (package W9).**
   Closed: the usage list's offset cursor, which stays by decision 25 of the reading of 2026-11-23; the reason
   is at Q-LIM-45 (`docs/spec/usage-and-limits.md`). As it stood:
   **Refactor, named by the builders:** the class `package_write` is a stand-in until upload figures exist (Q-LIM-27); a
   screen cannot change a technical token's description or delete one (API only); the usage list's cursor is an offset
-  (Q-LIM-45).
+  (Q-LIM-45). Read on 2026-11-24 (W17): waits for the owner; the upload figures are Later by his decision of 2026-11-19, and Q-LIM-56's revisit condition is not met.
 
 ### C · The walk (W-12 to W-24) and what landed on 2026-11-20
 
@@ -11195,7 +11199,7 @@ the walk items and the run record); what the code holds beyond the plan has not 
   average 19); held by the two cases of R-API-010 the entry of section 8 names in its list Closed ("The
   version list of a package reads every version"). As it stood:
   **H-829:** the listing of a remote OCI repository matches a regular expression on every tag entry without an index and was
-  never measured on a cache with very many tags. W-25 adds rows to that view.
+  never measured on a cache with very many tags. W-25 adds rows to that view. **Built on 2026-11-24 by W17 and held back (the branch `w17-version-sort-key`, d71cc13fc; Q-API-429, ADR-278, contract version 12, migration 00116):** the order of versions and the latest version read by an index over a sort key each format's code gives (100,000 versions of a local npm package: list 663→190 ms, a page by version 404→29 ms; a remote image with 100,000 tags of different manifests: list 1.24→0.41 s, a page by tag 581→23 ms), held by the two R-API-010 keyset tests. Open (H-829, H-1683): the list counts every visible version; a package several repositories hold, in the order of publication, reads every name (211 ms). **Why it waits:** migration 00116 refuses a database that holds version rows (the key is the format's code's, and the stage allows no data migration); the owner's installation holds four (read at 04:58), so its upgrade would fail until its database is started afresh, which his rule of 2026-11-21 has named to him first.
 - **Partly closed; open: H-842, the hub exchange tested against the stub realm only.** Closed: H-868, by
   2aee8d1eb (2026-11-23): its gap in `docs/spec/formats/ansible.md` says why no case with the clients is
   added: the union and the first tier per version are properties of the documents a virtual repository
