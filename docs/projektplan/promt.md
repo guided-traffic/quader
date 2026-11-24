@@ -250,7 +250,7 @@ its bound offers no run, the trend's axis numbers at 390 px, the layout check `c
 a walk in mirror mode for OCI and Debian). **The Go tests' names landed at 02:30** (six commits: 736 names, 157 functions,
 carry a requirement's number or the behaviour alone, no R-ID lost, R-API-083 newly named and so counted by the
 next record; `TestGoTestNamesCarryARequirementNeverADecision` holds it, about 1 to 2 s of the unit job; three
-tests that docs still name no longer exist under any name, left as found). **R2b landed at 03:00** (one commit, migration 00115). **W16 landed at 03:10** (six commits; sixteen entries of section 8 closed or read, the vulnerability scan's bound decided). **R3 landed at 03:30** (one commit). **R5b landed at 05:13** (one commit). Started at 05:00: **the repair of `upgrade-release`** (section 8). **W17 at 04:58:** its help text landed; the index of the versions' order waits as the branch
+tests that docs still name no longer exist under any name, left as found). **R2b landed at 03:00** (one commit, migration 00115). **W16 landed at 03:10** (six commits; sixteen entries of section 8 closed or read, the vulnerability scan's bound decided). **R3 landed at 03:30** (one commit). **R5b landed at 05:13** (one commit). Started at 05:12: **T-24 · R6** (one end-to-end case per format, a journey of the tab Upstream, the manual) and **the tab Upstream's two findings** (the versions stacking at 1,024 px, `stored` of an OCI remote). Started at 05:00: **the repair of `upgrade-release`** (section 8). **W17 at 04:58:** its help text landed; the index of the versions' order waits as the branch
 `w17-version-sort-key` for the owner's word on a fresh database of his installation (section 12 E). **The screens' third round landed at 04:27** (two commits; Q-UI-1060 to Q-UI-1062: a mirror without its bound disables its run and says why, the trend's axis readable at 390 px, the layout check `cramped` with five screens repaired, a walk of a stored OCI and Debian mirror; left: a list row a real mirror pass filled). `vuln-perf` dispatched at 03:53 (HA and Performance 45315614490), beside five runs of Test and Release still
 going (the neighbours' record of W14 names them); the place W18 freed stays empty: every open entry of sections 8
 and 12 is in a running package, waits for a recurrence, or needs the owner (an account, his cluster). **W18 landed at 03:52** (six commits: Q-VULN-268, a pushed image no longer waits for the schedule; the token API's wiring test; the realm's refusal named; a Sentinel failover during a start measured). Started at 03:36 in its place: **T-24 · R5b**, the tab Upstream and the settings of the rules. Started at 03:12 in its place: **W18**, small leftovers (the scan's bound in the specification, the token API's upper-case wiring, a stale configuration text, the render `scanners-none`, section 12 C's Sentinel entry, H-842). Started at 03:02 in its place: **W17**, the download limits' leftovers (section 12, part B) and the scale of long lists (H-829, H-1683). Started at 02:32 in its place: **W16**, the open entries of section 8,
@@ -328,7 +328,7 @@ starts from it and from his word how the work goes on, not from the order of the
 - **The repair of the evidence record's publish**: landed at 22:51 (Q-ARCH-1040); the release v0.115.0 made
   the branch `coverage` with its four files and the badge shows 82.1% (closed in section 8).
 - **The nightly sets:** `drain-roles` ran alone at 22:24 and closed its entry; `vuln-perf` ran at 03:53 and closed
-  F-121; `upgrade-release` ran at 04:21 and failed before it upgraded (section 8, a builder on it since 05:00); the two
+  F-121; `upgrade-release` ran at 04:21 and failed before it upgraded; repaired at 05:40 and dispatched again with `upgrade`; the two
   changed nightly sets `npm-ha` and `nuget-ha` have not run since their change either.
 - **What W4 did not do**: landed at 23:12 with the integration tests' environment and ports and the mirror's
   back-off bound (section 8, Closed); F-126 stays open with a new reading.
@@ -590,12 +590,6 @@ order is what a user or an operator meets first. The state is kept here.
 
 ### Tests and tools
 
-- **`upgrade-release` fails before it upgrades (2026-11-24; HA and Performance 45318634839, job 138192925847, the set
-  dispatched alone at 04:21, read at 05:00).** `helm install` of v0.119.0 ended "quader-api not ready … Progress
-  deadline exceeded", and the return to the dev release the same way. The api pods stopped at the object store's
-  start-up check: `quader-blobs/quader` still held the `_connection` marker of the installation before it (R-STOR-051
-  refuses a location of another installation, rightly). The set resets Valkey between the installations and not the
-  object store. Given to a builder at 05:00 (the test's environment, never the check).
 
 - **`e2e (bastion)` was red once on a runner that could not reach github.com (2026-11-24; Test and Release
   45302495247, job 138140910820, read at 03:23):** `deploy/dev/charts.sh` timed out seven times connecting to
@@ -669,6 +663,13 @@ records the recorder that tells such a stall apart).
 None open (2026-11-24).
 
 ### Closed
+
+- **Closed on 2026-11-24, 05:40, by its repair: `upgrade-release` failed before it upgraded.** The reset dropped the database and Valkey but left the connection marker of R-STOR-051 and the backup target's marker, which name the installation by its database's id, so from v0.96.0 on every `helm install` after a reset, and the return to the dev release, ended at the progress deadline. The set `upgrade` has the same reset; its green job in that run had been skipped by the leg selector. `resetInstallation` now empties `quader/` of `quader-blobs` and `quader-backups` (`emptyStoreLocations`, one aws-cli Job of about 10 s); Q-HA-95 amended, `e2e.md` updated. Verified locally: the reset emptied the location (711 objects) and v0.121.0 installed in 33 s; the upgrade step and the return then failed on the host's load (etcd timeouts at a load of 28 to 34), not on the store. The dispatch of `upgrade-release,upgrade` after the landing shows the upgrade, the rollback and the return. As it stood: **`upgrade-release` fails before it upgrades (2026-11-24; HA and Performance 45318634839, job 138192925847, the set
+  dispatched alone at 04:21, read at 05:00).** `helm install` of v0.119.0 ended "quader-api not ready … Progress
+  deadline exceeded", and the return to the dev release the same way. The api pods stopped at the object store's
+  start-up check: `quader-blobs/quader` still held the `_connection` marker of the installation before it (R-STOR-051
+  refuses a location of another installation, rightly). The set resets Valkey between the installations and not the
+  object store. Given to a builder at 05:00 (the test's environment, never the check).
 
 - **Closed on 2026-11-24, 04:58: `integration (shard b)` was red from R3's landing on (Test and Release 45313821227
   and 45315568516, read at 04:53).** The area `endpoints` panicked at its start: its test format `relay` has the
@@ -902,7 +903,7 @@ None open (2026-11-24).
   before R2 ("… needs a bound."); R2 changed the sentence ("… needs a bound: packages to mirror whose …"). R2's builder
   ran no journey (kind and e2e not run, as its report said). The journey takes the new words; a journey that takes
   its words by message ID (`ui()`, W8) would not have broken, but this message holds an inline code element, which
-  `ui()` does not render. The run of eedf310a4 (45309219887, read at 03:37) failed one step later: the journey typed into the field "Include patterns", which R2 replaced with "Mirror only these packages"; b3533e968 types into the new field. Neither repair was run on a cluster before its push (four builders held the host); the next run of the set shows both. **Rule for the briefs from now:** a change that removes or renames a label of a screen searches `web/e2e` for it and changes the journeys in the same commit.
+  `ui()` does not render. The run of eedf310a4 (45309219887, read at 03:37) failed one step later: the journey typed into the field "Include patterns", which R2 replaced with "Mirror only these packages"; b3533e968 types into the new field. Neither repair was run on a cluster before its push (four builders held the host); `e2e (access-long)` of the run of b3533e968 (45313821227) is green, so both hold. **Rule for the briefs from now:** a change that removes or renames a label of a screen searches `web/e2e` for it and changes the journeys in the same commit.
 
 - **Closed on 2026-11-24, 02:30: a worker panicked when a late claim started its job during the shutdown's wait
   (`integration (shard d)` of Test and Release 45300439644, area `vulnimage`, read at 02:15).** "sync: WaitGroup is
