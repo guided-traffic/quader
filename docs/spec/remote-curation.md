@@ -8,7 +8,10 @@ to [Q-CUR-148](#q-cur-148--every-persons-ask-is-recorded-the-last-asker-who-with
 (R-CUR-007 to R-CUR-009, package R3, with what [Q-CUR-62](#q-cur-62--debian-searches-the-name-provides-and-the-short-description-the-long-descriptions-and-read-the-index-wait)
 lists as not built), and the screens (R-CUR-018): the tab strip and the tab **Downloads** (package R5a), the tab **Upstream** and the
 settings' section **Delivery** (package R5b, [Q-CUR-150](#q-cur-150--the-strip-holds-the-content-upstream-and-downloads-for-every-signed-in-reader-the-strip-counts-the-open-requests-itself) to
-[Q-CUR-155](#q-cur-155--the-catalogues-own-states-are-sentences-of-the-screen-the-upstreams-own-sentences-stand-as-the-upstream-wrote-them));
+[Q-CUR-155](#q-cur-155--the-catalogues-own-states-are-sentences-of-the-screen-the-upstreams-own-sentences-stand-as-the-upstream-wrote-them)),
+and the end-to-end case of each format, the journey of the tab Upstream and the manual's page (package R6,
+[Q-CUR-160](#q-cur-160--an-oci-referrers-tag-is-no-version-it-follows-its-subject) to
+[Q-CUR-163](#q-cur-163--the-background-engine-of-the-role-api-shares-the-caches-of-its-read-only-view));
 the gauge `quader_remote_delivery_requests_open` and **Read the index** (Q-CUR-62) are not. The owner asked for it on 2026-11-23 (task T-24 of the
 [project plan](../projektplan/promt.md)), at 12:38:
 
@@ -237,7 +240,7 @@ Priority: **P1** · Covers: SEC-007, SEC-032
   |---|---|---|
   | npm | `403`, `{"error": <text>, "message": <text>, "code": "not_allowed_in_repository"}` | `npm error 403 … - <text>` |
   | NuGet | `403`, one line `not_allowed_in_repository: <text>`, the text in `X-NuGet-Warning` | `dotnet restore` prints the warning and fails the package |
-  | OCI | `403`, `{"errors": [{"code": "DENIED", "message": <text>, "detail": null}]}` | `denied: <text>` |
+  | OCI | `403`, `{"errors": [{"code": "DENIED", "message": <text>, "detail": null}]}` | Docker 29: `Error response from daemon: error from registry: <text>` (the message, not the code; [Q-CUR-161](#q-cur-161--each-formats-end-to-end-case-is-the-remotes-own-refusal-an-allow-and-a-download-ahead-what-the-clients-print-is-measured)) |
   | Debian | `403` problem | apt prints the status line only: the protocol carries no reason (Q-CUR-9) |
   | Ansible Galaxy | `403`, `{"errors": [{"status": "403", "code": "not_allowed_in_repository", "title": …, "detail": <text>}]}` | `ansible-galaxy` prints the detail |
   | `/files/` | `403` problem with `code` | — |
@@ -1280,6 +1283,10 @@ Acceptance criteria:
   eleven states as three users).
 - UI layout checks (`web/e2e`, the existing walk, about 20 more screens at three widths as the three users): the two tabs in both
   schemes with the states listed above.
+- Browser journey (`web/e2e/tests/24-upstream.spec.ts`, the set `access-long`, the npm test upstream, one package of a few hundred bytes):
+  a Reader looks a package up by its exact name and asks for a version, a Maintainer allows it from the requests, the version is then
+  delivered by the package protocol and stored, the Reader reads the request as allowed, and **Documentation** on the tab names the
+  manual's page of curating a remote.
 
 ### R-CUR-019 · Audit events, metrics, webhooks
 Priority: **P1** · Covers: SEC-032
@@ -1402,7 +1409,7 @@ constant amount; payloads of kilobytes.
 | Unit, the format contract's kit | check 22 (the catalogue against a fake upstream in process) and check 23 (documents and refusals), per format | milliseconds per format, about 0.5 s for five | the fixture's canned documents, a few KB each |
 | Integration, per format | one case: a rule refuses a document and an artifact (R-CUR-003), and one download ahead (R-CUR-010) | about 4 s per format, 20 s for five, spread over the shards | the stubs' existing corpora |
 | Integration, once (npm) | the virtual walk (R-CUR-004), the queue's failure and retry (R-CUR-011), the examination (R-CUR-014), the requests (R-CUR-015), the retention (R-CUR-016), the catalogue's API (R-CUR-008, R-CUR-009), the permissions (R-CUR-005), the mirror (R-CUR-017) | about 20 s | the npm stub with a search route of 50 lines added |
-| End-to-end, per format, in the format's own leg | what only the client shows: npm and NuGet resolve a range to the newest allowed version from a filtered document; `docker pull` of a refused tag prints `denied: …`; apt through the virtual repository sees the filtered index; `ansible-galaxy` installs the newest allowed version | about 10 s per leg | one package of the leg's corpus |
+| End-to-end, per format, in the format's own leg (Q-CUR-161) | what only the client shows: what it prints at the refusal of a remote in mode `onlyAllowed` (npm's `E403` with the text, `dotnet restore`'s warning with the text and `NU1301`, Docker's `error from registry:` with the text, APT's bare `403` from the remote's unchanged index, H-1726, `ansible-galaxy`'s message with the text); after an allow of one version npm (`^1.0.0`), NuGet (`2.*`) and `ansible-galaxy` take the allowed version, not the newer one, and `docker pull` and `apt-get install` succeed; a version downloaded ahead through the queue and then allowed is fetched by the client from the cache (the stub's count) | 2.7 to 11.4 s per leg (measured 2026-11-24, [e2e.md](../developer/e2e.md#what-a-new-format-adds-to-the-tests)) | one or two packages of the leg's test upstream, bytes to kilobytes |
 | Web unit and layout checks | R-CUR-018 | seconds; about 20 screens more in the layout walk | the dev profile's seed |
 
 - What a leg gains: the unit job about 3 s; the integration shards about 40 s together; each format's e2e leg about 10 s; the UI layout
@@ -2494,6 +2501,108 @@ The development agent would revisit (c) if a person asks to sort or scan by the 
 [upstream-words.ts](../../web/src/app/features/repositories/upstream/upstream-words.ts) `verdictText`; the check in
 [layout.ts](../../web/e2e/renders/layout.ts) (`row-offset`); the screens' [upstream.ts](../../web/e2e/renders/upstream.ts)
 `upstreamVersions`.
+
+### Q-CUR-160 · An OCI referrers tag is no version: it follows its subject
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below when the end-to-end case of the leg `oci`
+(R6) found it; the owner reviews it at the walkthrough.
+
+Context: with the tag `3` of an image allowed in mode `onlyAllowed`, `docker pull` (Docker 29 with the containerd image store) fetched the
+index, the platform manifest and its layers, then asked the referrers API for the platform manifest's digest; the upstream answered 404,
+Docker fell back to the referrers tag schema of the OCI distribution specification (`GET …/manifests/sha256-<hex of the subject>`), the
+rules refused that tag as a version nobody had allowed, and Docker failed the pull with the rules' text. Every OCI remote with version
+rules whose upstream answers the referrers API with 404 (the test upstream does; which public registries do was not read) could not
+pull an allowed tag with Docker. The same case found a second defect on the way: the decision of a manifest by digest
+read the stored tags with no transaction and answered 500 (`TagTargets`, now read in a short transaction of its own).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A referrers tag is no version (`Classify` gives none, as for a manifest by digest); the tag's handler decides it by its subject's digest with the rule of R-OCI-038 (chosen) | The attachments' index follows the manifest it describes | Docker pulls an allowed tag; the referrers of a refused manifest answer the refusal, as R-OCI-038 says of the referrers API | A version pattern of an endpoint's exposure or a permission now decides such a tag by its image, as it decides a manifest by digest |
+| (b) Answer every referrers tag of a remote with rules 404 | Docker goes on without attachments | Simple | Hides the attachments of an allowed image (its signatures, which the signature gate reads) |
+| (c) Leave it a version; the operator allows `sha256-*` | No code | Nothing changes | A rule that names no image's version; every operator meets the failed pull first |
+
+**Choice:** (a). **Rationale:** a referrers tag names a digest, not a release; the rules' unit is the tag a person allows. The
+development agent would revisit it if a registry's clients ask for the tags of cosign's older layout (`sha256-<hex>.sig`, `.att`) under
+rules: those stay versions here, since no client of the legs asks for them on a pull.
+
+**Applied in the spec:** [formats/oci.md](formats/oci.md) R-OCI-038. Code: `Classify` in
+[paths.go](../../internal/formats/oci/paths.go), `remoteManifestGet` in
+[remote_handlers.go](../../internal/formats/oci/remote_handlers.go), `TagTargets` in
+[store_signatures.go](../../internal/formatdata/oci/store_signatures.go); held by the area `ociremote`
+(`TestR_CUR_003_AnOCIRemoteInModeOnlyAllowedDeliversTheAllowedTagOnly`) and the leg `oci` (`TestOCICuration_R_CUR_004_…`).
+
+### Q-CUR-161 · Each format's end-to-end case is the remote's own refusal, an allow and a download ahead; what the clients print is measured
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below while building R6; the owner reviews it
+at the walkthrough.
+
+Context: R-CUR-022 named what each format's leg shows: a range resolved from a filtered document (npm, NuGet), `denied:` of `docker
+pull`, apt through the virtual repository, the newest allowed version of `ansible-galaxy`. The virtual repository's filtered Debian index
+is held already by the area `debvirtual` (R-CUR-003), the virtual walk by the area `npm`, and what a client prints at a refusal was not
+known for four of the five clients.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One case per format in its own set, on a remote of its counting test upstream in mode `onlyAllowed`: the client refused (what it prints, a row of the manual's table), an allow of one version through the API (where the client resolves a range or "the newest", it takes the allowed one), a version downloaded ahead through the queue and allowed that the client takes from the cache (the stub's count) (chosen) | The three acts every remote's user meets, through the client | Each behaviour once: the virtual index and walk stay the integration's; the clients' messages become a measured table | Debian's case shows the remote's bare 403 (H-1726), not the virtual repository's index |
+| (b) The table of R-CUR-022 as written | — | As specified | The virtual Debian index twice, and the queue's effect on a client never shown |
+
+**Choice:** (a). NuGet resolves the floating version `2.*` (a plain minimum takes the lowest version, not the newest); Docker 29 prints
+the registry's message after `error from registry:`, not `denied:` (R-CUR-004's table now says so). **Rationale:** a client shows what a
+remote's user meets; what a format shares is tested once below the client. The development agent would revisit it if a client's
+behaviour through a virtual repository differs from its behaviour through the remote.
+
+**Applied in the spec:** R-CUR-004 (the OCI row), R-CUR-022 (the end-to-end row). Tests: `Test<Format>Curation_R_CUR_004_…` in
+`test/e2e/<format>_curation_test.go`, helpers in [curation_clients_env_test.go](../../test/e2e/curation_clients_env_test.go).
+
+### Q-CUR-162 · A Debian index APT fetched by its hash is parsed
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below when the end-to-end case of the leg `deb`
+(R6) found it; the owner reviews it at the walkthrough.
+
+Context: R-DEB-023 says every `Packages` index a remote stores is parsed. The parse was enqueued only by the fill of an index at its plain
+path; APT 3.0 fetches every index by its hash when the release says `Acquire-By-Hash: yes` (the test upstream's, Debian's and Ubuntu's
+archives do), here by its SHA-512, and a by-hash file is content that no fill hook of an index saw. A Debian remote that only APT read had
+no parsed rows: the tab Upstream found none of its packages, a download ahead of a version had no file to name, and the pool files were
+stored without the digest check of R-DEB-022. The integration area `debremote` fetched the plain `Packages.gz` and never met it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The commit of a by-hash file below a `binary-<arch>` directory enqueues the parse of that directory's `Packages`; the job reads the index the current release names for it by its SHA-256 (chosen) | The rows follow what APT reads | One coalesced job per index and release, a no-op when parsed already; no new column | The job may fetch the index a second time from the upstream (by its SHA-256 where APT took the SHA-512), once per release |
+| (b) Match the by-hash file to its index by its digest | Exact | The stored file is the one parsed | The SHA-512 of an index is not stored: a column and a migration for a match the release already implies |
+| (c) Parse every index a release lists when it is stored | Rows before any client | The catalogue is full at once | Every component and architecture of a large archive on every release, what **Read the index** (Q-CUR-62) leaves to a person |
+
+**Choice:** (a). **Rationale:** a remote parses what its clients read, as R-DEB-023 intended. The development agent would revisit it if a
+large archive's second fetch per release shows in the upstream's quota.
+
+**Applied in the spec:** [formats/debian.md](formats/debian.md) R-DEB-023. Code: `byHashFilled` in
+[hooks.go](../../internal/formats/deb/hooks.go); held by `TestR_DEB_023_AnIndexFetchedByItsHashIsParsed` (area `debremote`) and the leg
+`deb` (`TestDebCuration_R_CUR_004_…`).
+
+### Q-CUR-163 · The background engine of the role api shares the caches of its read-only view
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below when the journey of the tab Upstream
+(R6) found it on the kind cluster; the owner reviews it at the walkthrough.
+
+Context: Q-CUR-60 lets the role `api` build a background engine at the first catalogue call. That role has built, at its start, the
+read-only view of the remote members for the explanation of a resolution (Q-ARCH-294), on the same engine code, which registers the
+per-repository state and the negative L1 in the process's cache registry; the second engine registered both again, the registry refused
+it with a panic, and every catalogue call of the role `api` answered 500. The integration tests ran the catalogue on the role `all`,
+which has no view; the renders answered the catalogue in the browser. On an installation that separates `api` from `packages`, as the
+chart does by default (its Deployments `api` and `packages`), the tab **Upstream** answered no search, no lookup and no package.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The engine takes the view (`proxy.Options.View`) and reads the state and the negative L1 through the view's two caches (chosen) | One registration per process | The same rows by the same readers; the change area still invalidates the shared entry | The view's engine reloads only the repositories it knows at once; the background engine loads its others at its next read |
+| (b) The background engine registers its caches under other names | Two copies | Simple | Two caches of the same rows, both flushed, twice the memory |
+| (c) The background engine on a cache registry of its own | Isolated | No coupling | That registry hears no change area: a circuit opened elsewhere stays unseen up to the safety period |
+
+**Choice:** (a). **Rationale:** the view and the engine read one state; one cache of it is the registry's rule (R-ARCH-032). The
+development agent would revisit it if the role `api` gets the remote engine of the client path, which would make the view unnecessary.
+
+**Applied in the spec:** none (the wiring of Q-CUR-60). Code: `Options.View` in [engine.go](../../internal/proxy/engine.go),
+`virtualEngineArea.view` in [wire_virtual_engine.go](../../internal/app/wire_virtual_engine.go), `buildEngine` in
+[wire_mirror_host.go](../../internal/app/wire_mirror_host.go); held by `TestR_CUR_009_TheCatalogueAnswersOnAReplicaOfTheRoleAPI` (area
+`npm`) and the journey `24-upstream.spec.ts`.
 
 ### Q-CUR-80 · A download of one version runs before the catalogue: the call that names its files is a contract interface of its own
 

@@ -8,27 +8,30 @@ import (
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
 
-// TagTargets reads the manifests the tags at the paths point at, in the transaction of the hook (signatures.md R-SIG-025): a local
-// tag item's content, a remote's stored tag document.
+// TagTargets reads the manifests the tags at the paths point at: a local tag item's content, a remote's stored tag document. It reads in
+// the transaction of a removal's hook (signatures.md R-SIG-025) and, with tx nil, in a short one of its own: the delivery decision of a
+// manifest by digest of an image with version rules has no transaction (formats/oci.md R-OCI-038, Q-CUR-10).
 func (s *Store) TagTargets(ctx context.Context, tx meta.Tx, repoID int64, paths []string) (map[string][32]byte, error) {
 	out := map[string][32]byte{}
 	if len(paths) == 0 {
 		return out, nil
 	}
-	qs, err := txQueries(tx)
-	if err != nil {
-		return nil, err
-	}
-	rs, err := qs.OCITagTargets(ctx, q.OCITagTargetsParams{RepoID: repoID, Paths: paths})
-	if err != nil {
-		return nil, err
-	}
-	for _, r := range rs {
-		if d, ok := digestOf(r.Digest); ok {
-			if _, seen := out[r.Path]; !seen {
-				out[r.Path] = d
+	err := s.read(ctx, tx, func(qs *q.Queries) error {
+		rs, err := qs.OCITagTargets(ctx, q.OCITagTargetsParams{RepoID: repoID, Paths: paths})
+		if err != nil {
+			return err
+		}
+		for _, r := range rs {
+			if d, ok := digestOf(r.Digest); ok {
+				if _, seen := out[r.Path]; !seen {
+					out[r.Path] = d
+				}
 			}
 		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 	return out, nil
 }

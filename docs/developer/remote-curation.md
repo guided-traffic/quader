@@ -1,6 +1,6 @@
 # Curating a remote repository: the work packages
 
-Status: specified on 2026-11-23; the contracts package (C), the delivery rules (R2) and the downloads ahead with their queue (R4) built on 2026-11-23 and 2026-11-24, the tab strip and the tab Downloads (R5a), the requests, examination and retention (R2b), the upstream catalogue (R3) and the tab Upstream with the settings' section Delivery (R5b) on 2026-11-24, the rest (R6) not. The specification is [spec/remote-curation.md](../spec/remote-curation.md) with the format
+Status: specified on 2026-11-23; the contracts package (C), the delivery rules (R2) and the downloads ahead with their queue (R4) built on 2026-11-23 and 2026-11-24, the tab strip and the tab Downloads (R5a), the requests, examination and retention (R2b), the upstream catalogue (R3) and the tab Upstream with the settings' section Delivery (R5b) on 2026-11-24, and the clients and documents (R6) the same day. The specification is [spec/remote-curation.md](../spec/remote-curation.md) with the format
 pages' requirements (R-NPM-049, R-NUGET-035, R-OCI-038, R-DEB-036, R-ANS-047) and the changed sentences its section "Changes to other
 pages" lists; the security view is [security/remote-curation.md](../security/remote-curation.md). This page cuts the work into packages
 for builders, in the order they can land, each a whole feature that leaves `main` working, with the files and directories each owns so
@@ -40,7 +40,7 @@ that several builders work at once, the contracts between them, and the tests ea
 | **R2b · Requests, examination, retention** (built) | R-CUR-014 to R-CUR-016: requests and askers, the examination a request starts, allow and decline, the list with client refusals, discard and the retention task, their events, journal and replay | R2, R4 | 1.5 |
 | **R5a · The tab strip and the tab Downloads** (built) | R-CUR-018: the strip on a remote's page with the three addresses, the tab Downloads with its states, filters, failure detail, retry and cancel | R4 | 1 |
 | **R5b · The tab Upstream and the settings** (built) | R-CUR-018: search, levels, lookup, a package's versions with states and verdicts, the actions, the preview of a bulk, the rule list, the requests panel, the settings section Delivery, the glossary rows | R2, R3, R2b, R5a | 2 |
-| **R6 · Clients and documents** | the end-to-end case per format in its own leg; the manual's pages (the tabs, curation, the queue); the developer pages this change touches (formats, proxy, mirror) | R5b | 1 |
+| **R6 · Clients and documents** (built) | the end-to-end case per format in its own leg; the manual's pages (the tabs, curation, the queue); the developer pages this change touches (formats, proxy, mirror) | R5b | 1 |
 
 **Who works at once** (at most four builders): C alone first (half a day); then R2, R3 and R4 side by side; then R2b and R5a side by side
 (and whichever of the three is still open); then R5b; then R6. A research or a planner does not take a builder's place.
@@ -326,11 +326,32 @@ operations are R2's, R3's, R4's and R2b's and held there; the end-to-end case of
 
 ## R6 · Clients and documents
 
-- One end-to-end case per format in its own leg (`e2e (npm)`, `e2e (nuget)`, `e2e (oci)`, `e2e (deb)`, `e2e (ansible)`), each what only
-  its client shows (R-CUR-022): about 10 s per leg; no leg loads another format's client.
-- The manual: a page on curating a remote (the tabs, the rules, requests, the queue), linked from the repository's help.
-- The developer pages: [formats.md](formats.md) (contract version 11, the catalogue, the version canon), [proxy.md](proxy.md) (step 5a, the
-  failure's step), [mirror.md](mirror.md) (the scope), [coordination.md](coordination.md) (the queue `downloads`, the two tasks).
+Built on 2026-11-24 ([Q-CUR-160](../spec/remote-curation.md#q-cur-160--an-oci-referrers-tag-is-no-version-it-follows-its-subject) to
+[Q-CUR-163](../spec/remote-curation.md#q-cur-163--the-background-engine-of-the-role-api-shares-the-caches-of-its-read-only-view)).
+
+| File | What |
+|---|---|
+| [curation_clients_env_test.go](../../test/e2e/curation_clients_env_test.go) | what each format's case shares: `onlyAllowed`, `allowRule`, `downloadAhead` (a row of the queue to its end), `awaitOnEveryPackagesReplica` (a rule is in every packages replica's snapshot when it serves by it), `noteCuration` (the artifact `curation-clients.json`, the rows of the manual's table), `caseClock` |
+| `test/e2e/<format>_curation_test.go` | `Test<Format>Curation_R_CUR_004_…`, one per format in its own set: the client refused (what it prints), an allow of one version through the API (the client takes it where it resolves a range or "the newest"), a version downloaded ahead and allowed that the client takes from the cache (the stub's count); the npm set's expression in [e2e.sh](../../deploy/dev/e2e.sh) names `Curation` |
+| [24-upstream.spec.ts](../../web/e2e/tests/24-upstream.spec.ts) | the journey of the tab Upstream: a Reader looks up and asks, a Maintainer allows from the requests, the version is delivered; `TestE1_11Journeys` publishes its package to the npm test upstream (`QUADER_E2E_UPSTREAM_PACKAGE`) |
+| [remote-curation.md](../manual/user/remote-curation.md) (manual) | the page of curating a remote: the rules, the tab Upstream, requests, allowing, downloads ahead, the tab Downloads, the clients' table; the help of the tabs Upstream and Downloads opens it ([help-topics.ts](../../web/src/app/core/help-topics.ts)) |
+
+What the cases found and what holds each now, at its cheapest tier:
+
+| Defect | Fixed in | Held by |
+|---|---|---|
+| A manifest by digest of an image with version rules answered 500: the decision read the stored tags with no transaction | `TagTargets` in [store_signatures.go](../../internal/formatdata/oci/store_signatures.go) | `TestR_CUR_003_AnOCIRemoteInModeOnlyAllowedDeliversTheAllowedTagOnly` (area `ociremote`) |
+| Docker's referrers tag (`sha256-<hex>`) was refused as a version, and the pull of an allowed tag failed (Q-CUR-160) | `Classify` in [paths.go](../../internal/formats/oci/paths.go), `remoteManifestGet` in [remote_handlers.go](../../internal/formats/oci/remote_handlers.go) | the same case |
+| A Debian remote APT read by hash parsed no index: no rows for the catalogue, a download ahead or the pool digests (Q-CUR-162) | `byHashFilled` in [hooks.go](../../internal/formats/deb/hooks.go) | `TestR_DEB_023_AnIndexFetchedByItsHashIsParsed` (area `debremote`) |
+| Every catalogue call of the role `api` panicked: its background engine registered the caches of the read-only view a second time (Q-CUR-163) | `proxy.Options.View`, [wire_virtual_engine.go](../../internal/app/wire_virtual_engine.go), [wire_mirror_host.go](../../internal/app/wire_mirror_host.go) | `TestR_CUR_009_TheCatalogueAnswersOnAReplicaOfTheRoleAPI` (area `npm`) |
+
+Tests and what they cost: the five cases, 2.7 to 11.4 s each in their own leg beyond the set's fixture, bytes to kilobytes
+([e2e.md](e2e.md#what-a-new-format-adds-to-the-tests) has the table); the journey about 6 s in the set `access-long` (5.9 s measured, the npm test upstream and one package of a few hundred bytes); the integration cases
+about 2 s each (`ociremote` gains two subtests, `debremote` and `npm` one case each). No leg loads another format's client.
+
+The developer pages this change touches: [mirror.md](mirror.md) (the scope `remote.mirror.include` and the rules in the pass's admission,
+the engine of the role `api`), [coordination.md](coordination.md) (the queue `downloads` and the two tasks), [deb.md](deb.md) (the parse
+of a by-hash index); [formats.md](formats.md) and [proxy.md](proxy.md) held what R2, R3 and R4 changed already.
 
 ## What was not verified
 

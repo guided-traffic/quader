@@ -225,6 +225,7 @@ Each code with its status and meaning. `GET /api/v1/problems/<code>` gives the d
 | `csrf_failed` | 403 | A browser request without the session's anti-forgery header; reload the page |
 | `endpoint_read_only` | 403 | A write on an endpoint with exposure rules |
 | `not_admitted` | 403 | The repository's include and exclude patterns refuse the path or name |
+| `not_allowed_in_repository` | 403 | A remote repository's delivery rules do not deliver this package or version; ask for it on the tab **Upstream** ([Curating a remote repository](remote-curation.md)) |
 | `package_owned_by_other_owner` | 403 | The package has owners and you are none of them |
 | `shadows_remote_package` | 403 | A first publish would replace a package a remote repository serves |
 | `populate_not_permitted` | 403 | Not cached, and you may not fetch it from the upstream |

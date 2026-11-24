@@ -133,79 +133,14 @@ you are signed out, or when the installation does not scan.
 
 Debian packages are not scanned for vulnerabilities yet; the page says so and shows no vulnerability column for them.
 
-### The upstream of a remote repository
+### The upstream and the downloads of a remote repository
 
 When you are signed in, a remote repository's page has three tabs under its title: its content (**Packages**, **Images** or **Files**),
-**Upstream** and **Downloads**. **Upstream** shows what the registry the repository caches offers, whether it is stored here or not, and
-what this repository delivers of it.
-
-- **The line at the top** says what the repository delivers: "Delivers everything except what is blocked." (the default) or "Delivers
-  only what is allowed.". If you may change the repository's configuration, **Change** opens the section **Delivery** of its settings
-  ([Managing repositories](../admin/repositories.md#delivery-of-a-remote-repository)). **Rules** with their number opens the list of the
-  repository's delivery rules, if you may read them.
-- **Search the upstream** finds packages by words, where the registry answers a search (npm, NuGet, Ansible Galaxy, Docker Hub, Quay);
-  a Debian remote searches the package indexes Quader has read, as `apt search` does, and **Names only** matches names alone. **Look up by
-  exact name** opens one package by its full name. A registry without a search (ghcr.io, GitLab) offers only **Look up**, and the
-  sentence under the field says why. The address keeps what you searched for, so you can share the link; the message a client gets
-  for a package the repository does not deliver links the tab with the package's name.
-- **Levels**: where the registry has them, the tab lists them: a Debian remote's suites, then their components; an npm scope or a
-  Docker Hub namespace is opened by typing its name.
-- Each package shows its newest version, its state here (**Delivered**, **Allowed**, **Blocked**, **Not allowed** or **Requested**)
-  and whether the cache holds a version of it (**Stored**). Open a package with its arrow to see its versions, newest first, 100 at a
-  time with **Load more** and **Filter versions**: when each was published, its size where the registry tells it, its state, the rule
-  that decided it, whether the cache holds it (**Stored**, **Stored for examination**, **Waiting**, **Running**), and its verdicts: for a
-  version that is not stored the vulnerability verdict Quader knows without downloading it (npm and NuGet), for a stored version a link
-  to its page with the malware, vulnerability and signature verdicts.
-- **Download** stores a version in the cache before any client asks for it, if you may fetch it through the repository; it is charged
-  to your download budget. Follow it on **Downloads**.
-- **Request** asks for a version, or with **Request every version** for a whole package, in a repository that does not deliver it.
-  Those who may allow it see your request; with a note you can say why. **Your requests** lists what you asked for, with its state and,
-  for a declined request, the reason; **Withdraw** takes back a request that is still open. Quader usually downloads what you asked for
-  at once, so that it is scanned before anyone decides; it is not delivered until it is allowed.
-- **For Maintainers, Owners and administrators** the tab adds **Requests** at the top: every open request with who asked, how often
-  clients were refused it, and what its examination found (**Verdicts** opens the examined version). **Allow…** writes a rule for the
-  request, optionally for every version of the package and with a download of every version; **Decline…** takes a reason, which the
-  askers read, and discards what was fetched for examination. Each version's menu offers **Download** or **Download for examination**
-  (for a version the repository does not deliver: it is stored and scanned, not delivered), **Allow**, **Block**, **Remove rule** and
-  **Discard** (removes what was fetched for examination). The package offers **Allow every version** and **Block every version**
-  (future versions included) and **Download every version…**, and a level **Download this sub-section…**: both open a preview of how many
-  versions and bytes the download takes, how many are stored and how many are not delivered here, with bounds you may lower, and
-  **Start download**. **Rules** adds a rule for a sub-section, a name pattern such as `@acme/*`, and removes rules. The narrowest rule
-  decides: a version's rule before the package's, the package's before a sub-section's, and at equal width a block wins.
-- When the registry cannot be asked, the tab says why: "The upstream is assumed offline until 10:42; Quader retries then.", "The
-  upstream catalogue's budget is used up; try again in 40 s.", or that a package's document is too large to read for browsing.
-
-Allowing is not releasing: a version that is allowed and that the malware scan, the vulnerability block or the signature check refuses
-stays refused until an auditor releases it.
-
-### The downloads of a remote repository
-
-**Downloads** lists the repository's download queue: what Quader downloads into the cache ahead of a client, and the
-fetches of clients that failed. When downloads have failed, the tab says how many, for example **Downloads · 2 failed**. Use it to follow
-a cache while it is being built and to find out why a client's fetch failed.
-
-- **All**, **Waiting**, **Running**, **Failed** and **Done**, each with its count, show the downloads in that state; **Failure** shows
-  only the failures of one kind, such as **TLS** or **Rate limited by the upstream**. The address keeps what you chose, so you can
-  share the link.
-- Each row names the package and version, where the download came from (**You**, a person's name if you may see it, **Request**,
-  **Allow**, **Bulk**, **Probe** for a download Quader started after a client asked about a version, **Client** for a client's fetch
-  that failed, with how often it failed), its state with the attempt ("Attempt 2 of 5 · next in 4 minutes"), the files and bytes stored,
-  and a failure in one line: its kind, the upstream's HTTP status (or Quader's error code where no answer came) and the upstream's host.
-- Open a row with its arrow to read the whole failure: Quader's sentence of what failed and what helps, the step it failed in (resolving
-  the host name, connecting, the TLS check, the answer's status, reading the body, checking the digest, storing), the error code, the
-  file, the address it asked (without its query, which can carry a credential), the upstream's status, how long the upstream asked to
-  wait, and the start of the upstream's answer. Everyone who may read the repository sees these details, the upstream's answer included.
-- **Retry** lets a failed or cancelled download wait again; **Cancel** stops one that waits or runs. You see them on the downloads you
-  started; on the downloads of clients and probes if you may fetch that version through the repository; and on every row if you are a
-  Maintainer or Owner of the project or an administrator, who also see **Retry all failed**, which retries every failed download of the
-  kind **Failure** shows.
-- **Bulk** opens the rows of one bulk download (every version of a package) with its line above them: how many versions it found and
-  queued, its rows by state, its bounds, and **Cancel bulk** for the person who started it and for Maintainers, Owners and
-  administrators. **Show every download** returns to the whole queue.
-- While something waits or runs, the tab reads the queue again every five seconds; **Pause automatic refresh** stops that until you
-  resume it.
-
-By default, finished and cancelled downloads leave the list a week after they ended, failed ones after 30 days.
+**Upstream** and **Downloads**. **Upstream** shows what the registry the repository caches offers and what this repository delivers of
+it; there you search the upstream, ask for a package the repository does not deliver, and, as a Maintainer, Owner or administrator,
+allow or block it and download it into the cache before a client asks. **Downloads** shows the repository's download queue with the
+failures in their own words. [Curating a remote repository](remote-curation.md) explains both tabs, the delivery rules and what each
+client prints when the rules refuse it.
 
 ## Repository settings
 

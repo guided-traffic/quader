@@ -122,6 +122,11 @@ A remote repository is a pull-through cache of an APT archive, such as `https://
 
 Any suite the archive has works without configuration: `stable`, `bookworm`, `noble-updates`, a flat directory such as `binary/`, or `./` for a repository whose address is the flat directory itself. Nothing can be uploaded to a remote repository.
 
+A remote's delivery rules ([Curating a remote repository](remote-curation.md)) refuse the package files, never the indexes: the indexes
+are the archive's signed files and pass unchanged, so `apt-cache policy` and `apt-get install` see a package the rules refuse, and its
+download fails with `403  Forbidden` and no reason, since APT shows none. For an index that lists only what the rules deliver, point
+APT at a virtual repository over the remote.
+
 ### Through a virtual repository
 
 A virtual repository is one source for several local and remote Debian repositories of a project, with one key file and one credential file.
@@ -132,6 +137,8 @@ virtual repository, never a member's or the archive's. Keep in mind:
   (`deb_members_unreadable`). Each package file comes from the member whose index entry you read; the answer header `Quader-Resolved-From` names it.
 - A package that two members list in the same version comes from the first member in the order. A name a local member has claimed is never taken
   from a remote member.
+- A package that a remote member's delivery rules refuse is not in the virtual repository's index, so APT neither lists nor installs it
+  ([Curating a remote repository](remote-curation.md)).
 - An upload through the virtual repository goes to its deployment target, a local member; a virtual repository without one refuses uploads with
   `403`. The index wait (`waitFor`) is read on that local member, not on the virtual repository.
 - A new upload reaches the virtual repository's index after the member published it, within about a minute (the installation's

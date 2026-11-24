@@ -4,10 +4,13 @@ package debremote
 
 import (
 	"context"
+	"crypto/sha512"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"net/url"
+	"path"
 	"strings"
 	"testing"
 	"time"
@@ -79,6 +82,27 @@ func TestR_DEB_023_TheRowsOfAnIndexAreParsedAfterAnUpdateAndReplacedWhenItChange
 	if m := e.r.Metrics(t); !strings.Contains(m, `quader_deb_remote_parse_total{outcome="parsed"}`) {
 		t.Errorf("no parsed run of deb-remote-parse is counted:\n%s", grepLines(m, "quader_deb_remote_parse_total"))
 	}
+}
+
+// TestR_DEB_023_AnIndexFetchedByItsHashIsParsed: APT fetches every index by its hash when the release says Acquire-By-Hash, as the
+// stub's and Debian's do, here by its SHA-512 as APT 3.0 does; the remote parses the directory's Packages all the same (Q-CUR-162). Before,
+// only an index fetched at its plain path was parsed, and a remote APT read had no rows. Integration tier, about 2 s, the stub's index of
+// main/binary-amd64.
+func TestR_DEB_023_AnIndexFetchedByItsHashIsParsed(t *testing.T) {
+	e := newEnv(t)
+	want := e.paragraphs("stable")
+	if a := e.get(rFast, suitePath+"InRelease"); a.Status != http.StatusOK {
+		t.Fatalf("InRelease: %d %s", a.Status, a.Body)
+	}
+	sum := sha512.Sum512(e.stubGet(debstub.ArchiveBase + "/" + suitePath + packages + ".gz"))
+	byHash := path.Dir(packages) + "/by-hash/SHA512/" + hex.EncodeToString(sum[:])
+	if a := e.get(rFast, suitePath+byHash); a.Status != http.StatusOK {
+		t.Fatalf("%s: %d %.300s", byHash, a.Status, a.Body)
+	}
+	id := e.repoID(rFast)
+	eventually(t, 10*time.Second, "the rows of main/binary-amd64 after a fetch by hash", func() bool {
+		return e.st.Number(`SELECT count(*) FROM deb_remote_entries WHERE repo_id = $1 AND index_path = $2`, id, packages) == int64(want)
+	})
 }
 
 // grepLines returns the lines of text that contain s.

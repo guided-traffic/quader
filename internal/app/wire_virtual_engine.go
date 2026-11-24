@@ -16,7 +16,12 @@ import (
 const AreaVirtualEngine Area = "virtual-engine"
 
 // virtualEngineArea is the engine of a replica with a client listener.
-type virtualEngineArea struct{ engine *virtual.Resolver }
+type virtualEngineArea struct {
+	engine *virtual.Resolver
+	// view is the read-only view of the remote members on a role without the proxy-engine area (the role api); the engine the mirror
+	// host builds there shares its caches (proxy.Options.View, remote-curation.md Q-CUR-163). Nil elsewhere.
+	view *proxy.View
+}
 
 // virtualComponent starts the subscription to metadata_changed and ends it with the replica.
 type virtualComponent struct{ engine *virtual.Resolver }
@@ -61,11 +66,11 @@ func (a *App) wireVirtualEngine(ctx context.Context, in infra, v virtualArea, az
 	}
 	ro := formathost.VirtualRemotesOptions{Repos: repo.reader, Decider: az.engine, Deps: fm.deps}
 	var fillRefused func(string)
+	var view *proxy.View
 	if px.engine != nil {
 		ro.Engine, fillRefused = px.engine, px.engine.FillRefused
 	} else {
-		view, err := a.remoteView(ctx, in, inv, vz, fa)
-		if err != nil {
+		if view, err = a.remoteView(ctx, in, inv, vz, fa); err != nil {
 			return virtualEngineArea{}, err
 		}
 		ro.View = view
@@ -91,7 +96,7 @@ func (a *App) wireVirtualEngine(ctx context.Context, in infra, v virtualArea, az
 	if err := a.startComponent(ctx, &virtualComponent{engine: eng}); err != nil {
 		return virtualEngineArea{}, err
 	}
-	return virtualEngineArea{engine: eng}, nil
+	return virtualEngineArea{engine: eng, view: view}, nil
 }
 
 // remoteView builds the read-only view of the remote members for a role without the

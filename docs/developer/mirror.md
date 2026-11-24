@@ -57,7 +57,7 @@ planned versions) in [npm.md](../spec/formats/npm.md).
 | [mirror_test.go](../../internal/formats/npm/mirror_test.go) | the fake upstream and the tests: the exact query strings, paging, cursors, ranges, deletions, `names`, plan order and pins, a rate-limit error returned unchanged, admitted names only |
 
 Two rules of the validation changed after the audit: the update of a mirror that stays a mirror, by an Owner of the project without
-`repositories:write-config`, keeps the include and exclude lists, `remote.url` and `remote.extraHosts` as stored (Q-REPO-193, `checkDelegatedMirrorScope`), and "is this the well-known upstream" is
+`repositories:write-config`, keeps `remote.mirror` (the mirror's scope `remote.mirror.include` among it, `checkDelegatedMirror`), `remote.url` and `remote.extraHosts` as stored (Q-REPO-193, R-CUR-017, `checkDelegatedMirrorScope`), and "is this the well-known upstream" is
 `discover.SameUpstream` for the bound rule and for npm's lister (Q-REPO-194, Q-NPM-75), with a query in a mirror's url refused (Q-REPO-195). A
 format's lister that must know its well-known upstream calls `discover.SameUpstream` with the catalog's default upstream and does not compare
 strings.
@@ -159,7 +159,7 @@ PostgreSQL through `mirror.Store`.
 | [store.go](../../internal/mirror/store.go), [store_pg.go](../../internal/mirror/store_pg.go) | the port `Store` and its PostgreSQL implementation `PGStore` over [mirror.sql](../../internal/meta/postgres/queries/mirror.sql); `ClearAfterRestore` |
 | [metrics.go](../../internal/mirror/metrics.go) | the twelve families of R-REPO-057, the per-pass handle that `Forget` invalidates, and the database gauge source (every role) |
 | [events_mirror.go](../../internal/audit/events_mirror.go) | the four asynchronous event types (`mirror.pass_requested` is the run operation's) |
-| [wire_mirror.go](../../internal/app/wire_mirror.go), [wire_mirror_host.go](../../internal/app/wire_mirror_host.go) | the area `mirror` (roles `worker`, `all`), the kinds and the task, `MirrorOverride`; the area `mirror-engine` (`worker`, `all`, and `api` and `web` for the upstream catalogue's lent upstream, Q-CUR-60) and the host's builder, which builds in stages and keeps what succeeded (Q-ARCH-316, Q-ARCH-319) |
+| [wire_mirror.go](../../internal/app/wire_mirror.go), [wire_mirror_host.go](../../internal/app/wire_mirror_host.go) | the area `mirror` (roles `worker`, `all`), the kinds and the task, `MirrorOverride`; the area `mirror-engine` (`worker`, `all`, and `api` and `web` for the upstream catalogue's lent upstream, Q-CUR-60) and the host's builder, which builds in stages and keeps what succeeded (Q-ARCH-316, Q-ARCH-319); on the role `api` its engine reads the state and the negative L1 through the caches of the read-only view of the virtual engine (`proxy.Options.View`, Q-CUR-163) |
 
 ### How a pass runs
 
@@ -177,7 +177,7 @@ PostgreSQL through `mirror.Store`.
    `maxBytes`) ends it `bound_reached` without any request.
 4. **Discovery**: while fewer than 10,000 rows are pending (every row counts, Q-REPO-190), one page, after a read of the snapshot (a pause
    or offline mode takes effect before the next page); a request that a client pre-empted is sent again after five seconds
-   (Q-REPO-184); the pending names the current admission refuses are dropped at the claim (Q-REPO-188); a full pass first adds the exact include names and pages the held
+   (Q-REPO-184); the pending names the current admission refuses are dropped at the claim (Q-REPO-188); a full pass first adds the exact names of the mirror's scope (`remote.mirror.include`) and, in the delivery mode `onlyAllowed`, the names the rules allow (`pass.exactIncludes`, R-CUR-017), and pages the held
    names (Q-REPO-158, the end of the phase is the cursor `{"mirrorHeldDone": true}`, Q-REPO-186), then the format's pages; a page's names and its cursor are one statement; a deleted name refreshes its document
    through the plan and stores nothing.
 5. **Fill**: the pending names in name order go to as many workers as the ceiling; a package is checked against the current admission,
@@ -419,7 +419,8 @@ behind it. Specified in R-REPO-054, R-REPO-055 and R-REPO-057; the decisions are
   reported to the package's tally with `mirror.ReportStored` (read from the plan's context), so the pass counts it as an item and in `maxBytes`; an artifact that was stored costs
   nothing and is not reported. The Upstream also implements `discover.Bounded` (the version bounds), which a plan whose versions cost a request each reads with `discover.BoundsOf`
   (ADR-182, [oci.md](oci.md#the-mirror-r-oci-026)).
-- **`Admits`** applies the include and exclude patterns on the name (a format whose patterns match names), the format's name rule
+- **`Admits`** applies the mirror's scope (`remote.mirror.include`, empty: every name) and the delivery rules (a name of which the rules deliver no
+  version is never asked for, remote-curation.md R-CUR-017), the format's name rule
   (`PackageDocumentPath`, `catalog.NormalizeName`), and the claims of R-REPO-023 through `Deps.Refusal`; a failure to read the claims
   is answered by `Admits` itself, and later by a name that is not admitted. It is cheap: the claim index is the routing's snapshot.
 - **`Upstream(repo, pass)`** needs the format's lister: it fails for a format without one (`Lister` is false). Its `Get` refuses a host
@@ -469,7 +470,7 @@ behind it. Specified in R-REPO-054, R-REPO-055 and R-REPO-057; the decisions are
 | `vulnerability_blocked`, `vulnerability_data_missing` | `*mirror.RefusedError{blocked}` | counts it, next item |
 | `populate_not_permitted` | `*mirror.RefusedError{populate_denied}` | counts it, next item |
 | a not-found or forbidden answer of the format's `BeforeArtifact` | `*mirror.RefusedError{gate_refused}` | counts it, next item |
-| (before the engine) the repository's include and exclude patterns do not admit the item's name or path (`MirrorHost.admitted`, Q-REPO-365) | `*mirror.RefusedError{not_admitted}` | counts it, next item |
+| (before the engine) the repository's patterns do not admit the item's name or path, or, for a pass, the delivery rules do not deliver its version (`MirrorHost.admitted`, Q-REPO-365, R-CUR-017; a row of the download queue stores what the rules do not deliver for examination, Q-CUR-147) | `*mirror.RefusedError{not_admitted}` | counts it, next item |
 | `not_cached_offline` (the repository is offline) | the error as it is: a failure of the item with its own code | stops the pass as offline |
 | `shutting_down` (the shutdown cancelled the request) | wraps `mirror.ErrShuttingDown` | stops, writes nothing |
 | a pre-emption | wraps `mirror.ErrPreempted` | fetches the item later |

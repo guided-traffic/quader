@@ -15,8 +15,8 @@ import (
 
 // TestR_CUR_003_AnOCIRemoteInModeOnlyAllowedDeliversTheAllowedTagOnly: with the tag 1.0 of acme/a allowed (the version is the tag,
 // Q-CUR-10), the tags list names that tag only, its manifest is fetched and served, another tag's manifest and an image without a rule
-// answer the 403 DENIED of R-CUR-004 without an upstream request (remote-curation.md R-CUR-003, R-OCI-038). Data: the stub's corpus, one
-// platform manifest of a few hundred bytes.
+// answer the 403 DENIED of R-CUR-004 without an upstream request, the allowed tag's manifest is served by its digest as well, and a
+// referrers tag follows its subject (remote-curation.md R-CUR-003, R-OCI-038). Data: the stub's corpus, one platform manifest of a few hundred bytes.
 func TestR_CUR_003_AnOCIRemoteInModeOnlyAllowedDeliversTheAllowedTagOnly(t *testing.T) {
 	e := newEnv(t, options{})
 	const only = "oci-only"
@@ -51,6 +51,26 @@ func TestR_CUR_003_AnOCIRemoteInModeOnlyAllowedDeliversTheAllowedTagOnly(t *test
 		if n := e.stub.Counts().ManifestGets("acme/a", "1.0"); n != 1 {
 			t.Errorf("the upstream was asked %d times for the allowed tag, want once", n)
 		}
+	})
+	t.Run("R-CUR-003 R-OCI-038 the allowed tag's manifest is served by its digest too", func(t *testing.T) {
+		// A client pulls an image by its tag and then its platform manifests by digest: such a manifest is delivered when a delivered tag's
+		// stored document names it (Q-CUR-10), a decision that reads the stored tags outside any transaction.
+		d := e.get(rep, only, "acme/a/manifests/1.0").Header.Get("Docker-Content-Digest")
+		if !strings.HasPrefix(d, "sha256:") {
+			t.Fatalf("the tag's manifest has the digest %q", d)
+		}
+		if a := e.get(rep, only, "acme/a/manifests/"+d); a.Status != http.StatusOK {
+			t.Fatalf("the manifest by its digest: %d %.300s", a.Status, a.Body)
+		}
+	})
+	t.Run("R-OCI-038 the referrers tag follows its subject: the allowed tag's is asked upstream, another manifest's is refused", func(t *testing.T) {
+		// Docker with the containerd image store asks for the referrers tag `sha256-<hex>` of every manifest it pulls when the referrers API
+		// answers 404, and fails the pull on a 403: the tag is no version and follows its subject (Q-CUR-160).
+		d := e.get(rep, only, "acme/a/manifests/1.0").Header.Get("Docker-Content-Digest")
+		if a := e.get(rep, only, "acme/a/manifests/sha256-"+strings.TrimPrefix(d, "sha256:")); a.Status != http.StatusNotFound {
+			t.Errorf("the referrers tag of the allowed tag's manifest: %d %.300s, want the upstream's 404", a.Status, a.Body)
+		}
+		refused(t, e.get(rep, only, "acme/a/manifests/sha256-"+strings.Repeat("0", 64)), "the referrers tag of a manifest no allowed tag names")
 	})
 	t.Run("R-CUR-003 R-CUR-004 another tag's manifest is refused and the upstream is not asked", func(t *testing.T) {
 		refused(t, e.get(rep, only, "acme/a/manifests/1.1"), "acme/a:1.1")

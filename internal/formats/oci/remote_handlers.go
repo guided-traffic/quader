@@ -175,6 +175,12 @@ func (f *Format) remoteManifestGet(ctx context.Context, rq *formats.Request, w h
 	path := TagPath(name, ref)
 	pathOf := func(n string) string { return TagPath(n, ref) }
 	delivered := func() error { return formats.Undelivered(rq, name, ref, rules.KindDocument) }
+	if referrersTag(ref) {
+		// The referrers tag of a subject is delivered when its subject is (R-OCI-038, Q-CUR-160): with only some tags allowed, Docker's
+		// fallback for the attachments of an allowed image is not refused, and that of a refused manifest answers the refusal.
+		subject := "sha256:" + strings.TrimPrefix(ref, "sha256-")
+		delivered = func() error { return manifestUndelivered(ctx, rq, name, subject, rules.KindDocument) }
+	}
 	if err := gateRemote(ctx, rq, client, formats.Target{Package: client, Version: ref, Path: pathOf(client), Actions: read}, pathOf, errManifestUnknown, delivered); err != nil {
 		return err
 	}

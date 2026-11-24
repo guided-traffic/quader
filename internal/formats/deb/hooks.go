@@ -2,6 +2,7 @@ package deb
 
 import (
 	"context"
+	"path"
 	"sort"
 	"strings"
 	"time"
@@ -25,6 +26,9 @@ func (f *Format) OnCommit(ctx context.Context, tx formats.Tx, c formats.CommitEv
 	// (commitFill).
 	if c.Repo.Class == formats.Remote {
 		if c.Origin == formats.OriginFill {
+			if analyzeRemote(c.Path.Path).kind == rkByHash {
+				return byHashFilled(ctx, tx, c)
+			}
 			return f.commitFill(ctx, c)
 		}
 		return nil
@@ -34,6 +38,29 @@ func (f *Format) OnCommit(ctx context.Context, tx formats.Tx, c formats.CommitEv
 	}
 	return errs.E(errs.Conflict, errs.CodeConflict,
 		"A package file reaches a Debian repository through PUT upload/<file> with its distribution; a raw deploy is not accepted.")
+}
+
+// byHashFilled enqueues the parse of the Packages index of the directory a by-hash file belongs to (R-DEB-023): APT fetches every index
+// by its hash when the release says Acquire-By-Hash (Debian's and Ubuntu's archives do), so a remote that parsed only the indexes fetched
+// at their plain paths never had rows for an APT client: no digest for the pool files (R-DEB-022), and nothing for the upstream
+// catalogue and a download ahead of a version to name (R-CUR-007, R-CUR-010; found by the leg deb's case of the curation, Q-CUR-162).
+// The SHA-512 of an index is not stored, so the file is not matched by its digest: the directory's Packages is enqueued, and the job
+// reads the index the current release names for it, by its SHA-256, and does nothing for one it parsed already or one the release does
+// not list (Q-DEB-16, Q-DEB-36). A by-hash file of another directory (i18n, source, a Contents file's) has no Packages index.
+func byHashFilled(ctx context.Context, tx formats.Tx, c formats.CommitEvent) error {
+	st, err := storeOf(c.Data)
+	if err != nil {
+		return err
+	}
+	dir, rel, ok, err := releaseDirOf(ctx, st, c.Repo.ID, c.Path.Path)
+	if err != nil || !ok {
+		return err
+	}
+	indexDir, _, found := strings.Cut(rel, "/"+DirByHash+"/")
+	if !found || !strings.HasPrefix(path.Base(indexDir), "binary-") {
+		return nil
+	}
+	return st.EnqueueParse(ctx, tx, c.Repo.ID, dir, indexDir+"/Packages")
 }
 
 // commitFill records the package file a remote repository cached as a version of its package, so that the repository lists what was

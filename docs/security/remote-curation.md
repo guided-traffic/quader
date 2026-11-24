@@ -156,7 +156,9 @@ Component: the delivery rules for OCI (R-OCI-038, Q-CUR-10). Subject: an image o
 blocked). Live since the delivery rules are built. A blob by digest is delivered when some version of the image is, because a blob names no tag; a client
 that knows the digest of a layer of a refused tag fetches it, through the remote and from the upstream. Manifests by digest are decided by
 the stored tags that name them, so a client cannot pull the refused tag's image as a whole. What makes it real: a layer that a refused tag
-holds and an allowed one does not, and a client that learned its digest elsewhere; the signature gate made the same cut (H-1196).
+holds and an allowed one does not, and a client that learned its digest elsewhere; the signature gate made the same cut (H-1196). A
+referrers tag (`sha256-<hex of a manifest>`) is no version since [Q-CUR-160](../spec/remote-curation.md#q-cur-160--an-oci-referrers-tag-is-no-version-it-follows-its-subject):
+it is decided by the manifest it names, as that manifest by digest is, and adds nothing to this gap.
 
 ### H-1725 · A holder of `manage` can make Quader fetch up to a bulk's bound without a ceiling
 

@@ -72,11 +72,12 @@ const MaxCursorBytes = 4096
 
 // Scope is what bounds discovery (R-REPO-005, R-REPO-023, R-REPO-051).
 type Scope struct {
-	// Include and Exclude are the repository's include and exclude patterns as stored: a format may narrow its
-	// requests by the literal prefix of an include pattern ([LiteralPrefix]); it still checks every name with Admits.
+	// Include is the mirror's scope, remote.mirror.include as stored (remote-curation.md R-CUR-017), and Exclude is empty: a remote
+	// has no include and exclude patterns (R-CUR-002). A format may narrow its requests by the literal prefix of an include pattern
+	// ([LiteralPrefix]); it still checks every name with Admits.
 	Include, Exclude []string
-	// Admits reports whether a normalized name is admitted by the patterns, the claims and the format's name rule. The
-	// engine always sets it.
+	// Admits reports whether a normalized name is admitted by the scope, the delivery rules, the claims and the format's name rule.
+	// The engine always sets it.
 	Admits func(name string) bool
 }
 

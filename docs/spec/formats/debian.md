@@ -1080,7 +1080,8 @@ Priority: **P2** · Covers: PKG-DEB-022
 
 - Every `Packages` index a remote stores, and every `Sources` index of a mirror with `sources: true`, is parsed into rows by the job
   `deb-remote-parse` (queue `index`, `coalesce` per repository, release directory and index path), enqueued in the transaction
-  that stores the index file. A run reads, when it starts, the hash that the **currently stored** release names for its index
+  that stores the index file, at its plain path or by its hash (a by-hash file below `binary-<arch>` enqueues that directory's
+  `Packages`, [Q-CUR-162](../remote-curation.md#q-cur-162--a-debian-index-apt-fetched-by-its-hash-is-parsed)). A run reads, when it starts, the hash that the **currently stored** release names for its index
   path and parses that index (fetching it through the background path when it is not stored), never a hash handed to it at enqueue
   time; an enqueue while a run of the same path is going on leaves one job waiting, so a release stored during a run is parsed by
   the next one and no trigger is lost (Q-DEB-36). A newer index replaces the rows of the same index path in one transaction; a run

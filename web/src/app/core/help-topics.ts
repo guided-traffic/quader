@@ -19,6 +19,10 @@ export const HELP_TOPICS: readonly (readonly [route: string, topic: HelpTopic])[
   ['/project/repositories', { section: 'user', page: 'repositories' }],
   // Set up client of a repository (`/projects/<key>/repositories/<repo>/setup`, R-UI-120) is looked up as `/project/setup`.
   ['/project/setup', { section: 'user', page: 'client-setup' }],
+  // The tabs Upstream and Downloads of a remote repository (`…/repositories/<repo>/upstream`, `…/downloads`, R-CUR-018) are looked up
+  // as `/project/upstream` and `/project/downloads`.
+  ['/project/upstream', { section: 'user', page: 'remote-curation' }],
+  ['/project/downloads', { section: 'user', page: 'remote-curation' }],
   // >>> M4b vulnerabilities
   ['/project/vulnerabilities', { section: 'user', page: 'vulnerabilities' }],
   // <<< M4b vulnerabilities
@@ -77,8 +81,9 @@ export const HELP_TOPICS: readonly (readonly [route: string, topic: HelpTopic])[
 export function helpFor(url: string): readonly string[] {
   const raw = url.split(/[?#]/, 1)[0] ?? '';
   const inProject = /^\/projects\/[^/]+(\/.*)?$/.exec(raw);
-  // The files and Set up client of a repository are looked up without the repository: `/project/files`, `/project/setup`.
-  const inner = inProject?.[1]?.replace(/^\/repositories\/[^/]+\/(files|setup)(?=\/|$)/, '/$1') ?? '';
+  // The files, Set up client and a remote's tabs Upstream and Downloads of a repository are looked up without the repository:
+  // `/project/files`, `/project/setup`, `/project/upstream`, `/project/downloads`.
+  const inner = inProject?.[1]?.replace(/^\/repositories\/[^/]+\/(files|setup|upstream|downloads)(?=\/|$)/, '/$1') ?? '';
   const path = inProject ? `/project${inner}` : raw;
   let best: readonly [string, HelpTopic] | undefined;
   for (const entry of HELP_TOPICS) {

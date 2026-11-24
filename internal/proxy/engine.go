@@ -121,6 +121,10 @@ type Options struct {
 	Log     *slog.Logger
 	// Now replaces the clock of the replica, for tests.
 	Now func() time.Time
+	// View is the read-only view this process built first (the role api, Q-ARCH-294): the engine reads the per-repository state and the
+	// negative L1 through the view's two caches instead of registering them a second time, which the registry refuses (R-ARCH-032). The
+	// role api builds an engine for the upstream catalogue's lent upstream (remote-curation.md Q-CUR-60, Q-CUR-163). Nil registers them.
+	View *View
 }
 
 // Engine is the remote engine of one replica.
@@ -229,15 +233,19 @@ func newEngine(o Options, readOnly bool) (*Engine, error) {
 	e.readOnly = readOnly
 	e.slots.onWait = e.raiseYield
 	e.base, e.cancel = context.WithCancel(context.Background())
-	e.state = cache.Register(o.Caches, CacheState, cache.Options[int64, *repoState]{
-		MaxEntries: 4096, SafetyTTL: o.SafetyTTL, Areas: []string{cluster.AreaUpstreamState},
-		OnChange: e.onStateChange, OnFlush: func(string) { e.reloadAll() },
-	})
-	e.neg = &negatives{
-		l1: cache.Register(o.Caches, CacheNegativeL1, cache.Options[negKey, negEntry]{
+	e.neg = &negatives{store: o.Negatives, inv: o.Invalid, counter: o.Lookups, now: o.Now}
+	if v := o.View; v != nil && !readOnly {
+		// The view's caches hold the same rows, read by the same readers; a change of the state invalidates the shared entry, and this
+		// engine loads it again at its next read.
+		e.state, e.neg.l1 = v.e.state, v.e.neg.l1
+	} else {
+		e.state = cache.Register(o.Caches, CacheState, cache.Options[int64, *repoState]{
+			MaxEntries: 4096, SafetyTTL: o.SafetyTTL, Areas: []string{cluster.AreaUpstreamState},
+			OnChange: e.onStateChange, OnFlush: func(string) { e.reloadAll() },
+		})
+		e.neg.l1 = cache.Register(o.Caches, CacheNegativeL1, cache.Options[negKey, negEntry]{
 			MaxEntries: o.Config.NegativeL1Entries, SafetyTTL: negativeLifetime,
-		}),
-		store: o.Negatives, inv: o.Invalid, counter: o.Lookups, now: o.Now,
+		})
 	}
 	if readOnly {
 		return e, nil

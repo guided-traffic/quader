@@ -81,7 +81,10 @@ func (f *Format) Classify(p formats.Path) formats.PathInfo {
 		info.Kind = formats.Content
 	case dirTags:
 		info.Kind, info.Version = formats.PathMetadata, tail
-		if !ValidTag(tail) {
+		// A tag of the referrers tag schema (`sha256-<hex of the subject>`, the tag Docker with the containerd image store asks for when
+		// the referrers API answers 404) is no version of the image: it names its subject's attachments, which follow the subject, as a
+		// manifest by digest does (R-OCI-038, Q-CUR-160). The tag's handler decides it by its subject.
+		if !ValidTag(tail) || referrersTag(tail) {
 			info.Version = ""
 		}
 	default:

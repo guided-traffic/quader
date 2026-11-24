@@ -1643,7 +1643,12 @@ what more a registry offers is its operator's, so the capabilities are the prese
   the name the cache knows (`deliveredMask` in `internal/formats/oci/delivery.go`; `Host.PathsAllowed` does not join the rules, because OCI
   asks it for both spellings of a Docker Hub name and a rule names one, [Q-CUR-42](../remote-curation.md#q-cur-42--the-places-the-rules-decide-as-built-kit-check-23-oci-and-debian-in-the-kit)); the catalog (R-OCI-017) lists a remote's image only while some version of it is delivered;
   the referrers of a refused manifest answer the refusal.
-- **What `docker` shows:** `denied: <image> <tag> is not allowed in <project>/<repo>: …`.
+- **A referrers tag follows its subject** ([Q-CUR-160](../remote-curation.md#q-cur-160--an-oci-referrers-tag-is-no-version-it-follows-its-subject)):
+  a tag of the referrers tag schema (`sha256-<hex of the subject>`) is no version of the image (`Classify` gives it none) and is delivered
+  when its subject's digest is, by the rule above; Docker with the containerd image store asks for it after every pull whose referrers
+  answer is a 404, and a refusal there failed the pull of an allowed tag.
+- **What `docker` shows** (Docker 29, measured on 2026-11-24 by the leg `oci`): `Error response from daemon: error from registry: <image>
+  <tag> is not allowed in <project>/<repo>: …`: Docker prints the message of the `DENIED` error and not its code.
 - **Limits the downloads meet** (the preview says them): Docker Hub allows an anonymous caller 100 manifest pulls per window (observed as
   one hour on 2026-11-23, documented as six), counted per architecture of a multi-platform pull, and its Hub API answered with a limit of
   180 requests a minute; GitLab allows 500 unauthenticated requests a minute; Quay and ghcr.io name no number.
@@ -1653,7 +1658,11 @@ Acceptance criteria:
 - Unit (kit checks 22 and 23, milliseconds): each preset's capabilities from its declaration; the tags list without a refused tag; a
   manifest by the digest of a refused tag answers the refusal while a delivered tag's digest is served.
 - Unit (`internal/formats/oci`, milliseconds): the Hub search's fallback when the canned answer is a `404` or does not parse.
-- End-to-end (the leg `oci`, about 10 s): `docker pull` of a refused tag through the remote prints `denied:` with the text.
+- Integration (area `ociremote`, `TestR_CUR_003_AnOCIRemoteInModeOnlyAllowedDeliversTheAllowedTagOnly`, about 2 s): the allowed tag's
+  manifest by its digest is served, and the referrers tag of that manifest is asked upstream while that of a manifest no allowed tag names
+  is refused.
+- End-to-end (the leg `oci`, `TestOCICuration_R_CUR_004_…`): `docker pull` of a refused tag through the remote prints the text; the
+  allowed multi-platform tag pulls; a tag downloaded ahead and allowed pulls from the cache.
 
 ## Deferred
 

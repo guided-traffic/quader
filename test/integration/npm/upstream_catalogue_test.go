@@ -177,3 +177,19 @@ func TestR_CUR_009_TheRowsCarryTheRepositorysStateAndAReaderSeesWhatIsDelivered(
 		}
 	})
 }
+
+// TestR_CUR_009_TheCatalogueAnswersOnAReplicaOfTheRoleAPI: the role api has the engine of the client path and no format host; the
+// catalogue's lent upstream took a second engine there, whose caches and metrics were registered twice, and every catalogue call of the
+// role panicked (Q-CUR-163, found by the journey of the tab Upstream on the kind cluster, whose management API is the role api). One
+// replica of the role api, a lookup and a search. About 1 s, the stub's corpus.
+func TestR_CUR_009_TheCatalogueAnswersOnAReplicaOfTheRoleAPI(t *testing.T) {
+	r := newRemoteEnv(t, remoteOptions{Valkey: true})
+	r.st.Policy("npm-remote-managers", []string{"read", "manage"}, []string{rRemote}, r.lead)
+	rep := r.st.Start(t, testenv.ReplicaOptions{Name: "api-1", Role: "api"})
+	p := upstreamPackage(t, 2)
+	for _, path := range []string{"/package?name=" + url.QueryEscape(p.Name), "/search?q=" + url.QueryEscape(p.Name)} {
+		if a := r.st.Do(rep, http.MethodGet, upstreamPath+path, r.tokL, nil); a.Status != http.StatusOK {
+			t.Fatalf("%s on the role api: %d %.300s", path, a.Status, a.Body)
+		}
+	}
+}

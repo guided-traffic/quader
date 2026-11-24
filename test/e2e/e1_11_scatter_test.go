@@ -522,7 +522,8 @@ func (b *browser) reauth(password string) loginTrace {
 // The contract with the suite: base URL QUADER_E2E_EDGE_URL, the dev CA in NODE_EXTRA_CA_CERTS (the suite verifies
 // the edge and the IdP against it), QUADER_E2E_KEYCLOAK_ADDR (the address of a port-forward to the test IdP's
 // Service, to which the browser maps the issuer's name), the passwords in QUADER_E2E_ALICE_PASSWORD,
-// QUADER_E2E_BOB_PASSWORD and QUADER_E2E_BREAKGLASS_PASSWORD, the administrator token in QUADER_E2E_ADMIN_TOKEN.
+// QUADER_E2E_BOB_PASSWORD and QUADER_E2E_BREAKGLASS_PASSWORD, the administrator token in QUADER_E2E_ADMIN_TOKEN, and the package
+// of the npm test upstream that the journey 24-upstream asks for in QUADER_E2E_UPSTREAM_PACKAGE.
 func TestE1_11Journeys(t *testing.T) {
 	dir := filepath.Join(cfg.repo, "web", "e2e")
 	if _, err := os.Stat(filepath.Join(dir, "playwright.config.ts")); err != nil {
@@ -544,6 +545,10 @@ func TestE1_11Journeys(t *testing.T) {
 		c := protectedTag(t, "v1.4.0").with(map[string]any{"aud": cfg.edgeURL, "job_id": fmt.Sprint(nonce*10 + n), "pipeline_id": fmt.Sprint(nonce)})
 		return dbl.mint(t, c.set, c.remove)
 	}
+	// The journey 24-upstream looks a package of the npm test upstream up, asks for it and allows it (remote-curation.md R-CUR-018): a
+	// package of this run, one version of a few hundred bytes, published there so that no earlier run's request or cache is in the way.
+	upstreamPkg := fmt.Sprintf("journey-upstream-%d", nonce)
+	stub(t).publish(t, upstreamPkg, "1.0.0", nil, "latest")
 	// QUADER_E2E_PLAYWRIGHT_ARGS narrows a run while a journey is written (for example `tests/13-ci.spec.ts`); a set of CI never sets it.
 	cmd := exec.Command("npx", append([]string{"playwright", "test"}, strings.Fields(os.Getenv("QUADER_E2E_PLAYWRIGHT_ARGS"))...)...)
 	cmd.Dir = dir
@@ -558,6 +563,7 @@ func TestE1_11Journeys(t *testing.T) {
 		"QUADER_E2E_BOB_PASSWORD="+secretValue(t, "quader-keycloak", "bob-password"),
 		"QUADER_E2E_BREAKGLASS_PASSWORD="+secretValue(t, "quader-break-glass", "password"),
 		"QUADER_E2E_ADMIN_TOKEN="+adminToken(t),
+		"QUADER_E2E_UPSTREAM_PACKAGE="+upstreamPkg,
 	)
 	reportFile := filepath.Join(cfg.repo, ".out", "playwright", "results.json")
 	_ = os.Remove(reportFile)

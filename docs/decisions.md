@@ -10133,10 +10133,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-CUR
 
-71 questions on [spec/remote-curation.md](spec/remote-curation.md).
+75 questions on [spec/remote-curation.md](spec/remote-curation.md).
 
 <details>
-<summary>Q-CUR: 71 questions</summary>
+<summary>Q-CUR: 75 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10211,6 +10211,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-CUR-155](spec/remote-curation.md#q-cur-155--the-catalogues-own-states-are-sentences-of-the-screen-the-upstreams-own-sentences-stand-as-the-upstream-wrote-them) | The catalogue's own states are sentences of the screen; the upstream's own sentences stand as the upstream wrote them | Decided by the development agent on 2026-11-24 | (a) The three refusals, the offline mode and a call not offered as the screen's own translated sentences in a warning line, the time computed from `Retry-After`; the server's sentences shown as written; the catalogue's reads never repeated by the client | — |
 | [Q-CUR-156](spec/remote-curation.md#q-cur-156--an-oci-remotes-stored-tags-are-the-tags-its-package-screens-list) | An OCI remote's stored tags are the tags its package screens list | Decided by the development agent on 2026-11-24 | (a) The statement adds an OCI remote's tag entries, each kept by the view's rules written as checks per entry from the page's packages, as the version list's `PackageViewTagPageDesc` does | — |
 | [Q-CUR-157](spec/remote-curation.md#q-cur-157--a-packages-versions-are-three-columns-the-facts-under-the-version-the-rule-under-the-delivery-the-verdicts-under-the-cache) | A package's versions are three columns: the facts under the version, the rule under the delivery, the verdicts under the cache | Decided by the development agent on 2026-11-24 | (a) **Version** (the version, its flags, under it the published time and the size, "Size not told" where the upstream does not tell it, and an image's platforms), **Delivery** (the badge, under it the rule that decided: "Rule: this version", "Rule: the package", "Rule:" and a sub-section's pattern), **Cache** (the state, under it **Open the version** for a stored version or the vulnerability verdict of one that is not stored, "No known vulnerability" where none is known) and the acts | — |
+| [Q-CUR-160](spec/remote-curation.md#q-cur-160--an-oci-referrers-tag-is-no-version-it-follows-its-subject) | An OCI referrers tag is no version: it follows its subject | Decided by the development agent on 2026-11-24 | (a) A referrers tag is no version (`Classify` gives none, as for a manifest by digest); the tag's handler decides it by its subject's digest with the rule of R-OCI-038 | — |
+| [Q-CUR-161](spec/remote-curation.md#q-cur-161--each-formats-end-to-end-case-is-the-remotes-own-refusal-an-allow-and-a-download-ahead-what-the-clients-print-is-measured) | Each format's end-to-end case is the remote's own refusal, an allow and a download ahead; what the clients print is measured | Decided by the development agent on 2026-11-24 | (a) One case per format in its own set, on a remote of its counting test upstream in mode `onlyAllowed`: the client refused (what it prints, a row of the manual's table), an allow of one version through the API (where the client resolves a range or "the newest", it takes the allowed one), a version downloaded ahead through the queue and allowed that the client takes from the cache (the stub's count) | — |
+| [Q-CUR-162](spec/remote-curation.md#q-cur-162--a-debian-index-apt-fetched-by-its-hash-is-parsed) | A Debian index APT fetched by its hash is parsed | Decided by the development agent on 2026-11-24 | (a) The commit of a by-hash file below a `binary-<arch>` directory enqueues the parse of that directory's `Packages`; the job reads the index the current release names for it by its SHA-256 | — |
+| [Q-CUR-163](spec/remote-curation.md#q-cur-163--the-background-engine-of-the-role-api-shares-the-caches-of-its-read-only-view) | The background engine of the role api shares the caches of its read-only view | Decided by the development agent on 2026-11-24 | (a) The engine takes the view (`proxy.Options.View`) and reads the state and the negative L1 through the view's two caches | — |
 
 </details>
 

@@ -251,7 +251,7 @@ With `repositories:write-config`, or with `manage` on the repository (the roles 
 
 What a remote repository delivers of its upstream is its delivery mode and its rules. The section **Delivery** of the settings page,
 closed at first, holds the mode and the examination's switches; the tab **Upstream** of the repository's page holds the rules, the
-requests and the downloads ahead ([Repositories](../user/repositories.md#the-upstream-of-a-remote-repository)). **Change** on that tab
+requests and the downloads ahead ([Curating a remote repository](../user/remote-curation.md)). **Change** on that tab
 opens the section. It needs `repositories:write-config` or the project's Owner; the rules need the role Maintainer or Owner, or the
 system role `admin`. A system repository of the project `upstream` has no section: its rules are the product's.
 
