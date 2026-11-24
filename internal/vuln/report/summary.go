@@ -114,9 +114,6 @@ func (s *Service) ecosystems(data map[string]DataInfo) []string {
 	return out
 }
 
-// TrendBasis says how the counts of the trend are made (R-VULN-021).
-const TrendBasis = "A finding counts under its current severity, from the day it was detected until the day it resolved; dismissed findings count until they resolve."
-
 // MaxTrendDays is the longest range of the trend.
 const MaxTrendDays = 400
 

@@ -168,7 +168,7 @@ func (s *Server) GetVulnerabilityTrend(w http.ResponseWriter, r *http.Request, _
 		httpserver.Problem(w, r, err)
 		return
 	}
-	out := gen.VulnerabilityTrend{From: openapi_types.Date{Time: from}, To: openapi_types.Date{Time: to}, Basis: report.TrendBasis}
+	out := gen.VulnerabilityTrend{From: openapi_types.Date{Time: from}, To: openapi_types.Date{Time: to}}
 	out.Points = make([]struct {
 		Counts gen.VulnerabilitySeverityCounts `json:"counts"`
 		Date   openapi_types.Date              `json:"date"`

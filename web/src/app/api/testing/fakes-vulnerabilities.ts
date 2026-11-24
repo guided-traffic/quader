@@ -456,7 +456,6 @@ export class FakeVulnerabilitiesApi extends VulnerabilitiesApi {
     return {
       from: new Date(from).toISOString().slice(0, 10),
       to: new Date(to).toISOString().slice(0, 10),
-      basis: 'A finding counts under its current severity, and a dismissed finding counts until it resolves.',
       points,
     };
   }

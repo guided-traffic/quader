@@ -104,7 +104,6 @@ func TestR_VULN_021_Trend(t *testing.T) {
 		t.Fatalf("%d %s", a.Status, a.Body)
 	}
 	var tr struct {
-		Basis  string `json:"basis"`
 		Points []struct {
 			Date   string
 			Counts struct{ High, Low int64 }
@@ -121,8 +120,9 @@ func TestR_VULN_021_Trend(t *testing.T) {
 	if want := []int64{0, 5, 5, 3, 3, 3}; !slices.Equal(high, want) {
 		t.Errorf("high per day = %v, want %v\n%s", high, want, a.Body)
 	}
-	if tr.Basis == "" {
-		t.Error("the response does not say how it counts")
+	// The screen says how it counts in its own words; the answer carries the counts and no sentence (R-VULN-021).
+	if strings.Contains(string(a.Body), `"basis"`) {
+		t.Errorf("the trend answers a sentence: %s", a.Body)
 	}
 	for _, bad := range []string{q("from", "2020-01-01", "to", to), q("from", to, "to", from), q("from", "yesterday")} {
 		if a := e.get(e.r, "/api/v1/vulnerabilities/trend"+bad, e.tokRita); a.Status != 400 {

@@ -17961,10 +17961,8 @@ type VulnerabilitySummary struct {
 // VulnerabilitySummaryDataState defines model for VulnerabilitySummary.Data.State.
 type VulnerabilitySummaryDataState string
 
-// VulnerabilityTrend defines model for VulnerabilityTrend.
+// VulnerabilityTrend The open findings at the end of each day (R-VULN-021): a finding counts under its current severity, from the day it was detected until the day it resolved, and a dismissed finding counts until it resolves. The screen says so in its own language; the answer carries the counts and no sentence.
 type VulnerabilityTrend struct {
-	// Basis How the counts are made: a finding counts under its current severity, and dismissed findings count until they resolve.
-	Basis  string             `json:"basis"`
 	From   openapi_types.Date `json:"from"`
 	Points []struct {
 		Counts VulnerabilitySeverityCounts `json:"counts"`

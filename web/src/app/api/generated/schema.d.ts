@@ -5181,7 +5181,7 @@ export interface paths {
          * Open findings per day
          * @description Per day from `from` to `to` (at most 400 days, default the last 90): the findings detected and not resolved at the
          *     end of the day, by severity (R-VULN-021, Q-VULN-16). It counts a finding under its current severity and counts
-         *     dismissed findings until they resolve; `basis` says so. Computed over the findings the caller can read.
+         *     dismissed findings until they resolve (the screen says so in its own language). Computed over the findings the caller can read.
          */
         get: operations["getVulnerabilityTrend"];
         put?: never;
@@ -14831,13 +14831,12 @@ export interface components {
                 syncedAt: string | null;
             }[];
         };
+        /** @description The open findings at the end of each day (R-VULN-021): a finding counts under its current severity, from the day it was detected until the day it resolved, and a dismissed finding counts until it resolves. The screen says so in its own language; the answer carries the counts and no sentence. */
         VulnerabilityTrend: {
             /** Format: date */
             from: string;
             /** Format: date */
             to: string;
-            /** @description How the counts are made: a finding counts under its current severity, and dismissed findings count until they resolve. */
-            basis: string;
             points: {
                 /** Format: date */
                 date: string;

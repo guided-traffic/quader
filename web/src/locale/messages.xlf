@@ -41351,9 +41351,17 @@
         <source>Legend</source>
       </segment>
     </unit>
+    <unit id="vuln.trend.basis">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/report-trend.ts:252</note>
+      </notes>
+      <segment>
+        <source>A finding counts under its current severity, from the day it was detected until the day it resolved; a dismissed finding counts until it resolves.</source>
+      </segment>
+    </unit>
     <unit id="vuln.trend.empty">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/report-trend.ts:263</note>
+        <note category="location">src/app/features/vulnerabilities/report-trend.ts:264</note>
       </notes>
       <segment>
         <source>No data in this period.</source>
@@ -41361,7 +41369,7 @@
     </unit>
     <unit id="vuln.trend.description">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/report-trend.ts:265</note>
+        <note category="location">src/app/features/vulnerabilities/report-trend.ts:266</note>
       </notes>
       <segment>
         <source>Stacked columns of the open findings per day from <ph id="0" equiv="from" disp="t.from"/> to <ph id="1" equiv="to" disp="t.to"/>. On <ph id="2" equiv="last" disp="t.to"/> there were <ph id="3" equiv="counts" disp="parts"/>.</source>
@@ -41369,7 +41377,7 @@
     </unit>
     <unit id="vuln.trend.range-30">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/report-trend.ts:279</note>
+        <note category="location">src/app/features/vulnerabilities/report-trend.ts:280</note>
       </notes>
       <segment>
         <source>30 days</source>
@@ -41377,7 +41385,7 @@
     </unit>
     <unit id="vuln.trend.range-90">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/report-trend.ts:281</note>
+        <note category="location">src/app/features/vulnerabilities/report-trend.ts:282</note>
       </notes>
       <segment>
         <source>90 days</source>
@@ -41385,7 +41393,7 @@
     </unit>
     <unit id="vuln.trend.range-365">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/report-trend.ts:283</note>
+        <note category="location">src/app/features/vulnerabilities/report-trend.ts:284</note>
       </notes>
       <segment>
         <source>365 days</source>

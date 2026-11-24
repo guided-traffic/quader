@@ -195,7 +195,7 @@ export function trendGeometry(trend: VulnerabilityTrend): TrendGeometry {
               </li>
             }
           </ul>
-          <p class="hint">{{ basis() }}</p>
+          <p class="hint">{{ basis }}</p>
         }
       </div>
     </section>
@@ -248,7 +248,8 @@ export class ReportTrend {
     const e = this.trend.error();
     return e ? asApiError(e) : null;
   });
-  protected readonly basis = computed(() => valueOf(this.trend)?.basis ?? '');
+  /** How the counts are made (R-VULN-021), in the screen's words: the API answers the counts and no sentence, so the sentence follows the screen's language. */
+  protected readonly basis = $localize`:@@vuln.trend.basis:A finding counts under its current severity, from the day it was detected until the day it resolved; a dismissed finding counts until it resolves.`;
   protected readonly points = computed(() => valueOf(this.trend)?.points ?? []);
   protected readonly geometry = computed(() => {
     const t = valueOf(this.trend);
