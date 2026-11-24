@@ -8,6 +8,9 @@ import {
   RemoteDownloadFailureClass,
   RemoteDownloadFilters,
   RemoteDownloadPage,
+  RemoteDownloadPreview,
+  RemoteDownloadRequest,
+  RemoteDownloadStarted,
   RemoteDownloadsApi,
 } from '../remote-downloads-api';
 
@@ -146,6 +149,49 @@ export class FakeRemoteDownloadsApi extends RemoteDownloadsApi {
     const next = { ...b, state: 'cancelled' as const };
     this.bulks = this.bulks.map((x) => (x.id === id ? next : x));
     return next;
+  }
+
+  /** The preview every call answers; `previews` records the requests. */
+  previewAnswer: RemoteDownloadPreview = {
+    versions: 3,
+    packages: 1,
+    bytes: null,
+    sizeUnknown: 3,
+    stored: 1,
+    notDelivered: 0,
+    bounds: { maxVersions: 10000, maxBytes: 107374182400, includePrereleases: true },
+    note: null,
+  };
+  readonly previews: RemoteDownloadRequest[] = [];
+  readonly starts: RemoteDownloadRequest[] = [];
+  /** Answers every start with this error, where set. */
+  startError: ApiError | null = null;
+
+  override async preview(repository: string, request: RemoteDownloadRequest): Promise<RemoteDownloadPreview> {
+    this.previews.push(request);
+    const b = this.previewAnswer.bounds;
+    return {
+      ...this.previewAnswer,
+      bounds: {
+        maxVersions: request.maxVersions ?? b.maxVersions,
+        maxBytes: request.maxBytes ?? b.maxBytes,
+        includePrereleases: request.includePrereleases ?? b.includePrereleases,
+      },
+    };
+  }
+
+  override async start(repository: string, request: RemoteDownloadRequest): Promise<RemoteDownloadStarted> {
+    this.starts.push(request);
+    this.calls.push(`start ${repository} ${request.level} ${request.name ?? request.section ?? ''} ${request.version ?? ''}`.trim());
+    if (this.startError) throw this.startError;
+    if (request.level === 'version') {
+      const row = downloadRow({ id: `row-${this.starts.length}`, name: request.name ?? '', version: request.version ?? '' });
+      this.rows = [row, ...this.rows];
+      return { download: row };
+    }
+    const bulk = downloadBulk({ id: `bulk-${this.starts.length}`, level: request.level === 'section' ? 'section' : 'package', subject: request.name ?? request.section ?? '', state: 'expanding' });
+    this.bulks = [...this.bulks, bulk];
+    return { bulk };
   }
 
   private change(id: string, over: Partial<RemoteDownload>): RemoteDownload {

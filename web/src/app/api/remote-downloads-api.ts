@@ -20,6 +20,12 @@ export type RemoteDownloadPage = Schema<'RemoteDownloadPage'>;
 export type RemoteDownloadCounts = Schema<'RemoteDownloadCounts'>;
 /** A bulk download with its counters and its rows by state (R-CUR-010, R-CUR-012). */
 export type RemoteDownloadBulk = Schema<'RemoteDownloadBulk'>;
+/** A download ahead of a client: one version, every version of a package, or a sub-section, with a bulk's bounds (R-CUR-010). */
+export type RemoteDownloadRequest = Omit<Schema<'RemoteDownloadRequest'>, 'includePrereleases'> & { readonly includePrereleases?: boolean };
+/** What a download ahead would fetch, before it is started (R-CUR-010). */
+export type RemoteDownloadPreview = Schema<'RemoteDownloadPreview'>;
+/** The answer of a start: the row of one version, or the bulk (R-CUR-010). */
+export type RemoteDownloadStarted = Schema<'RemoteDownloadStarted'>;
 
 /** The states of a row in the order the tab lists them (R-CUR-018). */
 export const DOWNLOAD_STATES: readonly RemoteDownloadState[] = ['waiting', 'running', 'failed', 'done', 'cancelled'];
@@ -84,6 +90,10 @@ export abstract class RemoteDownloadsApi {
   abstract bulk(repository: string, id: string): Promise<RemoteDownloadBulk>;
   /** `POST …/download-bulks/{id}/cancel`: the bulk after the cancel. */
   abstract cancelBulk(repository: string, id: string, idempotencyKey: string): Promise<RemoteDownloadBulk>;
+  /** `POST …/downloads/preview`: what the download would fetch, with the bounds that hold (R-CUR-010). */
+  abstract preview(repository: string, request: RemoteDownloadRequest): Promise<RemoteDownloadPreview>;
+  /** `POST …/downloads`: the row of one version, or the bulk of a package or a sub-section (R-CUR-010). */
+  abstract start(repository: string, request: RemoteDownloadRequest, idempotencyKey: string): Promise<RemoteDownloadStarted>;
 }
 
 /** `/api/v1/projects/{project}/repositories/{key}` of a qualified name. */
@@ -130,5 +140,13 @@ export class HttpRemoteDownloadsApi extends RemoteDownloadsApi {
 
   async cancelBulk(repository: string, id: string, idempotencyKey: string): Promise<RemoteDownloadBulk> {
     return (await this.client.post<RemoteDownloadBulk>(`${base(repository)}/download-bulks/${encodeURIComponent(id)}/cancel`, undefined, { idempotencyKey })).body;
+  }
+
+  async preview(repository: string, request: RemoteDownloadRequest): Promise<RemoteDownloadPreview> {
+    return (await this.client.post<RemoteDownloadPreview>(`${base(repository)}/downloads/preview`, request)).body;
+  }
+
+  async start(repository: string, request: RemoteDownloadRequest, idempotencyKey: string): Promise<RemoteDownloadStarted> {
+    return (await this.client.post<RemoteDownloadStarted>(`${base(repository)}/downloads`, request, { idempotencyKey })).body;
   }
 }

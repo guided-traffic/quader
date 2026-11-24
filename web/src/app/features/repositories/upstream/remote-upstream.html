@@ -1,0 +1,226 @@
+<!-- The line about the mode (R-CUR-018): Change leads to the settings' section Delivery for those who may set the configuration;
+     Rules (n) opens the rule list for those who may read the rules. -->
+@if (modeText(); as mode) {
+  <p class="mode-line" data-testid="upstream-mode">
+    <span>{{ mode }}</span>
+    @if (mayChangeMode()) {
+      <a [routerLink]="settingsLink()" fragment="delivery" i18n="@@upstream.mode.change">Change</a>
+    }
+    @if (actions.mayReadRules()) {
+      <button class="btn btn-tertiary on-line" type="button" data-testid="upstream-rules" (click)="openRules()">
+        <ng-container i18n="@@upstream.rules">Rules</ng-container>&ngsp;<span class="badge">{{ caps()?.rules ?? 0 }}</span>
+      </button>
+    }
+  </p>
+}
+
+<!-- The requests, set apart and first for those who decide; an asker's own entries in the same place (R-CUR-015, R-CUR-018). -->
+<quader-delivery-requests-panel [project]="project()" [format]="format()" [openCount]="caps()?.openRequests ?? null" />
+
+@if (capsState(); as sentence) {
+  <p class="banner-warning" role="status" data-testid="upstream-state">
+    <span class="material-icons inline warn" aria-hidden="true">warning</span>
+    <span>{{ sentence }}</span>
+  </p>
+} @else if (capsFailure(); as f) {
+  <quader-error-notice [error]="f" (retry)="capsRead.reload()" />
+}
+
+@if (caps(); as c) {
+  <!-- The search where the upstream answers one, or over the index Quader holds (Debian, with Names only); the lookup by exact name
+       always, and alone where the upstream has no search, with the sentence that says why (R-CUR-007, R-CUR-018). -->
+  <form class="search" role="search" (submit)="search($event)" novalidate>
+    <label class="field-label" for="upstream-text">{{ fieldLabel() }}</label>
+    <div class="field-action-row">
+      <input
+        id="upstream-text"
+        class="text-input field-w-name"
+        type="search"
+        maxlength="128"
+        autocomplete="off"
+        spellcheck="false"
+        [value]="text()"
+        [attr.aria-describedby]="'upstream-text-note'"
+        (input)="text.set($any($event.target).value)"
+      />
+      @if (searches()) {
+        <button class="btn btn-confirm" type="submit" i18n="@@upstream.search.submit">Search</button>
+        <button class="btn btn-default" type="button" (click)="lookup()" i18n="@@upstream.lookup.exact">Look up by exact name</button>
+      } @else {
+        <button class="btn btn-confirm" type="submit" i18n="@@upstream.lookup.submit">Look up</button>
+      }
+    </div>
+    @if (c.search === 'index') {
+      <quader-checkbox class="names-only" [checked]="namesOnly()" (checkedChange)="setNamesOnly($event)">
+        <ng-container i18n="@@upstream.search.names-only">Names only</ng-container>
+      </quader-checkbox>
+    }
+    <p class="hint" id="upstream-text-note" translate="no">{{ c.search === 'none' ? c.searchReason : c.searchNote }}</p>
+  </form>
+
+  @if (lookupName(); as name) {
+    <!-- A package looked up by its exact name: every reader sees it with its versions and its state, so that it can be asked for
+         (Q-CUR-14); the refusal's link of R-CUR-004 lands here. -->
+    <section class="lookup" aria-labelledby="upstream-lookup-title" data-testid="upstream-lookup">
+      <div class="lookup-head">
+        <h2 id="upstream-lookup-title" class="lookup-title" translate="no">{{ name }}</h2>
+        <button class="btn btn-tertiary on-line" type="button" (click)="clearLookup()" i18n="@@upstream.lookup.close">Close</button>
+      </div>
+      <quader-upstream-package [name]="name" [project]="project()" [sizes]="c.sizes" [versionLabel]="shape().versionLabel" />
+    </section>
+  }
+
+  @if (listing() === 'level') {
+    <!-- The levels (R-CUR-007, Q-CUR-63): the breadcrumb of the level and its children as links; a level the root does not list is
+         entered by its name (an npm scope, a Docker Hub namespace). -->
+    <nav class="level-bar" [attr.aria-label]="kindText(kindAt(0))" data-testid="upstream-levels">
+      @if (level().length > 0) {
+      <ol class="level-trail">
+        <li>
+          @if (level().length === 0) {
+            <span aria-current="page" i18n="@@upstream.level.root">Upstream</span>
+          } @else {
+            <a [routerLink]="[]" [queryParams]="levelLink([])" queryParamsHandling="merge" i18n="@@upstream.level.root">Upstream</a>
+          }
+        </li>
+        @for (part of level(); track $index; let last = $last; let i = $index) {
+          <li translate="no">
+            @if (last) {
+              <span aria-current="page">{{ part }}</span>
+            } @else {
+              <a [routerLink]="[]" [queryParams]="levelLink(level().slice(0, i + 1))" queryParamsHandling="merge">{{ part }}</a>
+            }
+          </li>
+        }
+      </ol>
+      }
+      @if (page(); as p) {
+        @if (p.levels.length > 0) {
+          <p class="level-kind">{{ kindText(kindAt(level().length)) }}</p>
+          <ul class="level-children">
+            @for (child of p.levels; track child) {
+              <li translate="no"><a [routerLink]="[]" [queryParams]="levelLink(childPath(child))" queryParamsHandling="merge">{{ child }}</a></li>
+            }
+          </ul>
+        }
+        @if (level().length === 0 && p.levels.length === 0 && p.hits.length === 0) {
+          <form class="enter-level" (submit)="enterLevel($event)" novalidate>
+            <label class="field-label" for="upstream-level">{{ kindText(kindAt(0)) }}</label>
+            <div class="field-action-row">
+              <input id="upstream-level" class="text-input field-w-name" type="text" autocomplete="off" spellcheck="false" [value]="levelText()" (input)="levelText.set($any($event.target).value)" />
+              <button class="btn btn-default" type="submit" i18n="@@upstream.level.open">Open</button>
+            </div>
+          </form>
+        }
+      }
+      @if (level().length > 0 && actions.manager() && (page()?.hits?.length ?? 0) > 0) {
+        <button class="btn btn-default" type="button" (click)="downloadSection()" i18n="@@upstream.level.download">Download this sub-section…</button>
+      }
+    </nav>
+  } @else if (listing() === 'search') {
+    <p class="search-head">
+      <a [routerLink]="[]" [queryParams]="{ q: null }" queryParamsHandling="merge" i18n="@@upstream.search.clear">Clear the search</a>
+    </p>
+  }
+
+  @if (listing() !== null && !emptyRoot()) {
+    @if (listState(); as sentence) {
+      <p class="banner-warning" role="status" data-testid="upstream-list-state">
+        <span class="material-icons inline warn" aria-hidden="true">warning</span>
+        <span>{{ sentence }}</span>
+      </p>
+    }
+    @if (page(); as p) {
+      @if (totalText(p); as total) {
+        <p class="list-facts muted" role="status">{{ total }}</p>
+      }
+      @if (withheldText(p); as w) {
+        <p class="list-facts" role="status" data-testid="upstream-withheld">{{ w }}</p>
+      }
+    }
+    @if (!listState() || page()) {
+      <quader-data-table
+        [caption]="caption()"
+        [columns]="columns()"
+        [loaded]="page() !== null || !!listFailure()"
+        [loading]="listLoading()"
+        [error]="listState() ? null : listFailure()"
+        [empty]="(page()?.hits?.length ?? 0) === 0"
+        [emptyText]="emptyText()"
+        [hasMore]="!!page()?.next"
+        (more)="more()"
+        (retry)="retryList()"
+      >
+        @for (h of page()?.hits ?? []; track h.name) {
+          <tr>
+            <th scope="row" class="wrap-name">
+              <div class="name-cell">
+                <button
+                  type="button"
+                  class="btn btn-tertiary btn-icon on-line"
+                  [attr.aria-expanded]="isOpen(h)"
+                  [attr.aria-controls]="rowId(h)"
+                  [attr.aria-label]="openLabel(h)"
+                  (click)="toggle(h)"
+                >
+                  <span class="material-icons expand-chevron" aria-hidden="true">expand_more</span>
+                </button>
+                <span>
+                  <span class="hit-name" translate="no">{{ h.name }}</span>
+                  @if (h.description) {
+                    <span class="secondary"><span class="hit-description" [attr.title]="h.description">{{ h.description }}</span></span>
+                  }
+                </span>
+              </div>
+            </th>
+            <td class="keep">
+              @if (h.latest; as latest) {
+                <span translate="no">{{ latest }}</span>
+              } @else {
+                <quader-no-value />
+              }
+            </td>
+            <td class="keep">
+              @let b = badge(h.delivery, !!h.request);
+              <span [class]="b.look"><span class="material-icons" aria-hidden="true">{{ b.icon }}</span>{{ b.text }}</span>
+            </td>
+            <td class="keep">
+              @if (h.stored === 'partial') {
+                <span class="badge"><span class="material-icons" aria-hidden="true">inventory_2</span><ng-container i18n="@@upstream.cache.stored">Stored</ng-container></span>
+              } @else {
+                <span class="muted" i18n="@@upstream.cache.not-stored">Not stored</span>
+              }
+            </td>
+          </tr>
+          <tr class="expansion">
+            <td [attr.colspan]="columns().length">
+              <div [id]="rowId(h)" class="collapse-region" [class.open]="isOpen(h)">
+                <div>
+                  @if (isOpen(h)) {
+                    <quader-upstream-package [name]="h.name" [project]="project()" [sizes]="c.sizes" [versionLabel]="shape().versionLabel" [showDescription]="false" />
+                  }
+                </div>
+              </div>
+            </td>
+          </tr>
+        }
+      </quader-data-table>
+    }
+  } @else if (!lookupName() && !listLoading()) {
+    <p class="hint" data-testid="upstream-start">
+      @if (format() === 'oci') {
+        @if (searches()) {
+          <ng-container i18n="@@upstream.start.search-image">Search the upstream, or look an image up by its full name, to see its tags.</ng-container>
+        } @else {
+          <ng-container i18n="@@upstream.start.lookup-image">Look an image up by its full name to see its tags.</ng-container>
+        }
+      } @else if (searches()) {
+        <ng-container i18n="@@upstream.start.search">Search the upstream, or look a package up by its exact name, to see its versions.</ng-container>
+      } @else {
+        <ng-container i18n="@@upstream.start.lookup">Look a package up by its exact name to see its versions.</ng-container>
+      }
+    </p>
+  }
+} @else if (!capsFailure()) {
+  <p role="status" i18n="@@upstream.loading">Reading what the upstream offers.</p>
+}

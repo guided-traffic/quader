@@ -260,6 +260,22 @@
           </quader-disclosure>
         }
 
+        <!-- >>> T-24 delivery -->
+        <!-- The delivery mode and the curation's switches of a remote (R-CUR-018): a closed section, details on demand; the rules are
+             the tab Upstream's. -->
+        @if (deliveryShown()) {
+          <quader-repository-delivery
+            [stored]="repo.remote?.delivery"
+            [project]="project()"
+            [repositoryKey]="key()"
+            [canChange]="canChange()"
+            [saving]="deliverySaving()"
+            [failure]="deliveryFailure()"
+            (save)="saveDelivery($event)"
+          />
+        }
+        <!-- <<< T-24 delivery -->
+
         @if (formatNodes().length > 0) {
           <quader-disclosure
             [heading]="formatHeading()"

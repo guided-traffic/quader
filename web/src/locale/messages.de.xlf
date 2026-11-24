@@ -1554,6 +1554,105 @@
         <target>Die Warteschlange dieses Repositorys ist voll. Versuchen Sie es erneut, wenn einige ihrer Downloads gelaufen sind.</target>
       </segment>
     </unit>
+    <unit id="problem.catalogue_not_offered">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-downloads.ts:15</note>
+      </notes>
+      <segment>
+        <source>The upstream of this repository does not answer this.</source>
+        <target>Der Upstream dieses Repositorys beantwortet das nicht.</target>
+      </segment>
+    </unit>
+    <unit id="problem.catalogue_not_found">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-downloads.ts:17</note>
+      </notes>
+      <segment>
+        <source>The upstream has no package or version of this name.</source>
+        <target>Der Upstream hat kein Paket und keine Version dieses Namens.</target>
+      </segment>
+    </unit>
+    <unit id="problem.catalogue_budget_exhausted">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-downloads.ts:19</note>
+      </notes>
+      <segment>
+        <source>The upstream catalogue&apos;s budget is used up. Try again in a minute.</source>
+        <target>Das Budget des Upstream-Katalogs ist aufgebraucht. Versuchen Sie es in einer Minute erneut.</target>
+      </segment>
+    </unit>
+    <unit id="problem.catalogue_answer_too_large">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-downloads.ts:21</note>
+      </notes>
+      <segment>
+        <source>The upstream&apos;s answer is larger than the catalogue reads.</source>
+        <target>Die Antwort des Upstreams ist größer, als der Katalog liest.</target>
+      </segment>
+    </unit>
+    <unit id="problem.upstream_assumed_offline">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-downloads.ts:23</note>
+      </notes>
+      <segment>
+        <source>The upstream is assumed offline after repeated failures; Quader retries later.</source>
+        <target>Der Upstream gilt nach wiederholten Fehlern als offline; Quader versucht es später erneut.</target>
+      </segment>
+    </unit>
+    <unit id="problem.too_many_rules">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-downloads.ts:25</note>
+      </notes>
+      <segment>
+        <source>This repository has as many rules as it may hold. Remove some, or allow a sub-section instead.</source>
+        <target>Dieses Repository hat so viele Regeln, wie es haben darf. Entfernen Sie einige, oder erlauben Sie stattdessen einen Teilbereich.</target>
+      </segment>
+    </unit>
+    <unit id="problem.invalid_version">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-downloads.ts:27</note>
+      </notes>
+      <segment>
+        <source>This version is not one the format reads.</source>
+        <target>Diese Version kann das Format nicht lesen.</target>
+      </segment>
+    </unit>
+    <unit id="problem.already_delivered">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-downloads.ts:29</note>
+      </notes>
+      <segment>
+        <source>This is delivered in this repository already; there is nothing to ask for.</source>
+        <target>Das wird in diesem Repository bereits ausgeliefert; es gibt nichts zu beantragen.</target>
+      </segment>
+    </unit>
+    <unit id="problem.too_many_requests">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-downloads.ts:31</note>
+      </notes>
+      <segment>
+        <source>You have as many open requests in this repository as you may. Withdraw one, or wait for a decision.</source>
+        <target>Sie haben in diesem Repository so viele offene Anträge, wie Sie dürfen. Ziehen Sie einen zurück, oder warten Sie auf eine Entscheidung.</target>
+      </segment>
+    </unit>
+    <unit id="problem.delivered">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-downloads.ts:33</note>
+      </notes>
+      <segment>
+        <source>A version the rules deliver is not discarded.</source>
+        <target>Eine Version, die die Regeln ausliefern, wird nicht verworfen.</target>
+      </segment>
+    </unit>
+    <unit id="problem.not_allowed_in_repository">
+      <notes>
+        <note category="location">src/app/core/http/problem-messages-downloads.ts:35</note>
+      </notes>
+      <segment>
+        <source>This repository does not deliver it: a rule blocks it, or it delivers only what is allowed.</source>
+        <target>Dieses Repository liefert es nicht aus: Eine Regel sperrt es, oder es liefert nur Erlaubtes aus.</target>
+      </segment>
+    </unit>
     <unit id="problem.limit_above_maximum">
       <notes>
         <note category="location">src/app/core/http/problem-messages-limits.ts:19</note>
@@ -5451,7 +5550,7 @@
         <note category="location">src/app/features/audit/audit-log.html:326,328</note>
         <note category="location">src/app/features/endpoints/endpoint-detail.html:15,16</note>
         <note category="location">src/app/features/endpoints/endpoint-detail.html:172,176</note>
-        <note category="location">src/app/features/repositories/content/repository-content.html:208,211</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:221,224</note>
         <note category="location">src/app/features/repositories/content/repository-file.ts:156,158</note>
         <note category="location">src/app/features/repositories/content/repository-file.ts:202,204</note>
         <note category="location">src/app/features/repositories/repository-create.html:221,223</note>
@@ -10690,6 +10789,7 @@
     <unit id="repo.edit.reset">
       <notes>
         <note category="location">src/app/features/endpoints/exposure-rule-editor.html:410,412</note>
+        <note category="location">src/app/features/repositories/repository-delivery.ts:92,94</note>
         <note category="location">src/app/features/repositories/repository-detail.html:37,40</note>
         <note category="location">src/app/features/repositories/repository-download-links.ts:79,81</note>
         <note category="location">src/app/features/repositories/repository-malware.ts:65,67</note>
@@ -11884,7 +11984,7 @@
       <notes>
         <note category="location">src/app/features/guides/guide-format.ts:154</note>
         <note category="location">src/app/features/repositories/repository-detail.html:54,55</note>
-        <note category="location">src/app/features/repositories/repository-detail.html:459,460</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:475,476</note>
         <note category="location">src/app/features/repositories/repository-list.html:65,66</note>
         <note category="location">src/app/features/repositories/repository-list.html:69</note>
         <note category="location">src/app/features/repositories/repository-list.ts:281</note>
@@ -11998,7 +12098,7 @@
     <unit id="route.setup.title">
       <notes>
         <note category="location">src/app/features/guides/guides.routes.ts:46</note>
-        <note category="location">src/app/features/repositories/repositories.routes.ts:98</note>
+        <note category="location">src/app/features/repositories/repositories.routes.ts:107</note>
       </notes>
       <segment>
         <source>Set up client</source>
@@ -21601,16 +21701,25 @@
     </unit>
     <unit id="repo.tabs">
       <notes>
-        <note category="location">src/app/features/repositories/content/remote-tabs.ts:20</note>
+        <note category="location">src/app/features/repositories/content/remote-tabs.ts:25</note>
       </notes>
       <segment>
         <source>Views of the repository</source>
         <target>Ansichten des Repositorys</target>
       </segment>
     </unit>
+    <unit id="repo.tab.upstream">
+      <notes>
+        <note category="location">src/app/features/repositories/content/remote-tabs.ts:28,29</note>
+      </notes>
+      <segment>
+        <source>Upstream</source>
+        <target>Upstream</target>
+      </segment>
+    </unit>
     <unit id="repo.tab.downloads">
       <notes>
-        <note category="location">src/app/features/repositories/content/remote-tabs.ts:23,24</note>
+        <note category="location">src/app/features/repositories/content/remote-tabs.ts:32,33</note>
       </notes>
       <segment>
         <source>Downloads</source>
@@ -21619,7 +21728,7 @@
     </unit>
     <unit id="repo.tab.downloads-failed">
       <notes>
-        <note category="location">src/app/features/repositories/content/remote-tabs.ts:24,25</note>
+        <note category="location">src/app/features/repositories/content/remote-tabs.ts:33,34</note>
       </notes>
       <segment>
         <source>· <ph id="0" equiv="INTERPOLATION" disp="{{ n }}"/> failed</source>
@@ -21668,7 +21777,7 @@
     </unit>
     <unit id="repo.content.oci-remote-note3">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:67,69</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:80,82</note>
       </notes>
       <segment>
         <source>Only the tags clients have pulled through this repository are listed here, those it downloaded after a client asked about them, and, in mirror mode, those a pass has fetched.</source>
@@ -21677,7 +21786,7 @@
     </unit>
     <unit id="repo.content.remote-note3">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:69,73</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:82,86</note>
       </notes>
       <segment>
         <source>Only what clients have fetched through this repository is listed here, what it downloaded after a client asked about a version, and, in mirror mode, what a pass has fetched.</source>
@@ -21686,7 +21795,7 @@
     </unit>
     <unit id="files.virtual-note">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:100,102</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:113,115</note>
       </notes>
       <segment>
         <source>A virtual repository stores only what it generates itself, such as an index; the files of its members are on their pages.</source>
@@ -21695,7 +21804,7 @@
     </unit>
     <unit id="files.raw-note">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:102,105</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:115,118</note>
       </notes>
       <segment>
         <source>The raw files of the repository, as Quader stores them.</source>
@@ -21704,7 +21813,7 @@
     </unit>
     <unit id="repo.content.folder-path">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:111,113</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:124,126</note>
       </notes>
       <segment>
         <source>Folder path</source>
@@ -21713,8 +21822,8 @@
     </unit>
     <unit id="files.root">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:115,116</note>
-        <note category="location">src/app/features/repositories/content/repository-content.html:117,119</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:128,129</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:130,132</note>
       </notes>
       <segment>
         <source>Files</source>
@@ -21723,7 +21832,7 @@
     </unit>
     <unit id="files.download">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:163,164</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:176,177</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -21732,7 +21841,7 @@
     </unit>
     <unit id="files.delete">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:169,170</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:182,183</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -21741,8 +21850,8 @@
     </unit>
     <unit id="repo.deleting">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:181,182</note>
-        <note category="location">src/app/features/repositories/repository-detail.html:556,557</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:194,195</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:572,573</note>
         <note category="location">src/app/features/repositories/repository-list.html:247,248</note>
       </notes>
       <segment>
@@ -21752,7 +21861,7 @@
     </unit>
     <unit id="repo.content.upstream">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:224</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:237</note>
       </notes>
       <segment>
         <source>Caches</source>
@@ -21761,7 +21870,7 @@
     </unit>
     <unit id="repo.content.resolves-from">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.html:229,230</note>
+        <note category="location">src/app/features/repositories/content/repository-content.html:242,243</note>
       </notes>
       <segment>
         <source>Resolves from</source>
@@ -21770,7 +21879,7 @@
     </unit>
     <unit id="repo.content.sentence.remote">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:161</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:166</note>
       </notes>
       <segment>
         <source>A cache of another registry. It lists what clients have fetched through it.</source>
@@ -21779,7 +21888,7 @@
     </unit>
     <unit id="repo.content.sentence.virtual">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:163</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:168</note>
       </notes>
       <segment>
         <source>Combines other repositories behind one address. It lists what they resolve to.</source>
@@ -21788,7 +21897,7 @@
     </unit>
     <unit id="repo.content.sentence.local2">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:165</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:170</note>
       </notes>
       <segment>
         <source>Holds what is published to it.</source>
@@ -21797,7 +21906,7 @@
     </unit>
     <unit id="repo.content.files-address">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:218</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:237</note>
       </notes>
       <segment>
         <source>Address for downloads by path (curl, wget)</source>
@@ -21806,7 +21915,7 @@
     </unit>
     <unit id="repo.content.copy-files-address">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:219</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:238</note>
       </notes>
       <segment>
         <source>Copy address for downloads by path</source>
@@ -21815,7 +21924,7 @@
     </unit>
     <unit id="repo.content.more">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:232</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:251</note>
       </notes>
       <segment>
         <source>More actions</source>
@@ -21824,7 +21933,7 @@
     </unit>
     <unit id="repo.content.details">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:233</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:252</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -21833,7 +21942,7 @@
     </unit>
     <unit id="repo.content.details-text2">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:234</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:253</note>
       </notes>
       <segment>
         <source>Further addresses, and where this repository fetches from or what it resolves from.</source>
@@ -21842,7 +21951,7 @@
     </unit>
     <unit id="files.trail.between">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:281</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:301</note>
       </notes>
       <segment>
         <source>Show the folders in between</source>
@@ -21851,7 +21960,7 @@
     </unit>
     <unit id="files.delete.progress">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:338</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:358</note>
       </notes>
       <segment>
         <source>Deleting items</source>
@@ -21860,7 +21969,7 @@
     </unit>
     <unit id="files.copy-path">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:339</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:359</note>
       </notes>
       <segment>
         <source>Copy path</source>
@@ -21869,7 +21978,7 @@
     </unit>
     <unit id="files.delete.folder-many">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:401</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:423</note>
       </notes>
       <segment>
         <source>The folder holds more than <ph id="0" equiv="limit" disp="TYPE_TO_CONFIRM_ABOVE"/> items. They are deleted for good.</source>
@@ -21878,7 +21987,7 @@
     </unit>
     <unit id="files.delete.folder">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:402</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:424</note>
       </notes>
       <segment>
         <source>The folder holds <ph id="0" equiv="count" disp="count"/> items. They are deleted for good.</source>
@@ -21887,7 +21996,7 @@
     </unit>
     <unit id="files.delete.file">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:410</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:432</note>
       </notes>
       <segment>
         <source>The file is deleted for good.</source>
@@ -21896,7 +22005,7 @@
     </unit>
     <unit id="files.delete.title">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:413</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:435</note>
       </notes>
       <segment>
         <source>Delete <ph id="0" equiv="path" disp="path"/>?</source>
@@ -21905,7 +22014,7 @@
     </unit>
     <unit id="files.delete.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:415</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:437</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -21914,8 +22023,8 @@
     </unit>
     <unit id="files.deleted">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:423</note>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:433</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:445</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:455</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="path" disp="path"/> deleted.</source>
@@ -21924,7 +22033,7 @@
     </unit>
     <unit id="files.delete.failed">
       <notes>
-        <note category="location">src/app/features/repositories/content/repository-content.ts:434</note>
+        <note category="location">src/app/features/repositories/content/repository-content.ts:456</note>
       </notes>
       <segment>
         <source>The deletion failed. Some items may be gone.</source>
@@ -24636,7 +24745,7 @@
         <note category="location">src/app/features/repositories/mirror-settings.ts:45</note>
         <note category="location">src/app/features/repositories/repository-create.html:172,173</note>
         <note category="location">src/app/features/repositories/repository-detail.html:218</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:470</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:474</note>
       </notes>
       <segment>
         <source>Mirror</source>
@@ -25809,9 +25918,18 @@
         <target>Downloads</target>
       </segment>
     </unit>
+    <unit id="route.repositories.upstream.title">
+      <notes>
+        <note category="location">src/app/features/repositories/repositories.routes.ts:100</note>
+      </notes>
+      <segment>
+        <source>Upstream</source>
+        <target>Upstream</target>
+      </segment>
+    </unit>
     <unit id="route.repositories.settings.title">
       <notes>
-        <note category="location">src/app/features/repositories/repositories.routes.ts:103</note>
+        <note category="location">src/app/features/repositories/repositories.routes.ts:112</note>
       </notes>
       <segment>
         <source>Settings</source>
@@ -25820,7 +25938,7 @@
     </unit>
     <unit id="route.service-accounts.detail.title">
       <notes>
-        <note category="location">src/app/features/repositories/repositories.routes.ts:110</note>
+        <note category="location">src/app/features/repositories/repositories.routes.ts:119</note>
         <note category="location">src/app/features/service-accounts/service-accounts.routes.ts:12</note>
         <note category="location">src/app/features/service-accounts/service-accounts.routes.ts:29</note>
       </notes>
@@ -25928,8 +26046,8 @@
         <note category="location">src/app/features/repositories/repository-create.html:74,76</note>
         <note category="location">src/app/features/repositories/repository-create.ts:607</note>
         <note category="location">src/app/features/repositories/repository-detail.html:87,89</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:466</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:491</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:470</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:495</note>
       </notes>
       <segment>
         <source>Description (optional)</source>
@@ -26014,9 +26132,9 @@
       <notes>
         <note category="location">src/app/features/repositories/repository-create.html:159,160</note>
         <note category="location">src/app/features/repositories/repository-create.ts:609</note>
-        <note category="location">src/app/features/repositories/repository-detail.html:373,374</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:476</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:493</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:389,390</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:480</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:497</note>
       </notes>
       <segment>
         <source>Administrator notes</source>
@@ -26035,8 +26153,8 @@
     <unit id="repo.group.access">
       <notes>
         <note category="location">src/app/features/repositories/repository-create.html:168,169</note>
-        <note category="location">src/app/features/repositories/repository-detail.html:295,296</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:474</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:311,312</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:478</note>
       </notes>
       <segment>
         <source>Access details</source>
@@ -26187,7 +26305,7 @@
     <unit id="repo.detail.api.copy-request">
       <notes>
         <note category="location">src/app/features/repositories/repository-create.ts:432</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:412</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:416</note>
       </notes>
       <segment>
         <source>Copy the request</source>
@@ -26215,7 +26333,7 @@
     <unit id="repo.field.include">
       <notes>
         <note category="location">src/app/features/repositories/repository-create.ts:611</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:495</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:499</note>
         <note category="location">src/app/features/repositories/repository-fields.ts:46,48</note>
       </notes>
       <segment>
@@ -26226,7 +26344,7 @@
     <unit id="repo.field.exclude">
       <notes>
         <note category="location">src/app/features/repositories/repository-create.ts:613</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:497</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:501</note>
         <note category="location">src/app/features/repositories/repository-fields.ts:63,65</note>
       </notes>
       <segment>
@@ -26237,7 +26355,7 @@
     <unit id="repo.field.hide">
       <notes>
         <note category="location">src/app/features/repositories/repository-create.ts:615</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:499</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:503</note>
         <note category="location">src/app/features/repositories/repository-fields.ts:105,107</note>
       </notes>
       <segment>
@@ -26264,6 +26382,133 @@
         <target>Geben Sie die Adresse der Registry an, etwa https://registry.example.com/.</target>
       </segment>
     </unit>
+    <unit id="delivery.heading">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-delivery.ts:36,37</note>
+      </notes>
+      <segment>
+        <source>Delivery</source>
+        <target>Auslieferung</target>
+      </segment>
+    </unit>
+    <unit id="delivery.hint">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-delivery.ts:38,39</note>
+      </notes>
+      <segment>
+        <source>What this repository delivers of its upstream, and what it fetches to examine.</source>
+        <target>Was dieses Repository von seinem Upstream ausliefert und was es zur Prüfung holt.</target>
+      </segment>
+    </unit>
+    <unit id="delivery.mode">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-delivery.ts:47,48</note>
+      </notes>
+      <segment>
+        <source>Delivery mode</source>
+        <target>Auslieferungsmodus</target>
+      </segment>
+    </unit>
+    <unit id="delivery.rules-link">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-delivery.ts:57,59</note>
+      </notes>
+      <segment>
+        <source>The rules are set on the tab Upstream</source>
+        <target>Die Regeln werden im Reiter Upstream gesetzt</target>
+      </segment>
+    </unit>
+    <unit id="delivery.examine">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-delivery.ts:61,62</note>
+      </notes>
+      <segment>
+        <source>Fetch for examination when someone asks</source>
+        <target>Zur Prüfung holen, wenn jemand einen Antrag stellt</target>
+      </segment>
+    </unit>
+    <unit id="delivery.examine-hint">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-delivery.ts:64,66</note>
+      </notes>
+      <segment>
+        <source> A request downloads what it asks for at once, so that it is scanned before anyone decides; it is not delivered until allowed. </source>
+        <target> Ein Antrag lädt das Beantragte sofort herunter, damit es geprüft ist, bevor jemand entscheidet; ausgeliefert wird es erst, wenn es erlaubt ist. </target>
+      </segment>
+    </unit>
+    <unit id="delivery.days">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-delivery.ts:67,69</note>
+      </notes>
+      <segment>
+        <source>Remove what was examined and not allowed after this many days</source>
+        <target>Geprüftes und nicht Erlaubtes nach so vielen Tagen entfernen</target>
+      </segment>
+    </unit>
+    <unit id="repo.settings.save">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-delivery.ts:88,89</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:31,32</note>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:75,76</note>
+        <note category="location">src/app/features/repositories/repository-malware.ts:61,62</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:211,212</note>
+        <note category="location">src/app/features/repositories/virtual-members.html:51,52</note>
+      </notes>
+      <segment>
+        <source>Save changes</source>
+        <target>Änderungen speichern</target>
+      </segment>
+    </unit>
+    <unit id="delivery.save-for">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-delivery.ts:89,91</note>
+      </notes>
+      <segment>
+        <source> (delivery)</source>
+        <target> (Auslieferung)</target>
+      </segment>
+    </unit>
+    <unit id="repo.settings.unsaved">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-delivery.ts:183</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:378</note>
+        <note category="location">src/app/features/repositories/repository-download-links.ts:123</note>
+        <note category="location">src/app/features/repositories/repository-malware.ts:104</note>
+        <note category="location">src/app/features/repositories/repository-signatures.ts:326</note>
+        <note category="location">src/app/features/repositories/repository-visibility.ts:215</note>
+      </notes>
+      <segment>
+        <source>Unsaved changes</source>
+        <target>Ungespeicherte Änderungen</target>
+      </segment>
+    </unit>
+    <unit id="delivery.days-error">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-delivery.ts:192</note>
+      </notes>
+      <segment>
+        <source>Enter a whole number of days from 1 to 365.</source>
+        <target>Geben Sie eine ganze Zahl von Tagen zwischen 1 und 365 ein.</target>
+      </segment>
+    </unit>
+    <unit id="delivery.mode.only-allowed.hint">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-delivery.ts:218</note>
+      </notes>
+      <segment>
+        <source>Nothing is delivered unless a rule allows it. Readers ask for what they need, and those who manage the repository decide.</source>
+        <target>Nichts wird ausgeliefert, außer eine Regel erlaubt es. Leser beantragen, was sie brauchen, und wer das Repository verwaltet, entscheidet.</target>
+      </segment>
+    </unit>
+    <unit id="delivery.mode.all-except-blocked.hint">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-delivery.ts:219</note>
+      </notes>
+      <segment>
+        <source>Every package and version is delivered unless a rule blocks it. This is the default.</source>
+        <target>Jedes Paket und jede Version wird ausgeliefert, außer eine Regel sperrt es. Das ist die Voreinstellung.</target>
+      </segment>
+    </unit>
     <unit id="repo.settings.heading">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:1,2</note>
@@ -26282,19 +26527,6 @@
         <target>Deaktiviert</target>
       </segment>
     </unit>
-    <unit id="repo.settings.save">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:31,32</note>
-        <note category="location">src/app/features/repositories/repository-download-links.ts:75,76</note>
-        <note category="location">src/app/features/repositories/repository-malware.ts:61,62</note>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:211,212</note>
-        <note category="location">src/app/features/repositories/virtual-members.html:51,52</note>
-      </notes>
-      <segment>
-        <source>Save changes</source>
-        <target>Änderungen speichern</target>
-      </segment>
-    </unit>
     <unit id="repo.detail.consumer">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:51,53</note>
@@ -26307,7 +26539,7 @@
     <unit id="repo.col.format">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:56,57</note>
-        <note category="location">src/app/features/repositories/repository-detail.html:461,462</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:477,478</note>
         <note category="location">src/app/features/repositories/repository-list.html:52,53</note>
         <note category="location">src/app/features/repositories/repository-list.html:56</note>
         <note category="location">src/app/features/repositories/repository-list.ts:279</note>
@@ -26378,7 +26610,7 @@
     <unit id="upstream.heading">
       <notes>
         <note category="location">src/app/features/repositories/repository-detail.html:148,149</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:468</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:472</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:81</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:97,98</note>
       </notes>
@@ -26463,7 +26695,7 @@
     </unit>
     <unit id="repo.settings.format-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:267,268</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:283,284</note>
       </notes>
       <segment>
         <source>What the format does differently in this repository. The defaults suit most repositories.</source>
@@ -26472,7 +26704,7 @@
     </unit>
     <unit id="repo.settings.notes-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:375,377</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:391,393</note>
       </notes>
       <segment>
         <source>Notes for the people who configure the repository.</source>
@@ -26481,7 +26713,7 @@
     </unit>
     <unit id="repo.tab.deb-keys">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:388,389</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:404,405</note>
       </notes>
       <segment>
         <source>Signing keys</source>
@@ -26490,7 +26722,7 @@
     </unit>
     <unit id="repo.settings.deb-keys-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:390,391</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:406,407</note>
       </notes>
       <segment>
         <source>The keys that sign the repository&apos;s indexes.</source>
@@ -26499,7 +26731,7 @@
     </unit>
     <unit id="repo.settings.deb-index">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:400</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:416</note>
       </notes>
       <segment>
         <source>Indexes</source>
@@ -26508,7 +26740,7 @@
     </unit>
     <unit id="repo.settings.deb-index-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:401,402</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:417,418</note>
       </notes>
       <segment>
         <source>The state of each suite&apos;s indexes, and a rebuild.</source>
@@ -26517,7 +26749,7 @@
     </unit>
     <unit id="repo.tab.ansible-imports">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:413,414</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:429,430</note>
       </notes>
       <segment>
         <source>Import tasks</source>
@@ -26526,7 +26758,7 @@
     </unit>
     <unit id="repo.settings.imports-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:415,416</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:431,432</note>
       </notes>
       <segment>
         <source>The imports of published collections and their logs.</source>
@@ -26535,7 +26767,7 @@
     </unit>
     <unit id="repo.tab.ansible-tombstones">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:426,427</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:442,443</note>
       </notes>
       <segment>
         <source>Tombstones</source>
@@ -26544,7 +26776,7 @@
     </unit>
     <unit id="repo.settings.tombstones-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:428,429</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:444,445</note>
       </notes>
       <segment>
         <source>Deleted collection versions whose names stay taken.</source>
@@ -26553,7 +26785,7 @@
     </unit>
     <unit id="repo.settings.service-accounts">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:440,441</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:456,457</note>
       </notes>
       <segment>
         <source>Service accounts</source>
@@ -26562,7 +26794,7 @@
     </unit>
     <unit id="repo.settings.service-accounts-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:442,443</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:458,459</note>
       </notes>
       <segment>
         <source>Accounts that hold their rights on this repository and nowhere else, each with its technical tokens.</source>
@@ -26571,7 +26803,7 @@
     </unit>
     <unit id="repo.settings.details">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:455</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:471</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:431</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:450</note>
       </notes>
@@ -26582,7 +26814,7 @@
     </unit>
     <unit id="repo.settings.details-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:456,459</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:472,475</note>
       </notes>
       <segment>
         <source>The class, the format, the layout and the dates of the repository.</source>
@@ -26591,7 +26823,7 @@
     </unit>
     <unit id="repo.detail.layout">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:463,464</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:479,480</note>
       </notes>
       <segment>
         <source>Layout</source>
@@ -26600,7 +26832,7 @@
     </unit>
     <unit id="repo.detail.project">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:466,467</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:482,483</note>
       </notes>
       <segment>
         <source>Project</source>
@@ -26609,7 +26841,7 @@
     </unit>
     <unit id="repo.detail.created">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:470,471</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:486,487</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:479,480</note>
       </notes>
       <segment>
@@ -26619,7 +26851,7 @@
     </unit>
     <unit id="repo.detail.updated">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:474,475</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:490,491</note>
         <note category="location">src/app/features/upstream/upstream-registry.html:483,484</note>
       </notes>
       <segment>
@@ -26629,7 +26861,7 @@
     </unit>
     <unit id="repo.col.activity">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:478,479</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:494,495</note>
         <note category="location">src/app/features/repositories/repository-list.ts:355</note>
       </notes>
       <segment>
@@ -26639,7 +26871,7 @@
     </unit>
     <unit id="repo.tab.api">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:487</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:503</note>
       </notes>
       <segment>
         <source>API</source>
@@ -26648,7 +26880,7 @@
     </unit>
     <unit id="repo.settings.api-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:488,490</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:504,506</note>
       </notes>
       <segment>
         <source>The stored document, and each unsaved change as the request that saves it.</source>
@@ -26657,7 +26889,7 @@
     </unit>
     <unit id="repo.detail.api.document">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:490,491</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:506,507</note>
       </notes>
       <segment>
         <source>Stored document</source>
@@ -26666,7 +26898,7 @@
     </unit>
     <unit id="repo.detail.api.patch">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:492,493</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:508,509</note>
       </notes>
       <segment>
         <source>Your change as a request</source>
@@ -26675,7 +26907,7 @@
     </unit>
     <unit id="repo.detail.api.nochange">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:497,499</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:513,515</note>
       </notes>
       <segment>
         <source>Change a setting to see the request that saves it.</source>
@@ -26684,7 +26916,7 @@
     </unit>
     <unit id="repo.detail.advanced">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:507,508</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:523,524</note>
       </notes>
       <segment>
         <source>Advanced</source>
@@ -26693,7 +26925,7 @@
     </unit>
     <unit id="repo.settings.advanced-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:509,511</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:525,527</note>
       </notes>
       <segment>
         <source>Disable, move or delete this repository.</source>
@@ -26702,7 +26934,7 @@
     </unit>
     <unit id="repo.enable.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:516,517</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:532,533</note>
       </notes>
       <segment>
         <source>Enable repository</source>
@@ -26711,7 +26943,7 @@
     </unit>
     <unit id="repo.enable.hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:517,518</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:533,534</note>
       </notes>
       <segment>
         <source>The repository is disabled: it serves nothing and takes no publish.</source>
@@ -26720,8 +26952,8 @@
     </unit>
     <unit id="repo.enable.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:518,520</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:928</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:534,536</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:961</note>
       </notes>
       <segment>
         <source>Enable repository</source>
@@ -26730,7 +26962,7 @@
     </unit>
     <unit id="repo.disable.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:520,521</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:536,537</note>
       </notes>
       <segment>
         <source>Disable repository</source>
@@ -26739,7 +26971,7 @@
     </unit>
     <unit id="repo.disable.hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:521,522</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:537,538</note>
       </notes>
       <segment>
         <source>Clients can no longer download from it or publish to it; its content stays.</source>
@@ -26748,8 +26980,8 @@
     </unit>
     <unit id="repo.disable.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:522,524</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:923</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:538,540</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:956</note>
       </notes>
       <segment>
         <source>Disable repository</source>
@@ -26758,7 +26990,7 @@
     </unit>
     <unit id="repo.move.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:527,528</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:543,544</note>
       </notes>
       <segment>
         <source>Move to another project</source>
@@ -26767,7 +26999,7 @@
     </unit>
     <unit id="repo.move.hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:529,530</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:545,546</note>
       </notes>
       <segment>
         <source> The repository keeps its key and its content; its address changes. You must be Owner of the target project too. </source>
@@ -26776,7 +27008,7 @@
     </unit>
     <unit id="repo.move.target">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:534,535</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:550,551</note>
       </notes>
       <segment>
         <source>Target project</source>
@@ -26785,7 +27017,7 @@
     </unit>
     <unit id="repo.move.action">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:540,541</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:556,557</note>
       </notes>
       <segment>
         <source> Move repository </source>
@@ -26794,7 +27026,7 @@
     </unit>
     <unit id="repo.delete.heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:546,547</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:562,563</note>
       </notes>
       <segment>
         <source>Delete repository</source>
@@ -26803,7 +27035,7 @@
     </unit>
     <unit id="repo.detail.delete-note">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:547,548</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:563,564</note>
       </notes>
       <segment>
         <source>Deleting the repository removes it and everything in it for good. It runs as a job, and the key stays taken until it has finished.</source>
@@ -26812,7 +27044,7 @@
     </unit>
     <unit id="repo.detail.delete">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:548,550</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:564,566</note>
       </notes>
       <segment>
         <source>Delete repository</source>
@@ -26821,7 +27053,7 @@
     </unit>
     <unit id="wellknown.account.basic-of">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:241</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:245</note>
       </notes>
       <segment>
         <source>Username and password of <ph id="0" equiv="user" disp="remote.username"/></source>
@@ -26830,7 +27062,7 @@
     </unit>
     <unit id="upstream.auth.basic">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:242</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:246</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:716</note>
         <note category="location">src/app/features/upstream/upstream-account.ts:15</note>
       </notes>
@@ -26841,7 +27073,7 @@
     </unit>
     <unit id="upstream.auth.bearer">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:244</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:248</note>
         <note category="location">src/app/features/repositories/upstream-settings.ts:718</note>
         <note category="location">src/app/features/upstream/upstream-account.ts:16</note>
       </notes>
@@ -26852,7 +27084,7 @@
     </unit>
     <unit id="wellknown.account.none">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:246</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:250</note>
       </notes>
       <segment>
         <source>No account</source>
@@ -26861,7 +27093,7 @@
     </unit>
     <unit id="repo.settings.access-hint-remote">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:272</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:276</note>
       </notes>
       <segment>
         <source>What callers without access learn about the repository.</source>
@@ -26870,29 +27102,16 @@
     </unit>
     <unit id="repo.settings.access-hint">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:273</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:277</note>
       </notes>
       <segment>
         <source>Which paths the repository admits, and what callers without access learn about it.</source>
         <target>Welche Pfade das Repository zulässt und was Aufrufer ohne Zugriff davon erfahren.</target>
       </segment>
     </unit>
-    <unit id="repo.settings.unsaved">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:374</note>
-        <note category="location">src/app/features/repositories/repository-download-links.ts:123</note>
-        <note category="location">src/app/features/repositories/repository-malware.ts:104</note>
-        <note category="location">src/app/features/repositories/repository-signatures.ts:326</note>
-        <note category="location">src/app/features/repositories/repository-visibility.ts:215</note>
-      </notes>
-      <segment>
-        <source>Unsaved changes</source>
-        <target>Ungespeicherte Änderungen</target>
-      </segment>
-    </unit>
     <unit id="repo.detail.api.copy-document">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:411</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:415</note>
       </notes>
       <segment>
         <source>Copy the stored document</source>
@@ -26901,7 +27120,7 @@
     </unit>
     <unit id="repo.settings.format-heading">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:481</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:485</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="format" disp="this.formatLabel()"/> settings</source>
@@ -26910,8 +27129,8 @@
     </unit>
     <unit id="repo.edit.saved">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:575</note>
-        <note category="location">src/app/features/repositories/repository-detail.ts:601</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:579</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:605</note>
       </notes>
       <segment>
         <source>Repository saved.</source>
@@ -26920,7 +27139,7 @@
     </unit>
     <unit id="repo.visibility.saved">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:663</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:667</note>
       </notes>
       <segment>
         <source>Visibility saved.</source>
@@ -26929,7 +27148,7 @@
     </unit>
     <unit id="repo.malware.saved-on">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:725</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:729</note>
       </notes>
       <segment>
         <source>Only checked artifacts can be downloaded from this repository now.</source>
@@ -26938,7 +27157,7 @@
     </unit>
     <unit id="repo.malware.saved-off">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:726</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:730</note>
       </notes>
       <segment>
         <source>This repository follows the installation&apos;s malware setting again.</source>
@@ -26947,7 +27166,7 @@
     </unit>
     <unit id="repo.links.saved-on">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:788</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:792</note>
       </notes>
       <segment>
         <source>Large downloads of this repository may go by signed links again.</source>
@@ -26956,16 +27175,34 @@
     </unit>
     <unit id="repo.links.saved-off">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:789</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:793</note>
       </notes>
       <segment>
         <source>Quader delivers every download of this repository itself now.</source>
         <target>Quader liefert jetzt jeden Download dieses Repositorys selbst aus.</target>
       </segment>
     </unit>
+    <unit id="delivery.saved-only">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.ts:821</note>
+      </notes>
+      <segment>
+        <source>Saved. The repository delivers only what is allowed.</source>
+        <target>Gespeichert. Das Repository liefert nur Erlaubtes aus.</target>
+      </segment>
+    </unit>
+    <unit id="delivery.saved-all">
+      <notes>
+        <note category="location">src/app/features/repositories/repository-detail.ts:822</note>
+      </notes>
+      <segment>
+        <source>Saved. The repository delivers everything except what is blocked.</source>
+        <target>Gespeichert. Das Repository liefert alles außer Gesperrtem aus.</target>
+      </segment>
+    </unit>
     <unit id="repo.members.saved">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:823</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:856</note>
       </notes>
       <segment>
         <source>Members saved.</source>
@@ -26974,7 +27211,7 @@
     </unit>
     <unit id="mirror.paused-notice">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:852</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:885</note>
       </notes>
       <segment>
         <source>Mirror paused.</source>
@@ -26983,7 +27220,7 @@
     </unit>
     <unit id="mirror.resumed-notice">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:852</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:885</note>
       </notes>
       <segment>
         <source>Mirror resumed.</source>
@@ -26992,7 +27229,7 @@
     </unit>
     <unit id="repo.disable.title">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:919</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:952</note>
       </notes>
       <segment>
         <source>Disable repository <ph id="0" equiv="key" disp="this.ref()"/>?</source>
@@ -27001,7 +27238,7 @@
     </unit>
     <unit id="repo.disable.text">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:921</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:954</note>
       </notes>
       <segment>
         <source>Clients can no longer download from it or publish to it, and virtual repositories skip it, until it is enabled again. Its content stays.</source>
@@ -27010,7 +27247,7 @@
     </unit>
     <unit id="repo.enable.title">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:926</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:959</note>
       </notes>
       <segment>
         <source>Enable repository <ph id="0" equiv="key" disp="this.ref()"/>?</source>
@@ -27019,7 +27256,7 @@
     </unit>
     <unit id="repo.enable.text">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:927</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:960</note>
       </notes>
       <segment>
         <source>Clients can download from it and publish to it again.</source>
@@ -27028,7 +27265,7 @@
     </unit>
     <unit id="repo.disable.done">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:961</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:994</note>
       </notes>
       <segment>
         <source>Repository <ph id="0" equiv="key" disp="this.ref()"/> disabled.</source>
@@ -27037,7 +27274,7 @@
     </unit>
     <unit id="repo.enable.done">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:962</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:995</note>
       </notes>
       <segment>
         <source>Repository <ph id="0" equiv="key" disp="this.ref()"/> enabled.</source>
@@ -27046,7 +27283,7 @@
     </unit>
     <unit id="repo.delete.title">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:968</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1001</note>
         <note category="location">src/app/features/repositories/repository-list.ts:438</note>
       </notes>
       <segment>
@@ -27056,7 +27293,7 @@
     </unit>
     <unit id="repo.delete.text">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:970</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1003</note>
         <note category="location">src/app/features/repositories/repository-list.ts:440</note>
       </notes>
       <segment>
@@ -27066,7 +27303,7 @@
     </unit>
     <unit id="repo.delete.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:972</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1005</note>
         <note category="location">src/app/features/repositories/repository-list.ts:442</note>
       </notes>
       <segment>
@@ -27076,7 +27313,7 @@
     </unit>
     <unit id="repo.move.choose">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:998</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1031</note>
       </notes>
       <segment>
         <source>Choose a project</source>
@@ -27085,7 +27322,7 @@
     </unit>
     <unit id="repo.move.title">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:1016</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1049</note>
       </notes>
       <segment>
         <source>Move repository <ph id="0" equiv="key" disp="this.ref()"/> to project <ph id="1" equiv="project" disp="target"/>?</source>
@@ -27094,7 +27331,7 @@
     </unit>
     <unit id="repo.move.text">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:1018</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1051</note>
       </notes>
       <segment>
         <source>The repository gets a new address; clients must switch to it. Policies, pins, virtual memberships and CI mappings that name it in this project stop applying, and the move is refused while any of them exists.</source>
@@ -27103,7 +27340,7 @@
     </unit>
     <unit id="repo.move.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:1020</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1053</note>
       </notes>
       <segment>
         <source>Move repository</source>
@@ -27112,7 +27349,7 @@
     </unit>
     <unit id="repo.move.done">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:1029</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1062</note>
       </notes>
       <segment>
         <source>Repository moved to project <ph id="0" equiv="project" disp="target"/>.</source>
@@ -27121,7 +27358,7 @@
     </unit>
     <unit id="repo.delete.failed">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:1043</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1076</note>
         <note category="location">src/app/features/repositories/repository-list.ts:487</note>
       </notes>
       <segment>
@@ -27131,7 +27368,7 @@
     </unit>
     <unit id="repo.delete.done">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:1048</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1081</note>
         <note category="location">src/app/features/repositories/repository-list.ts:477</note>
       </notes>
       <segment>
@@ -27141,7 +27378,7 @@
     </unit>
     <unit id="repo.delete.progress">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:1053</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1086</note>
         <note category="location">src/app/features/repositories/repository-list.ts:389</note>
       </notes>
       <segment>
@@ -27151,7 +27388,7 @@
     </unit>
     <unit id="repo.gate.saved-on">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:1059</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1092</note>
       </notes>
       <segment>
         <source>Only artifacts with a verified signature can be downloaded from this repository now.</source>
@@ -27160,7 +27397,7 @@
     </unit>
     <unit id="repo.gate.saved-off">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:1062</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1095</note>
       </notes>
       <segment>
         <source>This repository serves artifacts whatever their signatures say again.</source>
@@ -27169,7 +27406,7 @@
     </unit>
     <unit id="repo.signatures.saved-off">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:1065</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1098</note>
       </notes>
       <segment>
         <source>Quader no longer fetches the upstream&apos;s signatures for this repository.</source>
@@ -27178,7 +27415,7 @@
     </unit>
     <unit id="repo.signatures.saved-on">
       <notes>
-        <note category="location">src/app/features/repositories/repository-detail.ts:1066</note>
+        <note category="location">src/app/features/repositories/repository-detail.ts:1099</note>
       </notes>
       <segment>
         <source>Quader fetches the upstream&apos;s signatures for this repository again.</source>
@@ -28528,6 +28765,1932 @@
       <segment>
         <source>None</source>
         <target>Keine</target>
+      </segment>
+    </unit>
+    <unit id="requests.title">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:40,41</note>
+      </notes>
+      <segment>
+        <source>Requests</source>
+        <target>Anträge</target>
+      </segment>
+    </unit>
+    <unit id="requests.title-mine">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:42,44</note>
+      </notes>
+      <segment>
+        <source>Your requests</source>
+        <target>Ihre Anträge</target>
+      </segment>
+    </unit>
+    <unit id="requests.every-version">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:57,59</note>
+      </notes>
+      <segment>
+        <source>every version</source>
+        <target>jede Version</target>
+      </segment>
+    </unit>
+    <unit id="requests.refusals">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:68,70</note>
+      </notes>
+      <segment>
+        <source>{VAR_PLURAL, plural, =1 {refused to clients once} other {refused to clients <ph id="0" equiv="INTERPOLATION"/> times}}</source>
+        <target>{VAR_PLURAL, plural, =1 {Clients einmal verweigert} other {Clients <ph id="0" equiv="INTERPOLATION"/>-mal verweigert}}</target>
+      </segment>
+    </unit>
+    <unit id="requests.examined">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:76</note>
+      </notes>
+      <segment>
+        <source>Examined <ph id="0" equiv="INTERPOLATION" disp="{{ x.version }}"/></source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ x.version }}"/> geprüft</target>
+      </segment>
+    </unit>
+    <unit id="requests.verdicts">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:76,77</note>
+      </notes>
+      <segment>
+        <source>Verdicts</source>
+        <target>Prüfergebnisse</target>
+      </segment>
+    </unit>
+    <unit id="requests.examination">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:83</note>
+      </notes>
+      <segment>
+        <source>Examination</source>
+        <target>Prüfung</target>
+      </segment>
+    </unit>
+    <unit id="requests.examination-refused">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:87,88</note>
+      </notes>
+      <segment>
+        <source>Not examined</source>
+        <target>Nicht geprüft</target>
+      </segment>
+    </unit>
+    <unit id="requests.not-examined">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:89,91</note>
+      </notes>
+      <segment>
+        <source>Not examined</source>
+        <target>Nicht geprüft</target>
+      </segment>
+    </unit>
+    <unit id="requests.declined-because">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:98</note>
+      </notes>
+      <segment>
+        <source>Declined</source>
+        <target>Abgelehnt</target>
+      </segment>
+    </unit>
+    <unit id="requests.allow">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:113,114</note>
+      </notes>
+      <segment>
+        <source>Allow…</source>
+        <target>Erlauben …</target>
+      </segment>
+    </unit>
+    <unit id="requests.decline">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:114,115</note>
+      </notes>
+      <segment>
+        <source>Decline…</source>
+        <target>Ablehnen …</target>
+      </segment>
+    </unit>
+    <unit id="requests.withdraw">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:119</note>
+      </notes>
+      <segment>
+        <source>Withdraw</source>
+        <target>Zurückziehen</target>
+      </segment>
+    </unit>
+    <unit id="requests.more">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:126,128</note>
+      </notes>
+      <segment>
+        <source>Load more</source>
+        <target>Mehr laden</target>
+      </segment>
+    </unit>
+    <unit id="requests.state.open">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:264</note>
+      </notes>
+      <segment>
+        <source>Open</source>
+        <target>Offen</target>
+      </segment>
+    </unit>
+    <unit id="requests.state.allowed">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:266</note>
+      </notes>
+      <segment>
+        <source>Allowed</source>
+        <target>Erlaubt</target>
+      </segment>
+    </unit>
+    <unit id="requests.state.declined">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:268</note>
+      </notes>
+      <segment>
+        <source>Declined</source>
+        <target>Abgelehnt</target>
+      </segment>
+    </unit>
+    <unit id="requests.state.withdrawn">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:270</note>
+      </notes>
+      <segment>
+        <source>Withdrawn</source>
+        <target>Zurückgezogen</target>
+      </segment>
+    </unit>
+    <unit id="requests.asked-by-you">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:277</note>
+      </notes>
+      <segment>
+        <source>asked by you</source>
+        <target>von Ihnen beantragt</target>
+      </segment>
+    </unit>
+    <unit id="requests.asked-by-one">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:279</note>
+      </notes>
+      <segment>
+        <source>asked by <ph id="0" equiv="name" disp="name"/></source>
+        <target>beantragt von <ph id="0" equiv="name" disp="name"/></target>
+      </segment>
+    </unit>
+    <unit id="requests.asked-by-a-person">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:281</note>
+      </notes>
+      <segment>
+        <source>asked by 1 person</source>
+        <target>von 1 Person beantragt</target>
+      </segment>
+    </unit>
+    <unit id="requests.asked-by-many">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:282</note>
+      </notes>
+      <segment>
+        <source>asked by <ph id="0" equiv="count" disp="r.askerCount"/> people</source>
+        <target>von <ph id="0" equiv="count" disp="r.askerCount"/> Personen beantragt</target>
+      </segment>
+    </unit>
+    <unit id="requests.menu">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:295</note>
+      </notes>
+      <segment>
+        <source>Actions for <ph id="0" equiv="subject" disp="this.subject(r)"/></source>
+        <target>Aktionen für <ph id="0" equiv="subject" disp="this.subject(r)"/></target>
+      </segment>
+    </unit>
+    <unit id="requests.allowed">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:327</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="subject" disp="this.subject(r)"/> is allowed; its download starts.</source>
+        <target><ph id="0" equiv="subject" disp="this.subject(r)"/> ist erlaubt; der Download beginnt.</target>
+      </segment>
+    </unit>
+    <unit id="requests.declined">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:338</note>
+      </notes>
+      <segment>
+        <source>The request for <ph id="0" equiv="subject" disp="this.subject(r)"/> is declined.</source>
+        <target>Der Antrag auf <ph id="0" equiv="subject" disp="this.subject(r)"/> ist abgelehnt.</target>
+      </segment>
+    </unit>
+    <unit id="requests.withdrawn">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-requests-panel.ts:346</note>
+      </notes>
+      <segment>
+        <source>Your request for <ph id="0" equiv="subject" disp="this.subject(r)"/> is withdrawn.</source>
+        <target>Ihr Antrag auf <ph id="0" equiv="subject" disp="this.subject(r)"/> ist zurückgezogen.</target>
+      </segment>
+    </unit>
+    <unit id="rules.kind.section">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:27</note>
+      </notes>
+      <segment>
+        <source>Sub-section</source>
+        <target>Teilbereich</target>
+      </segment>
+    </unit>
+    <unit id="rules.kind.package">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:29</note>
+      </notes>
+      <segment>
+        <source>Package</source>
+        <target>Paket</target>
+      </segment>
+    </unit>
+    <unit id="rules.kind.version">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:31</note>
+      </notes>
+      <segment>
+        <source>Version</source>
+        <target>Version</target>
+      </segment>
+    </unit>
+    <unit id="rules.effect.allow">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:37</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:67,68</note>
+      </notes>
+      <segment>
+        <source>Allow</source>
+        <target>Erlauben</target>
+      </segment>
+    </unit>
+    <unit id="rules.effect.block">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:37</note>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:68,70</note>
+      </notes>
+      <segment>
+        <source>Block</source>
+        <target>Sperren</target>
+      </segment>
+    </unit>
+    <unit id="rules.title">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:50,51</note>
+      </notes>
+      <segment>
+        <source>Delivery rules</source>
+        <target>Auslieferungsregeln</target>
+      </segment>
+    </unit>
+    <unit id="rules.decides">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:52,53</note>
+      </notes>
+      <segment>
+        <source>The narrowest rule decides; at equal width a block wins. Without a rule, the mode decides.</source>
+        <target>Die engste Regel entscheidet; bei gleicher Breite gewinnt die Sperre. Ohne Regel entscheidet der Modus.</target>
+      </segment>
+    </unit>
+    <unit id="rules.add.pattern">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:58,60</note>
+      </notes>
+      <segment>
+        <source>Sub-section</source>
+        <target>Teilbereich</target>
+      </segment>
+    </unit>
+    <unit id="rules.add.submit">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:70,72</note>
+      </notes>
+      <segment>
+        <source>Add rule</source>
+        <target>Regel hinzufügen</target>
+      </segment>
+    </unit>
+    <unit id="rules.filter">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:78</note>
+      </notes>
+      <segment>
+        <source>Filter rules</source>
+        <target>Regeln filtern</target>
+      </segment>
+    </unit>
+    <unit id="rules.remove">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:117</note>
+      </notes>
+      <segment>
+        <source>Remove</source>
+        <target>Entfernen</target>
+      </segment>
+    </unit>
+    <unit id="rules.close">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:126,129</note>
+      </notes>
+      <segment>
+        <source>Close</source>
+        <target>Schließen</target>
+      </segment>
+    </unit>
+    <unit id="rules.caption">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:187</note>
+      </notes>
+      <segment>
+        <source>Delivery rules of this repository, newest first</source>
+        <target>Auslieferungsregeln dieses Repositorys, neueste zuerst</target>
+      </segment>
+    </unit>
+    <unit id="rules.empty">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:188</note>
+      </notes>
+      <segment>
+        <source>There is no rule yet.</source>
+        <target>Es gibt noch keine Regel.</target>
+      </segment>
+    </unit>
+    <unit id="rules.empty-filtered">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:189</note>
+      </notes>
+      <segment>
+        <source>No rule matches.</source>
+        <target>Keine Regel passt.</target>
+      </segment>
+    </unit>
+    <unit id="rules.add.effect">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:190</note>
+      </notes>
+      <segment>
+        <source>Effect</source>
+        <target>Wirkung</target>
+      </segment>
+    </unit>
+    <unit id="rules.add.pattern-hint">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:191</note>
+      </notes>
+      <segment>
+        <source>A name pattern, such as <ph id="0" equiv="example" disp="this.data.example"/>.</source>
+        <target>Ein Namensmuster, etwa <ph id="0" equiv="example" disp="this.data.example"/>.</target>
+      </segment>
+    </unit>
+    <unit id="rules.col.subject">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:193</note>
+      </notes>
+      <segment>
+        <source>Subject</source>
+        <target>Gegenstand</target>
+      </segment>
+    </unit>
+    <unit id="rules.col.kind">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:194</note>
+      </notes>
+      <segment>
+        <source>Kind</source>
+        <target>Art</target>
+      </segment>
+    </unit>
+    <unit id="rules.col.effect">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:195</note>
+      </notes>
+      <segment>
+        <source>Effect</source>
+        <target>Wirkung</target>
+      </segment>
+    </unit>
+    <unit id="rules.col.by">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:196</note>
+      </notes>
+      <segment>
+        <source>Set by</source>
+        <target>Gesetzt von</target>
+      </segment>
+    </unit>
+    <unit id="rules.col.actions">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:197</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+        <target>Aktionen</target>
+      </segment>
+    </unit>
+    <unit id="rules.added-allow">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:251</note>
+      </notes>
+      <segment>
+        <source>The sub-section <ph id="0" equiv="pattern" disp="pattern"/> is allowed.</source>
+        <target>Der Teilbereich <ph id="0" equiv="pattern" disp="pattern"/> ist erlaubt.</target>
+      </segment>
+    </unit>
+    <unit id="rules.added-block">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:252</note>
+      </notes>
+      <segment>
+        <source>The sub-section <ph id="0" equiv="pattern" disp="pattern"/> is blocked.</source>
+        <target>Der Teilbereich <ph id="0" equiv="pattern" disp="pattern"/> ist gesperrt.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.rule.removed">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/delivery-rules-dialog.ts:271</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:155</note>
+      </notes>
+      <segment>
+        <source>The rule for <ph id="0" equiv="subject" disp="r.subject"/> is removed.</source>
+        <target>Die Regel für <ph id="0" equiv="subject" disp="r.subject"/> ist entfernt.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.versions">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:43,45</note>
+      </notes>
+      <segment>
+        <source>Versions</source>
+        <target>Versionen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.versions-unknown">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:48,51</note>
+      </notes>
+      <segment>
+        <source>Not told by the upstream</source>
+        <target>Vom Upstream nicht genannt</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.packages">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:52,54</note>
+      </notes>
+      <segment>
+        <source>Packages</source>
+        <target>Pakete</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.packages-unknown">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:57,60</note>
+      </notes>
+      <segment>
+        <source>Not told by the upstream</source>
+        <target>Vom Upstream nicht genannt</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.size">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:61,63</note>
+      </notes>
+      <segment>
+        <source>Size</source>
+        <target>Größe</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.size-unknown">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:66,68</note>
+      </notes>
+      <segment>
+        <source>Not told by the upstream</source>
+        <target>Vom Upstream nicht genannt</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.size-unknown-of">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:69,70</note>
+      </notes>
+      <segment>
+        <source>Size of <ph id="0" equiv="INTERPOLATION" disp="{{ p.sizeUnknown }}"/> versions not told by the upstream; the bound of <ph id="1" equiv="INTERPOLATION_1" disp="{{ size(p.bounds.maxBytes) }}"/> stops the download when it is reached.</source>
+        <target>Größe von <ph id="0" equiv="INTERPOLATION" disp="{{ p.sizeUnknown }}"/> Versionen vom Upstream nicht genannt; die Grenze von <ph id="1" equiv="INTERPOLATION_1" disp="{{ size(p.bounds.maxBytes) }}"/> beendet den Download, wenn sie erreicht ist.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.stored">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:72,73</note>
+      </notes>
+      <segment>
+        <source>Stored already</source>
+        <target>Bereits gespeichert</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.not-delivered">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:74,76</note>
+      </notes>
+      <segment>
+        <source>Not delivered here</source>
+        <target>Hier nicht ausgeliefert</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.not-delivered-hint">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:78,81</note>
+      </notes>
+      <segment>
+        <source>Fetched for examination: stored and scanned, not delivered until a rule allows them.</source>
+        <target>Zur Prüfung geholt: gespeichert und geprüft, nicht ausgeliefert, bis eine Regel sie erlaubt.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.bounds">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:86,87</note>
+      </notes>
+      <segment>
+        <source>Bounds</source>
+        <target>Grenzen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.max-versions">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:88,90</note>
+      </notes>
+      <segment>
+        <source>At most this many versions</source>
+        <target>Höchstens so viele Versionen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.max-bytes">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:101,103</note>
+      </notes>
+      <segment>
+        <source>At most this many GiB</source>
+        <target>Höchstens so viele GiB</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.prereleases">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:114,115</note>
+      </notes>
+      <segment>
+        <source>Include pre-releases</source>
+        <target>Vorabversionen einschließen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.loading">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:121,124</note>
+      </notes>
+      <segment>
+        <source>Reading what the download would fetch.</source>
+        <target>Es wird gelesen, was der Download holen würde.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.dialog.cancel">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:125,126</note>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:44,45</note>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:111,112</note>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:201,202</note>
+      </notes>
+      <segment>
+        <source>Cancel</source>
+        <target>Abbrechen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.start">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:126,129</note>
+      </notes>
+      <segment>
+        <source>Start download</source>
+        <target>Download starten</target>
+      </segment>
+    </unit>
+    <unit id="upstream.mode.change">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:7,9</note>
+      </notes>
+      <segment>
+        <source>Change</source>
+        <target>Ändern</target>
+      </segment>
+    </unit>
+    <unit id="upstream.rules">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:11</note>
+      </notes>
+      <segment>
+        <source>Rules</source>
+        <target>Regeln</target>
+      </segment>
+    </unit>
+    <unit id="upstream.search.submit">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:47,48</note>
+      </notes>
+      <segment>
+        <source>Search</source>
+        <target>Suchen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.lookup.exact">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:48,50</note>
+      </notes>
+      <segment>
+        <source>Look up by exact name</source>
+        <target>Nach exaktem Namen nachschlagen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.lookup.submit">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:50,53</note>
+      </notes>
+      <segment>
+        <source>Look up</source>
+        <target>Nachschlagen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.search.names-only">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:55,57</note>
+      </notes>
+      <segment>
+        <source>Names only</source>
+        <target>Nur Namen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.lookup.close">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:67,69</note>
+      </notes>
+      <segment>
+        <source>Close</source>
+        <target>Schließen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.level.root">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:81,83</note>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:83,86</note>
+      </notes>
+      <segment>
+        <source>Upstream</source>
+        <target>Upstream</target>
+      </segment>
+    </unit>
+    <unit id="upstream.level.open">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:111,113</note>
+      </notes>
+      <segment>
+        <source>Open</source>
+        <target>Öffnen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.level.download">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:117,120</note>
+      </notes>
+      <segment>
+        <source>Download this sub-section…</source>
+        <target>Diesen Teilbereich in den Cache laden …</target>
+      </segment>
+    </unit>
+    <unit id="upstream.search.clear">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:122,126</note>
+      </notes>
+      <segment>
+        <source>Clear the search</source>
+        <target>Suche zurücksetzen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.cache.stored">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:189,190</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:123,124</note>
+      </notes>
+      <segment>
+        <source>Stored</source>
+        <target>Gespeichert</target>
+      </segment>
+    </unit>
+    <unit id="upstream.cache.not-stored">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:191,193</note>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:125,128</note>
+      </notes>
+      <segment>
+        <source>Not stored</source>
+        <target>Nicht gespeichert</target>
+      </segment>
+    </unit>
+    <unit id="upstream.start.search-image">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:213,215</note>
+      </notes>
+      <segment>
+        <source>Search the upstream, or look an image up by its full name, to see its tags.</source>
+        <target>Durchsuchen Sie den Upstream oder schlagen Sie ein Image nach seinem vollen Namen nach, um seine Tags zu sehen.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.start.lookup-image">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:215,217</note>
+      </notes>
+      <segment>
+        <source>Look an image up by its full name to see its tags.</source>
+        <target>Schlagen Sie ein Image nach seinem vollen Namen nach, um seine Tags zu sehen.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.start.search">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:218,220</note>
+      </notes>
+      <segment>
+        <source>Search the upstream, or look a package up by its exact name, to see its versions.</source>
+        <target>Durchsuchen Sie den Upstream oder schlagen Sie ein Paket nach seinem exakten Namen nach, um seine Versionen zu sehen.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.start.lookup">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:220,223</note>
+      </notes>
+      <segment>
+        <source>Look a package up by its exact name to see its versions.</source>
+        <target>Schlagen Sie ein Paket nach seinem exakten Namen nach, um seine Versionen zu sehen.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.loading">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.html:225,227</note>
+      </notes>
+      <segment>
+        <source>Reading what the upstream offers.</source>
+        <target>Es wird gelesen, was der Upstream anbietet.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.results.caption">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:164</note>
+      </notes>
+      <segment>
+        <source>Packages of the upstream that match the search</source>
+        <target>Pakete des Upstreams, die zur Suche passen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.level.caption">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:165</note>
+      </notes>
+      <segment>
+        <source>Packages of the upstream at this level</source>
+        <target>Pakete des Upstreams auf dieser Ebene</target>
+      </segment>
+    </unit>
+    <unit id="upstream.col.latest">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:169</note>
+      </notes>
+      <segment>
+        <source>Latest</source>
+        <target>Neueste</target>
+      </segment>
+    </unit>
+    <unit id="upstream.col.state">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:170</note>
+      </notes>
+      <segment>
+        <source>State</source>
+        <target>Zustand</target>
+      </segment>
+    </unit>
+    <unit id="upstream.col.stored">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:171</note>
+      </notes>
+      <segment>
+        <source>Cache</source>
+        <target>Cache</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.title-section">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:311</note>
+      </notes>
+      <segment>
+        <source>The sub-section <ph id="0" equiv="section" disp="path.join(&apos; / &apos;)"/></source>
+        <target>Der Teilbereich <ph id="0" equiv="section" disp="path.join(&apos; / &apos;)"/></target>
+      </segment>
+    </unit>
+    <unit id="upstream.row.open">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:330</note>
+      </notes>
+      <segment>
+        <source>Versions of <ph id="0" equiv="name" disp="h.name"/></source>
+        <target>Versionen von <ph id="0" equiv="name" disp="h.name"/></target>
+      </segment>
+    </unit>
+    <unit id="upstream.results.total-window">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:344</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="total" disp="groupedCount(p.total)"/> hits; the upstream shows at most the first <ph id="1" equiv="window" disp="groupedCount(window)"/></source>
+        <target><ph id="0" equiv="total" disp="groupedCount(p.total)"/> Treffer; der Upstream zeigt höchstens die ersten <ph id="1" equiv="window" disp="groupedCount(window)"/></target>
+      </segment>
+    </unit>
+    <unit id="upstream.results.total">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:346</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="total" disp="groupedCount(p.total)"/> hits</source>
+        <target><ph id="0" equiv="total" disp="groupedCount(p.total)"/> Treffer</target>
+      </segment>
+    </unit>
+    <unit id="upstream.results.withheld-one">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:354</note>
+      </notes>
+      <segment>
+        <source>1 hit is not allowed in this repository; look a package up by its exact name to ask for it.</source>
+        <target>1 Treffer ist in diesem Repository nicht erlaubt; schlagen Sie ein Paket nach seinem exakten Namen nach, um es zu beantragen.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.results.withheld">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:355</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="count" disp="n"/> hits are not allowed in this repository; look a package up by its exact name to ask for it.</source>
+        <target><ph id="0" equiv="count" disp="n"/> Treffer sind in diesem Repository nicht erlaubt; schlagen Sie ein Paket nach seinem exakten Namen nach, um es zu beantragen.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.results.empty">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:359</note>
+      </notes>
+      <segment>
+        <source>No package of the upstream matches “<ph id="0" equiv="query" disp="this.q()"/>”.</source>
+        <target>Kein Paket des Upstreams passt zu „<ph id="0" equiv="query" disp="this.q()"/>“.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.level.empty">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:360</note>
+      </notes>
+      <segment>
+        <source>This level lists no package.</source>
+        <target>Diese Ebene listet kein Paket.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.search.label">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:367</note>
+      </notes>
+      <segment>
+        <source>Search the upstream</source>
+        <target>Upstream durchsuchen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.search.label-index">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:369</note>
+      </notes>
+      <segment>
+        <source>Search the index</source>
+        <target>Index durchsuchen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.lookup.label">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/remote-upstream.ts:371</note>
+      </notes>
+      <segment>
+        <source>Look up by name</source>
+        <target>Nach Namen nachschlagen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.ask.title">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:22,23</note>
+      </notes>
+      <segment>
+        <source>Request <ph id="0" equiv="INTERPOLATION" disp="{{ data.subject }}"/></source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ data.subject }}"/> beantragen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.ask.version">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:27,28</note>
+      </notes>
+      <segment>
+        <source>Those who may allow it in this repository see your request. Once allowed, the version is delivered here.</source>
+        <target>Wer es in diesem Repository erlauben darf, sieht Ihren Antrag. Ist er erlaubt, wird die Version hier ausgeliefert.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.ask.package">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:29,31</note>
+      </notes>
+      <segment>
+        <source>Those who may allow it in this repository see your request. Once allowed, the package is delivered here with every version, future ones included.</source>
+        <target>Wer es in diesem Repository erlauben darf, sieht Ihren Antrag. Ist er erlaubt, wird das Paket hier mit jeder Version ausgeliefert, künftige eingeschlossen.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.ask.note">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:36,38</note>
+      </notes>
+      <segment>
+        <source>Why you need it (optional)</source>
+        <target>Wofür Sie es brauchen (optional)</target>
+      </segment>
+    </unit>
+    <unit id="upstream.ask.note-hint">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:40,43</note>
+      </notes>
+      <segment>
+        <source>Read by those who decide, and by you.</source>
+        <target>Gelesen von denen, die entscheiden, und von Ihnen.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.ask.submit">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:45,47</note>
+      </notes>
+      <segment>
+        <source>Send request</source>
+        <target>Antrag senden</target>
+      </segment>
+    </unit>
+    <unit id="upstream.allow.title">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:75,76</note>
+      </notes>
+      <segment>
+        <source>Allow <ph id="0" equiv="INTERPOLATION" disp="{{ subject() }}"/></source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ subject() }}"/> erlauben</target>
+      </segment>
+    </unit>
+    <unit id="upstream.allow.what">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:80,81</note>
+      </notes>
+      <segment>
+        <source>What is allowed</source>
+        <target>Was erlaubt wird</target>
+      </segment>
+    </unit>
+    <unit id="upstream.allow.as-asked">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:83,84</note>
+      </notes>
+      <segment>
+        <source>This version</source>
+        <target>Diese Version</target>
+      </segment>
+    </unit>
+    <unit id="upstream.allow.as-asked-hint">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:84,85</note>
+      </notes>
+      <segment>
+        <source>Only <ph id="0" equiv="INTERPOLATION" disp="{{ subject() }}"/> is delivered.</source>
+        <target>Nur <ph id="0" equiv="INTERPOLATION" disp="{{ subject() }}"/> wird ausgeliefert.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.allow.as-package">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:88,89</note>
+      </notes>
+      <segment>
+        <source>Every version</source>
+        <target>Jede Version</target>
+      </segment>
+    </unit>
+    <unit id="upstream.allow.as-package-hint">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:89,90</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ data.name }}"/> is delivered with every version, future ones included.</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ data.name }}"/> wird mit jeder Version ausgeliefert, künftige eingeschlossen.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.allow.package-text">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:93,95</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="INTERPOLATION" disp="{{ data.name }}"/> is delivered with every version, future ones included.</source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ data.name }}"/> wird mit jeder Version ausgeliefert, künftige eingeschlossen.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.allow.download-every">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:96,98</note>
+      </notes>
+      <segment>
+        <source>Download every version into the cache now</source>
+        <target>Jede Version jetzt in den Cache laden</target>
+      </segment>
+    </unit>
+    <unit id="upstream.allow.download-hint">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:98,100</note>
+      </notes>
+      <segment>
+        <source>Without it, what was examined is delivered at once and the version asked for is downloaded.</source>
+        <target>Ohne das wird Geprüftes sofort ausgeliefert und die beantragte Version heruntergeladen.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.allow.note">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:103,105</note>
+      </notes>
+      <segment>
+        <source>Note of the rule (optional)</source>
+        <target>Notiz der Regel (optional)</target>
+      </segment>
+    </unit>
+    <unit id="upstream.allow.note-hint">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:107,110</note>
+      </notes>
+      <segment>
+        <source>Seen only by those who may read the rules.</source>
+        <target>Nur für die sichtbar, die die Regeln lesen dürfen.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.allow.submit">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:112,115</note>
+      </notes>
+      <segment>
+        <source>Allow</source>
+        <target>Erlauben</target>
+      </segment>
+    </unit>
+    <unit id="upstream.decline.title">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:181,182</note>
+      </notes>
+      <segment>
+        <source>Decline <ph id="0" equiv="INTERPOLATION" disp="{{ data.subject }}"/></source>
+        <target><ph id="0" equiv="INTERPOLATION" disp="{{ data.subject }}"/> ablehnen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.decline.reason">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:189,190</note>
+      </notes>
+      <segment>
+        <source>Reason</source>
+        <target>Begründung</target>
+      </segment>
+    </unit>
+    <unit id="upstream.decline.reason-hint">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:194,196</note>
+      </notes>
+      <segment>
+        <source>Those who asked read it.</source>
+        <target>Die Antragsteller lesen sie.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.decline.discard">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:197,198</note>
+      </notes>
+      <segment>
+        <source>Discard what was fetched for examination</source>
+        <target>Zur Prüfung Geholtes verwerfen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.decline.submit">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:202,205</note>
+      </notes>
+      <segment>
+        <source>Decline</source>
+        <target>Ablehnen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.decline.reason-required">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:213</note>
+      </notes>
+      <segment>
+        <source>Say why, in a sentence.</source>
+        <target>Nennen Sie den Grund in einem Satz.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.show-downloads">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:109</note>
+      </notes>
+      <segment>
+        <source>Show downloads</source>
+        <target>Downloads anzeigen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.download.queued">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:120</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="subject" disp="subjectText(s)"/> waits for its download into the cache.</source>
+        <target><ph id="0" equiv="subject" disp="subjectText(s)"/> wartet auf den Download in den Cache.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.download.queued-examination">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:121</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="subject" disp="subjectText(s)"/> waits for its download for examination; it is not delivered.</source>
+        <target><ph id="0" equiv="subject" disp="subjectText(s)"/> wartet auf den Download zur Prüfung; es wird nicht ausgeliefert.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.download.bulk-queued">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:135</note>
+      </notes>
+      <segment>
+        <source>The bulk download is queued; its rows wait in the tab Downloads.</source>
+        <target>Der Sammeldownload ist eingereiht; seine Zeilen warten im Reiter Downloads.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.request.created">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:166</note>
+      </notes>
+      <segment>
+        <source>Your request for <ph id="0" equiv="subject" disp="subjectText(s)"/> is sent to those who may allow it.</source>
+        <target>Ihr Antrag auf <ph id="0" equiv="subject" disp="subjectText(s)"/> ist an die gesendet, die ihn erlauben dürfen.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.discard.title">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:172</note>
+      </notes>
+      <segment>
+        <source>Discard <ph id="0" equiv="subject" disp="subjectText(s)"/>?</source>
+        <target><ph id="0" equiv="subject" disp="subjectText(s)"/> verwerfen?</target>
+      </segment>
+    </unit>
+    <unit id="upstream.discard.text">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:173</note>
+      </notes>
+      <segment>
+        <source>The files fetched for examination are removed from the cache. A version the rules deliver is never discarded.</source>
+        <target>Die zur Prüfung geholten Dateien werden aus dem Cache entfernt. Eine Version, die die Regeln ausliefern, wird nie verworfen.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.discard.confirm">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:174</note>
+      </notes>
+      <segment>
+        <source>Discard</source>
+        <target>Verwerfen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.discard.done">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:180</note>
+      </notes>
+      <segment>
+        <source>Discarded: <ph id="0" equiv="versions" disp="out.versions.length"/> versions, <ph id="1" equiv="files" disp="out.files"/> files.</source>
+        <target>Verworfen: <ph id="0" equiv="versions" disp="out.versions.length"/> Versionen, <ph id="1" equiv="files" disp="out.files"/> Dateien.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.rule.allowed-package">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:188</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="subject" disp="subject"/> is allowed with every version, future ones included.</source>
+        <target><ph id="0" equiv="subject" disp="subject"/> ist mit jeder Version erlaubt, künftige eingeschlossen.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.rule.allowed">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:189</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="subject" disp="subject"/> is allowed.</source>
+        <target><ph id="0" equiv="subject" disp="subject"/> ist erlaubt.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.rule.blocked-package">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:192</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="subject" disp="subject"/> is blocked with every version, future ones included.</source>
+        <target><ph id="0" equiv="subject" disp="subject"/> ist mit jeder Version gesperrt, künftige eingeschlossen.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.rule.blocked">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-actions.ts:193</note>
+      </notes>
+      <segment>
+        <source><ph id="0" equiv="subject" disp="subject"/> is blocked.</source>
+        <target><ph id="0" equiv="subject" disp="subject"/> ist gesperrt.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.package.download-every">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:35,36</note>
+      </notes>
+      <segment>
+        <source>Download every version…</source>
+        <target>Jede Version in den Cache laden …</target>
+      </segment>
+    </unit>
+    <unit id="upstream.package.remove-allow">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:37,39</note>
+      </notes>
+      <segment>
+        <source>Remove the allow</source>
+        <target>Erlaubnis entfernen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.package.allow-every">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:39,41</note>
+      </notes>
+      <segment>
+        <source>Allow every version</source>
+        <target>Jede Version erlauben</target>
+      </segment>
+    </unit>
+    <unit id="upstream.package.remove-block">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:42,44</note>
+      </notes>
+      <segment>
+        <source>Remove the block</source>
+        <target>Sperre entfernen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.package.block-every">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:44,46</note>
+      </notes>
+      <segment>
+        <source>Block every version</source>
+        <target>Jede Version sperren</target>
+      </segment>
+    </unit>
+    <unit id="upstream.package.request">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:47,51</note>
+      </notes>
+      <segment>
+        <source>Request every version</source>
+        <target>Jede Version beantragen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.versions.filter">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:58,59</note>
+      </notes>
+      <segment>
+        <source>Filter versions</source>
+        <target>Versionen filtern</target>
+      </segment>
+    </unit>
+    <unit id="upstream.size.not-told">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:99,102</note>
+      </notes>
+      <segment>
+        <source>Not told</source>
+        <target>Nicht genannt</target>
+      </segment>
+    </unit>
+    <unit id="upstream.cache.for-examination">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:121,122</note>
+      </notes>
+      <segment>
+        <source>Stored for examination</source>
+        <target>Zur Prüfung gespeichert</target>
+      </segment>
+    </unit>
+    <unit id="upstream.verdicts.open">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:131,132</note>
+      </notes>
+      <segment>
+        <source>Open the version</source>
+        <target>Version öffnen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.package.loading">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.html:170,172</note>
+      </notes>
+      <segment>
+        <source>Reading the package from the upstream.</source>
+        <target>Das Paket wird vom Upstream gelesen.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.rule.own">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:86</note>
+      </notes>
+      <segment>
+        <source>This version</source>
+        <target>Diese Version</target>
+      </segment>
+    </unit>
+    <unit id="upstream.rule.package">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:88</note>
+      </notes>
+      <segment>
+        <source>The package</source>
+        <target>Das Paket</target>
+      </segment>
+    </unit>
+    <unit id="upstream.versions.empty">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:105</note>
+      </notes>
+      <segment>
+        <source>The upstream lists no version of this package.</source>
+        <target>Der Upstream listet keine Version dieses Pakets.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.versions.empty-filtered">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:106</note>
+      </notes>
+      <segment>
+        <source>No version matches.</source>
+        <target>Keine Version passt.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.col.published">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:113</note>
+      </notes>
+      <segment>
+        <source>Published</source>
+        <target>Veröffentlicht</target>
+      </segment>
+    </unit>
+    <unit id="upstream.col.size">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:114</note>
+      </notes>
+      <segment>
+        <source>Size</source>
+        <target>Größe</target>
+      </segment>
+    </unit>
+    <unit id="upstream.col.delivery">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:115</note>
+      </notes>
+      <segment>
+        <source>Delivery</source>
+        <target>Auslieferung</target>
+      </segment>
+    </unit>
+    <unit id="upstream.col.rule">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:116</note>
+      </notes>
+      <segment>
+        <source>Rule</source>
+        <target>Regel</target>
+      </segment>
+    </unit>
+    <unit id="upstream.col.cache">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:117</note>
+      </notes>
+      <segment>
+        <source>Cache</source>
+        <target>Cache</target>
+      </segment>
+    </unit>
+    <unit id="upstream.col.verdicts">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:120</note>
+      </notes>
+      <segment>
+        <source>Verdicts</source>
+        <target>Prüfergebnisse</target>
+      </segment>
+    </unit>
+    <unit id="upstream.col.actions">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:121</note>
+      </notes>
+      <segment>
+        <source>Actions</source>
+        <target>Aktionen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.versions.showing">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:192</note>
+      </notes>
+      <segment>
+        <source>Showing <ph id="0" equiv="shown" disp="groupedCount(n)"/> of <ph id="1" equiv="total" disp="groupedCount(p.total)"/></source>
+        <target><ph id="0" equiv="shown" disp="groupedCount(n)"/> von <ph id="1" equiv="total" disp="groupedCount(p.total)"/> angezeigt</target>
+      </segment>
+    </unit>
+    <unit id="upstream.act.download">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:235</note>
+      </notes>
+      <segment>
+        <source>Download</source>
+        <target>In den Cache laden</target>
+      </segment>
+    </unit>
+    <unit id="upstream.act.examine">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:237</note>
+      </notes>
+      <segment>
+        <source>Download for examination</source>
+        <target>Zur Prüfung in den Cache laden</target>
+      </segment>
+    </unit>
+    <unit id="upstream.act.allow">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:239</note>
+      </notes>
+      <segment>
+        <source>Allow</source>
+        <target>Erlauben</target>
+      </segment>
+    </unit>
+    <unit id="upstream.act.block">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:241</note>
+      </notes>
+      <segment>
+        <source>Block</source>
+        <target>Sperren</target>
+      </segment>
+    </unit>
+    <unit id="upstream.act.remove-rule">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:243</note>
+      </notes>
+      <segment>
+        <source>Remove rule</source>
+        <target>Regel entfernen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.act.discard">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:245</note>
+      </notes>
+      <segment>
+        <source>Discard</source>
+        <target>Verwerfen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.act.request">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:247</note>
+      </notes>
+      <segment>
+        <source>Request</source>
+        <target>Beantragen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.version.menu">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:252</note>
+      </notes>
+      <segment>
+        <source>Actions for <ph id="0" equiv="name" disp="this.name()"/> <ph id="1" equiv="version" disp="v.version"/></source>
+        <target>Aktionen für <ph id="0" equiv="name" disp="this.name()"/> <ph id="1" equiv="version" disp="v.version"/></target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.title-package">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-package.ts:289</note>
+      </notes>
+      <segment>
+        <source>Every version of <ph id="0" equiv="name" disp="name"/></source>
+        <target>Jede Version von <ph id="0" equiv="name" disp="name"/></target>
+      </segment>
+    </unit>
+    <unit id="upstream.mode.only-allowed">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:10</note>
+      </notes>
+      <segment>
+        <source>Delivers only what is allowed.</source>
+        <target>Liefert nur Erlaubtes aus.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.mode.all-except-blocked">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:11</note>
+      </notes>
+      <segment>
+        <source>Delivers everything except what is blocked.</source>
+        <target>Liefert alles außer Gesperrtem aus.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.mode.only-allowed.name">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:17</note>
+      </notes>
+      <segment>
+        <source>Only what is allowed</source>
+        <target>Nur Erlaubtes</target>
+      </segment>
+    </unit>
+    <unit id="upstream.mode.all-except-blocked.name">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:18</note>
+      </notes>
+      <segment>
+        <source>Everything except what is blocked</source>
+        <target>Alles außer Gesperrtem</target>
+      </segment>
+    </unit>
+    <unit id="upstream.state.blocked">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:36</note>
+      </notes>
+      <segment>
+        <source>Blocked</source>
+        <target>Gesperrt</target>
+      </segment>
+    </unit>
+    <unit id="upstream.state.requested">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:37</note>
+      </notes>
+      <segment>
+        <source>Requested</source>
+        <target>Beantragt</target>
+      </segment>
+    </unit>
+    <unit id="upstream.state.not-allowed">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:38</note>
+      </notes>
+      <segment>
+        <source>Not allowed</source>
+        <target>Nicht erlaubt</target>
+      </segment>
+    </unit>
+    <unit id="upstream.state.allowed">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:40</note>
+      </notes>
+      <segment>
+        <source>Allowed</source>
+        <target>Erlaubt</target>
+      </segment>
+    </unit>
+    <unit id="upstream.state.delivered">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:41</note>
+      </notes>
+      <segment>
+        <source>Delivered</source>
+        <target>Ausgeliefert</target>
+      </segment>
+    </unit>
+    <unit id="upstream.state.rule">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:48</note>
+      </notes>
+      <segment>
+        <source>Rule: <ph id="0" equiv="subject" disp="by.subject"/></source>
+        <target>Regel: <ph id="0" equiv="subject" disp="by.subject"/></target>
+      </segment>
+    </unit>
+    <unit id="upstream.level.scope">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:55</note>
+      </notes>
+      <segment>
+        <source>Scope</source>
+        <target>Scope</target>
+      </segment>
+    </unit>
+    <unit id="upstream.level.namespace">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:57</note>
+      </notes>
+      <segment>
+        <source>Namespace</source>
+        <target>Namespace</target>
+      </segment>
+    </unit>
+    <unit id="upstream.level.project">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:59</note>
+      </notes>
+      <segment>
+        <source>Project</source>
+        <target>Projekt</target>
+      </segment>
+    </unit>
+    <unit id="upstream.level.suite">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:61</note>
+      </notes>
+      <segment>
+        <source>Suite</source>
+        <target>Suite</target>
+      </segment>
+    </unit>
+    <unit id="upstream.level.component">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:63</note>
+      </notes>
+      <segment>
+        <source>Component</source>
+        <target>Komponente</target>
+      </segment>
+    </unit>
+    <unit id="upstream.level.architecture">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:65</note>
+      </notes>
+      <segment>
+        <source>Architecture</source>
+        <target>Architektur</target>
+      </segment>
+    </unit>
+    <unit id="upstream.flag.deprecated">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:75</note>
+      </notes>
+      <segment>
+        <source>Deprecated</source>
+        <target>Veraltet</target>
+      </segment>
+    </unit>
+    <unit id="upstream.flag.yanked">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:77</note>
+      </notes>
+      <segment>
+        <source>Yanked</source>
+        <target>Zurückgezogen</target>
+      </segment>
+    </unit>
+    <unit id="upstream.flag.unlisted">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:79</note>
+      </notes>
+      <segment>
+        <source>Unlisted</source>
+        <target>Nicht gelistet</target>
+      </segment>
+    </unit>
+    <unit id="upstream.flag.prerelease">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:81</note>
+      </notes>
+      <segment>
+        <source>Pre-release</source>
+        <target>Vorabversion</target>
+      </segment>
+    </unit>
+    <unit id="upstream.flag.official">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:83</note>
+      </notes>
+      <segment>
+        <source>Official</source>
+        <target>Offiziell</target>
+      </segment>
+    </unit>
+    <unit id="upstream.flag.verified">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:85</note>
+      </notes>
+      <segment>
+        <source>Verified publisher</source>
+        <target>Verifizierter Herausgeber</target>
+      </segment>
+    </unit>
+    <unit id="upstream.flag.vulnerable">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:87</note>
+      </notes>
+      <segment>
+        <source>Vulnerable</source>
+        <target>Verwundbar</target>
+      </segment>
+    </unit>
+    <unit id="upstream.flag.insecure">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:89</note>
+      </notes>
+      <segment>
+        <source>Insecure</source>
+        <target>Unsicher</target>
+      </segment>
+    </unit>
+    <unit id="upstream.flag.unsigned-index">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:91</note>
+      </notes>
+      <segment>
+        <source>Unsigned index</source>
+        <target>Unsignierter Index</target>
+      </segment>
+    </unit>
+    <unit id="upstream.verdict.none">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:101</note>
+      </notes>
+      <segment>
+        <source>None known</source>
+        <target>Keine bekannt</target>
+      </segment>
+    </unit>
+    <unit id="upstream.verdict.malicious">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:105</note>
+      </notes>
+      <segment>
+        <source>Known as malicious</source>
+        <target>Als schädlich bekannt</target>
+      </segment>
+    </unit>
+    <unit id="upstream.verdict.triage">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:107</note>
+      </notes>
+      <segment>
+        <source>Blocked in triage</source>
+        <target>In der Triage gesperrt</target>
+      </segment>
+    </unit>
+    <unit id="upstream.verdict.missing-data">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:109</note>
+      </notes>
+      <segment>
+        <source>Vulnerability data incomplete</source>
+        <target>Schwachstellendaten unvollständig</target>
+      </segment>
+    </unit>
+    <unit id="upstream.verdict.blocked">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:111</note>
+      </notes>
+      <segment>
+        <source>Blocked: vulnerability</source>
+        <target>Gesperrt: Schwachstelle</target>
+      </segment>
+    </unit>
+    <unit id="upstream.verdict.not-covered.deb">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:125</note>
+      </notes>
+      <segment>
+        <source>Debian packages are not analysed for vulnerabilities.</source>
+        <target>Debian-Pakete werden nicht auf Schwachstellen analysiert.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.verdict.not-covered.ansible">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:127</note>
+      </notes>
+      <segment>
+        <source>Ansible collections are not analysed for vulnerabilities.</source>
+        <target>Ansible-Collections werden nicht auf Schwachstellen analysiert.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.verdict.not-covered.oci">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:129</note>
+      </notes>
+      <segment>
+        <source>An image is analysed for vulnerabilities once its platforms are stored.</source>
+        <target>Ein Image wird auf Schwachstellen analysiert, sobald seine Plattformen gespeichert sind.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.verdict.not-covered">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:131</note>
+      </notes>
+      <segment>
+        <source>This repository&apos;s versions are not analysed for vulnerabilities.</source>
+        <target>Die Versionen dieses Repositorys werden nicht auf Schwachstellen analysiert.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.state.offline-until">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:167</note>
+      </notes>
+      <segment>
+        <source>The upstream is assumed offline until <ph id="0" equiv="time" disp="clockAfter(wait)"/>; Quader retries then.</source>
+        <target>Der Upstream gilt bis <ph id="0" equiv="time" disp="clockAfter(wait)"/> als offline; Quader versucht es dann erneut.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.state.offline-retry">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:168</note>
+      </notes>
+      <segment>
+        <source>The upstream is busy with a client&apos;s fetch or assumed offline; try again in a moment.</source>
+        <target>Der Upstream ist mit dem Abruf eines Clients beschäftigt oder gilt als offline; versuchen Sie es gleich erneut.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.state.offline-mode">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:170</note>
+      </notes>
+      <segment>
+        <source>This repository is in offline mode: it asks its upstream nothing.</source>
+        <target>Dieses Repository ist im Offline-Modus: Es fragt seinen Upstream nichts.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.state.budget-wait">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:173</note>
+      </notes>
+      <segment>
+        <source>The upstream catalogue&apos;s budget is used up; try again in <ph id="0" equiv="seconds" disp="wait"/> s.</source>
+        <target>Das Budget des Upstream-Katalogs ist aufgebraucht; versuchen Sie es in <ph id="0" equiv="seconds" disp="wait"/> s erneut.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.state.budget">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:174</note>
+      </notes>
+      <segment>
+        <source>The upstream catalogue&apos;s budget is used up; try again in a minute.</source>
+        <target>Das Budget des Upstream-Katalogs ist aufgebraucht; versuchen Sie es in einer Minute erneut.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.state.too-large-package">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:177</note>
+      </notes>
+      <segment>
+        <source>This package&apos;s document is larger than the catalogue reads; Quader does not read it for browsing.</source>
+        <target>Das Dokument dieses Pakets ist größer, als der Katalog liest; Quader liest es zum Stöbern nicht.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.state.too-large">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:178</note>
+      </notes>
+      <segment>
+        <source>The upstream&apos;s answer is larger than the catalogue reads; Quader does not read it for browsing.</source>
+        <target>Die Antwort des Upstreams ist größer, als der Katalog liest; Quader liest sie zum Stöbern nicht.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.state.not-offered">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/upstream-words.ts:180</note>
+      </notes>
+      <segment>
+        <source>The upstream of this repository does not answer this.</source>
+        <target>Der Upstream dieses Repositorys beantwortet das nicht.</target>
       </segment>
     </unit>
     <unit id="virtual.intro-upstream">

@@ -247,6 +247,23 @@ With `repositories:write-config`, or with `manage` on the repository (the roles 
 - While a pass is already queued or running the answer is **A pass is already queued or running.** with that job. A paused mirror answers **The mirror is paused. Resume it to run a pass.**, and a repository in pull-through mode says that there is no mirror to run.
 - In the state **No bound** no pass can run: **Run a pass now** and its arrow are disabled, with **No pass runs until the mirror has a bound.** beside them. The state's sentence tells a holder of `repositories:write-config` to set **Mirror only these packages** or a **Storage limit in bytes** in the mirror settings and save; an Owner of the project without it, who keeps the mirror's settings as stored, reads that only an administrator of the installation can set one. **Pause** stays available.
 
+## Delivery of a remote repository
+
+What a remote repository delivers of its upstream is its delivery mode and its rules. The section **Delivery** of the settings page,
+closed at first, holds the mode and the examination's switches; the tab **Upstream** of the repository's page holds the rules, the
+requests and the downloads ahead ([Repositories](../user/repositories.md#the-upstream-of-a-remote-repository)). **Change** on that tab
+opens the section. It needs `repositories:write-config` or the project's Owner; the rules need the role Maintainer or Owner, or the
+system role `admin`. A system repository of the project `upstream` has no section: its rules are the product's.
+
+| UI label | Document key | Default | Meaning |
+|---|---|---|---|
+| **Delivery mode** | `remote.delivery.mode` | **Everything except what is blocked** (`allExceptBlocked`) | **Only what is allowed** (`onlyAllowed`) delivers nothing without a rule that allows it; readers ask for what they need on the tab **Upstream** |
+| **Fetch for examination when someone asks** | `remote.delivery.examineOnRequest` | on | A request downloads what it asks for at once, charged to the person who asked, so that it is scanned before anyone decides; it is not delivered until it is allowed |
+| **Remove what was examined and not allowed after this many days** | `remote.delivery.examinedRetentionDays` | `30` | 1 to 365; a daily task removes what was fetched for examination and is still not delivered after these days |
+
+The section saves these members alone. A rule binds every client, administrators included; a client the rules refuse gets
+`403 not_allowed_in_repository` with a link to the tab, and a virtual repository goes on to its next member.
+
 ## Settings that are set through the API
 
 The UI edits the shared settings, the format settings, the [upstream](#the-upstream-of-a-remote-repository) and the [mirror](#mirror) of a remote repository. The UI also edits the members and the deployment target of a virtual repository. The other members of a remote repository (limits, integrity, the source network), package ownership and namespace claims are set through the management API. The closed section **API** of a repository's settings shows the **Stored document** and, for each section with an unsaved change, the request that saves it.

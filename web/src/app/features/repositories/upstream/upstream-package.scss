@@ -1,0 +1,82 @@
+// A package of the upstream opened in place (R-CUR-018): its head with the state and the acts, the version filter and the versions.
+// Only Quader's tokens, so both schemes follow; the table is the shared data table.
+
+:host {
+  // The column of names of the versions' rows where they stand as blocks. The stacked rows of the list around the package (its
+  // descendant rules) reach these rows too, while this table does not count itself as stacked and measures no names: without a
+  // width of its own it took the outer list's ("Latest", "State"), and "Published" ran into its value (2026-11-24). A table that
+  // stacks by itself sets its own on its host.
+  --quader-stack-names: 7rem;
+
+  display: block;
+  padding: var(--quader-space-2) 0 var(--quader-space-3) var(--quader-space-6);
+}
+
+.package-head {
+  margin-block-end: var(--quader-space-3);
+
+  // A line of facts keeps its own margins (.dot-separated moves itself by the width of a dot).
+  p:not(.dot-separated) {
+    margin: 0 0 var(--quader-space-2);
+    overflow-wrap: anywhere;
+  }
+
+  p.dot-separated {
+    margin-block: 0 var(--quader-space-2);
+  }
+}
+
+.package-tags {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+// The package's acts in a row of their own under its state, wrapping where narrow.
+.acts-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--quader-space-2);
+  margin-block-end: var(--quader-space-2);
+}
+
+.versions-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--quader-space-2) var(--quader-space-4);
+  margin-block-end: var(--quader-space-2);
+}
+
+.filter-field {
+  max-inline-size: 100%;
+  display: flex;
+  flex: 0 1 var(--quader-field-width-name);
+  flex-direction: column;
+  gap: var(--quader-space-1);
+  min-inline-size: 0;
+
+  input {
+    inline-size: 100%;
+  }
+}
+
+.showing {
+  margin: 0;
+}
+
+.version {
+  font-weight: 600;
+}
+
+// Published, size, delivery and cache never break (Q-UI-563): the verdict is the column that wraps.
+td.keep {
+  white-space: nowrap;
+}
+
+.rule-cell code {
+  overflow-wrap: anywhere;
+}
+
+.verdict-cell {
+  overflow-wrap: anywhere;
+}

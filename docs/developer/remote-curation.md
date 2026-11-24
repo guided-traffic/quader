@@ -1,6 +1,6 @@
 # Curating a remote repository: the work packages
 
-Status: specified on 2026-11-23; the contracts package (C), the delivery rules (R2) and the downloads ahead with their queue (R4) built on 2026-11-23 and 2026-11-24, the tab strip and the tab Downloads (R5a) and the requests, examination and retention (R2b) and the upstream catalogue (R3) on 2026-11-24, the rest not. The specification is [spec/remote-curation.md](../spec/remote-curation.md) with the format
+Status: specified on 2026-11-23; the contracts package (C), the delivery rules (R2) and the downloads ahead with their queue (R4) built on 2026-11-23 and 2026-11-24, the tab strip and the tab Downloads (R5a), the requests, examination and retention (R2b), the upstream catalogue (R3) and the tab Upstream with the settings' section Delivery (R5b) on 2026-11-24, the rest (R6) not. The specification is [spec/remote-curation.md](../spec/remote-curation.md) with the format
 pages' requirements (R-NPM-049, R-NUGET-035, R-OCI-038, R-DEB-036, R-ANS-047) and the changed sentences its section "Changes to other
 pages" lists; the security view is [security/remote-curation.md](../security/remote-curation.md). This page cuts the work into packages
 for builders, in the order they can land, each a whole feature that leaves `main` working, with the files and directories each owns so
@@ -38,8 +38,8 @@ that several builders work at once, the contracts between them, and the tests ea
 | **R3 · Upstream catalogue** (built) | R-CUR-007 to R-CUR-009: the catalogue engine (lent upstream that stores nothing, budget, cache, bounds, second hosts), the five formats' catalogues (kit check 22) and the check of `Register` that a remote adapter implements `formats.Catalogue` (Q-CUR-109), the Debian parse's descriptions, the API with the vulnerability verdicts of unstored versions | C | 2 |
 | **R4 · Downloads ahead and the queue** | R-CUR-010 to R-CUR-013: the queue's store, dispatch, run, retries and failures in words; the probe's row; bulks and their expansion; the API; the client failure rows; the charge; a fill without a client is no refused download (Q-CUR-22) | C (the expansion calls the catalogue's interface; its integration case of a bulk lands with whichever of R3 and R4 lands second) | 2 |
 | **R2b · Requests, examination, retention** (built) | R-CUR-014 to R-CUR-016: requests and askers, the examination a request starts, allow and decline, the list with client refusals, discard and the retention task, their events, journal and replay | R2, R4 | 1.5 |
-| **R5a · The tab strip and the tab Downloads** | R-CUR-018: the strip on a remote's page with the three addresses, the tab Downloads with its states, filters, failure detail, retry and cancel | R4 | 1 |
-| **R5b · The tab Upstream and the settings** | R-CUR-018: search, levels, lookup, a package's versions with states and verdicts, the actions, the preview of a bulk, the rule list, the requests panel, the settings section Delivery, the glossary rows | R2, R3, R2b, R5a | 2 |
+| **R5a · The tab strip and the tab Downloads** (built) | R-CUR-018: the strip on a remote's page with the three addresses, the tab Downloads with its states, filters, failure detail, retry and cancel | R4 | 1 |
+| **R5b · The tab Upstream and the settings** (built) | R-CUR-018: search, levels, lookup, a package's versions with states and verdicts, the actions, the preview of a bulk, the rule list, the requests panel, the settings section Delivery, the glossary rows | R2, R3, R2b, R5a | 2 |
 | **R6 · Clients and documents** | the end-to-end case per format in its own leg; the manual's pages (the tabs, curation, the queue); the developer pages this change touches (formats, proxy, mirror) | R5b | 1 |
 
 **Who works at once** (at most four builders): C alone first (half a day); then R2, R3 and R4 side by side; then R2b and R5a side by side
@@ -269,7 +269,7 @@ the examination, the discard and the retention are the same for every format wit
 | Package | Files |
 |---|---|
 | R5a (built) | see the table below |
-| R5b | `web/src/app/features/repositories/upstream/` (search, levels, package, preview dialog, rule list, requests panel), `web/src/app/api/upstream-catalogue-api.ts`, `delivery-rules-api.ts`, `delivery-requests-api.ts`, the section **Delivery** of the settings page (`repository-detail.*`, `settings-sections.ts`), `web/src/locale/GLOSSARY.md` and the messages |
+| R5b (built) | see the second table below |
 
 R5a, built on 2026-11-24 (R-CUR-018, Q-CUR-130 to Q-CUR-133):
 
@@ -294,6 +294,34 @@ failed row opened, with a bulk; R5b, every state of R-CUR-018: a search with sta
 thousands of versions, ghcr.io's lookup only, the upstream down, the budget used up, a too large document, Debian with a suite not read, the
 requests panel, the preview, the rule list, the settings section. Tests: web unit (Vitest, seconds), the UI layout checks gain about 20
 screens (about 60 s).
+
+R5b, built on 2026-11-24 (R-CUR-018, [Q-CUR-150](../spec/remote-curation.md#q-cur-150--the-strip-holds-the-content-upstream-and-downloads-for-every-signed-in-reader-the-strip-counts-the-open-requests-itself)
+to [Q-CUR-155](../spec/remote-curation.md#q-cur-155--the-catalogues-own-states-are-sentences-of-the-screen-the-upstreams-own-sentences-stand-as-the-upstream-wrote-them)).
+No Go and no API change: the screens speak the operations of R2, R3, R4 and R2b as built. What every format shows comes from the
+repository's capabilities (`GET …/upstream`), so a new format adds nothing to the screens but, where it names a level of a new kind or a
+verdict that cannot exist, one word in [upstream-words.ts](../../web/src/app/features/repositories/upstream/upstream-words.ts).
+
+| File | What |
+|---|---|
+| [upstream-catalogue-api.ts](../../web/src/app/api/upstream-catalogue-api.ts), [delivery-rules-api.ts](../../web/src/app/api/delivery-rules-api.ts), [delivery-requests-api.ts](../../web/src/app/api/delivery-requests-api.ts) | the catalogue's five operations (read without the client's retry, so a budget is not spent twice), the rules' list, write and removal, the requests' list, ask, allow, decline, withdraw and the discard; their providers in `providers.ts` (`// >>> T-24 upstream`), their fakes in [fakes-upstream-catalogue.ts](../../web/src/app/api/testing/fakes-upstream-catalogue.ts) |
+| [remote-downloads-api.ts](../../web/src/app/api/remote-downloads-api.ts) | `preview` and `start` (R-CUR-010); the fake's in [fakes-remote-downloads.ts](../../web/src/app/api/testing/fakes-remote-downloads.ts) |
+| [remote-upstream.ts](../../web/src/app/features/repositories/upstream/remote-upstream.ts), `.html`, `.scss` | the tab: the mode's line, the requests, the field of the search and the lookup, the levels, the list of hits opened in place, the catalogue's states; the query in the address |
+| [upstream-package.ts](../../web/src/app/features/repositories/upstream/upstream-package.ts), `.html`, `.scss` | an opened package: its head with its acts, the versions with their filter, paging, states, rule, cache, verdicts and acts |
+| [upstream-actions.ts](../../web/src/app/features/repositories/upstream/upstream-actions.ts) | the tab's acts and the caller's rights (`manage` or `admin`, the fill of a client), provided by the tab; its counter `changed` makes the views read again after a write |
+| [delivery-requests-panel.ts](../../web/src/app/features/repositories/upstream/delivery-requests-panel.ts), [request-dialogs.ts](../../web/src/app/features/repositories/upstream/request-dialogs.ts) | the requests set apart; the dialogs of the ask, the allow and the decline |
+| [delivery-rules-dialog.ts](../../web/src/app/features/repositories/upstream/delivery-rules-dialog.ts), [download-preview-dialog.ts](../../web/src/app/features/repositories/upstream/download-preview-dialog.ts) | the rule list; the preview of a bulk with its bounds |
+| [upstream-words.ts](../../web/src/app/features/repositories/upstream/upstream-words.ts) | the words of the modes, the states, the levels, the flags, the verdicts and the catalogue's refusals |
+| [remote-tabs.ts](../../web/src/app/features/repositories/content/remote-tabs.ts), [repository-content.ts](../../web/src/app/features/repositories/content/repository-content.ts), `.html`, [repositories.routes.ts](../../web/src/app/features/repositories/repositories.routes.ts) | **Upstream** in the strip with its count, the route `…/upstream` |
+| [repository-delivery.ts](../../web/src/app/features/repositories/repository-delivery.ts), `repository-detail.ts`, `.html` (`T-24 delivery`) | the settings' section **Delivery** |
+| [problem-messages-downloads.ts](../../web/src/app/core/http/problem-messages-downloads.ts) | the words of the catalogue's, the rules' and the requests' codes |
+| [upstream.ts](../../web/e2e/renders/upstream.ts), `screens.ts` | the renders: the npm walk of eleven states as three users (German too), an OCI lookup, a Debian remote's suites and search, the OCI remote of this installation with the server's own answers, the section Delivery of two remotes |
+
+Tests and what they cost: [remote-upstream.spec.ts](../../web/src/app/features/repositories/upstream/remote-upstream.spec.ts), web unit,
+twelve cases, about 1.3 s, answers of a few kilobytes in memory; [repository-delivery.spec.ts](../../web/src/app/features/repositories/repository-delivery.spec.ts),
+two cases, about 0.2 s; one case of [remote-downloads.spec.ts](../../web/src/app/features/repositories/downloads/remote-downloads.spec.ts)
+changed for the third tab. The renders gain six screens: about 4 minutes on the development machine, most of it the npm walk; its package
+answers 24 versions, since a page of 100 stacked at 390 px is a picture of about 20,000 px. No Go, no integration or end-to-end case: the
+operations are R2's, R3's, R4's and R2b's and held there; the end-to-end case of each format is R6's.
 
 ## R6 · Clients and documents
 

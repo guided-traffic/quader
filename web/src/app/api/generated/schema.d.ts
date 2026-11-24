@@ -7875,6 +7875,153 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/upstream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * The upstream catalogue's capabilities of a remote repository
+         * @description What a person can see of the repository's upstream (remote-curation.md R-CUR-007, R-CUR-009): how it searches (by the upstream,
+         *     by Quader over an index it holds, or not, with the reason), the levels above a package (or why there are none), whether the
+         *     upstream tells a version's size, and the hosts besides the upstream's the catalogue reaches (from the preset only, R-CUR-008); with
+         *     the delivery mode, the number of rules, the open requests (to those who may set rules) and the queue's rows by state. A capability
+         *     whose upstream did not answer as expected is `none` with its sentence for the cache period. Needs `read` on the repository; a
+         *     repository hidden from the caller answers `404`, a local or virtual one `400 not_applicable`.
+         */
+        get: operations["getUpstreamCatalogue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Search the upstream of a remote repository
+         * @description One page of a text query (R-CUR-007, R-CUR-009), answered by the upstream or over an index Quader holds; nothing is stored in the
+         *     cache (R-CUR-008). Every hit carries the repository's state beside the upstream's facts: `delivery`, `stored`, `request`. In the
+         *     mode `onlyAllowed` a caller who may not set rules sees only the hits whose package is delivered, with `withheld` and its sentence
+         *     (Q-CUR-14). `400 catalogue_not_offered` where the repository has no search, `429 catalogue_budget_exhausted` with `Retry-After`
+         *     when the catalogue's budget of the repository or of the person is used up or the upstream rate limits Quader, `502
+         *     catalogue_answer_too_large` above a bound. Needs `read`; a local or virtual repository answers `400 not_applicable`.
+         */
+        get: operations["searchUpstreamCatalogue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/levels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * List a level of the upstream of a remote repository
+         * @description One page of a level (R-CUR-007, R-CUR-009): the levels below it and the packages directly in it, each package with the
+         *     repository's state. A level is its path joined by `/`, each part URL-encoded; none is the root. Where a level's own names are not
+         *     listable (npm's scopes, Docker Hub's namespaces), the root lists nothing and a level is entered by its name. In the mode
+         *     `onlyAllowed` a caller who may not set rules sees only the delivered packages, with `withheld`. `400 catalogue_not_offered` where
+         *     the upstream lists no levels. Needs `read`; a local or virtual repository answers `400 not_applicable`.
+         */
+        get: operations["listUpstreamLevel"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/package": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Look a package of the upstream up by its exact name
+         * @description A package by its exact name and one page of its versions, newest first by the format's order (R-CUR-007, R-CUR-009): what the
+         *     upstream tells of each without a download (time, size, flags, platforms, digest) and the repository's state of each (`delivery`,
+         *     `stored`, `queued`, `request`). The package document is read from the repository's store when it holds one and otherwise without
+         *     storing it (R-CUR-008). Every reader may look up any package, in either mode, so that a person can ask for it (Q-CUR-14). `404
+         *     catalogue_not_found` when the upstream does not have it. Needs `read`; a local or virtual repository answers `400 not_applicable`.
+         */
+        get: operations["getUpstreamPackage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{projectKey}/repositories/{repoKey}/upstream/vulnerabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * The vulnerability verdicts of versions the repository has not stored
+         * @description The vulnerability verdict of each named version that the repository does not hold, computed as the miss gate computes it
+         *     (R-VULN-015, `EvaluateMiss`): nothing is fetched and nothing is written (R-CUR-009). A version the repository stores answers
+         *     `stored`, whose verdicts are the package API's version view. A format the vulnerability scanning does not cover, or a repository
+         *     whose upstream it does not evaluate, answers `notCovered: true` (R-CUR-014). Needs `read`; a local or virtual repository answers
+         *     `400 not_applicable`. A question, not a change: it needs no CSRF token beyond the session's and writes no event.
+         */
+        post: operations["evaluateUpstreamVulnerabilities"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -16384,6 +16531,174 @@ export interface components {
         };
         RemoteDownloadRetried: {
             retried: number;
+        };
+        /**
+         * @description The upstream catalogue's capabilities of a remote repository (R-CUR-007, R-CUR-009): read per repository, since one format's
+         *     upstreams differ.
+         */
+        UpstreamCatalogue: {
+            /**
+             * @description upstream: the upstream answers a text query; index: Quader answers it over an index it holds; none: no search.
+             * @enum {string}
+             */
+            search: "upstream" | "index" | "none";
+            /** @description The deepest hit the upstream's search reaches; null when it says nothing. */
+            searchWindow: number | null;
+            /** @description What a query matches, one sentence. */
+            searchNote: string | null;
+            /** @description Why there is no search, one sentence. */
+            searchReason: string | null;
+            /** @description The kinds of the levels above a package, outermost first (scope; namespace; project; suite, component, architecture). */
+            levels: string[];
+            /** @description Why the upstream lists no levels; null where the root lists packages or levels. */
+            levelsReason: string | null;
+            /** @enum {string} */
+            sizes: "known" | "perVersion" | "unknown";
+            /** @description The hosts besides the upstream's that the catalogue reaches, from the preset (R-CUR-008); none receives a credential. */
+            hosts: string[];
+            /** @enum {string} */
+            mode: "allExceptBlocked" | "onlyAllowed";
+            /** @description The repository's delivery rules. */
+            rules: number;
+            /** @description The open request entries; null for a caller who may not set rules. */
+            openRequests: number | null;
+            queue: {
+                waiting: number;
+                running: number;
+                failed: number;
+                done: number;
+            };
+            /** @description The caller holds manage on the repository or the system role admin (R-CUR-005). */
+            maySetRules: boolean;
+        };
+        /** @description The open request entry of a subject (R-CUR-015), null for none. */
+        UpstreamRequestState: {
+            /** Format: uuid */
+            id: string;
+            askers: number;
+            /** Format: int64 */
+            refusals: number;
+        } | null;
+        /** @description The queue row of a download of the version that waits or runs (R-CUR-011), null for none. */
+        UpstreamQueued: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            state: "waiting" | "running";
+            origin: string;
+            attempts: number;
+            maxAttempts: number;
+            /** Format: date-time */
+            nextAttemptAt: string | null;
+        } | null;
+        /**
+         * @description A package of a search or a level (R-CUR-009): the upstream's facts as plain text and the repository's state: `delivery` (the
+         *     package's decision of the rules), `stored` (`none`, or `partial` when the repository holds a version of it) and `request`.
+         */
+        UpstreamHit: {
+            /** @description The format's normalized name. */
+            name: string;
+            description: string;
+            latest: string | null;
+            /** Format: date-time */
+            updated: string | null;
+            /** @description deprecated, unlisted, official, verified, insecure, unsigned-index. */
+            flags: string[];
+            delivery: components["schemas"]["DeliveryDecision"];
+            /** @enum {string} */
+            stored: "none" | "partial";
+            request: components["schemas"]["UpstreamRequestState"];
+        };
+        /** @description One page of a text query (R-CUR-007, R-CUR-009). */
+        UpstreamSearchPage: {
+            hits: components["schemas"]["UpstreamHit"][];
+            /** @description The upstream's count; null when it does not say. */
+            total: number | null;
+            nextCursor: string | null;
+            done: boolean;
+            /** @description The upstream's window ends before its total. */
+            truncated: boolean;
+            note: string | null;
+            /** @description In the mode onlyAllowed, the hits of this page a caller who may not set rules does not see (Q-CUR-14). */
+            withheld: number | null;
+            withheldNote: string | null;
+        };
+        /** @description One page of a level (R-CUR-007, R-CUR-009). */
+        UpstreamLevelPage: {
+            levels: string[];
+            packages: components["schemas"]["UpstreamHit"][];
+            total: number | null;
+            nextCursor: string | null;
+            done: boolean;
+            withheld: number | null;
+            withheldNote: string | null;
+        };
+        /**
+         * @description A version of a package as the upstream tells it without a download, with the repository's state: `delivery` (the rules'
+         *     decision), `stored` (`none` or `whole`), `queued` and `request` (R-CUR-009). The version is canonical (R-CUR-006).
+         */
+        UpstreamVersion: {
+            version: string;
+            /** Format: date-time */
+            published: string | null;
+            /**
+             * Format: int64
+             * @description The download's size the upstream announces; null when it does not.
+             */
+            size: number | null;
+            /**
+             * Format: int64
+             * @description The unpacked files' size where the upstream tells only that (npm); never counted as a download's size.
+             */
+            unpackedSize: number | null;
+            /** @description deprecated, yanked, unlisted, prerelease, vulnerable. */
+            flags: string[];
+            platforms: string[];
+            digest: string | null;
+            delivery: components["schemas"]["DeliveryDecision"];
+            /** @enum {string} */
+            stored: "none" | "whole";
+            queued: components["schemas"]["UpstreamQueued"];
+            request: components["schemas"]["UpstreamRequestState"];
+        };
+        /** @description A package looked up by its exact name and one page of its versions (R-CUR-007, R-CUR-009). */
+        UpstreamPackage: {
+            name: string;
+            description: string;
+            /** @description npm's dist-tags; empty for a format without. */
+            tags: {
+                [key: string]: string;
+            };
+            delivery: components["schemas"]["DeliveryDecision"];
+            /** @enum {string} */
+            stored: "none" | "partial";
+            request: components["schemas"]["UpstreamRequestState"];
+            versions: components["schemas"]["UpstreamVersion"][];
+            total: number | null;
+            nextCursor: string | null;
+            done: boolean;
+        };
+        UpstreamVulnerabilitiesRequest: {
+            name: string;
+            versions: string[];
+        };
+        /** @description The vulnerability verdicts of versions the repository has not stored (R-CUR-009, R-VULN-015). */
+        UpstreamVulnerabilities: {
+            /** @description The vulnerability scanning does not evaluate this repository's versions (its format, or its upstream). */
+            notCovered: boolean;
+            versions: {
+                version: string;
+                stored: boolean;
+                /**
+                 * @description none: no block; blocked: the miss gate would refuse it (or report it in the mode report); stored: see the version view.
+                 * @enum {string}
+                 */
+                verdict: "none" | "blocked" | "stored" | "notCovered";
+                /** @description malicious, triage or missing_data. */
+                reason: string | null;
+                advisoryId: string | null;
+                enforced: boolean;
+            }[];
         };
     };
     responses: {
@@ -32959,6 +33274,358 @@ export interface operations {
             401: components["responses"]["Unauthenticated"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getUpstreamCatalogue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The capabilities. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "search": "upstream",
+                     *       "searchWindow": 5250,
+                     *       "searchNote": "The registry ranks names, descriptions, keywords and maintainers; a query takes 2 to 64 characters.",
+                     *       "searchReason": null,
+                     *       "levels": [
+                     *         "scope"
+                     *       ],
+                     *       "levelsReason": null,
+                     *       "sizes": "unknown",
+                     *       "hosts": [
+                     *         "replicate.npmjs.com"
+                     *       ],
+                     *       "mode": "allExceptBlocked",
+                     *       "rules": 2,
+                     *       "openRequests": null,
+                     *       "queue": {
+                     *         "waiting": 0,
+                     *         "running": 1,
+                     *         "failed": 0,
+                     *         "done": 4
+                     *       },
+                     *       "maySetRules": false
+                     *     }
+                     */
+                    "application/json": components["schemas"]["UpstreamCatalogue"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            502: components["responses"]["BadGateway"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    searchUpstreamCatalogue: {
+        parameters: {
+            query: {
+                /** @description The text, 1 to 128 characters after trimming; a format may narrow it (npm takes 2 to 64). */
+                q: string;
+                /** @description Match names only (Debian, as `apt-cache search --names-only`). */
+                namesOnly?: boolean;
+                /** @description Restrict the query to a level where the upstream can; the path joined by `/`, each part URL-encoded. */
+                level?: string;
+                /** @description The `nextCursor` of the previous page; opaque, valid for the same call and arguments. */
+                cursor?: string;
+                /** @description Hits on the page, at most 50. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of hits. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "hits": [
+                     *         {
+                     *           "name": "@tufjs/models",
+                     *           "description": "TUF metadata models",
+                     *           "latest": "5.0.3",
+                     *           "updated": "2026-11-19T22:21:33Z",
+                     *           "flags": [],
+                     *           "delivery": {
+                     *             "delivered": true,
+                     *             "decidedBy": {
+                     *               "mode": "allExceptBlocked"
+                     *             }
+                     *           },
+                     *           "stored": "none",
+                     *           "request": null
+                     *         }
+                     *       ],
+                     *       "total": 4,
+                     *       "nextCursor": "eyJvZmZzZXQiOjJ9",
+                     *       "done": false,
+                     *       "truncated": false,
+                     *       "note": null,
+                     *       "withheld": null,
+                     *       "withheldNote": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["UpstreamSearchPage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            502: components["responses"]["BadGateway"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listUpstreamLevel: {
+        parameters: {
+            query?: {
+                /** @description The level's path joined by `/`, each part URL-encoded; absent for the root. */
+                level?: string;
+                /** @description The `nextCursor` of the previous page; opaque, valid for the same call and arguments. */
+                cursor?: string;
+                /** @description Entries on the page, at most 200. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of the level. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "levels": [],
+                     *       "packages": [
+                     *         {
+                     *           "name": "@tufjs/cli",
+                     *           "description": "",
+                     *           "latest": null,
+                     *           "updated": null,
+                     *           "flags": [],
+                     *           "delivery": {
+                     *             "delivered": true,
+                     *             "decidedBy": {
+                     *               "mode": "allExceptBlocked"
+                     *             }
+                     *           },
+                     *           "stored": "partial",
+                     *           "request": null
+                     *         }
+                     *       ],
+                     *       "total": null,
+                     *       "nextCursor": null,
+                     *       "done": true,
+                     *       "withheld": null,
+                     *       "withheldNote": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["UpstreamLevelPage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            502: components["responses"]["BadGateway"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getUpstreamPackage: {
+        parameters: {
+            query: {
+                /** @description The package's exact name in any spelling the format reads. */
+                name: string;
+                /** @description A substring of the version, applied by Quader. */
+                filter?: string;
+                /** @description The `nextCursor` of the previous page; opaque, valid for the same call and arguments. */
+                cursor?: string;
+                /** @description Versions on the page, at most 100. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The package and one page of its versions. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "name": "left-pad",
+                     *       "description": "String left pad",
+                     *       "tags": {
+                     *         "latest": "1.3.0"
+                     *       },
+                     *       "delivery": {
+                     *         "delivered": true,
+                     *         "decidedBy": {
+                     *           "mode": "allExceptBlocked"
+                     *         }
+                     *       },
+                     *       "stored": "partial",
+                     *       "request": null,
+                     *       "versions": [
+                     *         {
+                     *           "version": "1.3.0",
+                     *           "published": "2018-04-09T00:56:58Z",
+                     *           "size": null,
+                     *           "unpackedSize": null,
+                     *           "flags": [],
+                     *           "platforms": [],
+                     *           "digest": "sha512-VBRr0Rr0ZpYtQmtQ...",
+                     *           "delivery": {
+                     *             "delivered": true,
+                     *             "decidedBy": {
+                     *               "mode": "allExceptBlocked"
+                     *             }
+                     *           },
+                     *           "stored": "whole",
+                     *           "queued": null,
+                     *           "request": null
+                     *         }
+                     *       ],
+                     *       "total": 2,
+                     *       "nextCursor": null,
+                     *       "done": true
+                     *     }
+                     */
+                    "application/json": components["schemas"]["UpstreamPackage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["Unprocessable"];
+            429: components["responses"]["TooManyRequests"];
+            500: components["responses"]["Internal"];
+            502: components["responses"]["BadGateway"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    evaluateUpstreamVulnerabilities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The project key (`^[a-z][a-z0-9]*(?:-+[a-z0-9]+)*$` (2 to 32 characters)), immutable. A project the caller cannot see answers `404`, exactly as a project that does not exist. */
+                projectKey: components["parameters"]["ProjectKey"];
+                /** @description The repository key (R-REPO-002). */
+                repoKey: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "name": "lodash",
+                 *       "versions": [
+                 *         "4.17.20",
+                 *         "4.17.21"
+                 *       ]
+                 *     }
+                 */
+                "application/json": components["schemas"]["UpstreamVulnerabilitiesRequest"];
+            };
+        };
+        responses: {
+            /** @description The verdicts. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "notCovered": false,
+                     *       "versions": [
+                     *         {
+                     *           "version": "4.17.20",
+                     *           "stored": false,
+                     *           "verdict": "blocked",
+                     *           "reason": "malicious",
+                     *           "advisoryId": "MAL-2026-1",
+                     *           "enforced": true
+                     *         },
+                     *         {
+                     *           "version": "4.17.21",
+                     *           "stored": false,
+                     *           "verdict": "none",
+                     *           "reason": null,
+                     *           "advisoryId": null,
+                     *           "enforced": false
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["UpstreamVulnerabilities"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthenticated"];
+            404: components["responses"]["NotFound"];
+            415: components["responses"]["UnsupportedMediaType"];
+            422: components["responses"]["Unprocessable"];
             429: components["responses"]["TooManyRequests"];
             500: components["responses"]["Internal"];
             503: components["responses"]["Unavailable"];

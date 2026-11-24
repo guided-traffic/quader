@@ -43,6 +43,10 @@ import { FormatIconView } from '../../../shared/format-icon';
 import { RemoteDownloadCounts } from '../../../api/remote-downloads-api';
 import { RemoteDownloads } from '../downloads/remote-downloads';
 import { RemoteTab, RemoteTabs } from './remote-tabs';
+// >>> T-24 upstream
+import { UpstreamCatalogue } from '../../../api/upstream-catalogue-api';
+import { RemoteUpstream } from '../upstream/remote-upstream';
+// <<< T-24 upstream
 
 const SORTS: readonly ItemSort[] = ['name', '-name', 'updatedAt', '-updatedAt', 'grade', '-grade'];
 
@@ -80,6 +84,7 @@ export const TYPE_TO_CONFIRM_ABOVE = 100;
     DownloadLink,
     RemoteTabs,
     RemoteDownloads,
+    RemoteUpstream,
   ],
   templateUrl: './repository-content.html',
   styleUrl: './repository-content.scss',
@@ -103,7 +108,7 @@ export class RepositoryContent {
   /** Query parameters (R-UI-003): the filter and the sort of a package format's list. */
   readonly q = input<string | undefined>();
   readonly sort = input<string | undefined>();
-  /** The tab of a remote repository's page, from the route's data (R-CUR-018): its content, or `downloads`. */
+  /** The tab of a remote repository's page, from the route's data (R-CUR-018): its content, `upstream` or `downloads`. */
   readonly tab = input<RemoteTab>('content');
 
   protected readonly ref = computed(() => repoRef(this.project(), this.key()));
@@ -178,11 +183,12 @@ export class RepositoryContent {
   /** The repository is disabled: the full document and the reader's view say so alike (R-REPO-010), so every reader's page knows it. */
   protected readonly disabled = computed(() => this.repository()?.disabled ?? false);
 
-  // ---- The tabs of a remote repository (remote-curation.md R-CUR-018, Q-CUR-1, Q-CUR-130) ----
+  // ---- The tabs of a remote repository (remote-curation.md R-CUR-018, Q-CUR-1, Q-CUR-150) ----
 
   /**
-   * A remote repository's page has the tab strip: its content and **Downloads**. The queue answers a signed-in reader only, and one
-   * tab is no strip (Q-UI-652), so a visitor without a session sees the content alone; a local or virtual repository has no strip.
+   * A remote repository's page has the tab strip: its content, **Upstream** and **Downloads**. The catalogue and the queue answer a
+   * signed-in reader only, and one tab is no strip (Q-UI-652), so a visitor without a session sees the content alone; a local or
+   * virtual repository has no strip.
    */
   protected readonly remoteTabs = computed(() => this.repository()?.class === 'remote' && this.session.state() === 'authenticated');
   /** The action a client's fill needs here: the full document has it, a reader's view does not (then `read`, the default). */
@@ -192,6 +198,19 @@ export class RepositoryContent {
   });
   /** The queue's counts as the tab Downloads read them last, for the strip's label. */
   protected readonly queueCounts = signal<RemoteDownloadCounts | null>(null);
+  /** The open requests as the tab Upstream read them last (null for a caller who may not answer them), for the strip's label. */
+  protected readonly requestCount = signal<number | null | undefined>(undefined);
+
+  /** The tab the strip marks: the content's for a folder or a file too. */
+  protected readonly currentTab = computed<RemoteTab>(() => {
+    const v = this.view();
+    return v === 'downloads' || v === 'upstream' ? v : 'content';
+  });
+
+  protected upstreamRead(caps: UpstreamCatalogue): void {
+    this.requestCount.set(caps.openRequests);
+    this.queueCounts.set({ ...caps.queue });
+  }
 
   /**
    * The repository's addresses: the consumer view carries them; the full document does not, so the address is built from the
@@ -261,8 +280,9 @@ export class RepositoryContent {
     return e ? asApiError(e) : null;
   });
   /** What the page shows below the header: the packages, a folder, a file, or nothing yet. */
-  protected readonly view = computed<'items' | 'folder' | 'file' | 'loading' | 'downloads'>(() => {
+  protected readonly view = computed<'items' | 'folder' | 'file' | 'loading' | 'downloads' | 'upstream'>(() => {
     if (this.tab() === 'downloads') return 'downloads';
+    if (this.tab() === 'upstream') return 'upstream';
     if (!this.showsFiles()) return 'items';
     if (this.path() === '') return 'folder';
     const item = this.item();
@@ -355,11 +375,13 @@ export class RepositoryContent {
       this.path();
       untracked(() => this.actionFailure.set(null));
     });
-    // The address of the tab Downloads of a repository that has none (a local or virtual one, or a visitor without a session)
-    // leads to its content.
+    // The address of the tab Downloads or Upstream of a repository that has none (a local or virtual one, or a visitor without a
+    // session) leads to its content.
     effect(() => {
       const known = this.session.state() === 'authenticated' || this.session.state() === 'anonymous';
-      if (this.tab() !== 'downloads' || !this.repository() || !known || this.remoteTabs()) return;
+      // A route without the data `tab` (a folder, a file) binds no tab: only the two tabs of a remote lead away.
+      const tab = this.tab();
+      if ((tab !== 'downloads' && tab !== 'upstream') || !this.repository() || !known || this.remoteTabs()) return;
       untracked(() => void this.router.navigate(['/projects', this.project(), 'repositories', this.key()], { replaceUrl: true }));
     });
   }

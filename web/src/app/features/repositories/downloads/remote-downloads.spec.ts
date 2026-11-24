@@ -241,22 +241,21 @@ describe('The tab strip of a remote repository', () => {
     return r;
   }
 
-  it('R-CUR-018 a remote repository has the strip of its content and Downloads with addresses, the failed count on Downloads', async () => {
+  it('R-CUR-018 a remote repository has the strip of its content, Upstream and Downloads with addresses, the failed count on Downloads', async () => {
     const { root } = await page(REMOTE, { failed: 2 });
     const links = [...root.querySelectorAll<HTMLAnchorElement>('quader-remote-tabs a.tab-link')];
-    expect(links.map((a) => text(a))).toEqual(['Packages', 'Downloads · 2 failed']);
+    expect(links.map((a) => text(a))).toEqual(['Packages', 'Upstream', 'Downloads · 2 failed']);
     expect(links[0]!.getAttribute('aria-current')).toBe('page');
     expect(links[0]!.getAttribute('href')).toBe('/projects/web/repositories/npmjs');
-    expect(links[1]!.getAttribute('href')).toBe('/projects/web/repositories/npmjs/downloads');
-    // The tab Upstream comes with the catalogue's screens (Q-CUR-130).
-    expect(text(root.querySelector('quader-remote-tabs')!)).not.toContain('Upstream');
+    expect(links[1]!.getAttribute('href')).toBe('/projects/web/repositories/npmjs/upstream');
+    expect(links[2]!.getAttribute('href')).toBe('/projects/web/repositories/npmjs/downloads');
     await expectAccessible(root);
   });
 
   it('R-CUR-018 the tab Downloads shows the queue under the strip, with Downloads current, and no content list', async () => {
     const { root } = await page(REMOTE, { tab: 'downloads' });
     const links = [...root.querySelectorAll<HTMLAnchorElement>('quader-remote-tabs a.tab-link')];
-    expect(links[1]!.getAttribute('aria-current')).toBe('page');
+    expect(links[2]!.getAttribute('aria-current')).toBe('page');
     expect(root.querySelector('quader-remote-downloads')).not.toBeNull();
     expect(root.querySelector('quader-repository-items')).toBeNull();
   });

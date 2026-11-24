@@ -6,8 +6,10 @@ lists as not built, the downloads ahead with their queue (R-CUR-010 to R-CUR-013
 (R-CUR-014 to R-CUR-016, package R2b, with what [Q-CUR-140](#q-cur-140--an-examination-row-names-the-files-its-runs-stored-a-discard-removes-what-belongs-to-the-version-alone)
 to [Q-CUR-148](#q-cur-148--every-persons-ask-is-recorded-the-last-asker-who-withdraws-ends-an-entry-no-client-was-refused) decide), the upstream catalogue
 (R-CUR-007 to R-CUR-009, package R3, with what [Q-CUR-62](#q-cur-62--debian-searches-the-name-provides-and-the-short-description-the-long-descriptions-and-read-the-index-wait)
-lists as not built), and of the screens (R-CUR-018) the tab strip and the tab **Downloads** (package R5a); the gauge
-`quader_remote_delivery_requests_open` and the other screens are not. The owner asked for it on 2026-11-23 (task T-24 of the
+lists as not built), and the screens (R-CUR-018): the tab strip and the tab **Downloads** (package R5a), the tab **Upstream** and the
+settings' section **Delivery** (package R5b, [Q-CUR-150](#q-cur-150--the-strip-holds-the-content-upstream-and-downloads-for-every-signed-in-reader-the-strip-counts-the-open-requests-itself) to
+[Q-CUR-155](#q-cur-155--the-catalogues-own-states-are-sentences-of-the-screen-the-upstreams-own-sentences-stand-as-the-upstream-wrote-them));
+the gauge `quader_remote_delivery_requests_open` and **Read the index** (Q-CUR-62) are not. The owner asked for it on 2026-11-23 (task T-24 of the
 [project plan](../projektplan/promt.md)), at 12:38:
 
 > In Repositories, die Remote sind, fehlt mir dafür ein Reiter um das Remote zu durchsuchen. Manche Varianten von
@@ -1087,9 +1089,10 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
   `aria-current="page"`, as the page **System status** has, R-UI-164) with **Packages** (**Images** for OCI; the content as today), **Upstream**
   and **Downloads**, each with its address: `…/repositories/{key}`, `…/repositories/{key}/upstream`, `…/repositories/{key}/downloads`;
   the document title and the breadcrumb end with the tab. A local or virtual repository shows no tab strip, and the address of its
-  tab Downloads leads to its content. A tab's filters stay in its address. Until the tab **Upstream** is built (R5b) the strip holds the
-  content and **Downloads**; a visitor without a session, whom the queue does not answer, sees no strip, because one tab is no strip
-  ([Q-CUR-130](#q-cur-130--until-the-catalogues-screens-land-the-strip-holds-the-content-and-downloads-and-a-visitor-sees-none)). The label **Upstream** carries the count of open requests for those who may set rules (`Upstream 3`); **Downloads** the count
+  tab Downloads (and of its tab Upstream) leads to its content. A tab's filters stay in its address. A visitor without a session, whom
+  the catalogue and the queue do not answer, sees no strip, because one tab is no strip
+  ([Q-CUR-150](#q-cur-150--the-strip-holds-the-content-upstream-and-downloads-for-every-signed-in-reader-the-strip-counts-the-open-requests-itself), which replaces
+  Q-CUR-130). The label **Upstream** carries the count of open requests for those who may set rules (`Upstream 3`); **Downloads** the count
   of failed rows when there are any (`Downloads · 2 failed`).
 - **The tab Upstream** (`…/upstream`):
   - At the top, one line about the mode: "Delivers everything except what is blocked." or "Delivers only what is allowed.", with
@@ -1117,6 +1120,26 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
     in 40 s."), a document too large ("This package's document is larger than 64 MiB; Quader does not read it for browsing."), a format
     without search, a long name, a package with thousands of versions (the filter and the paging; "Showing 100 of 3,893"), a reader in mode
     `onlyAllowed` ("14 hits are not allowed in this repository; look a package up by its exact name to ask for it.").
+  - **As built (R5b).** The line about the mode with **Change** (to `…/settings#delivery`, which opens the section **Delivery**) for
+    those who may set the configuration, and **Rules** with the count as a badge for those who may read the rules. The requests panel
+    under it ([Q-CUR-153](#q-cur-153--the-requests-panel-answers-by-a-rows-menu-and-dialogs-the-rule-list-is-a-dialog-that-adds-sub-sections)).
+    One field for the search and the lookup: **Search** and **Look up by exact name** where the upstream answers a search (by itself or
+    over Quader's index, with **Names only** for Debian), **Look up** alone where it does not, with the upstream's sentence under the field;
+    the address carries `q`, `name`, `level` and `namesOnly`, so the refusal's link of R-CUR-004 (`?name=`) opens the package
+    ([Q-CUR-151](#q-cur-151--one-field-searches-and-looks-up-the-address-holds-the-query-the-levels-are-a-breadcrumb-and-links)). The
+    levels: a breadcrumb under **Upstream** and the children as links; a root that lists nothing (an npm scope, a Docker Hub namespace,
+    Q-CUR-63) offers a field named by the level's kind to enter one by its name; **Download this sub-section…** at a level that lists
+    packages, for those who decide. The results: **Package** (name, the description cut to one line with the whole as its title),
+    **Latest**, **State** (**Allowed**, **Delivered**, **Blocked**, **Not allowed**, **Requested**), **Cache** (**Stored** where the
+    repository holds a version: the API answers no count, Q-CUR-61). A package opens in place: its description where nothing showed it,
+    its tags, its state with the rule that decided, **Download every version…**, **Allow every version** and **Block every version** (the
+    one the package's rule has is **Remove the allow** or **Remove the block**) for those who decide, **Request every version** for a
+    reader; **Filter versions** and "Showing 100 of 3,893" with **Load more**; per version **Published**, **Size** ("Not told"),
+    **Delivery**, **Rule** (the subject that decided), **Cache** (**Stored**, **Stored for examination**, **Waiting**, **Running**,
+    **Not stored**), **Verdicts** and the acts
+    ([Q-CUR-152](#q-cur-152--a-versions-acts-are-a-word-for-a-reader-and-a-menu-for-those-who-decide-the-rule-is-a-column-the-verdicts-a-word-or-a-link)).
+    The catalogue's states are sentences in a warning line
+    ([Q-CUR-155](#q-cur-155--the-catalogues-own-states-are-sentences-of-the-screen-the-upstreams-own-sentences-stand-as-the-upstream-wrote-them)).
 - **The preview of a bulk** (a dialog): what will be fetched (versions, packages, bytes, "size of 12 versions not told by the upstream;
   the bound of 100 GiB stops the download when it is reached"), what is stored already, how much is not delivered (fetched for
   examination), the bounds as fields with their values, **Start download**.
@@ -1152,7 +1175,9 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
     ([H-1728](../security/remote-curation.md#h-1728--the-excerpt-of-an-upstreams-error-answer-is-shown-to-every-reader-of-the-repository)).
 - **The settings page** (R-UI-087): a closed section **Delivery** (details on demand, R-UI-067) with the mode as two radio choices and
   their sentences, **Fetch for examination when someone asks** (on), **Remove what was examined and not allowed after [30] days**; for a
-  mirror, `remote.mirror.include` joins the section Mirror as **Mirror only these packages**.
+  mirror, `remote.mirror.include` joins the section Mirror as **Mirror only these packages**. As built (R5b): the section stands after **Mirror** on
+  every remote but a system repository, saves `remote.delivery` alone with the page's `ETag`, and links the tab **Upstream** for the
+  rules ([Q-CUR-154](#q-cur-154--the-section-delivery-saves-remotedelivery-alone-and-leads-to-the-rules-on-the-tab-upstream)).
 - **German texts** follow the glossary (`web/src/locale/GLOSSARY.md`), without "du": allow `zulassen` is taken (a gate's release) and
   `freigeben` renders exposure, so allow is **erlauben** (Erlaubt), block **sperren** (Gesperrt, named with "durch eine Regel" where a
   vulnerability block could be meant), request **beantragen** (Antrag, the owner's word), decline **ablehnen**, discard **verwerfen**,
@@ -1243,7 +1268,11 @@ Acceptance criteria:
 - Web unit (Vitest, milliseconds per component, `web/src/app/features/repositories/upstream/`, `…/downloads/`): the tab strip appears for
   a remote only; each state's sentence; the actions by permission; the German texts of the glossary rows. Built for the strip and the tab
   Downloads in [remote-downloads.spec.ts](../../web/src/app/features/repositories/downloads/remote-downloads.spec.ts) (twelve cases, about
-  0.7 s, rows of a few hundred bytes each); the renders gain two screens, about 45 s.
+  0.7 s, rows of a few hundred bytes each); the renders gain two screens, about 45 s. Built for the tab Upstream and the section Delivery in
+  [remote-upstream.spec.ts](../../web/src/app/features/repositories/upstream/remote-upstream.spec.ts) (twelve cases, about 1.3 s) and
+  [repository-delivery.spec.ts](../../web/src/app/features/repositories/repository-delivery.spec.ts) (two cases, about 0.2 s), answers of
+  a few kilobytes in memory; the renders gain six screens (about 4 minutes on the development machine, most of it the npm walk's
+  eleven states as three users).
 - UI layout checks (`web/e2e`, the existing walk, about 20 more screens at three widths as the three users): the two tabs in both
   schemes with the states listed above.
 
@@ -2166,8 +2195,8 @@ The development agent would revisit it if a remote's old lists were wanted as a 
 
 ### Q-CUR-130 · Until the catalogue's screens land, the strip holds the content and Downloads, and a visitor sees none
 
-Status: **Decided by the development agent** — selected from the options below while building the tab strip and the tab Downloads (R5a);
-the owner reviews it at the walkthrough.
+Status: **Superseded by [Q-CUR-150](#q-cur-150--the-strip-holds-the-content-upstream-and-downloads-for-every-signed-in-reader-the-strip-counts-the-open-requests-itself)** with the tab Upstream (R5b); it was
+decided by the development agent while building the tab strip and the tab Downloads (R5a).
 
 Context: R-CUR-018 gives a remote's page three tabs, and the tab **Upstream** (search, levels, rules, requests) is R5b's, which needs the
 catalogue (R3) and the rules' screens. The specification says how **Upstream** looks once built, not before. The queue's API answers a
@@ -2266,6 +2295,139 @@ development agent would revisit it if a reader asks for the values to be hidden 
 
 **Applied in the spec:** R-CUR-018 (the tab Downloads, "As built"). Code: [remote-downloads.html](../../web/src/app/features/repositories/downloads/remote-downloads.html),
 [remote-downloads.spec.ts](../../web/src/app/features/repositories/downloads/remote-downloads.spec.ts).
+
+### Q-CUR-150 · The strip holds the content, Upstream and Downloads for every signed-in reader; the strip counts the open requests itself
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below while building the tab Upstream (R5b); the
+owner reviews it at the walkthrough. It replaces Q-CUR-130.
+
+Context: R-CUR-018 gives the label **Upstream** the count of open requests for those who may set rules. The API counts them in the
+capabilities (`GET …/upstream`, `openRequests`), which asks the format's catalogue and can reach the upstream (once per cache period) and
+fails while the upstream is down. The list of requests (`GET …/delivery-requests?state=open`) reads Quader's own tables and answers no
+total.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The tab Upstream passes the capabilities' count; on the other tabs the strip reads the open entries once (up to 100, "100+" beyond) for a holder of `manage` or the role `admin`, and nothing for anyone else (chosen) | Two readers of one count | The content's page asks no upstream; the count is right where it is shown first | A page of up to 100 entries for a count |
+| (b) The strip reads the capabilities on every tab | One reader | One number | Every view of a remote's content asks its catalogue, and its label loses the count while the upstream is down |
+| (c) A count of open requests in the repository's document | Exact and cheap | — | An API change for a label |
+
+**Choice:** (a). A visitor without a session sees no strip, as before. **Rationale:** the development agent would revisit (c) if the
+entries of a repository exceed a page often.
+
+**Applied in the spec:** R-CUR-018 (the tab strip), [api-and-ui.md](api-and-ui.md) R-UI-052. Code:
+[remote-tabs.ts](../../web/src/app/features/repositories/content/remote-tabs.ts).
+
+### Q-CUR-151 · One field searches and looks up; the address holds the query; the levels are a breadcrumb and links
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below while building the tab Upstream (R5b); the
+owner reviews it at the walkthrough.
+
+Context: R-CUR-018 wants a search where the upstream answers one, the lookup by exact name where only that works (said plainly), and in
+mode `onlyAllowed` the lookup for a reader whose search withholds hits. R-CUR-004's refusal links `…/upstream?name=<name>`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One field with **Search** and **Look up by exact name**; where the upstream has no search, **Look up** alone and the upstream's sentence under the field; `q`, `name`, `level` and `namesOnly` in the address; a package looked up stands above the list under its name with **Close** (chosen) | One place to type | The refusal's link and a shared link open the same view; the reader who is told to look a package up does it in the field they used | Two buttons beside a field |
+| (b) A field per act | Separate | Each labelled for itself | Two fields for one name |
+| (c) The lookup as a link under each empty search | Implicit | Fewer controls | A reader in `onlyAllowed` has to search first to find the lookup |
+
+The levels: the breadcrumb of the level (from **Upstream**) and its children as links, so a suite of Debian and its components are
+reached by following them; a root that lists nothing (an npm scope, a Docker Hub namespace, Q-CUR-63) offers a field named by the kind of
+the level to enter one by its name, and then no empty list. A level that lists packages offers **Download this sub-section…** to those who
+decide. A sub-section's rule is not offered at a level: a level's name is a name pattern in some formats only (a Debian suite is not), so
+sub-section rules are written in the rule list (Q-CUR-153). **Read the index** waits for Q-CUR-62.
+
+**Choice:** (a). **Rationale:** the development agent would revisit (b) if a format's lookup takes more than a name.
+
+**Applied in the spec:** R-CUR-018 (the tab Upstream, "As built (R5b)"). Code:
+[remote-upstream.ts](../../web/src/app/features/repositories/upstream/remote-upstream.ts).
+
+### Q-CUR-152 · A version's acts are a word for a reader and a menu for those who decide; the rule is a column, the verdicts a word or a link
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below while building the tab Upstream (R5b); the
+owner reviews it at the walkthrough.
+
+Context: R-CUR-018's drawing shows a version's acts as buttons side by side ([Allow][Discard]). R-UI-163 gives a row with one action its
+word and a row with several a menu, and the layout checks refuse a table whose action cells are built two ways. Those who decide have
+**Download** or **Download for examination**, **Allow**, **Block**, **Remove rule** and **Discard**; a reader **Download** (a version the
+rules deliver, where they may fill the repository) or **Request**. The rule that decided and the verdicts are facts of the version; a
+stored version's verdicts are its version page's (Q-CUR-61), an unstored one's vulnerability verdict is `upstream/vulnerabilities`'.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A reader's row has at most one act, its word; the row of those who decide is the menu **Actions for &lt;name&gt; &lt;version&gt;** with **Allow** and **Block** always (the effect the version's own rule has is **Remove rule** in its place), so every row has two acts or more; the rule that decided is a column **Rule**; an unstored version's verdict is a word (**None known**, **Known as malicious**, **Blocked in triage**), a stored one's the link **Open the version** to its page; a format without verdicts says so once at the package (chosen) | R-UI-163 in every row | One construction per table; an explicit allow of a delivered version is meaningful (it outlasts a narrower block and a change of the mode, R-CUR-001) | A menu where the drawing has buttons |
+| (b) The drawing's buttons | R-CUR-018's drawing | Every act one click away | Two to four words per row, against R-UI-163 and the layout checks |
+| (c) The rule under the state's badge | One column fewer | Narrower | The cell's first line is no longer the badge's (the layout check `row-offset`, R-UI-172) |
+
+**Choice:** (a). The package's acts stand as buttons in the opened package's head, which is no row. **Rationale:** the development agent
+would revisit the verdicts' link (Q-CUR-61 (b)) if a decider needs the badges in the list itself.
+
+**Applied in the spec:** R-CUR-018 (the tab Upstream, "As built (R5b)"). Code:
+[upstream-package.ts](../../web/src/app/features/repositories/upstream/upstream-package.ts).
+
+### Q-CUR-153 · The requests panel answers by a row's menu and dialogs; the rule list is a dialog that adds sub-sections
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below while building the tab Upstream (R5b); the
+owner reviews it at the walkthrough.
+
+Context: R-CUR-018 sets the requests apart with **Allow** and **Decline**; R-CUR-015's allow takes `as` and `downloadEveryVersion`, a decline
+a reason and `discard`. The rule list is "a dialog or a page section". The examined versions' verdicts are read where every stored
+version's are (Q-CUR-146).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A bordered panel **Requests** with the count; each entry its subject, who asked (with the askers' notes) or how often clients were refused, the time, the examination (its row's state, **Examined 39.2.0** with **Verdicts** to the version page, or why it did not start); **Allow…** and **Decline…** in the entry's menu, each a dialog with its choices; a reader's **Your requests** with the state, a decline's reason and **Withdraw**; **Rules** opens the rule list as a dialog that adds a sub-section's rule (pattern and effect) and removes any, read only for `repositories:read-config` (chosen) | The acts with their choices | The allow's two choices and the decline's reason are asked where they are made; the list's package and version rules are set where the package is shown, with its versions in view | Two clicks to an allow |
+| (b) **Allow** and **Decline** as words on the entry, the choices in a later edit | Faster | One click | Two words in a list item (R-UI-163); a decline without its reason |
+| (c) The rule list as a section of the settings page | With the mode | One place for the configuration | A Maintainer sets rules and does not read the settings page (R-CUR-005) |
+
+**Choice:** (a). **Rationale:** the development agent would revisit (b) for the allow if deciders answer many entries in a row.
+
+**Applied in the spec:** R-CUR-018 (the requests, the rule list). Code:
+[delivery-requests-panel.ts](../../web/src/app/features/repositories/upstream/delivery-requests-panel.ts),
+[request-dialogs.ts](../../web/src/app/features/repositories/upstream/request-dialogs.ts),
+[delivery-rules-dialog.ts](../../web/src/app/features/repositories/upstream/delivery-rules-dialog.ts).
+
+### Q-CUR-154 · The section Delivery saves `remote.delivery` alone and leads to the rules on the tab Upstream
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below while building the settings' section (R5b);
+the owner reviews it at the walkthrough.
+
+Context: R-CUR-018 puts the mode, **Fetch for examination when someone asks** and the days of the retention into a closed section
+**Delivery** of the settings page; the mode is configuration (`repositories:write-config` or the project's Owner, R-CUR-005), the rules
+are `manage`'s. The page's other sections save through the form's model (`settings-sections.ts`), which other builders change.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A component of its own that patches `remote.delivery` with the page's `ETag`, after **Mirror** on every remote but a system repository, opened by the address's `#delivery` (the tab's **Change**), with a link to the tab Upstream for the rules (chosen) | As **Download links** | The section's save touches one member; a remote's other sections are unchanged | A second save path beside the form's sections |
+| (b) A section of the form's model | As **Mirror** | One model | A change of shared files for three values |
+
+**Choice:** (a). **Rationale:** the development agent would revisit (b) when the form's model moves every section to one pattern.
+
+**Applied in the spec:** R-CUR-018 (the settings page). Code:
+[repository-delivery.ts](../../web/src/app/features/repositories/repository-delivery.ts).
+
+### Q-CUR-155 · The catalogue's own states are sentences of the screen; the upstream's own sentences stand as the upstream wrote them
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below while building the tab Upstream (R5b); the
+owner reviews it at the walkthrough.
+
+Context: R-CUR-018 names the sentences of the upstream down ("until 10:42"), the budget used up ("try again in 40 s"), a document too
+large and a format without search. The API answers `503 upstream_assumed_offline`, `429 catalogue_budget_exhausted` and
+`502 catalogue_answer_too_large` with `Retry-After`; `searchNote`, `searchReason`, `levelsReason` and a page's `note` are English
+sentences the server writes per upstream.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The three refusals, the offline mode and a call not offered as the screen's own translated sentences in a warning line, the time computed from `Retry-After`; the server's sentences shown as written; the catalogue's reads never repeated by the client (chosen) | The screen speaks | A state reads as a state, not as an error with **Retry**; a budget is not spent by an automatic retry | The upstream's sentences stay English in German |
+| (b) Every failure in the shared error notice | One pattern | Nothing new | "upstream_assumed_offline" with **Retry** says less than the specification's sentence |
+
+**Choice:** (a). The sentence of the budget says "the upstream catalogue's budget": the API's refusal does not say whether the
+repository's or the person's ran out. **Rationale:** the development agent would revisit the server's sentences if the API answers them
+as codes.
+
+**Applied in the spec:** R-CUR-018 (the states). Code:
+[upstream-words.ts](../../web/src/app/features/repositories/upstream/upstream-words.ts).
 
 ### Q-CUR-80 · A download of one version runs before the catalogue: the call that names its files is a contract interface of its own
 

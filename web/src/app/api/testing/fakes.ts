@@ -72,6 +72,7 @@ import { provideStorageFakes } from './fakes-storage';
 // <<< storage connections
 // >>> T-24 downloads
 import { provideRemoteDownloadsFakes } from './fakes-remote-downloads';
+import { provideUpstreamCatalogueFakes } from './fakes-upstream-catalogue';
 // <<< T-24 downloads
 // >>> W-26 limits
 import { provideLimitsFakes } from './fakes-limits';
@@ -556,6 +557,7 @@ export function provideFakeApis(): Provider[] {
     // <<< storage connections
     // >>> T-24 downloads
     ...provideRemoteDownloadsFakes(),
+    ...provideUpstreamCatalogueFakes(),
     // <<< T-24 downloads
   ];
 }

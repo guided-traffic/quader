@@ -1,0 +1,171 @@
+@if (stateSentence(); as sentence) {
+  <!-- The catalogue's own states in the tab's words (R-CUR-018): the upstream offline, the budget used up, a document too large. -->
+  <p class="banner-warning" role="status" data-testid="upstream-package-state">
+    <span class="material-icons inline warn" aria-hidden="true">warning</span>
+    <span>{{ sentence }}</span>
+  </p>
+} @else if (failure(); as f) {
+  <quader-error-notice [error]="f" (retry)="retry()" />
+}
+
+@if (pkg(); as p) {
+  <div class="package-head">
+    @if (p.description && showDescription()) {
+      <p class="package-description">{{ p.description }}</p>
+    }
+    @if (tagEntries(p).length > 0) {
+      <p class="package-tags dot-separated">
+        @for (t of tagEntries(p); track t.tag) {
+          <span translate="no"><span class="muted">{{ t.tag }}</span>&ngsp;{{ t.version }}</span>
+        }
+      </p>
+    }
+    <!-- The package's state and its acts: a holder of manage downloads every version after a preview and sets the package's rule
+         (every version, future ones included); a reader asks for the package (R-CUR-005, R-CUR-015). -->
+    <p class="package-state">
+      @let b = badge(p.delivery, !!p.request);
+      <span [class]="b.look"><span class="material-icons" aria-hidden="true">{{ b.icon }}</span>{{ b.text }}</span>
+      @if (ruleLine(p.delivery); as rule) {
+        &ngsp;<span class="muted" translate="no">{{ rule }}</span>
+      }
+    </p>
+    @if (actions.manager() || mayRequestPackage()) {
+      <div class="acts-row">
+        @if (actions.manager()) {
+          <button class="btn btn-default" type="button" data-testid="upstream-download-every" (click)="downloadEvery()" i18n="@@upstream.package.download-every">Download every version…</button>
+          @if (packageRule() === 'allow') {
+            <button class="btn btn-default" type="button" [disabled]="actions.isBusy(name())" (click)="removePackageRule()" i18n="@@upstream.package.remove-allow">Remove the allow</button>
+          } @else {
+            <button class="btn btn-default" type="button" [disabled]="actions.isBusy(name())" (click)="setPackageRule('allow')" i18n="@@upstream.package.allow-every">Allow every version</button>
+          }
+          @if (packageRule() === 'block') {
+            <button class="btn btn-default" type="button" [disabled]="actions.isBusy(name())" (click)="removePackageRule()" i18n="@@upstream.package.remove-block">Remove the block</button>
+          } @else {
+            <button class="btn btn-default" type="button" [disabled]="actions.isBusy(name())" (click)="setPackageRule('block')" i18n="@@upstream.package.block-every">Block every version</button>
+          }
+        } @else if (mayRequestPackage()) {
+          <button class="btn btn-default" type="button" [disabled]="actions.isBusy(name())" (click)="requestPackage()" i18n="@@upstream.package.request">Request every version</button>
+        }
+      </div>
+    }
+    @if (notCovered()) {
+      <p class="hint" data-testid="upstream-not-covered">{{ notCoveredSentence() }}</p>
+    }
+  </div>
+
+  <div class="versions-head">
+    <div class="filter-field">
+      <label class="field-label" [attr.for]="'vf-' + name()" i18n="@@upstream.versions.filter">Filter versions</label>
+      <input [id]="'vf-' + name()" class="text-input field-w-name" type="search" [value]="filter()" (input)="setFilter($any($event.target).value)" />
+    </div>
+    @if (showing(); as s) {
+      <p class="muted showing" role="status">{{ s }}</p>
+    }
+  </div>
+
+  <quader-data-table
+    [caption]="p.name"
+    [columns]="columns()"
+    [loaded]="true"
+    [loading]="loading()"
+    [empty]="versions().length === 0"
+    [emptyText]="filter() ? noVersionMatches : noVersions"
+    [hasMore]="next() !== null"
+    (more)="more()"
+    (retry)="retry()"
+  >
+    @for (v of versions(); track v.version) {
+      <tr>
+        <th scope="row">
+          <span class="version" translate="no">{{ v.version }}</span>
+          @for (f of v.flags; track f) {
+            &ngsp;<span class="badge">{{ flag(f) }}</span>
+          }
+          @if (v.platforms.length > 0) {
+            <span class="secondary" translate="no">{{ v.platforms.join(', ') }}</span>
+          }
+        </th>
+        <td class="keep">
+          @if (v.published; as at) {
+            <quader-time-ago [at]="at" absolute="title" />
+          } @else {
+            <quader-no-value />
+          }
+        </td>
+        <td class="num keep">
+          @if (v.size !== null && v.size > 0) {
+            {{ size(v.size) }}
+          } @else {
+            <span class="muted" i18n="@@upstream.size.not-told">Not told</span>
+          }
+        </td>
+        <td class="keep">
+          @let vb = badge(v.delivery, !!v.request);
+          <span [class]="vb.look"><span class="material-icons" aria-hidden="true">{{ vb.icon }}</span>{{ vb.text }}</span>
+        </td>
+        <td class="rule-cell">
+          @if (ruleOf(v); as rule) {
+            @if (rule.pattern) {
+              <code translate="no">{{ rule.words }}</code>
+            } @else {
+              {{ rule.words }}
+            }
+          } @else {
+            <quader-no-value />
+          }
+        </td>
+        <td class="keep">
+          @if (v.queued; as q) {
+            <span class="badge"><span class="material-icons" aria-hidden="true">{{ q.state === 'running' ? 'sync' : 'hourglass_empty' }}</span>{{ queuedText(q.state) }}</span>
+          } @else if (v.stored === 'whole' && !v.delivery.delivered) {
+            <span class="badge"><span class="material-icons" aria-hidden="true">science</span><ng-container i18n="@@upstream.cache.for-examination">Stored for examination</ng-container></span>
+          } @else if (v.stored === 'whole') {
+            <span class="badge"><span class="material-icons" aria-hidden="true">inventory_2</span><ng-container i18n="@@upstream.cache.stored">Stored</ng-container></span>
+          } @else {
+            <span class="muted" i18n="@@upstream.cache.not-stored">Not stored</span>
+          }
+        </td>
+        @if (verdictColumn()) {
+        <td class="verdict-cell">
+          @if (v.stored === 'whole') {
+            <a [routerLink]="versionLink(v.version)" i18n="@@upstream.verdicts.open">Open the version</a>
+          } @else if (verdictOf(v); as verdict) {
+            <span [class.bad]="blockedVerdict(v)">{{ verdict }}</span>
+          } @else {
+            <quader-no-value />
+          }
+        </td>
+        }
+        @if (hasActions()) {
+          <td class="actions">
+            @let list = acts(v);
+            @if (list.length === 1 && list[0]; as only) {
+              <button class="btn btn-tertiary" type="button" [disabled]="actions.isBusy(name() + ' ' + v.version)" (click)="run(only, v)">
+                {{ actText(only) }}<span class="visually-hidden" translate="no">&ngsp;{{ name() }} {{ v.version }}</span>
+              </button>
+            } @else if (list.length > 1) {
+              <button
+                class="btn btn-tertiary btn-icon"
+                type="button"
+                [disabled]="actions.isBusy(name() + ' ' + v.version)"
+                [attr.aria-label]="menuLabel(v)"
+                [cdkMenuTriggerFor]="versionMenu"
+              >
+                <span class="material-icons" aria-hidden="true">more_vert</span>
+              </button>
+              <ng-template #versionMenu>
+                <div class="menu" cdkMenu>
+                  @for (a of list; track a) {
+                    <button class="menu-item" type="button" cdkMenuItem (cdkMenuItemTriggered)="run(a, v)">{{ actText(a) }}</button>
+                  }
+                </div>
+              </ng-template>
+            }
+          </td>
+        }
+      </tr>
+    }
+  </quader-data-table>
+} @else if (!failure()) {
+  <p role="status" i18n="@@upstream.package.loading">Reading the package from the upstream.</p>
+}

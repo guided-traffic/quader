@@ -40,6 +40,7 @@ import { clamavDatabases, clamavRegistry, clamavRow, definitionsExpected, defini
 import { damagedBlobs, noDamagedBlob, oneConnection, secondUnreachable, severalConnections, twoConnectionFacts } from './storage';
 import { auditDataKeys, bastionsHandover, bastionsRead, forbiddenLink, seededBastion } from './bastions';
 import { downloadsWalk } from './downloads';
+import { upstreamDebWalk, upstreamExpected, upstreamLookupWalk, upstreamOwnWalk, upstreamTabWalk } from './upstream';
 
 /**
  * Every screen of the app (web/src/app/app.routes.ts and the route files of the feature areas), with the parameters of the
@@ -2635,6 +2636,13 @@ export const screens: readonly Screen[] = [
   // row of the server's own.
   { id: 'repository-npm-remote-downloads', path: `${P}/repositories/npmjs/downloads`, kinds: all, walk: downloadsWalk, de: true },
   { id: 'repository-oci-probed-downloads', path: `${O}/repositories/${probedCache.key}/downloads`, kinds: ['power'] },
+  // The tab Upstream of a remote (R-CUR-018): as the seed's offline remote opens it, then answered in the browser as an npm remote
+  // in mode onlyAllowed with every state (upstream.ts); an OCI remote of ghcr.io that offers only the lookup by name; a Debian remote's
+  // suites and its index search; and the OCI remote whose upstream is this installation, with the server's own answers.
+  { id: 'repository-npm-remote-upstream', path: `${P}/repositories/npmjs/upstream`, kinds: all, walk: upstreamTabWalk, expected: upstreamExpected, de: true },
+  { id: 'repository-oci-upstream-lookup', path: `${O}/repositories/docker-hub-remote/upstream`, kinds: ['power'], walk: upstreamLookupWalk, expected: upstreamExpected },
+  { id: 'repository-deb-upstream', path: `${O}/repositories/debian/upstream`, kinds: ['power'], walk: upstreamDebWalk },
+  { id: 'repository-oci-upstream-own', path: `${O}/repositories/${remoteCache.key}/upstream`, kinds: ['power', 'admin'], walk: upstreamOwnWalk },
   { id: 'repository-npm-virtual', path: `${P}/repositories/npm`, kinds: all },
   { id: 'repository-long-key', path: `${P}/repositories/${longNpmKey}`, kinds: all },
   { id: 'repository-generic', path: `${P}/repositories/assets`, kinds: all },
@@ -2807,6 +2815,10 @@ export const screens: readonly Screen[] = [
     kinds: owners,
     walk: mirrorUnbounded,
   },
+  // The section Delivery opened by the tab Upstream's Change (R-CUR-018): the mode, the examination's switch and its days; the
+  // remote guidedtraffic delivers only what is allowed.
+  { id: 'repository-settings-npm-delivery', path: `${P}/repositories/npmjs/settings#delivery`, kinds: owners },
+  { id: 'repository-settings-oci-delivery', path: `${O}/repositories/guidedtraffic/settings#delivery`, kinds: admins },
   { id: 'repository-settings-npm-virtual', path: `${P}/repositories/npm/settings`, kinds: all, walk: allSections },
   { id: 'repository-settings-generic', path: `${P}/repositories/assets/settings`, kinds: owners, walk: allSections },
   { id: 'repository-settings-generic-advanced', path: `${P}/repositories/assets/settings`, kinds: admins, walk: advancedOpen },

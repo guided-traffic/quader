@@ -69,6 +69,11 @@ import { HttpStorageApi, StorageApi } from './storage-api';
 // >>> T-24 downloads
 import { HttpRemoteDownloadsApi, RemoteDownloadsApi } from './remote-downloads-api';
 // <<< T-24 downloads
+// >>> T-24 upstream
+import { DeliveryRequestsApi, HttpDeliveryRequestsApi } from './delivery-requests-api';
+import { DeliveryRulesApi, HttpDeliveryRulesApi } from './delivery-rules-api';
+import { HttpUpstreamCatalogueApi, UpstreamCatalogueApi } from './upstream-catalogue-api';
+// <<< T-24 upstream
 
 /**
  * Binds every service interface of `api/` to its HTTP implementation. Specs and component tests
@@ -149,5 +154,10 @@ export function provideApiServices(): Provider[] {
     // >>> T-24 downloads
     { provide: RemoteDownloadsApi, useClass: HttpRemoteDownloadsApi },
     // <<< T-24 downloads
+    // >>> T-24 upstream
+    { provide: UpstreamCatalogueApi, useClass: HttpUpstreamCatalogueApi },
+    { provide: DeliveryRulesApi, useClass: HttpDeliveryRulesApi },
+    { provide: DeliveryRequestsApi, useClass: HttpDeliveryRequestsApi },
+    // <<< T-24 upstream
   ];
 }

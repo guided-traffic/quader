@@ -93,6 +93,15 @@ export const PROJECT_REPOSITORIES_ROUTES: Routes = [
         loadComponent: loadContent,
       },
       {
+        // The tab Upstream of a remote repository (remote-curation.md R-CUR-018): the same page with the upstream catalogue under its
+        // tab strip; the search, the package looked up and the level are query parameters. A local or virtual repository's address
+        // leads to its content.
+        path: 'upstream',
+        title: $localize`:@@route.repositories.upstream.title:Upstream`,
+        data: { tab: 'upstream' },
+        loadComponent: loadContent,
+      },
+      {
         // Set up client (R-UI-120): the snippets and the guide of this repository; the client is a query parameter.
         path: 'setup',
         title: $localize`:@@route.setup.title:Set up client`,

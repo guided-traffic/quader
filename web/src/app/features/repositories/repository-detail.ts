@@ -71,6 +71,9 @@ import { RepositorySignaturesSection, SignatureSettingsChange } from './reposito
 // >>> download-links
 import { RepositoryDownloadLinksSection } from './repository-download-links';
 // <<< download-links
+// >>> T-24 delivery
+import { DeliverySettings, RepositoryDeliverySection } from './repository-delivery';
+// <<< T-24 delivery
 
 /** The closed sections whose content loads when it is first opened (a list read from the server). */
 type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombstones' | 'service-accounts';
@@ -106,6 +109,7 @@ type LazySection = 'deb-keys' | 'deb-index' | 'ansible-imports' | 'ansible-tombs
     RepositoryFields,
     RepositoryServiceAccounts,
     RepositoryDownloadLinksSection,
+    RepositoryDeliverySection,
     RepositoryLimitsSection,
     RepositoryMalwareSection,
     RepositorySignaturesSection,
@@ -795,6 +799,35 @@ export class RepositoryDetail implements HasUnsavedChanges {
     }
   }
   // <<< download-links
+
+  // >>> T-24 delivery
+  // ---- The delivery mode and the curation's switches of a remote (remote-curation.md R-CUR-018, R-CUR-020) ----
+
+  /** The section on a remote repository but a system repository, whose rules are the product's (R-REPO-070). */
+  protected readonly deliveryShown = computed(() => this.upstreamSection() && !this.systemRepository());
+  protected readonly deliverySaving = signal(false);
+  protected readonly deliveryFailure = signal<ApiError | null>(null);
+
+  /** Stores `remote.delivery` with the loaded `ETag`; the merge patch carries that member only, so other unsaved edits stay. */
+  protected async saveDelivery(delivery: DeliverySettings): Promise<void> {
+    if (this.deliverySaving() || !this.stored()) return;
+    this.deliverySaving.set(true);
+    this.deliveryFailure.set(null);
+    try {
+      const saved = await this.api.patch(this.ref(), { remote: { delivery } }, this.etag);
+      this.takeStored(saved.value, saved.etag);
+      this.notifier.status(
+        delivery.mode === 'onlyAllowed'
+          ? $localize`:@@delivery.saved-only:Saved. The repository delivers only what is allowed.`
+          : $localize`:@@delivery.saved-all:Saved. The repository delivers everything except what is blocked.`,
+      );
+    } catch (e) {
+      this.deliveryFailure.set(asApiError(e));
+    } finally {
+      this.deliverySaving.set(false);
+    }
+  }
+  // <<< T-24 delivery
 
   protected readonly membersSaving = signal(false);
   protected readonly membersFailure = signal<ApiError | null>(null);

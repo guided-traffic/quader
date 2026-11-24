@@ -99,6 +99,10 @@ refuses a masculine "Token" in a target.
 | pause, resume (a mirror); run a pass now, run a full pass | pausieren, fortsetzen; Durchlauf jetzt starten, Vollständigen Durchlauf starten |
 | rate-limit wait, bound (of a mirror), discovery (of names) | Rate-Limit-Wartezeit, Grenze, Ermittlung |
 | download queue (of a remote repository), bulk download, download state (waiting, running, failed, done, cancelled), retry, attempt, probe (a client's question about a version that starts a download) | Download-Warteschlange, Sammeldownload, Wartet, Läuft, Fehlgeschlagen, Fertig, Abgebrochen, wiederholen, Versuch, Abfrage |
+| allow, allowed (a delivery rule; not a gate's release, which is "zulassen", nor exposure, which is "freigeben"), block, blocked (by a rule), not allowed | erlauben, Erlaubt, sperren, Gesperrt (where a vulnerability block could be meant: "durch eine Regel gesperrt"), Nicht erlaubt |
+| delivery mode (Everything except what is blocked, Only what is allowed), delivery rule, delivered, sub-section (a rule's name pattern) | Auslieferungsmodus (Alles außer Gesperrtem, Nur Erlaubtes), Auslieferungsregel, Ausgeliefert, Teilbereich |
+| request (an ask for an allow), requested, decline, withdraw (a request), discard (what was fetched for examination) | beantragen, Antrag, Beantragt, ablehnen, zurückziehen, verwerfen |
+| download ahead (into the cache, before a client asks), fetch for examination, stored for examination, the tab Upstream, upstream catalogue | In den Cache laden, zur Prüfung holen, Zur Prüfung gespeichert, der Reiter Upstream, Upstream-Katalog |
 | test connection, upstream URL, negative cache | Verbindung testen, Upstream-URL, negativer Cache |
 | licence (of the software the build bundles, its notices) | Lizenz (der eingebundenen Software, Hinweise) |
 | project switcher, start page of the projects ("Your work"), recently visited (projects) | Projektwechsler, "Ihre Arbeit", Zuletzt besucht |

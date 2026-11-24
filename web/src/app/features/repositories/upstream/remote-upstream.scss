@@ -1,0 +1,153 @@
+// The tab Upstream of a remote repository (R-CUR-018): the mode's line, the search, the levels and the packages. Only Quader's tokens,
+// so both schemes follow; the table is the shared data table.
+
+:host {
+  display: block;
+}
+
+.mode-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--quader-space-1) var(--quader-space-3);
+  margin: 0 0 var(--quader-space-4);
+}
+
+.search {
+  margin-block-end: var(--quader-space-4);
+
+  .field-label {
+    display: block;
+    margin-block-end: var(--quader-space-1);
+  }
+
+  input {
+    min-inline-size: 0;
+  }
+
+  .names-only {
+    margin-block-start: var(--quader-space-2);
+  }
+
+  .hint {
+    margin: 0;
+    max-inline-size: var(--quader-settings-measure);
+  }
+}
+
+.lookup + * {
+  margin-block-start: var(--quader-space-6);
+}
+
+// A raw input in a field's row stands on the buttons' line (their margin) and never wider than the panel.
+.field-action-row > input {
+  max-inline-size: 100%;
+  margin-block-end: var(--quader-space-3);
+}
+
+// The name looked up and Close on its line (R-UI-175): the box's line is the heading's.
+.lookup-head {
+  --quader-line: calc(var(--quader-heading-3) * 1.4);
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--quader-space-2) var(--quader-space-3);
+}
+
+.lookup-title {
+  margin: 0;
+  font-size: var(--quader-heading-3);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.level-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--quader-space-2);
+  margin-block-end: var(--quader-space-4);
+}
+
+// The breadcrumb of the level: its parts separated by a chevron, each a link but the last.
+.level-trail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--quader-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li + li::before {
+    content: '›';
+    margin-inline-end: var(--quader-space-1);
+    color: var(--quader-text-muted);
+  }
+}
+
+.level-kind {
+  margin: 0;
+  font-weight: 600;
+}
+
+.level-children {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--quader-space-1) var(--quader-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.enter-level {
+  // The form takes the bar's width, so that its field shrinks with a narrow panel (the bar's items stand at its start).
+  align-self: stretch;
+
+  .field-label {
+    display: block;
+    margin-block-end: var(--quader-space-1);
+  }
+}
+
+.search-head,
+.list-facts {
+  margin: 0 0 var(--quader-space-2);
+}
+
+// The first column: the chevron that opens the row, then the name and the description, which wrap inside themselves.
+.name-cell {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--quader-space-1);
+
+  > .btn {
+    flex: none;
+  }
+
+  > span {
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+.hit-name {
+  font-weight: 600;
+}
+
+// The upstream's description is one line, cut (R-CUR-018); the whole stands in the opened package.
+.hit-description {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+td.keep {
+  white-space: nowrap;
+}
+
+tr.expansion > td {
+  padding: 0;
+  border-block-end: 0;
+}

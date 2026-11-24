@@ -44,14 +44,14 @@
   </quader-page-header>
 
   @if (remoteTabs()) {
-    <!-- A remote repository's views are tabs, each with its address (R-CUR-018, Q-CUR-1): the content and Downloads; Upstream
-         joins with the catalogue's screens (Q-CUR-130). -->
+    <!-- A remote repository's views are tabs, each with its address (R-CUR-018, Q-CUR-1): the content, Upstream and Downloads. -->
     <quader-remote-tabs
       [project]="project()"
       [key]="key()"
       [contentLabel]="shape().itemsLabel"
-      [current]="view() === 'downloads' ? 'downloads' : 'content'"
-      [counts]="view() === 'downloads' ? queueCounts() : null"
+      [current]="currentTab()"
+      [counts]="currentTab() === 'content' ? null : queueCounts()"
+      [requestCount]="currentTab() === 'upstream' ? requestCount() : undefined"
     />
   }
 
@@ -59,6 +59,19 @@
     @if (remoteTabs()) {
       <quader-remote-downloads [repository]="ref()" [fillAction]="fillAction()" (countsChange)="queueCounts.set($event)" />
     }
+  } @else if (view() === 'upstream') {
+    <!-- >>> T-24 upstream -->
+    @if (remoteTabs()) {
+      <quader-remote-upstream
+        [repository]="ref()"
+        [project]="project()"
+        [format]="r.format"
+        [shape]="shape()"
+        [fillAction]="fillAction()"
+        (capsChange)="upstreamRead($event)"
+      />
+    }
+    <!-- <<< T-24 upstream -->
   } @else if (view() === 'items') {
     <!-- The content alone: the client setup is the header's Set up client (Q-UI-321). A system repository is fetched into by Quader's
          own work, not by clients, so the note about what clients fetched is not its (Q-UI-896). -->
