@@ -5,6 +5,7 @@ import (
 
 	nugetdata "github.com/guided-traffic/quader/internal/formatdata/nuget"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
+	"github.com/guided-traffic/quader/internal/packages/sortkey"
 )
 
 func TestBackgroundMigrations(t *testing.T) {
@@ -30,5 +31,16 @@ func TestBackgroundMigrations(t *testing.T) {
 		if !found {
 			t.Fatalf("nuget_semver2 is not among %+v", BackgroundMigrations())
 		}
+	})
+	t.Run("R-HA-022 the fill of the versions' sort keys is declared under the name of its job kind", func(t *testing.T) {
+		for _, m := range BackgroundMigrations() {
+			if m.Name == "version_sort_key" {
+				if m.Kind() != sortkey.JobKind || m.DoneKey != sortkey.StateKey {
+					t.Fatalf("declaration = %+v (kind %s)", m, m.Kind())
+				}
+				return
+			}
+		}
+		t.Fatalf("version_sort_key is not among %+v", BackgroundMigrations())
 	})
 }

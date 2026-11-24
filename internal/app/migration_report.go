@@ -7,6 +7,7 @@ import (
 	nugetdata "github.com/guided-traffic/quader/internal/formatdata/nuget"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
+	"github.com/guided-traffic/quader/internal/packages/sortkey"
 )
 
 // BackgroundMigrations are the background data migrations of this binary (R-HA-022, Q-HA-114), declared by the packages
@@ -14,7 +15,7 @@ import (
 // has not succeeded (Q-HA-115), and GET /api/v1/system/migrations and `quader migrate status` list their states. The
 // composition root alone imports a format's data package, so the list is here.
 func BackgroundMigrations() []postgres.BackgroundMigration {
-	return []postgres.BackgroundMigration{nugetdata.Semver2Background()}
+	return []postgres.BackgroundMigration{nugetdata.Semver2Background(), sortkey.Background()}
 }
 
 // migrationReport is the source of GET /api/v1/system/migrations: postgres.Report, the code of `quader migrate status`, on

@@ -16,6 +16,9 @@ the client setup page of the admin UI ([web-ui.md](web-ui.md#package-screens-and
   format's `ViewAdapter` over its data port (Q-API-166). The order is also stored: every version row carries the format's sort key
   (`ViewAdapter.SortKey`, bytewise the order of `Compare`) and its pre-release answer, which the host's package writer writes, so that
   PostgreSQL orders the versions by an index ([Q-API-429](../spec/api-and-ui.md#q-api-429--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row)).
+  A row may lack the key (written before migration 00116, or by a replica of the release before it during an upgrade): the reads give it the
+  key its format gives it ([Q-API-430](../spec/api-and-ui.md#q-api-430--a-version-row-without-a-stored-sort-key-is-ordered-by-the-key-its-format-gives-it)),
+  and the background migration `version_sort_key` fills it ([below](#the-fill-of-the-sort-keys-q-ha-492)).
 - **The server never builds an address from the `Host` of a request**, and never puts a token into a snippet (Q-API-168).
 - **A hidden thing and a missing thing look the same**: `404`, the same problem body.
 
@@ -26,6 +29,7 @@ the client setup page of the admin UI ([web-ui.md](web-ui.md#package-screens-and
 | [internal/api/v1/packages_api.go](../../internal/api/v1/packages_api.go) | The seven handlers; `PackageServices`; the request's scope (`packageScope`); `writeTagged`; the download URL; `GetClientSetup` and `publishTarget` |
 | [internal/api/v1/setup_snippets.go](../../internal/api/v1/setup_snippets.go) | Runs a format's `SetupTemplate`s: the credential modes, the package substitution, `shellQuote`, the snippet ids, the token-shape check |
 | [internal/packages/view/](../../internal/packages/view) | The read model (domain layer): `Service` (`Scope`, `List`, `Package`, `Versions`, `Version`, `ReadmeOf`), `Topology` (the repositories by database ID, which virtual repository contains which, the name of an ID), `ID`/`ParseID`, the `Adapter` interface and the value types |
+| [internal/packages/sortkey/](../../internal/packages/sortkey) | The background migration `version_sort_key` (Q-HA-492): `Fill` with `Enqueue` and `Run`, `Background`, `JobSpec` ([below](#the-fill-of-the-sort-keys-q-ha-492)) |
 | [internal/packages/readme/](../../internal/packages/readme) | The README renderer: goldmark, bluemonday, the finishing pass, `HeadingSlug`, `Version`, `PolicyHash` |
 | [internal/authz/visible.go](../../internal/authz/visible.go) | `ReadScoper`, `ReadScope`, `ReadShape` (`ReadAll`, `ReadNone`, `ReadRows`): the classification of a repository for a listing |
 | [internal/formats/view.go](../../internal/formats/view.go) | The contract: `ViewAdapter`, `ViewVersion`, `ViewFields`, `ViewData`, `ViewFind`, `DataPorts`, `Base.View()`, and `StoredQuery`/`Stored` (the stored versions and tags of one package in one repository, for the exposure check; `ViewAdapter.Stored`) |
@@ -51,9 +55,9 @@ the client setup page of the admin UI ([web-ui.md](web-ui.md#package-screens-and
    package's downloaded files, each counted once per visible version or tag that holds its bytes). Names are compared with collation `C`.
 5. For the packages of the page it reads the candidates of their latest version (`PackageViewLatest`, Q-API-429): per package row its highest visible release
    by the stored sort key, its highest pre-release when it has no visible release, and a remote OCI repository's highest tag, each the first visible entry of
-   an index (`package_versions_latest_release`, `package_versions_latest_prerelease`, `remote_cache_entries_tag_key`). It takes the latest among them by the
-   adapter's order (a release before a pre-release), names the repositories whose rows gave a candidate, and asks the adapter for the description and
-   keywords of that version.
+   an index (`package_versions_latest_release`, `package_versions_latest_prerelease`, `remote_cache_entries_tag_key`), and every visible row without a stored
+   key (Q-API-430; none once the fill has run). It takes the latest among them by the adapter's order (a release before a pre-release), names the
+   repositories whose rows gave a candidate, and asks the adapter for the description and keywords of that version.
 
 Every transaction of the service runs with the server's JIT compilation off (`Service.read`, Q-API-428).
 
@@ -68,7 +72,9 @@ package several repositories hold, in the order of publication, goes through `so
 through `keyPage` for one holder or several (Q-API-429): `PackageViewVersionKeyDesc`/`Asc` over `package_versions` (index `package_versions_by_key`) and, for
 a remote repository, `PackageViewTagKeyDesc`/`Asc` over its tag entries (index `remote_cache_entries_tag_key`), at least 64 versions of each holder after the
 cursor's key, merged by the key (`keyBatch`: a version two holders hold has one key, so its rows meet and it is taken once; the first `n` distinct versions
-of the merge are complete). The cursor is `[version]`; its key is `Adapter.SortKey(version)`, the bytes the rows store. A version's `publishedAt` is its
+of the merge are complete). The cursor is `[version]`; its key is `Adapter.SortKey(version)`, the bytes the rows store. The two version statements return
+after their batch every visible row of the package without a stored key; `keyRows` gives each the key `Adapter.SortKey` gives it, keeps it when it lies
+after the cursor's key and merges it with the rest, and only the keyed rows count against the batch (Q-API-430). A version's `publishedAt` is its
 oldest visible row's in every order. Either way `PackageViewVersions` then reads the rows of the
 page's versions alone, by the holders' package ids and the versions, with sizes and downloads. Each row carries the downloads and the `last_download_at` of the items that are a fetch of the version by its format's rule
 (`Descriptor.VersionFetch`: the lead file, any file of the version, or an image's manifest by tag and by digest), read from `item_download_stats` in a
@@ -78,6 +84,32 @@ The details (`Service.Version`) read the visible rows of the one version (`oneVe
 oldest copy as the primary one, ask the adapter for summary and details, and read the files of the primary version; the visible set of versions the adapter
 may ask about (npm's dist-tags) is read only when it asks. `ReadmeOf` asks for details and README. The repositories of a version are the physical
 repositories that hold it plus the virtual repositories that contain one of them and that the caller may read, local first.
+
+## The fill of the sort keys (Q-HA-492)
+
+Migration 00116 adds `package_versions.sort_key` and `prerelease` as nullable columns (a row has both or neither, the check
+`package_versions_sort_key_whole`): the key is the format's code's, and the release before it keeps writing rows without them while a
+rolling upgrade runs (R-HA-020). The background migration `version_sort_key` ([sortkey.go](../../internal/packages/sortkey/sortkey.go),
+R-HA-022) fills them:
+
+- A worker that starts calls `Fill.Enqueue` (`startSortKeyFill` in [wire_formats.go](../../internal/app/wire_formats.go)): it queues the job
+  `data_migration_version_sort_key` (queue `maintenance`, `coalesce`) unless the `system_state` key `version_sort_key_filled` exists and no row
+  lacks a key; a completion that rows without a key followed (a rollback and an upgrade again, a restore of an old backup) is deleted first, so
+  the report shows the fill pending again.
+- `Fill.Run` reads the rows without a key by id after its cursor (`VersionSortKeyBatch` in
+  [version_sort_key.sql](../../internal/meta/postgres/queries/version_sort_key.sql), index `package_versions_unkeyed`, locked with
+  `SKIP LOCKED` so it never waits for a writer), computes each key with `formathost.VersionOrder` (the function the package writer stores
+  with), writes them (`VersionSortKeyFill`, only where the key is still NULL) and saves its cursor after every batch of
+  `jobs.background_migrations.batch_size`, with `pause_between_batches` between them.
+- At the end of a pass it asks whether a row without a key is left (`VersionSortKeyUnkeyed`): a replica of the release before can still be
+  writing, or a writer held a row. Then it queues the next run a minute later and records no completion (result `waiting`); otherwise it
+  records `{"state":"filled","filled":<rows>}` under `version_sort_key_filled`. It names no release it waits for.
+
+`GET /api/v1/system/migrations` lists it as `version_sort_key` (`sortkey.Background`, `app.BackgroundMigrations`). Tests:
+`TestR_API_029_VersionsWithoutAStoredKeyKeepTheirPlaceBeforeAndAfterTheFill`
+([versions_unkeyed_test.go](../../test/integration/packages/versions_unkeyed_test.go)) and
+`TestR_HA_020_TheSortKeyStepPassesOnADatabaseOfThePreviousRelease`
+([version_sort_key_test.go](../../test/integration/postgres/version_sort_key_test.go)).
 
 ## The suggestion read (R-API-061, R-API-064)
 

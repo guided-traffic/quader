@@ -1005,7 +1005,7 @@ func (s *Service) keyPage(ctx context.Context, sc Scope, a Adapter, hs []q.Packa
 	batch := max(limit+1, keysetBatch)
 	var page []pageKey
 	for len(admitted) > 0 && len(page) < limit+1 {
-		got, more, err := s.keyBatch(ctx, admitted, at, batch)
+		got, more, err := s.keyBatch(ctx, a, admitted, at, batch)
 		if err != nil {
 			return nil, true, err
 		}
@@ -1026,7 +1026,7 @@ func (s *Service) keyPage(ctx context.Context, sc Scope, a Adapter, hs []q.Packa
 		return page, len(page) > 0 || after != nil, nil
 	}
 	// An empty first page under a filter: the package is found when it has a version at all.
-	any, _, err := s.keyBatch(ctx, all, keyStart(o), 1)
+	any, _, err := s.keyBatch(ctx, a, all, keyStart(o), 1)
 	return page, len(any) > 0, err
 }
 
@@ -1042,23 +1042,24 @@ func keyStart(o VersionOrder) []byte {
 // keyBatch reads at most n versions of every holder after the key at, in the order of the keys, merges them and takes each version
 // once. Of the merged list the first n distinct versions are complete: a version among them is preceded in its holder's list only by
 // versions among them. more says that a holder had more than it gave, so the list is cut after n versions; when no holder had more,
-// every version after at is in the list.
-func (s *Service) keyBatch(ctx context.Context, ks []keysetQuery, at []byte, n int) ([]pageKey, bool, error) {
+// every version after at is in the list. A holder's rows without a stored key come whole, with the key a's format gives them (keyRows,
+// Q-API-430), so they count against no limit.
+func (s *Service) keyBatch(ctx context.Context, a Adapter, ks []keysetQuery, at []byte, n int) ([]pageKey, bool, error) {
 	var out []pageKey
 	more := false
 	err := s.read(ctx, func(qs *q.Queries) error {
 		out, more = out[:0], false
 		for _, k := range ks {
-			before := len(out)
 			var err error
-			if out, err = keyRows(ctx, qs, k, at, n, out); err != nil {
+			var keyed int
+			if out, keyed, err = keyRows(ctx, qs, a, k, at, n, out); err != nil {
 				return err
 			}
-			more = more || len(out)-before >= n
+			more = more || keyed >= n
 			if !k.remote {
 				continue
 			}
-			before = len(out)
+			before := len(out)
 			if out, err = keyTags(ctx, qs, k, at, n, out); err != nil {
 				return err
 			}
@@ -1088,24 +1089,40 @@ func (s *Service) keyBatch(ctx context.Context, ks []keysetQuery, at []byte, n i
 	return distinct, more, nil
 }
 
-// keyRows appends a batch of the package's version rows after the key at, in the order of the keys, to out.
-func keyRows(ctx context.Context, qs *q.Queries, k keysetQuery, at []byte, n int, out []pageKey) ([]pageKey, error) {
+// keyRows appends a batch of the package's version rows after the key at, in the order of the keys, to out, and reports how many of
+// them carry a stored key. The statement returns the rows without a stored key after them, every visible one of the package (rows
+// written before migration 00116 or by a replica of the release before it, until the background migration version_sort_key has filled
+// them, Q-API-430): each gets the key a's format gives it, the one the fill stores, and is kept when it lies after at. So such a row
+// takes its place in the order of the versions on every page, and none is dropped or listed twice.
+func keyRows(ctx context.Context, qs *q.Queries, a Adapter, k keysetQuery, at []byte, n int, out []pageKey) ([]pageKey, int, error) {
+	keyed := 0
+	add := func(version string, created time.Time, key []byte) {
+		if key != nil {
+			keyed++
+			out = append(out, pageKey{version: version, published: created, key: key})
+			return
+		}
+		key = a.SortKey(version)
+		if c := bytes.Compare(key, at); (k.desc && c < 0) || (!k.desc && c > 0) {
+			out = append(out, pageKey{version: version, published: created, key: key})
+		}
+	}
 	if k.desc {
 		rs, err := qs.PackageViewVersionKeyDesc(ctx, q.PackageViewVersionKeyDescParams{
 			PackageID: k.holder.PackageID, AfterKey: at, Withheld: k.withheld, Whole: k.whole, Allowed: k.allowed, MaxRows: rows32(n),
 		})
 		for _, r := range rs {
-			out = append(out, pageKey{version: r.Version, published: r.CreatedAt.Time, key: r.SortKey})
+			add(r.Version, r.CreatedAt.Time, r.SortKey)
 		}
-		return out, err
+		return out, keyed, err
 	}
 	rs, err := qs.PackageViewVersionKeyAsc(ctx, q.PackageViewVersionKeyAscParams{
 		PackageID: k.holder.PackageID, AfterKey: at, Withheld: k.withheld, Whole: k.whole, Allowed: k.allowed, MaxRows: rows32(n),
 	})
 	for _, r := range rs {
-		out = append(out, pageKey{version: r.Version, published: r.CreatedAt.Time, key: r.SortKey})
+		add(r.Version, r.CreatedAt.Time, r.SortKey)
 	}
-	return out, err
+	return out, keyed, err
 }
 
 // keyTags appends a batch of a remote OCI repository's tags of the name after the key at, in the order of the keys, to out.

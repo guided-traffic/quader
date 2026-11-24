@@ -77,6 +77,19 @@ func orderOf(f formats.Format) versionOrder {
 	return o
 }
 
+// VersionOrder is what the host stores of a version of the format with the ID besides the version (R-API-029, Q-API-429): the sort key
+// and the pre-release answer the package writer stores with every row. The background migration version_sort_key fills the rows
+// written without them with it (Q-HA-492), and the reads give a row without a stored key the same key (Q-API-430), so the three never
+// disagree. A format that is not registered has the key of a string that is no version.
+func VersionOrder(format, version string) (key []byte, prerelease bool) {
+	f, ok := formats.Lookup(format)
+	if !ok {
+		f = nil
+	}
+	o := orderOf(f)
+	return o.key(version), o.pre(version)
+}
+
 func (d Deps) lookup(id string) (formats.Format, bool) {
 	if d.Formats == nil {
 		return formats.Lookup(id)

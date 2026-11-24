@@ -1164,7 +1164,7 @@ type PackageVersion struct {
 	CreatedBy      pgtype.UUID
 	TrashedAt      pgtype.Timestamptz
 	SortKey        []byte
-	Prerelease     bool
+	Prerelease     pgtype.Bool
 }
 
 type PackageVersionListing struct {
@@ -1176,7 +1176,7 @@ type PackageVersionListing struct {
 	TrashedAt      pgtype.Timestamptz
 	DocumentSha256 []byte
 	SortKey        []byte
-	Prerelease     bool
+	Prerelease     pgtype.Bool
 }
 
 type Principal struct {

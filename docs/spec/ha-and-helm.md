@@ -3273,9 +3273,11 @@ Acceptance criteria:
 ### R-HA-022 · Background data migrations
 Priority: **MVP** · Covers: OPS-074
 
-**Status.** Partly built. One background migration exists, `data_migration_nuget_semver2`
-([formats/nuget.md](formats/nuget.md) Q-NUGET-93): a job on the queue `maintenance`, a singleton through `coalesce`, in keyset
-batches with a checkpoint, started only once no replica of the release before it is live. The table `background_migration`, the
+**Status.** Partly built. Two background migrations exist: `data_migration_nuget_semver2`
+([formats/nuget.md](formats/nuget.md) Q-NUGET-93), a job on the queue `maintenance`, a singleton through `coalesce`, in keyset
+batches with a checkpoint, started only once no replica of the release before it is live; and `data_migration_version_sort_key`
+([Q-HA-492](#q-ha-492--the-fill-of-the-versions-sort-keys-records-its-completion-after-a-pass-that-leaves-no-row-without-a-key)), which fills the sort key of the version rows written without one ([api-and-ui.md](api-and-ui.md) Q-API-430) the same
+way, starts at once and records its completion only after a pass that leaves no such row. The table `background_migration`, the
 pause and resume operations and a shared runner are not built. Until they are, each migration is declared by its package with the
 `system_state` key of its completion, and the report of R-HA-018 and the guard read its state from that record and its newest job
 ([Q-HA-114](#q-ha-114--which-background-migrations-the-migration-report-lists-before-r-ha-022s-table-exists)); a contract step
@@ -3297,7 +3299,9 @@ the previous release is tested for the NuGet recomputation ([semver2_test.go](..
   in N, because workers claim only the kinds they know (R-HA-005).
 - A background migration starts only when the cluster minimum version (R-HA-003) is ≥ the release
   that introduced it. Otherwise an older replica could write rows in the old shape behind the
-  backfill.
+  backfill. A migration whose rows of the old shape the data show (a column that is NULL) may
+  instead start at once, if it records its completion only after a pass that finds no such row and
+  queues the next run otherwise ([Q-HA-492](#q-ha-492--the-fill-of-the-versions-sort-keys-records-its-completion-after-a-pass-that-leaves-no-row-without-a-key)).
 - While a background migration runs, code that depends on its result MUST handle unconverted rows
   (dual read). A contract step that depends on its completion declares it, and the guard
   (R-HA-018) refuses to run that step before the migration has `succeeded`.
@@ -3332,7 +3336,8 @@ Acceptance criteria:
 
 - A test background migration over 1 million rows survives three worker restarts and finishes with
   `processed = 1000000`, each row converted exactly once (verified by a per-row counter column).
-- It does not start while a replica of the previous release is alive.
+- It does not start while a replica of the previous release is alive; a migration of the kind of
+  Q-HA-492 records no completion while a row of the old shape is left.
 
 ## Backup, restore and disaster recovery
 
@@ -13214,6 +13219,35 @@ worktree, which `QUADER_DEV_HTTP_PORT` then sets.
 `--cluster`, [up.sh](../../deploy/dev/up.sh), [cluster-logs.sh](../../deploy/dev/cluster-logs.sh); held by
 `TestDevProfileClusterPortAndKubeconfigArePerCheckout` ([checkoutprofiles_test.go](../../internal/tools/ciworkflows/checkoutprofiles_test.go)).
 Elsewhere: [local-profile.md](../developer/local-profile.md#one-cluster-port-and-kubeconfig-per-checkout).
+
+### Q-HA-492 · The fill of the versions' sort keys records its completion after a pass that leaves no row without a key
+
+Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: migration 00116 adds the sort key of a version and its pre-release flag ([api-and-ui.md](api-and-ui.md) Q-API-429), which only
+the format's code can compute, so the rows stored before it have neither, and a replica of the release before it writes more such rows
+while a rolling upgrade runs (R-HA-020). R-HA-022 starts a background migration only once no replica of an older release is live, which
+the NuGet recomputation reads from a release number written into the code (`Semver2LastOldRelease`). The release that will carry this
+change is not known when it is written: semantic-release sets it at the release, and a patch release of the commits before it may come
+first. The reads stay right without the keys ([api-and-ui.md](api-and-ui.md) Q-API-430); the fill makes them cheap again.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The fill starts at once and records its completion only after a pass that leaves no row without a key (chosen) | `data_migration_version_sort_key`: keyset batches by id over the rows whose key is NULL (index `package_versions_unkeyed`), locked with `SKIP LOCKED`, the key from `formathost.VersionOrder`; at the end of a pass a row without a key left (written behind the cursor, or held by a writer) queues the next run a minute later and records nothing; a worker that starts queues it while the completion is missing or such a row exists, and deletes a completion that such a row followed | The data say when the old writers are gone, so no release number can be wrong; a rollback and an upgrade again, or a restore of an older backup, are filled again by the next worker; filling early costs nothing, because a filled row is never written again | A run during the roll may find rows left and wait a minute; the report shows `pending` while it waits |
+| (b) Wait while a replica of the release before is live, as the NuGet recomputation does | `postgres.ReplicasUpTo(<the release before>)` | The rule of R-HA-022 as written | The release before is a number the change cannot know: it was 0.122.2 when this was written and 0.122.3 an hour later, when the fix before it on `main` was released; a wrong number lets an old replica write behind the fill, or makes the fill wait for no one |
+| (c) Wait while any live replica runs a release lower than the fill's own binary | No constant | No number to keep | A dev build counts as newest; every later upgrade waits for the replicas before it whenever the fill runs again |
+| (d) The migration Job fills the keys | Go code in `quader migrate` | Done before a replica starts | The Job must load every format's code; the replicas of the release before keep writing rows without a key after it |
+
+**Choice:** (a). **Rationale:** what R-HA-022's version gate protects against is a row of the old shape left behind the backfill; where the
+data show such a row, a check of the data at the end of a pass protects against it exactly, whoever wrote it and whenever, and needs no
+release number. The development agent would revisit it if a migration's old shape cannot be seen in the data, which needs the version gate
+of R-HA-022. **Applied in the spec:** R-HA-022 (the status, the start rule and its acceptance criterion). Code:
+[sortkey.go](../../internal/packages/sortkey/sortkey.go) (`Fill`, `Background`), [version_sort_key.sql](../../internal/meta/postgres/queries/version_sort_key.sql),
+`startSortKeyFill` in [wire_formats.go](../../internal/app/wire_formats.go), `app.BackgroundMigrations`. Tests:
+`TestR_API_029_VersionsWithoutAStoredKeyKeepTheirPlaceBeforeAndAfterTheFill` ([packages](../../test/integration/packages/versions_unkeyed_test.go)),
+`TestR_HA_020_TheSortKeyStepPassesOnADatabaseOfThePreviousRelease` ([postgres](../../test/integration/postgres/version_sort_key_test.go)),
+`TestBackgroundMigrations`, the unit tests of [sortkey_test.go](../../internal/packages/sortkey/sortkey_test.go), and the set `upgrade-release`,
+whose check of `GET /api/v1/system/migrations` waits for it to succeed.
 ### H-37 · A database restore revives revoked credentials and removed grants
 
 Restoring PostgreSQL to time *t*, from the platform layer (R-HA-025) or from a Quader backup taken at

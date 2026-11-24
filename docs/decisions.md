@@ -2606,12 +2606,20 @@ No statement can sort by a format's `Compare`.
   bytewise the order of `Compare`, a string that is no version first, two strings two keys. Kit check 11 holds it to `Compare`.
 - The host's package writer stores the key and the format's pre-release answer with every version row; a remote OCI repository's tag
   entries derive the same key in PostgreSQL from the stored tag (migration 00116, compared byte for byte by an integration test).
+- The rows written without a key (before migration 00116, or by a replica of the release before it during a rolling upgrade) keep it
+  NULL until the background migration `version_sort_key` fills it with the same function the writer uses; it records its completion only
+  after a pass that leaves no such row
+  ([Q-HA-492](spec/ha-and-helm.md#q-ha-492--the-fill-of-the-versions-sort-keys-records-its-completion-after-a-pass-that-leaves-no-row-without-a-key)).
+  Meanwhile the statements return a package's rows without a key besides the keyed batch and the service gives each the key its format
+  gives it ([Q-API-430](spec/api-and-ui.md#q-api-430--a-version-row-without-a-stored-sort-key-is-ordered-by-the-key-its-format-gives-it)).
 - A page in the order of the versions is one keyset statement per holder on an index; the latest version of a listed package is the first
   visible entry of an index of its releases, else of its pre-releases; the package list sums the downloads of the page's packages alone.
 
-**Consequences.** Every format with a view implements `SortKey`; a database that holds version rows written without a key is started
-afresh (pre-alpha); the order of publication of a package several repositories hold, and the count of a package's versions in the list,
-still read every version (H-1683).
+**Consequences.** Every format with a view implements `SortKey`; an installation upgrades with its version rows (R-HA-020), and a page
+reads a package's rows without a key whole until the fill has reached them; a change of a format's encoding is a migration step that
+sets its stored keys to NULL, which the fill recomputes. **Revised on 2026-11-24:** migration 00116 had refused a database that held
+version rows, which refused every upgrade. The order of publication of a package several repositories hold, and the count of a
+package's versions in the list, still read every version (H-1683).
 
 ## Design invariants
 
@@ -8997,10 +9005,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-API
 
-155 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
+156 questions on [spec/api-and-ui.md](spec/api-and-ui.md) and [spec/formats/ansible.md](spec/formats/ansible.md).
 
 <details>
-<summary>Q-API: 155 questions</summary>
+<summary>Q-API: 156 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9159,6 +9167,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-API-417](spec/api-and-ui.md#q-api-417--the-version-list-of-a-package-is-read-a-page-at-a-time-by-a-keyset-query-in-the-order-of-publication) | The version list of a package is read a page at a time by a keyset query in the order of publication | Decided by the development agent | (a) A package that one repository of the scope holds, in the order of publication: one keyset statement on (creation time, version compared bytewise) with a limit, in the order of an index (`package_versions_listing`; a remote OCI repository's tags by `remote_cache_entries_tag_time`, Q-OCI-267); the rows with sizes and downloads are read for the page's versions alone. A package several repositories hold, and the order of the format's versions, read every visible version's name, one cheap row each, and sort in the service | — |
 | [Q-API-428](spec/api-and-ui.md#q-api-428--the-package-views-statements-run-without-the-servers-jit-compilation) | The package view's statements run without the server's JIT compilation | Decided by the development agent | (a) `set_config('jit', 'off', true)` as the first statement of every transaction of the view's service | — |
 | [Q-API-429](spec/api-and-ui.md#q-api-429--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row) | The order of a format's versions is a sort key stored with every version row | Decided by the development agent | (a) A sort key of the format's order stored with every version row | [ADR-278](#adr-278--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row) |
+| [Q-API-430](spec/api-and-ui.md#q-api-430--a-version-row-without-a-stored-sort-key-is-ordered-by-the-key-its-format-gives-it) | A version row without a stored sort key is ordered by the key its format gives it | Decided by the development agent | (a) The statements return a package's rows without a key after their keyed batch, and the service gives each the key its format gives it | [ADR-278](#adr-278--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row) |
 
 </details>
 
@@ -10457,10 +10466,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-HA
 
-259 questions on [spec/ha-and-helm.md](spec/ha-and-helm.md).
+260 questions on [spec/ha-and-helm.md](spec/ha-and-helm.md).
 
 <details>
-<summary>Q-HA: 259 questions</summary>
+<summary>Q-HA: 260 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10723,6 +10732,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-HA-489](spec/ha-and-helm.md#q-ha-489--every-image-of-the-development-profiles-carries-the-checkouts-tag-and-the-charts-run-the-image-they-were-given) | Every image of the development profiles carries the checkout's tag, and the charts run the image they were given | Decided by the development agent on 2026-11-23 | (a) A tag per checkout, `DEV_TAG` (`dev` in a main checkout, `dev-<worktree directory>` in a git worktree, `QUADER_DEV_TAG` overrides), on every image the profiles build and run, and the charts' `image.registry`, `image.repository` and `image.tag` set from the image the script was given | — |
 | [Q-HA-490](spec/ha-and-helm.md#q-ha-490--the-development-profiles-root-ca-is-ready-before-a-leaf-is-requested) | The development profile's root CA is Ready before a leaf is requested | Decided by the development agent on 2026-11-23 | (a) The root first: apply the objects labelled `quader-dev/pki=root`, wait until the root's Certificate and the CA Issuer are Ready, then apply the file | — |
 | [Q-HA-491](spec/ha-and-helm.md#q-ha-491--a-worktrees-kind-cluster-its-edge-port-and-its-kubeconfig-are-its-own) | A worktree's kind cluster, its edge port and its kubeconfig are its own | Decided by the development agent on 2026-11-23 | (a) Derived from the checkout: `quader-<worktree>` (`dev-tag.sh --cluster`), the port picked free by kind at creation (`hostPort` 0) and read back from the node, the kubeconfig `.dev/kubeconfig` of the worktree; the main checkout keeps `quader`, 8080 and the caller's kubeconfig | — |
+| [Q-HA-492](spec/ha-and-helm.md#q-ha-492--the-fill-of-the-versions-sort-keys-records-its-completion-after-a-pass-that-leaves-no-row-without-a-key) | The fill of the versions' sort keys records its completion after a pass that leaves no row without a key | Decided by the development agent on 2026-11-24 | (a) The fill starts at once and records its completion only after a pass that leaves no row without a key | [ADR-278](#adr-278--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row) |
 
 </details>
 

@@ -208,7 +208,7 @@ quader/
 │   ├── errs/                 # error kinds, the code registry (codes.go), problem rendering
 │   ├── httpserver/           # listeners, routes, middleware chain, client address, ops endpoints; content/ the content-header wrapper
 │   ├── formathost/           # the Host of the format contract, the hook and seam adapters, the data-port bindings
-│   ├── packages/             # the generic package rows: store and writer (rev_seq raised once per package per transaction)
+│   ├── packages/             # the generic package rows: store and writer (rev_seq raised once per package per transaction); view/ the read model, sortkey/ the fill of the versions' sort keys
 │   ├── jobs/                 # job kinds, tasks, the queue, workers, scheduler, reaper
 │   ├── meta/                 # transactions and the revision-column registry
 │   ├── meta/postgres/        # pools, connect, retry, migrations/ (embedded), queries/ (sqlc input), q/ (sqlc output),

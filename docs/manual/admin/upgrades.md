@@ -104,7 +104,20 @@ kubectl -n quader exec deploy/quader-worker -- /usr/local/bin/quader migrate sta
 
 ## Background data migrations
 
-A correction of stored data runs after the upgrade as a job on a worker, not in the migration Job, so the Job does not take longer with more data. This version has one, `data_migration_nuget_semver2`. It finds the NuGet versions stored by 0.9.0 or older that have a dependency range with a SemVer 2.0.0 bound, such as `[2.0.0-rc.1, )`, and marks them SemVer 2.0.0. NuGet clients older than 4.3 then no longer get these versions in the SemVer 1 registrations or in a search without `semVerLevel=2.0.0`.
+A correction of stored data runs after the upgrade as a job on a worker, not in the migration Job, so the Job does not take longer with more data. This version has two.
+
+### The sort keys of the versions
+
+`data_migration_version_sort_key` stores, for every version stored before the upgrade, the key by which Quader orders a package's versions and finds its latest version. Until it has reached a version, the package screens and the API still list that version in its right place, only more slowly for a package with very many versions.
+
+- The first worker that starts after the upgrade queues it. Pods of the previous version keep storing versions without the key while the rollout runs; a run that finds such versions left at its end says `state: waiting` and tries again a minute later. Once the rollout has finished, a run ends with `state: filled` and the number of versions it `filled`.
+- Follow it in the tab **Jobs** of **Admin area › System › System status** with the kind `data_migration_version_sort_key`.
+- `GET /api/v1/system/migrations` lists it under `background` as `version_sort_key`: `pending` until a worker runs it and while it waits for the next run, `running` while it runs, `failed` when its last run failed, and `succeeded` once its completion is recorded, with the number of versions it filled.
+- After a rollback and an upgrade again, the first worker that starts finds the versions stored meanwhile and runs it again by itself.
+
+### The SemVer 2 classification of NuGet versions
+
+`data_migration_nuget_semver2` finds the NuGet versions stored by 0.9.0 or older that have a dependency range with a SemVer 2.0.0 bound, such as `[2.0.0-rc.1, )`, and marks them SemVer 2.0.0. NuGet clients older than 4.3 then no longer get these versions in the SemVer 1 registrations or in a search without `semVerLevel=2.0.0`.
 
 - The first worker that starts after the upgrade queues it. While a pod of 0.9.0 or older is still live, it waits: the result says `state: waiting` and names those pods, and it tries again a minute later. Once the rollout has finished, it runs.
 - Follow it in the tab **Jobs** of **Admin area › System › System status** with the kind `data_migration_nuget_semver2`. A run that reached the end shows `state: recomputed` with the number of versions it `examined` and `changed` and the `packages` they belong to. A version it could not read is counted as `unreadable` and named in the worker's log.

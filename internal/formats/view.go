@@ -32,8 +32,10 @@ type ViewAdapter interface {
 	// SortKey is the stored sort key of a version (R-API-029, Q-API-429): bytes.Compare of the keys of two strings has the sign of
 	// Compare wherever Compare is not zero, and two different strings have two different keys. The host stores it with every
 	// version row, so that the version list in the order of the versions and the latest version of a package are read by an index.
-	// It is built with internal/formats/versionkey: a string that is no version is [versionkey.NotVersion] and its bytes. The key
-	// of a stored version is never recomputed: a change of the encoding needs a fresh database while Quader is pre-alpha.
+	// It is built with internal/formats/versionkey: a string that is no version is [versionkey.NotVersion] and its bytes. A stored
+	// key is recomputed only when it is missing: the background migration version_sort_key fills a row without one (Q-HA-492) and
+	// the reads give such a row this key meanwhile (Q-API-430). A change of the encoding is therefore a migration step that sets the
+	// format's stored keys to NULL; the next worker that starts queues the fill again.
 	SortKey(version string) []byte
 	// Describe reads, for versions the caller may read, what the screens show of
 	// each. A version the format has no data for is absent from the answer. visible

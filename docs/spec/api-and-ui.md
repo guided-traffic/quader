@@ -1664,8 +1664,10 @@ remain as their owners define them.)
   ([Q-API-417](#q-api-417--the-version-list-of-a-package-is-read-a-page-at-a-time-by-a-keyset-query-in-the-order-of-publication)); the
   order of the format's versions (`sort` `version` or `-version`) by keyset queries on the format's sort key stored with every version, for
   one repository or several, and the latest version of a listed package by the first entry of an index of its releases, else of its
-  pre-releases ([Q-API-429](#q-api-429--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row)); a package several
-  repositories hold, in the order of publication, reads every visible version's name and sorts them in the service
+  pre-releases ([Q-API-429](#q-api-429--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row)); a version row
+  without a stored key (written before the key existed, or by a replica of the release before it during an upgrade) takes the place the
+  key its format gives it puts it in, on every page and as a candidate of the latest version, until a background migration has filled it
+  ([Q-API-430](#q-api-430--a-version-row-without-a-stored-sort-key-is-ordered-by-the-key-its-format-gives-it)); a package several repositories hold, in the order of publication, reads every visible version's name and sorts them in the service
   ([H-1683](#h-1683--the-version-list-of-a-package-several-repositories-hold-in-the-order-of-publication-reads-every-version-and-the-package-list-counts-every-version)).
   Remote repositories contribute their cached versions only,
   and a version the format withholds (npm: a tombstoned one, R-NPM-047) is not counted anywhere.
@@ -23454,7 +23456,11 @@ and the version's bytes ([versionkey](../../internal/formats/versionkey/versionk
 `[version]`: the service asks the format for its key. The package list now reads, per listed package row, its latest release, its latest
 pre-release when it has no release, and a remote image's latest tag (`PackageViewLatest`), each the first visible entry of an index, and
 sums the downloads of the page's packages alone, by joins and not a subplan per version. The rows stored before the key existed cannot
-carry it: migration 00116 refuses a database that holds version rows, which is started afresh (pre-alpha, Q-ARCH-340). **Rationale:** the
+carry it: migration 00116 adds the columns without a value for them, the background migration `version_sort_key` fills them through the
+format's code, and the reads order a row without a key by the key its format gives it meanwhile ([Q-API-430](#q-api-430--a-version-row-without-a-stored-sort-key-is-ordered-by-the-key-its-format-gives-it);
+[Q-HA-492](ha-and-helm.md#q-ha-492--the-fill-of-the-versions-sort-keys-records-its-completion-after-a-pass-that-leaves-no-row-without-a-key)).
+**Revised on 2026-11-24**: the step had refused a database that held version rows, which every running installation does within seconds
+of its start (the malware updater stores the scanner's definitions as versions), so it refused every upgrade (R-HA-020). **Rationale:** the
 order of versions is the format's knowledge; a key computed where `Compare` lives is tested at the cheapest tier for every format, and the
 one place it is written twice (the tags of a remote, which are cache entries the engine writes) is a rule of a few lines that one
 integration test compares over a table of tags. The development agent would revisit this if a format's order cannot be encoded as bytes,
@@ -23462,11 +23468,43 @@ or when the count of a package's versions, still read whole (H-1683), is kept by
 R-API-029, H-1683, [formats/oci.md](formats/oci.md) H-829, [architecture.md](architecture.md) R-ARCH-008 (contract version 12). Code:
 `keyPage`, `keyBatch`, `latestCandidates` in [service.go](../../internal/packages/view/service.go); `PackageViewVersionKey*`,
 `PackageViewTagKey*`, `PackageViewLatest`, `PackageViewList` in [package_view.sql](../../internal/meta/postgres/queries/package_view.sql);
-the writer's `versionOrder` in [hooks.go](../../internal/formathost/hooks.go); migration
+the writer's `versionOrder` and `VersionOrder` in [hooks.go](../../internal/formathost/hooks.go); migration
 [00116](../../internal/meta/postgres/migrations/00116_version_sort_key.sql). Tests: `TestR_API_010_APageOfVersionsReadsNoVersionPastItsLimit`
 ([packages](../../test/integration/packages/versions_keyset_test.go)), `TestR_API_010_APageOfARemotesTagsReadsNoTagPastItsLimit`
 ([ociremote](../../test/integration/ociremote/listing_keyset_test.go)), kit check 11 (`viewSortKey` in
 [checks_view.go](../../internal/formats/formattest/checks_view.go)) and the key tests of npm, Debian and the tag order.
+
+### Q-API-430 · A version row without a stored sort key is ordered by the key its format gives it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It revises
+[Q-API-429](#q-api-429--the-order-of-a-formats-versions-is-a-sort-key-stored-with-every-version-row), whose migration refused a database
+that held version rows.
+
+Context: the sort key of a version is computed by its format's code, so migration 00116 cannot write it for the rows stored before it, and
+during a rolling upgrade (R-HA-020) the replicas of the release before it keep writing rows without one until they stop. Every running
+installation holds version rows within seconds of its start (the malware updater stores the scanner's definitions `main`, `daily` and
+`bytecode` as versions), so a step that refuses such a database refuses every upgrade. The columns are therefore nullable, and the
+background migration `version_sort_key` fills them ([Q-HA-492](ha-and-helm.md#q-ha-492--the-fill-of-the-versions-sort-keys-records-its-completion-after-a-pass-that-leaves-no-row-without-a-key)).
+Until it has, and again for a row a replica of the release before writes after it, a version without a key must neither vanish from a
+page nor be listed out of order, and the latest version must count it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The statements return a package's rows without a key after their keyed batch, and the service gives each the key its format gives it (chosen) | `PackageViewVersionKeyDesc`/`Asc` return, after the batch on the key, every visible row of the package whose key is NULL; `keyRows` computes `Adapter.SortKey(version)` for each, keeps it when it lies after the cursor's key and merges it with the keyed rows (only those count against the batch); `PackageViewLatest` returns every visible row without a key as a candidate besides the first of each index, and the format's order picks the latest among them | Right for every package at every moment, also for a row written after the fill completed (a rollback); one statement as before, no state to read and no second code path; the key the service computes is the one the fill stores (`formathost.VersionOrder`), so a page's cursor means the same before and after; once the rows are filled the extra part reads nothing (`package_versions_by_key` holds the NULL keys) | A package with many rows without a key reads all of them on every page until the fill reaches them, as every page did before Q-API-429 |
+| (b) The API answers the old way until the background migration reports done | The service reads the migration's state and orders in the service (the way before Q-API-429) while it is not `succeeded` | The old way is known to be right | A switch over the whole installation for the rows of a few packages; a row a replica of the release before writes after the completion is ordered wrong or lost from the latest; the old path stays in the code beside the new |
+| (c) A package with a row without a key falls back to the old way | A probe per package, then the keyset or the old sort | Each package read by the cheap path as soon as its rows are filled | Two paths per read and a probe per package; a cursor must mean the same in both, which (a) gets for free |
+| (d) The keyset ignores rows without a key until they are filled | Nothing to build | — | A version vanishes from the pages and from the latest for minutes after an upgrade, and for good when written after the completion |
+
+**Choice:** (a). **Rationale:** the rows without a key are few, short-lived and recognizable in the statement itself (a NULL key); giving
+each the key the fill will store keeps one path, one cursor and the exact order, and the cost falls only on what is not filled yet. The
+development agent would revisit this if a fill could leave rows without a key for long, or if the key of a stored row could differ from the
+one the format gives (a change of the encoding, which a migration step then clears so the fill recomputes it). **Applied in the spec:**
+R-API-029, Q-API-429. Code: `keyRows` and `keyBatch` in [service.go](../../internal/packages/view/service.go); `PackageViewVersionKeyDesc`,
+`PackageViewVersionKeyAsc` and `PackageViewLatest` in [package_view.sql](../../internal/meta/postgres/queries/package_view.sql); migration
+[00116](../../internal/meta/postgres/migrations/00116_version_sort_key.sql). Tests: `TestR_API_029_VersionsWithoutAStoredKeyKeepTheirPlaceBeforeAndAfterTheFill`
+([packages](../../test/integration/packages/versions_unkeyed_test.go)), `TestR_HA_020_TheSortKeyStepPassesOnADatabaseOfThePreviousRelease`
+([postgres](../../test/integration/postgres/version_sort_key_test.go)); `TestR_API_010_APageOfVersionsReadsNoVersionPastItsLimit` keeps
+holding the keyset's bound.
 
 ## What this does not cover
 

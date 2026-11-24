@@ -270,12 +270,16 @@ from its completion record (`BackgroundMigration.Processed`), which outlives the
 any run of the kind (`BackgroundMigrationJob` in [migration.sql](../../internal/meta/postgres/queries/migration.sql)).
 
 `app.BackgroundMigrations()` ([migration_report.go](../../internal/app/migration_report.go)) lists the declarations of the binary;
-`quader migrate` passes them to the guard and the report, the `api` role to the report. Today it holds one, `nuget_semver2`
-(`nugetdata.Semver2Background`, [nuget.md](nuget.md#the-recomputation-of-is_semver2-q-nuget-93)). How to add one:
+`quader migrate` passes them to the guard and the report, the `api` role to the report. Today it holds two: `nuget_semver2`
+(`nugetdata.Semver2Background`, [nuget.md](nuget.md#the-recomputation-of-is_semver2-q-nuget-93)) and `version_sort_key`
+(`sortkey.Background`, [packages.md](packages.md#the-fill-of-the-sort-keys-q-ha-492)), which fills the sort key of the version rows
+written without one (Q-HA-492). How to add one:
 
 1. Run it as a job kind `data_migration_<name>` that records its completion in a `system_state` key (as
    [semver2.go](../../internal/formatdata/nuget/semver2.go) does), and start it only once every live replica runs its release
-   (`postgres.ReplicasUpTo`).
+   (`postgres.ReplicasUpTo`), or, when a row of the old shape is recognizable in the data (a column that is NULL), record the
+   completion only after a pass that finds no such row and queue the next run otherwise, as
+   [sortkey.go](../../internal/packages/sortkey/sortkey.go) does (Q-HA-492).
 2. Declare it next to the job (`Name`, `Release`, `DoneKey`, optionally `Processed`) and add it to `app.BackgroundMigrations()`.
    `TestBackgroundMigrations` ([migration_report_test.go](../../internal/app/migration_report_test.go)) checks that the
    declarations are valid and that every `requires-background` of the embedded steps names one of them.

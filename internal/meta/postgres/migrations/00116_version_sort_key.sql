@@ -7,19 +7,17 @@
 -- here from the stored tag, by the same encoding as the format's (internal/formats/oci/tagorder Key), and none of them is a
 -- pre-release, as the format's exposure adapter calls none.
 --
--- The key of a stored version is the format's code's and cannot be computed here: the columns have no default, so this step refuses a
--- database that holds version rows (pre-alpha, no installation has to keep them: Q-ARCH-340, CLAUDE.md). Such a database is started
--- afresh.
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM package_versions) THEN
-    RAISE EXCEPTION 'migration 00116: package_versions holds rows written without their sort key; this release needs a fresh database (pre-alpha, Q-ARCH-340)';
-  END IF;
-END $$;
-
+-- The key of a stored version is the format's code's and cannot be computed here. The columns are nullable: a row written before this
+-- step, or by a replica of the previous release during a rolling upgrade (R-HA-020), has neither, and the background data migration
+-- version_sort_key (R-HA-022, Q-HA-492; internal/packages/sortkey) fills both through the format's code. Until it has, the reads take a
+-- package's rows without a key by their version (Q-API-430). A row has both or neither.
 ALTER TABLE package_versions
-    ADD COLUMN sort_key   bytea   NOT NULL CHECK (octet_length(sort_key) > 0),
-    ADD COLUMN prerelease boolean NOT NULL;
+    ADD COLUMN sort_key   bytea   CHECK (octet_length(sort_key) > 0),
+    ADD COLUMN prerelease boolean,
+    ADD CONSTRAINT package_versions_sort_key_whole CHECK ((sort_key IS NULL) = (prerelease IS NULL));
+
+-- The rows the background migration has still to fill, in the order of their ids; empty once it has.
+CREATE INDEX package_versions_unkeyed ON package_versions (id) WHERE sort_key IS NULL;
 
 -- A page of a package's versions in the order of the versions (keyset on the key); the latest version, the highest key of the
 -- package's releases, else of its pre-releases, each the first entry of an index of its own kind.

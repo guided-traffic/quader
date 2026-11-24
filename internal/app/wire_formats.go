@@ -36,6 +36,7 @@ import (
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/observability"
 	"github.com/guided-traffic/quader/internal/packages"
+	"github.com/guided-traffic/quader/internal/packages/sortkey"
 	"github.com/guided-traffic/quader/internal/repository"
 	"github.com/guided-traffic/quader/internal/secrets"
 	sigfetch "github.com/guided-traffic/quader/internal/signatures/fetch"
@@ -93,10 +94,14 @@ func (a *App) wireFormatPorts(ctx context.Context, in infra) (formatPortsArea, e
 
 // startFormatMigrations builds the background data migrations of the format data ports on a
 // replica that claims jobs and queues those whose completion is not recorded (R-HA-022): the
-// recomputation of NuGet's SemVer 2 flag (data_migration_nuget_semver2, Q-NUGET-93). A queue
-// that fails stops the start-up, so the worker does not run without it.
+// recomputation of NuGet's SemVer 2 flag (data_migration_nuget_semver2, Q-NUGET-93) and the fill
+// of the versions' sort keys (data_migration_version_sort_key, Q-HA-492). A queue that fails
+// stops the start-up, so the worker does not run without it.
 func (a *App) startFormatMigrations(ctx context.Context, in infra) error {
 	bm := a.cfg.Jobs.BackgroundMigrations
+	if err := a.startSortKeyFill(ctx, in); err != nil {
+		return err
+	}
 	sv2, err := nugetdata.NewSemver2(nugetdata.Semver2Options{
 		DB: in.db, Jobs: in.queue, Signals: in.signals,
 		BatchSize: bm.BatchSize, Pause: bm.PauseBetweenBatches, StaleAfter: a.cfg.System.HeartbeatStaleAfter,
@@ -112,6 +117,29 @@ func (a *App) startFormatMigrations(ctx context.Context, in infra) error {
 	}
 	if queued {
 		a.log.Info("queued a background data migration", "kind", nugetdata.Semver2JobKind)
+	}
+	return nil
+}
+
+// startSortKeyFill builds the fill of the sort keys of the version rows written without one (data_migration_version_sort_key,
+// Q-HA-492) with the key the host's package writer stores (formathost.VersionOrder), and queues it unless it has completed and no
+// such row exists.
+func (a *App) startSortKeyFill(ctx context.Context, in infra) error {
+	bm := a.cfg.Jobs.BackgroundMigrations
+	fill, err := sortkey.New(sortkey.Options{
+		DB: in.db, Jobs: in.queue, Key: formathost.VersionOrder, BatchSize: bm.BatchSize, Pause: bm.PauseBetweenBatches,
+		Log: a.log.With("component", "version-sort-key"),
+	})
+	if err != nil {
+		return err
+	}
+	a.sortKeys.set(fill)
+	queued, err := fill.Enqueue(ctx)
+	if err != nil {
+		return fmt.Errorf("formats: queueing %s: %w", sortkey.JobKind, err)
+	}
+	if queued {
+		a.log.Info("queued a background data migration", "kind", sortkey.JobKind)
 	}
 	return nil
 }
@@ -142,9 +170,14 @@ func (a *App) startOCISweep(in infra, ports map[formats.ID]any) error {
 }
 
 // registerFormatJobs registers the kinds of the format data ports that the composition root
-// binds: data_migration_nuget_semver2 (Q-NUGET-93). Its handler finds the replica's
-// recomputation at run time; startFormatMigrations builds it on a replica that claims jobs.
+// binds: data_migration_nuget_semver2 (Q-NUGET-93) and data_migration_version_sort_key (Q-HA-492).
+// Their handlers find the replica's migration at run time; startFormatMigrations builds them on a
+// replica that claims jobs.
 func (a *App) registerFormatJobs(r *jobs.Registry) {
+	r.RegisterKind(sortkey.JobKind, sortkey.JobSpec(
+		a.sortKeys.handler("version sort key fill", func(ctx context.Context, f *sortkey.Fill, run *jobs.Run) error {
+			return f.Run(ctx, run)
+		})))
 	r.RegisterKind(nugetdata.Semver2JobKind, nugetdata.Semver2JobSpec(
 		a.semver2.handler("NuGet SemVer 2 recomputation", func(ctx context.Context, m *nugetdata.Semver2, run *jobs.Run) error {
 			return m.Run(ctx, run)

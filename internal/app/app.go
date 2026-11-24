@@ -41,6 +41,7 @@ import (
 	"github.com/guided-traffic/quader/internal/meta"
 	"github.com/guided-traffic/quader/internal/meta/postgres"
 	"github.com/guided-traffic/quader/internal/observability/health"
+	"github.com/guided-traffic/quader/internal/packages/sortkey"
 	"github.com/guided-traffic/quader/internal/proxy/invalidation"
 	"github.com/guided-traffic/quader/internal/repository"
 	"github.com/guided-traffic/quader/internal/secrets"
@@ -176,9 +177,11 @@ type App struct {
 	reseal       late[resealDeps]
 	host         late[formats.Host]
 	semver2      late[*nugetdata.Semver2]
-	ociSweep     late[*ocidata.Sweeper]
-	debRemote    late[*debdata.RemoteJobs]
-	debIndexer   late[*debdata.Indexer]
+	// sortKeys is the background migration version_sort_key (Q-HA-492).
+	sortKeys   late[*sortkey.Fill]
+	ociSweep   late[*ocidata.Sweeper]
+	debRemote  late[*debdata.RemoteJobs]
+	debIndexer late[*debdata.Indexer]
 	// ansibleReindex is the handler of the job ansible-reindex (wire_ansible.go).
 	ansibleReindex late[jobs.Handler]
 	// ansibleDocsFill is the handler of the job ansible-docs-fill (wire_ansible.go).

@@ -285,6 +285,9 @@ SELECT e.tag::text AS version, e.fetched_at AS created_at
 -- package_versions_latest_prerelease, remote_cache_entries_tag_key) that stops at the first visible row (Q-API-429). The caller picks
 -- the latest of a package among its rows' candidates by the format's order, and a package row with a candidate is a repository that
 -- holds a visible version. It reads no version past the ones it returns and those the scope or the withheld list drops on the way.
+-- A visible version row without a key (written before migration 00116 or by a replica of the release before it, until the background
+-- migration version_sort_key has filled it) is a candidate as well, every one of them (Q-API-430): the caller's order decides among
+-- them and the keyed candidates, so such a row is never passed over; once the rows are filled the branch reads nothing.
 SELECT p.id AS package_id, r.format, (p.name COLLATE "C")::text AS name, p.repo_id, l.version_id, l.version, l.created_at
   FROM packages p
   JOIN repositories r ON r.id = p.repo_id
@@ -328,6 +331,13 @@ SELECT p.id AS package_id, r.format, (p.name COLLATE "C")::text AS name, p.repo_
                               AND i.trashed_at IS NULL AND s.downloads > 0 OFFSET 0))
          ORDER BY e.tag_sort_key DESC
          LIMIT 1)
+       UNION ALL
+       (SELECT pv.id, pv.version::text, pv.created_at
+          FROM package_versions pv
+         WHERE pv.package_id = p.id AND pv.trashed_at IS NULL AND pv.sort_key IS NULL
+           AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
+           AND (p.repo_id = ANY(sqlc.arg(whole)::bigint[])
+                OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY(sqlc.arg(rows)::text[])))
   ) l
  WHERE concat_ws(chr(31), r.format, p.name) = ANY(sqlc.arg(packages)::text[])
    AND p.repo_id = ANY(sqlc.arg(scope)::bigint[])
@@ -338,26 +348,42 @@ SELECT p.id AS package_id, r.format, (p.name COLLATE "C")::text AS name, p.repo_
 -- One page of the visible versions of one package of one repository in the order of the versions, highest first (R-API-010, Q-API-429):
 -- the keyset on the format's sort key below the cursor's, in the order of the index package_versions_by_key, so the page reads the rows
 -- it returns and those the scope or the withheld list drops on the way, and none past its limit. The first page passes '\x02', above
--- every key (a key starts with 0x00 or 0x01).
-SELECT pv.version::text AS version, pv.created_at, pv.sort_key
-  FROM package_versions pv
- WHERE pv.package_id = sqlc.arg(package_id)::bigint AND pv.trashed_at IS NULL
-   AND pv.sort_key < sqlc.arg(after_key)::bytea
-   AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
-   AND (sqlc.arg(whole)::boolean OR pv.version = ANY(sqlc.arg(allowed)::text[]))
- ORDER BY pv.sort_key DESC
- LIMIT sqlc.arg(max_rows)::int;
+-- every key (a key starts with 0x00 or 0x01). After them come the package's visible rows without a key, every one (Q-API-430), with a
+-- NULL sort_key: rows written before migration 00116 or by a replica of the release before it, until the background migration
+-- version_sort_key has filled them. The caller computes their keys with the format's code and merges them; once the rows are filled the
+-- second part reads nothing (package_versions_by_key holds the NULL keys).
+(SELECT pv.version::text AS version, pv.created_at, pv.sort_key
+   FROM package_versions pv
+  WHERE pv.package_id = sqlc.arg(package_id)::bigint AND pv.trashed_at IS NULL
+    AND pv.sort_key < sqlc.arg(after_key)::bytea
+    AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
+    AND (sqlc.arg(whole)::boolean OR pv.version = ANY(sqlc.arg(allowed)::text[]))
+  ORDER BY pv.sort_key DESC
+  LIMIT sqlc.arg(max_rows)::int)
+UNION ALL
+(SELECT pv.version::text, pv.created_at, pv.sort_key
+   FROM package_versions pv
+  WHERE pv.package_id = sqlc.arg(package_id)::bigint AND pv.trashed_at IS NULL AND pv.sort_key IS NULL
+    AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
+    AND (sqlc.arg(whole)::boolean OR pv.version = ANY(sqlc.arg(allowed)::text[])));
 
 -- name: PackageViewVersionKeyAsc :many
--- PackageViewVersionKeyDesc lowest first: the keyset above the cursor's; the first page passes the empty key, below every key.
-SELECT pv.version::text AS version, pv.created_at, pv.sort_key
-  FROM package_versions pv
- WHERE pv.package_id = sqlc.arg(package_id)::bigint AND pv.trashed_at IS NULL
-   AND pv.sort_key > sqlc.arg(after_key)::bytea
-   AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
-   AND (sqlc.arg(whole)::boolean OR pv.version = ANY(sqlc.arg(allowed)::text[]))
- ORDER BY pv.sort_key
- LIMIT sqlc.arg(max_rows)::int;
+-- PackageViewVersionKeyDesc lowest first: the keyset above the cursor's; the first page passes the empty key, below every key. The rows
+-- without a key follow as there.
+(SELECT pv.version::text AS version, pv.created_at, pv.sort_key
+   FROM package_versions pv
+  WHERE pv.package_id = sqlc.arg(package_id)::bigint AND pv.trashed_at IS NULL
+    AND pv.sort_key > sqlc.arg(after_key)::bytea
+    AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
+    AND (sqlc.arg(whole)::boolean OR pv.version = ANY(sqlc.arg(allowed)::text[]))
+  ORDER BY pv.sort_key
+  LIMIT sqlc.arg(max_rows)::int)
+UNION ALL
+(SELECT pv.version::text, pv.created_at, pv.sort_key
+   FROM package_versions pv
+  WHERE pv.package_id = sqlc.arg(package_id)::bigint AND pv.trashed_at IS NULL AND pv.sort_key IS NULL
+    AND NOT (pv.id = ANY(sqlc.arg(withheld)::bigint[]))
+    AND (sqlc.arg(whole)::boolean OR pv.version = ANY(sqlc.arg(allowed)::text[])));
 
 -- name: PackageViewTagKeyDesc :many
 -- PackageViewVersionKeyDesc for the tags of a name in a remote OCI repository (R-OCI-036): in the order of the index

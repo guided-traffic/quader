@@ -186,6 +186,13 @@ SELECT p.id AS package_id, r.format, (p.name COLLATE "C")::text AS name, p.repo_
                               AND i.trashed_at IS NULL AND s.downloads > 0 OFFSET 0))
          ORDER BY e.tag_sort_key DESC
          LIMIT 1)
+       UNION ALL
+       (SELECT pv.id, pv.version::text, pv.created_at
+          FROM package_versions pv
+         WHERE pv.package_id = p.id AND pv.trashed_at IS NULL AND pv.sort_key IS NULL
+           AND NOT (pv.id = ANY($1::bigint[]))
+           AND (p.repo_id = ANY($2::bigint[])
+                OR concat_ws(chr(31), p.repo_id::text, p.name, pv.version) = ANY($3::text[])))
   ) l
  WHERE concat_ws(chr(31), r.format, p.name) = ANY($4::text[])
    AND p.repo_id = ANY($5::bigint[])
@@ -219,6 +226,9 @@ type PackageViewLatestRow struct {
 // package_versions_latest_prerelease, remote_cache_entries_tag_key) that stops at the first visible row (Q-API-429). The caller picks
 // the latest of a package among its rows' candidates by the format's order, and a package row with a candidate is a repository that
 // holds a visible version. It reads no version past the ones it returns and those the scope or the withheld list drops on the way.
+// A visible version row without a key (written before migration 00116 or by a replica of the release before it, until the background
+// migration version_sort_key has filled it) is a candidate as well, every one of them (Q-API-430): the caller's order decides among
+// them and the keyed candidates, so such a row is never passed over; once the rows are filled the branch reads nothing.
 func (q *Queries) PackageViewLatest(ctx context.Context, arg PackageViewLatestParams) ([]PackageViewLatestRow, error) {
 	rows, err := q.db.Query(ctx, packageViewLatest,
 		arg.Withheld,
@@ -766,14 +776,20 @@ func (q *Queries) PackageViewTagPageDesc(ctx context.Context, arg PackageViewTag
 }
 
 const packageViewVersionKeyAsc = `-- name: PackageViewVersionKeyAsc :many
-SELECT pv.version::text AS version, pv.created_at, pv.sort_key
-  FROM package_versions pv
- WHERE pv.package_id = $1::bigint AND pv.trashed_at IS NULL
-   AND pv.sort_key > $2::bytea
-   AND NOT (pv.id = ANY($3::bigint[]))
-   AND ($4::boolean OR pv.version = ANY($5::text[]))
- ORDER BY pv.sort_key
- LIMIT $6::int
+(SELECT pv.version::text AS version, pv.created_at, pv.sort_key
+   FROM package_versions pv
+  WHERE pv.package_id = $1::bigint AND pv.trashed_at IS NULL
+    AND pv.sort_key > $2::bytea
+    AND NOT (pv.id = ANY($3::bigint[]))
+    AND ($4::boolean OR pv.version = ANY($5::text[]))
+  ORDER BY pv.sort_key
+  LIMIT $6::int)
+UNION ALL
+(SELECT pv.version::text, pv.created_at, pv.sort_key
+   FROM package_versions pv
+  WHERE pv.package_id = $1::bigint AND pv.trashed_at IS NULL AND pv.sort_key IS NULL
+    AND NOT (pv.id = ANY($3::bigint[]))
+    AND ($4::boolean OR pv.version = ANY($5::text[])))
 `
 
 type PackageViewVersionKeyAscParams struct {
@@ -791,7 +807,8 @@ type PackageViewVersionKeyAscRow struct {
 	SortKey   []byte
 }
 
-// PackageViewVersionKeyDesc lowest first: the keyset above the cursor's; the first page passes the empty key, below every key.
+// PackageViewVersionKeyDesc lowest first: the keyset above the cursor's; the first page passes the empty key, below every key. The rows
+// without a key follow as there.
 func (q *Queries) PackageViewVersionKeyAsc(ctx context.Context, arg PackageViewVersionKeyAscParams) ([]PackageViewVersionKeyAscRow, error) {
 	rows, err := q.db.Query(ctx, packageViewVersionKeyAsc,
 		arg.PackageID,
@@ -820,14 +837,20 @@ func (q *Queries) PackageViewVersionKeyAsc(ctx context.Context, arg PackageViewV
 }
 
 const packageViewVersionKeyDesc = `-- name: PackageViewVersionKeyDesc :many
-SELECT pv.version::text AS version, pv.created_at, pv.sort_key
-  FROM package_versions pv
- WHERE pv.package_id = $1::bigint AND pv.trashed_at IS NULL
-   AND pv.sort_key < $2::bytea
-   AND NOT (pv.id = ANY($3::bigint[]))
-   AND ($4::boolean OR pv.version = ANY($5::text[]))
- ORDER BY pv.sort_key DESC
- LIMIT $6::int
+(SELECT pv.version::text AS version, pv.created_at, pv.sort_key
+   FROM package_versions pv
+  WHERE pv.package_id = $1::bigint AND pv.trashed_at IS NULL
+    AND pv.sort_key < $2::bytea
+    AND NOT (pv.id = ANY($3::bigint[]))
+    AND ($4::boolean OR pv.version = ANY($5::text[]))
+  ORDER BY pv.sort_key DESC
+  LIMIT $6::int)
+UNION ALL
+(SELECT pv.version::text, pv.created_at, pv.sort_key
+   FROM package_versions pv
+  WHERE pv.package_id = $1::bigint AND pv.trashed_at IS NULL AND pv.sort_key IS NULL
+    AND NOT (pv.id = ANY($3::bigint[]))
+    AND ($4::boolean OR pv.version = ANY($5::text[])))
 `
 
 type PackageViewVersionKeyDescParams struct {
@@ -848,7 +871,10 @@ type PackageViewVersionKeyDescRow struct {
 // One page of the visible versions of one package of one repository in the order of the versions, highest first (R-API-010, Q-API-429):
 // the keyset on the format's sort key below the cursor's, in the order of the index package_versions_by_key, so the page reads the rows
 // it returns and those the scope or the withheld list drops on the way, and none past its limit. The first page passes '\x02', above
-// every key (a key starts with 0x00 or 0x01).
+// every key (a key starts with 0x00 or 0x01). After them come the package's visible rows without a key, every one (Q-API-430), with a
+// NULL sort_key: rows written before migration 00116 or by a replica of the release before it, until the background migration
+// version_sort_key has filled them. The caller computes their keys with the format's code and merges them; once the rows are filled the
+// second part reads nothing (package_versions_by_key holds the NULL keys).
 func (q *Queries) PackageViewVersionKeyDesc(ctx context.Context, arg PackageViewVersionKeyDescParams) ([]PackageViewVersionKeyDescRow, error) {
 	rows, err := q.db.Query(ctx, packageViewVersionKeyDesc,
 		arg.PackageID,
