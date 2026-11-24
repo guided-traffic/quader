@@ -1716,7 +1716,13 @@ async function* usageWalk(page: Page): AsyncGenerator<string> {
 /** A caller's usage (R-UI-184, R-UI-185): as it opens, with the explanation for a repository, the history as a table, in Enforce. */
 async function* usageDetailWalk(page: Page): AsyncGenerator<string> {
   yield '';
-  await page.locator('main').getByRole('button', { name: 'Explain for a repository' }).click();
+  const explain = page.locator('main').getByRole('button', { name: 'Explain for a repository' });
+  await explain.click();
+  // The panel opens over 200 ms with its content clipped: a field focused meanwhile scrolls the clipped content, and the button under
+  // it moves with the opening, so on a loaded runner the press of the click landed on the button and its release beside it, and
+  // nothing was submitted (stopped at 390 px, 2026-11-24). The walk acts once the panel stands open.
+  await expect(explain).toHaveAttribute('aria-expanded', 'true');
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
   await page.locator('#explain-repository').fill(`${mainProject}/npm-internal`);
   await page.locator('main quader-limit-explain').getByRole('button', { name: 'Explain', exact: true }).click();
   await expect(page.locator('main ol.steps li').first()).toBeVisible();
