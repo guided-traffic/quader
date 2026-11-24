@@ -2765,7 +2765,7 @@
             },
             "url": {
               "default": "",
-              "description": "The scan listener of packages, an origin: https://\u003cfullname\u003e-packages-scan.\u003cnamespace\u003e.svc:8082 in the chart, which sets it. Required in a malware scanner and in the updater; empty in the role all, where it means the process's own scan listener. Neither reads another address: a call cannot point them elsewhere.",
+              "description": "The scan listener of packages, an origin: https://\u003cfullname\u003e-packages-scan.\u003cnamespace\u003e.svc:8082 in the chart, which sets it. Required in a malware scanner and in the updater (the role scanner of the kinds clamav and freshclam); no other role reads it, and the role all builds neither (Q-ARCH-563). Neither reads another address: a call cannot point them elsewhere.",
               "type": "string",
               "x-quader-env": "QUADER_MALWARE_SCAN_LISTENER_URL"
             }
