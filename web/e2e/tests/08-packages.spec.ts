@@ -306,14 +306,14 @@ test('R-UI-021 R-UI-083 R-REPO-050 the Mirror group of a remote npm repository i
     await expect(page.getByRole('checkbox', { name: 'Include prerelease versions' })).toBeChecked();
     await expect(page.getByRole('checkbox', { name: 'Paused' })).not.toBeChecked();
     await expect(page.getByRole('combobox', { name: 'Discovery' })).toHaveValue('auto');
-    await expect(page.getByText('A mirror of a well-known public registry needs a bound.')).toBeVisible();
+    await expect(page.getByText('A mirror of a well-known public registry needs a bound:')).toBeVisible();
     for (const scheme of ['light', 'dark'] as const) {
       await page.emulateMedia({ colorScheme: scheme });
       await expectAccessible(page, `creation form, Mirror group, mirror (${scheme})`);
     }
     // The pattern the server asks for removes the notice; it is typed here, not sent.
     await page.getByRole('textbox', { name: 'Include patterns' }).fill('@types/*');
-    await expect(page.getByText('A mirror of a well-known public registry needs a bound.')).toHaveCount(0);
+    await expect(page.getByText('A mirror of a well-known public registry needs a bound:')).toHaveCount(0);
     await page.getByRole('textbox', { name: 'Include patterns' }).fill('');
     await mode(/^Pull-through/).check();
     await expect(interval).toHaveCount(0);
