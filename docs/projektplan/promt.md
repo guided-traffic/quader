@@ -282,6 +282,11 @@ What was red at 19:49 (Test and Release on 928e2a6e7 and every run since 08:32; 
 - **Test and Release green** on ee8e41c2c (run 45480741707, every job), the first green run of `main` since 08:19; no job of the
   night was re-run.
 
+- **No release of 94a99ebca and ee8e41c2c**: Semantic Release of run 45480741707 refused because `main` had moved on by the plan's
+  `[skip ci]` commits ("The local branch main is behind the remote one"). Not dispatched (a dispatch runs every e2e leg beside the
+  nightly); the next code push releases the two UI fixes. The owner's installation runs 0.124.0 meanwhile. Plan commits now wait for
+  the code run's release.
+
 ### State at the stop of 2026-11-24
 
 Read this first. The run that began at 22:21 on 2026-11-23 ended its starts at 12:25 on 2026-11-24 by the owner's word
