@@ -6378,7 +6378,9 @@ how a stored pattern matches is Q-AUTHZ-254's. The development agent would revis
 `internal/authz/{validate.go,path_case.go,exposure_service.go}`, `internal/api/v1/{tokens_api.go,project_accounts_api.go,ci_mappings_api.go,ci_project_api.go}`,
 `internal/formats/nuget/format.go`. Tests: `TestR_AUTHZ_005_AnUpperCasePathPatternOnALowerCaseFormatIsRefused`,
 `TestR_AUTHZ_005_AnInlineGrantsUpperCasePathPatternOnNuGetIsRefused` (integration), the token-scope case of
-`TestR_AUTHZ_005_PathPatternsDecideTheNuGetProtocolOnCanonicalPaths`.
+`TestR_AUTHZ_005_PathPatternsDecideTheNuGetProtocolOnCanonicalPaths`, and the token API's step `refuseUpperCasePaths` over a real
+decision point with a repository of each kind of format, `TestR_AUTHZ_005_ATokenScopesUpperCasePathPatternOverALowerCaseFormatIsRefused`
+(unit, `internal/api/v1`, milliseconds; added on 2026-11-24).
 
 ### Q-AUTHZ-254 · The path dimension of a format with lower-case paths is compared in lower case, pattern and path alike
 
