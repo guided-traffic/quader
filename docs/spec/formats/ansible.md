@@ -2657,7 +2657,7 @@ Status: **Decided by the development agent** — selected from the options below
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) Decode a `file` part that says `Content-Transfer-Encoding: base64` while it streams into the spool (chosen) | `base64.NewDecoder` over the part; the digest, the size limit and the inspection see the decoded bytes | It is what the real client sends: `prepare_multipart` of ansible-core 2.17 and 2.21 encodes the archive as base64 in lines of 76 characters (the first run of the e2e set against the local class answered 400 `sha256_mismatch` for every `ansible-galaxy collection publish`, because the digest was that of the encoded text); streaming, no buffering | A body is a third larger on the wire than the archive. `ansible.max_archive_bytes` and the repository's upload limit (R-STOR-004) are one limit of the spool, the smaller of the two, and both count the decoded bytes; the encoded text is bounded through the decoder (verified in `Ingest.Spool` of `internal/formathost/ingest.go` on 2026-11-23; test `TestQ_ANS_53_TheArchiveLimitCountsTheDecodedBytesOfABase64Part`) |
+| (a) Decode a `file` part that says `Content-Transfer-Encoding: base64` while it streams into the spool (chosen) | `base64.NewDecoder` over the part; the digest, the size limit and the inspection see the decoded bytes | It is what the real client sends: `prepare_multipart` of ansible-core 2.17 and 2.21 encodes the archive as base64 in lines of 76 characters (the first run of the e2e set against the local class answered 400 `sha256_mismatch` for every `ansible-galaxy collection publish`, because the digest was that of the encoded text); streaming, no buffering | A body is a third larger on the wire than the archive. `ansible.max_archive_bytes` and the repository's upload limit (R-STOR-004) are one limit of the spool, the smaller of the two, and both count the decoded bytes; the encoded text is bounded through the decoder (verified in `Ingest.Spool` of `internal/formathost/ingest.go` on 2026-11-23; test `TestR_ANS_008_TheArchiveLimitCountsTheDecodedBytesOfABase64Part`) |
 | (b) Accept only raw parts | | Nothing to build | No real client can publish |
 | (c) Ask the client to change | | | Not in our hands |
 
@@ -3079,7 +3079,7 @@ Code: `remoteVersion`, `remoteArtifact`, `remoteRoleArchive` in [handlers_remote
 Through a virtual repository the version document and a `HEAD` of a collection's archive are the probes of the member that serves the
 archive, and a `HEAD` of a role's archive the probe of the member its id names ([repositories-and-proxy.md](../repositories-and-proxy.md#q-repo-367--a-probe-through-a-virtual-repository-starts-the-download-at-the-member-that-serves-it) Q-REPO-367): `virtualVersion` and
 `virtualArtifact` in [handlers_virtual.go](../../../internal/formats/ansible/handlers_virtual.go). Tests:
-`TestR_REPO_065_WhatAProbeOfTheGalaxyIs`, `TestQ_REPO_367_WhatAProbeOfTheGalaxyIsThroughAVirtualRepository` in
+`TestR_REPO_065_WhatAProbeOfTheGalaxyIs`, `TestR_REPO_065_WhatAProbeOfTheGalaxyIsThroughAVirtualRepository` in
 [probe_test.go](../../../internal/formats/ansible/probe_test.go).
 
 ### Q-ANS-91 · A symbolic link that stays inside a collection is admitted and never followed
@@ -3128,7 +3128,7 @@ collection the client built were refused by them.
 [tar.go](../../../internal/formats/untrusted/tar.go); `ReadArchive`, `checkFiles`, `checkLinkSteps` in
 [archive.go](../../../internal/formats/ansible/collection/archive.go); `ReadFile` in [file.go](../../../internal/formats/ansible/collection/file.go);
 `checkRoleArchive` in [remote_fill.go](../../../internal/formats/ansible/remote_fill.go); `filesMatch` in
-[ansible.go](../../../internal/signatures/scheme/openpgp/ansible.go). Tests: `TestQ_ANS_91_*` in
+[ansible.go](../../../internal/signatures/scheme/openpgp/ansible.go). Tests: `TestR_ANS_010_*` in
 [tar_links_test.go](../../../internal/formats/untrusted/tar_links_test.go),
 [archive_links_test.go](../../../internal/formats/ansible/collection/archive_links_test.go),
 [remote_role_links_test.go](../../../internal/formats/ansible/remote_role_links_test.go),

@@ -3863,7 +3863,7 @@ files it needs. The one request that names exactly one version's file of one arc
 path is the probe of the member that serves it, and by the member path of the merged index (`deb.members.get`, a probe of its own) the
 probe of that member ([repositories-and-proxy.md](../repositories-and-proxy.md#q-repo-367--a-probe-through-a-virtual-repository-starts-the-download-at-the-member-that-serves-it) Q-REPO-367): `handleVirtualPool` and `handleMember` in
 [handlers_virtual.go](../../../internal/formats/deb/handlers_virtual.go). Tests: `TestR_REPO_065_WhatAProbeOfAnAPTArchiveIs`,
-`TestQ_REPO_367_WhatAProbeOfAnAPTArchiveIsThroughAVirtualRepository` in [probe_test.go](../../../internal/formats/deb/probe_test.go).
+`TestR_REPO_065_WhatAProbeOfAnAPTArchiveIsThroughAVirtualRepository` in [probe_test.go](../../../internal/formats/deb/probe_test.go).
 
 ### Q-DEB-133 · A release is recorded under the keys its recording transaction reads
 
@@ -3894,7 +3894,7 @@ on each other. The development agent would revisit the share lock if fills of re
 activity flush's update of the same row to stall them.
 
 **Applied in the spec:** R-DEB-020. Tests: `TestR_DEB_020_AFillIsRecordedUnderTheKeysItsTransactionReads`
-([remote_keychange_test.go](../../../internal/formats/deb/remote_keychange_test.go), unit), `TestQ_DEB_133_ASignerHoldsWhileItsKeyIsInTheSet`
+([remote_keychange_test.go](../../../internal/formats/deb/remote_keychange_test.go), unit), `TestR_DEB_020_ASignerHoldsWhileItsKeyIsInTheSet`
 ([remote_store_keys_test.go](../../../internal/formatdata/deb/remote_store_keys_test.go), unit), the step "a fetch that spans the
 change" of `TestR_DEB_020_AReleaseNoKeyOfTheNewSetVerifiesIsFetchedAgainWithoutValidators`
 ([keys_test.go](../../../test/integration/debremote/keys_test.go), integration).

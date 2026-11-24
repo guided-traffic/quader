@@ -1887,11 +1887,11 @@ Acceptance criteria:
 - Unit (`formats`, `TestR_API_079_AFormatWithAPackageViewDeclaresWhatAFetchOfAVersionIs`): a format with a package view and no rule does not
   register; (`formats/all`, `TestR_API_079_EveryFormatWithPackageScreensCountsTheFetchesOfItsVersionsByItsProtocol`) every registered
   format with package screens declares the rule of the table.
-- Unit (`oci`, `TestQ_OCI_222_…`): the `GET` of a remote tag records a download of its manifest item; a `HEAD`, a `304` and a tag without a
+- Unit (`oci`, `TestR_API_079_AGetOfARemoteTagIsADownloadOfItsManifest`): the `GET` of a remote tag records a download of its manifest item; a `HEAD`, a `304` and a tag without a
   manifest item record none.
 - Integration (`ociremote`, `TestR_API_081_…`): after a `GET` of a tag the tag has one download; the `GET` of its index by digest makes it
   two; the `GET` of a platform manifest leaves it at two.
-- Integration (`proxy`, `TestQ_REPO_331_…`): the streamed first answer of a miss calls the engine's `Streamed` once with the stored item; a
+- Integration (`proxy`, `TestR_STOR_015_TheStreamedFirstAnswerOfAMissIsADownload`): the streamed first answer of a miss calls the engine's `Streamed` once with the stored item; a
   hit and a ranged miss are answered through `Serve` and do not.
 - Integration (`debremote`, `TestR_API_081_…`): a package file a client fetched through a Debian remote has one download.
 
@@ -1915,7 +1915,7 @@ The owner's objection of 2026-11-19 (W-24): an image listed with **0 B** whose p
 
 Acceptance criteria:
 
-- Unit (`oci`, `TestQ_OCI_221_…`): an index with every platform held has the whole sum, one of two a partial sum, none no number; an
+- Unit (`oci`, `TestR_OCI_031_AnIndexCountsThePlatformsTheRepositoryHolds`): an index with every platform held has the whole sum, one of two a partial sum, none no number; an
   attestation manifest is not counted.
 - Unit (`formattest`, check 11): a `ViewSizer` that answers a number for a size it does not know fails the kit.
 - Integration (`ociremote`, `TestR_API_081_…`): a remote index none of whose platforms was fetched lists `sizeBytes: null`; after one
@@ -12021,7 +12021,7 @@ the cleaner shape.
 `replicas.roles`), R-UI-038 (the groups read `roleName`), R-API-038's acceptance criteria. Code: `api/openapi.yaml`
 (`roleName` on `answeredBy`, `Replica` and `EncryptionReplica`; `Replica.pool`), `internal/api/v1/roles.go`,
 `internal/api/v1/handlers.go` (`Summarise` keys by `roleName`), `internal/api/v1/encryption_api.go`. Tests:
-`TestQ_API_194_RoleMembersOfTheCut`, `TestR_OPS_004_SummaryPerRoleOfTheCut`, `TestR_OPS_004_RingsOfEveryRole`.
+`TestR_OPS_003_EveryReplicaIsListedWithItsOwnRole`, `TestR_OPS_004_SummaryPerRoleOfTheCut`, `TestR_OPS_004_RingsOfEveryRole`.
 
 ### Q-API-195 · The content routes are the files transfer behind a session check, and the UI's upload limit is a configuration key
 

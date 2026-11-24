@@ -272,7 +272,7 @@ Run 2 split of the 1341 s: set-up steps 419, `make e2e` outside the listed tests
 | TestOCIEngineMirror | 41.4 | 48.8 | oci | client | 40.6 | docker/podman/buildx/kubelet behaviour |
 | TestOCILimits_R-LIM_020_WhatDockerAndPodmanShowAtARefusal | 21.3 | - | oci | client | 0.0 | docker/podman/buildx/kubelet behaviour |
 | TestOCILocal | 20.6 | 21.6 | oci | client | 0.0 | docker/podman/buildx/kubelet behaviour |
-| TestOCILimits_Q_LIM_27_APushOfManyTinyLayersMeetsTheWriteClass | 18.2 | - | oci | client | 0.0 | docker/podman/buildx/kubelet behaviour |
+| TestOCILimits_R_API_016_APushOfManyTinyLayersMeetsTheWriteClass | 18.2 | - | oci | client | 0.0 | docker/podman/buildx/kubelet behaviour |
 | TestOCILimits_F161_SignInsAndPullsFromOneAddressMeetNoAnonymousBudget | 16.9 | - | oci | client | 0.0 | docker/podman/buildx/kubelet behaviour |
 | TestOCIRemote | 12.2 | 11.5 | oci | client | 3.3 | docker/podman/buildx/kubelet behaviour |
 | TestOCIVirtual | 10.1 | 9.9 | oci | repeated | 2.5 | generic mirror/virtual machinery driven by docker/podman |
@@ -1201,17 +1201,17 @@ in the pipeline run 45109360386 before the change (a runner, coverage on, so not
 
 `testenv` grew by the harness's own tests: 23.5 s of its 30.8 were `TestTemplateFollowsTheMigrations` at a load near 50, then with three
 template migrations; cut to two, the area took 9.0 s and the test 2.4 s at a load of 25; `postgres` keeps databases of its own and does not use the template, and `backup` uses it in its 54 tests on the harness and restores into databases of its own; `uiassets` passes its own UI trees. NuGet's data-port
-test `TestQ_NUGET_48_TheDataPortReadsTheViewFromPostgreSQL`, which builds an installation without a replica, took 1.36 s locally from a
+test `TestR_API_029_TheDataPortReadsTheViewFromPostgreSQL`, which builds an installation without a replica, took 1.36 s locally from a
 worktree before the change (the kit move's first builder's run, 2026-11-23) and 0.27 s on the final tree [V].
 
 **The prediction made before the change landed:** the fastest data-port test, which builds an
-installation without a replica (`oci`'s data port, NuGet's `TestQ_NUGET_48`), falls from about 1.9 s to about 0.7 s. If it falls much less,
+installation without a replica (`oci`'s data port, NuGet's `TestR_API_029_TheDataPortReadsTheViewFromPostgreSQL`), falls from about 1.9 s to about 0.7 s. If it falls much less,
 the runner split of the validator (1.25 s, computed from minima and not separated from the object store's cleanup) was wrong.
 
 **What the first pipeline run after the change showed** (Test and Release 45133371730 of 2026-11-23 beside 45126854432, the run before it;
 read from the four shards' `go test -json` records, top-level tests only) [V]: the fastest test of `oci`'s data port fell from 1.89 s
 (`TestExistingItemsAreTheLiveFilesOfTheRepository`) to 0.10 s (`TestAManifestWithoutAnnotationsOrSubjectStoresNull`; the first of the two
-took 0.11 s), and NuGet's `TestQ_NUGET_48` from 2.28 s to 0.26 s. It fell further than predicted: what stays of an installation on a runner
+took 0.11 s), and NuGet's `TestR_API_029_TheDataPortReadsTheViewFromPostgreSQL` from 2.28 s to 0.26 s. It fell further than predicted: what stays of an installation on a runner
 (start, stop, seed, a small body) is about 0.1 to 0.3 s, not the 0.55 to 0.7 s of the split above [I]. Of the run's 1,721 tests, 472 took
 less than 0.7 s; of the 1,716 of the run before, 96 did. No test failed in either. The shard jobs, with their test step in brackets, in
 minutes and seconds [V], beside the minutes computed above [I]:

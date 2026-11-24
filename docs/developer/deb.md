@@ -397,7 +397,7 @@ How they were obtained and checked, on 2026-11-20 (the procedure for the next ke
    2018 key's on `wiki.ubuntu.com/SecurityTeam/FAQ`.
 
 The armored files are `gpg --armor --export` of the keyring imported into an empty home: the keys and their signatures, unchanged.
-`TestQ_REPO_379_TheArchiveKeys` ([archivekeys_test.go](../../internal/formats/deb/archivekeys_test.go)) parses each file as `deb.upstreamKeys` parses a
+`TestR_REPO_062_TheArchiveKeys` ([archivekeys_test.go](../../internal/formats/deb/archivekeys_test.go)) parses each file as `deb.upstreamKeys` parses a
 remote's keys (strictly: no expired, revoked or weak key), pins the fingerprints, and fails 90 days before a key expires (the first, the Debian 11 keys,
 expire on 2029-01-15). A key change of either keyring is a release of Quader; an administrator who cannot wait sets the keys with the address of the
 well-known repository (`setUpstreamRepositoryAddress`, `upstreamKeys`).

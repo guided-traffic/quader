@@ -2633,11 +2633,11 @@ client case on kind and the manual (package D, R-BAS-060): `TestOCI_R_BAS_051_Th
 release of the leg with Docker, Podman and a pod's kubelet, and the manual says that a Bastion serves every format
 ([Q-BAS-204](#q-bas-204--the-set-oci-runs-in-a-profile-of-its-own-that-carries-the-main-installations-side-of-its-bastion) to
 [Q-BAS-207](#q-bas-207--the-case-runs-on-a-push-that-changes-ocis-own-paths-and-in-the-nightly)). The
-main side's tests carry the decisions' IDs, not the requirements' (a test named by a requirement would have counted it as implemented
-before the Bastion's side). Two
+main side's tests carried the decisions' IDs while the Bastion's side was not built (a test named by a requirement would have counted it
+as implemented before then); with both sides built they carry the requirements' IDs, as every Go test does. Two
 points the table below left unverified were established by the builder with a test: the shape resolver cannot see a registry token's
-grant (`authz.Subject` has no member for it, `TestQ_BAS_167_TheDecisionPointDoesNotSeeTheGrant`), and the token service of a forward checks
-`service` against the Bastion's host (`TestQ_BAS_166_ABastionsHostReachesTheTokenServicesServiceCheck`). The decisions are
+grant (`authz.Subject` has no member for it, `TestR_BAS_080_TheDecisionPointDoesNotSeeTheGrant`), and the token service of a forward checks
+`service` against the Bastion's host (`TestR_BAS_051_ABastionsHostReachesTheTokenServicesServiceCheck`). The decisions are
 [Q-BAS-165](#q-bas-165--the-registry-root-is-a-path-family-of-the-bastion-at-its-own-host-root) to
 [Q-BAS-180](#q-bas-180--the-tests-of-the-feature-each-behaviour-once-at-the-cheapest-tier-and-one-client-case-in-the-formats-own-set)
 and the builders' [Q-BAS-181](#q-bas-181--the-cores-representation-and-per-request-headers-are-two-lists-of-the-catalog-and-the-content-headers-of-r-arch-007-are-representation-headers)
@@ -2759,12 +2759,11 @@ Acceptance criteria:
   `/api/%76%31/tokens`; the probe of `POST /v2/_token` answers `204` read-with-body and the probe of `POST /v2/web/docker-local/app/blobs/uploads/`
   answers `403` `DENIED` in the distribution's shape whose message names `quader.example.com/web/docker-local`
   (`TestR_BAS_051_TheMainInstallationForwardsTheRegistryRoot`). *As built, in three packages, since the domain package of the backstop
-  imports neither the token service nor a format's error shape, and named by the decisions until the Bastion's side proves the
-  requirement:* the backstop in `internal/bastionmain` (`TestQ_BAS_165_TheMainInstallationForwardsTheRegistryRoot`), the refusal of
+  imports neither the token service nor a format's error shape:* the backstop in `internal/bastionmain` (`TestR_BAS_051_TheMainInstallationForwardsTheRegistryRoot`), the refusal of
   three writes below `/v2/` through the dispatcher's registry handler and OCI's error shape in `internal/api/bastionmark`
-  (`TestQ_BAS_165_AWriteBelowTheRegistryRootNamesTheImagePrefix`), and the token service's and the catalog's probes, the token answer's
-  subject and the service check of a forward in `internal/api/registry` (`TestQ_BAS_166_TheTokenServiceAndTheCatalogTellTheMarkingTheirKind`,
-  `TestQ_BAS_166_ABastionsHostReachesTheTokenServicesServiceCheck`).
+  (`TestR_BAS_051_AWriteBelowTheRegistryRootNamesTheImagePrefix`), and the token service's and the catalog's probes, the token answer's
+  subject and the service check of a forward in `internal/api/registry` (`TestR_BAS_051_TheTokenServiceAndTheCatalogTellTheMarkingTheirKind`,
+  `TestR_BAS_051_ABastionsHostReachesTheTokenServicesServiceCheck`).
 - Integration (area `bastion`, R-BAS-060): the sequence of a `docker login` and a `docker pull` replayed by Go's client through an
   in-process Bastion (ping, challenge, `GET` token with Basic, manifest by tag, manifest by digest, two blobs) and containerd's (`HEAD` of the
   tag, `POST` token with the form, index by digest, manifest by digest, blobs) both succeed cold and warm
@@ -2838,12 +2837,11 @@ Acceptance criteria:
 - Unit (`internal/api/bastionmark`, `internal/api/v1`): the marking of a request with a registry token whose principal reads the whole
   repository says `partial`, and the check's answer for it too; the check of a registry token answers `token` with the registry token's
   expiry, and of a Quader token as before; an `insufficient_scope` `401` is marked with the token's subject
-  (`TestR_BAS_052_ARegistryTokensShapeIsAtMostPartial`, `TestR_BAS_052_TheCheckPresentsARegistryTokenBelowTheRegistryRoot`). *As built,
-  named by the decision until the Bastion's side proves the requirement:* `TestQ_BAS_167_ARegistryTokensShapeIsAtMostPartial`,
-  `TestQ_BAS_167_TheDecisionPointDoesNotSeeTheGrant`, `TestQ_BAS_167_InsufficientScopeIsNoStatementAboutTheCredential`
-  (`internal/api/bastionmark`), `TestQ_BAS_167_TheCheckPresentsARegistryTokenBelowTheRegistryRoot` (`internal/api/v1`, through the real
+  (`TestR_BAS_052_ARegistryTokensShapeIsAtMostPartial`, `TestR_BAS_052_TheCheckPresentsARegistryTokenBelowTheRegistryRoot`). *As built:* `TestR_BAS_052_ARegistryTokensShapeIsAtMostPartial`,
+  `TestR_BAS_080_TheDecisionPointDoesNotSeeTheGrant`, `TestR_BAS_052_InsufficientScopeIsNoStatementAboutTheCredential`
+  (`internal/api/bastionmark`), `TestR_BAS_052_TheCheckPresentsARegistryTokenBelowTheRegistryRoot` (`internal/api/v1`, through the real
   authentication stage with a registry token issued by the real signer, and one of another key, which is `invalid`), and
-  `TestQ_BAS_167_TheCheckDecidesItsPathsAsAReplicaThatServesThePackageFamilies` (`internal/app`).
+  `TestR_BAS_052_TheCheckDecidesItsPathsAsAReplicaThatServesThePackageFamilies` (`internal/app`).
 
 ### R-BAS-053 · Container images in the Bastion's cache
 Priority: **MVP** · Covers: DIST-024
@@ -3080,7 +3078,7 @@ Acceptance criteria:
 - Unit (`internal/api/v1`, `internal/bastion/link`): the handshake lists every format with routes of `internal/formats/all` with its
   facts, OCI's four headers and ClamAV's `503`; with `host_roots: {packages.example.com: web/docker-hub}` it names
   `boundRepository`; the link keeps the table and the engine reads it (`TestR_BAS_057_TheHandshakeCarriesTheFormatTable`). *As built on
-  the main installation's side, named by the decision until the link uses the table:* `TestQ_BAS_170_TheHandshakeCarriesTheFormatTable`
+  the main installation's side:* `TestR_BAS_057_TheHandshakeCarriesTheFormatTable`
   (`internal/api/v1`: the table over `internal/formats/all`, the answer validated against the OpenAPI document, an unbound and a bound
   host).
 - Integration (area `bastion`): a Bastion whose host is bound to an OCI repository serves `GET /v2/library/alpine/manifests/3` from that
@@ -3173,10 +3171,10 @@ Acceptance criteria:
 
 - Integration (area `bastion`): a warm pull by tag through the Bastion reports the tag's document and the two blobs and nothing for a
   `HEAD` of the tag; a warm `npm ci` still reports its tarballs and no packument (`TestR_BAS_059_AHitIsReportedWhenTheMainInstallationCountedItsFill`).
-- Unit, the main installation's side, named by the decisions until the Bastion reports what is marked:
-  `TestQ_BAS_186_ACountedDownloadIsNotedAtItsStatusLine` (`internal/bastionmain`: which status lines note, before the stage below reads
-  the note), `TestQ_BAS_186_ARemoteTagIsCountedBeforeItsStatusLine` (`internal/formats/oci`: a remote tag's download exists when its status
-  line goes out) and `TestQ_BAS_177_ADownloadTheCoreCountedIsMarkedCounted` (`internal/api/bastionmark`: a download and a document marked, a
+- Unit, the main installation's side:
+  `TestR_BAS_059_ACountedDownloadIsNotedAtItsStatusLine` (`internal/bastionmain`: which status lines note, before the stage below reads
+  the note), `TestR_BAS_059_ARemoteTagIsCountedBeforeItsStatusLine` (`internal/formats/oci`: a remote tag's download exists when its status
+  line goes out) and `TestR_BAS_059_ADownloadTheCoreCountedIsMarkedCounted` (`internal/api/bastionmark`: a download and a document marked, a
   `304`, a `404` and an ordinary caller not).
 
 ### R-BAS-060 · Tests of the feature and what they cost
@@ -4384,7 +4382,7 @@ name a system subject (the member `s` of a scan or blob token, which reaches one
 lower what is read. The expiry reader of Q-BAS-252 is kept: `iface.RegistryTokenExpiry` reads the member `exp`. Each reader decodes only
 the members it reads, so `RegistryTokenAnonymous` answers as before. Both are tested against tokens from the real encoder, entry by entry
 against what the verifier decodes (`TestR_BAS_087_TheGrantIsReadAsTheTokenServiceWritesIt`,
-`TestQ_BAS_252_TheExpiryIsReadAsTheTokenServiceWritesIt`); `maintest` speaks version 5, marks packages through `Main.Mark` and holds the
+`TestR_BAS_087_TheExpiryIsReadAsTheTokenServiceWritesIt`); `maintest` speaks version 5, marks packages through `Main.Mark` and holds the
 check's pairs to the main installation's rules; the Bastion's client reads a package from a marking and sends a check's pairs
 (`TestR_BAS_087_TheClientAndTheFakeSpeakTheVersionWithPackages` in `internal/bastion/mainclient`). Nothing reads the grant or the expiry
 yet: the Bastion's recording of package answers and its use of the expiry are P4's. Nothing on `main` used version 5 before.
@@ -7957,7 +7955,7 @@ request ID, a rate-limit field)" without listing them. The Bastion keeps ten nam
 catalog's rule for a declaration and the Bastion need the same lists; the Bastion may not import the catalog (R-BAS-001) and the kit
 may not import the interface (Q-ARCH-216). Read in the code: `keepHeader` does not keep the content headers of R-ARCH-007 that
 `formats.ServeRoute` puts on every content answer, so a hit from a Bastion's cache carried none of them (gap H-1250, closed with the
-Bastion's side: the engine replays `catalog.RepresentationHeaders()`, held by `TestQ_BAS_181_TheEnginesHeaderListsAreTheCatalogs`).
+Bastion's side: the engine replays `catalog.RepresentationHeaders()`, held by `TestR_BAS_053_TheEnginesHeaderListsAreTheCatalogs`).
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -8047,7 +8045,7 @@ principal. The token service writes the member `a` true into the token of a requ
 | (c) Also the MAC's 43 characters and strictly decoded claims | Closer to `Verify` | Fewer forwarded failures | Every change of the token's MAC or claims becomes a change of the interface |
 
 **Choice:** (a). Trusting the unverified claim can only lower what is read (Q-BAS-168). **Applied in the spec:** R-BAS-052; code:
-[regtoken.go](../../internal/bastion/iface/regtoken.go), `TestQ_BAS_168_AnAnonymousRegistryTokenReadsAsTheAnonymousCaller`.
+[regtoken.go](../../internal/bastion/iface/regtoken.go), `TestR_BAS_052_AnAnonymousRegistryTokenReadsAsTheAnonymousCaller`.
 
 ### Q-BAS-186 · A counted download is noted at the status line of the serve that counts it
 
@@ -8078,7 +8076,7 @@ and counts after the body).
 **Applied in the spec:** R-BAS-013, R-BAS-059; code: [absence.go](../../internal/bastionmain/absence.go),
 [ingest.go](../../internal/formathost/ingest.go), [remote.go](../../internal/formathost/remote.go),
 [handler.go](../../internal/api/rawfiles/handler.go), `recordTagFetch` in [remote_handlers.go](../../internal/formats/oci/remote_handlers.go),
-`TestQ_BAS_186_ACountedDownloadIsNotedAtItsStatusLine`, `TestQ_BAS_186_ARemoteTagIsCountedBeforeItsStatusLine`.
+`TestR_BAS_059_ACountedDownloadIsNotedAtItsStatusLine`, `TestR_BAS_059_ARemoteTagIsCountedBeforeItsStatusLine`.
 
 ### Q-BAS-187 · A token answer names the caller the token service accepted
 
@@ -8098,7 +8096,7 @@ request is the anonymous caller. The Bastion records the subject of every marked
 | (c) No subject on a token answer | A marking without `Quader-Bastion-Subject` | No statement | The header is always written (`iface.Marking.Set`); an interface change |
 
 **Choice:** (a). **Applied in the spec:** R-BAS-013, R-BAS-051; code: `NoteCaller` in [mark.go](../../internal/api/bastionmark/mark.go),
-[token.go](../../internal/api/registry/token.go), `TestQ_BAS_166_TheTokenServiceAndTheCatalogTellTheMarkingTheirKind`.
+[token.go](../../internal/api/registry/token.go), `TestR_BAS_051_TheTokenServiceAndTheCatalogTellTheMarkingTheirKind`.
 
 ### Q-BAS-188 · The bound repository is named as the match of /v2/ reads the binding
 
@@ -8121,7 +8119,7 @@ the registry root, as no binding (`Dispatcher.BoundRepository` in [registry_targ
 with the first format other than the registry root that declares bound-host prefixes (Terraform's discovery).
 
 **Applied in the spec:** R-BAS-057; code: [bastion_handshake_api.go](../../internal/api/v1/bastion_handshake_api.go), `bastionBoundRepository`
-in [wire_bastion.go](../../internal/app/wire_bastion.go), `TestQ_BAS_170_TheHandshakeCarriesTheFormatTable`.
+in [wire_bastion.go](../../internal/app/wire_bastion.go), `TestR_BAS_057_TheHandshakeCarriesTheFormatTable`.
 
 ### Q-BAS-189 · The core routes below /v2/ tell the marking their kind only for the methods they answer
 
@@ -8159,7 +8157,7 @@ neither `/api/<format>/` nor `/v2/`. The stage verifies a registry token only on
 | (c) The Bastion sends its check to a replica that serves the package families | A second address for one operation | The rules of the forward's replica | A further configuration value of the Bastion and a split of the interface |
 
 **Choice:** (a). **Applied in the spec:** R-BAS-011, R-BAS-052; code: `bastionCheckStage` in
-[wire_bastion.go](../../internal/app/wire_bastion.go), `TestQ_BAS_167_TheCheckDecidesItsPathsAsAReplicaThatServesThePackageFamilies`.
+[wire_bastion.go](../../internal/app/wire_bastion.go), `TestR_BAS_052_TheCheckDecidesItsPathsAsAReplicaThatServesThePackageFamilies`.
 ### Q-BAS-195 · On a bound host every path below /v2/ but the core routes is the bound repository, as the main installation reads it
 
 Status: **Decided by the builder** — selected from the options below; the owner reviews it. Where the specification and the code
@@ -8320,7 +8318,7 @@ collection was installable through a Bastion with a token.
 
 **Choice:** (a). The builder would revisit (b) with the next change of the interface. **Applied in the spec:** R-BAS-050, R-BAS-019;
 code: `authorization` and `parseCredential` in [credential.go](../../internal/bastion/engine/credential.go),
-`TestQ_BAS_203_TheGalaxyTokenSchemeIsACredentialOfTheProtocolFamily`.
+`TestR_BAS_019_TheGalaxyTokenSchemeIsACredentialOfTheProtocolFamily`.
 
 ### Q-BAS-204 · The set oci runs in a profile of its own that carries the main installation's side of its Bastion
 

@@ -2389,7 +2389,7 @@ platform `unknown/unknown` are left out of both counts unless the index names no
 (b) if a partial size is read as the image's size despite its mark.
 
 **Applied in the spec:** R-OCI-031, R-API-080. Code: `OCITagSizes` and `OCIChildPlatforms` in `internal/meta/postgres/queries/oci_manifests.sql`,
-`imageSize` in [view.go](../../../internal/formats/oci/view.go). Tests: `TestQ_OCI_221_*`, `TestTheViewReadsTheTagsTheirManifestsAndThePlatformsOfAnIndex`,
+`imageSize` in [view.go](../../../internal/formats/oci/view.go). Tests: `TestR_OCI_031_AnIndexCountsThePlatformsTheRepositoryHolds`, `TestTheViewReadsTheTagsTheirManifestsAndThePlatformsOfAnIndex`,
 `TestR_API_081_ARemoteListsATagOnceAClientFetchedItAndEveryCellIsTrue`.
 
 ### Q-OCI-222 · A pull of a tag is the download of its manifest by the tag or by its digest, and a remote lists a tag once one was counted
@@ -2411,7 +2411,7 @@ metadata entry and was counted nowhere, while a `HEAD` stored the entry and list
 **Choice:** (a). `oci_remote_tags` ([00079](../../../internal/meta/postgres/migrations/00079_version_fetches.sql)) keeps an entry whose manifest item
 `<name>/_manifests/<digest>` has a download, or whose repository has a mirror state. **Applied in the spec:** R-OCI-036, R-API-079, R-API-081.
 Code: `recordTagFetch` in [remote_handlers.go](../../../internal/formats/oci/remote_handlers.go), the migration, `package_view.sql`. Tests:
-`TestQ_OCI_222_AGetOfARemoteTagIsADownloadOfItsManifest`, `TestR_API_081_ARemoteListsATagOnceAClientFetchedItAndEveryCellIsTrue`.
+`TestR_API_079_AGetOfARemoteTagIsADownloadOfItsManifest`, `TestR_API_081_ARemoteListsATagOnceAClientFetchedItAndEveryCellIsTrue`.
 
 ### Q-OCI-223 · The platforms of an index are one list per remote repository, linux/amd64 and linux/arm64 by default
 
@@ -2452,7 +2452,7 @@ answers a manifest or a blob from a remote member's own handler, which tells the
 member's `oci.platforms` and settings decide ([repositories-and-proxy.md](../repositories-and-proxy.md#q-repo-367--a-probe-through-a-virtual-repository-starts-the-download-at-the-member-that-serves-it) Q-REPO-367).
 **Applied in the spec:** [repositories-and-proxy.md](../repositories-and-proxy.md)
 R-REPO-065, [api-and-ui.md](../api-and-ui.md) R-API-081. Tests: `TestR_REPO_065_WhatAProbeOfTheRegistryIs`,
-`TestQ_OCI_223_ATagOfAnIndexNamesThePlatformsOfTheRepositorysList`, `TestR_REPO_065_TheContentOfAProbedVersion` in
+`TestR_OCI_026_ATagOfAnIndexNamesThePlatformsOfTheRepositorysList`, `TestR_REPO_065_TheContentOfAProbedVersion` in
 [probe_test.go](../../../internal/formats/oci/probe_test.go).
 
 ### Q-OCI-220 · The refusal of a registry token names the scope, and tells a token without administrator rights why an administrator is refused

@@ -105,7 +105,7 @@ their secrets; `packages` serves machine traffic with tokens. What the binary gu
 |---|---|---|
 | `packages` builds no session store, login or CI exchange, and reads no OIDC or break-glass file | the areas `sessions`, `login`, `ci_exchange` are not in its role set; the chart does not mount the files | `TestR_ARCH_001_RoleTableIsData`, `TestR_ARCH_001_ReplicasBuildTheAreasOfTheirRole` |
 | a session cookie is ignored on `packages` | the authentication stage is built without a session validator (Q-ARCH-300) and the endpoint's surface lacks `ui` | `TestR_EP_010_PackagesIgnoresASessionCookie` |
-| `api` can fill no cache and forward to no upstream | the areas `proxy-engine`, `formathost` are not built; the explanation reads the remote members through `proxy.View`, which has no method that fetches (Q-ARCH-301) | `TestQ_ARCH_294_ApiExplainsAVirtualRepositoryWithoutContactingTheUpstream`, `TestViewReadsWhatTheEngineStored` |
+| `api` can fill no cache and forward to no upstream | the areas `proxy-engine`, `formathost` are not built; the explanation reads the remote members through `proxy.View`, which has no method that fetches (Q-ARCH-301) | `TestR_ARCH_001_ApiExplainsAVirtualRepositoryWithoutContactingTheUpstream`, `TestViewReadsWhatTheEngineStored` |
 | a route of the other role's family answers like an unknown path, with or without a credential | the effective surface of the endpoint, and the stage's `Served` rule (Q-ARCH-302) | `TestR_ARCH_001_AFamilyOfTheOtherRoleIsAnUnknownPath` |
 
 The cut does not narrow the data credentials: [H-517](../spec/architecture.md#h-517--the-cut-into-roles-separates-the-login-secrets-not-the-data-credentials).
@@ -132,7 +132,7 @@ roles:
 
 | Property | How | Test |
 |---|---|---|
-| the scanner builds no area that reaches a data store | its role enables the area `scanner` alone; its configuration load resolves no secret file | `TestR_ARCH_036_AScannerStartsWithoutTheInfrastructureAndServesItsOneRoute` (`internal/app`), `TestQ_ARCH_527_TheScannerReadsOnlyTheKeysItUsesAndResolvesNoSecretFile` (`internal/config`) |
+| the scanner builds no area that reaches a data store | its role enables the area `scanner` alone; its configuration load resolves no secret file | `TestR_ARCH_036_AScannerStartsWithoutTheInfrastructureAndServesItsOneRoute` (`internal/app`), `TestR_ARCH_036_TheScannerReadsOnlyTheKeysItUsesAndResolvesNoSecretFile` (`internal/config`) |
 | the scanner's pod mounts no secret but its own TLS pair and the internal CA | the chart's volume list for the role; the shared extras do not reach it | `TestR_HA_065_*` (`test/chart`) |
 | each link admits one kind: a certificate of the CA with another kind's name or a wildcard is refused on both ends | the exact name checks of the links | `TestR_ARCH_038_EachEndOfALinkRefusesACertificateOfTheCAWithAnotherKindsName` (`internal/httpserver`), `TestR_VULN_041_TheLinksRefuseAClientWithoutTheCertificateOfTheirKind` (`test/integration/vulnimage`) |
 | a scan token reads one image and works only on the scan listener | the claims' rule, the endpoint `scan`, the digest pin of the enforcement point, the fixed rule of the decision point | `TestR_OCI_037_*` (`internal/auth/registrytoken`, `internal/api/registry`, `internal/authz`), `TestR_EP_010_TheScanListenerAcceptsAScanTokenAndNothingElse` (`internal/auth`) |

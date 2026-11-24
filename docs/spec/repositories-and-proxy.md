@@ -4183,7 +4183,7 @@ download per version of the member, the content stored in the member. The charge
 the usage recorded at the member. A format whose virtual handler answers from a member's own handler (an OCI manifest or blob, an
 Ansible role's archive, a Debian package file by its member path) tells the host of the probe with that member's request, which is
 the same. Every format with the classes remote and virtual answers its probes through a virtual address;
-`TestQ_REPO_367_AProbeIsAProbeThroughAVirtualRepositoryToo` (`internal/formats/all`) pins it.
+`TestR_REPO_065_AProbeIsAProbeThroughAVirtualRepositoryToo` (`internal/formats/all`) pins it.
 
 | Format | Probes (the route's request) | What is downloaded | What the protocol leaves out |
 |---|---|---|---|
@@ -4251,11 +4251,11 @@ Acceptance criteria:
   downloaded; in `audit` it is downloaded and the overview records `would_limit`.
 - Integration: with `downloadOnProbe: false`, and for a tag whose image the exclude patterns refuse, a probe stores nothing.
 - Unit, per format: the requests of the table call `Probed` with the files named there, and the package documents, the version lists
-  and a GET of a version's file do not; through a virtual repository the same (`TestQ_REPO_367_*`).
-- Integration (`ociremote`, `TestQ_REPO_367_*`): a `HEAD` of a tag through a virtual repository whose member is the remote stores the
+  and a GET of a version's file do not; through a virtual repository the same (`TestR_REPO_065_*`).
+- Integration (`ociremote`, `TestR_REPO_065_*`): a `HEAD` of a tag through a virtual repository whose member is the remote stores the
   image at the member; the usage row of the background download names the caller's place at the virtual repository and the member;
   the member's switch off starts nothing; the member's ceiling used up by the probe starts nothing.
-- Integration (`npm`, `TestQ_REPO_367_*`): the version document through a virtual repository over a local and a remote member stores
+- Integration (`npm`, `TestR_REPO_065_*`): the version document through a virtual repository over a local and a remote member stores
   the tarball at the remote member, charged at the virtual repository; a version the local member holds starts nothing.
 
 ## Mirror mode
@@ -9462,7 +9462,7 @@ the first client of every remote artifact larger than 64 KiB was not counted: a 
 
 **Choice:** (a). **Applied in the spec:** [storage.md](storage.md) R-STOR-015, [api-and-ui.md](api-and-ui.md) R-API-079. Code: `artifact` and
 `artifactAnswer` in [artifact.go](../../internal/proxy/artifact.go), `Artifact` in [remote.go](../../internal/formathost/remote.go). Tests:
-`TestQ_REPO_331_TheStreamedFirstAnswerOfAMissIsADownload` in [test/integration/proxy](../../test/integration/proxy).
+`TestR_STOR_015_TheStreamedFirstAnswerOfAMissIsADownload` in [test/integration/proxy](../../test/integration/proxy).
 
 ### Q-REPO-360 · A remote repository can turn the background download off
 
@@ -9633,7 +9633,7 @@ member" for NuGet is wrong in practice: the NuGet gate could read the member's s
 **Applied in the spec:** R-REPO-065, [usage-and-limits.md](usage-and-limits.md) R-LIM-037 and Q-LIM-2, [architecture.md](architecture.md)
 R-ARCH-008, the format pages. Code: `Probed`, `servingMember` and `decideFor` in [probe.go](../../internal/formathost/probe.go), the
 virtual handlers of npm, NuGet, Ansible Galaxy and Debian, `checkProbes` in [formats.go](../../internal/formats/formats.go). Tests:
-`TestQ_REPO_367_*` in `internal/formathost`, `internal/formats/all` and each format, and in `test/integration/ociremote` and
+`TestR_REPO_065_*` in `internal/formathost`, `internal/formats/all` and each format, and in `test/integration/ociremote` and
 `test/integration/npm`.
 
 ### Q-REPO-370 · A built-in project `upstream` holds the product's well-known repositories

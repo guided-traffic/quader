@@ -535,7 +535,7 @@ Details: [roadmap M4](../coverage/roadmap.md#m4--gitlab-ci-oidc) · spec: [gitla
 - 🟢 MEDIUM · A project's view of an issuance strips the other tiers' grants but keeps `grantedScope` and `requestedScope`,
   which list them, and the claim snapshot of jobs it only contributed to (`issuances.go` `onlyProject`). Fixed (Q-CI-52): the
   view omits both scope strings, the person, the subject token's ID and the client and trims the same claims from the snapshot;
-  `TestQ_CI_26_AProjectsRecordShowsItsOwnMappingsOnly` and its integration twin check the fields
+  `TestR_CI_019_AProjectsRecordShowsItsOwnMappingsOnly` and its integration twin check the fields
 - 🟢 MEDIUM · The UI offers a project administrator no CI snippet, although the project route exists (`mapping-editor.ts`,
   `ci-api.ts`) — `CiApi.snippet` takes the project and reads `getProjectCiSnippet`; the editor offers the button to a project
   administrator whose `managePolicies` switch is on
@@ -638,7 +638,7 @@ Details: [roadmap M4](../coverage/roadmap.md#m4--gitlab-ci-oidc) · spec: [gitla
 - 🟢 Project administrators manage the CI mappings of their project (owner, 2026-11-02; Q-CI-26): a mapping tier per
   project, grants only over the project's repositories and policies, the save-time rules unchanged; issuers stay the
   system administrators'. Built (W3): the project routes with the narrowing, the bounds, the dry run and the snippet of the
-  tier, `project_not_empty` for a project with mappings (`TestQ_CI_26_*`); the project's issuances (W5, Q-CI-52) and the journey `13-ci` (W7)
+  tier, `project_not_empty` for a project with mappings (`TestR_CI_019_*`); the project's issuances (W5, Q-CI-52) and the journey `13-ci` (W7)
 - 🟢 Identity mappings: conditions on project, branch, protected ref, environment; templated grants. The claim engine is
   built (W2: conditions with their limits and trace, glob, RE2, templates with escaping per context, grants with the
   ownership default, the scope grammar, the cross-project cap per mapping, every save-time rule and warning, the project

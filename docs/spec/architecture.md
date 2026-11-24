@@ -3028,7 +3028,7 @@ Acceptance criteria:
   in a code block, fails kit check 8 (`TestR_ARCH_010_Defects`).
 - A content route whose cases only refuse fails kit check 7 unless `NoContent` lists it with a reason, a restore hook
   no change case drives fails check 9, a fill hook that panics on a crafted input fails check 6, and a skip of check 6
-  or 9 that the format contradicts fails (`TestQ_ARCH_281_*`, `TestR_ARCH_010_KitSkips`).
+  or 9 that the format contradicts fails (`TestR_ARCH_010_*` of `kit_test.go`, `TestR_ARCH_010_KitSkips`).
 - A test format whose document route authorizes the package without a path, whose document route authorizes the
   repository instead of the package, whose tarball route authorizes the package document's path for the tarball it
   serves, whose document route leaves the path out or authorizes the repository in a remote and a virtual repository
@@ -8738,7 +8738,7 @@ Context: roadmap WP3.0j. Five parts of the contract of M2 have no caller in the 
 
 **Rationale:** the contract that freezes should hold what the core calls. The development agent revisits this when the first of those callers is built (retention, the trash can's restore, the NuGet symbol-index job): that change adds its optional interface, the kit check and the block of R-ARCH-008, and `ContractVersion` rises only if an existing method changes meaning.
 
-**Applied in the spec:** R-ARCH-008 (the blocks, the paragraph "Optional behaviour"), R-ARCH-009 (`PackageWriter`), R-ARCH-012 (the repository-wide index declaration), R-ARCH-025 ("Evolution of the format contract after the freeze"), [storage.md](storage.md) (the hook table, restore, retention and caps). Code: `internal/formats/formats.go`, `hooks.go`, `exposure.go`, `serve.go`, `internal/formats/formattest/store.go`, `internal/formathost/writer.go`, `host.go`, `internal/archtest/contract.go`. Tests: `TestQ_ARCH_256_AnOptionalCapabilityIsFoundOnceAndRecordedAtRegister`, `TestContractAssertions`, `TestR_ARCH_008_TheWrittenContractEqualsTheCode`.
+**Applied in the spec:** R-ARCH-008 (the blocks, the paragraph "Optional behaviour"), R-ARCH-009 (`PackageWriter`), R-ARCH-012 (the repository-wide index declaration), R-ARCH-025 ("Evolution of the format contract after the freeze"), [storage.md](storage.md) (the hook table, restore, retention and caps). Code: `internal/formats/formats.go`, `hooks.go`, `exposure.go`, `serve.go`, `internal/formats/formattest/store.go`, `internal/formathost/writer.go`, `host.go`, `internal/archtest/contract.go`. Tests: `TestR_ARCH_008_AnOptionalCapabilityIsFoundOnceAndRecordedAtRegister`, `TestContractAssertions`, `TestR_ARCH_008_TheWrittenContractEqualsTheCode`.
 
 ### Q-ARCH-257 · A minimal contract: the npm concepts leave the shared types
 
@@ -8774,7 +8774,7 @@ Context: roadmap WP3.0d. NuGet's search is a `Volatile` route (a query, passed t
 
 **Rationale:** the text of a search answer is as hostile as a package document. The development agent revisits this if a `Volatile` route ever has to return HTML: it would need its own header set and its own kind.
 
-**Applied in the spec:** R-ARCH-007, R-ARCH-008 (`WrapsContent`), R-ARCH-010 (check 7 and its criteria). Code: `internal/formats/serve.go`, `internal/formats/formattest/checks.go`, `host.go`, `testformat/format.go`. Tests: `TestR_ARCH_007_ServeRouteWrapsTheContentRoutes` (the Volatile cases), `TestR_ARCH_007_FormatRoutesCarryTheContentHeaders`, `TestQ_ARCH_258_OnlyContentRoutesAndVolatileOnesMayReturnPackageBytes`. The stale sentence on `RouteKind.ServesContent` in `route.go` is the owner of that file's to fix.
+**Applied in the spec:** R-ARCH-007, R-ARCH-008 (`WrapsContent`), R-ARCH-010 (check 7 and its criteria). Code: `internal/formats/serve.go`, `internal/formats/formattest/checks.go`, `host.go`, `testformat/format.go`. Tests: `TestR_ARCH_007_ServeRouteWrapsTheContentRoutes` (the Volatile cases), `TestR_ARCH_007_FormatRoutesCarryTheContentHeaders`, `TestR_ARCH_010_OnlyContentRoutesAndVolatileOnesMayReturnPackageBytes`. The stale sentence on `RouteKind.ServesContent` in `route.go` is the owner of that file's to fix.
 
 ### Q-ARCH-259 · The package writer signals a raised package, and `Notify` is limited to declared areas
 
@@ -8792,7 +8792,7 @@ Context: roadmap WP3.0k. Six call sites in npm attach `metadata_changed` with `P
 
 **Rationale:** the revision and the signal are one fact. The development agent revisits this when a second format's remote fill raises package rows (NuGet's cached `.nupkg` rows, R-NUGET-015): its fill then signals through the writer and needs no declared area.
 
-**Applied in the spec:** R-ARCH-008 (`Descriptor.NotifyAreas`), R-ARCH-009 (`PackageWriter`), [virtual.md](../developer/virtual.md). Code: `internal/formats/catalog/changed.go`, `internal/packages/writer.go`, `internal/meta/postgres/queries/packages.sql` (`GetPackageRef`), `internal/formathost/writer.go`, `hooks.go`, `internal/cluster/areas.go`, `internal/formats/npm`, the kit's `store.go`. Tests: `TestQ_ARCH_259_NotifyIsLimitedToTheAreasTheFormatDeclared`, `TestQ_ARCH_259_APackageTheTransactionRaisedSignalsOnce`, `TestQ_ARCH_259_ThePackageWriterSignalsARaisedPackageOnce` (integration), `TestQ_ARCH_259_NotifyAreasAreSignalAreasOfTheCatalog`.
+**Applied in the spec:** R-ARCH-008 (`Descriptor.NotifyAreas`), R-ARCH-009 (`PackageWriter`), [virtual.md](../developer/virtual.md). Code: `internal/formats/catalog/changed.go`, `internal/packages/writer.go`, `internal/meta/postgres/queries/packages.sql` (`GetPackageRef`), `internal/formathost/writer.go`, `hooks.go`, `internal/cluster/areas.go`, `internal/formats/npm`, the kit's `store.go`. Tests: `TestR_ARCH_009_NotifyIsLimitedToTheAreasTheFormatDeclared`, `TestR_ARCH_009_APackageTheTransactionRaisedSignalsOnce`, `TestR_ARCH_009_ThePackageWriterSignalsARaisedPackageOnce` (integration), `TestR_ARCH_009_NotifyAreasAreSignalAreasOfTheCatalog`.
 
 ### Q-ARCH-260 · A format names only its own repository: the request's scope, and a writer bound to its event
 
@@ -8810,7 +8810,7 @@ Context: roadmap WP3.0e. `EnsureLocked`, `DeleteItems` and the read stores take 
 
 **Rationale:** (a) closes the cross-repository road for formats and costs no signature; what it cannot close is the road inside the family of a virtual repository, which only (b) or (c) close. The development agent revisits this when `Resolver.Plan` (roadmap WP3.0c) hands out the members a caller may read: the scope can then be that list.
 
-**Applied in the spec:** R-ARCH-008 (`Target` comment, `RepositoryAllowed`), R-ARCH-009 (`PackageWriter`). Code: `internal/formats/scope.go`, `serve.go`, `internal/formathost/ingest.go`, `writer.go`, `hooks.go`, the kit's `store.go`. Tests: `TestQ_ARCH_260_TheStoresRefuseARepositoryOutsideTheRequest`, `TestQ_ARCH_260_AWriterWritesToItsOwnRepositoryOnly`, `TestQ_ARCH_260_AFormatNamesItsOwnRepositoryOnly`. The open gap is [H-329](../security/repository-model.md#h-329--a-format-that-reads-a-member-without-rqmember-skips-the-per-member-read-check).
+**Applied in the spec:** R-ARCH-008 (`Target` comment, `RepositoryAllowed`), R-ARCH-009 (`PackageWriter`). Code: `internal/formats/scope.go`, `serve.go`, `internal/formathost/ingest.go`, `writer.go`, `hooks.go`, the kit's `store.go`. Tests: `TestR_ARCH_009_TheStoresRefuseARepositoryOutsideTheRequest`, `TestR_ARCH_009_AWriterWritesToItsOwnRepositoryOnly`, `TestR_ARCH_009_AFormatNamesItsOwnRepositoryOnly`. The open gap is [H-329](../security/repository-model.md#h-329--a-format-that-reads-a-member-without-rqmember-skips-the-per-member-read-check).
 
 ### Q-ARCH-261 · The rendition ETag, the typed environment and the engine value types stay as they are across the freeze
 
@@ -9283,8 +9283,8 @@ the `npm.audit.bulk` entry when a content case can name the class of its reposit
 **Applied in the spec:** R-ARCH-008 (acceptance criterion), R-ARCH-010 (checks 3, 6, 7 and 9, the skip rule, the fixture
 paragraph, an acceptance criterion). Code: `internal/formats/formattest/kit.go`, `checks.go`, `host.go`, `store.go`;
 `internal/formats/npm/conformance_test.go`, `internal/formats/nuget/conformance_test.go`. Tests:
-`TestQ_ARCH_281_AContentRouteThatOnlyRefusesIsListed`, `TestQ_ARCH_281_EveryStorageHookIsDrivenByAChange`,
-`TestQ_ARCH_281_TheFillHookMeetsTheBoundsOfCheck6`, `TestR_ARCH_010_KitSkips`, `TestR_ARCH_010_NoCheckIsSkipped`,
+`TestR_ARCH_010_AContentRouteThatOnlyRefusesIsListed`, `TestR_ARCH_010_EveryStorageHookIsDrivenByAChange`,
+`TestR_ARCH_010_TheFillHookMeetsTheBoundsOfCheck6`, `TestR_ARCH_010_KitSkips`, `TestR_ARCH_010_NoCheckIsSkipped`,
 `TestR_ARCH_010_Conformance`.
 
 ### Q-ARCH-282 · How does the road of a pass-through query resolve the discovery document of a format that has one?

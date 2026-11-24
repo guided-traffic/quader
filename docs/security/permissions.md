@@ -201,7 +201,7 @@ holds the budget of such a caller's documents.
   (`TestR_API_029_ReadScopeAgreesWithTheDecisionPoint`). On an endpoint with exposure rules a repository is never classified as read whole.
   A listing that belongs to a request through a virtual repository (NuGet's merged search) names the addressed repository, and every row
   is decided as a read through it: the exposure of the virtual repository and the lift of a token scope that names it apply, and a
-  repository it does not reach reads as nothing (Q-AUTHZ-168, `TestQ_AUTHZ_168_AReadScopeThroughAVirtualRepositoryAgreesWithTheDecisionPoint`).
+  repository it does not reach reads as nothing (Q-AUTHZ-168, `TestR_AUTHZ_009_AReadScopeThroughAVirtualRepositoryAgreesWithTheDecisionPoint`).
 - The repositories of one project (`GET /api/v1/projects/{projectKey}/repositories`) answer an empty page only to a caller that sees
   the project: a holder of `projects:read` or `repositories:read-config`, a member (within its token's scope), or a caller that reads
   one of its repositories whatever the filters. To anyone else a project that exists and one that does not both answer 404 with the
@@ -396,7 +396,7 @@ a `.nuspec`, a raw file) is refused like a missing one, every write with 403, an
 metadata read. The gate of a virtual repository is decided with the request's kind, so an artifact through a virtual
 repository stops at the gate. Exposure rules bind the auditor as every subject (R-EP-013). A token carries the capability only
 when its scope lists the system item `content:metadata-read`, and its repository part narrows it like a grant (R-AUTHZ-013).
-Tests: `TestQ_AUTHZ_172_AuditorReadsMetadataNeverArtifacts`, `TestQ_AUTHZ_172_AuditorReadsNpmMetadata`; which of a format's
+Tests: `TestR_AUTHZ_011_AuditorReadsMetadataNeverArtifacts`, `TestR_AUTHZ_011_AuditorReadsNpmMetadata`; which of a format's
 paths are metadata and which are artifacts is its classification, held for every format by check 3 of R-ARCH-010.
 
 What the auditor learns is everything the metadata says: every repository key, every package name and version, the dist-tags

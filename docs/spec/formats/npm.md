@@ -5237,7 +5237,7 @@ package document, which lists every version, and then fetches the tarball itself
 in [handlers_remote.go](../../../internal/formats/npm/handlers_remote.go). Through a virtual repository the version document, cut from
 the merged document, and a `HEAD` of the tarball are the probes of the member that serves the tarball ([repositories-and-proxy.md](../repositories-and-proxy.md#q-repo-367--a-probe-through-a-virtual-repository-starts-the-download-at-the-member-that-serves-it) Q-REPO-367):
 `virtualDocument` and `virtualTarball` in [handlers_virtual.go](../../../internal/formats/npm/handlers_virtual.go). Tests:
-`TestR_REPO_065_WhatAProbeOfNpmIs`, `TestQ_REPO_367_WhatAProbeOfNpmIsThroughAVirtualRepository` in
+`TestR_REPO_065_WhatAProbeOfNpmIs`, `TestR_REPO_065_WhatAProbeOfNpmIsThroughAVirtualRepository` in
 [probe_test.go](../../../internal/formats/npm/probe_test.go).
 
 ### Q-NPM-90 · `npm view` of a version is no probe; the rule fires for tools that ask the version document

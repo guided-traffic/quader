@@ -2044,7 +2044,7 @@ Acceptance criteria:
 - Unit and kit (`internal/formats/nuget`, milliseconds, bytes): the icon, the license and the README of a pushed package with their
   media types and headers, `HEAD`, a `304`; a 404 for a version that embeds none without a read of the object store; a file outside
   the limits; the refusal of a check of the `.nupkg`; the links in registration, search and service index; a remote's cached and
-  uncached version; the walk of a virtual repository (`TestR_NUGET_024_*`, `TestQ_NUGET_136_*`, `TestQ_NUGET_137_*` in
+  uncached version; the walk of a virtual repository (`TestR_NUGET_024_*` in
   [embedded_test.go](../../../internal/formats/nuget/embedded_test.go)); the kit's content cases `embedded icon`, `embedded license`
   and `embedded readme`. Integration (`nuget`, about a second): the three files through the PostgreSQL store and the object store,
   local and through a virtual repository (`TestR_NUGET_024_TheEmbeddedFilesThroughTheDataPort`).
@@ -4127,7 +4127,7 @@ Context: the package screens of [api-and-ui.md](../api-and-ui.md) R-API-029 show
 
 **Rationale:** (a) is the only option that gives M3 a README without a second ingestion path, and the cost lands on the one tab that needs it. The deviation of `hasReadme` is small and visible (an empty README tab); the exact answer needs the flag the P1 extraction can write when it lands, and the development agent would revisit this then: R-NUGET-024 can make `hasReadme` exact by writing the item and the view can read that instead. The ranged reads are not verified against the blob digest ([storage.md](../storage.md) R-STOR-013 verifies full reads only); the text is rendered by the sanitizer of R-UI-008, never executed.
 
-**Applied in the spec:** none in a requirement; this block is the schema of the `metadata` object that [api-and-ui.md](../api-and-ui.md) R-API-029 leaves to the format page. Code: [view.go](../../../internal/formats/nuget/view.go), [formatdata/nuget/view.go](../../../internal/formatdata/nuget/view.go), [nuget_view.sql](../../../internal/meta/postgres/queries/nuget_view.sql), [wire_nuget_blobs.go](../../../internal/app/wire_nuget_blobs.go). Tests: `TestR_API_029_NuGetDescribesSummaryAndDetails`, `TestR_EP_016_NuGetStoredListsWhatTheRepositoryServes`, `TestQ_NUGET_48_TheDataPortReadsTheViewFromPostgreSQL`, `TestR_API_029_NuGetPackagesAreListedAndDescribed`.
+**Applied in the spec:** none in a requirement; this block is the schema of the `metadata` object that [api-and-ui.md](../api-and-ui.md) R-API-029 leaves to the format page. Code: [view.go](../../../internal/formats/nuget/view.go), [formatdata/nuget/view.go](../../../internal/formatdata/nuget/view.go), [nuget_view.sql](../../../internal/meta/postgres/queries/nuget_view.sql), [wire_nuget_blobs.go](../../../internal/app/wire_nuget_blobs.go). Tests: `TestR_API_029_NuGetDescribesSummaryAndDetails`, `TestR_EP_016_NuGetStoredListsWhatTheRepositoryServes`, `TestR_API_029_TheDataPortReadsTheViewFromPostgreSQL`, `TestR_API_029_NuGetPackagesAreListedAndDescribed`.
 
 ### Q-NUGET-49 · The setup snippets: one command or file per client, the credential only where it is needed
 
@@ -4650,7 +4650,7 @@ Context: the merged search of R-NUGET-018 asked `Resolver.ReadScope` for the row
 
 **Rationale:** exposure and the lift are properties of what the client named (Q-EP-11, Q-AUTHZ-163), and `rq.Addressed()` already carries it to every other decision of the request. The development agent revisits this if a format needs a listing through a repository other than the one the request addressed.
 
-**Applied in the spec:** R-NUGET-018 (step 1 and an acceptance criterion), R-NUGET-034 (the search bullet), [authorization.md](../authorization.md) R-AUTHZ-009 rule 4. Code: [visible.go](../../../internal/authz/visible.go), [virtual.go](../../../internal/formathost/virtual.go) `ReadScope`, [search_virtual.go](../../../internal/formats/nuget/search_virtual.go) `exposedHit`. Security: [nuget-virtual.md](../../security/nuget-virtual.md). Tests: `TestQ_AUTHZ_168_AListingThroughAVirtualRepositoryAppliesItsExposure`, `TestQ_AUTHZ_168_AListingThroughAVirtualRepositoryLiftsATokenScopeThatNamesIt`, `TestR_API_029_BridgeReadScope`, `TestR_NUGET_034_TheMergedSearchFiltersEveryMemberByTheViewOfTheAddressedRepository`, and the integration test `TestR_NUGET_034_SearchThroughAVirtualRepositoryOnAnEndpointWithRules`.
+**Applied in the spec:** R-NUGET-018 (step 1 and an acceptance criterion), R-NUGET-034 (the search bullet), [authorization.md](../authorization.md) R-AUTHZ-009 rule 4. Code: [visible.go](../../../internal/authz/visible.go), [virtual.go](../../../internal/formathost/virtual.go) `ReadScope`, [search_virtual.go](../../../internal/formats/nuget/search_virtual.go) `exposedHit`. Security: [nuget-virtual.md](../../security/nuget-virtual.md). Tests: `TestR_AUTHZ_009_AListingThroughAVirtualRepositoryAppliesItsExposure`, `TestR_AUTHZ_009_AListingThroughAVirtualRepositoryLiftsATokenScopeThatNamesIt`, `TestR_API_029_BridgeReadScope`, `TestR_NUGET_034_TheMergedSearchFiltersEveryMemberByTheViewOfTheAddressedRepository`, and the integration test `TestR_NUGET_034_SearchThroughAVirtualRepositoryOnAnEndpointWithRules`.
 
 ### Q-NUGET-76 · The fan-out of the merged search: four members at a time and one scan budget
 
@@ -5644,7 +5644,7 @@ index, which name every version, and then fetches the `.nupkg` itself.
 [handlers_remote.go](../../../internal/formats/nuget/handlers_remote.go). Through a virtual repository the leaf, cut from the merged
 registration, the `.nuspec` and a `HEAD` of the `.nupkg` are the probes of the member that serves the `.nupkg` ([repositories-and-proxy.md](../repositories-and-proxy.md#q-repo-367--a-probe-through-a-virtual-repository-starts-the-download-at-the-member-that-serves-it)
 Q-REPO-367, H-1019): `virtualRegistration` and `virtualFile` in [handlers_virtual.go](../../../internal/formats/nuget/handlers_virtual.go).
-Tests: `TestR_REPO_065_WhatAProbeOfNuGetIs`, `TestQ_REPO_367_WhatAProbeOfNuGetIsThroughAVirtualRepository` in
+Tests: `TestR_REPO_065_WhatAProbeOfNuGetIs`, `TestR_REPO_065_WhatAProbeOfNuGetIsThroughAVirtualRepository` in
 [probe_test.go](../../../internal/formats/nuget/probe_test.go).
 
 ### Q-NUGET-135 · An embedded file is read out of the stored package when a client asks for it
@@ -5689,7 +5689,7 @@ Ansible Galaxy's version document (Q-SIG-241), a read of the package's bytes at 
 [signatures.md](../signatures.md) Q-SIG-143 (revised for NuGet's embedded files); [usage-and-limits.md](../usage-and-limits.md) the NuGet
 table. Code: `embeddedIn` in [handlers_embedded.go](../../../internal/formats/nuget/handlers_embedded.go), the route kind in
 [routes.go](../../../internal/formats/nuget/routes.go), `classifyVersionFile` in [paths.go](../../../internal/formats/nuget/paths.go).
-Test: `TestQ_NUGET_136_AnEmbeddedFileOfAPackageACheckHoldsBackIsNotServed`.
+Test: `TestR_NUGET_024_AnEmbeddedFileOfAPackageACheckHoldsBackIsNotServed`.
 
 ### Q-NUGET-137 · A remote serves the embedded files of the packages its cache holds, and a virtual repository those of its first member that holds the package
 
@@ -5707,7 +5707,7 @@ below its flat container; other feeds need not. A client probes the README of ev
 
 **Choice:** (a). The service index of every class lists the README template, so a remote's cached packages and a virtual repository's
 show their README. **Applied in the spec:** R-NUGET-024, R-NUGET-015's rewriting table. Code: `virtualEmbedded` and `embeddedIn` in
-[handlers_embedded.go](../../../internal/formats/nuget/handlers_embedded.go). Tests: `TestQ_NUGET_137_*` in
+[handlers_embedded.go](../../../internal/formats/nuget/handlers_embedded.go). Tests: `TestR_NUGET_024_ARemoteServes…`, `TestR_NUGET_024_AVirtualServes…` in
 [embedded_test.go](../../../internal/formats/nuget/embedded_test.go).
 
 ## What this does not cover

@@ -227,7 +227,7 @@ its tests pin the two callers of Q-REPO-113 in both orders as npm's and NuGet's 
 
 Component: the read stores and the package writer of the formats host, scoped by `formats.RepositoryAllowed` ([scope.go](../../internal/formats/scope.go),
 Q-ARCH-260). Subject: the members of a virtual repository a caller may not read. The scope of a request is its repository and every member below it, so a store
-refuses a repository outside that set (a format cannot name another tenant's repository by id: `TestQ_ARCH_260_TheStoresRefuseARepositoryOutsideTheRequest`) and a
+refuses a repository outside that set (a format cannot name another tenant's repository by id: `TestR_ARCH_009_TheStoresRefuseARepositoryOutsideTheRequest`) and a
 package writer is bound to the request's or the event's repository. The scope does not remember which members the format obtained through `rq.Member`, because
 the engines hand members to a format themselves (`ServeCheck`, `LocalDocument`, `Merge`) and those calls would fail. A search that iterates `rq.Repo.Members()`
 and reads each through the stores therefore reads members the caller has no grant on: the stores answer, and R-AUTHZ-009 rule 2 (a caller lists only what they may

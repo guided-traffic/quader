@@ -547,10 +547,10 @@ job remote-download (queue downloads, one attempt, exclusive per row)
   [probe_virtual_test.go](../../test/integration/ociremote/probe_virtual_test.go) and
   [remote_probe_virtual_test.go](../../test/integration/npm/remote_probe_virtual_test.go).
 - **Why NuGet, Ansible Galaxy and Debian through a virtual repository have unit tests only.** What a format adds there is which of its
-  answers through the virtual repository is a probe and which files it names: `TestQ_REPO_367_WhatAProbeOf…IsThroughAVirtualRepository`
+  answers through the virtual repository is a probe and which files it names: `TestR_REPO_065_WhatAProbeOf…IsThroughAVirtualRepository`
   in each format's `probe_test.go` (OCI's tells it on the request of the remote member whose answer the walk served, the others on the
   virtual repository's). What follows, the member search and the decision on the member, is shared code: once at the unit tier
-  (`TestQ_REPO_367_AProbeThroughAVirtualRepositoryIsTheProbeOfTheMemberThatServesIt` in
+  (`TestR_REPO_065_AProbeThroughAVirtualRepositoryIsTheProbeOfTheMemberThatServesIt` in
   [probe_test.go](../../internal/formathost/probe_test.go)) and twice in integration, npm's case for the probe told on the virtual
   repository and OCI's for the one told on the member. A further format adds its unit case, not an integration case.
 - **The rules on the background path.** A remote has no include and exclude patterns ([remote-curation.md](../spec/remote-curation.md)

@@ -644,7 +644,7 @@ the item store, [oci.md](oci.md#upload-sessions-r-stor-011); the in-memory host 
    file), adds its row to `TestR_REPO_065_EveryFormatDeclaresItsProbes` in [all_test.go](../../internal/formats/all/all_test.go) and a unit
    test of its probes with `formattest.MemRemote`, whose `ProbesSeen` lists what the handlers told it ([proxy.md](proxy.md#a-probe-starts-the-download)).
    With the class `virtual` too, its virtual handlers call `Probed` on the same requests with the virtual request (or a member's, when they
-   answered from a member's own handler); `ProbedOnSeen` says which, and `TestQ_REPO_367_AProbeIsAProbeThroughAVirtualRepositoryToo` holds
+   answered from a member's own handler); `ProbedOnSeen` says which, and `TestR_REPO_065_AProbeIsAProbeThroughAVirtualRepositoryToo` holds
    that every probe route serves the class `virtual` (Q-REPO-367).
    A format with the class `remote` also declares its upstream catalogue (`Descriptor.Catalogue`) and its version canon
    (`Descriptor.VersionCanon`) and adds its rows to `TestR_CUR_007_EveryRemoteFormatDeclaresItsCatalogue` and

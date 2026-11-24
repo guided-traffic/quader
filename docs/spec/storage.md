@@ -8443,7 +8443,7 @@ and are not listed.
 | (c) Add the indexes to the member that built them | An owner for the bytes | Sums | The bytes of a merged index belong to no member |
 
 **Choice:** (a). The usage counters are kept by the items table whatever the class (R-STOR-003), so the figures of a virtual repository are those
-of its generated items. Verified: the publication port accepts a virtual repository and no remote one (`TestQ_STOR_180_PublishTargetClasses`).
+of its generated items. Verified: the publication port accepts a virtual repository and no remote one (`TestR_STOR_003_PublishTargetClasses`).
 Not verified: the summary task itself (R-STOR-028) is not built yet, so this decision is for it.
 
 **Rationale:** the usage of an installation is the sum of the usage of its repositories. The development agent would revisit it if the list became
@@ -10964,7 +10964,7 @@ Status: **Decided by the development agent** — selected from the options below
 2026-11-23 beside [vulnerability-scanning.md](vulnerability-scanning.md#q-vuln-225--every-large-write-of-the-scanning-units-is-flushed-every-32-mib-by-the-loaders-mechanism)
 Q-VULN-225: the spool's hashing pass (R-STOR-004) wrote an upload of up to `storage.upload.max_size` (10 GiB by default) with no flush,
 the cause for which the loader of the image scanner's database had been killed for dirty pages (Q-VULN-212). Reproduced by
-`TestQ_STOR_486_TheSpoolFlushesAnUploadWhileItArrives` before the change: no flush.
+`TestR_STOR_004_TheSpoolFlushesAnUploadWhileItArrives` before the change: no flush.
 
 | Option | What it means | For | Against |
 |---|---|---|---|
@@ -10991,7 +10991,7 @@ the cause for which the loader of the image scanner's database had been killed f
 [core.go](../../internal/bastion/cache/core.go), [volume.go](../../internal/bastion/cache/volume.go),
 [pull.go](../../internal/blob/offline/pull.go), [read.go](../../internal/blob/offline/read.go),
 [client.go](../../internal/importer/client.go); the Bastion's allow-list gains the leaf `internal/syncwrite`
-([bastion.go](../../internal/archtest/bastion.go), R-BAS-001). Tests: `TestQ_STOR_486_TheSpoolFlushesAnUploadWhileItArrives` (unit,
+([bastion.go](../../internal/archtest/bastion.go), R-BAS-001). Tests: `TestR_STOR_004_TheSpoolFlushesAnUploadWhileItArrives` (unit,
 `internal/blob`, a body of 10 bytes with a threshold of 4, under a second); the case Q-STOR-486 of `TestCopy` (unit, `internal/syncwrite`).
 
 ## What this does not cover

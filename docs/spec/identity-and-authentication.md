@@ -208,7 +208,7 @@ Acceptance criteria:
   `Set-Cookie: __Host-qdr_session=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax` and
   `Set-Cookie: __Host-qdr_csrf=; Path=/; Max-Age=0; Secure; SameSite=Strict`; a malformed cookie gets the same answer. The same
   cookie on `GET /api/v1/formats` answers 401 `session_expired` without a `Set-Cookie` line, and without the cookie the same
-  request answers 200 where something is `public`. Unit tests: `TestQ_AUTH_410_WhoamiClearsAnEndedSessionsCookie` in
+  request answers 200 where something is `public`. Unit tests: `TestR_AUTH_002_WhoamiClearsAnEndedSessionsCookie` in
   [stage_whoami_test.go](../../internal/auth/stage_whoami_test.go).
 
 ### R-AUTH-002 · Authentication failures and challenges
@@ -6166,7 +6166,7 @@ Context: a token with `admin: true` carries administrator power only while its o
 
 **Security note:** who is shown the fact is narrowed by [Q-AUTH-428](#q-auth-428--the-administrator-role-of-a-token-owner-or-a-service-account-is-shown-only-to-a-holder-of-identitiesread-and-to-the-owner-itself): a holder of `tokens:read` alone no longer learns which token owners are administrators.
 
-**Applied in the spec:** R-AUTH-020, R-AUTH-028, [openapi.yaml](../../api/openapi.yaml) (`Token`, `ServiceAccount`). Code: `Manager.AdminHolders` and the query `IdentityAdminHolderIDs` ([identity.sql](../../internal/meta/postgres/queries/identity.sql)), `ownerAdmins` in [tokens_api.go](../../internal/api/v1/tokens_api.go). Tests: `TestQ_AUTH_209_TheRecordsStateWhetherTheOwnerIsAnAdministrator` in [admin_state_test.go](../../test/integration/identity/admin_state_test.go).
+**Applied in the spec:** R-AUTH-020, R-AUTH-028, [openapi.yaml](../../api/openapi.yaml) (`Token`, `ServiceAccount`). Code: `Manager.AdminHolders` and the query `IdentityAdminHolderIDs` ([identity.sql](../../internal/meta/postgres/queries/identity.sql)), `ownerAdmins` in [tokens_api.go](../../internal/api/v1/tokens_api.go). Tests: `TestR_AUTH_028_TheRecordsStateWhetherTheOwnerIsAnAdministrator` in [admin_state_test.go](../../test/integration/identity/admin_state_test.go).
 
 ### Q-AUTH-428 · The administrator role of a token owner or a service account is shown only to a holder of `identities:read` and to the owner itself
 
@@ -6451,7 +6451,7 @@ from a browser with several tabs, then with (d) asked only after a second `sessi
 **Applied in the spec:** R-AUTH-001 (the normative rule and an acceptance criterion), R-AUTH-002 (the code's meaning), R-AUTH-013;
 Q-AUTH-177 (revisited); [api-and-ui.md](api-and-ui.md) R-UI-004, R-UI-057, Q-UI-710 to Q-UI-713; `api/openapi.yaml`
 (`getWhoami`). Code: `endedSessionAnswer` in [stage.go](../../internal/auth/stage.go), `ClearingCookies` in
-[cookie.go](../../internal/auth/session/cookie.go), `errs.WithCookies`. Tests: `TestQ_AUTH_410_WhoamiClearsAnEndedSessionsCookie`
+[cookie.go](../../internal/auth/session/cookie.go), `errs.WithCookies`. Tests: `TestR_AUTH_002_WhoamiClearsAnEndedSessionsCookie`
 in [stage_whoami_test.go](../../internal/auth/stage_whoami_test.go).
 
 ### Q-AUTH-411 · The cookies are cleared in the answer, after what the stage records; a session that cannot be checked keeps its cookie
@@ -6491,7 +6491,7 @@ answers all of them with the same `401 session_expired` (R-AUTH-002, H-328).
 oracle. The development agent records no revisit condition.
 
 **Applied in the spec:** R-AUTH-001, R-AUTH-002. Tests: the subtest "a malformed cookie and an ended session's cookie get the same
-answer" of `TestQ_AUTH_410_WhoamiClearsAnEndedSessionsCookie`.
+answer" of `TestR_AUTH_002_WhoamiClearsAnEndedSessionsCookie`.
 
 ### Q-AUTH-413 · Only `GET` and `HEAD` clear, with `no-store` and the challenge of the route
 
@@ -6531,7 +6531,7 @@ is decided from the row by every replica (Q-AUTH-13). The session cookie is eval
 the endpoint rules of the verdict it follows. The development agent records no revisit condition.
 
 **Applied in the spec:** R-AUTH-001. Tests: the subtests for an endpoint that does not accept the session cookie, a replica
-without sessions and a token beside the cookie in `TestQ_AUTH_410_WhoamiClearsAnEndedSessionsCookie`.
+without sessions and a token beside the cookie in `TestR_AUTH_002_WhoamiClearsAnEndedSessionsCookie`.
 
 ### Q-AUTH-415 · A technical token is a named line of secrets of a service account, and its identity is the budget's subject
 

@@ -2586,7 +2586,7 @@ client, not checked in this repository): 3 × 127 + the configuration's 3 + a ma
 
 **Choice:** (a). **Rationale:** the measurement shows the refusal is the burst, not the rate: a push is short and dense. A burst that
 holds the largest image keeps the class's purpose (a publish loop runs at 10 a second) and removes the failure without a new concept.
-After the change the same push of 40 layers passes in Enforce (`TestOCILimits_Q_LIM_27_APushOfManyTinyLayersMeetsTheWriteClass`).
+After the change the same push of 40 layers passes in Enforce (`TestOCILimits_R_API_016_APushOfManyTinyLayersMeetsTheWriteClass`).
 Revisit when the upload figures of Q-LIM-27 come, or if a client pushes several large images within seconds.
 
 Checked on 2026-11-20 against the measurement of
@@ -3084,7 +3084,7 @@ Tests: `TestR_LIM_022_ARefusedUpstreamRequestIsCountedNowhere` in [engine_test.g
 `TestR_EP_015_ARequestStage7RefusesIsGivenBackToTheEndpointsClass` in
 [endpoint_ratelimit_test.go](../../internal/api/v1/endpoint_ratelimit_test.go), `TestLimiterGiveBack` in
 [limiter_test.go](../../internal/cluster/limiter_test.go), and the script against the stack's Valkey in
-`TestQ_LIM_110_AGiveBackTakesBackWhatATakeCountedAndAPeekAddsNothing` ([units_test.go](../../test/integration/valkey/units_test.go)).
+`TestR_LIM_017_AGiveBackTakesBackWhatATakeCountedAndAPeekAddsNothing` ([units_test.go](../../test/integration/valkey/units_test.go)).
 
 ### Q-LIM-111 · A replica reports the epoch of the limits it decides with
 

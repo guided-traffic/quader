@@ -4588,7 +4588,7 @@ revocation per tier, the contribution dropped at use time, the principal mirror,
 (`notifyMappingState`), `internal/ci/claims/grants.go` (version 2), `internal/authz/ci.go` (`ciContributes`),
 `internal/authz/index.go` and `source.go` (`Snapshot.CIMappings`), `queries/ci_exchange.sql` (`CiExchangeClock`),
 `queries/ci_mappings.sql` (`CiMappingsActive`), `queries/ci_issuances.sql` (`CiIssuanceTokensOfMapping`'s `contributed`). Tests:
-`TestQ_CI_47_*` (`test/integration/ci/tiers_test.go`, `internal/authz/ci_test.go`, `internal/ci/exchange_service_test.go`,
+`TestR_CI_009_*` (`test/integration/ci/tiers_test.go`, `internal/authz/ci_test.go`, `internal/ci/exchange_service_test.go`,
 `internal/ci/claims/bounds_test.go`), `TestR_CI_009_AProjectTiersRenderFailureDropsOnlyItsContribution`,
 `TestR_CI_016_AMappingsBoundEndsOnlyItsOwnContribution`, `TestR_CI_016_ABoundBelowTheFloorIsRefusedAtTheSave`.
 
@@ -4719,7 +4719,7 @@ of made-up `iss` values show up in PostgreSQL.
 the configuration), R-CI-019 (the prefix before the lookup). Code: `internal/ci/exchange_scope.go` (`narrow`, `GrantIndex` without
 `UnknownKey`), `internal/authz/ci_scope.go`, `internal/ci/mappings_write.go` (`create`), `internal/ci/claims/check.go`
 (`CheckProjectName`), `internal/config/ci.go`, `internal/ci/exchange_tx.go` (`ceilUnix`), `internal/ci/issuers_read.go` (`Resolve`,
-`rereadIssuers`). Tests: `TestQ_CI_51_AnUnknownScopeKeyAnswersAsANotGrantedOne`, the scope cases of
+`rereadIssuers`). Tests: `TestR_CI_007_AnUnknownScopeKeyAnswersAsANotGrantedOne`, the scope cases of
 `TestR_CI_008_EveryReasonOfTheErrorTable` (`exchange_errors_test.go`), `TestQ_CI_51_AProjectAdministratorProbesNoNameOutsideItsPrefix`, `TestR_CI_018_TheReplayRetentionHasAFloor`,
 `TestR_CI_018_TheStoredSubjectExpiryRoundsUp`, `TestR_CI_003_ALaggingReplicaLearnsANewIssuerWithinThePollInterval`.
 

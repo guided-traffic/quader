@@ -336,7 +336,7 @@ new cases (`QUADER_E2E_RUN`), so the seconds include the fixture the full set bu
 |---|---|---|---|---|
 | `npm` | `TestNPMLimits_R_LIM_020_WhatNpmShowsAtARefusal` | npm 11 | 33 | one tarball of a few hundred bytes |
 | `nuget` | `TestNuGetLimits_R_LIM_020_WhatDotnetShowsAtARefusal` | dotnet restore | 59 | one package of about a kilobyte |
-| `oci` | `TestOCILimits_R_LIM_020_WhatDockerAndPodmanShowAtARefusal`, `TestOCILimits_F161_SignInsAndPullsFromOneAddressMeetNoAnonymousBudget`, `TestOCILimits_Q_LIM_27_APushOfManyTinyLayersMeetsTheWriteClass`, `TestOCIProbe_R_REPO_065_ManifestInspectThroughAVirtualRepositoryDownloadsTheImage` | docker, podman | 63 (37, 12, 13 and 1) | images of a few hundred bytes; the push 40 layers of a few bytes |
+| `oci` | `TestOCILimits_R_LIM_020_WhatDockerAndPodmanShowAtARefusal`, `TestOCILimits_F161_SignInsAndPullsFromOneAddressMeetNoAnonymousBudget`, `TestOCILimits_R_API_016_APushOfManyTinyLayersMeetsTheWriteClass`, `TestOCIProbe_R_REPO_065_ManifestInspectThroughAVirtualRepositoryDownloadsTheImage` | docker, podman | 63 (37, 12, 13 and 1) | images of a few hundred bytes; the push 40 layers of a few bytes |
 | `deb` | `TestDebLimits_R_LIM_020_WhatAptShowsAtARefusal` | APT 3.0 (Debian 13) | 40 | one package of about a kilobyte |
 | `ansible` | `TestAnsibleLimits_R_LIM_020_WhatAnsibleGalaxyShowsAtARefusal` | ansible-galaxy 2.21 | 36 | one collection of a few KB |
 

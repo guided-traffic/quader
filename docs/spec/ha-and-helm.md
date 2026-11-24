@@ -568,7 +568,7 @@ Priority: **P1** · Covers: quader-only
 - **With the detection in the scanner and the analyser from its own image** (owner, 2026-11-21): the role `all` builds no image scanner,
   and its worker part calls `vulnerabilities.images.scanner.url` when one is set; without one the image scanning's job ends at once and
   touches no row ([architecture.md](architecture.md) Q-ARCH-563), so the UI development profile shows images `pending_scan` and the API
-  `replicas: "none"`; the renders keep seeding the scanners' rows by SQL. Built on 2026-11-21 (`TestQ_ARCH_563_TheRoleAllBuildsNoImageScanner`
+  `replicas: "none"`; the renders keep seeding the scanners' rows by SQL. Built on 2026-11-21 (`TestR_ARCH_036_TheRoleAllBuildsNoImageScanner`
   in `vulnimage`); the integration stack's loader replica too (`flow.startLoader`). The profiles' part below (the image scanning off in
   `values-dev.yaml` and `values-restore.yaml`, the analyser's image loaded in `vuln`) is built with R-HA-070 (Q-HA-386, Q-HA-387). The local profile on kind runs the
   image scanning only in the profile `vuln` (and the profiles layered on it) and in the platform matrix, and loads the analyser's image into
