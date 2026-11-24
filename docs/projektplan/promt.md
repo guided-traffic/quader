@@ -253,10 +253,9 @@ Read this first. The run that began at 22:21 on 2026-11-23 ended its starts at 1
   bulk with its cause; **no view needs a reload** (R-UI-213, `live()`; the rule is in CLAUDE.md).
 - Findings: the search hint in the screen's language; the date-dependent ClamAV cell and GitLab's tooltip; a pull of an
   image index under `block`; the missing-data notice by its real cause; tab strips without a scrollbar; names in stacked
-  rows that never break inside a word and time columns of a fixed width; an image's status line by its cause.
+  rows that never break inside a word and time columns of a fixed width; an image's status line by its cause; three German layout findings at 390 px.
 
 **In work at 12:25, to be landed when it reports** (each entry in section 8, Product):
-- three German layout findings at 390 px (the signature badge, `dl.facts`, `policy-new`'s rule);
 - a failed bulk's engine sentence and the download queue's failures in the screen's language;
 - the trend's basis sentence on the vulnerability dashboard, with a list of every other server sentence the UI shows as
   is (the list becomes findings, not built).
@@ -727,13 +726,10 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
-- **Three layout findings of the German renders at 390 px (2026-11-24, 11:40 and 12:00, seen by the tab strips' and the
-  stacked rows' builders):** the OCI files' signature badge ("Signiert · Signierer nicht vertrauenswürdig") pushes the
-  version page 41 px sideways (`package-version-oci`, `package-version-signatures-files`); a fact's long value (the
-  Debian maintainer's email) breaks inside itself beside a wider German term in `dl.facts` (`package-version-deb`,
-  `package-version-ansible`, tab Details); the allowed-finding rule of `policy-new` matches only the English "Add
-  selector". (The sessions' cramped time at 1,440 px, seen at 11:40, was fixed by the stacked rows' package.) Given to a
-  builder at 11:48.
+- **Two German layout findings left by the layout package (2026-11-24, 12:45):** German `package-version-ansible` at
+  1,024 px has a tab strip that scrolls 11–14 px (the `sideways` check flags it; the screen is not in the German pass, so
+  CI does not see it); German `admin-settings-auth` at 390 px breaks its heading "Authentifizierungseinstellungen" inside
+  the word (no check covers headings). Not given: the run was wound down at 12:25.
 
 - **The trend's basis sentence stays English on the German dashboard (seen by the status line's builder on 2026-11-24,
   12:20):** "A finding counts under its current severity…" is a sentence the server sends. Given to a builder at 12:01, with every other server sentence the UI shows as is.
@@ -745,6 +741,21 @@ records the recorder that tells such a stall apart).
   shows a dash. Given to a builder at 11:57.
 
 ### Closed
+
+- **Closed on 2026-11-24, 12:39, by the German layout package (Q-UI-1076, Q-UI-1077):** the untrusted signer's badge says
+  **Signiert**, and "Signierer nicht vertrauenswürdig" follows as muted text that wraps between its words (in a list's cell
+  as its second line); a badge still never breaks (R-UI-171), and the files' table keeps its form at 1,024 px in German.
+  Every `dl.facts` puts each term above its value below 36 rem, so the Debian maintainer's address and the Ansible links
+  no longer break inside themselves; `access.scss`'s duplicate of the facts is gone. The exception of `policy-new` in the
+  render checks matches the button by its place, not by English words. One Vitest case, a fixture in three engines and a
+  `judge` case (under 3 s); every German screen without a walk at 390 px (252, no finding) and the touched screens in both
+  languages, schemes and widths, looked at by the development agent. As it stood: **Three layout findings of the German renders at 390 px (2026-11-24, 11:40 and 12:00, seen by the tab strips' and the
+  stacked rows' builders):** the OCI files' signature badge ("Signiert · Signierer nicht vertrauenswürdig") pushes the
+  version page 41 px sideways (`package-version-oci`, `package-version-signatures-files`); a fact's long value (the
+  Debian maintainer's email) breaks inside itself beside a wider German term in `dl.facts` (`package-version-deb`,
+  `package-version-ansible`, tab Details); the allowed-finding rule of `policy-new` matches only the English "Add
+  selector". (The sessions' cramped time at 1,440 px, seen at 11:40, was fixed by the stacked rows' package.) Given to a
+  builder at 11:48.
 
 - **Closed on 2026-11-24, 12:32, by the status line's package (Q-VULN-273; R-VULN-020, 021, 022, 038, R-UI-091):** an
   image that is not checked names its cause in every place that explains "not checked": the version report's `missingData`
