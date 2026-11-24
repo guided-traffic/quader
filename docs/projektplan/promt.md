@@ -250,7 +250,7 @@ its bound offers no run, the trend's axis numbers at 390 px, the layout check `c
 a walk in mirror mode for OCI and Debian). **The Go tests' names landed at 02:30** (six commits: 736 names, 157 functions,
 carry a requirement's number or the behaviour alone, no R-ID lost, R-API-083 newly named and so counted by the
 next record; `TestGoTestNamesCarryARequirementNeverADecision` holds it, about 1 to 2 s of the unit job; three
-tests that docs still name no longer exist under any name, left as found). **R2b landed at 03:00** (one commit, migration 00115). Started at 02:32 in its place: **W16**, the open entries of section 8,
+tests that docs still name no longer exist under any name, left as found). **R2b landed at 03:00** (one commit, migration 00115). **W16 landed at 03:10** (six commits; sixteen entries of section 8 closed or read, the vulnerability scan's bound decided). Started at 03:02 in its place: **W17**, the download limits' leftovers (section 12, part B) and the scale of long lists (H-829, H-1683). Started at 02:32 in its place: **W16**, the open entries of section 8,
 "Tests and tools", worked down (the red jobs of 2026-11-23 read before their artifacts expire, entries closed
 by tonight's landings, repairs where code is wrong).
 **W13 landed at 01:03** (ten commits; H-1662, the Bastion's gauge, R-ARCH-034's count, the limits'
@@ -584,11 +584,6 @@ order is what a user or an operator meets first. The state is kept here.
 
 ### Tests and tools
 
-- **A builder's render run took another worktree's instance of the UI profile (2026-11-24, R2's builder, whose
-  worktree was cut before the claims of W8 landed):** its migrate wrote the product rule of `scanner-trivy` into
-  instance 6's database before the replica stopped on a key-ring mismatch; the volumes were left. A builder that
-  rebases onto `main` after c2e9d02be claims its instance; nothing older can. Closed by the claims, recorded as
-  what happened; whose instance 6 was is not known (no claim was written for it).
 
 
 - **`integration (shard d)` was red in the run of R4's push (2026-11-24; Test and Release 45287679724, read at
@@ -600,16 +595,8 @@ order is what a user or an operator meets first. The state is kept here.
   later. Repaired at 00:45: the test starts a fresh run (`runFreshScan`, repeated until the task answers 202);
   the area passed once (61 s). **Open, read and not confirmed:** whether a pass in progress when the database
   changes should take a push that arrives during it before its re-detections; R-VULN's promise names a pass, so
-  this is a question of the specification, to be read with Q-VULN-200.
+  this is a question of the specification, to be read with Q-VULN-200. **Read by W16 on 2026-11-24:** `RunScan` (`internal/vuln/imagescan/service.go`) discovers the manifests and the database in use once at a run's start, so an image pushed during a run waits for the next run, at most one run slice (`vulnerabilities.images.run_slice`, default 10 m), and is then first by Q-VULN-200's order. **Decided by the development agent:** that bound is the promise; it is written into R-VULN-048 and Q-VULN-200 (a discovery between batches would cost a statement a batch for a wait of at most ten minutes). To do: the two sentences of the specification.
 
-- **T-25's landing left one link of the specification to a removed file, and the job `coverage generator
-  (links and rules)` was red (2026-11-23; Test and Release 45274912230, read at 23:03).** Q-UI-577's code link
-  named `project-list.ts`, which T-25 removed; its builder ran `coverage -check` and not `-links`. Repaired at
-  23:06 (the link names `projects-home.ts`, where the list's columns are now); the builder's brief names
-  `go run ./internal/tools/coverage -links` from now on, as the pre-push list of the development agent does.
-  The repair touches `docs/` alone and starts no run (the path filter of `Test and Release`), so the run at the
-  tip stays the red one and nothing is released until the next code push: the evidence record's publish
-  (f292d0097), T-25 (7bc671b5c) and the Bastion's fix of 18:39 (0c158f5a4) go out with it.
 
 Several entries below name **F-133**, closed on 2026-11-19: the stall family on the CI runners. Every kind cluster of a machine
 sat in one cgroup of weight 100, the runner pods in one of weight 1250, so beside the small jobs of a Test and Release run a
@@ -659,7 +646,7 @@ records the recorder that tells such a stall apart).
   collection, or the autovacuum of the 100,000 rows the run inserts without an `ANALYZE`). Next step: a run of `vuln-perf` alone on
   the large class (after the kind legs, as [Q-ARCH-325](../spec/architecture.md) set) that logs the slowest five requests with
   their request IDs; revisit if V-7b misses there as well, which would make it the reference environment's number
-  ([H-491](../security/vulnerability-scanning.md#h-491--the-performance-run-is-not-the-reference-environment)).
+  ([H-491](../security/vulnerability-scanning.md#h-491--the-performance-run-is-not-the-reference-environment)). Read on 2026-11-24 (W16): no run of `vuln-perf` since 1b2e20ffb; the next step stands.
 - **F-95 · One Angular unit test failed once in 1,080, its name not recorded** (seen once, on a loaded host). Done when the
   failing test is identified and its cause fixed; until then a recurrence is reported with the test's name and output.
 - A job can stay queued for hours when the ARC listener loses its assignment (P-13, 2026-11-10, `assigned job=0` after a broker
@@ -671,10 +658,7 @@ records the recorder that tells such a stall apart).
   `image (host architecture, no push)` was red once in Test and Release 43254986257 (78bb2250): `npm ci` in the Containerfile's web
   stage ended with "Cannot find native binding" (npm's optional-dependency issue); the push changed neither package.json nor the
   lockfile, and re-run 1 was green. The cause is not verified: a failed download of a platform package of an optional dependency is
-  the suspect.
-- `messages.xlf` has drifted from `npm run extract-i18n`: 687 location notes and the unit order differ. No gate checks it.
-- Many existing web specs carry decision IDs in their test names (`app.projects.spec.ts`, `app.routes.spec.ts`, `app.spec.ts`), where
-  the convention is requirement IDs.
+  the suspect. Read on 2026-11-24 (W16): since eb2be1c1e the job `image (host architecture, no push)` ran in the 31 runs from 45160021052 to 45305430905 and failed in none; its log names every fetch (job 138109104245: 460 `npm http fetch` lines). Open for a recurrence.
 - A disk watcher in the jobs, so that a lost runner can be read, was proposed and not built.
 - **Partly closed; open: the unit test of a removal refused whole, the engine test of a cache miss's first
   answer and the token API's unit test of an upper-case path pattern (each waits for the owner's go for new
@@ -701,8 +685,138 @@ records the recorder that tells such a stall apart).
   The unit test of a removal refused whole, the engine test of a cache miss's first answer and the token API's
   unit test of an upper-case path pattern wait for the owner's go for new formats (his words of 2026-11-23 in
   section 0), since their only use is room for more formats: each moves a behaviour that is tested once
-  already to a cheaper tier, which pays only when the kit move deletes the integration cases.
-- **Partly closed; open: whether the gating jobs without the module cache stopped downloading the module
+  already to a cheaper tier, which pays only when the kit move deletes the integration cases. **Closed on 2026-11-24 by W16 (ef1c610e6):** the removal refused whole, by `TestR_NUGET_013_ADeleteThatWouldRemoveAFileTheCallerMayNotDeleteIsRefusedWhole` and `TestR_AUTHZ_005_AnNpmRemovalIsRefusedWholeWhenTheCallerMayNotDeleteOneOfItsFiles` (unit, milliseconds, each failing when its rule is taken out); the cache miss's first answer, by the engine's decision `fillHeld` and `TestR_REPO_041_TheFirstAnswerOfASmallMissComesFromTheStoredEntry`; Ansible Galaxy in the record, by the record on `coverage` (e6e3ef60c, all 47 R-ANS). Open: a unit test of the token API's upper-case wiring (`refuseUpperCasePaths`, `internal/api/v1/tokens_api.go`), which needs an authz engine over a repository index that the API's unit tests do not build; the two integration cases go with the kit move.
+
+### Product
+
+- **A mirror without its bound still offers "Run a pass now" (seen by the development agent on 2026-11-24 at R2's
+  renders, `power/repository-settings-npm-mirror-unbounded-unbounded-light-1440.png`):** the status says "No bound"
+  and the button stays active, though the run answers 422 `mirror_unbounded`. And a project's Owner without
+  `write-config` reads "Set one in the mirror settings" there, which only an administrator can (R2's builder). To
+  do: the button disabled with the reason beside it, and the sentence by who reads it.
+
+- **The trend's axis numbers are about 6 px high at 390 px (seen by W15 on 2026-11-24 at the renders of
+  `vulnerabilities` in Chromium, Firefox and WebKit alike):** the numbers 0, 1000 and 2000 scale with the chart's
+  viewBox, which is about half its size at a phone's width, so they are hard to read there. Not an engine's
+  difference. To do: the axis's text at the app's smallest text size whatever the chart's scale.
+
+
+- **Partly closed; open: a render state of it, looked at: the walk's state `none` of `malwareSettings`
+  (`web/e2e/renders/screens.ts`) takes the database's version away but keeps the scanners' answer of the
+  render seed, which holds a ready updater (`web/e2e/renders/scanners.ts`), so the page's sentence for a
+  missing updater is in no render.** Closed: what the page says in that state, by 8a473bf5a (2026-11-23,
+  Q-UI-1003): the updater's line names it an updater with `malware.updater.url`, and before a first set the
+  section says that no database arrives until an updater is configured and that the task records no failure;
+  held by the component test "Q-UI-1003 before a first set with no updater configured, …"
+  (`web/src/app/features/settings/malware-settings.spec.ts`), which passes. The entry of the UI stack's page
+  in the list Closed points here. As it stood:
+  **The malware settings before the first signature set are not rendered (the reading's row of the ClamAV
+  definitions' setup; checked by reading on 2026-11-23 by the builder of W2, who may not start a UI
+  stack).** By the code the page shows the badge "None yet" with a sentence and no error banner. To do
+  (W9): a render state of it, looked at. Read in the code on 2026-11-24 (W16): the walk's state `scanners-none` keeps the `none` answer and an empty scanner list, so `malware-db-no-updater` should show in `admin/admin-settings-malware-scanners-none-*.png`. To do: look at that picture in the next render run. Seen beside it: `malware.scan_listener.url` (`internal/config/malware.go`) still says empty means the process's own scan listener in the role `all`, which builds no scanner.
+### Closed
+
+- **Closed on 2026-11-24, 03:10, by W16: `integration (shard a)` of run 45226379787 (job 137873881605), not recorded
+  before.** `TestFillHook`, case "over two replicas … at most once", saw three upstream GETs: a refusal writes no
+  negative entry, so a request a loaded host started after its replica's 700 ms flight fetched again. 35d732234 holds
+  the upstream's answer until both replicas counted 40 cache misses; the area `proxy` passed once (291 s).
+
+- **Closed on 2026-11-24, 03:10, by W16:** 83ac0cbe7 and f292d0097: both are published onto the branch `coverage` with each release, and the README's badge reads from there. As it stood: The coverage badge and the evidence record stand still until the first stable release (Q-ARCH-457).
+
+- **Closed on 2026-11-24, 03:10, by W16:** ab171b0ce (W8); and 3f291a35b corrects the UI profile's pages, which said the role `all` calls a scanner of its own (it builds none, Q-ARCH-563). As it stood: The UI's tests that choose a person wait a fixed 320 ms for the search's debounce (`choosePrincipal` of the test
+  helpers) and fail on a loaded machine; they passed alone each time (seen by three builders on 2026-11-21 at host loads
+  of 60 to 120, left). A comment of the UI development profile still says the role `all` calls its own image scanner.
+
+- **Closed on 2026-11-24, 03:10, by W16:** (5) is the gap H-591, which lives on `docs/security/upload-sessions.md` under "What this does not cover"; it is the absence of a read-back, which no test closes. As it stood: **Partly closed; open: (5) the gap H-591, the finalize's check by size, which stays on its security page.**
+  Closed: (1) by d89e83052, the scrub (`TestR_STOR_027_TheScrubAgainstTheDatabase`), and 392a7c823, the orphan
+  sweep (`TestR_STOR_026_OrphanSweep`), both 2026-11-22; (2) by 3ccf4deee, which refuses
+  `storage.presignedDownloads` as no member of a repository's storage, and 071c4297c, with which the
+  configuration's `presign` keys went; (4) by 9a9b33d6a: the journal is shipped through each connection's
+  guarded client (`internal/app/wire_journal.go`). Closed too: (3), by 28751c4d7 (2026-11-23):
+  `TestR_STOR_032_EveryWriteCarriesTheConnectionsEncryption` (unit, `internal/blob/s3`, about 40 ms, a fake
+  endpoint) holds the modes none, s3 and kms, with and without a bucket key, taken from a connection, on
+  PutObject, CreateMultipartUpload, CopyObject and a copy in parts, and on no other request; no provider is
+  called, so the behaviour at a real one is not tested. As it stood:
+  **The object store, read on 2026-11-22 for the owner's storage topic** (by a research, in the code; the first point
+  checked by the development agent): (1) **the scrub of stored content and the orphan sweep of the content addresses are
+  not built** (R-STOR-027, R-STOR-026; no job kind, no list of damaged blobs; the developer page of the blob store says
+  so), while the evidence lists R-STOR-027 as implemented, through the claims of its part about a lost object in the
+  remote cache; the scrub is what the gap H-11 names as its mitigation, so a changed byte in the bucket is found today
+  only when a full download reads it; (2) a repository's `storage.presignedDownloads` is stored and has no effect, also
+  on a remote repository that keeps nothing, where R-STOR-014 wants a 422, and `storage.s3.presign.ttl` and `min_size`
+  are read by nothing; (3) the object store's own encryption (R-STOR-032) is built on every write and copy, is not
+  marked implemented, has no test that names it, and the chart reaches it through the configuration block alone;
+  (4) the journal's shipper uses the plain client and not the guarded one, so it passes the circuit breaker and the
+  metrics by; (5) the finalize of an upload session checks its server-side copy by size alone (the gap H-591, known).
+  None is repaired; (1) and (2) belong to what the storage topic decides, (3) and (4) wait for a batch.
+
+- **Closed on 2026-11-24, 03:10, by W16:** 351d0c85d and 71cf8dd2e (W13): the cases send their burst until the first 429. As it stood: **`e2e (push)` was red once, in the run of the push of 18:27 (2026-11-23; Test and Release 45227959384,
+  job 137882199385; read at 19:08).** `TestE1_14Exposure`, the case of R-EP-015 (an endpoint's rate-limit
+  class): "400 reads on customers with one token in 7.46s: map[200:400], want a 429 after the burst of
+  200". The reads took so long that the class refilled while they ran, so none was refused; the leg had
+  passed in every run of the day before it, and the push changed the refusal's text and wait, not the
+  admission; **the leg is green again in the run of the push of 18:39** (read at 19:16), so it was the
+  runner's speed at that minute. To do (W8, with the limits' client cases): the case sends its
+  burst faster than the class refills whatever the runner's speed (in parallel, or against a class
+  whose refill it sets), or measures the rate it reached and asserts against that.
+
+- **Closed on 2026-11-24, 03:10, by W16:** on a candidate cause, not reproduced: the wait for one of six pooled connections (about seventeen uploads a replica) ended at the stack's retry budget of 3 s, which `acquire` classifies as a failover and answers 503. 8f085b627 gives the test the configuration's default of 30 s and prints a refused upload's lines for its request ID; the area passed once (206.5 s). As it stood: **`integration (shard a)` is red in the run of the push of 18:39, the first run of every area on the
+  changed harness (2026-11-23; Test and Release 45229955480, job 137886492542; read at 19:08).**
+  `TestR_DEB_010_FiftyParallelUploadsThroughThreeReplicas` (area `deblocal`): two of fifty uploads were
+  answered `503 database_unavailable` (`replicas_test.go:98`), the answer of a refused or timed-out
+  connection that outlasts the retry (`internal/meta/postgres/tx.go`). The area had passed in the
+  landing's gates on the same tree (154 s, a load of 20) and in the shard of the run before it; the
+  runners carried three runs of the evening at once. Not read: the request log of the two uploads (the
+  job's dump holds only the replicas' last lines), whether the pools of three replicas with fifty
+  uploads fit the test stack's connections on a starved runner, and whether the harness's change of
+  the children's environment (6c1062fd7) takes a setting from the replicas that the pipeline had given
+  them (the workflow sets no `QUADER_` variable for the shards, as far as read). **Run again at 19:33,
+  the shard is green** (job 137920683691, read at 19:54), so it was the runner at that minute and not
+  the changed harness. To do, with what W4 left (section 1): fifty parallel uploads through three
+  replicas must not depend on the runner's free connections; read what the two refused uploads waited
+  for, and either the test's stack gives the pools their room or the test retries a 503 as a client
+  does.
+
+- **Closed on 2026-11-24, 03:10, by W16:** the test started the Bastion's install beside its own push; the install added an Ingress, HAProxy Ingress reloaded at 17:29:30.645 and closed the kept connections, and the push's PUT failed with "use of closed network connection" (the edge, not the product, R-HA-011 not concerned). 6a1fa52d7 pushes before the install; vetted only, the leg's next run shows it. As it stood: **`e2e (oci)` was red once, in the run of the push of 17:59 (2026-11-23; Test and Release 45222735716, job
+  137865254683; read at 18:56).** `TestOCI_R_BAS_051_ThroughABastion` failed in its setup: the `docker push`
+  of its image ended with "failed commit on ref index-sha256:…: failed to do request: Put
+  …/manifests/1: use of closed network connection" after the layers were pushed (3.11 s); every other
+  test of the leg passed. The push of 17:59 brought the remote curation's contracts, which add no
+  behaviour, and the plan has no earlier record of this failure. Not read: which side closed the
+  connection (a replica that restarted at that second, the edge's keep-alive, the client's reuse of a
+  connection the server had ended). To do: the replicas' and the edge's logs of that second from the
+  leg's artifact; if a kept-alive connection is ended by the server while a client may reuse it, it is
+  the product's (R-HA-011 says what a drain owes a client), else the test's push retries a transport
+  error once.
+
+- **Closed on 2026-11-24, 03:10, by W16:** read in job 137879462820: `Record` failed at `valkey_negative_test.go:93` on the fixture's command timeout of 1 s; dd63c7653 gives the store fixtures of negative entries and of the Bastion 30 s (the breaker's test, whose bound is measured against the command timeout, keeps 1 s); passed with `GOMAXPROCS=1` in the background class with `-race` at a load of 20. As it stood: **A unit test of the cluster package made the gating job red once (2026-11-23; `unit tests` of Test and
+  Release 45227959384, the push of 18:27, job 137879462820; read at 18:47).**
+  `TestNegativeStore/R-REPO-028 a recorded entry is found, with the status and the time its request was
+  sent` (`internal/cluster/valkey_negative_test.go:93`): "valkey is unavailable: context deadline
+  exceeded" after 1.29 s, on a runner that carried three runs of the evening at once. Nothing of that
+  push touches the package's code, and the plan has no earlier record of this test. Not read: which
+  deadline the call runs under and what the stand-in for Valkey does on a starved host. The run was not
+  the tip any more, so the release is the matter of the run of the push of 18:39. Not repaired today (no
+  builder is started after the owner's word of 17:15). To do, with what W4 left (section 1): the test
+  waits for the store's answer under a deadline that is not the host's speed, shown with one core under
+  the background class as the others were.
+
+- **Closed on 2026-11-24, 03:10, by W16:** a5cb666e1 (W13): the render seed keeps the remotes of public registries offline until it is done; `UI layout checks` green from run 45285588577 on. As it stood: **The layout job of the revert's push failed in the walk's seed, before a screen was rendered (2026-11-23;
+  Test and Release 45226379787, the push of 18:19, read at 18:29).** The fixtures passed (50 in Chromium);
+  then the seed's publish of the Ansible collection `acme.platform` 1.0.0 was answered `503
+  shadow_check_unavailable` ("Whether a remote repository already serves the package acme.platform could
+  not be determined; retry later", `web/e2e/renders/seed.ts:820`). The same seed had passed in every
+  layout run of the day until the one of 17:06. Not read: the backend's log of the job (whether the
+  remote's upstream was unreachable from the runner at that minute, or a breaker was open, or a change
+  of the pushes of 17:53 and 17:59 makes the check undeterminable there). The layout job of the run of
+  the push of 18:27 says whether it was the minute: **it was** (that job's seed passed and the job is
+  green, read at 19:23), so the cause is the answer of the remote's upstream at one minute, not a change.
+  To do (W8): the walk's seed
+  does not depend on a public registry's answer (its remotes point at a stand-in, or the seed's publish
+  retries a 503 that says "retry later"), and the audit log's repair is shown by the first run that
+  renders.
+
+- **Closed on 2026-11-24, 03:10, by W16:** run 45179000559, before d9e79a585, logged 126 `go: downloading` lines in each of `image`, `Container Scan (Trivy, built image)`, `Malware Scan` and `Release Tooling`; run 45293841303 logs none in those four or in `Container Scan (Trivy, images the chart runs)`. As it stood: **Partly closed; open: whether the gating jobs without the module cache stopped downloading the module
   graph after d9e79a585 (read from the first run after it).** Closed on 2026-11-23, 22:50, by the reading of the
   builder of the evidence record's publish: (2)'s summary, the job `coverage evidence` of run 45212749706,
   logged 31 `carried:` lines, each with run, commit, distance and date (for example `carried:
@@ -731,122 +845,26 @@ records the recorder that tells such a stall apart).
   the newest report by the artifact's creation time, which can be an older commit's (with the evidence
   record's step); (3) `TestR_MAL_014_APendingDownloadIsServedWhenItsVerdictArrives` failed once at a load
   of about 100 (5.01 s against the gate's wait of 5 s; alone it passed) (W4).
-- **The layout job of the revert's push failed in the walk's seed, before a screen was rendered (2026-11-23;
-  Test and Release 45226379787, the push of 18:19, read at 18:29).** The fixtures passed (50 in Chromium);
-  then the seed's publish of the Ansible collection `acme.platform` 1.0.0 was answered `503
-  shadow_check_unavailable` ("Whether a remote repository already serves the package acme.platform could
-  not be determined; retry later", `web/e2e/renders/seed.ts:820`). The same seed had passed in every
-  layout run of the day until the one of 17:06. Not read: the backend's log of the job (whether the
-  remote's upstream was unreachable from the runner at that minute, or a breaker was open, or a change
-  of the pushes of 17:53 and 17:59 makes the check undeterminable there). The layout job of the run of
-  the push of 18:27 says whether it was the minute: **it was** (that job's seed passed and the job is
-  green, read at 19:23), so the cause is the answer of the remote's upstream at one minute, not a change.
-  To do (W8): the walk's seed
-  does not depend on a public registry's answer (its remotes point at a stand-in, or the seed's publish
-  retries a 503 that says "retry later"), and the audit log's repair is shown by the first run that
-  renders.
-- **A unit test of the cluster package made the gating job red once (2026-11-23; `unit tests` of Test and
-  Release 45227959384, the push of 18:27, job 137879462820; read at 18:47).**
-  `TestNegativeStore/R-REPO-028 a recorded entry is found, with the status and the time its request was
-  sent` (`internal/cluster/valkey_negative_test.go:93`): "valkey is unavailable: context deadline
-  exceeded" after 1.29 s, on a runner that carried three runs of the evening at once. Nothing of that
-  push touches the package's code, and the plan has no earlier record of this test. Not read: which
-  deadline the call runs under and what the stand-in for Valkey does on a starved host. The run was not
-  the tip any more, so the release is the matter of the run of the push of 18:39. Not repaired today (no
-  builder is started after the owner's word of 17:15). To do, with what W4 left (section 1): the test
-  waits for the store's answer under a deadline that is not the host's speed, shown with one core under
-  the background class as the others were.
-- **`e2e (oci)` was red once, in the run of the push of 17:59 (2026-11-23; Test and Release 45222735716, job
-  137865254683; read at 18:56).** `TestOCI_R_BAS_051_ThroughABastion` failed in its setup: the `docker push`
-  of its image ended with "failed commit on ref index-sha256:…: failed to do request: Put
-  …/manifests/1: use of closed network connection" after the layers were pushed (3.11 s); every other
-  test of the leg passed. The push of 17:59 brought the remote curation's contracts, which add no
-  behaviour, and the plan has no earlier record of this failure. Not read: which side closed the
-  connection (a replica that restarted at that second, the edge's keep-alive, the client's reuse of a
-  connection the server had ended). To do: the replicas' and the edge's logs of that second from the
-  leg's artifact; if a kept-alive connection is ended by the server while a client may reuse it, it is
-  the product's (R-HA-011 says what a drain owes a client), else the test's push retries a transport
-  error once.
-- **`integration (shard a)` is red in the run of the push of 18:39, the first run of every area on the
-  changed harness (2026-11-23; Test and Release 45229955480, job 137886492542; read at 19:08).**
-  `TestR_DEB_010_FiftyParallelUploadsThroughThreeReplicas` (area `deblocal`): two of fifty uploads were
-  answered `503 database_unavailable` (`replicas_test.go:98`), the answer of a refused or timed-out
-  connection that outlasts the retry (`internal/meta/postgres/tx.go`). The area had passed in the
-  landing's gates on the same tree (154 s, a load of 20) and in the shard of the run before it; the
-  runners carried three runs of the evening at once. Not read: the request log of the two uploads (the
-  job's dump holds only the replicas' last lines), whether the pools of three replicas with fifty
-  uploads fit the test stack's connections on a starved runner, and whether the harness's change of
-  the children's environment (6c1062fd7) takes a setting from the replicas that the pipeline had given
-  them (the workflow sets no `QUADER_` variable for the shards, as far as read). **Run again at 19:33,
-  the shard is green** (job 137920683691, read at 19:54), so it was the runner at that minute and not
-  the changed harness. To do, with what W4 left (section 1): fifty parallel uploads through three
-  replicas must not depend on the runner's free connections; read what the two refused uploads waited
-  for, and either the test's stack gives the pools their room or the test retries a 503 as a client
-  does.
-- **`e2e (push)` was red once, in the run of the push of 18:27 (2026-11-23; Test and Release 45227959384,
-  job 137882199385; read at 19:08).** `TestE1_14Exposure`, the case of R-EP-015 (an endpoint's rate-limit
-  class): "400 reads on customers with one token in 7.46s: map[200:400], want a 429 after the burst of
-  200". The reads took so long that the class refilled while they ran, so none was refused; the leg had
-  passed in every run of the day before it, and the push changed the refusal's text and wait, not the
-  admission; **the leg is green again in the run of the push of 18:39** (read at 19:16), so it was the
-  runner's speed at that minute. To do (W8, with the limits' client cases): the case sends its
-  burst faster than the class refills whatever the runner's speed (in parallel, or against a class
-  whose refill it sets), or measures the rate it reached and asserts against that.
 
-### Product
+- **Closed on 2026-11-24, 03:10, by W16:** e8f8c61cd and the web renames of 02:06; `web/scripts/test-names-rule.mjs` in the web lint refuses a decision's number in a title. As it stood: Many existing web specs carry decision IDs in their test names (`app.projects.spec.ts`, `app.routes.spec.ts`, `app.spec.ts`), where
+  the convention is requirement IDs.
 
-- **A mirror without its bound still offers "Run a pass now" (seen by the development agent on 2026-11-24 at R2's
-  renders, `power/repository-settings-npm-mirror-unbounded-unbounded-light-1440.png`):** the status says "No bound"
-  and the button stays active, though the run answers 422 `mirror_unbounded`. And a project's Owner without
-  `write-config` reads "Set one in the mirror settings" there, which only an administrator can (R2's builder). To
-  do: the button disabled with the reason beside it, and the sentence by who reads it.
+- **Closed on 2026-11-24, 03:10, by W16:** f2f8aba9c: `make web-i18n-check` fails the job `web` on any difference between the translation files and a fresh extraction. As it stood: `messages.xlf` has drifted from `npm run extract-i18n`: 687 location notes and the unit order differ. No gate checks it.
 
-- **The trend's axis numbers are about 6 px high at 390 px (seen by W15 on 2026-11-24 at the renders of
-  `vulnerabilities` in Chromium, Firefox and WebKit alike):** the numbers 0, 1000 and 2000 scale with the chart's
-  viewBox, which is about half its size at a phone's width, so they are hard to read there. Not an engine's
-  difference. To do: the axis's text at the app's smallest text size whatever the chart's scale.
+- **Closed on 2026-11-24, 03:10, by W16:** the repair 8a0293283; `coverage generator (links and rules)` green in run 45277825413 and every run after it; held by that job and by `coverage -links` in the builders' gates. As it stood: **T-25's landing left one link of the specification to a removed file, and the job `coverage generator
+  (links and rules)` was red (2026-11-23; Test and Release 45274912230, read at 23:03).** Q-UI-577's code link
+  named `project-list.ts`, which T-25 removed; its builder ran `coverage -check` and not `-links`. Repaired at
+  23:06 (the link names `projects-home.ts`, where the list's columns are now); the builder's brief names
+  `go run ./internal/tools/coverage -links` from now on, as the pre-push list of the development agent does.
+  The repair touches `docs/` alone and starts no run (the path filter of `Test and Release`), so the run at the
+  tip stays the red one and nothing is released until the next code push: the evidence record's publish
+  (f292d0097), T-25 (7bc671b5c) and the Bastion's fix of 18:39 (0c158f5a4) go out with it.
 
-- **Partly closed; open: (5) the gap H-591, the finalize's check by size, which stays on its security page.**
-  Closed: (1) by d89e83052, the scrub (`TestR_STOR_027_TheScrubAgainstTheDatabase`), and 392a7c823, the orphan
-  sweep (`TestR_STOR_026_OrphanSweep`), both 2026-11-22; (2) by 3ccf4deee, which refuses
-  `storage.presignedDownloads` as no member of a repository's storage, and 071c4297c, with which the
-  configuration's `presign` keys went; (4) by 9a9b33d6a: the journal is shipped through each connection's
-  guarded client (`internal/app/wire_journal.go`). Closed too: (3), by 28751c4d7 (2026-11-23):
-  `TestR_STOR_032_EveryWriteCarriesTheConnectionsEncryption` (unit, `internal/blob/s3`, about 40 ms, a fake
-  endpoint) holds the modes none, s3 and kms, with and without a bucket key, taken from a connection, on
-  PutObject, CreateMultipartUpload, CopyObject and a copy in parts, and on no other request; no provider is
-  called, so the behaviour at a real one is not tested. As it stood:
-  **The object store, read on 2026-11-22 for the owner's storage topic** (by a research, in the code; the first point
-  checked by the development agent): (1) **the scrub of stored content and the orphan sweep of the content addresses are
-  not built** (R-STOR-027, R-STOR-026; no job kind, no list of damaged blobs; the developer page of the blob store says
-  so), while the evidence lists R-STOR-027 as implemented, through the claims of its part about a lost object in the
-  remote cache; the scrub is what the gap H-11 names as its mitigation, so a changed byte in the bucket is found today
-  only when a full download reads it; (2) a repository's `storage.presignedDownloads` is stored and has no effect, also
-  on a remote repository that keeps nothing, where R-STOR-014 wants a 422, and `storage.s3.presign.ttl` and `min_size`
-  are read by nothing; (3) the object store's own encryption (R-STOR-032) is built on every write and copy, is not
-  marked implemented, has no test that names it, and the chart reaches it through the configuration block alone;
-  (4) the journal's shipper uses the plain client and not the guarded one, so it passes the circuit breaker and the
-  metrics by; (5) the finalize of an upload session checks its server-side copy by size alone (the gap H-591, known).
-  None is repaired; (1) and (2) belong to what the storage topic decides, (3) and (4) wait for a batch.
-- The UI's tests that choose a person wait a fixed 320 ms for the search's debounce (`choosePrincipal` of the test
-  helpers) and fail on a loaded machine; they passed alone each time (seen by three builders on 2026-11-21 at host loads
-  of 60 to 120, left). A comment of the UI development profile still says the role `all` calls its own image scanner.
-- The coverage badge and the evidence record stand still until the first stable release (Q-ARCH-457).
-
-- **Partly closed; open: a render state of it, looked at: the walk's state `none` of `malwareSettings`
-  (`web/e2e/renders/screens.ts`) takes the database's version away but keeps the scanners' answer of the
-  render seed, which holds a ready updater (`web/e2e/renders/scanners.ts`), so the page's sentence for a
-  missing updater is in no render.** Closed: what the page says in that state, by 8a473bf5a (2026-11-23,
-  Q-UI-1003): the updater's line names it an updater with `malware.updater.url`, and before a first set the
-  section says that no database arrives until an updater is configured and that the task records no failure;
-  held by the component test "Q-UI-1003 before a first set with no updater configured, …"
-  (`web/src/app/features/settings/malware-settings.spec.ts`), which passes. The entry of the UI stack's page
-  in the list Closed points here. As it stood:
-  **The malware settings before the first signature set are not rendered (the reading's row of the ClamAV
-  definitions' setup; checked by reading on 2026-11-23 by the builder of W2, who may not start a UI
-  stack).** By the code the page shows the badge "None yet" with a sentence and no error banner. To do
-  (W9): a render state of it, looked at.
-### Closed
+- **Closed on 2026-11-24, 03:10, by W16:** by the claims (9490db419 and e68c58bae: an instance of the UI profile is claimed, never picked without a claim, refused when named), held by `TestUIDevInstancesAreClaimedNotChosen`; whose instance 6 was stays unknown. As it stood: **A builder's render run took another worktree's instance of the UI profile (2026-11-24, R2's builder, whose
+  worktree was cut before the claims of W8 landed):** its migrate wrote the product rule of `scanner-trivy` into
+  instance 6's database before the replica stopped on a key-ring mismatch; the volumes were left. A builder that
+  rebases onto `main` after c2e9d02be claims its instance; nothing older can. Closed by the claims, recorded as
+  what happened; whose instance 6 was is not known (no claim was written for it).
 
 - **Closed on 2026-11-24, 02:53: `e2e (access-long)` was red in the runs of R2's push and the next (Test and Release
   45299737446 and 45300439644).** Journey `08-packages.spec.ts` looked for the mirror's bound notice by its words of
