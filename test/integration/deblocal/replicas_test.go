@@ -84,7 +84,11 @@ func TestR_DEB_010_EveryReplicaHasItsOwnIndexBuilder(t *testing.T) {
 // the suite, the generation grows monotonically as every replica reads it, and fewer builds ran than uploads. No session affinity: the
 // published generation is the same on every replica.
 func TestR_DEB_010_FiftyParallelUploadsThroughThreeReplicas(t *testing.T) {
-	e := newEnvOpts(t, envOpts{replicas: 3})
+	// The database's retry budget is the configuration's default of 30 s, not the stack's 3 s: about seventeen uploads per replica share
+	// its six pooled connections, and the wait for one ends with the budget (database_unavailable). Two of fifty uploads were refused so
+	// on a runner that carried three runs at once (Test and Release 45229955480); the index of the uploads is what this test holds, not
+	// how fast a starved host frees a connection.
+	e := newEnvOpts(t, envOpts{replicas: 3, env: []string{"QUADER_DATABASE_RETRY_MAX_ELAPSED=30s"}})
 	const n = 50
 	var wg sync.WaitGroup
 	seqs := make([]int64, n)
@@ -93,9 +97,13 @@ func TestR_DEB_010_FiftyParallelUploadsThroughThreeReplicas(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			name := fmt.Sprintf("par%02d", i)
-			a := e.st.Do(e.rs[i%3], "PUT", uploadPath(name+"_1.0-1_amd64.deb", []string{"stable"}), e.tokA, build(t, name, "1.0-1", nil), "Content-Type", debMedia)
+			up := e.rs[i%3]
+			a := e.st.Do(up, "PUT", uploadPath(name+"_1.0-1_amd64.deb", []string{"stable"}), e.tokA, build(t, name, "1.0-1", nil), "Content-Type", debMedia)
 			if a.Status != 201 {
-				t.Errorf("upload %s = %d %s", name, a.Status, a.Body)
+				// The replica's lines of the request name the wait that ran out (a pooled connection, a refused or timed-out
+				// connection, too many connections): the job's dump of a replica holds only its last lines.
+				t.Errorf("upload %s = %d %s; the lines of request %s on %s:\n%s", name, a.Status, a.Body, a.Header.Get("X-Request-Id"),
+					up.Name, linesOf(up.Logs.String(), a.Header.Get("X-Request-Id")))
 				return
 			}
 			seqs[i] = seqOf(e, a.JSON(t), "stable")
