@@ -21,7 +21,7 @@ func (e *renv) jobsOf(member string) int64 {
 		WHERE d.origin = 'probe' AND r.key = $1`, member)
 }
 
-func TestQ_REPO_367_AProbeThroughAVirtualRepositoryDownloadsAtTheMemberThatServesIt(t *testing.T) {
+func TestR_REPO_065_AProbeThroughAVirtualRepositoryDownloadsAtTheMemberThatServesIt(t *testing.T) {
 	e, rep := probeEnv(t)
 	put := func(method, path string, body any, h ...string) {
 		t.Helper()

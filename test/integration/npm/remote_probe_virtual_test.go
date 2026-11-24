@@ -15,7 +15,7 @@ import (
 // Q-REPO-367): the version document of npm-all, whose members are npm-local and npm-remote, downloads the version's tarball into
 // npm-remote, charged to the caller's budget key at npm-all with the usage recorded at npm-remote (usage-and-limits.md Q-LIM-2,
 // R-LIM-037); a version the local member holds starts nothing.
-func TestQ_REPO_367_TheVersionDocumentOfAVirtualRepositoryDownloadsTheTarballAtTheRemoteMember(t *testing.T) {
+func TestR_REPO_065_TheVersionDocumentOfAVirtualRepositoryDownloadsTheTarballAtTheRemoteMember(t *testing.T) {
 	r := newRemoteEnv(t, remoteOptions{Valkey: true, Env: []string{
 		"QUADER_LIMITS_FLUSH_INTERVAL=200ms", "QUADER_LIMITS_USAGE_FLUSH_INTERVAL=1s", "QUADER_JOBS_POLL_INTERVAL=200ms",
 	}})

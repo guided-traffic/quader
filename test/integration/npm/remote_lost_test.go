@@ -87,7 +87,7 @@ func TestR_REPO_025_ACachedNPMItemWhoseObjectIsMissingIsFilledAgainFromTheUpstre
 		}
 	})
 
-	t.Run("R-REPO-025 Q-REPO-204 through the virtual repository the member's cache misses and its fetch tier fills it again", func(t *testing.T) {
+	t.Run("R-REPO-025 through the virtual repository the member's cache misses and its fetch tier fills it again", func(t *testing.T) {
 		d := r.entryBlob(rRemote, "artifact", p.Name+"/-/"+file)
 		r.st.DeleteObject(t, d)
 		before := tarballs()
@@ -103,7 +103,7 @@ func TestR_REPO_025_ACachedNPMItemWhoseObjectIsMissingIsFilledAgainFromTheUpstre
 		}
 	})
 
-	t.Run("R-REPO-025 Q-REPO-203 the package document is fetched again whole, on a replica that does not hold its bytes, and served", func(t *testing.T) {
+	t.Run("R-REPO-025 the package document is fetched again whole, on a replica that does not hold its bytes, and served", func(t *testing.T) {
 		d := r.entryBlob(rRemote, "metadata", p.Name)
 		r.st.DeleteObject(t, d)
 		docs, conditional := r.upstreamDocs(p.Name), r.stub.Counts().ConditionalDocuments(p.Name)
@@ -304,7 +304,7 @@ func TestR_HA_024_AMissingMarkHealsOnceTheObjectIsBack(t *testing.T) {
 	r := newRemoteEnv(t, remoteOptions{})
 	reps := r.start(2)
 
-	t.Run("Q-STOR-153 a local tarball: 503 while its object is away, still 503 inside the interval, 200 with its bytes after it", func(t *testing.T) {
+	t.Run("R-STOR-012 a local tarball: 503 while its object is away, still 503 inside the interval, 200 with its bytes after it", func(t *testing.T) {
 		pk := pkg{Name: "moved-local", Version: "1.0.0"}
 		r.publishTo(reps[0], rLocal, r.tokA, pk)
 		want := r.tarball(reps[0], rLocal, pk.Name, pk.Version, r.tokA)
@@ -337,7 +337,7 @@ func TestR_HA_024_AMissingMarkHealsOnceTheObjectIsBack(t *testing.T) {
 		}
 	})
 
-	t.Run("Q-STOR-153 a remote's marked tarball and document are served again without an upstream fetch once their objects are back", func(t *testing.T) {
+	t.Run("R-STOR-012 a remote's marked tarball and document are served again without an upstream fetch once their objects are back", func(t *testing.T) {
 		p := upstreamPackage(t, 2)
 		v := p.Versions[0]
 		file := corpus.TarballFile(p.Name, v.Version)

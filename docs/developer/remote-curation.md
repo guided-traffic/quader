@@ -185,7 +185,7 @@ Tests and what they cost (each run once, R-CUR-022):
 | `TestR_CUR_014_AFillWithoutAClientIsNoRefusedDownload` (`internal/vuln/enforce`) | unit | milliseconds | none |
 | `TestR_CUR_010_ADownloadAheadOfOneVersionAndOfAPackage`, `TestR_CUR_011_AFailureInItsOwnWordsAndTheRetries` (area `npm`) | integration | about 4 s each | the stub's corpus: one package of three versions |
 | `TestR_CUR_010_…` of the areas `nuget`, `ociremote`, `debremote`, `ansibleremote` | integration | about 3 s each | one version of each stub's corpus |
-| the existing `TestR_REPO_065_*`, `TestQ_REPO_367_*` against the row, one more assertion of the row's counters | integration | unchanged | unchanged |
+| the existing `TestR_REPO_065_*` against the row, one more assertion of the row's counters | integration | unchanged | unchanged |
 
 What a leg gains: the unit job well under a second; the integration shards about 20 s together (npm 8 s, four formats 3 s each). A new
 format adds its `version_probe.go` and one `TestR_CUR_010_…` of about 3 s in its own area.

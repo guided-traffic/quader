@@ -10,10 +10,10 @@ import (
 	"testing"
 )
 
-// TestQ_ANS_91_ACollectionWithAContainedLinkIsFetchedThroughARemote: the upstream serves a collection whose archive holds a symbolic
+// TestR_ANS_010_ACollectionWithAContainedLinkIsFetchedThroughARemote: the upstream serves a collection whose archive holds a symbolic
 // link inside it, as the public Galaxy serves ansible.posix 2.2.2; the remote stores it and serves the archive the upstream announced, byte
 // for byte (R-ANS-013, R-ANS-010).
-func TestQ_ANS_91_ACollectionWithAContainedLinkIsFetchedThroughARemote(t *testing.T) {
+func TestR_ANS_010_ACollectionWithAContainedLinkIsFetchedThroughARemote(t *testing.T) {
 	e := newEnv(t, options{})
 	if err := e.stub.AddLinkedVersion("acme.linked", "1.0.0", map[string]string{"plugins/README-link.md": "../README.md"}); err != nil {
 		t.Fatal(err)

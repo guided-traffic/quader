@@ -307,7 +307,7 @@ func TestR_REPO_062_APresetsIDIsARepositoryKeyOfTheProjectUpstream(t *testing.T)
 		}()
 		r.Register(e)
 	}
-	t.Run("Q-REPO-387 an id another format's preset has is refused", func(t *testing.T) {
+	t.Run("an id another format's preset has is refused", func(t *testing.T) {
 		r := NewRegistry()
 		r.Register(remoteWith("probe-first", preset("shared", "https://a.example.com/", true)))
 		mustPanic(t, r, remoteWith("probe-second", preset("shared", "https://b.example.com/", true)))
@@ -316,12 +316,12 @@ func TestR_REPO_062_APresetsIDIsARepositoryKeyOfTheProjectUpstream(t *testing.T)
 		}
 		r.Register(remoteWith("probe-third", preset("shared-too", "https://b.example.com/", true)))
 	})
-	t.Run("Q-REPO-387 an id that is no repository key is refused", func(t *testing.T) {
+	t.Run("an id that is no repository key is refused", func(t *testing.T) {
 		mustPanic(t, NewRegistry(), remoteWith("probe-short", preset("a", "https://a.example.com/", true)))
 		mustPanic(t, NewRegistry(), remoteWith("probe-long", preset(strings.Repeat("a", 65), "https://a.example.com/", true)))
 	})
 	for _, id := range ReservedPresetIDs() {
-		t.Run("Q-REPO-387 the reserved id "+id+" is refused", func(t *testing.T) {
+		t.Run("the reserved id "+id+" is refused", func(t *testing.T) {
 			mustPanic(t, NewRegistry(), remoteWith("probe-reserved", preset(id, "https://a.example.com/", true)))
 		})
 	}

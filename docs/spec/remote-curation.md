@@ -841,7 +841,7 @@ The owner's decisions of 2026-11-19 (W-25) about the trigger, the platforms, the
 
 Acceptance criteria:
 
-- The integration cases of R-REPO-065 (`TestR_REPO_065_*`, `TestQ_REPO_367_*`) run unchanged against the row and its run; one more
+- The integration cases of R-REPO-065 (`TestR_REPO_065_*`) run unchanged against the row and its run; one more
   assertion reads the row of origin `probe` with its counters.
 
 ### R-CUR-014 · Fetched for examination, not delivered
