@@ -700,22 +700,35 @@ records the recorder that tells such a stall apart).
   shows state the server changes by itself refreshes itself while it is seen, one shared mechanism, the rule written into
   the specification and CLAUDE.md.
 
-- **Three layout findings of the tab strips' renders (2026-11-24, 11:40):** the sessions' time cramped at 1,440 px
-  (`profile-sessions`, 2 px short of one line); the OCI files' signature badge ("Signiert · Signierer nicht
-  vertrauenswürdig") pushes the version page 41 px sideways at 390 px in German; the Debian maintainer's email breaks
-  inside itself in `dl.facts` at 390 px in German. Waiting for the stacked rows' package to land (the same files).
+- **Three layout findings of the German renders at 390 px (2026-11-24, 11:40 and 12:00, seen by the tab strips' and the
+  stacked rows' builders):** the OCI files' signature badge ("Signiert · Signierer nicht vertrauenswürdig") pushes the
+  version page 41 px sideways (`package-version-oci`, `package-version-signatures-files`); a fact's long value (the
+  Debian maintainer's email) breaks inside itself beside a wider German term in `dl.facts` (`package-version-deb`,
+  `package-version-ansible`, tab Details); the allowed-finding rule of `policy-new` matches only the English "Add
+  selector". (The sessions' cramped time at 1,440 px, seen at 11:40, was fixed by the stacked rows' package.) Given to a
+  builder at 11:48.
 
 - **An unscanned image's status line still names advisory data (seen by the development agent on 2026-11-24, 11:40, in
   the render `package-version-oci-schwachstellen`):** under "nicht geprüft" an OCI image reads "Wartet auf Advisory-Daten",
   the cause the notice's package fixed in the refusal but not in this line. Given to a builder at 11:28.
 
-- **A stacked row breaks a word in the middle at 390 px (seen by the development agent on 2026-11-24, 10:30, in the
+### Closed
+
+- **Closed on 2026-11-24, 11:48, by the stacked rows' package (Q-UI-1068, Q-UI-1069):** a stacked row's column of names
+  is never narrower than the longest word of its names, so a name wraps only between words ("Veröffentlicht" on one
+  line); a list inside a block of a stacked list (a package's versions, the tab Upstream's versions) measures its own names
+  instead of borrowing the outer list's 82 px, and the tab Upstream's fixed 7 rem is gone; the render run's `broken` check
+  finds a name broken inside a word. A column whose cells start with a relative time is as wide as the widest relative
+  time of the language (102 px in English), so a list's form no longer changes with its ages; `cramped` counts that room
+  as used. The token list's stacking at 1,024 px was measured and does not depend on its ages (with "now" it needs 773 px
+  of 712); a service account's technical tokens keep their table at 1,024 px, and the sessions' dates no longer break with
+  the hour. Four Vitest cases and two layout fixtures (about 3 s); the full English run (486 screens), every German screen
+  without a walk at 390 px, and the touched screens in both languages, schemes and widths, looked at by the development
+  agent. As it stood: **A stacked row breaks a word in the middle at 390 px (seen by the development agent on 2026-11-24, 10:30, in the
   renders of the pull menu):** on a Debian repository's versions at 390 px the label "Veröffentlicht" reads
   "Veröffentli" / "cht"; the stacked rows' label column lets a long German word break inside itself. Together with the
   token list that stacks at 1,024 px on a reused UI instance as its "Created" age grows (the layout package's leftover),
   given to a builder at 10:35.
-
-### Closed
 
 - **Closed on 2026-11-24, 11:30, by the tab strips' package (Q-UI-1074, R-UI-173):** every tab strip of Quader (nine:
   a version, a repository, the profile, the packages' views, the search, a CI issuer, System status, Download limits, the
