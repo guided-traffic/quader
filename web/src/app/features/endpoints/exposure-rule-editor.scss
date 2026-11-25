@@ -45,6 +45,11 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--quader-space-3);
+
+  // The note of unsaved changes stands on the buttons' line: the hint's margin above it put its text 1.3 px under their middle.
+  > .hint {
+    margin: 0;
+  }
 }
 
 .preview {
