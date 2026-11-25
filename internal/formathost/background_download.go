@@ -277,36 +277,46 @@ func queueCause(row *queue.Row) proxy.DownloadCause {
 }
 
 // The expansion of a bulk (R-CUR-010): the format's upstream catalogue names a package's versions (Package) and a sub-section's packages
-// (Children) through the worker's upstream, never through a second lister (R-CUR-007); the bulk's bounds are applied by the queue.
+// (Children) through the worker's upstream, never through a second lister (R-CUR-007); the bulk's range, pre-releases and maxVersions
+// are applied here by the queue's Picker, its bytes by the queue.
 
 var _ queue.Planner = (*MirrorHost)(nil)
 
 // plannerPage is the page size of the expansion's catalogue calls: a package document is read once per page.
 const plannerPage = 1000
 
-// planner reads the repository and its format's catalogue for a bulk's expansion.
-func (m *MirrorHost) planner(ctx context.Context, repoID int64) (formats.Catalogue, *backgroundUpstream, error) {
+// planner reads the repository and its format's catalogue for a bulk's expansion; format is the repository's.
+func (m *MirrorHost) planner(ctx context.Context, repoID int64) (cat formats.Catalogue, u *backgroundUpstream, format string, err error) {
 	repo, err := m.h.o.Repos.ByID(ctx, repoID)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, "", err
 	}
-	cat := formats.RemoteCapabilities(formats.ID(repo.Format)).Catalogue
+	cat = formats.RemoteCapabilities(formats.ID(repo.Format)).Catalogue
 	if cat == nil {
-		return nil, nil, errs.E(errs.NotImplemented, errs.CodeNotImplemented, "The format "+repo.Format+" has no upstream catalogue to list a package's versions with.")
+		return nil, nil, "", errs.E(errs.NotImplemented, errs.CodeNotImplemented, "The format "+repo.Format+" has no upstream catalogue to list a package's versions with.")
 	}
-	u, err := m.downloadUpstream(repo, "", nil, fillDownloadAhead, nil)
+	u, err = m.downloadUpstream(repo, "", nil, fillDownloadAhead, nil)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, "", err
 	}
-	return cat, u, nil
+	return cat, u, repo.Format, nil
 }
 
-// Versions implements [queue.Planner] over the format's catalogue (Package): the versions newest first, without prereleases unless
-// asked, at most maxVersions (0 for all), each with the size the upstream announces.
-func (m *MirrorHost) Versions(ctx context.Context, repoID int64, name string, includePrereleases bool, maxVersions int) ([]queue.PlannedVersion, error) {
-	cat, u, err := m.planner(ctx, repoID)
+// Versions implements [queue.Planner] over the format's catalogue (Package): the versions the selection takes, newest first by the
+// catalogue's order, each with the size the upstream announces. The selection's range is read in the format's order of the view adapter
+// (rangeOrder, Q-CUR-190), the order the catalogue lists the versions in.
+func (m *MirrorHost) Versions(ctx context.Context, repoID int64, name string, sel queue.Selection) ([]queue.PlannedVersion, error) {
+	cat, u, format, err := m.planner(ctx, repoID)
 	if err != nil {
 		return nil, err
+	}
+	pick := queue.Picker{Selection: sel}
+	if sel.Range.Set() {
+		o, ok := rangeOrder(format)
+		if !ok {
+			return nil, errs.E(errs.NotImplemented, errs.CodeNotImplemented, "The format "+format+" has no order of versions to bound a download by.")
+		}
+		pick.Order = o
 	}
 	var out []queue.PlannedVersion
 	var cursor discover.Cursor
@@ -319,13 +329,13 @@ func (m *MirrorHost) Versions(ctx context.Context, repoID int64, name string, in
 			return nil, nil
 		}
 		for _, v := range info.Versions {
-			if !includePrereleases && slices.Contains(v.Flags, "prerelease") {
-				continue
-			}
-			if maxVersions > 0 && len(out) >= maxVersions {
+			take, full := pick.Take(v.Version, slices.Contains(v.Flags, "prerelease"))
+			if full {
 				return out, nil
 			}
-			out = append(out, queue.PlannedVersion{Version: v.Version, Size: v.Size})
+			if take {
+				out = append(out, queue.PlannedVersion{Version: v.Version, Size: v.Size})
+			}
 		}
 		if info.Done || len(info.Cursor) == 0 {
 			return out, nil
@@ -334,11 +344,25 @@ func (m *MirrorHost) Versions(ctx context.Context, repoID int64, name string, in
 	}
 }
 
+// rangeOrder is the order a range of the format's versions is read by (Q-CUR-190): the registered format's view adapter and its
+// canon (R-CUR-006); ok is false for a format without a view adapter. The API's preview builds the same order.
+func rangeOrder(format string) (queue.Order, bool) {
+	f, ok := formats.Lookup(format)
+	if !ok || f.View() == nil {
+		return queue.Order{}, false
+	}
+	o := queue.Order{View: f.View()}
+	if c := f.Descriptor().VersionCanon; c != nil {
+		o.Canon = c
+	}
+	return o, true
+}
+
 // Packages implements [queue.Planner] over the format's catalogue (Children): one page of the packages directly in the level the section
 // names (its path joined by "/", each part URL-encoded, as the API spells a level). An upstream that lists no levels answers
 // discover.ErrNotOffered.
 func (m *MirrorHost) Packages(ctx context.Context, repoID int64, section, cursor string) ([]string, string, bool, error) {
-	cat, u, err := m.planner(ctx, repoID)
+	cat, u, _, err := m.planner(ctx, repoID)
 	if err != nil {
 		return nil, "", false, err
 	}

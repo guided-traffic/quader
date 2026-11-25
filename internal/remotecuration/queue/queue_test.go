@@ -1,11 +1,17 @@
 package queue
 
 import (
+	"cmp"
 	"context"
 	"errors"
+	"fmt"
+	"slices"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/guided-traffic/quader/internal/formats/versionkey"
 	"github.com/guided-traffic/quader/internal/remotecuration"
 )
 
@@ -205,17 +211,26 @@ func TestR_CUR_011_AClientsFailureIsWrittenOncePerFileAndMinute(t *testing.T) {
 	}
 }
 
-// fakePlanner names the versions of every package and the packages of one section.
+// fakePlanner names the versions of every package and the packages of one section. It takes the versions as the planner of a worker
+// does, by a Picker over testOrder: a version with a "-" is a pre-release.
 type fakePlanner struct {
 	versions []PlannedVersion
 	packages []string
 }
 
-func (p fakePlanner) Versions(_ context.Context, _ int64, _ string, _ bool, maxVersions int) ([]PlannedVersion, error) {
-	if maxVersions > 0 && len(p.versions) > maxVersions {
-		return p.versions[:maxVersions], nil
+func (p fakePlanner) Versions(_ context.Context, _ int64, _ string, sel Selection) ([]PlannedVersion, error) {
+	pick := Picker{Selection: sel, Order: testOrder}
+	var out []PlannedVersion
+	for _, v := range p.versions {
+		take, full := pick.Take(v.Version, strings.Contains(v.Version, "-"))
+		if full {
+			break
+		}
+		if take {
+			out = append(out, v)
+		}
 	}
-	return p.versions, nil
+	return out, nil
 }
 
 func (p fakePlanner) Packages(context.Context, int64, string, string) ([]string, string, bool, error) {
@@ -277,6 +292,180 @@ func TestR_CUR_010_ABulkIsExpandedWithinItsBounds(t *testing.T) {
 		_, b := run(t, big, BulkSpec{RepoID: 1, Level: LevelPackage, Subject: "x", MaxVersions: 1, MaxBytes: 1}, nil)
 		if b.State != BulkFailed || b.Failure == nil || b.Failure.Code != CodeCatalogueUnavailable {
 			t.Fatalf("bulk %+v", b)
+		}
+	})
+}
+
+// testOrder is a format's order as a range reads it: MAJOR.MINOR.PATCH with an optional pre-release after a "-", which sorts below its
+// release; a missing part is 0 for the canon, so that "5.4" and "5.4.0" meet as NuGet's "1.0" and "1.0.0" do; anything else is a tag
+// the canon accepts that is no version (the class NotVersion, as OCI's "latest").
+var testOrder = Order{View: testView{}, Canon: testCanon{}}
+
+type (
+	testView  struct{}
+	testCanon struct{}
+)
+
+func testParse(v string) (nums [3]int, pre string, ok bool) {
+	core, pre, _ := strings.Cut(v, "-")
+	parts := strings.Split(core, ".")
+	if len(parts) > 3 {
+		return nums, "", false
+	}
+	for i, p := range parts {
+		n, err := strconv.Atoi(p)
+		if err != nil || n < 0 {
+			return nums, "", false
+		}
+		nums[i] = n
+	}
+	return nums, pre, true
+}
+
+func (testCanon) Canonical(v string) (string, bool) {
+	nums, pre, ok := testParse(v)
+	if !ok {
+		return v, v != ""
+	}
+	c := fmt.Sprintf("%d.%d.%d", nums[0], nums[1], nums[2])
+	if pre != "" {
+		c += "-" + pre
+	}
+	return c, true
+}
+
+func (testView) Compare(a, b string) int {
+	na, pa, oka := testParse(a)
+	nb, pb, okb := testParse(b)
+	switch {
+	case !oka && !okb:
+		return strings.Compare(a, b)
+	case !oka:
+		return -1
+	case !okb:
+		return 1
+	}
+	for i := range na {
+		if c := cmp.Compare(na[i], nb[i]); c != 0 {
+			return c
+		}
+	}
+	switch {
+	case pa == pb:
+		return strings.Compare(a, b)
+	case pa == "":
+		return 1
+	case pb == "":
+		return -1
+	}
+	return strings.Compare(pa, pb)
+}
+
+func (testView) SortKey(v string) []byte {
+	_, _, ok := testParse(v)
+	return versionkey.Of(nil, ok, v)
+}
+
+// The range of a package's bulk (R-CUR-010, Q-CUR-190 to Q-CUR-192): both bounds, each alone, a bound included or below, bounds the
+// upstream does not list, two spellings of one version, strings that are no version, and the composition with the pre-releases, the
+// newest maxVersions and maxBytes. Unit tier, milliseconds, seven version strings.
+func TestR_CUR_010_ABulkTakesARangeOfVersionsInTheFormatsOrder(t *testing.T) {
+	listed := []PlannedVersion{{"6.0.0-rc.1", 10}, {"5.4.7", 10}, {"5.4.0", 10}, {"5.0.0", 10}, {"4.2.0", 10}, {"main", 10}, {"latest", 10}}
+	big := Settings{PerRepository: 2, MaxWaiting: 100, MaxAttempts: 5}
+	for _, tc := range []struct {
+		name     string
+		rng      Range
+		noPre    bool
+		max      int
+		maxBytes int64
+		want     []string
+		bound    string
+	}{
+		{name: "no bound takes every string, versions or not", want: []string{"6.0.0-rc.1", "5.4.7", "5.4.0", "5.0.0", "4.2.0", "main", "latest"}},
+		{name: "from a version, included", rng: Range{From: "5.0.0"}, want: []string{"6.0.0-rc.1", "5.4.7", "5.4.0", "5.0.0"}},
+		{name: "up to a version, included", rng: Range{To: "5.4.7", ToInclusive: true}, want: []string{"5.4.7", "5.4.0", "5.0.0", "4.2.0"}},
+		{name: "below a version", rng: Range{To: "5.4.7"}, want: []string{"5.4.0", "5.0.0", "4.2.0"}},
+		{name: "both bounds", rng: Range{From: "5.0.0", To: "5.4.7", ToInclusive: true}, want: []string{"5.4.7", "5.4.0", "5.0.0"}},
+		{name: "bounds the upstream does not list", rng: Range{From: "5.1.0", To: "5.5.0"}, want: []string{"5.4.7", "5.4.0"}},
+		{name: "a bound in another spelling meets its version", rng: Range{From: "5.4", To: "5.4", ToInclusive: true}, want: []string{"5.4.0"}},
+		{name: "the range first, then the pre-releases", rng: Range{From: "5.0.0"}, noPre: true, want: []string{"5.4.7", "5.4.0", "5.0.0"}},
+		{name: "then the newest maxVersions", rng: Range{From: "4.0.0"}, noPre: true, max: 2, want: []string{"5.4.7", "5.4.0"}},
+		{name: "then maxBytes", rng: Range{To: "5.4.7", ToInclusive: true}, maxBytes: 25, want: []string{"5.4.7", "5.4.0"}, bound: CodeBulkMaxBytes},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := newFixture(t, big)
+			f.svc.o.Planner = fakePlanner{versions: listed}
+			spec := BulkSpec{
+				RepoID: 1, Level: LevelPackage, Subject: "acme", MaxVersions: 100, MaxBytes: 1 << 30, IncludePrereleases: !tc.noPre, Range: tc.rng,
+			}
+			if tc.max > 0 {
+				spec.MaxVersions = tc.max
+			}
+			if tc.maxBytes > 0 {
+				spec.MaxBytes = tc.maxBytes
+			}
+			// The API stores a bound in its canonical form.
+			spec.Range.From, _ = testOrder.Rank(spec.Range.From)
+			spec.Range.To, _ = testOrder.Rank(spec.Range.To)
+			b, err := f.svc.StartBulk(context.Background(), nil, spec)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := f.svc.Dispatch(context.Background(), func(error) remotecuration.Failure { return remotecuration.Failure{} }); err != nil {
+				t.Fatal(err)
+			}
+			var got []string
+			for _, r := range f.store.rows {
+				got = append(got, r.Version)
+			}
+			if !slices.Equal(got, tc.want) {
+				t.Errorf("queued %v, want %v", got, tc.want)
+			}
+			stored, _, _, _ := f.store.GetBulk(context.Background(), b.ID, 1)
+			want := spec.Range
+			want.ToInclusive = want.To == "" || want.ToInclusive // a range without an upper bound keeps the column's default
+			if stored.Range() != want {
+				t.Errorf("the bulk keeps the range %+v, want %+v", stored.Range(), want)
+			}
+			code := ""
+			if stored.Failure != nil {
+				code = stored.Failure.Code
+			}
+			if code != tc.bound {
+				t.Errorf("the bulk's bound %q, want %q", code, tc.bound)
+			}
+		})
+	}
+	t.Run("a range counts the strings it leaves out because they are no version", func(t *testing.T) {
+		for _, tc := range []struct {
+			rng  Range
+			want int
+		}{{Range{}, 0}, {Range{From: "1.0.0"}, 2}} {
+			p := Picker{Selection: Selection{Range: tc.rng, IncludePrereleases: true}, Order: testOrder}
+			for _, v := range listed {
+				p.Take(v.Version, false)
+			}
+			if p.NotVersions != tc.want {
+				t.Errorf("range %+v: %d strings that are no version, want %d", tc.rng, p.NotVersions, tc.want)
+			}
+		}
+	})
+	t.Run("a bound is a version of the format, and a range holds one", func(t *testing.T) {
+		if _, ok := testOrder.Rank("latest"); ok {
+			t.Error("latest is ranked")
+		}
+		for _, tc := range []struct {
+			rng   Range
+			empty bool
+		}{
+			{Range{From: "5.0.0", To: "4.0.0", ToInclusive: true}, true},
+			{Range{From: "5.0.0", To: "5.0.0"}, true},
+			{Range{From: "5.0.0", To: "5.0.0", ToInclusive: true}, false},
+			{Range{From: "5.0.0"}, false},
+		} {
+			if got := tc.rng.Empty(testOrder); got != tc.empty {
+				t.Errorf("range %+v empty %v, want %v", tc.rng, got, tc.empty)
+			}
 		}
 	})
 }

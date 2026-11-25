@@ -329,6 +329,7 @@ func (t *pgTx) InsertBulk(ctx context.Context, b Bulk) (Bulk, error) {
 	doc, err := t.qs.RemoteDownloadBulkInsert(ctx, q.RemoteDownloadBulkInsertParams{
 		ID: b.ID, RepoID: b.RepoID, Level: string(b.Level), Subject: b.Subject, MaxVersions: int32(b.MaxVersions), //nolint:gosec // bounded by the configuration
 		MaxBytes: b.MaxBytes, IncludePrereleases: b.IncludePrereleases, StartedBy: b.StartedBy,
+		FromVersion: b.FromVersion, ToVersion: b.ToVersion, ToInclusive: b.ToInclusive,
 	})
 	if err != nil {
 		return Bulk{}, err

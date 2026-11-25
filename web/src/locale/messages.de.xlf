@@ -24599,9 +24599,54 @@
         <target>Fingerabdruck kopieren</target>
       </segment>
     </unit>
+    <unit id="downloads.range.from-up-to">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:26</note>
+      </notes>
+      <segment>
+        <source>From <ph id="0" equiv="from" disp="from"/> up to <ph id="1" equiv="to" disp="to"/></source>
+        <target>Ab <ph id="0" equiv="from" disp="from"/> bis einschließlich <ph id="1" equiv="to" disp="to"/></target>
+      </segment>
+    </unit>
+    <unit id="downloads.range.from-below">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:27</note>
+      </notes>
+      <segment>
+        <source>From <ph id="0" equiv="from" disp="from"/>, below <ph id="1" equiv="to" disp="to"/></source>
+        <target>Ab <ph id="0" equiv="from" disp="from"/>, unter <ph id="1" equiv="to" disp="to"/></target>
+      </segment>
+    </unit>
+    <unit id="downloads.range.from">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:29</note>
+      </notes>
+      <segment>
+        <source>From <ph id="0" equiv="from" disp="from"/></source>
+        <target>Ab <ph id="0" equiv="from" disp="from"/></target>
+      </segment>
+    </unit>
+    <unit id="downloads.range.up-to">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:30</note>
+      </notes>
+      <segment>
+        <source>Up to <ph id="0" equiv="to" disp="to"/></source>
+        <target>Bis einschließlich <ph id="0" equiv="to" disp="to"/></target>
+      </segment>
+    </unit>
+    <unit id="downloads.range.below">
+      <notes>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:30</note>
+      </notes>
+      <segment>
+        <source>Below <ph id="0" equiv="to" disp="to"/></source>
+        <target>Unter <ph id="0" equiv="to" disp="to"/></target>
+      </segment>
+    </unit>
     <unit id="downloads.state.waiting">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:14</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:38</note>
       </notes>
       <segment>
         <source>Waiting</source>
@@ -24610,7 +24655,7 @@
     </unit>
     <unit id="downloads.state.running">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:16</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:40</note>
       </notes>
       <segment>
         <source>Running</source>
@@ -24619,7 +24664,7 @@
     </unit>
     <unit id="downloads.state.done">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:18</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:42</note>
       </notes>
       <segment>
         <source>Done</source>
@@ -24628,7 +24673,7 @@
     </unit>
     <unit id="downloads.state.failed">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:20</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:44</note>
       </notes>
       <segment>
         <source>Failed</source>
@@ -24637,7 +24682,7 @@
     </unit>
     <unit id="downloads.state.cancelled">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:22</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:46</note>
       </notes>
       <segment>
         <source>Cancelled</source>
@@ -24646,7 +24691,7 @@
     </unit>
     <unit id="downloads.origin.person">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:33</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:57</note>
       </notes>
       <segment>
         <source>A person</source>
@@ -24655,7 +24700,7 @@
     </unit>
     <unit id="downloads.origin.request">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:35</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:59</note>
       </notes>
       <segment>
         <source>Request</source>
@@ -24664,7 +24709,7 @@
     </unit>
     <unit id="downloads.origin.allow">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:37</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:61</note>
       </notes>
       <segment>
         <source>Allow</source>
@@ -24673,7 +24718,7 @@
     </unit>
     <unit id="downloads.origin.bulk">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:39</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:63</note>
       </notes>
       <segment>
         <source>Bulk</source>
@@ -24682,7 +24727,7 @@
     </unit>
     <unit id="downloads.origin.probe">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:41</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:65</note>
       </notes>
       <segment>
         <source>Probe</source>
@@ -24691,7 +24736,7 @@
     </unit>
     <unit id="downloads.origin.client">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:43</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:67</note>
       </notes>
       <segment>
         <source>Client</source>
@@ -24700,7 +24745,7 @@
     </unit>
     <unit id="downloads.outcome.bounded">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:54</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:78</note>
       </notes>
       <segment>
         <source>Stopped at a bound</source>
@@ -24709,7 +24754,7 @@
     </unit>
     <unit id="downloads.outcome.refused">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:56</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:80</note>
       </notes>
       <segment>
         <source>Every file was refused by a gate</source>
@@ -24718,7 +24763,7 @@
     </unit>
     <unit id="downloads.outcome.skipped">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:58</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:82</note>
       </notes>
       <segment>
         <source>Skipped: the repository is gone, disabled, offline or no longer remote</source>
@@ -24727,7 +24772,7 @@
     </unit>
     <unit id="downloads.class.upstream-not-found">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:68</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:92</note>
       </notes>
       <segment>
         <source>Not found upstream</source>
@@ -24736,7 +24781,7 @@
     </unit>
     <unit id="downloads.class.upstream-auth">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:70</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:94</note>
       </notes>
       <segment>
         <source>Refused by the upstream&apos;s authentication</source>
@@ -24745,7 +24790,7 @@
     </unit>
     <unit id="downloads.class.upstream-rate-limited">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:72</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:96</note>
       </notes>
       <segment>
         <source>Rate limited by the upstream</source>
@@ -24754,7 +24799,7 @@
     </unit>
     <unit id="downloads.class.upstream-error">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:74</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:98</note>
       </notes>
       <segment>
         <source>Upstream error</source>
@@ -24763,7 +24808,7 @@
     </unit>
     <unit id="downloads.class.upstream-unexpected">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:76</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:100</note>
       </notes>
       <segment>
         <source>Unexpected answer of the upstream</source>
@@ -24772,7 +24817,7 @@
     </unit>
     <unit id="downloads.class.network">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:78</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:102</note>
       </notes>
       <segment>
         <source>Network</source>
@@ -24781,7 +24826,7 @@
     </unit>
     <unit id="downloads.class.tls">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:80</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:104</note>
       </notes>
       <segment>
         <source>TLS</source>
@@ -24790,7 +24835,7 @@
     </unit>
     <unit id="downloads.class.egress-denied">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:82</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:106</note>
       </notes>
       <segment>
         <source>Address not allowed by this installation</source>
@@ -24799,7 +24844,7 @@
     </unit>
     <unit id="downloads.class.integrity">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:84</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:108</note>
       </notes>
       <segment>
         <source>Integrity check failed</source>
@@ -24808,7 +24853,7 @@
     </unit>
     <unit id="downloads.class.content-refused">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:86</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:110</note>
       </notes>
       <segment>
         <source>Content refused</source>
@@ -24817,7 +24862,7 @@
     </unit>
     <unit id="downloads.class.gate-refused">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:88</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:112</note>
       </notes>
       <segment>
         <source>Refused by a gate</source>
@@ -24826,7 +24871,7 @@
     </unit>
     <unit id="downloads.class.circuit-open">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:90</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:114</note>
       </notes>
       <segment>
         <source>Upstream assumed offline</source>
@@ -24835,7 +24880,7 @@
     </unit>
     <unit id="downloads.class.bound">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:92</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:116</note>
       </notes>
       <segment>
         <source>Bound reached</source>
@@ -24844,7 +24889,7 @@
     </unit>
     <unit id="downloads.class.storage">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:94</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:118</note>
       </notes>
       <segment>
         <source>Storage</source>
@@ -24853,7 +24898,7 @@
     </unit>
     <unit id="downloads.class.internal">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:96</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:120</note>
       </notes>
       <segment>
         <source>Internal error</source>
@@ -24862,7 +24907,7 @@
     </unit>
     <unit id="downloads.step.plan">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:104</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:128</note>
       </notes>
       <segment>
         <source>Reading the documents that name the files</source>
@@ -24871,7 +24916,7 @@
     </unit>
     <unit id="downloads.step.resolve">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:106</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:130</note>
       </notes>
       <segment>
         <source>Resolving the host name</source>
@@ -24880,7 +24925,7 @@
     </unit>
     <unit id="downloads.step.connect">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:108</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:132</note>
       </notes>
       <segment>
         <source>Connecting</source>
@@ -24889,7 +24934,7 @@
     </unit>
     <unit id="downloads.step.tls">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:110</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:134</note>
       </notes>
       <segment>
         <source>TLS handshake or certificate check</source>
@@ -24898,7 +24943,7 @@
     </unit>
     <unit id="downloads.step.request">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:112</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:136</note>
       </notes>
       <segment>
         <source>Sending the request</source>
@@ -24907,7 +24952,7 @@
     </unit>
     <unit id="downloads.step.status">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:114</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:138</note>
       </notes>
       <segment>
         <source>The answer&apos;s status</source>
@@ -24916,7 +24961,7 @@
     </unit>
     <unit id="downloads.step.body">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:116</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:140</note>
       </notes>
       <segment>
         <source>Reading the body</source>
@@ -24925,7 +24970,7 @@
     </unit>
     <unit id="downloads.step.verify">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:118</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:142</note>
       </notes>
       <segment>
         <source>Checking digest, size and media type</source>
@@ -24934,7 +24979,7 @@
     </unit>
     <unit id="downloads.step.gate">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:120</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:144</note>
       </notes>
       <segment>
         <source>Vulnerability check before the download</source>
@@ -24943,7 +24988,7 @@
     </unit>
     <unit id="downloads.step.store">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:122</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:146</note>
       </notes>
       <segment>
         <source>Storing</source>
@@ -24952,7 +24997,7 @@
     </unit>
     <unit id="downloads.why.unexpected-status">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:192</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:216</note>
       </notes>
       <segment>
         <source>The upstream answered with a status Quader does not expect here. Check the upstream&apos;s address in the repository&apos;s settings; the start of its answer may say more.</source>
@@ -24961,7 +25006,7 @@
     </unit>
     <unit id="downloads.why.too-many-redirects">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:194</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:218</note>
       </notes>
       <segment>
         <source>The upstream redirected the request more often than this installation allows. Check the upstream&apos;s address in the repository&apos;s settings.</source>
@@ -24970,7 +25015,7 @@
     </unit>
     <unit id="downloads.why.insecure-redirect-host">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:197</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:221</note>
       </notes>
       <segment>
         <source>The upstream sent the request from https to plain http on <ph id="0" equiv="host" disp="host"/>, and Quader never leaves https. Ask the upstream&apos;s operator for an https address.</source>
@@ -24979,7 +25024,7 @@
     </unit>
     <unit id="downloads.why.insecure-redirect">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:198</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:222</note>
       </notes>
       <segment>
         <source>The upstream sent the request from https to plain http, and Quader never leaves https. Ask the upstream&apos;s operator for an https address.</source>
@@ -24988,7 +25033,7 @@
     </unit>
     <unit id="downloads.why.foreign-host-host">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:201</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:225</note>
       </notes>
       <segment>
         <source>The upstream points to <ph id="0" equiv="host" disp="host"/>, which is neither the upstream nor one of the repository&apos;s further hosts, so Quader sent no request there. If you trust this host, add it to the repository&apos;s further hosts.</source>
@@ -24997,7 +25042,7 @@
     </unit>
     <unit id="downloads.why.foreign-host">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:202</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:226</note>
       </notes>
       <segment>
         <source>The upstream points to a host that is neither the upstream nor one of the repository&apos;s further hosts, so Quader sent no request there. If you trust this host, add it to the repository&apos;s further hosts.</source>
@@ -25006,7 +25051,7 @@
     </unit>
     <unit id="downloads.why.package-mismatch">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:204</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:228</note>
       </notes>
       <segment>
         <source>The upstream answered with another package than the one asked for; nothing was stored.</source>
@@ -25015,7 +25060,7 @@
     </unit>
     <unit id="downloads.why.invalid-document">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:207</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:231</note>
       </notes>
       <segment>
         <source>The upstream&apos;s document of the package is not valid; nothing was stored. A later attempt succeeds once the upstream corrects it.</source>
@@ -25024,7 +25069,7 @@
     </unit>
     <unit id="downloads.why.timeout">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:217</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:241</note>
       </notes>
       <segment>
         <source>The upstream did not answer in time. A later attempt may succeed.</source>
@@ -25033,7 +25078,7 @@
     </unit>
     <unit id="downloads.why.source-network">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:219</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:243</note>
       </notes>
       <segment>
         <source>This replica has no address in the network the repository sends its requests from; another replica may have one. An administrator checks the repository&apos;s source network.</source>
@@ -25042,7 +25087,7 @@
     </unit>
     <unit id="downloads.why.secret">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:221</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:245</note>
       </notes>
       <segment>
         <source>The repository&apos;s credential for the upstream cannot be read on this replica. A Maintainer or Owner enters it again in the repository&apos;s settings.</source>
@@ -25051,7 +25096,7 @@
     </unit>
     <unit id="downloads.why.integrity">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:231</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:255</note>
       </notes>
       <segment>
         <source>The file does not match the digest the upstream announced, so it was not stored.</source>
@@ -25060,7 +25105,7 @@
     </unit>
     <unit id="downloads.why.digest-missing">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:233</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:257</note>
       </notes>
       <segment>
         <source>The upstream announces no digest for the file and the repository requires one, so it was not stored.</source>
@@ -25069,7 +25114,7 @@
     </unit>
     <unit id="downloads.why.oci-digest">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:235</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:259</note>
       </notes>
       <segment>
         <source>The content does not match its digest, so it was not stored.</source>
@@ -25078,7 +25123,7 @@
     </unit>
     <unit id="downloads.why.oci-size">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:237</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:261</note>
       </notes>
       <segment>
         <source>The image exceeds a size limit of this installation, so it was not stored.</source>
@@ -25087,7 +25132,7 @@
     </unit>
     <unit id="downloads.why.content-type">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:239</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:263</note>
       </notes>
       <segment>
         <source>The upstream answered with a page in place of the file, usually an error page or the sign-in page of a network, so nothing was stored.</source>
@@ -25096,7 +25141,7 @@
     </unit>
     <unit id="downloads.why.too-large">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:251</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:275</note>
       </notes>
       <segment>
         <source>The file is larger than the repository&apos;s limit allows, so it was not stored. A Maintainer or Owner can raise the limit in the repository&apos;s settings.</source>
@@ -25105,7 +25150,7 @@
     </unit>
     <unit id="downloads.why.download-timeout">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:253</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:277</note>
       </notes>
       <segment>
         <source>The download took longer than its time limit. What it stored stays, and the next attempt goes on from there.</source>
@@ -25114,7 +25159,7 @@
     </unit>
     <unit id="downloads.why.vulnerability-blocked">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:255</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:279</note>
       </notes>
       <segment>
         <source>A vulnerability finding blocks this version in this repository, so it was not fetched.</source>
@@ -25123,7 +25168,7 @@
     </unit>
     <unit id="downloads.why.vulnerability-data">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:257</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:281</note>
       </notes>
       <segment>
         <source>The vulnerability data of this ecosystem is not complete and the repository blocks what it cannot check, so the version was not fetched.</source>
@@ -25132,7 +25177,7 @@
     </unit>
     <unit id="downloads.why.populate">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:259</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:283</note>
       </notes>
       <segment>
         <source>Whoever started the download may read the repository but not bring new content into its cache.</source>
@@ -25141,7 +25186,7 @@
     </unit>
     <unit id="downloads.why.offline">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:269</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:293</note>
       </notes>
       <segment>
         <source>The repository is offline and the file is not in its cache, so Quader sent no request.</source>
@@ -25150,7 +25195,7 @@
     </unit>
     <unit id="downloads.why.spool-busy">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:271</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:295</note>
       </notes>
       <segment>
         <source>The space for downloads in progress is full; the next attempt waits for room.</source>
@@ -25159,7 +25204,7 @@
     </unit>
     <unit id="downloads.why.preempted">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:273</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:297</note>
       </notes>
       <segment>
         <source>A client&apos;s fetch took the repository&apos;s place for downloads ahead; the download goes on with its next attempt.</source>
@@ -25168,7 +25213,7 @@
     </unit>
     <unit id="downloads.why.database">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:275</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:299</note>
       </notes>
       <segment>
         <source>The database answered too slowly. A later attempt may succeed.</source>
@@ -25177,7 +25222,7 @@
     </unit>
     <unit id="downloads.why.no-sections">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:285</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:309</note>
       </notes>
       <segment>
         <source>The upstream of this repository lists no sub-sections, so a sub-section cannot be downloaded. Download its packages one by one.</source>
@@ -25186,7 +25231,7 @@
     </unit>
     <unit id="downloads.why.no-catalogue">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:287</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:311</note>
       </notes>
       <segment>
         <source>This server cannot read the upstream&apos;s lists for a bulk download. Start it again; if it fails again, an administrator finds the cause in the server&apos;s log.</source>
@@ -25195,7 +25240,7 @@
     </unit>
     <unit id="downloads.why.bulk-versions">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:289</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:313</note>
       </notes>
       <segment>
         <source>The bulk download queued as many versions as its limit allows and adds no more.</source>
@@ -25204,7 +25249,7 @@
     </unit>
     <unit id="downloads.why.bulk-bytes">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:291</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:315</note>
       </notes>
       <segment>
         <source>The announced sizes of the queued versions reach the bulk download&apos;s size limit; it adds no more.</source>
@@ -25213,7 +25258,7 @@
     </unit>
     <unit id="downloads.why.bulk-stored">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:293</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:317</note>
       </notes>
       <segment>
         <source>The versions of the bulk download stored as much as its size limit allows; it adds no more.</source>
@@ -25222,7 +25267,7 @@
     </unit>
     <unit id="downloads.why.class.not-found">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:303</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:327</note>
       </notes>
       <segment>
         <source>The upstream does not have this file. Check the package&apos;s name and version.</source>
@@ -25231,7 +25276,7 @@
     </unit>
     <unit id="downloads.why.class.auth">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:305</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:329</note>
       </notes>
       <segment>
         <source>The upstream refused the repository&apos;s credentials. A Maintainer or Owner checks them in the repository&apos;s settings.</source>
@@ -25240,7 +25285,7 @@
     </unit>
     <unit id="downloads.why.class.rate-limited-wait">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:308</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:332</note>
       </notes>
       <segment>
         <source>The upstream limits how often Quader may ask it and asked to wait <ph id="0" equiv="seconds" disp="retryAfter"/> s; the next attempt waits that long.</source>
@@ -25249,7 +25294,7 @@
     </unit>
     <unit id="downloads.why.class.rate-limited">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:309</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:333</note>
       </notes>
       <segment>
         <source>The upstream limits how often Quader may ask it; the next attempt waits.</source>
@@ -25258,7 +25303,7 @@
     </unit>
     <unit id="downloads.why.class.upstream-error">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:311</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:335</note>
       </notes>
       <segment>
         <source>The upstream answered with an error of its own. A later attempt may succeed.</source>
@@ -25267,7 +25312,7 @@
     </unit>
     <unit id="downloads.why.class.unexpected">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:313</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:337</note>
       </notes>
       <segment>
         <source>The upstream answered in a way Quader does not expect here, so nothing was stored.</source>
@@ -25276,7 +25321,7 @@
     </unit>
     <unit id="downloads.why.class.network">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:315</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:339</note>
       </notes>
       <segment>
         <source>Quader could not reach the upstream. Check the upstream&apos;s address in the repository&apos;s settings; an administrator checks the network and the proxy.</source>
@@ -25285,7 +25330,7 @@
     </unit>
     <unit id="downloads.why.class.tls-host">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:318</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:342</note>
       </notes>
       <segment>
         <source>This installation does not trust the certificate of <ph id="0" equiv="host" disp="host"/>. An administrator adds the certificate authority that signed it.</source>
@@ -25294,7 +25339,7 @@
     </unit>
     <unit id="downloads.why.class.tls">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:319</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:343</note>
       </notes>
       <segment>
         <source>This installation does not trust the upstream&apos;s certificate. An administrator adds the certificate authority that signed it.</source>
@@ -25303,7 +25348,7 @@
     </unit>
     <unit id="downloads.why.class.egress-host">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:322</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:346</note>
       </notes>
       <segment>
         <source>This installation does not allow requests to <ph id="0" equiv="host" disp="host"/>. An administrator decides which addresses Quader may reach.</source>
@@ -25312,7 +25357,7 @@
     </unit>
     <unit id="downloads.why.class.egress">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:323</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:347</note>
       </notes>
       <segment>
         <source>This installation does not allow requests to the upstream&apos;s address. An administrator decides which addresses Quader may reach.</source>
@@ -25321,7 +25366,7 @@
     </unit>
     <unit id="downloads.why.class.integrity">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:325</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:349</note>
       </notes>
       <segment>
         <source>The file failed its integrity check, so it was not stored.</source>
@@ -25330,7 +25375,7 @@
     </unit>
     <unit id="downloads.why.class.content-refused">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:327</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:351</note>
       </notes>
       <segment>
         <source>The file has a structure Quader does not read, so it was not stored.</source>
@@ -25339,7 +25384,7 @@
     </unit>
     <unit id="downloads.why.class.gate">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:329</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:353</note>
       </notes>
       <segment>
         <source>A check of this repository refused the file before it was fetched.</source>
@@ -25348,7 +25393,7 @@
     </unit>
     <unit id="downloads.why.class.circuit">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:331</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:355</note>
       </notes>
       <segment>
         <source>The upstream failed several times in a row and counts as unavailable for a while; the next attempt waits for it.</source>
@@ -25357,7 +25402,7 @@
     </unit>
     <unit id="downloads.why.class.bound">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:333</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:357</note>
       </notes>
       <segment>
         <source>The download reached a limit. What it stored stays.</source>
@@ -25366,7 +25411,7 @@
     </unit>
     <unit id="downloads.why.class.storage">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:335</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:359</note>
       </notes>
       <segment>
         <source>The file could not be stored. A later attempt may succeed.</source>
@@ -25375,7 +25420,7 @@
     </unit>
     <unit id="downloads.why.class.internal">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/download-words.ts:337</note>
+        <note category="location">src/app/features/repositories/downloads/download-words.ts:361</note>
       </notes>
       <segment>
         <source>The download failed inside Quader. A later attempt may succeed; if not, an administrator finds the cause in the server&apos;s log.</source>
@@ -25457,7 +25502,7 @@
     <unit id="downloads.failure.address">
       <notes>
         <note category="location">src/app/features/repositories/downloads/remote-downloads.html:39,40</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:396,397</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:402,403</note>
       </notes>
       <segment>
         <source>Address</source>
@@ -25467,7 +25512,7 @@
     <unit id="downloads.failure.query-removed">
       <notes>
         <note category="location">src/app/features/repositories/downloads/remote-downloads.html:40,42</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:397,399</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:403,405</note>
       </notes>
       <segment>
         <source>(shown without its query, which can carry a credential)</source>
@@ -25477,7 +25522,7 @@
     <unit id="downloads.failure.headers">
       <notes>
         <note category="location">src/app/features/repositories/downloads/remote-downloads.html:43,44</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:408,409</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:414,415</note>
       </notes>
       <segment>
         <source>Headers of the limit</source>
@@ -25487,7 +25532,7 @@
     <unit id="downloads.failure.excerpt">
       <notes>
         <note category="location">src/app/features/repositories/downloads/remote-downloads.html:52,53</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:417,418</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:423,424</note>
       </notes>
       <segment>
         <source>The start of the upstream&apos;s answer</source>
@@ -25505,8 +25550,8 @@
     </unit>
     <unit id="downloads.bulk.started-by-you">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:84,85</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:226,227</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:87,88</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:232,233</note>
       </notes>
       <segment>
         <source>Started by you</source>
@@ -25515,8 +25560,8 @@
     </unit>
     <unit id="downloads.bulk.started-by">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:86</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:228</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:89</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:234</note>
       </notes>
       <segment>
         <source>Started by <ph id="0" equiv="INTERPOLATION" disp="{{ who }}"/></source>
@@ -25525,7 +25570,7 @@
     </unit>
     <unit id="downloads.rows.title">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:136,139</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:139,142</note>
       </notes>
       <segment>
         <source>Downloads</source>
@@ -25534,7 +25579,7 @@
     </unit>
     <unit id="downloads.filter.all">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:143,144</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:146,147</note>
       </notes>
       <segment>
         <source>All</source>
@@ -25543,7 +25588,7 @@
     </unit>
     <unit id="downloads.filter.failure">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:154,155</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:157,158</note>
       </notes>
       <segment>
         <source>Failure</source>
@@ -25552,7 +25597,7 @@
     </unit>
     <unit id="downloads.filter.any-class">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:156,157</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:159,160</note>
       </notes>
       <segment>
         <source>Any class</source>
@@ -25561,7 +25606,7 @@
     </unit>
     <unit id="downloads.retry-all">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:164,166</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:167,169</note>
       </notes>
       <segment>
         <source>Retry all failed</source>
@@ -25570,7 +25615,7 @@
     </unit>
     <unit id="downloads.resume">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:168,169</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:171,172</note>
       </notes>
       <segment>
         <source>Resume automatic refresh</source>
@@ -25579,7 +25624,7 @@
     </unit>
     <unit id="downloads.pause">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:170,172</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:173,175</note>
       </notes>
       <segment>
         <source>Pause automatic refresh</source>
@@ -25588,7 +25633,7 @@
     </unit>
     <unit id="downloads.name-filter">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:179</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:182</note>
       </notes>
       <segment>
         <source>Only the downloads of <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span class=&quot;name-filter-name&quot; translate=&quot;no&quot;&gt;" dispEnd="&lt;/span&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ n }}"/></pc>.</source>
@@ -25597,8 +25642,8 @@
     </unit>
     <unit id="downloads.bulk.show-all">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:184,189</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:206,208</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:187,192</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:209,211</note>
       </notes>
       <segment>
         <source>Show every download</source>
@@ -25607,7 +25652,7 @@
     </unit>
     <unit id="downloads.bulk.cancel">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:202,203</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:205,206</note>
       </notes>
       <segment>
         <source>Cancel bulk</source>
@@ -25616,8 +25661,8 @@
     </unit>
     <unit id="downloads.bulk.start-again">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:204,206</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:641</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:207,209</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:642</note>
       </notes>
       <segment>
         <source>Start again</source>
@@ -25626,7 +25671,7 @@
     </unit>
     <unit id="downloads.bulk.versions-found">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:214</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:217</note>
       </notes>
       <segment>
         <source>Versions found</source>
@@ -25635,7 +25680,7 @@
     </unit>
     <unit id="downloads.bulk.loading">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:245,250</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:251,256</note>
       </notes>
       <segment>
         <source>Loading the bulk download.</source>
@@ -25644,7 +25689,7 @@
     </unit>
     <unit id="downloads.not-delivered">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:283,285</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:289,291</note>
       </notes>
       <segment>
         <source>Not delivered here: stored for examination</source>
@@ -25653,7 +25698,7 @@
     </unit>
     <unit id="downloads.occurrences">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:295</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:301</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ r.occurrences }}"/> times</source>
@@ -25662,7 +25707,7 @@
     </unit>
     <unit id="downloads.next-attempt">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:336</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:342</note>
       </notes>
       <segment>
         <source>next</source>
@@ -25671,7 +25716,7 @@
     </unit>
     <unit id="downloads.progress.refused">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:343</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:349</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ r.refused }}"/> refused by a gate</source>
@@ -25680,7 +25725,7 @@
     </unit>
     <unit id="downloads.failure.title">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:379</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:385</note>
       </notes>
       <segment>
         <source>Failure of attempt <ph id="0" equiv="INTERPOLATION" disp="{{ f.attempt }}"/></source>
@@ -25689,7 +25734,7 @@
     </unit>
     <unit id="downloads.failure.class">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:385,386</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:391,392</note>
       </notes>
       <segment>
         <source>Class</source>
@@ -25698,7 +25743,7 @@
     </unit>
     <unit id="downloads.failure.step">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:387,388</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:393,394</note>
       </notes>
       <segment>
         <source>Step</source>
@@ -25707,7 +25752,7 @@
     </unit>
     <unit id="downloads.failure.code">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:389,390</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:395,396</note>
       </notes>
       <segment>
         <source>Code</source>
@@ -25716,7 +25761,7 @@
     </unit>
     <unit id="downloads.failure.file">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:392,393</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:398,399</note>
       </notes>
       <segment>
         <source>File</source>
@@ -25725,7 +25770,7 @@
     </unit>
     <unit id="downloads.failure.status">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:400,401</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:406,407</note>
       </notes>
       <segment>
         <source>Upstream status</source>
@@ -25734,7 +25779,7 @@
     </unit>
     <unit id="downloads.failure.retry-after">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:404,405</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:410,411</note>
       </notes>
       <segment>
         <source>Retry-After</source>
@@ -25743,7 +25788,7 @@
     </unit>
     <unit id="downloads.failure.seconds">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:405,406</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:411,412</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ f.retryAfter }}"/> s</source>
@@ -25752,8 +25797,8 @@
     </unit>
     <unit id="downloads.fact.started-by">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:423,424</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:426,427</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:429,430</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:432,433</note>
       </notes>
       <segment>
         <source>Started by</source>
@@ -25762,7 +25807,7 @@
     </unit>
     <unit id="downloads.fact.started-by-you">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:425</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:431</note>
       </notes>
       <segment>
         <source>You</source>
@@ -25771,7 +25816,7 @@
     </unit>
     <unit id="downloads.fact.queued">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:429,430</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:435,436</note>
       </notes>
       <segment>
         <source>Queued</source>
@@ -25780,7 +25825,7 @@
     </unit>
     <unit id="downloads.fact.started">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:432,433</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:438,439</note>
       </notes>
       <segment>
         <source>Started</source>
@@ -25789,7 +25834,7 @@
     </unit>
     <unit id="downloads.fact.finished">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:436,437</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:442,443</note>
       </notes>
       <segment>
         <source>Finished</source>
@@ -25798,7 +25843,7 @@
     </unit>
     <unit id="downloads.fact.files">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:440,441</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:446,447</note>
       </notes>
       <segment>
         <source>Files</source>
@@ -25807,7 +25852,7 @@
     </unit>
     <unit id="downloads.fact.files-value">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:441,442</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:447,448</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ r.files }}"/> named, <ph id="1" equiv="INTERPOLATION_1" disp="{{ r.stored }}"/> stored, <ph id="2" equiv="INTERPOLATION_2" disp="{{ r.present }}"/> already stored, <ph id="3" equiv="INTERPOLATION_3" disp="{{ r.refused }}"/> refused</source>
@@ -25816,7 +25861,7 @@
     </unit>
     <unit id="downloads.fact.bytes">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:444,445</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.html:450,451</note>
       </notes>
       <segment>
         <source>Stored</source>
@@ -25825,7 +25870,7 @@
     </unit>
     <unit id="downloads.bulks.caption">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:204</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:205</note>
       </notes>
       <segment>
         <source>Bulk downloads of this repository, newest first</source>
@@ -25834,7 +25879,7 @@
     </unit>
     <unit id="downloads.caption">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:266</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:267</note>
       </notes>
       <segment>
         <source>Downloads of this repository, running and waiting first</source>
@@ -25843,7 +25888,7 @@
     </unit>
     <unit id="downloads.empty">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:267</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:268</note>
       </notes>
       <segment>
         <source>There is no download yet.</source>
@@ -25852,7 +25897,7 @@
     </unit>
     <unit id="downloads.empty-filtered">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:268</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:269</note>
       </notes>
       <segment>
         <source>No download matches.</source>
@@ -25861,7 +25906,7 @@
     </unit>
     <unit id="downloads.filter.state">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:269</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:270</note>
       </notes>
       <segment>
         <source>State</source>
@@ -25870,7 +25915,7 @@
     </unit>
     <unit id="downloads.col.subject">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:278</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:279</note>
       </notes>
       <segment>
         <source>Package</source>
@@ -25879,7 +25924,7 @@
     </unit>
     <unit id="downloads.col.origin">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:279</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:280</note>
       </notes>
       <segment>
         <source>Origin</source>
@@ -25888,8 +25933,8 @@
     </unit>
     <unit id="downloads.col.state">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:280</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:290</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:281</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:291</note>
       </notes>
       <segment>
         <source>State</source>
@@ -25898,7 +25943,7 @@
     </unit>
     <unit id="downloads.col.progress">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:281</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:282</note>
       </notes>
       <segment>
         <source>Progress</source>
@@ -25907,8 +25952,8 @@
     </unit>
     <unit id="downloads.col.failure">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:282</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:292</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:283</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:293</note>
       </notes>
       <segment>
         <source>Failure</source>
@@ -25917,8 +25962,8 @@
     </unit>
     <unit id="downloads.col.actions">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:283</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:293</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:284</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:294</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -25927,7 +25972,7 @@
     </unit>
     <unit id="downloads.bulks.col.bulk">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:289</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:290</note>
       </notes>
       <segment>
         <source>Bulk download</source>
@@ -25936,7 +25981,7 @@
     </unit>
     <unit id="downloads.bulks.col.versions">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:291</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:292</note>
       </notes>
       <segment>
         <source>Versions</source>
@@ -25945,7 +25990,7 @@
     </unit>
     <unit id="downloads.row.open">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:480</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:481</note>
       </notes>
       <segment>
         <source>Details of <ph id="0" equiv="subject" disp="downloadSubject(r)"/></source>
@@ -25954,7 +25999,7 @@
     </unit>
     <unit id="downloads.origin.you">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:487</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:488</note>
       </notes>
       <segment>
         <source>You</source>
@@ -25963,7 +26008,7 @@
     </unit>
     <unit id="downloads.attempt">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:533</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:534</note>
       </notes>
       <segment>
         <source>Attempt <ph id="0" equiv="attempt" disp="r.attempts"/> of <ph id="1" equiv="max" disp="r.maxAttempts"/></source>
@@ -25972,7 +26017,7 @@
     </unit>
     <unit id="downloads.progress.files">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:540</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:541</note>
       </notes>
       <segment>
         <source>Files: <ph id="0" equiv="done" disp="done"/> of <ph id="1" equiv="files" disp="r.files"/></source>
@@ -25981,7 +26026,7 @@
     </unit>
     <unit id="downloads.retried">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:573</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:574</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="subject" disp="downloadSubject(r)"/> waits for its download again.</source>
@@ -25990,7 +26035,7 @@
     </unit>
     <unit id="downloads.cancelled">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:574</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:575</note>
       </notes>
       <segment>
         <source>The download of <ph id="0" equiv="subject" disp="downloadSubject(r)"/> is cancelled.</source>
@@ -25999,7 +26044,7 @@
     </unit>
     <unit id="downloads.retry">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:589</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:590</note>
       </notes>
       <segment>
         <source>Retry</source>
@@ -26008,8 +26053,8 @@
     </unit>
     <unit id="downloads.cancel">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:589</note>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:642</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:590</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:643</note>
       </notes>
       <segment>
         <source>Cancel</source>
@@ -26018,7 +26063,7 @@
     </unit>
     <unit id="downloads.retried-all">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:607</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:608</note>
       </notes>
       <segment>
         <source>Failed downloads that wait again: <ph id="0" equiv="count" disp="n"/>.</source>
@@ -26027,7 +26072,7 @@
     </unit>
     <unit id="downloads.bulk.cancelled">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:656</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:657</note>
       </notes>
       <segment>
         <source>The bulk download of <ph id="0" equiv="subject" disp="b.subject"/> is cancelled.</source>
@@ -26036,7 +26081,7 @@
     </unit>
     <unit id="downloads.bulk.started-again">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:660</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:661</note>
       </notes>
       <segment>
         <source>The bulk download of <ph id="0" equiv="subject" disp="b.subject"/> starts again: Quader reads its versions from the upstream.</source>
@@ -26045,7 +26090,7 @@
     </unit>
     <unit id="downloads.bulk.failed-versions-of">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:693</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:694</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="upstream" disp="name"/>&apos;s version list could not be read</source>
@@ -26054,7 +26099,7 @@
     </unit>
     <unit id="downloads.bulk.failed-versions">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:694</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:695</note>
       </notes>
       <segment>
         <source>The upstream&apos;s version list could not be read</source>
@@ -26063,7 +26108,7 @@
     </unit>
     <unit id="downloads.bulk.failed-section-of">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:697</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:698</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="upstream" disp="name"/>&apos;s list of the sub-section could not be read</source>
@@ -26072,7 +26117,7 @@
     </unit>
     <unit id="downloads.bulk.failed-section">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:698</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:699</note>
       </notes>
       <segment>
         <source>The upstream&apos;s list of the sub-section could not be read</source>
@@ -26081,7 +26126,7 @@
     </unit>
     <unit id="downloads.bulk.open">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:709</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:710</note>
       </notes>
       <segment>
         <source>The downloads of the bulk: <ph id="0" equiv="title" disp="this.bulkTitle(b)"/></source>
@@ -26090,7 +26135,7 @@
     </unit>
     <unit id="downloads.bulk.package">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:715</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:716</note>
       </notes>
       <segment>
         <source>Every version of <ph id="0" equiv="subject" disp="b.subject"/></source>
@@ -26099,7 +26144,7 @@
     </unit>
     <unit id="downloads.bulk.section">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:716</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:717</note>
       </notes>
       <segment>
         <source>The sub-section <ph id="0" equiv="subject" disp="b.subject"/></source>
@@ -26108,7 +26153,7 @@
     </unit>
     <unit id="downloads.bulk.state.expanding">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:740</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:741</note>
       </notes>
       <segment>
         <source>Finding versions</source>
@@ -26117,7 +26162,7 @@
     </unit>
     <unit id="downloads.bulk.state.queued">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:742</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:743</note>
       </notes>
       <segment>
         <source>Queued</source>
@@ -26126,7 +26171,7 @@
     </unit>
     <unit id="downloads.bulk.state.done">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:744</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:745</note>
       </notes>
       <segment>
         <source>Done</source>
@@ -26135,7 +26180,7 @@
     </unit>
     <unit id="downloads.bulk.state.bounded">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:746</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:747</note>
       </notes>
       <segment>
         <source>Stopped at a bound</source>
@@ -26144,7 +26189,7 @@
     </unit>
     <unit id="downloads.bulk.state.cancelled">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:748</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:749</note>
       </notes>
       <segment>
         <source>Cancelled</source>
@@ -26153,7 +26198,7 @@
     </unit>
     <unit id="downloads.bulk.state.failed">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:750</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:751</note>
       </notes>
       <segment>
         <source>Failed</source>
@@ -26162,7 +26207,7 @@
     </unit>
     <unit id="downloads.bulks.versions">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:756</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:757</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="queued" disp="b.versionsQueued"/> of <ph id="1" equiv="found" disp="b.versionsFound"/> queued</source>
@@ -26171,7 +26216,7 @@
     </unit>
     <unit id="downloads.bulk.counts">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:760</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:761</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="queued" disp="b.versionsQueued"/> of <ph id="1" equiv="found" disp="b.versionsFound"/> versions found are queued</source>
@@ -26180,7 +26225,7 @@
     </unit>
     <unit id="downloads.bulk.bounds">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:766</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:772</note>
       </notes>
       <segment>
         <source>At most <ph id="0" equiv="versions" disp="b.bounds.maxVersions"/> versions and <ph id="1" equiv="bytes" disp="bytes"/>, pre-releases included</source>
@@ -26189,7 +26234,7 @@
     </unit>
     <unit id="downloads.bulk.bounds-no-pre">
       <notes>
-        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:767</note>
+        <note category="location">src/app/features/repositories/downloads/remote-downloads.ts:773</note>
       </notes>
       <segment>
         <source>At most <ph id="0" equiv="versions" disp="b.bounds.maxVersions"/> versions and <ph id="1" equiv="bytes" disp="bytes"/>, without pre-releases</source>
@@ -31267,7 +31312,7 @@
     </unit>
     <unit id="upstream.preview.note.section">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:18</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:19</note>
       </notes>
       <segment>
         <source>The upstream does not tell how many versions a sub-section holds or how large they are; the bounds stop the download while it runs.</source>
@@ -31276,7 +31321,7 @@
     </unit>
     <unit id="upstream.preview.note.sizes">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:20</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:21</note>
       </notes>
       <segment>
         <source>The upstream announces no sizes. A size counts once its file is stored, and the bounds stop the download while it runs.</source>
@@ -31285,7 +31330,7 @@
     </unit>
     <unit id="upstream.preview.note.more">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:22</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:23</note>
       </notes>
       <segment>
         <source>The upstream lists more versions than one answer holds; the rest are counted while the download runs.</source>
@@ -31294,7 +31339,7 @@
     </unit>
     <unit id="upstream.preview.note.size-once-stored">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:24</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:25</note>
       </notes>
       <segment>
         <source>The size of the version is known once it is stored.</source>
@@ -31303,16 +31348,43 @@
     </unit>
     <unit id="upstream.preview.note.on-expand">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:26</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:27</note>
       </notes>
       <segment>
         <source>The versions are counted when the download starts; the bounds stop it while it runs.</source>
         <target>Die Versionen werden gezählt, wenn der Download beginnt; die Grenzen beenden ihn, während er läuft.</target>
       </segment>
     </unit>
+    <unit id="upstream.preview.range.not-a-version">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:43</note>
+      </notes>
+      <segment>
+        <source>This is no version of the format. Type a version as the format&apos;s clients name it; a tag such as latest has no place in the order of versions.</source>
+        <target>Das ist keine Version des Formats. Geben Sie eine Version so ein, wie die Clients des Formats sie nennen; ein Tag wie latest hat keinen Platz in der Reihenfolge der Versionen.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.range.empty">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:46</note>
+      </notes>
+      <segment>
+        <source>No version lies between the two versions. Type an upper version above the lower one.</source>
+        <target>Zwischen den beiden Versionen liegt keine Version. Geben Sie eine obere Version über der unteren ein.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.range.too-long">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:47</note>
+      </notes>
+      <segment>
+        <source>A version has at most 256 characters.</source>
+        <target>Eine Version hat höchstens 256 Zeichen.</target>
+      </segment>
+    </unit>
     <unit id="upstream.preview.versions">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:62,64</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:88,90</note>
       </notes>
       <segment>
         <source>Versions</source>
@@ -31321,7 +31393,7 @@
     </unit>
     <unit id="upstream.preview.versions-unknown">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:67,70</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:93,96</note>
       </notes>
       <segment>
         <source>Not told by the upstream</source>
@@ -31330,7 +31402,7 @@
     </unit>
     <unit id="upstream.preview.packages">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:71,73</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:97,99</note>
       </notes>
       <segment>
         <source>Packages</source>
@@ -31339,7 +31411,7 @@
     </unit>
     <unit id="upstream.preview.packages-unknown">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:76,79</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:102,105</note>
       </notes>
       <segment>
         <source>Not told by the upstream</source>
@@ -31348,7 +31420,7 @@
     </unit>
     <unit id="upstream.preview.size">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:80,82</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:106,108</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -31357,7 +31429,7 @@
     </unit>
     <unit id="upstream.preview.size-unknown">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:85,87</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:111,113</note>
       </notes>
       <segment>
         <source>Not told by the upstream</source>
@@ -31366,7 +31438,7 @@
     </unit>
     <unit id="upstream.preview.size-unknown-of">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:88,89</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:114,115</note>
       </notes>
       <segment>
         <source>Size of <ph id="0" equiv="INTERPOLATION" disp="{{ p.sizeUnknown }}"/> versions not told by the upstream; the bound of <ph id="1" equiv="INTERPOLATION_1" disp="{{ size(p.bounds.maxBytes) }}"/> stops the download when it is reached.</source>
@@ -31375,7 +31447,7 @@
     </unit>
     <unit id="upstream.preview.stored">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:91,92</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:117,118</note>
       </notes>
       <segment>
         <source>Stored already</source>
@@ -31384,7 +31456,7 @@
     </unit>
     <unit id="upstream.preview.not-delivered">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:93,95</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:119,121</note>
       </notes>
       <segment>
         <source>Not delivered here</source>
@@ -31393,25 +31465,115 @@
     </unit>
     <unit id="upstream.preview.not-delivered-hint">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:97,100</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:123,126</note>
       </notes>
       <segment>
         <source>Fetched for examination: stored and scanned, not delivered until a rule allows them.</source>
         <target>Zur Prüfung geholt: gespeichert und geprüft, nicht ausgeliefert, bis eine Regel sie erlaubt.</target>
       </segment>
     </unit>
+    <unit id="upstream.preview.not-versions">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:127,129</note>
+      </notes>
+      <segment>
+        <source>Left out, no version</source>
+        <target>Ausgelassen, keine Version</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.not-versions-hint">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:130,133</note>
+      </notes>
+      <segment>
+        <source>Tags such as latest name no version and lie outside every range of versions.</source>
+        <target>Tags wie latest nennen keine Version und liegen außerhalb jedes Versionsbereichs.</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.loading">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:138,140</note>
+      </notes>
+      <segment>
+        <source>Reading what the download would fetch.</source>
+        <target>Es wird gelesen, was der Download holen würde.</target>
+      </segment>
+    </unit>
     <unit id="upstream.preview.bounds">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:105,106</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:142,143</note>
       </notes>
       <segment>
         <source>Bounds</source>
         <target>Grenzen</target>
       </segment>
     </unit>
+    <unit id="upstream.preview.from-version">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:145,147</note>
+      </notes>
+      <segment>
+        <source>From version</source>
+        <target>Ab Version</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.from-version.empty">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:153,154</note>
+      </notes>
+      <segment>
+        <source>The oldest</source>
+        <target>Die älteste</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.to-version">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:165,166</note>
+      </notes>
+      <segment>
+        <source>Up to version</source>
+        <target>Bis Version</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.to-version.empty">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:174,175</note>
+      </notes>
+      <segment>
+        <source>The newest</source>
+        <target>Die neueste</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.to-inclusive.label">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:183,184</note>
+      </notes>
+      <segment>
+        <source>Whether the version itself is downloaded</source>
+        <target>Ob die Version selbst geladen wird</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.to-inclusive.included">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:187,188</note>
+      </notes>
+      <segment>
+        <source>included</source>
+        <target>einschließlich</target>
+      </segment>
+    </unit>
+    <unit id="upstream.preview.to-inclusive.below">
+      <notes>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:188,190</note>
+      </notes>
+      <segment>
+        <source>below it</source>
+        <target>darunter</target>
+      </segment>
+    </unit>
     <unit id="upstream.preview.max-versions">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:107,109</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:202,204</note>
       </notes>
       <segment>
         <source>At most this many versions</source>
@@ -31420,7 +31582,7 @@
     </unit>
     <unit id="upstream.preview.max-bytes">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:120,122</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:215,217</note>
       </notes>
       <segment>
         <source>At most this many GiB</source>
@@ -31429,25 +31591,16 @@
     </unit>
     <unit id="upstream.preview.prereleases">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:133,134</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:228,229</note>
       </notes>
       <segment>
         <source>Include pre-releases</source>
         <target>Vorabversionen einschließen</target>
       </segment>
     </unit>
-    <unit id="upstream.preview.loading">
-      <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:140,143</note>
-      </notes>
-      <segment>
-        <source>Reading what the download would fetch.</source>
-        <target>Es wird gelesen, was der Download holen würde.</target>
-      </segment>
-    </unit>
     <unit id="upstream.dialog.cancel">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:144,145</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:237,238</note>
         <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:44,45</note>
         <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:111,112</note>
         <note category="location">src/app/features/repositories/upstream/request-dialogs.ts:203,204</note>
@@ -31459,7 +31612,7 @@
     </unit>
     <unit id="upstream.preview.start">
       <notes>
-        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:145,148</note>
+        <note category="location">src/app/features/repositories/upstream/download-preview-dialog.ts:238,241</note>
       </notes>
       <segment>
         <source>Start download</source>

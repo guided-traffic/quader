@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/guided-traffic/quader/internal/api/edge"
@@ -15,6 +16,7 @@ import (
 	"github.com/guided-traffic/quader/internal/authz"
 	"github.com/guided-traffic/quader/internal/config"
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats"
 	"github.com/guided-traffic/quader/internal/formats/catalog"
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/limits"
@@ -161,20 +163,55 @@ func (s *Server) downloadSetup(ctx context.Context, key qname.Repo) (context.Con
 
 // downloadRequest is the body of a preview and a start (R-CUR-010).
 type downloadRequest struct {
-	Level              string `json:"level"`
-	Name               string `json:"name,omitempty"`
-	Version            string `json:"version,omitempty"`
-	Section            string `json:"section,omitempty"`
-	MaxVersions        *int   `json:"maxVersions,omitempty"`
-	MaxBytes           *int64 `json:"maxBytes,omitempty"`
-	IncludePrereleases *bool  `json:"includePrereleases,omitempty"`
+	Level              string  `json:"level"`
+	Name               string  `json:"name,omitempty"`
+	Version            string  `json:"version,omitempty"`
+	Section            string  `json:"section,omitempty"`
+	MaxVersions        *int    `json:"maxVersions,omitempty"`
+	MaxBytes           *int64  `json:"maxBytes,omitempty"`
+	IncludePrereleases *bool   `json:"includePrereleases,omitempty"`
+	FromVersion        *string `json:"fromVersion,omitempty"`
+	ToVersion          *string `json:"toVersion,omitempty"`
+	ToInclusive        *bool   `json:"toInclusive,omitempty"`
 }
 
-// downloadBounds are a bulk's bounds: the configuration's, lowered by the request (R-CUR-010).
+// downloadBounds are a bulk's bounds: the configuration's, lowered by the request, and a package's range of versions (R-CUR-010,
+// Q-CUR-190): fromVersion and toVersion null for no bound on that side, in the format's canonical form once checked.
 type downloadBounds struct {
-	MaxVersions        int   `json:"maxVersions"`
-	MaxBytes           int64 `json:"maxBytes"`
-	IncludePrereleases bool  `json:"includePrereleases"`
+	MaxVersions        int     `json:"maxVersions"`
+	MaxBytes           int64   `json:"maxBytes"`
+	IncludePrereleases bool    `json:"includePrereleases"`
+	FromVersion        *string `json:"fromVersion"`
+	ToVersion          *string `json:"toVersion"`
+	ToInclusive        bool    `json:"toInclusive"`
+}
+
+// versionRange is the bounds' range of versions.
+func (b downloadBounds) versionRange() queue.Range {
+	var r queue.Range
+	if b.FromVersion != nil {
+		r.From = *b.FromVersion
+	}
+	if b.ToVersion != nil {
+		r.To = *b.ToVersion
+	}
+	r.ToInclusive = b.ToInclusive
+	return r
+}
+
+// boundsOf are the bounds of a stored bulk.
+func boundsOf(b queue.Bulk) downloadBounds {
+	return downloadBounds{
+		MaxVersions: b.MaxVersions, MaxBytes: b.MaxBytes, IncludePrereleases: b.IncludePrereleases,
+		FromVersion: optionalString(b.FromVersion), ToVersion: optionalString(b.ToVersion), ToInclusive: b.ToInclusive || b.ToVersion == "",
+	}
+}
+
+func optionalString(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
 
 // parseDownloadRequest reads and checks the body: the level's members present, the bounds no higher than the configuration's.
@@ -194,7 +231,9 @@ func (s *Server) parseDownloadRequest(w http.ResponseWriter, r *http.Request) (d
 		return in, downloadBounds{}, nil, err
 	}
 	cfg := s.o.RemoteDownloads.Settings
-	b := downloadBounds{MaxVersions: max(cfg.MaxVersionsPerBulk, 1), MaxBytes: max(int64(cfg.MaxBytesPerBulk), 1), IncludePrereleases: true}
+	b := downloadBounds{
+		MaxVersions: max(cfg.MaxVersionsPerBulk, 1), MaxBytes: max(int64(cfg.MaxBytesPerBulk), 1), IncludePrereleases: true, ToInclusive: true,
+	}
 	field := func(ptr, detail string) error {
 		return errs.E(errs.Invalid, errs.CodeValidation, detail, errs.WithFields(errs.FieldError{Pointer: ptr, Code: errs.CodeValidation, Detail: detail}))
 	}
@@ -229,7 +268,104 @@ func (s *Server) parseDownloadRequest(w http.ResponseWriter, r *http.Request) (d
 	if in.IncludePrereleases != nil {
 		b.IncludePrereleases = *in.IncludePrereleases
 	}
+	if err := rangeSyntax(in, &b); err != nil {
+		return in, b, nil, err
+	}
 	return in, b, body, nil
+}
+
+// maxVersionBound is the longest bound of a range, the longest version a row of the queue holds (R-CUR-011).
+const maxVersionBound = 256
+
+// rangeSyntax reads a package's range of versions (R-CUR-010, Q-CUR-190): a bound names a version of at most 256 bytes, and only a
+// package's bulk has one. Whether the format ranks the bounds is checked against the repository's format (downloadRange).
+func rangeSyntax(in downloadRequest, b *downloadBounds) error {
+	for _, f := range []struct {
+		ptr string
+		v   *string
+	}{{"/fromVersion", in.FromVersion}, {"/toVersion", in.ToVersion}} {
+		if f.v == nil {
+			continue
+		}
+		if in.Level != string(queue.LevelPackage) {
+			return rangeField(errs.Invalid, errs.CodeValidation, f.ptr, errs.CodeValidation,
+				"A range of versions bounds a download of every version of one package; a version or a sub-section has none.")
+		}
+		if v := strings.TrimSpace(*f.v); v == "" || len(v) > maxVersionBound {
+			return rangeField(errs.Invalid, errs.CodeValidation, f.ptr, "out_of_range", "A bound of the range names a version of 1 to 256 bytes.")
+		}
+	}
+	if in.FromVersion != nil {
+		v := strings.TrimSpace(*in.FromVersion)
+		b.FromVersion = &v
+	}
+	if in.ToVersion != nil {
+		v := strings.TrimSpace(*in.ToVersion)
+		b.ToVersion = &v
+	}
+	if in.ToInclusive != nil {
+		b.ToInclusive = *in.ToInclusive
+	}
+	return nil
+}
+
+func rangeField(kind errs.Kind, code, ptr, fieldCode, detail string) error {
+	return errs.E(kind, code, detail, errs.WithFields(errs.FieldError{Pointer: ptr, Code: fieldCode, Detail: detail}))
+}
+
+// versionOrder is the order a range of the format's versions is read by (Q-CUR-190): the registered format's view adapter, whose
+// Compare and sort key order every list of the format, and its canon (R-CUR-006). ok is false for a format without a view adapter.
+// The format host's planner builds the same order (formathost.rangeOrder).
+func versionOrder(format string) (queue.Order, bool) {
+	f, ok := formats.Lookup(format)
+	if !ok || f.View() == nil {
+		return queue.Order{}, false
+	}
+	o := queue.Order{View: f.View()}
+	if c := f.Descriptor().VersionCanon; c != nil {
+		o.Canon = c
+	}
+	return o, true
+}
+
+// downloadRange checks a package's range of versions in the repository's format and writes its bounds in the format's canonical form
+// (R-CUR-010, R-CUR-006, Q-CUR-192): a bound the format does not rank (a string that is no version, an OCI tag such as latest) answers
+// 422 invalid_version at its pointer; a range that holds no version answers 422 validation_failed at /toVersion with the field code
+// out_of_range and a sentence. The order is the format's view adapter's,
+// the order of every list of the format; a bound need not be a version the upstream has.
+func downloadRange(format string, b *downloadBounds) error {
+	if b.FromVersion == nil && b.ToVersion == nil {
+		return nil
+	}
+	o, ok := versionOrder(format)
+	if !ok {
+		return rangeField(errs.Invalid, errs.CodeValidation, "/fromVersion", errs.CodeValidation,
+			"The format "+format+" has no order of versions to bound a download by.")
+	}
+	for _, f := range []struct {
+		ptr, name string
+		v         **string
+	}{{"/fromVersion", "fromVersion", &b.FromVersion}, {"/toVersion", "toVersion", &b.ToVersion}} {
+		if *f.v == nil {
+			continue
+		}
+		c, ok := o.Rank(**f.v)
+		if !ok {
+			return rangeField(errs.Unprocessable, errs.CodeInvalidVersion, f.ptr, errs.CodeInvalidVersion,
+				f.name+" "+strconv.Quote(**f.v)+" is no version the format "+format+
+					" orders: a range is bounded by versions, not by a tag such as latest or by a range expression.")
+		}
+		*f.v = &c
+	}
+	if r := b.versionRange(); r.Empty(o) {
+		why := "lies below fromVersion " + r.From
+		if o.View.Compare(r.From, r.To) == 0 {
+			why = "equals fromVersion " + r.From + " and is excluded (toInclusive false)"
+		}
+		return rangeField(errs.Unprocessable, errs.CodeValidation, "/toVersion", "out_of_range",
+			"toVersion "+r.To+" "+why+": the range holds no version.")
+	}
+	return nil
 }
 
 // mayStart decides who starts a download (R-CUR-005, R-CUR-010): one version the rules deliver, whoever may populate the repository;
@@ -264,6 +400,9 @@ func (s *Server) PreviewRemoteDownload(w http.ResponseWriter, r *http.Request, p
 	}
 	if err == nil {
 		_, err = s.mayStart(ctx, acc, t, in)
+	}
+	if err == nil {
+		err = downloadRange(t.Format, &b)
 	}
 	var out map[string]any
 	if err == nil {
@@ -300,6 +439,9 @@ func (s *Server) StartRemoteDownload(w http.ResponseWriter, r *http.Request, pro
 	var charged bool
 	if err == nil {
 		charged, err = s.mayStart(ctx, acc, t, in)
+	}
+	if err == nil {
+		err = downloadRange(t.Format, &b)
 	}
 	if err == nil && in.Level == string(queue.LevelSection) {
 		err = s.sectionOffered(ctx, t, in.Section)
@@ -361,7 +503,7 @@ func (s *Server) startDownload(ctx context.Context, r *http.Request, tx meta.Tx,
 		details["subject"] = subject
 		bulk, err := svc.StartBulk(ctx, tx, queue.BulkSpec{
 			RepoID: t.ID, Level: queue.Level(in.Level), Subject: subject, MaxVersions: b.MaxVersions, MaxBytes: b.MaxBytes,
-			IncludePrereleases: b.IncludePrereleases, StartedBy: callerID(ctx),
+			IncludePrereleases: b.IncludePrereleases, Range: b.versionRange(), StartedBy: callerID(ctx),
 		})
 		if err != nil {
 			return Outcome{}, err
@@ -496,7 +638,7 @@ func (s *Server) bulkView(ctx context.Context, acc *edge.Access, t downloadTarge
 	}
 	return map[string]any{
 		"id": b.ID, "level": b.Level, "subject": b.Subject, "origin": origin, "state": b.State,
-		"bounds":        downloadBounds{MaxVersions: b.MaxVersions, MaxBytes: b.MaxBytes, IncludePrereleases: b.IncludePrereleases},
+		"bounds":        boundsOf(b),
 		"versionsFound": b.VersionsFound, "versionsQueued": b.VersionsQueued, "failure": failureView(b.Failure),
 		"startedBy": s.starter(ctx, acc, t, b.StartedBy), "createdAt": b.CreatedAt.UTC(), "finishedAt": nullTime(b.FinishedAt), "rows": rows,
 	}
@@ -899,7 +1041,7 @@ const (
 // the bulk's maxVersions, a sub-section by its level's count where the upstream tells it. Without the catalogue a version is one version
 // of unknown size and a package is not counted.
 func (s *Server) preview(ctx context.Context, t downloadTarget, in downloadRequest, b downloadBounds) (map[string]any, error) {
-	out := map[string]any{"bounds": b, "stored": 0, "notDelivered": 0, "sizeUnknown": 0, "note": nil}
+	out := map[string]any{"bounds": b, "stored": 0, "notDelivered": 0, "sizeUnknown": 0, "notVersions": 0, "note": nil}
 	repoID := strconv.FormatInt(t.ID, 10)
 	eng := s.o.RemoteDownloads.Catalogue
 	if in.Level == string(queue.LevelSection) {
@@ -929,30 +1071,18 @@ func (s *Server) preview(ctx context.Context, t downloadTarget, in downloadReque
 	if err != nil {
 		return nil, err
 	}
-	rq := discover.VersionsRequest{Limit: b.MaxVersions}
+	var info discover.PackageInfo
+	var picked []discover.VersionFacts
+	notVersions := 0
 	if in.Level == string(queue.LevelVersion) {
-		rq.Filter = in.Version // a substring: the exact version is picked below
+		info, picked, err = previewVersion(ctx, eng, ct, t.Format, in, b.MaxVersions)
+	} else {
+		info, picked, notVersions, err = previewPackage(ctx, eng, ct, t.Format, in.Name, b)
 	}
-	info, err := eng.Versions(ctx, ct, in.Name, rq)
 	if err != nil {
 		return nil, err
 	}
-	var picked []discover.VersionFacts
-	for _, v := range info.Versions {
-		switch {
-		case in.Level == string(queue.LevelVersion):
-			cv, ok := catalog.Default().CanonicalVersion(t.Format, in.Version)
-			if v.Version == in.Version || (ok && v.Version == cv) {
-				picked = append(picked, v)
-			}
-		case !b.IncludePrereleases && slices.Contains(v.Flags, "prerelease"):
-		case len(picked) < b.MaxVersions:
-			picked = append(picked, v)
-		}
-	}
-	if in.Level == string(queue.LevelVersion) && len(picked) == 0 {
-		return nil, errs.E(errs.NotFound, errs.CodeCatalogueNotFound, "The upstream does not list "+in.Name+" "+in.Version+".")
-	}
+	out["notVersions"] = notVersions
 	var stored map[string][]string
 	if s.o.RemoteDownloads.Stored != nil {
 		if stored, err = s.o.RemoteDownloads.Stored.Versions(ctx, t.ID, []string{info.Name}); err != nil {
@@ -986,6 +1116,71 @@ func (s *Server) preview(ctx context.Context, t downloadTarget, in downloadReque
 		out["note"] = previewNoteMoreVersions
 	}
 	return out, nil
+}
+
+// previewVersion is the version a preview of one version names, by one catalogue call of a page of limit filtered by the version.
+func previewVersion(ctx context.Context, eng *catalogue.Engine, ct catalogue.Target, format string, in downloadRequest, limit int) (
+	discover.PackageInfo, []discover.VersionFacts, error,
+) {
+	// The filter is a substring: the exact version is picked below.
+	info, err := eng.Versions(ctx, ct, in.Name, discover.VersionsRequest{Limit: limit, Filter: in.Version})
+	if err != nil {
+		return info, nil, err
+	}
+	cv, ok := catalog.Default().CanonicalVersion(format, in.Version)
+	var picked []discover.VersionFacts
+	for _, v := range info.Versions {
+		if v.Version == in.Version || (ok && v.Version == cv) {
+			picked = append(picked, v)
+		}
+	}
+	if len(picked) == 0 {
+		return info, nil, errs.E(errs.NotFound, errs.CodeCatalogueNotFound, "The upstream does not list "+in.Name+" "+in.Version+".")
+	}
+	return info, picked, nil
+}
+
+// The pages a preview of a package with a range reads (Q-CUR-191): the versions of a range may lie past the newest maxVersions, so the
+// preview pages on, at least previewRangePage versions a page and at most previewRangePages pages; without a range it reads the one
+// page of the bulk's maxVersions (Q-CUR-65).
+const (
+	previewRangePage  = 1000
+	previewRangePages = 10
+)
+
+// previewPackage counts the versions a package's bulk takes, as its planner takes them (queue.Picker, Q-CUR-191): the range, then the
+// pre-releases, then the newest maxVersions. info is the last page read; Done says whether the preview read to the list's end.
+// notVersions counts the strings the range left out because the format does not rank them (Q-CUR-192).
+func previewPackage(ctx context.Context, eng *catalogue.Engine, ct catalogue.Target, format, name string, b downloadBounds) (
+	info discover.PackageInfo, picked []discover.VersionFacts, notVersions int, err error,
+) {
+	pick := queue.Picker{Selection: queue.Selection{Range: b.versionRange(), IncludePrereleases: b.IncludePrereleases, Max: b.MaxVersions}}
+	rq := discover.VersionsRequest{Limit: b.MaxVersions}
+	pages := 1
+	if pick.Range.Set() {
+		pick.Order, _ = versionOrder(format) // downloadRange found it
+		rq.Limit, pages = max(b.MaxVersions, previewRangePage), previewRangePages
+	}
+	for range pages {
+		if info, err = eng.Versions(ctx, ct, name, rq); err != nil {
+			return info, nil, 0, err
+		}
+		for _, v := range info.Versions {
+			take, full := pick.Take(v.Version, slices.Contains(v.Flags, "prerelease"))
+			if full {
+				info.Done = true // the bound is reached: what follows is not the bulk's
+				return info, picked, pick.NotVersions, nil
+			}
+			if take {
+				picked = append(picked, v)
+			}
+		}
+		if info.Done || len(info.Cursor) == 0 {
+			break
+		}
+		rq.Cursor = info.Cursor
+	}
+	return info, picked, pick.NotVersions, nil
 }
 
 // previewWithoutCatalogue is the preview of a process without the catalogue: a version of unknown size, a package not counted.

@@ -1,8 +1,22 @@
 import { describe, it } from 'vitest';
 import { DeliveryRulesApi } from '../../api/delivery-rules-api';
 import { FilesApi } from '../../api/files-api';
+import { ApiError } from '../../api/problem';
 import { RemoteDownloadsApi } from '../../api/remote-downloads-api';
-import { click, expectState, failAlways, failNext, fieldRefusal, fill, openDialog, serverFailure, submit } from '../../testing/states';
+import { FakeRemoteDownloadsApi } from '../../api/testing/fakes-remote-downloads';
+import {
+  REQUEST_ID,
+  click,
+  expectState,
+  failAlways,
+  failNext,
+  fieldRefusal,
+  fill,
+  openDialog,
+  serverFailure,
+  submit,
+  until,
+} from '../../testing/states';
 import { FolderDialog } from './content/folder-dialog';
 import { DeliveryRulesDialog } from './upstream/delivery-rules-dialog';
 import { DownloadPreviewDialog } from './upstream/download-preview-dialog';
@@ -70,6 +84,32 @@ describe('dialogs of repositories in a browser (R-CUR-005, R-CUR-010, R-CUR-015,
         setup: (get) => failAlways(get(RemoteDownloadsApi), 'preview', serverFailure()),
       }),
     );
+  });
+
+  it('a download ahead, the upper bound of its range refused: the sentence under the field and the whole answer in the notice', async () => {
+    await expectState('download-preview-range-refused', async () => {
+      const { panel } = await openDialog(DownloadPreviewDialog, {
+        width: '36rem',
+        data: {
+          repository: 'platform-engineering/npmjs-remote',
+          request: { level: 'package', name: '@platform-engineering/kubernetes-infrastructure-operators' },
+          title: 'Every version of @platform-engineering/kubernetes-infrastructure-operators',
+        },
+        setup: (get) => {
+          const detail = 'toVersion 17.0.0 lies below fromVersion 18.6.0-rc.12: the range holds no version.';
+          (get(RemoteDownloadsApi) as FakeRemoteDownloadsApi).previewError = (r) =>
+            r.toVersion
+              ? new ApiError(422, { code: 'validation_failed', status: 422, detail, requestId: REQUEST_ID, errors: [{ pointer: '/toVersion', code: 'out_of_range', detail }] }, REQUEST_ID)
+              : null;
+        },
+      });
+      for (const [id, value] of [['#preview-from-version', '18.6.0-rc.12'], ['#preview-to-version', '17.0.0']] as const) {
+        const field = panel.querySelector<HTMLInputElement>(id)!;
+        field.value = value;
+        field.dispatchEvent(new Event('change'));
+      }
+      await until(() => !!panel.querySelector('#preview-to-version-error'), 'the refusal of the upper bound');
+    });
   });
 
   it('New folder, failed: the error notice with its request ID', async () => {

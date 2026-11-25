@@ -76,7 +76,7 @@ function failure(over: Record<string, unknown>): Record<string, unknown> {
 /** The rows of a queue while a cache is built: newest first within running and waiting first, as the API orders them. */
 export function queueRows(): Record<string, unknown>[] {
   return [
-    row({ id: '0193a1b2-0000-7000-8000-000000000001', name: '@acme/design-tokens', version: '4.2.0', origin: 'bulk', bulk: BULK, state: 'running', attempts: 1, files: 1, stored: 0, startedAt: at(-1) }),
+    row({ id: '0193a1b2-0000-7000-8000-000000000001', name: '@acme/design-tokens', version: '5.4.2', origin: 'bulk', bulk: BULK, state: 'running', attempts: 1, files: 1, stored: 0, startedAt: at(-1) }),
     row({
       id: '0193a1b2-0000-7000-8000-000000000002',
       name: '@customer-portal/release-candidates-for-the-frontend-design-system-components',
@@ -165,13 +165,17 @@ function page(items: Record<string, unknown>[], more: boolean): Record<string, u
   return { items, nextCursor: more ? 'more' : null, counts: { waiting: count('waiting') + 10, running: count('running'), failed: count('failed'), done: count('done') + 228 } };
 }
 
+/** The bounds of a bulk without a range of versions. */
+const noRange = { maxVersions: 100, maxBytes: 107374182400, includePrereleases: true, fromVersion: null, toVersion: null, toInclusive: true };
+
+/** A bulk of a package asked for a range of versions (Q-CUR-193): its line says "From 5.0.0 up to 5.4.7". */
 const bulk = {
   id: BULK,
   level: 'package',
   subject: '@acme/design-tokens',
   origin: 'person',
   state: 'queued',
-  bounds: { maxVersions: 100, maxBytes: 107374182400, includePrereleases: true },
+  bounds: { ...noRange, fromVersion: '5.0.0', toVersion: '5.4.7' },
   versionsFound: 38,
   versionsQueued: 38,
   failure: null,
@@ -186,6 +190,8 @@ const failedBulk = {
   ...bulk,
   id: BULK_FAILED,
   subject: '@customer-portal/release-candidates-for-the-frontend-design-system-components',
+  // The versions below one: its line says "Below 3.0.0".
+  bounds: { ...noRange, toVersion: '3.0.0', toInclusive: false },
   state: 'failed',
   versionsFound: 0,
   versionsQueued: 0,
@@ -210,6 +216,7 @@ const expandingBulk = {
   id: BULK_EXPANDING,
   level: 'section',
   subject: '@acme',
+  bounds: noRange,
   state: 'expanding',
   versionsFound: 0,
   versionsQueued: 0,
@@ -226,6 +233,7 @@ const heldBulk = {
   ...bulk,
   id: BULK,
   subject: '@types/node',
+  bounds: noRange,
   versionsFound: 315,
   versionsQueued: 315,
   rows: { waiting: 206, done: 105 },

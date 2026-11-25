@@ -286,9 +286,25 @@ const preview = {
   sizeUnknown: 212,
   stored: 2,
   notDelivered: 210,
-  bounds: { maxVersions: 10000, maxBytes: 107374182400, includePrereleases: true },
+  notVersions: 0,
+  bounds: { maxVersions: 10000, maxBytes: 107374182400, includePrereleases: true, fromVersion: null, toVersion: null, toInclusive: true },
   note: 'sizes_unannounced',
 };
+
+/** The preview of what the dialog asks: a range of versions (Q-CUR-190) counts the 37 versions between its bounds and keeps them. */
+function previewOf(body: Record<string, unknown> | null): Record<string, unknown> {
+  const from = (body?.['fromVersion'] as string | undefined) ?? null;
+  const to = (body?.['toVersion'] as string | undefined) ?? null;
+  if (!from && !to) return preview;
+  return {
+    ...preview,
+    versions: 37,
+    sizeUnknown: 37,
+    stored: 2,
+    notDelivered: 35,
+    bounds: { ...preview.bounds, fromVersion: from, toVersion: to, toInclusive: body?.['toInclusive'] !== false },
+  };
+}
 
 /** Every call of the tab answered as an npm remote in mode `onlyAllowed` answers it; `over` changes one call's answer. */
 async function answerNpm(p: Page, over: { caps?: (r: Route) => Promise<void>; search?: (r: Route) => Promise<void>; pkg?: (r: Route) => Promise<void> } = {}): Promise<void> {
@@ -308,7 +324,7 @@ async function answerNpm(p: Page, over: { caps?: (r: Route) => Promise<void>; se
     return json(r, { items: mine ? myRequests() : openRequests(), nextCursor: null });
   });
   await p.route(rulesUrl, (r) => (r.request().method() === 'GET' ? json(r, { items: rules(), nextCursor: null }) : r.fallback()));
-  await p.route(previewUrl, (r) => json(r, preview));
+  await p.route(previewUrl, (r) => json(r, previewOf(r.request().postDataJSON() as Record<string, unknown> | null)));
 }
 
 /** A query of the tab's address, the page reloaded with the answers in place. */
@@ -351,6 +367,14 @@ export async function* upstreamTabWalk(p: Page): AsyncGenerator<string> {
     await every.click();
     await expect(p.locator('quader-download-preview-dialog [data-testid="download-preview"]')).toBeVisible();
     yield 'preview';
+    // A range of versions (Q-CUR-190, Q-CUR-194): from a version the package lists, below one typed; the preview counts it again.
+    await p.locator('#preview-from-version').fill('4.80.1');
+    await p.locator('#preview-from-version').press('Tab');
+    await p.locator('#preview-to-version').fill('5.0.0');
+    await p.locator('#preview-to-version').press('Tab');
+    await p.locator('quader-download-preview-dialog select.to-inclusive').selectOption('below');
+    await expect(p.locator('quader-download-preview-dialog [data-testid="download-preview"] dd').first()).toHaveText('37');
+    yield 'preview-range';
     await p.keyboard.press('Escape');
     await expect(p.locator('quader-download-preview-dialog')).toBeHidden();
   }

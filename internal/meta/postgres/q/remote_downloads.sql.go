@@ -87,10 +87,12 @@ func (q *Queries) RemoteDownloadBulkGet(ctx context.Context, arg RemoteDownloadB
 }
 
 const remoteDownloadBulkInsert = `-- name: RemoteDownloadBulkInsert :one
-INSERT INTO remote_download_bulks (id, repo_id, level, subject, max_versions, max_bytes, include_prereleases, state, started_by)
+INSERT INTO remote_download_bulks (id, repo_id, level, subject, max_versions, max_bytes, include_prereleases, state, started_by,
+                                   from_version, to_version, to_inclusive)
 VALUES ($1::text::uuid, $2::bigint, $3::text, $4::text,
         $5::int, $6::bigint, $7::bool, 'expanding',
-        NULLIF($8::text, '')::uuid)
+        NULLIF($8::text, '')::uuid, NULLIF($9::text, ''), NULLIF($10::text, ''),
+        $11::bool)
 RETURNING to_jsonb(remote_download_bulks.*)::text AS doc
 `
 
@@ -103,8 +105,12 @@ type RemoteDownloadBulkInsertParams struct {
 	MaxBytes           int64
 	IncludePrereleases bool
 	StartedBy          string
+	FromVersion        string
+	ToVersion          string
+	ToInclusive        bool
 }
 
+// A person's bulk with its bounds; from_version and to_version ” are no bound on that side (R-CUR-010, Q-CUR-193).
 func (q *Queries) RemoteDownloadBulkInsert(ctx context.Context, arg RemoteDownloadBulkInsertParams) (string, error) {
 	row := q.db.QueryRow(ctx, remoteDownloadBulkInsert,
 		arg.ID,
@@ -115,6 +121,9 @@ func (q *Queries) RemoteDownloadBulkInsert(ctx context.Context, arg RemoteDownlo
 		arg.MaxBytes,
 		arg.IncludePrereleases,
 		arg.StartedBy,
+		arg.FromVersion,
+		arg.ToVersion,
+		arg.ToInclusive,
 	)
 	var doc string
 	err := row.Scan(&doc)

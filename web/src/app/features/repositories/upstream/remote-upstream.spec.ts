@@ -296,6 +296,56 @@ describe('The tab Upstream of a remote repository', () => {
     expect(TestBed.inject(Router).url).toBe(`/projects/web/repositories/npmjs/downloads?bulk=${downloads.bulks.at(-1)!.id}`);
   });
 
+  it('R-CUR-010 the preview takes a range of versions: the opened package\'s versions offered, a refused bound said at its field, the bulk started with the range', async () => {
+    const { root, fixture, downloads } = await open({ manage: true, url: '/projects/web/repositories/npmjs/upstream?name=lodash' });
+    downloads.previewError = (r) =>
+      r.fromVersion === 'latest'
+        ? new ApiError(
+            422,
+            {
+              code: 'invalid_version',
+              detail: 'fromVersion "latest" is no version the format npm orders.',
+              errors: [{ pointer: '/fromVersion', code: 'invalid_version', detail: 'fromVersion "latest" is no version the format npm orders.' }],
+            },
+            'rid-422',
+          )
+        : null;
+    button(root.querySelector('quader-upstream-package')!, 'Download every version').click();
+    await settle(fixture);
+    const d = dialog();
+    // The versions the opened package lists are the fields' suggestions; an empty field is no bound and says which end it leaves open.
+    expect([...d.querySelectorAll<HTMLOptionElement>('#preview-versions option')].map((o) => o.value)).toEqual(['4.17.21', '4.17.20']);
+    const from = d.querySelector<HTMLInputElement>('#preview-from-version')!;
+    const to = d.querySelector<HTMLInputElement>('#preview-to-version')!;
+    expect(from.placeholder).toBe('The oldest');
+    expect(to.placeholder).toBe('The newest');
+    expect(from.getAttribute('list')).toBe('preview-versions');
+    // A bound the server refuses is said at its field; the whole answer stays in the notice, and the start waits for a valid preview.
+    from.value = 'latest';
+    from.dispatchEvent(new Event('change'));
+    await settle(fixture);
+    expect(text(d.querySelector('#preview-from-version-error')!)).toContain('This is no version of the format.');
+    expect(from.getAttribute('aria-invalid')).toBe('true');
+    expect(text(d)).toContain('rid-422');
+    expect(button(d, 'Start download').disabled).toBe(true);
+    // Any version may be typed, listed or not; "below" leaves the upper version out. Each change is previewed again.
+    from.value = ' 4.0.0 ';
+    from.dispatchEvent(new Event('change'));
+    to.value = '4.17.21';
+    to.dispatchEvent(new Event('change'));
+    await settle(fixture);
+    const inclusive = d.querySelector<HTMLSelectElement>('select.to-inclusive')!;
+    inclusive.value = 'below';
+    inclusive.dispatchEvent(new Event('change'));
+    await settle(fixture);
+    expect(d.querySelector('#preview-from-version-error')).toBeNull();
+    expect(downloads.previews.at(-1)).toEqual({ level: 'package', name: 'lodash', fromVersion: '4.0.0', toVersion: '4.17.21', toInclusive: false });
+    button(d, 'Start download').click();
+    await settle(fixture);
+    expect(downloads.starts.at(-1)).toEqual({ level: 'package', name: 'lodash', fromVersion: '4.0.0', toVersion: '4.17.21', toInclusive: false });
+    await expectAccessible(root);
+  });
+
   it('R-CUR-018 R-CUR-009 a reader in mode onlyAllowed reads the withheld hits, its own requests, and requests a version; no rules, no bulk', async () => {
     const { root, fixture, requests } = await open({
       manage: false,

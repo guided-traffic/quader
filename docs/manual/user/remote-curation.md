@@ -86,6 +86,13 @@ For Maintainers, Owners and administrators the tab adds:
 - On a package: **Allow every version** and **Block every version** (future versions included) and **Download every version…**; on a
   level: **Download this sub-section…**. Both downloads open a preview of how many versions and bytes they take, how many are stored and
   how many are not delivered here, with bounds you may lower, and **Start download**.
+- **Download every version…** also takes a range of the package's versions: **From version** (that version and every newer one) and
+  **Up to version** with **included** or **below it** (that version and every older one, or only the older ones). Leave a field empty
+  for no bound on that side. The fields offer the versions the package lists, and you may type any version, also one the upstream does
+  not have yet. The versions are compared in the format's own order, the order the package's list shows; a tag that names no version
+  (an image's `latest` or `main`) lies outside every range, and the preview says how many it leaves out. The range is applied first,
+  then **Include pre-releases**, then **At most this many versions** (the newest of the range) and the size. The tab **Downloads**
+  says the range on the bulk's line ("From 5.0.0 up to 5.4.7").
 - **Rules** lists the repository's rules with their notes, adds a rule for a sub-section, and removes rules.
 
 A reader who may fetch a version through the repository sees **Download** on a delivered version too; it is charged to their download

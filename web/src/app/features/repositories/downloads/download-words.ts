@@ -7,6 +7,30 @@ import {
   RemoteDownloadState,
 } from '../../../api/remote-downloads-api';
 
+/** A bulk's range of versions as the API answers it in its bounds (R-CUR-010, Q-CUR-193). */
+export interface VersionRange {
+  readonly fromVersion: string | null;
+  readonly toVersion: string | null;
+  readonly toInclusive: boolean;
+}
+
+/**
+ * What a bulk of a package was asked for by version, in words (Q-CUR-193): "From 5.0.0 up to 5.4.7", "From 5.0.0, below 6.0.0",
+ * "Up to 5.4.7", "Below 6.0.0", "From 5.0.0"; null for a bulk without a range.
+ */
+export function versionRangeText(r: VersionRange): string | null {
+  const from = r.fromVersion;
+  const to = r.toVersion;
+  if (from && to) {
+    return r.toInclusive
+      ? $localize`:@@downloads.range.from-up-to:From ${from}:from: up to ${to}:to:`
+      : $localize`:@@downloads.range.from-below:From ${from}:from:, below ${to}:to:`;
+  }
+  if (from) return $localize`:@@downloads.range.from:From ${from}:from:`;
+  if (to) return r.toInclusive ? $localize`:@@downloads.range.up-to:Up to ${to}:to:` : $localize`:@@downloads.range.below:Below ${to}:to:`;
+  return null;
+}
+
 /** A row's state as the word of its badge (Q-UI-560, Q-UI-564). */
 export function downloadStateText(state: RemoteDownloadState): string {
   switch (state) {

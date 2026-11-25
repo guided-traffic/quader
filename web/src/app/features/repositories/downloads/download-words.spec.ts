@@ -3,7 +3,7 @@ import { clearTranslations, loadTranslations } from '@angular/localize';
 import { downloadFailure } from '../../../api/testing/fakes-remote-downloads';
 import { RemoteDownloadFailure } from '../../../api/remote-downloads-api';
 import { DOWNLOAD_FAILURE_CLASSES } from '../../../api/remote-downloads-api';
-import { failureSentence } from './download-words';
+import { failureSentence, versionRangeText } from './download-words';
 
 // The sentence of a failure is the screen's, written from its code and its members, never the server's detail (R-CUR-011, R-CUR-018).
 // Unit tier, milliseconds: pure functions over a failure of a few hundred bytes.
@@ -96,5 +96,17 @@ describe('The sentence of a download failure', () => {
       clearTranslations();
     }
     expect(says({ class: 'bound', code: 'bulk_max_versions' })).toBe('The bulk download queued as many versions as its limit allows and adds no more.');
+  });
+});
+
+describe('The range of a bulk in words', () => {
+  it('R-CUR-010 a bulk says what it was asked for by version: both bounds, each alone, included or below, none', () => {
+    const r = (fromVersion: string | null, toVersion: string | null, toInclusive = true) => versionRangeText({ fromVersion, toVersion, toInclusive });
+    expect(r('5.0.0', '5.4.7')).toBe('From 5.0.0 up to 5.4.7');
+    expect(r('5.0.0', '6.0.0', false)).toBe('From 5.0.0, below 6.0.0');
+    expect(r('5.0.0', null)).toBe('From 5.0.0');
+    expect(r(null, '5.4.7')).toBe('Up to 5.4.7');
+    expect(r(null, '6.0.0', false)).toBe('Below 6.0.0');
+    expect(r(null, null)).toBeNull();
   });
 });

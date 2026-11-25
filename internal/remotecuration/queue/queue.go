@@ -85,6 +85,15 @@ type Bulk struct {
 	RequestID string `json:"request_id"`
 	// Ticket is the asker's charge the rows of a request's examination carry (R-CUR-015); null for system work.
 	Ticket json.RawMessage `json:"ticket"`
+	// FromVersion, ToVersion and ToInclusive are the bulk's range of versions (R-CUR-010, Q-CUR-190): "" is no bound on that side.
+	FromVersion string `json:"from_version"`
+	ToVersion   string `json:"to_version"`
+	ToInclusive bool   `json:"to_inclusive"`
+}
+
+// Range is the bulk's range of versions.
+func (b Bulk) Range() Range {
+	return Range{From: b.FromVersion, To: b.ToVersion, ToInclusive: b.ToInclusive}
 }
 
 // RowOrigin is the origin of the rows the bulk queues: bulk unless a request or an allow started it.

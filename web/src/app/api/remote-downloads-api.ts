@@ -28,7 +28,11 @@ export type RemoteDownloadBulk = Schema<'RemoteDownloadBulk'>;
 /** One page of a repository's bulk downloads, newest first (Q-CUR-168). */
 export type RemoteDownloadBulkPage = Schema<'RemoteDownloadBulkPage'>;
 /** A download ahead of a client: one version, every version of a package, or a sub-section, with a bulk's bounds (R-CUR-010). */
-export type RemoteDownloadRequest = Omit<Schema<'RemoteDownloadRequest'>, 'includePrereleases'> & { readonly includePrereleases?: boolean };
+export type RemoteDownloadRequest = Omit<Schema<'RemoteDownloadRequest'>, 'includePrereleases' | 'toInclusive'> & {
+  readonly includePrereleases?: boolean;
+  /** Whether `toVersion` itself is downloaded; the server's default is true (Q-CUR-190). */
+  readonly toInclusive?: boolean;
+};
 /** What a download ahead would fetch, before it is started (R-CUR-010). */
 export type RemoteDownloadPreview = Schema<'RemoteDownloadPreview'>;
 /** The answer of a start: the row of one version, or the bulk (R-CUR-010). */

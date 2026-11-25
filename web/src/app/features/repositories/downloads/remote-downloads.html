@@ -80,6 +80,9 @@
             <a [routerLink]="[]" [queryParams]="bulkLink(b.id)" queryParamsHandling="merge" [attr.aria-label]="bulkLinkLabel(b)">{{ bulkTitle(b) }}</a>
             <span class="secondary"
               ><span class="dot-separated">
+                @if (bulkRange(b); as range) {
+                  <span>{{ range }}</span>
+                }
                 @if (startedBySelf(b.startedBy)) {
                   <span i18n="@@downloads.bulk.started-by-you">Started by you</span>
                 } @else if (starterText(b.startedBy); as who) {
@@ -221,6 +224,9 @@
         }
       </p>
       <p class="bulk-facts dot-separated muted">
+        @if (bulkRange(b); as range) {
+          <span>{{ range }}</span>
+        }
         <span>{{ bulkBounds(b) }}</span>
         @if (startedBySelf(b.startedBy)) {
           <span i18n="@@downloads.bulk.started-by-you">Started by you</span>

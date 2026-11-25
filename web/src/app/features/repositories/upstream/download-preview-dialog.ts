@@ -2,6 +2,7 @@ import { Component, computed, inject, resource, signal } from '@angular/core';
 import { newIdempotencyKey } from '../../../api/client';
 import { ApiError } from '../../../api/problem';
 import { RemoteDownloadPreview, RemoteDownloadRequest, RemoteDownloadsApi } from '../../../api/remote-downloads-api';
+import { UpstreamCatalogueApi } from '../../../api/upstream-catalogue-api';
 import { Checkbox } from '../../../shared/ui/checkbox';
 import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle } from '../../../shared/ui/dialog';
 import { ErrorNotice } from '../../../shared/error-notice';
@@ -27,6 +28,28 @@ export function previewNoteText(code: PreviewNote): string {
   }
 }
 
+/** The pointers of a package's range of versions (R-CUR-010, Q-CUR-190). */
+export type RangePointer = '/fromVersion' | '/toVersion';
+
+/**
+ * The sentence of a refused bound, in the screen's language (R-UI-214, Q-CUR-192): the server names the field and its code, the screen
+ * says what to type; the server's own sentence stays in the error notice under the facts.
+ */
+export function rangeErrorText(error: ApiError | null, pointer: RangePointer): string | null {
+  const problem = error?.fieldErrors.get(pointer);
+  if (!problem) return null;
+  switch (problem.code) {
+    case 'invalid_version':
+      return $localize`:@@upstream.preview.range.not-a-version:This is no version of the format. Type a version as the format's clients name it; a tag such as latest has no place in the order of versions.`;
+    case 'out_of_range':
+      return pointer === '/toVersion'
+        ? $localize`:@@upstream.preview.range.empty:No version lies between the two versions. Type an upper version above the lower one.`
+        : $localize`:@@upstream.preview.range.too-long:A version has at most 256 characters.`;
+    default:
+      return problem.detail ?? problem.code;
+  }
+}
+
 export interface DownloadPreviewData {
   readonly repository: string;
   /** A package's or a sub-section's bulk, without bounds: the preview answers the installation's. */
@@ -45,8 +68,11 @@ function count(n: number): string {
 /**
  * The preview of a bulk download (remote-curation.md R-CUR-010, R-CUR-018): what will be fetched (versions, packages, bytes, the
  * versions whose size the upstream does not tell), what is stored already and what is not delivered here (fetched for examination),
- * the bounds as fields with their values, which may only be lowered, and **Start download**. A changed bound is previewed again
- * before the start. Closes with the started bulk's ID, which expands into rows while the tab Downloads shows it (Q-CUR-168).
+ * the bounds as fields with their values, which may only be lowered, and **Start download**. A package's bulk takes a range of its
+ * versions (Q-CUR-190 to Q-CUR-194): **From version** and **Up to version** with **included** or **below**, empty for no bound,
+ * offered the versions the opened package lists (its first page) and open to any version typed. A changed bound is previewed again
+ * before the start; a bound the server refuses says so at its field, with the whole answer in the error notice (R-UI-216). Closes with
+ * the started bulk's ID, which expands into rows while the tab Downloads shows it (Q-CUR-168).
  */
 @Component({
   selector: 'quader-download-preview-dialog',
@@ -97,12 +123,81 @@ function count(n: number): string {
                 <span class="secondary" i18n="@@upstream.preview.not-delivered-hint">Fetched for examination: stored and scanned, not delivered until a rule allows them.</span>
               }
             </dd>
+            @if (p.notVersions > 0) {
+              <dt i18n="@@upstream.preview.not-versions">Left out, no version</dt>
+              <dd>
+                {{ number(p.notVersions) }}
+                <span class="secondary" i18n="@@upstream.preview.not-versions-hint">Tags such as latest name no version and lie outside every range of versions.</span>
+              </dd>
+            }
           </dl>
           @if (p.note; as code) {
             <p class="hint">{{ noteText(code) }}</p>
           }
+        } @else {
+          <p role="status" i18n="@@upstream.preview.loading">Reading what the download would fetch.</p>
+        }
+        @if (ceilingBounds(); as top) {
           <fieldset class="plain bounds">
             <legend class="field-label" i18n="@@upstream.preview.bounds">Bounds</legend>
+            @if (data.request.level === 'package') {
+              <div class="bound-row">
+                <label class="field-label" for="preview-from-version" i18n="@@upstream.preview.from-version">From version</label>
+                <input
+                  id="preview-from-version"
+                  class="text-input field-w-bytes"
+                  list="preview-versions"
+                  autocomplete="off"
+                  spellcheck="false"
+                  translate="no"
+                  placeholder="The oldest"
+                  i18n-placeholder="@@upstream.preview.from-version.empty"
+                  [value]="fromVersion()"
+                  [attr.aria-invalid]="fromError() ? 'true' : null"
+                  aria-describedby="preview-from-version-error"
+                  (change)="setFrom($any($event.target).value)"
+                />
+                @if (fromError(); as text) {
+                  <p id="preview-from-version-error" class="field-error">{{ text }}</p>
+                }
+              </div>
+              <div class="bound-row">
+                <label class="field-label" for="preview-to-version" i18n="@@upstream.preview.to-version">Up to version</label>
+                <div class="to-row">
+                  <input
+                    id="preview-to-version"
+                    class="text-input field-w-bytes"
+                    list="preview-versions"
+                    autocomplete="off"
+                    spellcheck="false"
+                    translate="no"
+                    placeholder="The newest"
+                    i18n-placeholder="@@upstream.preview.to-version.empty"
+                    [value]="toVersion()"
+                    [attr.aria-invalid]="toError() ? 'true' : null"
+                    aria-describedby="preview-to-version-error"
+                    (change)="setTo($any($event.target).value)"
+                  />
+                  <select
+                    class="select-input to-inclusive"
+                    aria-label="Whether the version itself is downloaded"
+                    i18n-aria-label="@@upstream.preview.to-inclusive.label"
+                    (change)="toInclusive.set($any($event.target).value === 'included')"
+                  >
+                    <option value="included" [selected]="toInclusive()" i18n="@@upstream.preview.to-inclusive.included">included</option>
+                    <option value="below" [selected]="!toInclusive()" i18n="@@upstream.preview.to-inclusive.below">below it</option>
+                  </select>
+                </div>
+                @if (toError(); as text) {
+                  <p id="preview-to-version-error" class="field-error">{{ text }}</p>
+                }
+              </div>
+              <datalist id="preview-versions">
+                @for (v of suggestions(); track v) {
+                  <option [value]="v"></option>
+                }
+              </datalist>
+            }
             <div class="bound-row">
               <label class="field-label" for="preview-max-versions" i18n="@@upstream.preview.max-versions">At most this many versions</label>
               <input
@@ -111,9 +206,9 @@ function count(n: number): string {
                 type="number"
                 inputmode="numeric"
                 min="1"
-                [max]="topVersions(p)"
-                [value]="maxVersions() ?? p.bounds.maxVersions"
-                (change)="setVersions($any($event.target).value, p)"
+                [max]="top.maxVersions"
+                [value]="maxVersions() ?? top.maxVersions"
+                (change)="setVersions($any($event.target).value)"
               />
             </div>
             <div class="bound-row">
@@ -125,24 +220,22 @@ function count(n: number): string {
                 inputmode="decimal"
                 min="0.01"
                 step="any"
-                [value]="gib(maxBytes() ?? p.bounds.maxBytes)"
-                (change)="setBytes($any($event.target).value, p)"
+                [value]="gib(maxBytes() ?? top.maxBytes)"
+                (change)="setBytes($any($event.target).value)"
               />
             </div>
-            <quader-checkbox [checked]="prereleases() ?? p.bounds.includePrereleases" (checkedChange)="prereleases.set($event)">
+            <quader-checkbox [checked]="prereleases() ?? top.includePrereleases" (checkedChange)="prereleases.set($event)">
               <ng-container i18n="@@upstream.preview.prereleases">Include pre-releases</ng-container>
             </quader-checkbox>
           </fieldset>
-          @if (startFailure(); as f) {
-            <quader-error-notice [error]="f" />
-          }
-        } @else {
-          <p role="status" i18n="@@upstream.preview.loading">Reading what the download would fetch.</p>
+        }
+        @if (startFailure(); as f) {
+          <quader-error-notice [error]="f" />
         }
       </div>
       <div class="dialog-actions">
         <button class="btn btn-tertiary" type="button" quaderDialogClose i18n="@@upstream.dialog.cancel">Cancel</button>
-        <button class="btn btn-confirm" type="submit" [disabled]="!preview() || starting()" i18n="@@upstream.preview.start">Start download</button>
+        <button class="btn btn-confirm" type="submit" [disabled]="!preview() || !!failure() || starting()" i18n="@@upstream.preview.start">Start download</button>
       </div>
     </form>
   `,
@@ -171,10 +264,24 @@ function count(n: number): string {
       flex-direction: column;
       gap: var(--quader-space-1);
     }
+    /* The upper version and whether it is taken, on one line; the choice moves under the field where the line is too narrow. */
+    .to-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--quader-space-2);
+    }
+    .to-inclusive {
+      inline-size: auto;
+      max-inline-size: 100%;
+    }
+    .field-error {
+      margin: 0;
+    }
   `,
 })
 export class DownloadPreviewDialog {
   private readonly api = inject(RemoteDownloadsApi);
+  private readonly catalogue = inject(UpstreamCatalogueApi);
   protected readonly data = inject<DownloadPreviewData>(DIALOG_DATA);
   private readonly ref = inject<DialogRef<string, DownloadPreviewDialog>>(DialogRef);
 
@@ -182,6 +289,10 @@ export class DownloadPreviewDialog {
   protected readonly maxVersions = signal<number | null>(null);
   protected readonly maxBytes = signal<number | null>(null);
   protected readonly prereleases = signal<boolean | null>(null);
+  /** The range of a package's versions as typed; '' is no bound on that side (Q-CUR-190). */
+  protected readonly fromVersion = signal('');
+  protected readonly toVersion = signal('');
+  protected readonly toInclusive = signal(true);
   protected readonly starting = signal(false);
   protected readonly startFailure = signal<ApiError | null>(null);
 
@@ -191,6 +302,11 @@ export class DownloadPreviewDialog {
     if (this.maxVersions() !== null) r['maxVersions'] = this.maxVersions();
     if (this.maxBytes() !== null) r['maxBytes'] = this.maxBytes();
     if (this.prereleases() !== null) r['includePrereleases'] = this.prereleases();
+    if (this.fromVersion()) r['fromVersion'] = this.fromVersion();
+    if (this.toVersion()) {
+      r['toVersion'] = this.toVersion();
+      if (!this.toInclusive()) r['toInclusive'] = false;
+    }
     return r as RemoteDownloadRequest;
   });
 
@@ -209,8 +325,19 @@ export class DownloadPreviewDialog {
     }
     return v ?? this.last;
   });
+  /** The installation's bounds, once a preview answered: the fields stay while a refused bound is corrected. */
+  protected readonly ceilingBounds = computed(() => (this.preview() ? (this.ceiling ?? null) : null));
   /** The preview's failure, kept while it reads again (R-UI-216). */
   protected readonly failure = failureOf(this.read);
+  protected readonly fromError = computed(() => rangeErrorText(this.failure(), '/fromVersion'));
+  protected readonly toError = computed(() => rangeErrorText(this.failure(), '/toVersion'));
+
+  /** The versions the opened package lists on its first page, offered in both fields; a failed read offers none. */
+  private readonly listed = resource({
+    params: () => (this.data.request.level === 'package' && this.data.request.name ? this.data.request.name : undefined),
+    loader: async ({ params }) => (await this.catalogue.package(this.data.repository, params, null, '')).versions.map((v) => v.version),
+  });
+  protected readonly suggestions = computed<readonly string[]>(() => valueOf(this.listed) ?? []);
 
   protected readonly number = count;
   protected readonly noteText = previewNoteText;
@@ -220,27 +347,31 @@ export class DownloadPreviewDialog {
     return String(Math.round((bytes / GIB) * 100) / 100);
   }
 
+  /** A bound of the range: blanks around it are dropped, and an empty field is no bound. */
+  protected setFrom(value: string): void {
+    this.fromVersion.set(value.trim());
+  }
+
+  protected setTo(value: string): void {
+    this.toVersion.set(value.trim());
+  }
+
   /** A bound is lowered only: a value above the installation's, or not a number, keeps it. */
-  protected setVersions(value: string, p: RemoteDownloadPreview): void {
-    const top = (this.ceiling ?? p.bounds).maxVersions;
+  protected setVersions(value: string): void {
+    const top = this.ceiling?.maxVersions ?? Number.MAX_SAFE_INTEGER;
     const n = Math.floor(Number(value));
     this.maxVersions.set(Number.isFinite(n) && n >= 1 && n < top ? n : null);
   }
 
-  protected setBytes(value: string, p: RemoteDownloadPreview): void {
-    const top = (this.ceiling ?? p.bounds).maxBytes;
+  protected setBytes(value: string): void {
+    const top = this.ceiling?.maxBytes ?? Number.MAX_SAFE_INTEGER;
     const n = Math.round(Number(value) * GIB);
     this.maxBytes.set(Number.isFinite(n) && n >= 1 && n < top ? n : null);
   }
 
-  /** The installation's bound of versions: a field's highest value. */
-  protected topVersions(p: RemoteDownloadPreview): number {
-    return (this.ceiling ?? p.bounds).maxVersions;
-  }
-
   protected async submit(event: Event): Promise<void> {
     event.preventDefault();
-    if (!this.preview() || this.starting()) return;
+    if (!this.preview() || this.failure() || this.starting()) return;
     this.starting.set(true);
     this.startFailure.set(null);
     try {

@@ -838,6 +838,15 @@ revision column, raised by a restore), and `deb_remote_entries.provides`, `descr
 [tables_deb.go](../../internal/formatdata/deb/tables_deb.go)). No query reads the tables yet; `TestR_CUR_011_TheVocabularyIsTheMigrations`
 in `internal/remotecuration` holds the CHECK lists to the domain package's constants. The step replaces `upstream_repository_purge` (the one of 00102) with the deletes of `remote_download`, `remote_download_bulks` and `remote_examinations`; the rules and the requests stay with a retired repository (Q-CUR-111).
 
+## A bulk download keeps its range of versions (00129)
+
+[00129_remote_download_bulk_range](../../internal/meta/postgres/migrations/00129_remote_download_bulk_range.sql) adds a package's range
+of versions to `remote_download_bulks` ([remote-curation.md](../spec/remote-curation.md) R-CUR-010, Q-CUR-190 to Q-CUR-193):
+`from_version` and `to_version` (the format's canonical form of a version, 1 to 256 characters; NULL is no bound on that side) and
+`to_inclusive` (a constant default of true, so the step rewrites no row). Every step of a bulk's expansion reads the range, the bulk's
+`bounds` answer it, and the tab Downloads says it. `RemoteDownloadBulkInsert` writes it for a person's bulk; a request's or an allow's bulk
+(`RemoteDownloadBulkInsertOf`) leaves the columns at no bound. Expand phase only: a bulk of before bounds nothing.
+
 ## The malware settings count the scanner replicas' rows (00127)
 
 [00127_malware_scanners_drop](../../internal/meta/postgres/migrations/00127_malware_scanners_drop.sql) drops `malware_scanners`, the one row

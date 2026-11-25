@@ -1334,6 +1334,9 @@ type RemoteDownloadBulk struct {
 	Origin             string
 	RequestID          pgtype.UUID
 	Ticket             json.RawMessage
+	FromVersion        pgtype.Text
+	ToVersion          pgtype.Text
+	ToInclusive        bool
 }
 
 type RemoteDownloadLimit struct {

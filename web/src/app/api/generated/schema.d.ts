@@ -7721,8 +7721,10 @@ export interface paths {
          *     the versions and packages, their announced bytes (`null` where the upstream does not tell), how many have no announced size,
          *     how many are stored already and how many the delivery rules do not deliver, and the bounds that apply. Where the upstream
          *     catalogue cannot count a level, `versions` and `bytes` are `null` and `note` says that the bounds cut while the bulk runs. Nothing
-         *     is queued and nothing is fetched. Needs what the start of the same download needs (R-CUR-005); a local or virtual repository
-         *     answers `400 not_applicable`, a sub-section of an upstream that lists no levels `400 catalogue_not_offered`.
+         *     is queued and nothing is fetched. A package's range of versions is counted as the bulk takes it, and `notVersions` says how many
+         *     strings of the package it left out because the format does not rank them (Q-CUR-192). Needs what the start of the same download
+         *     needs (R-CUR-005); a local or virtual repository answers `400 not_applicable`, a sub-section of an upstream that lists no levels
+         *     `400 catalogue_not_offered`, a bound the format does not rank `422 invalid_version` at its pointer.
          */
         post: operations["previewRemoteDownload"];
         delete?: never;
@@ -17000,7 +17002,11 @@ export interface components {
         /**
          * @description A download ahead of a client (R-CUR-010): `version` with `name` and `version`; `package` with `name`; `section` with `section`,
          *     a level of the upstream catalogue. The bounds of a package and a section default to `proxy.downloads.max_versions_per_bulk`
-         *     and `proxy.downloads.max_bytes_per_bulk` and may only be lowered.
+         *     and `proxy.downloads.max_bytes_per_bulk` and may only be lowered. A package's bulk may take a range of its versions in the
+         *     format's own order (Q-CUR-190 to Q-CUR-192): `fromVersion` (included) and `toVersion` (included unless `toInclusive` is false,
+         *     then below it), each optional; a bound need not be a version the upstream has, but one the format does not rank answers
+         *     `422 invalid_version` at its pointer, and a range that holds no version `422` at `/toVersion`. The range is applied first, then
+         *     `includePrereleases`, then `maxVersions` and `maxBytes`.
          */
         RemoteDownloadRequest: {
             /** @enum {string} */
@@ -17013,12 +17019,27 @@ export interface components {
             maxBytes?: number;
             /** @default true */
             includePrereleases: boolean;
+            /** @description The lowest version of a package's bulk, included (Q-CUR-190); absent for no lower bound. */
+            fromVersion?: string;
+            /** @description The highest version of a package's bulk (Q-CUR-190); absent for no upper bound. */
+            toVersion?: string;
+            /**
+             * @description Whether `toVersion` itself is taken; false takes the versions below it.
+             * @default true
+             */
+            toInclusive: boolean;
         };
         RemoteDownloadBounds: {
             maxVersions: number;
             /** Format: int64 */
             maxBytes: number;
             includePrereleases: boolean;
+            /** @description The range's lowest version in the format's canonical form, included; null for no lower bound (Q-CUR-193). */
+            fromVersion: string | null;
+            /** @description The range's highest version in the format's canonical form; null for no upper bound. */
+            toVersion: string | null;
+            /** @description Whether `toVersion` is taken; false takes the versions below it. True without an upper bound. */
+            toInclusive: boolean;
         };
         RemoteDownloadPreview: {
             versions: number | null;
@@ -17028,6 +17049,8 @@ export interface components {
             sizeUnknown: number;
             stored: number;
             notDelivered: number;
+            /** @description The strings of the package the range left out because the format does not rank them, such as an OCI tag `latest` or `main` (Q-CUR-192); 0 without a range, where they are taken as before. */
+            notVersions: number;
             bounds: components["schemas"]["RemoteDownloadBounds"];
             /**
              * @description The code of what the counts leave open, which the screen says in its own words (R-UI-214): `section_uncounted` (the upstream does not tell a sub-section's versions and sizes; the bounds cut while the bulk runs), `sizes_unannounced` (no size is announced; a size counts once the file is stored), `more_versions` (the upstream lists more versions than one answer holds; the bulk counts the rest while it runs), `size_once_stored` and `counted_on_expand` (without the catalogue: a version's size is known once it is stored; a package's versions are counted when the bulk is expanded); `null` when the counts are complete.
@@ -33642,7 +33665,9 @@ export interface operations {
                  * @example {
                  *       "level": "package",
                  *       "name": "@acme/a",
-                 *       "maxVersions": 100
+                 *       "maxVersions": 100,
+                 *       "fromVersion": "5.0.0",
+                 *       "toVersion": "5.4.7"
                  *     }
                  */
                 "application/json": components["schemas"]["RemoteDownloadRequest"];
@@ -33663,10 +33688,14 @@ export interface operations {
                      *       "sizeUnknown": 3,
                      *       "stored": 0,
                      *       "notDelivered": 0,
+                     *       "notVersions": 0,
                      *       "bounds": {
                      *         "maxVersions": 100,
                      *         "maxBytes": 107374182400,
-                     *         "includePrereleases": true
+                     *         "includePrereleases": true,
+                     *         "fromVersion": "5.0.0",
+                     *         "toVersion": "5.4.7",
+                     *         "toInclusive": true
                      *       },
                      *       "note": null
                      *     }

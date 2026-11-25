@@ -664,7 +664,7 @@ Priority: **P1** · Covers: RMT-027
 
   | Method and path | Body | Answer |
   |---|---|---|
-  | `POST downloads/preview` | `{"level": "version" \| "package" \| "section", "name"?, "version"?, "section"?, "maxVersions"?, "maxBytes"?, "includePrereleases"?}` | `200` `{"versions": <n> \| null, "packages": <n> \| null, "bytes": <n> \| null, "sizeUnknown": <n>, "stored": <n>, "notDelivered": <n>, "bounds": {…}, "note"}`; for a section whose size the upstream does not tell, `versions` and `bytes` are `null` and `note` says that the bound cuts while it runs (D10) |
+  | `POST downloads/preview` | `{"level": "version" \| "package" \| "section", "name"?, "version"?, "section"?, "maxVersions"?, "maxBytes"?, "includePrereleases"?, "fromVersion"?, "toVersion"?, "toInclusive"?}` | `200` `{"versions": <n> \| null, "packages": <n> \| null, "bytes": <n> \| null, "sizeUnknown": <n>, "stored": <n>, "notDelivered": <n>, "notVersions": <n>, "bounds": {…}, "note"}`; for a section whose size the upstream does not tell, `versions` and `bytes` are `null` and `note` says that the bound cuts while it runs (D10); `notVersions` counts the strings a range left out because the format does not rank them (Q-CUR-192) |
   | `POST downloads` | the same | `202` with the queue row of a version, or the bulk `{"id", "state": "expanding", …}` and `Location` of `download-bulks/{id}`; `409 already_queued` names the row of a version that is waiting or running |
 
   The preview of a version or a package is one catalogue call (`Package`); of a section the level's count where the upstream tells it
@@ -674,9 +674,41 @@ Priority: **P1** · Covers: RMT-027
   [Q-CUR-167](#q-cur-167--a-bulks-expansion-reaches-the-hosts-the-catalogue-reaches-a-rows-fetch-reaches-no-more)), with the bulk's bounds ([Q-CUR-65](#q-cur-65--a-bulk-and-a-preview-read-the-catalogue-a-preview-is-one-page-of-the-bulks-bound),
   which replaces the mirror plan's expansion of [Q-CUR-80](#q-cur-80--a-download-of-one-version-runs-before-the-catalogue-the-call-that-names-its-files-is-a-contract-interface-of-its-own)).
 - **Bounds of a bulk**, each a value in the form that the person may lower: `maxVersions` (`proxy.downloads.max_versions_per_bulk`,
-  10,000 by default), `maxBytes` (`proxy.downloads.max_bytes_per_bulk`, 100 GiB), `includePrereleases` (true), and for a package
-  `newest` (all). A size the upstream does not announce counts when the file is stored: the bulk stops adding rows when the stored bytes
-  of its rows reach `maxBytes`, and ends `bounded`.
+  10,000 by default; a package's bulk takes the newest so many), `maxBytes` (`proxy.downloads.max_bytes_per_bulk`, 100 GiB),
+  `includePrereleases` (true). A size the upstream does not announce counts when the file is stored: the bulk stops adding rows when the
+  stored bytes of its rows reach `maxBytes`, and ends `bounded`.
+- **A range of a package's versions** (the owner, 2026-11-25: "nicht nur einfach alle Versionen herunterzuladen, sondern alle Versionen ab
+  einer bestimmten Version", "ggf. AB einer bestimmten Version, oder bis zu einer bestimmten Version";
+  [Q-CUR-190](#q-cur-190--a-packages-bulk-takes-a-range-of-versions-by-two-bounds-in-the-formats-own-order) to
+  [Q-CUR-194](#q-cur-194--the-preview-offers-the-opened-packages-versions-for-the-two-bounds-and-takes-any-version-typed)), in the preview
+  and in the bulk of the level `package`:
+
+  | Member | Means | Absent |
+  |---|---|---|
+  | `fromVersion` | the lowest version taken, always included | no lower bound: from the oldest |
+  | `toVersion` | the highest version taken | no upper bound: up to the newest |
+  | `toInclusive` | `true`: `toVersion` is taken; `false`: the versions below it | `true` |
+
+  - **The order is the format's own**, the one every list of the format is sorted by: `formats.ViewAdapter.Compare` and its sort key
+    (`internal/formats/versionkey`), the order the catalogue lists a package's versions in. One mechanism serves npm, NuGet, OCI, Debian
+    and Ansible Galaxy: no range syntax, no range code per format (`queue.Order`, `queue.Range`; the edge builds the order from the registered format: `rangeOrder` of the format host, `versionOrder` of the API).
+  - **A bound need not be a version the upstream has**; it must be one the format ranks: a version by the format's canon (R-CUR-006, so
+    that NuGet's `1.0` and `1.0.0` meet) whose sort key has the class `Version`. A bound the format does not rank answers
+    `422 invalid_version` at `/fromVersion` or `/toVersion`; a range that holds no version (`fromVersion` above `toVersion`, or equal to
+    it while `toInclusive` is false) answers `422 validation_failed` at `/toVersion` with the field code `out_of_range` and a sentence; a
+    bound of a `version` or a `section` answers `400 validation_failed` at its pointer. The bounds are kept in their canonical form.
+  - **A string that is no version of the format** (an OCI tag such as `latest` or `main`, the class `NotVersion` of the sort key) lies
+    outside every range: with a bound set it is not part of the bulk, and the preview's `notVersions` says how many it left out. Without
+    a bound nothing changes for them.
+  - **Composition:** the range first, then `includePrereleases`, then the newest `maxVersions`, then `maxBytes` (`queue.Picker` in the
+    worker's planner and in the preview,
+    [Q-CUR-191](#q-cur-191--the-range-is-applied-first-then-the-pre-releases-then-the-newest-maxversions-then-maxbytes)). A preview with a
+    range reads on past the first page, at least 1,000 versions a page and at most ten pages, since the range's versions may lie past the
+    newest `maxVersions`.
+  - **The bulk keeps its range** (`remote_download_bulks.from_version`, `to_version`, `to_inclusive`, migration 00129), which every step
+    of its expansion reads; the bulk's `bounds` carry it, the event `remote.download.started` names it, and the tab Downloads says what
+    the bulk was asked for ("From 5.0.0 up to 5.4.7",
+    [Q-CUR-193](#q-cur-193--the-bulk-keeps-its-range-and-the-tab-downloads-says-it-in-the-bulks-line)).
 - **Who** (R-CUR-005): one version the rules deliver, whoever may populate the repository with a client; one version the rules do not
   deliver, every version and a section, the holders of `manage` and `admin`.
 - **The session.** A download ahead is an explicit act of the management API (a `POST` that needs the CSRF token of the session, R-API-006,
@@ -711,6 +743,14 @@ Acceptance criteria:
   one upstream request of the person's budget key, no request.
 - Unit (`internal/remotecuration/queue`, `TestR_CUR_010_ABulkIsExpandedWithinItsBounds`, milliseconds): `maxVersions`, `maxBytes` of
   the announced sizes, the pause at the bound of waiting rows, a section's packages, a failure without a planner.
+- Unit (`internal/remotecuration/queue`, `TestR_CUR_010_ABulkTakesARangeOfVersionsInTheFormatsOrder`, milliseconds, seven version
+  strings): both bounds, each alone, a bound included and below, bounds the upstream does not list, two spellings of one version that
+  meet by the canon, strings that are no version (outside a set range, counted; taken without one), the range before the pre-releases,
+  the newest `maxVersions` and `maxBytes`, the range the bulk keeps, an empty range.
+- Integration (area `npm`, inside `TestR_CUR_010_ADownloadAheadOfOneVersionAndOfAPackage`, about 0.1 s, two tarballs): the preview refuses
+  `fromVersion: "latest"` (`422 invalid_version` at `/fromVersion`), a range that holds no version (`out_of_range` at `/toVersion`) and a
+  bound of a version's download; it counts a range from one version below another (two versions, the bounds kept) and up to a version the
+  upstream does not list; the bulk of that range queues exactly the two versions and answers its bounds.
 - Integration, one download ahead per format (areas `nuget`, `ociremote`, `debremote`, `ansibleremote`, `TestR_CUR_010_…`, about 3 s
   each): one version is stored; for OCI the platforms of `oci.platforms` with their layers; for Debian the file a parsed index lists,
   verified against its digest.
@@ -748,7 +788,11 @@ Priority: **P1** · Covers: RMT-027
     -- a bulk a request or an allow starts for the newest versions of a package (Q-CUR-141): its rows' origin, request and charge
     origin              text        NOT NULL DEFAULT 'bulk' CHECK (origin IN ('bulk', 'request', 'allow')),
     request_id          uuid        NULL REFERENCES remote_delivery_requests (id) ON DELETE SET NULL,
-    ticket              jsonb       NULL
+    ticket              jsonb       NULL,
+    -- a package's range of versions in the format's canonical form (R-CUR-010, Q-CUR-193, migration 00129): NULL is no bound
+    from_version        text        NULL CHECK (char_length(from_version) BETWEEN 1 AND 256),
+    to_version          text        NULL CHECK (char_length(to_version) BETWEEN 1 AND 256),
+    to_inclusive        boolean     NOT NULL DEFAULT true
   );
   CREATE INDEX remote_download_bulks_repo ON remote_download_bulks (repo_id, created_at DESC, id);
 
@@ -926,7 +970,9 @@ Below `/api/v1/projects/{projectKey}/repositories/{repoKey}` (tag `remote-curati
   "startedAt", "finishedAt", "delivery"}` (`delivery` as in R-CUR-009, so an examined row says it is not delivered). `startedBy` names a
   person to those who may set rules and to that person; to other readers it reads `{"id": null, "name": null}` with `origin`.
 - A bulk's representation: `{"id", "level", "subject", "origin", "state", "bounds", "versionsFound", "versionsQueued", "failure",
-  "startedBy", "createdAt", "finishedAt", "rows"}`; `origin` is `person`, `request` (a request's examination) or `allow` (Q-CUR-141);
+  "startedBy", "createdAt", "finishedAt", "rows"}`; `bounds` is `{"maxVersions", "maxBytes", "includePrereleases", "fromVersion",
+  "toVersion", "toInclusive"}`, the range's versions `null` for no bound and `toInclusive` true without an upper one (R-CUR-010,
+  Q-CUR-193); `origin` is `person`, `request` (a request's examination) or `allow` (Q-CUR-141);
   `failure` is the expansion's, in a row's form, or the note of the bound that stopped it (class `bound`, codes `bulk_max_versions`,
   `bulk_max_bytes`, `bulk_stored_bytes`); `rows` counts its rows by state.
 - A failure's `code` and its members are what a client says the failure from; `detail` is an English sentence for a script and an
@@ -1268,7 +1314,13 @@ style guide's; every screen is rendered in both schemes, wide and narrow, with r
     ([Q-CUR-155](#q-cur-155--the-catalogues-own-states-are-sentences-of-the-screen-the-upstreams-own-sentences-stand-as-the-upstream-wrote-them)).
 - **The preview of a bulk** (a dialog): what will be fetched (versions, packages, bytes, "size of 12 versions not told by the upstream;
   the bound of 100 GiB stops the download when it is reached"), what is stored already, how much is not delivered (fetched for
-  examination), the bounds as fields with their values, **Start download**.
+  examination), how many tags a range left out because they name no version, the bounds as fields with their values, **Start
+  download**. A package's preview has **From version** and **Up to version** with **included** or **below it** above the other bounds
+  (R-CUR-010, [Q-CUR-194](#q-cur-194--the-preview-offers-the-opened-packages-versions-for-the-two-bounds-and-takes-any-version-typed)):
+  an empty field is no bound and says which end it leaves open ("The oldest", "The newest"); the fields offer the versions the opened
+  package lists and take any version typed; a changed bound is previewed again; a bound the server refuses is said under its field and
+  the whole answer stands in the error notice (R-UI-216). A bulk's line on the tab Downloads says its range ("From 5.0.0 up to 5.4.7",
+  "Below 3.0.0", Q-CUR-193), and **Start again** asks for the same range.
 - **The rule list** (a dialog or a page section): kind, subject, effect, note, who and when, **Remove**; a field to add a section rule
   (pattern) with its effect; the sentence "The narrowest rule decides; at equal width a block wins.".
 - **The tab Downloads** (`…/downloads`): the counts by state as filters (**Waiting 12**, **Running 4**, **Failed 2**, **Done**), the filter
@@ -3277,6 +3329,113 @@ contract's `VersionsRequest`), R-CUR-009, R-CUR-018; [api/openapi.yaml](../../ap
 [page.go](../../internal/mirror/discover/page.go), `Package` of [npm/catalogue.go](../../internal/formats/npm/catalogue.go). Tests:
 `TestR_CUR_009_TheVersionFilterFindsAVersionByTheNameOfItsTag` (`internal/mirror/discover`), `R-CUR-018 R-CUR-009 an npm tag stands as a
 badge on the row of the version it names…` ([remote-upstream.spec.ts](../../web/src/app/features/repositories/upstream/remote-upstream.spec.ts)).
+
+### Q-CUR-190 · A package's bulk takes a range of versions by two bounds in the format's own order
+
+Status: **Decided by the development agent** (2026-11-25, working paper W-28, package 3) — selected from the options below; the owner
+reviews it at the walkthrough. It answers the owner's words "Es muss möglich sein, nur einfach alle versionen herunterzuladen, sondern alle
+Versionen ab einer bestimmten Version" and "ggf. AB einer bestimmten Version, oder bis zu einer bestimmten Version".
+
+Context: a bulk of a package took the newest `maxVersions`, without and with pre-releases; nothing bounded it by version. Every format
+already orders its versions by its view adapter (`Compare`, the sort key of `internal/formats/versionkey`), and the catalogue lists a
+package's versions in that order, newest first (Q-CUR-180 for OCI).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `fromVersion` (always included), `toVersion` with `toInclusive` (default true), each optional, compared by the format's view adapter through `queue.Order`; only for the level `package` (chosen) | Two strings and a flag; one comparison for every format | The owner's two words ("ab", "bis"); no syntax to learn; npm, NuGet, OCI, Debian and Ansible Galaxy alike, and every later format with a view adapter | No union of ranges, no "every 5.x" in one word |
+| (b) The format's own range syntax (`^5.0.0`, `[5.0,6.0)`) through the exposure adapter's `ValidateRange` and `InRange` | A text field per format | An npm user knows `^` | Five syntaxes, Debian and OCI have none, a person must learn the format's; the owner asked for "from" and "up to" |
+| (c) A range for a section's bulk too | Every package of a level bounded alike | One more use | A version means another thing in every package of a level; the preview of a section counts no versions to show what it takes |
+
+**Choice:** (a). A bound of a `version` or `section` download answers `400 validation_failed` at its pointer. **Rationale:** the order every
+list of the format shows is the order the person reads the versions in, so "from 5.0.0" means what the list shows above 5.0.0. The
+development agent would revisit (c) if a level of many packages that share their versions (a Debian suite's source package) asks for it.
+**Applied in the spec:** R-CUR-010 (the members, the order), R-CUR-012 (the bulk's bounds), [api/openapi.yaml](../../api/openapi.yaml)
+(`RemoteDownloadRequest`, `RemoteDownloadBounds`). Code: [range.go](../../internal/remotecuration/queue/range.go) (`Range`, `Order`;
+the domain compares only, since it imports no format), `rangeOrder` in
+[background_download.go](../../internal/formathost/background_download.go) and `versionOrder`, `downloadRange` and `rangeSyntax` in
+[remote_downloads_api.go](../../internal/api/v1/remote_downloads_api.go) (the registered format's view adapter and canon, read by the
+edge; no function of the frozen format contract is added).
+
+### Q-CUR-191 · The range is applied first, then the pre-releases, then the newest maxVersions, then maxBytes
+
+Status: **Decided by the development agent** (2026-11-25) — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the planner of a worker applied the pre-releases and `maxVersions` while it paged the catalogue, the expansion `maxBytes`; the
+preview counted one page of `maxVersions`. The range's versions may lie past the newest `maxVersions` (the oldest of a long list). R-CUR-010
+named a bound `newest (all)` that the API never had as a member: it is `maxVersions` of a package, the newest so many.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One `queue.Picker` takes the versions in the catalogue's order: outside the range, out; a pre-release without `includePrereleases`, out; at `maxVersions`, full; the planner and the preview use it alike; a preview with a range reads on, at least 1,000 versions a page and at most ten pages (chosen) | `Planner.Versions` takes a `Selection`; the preview pages | "The newest 3 from 5.0.0" is what it says; the preview counts what the bulk takes | A preview of a range in an old part of a long list costs more catalogue calls (cached per replica, charged to the person's catalogue budget) |
+| (b) `maxVersions` first, then the range | No change of the paging | Cheap | "From 1.0.0, at most 10" takes nothing when the newest ten are above 1.0.0's range end, which surprises |
+| (c) The queue filters the planner's whole list | The planner lists everything | One place | A package of thousands of versions is read whole at every step of the expansion |
+
+**Choice:** (a). **Rationale:** the bounds narrow in the order a person reads them; a page reads a document the catalogue holds whole
+(Q-CUR-64). The development agent would revisit the ten pages if a package past 10,000 versions shows a range's count as "more versions".
+**Applied in the spec:** R-CUR-010 (the composition, the bound `newest` folded into `maxVersions`). Code: `Selection` and `Picker` in
+[range.go](../../internal/remotecuration/queue/range.go), `MirrorHost.Versions` in
+[background_download.go](../../internal/formathost/background_download.go), `previewPackage` in
+[remote_downloads_api.go](../../internal/api/v1/remote_downloads_api.go). Test: `TestR_CUR_010_ABulkTakesARangeOfVersionsInTheFormatsOrder`.
+
+### Q-CUR-192 · A bound is a version the format ranks; a string that is no version lies outside every range
+
+Status: **Decided by the development agent** (2026-11-25) — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a bound need not be listed by the upstream (a person types "from 5.0" before 5.0.0 exists, or below a major that is not out),
+but it must have a place in the order. OCI's canon (R-CUR-006) accepts every tag, `latest` and `main` among them, which the tag order
+does not rank (the sort key's class `NotVersion`, Q-OCI-269); NuGet's canon folds `1.0` into `1.0.0`, which its `Compare` alone keeps
+apart.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A bound is canonical by the format's canon and ranked by its sort key's class; otherwise `422 invalid_version` at its pointer; an empty range `422 validation_failed` at `/toVersion` (field code `out_of_range`); a string the format does not rank is outside every range that bounds something, and the preview's `notVersions` counts what it left out (chosen) | `Order.Rank`, `Range.Contains`, `Range.Empty` | NuGet's `1.0` and `1.0.0` meet; a tag is never "above 5.0.0" by chance of its bytes; the person learns why `latest` is missing | `latest` cannot be part of a ranged bulk (it is part of every bulk without a range) |
+| (b) Order a tag by its bytes beside the versions | `Compare` as it is | Nothing refused | `main` would lie above `5.0.0` by its letters |
+| (c) A bound must be a version the upstream lists | A lookup per bound | No surprise on a typo | "From 5.0" before 5.0.0 exists is refused; one catalogue call more per preview |
+
+**Choice:** (a). The empty range answers `validation_failed` rather than `invalid_version`, so the error notice's headline says that an
+entry is invalid, not that a valid version is no version. **Rationale:** the sort key's class is the one place a format says what it
+ranks (R-API-029). **Applied in the spec:** R-CUR-010; [api/openapi.yaml](../../api/openapi.yaml) (`notVersions`). Code: `Rank`,
+`Contains`, `Empty` and `Picker.NotVersions` in [range.go](../../internal/remotecuration/queue/range.go), `downloadRange`.
+
+### Q-CUR-193 · The bulk keeps its range, and the tab Downloads says it in the bulk's line
+
+Status: **Decided by the development agent** (2026-11-25) — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a bulk is expanded step by step by the dispatch (R-CUR-010), so the range must outlive the `POST`; the tab Downloads lists a
+person's bulks and starts a failed one again (Q-CUR-168).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Three columns of `remote_download_bulks` (`from_version`, `to_version` NULL for no bound, `to_inclusive` true by default), migration 00129; the bulk's `bounds` answer them; the bulk's line in the list and its own line say "From 5.0.0 up to 5.4.7", "From 5.0.0, below 6.0.0", "Up to 5.4.7", "Below 6.0.0" or "From 5.0.0"; **Start again** sends the range again (chosen) | A migration, a member of the bounds | The person sees what a bulk was asked for; a script reads it; a failed bulk starts with the same versions | Three columns most bulks leave empty |
+| (b) The range inside the bulk's cursor | No migration | — | The cursor is the expansion's position and is cleared at its end; the tab could not say it |
+
+**Choice:** (a). **Rationale:** what a bulk was asked for is a fact of the bulk, as its other bounds are. **Applied in the spec:**
+R-CUR-010, R-CUR-011 (the table), R-CUR-012 (`bounds`), R-CUR-018; [database.md](../developer/database.md). Code:
+[00129_remote_download_bulk_range.sql](../../internal/meta/postgres/migrations/00129_remote_download_bulk_range.sql), `Bulk.Range` in
+[queue.go](../../internal/remotecuration/queue/queue.go), `versionRangeText` in
+[download-words.ts](../../web/src/app/features/repositories/downloads/download-words.ts), `bulkRequest` in
+[remote-downloads.ts](../../web/src/app/features/repositories/downloads/remote-downloads.ts).
+
+### Q-CUR-194 · The preview offers the opened package's versions for the two bounds and takes any version typed
+
+Status: **Decided by the development agent** (2026-11-25) — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the dialog **Download every version…** is opened from the head of an opened package (`upstream-package.ts`), which lists the
+newest 100 versions; another package of work rebuilds that head, so the dialog is opened as before, with the package's name alone.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The dialog reads the first page of the package's versions itself (`GET …/upstream/package`, the call and the page the opened package made, answered from the catalogue's cache) and offers them in a `datalist` under both fields; any version may be typed; **Up to version** has a select **included** / **below it**, as wide as its words; both fields as wide as a version (`field-w-bytes`, 13 rem); empty with the hint "The oldest" / "The newest", since an empty field has no value; a field change asks the preview again, as a lowered bound does (chosen) | No change of the package's head | The suggestions are the versions the person just saw; a typed version needs no list | One catalogue call more when the cache has expired |
+| (b) The head passes its loaded versions to the dialog | No call | Exactly what is on the screen, with **Load more**'s pages | A change of the head, which another package rebuilds |
+| (c) A select of the listed versions | A choice only | No typo | A version past the first page or not yet published cannot be named; the owner's "ab einer bestimmten Version" is any version |
+
+**Choice:** (a). The select stands beside the field and moves under it where the line is too narrow; it is no form select of a column and
+keeps the width of its two words instead of `field-w-name`. **Rationale:** the dialog stands on its own and the call it makes is the
+one the opened package made. The development agent would revisit (b) once the head's rebuild has landed. **Applied in the spec:**
+R-CUR-018 (the preview). Code: `DownloadPreviewDialog` and `rangeErrorText` in
+[download-preview-dialog.ts](../../web/src/app/features/repositories/upstream/download-preview-dialog.ts). Tests: `R-CUR-010 the preview
+takes a range of versions…` ([remote-upstream.spec.ts](../../web/src/app/features/repositories/upstream/remote-upstream.spec.ts)), the
+state `download-preview-range-refused` ([repositories.states.spec.ts](../../web/src/app/features/repositories/repositories.states.spec.ts)).
 
 ### Q-CUR-80 · A download of one version runs before the catalogue: the call that names its files is a contract interface of its own
 

@@ -11,12 +11,13 @@ import (
 	"github.com/guided-traffic/quader/internal/remotecuration"
 )
 
-// Planner names what a bulk expands to (R-CUR-010). The composition root implements it on a worker over the format's catalogue (R3)
-// or its mirror lister, reading through the worker's upstream.
+// Planner names what a bulk expands to (R-CUR-010). The composition root implements it on a worker over the format's catalogue (R3),
+// reading through the worker's upstream.
 type Planner interface {
-	// Versions lists the versions of a package, newest first by the format's order, without prereleases unless asked, at most max,
-	// each with the size the upstream announces (0 when it does not). A package the upstream does not have is an empty list.
-	Versions(ctx context.Context, repoID int64, name string, includePrereleases bool, max int) ([]PlannedVersion, error)
+	// Versions lists the versions of a package the selection takes, newest first by the format's order, each with the size the
+	// upstream announces (0 when it does not): the versions of the selection's range, without prereleases unless asked, at most its
+	// Max, applied by a [Picker] over the format's [Order] (Q-CUR-191). A package the upstream does not have is an empty list.
+	Versions(ctx context.Context, repoID int64, name string, sel Selection) ([]PlannedVersion, error)
 	// Packages lists one page of the packages of a sub-section, from cursor ("" for the first page); done is true on the last page.
 	// A repository whose upstream lists no levels answers [discover.ErrNotOffered].
 	Packages(ctx context.Context, repoID int64, section, cursor string) (names []string, next string, done bool, err error)
@@ -37,7 +38,10 @@ type BulkSpec struct {
 	MaxVersions        int
 	MaxBytes           int64
 	IncludePrereleases bool
-	StartedBy          string
+	// Range is the bulk's range of versions of a package, canonical and checked by the caller (Q-CUR-190); the zero value bounds
+	// nothing.
+	Range     Range
+	StartedBy string
 	// Origin, RequestID and Ticket are those of a bulk a request or an allow starts for the newest versions of a package (Q-CUR-141):
 	// its rows take the origin, the request and the charge; the zero values are a person's bulk.
 	Origin    remotecuration.Origin
@@ -53,7 +57,7 @@ func (s *Service) StartBulk(ctx context.Context, tx meta.Tx, b BulkSpec) (Bulk, 
 		out, err = t.InsertBulk(ctx, Bulk{
 			RepoID: b.RepoID, Level: b.Level, Subject: b.Subject, MaxVersions: b.MaxVersions, MaxBytes: b.MaxBytes,
 			IncludePrereleases: b.IncludePrereleases, State: BulkExpanding, StartedBy: b.StartedBy, Origin: b.Origin, RequestID: b.RequestID,
-			Ticket: b.Ticket,
+			Ticket: b.Ticket, FromVersion: b.Range.From, ToVersion: b.Range.To, ToInclusive: b.Range.To == "" || b.Range.ToInclusive,
 		})
 		return err
 	})
@@ -126,7 +130,7 @@ func (s *Service) expand(ctx context.Context, b Bulk, describe func(error) remot
 	bounded := ""
 	for cur.Index < len(names) && len(add) < room {
 		name := names[cur.Index]
-		vs, err := s.o.Planner.Versions(ctx, b.RepoID, name, b.IncludePrereleases, b.MaxVersions)
+		vs, err := s.o.Planner.Versions(ctx, b.RepoID, name, Selection{Range: b.Range(), IncludePrereleases: b.IncludePrereleases, Max: b.MaxVersions})
 		if err != nil {
 			return s.bulkFailure(ctx, b, err, describe)
 		}

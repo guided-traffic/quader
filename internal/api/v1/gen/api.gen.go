@@ -13926,9 +13926,17 @@ type RemoteDownloadState string
 
 // RemoteDownloadBounds defines model for RemoteDownloadBounds.
 type RemoteDownloadBounds struct {
-	IncludePrereleases bool  `json:"includePrereleases"`
-	MaxBytes           int64 `json:"maxBytes"`
-	MaxVersions        int   `json:"maxVersions"`
+	// FromVersion The range's lowest version in the format's canonical form, included; null for no lower bound (Q-CUR-193).
+	FromVersion        *string `json:"fromVersion"`
+	IncludePrereleases bool    `json:"includePrereleases"`
+	MaxBytes           int64   `json:"maxBytes"`
+	MaxVersions        int     `json:"maxVersions"`
+
+	// ToInclusive Whether `toVersion` is taken; false takes the versions below it. True without an upper bound.
+	ToInclusive bool `json:"toInclusive"`
+
+	// ToVersion The range's highest version in the format's canonical form; null for no upper bound.
+	ToVersion *string `json:"toVersion"`
 }
 
 // RemoteDownloadBulk A bulk download (R-CUR-010, R-CUR-012), expanded into rows within its bounds.
@@ -14070,6 +14078,9 @@ type RemoteDownloadPreview struct {
 	Bytes        *int64               `json:"bytes"`
 	NotDelivered int                  `json:"notDelivered"`
 
+	// NotVersions The strings of the package the range left out because the format does not rank them, such as an OCI tag `latest` or `main` (Q-CUR-192); 0 without a range, where they are taken as before.
+	NotVersions int `json:"notVersions"`
+
 	// Note The code of what the counts leave open, which the screen says in its own words (R-UI-214): `section_uncounted` (the upstream does not tell a sub-section's versions and sizes; the bounds cut while the bulk runs), `sizes_unannounced` (no size is announced; a size counts once the file is stored), `more_versions` (the upstream lists more versions than one answer holds; the bulk counts the rest while it runs), `size_once_stored` and `counted_on_expand` (without the catalogue: a version's size is known once it is stored; a package's versions are counted when the bulk is expanded); `null` when the counts are complete.
 	Note        *RemoteDownloadPreviewNote `json:"note"`
 	Packages    *int                       `json:"packages"`
@@ -14083,15 +14094,27 @@ type RemoteDownloadPreviewNote string
 
 // RemoteDownloadRequest A download ahead of a client (R-CUR-010): `version` with `name` and `version`; `package` with `name`; `section` with `section`,
 // a level of the upstream catalogue. The bounds of a package and a section default to `proxy.downloads.max_versions_per_bulk`
-// and `proxy.downloads.max_bytes_per_bulk` and may only be lowered.
+// and `proxy.downloads.max_bytes_per_bulk` and may only be lowered. A package's bulk may take a range of its versions in the
+// format's own order (Q-CUR-190 to Q-CUR-192): `fromVersion` (included) and `toVersion` (included unless `toInclusive` is false,
+// then below it), each optional; a bound need not be a version the upstream has, but one the format does not rank answers
+// `422 invalid_version` at its pointer, and a range that holds no version `422` at `/toVersion`. The range is applied first, then
+// `includePrereleases`, then `maxVersions` and `maxBytes`.
 type RemoteDownloadRequest struct {
+	// FromVersion The lowest version of a package's bulk, included (Q-CUR-190); absent for no lower bound.
+	FromVersion        *string                    `json:"fromVersion,omitempty"`
 	IncludePrereleases *bool                      `json:"includePrereleases,omitempty"`
 	Level              RemoteDownloadRequestLevel `json:"level"`
 	MaxBytes           *int64                     `json:"maxBytes,omitempty"`
 	MaxVersions        *int                       `json:"maxVersions,omitempty"`
 	Name               *string                    `json:"name,omitempty"`
 	Section            *string                    `json:"section,omitempty"`
-	Version            *string                    `json:"version,omitempty"`
+
+	// ToInclusive Whether `toVersion` itself is taken; false takes the versions below it.
+	ToInclusive *bool `json:"toInclusive,omitempty"`
+
+	// ToVersion The highest version of a package's bulk (Q-CUR-190); absent for no upper bound.
+	ToVersion *string `json:"toVersion,omitempty"`
+	Version   *string `json:"version,omitempty"`
 }
 
 // RemoteDownloadRequestLevel defines model for RemoteDownloadRequest.Level.

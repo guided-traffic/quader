@@ -131,12 +131,12 @@ func (p downloadPlanner) host() (*formathost.MirrorHost, error) {
 	return area.b.get()
 }
 
-func (p downloadPlanner) Versions(ctx context.Context, repoID int64, name string, pre bool, maxVersions int) ([]queue.PlannedVersion, error) {
+func (p downloadPlanner) Versions(ctx context.Context, repoID int64, name string, sel queue.Selection) ([]queue.PlannedVersion, error) {
 	h, err := p.host()
 	if err != nil {
 		return nil, err
 	}
-	return h.Versions(ctx, repoID, name, pre, maxVersions)
+	return h.Versions(ctx, repoID, name, sel)
 }
 
 func (p downloadPlanner) Packages(ctx context.Context, repoID int64, section, cursor string) ([]string, string, bool, error) {

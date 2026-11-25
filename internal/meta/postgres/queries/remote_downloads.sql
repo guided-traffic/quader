@@ -222,10 +222,13 @@ DELETE FROM remote_download
    OFFSET sqlc.arg(max_rows)::int);
 
 -- name: RemoteDownloadBulkInsert :one
-INSERT INTO remote_download_bulks (id, repo_id, level, subject, max_versions, max_bytes, include_prereleases, state, started_by)
+-- A person's bulk with its bounds; from_version and to_version '' are no bound on that side (R-CUR-010, Q-CUR-193).
+INSERT INTO remote_download_bulks (id, repo_id, level, subject, max_versions, max_bytes, include_prereleases, state, started_by,
+                                   from_version, to_version, to_inclusive)
 VALUES (sqlc.arg(id)::text::uuid, sqlc.arg(repo_id)::bigint, sqlc.arg(level)::text, sqlc.arg(subject)::text,
         sqlc.arg(max_versions)::int, sqlc.arg(max_bytes)::bigint, sqlc.arg(include_prereleases)::bool, 'expanding',
-        NULLIF(sqlc.arg(started_by)::text, '')::uuid)
+        NULLIF(sqlc.arg(started_by)::text, '')::uuid, NULLIF(sqlc.arg(from_version)::text, ''), NULLIF(sqlc.arg(to_version)::text, ''),
+        sqlc.arg(to_inclusive)::bool)
 RETURNING to_jsonb(remote_download_bulks.*)::text AS doc;
 
 -- name: RemoteDownloadBulkGet :many

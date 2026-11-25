@@ -5,12 +5,14 @@ package npm
 import (
 	"encoding/json"
 	"net/http"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/guided-traffic/quader/test/integration/testenv"
 	"github.com/guided-traffic/quader/test/npmstub"
+	"github.com/guided-traffic/quader/test/npmstub/corpus"
 )
 
 // The download queue of a remote repository (remote-curation.md R-CUR-010 to R-CUR-012) against the integration stack and the counting
@@ -169,6 +171,76 @@ func TestR_CUR_010_ADownloadAheadOfOneVersionAndOfAPackage(t *testing.T) {
 			t.Errorf("%d rows of the bulk name lead, want 2", n)
 		}
 	})
+
+	// A range of versions in the format's order (R-CUR-010, Q-CUR-190 to Q-CUR-193): the preview counts it and keeps its bounds, the
+	// bulk stores them and queues only the versions between them; a bound the format does not rank and a range that holds no version
+	// are refused at their pointers. Data: two tarballs of another package of the stub's corpus.
+	t.Run("R-CUR-010 a bulk takes a range of versions in the format's order", func(t *testing.T) {
+		q := rangePackage(t, p.Name)
+		v := func(i int) string { return q.Versions[i].Version }
+		for _, tc := range []struct {
+			body    map[string]any
+			pointer string
+			code    string
+		}{
+			{map[string]any{"level": "package", "name": q.Name, "fromVersion": "latest"}, "/fromVersion", "invalid_version"},
+			{map[string]any{"level": "package", "name": q.Name, "fromVersion": v(3), "toVersion": v(1)}, "/toVersion", "out_of_range"},
+			{map[string]any{"level": "version", "name": q.Name, "version": v(1), "toVersion": v(1)}, "/toVersion", "validation_failed"},
+		} {
+			a := r.st.Do(rep, http.MethodPost, downloadsPath+"/downloads/preview", r.tokL, tc.body)
+			if a.Status/100 != 4 || !strings.Contains(string(a.Body), `"pointer":"`+tc.pointer+`"`) || !strings.Contains(string(a.Body), tc.code) {
+				t.Errorf("the preview of %v: %d %s, want the refusal at %s with %s", tc.body, a.Status, a.Body, tc.pointer, tc.code)
+			}
+		}
+		// From v(1), included, to below v(3): v(2) and v(1); a bound need not be listed (the second preview's upper bound).
+		body := map[string]any{"level": "package", "name": q.Name, "fromVersion": v(1), "toVersion": v(3), "toInclusive": false}
+		pv := r.st.Do(rep, http.MethodPost, downloadsPath+"/downloads/preview", r.tokL, body)
+		m := pv.JSON(t)
+		bounds, _ := m["bounds"].(map[string]any)
+		if pv.Status != http.StatusOK || m["versions"] != float64(2) || m["notVersions"] != float64(0) ||
+			bounds["fromVersion"] != v(1) || bounds["toVersion"] != v(3) || bounds["toInclusive"] != false {
+			t.Fatalf("the preview of the range: %d %s", pv.Status, pv.Body)
+		}
+		open := map[string]any{"level": "package", "name": q.Name, "fromVersion": v(1), "toVersion": "999.0.0"}
+		if m := r.st.Do(rep, http.MethodPost, downloadsPath+"/downloads/preview", r.tokL, open).JSON(t); m["versions"] != float64(len(q.Versions)-1) {
+			t.Errorf("the preview up to a version the upstream does not list: %v", m)
+		}
+		a := r.startDownload(rep, r.tokL, body)
+		if a.Status != http.StatusAccepted {
+			t.Fatalf("lead's bulk of the range: %d %s", a.Status, a.Body)
+		}
+		id := a.JSON(t)["bulk"].(map[string]any)["id"].(string)
+		r.runDispatch(rep)
+		testenv.WaitFor(t, "the range's two rows queued", 60*time.Second, func() bool {
+			got := r.st.Do(rep, http.MethodGet, downloadsPath+"/download-bulks/"+id, r.tokL, nil).JSON(t)
+			if got["state"] == "expanding" {
+				r.runDispatch(rep)
+			}
+			return got["versionsQueued"] == float64(2)
+		})
+		got := r.st.Do(rep, http.MethodGet, downloadsPath+"/download-bulks/"+id, r.tokL, nil).JSON(t)
+		if b, _ := got["bounds"].(map[string]any); b["fromVersion"] != v(1) || b["toVersion"] != v(3) || b["toInclusive"] != false {
+			t.Errorf("the bulk's bounds: %v", got["bounds"])
+		}
+		if n := r.st.Number(`SELECT count(*) FROM remote_download WHERE bulk_id = $1::uuid AND version IN ($2, $3)`, id, v(1), v(2)); n != 2 {
+			t.Errorf("%d rows of the bulk are %s and %s, want both", n, v(1), v(2))
+		}
+	})
+}
+
+// rangePackage is a package of the stub's corpus other than not with at least four versions and no pre-release, ascending by SemVer.
+func rangePackage(t testing.TB, not string) *corpus.Package {
+	t.Helper()
+	for _, p := range corpus.Default().Packages {
+		if p.Name == not || strings.HasPrefix(p.Name, "@") || len(p.Versions) < 4 || len(p.Versions) >= 30 {
+			continue
+		}
+		if !slices.ContainsFunc(p.Versions, func(v corpus.Version) bool { return strings.Contains(v.Version, "-") }) {
+			return p
+		}
+	}
+	t.Fatal("the corpus has no such package")
+	return nil
 }
 
 func TestR_CUR_011_AFailureInItsOwnWordsAndTheRetries(t *testing.T) {

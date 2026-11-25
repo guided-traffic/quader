@@ -10270,10 +10270,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-CUR
 
-91 questions on [spec/remote-curation.md](spec/remote-curation.md).
+96 questions on [spec/remote-curation.md](spec/remote-curation.md).
 
 <details>
-<summary>Q-CUR: 91 questions</summary>
+<summary>Q-CUR: 96 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10368,6 +10368,11 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-CUR-180](spec/remote-curation.md#q-cur-180--docker-hubs-and-quays-tags-are-listed-in-the-tag-order) | Docker Hub's and Quay's tags are listed in the tag order | Decided by the development agent | (a) Read Docker Hub's and Quay's tags whole up to five pages of 100 and sort them: versions by the tag order, the other tags newest first by the upstream's time; an image with more tags is listed from the distribution tags list in the tag order, without the API's facts | — |
 | [Q-CUR-181](spec/remote-curation.md#q-cur-181--a-bulks-rows-are-listed-in-the-order-they-run) | A bulk's rows are listed in the order they run | Decided by the development agent | (a) Newest first by creation, then by id ascending: rows queued together in the order they run | — |
 | [Q-CUR-182](spec/remote-curation.md#q-cur-182--the-version-filter-of-the-catalogue-finds-a-version-by-the-name-of-its-tag) | The version filter of the catalogue finds a version by the name of its tag | Decided by the development agent | (a) The server's filter matches the version or the name of a tag that points at it: npm pages its versions with `discover.PageTaggedVersions`, which takes the package's tags beside the versions; every other format keeps `PageVersions` | — |
+| [Q-CUR-190](spec/remote-curation.md#q-cur-190--a-packages-bulk-takes-a-range-of-versions-by-two-bounds-in-the-formats-own-order) | A package's bulk takes a range of versions by two bounds in the format's own order | Decided by the development agent | (a) `fromVersion` (always included), `toVersion` with `toInclusive` (default true), each optional, compared by the format's view adapter through `queue.Order`; only for the level `package` | — |
+| [Q-CUR-191](spec/remote-curation.md#q-cur-191--the-range-is-applied-first-then-the-pre-releases-then-the-newest-maxversions-then-maxbytes) | The range is applied first, then the pre-releases, then the newest maxVersions, then maxBytes | Decided by the development agent | (a) One `queue.Picker` takes the versions in the catalogue's order: outside the range, out; a pre-release without `includePrereleases`, out; at `maxVersions`, full; the planner and the preview use it alike; a preview with a range reads on, at least 1,000 versions a page and at most ten pages | — |
+| [Q-CUR-192](spec/remote-curation.md#q-cur-192--a-bound-is-a-version-the-format-ranks-a-string-that-is-no-version-lies-outside-every-range) | A bound is a version the format ranks; a string that is no version lies outside every range | Decided by the development agent | (a) A bound is canonical by the format's canon and ranked by its sort key's class; otherwise `422 invalid_version` at its pointer; an empty range `422 validation_failed` at `/toVersion` (field code `out_of_range`); a string the format does not rank is outside every range that bounds something, and the preview's `notVersions` counts what it left out | — |
+| [Q-CUR-193](spec/remote-curation.md#q-cur-193--the-bulk-keeps-its-range-and-the-tab-downloads-says-it-in-the-bulks-line) | The bulk keeps its range, and the tab Downloads says it in the bulk's line | Decided by the development agent | (a) Three columns of `remote_download_bulks` (`from_version`, `to_version` NULL for no bound, `to_inclusive` true by default), migration 00129; the bulk's `bounds` answer them; the bulk's line in the list and its own line say "From 5.0.0 up to 5.4.7", "From 5.0.0, below 6.0.0", "Up to 5.4.7", "Below 6.0.0" or "From 5.0.0"; **Start again** sends the range again | — |
+| [Q-CUR-194](spec/remote-curation.md#q-cur-194--the-preview-offers-the-opened-packages-versions-for-the-two-bounds-and-takes-any-version-typed) | The preview offers the opened package's versions for the two bounds and takes any version typed | Decided by the development agent | (a) The dialog reads the first page of the package's versions itself (`GET …/upstream/package`, the call and the page the opened package made, answered from the catalogue's cache) and offers them in a `datalist` under both fields; any version may be typed; **Up to version** has a select **included** / **below it**, as wide as its words; both fields as wide as a version (`field-w-bytes`, 13 rem); empty with the hint "The oldest" / "The newest", since an empty field has no value; a field change asks the preview again, as a lowered bound does | — |
 
 </details>
 

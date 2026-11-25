@@ -103,7 +103,7 @@ export function downloadBulk(over: Partial<RemoteDownloadBulk> = {}): RemoteDown
     subject: 'lodash',
     origin: 'person',
     state: 'queued',
-    bounds: { maxVersions: 100, maxBytes: 107374182400, includePrereleases: true },
+    bounds: { maxVersions: 100, maxBytes: 107374182400, includePrereleases: true, fromVersion: null, toVersion: null, toInclusive: true },
     versionsFound: 3,
     versionsQueued: 3,
     failure: null,
@@ -205,16 +205,21 @@ export class FakeRemoteDownloadsApi extends RemoteDownloadsApi {
     sizeUnknown: 3,
     stored: 1,
     notDelivered: 0,
-    bounds: { maxVersions: 10000, maxBytes: 107374182400, includePrereleases: true },
+    notVersions: 0,
+    bounds: { maxVersions: 10000, maxBytes: 107374182400, includePrereleases: true, fromVersion: null, toVersion: null, toInclusive: true },
     note: null,
   };
   readonly previews: RemoteDownloadRequest[] = [];
   readonly starts: RemoteDownloadRequest[] = [];
   /** Answers every start with this error, where set. */
   startError: ApiError | null = null;
+  /** Answers a preview with the error this returns for its request, where set: a range the server refuses (Q-CUR-192). */
+  previewError: ((request: RemoteDownloadRequest) => ApiError | null) | null = null;
 
   override async preview(repository: string, request: RemoteDownloadRequest): Promise<RemoteDownloadPreview> {
     this.previews.push(request);
+    const refused = this.previewError?.(request);
+    if (refused) throw refused;
     const b = this.previewAnswer.bounds;
     return {
       ...this.previewAnswer,
@@ -222,6 +227,9 @@ export class FakeRemoteDownloadsApi extends RemoteDownloadsApi {
         maxVersions: request.maxVersions ?? b.maxVersions,
         maxBytes: request.maxBytes ?? b.maxBytes,
         includePrereleases: request.includePrereleases ?? b.includePrereleases,
+        fromVersion: request.fromVersion ?? b.fromVersion,
+        toVersion: request.toVersion ?? b.toVersion,
+        toInclusive: request.toInclusive ?? b.toInclusive,
       },
     };
   }

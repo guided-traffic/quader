@@ -47,6 +47,7 @@ import {
   failureSentence,
   failureStepText,
   queueOriginText,
+  versionRangeText,
 } from './download-words';
 import { FailureToasts } from '../../../shared/failure-dialog';
 
@@ -760,6 +761,11 @@ export class RemoteDownloads {
     return $localize`:@@downloads.bulk.counts:${b.versionsQueued}:queued: of ${b.versionsFound}:found: versions found are queued`;
   }
 
+  /** What a bulk of a package was asked for by version (Q-CUR-193): "From 5.0.0 up to 5.4.7"; null without a range. */
+  protected bulkRange(b: RemoteDownloadBulk): string | null {
+    return versionRangeText(b.bounds);
+  }
+
   protected bulkBounds(b: RemoteDownloadBulk): string {
     const bytes = formatSize(b.bounds.maxBytes);
     return b.bounds.includePrereleases
@@ -781,5 +787,11 @@ function bulkActive(b: RemoteDownloadBulk): boolean {
 /** The start of a bulk again with its level, its subject and its bounds (R-CUR-010): what the preview of the tab Upstream started. */
 function bulkRequest(b: RemoteDownloadBulk): RemoteDownloadRequest {
   const bounds = { maxVersions: b.bounds.maxVersions, maxBytes: b.bounds.maxBytes, includePrereleases: b.bounds.includePrereleases };
-  return b.level === 'package' ? { level: 'package', name: b.subject, ...bounds } : { level: 'section', section: b.subject, ...bounds };
+  if (b.level !== 'package') return { level: 'section', section: b.subject, ...bounds };
+  // A package's range goes with it (Q-CUR-193): the same versions are asked for again.
+  const range = {
+    ...(b.bounds.fromVersion ? { fromVersion: b.bounds.fromVersion } : {}),
+    ...(b.bounds.toVersion ? { toVersion: b.bounds.toVersion, toInclusive: b.bounds.toInclusive } : {}),
+  };
+  return { level: 'package', name: b.subject, ...bounds, ...range };
 }
