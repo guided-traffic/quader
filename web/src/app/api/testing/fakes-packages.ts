@@ -293,6 +293,28 @@ export function ociFixture(fake: FakePackagesApi): void {
   );
 }
 
+/**
+ * The OCI package `team/app` as a pipeline pushes it (the owner's image of 2026-11-25, Q-UI-1130): each image a manifest of its own,
+ * named by its tags (a version, its commit tag `sha-…`, `latest` on the newest). The first image is the newest push; `versionCount`
+ * counts the tags, as the list's row does. `signed` gives the image of that index a verified signature.
+ */
+export function ociImagesFixture(fake: FakePackagesApi, images: readonly (readonly string[])[], signed: readonly number[] = []): void {
+  const tags = images.reduce((n, i) => n + i.length, 0);
+  fake.packages.push({ ...OCI_PACKAGE, latestVersion: images[0]?.[0] ?? '', versionCount: tags });
+  images.forEach((image, i) => {
+    const pushed = new Date(Date.UTC(2026, 10, 20, 12) - i * 3_600_000).toISOString();
+    for (const tag of image) {
+      fake.versionList.push(
+        ociVersion(tag, { digest: digestOf(0x1000 + i), mediaType: MANIFEST, size: 1024 }, 512, {
+          publishedAt: pushed,
+          prerelease: /^\d.*-/.test(tag),
+          ...(signed.includes(i) ? { signatures: { state: 'verified_internal', stale: false } } : {}),
+        }),
+      );
+    }
+  });
+}
+
 /** The Debian repositories of the fakes: a local, a remote and a virtual one. */
 export const DEB_REPOSITORIES: readonly Repository[] = [
   { key: 'deb-local', project: 'web', class: 'local', format: 'deb', description: 'Internal packages' },
@@ -566,41 +588,90 @@ export class FakePackagesApi extends PackagesApi {
 
   /** The filters of every read of a version list, in order. */
   readonly versionFilters: VersionFilters[] = [];
+  /** Every page asked of a version list, in order: its cursor and its limit. */
+  readonly versionPages: { readonly cursor: string | null; readonly limit: number }[] = [];
+  /**
+   * How many entries each next page of a version list answers, in order, as a server whose read budget ended (R-API-010, Q-API-432):
+   * a page may be short or empty while its cursor is set. Once they are used up, a page is whole again.
+   */
+  versionPageSizes: number[] = [];
 
   override versions(packageId: string, filters: VersionFilters = {}): PageFetcher<PackageVersionSummary> {
     this.versionFilters.push(filters);
+    // The server's order (Q-API-431): the versions the format ranks, highest first, then the strings it does not rank (an image's
+    // `latest`, `main`, `sha-…`) newest first by their time. A version here is what the fixtures use: digits and dots, a suffix.
+    const ranked = (v: string): boolean => /^v?\d+(\.\d+)*([-+].*)?$/.test(v);
+    const byVersion = (a: PackageVersionSummary, b: PackageVersionSummary): number => {
+      if (ranked(a.version) !== ranked(b.version)) return ranked(a.version) ? -1 : 1;
+      if (!ranked(a.version)) return b.publishedAt.localeCompare(a.publishedAt) || a.version.localeCompare(b.version);
+      return b.version.localeCompare(a.version, undefined, { numeric: true });
+    };
     const order = (a: PackageVersionSummary, b: PackageVersionSummary): number => {
-      switch (filters.sort ?? '-publishedAt') {
+      switch (filters.sort ?? '-version') {
         case 'publishedAt':
           return a.publishedAt.localeCompare(b.publishedAt);
-        case '-version':
-          return b.version.localeCompare(a.version, undefined, { numeric: true });
-        case 'version':
-          return a.version.localeCompare(b.version, undefined, { numeric: true });
-        default:
+        case '-publishedAt':
           return b.publishedAt.localeCompare(a.publishedAt);
+        case 'version':
+          return -byVersion(a, b);
+        default:
+          return byVersion(a, b);
       }
     };
+    const digestOf = (v: FakeVersion): string | undefined => (typeof v.metadata['digest'] === 'string' ? v.metadata['digest'] : undefined);
+    const withDigest = filters.include?.includes('digest') || filters.group === 'content';
     // Each page reads the versions as they are then, as the server does: a list read again in place (R-UI-213) sees a push.
-    const read = (): PackageVersionSummary[] => this.versionList
-      .filter((v) => v.packageId === packageId)
-      .filter((v) => filters.prerelease === undefined || v.prerelease === filters.prerelease)
-      .map(
-        (v): PackageVersionSummary => ({
-          version: v.version,
-          prerelease: v.prerelease,
-          publishedAt: v.publishedAt,
-          sizeBytes: v.sizeBytes,
-          sizePartial: v.sizePartial,
-          repositories: v.repositories.map((r) => r.key),
-          downloadCount: v.downloadCount,
-          lastDownloadedAt: v.lastDownloadedAt,
-          ...(filters.include?.includes('digest') && typeof v.metadata['digest'] === 'string' ? { digest: v.metadata['digest'] } : {}),
-          ...(filters.include?.includes('state') && typeof v.metadata['state'] === 'string' ? { state: v.metadata['state'] } : {}),
-        }),
-      )
-      .sort(order);
-    return (cursor, limit) => pages(read())(cursor, limit);
+    const read = (): PackageVersionSummary[] => {
+      const rows = this.versionList
+        .filter((v) => v.packageId === packageId)
+        .filter((v) => filters.prerelease === undefined || v.prerelease === filters.prerelease)
+        .map((v) => {
+          const digest = digestOf(v);
+          const summary: PackageVersionSummary = {
+            version: v.version,
+            prerelease: v.prerelease,
+            publishedAt: v.publishedAt,
+            sizeBytes: v.sizeBytes,
+            sizePartial: v.sizePartial,
+            repositories: v.repositories.map((r) => r.key),
+            downloadCount: v.downloadCount,
+            lastDownloadedAt: v.lastDownloadedAt,
+            ...(v.signatures ? { signatures: v.signatures } : {}),
+            ...(withDigest && digest ? { digest } : {}),
+            ...(filters.include?.includes('state') && typeof v.metadata['state'] === 'string' ? { state: v.metadata['state'] } : {}),
+          };
+          return { digest, summary };
+        })
+        .sort((a, b) => order(a.summary, b.summary));
+      if (filters.group !== 'content') return rows.map((r) => r.summary);
+      // The list by content (Q-API-432): an entry per digest at its first version in the order, the others its aliases (at most 100);
+      // a version that names no content is an entry of its own.
+      const groups = new Map<string, string[]>();
+      const entries: { lead: PackageVersionSummary; digest: string | undefined }[] = [];
+      for (const { digest, summary } of rows) {
+        const group = digest === undefined ? undefined : groups.get(digest);
+        if (group) {
+          group.push(summary.version);
+          continue;
+        }
+        if (digest !== undefined) groups.set(digest, []);
+        entries.push({ lead: summary, digest });
+      }
+      return entries.map(({ lead, digest }) => {
+        const others = digest === undefined ? [] : groups.get(digest)!;
+        return { ...lead, aliases: others.slice(0, 100), aliasesMore: others.length > 100 };
+      });
+    };
+    return async (cursor, limit) => {
+      this.versionPages.push({ cursor, limit });
+      const all = read();
+      const start = cursor === null ? 0 : Number.parseInt(cursor, 10);
+      const size = this.versionPageSizes.shift();
+      const end = start + (size === undefined ? limit : Math.min(size, limit));
+      // A short page of a budget that ended keeps a cursor while the list goes on, an empty one too; the server's cursor is the walk's
+      // position, which moved by what it read, so even an empty page's cursor is a new one (here: the position and the request).
+      return { items: all.slice(start, end), nextCursor: end < all.length ? `${end}.${this.versionPages.length}` : null };
+    };
   }
 
   override async version(packageId: string, v: string): Promise<PackageVersion> {

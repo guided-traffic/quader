@@ -1,7 +1,7 @@
 import { ClientSetupApi, PackagesApi } from '../../../api/packages-api';
 import { RepositoriesApi } from '../../../api/repositories-api';
 import { VulnerabilitiesApi } from '../../../api/vulnerabilities-api';
-import { FakeClientSetupApi, FakePackagesApi, ociFixture } from '../../../api/testing/fakes-packages';
+import { FakeClientSetupApi, FakePackagesApi, OCI_PACKAGE, ociFixture, ociImagesFixture } from '../../../api/testing/fakes-packages';
 import { FakeRepositoriesApi, GENERIC_FORMAT, OCI_FORMAT, PACKAGE_FORMAT } from '../../../api/testing/fakes-catalog';
 import { FakeFilesApi } from '../../../api/testing/fakes-catalog';
 import { FakeVulnerabilitiesApi, sampleGrade } from '../../../api/testing/fakes-vulnerabilities';
@@ -82,7 +82,7 @@ describe('Repository content page', () => {
     opener.click();
     await settle(r.fixture);
     expect(opener.getAttribute('aria-expanded')).toBe('true');
-    // Newest push first, with the digest of the format.
+    // The highest version first, one row per image with the digest of its manifest.
     const rows = [...r.root.querySelectorAll('quader-repository-item-versions tbody tr')];
     expect(rows[0]?.textContent).toContain('1.2.0');
     expect(rows[0]?.textContent).toContain('sha256:');
@@ -94,28 +94,118 @@ describe('Repository content page', () => {
     await expectAccessible(panel);
   });
 
-  it('R-UI-215 an opened image lists its ten newest tags under a head of its own and links all of them, with no Load more', async () => {
+  it('R-UI-215 an opened image lists its ten newest images under a head of its own and links all of its tags, with no Load more', async () => {
     const r = await open(OCI_REPO, ({ packages }) => {
-      ociFixture(packages);
-      // Thirteen tags: the fixture's two and eleven older ones, a day apart.
-      const base = packages.versionList.find((v) => v.version === '1.1.0')!;
-      packages.versionList.push(
-        ...Array.from({ length: 11 }, (_, i) => ({ ...base, version: `0.${i}.0`, publishedAt: `2026-10-${String(10 + i).padStart(2, '0')}T00:00:00.000Z` })),
-      );
-      packages.packages = packages.packages.map((p) => (p.name === 'team/app' ? { ...p, versionCount: 13 } : p));
+      // Thirteen images of a version and a commit tag each, pushed an hour apart, the highest version the newest (Q-UI-1130); 1.10.0 is
+      // above 1.9.0 by the version's order, not by its text.
+      ociImagesFixture(packages, Array.from({ length: 13 }, (_, i) => [`1.${12 - i}.0`, `sha-${String(i).padStart(7, 'a')}`]));
     });
     r.root.querySelector<HTMLButtonElement>('.name-cell button[aria-expanded]')!.click();
     await settle(r.fixture);
     const opened = r.root.querySelector('quader-repository-item-versions')!;
     // The newest ten, under the list's own head (its columns are the tags', not the images').
-    const tags = [...opened.querySelectorAll(':scope table > tbody > tr')].map((tr) => tr.querySelector('th')?.textContent?.trim());
-    expect(tags).toEqual(['1.2.0', '1.1.0', '0.10.0', '0.9.0', '0.8.0', '0.7.0', '0.6.0', '0.5.0', '0.4.0', '0.3.0']);
+    const leads = [...opened.querySelectorAll(':scope table > tbody > tr')].map((tr) => text(tr.querySelector('th a')!));
+    expect(leads).toEqual(['1.12.0', '1.11.0', '1.10.0', '1.9.0', '1.8.0', '1.7.0', '1.6.0', '1.5.0', '1.4.0', '1.3.0']);
     expect([...opened.querySelectorAll(':scope table > thead th')].map((th) => text(th))[0]).toBe('Tag');
     expect(opened.querySelector('.table-more')).toBeNull();
     const all = opened.querySelector<HTMLAnchorElement>('.all-versions a')!;
-    expect(spokenText(all)).toBe('All 13 tags: team/app');
+    // The image's row counts its tags, and so does the link (R-UI-052).
+    expect(spokenText(all)).toBe('All 26 tags: team/app');
     expect(all.getAttribute('href')).toBe('/projects/web/packages/oci/team/app');
     await expectAccessible(r.root);
+  });
+
+  it('R-UI-052 R-SIG-035 an opened image is one row per image: the leading tag, its other tags muted after it (four, then +N more), its signature badge, asked as the list by content', async () => {
+    const r = await open(OCI_REPO, ({ packages }) => {
+      ociImagesFixture(packages, [['5.4.7', '5.4', '5', 'latest', 'stable', 'sha-f00cf6c'], ['5.4.6', 'sha-6b24a87'], ['5.4.5', 'sha-ed7fd56']], [0]);
+    });
+    const packages = r.get(PackagesApi) as FakePackagesApi;
+    r.root.querySelector<HTMLButtonElement>('.name-cell button[aria-expanded]')!.click();
+    await settle(r.fixture);
+    expect(packages.versionFilters.at(-1)).toEqual({ repository: ['web/oci-local'], sort: '-version', group: 'content' });
+    expect(packages.versionPages.at(-1)).toEqual({ cursor: null, limit: 10 });
+    const opened = r.root.querySelector('quader-repository-item-versions')!;
+    const rows = [...opened.querySelectorAll(':scope table > tbody > tr')];
+    expect(rows).toHaveLength(3);
+    const first = rows[0]!.querySelector('th quader-image-tags')!;
+    expect(text(first.querySelector('.lead')!)).toBe('5.4.7');
+    // The version tags first, then those that are no version, newest first; the sixth tag is counted, not named.
+    expect([...first.querySelectorAll('.other [translate="no"]')].map((t) => text(t))).toEqual(['5.4', '5', 'latest', 'sha-f00cf6c']);
+    expect(text(first.querySelector('.more')!)).toBe('+1 more');
+    expect(spokenText(first.querySelector('.other')!)).toBe('Other tags of team/app 5.4.7: 5.4');
+    expect(first.querySelector('[data-testid="signature-badge"]')?.getAttribute('data-state')).toBe('verified_internal');
+    expect(rows[1]!.querySelector('[data-testid="signature-badge"]')).toBeNull();
+    expect([...rows[1]!.querySelectorAll('.other [translate="no"]')].map((t) => text(t))).toEqual(['sha-6b24a87']);
+    // Every row has its manifest's digest; Pull is the leading tag's.
+    expect(rows.every((tr) => tr.querySelector('.digest-cell code')?.textContent?.startsWith('sha256:'))).toBe(true);
+    expect(spokenText(rows[0]!.querySelector('quader-client-command-menu button')!)).toBe('5.4.7: Pull');
+    // A row leaves a tag out: the link to all of them stands under the three images.
+    expect(spokenText(opened.querySelector('.all-versions a')!)).toBe('All 10 tags: team/app');
+    await expectAccessible(r.root);
+  });
+
+  it('R-UI-215 an opened image whose rows name every tag has no link to all of them, though it has more than ten tags', async () => {
+    const r = await open(OCI_REPO, ({ packages }) => {
+      ociImagesFixture(packages, [['2.0.0', '2.0', '2', 'sha-0000001'], ['1.9.0', '1.9', 'sha-0000002', 'stable'], ['1.8.0', 'sha-0000003']]);
+    });
+    r.root.querySelector<HTMLButtonElement>('.name-cell button[aria-expanded]')!.click();
+    await settle(r.fixture);
+    const opened = r.root.querySelector('quader-repository-item-versions')!;
+    expect(opened.querySelectorAll(':scope table > tbody > tr')).toHaveLength(3);
+    expect(opened.querySelector('.more')).toBeNull();
+    expect(opened.querySelector('.all-versions')).toBeNull();
+  });
+
+  it('R-API-010 an opened image reads on after a short and an empty page until it has its ten images', async () => {
+    const r = await open(OCI_REPO, ({ packages }) => {
+      ociImagesFixture(packages, Array.from({ length: 13 }, (_, i) => [`1.${12 - i}.0`, `sha-${String(i).padStart(7, 'b')}`]));
+      // The server's read budget ends twice before the page is whole (Q-API-432).
+      packages.versionPageSizes = [3, 0];
+    });
+    const packages = r.get(PackagesApi) as FakePackagesApi;
+    r.root.querySelector<HTMLButtonElement>('.name-cell button[aria-expanded]')!.click();
+    await settle(r.fixture);
+    expect(packages.versionPages.map((p) => p.limit)).toEqual([10, 7, 7]);
+    const opened = r.root.querySelector('quader-repository-item-versions')!;
+    expect(opened.querySelectorAll(':scope table > tbody > tr')).toHaveLength(10);
+    expect(opened.querySelector('.all-versions')).not.toBeNull();
+  });
+
+  it('R-UI-213 an opened image is read again every 3 s while a version it shows waits for its scan, and no longer once none waits', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const report = (state: 'queued' | 'checked') => ({
+        packageId: OCI_PACKAGE.id,
+        versions: [
+          { version: '1.2.0', grade: sampleGrade('A', {}, { state: 'checked' }) },
+          { version: '1.1.0', grade: state === 'queued' ? sampleGrade('N/A', {}, { state, stateSince: '2026-11-25T08:00:00Z' }) : sampleGrade('A') },
+        ],
+      });
+      const r = await open(OCI_REPO, ({ packages, vulnerabilities }) => {
+        ociFixture(packages);
+        packages.packages = packages.packages.map((p) => ({ ...p, vulnerabilityGrade: sampleGrade('A') }));
+        vulnerabilities.packageReports.set(OCI_PACKAGE.id, report('queued'));
+      });
+      const packages = r.get(PackagesApi) as FakePackagesApi;
+      const vulnerabilities = r.get(VulnerabilitiesApi) as FakeVulnerabilitiesApi;
+      r.root.querySelector<HTMLButtonElement>('.name-cell button[aria-expanded]')!.click();
+      await settle(r.fixture);
+      const reads = () => packages.versionPages.length;
+      const before = reads();
+      vi.advanceTimersByTime(3_000);
+      await settle(r.fixture);
+      expect(reads()).toBe(before + 1);
+      // The older image's scan ends: the next read shows it, and the reads stop, with the item's row unchanged.
+      vulnerabilities.packageReports.set(OCI_PACKAGE.id, report('checked'));
+      vi.advanceTimersByTime(3_000);
+      await settle(r.fixture);
+      expect(reads()).toBe(before + 2);
+      vi.advanceTimersByTime(9_000);
+      await settle(r.fixture);
+      expect(reads()).toBe(before + 2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('R-UI-215 an opened item with ten versions or fewer has no link to all of them', async () => {
@@ -593,11 +683,12 @@ describe('Repository content page', () => {
       const opener = row.querySelector<HTMLButtonElement>('.name-cell button[aria-expanded]')!;
       opener.click();
       await settle(r.fixture);
-      const tags = () => [...r.root.querySelectorAll('quader-repository-item-versions tbody tr')].map((tr) => tr.querySelector('th, td')?.textContent?.trim());
+      const versionRows = () => [...r.root.querySelectorAll('quader-repository-item-versions tbody tr')];
+      const tags = () => versionRows().map((tr) => text(tr.querySelector('th a')!));
       expect(tags()).toEqual(['1.2.0', '1.1.0']);
       const app = packages.packages.find((p) => p.name === 'team/app')!;
       const tag = packages.versionList.find((v) => v.packageId === app.id && v.version === '1.2.0')!;
-      // A client pushes the tag 1.3.0 and a second image.
+      // A client pushes the tag 1.3.0 onto the image of 1.2.0, and a second image.
       packages.versionList = [...packages.versionList, { ...tag, version: '1.3.0', publishedAt: '2026-11-24T10:00:00.000Z' }];
       packages.packages = [
         ...packages.packages.map((p) => (p.id === app.id ? { ...p, latestVersion: '1.3.0', versionCount: p.versionCount + 1, updatedAt: '2026-11-24T10:00:00.000Z' } : p)),
@@ -608,7 +699,9 @@ describe('Repository content page', () => {
       expect(text(r.root.querySelector('quader-repository-items tbody')!)).toContain('team/worker');
       expect(imageRow()).toBe(row);
       expect(opener.getAttribute('aria-expanded')).toBe('true');
-      expect(tags()).toEqual(['1.3.0', '1.2.0', '1.1.0']);
+      // The image's row is led by its new tag, with the tag it had beside it (Q-UI-1130).
+      expect(tags()).toEqual(['1.3.0', '1.1.0']);
+      expect([...versionRows()[0]!.querySelectorAll('.other [translate="no"]')].map((t) => text(t))).toEqual(['1.2.0']);
     } finally {
       vi.useRealTimers();
     }

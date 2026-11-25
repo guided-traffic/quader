@@ -50,6 +50,11 @@ export interface VersionFilters {
   readonly sort?: '-publishedAt' | 'publishedAt' | '-version' | 'version';
   /** `digest` adds each version's content digest from the format (R-UI-052). */
   readonly include?: readonly string[];
+  /**
+   * `content`: one entry per content, led by its highest version, with the other versions that name it as `aliases` (an image and
+   * its tags, Q-API-432). Only with `sort=-version` and without `prerelease`; a page may be short or empty while its cursor is set.
+   */
+  readonly group?: 'content';
 }
 
 /** The query of `GET …/docs` (R-ANS-036): the repository to read from (`<projectKey>/<repoKey>`) and the search text. */

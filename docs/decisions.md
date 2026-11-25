@@ -12203,10 +12203,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-568 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+570 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 568 questions</summary>
+<summary>Q-UI: 570 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12778,6 +12778,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1147](spec/api-and-ui.md#q-ui-1147--a-tokens-secret-shown-once-stands-in-a-field-as-wide-as-a-token) | A token's secret shown once stands in a field as wide as a token | Decided by the development agent | (a) The field grows to 36 rem at most and shrinks with the line; Show and Copy stand beside it, under it where the line is narrower | — |
 | [Q-UI-1148](spec/api-and-ui.md#q-ui-1148--change-maximum-names-the-project-it-changes) | Change maximum names the project it changes | Decided by the development agent | (a) Where Set maximum has its field **Project**, Change maximum shows the project as the field's value, read only | — |
 | [Q-UI-1149](spec/api-and-ui.md#q-ui-1149--an-upstream-registrys-entry-says-a-refusal-once-and-a-refusal-of-the-whole-entry-at-its-top) | An upstream registry's entry says a refusal once, and a refusal of the whole entry at its top | Decided by the development agent | (a) The notice at the top of the dialog's body, as in every other dialog; under **Add host** only a refusal of the list itself (its pointer exactly) | — |
+| [Q-UI-1150](spec/api-and-ui.md#q-ui-1150--an-images-tags-are-one-line-of-facts-after-the-leading-tag-and-a-line-each-in-a-block) | An image's tags are one line of facts after the leading tag, and a line each in a block | Decided by the development agent | (a). "+N more" counts the tags the row leaves out; where the answer names 100 other tags and the image has more (`aliasesMore`), how many is not known and the row says "+ more" on both screens. | — |
+| [Q-UI-1151](spec/api-and-ui.md#q-ui-1151--an-opened-item-reads-its-versions-again-every-3-s-while-one-it-shows-waits-for-its-scan) | An opened item reads its versions again every 3 s while one it shows waits for its scan | Decided by the development agent | (a) The opened item is live itself while a version it shows waits: every 3 s (`LIVE_FAST_MS`), and not at all while none waits | — |
 
 </details>
 

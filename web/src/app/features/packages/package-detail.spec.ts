@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { PackagesApi } from '../../api/packages-api';
-import { FakePackagesApi, ansibleDocsFixture, ansibleFixture, debFixture, ociFixture } from '../../api/testing/fakes-packages';
+import { FakePackagesApi, ansibleDocsFixture, ansibleFixture, debFixture, ociFixture, ociImagesFixture } from '../../api/testing/fakes-packages';
 import { clamavFixture } from '../../api/testing/fakes-clamav';
 import { FakeVulnerabilitiesApi, sampleGrade } from '../../api/testing/fakes-vulnerabilities';
 import { VulnerabilitiesApi, VulnerabilityGrade } from '../../api/vulnerabilities-api';
@@ -243,9 +243,47 @@ describe('The package page: its versions (R-UI-110)', () => {
     await expectAccessible(r.root);
   });
 
-  it('R-UI-110 every format has the page: an image lists its tags, the tag leading; NuGet, Debian and a collection their versions', async () => {
+  it('R-UI-007 R-UI-110 an image\'s page counts its tags and lists one row per image with every tag, found by any of them, and the images counted', async () => {
+    const r = await open({ format: 'oci' }, (fake) => {
+      ociImagesFixture(fake, [['5.4.7', '5.4', '5', 'latest', 'stable', 'sha-f00cf6c'], ['5.4.6', 'sha-6b24a87'], ['5.4.5', 'sha-ed7fd56']], [1]);
+    }, 'team/app');
+    expect(r.fake.versionFilters.at(-1)).toEqual({ sort: '-version', group: 'content' });
+    expect(text(r.root.querySelector('.pkg-meta .dot-separated')!)).toMatch(/^10 tags\s*Latest 5\.4\.7$/);
+    expect(headers(r)).toEqual(['Tag', 'Size', 'Published', 'Last download']);
+    expect(versions(r)).toEqual(['5.4.7', '5.4.6', '5.4.5']);
+    // Every tag of the image, none counted away; no digest (Q-UI-453).
+    const others = (tr: Element) => [...tr.querySelectorAll('.other [translate="no"]')].map((t) => text(t));
+    expect(others(rows(r)[0]!)).toEqual(['5.4', '5', 'latest', 'sha-f00cf6c', 'stable']);
+    expect(rows(r)[1]!.querySelector('[data-testid="signature-badge"]')?.getAttribute('data-state')).toBe('verified_internal');
+    expect(text(r.root.querySelector('.pkg-versions')!)).not.toMatch(/sha256:/);
+    expect(filter(r).getAttribute('aria-label')).toBe('Filter tags');
+    filter(r).value = 'sha-6b2';
+    filter(r).dispatchEvent(new Event('input'));
+    await settle(r.fixture);
+    expect(versions(r)).toEqual(['5.4.6']);
+    expect(text(r.root.querySelector('.versions-count')!)).toBe('1 of 3 images');
+    filter(r).value = 'nothing-like-it';
+    filter(r).dispatchEvent(new Event('input'));
+    await settle(r.fixture);
+    expect(text(r.root.querySelector('.pkg-versions')!)).toContain('No image has a tag that matches “nothing-like-it”.');
+    await expectAccessible(r.root);
+  });
+
+  it('R-API-010 R-UI-110 the page reads every page of the list by content while a cursor is set, a short and an empty one too', async () => {
+    const r = await open({ format: 'oci' }, (fake) => {
+      ociImagesFixture(fake, Array.from({ length: 6 }, (_, i) => [`1.${i}.0`, `sha-${String(i).padStart(7, 'c')}`]));
+      fake.versionPageSizes = [2, 0, 1];
+    }, 'team/app');
+    expect(r.fake.versionPages.map((p) => p.cursor)).toEqual([null, '2.1', '2.2', '3.3']);
+    expect(versions(r)).toEqual(['1.5.0', '1.4.0', '1.3.0', '1.2.0', '1.1.0', '1.0.0']);
+  });
+
+  it('R-UI-110 every format has the page: an image lists its images, the tag leading; NuGet, Debian and a collection their versions', async () => {
     const image = await open({ format: 'oci' }, (fake) => ociFixture(fake), 'team/app');
     expect(versions(image)).toEqual(['1.2.0', '1.1.0']);
+    expect(image.fake.versionFilters.at(-1)).toEqual({ sort: '-version', group: 'content' });
+    // The other formats' lists are no lists by content.
+    expect((await open()).fake.versionFilters.at(-1)).toEqual({ sort: '-version' });
     // Until the formats are read, and for a format the installation does not know, the header shows the key.
     expect(text(image.root.querySelector('.type-badge')!)).toBe('oci');
     expect(rows(image)[0]!.querySelector('th a')?.getAttribute('href')).toBe('/projects/web/packages/oci/team/app@1.2.0');

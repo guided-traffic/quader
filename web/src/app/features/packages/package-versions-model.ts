@@ -5,8 +5,9 @@ import { SortDirection, TableSort } from '../../shared/ui/data-table';
 import { gradeRank } from '../../shared/vulnerability/grade-words';
 
 /*
- * The versions table of a package page (R-UI-110): one row per version, searched, sorted and paged in the browser over the
- * complete list the page reads once (Q-UI-452). Pure functions, so the rules are tested without a screen.
+ * The versions table of a package page (R-UI-110): one row per version (for an image one row per image, its tags as the leading
+ * version and its aliases, Q-UI-1130), searched, sorted and paged in the browser over the complete list the page reads once (Q-UI-452).
+ * Pure functions, so the rules are tested without a screen.
  */
 
 /** One row of the table: the version, the facts the owner named and what the row's badges need. */
@@ -32,6 +33,13 @@ export interface VersionRow {
   readonly state: string | null;
   /** The badge of its signatures (R-SIG-035), the member of the row; null while the signatures are off. */
   readonly signatures: SignatureStatus | null;
+  /**
+   * For a row of a list by content (an image, Q-API-432): the other versions that name its content (the image's other tags), in the
+   * list's order; null for a list of versions.
+   */
+  readonly aliases: readonly string[] | null;
+  /** The answer names 100 aliases and the content has more. */
+  readonly aliasesMore: boolean;
 }
 
 /** The sortable columns, by the name the address carries (`?sort=-published`). */
@@ -66,6 +74,8 @@ export function versionRows(
     order,
     state: v.state ?? null,
     signatures: v.signatures ?? null,
+    aliases: v.aliases ?? null,
+    aliasesMore: v.aliasesMore ?? false,
   }));
 }
 
@@ -84,13 +94,14 @@ export function versionSortParam(sort: TableSort): string | null {
 }
 
 /**
- * The rows whose version or one of whose distribution tags holds the text, case-insensitive: `4.0` finds every 4.0.x, `rc` the
- * release candidates, `latest` the version the tag points at.
+ * The rows whose version, one of whose distribution tags or one of whose aliases holds the text, case-insensitive: `4.0` finds every
+ * 4.0.x, `rc` the release candidates, `latest` the version the tag points at, and an image by any of its tags (`sha-5ccf`, Q-UI-1130).
  */
 export function filterVersions(rows: readonly VersionRow[], text: string): readonly VersionRow[] {
   const needle = text.trim().toLowerCase();
   if (needle === '') return rows;
-  return rows.filter((r) => r.version.toLowerCase().includes(needle) || r.tags.some((t) => t.toLowerCase().includes(needle)));
+  const holds = (t: string): boolean => t.toLowerCase().includes(needle);
+  return rows.filter((r) => holds(r.version) || r.tags.some(holds) || (r.aliases ?? []).some(holds));
 }
 
 function key(r: VersionRow, column: string): number {

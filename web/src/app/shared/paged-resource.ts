@@ -1,6 +1,6 @@
 import { ResourceRef, signal } from '@angular/core';
 import { ApiError } from '../api/problem';
-import { DEFAULT_PAGE_LIMIT, Page, PagedList, PageFetcher } from '../api/pagination';
+import { DEFAULT_PAGE_LIMIT, Page, PagedList, PageFetcher, READ_ON_REQUESTS } from '../api/pagination';
 
 /** Wraps any failure of a list call in an `ApiError`, so that `<quader-error-notice>` can show it. */
 export function asApiError(e: unknown): ApiError {
@@ -75,8 +75,15 @@ export class PagedResource<T> {
     const items: T[] = [];
     let cursor: string | null = null;
     const seen = new Set<string>();
+    // The pages shown are read again whole, so a new row within them appears. A short page with a cursor is read on (R-API-010), each
+    // request for the rows its page still misses, so a page read again never holds more rows than a page, and with no more requests
+    // than `READ_ON_REQUESTS` per page.
+    const pagesShown = Math.max(1, Math.ceil(shown / limit));
+    const target = pagesShown * limit;
+    let requests = 0;
     do {
-      const page: Page<T> = await fetcher(cursor, limit);
+      const page: Page<T> = await fetcher(cursor, Math.min(limit, target - items.length));
+      requests++;
       if (generation !== this.generation || list !== this.list || this.loading() || this.items() !== before) return;
       items.push(...page.items);
       cursor = page.nextCursor;
@@ -84,7 +91,7 @@ export class PagedResource<T> {
         if (seen.has(cursor)) throw new Error('pagination: the server repeated a cursor');
         seen.add(cursor);
       }
-    } while (cursor !== null && items.length < shown);
+    } while (cursor !== null && items.length < target && requests < READ_ON_REQUESTS * pagesShown);
     this.fetcher = fetcher;
     this.list = PagedList.resumed(fetcher, limit, items, cursor);
     this.items.set(items);

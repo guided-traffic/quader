@@ -222,6 +222,27 @@ describe('A live view', () => {
     expect(view.list.items().map((r) => r.id)).toEqual(['x']);
   });
 
+  it('R-UI-213 R-API-010 a list read again reads on past a short and an empty page, for the rows its page still misses, and holds no more rows than its pages', async () => {
+    const rows = Array.from({ length: 30 }, (_, i) => `r${i}`);
+    const sizes: (number | undefined)[] = [];
+    const asked: number[] = [];
+    const list = new PagedResource<string>(10);
+    await list.start(async (cursor, limit) => {
+      asked.push(limit);
+      // The cursor is the position and the request, so an empty page's cursor is a new one, as the server's walk is.
+      const start = Number.parseInt(cursor ?? '0', 10);
+      const end = start + Math.min(sizes.shift() ?? limit, limit);
+      return { items: rows.slice(start, end), nextCursor: end < rows.length ? `${end}.${asked.length}` : null };
+    });
+    expect(list.items()).toHaveLength(10);
+    sizes.push(3, 0);
+    asked.length = 0;
+    await list.refresh();
+    expect(asked).toEqual([10, 7, 7]);
+    expect(list.items()).toEqual(rows.slice(0, 10));
+    expect(list.hasMore()).toBe(true);
+  });
+
   it('R-UI-213 a resource read again keeps its value until the answer, keeps it on a failure, and drops a stale answer', async () => {
     const { fixture, view, root } = await host();
     expect(root.querySelector('.value')?.textContent).toBe('one as read');

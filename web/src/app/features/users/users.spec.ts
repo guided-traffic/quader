@@ -29,13 +29,10 @@ describe('Users list (R-UI-024)', () => {
     expect(await seriousViolations(root)).toEqual([]);
   });
 
-  it('R-API-010 pages with "Load more" until the cursor ends', async () => {
-    const { fixture, root } = await renderScreen(UserList, {
+  it('R-API-010 a page shorter than the list asked for is read on until the cursor ends, with no Load more after it', async () => {
+    const { root } = await renderScreen(UserList, {
       setup: (get) => ((get(IdentityApi) as FakeIdentityApi).pageSize = 1),
     });
-    expect(root.querySelectorAll('tbody tr')).toHaveLength(1);
-    buttonByText(root, 'Load more').click();
-    await settle(fixture);
     expect(root.querySelectorAll('tbody tr')).toHaveLength(2);
     expect(root.textContent).not.toContain('Load more');
   });

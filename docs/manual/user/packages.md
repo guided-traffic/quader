@@ -73,7 +73,7 @@ The page is a table of every version you may see, the highest version first:
 
 | Column | Meaning |
 |---|---|
-| **Version** | The version, which opens its page. A distribution tag that points at it, such as `latest` or `next`, stands beside it, and so does **Pre-release** for a pre-release. For a container image the version is the tag |
+| **Version** | The version, which opens its page. A distribution tag that points at it, such as `latest` or `next`, stands beside it, and so does **Pre-release** for a pre-release. For a container image the column is **Tag**, and a row is an image (see below) |
 | **Size** | The size of the version's files; for an image, the size of the image. **≥** before the size of an image of several platforms counts only the platforms clients have fetched so far through a remote repository; a dash means the size is not known yet, because no platform was fetched. Point at the size for what it counts |
 | **Vulnerabilities** | The grade of the version, the number of its open findings and how many of them have a fix, for example the shield **E** and **1,145 findings · 112 fixable** (see [Vulnerabilities](vulnerabilities.md#grades)). Only where the versions are checked for vulnerabilities and you are signed in |
 | **Published** | When the version was published, as a relative time; hover for the exact time |
@@ -86,6 +86,12 @@ The page is a table of every version you may see, the highest version first:
   the worst versions first.
 - The table shows 50 versions; **Load more** shows 50 more.
 - The search and the sort are part of the page address, so you can send the narrowed table to a colleague.
+
+**A container image** lists its images, not its tags: the tags that name one image (a version, its shorter forms, `latest`, the
+commit tag a pipeline pushes beside it) are one row, led by its highest version, with every other tag after it in grey and the image's
+signature badge. The header counts the tags ("204 tags · Latest 5.4.7"). **Filter tags** keeps the images one of whose tags holds the
+text, so `sha-5ccf` finds the image of that commit, and "12 of 97 images" says how many match. Size, grade and **Last download** are the
+image's; a row's link and its page are the leading tag's. The digest is on the tag's page under **Details**.
 
 Below the table follows the README of the latest version, when it has one you may read. A collection of Ansible content links to
 the documentation of its latest version instead. **Details**, at the end of the page and closed until you open it, lists the

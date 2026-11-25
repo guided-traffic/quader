@@ -24,7 +24,10 @@ export interface ContentShape {
   readonly emptyFilteredText: string;
   /** The date a version arrived: Pushed for an image tag, Fetched for a tag of a remote repository, Published elsewhere. */
   readonly publishedLabel: string;
-  /** A version has a content digest worth showing (an image tag). */
+  /**
+   * A version names content (an image's tag names its manifest): an opened item lists the content, one row per image with its tags
+   * and its digest (`group=content`, Q-UI-1130), not one row per version.
+   */
   readonly digest: boolean;
   /**
    * The word of the button beside a version that opens its commands (Q-UI-1066): the format's client verb, `Pull` for an image,

@@ -13,6 +13,7 @@ import {
   versionSortParam,
 } from './package-versions-model';
 import { gradeSummaryText } from '../../shared/vulnerability/grade-words';
+import { shownTags } from './image-tags';
 
 const summary = (version: string, over: Partial<PackageVersionSummary> = {}): PackageVersionSummary => ({
   version,
@@ -61,6 +62,33 @@ describe('The versions table of a package (R-UI-110)', () => {
     expect(order(filterVersions(rows, 'latest'))).toEqual(['2.1.0']);
     expect(order(filterVersions(rows, '  '))).toEqual(order(rows));
     expect(filterVersions(rows, '9.9')).toEqual([]);
+  });
+
+  it('R-UI-110 an image of a list by content is found by its leading tag or any other tag; a list of versions has no aliases', () => {
+    const images = versionRows(
+      [
+        summary('5.4.7', { aliases: ['5.4', 'latest', 'sha-f00cf6c'], aliasesMore: false }),
+        summary('5.4.6', { aliases: ['sha-6b24a87'], aliasesMore: true }),
+      ],
+      new Map(),
+      [],
+    );
+    expect(images.map((r) => [r.aliases, r.aliasesMore])).toEqual([
+      [['5.4', 'latest', 'sha-f00cf6c'], false],
+      [['sha-6b24a87'], true],
+    ]);
+    expect(order(filterVersions(images, 'SHA-6B'))).toEqual(['5.4.6']);
+    expect(order(filterVersions(images, 'latest'))).toEqual(['5.4.7']);
+    expect(order(filterVersions(images, '5.4'))).toEqual(['5.4.7', '5.4.6']);
+    expect(rows.every((r) => r.aliases === null && !r.aliasesMore)).toBe(true);
+  });
+
+  it('R-UI-052 R-UI-110 a row names its image\'s other tags, all or the first four, and counts what it leaves out', () => {
+    const tags = ['5.4', '5', 'latest', 'stable', 'sha-f00cf6c'];
+    expect(shownTags(tags, false, 4)).toEqual({ shown: ['5.4', '5', 'latest', 'stable'], hidden: 1, more: false });
+    expect(shownTags(tags, false, null)).toEqual({ shown: tags, hidden: 0, more: false });
+    expect(shownTags(['sha-1'], true, 4)).toEqual({ shown: ['sha-1'], hidden: 0, more: true });
+    expect(shownTags([], false, 4)).toEqual({ shown: [], hidden: 0, more: false });
   });
 
   it('R-UI-110 every column sorts both ways; equal keys keep the highest version first', () => {

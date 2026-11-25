@@ -4102,8 +4102,13 @@ not a screen per format ([content-shape.ts](../../web/src/app/features/repositor
   newest images (`group=content`, one row per manifest, the owner's word of 2026-11-25,
   [Q-UI-1130](#q-ui-1130--an-image-is-one-row-with-its-tags-on-the-opened-item-and-on-the-packages-page)): the leading tag as the link,
   **Pre-release** where it is one, the image's other tags muted after it (at most four, then "+N more"), the signature badge (R-SIG-035),
-  the digest (`include=digest`), size and pushed (or fetched) time of the leading tag, and **Pull** of the leading tag; the tags that are no
-  version (`latest`, `sha-…`) lead an image only when no version tag names it, below the versions by their time. For a package, its
+  the digest (which the list by content always carries), size and pushed (or fetched) time of the leading tag, and **Pull** of the leading
+  tag; the tags that are no version (`latest`, `sha-…`) lead an image only when no version tag names it, below the versions by their time.
+  A page of the list by content may be short or empty with a cursor; the item reads on until it has its ten or the list ends, at most
+  eight requests (R-API-010). For an image the link stands where the list goes on or a row leaves a tag out, and the tags stand as
+  [Q-UI-1150](#q-ui-1150--an-images-tags-are-one-line-of-facts-after-the-leading-tag-and-a-line-each-in-a-block) says. While a version
+  shown waits for its scan (queued, scanning), the item reads its versions and grades again every 3 s
+  ([Q-UI-1151](#q-ui-1151--an-opened-item-reads-its-versions-again-every-3-s-while-one-it-shows-waits-for-its-scan)). For a package, its
   versions with size and published time. Each row with the grade of its version in this repository.
   No box of a command stands in the list. At the end of each version's row, and of each item's row for its latest version, a button
   with the format's client verb and a chevron (**Pull** for an image, **Install** for a package, **Download** for a file;
@@ -24440,6 +24445,55 @@ opened item that listed tags. The screens are package B of the work; the details
 tags). The Upstream tab stays one row per tag: its acts (a delivery rule, a download ahead) are per tag (Q-CUR-10). **Applied in the
 spec:** R-UI-007, R-UI-052, R-UI-110, [signatures.md](signatures.md) R-SIG-035. The API is
 [Q-API-432](#q-api-432--the-list-by-content-one-entry-per-manifest-on-the-walk-of-the-order-of-the-versions-with-a-lead-check-per-batch-and-a-scan-budget).
+The cell of an image's row is [Q-UI-1150](#q-ui-1150--an-images-tags-are-one-line-of-facts-after-the-leading-tag-and-a-line-each-in-a-block).
+
+### Q-UI-1150 · An image's tags are one line of facts after the leading tag, and a line each in a block
+
+Status: **Decided by the development agent** (2026-11-25), building Q-UI-1130's screens; the owner reviews it at the walkthrough.
+
+Context: Q-UI-1130 says what a row of an image holds (the leading tag, the other tags muted after it, at most four on the opened item
+and then "+N more", every one on the package's page, the signature badge); not how they stand at 1,440 and at 390 px, what a tag of 128
+characters does, what "+N more" says where the answer names 100 of more tags, or when the link **All N tags** stands under ten rows that
+may name every tag of the image.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The leading tag and the other tags as one line of facts (`.dot-separated`, the style guide's separator, so no line starts with a dot), the badge after it; in a block (a stacked list, R-UI-174) the leading tag, the other tags and the badge each start a line; a tag is an item of its own, so the line wraps between tags, and only a tag wider than the cell alone breaks inside itself (chosen) | One cell, `<quader-image-tags>`, on both screens | The tags read as the image's names, in the colour of a fact; nothing breaks a version at a hyphen; a long branch tag does not make a whole list stack | Five tags and a badge take two lines in a narrow column |
+| (b) The other tags in a column of their own | A column **Other tags** | Aligned | A column of mostly one commit tag; at 390 px one more field per block |
+| (c) The other tags under the leading tag at every width | Two lines a row | One rule | Every row twice as high at 1,440 px, where the line has room |
+
+**Choice:** (a). "+N more" counts the tags the row leaves out; where the answer names 100 other tags and the image has more
+(`aliasesMore`), how many is not known and the row says "+ more" on both screens. Assistive technology reads "Other tags of
+portal/web 1.4.0:" before the first of them. The link **All N tags** under the opened item stands where the item holds more than the
+rows show: the list goes on past the ten (its cursor is set) or a row leaves a tag out; an image of three images whose rows name all
+twelve of its tags has none (Q-UI-1111's "where the item holds more", read for rows that are images). **Applied in the spec:** R-UI-052,
+R-UI-110. Code: [image-tags.ts](../../web/src/app/features/packages/image-tags.ts), `more` of
+[repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts). Tests:
+`R-UI-052 R-SIG-035 an opened image is one row per image…`, `R-UI-215 an opened image whose rows name every tag has no link…`
+([repository-content.spec.ts](../../web/src/app/features/repositories/content/repository-content.spec.ts)), `R-UI-052 R-UI-110 a row names its
+image's other tags…` ([package-versions-model.spec.ts](../../web/src/app/features/packages/package-versions-model.spec.ts)); rendered
+`repository-oci`, `repository-oci-signed`, `package-oci`, `package-oci-many`.
+
+### Q-UI-1151 · An opened item reads its versions again every 3 s while one it shows waits for its scan
+
+Status: **Decided by the development agent** (2026-11-25), closing H-1890 with the rows of Q-UI-1130; the owner reviews it at the
+walkthrough.
+
+Context: the opened item read its versions and their grades again only when its row in the list above changed (R-UI-213): once the
+latest tag was checked, an older tag's scan (queued, scanning, checked) showed only at the next change of the row. The states that pass
+on their own are `queued` and `scanning` (`checkWaits`, Q-UI-1122).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The opened item is live itself while a version it shows waits: every 3 s (`LIVE_FAST_MS`), and not at all while none waits (chosen) | `live()` with `every` null while nothing waits | The state shows within seconds; an opened item with nothing waiting costs no request of its own, as before | One request pair per 3 s per opened item while a scan waits |
+| (b) Every 30 s, waiting or not | A slow cadence always | Simple | Every opened row costs requests forever; a scan's progress shows late |
+| (c) Keep it on the row's changes | As built | No requests | H-1890 stays live |
+
+**Choice:** (a). Rows that are images make the reason smaller (an image's tags have one scan), not gone: an opened item shows ten
+images whose scans run in turn. A scan that waits for what the installation lacks (no scanner, no database) does not pass on its own
+and reads nothing. **Applied in the spec:** R-UI-052. Code: `waiting` and its `live()` in
+[repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts). Test:
+`R-UI-213 an opened image is read again every 3 s while a version it shows waits for its scan…` (repository-content.spec.ts).
 
 ### Q-UI-1140 · The states of the overlays are measured at the component tier, in the unit-test builder's browser mode
 
@@ -25206,15 +25260,15 @@ loading), or a timer of the view is set again before it fires. Live, as far as m
 or the security dashboard open: a new event or finding shows only when the tab is seen again or the page is opened again, which is
 what R-UI-213 forbids.
 
-### H-1890 · An opened item's versions read their states again only when the item's row changes
+### H-1930 · An image's tags past the hundred its row names are not shown and not found by the filter
 
-Component: the opened item of a repository's list (`repository-item-versions.ts`, R-UI-213). Subject: a reader who keeps an image with
-many tags opened. Live since the states of R-VULN-039. The list above is live; the opened item reads its versions and their grades again
-only when its row changes (the count, the latest version, the latest's grade, `checkedAt` or `state`). While the latest tag is scanned and
-the older tags wait, the row changes and the versions are read again; once the latest is checked, a change of an older tag alone (queued
-to scanning to checked) shows at the next change of the row, or when the item is opened again. What makes it real: an image whose latest
-tag is scanned first, then a hundred older tags in turn. The rows of one image with all its tags (S5 of the plan) rebuild this list; the
-fix belongs there: the opened item read again while one of its versions waits (`checkWaits`).
+Component: the package's page of an image and the opened item (R-UI-110, R-UI-052, Q-UI-1130, Q-UI-1150). Subject: a reader of an image
+one of whose manifests more than 101 tags name. Live since the lists by content. An entry of the list by content names at most 100 other
+tags (`aliases`, Q-API-432) and says that there are more (`aliasesMore`); the row says "+ more" without a count, and the field **Filter
+tags** of the package's page finds the image by none of the tags past the hundred, since the page has never read them. What makes it real:
+a pipeline that tags one build many times (a tag per branch and per pipeline run on one manifest), which no image of the owner's
+installation does today (his largest has five tags on a manifest, 2026-11-25). The remedy would be a search of the list by a tag on the
+server, which the list by content does not offer (only `sort=-version`, Q-API-432), or every alias in the answer.
 
 ### H-1910 · The dialog states are measured in English only
 

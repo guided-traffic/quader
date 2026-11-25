@@ -235,10 +235,49 @@ export const genericFiles: readonly { repo: string; path: string; content: strin
 /** Folders created empty: an empty folder's state (R-UI-010). */
 export const genericFolders: readonly { repo: string; path: string }[] = [{ repo: 'assets', path: 'drafts' }];
 
-export const images: readonly { project: string; repo: string; name: string; tags: readonly string[] }[] = [
-  // Several tags of one image: the page of an image lists its tags, the tag leading (W-7).
-  { project: mainProject, repo: 'images', name: 'portal/web', tags: ['1.2.0', '1.3.0', '1.3.1', '1.4.0', 'latest', 'stable'] },
-  { project: mainProject, repo: 'images', name: 'portal/api', tags: ['1.4.0'] },
+/**
+ * The images the seed pushes, each a list of images (manifests) in the order they are pushed, each image named by its tags. A
+ * pipeline tags each version twice, its version and its commit (`sha-…`), as the owner's image of 2026-11-25 was (Q-UI-1130): a list
+ * shows one row per image, led by its version. The images of a name share their layer and differ by a label of their config.
+ */
+export const images: readonly { project: string; repo: string; name: string; images: readonly (readonly string[])[] }[] = [
+  // Six images: a version and its commit tag each; 1.4.0 also as 1.4, 1, latest and stable; one with only main and its commit; one
+  // with a branch's long tag (the longest a tag may be is 128 characters), whose row wraps between its tags and inside the long one.
+  {
+    project: mainProject,
+    repo: 'images',
+    name: 'portal/web',
+    images: [
+      ['1.2.0', 'sha-3f9a2c1'],
+      ['1.3.0', 'sha-8b14e07'],
+      ['1.3.1', 'sha-c52d9e4'],
+      ['1.4.0', '1.4', '1', 'latest', 'stable', 'sha-71e0b3a'],
+      ['main', 'sha-e4a1f60'],
+      ['feature-customer-portal-checkout-redesign-with-the-new-payment-provider-and-address-validation', 'sha-0d8c5b2'],
+    ],
+  },
+  { project: mainProject, repo: 'images', name: 'portal/api', images: [['1.4.0']] },
+  // Twelve images, 26 tags: more images than an opened item shows (ten) and more tags than fit, so the bound, the order of the versions
+  // (1.16.6 above 1.10.1 above 1.9.0, the pre-release 2.0.0-rc.1 first) and the link to all tags are in one picture.
+  {
+    project: mainProject,
+    repo: 'images',
+    name: 'portal/worker',
+    images: [
+      ['1.2.8', 'sha-1a2b3c4'],
+      ['1.3.0', 'sha-2b3c4d5'],
+      ['1.4.0', 'sha-3c4d5e6'],
+      ['1.5.2', 'sha-4d5e6f7'],
+      ['1.6.0', 'sha-5e6f708'],
+      ['1.7.3', 'sha-6f70819'],
+      ['1.8.1', 'sha-708192a'],
+      ['1.9.0', 'sha-8192a3b'],
+      ['1.10.0', 'sha-92a3b4c'],
+      ['1.10.1', 'sha-a3b4c5d'],
+      ['1.16.6', '1.16', 'latest', 'sha-b4c5d6e'],
+      ['2.0.0-rc.1', 'sha-c5d6e7f'],
+    ],
+  },
 ];
 
 /** The first package of the main project: the package page the renders open, with every tab. */
@@ -850,19 +889,21 @@ async function publishCollections(ctx: APIRequestContext, auth: Record<string, s
   }
 }
 
-/** Pushes a small image (one layer, a config, a manifest per tag) through `/v2/` with a registry token (R-OCI-005). */
+/**
+ * Pushes the images of a name through `/v2/` with a registry token (R-OCI-005): each a small image (one layer, a config, a manifest)
+ * under each of its tags. Every image of the name has the same layer (`bastions.ts` names its blob's digest), and the first keeps the
+ * config and the manifest it always had; the others' configs carry the commit as a label, so each is a manifest of its own. A few
+ * hundred bytes per image.
+ */
 async function pushImage(ctx: APIRequestContext, edge: string, pat: string, image: (typeof images)[number]): Promise<void> {
   const repo = `${image.project}/${image.repo}/${image.name}`;
   const bearer = await registryToken(ctx, edge, pat, repo);
   const auth = { Authorization: `Bearer ${bearer}` };
   const layer = gzipSync(tarEntry('etc/acme-release', Buffer.from(`${image.name}\n`)));
-  const config = Buffer.from(
-    JSON.stringify({ architecture: 'amd64', os: 'linux', config: { Labels: { 'org.opencontainers.image.title': image.name } }, rootfs: { type: 'layers', diff_ids: [] } }),
-  );
   const digestOf = (b: Buffer): string => `sha256:${createHash('sha256').update(b).digest('hex')}`;
-  for (const blob of [layer, config]) {
+  const upload = async (blob: Buffer): Promise<void> => {
     const digest = digestOf(blob);
-    if ((await ctx.head(`/v2/${repo}/blobs/${digest}`, { headers: auth })).status() === 200) continue;
+    if ((await ctx.head(`/v2/${repo}/blobs/${digest}`, { headers: auth })).status() === 200) return;
     const start = await ctx.post(`/v2/${repo}/blobs/uploads/`, { headers: auth });
     await expectStatus(start, [202], `start upload ${repo}`);
     const location = new URL(start.headers()['location'] ?? '', edge);
@@ -872,24 +913,32 @@ async function pushImage(ctx: APIRequestContext, edge: string, pat: string, imag
       headers: { ...auth, 'Content-Type': 'application/octet-stream' },
     });
     await expectStatus(put, [201], `upload blob ${repo}`);
-  }
-  const manifest = Buffer.from(
-    JSON.stringify({
-      schemaVersion: 2,
-      mediaType: 'application/vnd.oci.image.manifest.v1+json',
-      config: { mediaType: 'application/vnd.oci.image.config.v1+json', digest: digestOf(config), size: config.length },
-      layers: [{ mediaType: 'application/vnd.oci.image.layer.v1.tar+gzip', digest: digestOf(layer), size: layer.length }],
-      annotations: { 'org.opencontainers.image.description': `The ${image.name} image of the renders` },
-    }),
-  );
-  for (const tag of image.tags) {
-    const res = await patient(() =>
-      ctx.put(`/v2/${repo}/manifests/${tag}`, {
-      data: manifest,
-      headers: { ...auth, 'Content-Type': 'application/vnd.oci.image.manifest.v1+json' },
+  };
+  await upload(layer);
+  for (const [i, tags] of image.images.entries()) {
+    const labels: Record<string, string> = { 'org.opencontainers.image.title': image.name };
+    const commit = tags.find((t) => t.startsWith('sha-'));
+    if (i > 0 && commit) labels['org.opencontainers.image.revision'] = commit.slice(4);
+    const config = Buffer.from(JSON.stringify({ architecture: 'amd64', os: 'linux', config: { Labels: labels }, rootfs: { type: 'layers', diff_ids: [] } }));
+    await upload(config);
+    const manifest = Buffer.from(
+      JSON.stringify({
+        schemaVersion: 2,
+        mediaType: 'application/vnd.oci.image.manifest.v1+json',
+        config: { mediaType: 'application/vnd.oci.image.config.v1+json', digest: digestOf(config), size: config.length },
+        layers: [{ mediaType: 'application/vnd.oci.image.layer.v1.tar+gzip', digest: digestOf(layer), size: layer.length }],
+        annotations: { 'org.opencontainers.image.description': `The ${image.name} image of the renders` },
       }),
     );
-    await expectStatus(res, [201], `push ${repo}:${tag}`);
+    for (const tag of tags) {
+      const res = await patient(() =>
+        ctx.put(`/v2/${repo}/manifests/${tag}`, {
+          data: manifest,
+          headers: { ...auth, 'Content-Type': 'application/vnd.oci.image.manifest.v1+json' },
+        }),
+      );
+      await expectStatus(res, [201], `push ${repo}:${tag}`);
+    }
   }
 }
 

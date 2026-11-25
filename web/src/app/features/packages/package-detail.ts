@@ -2,7 +2,7 @@ import { DecimalPipe } from '@angular/common';
 import { LIVE_IDLE_MS, live, refreshResource } from '../../core/live-refresh';
 import { Component, computed, effect, inject, input, linkedSignal, resource, untracked } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { PackagesApi } from '../../api/packages-api';
+import { PackagesApi, VersionFilters } from '../../api/packages-api';
 import { collectAll } from '../../api/pagination';
 import { VulnerabilitiesApi, VulnerabilityGrade, VulnerabilityPackageReport } from '../../api/vulnerabilities-api';
 import { ErrorNotice } from '../../shared/error-notice';
@@ -31,6 +31,7 @@ import { GradeLabel } from '../../shared/vulnerability/grade';
 import { VersionSize } from './version-size';
 import { SignatureBadge } from '../../shared/signatures/signature-badge';
 import { CLAMAV_FORMAT, clamavState, stateRank, stateText } from './clamav-definitions';
+import { ImageTags, listsByContent } from './image-tags';
 
 /**
  * A package's page is its versions (R-UI-007, R-UI-110, the owner's walk of 2026-11-18): the name, the format and the
@@ -39,7 +40,8 @@ import { CLAMAV_FORMAT, clamavState, stateRank, stateText } from './clamav-defin
  * and when a client last downloaded it (R-API-079). A
  * field above the table narrows it to the versions that hold the typed text; the columns sort; 50 rows show at first. A version's
  * row links to the version's own page (R-UI-111). The README of the latest version follows the table, the facts of the package
- * are its Details. Search and sort are the `q` and `sort` parameters of the address.
+ * are its Details. Search and sort are the `q` and `sort` parameters of the address. An image's rows are its images, each with all
+ * its tags, found by any of them, while the header counts its tags (the owner's word of 2026-11-25, Q-UI-1130).
  */
 /** Two answers name the same version. */
 function sameVersion(a: { id: string; version: string } | undefined, b: { id: string; version: string } | undefined): boolean {
@@ -61,6 +63,7 @@ function sameVersion(a: { id: string; version: string } | undefined, b: { id: st
     PackageReadmeView,
     GradeLabel,
     VersionSize,
+    ImageTags,
   ],
   templateUrl: './package-detail.html',
   styleUrl: './package-detail.scss',
@@ -86,14 +89,26 @@ export class PackageDetail {
     loader: ({ params }) => this.api.lookup(params.format, params.name),
   });
   protected readonly pkg = computed(() => valueOf(this.summary));
-  /** Every version in the format's order, the highest first: the table sorts, searches and pages it in the browser (Q-UI-452). */
+  /**
+   * Every version in the format's order, the highest first, every page while a cursor is set (a page of a list by content may be
+   * short or empty, R-API-010): the table sorts, searches and pages it in the browser (Q-UI-452).
+   */
   protected readonly versions = resource({
     params: () => this.pkg()?.id,
-    loader: ({ params }) =>
-      collectAll(this.api.versions(params, { sort: '-version', ...(this.clamav() ? { include: ['state'] } : {}) })),
+    loader: ({ params }) => collectAll(this.api.versions(params, this.versionQuery())),
   });
   /** A database of the ClamAV definitions: its versions show their state, the version in use first (R-UI-194, Q-UI-904). */
   protected readonly clamav = computed(() => this.format() === CLAMAV_FORMAT);
+  /** The rows are images, each with all its tags (`group=content`, Q-UI-1130): the words say tags and images. */
+  protected readonly images = computed(() => listsByContent(this.format()));
+  /** The query of the version list: the format's order, a ClamAV database's states, an image's list by content. */
+  private versionQuery(): VersionFilters {
+    return {
+      sort: '-version',
+      ...(this.clamav() ? { include: ['state'] } : {}),
+      ...(this.images() ? { group: 'content' as const } : {}),
+    };
+  }
   /** The latest version's details: its distribution tags, which are the package's, and whether it has a README. */
   /** The latest version by value: reading the package again (R-UI-213) is no new latest version unless it changed. */
   private readonly latestKey = computed(
@@ -181,7 +196,11 @@ export class PackageDetail {
   });
 
   protected readonly columns = computed<readonly TableColumn[]>(() => [
-    { id: 'version', label: $localize`:@@pkg.ver.version:Version`, sortable: true },
+    {
+      id: 'version',
+      label: this.images() ? $localize`:@@pkg.ver.tag:Tag` : $localize`:@@pkg.ver.version:Version`,
+      sortable: true,
+    },
     { id: 'size', label: $localize`:@@pkg.ver.size:Size`, numeric: true, sortable: true },
     ...(this.graded()
       ? [{ id: 'vulnerabilities', label: $localize`:@@pkg.ver.vulnerabilities:Vulnerabilities`, sortable: true }]
@@ -195,12 +214,17 @@ export class PackageDetail {
     },
     ...(this.showRepositories() ? [{ id: 'repositories', label: $localize`:@@pkg.ver.repositories:Repositories` }] : []),
   ]);
-  protected readonly caption = $localize`:@@pkg.ver.caption:Versions`;
-  protected readonly filterLabel = $localize`:@@pkg.ver.filter:Filter versions`;
+  protected readonly imagesText = $localize`:@@pkg.ver.images:Images`;
+  protected readonly caption = computed(() => (this.images() ? this.imagesText : $localize`:@@pkg.ver.caption:Versions`));
+  protected readonly filterLabel = computed(() =>
+    this.images() ? $localize`:@@pkg.ver.filter-tags:Filter tags` : $localize`:@@pkg.ver.filter:Filter versions`,
+  );
   protected readonly detailsHeading = $localize`:@@pkg.details:Details`;
   protected readonly detailsText = $localize`:@@pkg.details-hint:The repositories that hold the package, its keywords and its downloads.`;
   protected readonly emptyText = computed(() =>
-    $localize`:@@pkg.ver.none-matching:No version matches “${this.draft().trim()}:text:”.`,
+    this.images()
+      ? $localize`:@@pkg.ver.none-matching-tags:No image has a tag that matches “${this.draft().trim()}:text:”.`
+      : $localize`:@@pkg.ver.none-matching:No version matches “${this.draft().trim()}:text:”.`,
   );
 
   protected readonly neverTitle = $localize`:@@pkg.ver.never-title:No client has downloaded this version through Quader yet.`;
@@ -242,11 +266,7 @@ export class PackageDetail {
           reads.push(refreshResource(this.report, () => this.vulnerabilityApi.packageReport(id).catch(() => null)));
         }
         if (this.stamp() !== before || this.clamav()) {
-          reads.push(
-            refreshResource(this.versions, () =>
-              collectAll(this.api.versions(id, { sort: '-version', ...(this.clamav() ? { include: ['state'] } : {}) })),
-            ),
-          );
+          reads.push(refreshResource(this.versions, () => collectAll(this.api.versions(id, this.versionQuery()))));
         }
         await Promise.all(reads);
       },

@@ -6,7 +6,12 @@
     </span>
     @if (pkg(); as p) {
       <span class="dot-separated muted">
-        <span i18n="@@pkg.version-count">{p.versionCount, plural, =1 {1 version} other {{{ p.versionCount | number }} versions}}</span>
+        <!-- An image's count is its tags, while its table lists its images (R-UI-007, Q-UI-1130). -->
+        @if (images()) {
+          <span i18n="@@pkg.tag-count">{p.versionCount, plural, =1 {1 tag} other {{{ p.versionCount | number }} tags}}</span>
+        } @else {
+          <span i18n="@@pkg.version-count">{p.versionCount, plural, =1 {1 version} other {{{ p.versionCount | number }} versions}}</span>
+        }
         <span
           ><ng-container i18n="@@pkg.latest">Latest</ng-container>&ngsp;<a [routerLink]="versionLink(p.latestVersion)" translate="no">{{
             p.latestVersion
@@ -24,30 +29,36 @@
 } @else if (pkg(); as p) {
   <section class="pkg-versions" aria-labelledby="pkg-versions-heading">
     <div class="versions-toolbar">
-      <h2 id="pkg-versions-heading" class="visually-hidden" i18n="@@pkg.ver.heading">Versions</h2>
+      <h2 id="pkg-versions-heading" class="visually-hidden">{{ caption() }}</h2>
       <div class="versions-filter">
         <input
           class="text-input"
           type="search"
           spellcheck="false"
           autocomplete="off"
-          [attr.aria-label]="filterLabel"
-          [attr.placeholder]="filterLabel"
+          [attr.aria-label]="filterLabel()"
+          [attr.placeholder]="filterLabel()"
           [value]="draft()"
           (input)="onFilter($any($event.target).value)"
         />
         <span class="material-icons" aria-hidden="true">search</span>
       </div>
       @if (draft().trim() !== '') {
-        <p class="versions-count secondary-inline" role="status" i18n="@@pkg.ver.matching">
-          {{ matching().length | number }} of {{ rows().length | number }} versions
-        </p>
+        @if (images()) {
+          <p class="versions-count secondary-inline" role="status" i18n="@@pkg.ver.matching-images">
+            {{ matching().length | number }} of {{ rows().length | number }} images
+          </p>
+        } @else {
+          <p class="versions-count secondary-inline" role="status" i18n="@@pkg.ver.matching">
+            {{ matching().length | number }} of {{ rows().length | number }} versions
+          </p>
+        }
       }
     </div>
 
     <quader-data-table
       class="versions-table"
-      [caption]="caption"
+      [caption]="caption()"
       [columns]="columns()"
       [sort]="sortState()"
       (sortChange)="changeSort($event)"
@@ -59,25 +70,38 @@
       @for (v of shown(); track v.version) {
         <tr>
           <th scope="row">
-            <span class="version-cell">
-              <a [routerLink]="versionLink(v.version)" translate="no">{{ v.version }}</a>
-              @for (t of v.tags; track t) {
-                <span class="badge info" translate="no">{{ t }}</span>
-              }
-              @if (v.prerelease) {
-                <span class="badge" i18n="@@pkg.badge.prerelease">Pre-release</span>
-              }
-              @if (stateBadge(v.state); as b) {
-                <span [class]="b.cls">
-                  @if (b.cls === 'ok') {
-                    <span class="material-icons" aria-hidden="true">check_circle</span>
-                  }
-                  {{ b.text }}
-                </span>
-              }
-              <!-- The badge of the version's signatures (R-SIG-035); nothing for a state without one. -->
-              <quader-signature-badge [state]="v.signatures?.state" [stale]="v.signatures?.stale ?? false" />
-            </span>
+            @if (v.aliases; as aliases) {
+              <!-- An image: its leading tag, every other tag and its signatures' badge (Q-UI-1130). -->
+              <quader-image-tags
+                [tag]="v.version"
+                [link]="versionLink(v.version)"
+                [prerelease]="v.prerelease"
+                [name]="name()"
+                [aliases]="aliases"
+                [more]="v.aliasesMore"
+                [signatures]="v.signatures"
+              />
+            } @else {
+              <span class="version-cell">
+                <a [routerLink]="versionLink(v.version)" translate="no">{{ v.version }}</a>
+                @for (t of v.tags; track t) {
+                  <span class="badge info" translate="no">{{ t }}</span>
+                }
+                @if (v.prerelease) {
+                  <span class="badge" i18n="@@pkg.badge.prerelease">Pre-release</span>
+                }
+                @if (stateBadge(v.state); as b) {
+                  <span [class]="b.cls">
+                    @if (b.cls === 'ok') {
+                      <span class="material-icons" aria-hidden="true">check_circle</span>
+                    }
+                    {{ b.text }}
+                  </span>
+                }
+                <!-- The badge of the version's signatures (R-SIG-035); nothing for a state without one. -->
+                <quader-signature-badge [state]="v.signatures?.state" [stale]="v.signatures?.stale ?? false" />
+              </span>
+            }
           </th>
           <td class="num size"><quader-version-size [bytes]="v.sizeBytes" [partial]="v.sizePartial" /></td>
           @if (graded()) {

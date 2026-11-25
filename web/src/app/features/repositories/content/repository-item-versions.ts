@@ -1,6 +1,6 @@
 import { Component, LOCALE_ID, computed, effect, inject, input, resource, untracked } from '@angular/core';
 import { formatNumber } from '@angular/common';
-import { refreshResource } from '../../../core/live-refresh';
+import { LIVE_FAST_MS, live, refreshResource } from '../../../core/live-refresh';
 import { RouterLink } from '@angular/router';
 import { TimeAgo } from '../../../shared/ui/time-ago';
 import { PackageSummary, PackageVersionSummary, PackagesApi } from '../../../api/packages-api';
@@ -12,9 +12,11 @@ import { CopyButton } from '../../../shared/copy-button';
 import { PagedResource } from '../../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../../shared/ui/data-table';
 import { GradeLabel } from '../../../shared/vulnerability/grade';
+import { checkWaits } from '../../../shared/vulnerability/grade-words';
 import { ClientCommandMenu } from '../../packages/client-command-menu';
 import { VersionSize } from '../../packages/version-size';
 import { packageCommands, versionCommands } from '../../packages/package-links';
+import { ImageTags } from '../../packages/image-tags';
 import { ContentShape } from './content-shape';
 
 /**
@@ -23,10 +25,15 @@ import { ContentShape } from './content-shape';
  */
 export const OPENED_VERSIONS = 10;
 
+/** How many of an image's other tags its row in an opened item names before "+N more" (Q-UI-1130); the package's page names all. */
+export const OPENED_OTHER_TAGS = 4;
+
 /**
- * The versions of one item of a repository's content page, opened in its row (R-UI-052): its ten newest under a head of their own
- * and, where it holds more, a link to the package's page that lists them all (R-UI-215, Q-UI-1111); no scroll and no **Load more**.
- * For an image its tags with digest, size and pushed time, for a package its versions; the grade of each in this repository (R-UI-094), and at the end of each row the button with
+ * The versions of one item of a repository's content page, opened in its row (R-UI-052): its ten newest by the format's order
+ * (R-API-029) under a head of their own and, where it holds more than they show, a link to the package's page that lists them all
+ * (R-UI-215, Q-UI-1111); no scroll and no **Load more**. For an image its ten newest images (`group=content`, Q-UI-1130): the leading
+ * tag with the image's other tags and its signatures' badge, the digest, the size and pushed time of the leading tag; for a package
+ * its versions; the grade of each in this repository (R-UI-094), and at the end of each row the button with
  * the format's client verb (**Pull**, **Install**) that opens the version's commands, one per client (`<quader-client-command-menu>`,
  * Q-UI-1066). A command is the server's install snippet (R-API-030) for this repository, so it carries this installation's real
  * address. A system repository of the project `upstream` and a disabled repository have no command: they answer no client (Q-UI-898,
@@ -34,7 +41,7 @@ export const OPENED_VERSIONS = 10;
  */
 @Component({
   selector: 'quader-repository-item-versions',
-  imports: [TimeAgo, RouterLink, CopyButton, DataTable, GradeLabel, ClientCommandMenu, VersionSize],
+  imports: [TimeAgo, RouterLink, CopyButton, DataTable, GradeLabel, ClientCommandMenu, VersionSize, ImageTags],
   template: `
     <quader-data-table
       [caption]="caption()"
@@ -46,12 +53,26 @@ export const OPENED_VERSIONS = 10;
       [emptyText]="shape().emptyText"
       (retry)="versions.reload()"
     >
-      @for (v of versions.items(); track v.version) {
+      @for (v of versions.items(); track v.digest ?? v.version) {
         <tr>
           <th scope="row">
-            <a [routerLink]="versionLink(v.version)" translate="no">{{ v.version }}</a>
-            @if (v.prerelease) {
-              <span class="badge" i18n="@@repo.content.prerelease">Pre-release</span>
+            @if (shape().digest) {
+              <!-- An image: its leading tag, its other tags and its signatures' badge (Q-UI-1130). -->
+              <quader-image-tags
+                [tag]="v.version"
+                [link]="versionLink(v.version)"
+                [prerelease]="v.prerelease"
+                [name]="pkg().name"
+                [aliases]="v.aliases ?? []"
+                [more]="v.aliasesMore ?? false"
+                [limit]="otherTags"
+                [signatures]="v.signatures ?? null"
+              />
+            } @else {
+              <a [routerLink]="versionLink(v.version)" translate="no">{{ v.version }}</a>
+              @if (v.prerelease) {
+                <span class="badge" i18n="@@repo.content.prerelease">Pre-release</span>
+              }
             }
           </th>
           @if (shape().digest) {
@@ -169,9 +190,18 @@ export class RepositoryItemVersions {
 
   protected readonly caption = computed(() => `${this.shape().versionsLabel}: ${this.pkg().name}`);
   protected readonly copyDigestLabel = $localize`:@@repo.content.copy-digest:Copy digest`;
-  /** The item holds more versions than the row lists: the link to all of them stands under the list (R-UI-215, Q-UI-1111). */
-  protected readonly more = computed(() => (this.versions.loaded() && this.pkg().versionCount > OPENED_VERSIONS ? this.pkg().versionCount : 0));
-  /** "All 103 tags", "All 33 versions": the count the row above shows. */
+  /** How many of an image's other tags a row names (Q-UI-1130). */
+  protected readonly otherTags = OPENED_OTHER_TAGS;
+  /**
+   * The item holds more than the rows show: the list goes on past them, or a row leaves some of its image's tags out. The link to all
+   * of them stands under the list (R-UI-215, Q-UI-1111, Q-UI-1150); an image whose rows show every tag has none.
+   */
+  protected readonly more = computed(() => {
+    if (!this.versions.loaded()) return 0;
+    const cut = this.versions.items().some((v) => (v.aliases?.length ?? 0) > OPENED_OTHER_TAGS || v.aliasesMore === true);
+    return this.versions.hasMore() || cut ? this.pkg().versionCount : 0;
+  });
+  /** "All 103 tags", "All 33 versions": the count the row above shows, which for an image counts its tags. */
   protected readonly allText = computed(() => this.shape().allVersionsText(formatNumber(this.more(), this.locale)));
   /** The package's page, which lists every version with filter, sort and **Load more** (R-UI-110). */
   protected packageLink(): string[] {
@@ -212,14 +242,28 @@ export class RepositoryItemVersions {
     effect(() => {
       const id = this.pkgId();
       const repository = this.repository();
-      const digest = this.shape().digest;
+      const images = this.shape().digest;
       untracked(() => {
+        // The newest first by the format's order (R-API-029); an image's list by content, one row per manifest with its digest
+        // (Q-API-432). A short or empty page with a cursor is read on until the ten are there (R-API-010, `PagedList`).
         void this.versions.start(
-          this.api.versions(id, { repository: [repository], sort: '-publishedAt', include: digest ? ['digest'] : [] }),
+          this.api.versions(id, { repository: [repository], sort: '-version', ...(images ? { group: 'content' as const } : {}) }),
         );
       });
     });
+    // While a version shown here waits for its scan (queued, scanning), its grade passes on its own: the rows are read again every
+    // few seconds, not only when the row above changes (R-UI-213, Q-UI-1151); otherwise the row above's changes are enough.
+    live({ reload: () => this.readAgain(), every: () => (this.waiting() ? LIVE_FAST_MS : null) });
   }
+
+  /** A version shown here waits for its scan: its grade's state passes on its own (R-VULN-039, `checkWaits`). */
+  private readonly waiting = computed(() => {
+    const grades = this.gradeByVersion();
+    return this.versions.items().some((v) => {
+      const g = grades.get(v.version);
+      return g !== undefined && checkWaits(g.state);
+    });
+  });
 
   /** The versions and their grades again, in place; a failure keeps what is shown, and the next change of the row tries again. */
   private async readAgain(): Promise<void> {

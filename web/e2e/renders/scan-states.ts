@@ -59,16 +59,30 @@ async function routeList(page: Page, from: number): Promise<void> {
   });
 }
 
-/** A package's report (the opened item's versions, the package page's): every version takes a state, from `from` on. */
+/**
+ * A package's report (the opened item's versions, the package page's): every image takes a state, from `from` on, in the order of its
+ * rows, and every tag of an image its image's (the image is scanned per manifest, so its tags have one state, Q-UI-1130). The rows are
+ * the server's list by content, read with the page's session for the report's repositories.
+ */
 async function routeReport(page: Page, from: number): Promise<void> {
   const url = '**/api/v1/packages/*/vulnerabilities**';
   await page.unroute(url);
   await page.route(url, async (route) => {
     const res = await route.fetch();
-    const body = (await res.json()) as { versions?: { grade: Grade }[] };
-    (body.versions ?? []).forEach((v, i) => {
-      v.grade = withState(v.grade, CHECK_STATES[(from + i) % CHECK_STATES.length]!, 13 + i);
-    });
+    const body = (await res.json()) as { versions?: { version: string; grade: Grade }[] };
+    const report = new URL(route.request().url());
+    const list = new URL(report.pathname.replace(/\/vulnerabilities$/, '/versions'), report.origin);
+    for (const r of report.searchParams.getAll('repository')) list.searchParams.append('repository', r);
+    list.searchParams.set('sort', '-version');
+    list.searchParams.set('group', 'content');
+    list.searchParams.set('limit', '100');
+    const images = ((await (await page.request.get(list.toString())).json()) as { items?: { version: string; aliases?: string[] }[] }).items ?? [];
+    const row = new Map<string, number>();
+    images.forEach((image, k) => [image.version, ...(image.aliases ?? [])].forEach((tag) => row.set(tag, k)));
+    for (const v of body.versions ?? []) {
+      const k = row.get(v.version) ?? images.length;
+      v.grade = withState(v.grade, CHECK_STATES[(from + k) % CHECK_STATES.length]!, 13 + k);
+    }
     await route.fulfill({ response: res, body: JSON.stringify(body) });
   });
 }
@@ -84,7 +98,7 @@ export async function* scanStatesList(page: Page): AsyncGenerator<string> {
   await page.reload();
   await expect(page.locator('main tbody quader-grade').first()).toBeVisible();
   yield '';
-  // The image with six tags (portal/web of the seed), so that three passes show every state.
+  // The image of six images (portal/web of the seed, a row each), so that three passes show every state.
   const open = page.locator('main tbody tr', { hasText: 'portal/web' }).locator('.name-cell button[aria-expanded]').first();
   const versions = page.locator('main .collapse-region.open quader-repository-item-versions');
   // A picture's name keeps letters and dashes only, so each pass has a word of its own.
@@ -105,7 +119,7 @@ export async function* scanStatesList(page: Page): AsyncGenerator<string> {
   await page.unroute('**/api/v1/packages/*/vulnerabilities**');
 }
 
-/** A package's page (Q-UI-1121): its versions say a state each, the column kept although none has a grade. */
+/** A package's page (Q-UI-1121): its images say a state each, the column kept although none has a grade. */
 export async function* scanStatesPackage(page: Page): AsyncGenerator<string> {
   for (const [from, name] of [[0, ''], [6, 'more'], [12, 'last']] as const) {
     await routeReport(page, from);

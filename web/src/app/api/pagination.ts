@@ -15,6 +15,13 @@ export const MAX_PAGE_LIMIT = 500;
 export type PageFetcher<T> = (cursor: string | null, limit: number) => Promise<Page<T>>;
 
 /**
+ * The most requests one page of a list takes (R-API-010): a page may be short, even empty, while its cursor is set (a list by content
+ * whose read budget ended, Q-API-432), and a list reads on until it has its page or the list ends, but never more than this often. A
+ * list that stops at the bound keeps its cursor: **Load more** goes on from there.
+ */
+export const READ_ON_REQUESTS = 8;
+
+/**
  * Walks from the first page to the last and returns every item. The cursor is never inspected
  * (R-API-010: opaque); a repeated cursor ends the walk with an error so that a misbehaving
  * server cannot make the UI loop forever.
@@ -74,13 +81,23 @@ export class PagedList<T> {
     return !this.started || this.nextCursor !== null;
   }
 
-  /** Loads the next page and returns the whole list so far. */
+  /**
+   * Loads the next page and returns the whole list so far. A short or empty answer with a cursor is read on (R-API-010), each request
+   * asking only for the rows still missing, until the page is whole, the list ends or `READ_ON_REQUESTS` requests were made; the rows
+   * are added once, at the end, so a list shown from them never shows a part of the page.
+   */
   async loadMore(): Promise<readonly T[]> {
     if (!this.hasMore) return this._items;
-    const page = await this.fetchPage(this.nextCursor, this.limit);
-    this.started = true;
-    this.nextCursor = page.nextCursor;
-    this._items = [...this._items, ...page.items];
+    const added: T[] = [];
+    let requests = 0;
+    do {
+      const page = await this.fetchPage(this.nextCursor, this.limit - added.length);
+      this.started = true;
+      this.nextCursor = page.nextCursor;
+      added.push(...page.items);
+      requests++;
+    } while (this.nextCursor !== null && added.length < this.limit && requests < READ_ON_REQUESTS);
+    this._items = [...this._items, ...added];
     return this._items;
   }
 }

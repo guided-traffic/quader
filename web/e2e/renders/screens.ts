@@ -185,6 +185,28 @@ async function* rowOpened(page: Page): AsyncGenerator<string> {
 }
 
 /**
+ * A repository of images with the image `name` opened in its row (R-UI-052, Q-UI-1130): its newest images, a row each with its leading
+ * tag, its other tags and its signature badge. `closed` renders the list before it is opened as well.
+ */
+function imageOpened(name: string, closed: boolean): (page: Page) => AsyncGenerator<string> {
+  return async function* (page: Page): AsyncGenerator<string> {
+    if (closed) yield '';
+    await page.locator('main tbody tr', { has: page.locator('.name-cell a', { hasText: new RegExp(`^${name}$`) }) }).locator('.name-cell button[aria-expanded="false"]').click();
+    await expect(page.locator('main .collapse-region.open quader-repository-item-versions quader-image-tags').first()).toBeVisible();
+    yield 'opened';
+  };
+}
+
+/** An image's page (R-UI-110, Q-UI-1130): its images with every tag, then narrowed to those with a tag that holds "1.1". */
+async function* imageTagsFiltered(page: Page): AsyncGenerator<string> {
+  yield '';
+  // Found by its place, not its English words: the German pass walks it too.
+  await page.locator('main .versions-filter input').fill('1.1');
+  await expect(page.locator('main .pkg-versions tbody tr')).toHaveCount(3);
+  yield 'filtered';
+}
+
+/**
  * The menu of a version's commands (Q-UI-1066): the first item opened, then the button of its first version clicked, so that the panel
  * hangs from it with a section and a command per client of the format.
  */
@@ -2813,7 +2835,11 @@ export const screens: readonly Screen[] = [
   { id: 'repository-npm-virtual', path: `${P}/repositories/npm`, kinds: all, de: true },
   { id: 'repository-long-key', path: `${P}/repositories/${longNpmKey}`, kinds: all },
   { id: 'repository-generic', path: `${P}/repositories/assets`, kinds: all },
-  { id: 'repository-oci', path: `${P}/repositories/images`, kinds: all, walk: rowOpened },
+  // The image of twelve images and 26 tags opened (Q-UI-1130): ten rows, the highest version first, its commit tag muted beside it, and
+  // the link to all its tags; then the image of six with the signed 1.4.0 (its badge on the row), a main without a version and a tag of
+  // 95 characters, in German too.
+  { id: 'repository-oci', path: `${P}/repositories/images`, kinds: all, walk: imageOpened('portal/worker', true) },
+  { id: 'repository-oci-signed', path: `${P}/repositories/images`, kinds: ['plain'], walk: imageOpened('portal/web', false), de: true },
   // Every state of a check by its cause in the list and the opened item (R-VULN-039, Q-UI-1120): a word beside the N/A shield, the
   // sentence as the tooltip; the German words in the narrow cell.
   { id: 'repository-oci-scan-states', path: `${P}/repositories/images`, kinds: ['plain'], walk: scanStatesList, de: true },
@@ -2849,7 +2875,9 @@ export const screens: readonly Screen[] = [
   { id: 'package-npm-many', path: pkg(P, manyVersionsPackage), kinds: all, walk: versionsTable },
   { id: 'package-npm-graded', path: pkg(P, gradedPackage), kinds: all },
   { id: 'package-npm-long-name', path: pkg(P, longNamePackage), kinds: ['plain'] },
-  { id: 'package-oci', path: pkg(P, ociPackage), kinds: all },
+  { id: 'package-oci', path: pkg(P, ociPackage), kinds: all, de: true },
+  // An image's page of twelve images: every tag in its row, the header's count of tags, the filter by any tag (Q-UI-1130).
+  { id: 'package-oci-many', path: pkg(P, { format: 'oci', name: 'portal/worker' }), kinds: ['plain'], walk: imageTagsFiltered, de: true },
   { id: 'package-nuget', path: pkg(O, nugetPackage), kinds: all },
   { id: 'package-deb', path: pkg(O, debPackage), kinds: all },
   { id: 'package-ansible', path: pkg(O, { format: 'ansible', name: collectionName }), kinds: all },
