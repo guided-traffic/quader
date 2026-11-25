@@ -305,11 +305,12 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | S16 · A retired system repository is removed, and a retired preset says so | the owner's finding of 19:09 (section 8, Product): `upstream/scanner-clamav` stays listed as "Off" | landed and pushed at 20:40 |
 | S17 · Every load shows the spinner the owner picked (W-29) | the owner's task of 19:15 and his choice of 19:19 (section 8, Product): the mark's six stones, lighting up in sandstone | landed and pushed at 23:00 |
 | S18 · No signed address in a log or a record | my finding of 19:23 (section 8, Product): the upstream log writes redirect targets with their signatures | landed and pushed at 20:40 |
-| S19 · The command behind its button on a version's page, clients as tabs, a collection opens in its documentation (W-30) | the owner's task of 20:39 (section 8, Product): every format's version page, the panel of the command, the target of a collection's name, the sentence why a format is not checked for vulnerabilities | built at 21:25; its builder rebases it onto the spinner and the range since about 23:03, with R-UI-218 and Q-UI-1240 to Q-UI-1245 |
+| S19 · The command behind its button on a version's page, clients as tabs, a collection opens in its documentation (W-30) | the owner's task of 20:39 (section 8, Product): every format's version page, the panel of the command, the target of a collection's name, the sentence why a format is not checked for vulnerabilities | landed and pushed on 2026-11-26 at 00:45 |
 | W30-A1 · A collection's documentation reads like the documentation site (W-30) | R-ANS-048 to R-ANS-050 of the plan `.dev/w30-plan.md`: anchors and links, a plugin's configuration, the page's contents, highlighted examples | landed and pushed at 23:55 |
-| W30-G7 · An image's facts: annotations and labels, the config, the layers, the history (W-30) | R-OCI-039 to R-OCI-041 of the plan `.dev/w30-plan.md`; with a Helm chart's facts since the owner's d4 = b; Q-UI-1250 to Q-UI-1259, R-UI-219, migration 00132 | in work since 22:06 |
+| W30-G7 · An image's facts: annotations and labels, the config, the layers, the history (W-30) | R-OCI-039 to R-OCI-041 of the plan `.dev/w30-plan.md`; with a Helm chart's facts since the owner's d4 = b; Q-UI-1250 to Q-UI-1259, R-UI-219, migration 00132 | built at about 23:58 (five commits); sent back at about 00:00 for the stored images, the gates' decision on a configuration and a chart's row menu, then its UI moves onto S19 |
 | W30-A4 · A role read through a remote reads like a role (W-30, the owner's d1 = b) | R-ANS-056 of the plan `.dev/w30-plan.md`: owner and name, description, README, `role search`; no local publish of a role; Q-ANS-110 to Q-ANS-119, Q-UI-1260 to Q-UI-1269, H-2120 to H-2129, migration 00133 | in work since 23:18 |
 | W30-G8 · A Debian package shows its relations, long description, changelog, copyright and file list (W-30) | R-DEB-038, R-DEB-039 of the plan `.dev/w30-plan.md`; the data archive read under bounds, which revises R-DEB-007; Q-DEB-140 to Q-DEB-149, Q-UI-1270 to Q-UI-1279, H-2130 to H-2139, migration 00134 | in work since 23:30 |
+| W30-A2 · The documentation generator reads fragments, a role's argument specs and the changelog (W-30) | R-ANS-051 to R-ANS-053 of the plan `.dev/w30-plan.md`; Q-ANS-96 to Q-ANS-105, Q-UI-1280 to Q-UI-1289, H-2140 to H-2149, migration 00135 | in work since 2026-11-26, about 00:29 |
 | W-30 planner · Ansible as an equal of Galaxy; general and specific properties per format | the owner's task of 20:39: a comparison screen by screen and answer by answer, and the table of properties per format | plan written at 21:05 (`.dev/w30-plan.md`) |
 | W30-G1 · A remote's cached version of npm and Debian carries its facts (W-30) | R-NPM-050, R-NPM-051, R-DEB-037 of the plan `.dev/w30-plan.md`; the README of an npm version from the stored tarball | landed and pushed at 23:27 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
@@ -1253,6 +1254,34 @@ records the recorder that tells such a stall apart).
   that failed between 07:39 and 09:00 is no finding of the code.
 
 ### Product
+
+- **Closed on 2026-11-26, 00:45, by S19 (W-30; R-UI-218; Q-UI-1240 to Q-UI-1245; gaps H-2080 to H-2082, H-2084): the client's
+  command stands behind its button on a version's page too, its panel has a tab per client, and a package of Ansible
+  Galaxy, npm or NuGet opens on its newest version's documentation.** The owner's four points of 2026-11-25, 20:39,
+  and his rule of 20:48 ("Doku die mit zum Format gehört und regelmäßig vorhanden ist, soll auch bei uns umgesetzt
+  werden"). (1) The panel (`client-command-menu`): a tab per client of the format with short names (Docker, Podman;
+  npm, pnpm, Yarn Berry, Yarn Classic; .NET CLI, NuGet CLI, Visual Studio), then room, then **Set up client** at the
+  row's end, which leads to the setup with the chosen client; a format with one client shows its name as the row's
+  label, no strip of one tab; where the row is too narrow (npm and NuGet at 390 px) the button stands on a line of
+  its own below; the product's own tab group, extended by a slot at the row's end. (2) A version's page: the box
+  Install is gone for every format, the verb's button stands in the page's head; a version several repositories hold
+  has the select Repository at the top of the panel; held only by disabled or system repositories: no button, the
+  sentence under the facts; ClamAV's definitions: **Set up client** with freshclam in the head. (3) The rule R-UI-218
+  with the format's property `LEADS_WITH_DOCUMENTATION` (one line per format in `content-shape.ts`): the package's own
+  address shows its newest version (the highest that is no pre-release), the table of every version moved to
+  `…/<name>/-/versions`; the version's page has a switch in its head (the ten newest, the newest marked, pre-releases
+  marked, "All N versions" at its end) that keeps the open tab, `doc` and a fragment, so a link to an option of a
+  collection's documentation survives a change of version; a version without documentation opens on its first tab
+  with content and says "This version has no README to show.". OCI, Debian and generic keep their table at the plain
+  address. (4) "Not checked for vulnerabilities" says why, per format: no public advisory source lists collections by
+  version; Debian's advisories name source packages and releases and the matching is not built yet; a file has no
+  package name and version an advisory could name. Per format: the panel and the head for npm, NuGet, OCI, Debian and
+  Ansible Galaxy; generic has neither a list row nor a version page with a command (its files' panel is W30-G9).
+  Journeys corrected and not run (H-2084): `08-packages`, `21-visibility`, `ansible-docs/01`. The landing: the
+  builder rebased it twice onto the evening's landings and renumbered it (three builders had taken R-UI-217 and
+  Q-UI-1229 to Q-UI-1234), the count of requirements 1,289; the landing's tree is the builder's rebased tip, on which it ran every gate, the full renders (583 in English, 129 in German, no layout finding, on the tip before the last rebase) and the package screens again; at the landing the web gates, the dialog states and the package and loading renders (98 in English, 42 in German, no layout finding) green; looked at: a collection's page with the version switch and the panel (the repository's select, the client's name, **Set up client**, the command) and an npm version's page with the README first and the panel's four tabs, both in light at 1,440 px. Open: a remote package's README is not shown
+  before a version of it is stored (H-2080; W30-G2); the switch lists the ten newest versions only (H-2082); the
+  documentation of OCI, Debian and generic files (H-2081; W30-G7, W30-G8).
 
 - **Closed on 2026-11-25, 23:55, by W30-A1 (W-30; R-ANS-048 to R-ANS-050; Q-ANS-93 to Q-ANS-95; Q-UI-1246; gaps H-2100
   to H-2105; no migration): a collection's documentation reads like the documentation site.** The owner: "Ansible-
