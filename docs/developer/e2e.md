@@ -297,6 +297,16 @@ Locally `make e2e` builds what a set needs. A CI leg builds none of the images t
   Dockerfile that runs such a tool itself fails `TestEveryFetchOfAClientsImageBuildIsBounded`.
 - **The stub upstreams, the driver and the issuer double** are built by `e2e.sh` in every leg, from the commit's Go code on the
   distroless base; each build (whose one fetch is that base) runs through `fetch.sh`, 120 s per attempt, three attempts.
+- **What the nodes pull themselves** (the operators' images of the profile's dependencies, which are on Docker Hub) is pulled with
+  the account the host's Docker is logged in with: after the nodes are ready, `up.sh` copies the host's Docker Hub entry, and only
+  that one, to `/var/lib/kubelet/config.json` of every node and restarts the kubelets (`node_registry_credentials`). It does so
+  only where the host's `config.json` stores the secret itself, as after the pipeline's step "Log in to Docker Hub"; a
+  developer's credential store keeps none in the file, and the nodes then pull without an account. Without it the pulls count
+  against Docker Hub's limit of the host's public address, 100 an hour, which anything else on that address can use up: on
+  2026-11-25 a bulk download of 315 tags on a development machine of the same site did, and `e2e (push)` ended after 25 minutes at
+  "Deployment/valkey-operator-system/valkey-operator not ready" with `ImagePullBackOff` and "429 Too Many Requests" in the cluster
+  state (Test and Release 45559612705). The entry lives in the nodes until `make dev-down`; the artifacts of a leg hold no file
+  of a node.
 - **The analyser's and ClamAV's images** are loaded only by the legs of the profile `vuln` (`up.sh` pulls `TRIVY_IMAGE` and `CLAMAV_IMAGE`
   with the host's Docker, logged in to Docker Hub, and loads them under the tags `quader-e2e-trivy:dev` and `quader-e2e-clamav:dev`: both pins
   name a multi-platform index, so `up.sh` saves the nodes' platform alone, `docker save --platform linux/<arch>`, and loads that archive with

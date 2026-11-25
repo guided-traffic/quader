@@ -100,6 +100,36 @@ k get nodes >/dev/null || die "the context $CTX does not answer"
 # the host spreading of the dependencies would be decided by luck.
 k wait --for=condition=Ready nodes --all --timeout=180s >/dev/null || die "the kind nodes did not become Ready"
 
+# The nodes pull the profile's dependencies themselves (the operators' images are on Docker Hub), and without a credential those
+# pulls count against Docker Hub's limit of the host's public address, which others on that address can use up: a leg then ends
+# at "Deployment ... not ready" with ImagePullBackOff and "429 Too Many Requests" (Test and Release 45559612705, e2e (push)).
+# Where the host's Docker is logged in to Docker Hub with a stored secret (CI's login step; not a credential store, which keeps
+# no secret in the file), the nodes' kubelets get that one entry and pull with the account. It lives in the nodes until dev-down.
+node_registry_credentials() {
+  local cfg="${DOCKER_CONFIG:-$HOME/.docker}/config.json" one node
+  [ -r "$cfg" ] || return 0
+  one="$(mktemp)"
+  if ! python3 - "$cfg" > "$one" 2>/dev/null <<'PY'
+import json, sys
+auths = json.load(open(sys.argv[1])).get("auths", {})
+hub = {k: v for k, v in auths.items() if "index.docker.io" in k or k.rstrip("/").endswith("docker.io")}
+hub = {k: v for k, v in hub.items() if isinstance(v, dict) and (v.get("auth") or v.get("identitytoken"))}
+if not hub:
+    sys.exit(3)
+json.dump({"auths": hub}, sys.stdout)
+PY
+  then rm -f "$one"; return 0; fi
+  log "the nodes pull from Docker Hub with the account the host's Docker is logged in with"
+  for node in $(kind get nodes --name "$CLUSTER"); do
+    docker cp "$one" "$node:/var/lib/kubelet/config.json" >/dev/null \
+      && docker exec "$node" sh -c 'chmod 600 /var/lib/kubelet/config.json && systemctl restart kubelet.service' \
+      || { rm -f "$one"; die "could not give the node $node the Docker Hub credential"; }
+  done
+  rm -f "$one"
+  k wait --for=condition=Ready nodes --all --timeout=180s >/dev/null || die "the kind nodes did not become Ready after the kubelets' restart"
+}
+node_registry_credentials
+
 # ── 2. namespace and Secrets ─────────────────────────────────────────────────
 log "namespace $NS enforces the restricted Pod Security Standard"
 k create namespace "$NS" --dry-run=client -o yaml | k apply -f - >/dev/null
