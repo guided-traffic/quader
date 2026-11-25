@@ -16,7 +16,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { Tree, TreeItem, TreeItemGroup } from '@angular/aria/tree';
-import { Router, RouterLink } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { PackageDocEntry, PackageDocFile, PackageDocTree, PackagesApi } from '../../api/packages-api';
 import { ApiError } from '../../api/problem';
 import { ErrorNotice } from '../../shared/error-notice';
@@ -74,6 +75,9 @@ type DocPage =
 export class AnsibleDocs {
   private readonly api = inject(PackagesApi);
   private readonly router = inject(Router);
+
+  /** The fragment of the address: an option, a return value or a section of the open entry (R-ANS-048); the entry goes to it. */
+  protected readonly fragment = toSignal(inject(ActivatedRoute).fragment, { initialValue: null });
 
   readonly packageId = input.required<string>();
   readonly version = input.required<string>();

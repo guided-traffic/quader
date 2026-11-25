@@ -394,6 +394,18 @@ async function* deepPath(page: Page): AsyncGenerator<string> {
 }
 
 /** A file's page, then its Details opened, then, for whoever may delete it, the confirmation of Delete, cancelled. */
+/** An entry of a collection's documentation, as it opens; the other tabs of the version are the screen package-version-ansible's. */
+async function* docEntry(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('quader-ansible-doc-entry .doc-title')).toBeVisible();
+  yield '';
+}
+
+/** An entry opened at the anchor of a suboption: the row marked and in view below the page's head (R-ANS-048). */
+async function* docAnchor(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('tr.is-target')).toBeInViewport();
+  yield '';
+}
+
 async function* fileView(page: Page): AsyncGenerator<string> {
   yield '';
   await page.getByRole('button', { name: /^Details/ }).click();
@@ -3056,6 +3068,36 @@ export const screens: readonly Screen[] = [
   // In German as the plain user: the strip of the most tabs with the longest labels of every format's version page, the one strip of
   // in-place tabs they share (Q-UI-1090: 13 px wider than its place at 1,024 px before its tabs stood closer).
   { id: 'package-version-ansible', path: ver(O, { format: 'ansible', name: collectionName }, ansiblePackage.versions[1]), kinds: all, de: ['plain'] },
+  // The documentation of a module as the documentation site shows it (R-ANS-048 to R-ANS-050): the contents, the options with their
+  // anchors, the highlighted examples; an opened anchor below the page's head; a lookup's terms and its options' configuration.
+  {
+    id: 'ansible-doc-module',
+    path: `${ver(O, { format: 'ansible', name: collectionName }, ansiblePackage.versions[1])}?doc=module/mount_volume`,
+    kinds: ['plain'],
+    de: true,
+    tables: 'quader-ansible-doc-entry quader-data-table',
+    walk: docEntry,
+  },
+  {
+    id: 'ansible-doc-anchor',
+    path: `${ver(O, { format: 'ansible', name: collectionName }, ansiblePackage.versions[1])}?doc=module/mount_volume#parameter-retry/backoff/seconds`,
+    kinds: ['plain'],
+    de: true,
+    walk: docAnchor,
+  },
+  {
+    id: 'ansible-doc-lookup',
+    path: `${ver(O, { format: 'ansible', name: collectionName }, ansiblePackage.versions[1])}?doc=lookup/env_vars`,
+    kinds: ['plain'],
+    de: true,
+    walk: docEntry,
+  },
+  {
+    id: 'ansible-doc-callback',
+    path: `${ver(O, { format: 'ansible', name: collectionName }, ansiblePackage.versions[1])}?doc=callback/timer`,
+    kinds: ['plain'],
+    walk: docEntry,
+  },
   // The folders and files of a repository on its page (R-UI-010 to R-UI-012, ADR-203): a folder with the Owner's operations, a
   // folder deep in a path of long names, a folder of more than a page, an empty folder, a file and a package format's raw files.
   { id: 'files-folder', path: `${P}/repositories/assets/files/releases/design-system/2.5.0`, kinds: all, walk: folderOperations },

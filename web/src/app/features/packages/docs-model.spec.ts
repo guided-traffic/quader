@@ -1,7 +1,9 @@
 import { commonFixture, docTree } from '../../api/testing/fakes-ansible-docs';
 import {
   README_DOC,
+  addedText,
   allBranches,
+  configLines,
   branchesOf,
   docNodes,
   firstDoc,
@@ -122,6 +124,38 @@ describe('The model of the documentation screens', () => {
     expect(rows[0]?.sample).toBe('{\n  "k": 1\n}');
     expect(rows[1]?.sample).toBe('1');
     expect(rows[2]?.sample).toBe('text');
+  });
+
+  it('R-ANS-048 a row\'s anchor is parameter- or return- and the path of names; an alias has its own', () => {
+    const rows = optionRows([{ name: 'opts', aliases: ['o'], suboptions: [{ name: 'mode', aliases: ['m'] }] }]);
+    expect(rows.map((r) => [r.anchor, r.aliasAnchors])).toEqual([
+      ['parameter-opts', ['parameter-o']],
+      ['parameter-opts/mode', ['parameter-opts/m']],
+    ]);
+    expect(returnRows([{ name: 'dev', contains: [{ name: 'name' }] }]).map((r) => r.anchor)).toEqual(['return-dev', 'return-dev/name']);
+  });
+
+  it('R-ANS-049 "added in" names the collection when the source does, and the configuration reads in the order of the site', () => {
+    expect(addedText('1.2.0', 'acme.tools')).toBe('acme.tools 1.2.0');
+    expect(addedText('1.2.0', undefined)).toBe('1.2.0');
+    expect(addedText(undefined, 'acme.tools')).toBe('');
+    expect(
+      configLines({
+        cli: [{ name: 'x', option: '--x' }],
+        keyword: [{ name: 'k' }],
+        vars: [{ name: 'v' }],
+        env: [{ name: 'E' }],
+        ini: [{ section: 's', key: 'k' }, { key: 'only' }],
+      }),
+    ).toEqual([
+      { kind: 'ini', text: '[s] k' },
+      { kind: 'ini', text: 'only' },
+      { kind: 'env', text: 'E' },
+      { kind: 'vars', text: 'v' },
+      { kind: 'keyword', text: 'k' },
+      { kind: 'cli', text: '--x' },
+    ]);
+    expect(configLines(undefined)).toEqual([]);
   });
 });
 

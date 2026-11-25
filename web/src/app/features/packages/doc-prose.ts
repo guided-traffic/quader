@@ -5,14 +5,15 @@ import { PackageReadmeView } from './package-readme';
 /**
  * The prose of a documentation entry (R-UI-061): an array of HTML strings the server converted from the Ansible markup and
  * sanitized (R-ANS-039), one per paragraph. Each is bound the way the README is, through {@link PackageReadmeView}, so Angular's own
- * sanitizer runs a second time and links that leave Quader get their `rel`; nothing here trusts the HTML.
+ * sanitizer runs a second time and links that leave Quader get their `rel`; nothing here trusts the HTML. The links the server built to
+ * the version's own documentation (R-ANS-048) open in place.
  */
 @Component({
   selector: 'quader-doc-prose',
   imports: [PackageReadmeView],
   template: `
     @for (r of readmes(); track $index) {
-      <quader-package-readme [readme]="r" />
+      <quader-package-readme [readme]="r" [docLinks]="true" />
     }
   `,
   host: { class: 'doc-prose' },

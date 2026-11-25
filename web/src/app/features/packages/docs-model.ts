@@ -1,4 +1,10 @@
-import { PackageDocOption, PackageDocReturnValue, PackageDocTree } from '../../api/packages-api';
+import {
+  PackageDocEntry,
+  PackageDocOption,
+  PackageDocOptionConfiguration,
+  PackageDocReturnValue,
+  PackageDocTree,
+} from '../../api/packages-api';
 
 /*
  * The pure part of the documentation screens (R-UI-060 to R-UI-062): the address of a page in the URL, the nodes of the tree, the rows of
@@ -182,10 +188,106 @@ export function valueText(v: unknown): string {
   }
 }
 
+/** A table of parameters of an entry, with the section that holds it (R-ANS-050). */
+export interface ParamGroup {
+  /** The section's id: `doc-<id>`. */
+  readonly id: 'parameters' | 'terms' | 'input' | 'positional' | 'keyword';
+  readonly title: string;
+  readonly options: readonly PackageDocOption[];
+}
+
+/** The types whose parameters the documentation site splits into terms or input, positional and keyword parameters. */
+const SPLIT_TYPES = new Set(['lookup', 'filter', 'test']);
+
+/**
+ * The tables of an entry's parameters (R-ANS-050): one **Parameters** table for a module and most plugins; for a lookup plugin the
+ * option `_terms` as **Terms**, for a filter or a test the option `_input` as **Input** and the options named in `positional` as
+ * **Positional parameters**, the others of the three types as **Keyword parameters**. An empty table is left out.
+ */
+export function parameterGroups(entry: PackageDocEntry): ParamGroup[] {
+  const options = entry.options ?? [];
+  if (!SPLIT_TYPES.has(entry.type)) {
+    return options.length > 0 ? [{ id: 'parameters', title: $localize`:@@docs.parameters:Parameters`, options }] : [];
+  }
+  const byName = new Map(options.map((o) => [o.name, o]));
+  const positional = (entry.positional ?? []).filter((n) => n !== '_input' && n !== '_terms' && byName.has(n));
+  const taken = new Set(['_terms', '_input', ...positional]);
+  const groups: ParamGroup[] = [
+    { id: 'terms', title: $localize`:@@docs.terms:Terms`, options: options.filter((o) => o.name === '_terms') },
+    { id: 'input', title: $localize`:@@docs.input:Input`, options: options.filter((o) => o.name === '_input') },
+    {
+      id: 'positional',
+      title: $localize`:@@docs.positional:Positional parameters`,
+      options: positional.map((n) => byName.get(n)).filter((o): o is PackageDocOption => o !== undefined),
+    },
+    { id: 'keyword', title: $localize`:@@docs.keyword-parameters:Keyword parameters`, options: options.filter((o) => !taken.has(o.name)) },
+  ];
+  return groups.filter((g) => g.options.length > 0);
+}
+
+/** A section of an entry's page, as its list of contents names it. */
+export interface DocSection {
+  readonly id: string;
+  readonly label: string;
+}
+
+/** The sections an entry's page shows, in its order: the list of contents that heads the page (R-ANS-050). */
+export function entrySections(entry: PackageDocEntry, groups: readonly ParamGroup[]): DocSection[] {
+  if (!entry.hasDocs || entry.readmeHtml) return [];
+  const has = (v: readonly unknown[] | undefined): boolean => (v?.length ?? 0) > 0;
+  const out: DocSection[] = [];
+  if (has(entry.description)) out.push({ id: 'doc-synopsis', label: $localize`:@@docs.synopsis:Synopsis` });
+  for (const g of groups) out.push({ id: `doc-${g.id}`, label: g.title });
+  if (has(entry.notes)) out.push({ id: 'doc-notes', label: $localize`:@@docs.notes:Notes` });
+  if (has(entry.requirements)) out.push({ id: 'doc-requirements', label: $localize`:@@docs.requirements:Requirements` });
+  if (has(entry.attributes)) out.push({ id: 'doc-attributes', label: $localize`:@@docs.attributes:Attributes` });
+  if (has(entry.seealso)) out.push({ id: 'doc-seealso', label: $localize`:@@docs.see-also:See also` });
+  if (entry.examples) out.push({ id: 'doc-examples', label: $localize`:@@docs.examples:Examples` });
+  if (has(entry.returnValues)) out.push({ id: 'doc-returns', label: $localize`:@@docs.returns:Return values` });
+  if (has(entry.author)) out.push({ id: 'doc-authors', label: $localize`:@@docs.authors:Authors` });
+  return out;
+}
+
+/** One way an option of a plugin is configured besides the task (R-ANS-049): what it is, and the text of the entry. */
+export interface ConfigLine {
+  readonly kind: 'ini' | 'env' | 'vars' | 'keyword' | 'cli';
+  readonly text: string;
+}
+
+/** The lines of an option's configuration, in the order the documentation site shows them: ini, environment, variable, keyword, cli. */
+export function configLines(c: PackageDocOptionConfiguration | undefined): ConfigLine[] {
+  if (!c) return [];
+  const out: ConfigLine[] = [];
+  for (const i of c.ini ?? []) {
+    const text = [i.section ? `[${i.section}]` : '', i.key ?? ''].filter((s) => s !== '').join(' ');
+    if (text) out.push({ kind: 'ini', text });
+  }
+  for (const kind of ['env', 'vars', 'keyword'] as const) for (const n of c[kind] ?? []) out.push({ kind, text: n.name });
+  for (const x of c.cli ?? []) {
+    const text = x.option ?? x.name ?? x.switch ?? '';
+    if (text) out.push({ kind: 'cli', text });
+  }
+  return out;
+}
+
+/** "added in": the collection the version counts in and the version, or the version alone where the source names no collection. */
+export function addedText(version: string | undefined, collection: string | undefined): string {
+  if (!version) return '';
+  return collection ? `${collection} ${version}` : version;
+}
+
+/** The anchor of a row of a table (R-ANS-048): `parameter-<path>` or `return-<path>`, the path the names from the top joined by `/`. */
+export function rowAnchor(kind: 'parameter' | 'return', id: string): string {
+  return `${kind}-${id.replace(/^\//, '')}`;
+}
+
 /** A row of a parameter table or a return value table, flattened with its depth. */
 export interface DocRow {
   /** The path of names from the top, unique in a table. */
   readonly id: string;
+  /** The row's anchor, the fragment a link to it ends in; an alias of an option has an anchor of its own (`aliasAnchors`). */
+  readonly anchor: string;
+  readonly aliasAnchors: readonly string[];
   readonly depth: number;
   /** The name of the row above, empty at the top. */
   readonly parent: string;
@@ -198,7 +300,9 @@ export interface DocRow {
   readonly choices: readonly string[];
   readonly returned: string;
   readonly sample: string;
+  /** "added in" with its collection (`addedText`), empty when the row names no version. */
   readonly versionAdded: string;
+  readonly configuration: readonly ConfigLine[];
   readonly description: readonly string[];
   readonly children: number;
 }
@@ -217,6 +321,8 @@ export function optionRows(options: readonly PackageDocOption[] | undefined): Do
       const subs = o.suboptions ?? [];
       out.push({
         id,
+        anchor: rowAnchor('parameter', id),
+        aliasAnchors: (o.aliases ?? []).map((a) => rowAnchor('parameter', `${path}/${a}`)),
         depth,
         parent,
         name: o.name,
@@ -228,7 +334,8 @@ export function optionRows(options: readonly PackageDocOption[] | undefined): Do
         choices: (o.choices ?? []).map(valueText),
         returned: '',
         sample: '',
-        versionAdded: o.versionAdded ?? '',
+        versionAdded: addedText(o.versionAdded, o.versionAddedCollection),
+        configuration: configLines(o.configuration),
         description: o.description ?? [],
         children: subs.length,
       });
@@ -248,6 +355,8 @@ export function returnRows(values: readonly PackageDocReturnValue[] | undefined)
       const subs = r.contains ?? [];
       out.push({
         id,
+        anchor: rowAnchor('return', id),
+        aliasAnchors: [],
         depth,
         parent,
         name: r.name,
@@ -259,7 +368,8 @@ export function returnRows(values: readonly PackageDocReturnValue[] | undefined)
         choices: [],
         returned: r.returned ?? '',
         sample: r.sample === undefined ? '' : sampleText(r.sample),
-        versionAdded: r.versionAdded ?? '',
+        versionAdded: addedText(r.versionAdded, r.versionAddedCollection),
+        configuration: [],
         description: r.description ?? [],
         children: subs.length,
       });

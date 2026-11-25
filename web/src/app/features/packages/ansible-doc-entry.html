@@ -1,15 +1,12 @@
 <article class="doc-entry" data-testid="doc-entry">
   <header class="doc-head">
-    <h2 class="doc-title">
-      <span translate="no">{{ entry().fullName }}</span>
-      <quader-copy-button [value]="entry().fullName" [label]="copyName" />
-    </h2>
+    <h2 class="doc-title"><span translate="no">@for (part of titleParts(); track $index) {{{ part }}@if (!$last) {.<wbr />}}</span><quader-copy-button [value]="entry().fullName" [label]="copyName" /></h2>
     @if (entry().shortDescription) {
       <p class="doc-short" translate="no">{{ entry().shortDescription }}</p>
     }
     <p class="doc-facts">
-      @if (entry().versionAdded) {
-        <span><ng-container i18n="@@docs.added-in">added in</ng-container>{{ ' ' }}<span translate="no">{{ entry().versionAdded }}</span></span>
+      @if (addedIn()) {
+        <span data-testid="doc-added-in"><ng-container i18n="@@docs.added-in">added in</ng-container>{{ ' ' }}<span translate="no">{{ addedIn() }}</span></span>
       }
       @if (entry().deprecated) {
         <span class="badge warn"><span class="material-icons" aria-hidden="true">warning</span><ng-container i18n="@@docs.deprecated">Deprecated</ng-container></span>
@@ -38,6 +35,19 @@
         }
       </div>
     }
+    @if (sections().length > 1) {
+      <nav class="doc-contents" [attr.aria-label]="contentsLabel" data-testid="doc-contents">
+        <ul>
+          @for (s of sections(); track s.id) {
+            <li>
+              <a [routerLink]="[]" queryParamsHandling="preserve" [fragment]="s.id" [attr.aria-current]="target() === s.id ? 'location' : null">{{
+                s.label
+              }}</a>
+            </li>
+          }
+        </ul>
+      </nav>
+    }
   </header>
 
   @if (readme(); as r) {
@@ -52,8 +62,8 @@
     </p>
   } @else {
     @if (entry().description?.length) {
-      <section aria-labelledby="doc-synopsis">
-        <h3 id="doc-synopsis" i18n="@@docs.synopsis">Synopsis</h3>
+      <section id="doc-synopsis" aria-labelledby="doc-synopsis-heading">
+        <h3 id="doc-synopsis-heading" i18n="@@docs.synopsis">Synopsis</h3>
         <quader-doc-prose [html]="entry().description ?? []" />
       </section>
     }
@@ -64,13 +74,16 @@
       </p>
     }
 
-    @if (options().length > 0) {
-      <section aria-labelledby="doc-parameters">
-        <h3 id="doc-parameters" i18n="@@docs.parameters">Parameters</h3>
+    @for (table of tables(); track table.group.id) {
+      <section [id]="'doc-' + table.group.id" [attr.aria-labelledby]="'doc-' + table.group.id + '-heading'">
+        <h3 [id]="'doc-' + table.group.id + '-heading'">{{ table.group.title }}</h3>
         <quader-data-table [caption]="optionsCaption" [columns]="optionColumns" [empty]="false">
-          @for (row of options(); track row.id) {
-            <tr [attr.data-depth]="row.depth">
+          @for (row of table.rows; track row.id) {
+            <tr [id]="row.anchor" [attr.data-depth]="row.depth" [class.is-target]="target() === row.anchor || row.aliasAnchors.includes(target() ?? '')">
               <th scope="row" class="param-name" [style.padding-inline-start]="indent(row)">
+                @for (a of row.aliasAnchors; track a) {
+                  <span class="alias-anchor" [id]="a"></span>
+                }
                 <span class="name-line">
                   @if (row.children > 0) {
                     <button
@@ -91,39 +104,62 @@
                     </span>
                   }
                   <code translate="no">{{ row.name }}</code>
+                  <quader-copy-button class="permalink" [value]="rowLink(row.anchor)" [label]="copyRowLabel(row)" icon="link" [quiet]="true" />
                 </span>
                 @if (row.aliases) {
                   <span class="doc-muted aliases"
                     ><ng-container i18n="@@docs.aliases">aliases:</ng-container>{{ ' ' }}<span translate="no">{{ row.aliases }}</span></span
                   >
                 }
-              </th>
-              <td translate="no">{{ row.type }}</td>
-              <td>
-                @if (row.required) {
-                  <span class="badge" i18n="@@docs.required">Required</span>
-                }
-              </td>
-              <td>
-                @if (row.hasDefault) {
-                  <code translate="no">{{ row.defaultText }}</code>
-                }
-              </td>
-              <td>
-                @if (row.choices.length > 0) {
-                  <ul class="choices">
-                    @for (c of row.choices; track $index) {
-                      <li><code translate="no">{{ c }}</code></li>
-                    }
-                  </ul>
-                }
-              </td>
-              <td class="param-description">
-                <quader-doc-prose [html]="row.description" />
+                <span class="param-facts">
+                  @if (row.type) {
+                    <span class="doc-muted" translate="no">{{ row.type }}</span>
+                  }
+                  @if (row.required) {
+                    <span class="badge" i18n="@@docs.required">Required</span>
+                  }
+                </span>
                 @if (row.versionAdded) {
-                  <span class="doc-muted"
+                  <span class="doc-muted added"
                     ><ng-container i18n="@@docs.added-in">added in</ng-container>{{ ' ' }}<span translate="no">{{ row.versionAdded }}</span></span
                   >
+                }
+              </th>
+              <td class="param-description">
+                <quader-doc-prose [html]="row.description" />
+                @if (row.choices.length > 0) {
+                  <div class="param-values">
+                    <span class="values-title">{{ choicesLabel }}</span>
+                    <ul class="choices">
+                      @for (c of row.choices; track $index) {
+                        <li>
+                          <code translate="no" [class.is-default]="row.hasDefault && c === row.defaultText">{{ c }}</code>
+                          @if (row.hasDefault && c === row.defaultText) {
+                            {{ ' ' }}<span class="doc-muted" i18n="@@docs.choice-default">(default)</span>
+                          }
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                } @else if (row.hasDefault) {
+                  <div class="param-values">
+                    <span class="values-title">{{ defaultLabel }}</span>{{ ' ' }}<code translate="no">{{ row.defaultText }}</code>
+                  </div>
+                }
+                @if (row.configuration.length > 0) {
+                  <div class="doc-config" data-testid="doc-config">
+                    <span class="values-title" i18n="@@docs.configuration">Configuration</span>
+                    <ul>
+                      @for (c of row.configuration; track $index) {
+                        <li>
+                          <span class="doc-muted">{{ configLabel(c) }}</span>{{ ' ' }}<code translate="no">{{ c.text }}</code>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                }
+                @if (row.description.length === 0 && row.choices.length === 0 && !row.hasDefault && row.configuration.length === 0) {
+                  <quader-no-value />
                 }
               </td>
             </tr>
@@ -133,15 +169,15 @@
     }
 
     @if (entry().notes?.length) {
-      <section aria-labelledby="doc-notes">
-        <h3 id="doc-notes" i18n="@@docs.notes">Notes</h3>
+      <section id="doc-notes" aria-labelledby="doc-notes-heading">
+        <h3 id="doc-notes-heading" i18n="@@docs.notes">Notes</h3>
         <quader-doc-prose [html]="entry().notes ?? []" />
       </section>
     }
 
     @if (entry().requirements?.length) {
-      <section aria-labelledby="doc-requirements">
-        <h3 id="doc-requirements" i18n="@@docs.requirements">Requirements</h3>
+      <section id="doc-requirements" aria-labelledby="doc-requirements-heading">
+        <h3 id="doc-requirements-heading" i18n="@@docs.requirements">Requirements</h3>
         <ul class="doc-list">
           @for (r of entry().requirements ?? []; track $index) {
             <li><quader-doc-prose [html]="[r]" /></li>
@@ -151,8 +187,8 @@
     }
 
     @if (entry().attributes?.length) {
-      <section aria-labelledby="doc-attributes">
-        <h3 id="doc-attributes" i18n="@@docs.attributes">Attributes</h3>
+      <section id="doc-attributes" aria-labelledby="doc-attributes-heading">
+        <h3 id="doc-attributes-heading" i18n="@@docs.attributes">Attributes</h3>
         <dl class="doc-attributes">
           @for (a of entry().attributes ?? []; track a.name) {
             <dt>
@@ -171,13 +207,19 @@
     }
 
     @if (entry().seealso?.length) {
-      <section aria-labelledby="doc-seealso">
-        <h3 id="doc-seealso" i18n="@@docs.see-also">See also</h3>
+      <section id="doc-seealso" aria-labelledby="doc-seealso-heading">
+        <h3 id="doc-seealso-heading" i18n="@@docs.see-also">See also</h3>
         <ul class="doc-list">
           @for (s of entry().seealso ?? []; track $index) {
             <li>
               @if (s.module) {
-                <code translate="no">{{ s.module }}</code>
+                @if (s.entry) {
+                  <a [routerLink]="[]" [queryParams]="{ doc: s.entry }" queryParamsHandling="merge" data-testid="doc-seealso-entry"
+                    ><code translate="no">{{ s.module }}</code></a
+                  >
+                } @else {
+                  <code translate="no">{{ s.module }}</code>
+                }
               }
               @if (s.description) {
                 <quader-doc-prose [html]="[s.description]" />
@@ -198,21 +240,21 @@
     }
 
     @if (entry().examples) {
-      <section aria-labelledby="doc-examples">
-        <h3 id="doc-examples" i18n="@@docs.examples">Examples</h3>
+      <section id="doc-examples" aria-labelledby="doc-examples-heading">
+        <h3 id="doc-examples-heading" i18n="@@docs.examples">Examples</h3>
         <div class="code-wrap">
-          <pre class="code-block" translate="no" tabindex="0">{{ entry().examples }}</pre>
+          <pre class="code-block yaml" translate="no" tabindex="0" data-testid="doc-examples">@for (line of examples(); track $index) {@for (t of line; track $index) {<span [class]="'y-' + t.kind">{{ t.text }}</span>}{{ '\n' }}}</pre>
           <quader-copy-button [value]="entry().examples ?? ''" [label]="copyExamples" />
         </div>
       </section>
     }
 
     @if (returns().length > 0) {
-      <section aria-labelledby="doc-returns">
-        <h3 id="doc-returns" i18n="@@docs.returns">Return values</h3>
+      <section id="doc-returns" aria-labelledby="doc-returns-heading">
+        <h3 id="doc-returns-heading" i18n="@@docs.returns">Return values</h3>
         <quader-data-table [caption]="returnsCaption" [columns]="returnColumns" [empty]="false">
           @for (row of returns(); track row.id) {
-            <tr [attr.data-depth]="row.depth">
+            <tr [id]="row.anchor" [attr.data-depth]="row.depth" [class.is-target]="target() === row.anchor">
               <th scope="row" class="param-name" [style.padding-inline-start]="indent(row)">
                 <span class="name-line">
                   @if (row.children > 0) {
@@ -234,24 +276,42 @@
                     </span>
                   }
                   <code translate="no">{{ row.name }}</code>
+                  <quader-copy-button class="permalink" [value]="rowLink(row.anchor)" [label]="copyRowLabel(row)" icon="link" [quiet]="true" />
                 </span>
-              </th>
-              <td translate="no">{{ row.type }}</td>
-              <td translate="no">{{ row.returned }}</td>
-              <td class="param-sample">
-                @if (row.sample !== '') {
-                  @if (inlineSample(row)) {
-                    <code translate="no">{{ row.sample }}</code>
-                  } @else {
-                    <div class="code-wrap">
-                      <pre class="code-block" translate="no" tabindex="0">{{ row.sample }}</pre>
-                      <quader-copy-button [value]="row.sample" [label]="copyExamples" />
-                    </div>
+                <span class="param-facts">
+                  @if (row.type) {
+                    <span class="doc-muted" translate="no">{{ row.type }}</span>
                   }
+                </span>
+                @if (row.versionAdded) {
+                  <span class="doc-muted added"
+                    ><ng-container i18n="@@docs.added-in">added in</ng-container>{{ ' ' }}<span translate="no">{{ row.versionAdded }}</span></span
+                  >
                 }
-              </td>
+              </th>
               <td class="param-description">
                 <quader-doc-prose [html]="row.description" />
+                @if (row.returned) {
+                  <div class="param-values">
+                    <span class="values-title">{{ returnedLabel }}</span>{{ ' ' }}<span translate="no">{{ row.returned }}</span>
+                  </div>
+                }
+                @if (row.sample !== '') {
+                  <div class="param-values param-sample">
+                    <span class="values-title">{{ sampleLabel }}</span>
+                    @if (inlineSample(row)) {
+                      {{ ' ' }}<code translate="no">{{ row.sample }}</code>
+                    } @else {
+                      <div class="code-wrap">
+                        <pre class="code-block yaml" translate="no" tabindex="0">@for (line of sampleLines(row); track $index) {@for (t of line; track $index) {<span [class]="'y-' + t.kind">{{ t.text }}</span>}{{ '\n' }}}</pre>
+                        <quader-copy-button [value]="row.sample" [label]="copySample" />
+                      </div>
+                    }
+                  </div>
+                }
+                @if (row.description.length === 0 && !row.returned && row.sample === '') {
+                  <quader-no-value />
+                }
               </td>
             </tr>
           }
@@ -260,8 +320,8 @@
     }
 
     @if (entry().author?.length) {
-      <section aria-labelledby="doc-authors">
-        <h3 id="doc-authors" i18n="@@docs.authors">Authors</h3>
+      <section id="doc-authors" aria-labelledby="doc-authors-heading">
+        <h3 id="doc-authors-heading" i18n="@@docs.authors">Authors</h3>
         <ul class="doc-list" translate="no">
           @for (a of entry().author ?? []; track $index) {
             <li>{{ a }}</li>

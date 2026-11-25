@@ -101,6 +101,13 @@ test('R-UI-060 R-UI-061 R-UI-062 R-UI-063 R-ANS-046 a collection published with 
     await expect(page.locator('.doc-title')).toContainText(`${local.name}.ping_host`);
   });
 
+  await test.step('the anchor of a suboption opens the page at its row, marked, below the top of the page (R-ANS-048)', async () => {
+    await page.goto(pageUrl(local, '?doc=module%2Fping_host#parameter-proxy/url'));
+    const row = page.locator('[id="parameter-proxy/url"]');
+    await expect(row).toHaveClass(/is-target/);
+    await expect(row).toBeInViewport();
+  });
+
   await test.step('Import log shows the import task of the version', async () => {
     await tab(page, 'Import log').click();
     const task = page.locator('section.task').first();

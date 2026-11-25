@@ -135,6 +135,8 @@ unless the line is too short, and then breaks at the joint with a hyphen; withou
 | collection (Ansible), import task, tombstone (a deleted version number) | Collection, Import-Aufgabe, Grabstein |
 | documentation (of a collection), module, plugin, role, parameter, suboption, return value | Dokumentation, Modul, Plugin, Rolle, Parameter, Unteroption, Rückgabewert |
 | import log (tab of a version), docs site (link) | Import-Protokoll, Dokumentations-Website |
+| terms, input, positional parameters, keyword parameters (sections of a lookup, a filter or a test plugin) | Terme, Eingabe, Positionsparameter, Schlüsselwortparameter |
+| configuration of an option (INI entry, environment variable, variable, keyword, command line) | Konfiguration (INI-Eintrag, Umgebungsvariable, Variable, Schlüsselwort, Befehlszeile) |
 | visibility, visibility level (Private, Internal, Public), wiki visibility | Sichtbarkeit, Sichtbarkeitsstufe (Privat, Intern, Öffentlich), Sichtbarkeit des Wikis |
 | upstream registry (a well-known repository of the project upstream), built-in (project), listed by (virtual repositories) | Upstream-Registry (Plural Upstream-Registrys), integriert, aufgenommen von |
 | registries of this installation (an administrator's registry presets, R-REPO-076), preset | Registrys dieser Installation, Vorgabe |

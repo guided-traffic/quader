@@ -7,14 +7,24 @@
   margin-block-end: var(--quader-space-3);
 }
 
+// The copy button stands beside the name and on the middle of its first line, also where a long name wraps at 390 px.
 .doc-title {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--quader-space-1);
   margin: 0;
   font: var(--quader-type-title-large);
-  overflow-wrap: anywhere;
+
+  > span {
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+  }
+
+  quader-copy-button {
+    display: inline-flex;
+    flex: none;
+    margin-block-start: calc((1lh - 32px) / 2);
+  }
 }
 
 .doc-short {
@@ -69,6 +79,10 @@ section {
   margin: 0;
 
   dt {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--quader-space-1);
     margin-block-start: var(--quader-space-2);
     font-weight: 600;
   }
@@ -78,15 +92,20 @@ section {
   }
 }
 
+// The name's line is as high as a line of the description beside it (the README's line height, 1.5), so the two stand on one line; the
+// buttons in it reach over.
 .name-line {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: var(--quader-space-1);
+  block-size: 1.5em;
 }
 
 .fold {
+  inline-size: 24px;
   min-inline-size: 24px;
   min-block-size: 24px;
+  margin-block: calc((1.5em - 24px) / 2);
   padding: 0;
 
   .material-icons {
@@ -100,11 +119,6 @@ section {
   flex: none;
 }
 
-.aliases {
-  display: block;
-  padding-inline-start: 28px;
-}
-
 .choices {
   margin: 0;
   padding: 0;
@@ -112,11 +126,42 @@ section {
 }
 
 .param-description {
-  min-inline-size: 16rem;
+  min-inline-size: 10rem;
+  overflow-wrap: anywhere;
 }
 
-.param-sample {
-  min-inline-size: 8rem;
+// The facts of a name: its type and the Required badge on one line under it, as the documentation site writes them.
+.param-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--quader-space-1) var(--quader-space-2);
+  padding-inline-start: 28px;
+  font-weight: normal;
+
+  &:empty {
+    display: none;
+  }
+}
+
+.added,
+.aliases {
+  display: block;
+  padding-inline-start: 28px;
+  font-weight: normal;
+}
+
+.param-values,
+.doc-config {
+  line-height: 1.5;
+}
+
+.param-values {
+  margin-block-start: var(--quader-space-1);
+}
+
+.values-title {
+  font-weight: 600;
 }
 
 .code-wrap {
@@ -129,5 +174,104 @@ section {
     min-inline-size: 0;
     margin: 0;
     overflow-x: auto;
+  }
+}
+
+// The list of the page's sections (R-ANS-050): a row of links that wraps, as the documentation site's local contents.
+.doc-contents {
+  margin-block-start: var(--quader-space-3);
+
+  ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--quader-space-1) var(--quader-space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+}
+
+// An anchor of the page stands clear of the page's top when the page goes to it (R-ANS-048).
+section,
+tr[id],
+.alias-anchor {
+  scroll-margin-block-start: var(--quader-space-4);
+}
+
+tr.is-target > th,
+tr.is-target > td {
+  background: var(--quader-row-hover);
+}
+
+// The link of a row: shown where the pointer is, at the marked row, with the keyboard's focus, and always on a touch screen.
+.permalink {
+  display: inline-flex;
+  margin-block: calc((1.5em - 32px) / 2);
+  opacity: 0;
+
+  tr:hover &,
+  tr.is-target &,
+  &:focus-within {
+    opacity: 1;
+  }
+
+  @media (hover: none) {
+    opacity: 1;
+  }
+}
+
+.choices .is-default {
+  font-weight: 700;
+}
+
+.choices li {
+  margin-block-start: 2px;
+}
+
+.doc-config {
+  margin-block-start: var(--quader-space-1);
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  code {
+    overflow-wrap: anywhere;
+  }
+}
+
+// The examples and a sample of several lines, highlighted as YAML (R-ANS-050): the paper and the syntax colours of a snippet's window
+// (the code tokens of _tokens.scss, each kept at 4.5:1 on the paper by palette.spec.ts). A long example grows the page; only a line
+// wider than the column scrolls sideways (R-UI-215).
+.code-block.yaml {
+  background: var(--quader-code-bg);
+  color: var(--quader-code-fg);
+
+  .y-key {
+    color: var(--quader-code-key);
+  }
+
+  .y-string {
+    color: var(--quader-code-string);
+  }
+
+  .y-number,
+  .y-bool {
+    color: var(--quader-code-command);
+  }
+
+  .y-jinja {
+    color: var(--quader-code-flag);
+  }
+
+  .y-comment {
+    color: var(--quader-code-dim);
+    font-style: italic;
+  }
+
+  .y-punct {
+    color: var(--quader-code-punct);
   }
 }

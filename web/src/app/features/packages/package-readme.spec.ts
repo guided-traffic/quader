@@ -243,6 +243,26 @@ describe('README rendering', () => {
     expect(kept[0]?.hasAttribute('rel')).toBe(false);
   });
 
+  it('R-ANS-048 the prose of the documentation keeps the links the server built to an entry and an anchor, as addresses of the page', async () => {
+    const html =
+      '<a href="?doc=module/mount">a</a><a href="#parameter-opts/mode">b</a><a href="?doc=module/mount#return-dev">c</a>' +
+      '<a href="?doc=../x">d</a><a href="?doc=module/x&amp;tab=y">e</a><a href="#user-content-z">f</a>';
+    const readme = await show(html);
+    // A README keeps fragments as it always did, and no address with a query.
+    expect([...readme.body.querySelectorAll('a[href]')].map((a) => a.getAttribute('href'))).toEqual(['#parameter-opts/mode', '#user-content-z']);
+
+    const r = await renderScreen(PackageReadmeView, {
+      inputs: { readme: { contentType: 'text/markdown', html, truncated: false, externalImagesBlocked: 0 }, docLinks: true },
+    });
+    const kept = [...r.root.querySelectorAll<HTMLAnchorElement>('.readme a[data-doc-link]')];
+    expect(kept.map((a) => a.getAttribute('data-doc-link'))).toEqual(['?doc=module/mount', '#parameter-opts/mode', '?doc=module/mount#return-dev']);
+    expect(kept[0]?.getAttribute('href')).toContain('doc=module%2Fmount');
+    expect(kept[1]?.getAttribute('href')).toMatch(/#parameter-opts\/mode$/);
+    expect(kept[2]?.getAttribute('href')).toMatch(/doc=module%2Fmount.*#return-dev$/);
+    expect(kept.every((a) => !a.hasAttribute('rel') && !a.hasAttribute('target'))).toBe(true);
+    expect(r.root.querySelectorAll('.readme a[href]')).toHaveLength(4);
+  });
+
   it('R-UI-008 a version without a README renders nothing', async () => {
     const r = await renderScreen(PackageReadmeView, { inputs: { readme: null } });
     expect(r.root.querySelector('.readme')).toBeNull();

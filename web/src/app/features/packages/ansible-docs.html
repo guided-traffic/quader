@@ -141,7 +141,7 @@
           @if (p.kind === 'file') {
             <quader-package-readme [readme]="p.file" />
           } @else {
-            <quader-ansible-doc-entry [entry]="p.entry" />
+            <quader-ansible-doc-entry [entry]="p.entry" [target]="fragment()" />
           }
         } @else {
           <p class="pane-status" data-testid="docs-empty" i18n="@@docs.empty">This version has no documentation pages.</p>

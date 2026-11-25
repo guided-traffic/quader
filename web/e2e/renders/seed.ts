@@ -825,16 +825,308 @@ async function publishDeb(ctx: APIRequestContext, auth: Record<string, string>):
   }
 }
 
+/** One example of the module {@link mountModule}: a play of about forty lines. */
+function mountExample(n: number): string {
+  const lines = [
+    `- name: Prepare data volume ${n}`,
+    '  hosts: storage',
+    '  become: true',
+    '  vars:',
+    `    volume_label: data${n}`,
+    '    mount_root: /srv/volumes',
+    '  tasks:',
+    `    - name: Mount volume ${n} by its label (example ${n})`,
+    '      acme.platform.mount_volume:',
+    '        path: "{{ mount_root }}/{{ volume_label }}"',
+    "        src: 'LABEL={{ volume_label }}'",
+    '        fstype: ext4',
+    '        state: mounted',
+    '        opts:',
+    '          - noatime',
+    '          - nodev',
+    '        backup: true  # keep the previous fstab',
+    '        retry:',
+    `          count: ${n + 2}`,
+    '          backoff:',
+    '            seconds: 1.5',
+    '            jitter: false',
+    '      register: mounted',
+    '',
+    '    - name: Show what changed',
+    '      ansible.builtin.debug:',
+    '        msg: "{{ mounted.dev.name }} at {{ mounted.dev.uuid }}"',
+    '      when: mounted is changed',
+    '',
+    '    - name: Write a marker',
+    '      ansible.builtin.shell: |',
+    '        set -eu',
+    '        echo "volume: {{ volume_label }}" > {{ mount_root }}/.marker',
+    '        sync',
+    '      args:',
+    '        creates: "{{ mount_root }}/.marker"',
+    '',
+    '    - name: Check the mount',
+    '      ansible.builtin.command: findmnt --target {{ mount_root }}',
+    '      changed_when: false',
+  ];
+  return lines.join('\n');
+}
+
+/**
+ * A module as the documentation of a real collection writes it (R-ANS-048 to R-ANS-050): twenty options, suboptions three levels deep,
+ * choices, defaults, aliases, a long description with the markup's macros, attributes, see-also, three examples of forty lines and
+ * nested return values.
+ */
+function mountModule(): string {
+  const more = Array.from(
+    { length: 9 },
+    (_, i) => `  option_${String(i + 1).padStart(2, '0')}:\n    description: An extra setting number ${i + 1} that O(state=mounted) reads.\n    type: ${['str', 'int', 'bool'][i % 3]}\n${i % 3 === 1 ? '    default: 10\n' : ''}`,
+  ).join('');
+  return `#!/usr/bin/python
+DOCUMENTATION = r'''
+module: mount_volume
+short_description: Control active and configured mount points of the platform's volumes
+version_added: "1.0.0"
+description:
+  - Controls active and configured mount points in C(/etc/fstab) for the volumes of the platform, with retries for slow devices.
+  - Use O(state=mounted) to mount a device and write it to the fstab, or O(state=present) to write the entry only. The options in
+    O(opts) are passed to the mount command; B(never) put credentials there, use O(credentials.file) instead.
+  - The module returns the device in RV(dev) and its RV(dev.name). See M(acme.platform.mount_volume) for the plain case, the lookup
+    P(acme.platform.env_vars#lookup) to read the settings from the environment and the callback P(acme.platform.timer#callback) to time
+    the mounts. Set E(PLATFORM_MOUNT_DEBUG) for a trace. HORIZONTALLINE
+    Since version 1.1.0 a value of V(auto) for O(fstype) asks the kernel.
+author:
+  - Platform engineering (@platform)
+  - Jane Maintainer (@jane)
+requirements:
+  - util-linux >= 2.36
+  - python >= 3.9
+notes:
+  - Remounting needs O(state=remounted) and works on Linux only.
+  - Refer to U(https://docs.ansible.com/ansible/latest/collections/ansible/posix/mount_module.html) for the module this follows.
+seealso:
+  - module: ansible.posix.mount
+    description: The general module for mount points.
+  - plugin: acme.platform.env_vars
+    plugin_type: lookup
+    description: Reads the settings of a volume from the environment.
+  - name: Filesystem table
+    description: The format of the fstab.
+    link: https://man7.org/linux/man-pages/man5/fstab.5.html
+attributes:
+  check_mode:
+    support: full
+    description: Can run in check mode and return changed status prediction without modifying target.
+  diff_mode:
+    support: partial
+    description: Will return details on what has changed (or possibly needs changing in check_mode), when in diff mode.
+    details: Only the fstab entry is compared, not the mounted state.
+  platform:
+    support: full
+    platforms: posix
+    description: Target OS/families that can be operated against.
+options:
+  path:
+    description: Path to the mount point (for example C(/mnt/files)).
+    type: path
+    required: true
+    aliases: [name]
+  src:
+    description: Device (or NFS volume, or something else) to be mounted on O(path). Required when O(state) is V(mounted) or V(present).
+    type: path
+    aliases: [source, device]
+  fstype:
+    description: Filesystem type, or V(auto) to let the kernel decide.
+    type: str
+    default: auto
+    version_added: "1.1.0"
+  state:
+    description: Whether the mount point is mounted, only in the fstab, unmounted or absent.
+    type: str
+    required: true
+    choices: [absent, mounted, present, unmounted, remounted]
+  opts:
+    description: Mount options (see fstab(5), or vfstab(4) on Solaris).
+    type: list
+    elements: str
+    default: [defaults]
+  backup:
+    description: Create a backup file including the timestamp information so you can get the original file back.
+    type: bool
+    default: false
+  boot:
+    description: Determines if the filesystem should be mounted on boot.
+    type: bool
+    default: true
+  retry:
+    description: How a slow device is waited for.
+    type: dict
+    suboptions:
+      count:
+        description: How often to try again.
+        type: int
+        default: 3
+      backoff:
+        description: The waiting between two tries.
+        type: dict
+        suboptions:
+          seconds:
+            description: Seconds between two tries.
+            type: float
+            default: 1.5
+          jitter:
+            description: Spread the tries over a random share of O(retry.backoff.seconds).
+            type: bool
+            default: false
+  credentials:
+    description: Where the credentials of a network volume come from.
+    type: dict
+    suboptions:
+      file:
+        description: A file with the credentials, readable by root only.
+        type: path
+      user:
+        description: The user, when no O(credentials.file) is given.
+        type: str
+${more}'''
+
+EXAMPLES = r'''
+${[1, 2, 3].map(mountExample).join('\n\n')}
+'''
+
+RETURN = r'''
+dev:
+  description: The device that was mounted.
+  returned: success
+  type: dict
+  contains:
+    name:
+      description: The name of the device.
+      type: str
+      sample: /dev/sdb1
+    uuid:
+      description: The UUID of its filesystem.
+      type: str
+      sample: 4f3c1a2e-9b0d-4f6a-8c55-1d2e3f4a5b6c
+    usage:
+      description: The space used, after the mount.
+      type: dict
+      version_added: "1.1.0"
+      sample: {"used": 1024, "free": 4096, "ok": true, "labels": ["data", "fast"]}
+backup_file:
+  description: The name of the backup file of the fstab.
+  returned: changed and O(backup) is V(true)
+  type: str
+  sample: /etc/fstab.2026-11-25@21:38:06~
+'''
+`;
+}
+
+/** A lookup plugin with its terms and options configured by ini, env and vars (R-ANS-049, R-ANS-050). */
+const envVarsLookup = `DOCUMENTATION = r'''
+name: env_vars
+short_description: Read the settings of a volume from the environment
+version_added: "1.1.0"
+description:
+  - Returns the values of the environment variables named in the terms, with O(prefix) in front.
+options:
+  _terms:
+    description: The names of the variables.
+    type: list
+    elements: str
+    required: true
+  prefix:
+    description: The prefix of every name.
+    type: str
+    default: PLATFORM_
+    ini:
+      - section: platform_lookup
+        key: prefix
+    env:
+      - name: PLATFORM_LOOKUP_PREFIX
+    vars:
+      - name: platform_lookup_prefix
+  default:
+    description: The value of a variable that is not set.
+    type: raw
+    version_added: "1.1.0"
+    env:
+      - name: PLATFORM_LOOKUP_DEFAULT
+'''
+
+EXAMPLES = r'''
+- name: Read two settings
+  ansible.builtin.debug:
+    msg: "{{ lookup('acme.platform.env_vars', 'VOLUME', 'ROOT', prefix='APP_') }}"
+'''
+
+RETURN = r'''
+_list:
+  description: The values, in the order of the terms.
+  type: list
+  elements: str
+'''
+`;
+
+/** A callback plugin configured by ini, env and a play keyword (R-ANS-049). */
+const timerCallback = `DOCUMENTATION = r'''
+name: timer
+type: aggregate
+short_description: Adds the time of every task to the summary
+version_added: "1.0.0"
+description:
+  - Prints the time of each task at the end of the play, sorted by O(sort_order).
+requirements:
+  - enable in the configuration
+options:
+  sort_order:
+    description: The order of the summary.
+    type: str
+    default: descending
+    choices: [descending, ascending, none]
+    ini:
+      - section: callback_timer
+        key: sort_order
+    env:
+      - name: PLATFORM_TIMER_SORT_ORDER
+  summary_only:
+    description: Only the summary, not each task.
+    type: bool
+    default: false
+    version_added: "1.1.0"
+    ini:
+      - section: callback_timer
+        key: summary_only
+    env:
+      - name: PLATFORM_TIMER_SUMMARY_ONLY
+    keyword:
+      - name: timer_summary_only
+'''
+`;
+
 /** A collection archive with the MANIFEST.json and FILES.json ansible-galaxy builds (test/ansiblestub/ansiblegen). */
 function collection(namespace: string, name: string, version: string): Buffer {
   const sha = (b: Buffer): string => createHash('sha256').update(b).digest('hex');
   const files: [string, Buffer][] = [
     ['README.md', Buffer.from(`# ${namespace}.${name}\n\nRoles and modules of the platform team, version ${version}.\n`)],
     ['meta/runtime.yml', Buffer.from("requires_ansible: '>=2.15.0'\n")],
+    ['plugins/callback/timer.py', Buffer.from(timerCallback)],
+    ['plugins/lookup/env_vars.py', Buffer.from(envVarsLookup)],
+    ['plugins/modules/mount_volume.py', Buffer.from(mountModule())],
     ['roles/agent/tasks/main.yml', Buffer.from('---\n- name: Install the agent\n  ansible.builtin.package:\n    name: acme-agent\n')],
     ['roles/agent/meta/main.yml', Buffer.from("---\ngalaxy_info:\n  author: platform\n  description: the agent\n  license: MIT\n  min_ansible_version: '2.15'\n  platforms: []\ndependencies: []\n")],
   ];
-  const dirs = ['meta', 'roles', 'roles/agent', 'roles/agent/meta', 'roles/agent/tasks'];
+  const dirs = [
+    'meta',
+    'plugins',
+    'plugins/callback',
+    'plugins/lookup',
+    'plugins/modules',
+    'roles',
+    'roles/agent',
+    'roles/agent/meta',
+    'roles/agent/tasks',
+  ];
   const list = [
     { name: '.', ftype: 'dir', chksum_type: null, chksum_sha256: null, format: 1 },
     ...[...dirs.map((d) => [d, null] as const), ...files]

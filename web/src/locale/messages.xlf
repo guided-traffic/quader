@@ -14098,8 +14098,7 @@
     <unit id="docs.col.name">
       <notes>
         <note category="location">src/app/features/packages/ansible-contents.ts:141</note>
-        <note category="location">src/app/features/packages/ansible-doc-entry.ts:54</note>
-        <note category="location">src/app/features/packages/ansible-doc-entry.ts:62</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.ts:101</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -14108,8 +14107,6 @@
     <unit id="docs.col.type">
       <notes>
         <note category="location">src/app/features/packages/ansible-contents.ts:142</note>
-        <note category="location">src/app/features/packages/ansible-doc-entry.ts:55</note>
-        <note category="location">src/app/features/packages/ansible-doc-entry.ts:63</note>
       </notes>
       <segment>
         <source>Type</source>
@@ -14133,8 +14130,9 @@
     </unit>
     <unit id="docs.added-in">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:12</note>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:125</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:9</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:124</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:288</note>
       </notes>
       <segment>
         <source>added in</source>
@@ -14142,7 +14140,7 @@
     </unit>
     <unit id="docs.deprecated">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:15,16</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:12,13</note>
       </notes>
       <segment>
         <source>Deprecated</source>
@@ -14150,7 +14148,7 @@
     </unit>
     <unit id="docs.removed-in">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:25</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:22</note>
       </notes>
       <segment>
         <source>Removed in</source>
@@ -14158,7 +14156,7 @@
     </unit>
     <unit id="docs.removed-at">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:30</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:27</note>
       </notes>
       <segment>
         <source>Removed after</source>
@@ -14166,7 +14164,7 @@
     </unit>
     <unit id="docs.alternative">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:35,37</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:32,34</note>
       </notes>
       <segment>
         <source>Alternative</source>
@@ -14174,7 +14172,7 @@
     </unit>
     <unit id="docs.no-docs-upstream">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:48,50</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:58,60</note>
       </notes>
       <segment>
         <source>The upstream sent no documentation for this plugin.</source>
@@ -14182,7 +14180,7 @@
     </unit>
     <unit id="docs.no-docs-generated">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:50,53</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:60,63</note>
       </notes>
       <segment>
         <source>This plugin has no documentation in its source.</source>
@@ -14190,7 +14188,8 @@
     </unit>
     <unit id="docs.synopsis">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:56,57</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:66,67</note>
+        <note category="location">src/app/features/packages/docs-model.ts:239</note>
       </notes>
       <segment>
         <source>Synopsis</source>
@@ -14198,24 +14197,16 @@
     </unit>
     <unit id="docs.fragments">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:63</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:73</note>
       </notes>
       <segment>
         <source>Documentation fragments that are not merged into this page:</source>
       </segment>
     </unit>
-    <unit id="docs.parameters">
-      <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:69,70</note>
-      </notes>
-      <segment>
-        <source>Parameters</source>
-      </segment>
-    </unit>
     <unit id="docs.suboption-of">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:90</note>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:233</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:103</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:275</note>
       </notes>
       <segment>
         <source>suboptions of</source>
@@ -14223,7 +14214,7 @@
     </unit>
     <unit id="docs.aliases">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:97</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:111</note>
       </notes>
       <segment>
         <source>aliases:</source>
@@ -14231,15 +14222,32 @@
     </unit>
     <unit id="docs.required">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:104,106</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:119,121</note>
       </notes>
       <segment>
         <source>Required</source>
       </segment>
     </unit>
+    <unit id="docs.choice-default">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:138,139</note>
+      </notes>
+      <segment>
+        <source>(default)</source>
+      </segment>
+    </unit>
+    <unit id="docs.configuration">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:151,153</note>
+      </notes>
+      <segment>
+        <source>Configuration</source>
+      </segment>
+    </unit>
     <unit id="docs.notes">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:137,138</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:173,174</note>
+        <note category="location">src/app/features/packages/docs-model.ts:241</note>
       </notes>
       <segment>
         <source>Notes</source>
@@ -14247,7 +14255,8 @@
     </unit>
     <unit id="docs.requirements">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:144,145</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:180,181</note>
+        <note category="location">src/app/features/packages/docs-model.ts:242</note>
       </notes>
       <segment>
         <source>Requirements</source>
@@ -14255,7 +14264,8 @@
     </unit>
     <unit id="docs.attributes">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:155,156</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:191,192</note>
+        <note category="location">src/app/features/packages/docs-model.ts:243</note>
       </notes>
       <segment>
         <source>Attributes</source>
@@ -14263,7 +14273,8 @@
     </unit>
     <unit id="docs.see-also">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:175,176</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:211,212</note>
+        <note category="location">src/app/features/packages/docs-model.ts:244</note>
       </notes>
       <segment>
         <source>See also</source>
@@ -14271,7 +14282,7 @@
     </unit>
     <unit id="pkg.meta.external">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:190,191</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:232,233</note>
         <note category="location">src/app/features/packages/package-version.html:422,423</note>
       </notes>
       <segment>
@@ -14280,7 +14291,8 @@
     </unit>
     <unit id="docs.examples">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:202,203</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:244,245</note>
+        <note category="location">src/app/features/packages/docs-model.ts:245</note>
       </notes>
       <segment>
         <source>Examples</source>
@@ -14288,7 +14300,8 @@
     </unit>
     <unit id="docs.returns">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:212,213</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:254,255</note>
+        <note category="location">src/app/features/packages/docs-model.ts:246</note>
       </notes>
       <segment>
         <source>Return values</source>
@@ -14296,48 +14309,40 @@
     </unit>
     <unit id="docs.authors">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.html:264,265</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.html:324,325</note>
+        <note category="location">src/app/features/packages/docs-model.ts:247</note>
       </notes>
       <segment>
         <source>Authors</source>
       </segment>
     </unit>
-    <unit id="docs.col.required">
-      <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.ts:56</note>
-      </notes>
-      <segment>
-        <source>Required</source>
-      </segment>
-    </unit>
-    <unit id="docs.col.default">
-      <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.ts:57</note>
-      </notes>
-      <segment>
-        <source>Default</source>
-      </segment>
-    </unit>
-    <unit id="docs.col.choices">
-      <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.ts:58</note>
-      </notes>
-      <segment>
-        <source>Choices</source>
-      </segment>
-    </unit>
     <unit id="docs.col.description">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.ts:59</note>
-        <note category="location">src/app/features/packages/ansible-doc-entry.ts:66</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.ts:102</note>
       </notes>
       <segment>
         <source>Description</source>
       </segment>
     </unit>
+    <unit id="docs.col.choices">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-doc-entry.ts:105</note>
+      </notes>
+      <segment>
+        <source>Choices</source>
+      </segment>
+    </unit>
+    <unit id="docs.col.default">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-doc-entry.ts:106</note>
+      </notes>
+      <segment>
+        <source>Default</source>
+      </segment>
+    </unit>
     <unit id="docs.col.returned">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.ts:64</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.ts:107</note>
       </notes>
       <segment>
         <source>Returned</source>
@@ -14345,15 +14350,23 @@
     </unit>
     <unit id="docs.col.sample">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.ts:65</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.ts:108</note>
       </notes>
       <segment>
         <source>Sample</source>
       </segment>
     </unit>
+    <unit id="docs.copy-sample">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-doc-entry.ts:109</note>
+      </notes>
+      <segment>
+        <source>Copy the sample</source>
+      </segment>
+    </unit>
     <unit id="docs.options.caption">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.ts:68</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.ts:110</note>
       </notes>
       <segment>
         <source>Parameters of this entry</source>
@@ -14361,7 +14374,7 @@
     </unit>
     <unit id="docs.returns.caption">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.ts:69</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.ts:111</note>
       </notes>
       <segment>
         <source>Return values of this entry</source>
@@ -14369,7 +14382,7 @@
     </unit>
     <unit id="docs.copy-name">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.ts:70</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.ts:112</note>
       </notes>
       <segment>
         <source>Copy the full name</source>
@@ -14377,15 +14390,71 @@
     </unit>
     <unit id="docs.copy-examples">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.ts:71</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.ts:113</note>
       </notes>
       <segment>
         <source>Copy the examples</source>
       </segment>
     </unit>
+    <unit id="docs.contents">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-doc-entry.ts:114</note>
+      </notes>
+      <segment>
+        <source>Contents of this page</source>
+      </segment>
+    </unit>
+    <unit id="docs.copy-link">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-doc-entry.ts:155</note>
+      </notes>
+      <segment>
+        <source>Copy the link to <ph id="0" equiv="name" disp="row.name"/></source>
+      </segment>
+    </unit>
+    <unit id="docs.config.ini">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-doc-entry.ts:161</note>
+      </notes>
+      <segment>
+        <source>INI entry</source>
+      </segment>
+    </unit>
+    <unit id="docs.config.env">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-doc-entry.ts:163</note>
+      </notes>
+      <segment>
+        <source>Environment variable</source>
+      </segment>
+    </unit>
+    <unit id="docs.config.vars">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-doc-entry.ts:165</note>
+      </notes>
+      <segment>
+        <source>Variable</source>
+      </segment>
+    </unit>
+    <unit id="docs.config.keyword">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-doc-entry.ts:167</note>
+      </notes>
+      <segment>
+        <source>Keyword</source>
+      </segment>
+    </unit>
+    <unit id="docs.config.cli">
+      <notes>
+        <note category="location">src/app/features/packages/ansible-doc-entry.ts:169</note>
+      </notes>
+      <segment>
+        <source>Command line</source>
+      </segment>
+    </unit>
     <unit id="docs.unfold">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.ts:92</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.ts:197</note>
       </notes>
       <segment>
         <source>Show the suboptions of <ph id="0" equiv="name" disp="row.name"/></source>
@@ -14393,7 +14462,7 @@
     </unit>
     <unit id="docs.fold">
       <notes>
-        <note category="location">src/app/features/packages/ansible-doc-entry.ts:93</note>
+        <note category="location">src/app/features/packages/ansible-doc-entry.ts:198</note>
       </notes>
       <segment>
         <source>Hide the suboptions of <ph id="0" equiv="name" disp="row.name"/></source>
@@ -14522,7 +14591,7 @@
     </unit>
     <unit id="docs.search.too-short">
       <notes>
-        <note category="location">src/app/features/packages/ansible-docs.ts:182</note>
+        <note category="location">src/app/features/packages/ansible-docs.ts:186</note>
       </notes>
       <segment>
         <source>Enter at least 2 characters to search.</source>
@@ -14530,7 +14599,7 @@
     </unit>
     <unit id="docs.search.pending">
       <notes>
-        <note category="location">src/app/features/packages/ansible-docs.ts:183</note>
+        <note category="location">src/app/features/packages/ansible-docs.ts:187</note>
       </notes>
       <segment>
         <source>Searching.</source>
@@ -14538,7 +14607,7 @@
     </unit>
     <unit id="docs.search.count">
       <notes>
-        <note category="location">src/app/features/packages/ansible-docs.ts:186</note>
+        <note category="location">src/app/features/packages/ansible-docs.ts:190</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="matches" disp="n.matchCount"/> of <ph id="1" equiv="total" disp="total"/> entries</source>
@@ -14797,7 +14866,7 @@
     </unit>
     <unit id="docs.tree.documentation">
       <notes>
-        <note category="location">src/app/features/packages/docs-model.ts:82</note>
+        <note category="location">src/app/features/packages/docs-model.ts:88</note>
       </notes>
       <segment>
         <source>Documentation</source>
@@ -14805,7 +14874,7 @@
     </unit>
     <unit id="docs.tree.modules">
       <notes>
-        <note category="location">src/app/features/packages/docs-model.ts:144</note>
+        <note category="location">src/app/features/packages/docs-model.ts:150</note>
       </notes>
       <segment>
         <source>Modules</source>
@@ -14813,7 +14882,7 @@
     </unit>
     <unit id="docs.tree.plugins">
       <notes>
-        <note category="location">src/app/features/packages/docs-model.ts:146</note>
+        <note category="location">src/app/features/packages/docs-model.ts:152</note>
       </notes>
       <segment>
         <source>Plugins</source>
@@ -14821,15 +14890,55 @@
     </unit>
     <unit id="docs.tree.roles">
       <notes>
-        <note category="location">src/app/features/packages/docs-model.ts:148</note>
+        <note category="location">src/app/features/packages/docs-model.ts:154</note>
       </notes>
       <segment>
         <source>Roles</source>
       </segment>
     </unit>
+    <unit id="docs.parameters">
+      <notes>
+        <note category="location">src/app/features/packages/docs-model.ts:210</note>
+      </notes>
+      <segment>
+        <source>Parameters</source>
+      </segment>
+    </unit>
+    <unit id="docs.terms">
+      <notes>
+        <note category="location">src/app/features/packages/docs-model.ts:216</note>
+      </notes>
+      <segment>
+        <source>Terms</source>
+      </segment>
+    </unit>
+    <unit id="docs.input">
+      <notes>
+        <note category="location">src/app/features/packages/docs-model.ts:217</note>
+      </notes>
+      <segment>
+        <source>Input</source>
+      </segment>
+    </unit>
+    <unit id="docs.positional">
+      <notes>
+        <note category="location">src/app/features/packages/docs-model.ts:220</note>
+      </notes>
+      <segment>
+        <source>Positional parameters</source>
+      </segment>
+    </unit>
+    <unit id="docs.keyword-parameters">
+      <notes>
+        <note category="location">src/app/features/packages/docs-model.ts:223</note>
+      </notes>
+      <segment>
+        <source>Keyword parameters</source>
+      </segment>
+    </unit>
     <unit id="docs.unavailable.upstream">
       <notes>
-        <note category="location">src/app/features/packages/docs-model.ts:303</note>
+        <note category="location">src/app/features/packages/docs-model.ts:413</note>
       </notes>
       <segment>
         <source>The upstream did not deliver the documentation of this version.</source>
@@ -14837,7 +14946,7 @@
     </unit>
     <unit id="docs.unavailable.too-large">
       <notes>
-        <note category="location">src/app/features/packages/docs-model.ts:305</note>
+        <note category="location">src/app/features/packages/docs-model.ts:415</note>
       </notes>
       <segment>
         <source>The documentation of this version is larger than Quader keeps.</source>
@@ -14845,7 +14954,7 @@
     </unit>
     <unit id="docs.unavailable.invalid">
       <notes>
-        <note category="location">src/app/features/packages/docs-model.ts:307</note>
+        <note category="location">src/app/features/packages/docs-model.ts:417</note>
       </notes>
       <segment>
         <source>The upstream sent a documentation document that Quader cannot read.</source>
@@ -14853,7 +14962,7 @@
     </unit>
     <unit id="docs.unavailable.unknown">
       <notes>
-        <note category="location">src/app/features/packages/docs-model.ts:309</note>
+        <note category="location">src/app/features/packages/docs-model.ts:419</note>
       </notes>
       <segment>
         <source>The documentation of this version is not available.</source>
@@ -15541,7 +15650,7 @@
     </unit>
     <unit id="pkg.readme.truncated">
       <notes>
-        <note category="location">src/app/features/packages/package-readme.ts:63,66</note>
+        <note category="location">src/app/features/packages/package-readme.ts:69,72</note>
       </notes>
       <segment>
         <source> This README is shortened because it is larger than the display limit. </source>
@@ -15549,7 +15658,7 @@
     </unit>
     <unit id="pkg.readme.image-blocked">
       <notes>
-        <note category="location">src/app/features/packages/package-readme.ts:68,70</note>
+        <note category="location">src/app/features/packages/package-readme.ts:74,76</note>
       </notes>
       <segment>
         <source> One external image is shown as a link. </source>
@@ -15557,7 +15666,7 @@
     </unit>
     <unit id="pkg.readme.images-blocked">
       <notes>
-        <note category="location">src/app/features/packages/package-readme.ts:72,74</note>
+        <note category="location">src/app/features/packages/package-readme.ts:78,80</note>
       </notes>
       <segment>
         <source> <ph id="0" equiv="INTERPOLATION" disp="{{ r.externalImagesBlocked }}"/> external images are shown as links. </source>

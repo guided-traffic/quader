@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { AnsibleApi } from '../../api/ansible-api';
 import { PackagesApi } from '../../api/packages-api';
 import { ApiError } from '../../api/problem';
-import { bareEntry, commonFixture, DocsFixture } from '../../api/testing/fakes-ansible-docs';
+import { CHECK_HOST_REACHABLE, bareEntry, commonFixture, DocsFixture } from '../../api/testing/fakes-ansible-docs';
 import { FakeAnsibleApi, importTask } from '../../api/testing/fakes-ansible';
 import { FakePackagesApi, ansibleDocsFixture, ansibleFixture } from '../../api/testing/fakes-packages';
 import { expectAccessible, inProject, renderScreen, settle, text, type } from '../../testing/screen';
@@ -386,6 +386,25 @@ describe('The Documentation tab of an Ansible collection', () => {
         delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
         main.remove();
       }
+    });
+
+    it('R-ANS-048 a link of the prose to an option or another entry opens it in place, with the anchor as the fragment of the address', async () => {
+      const linked = {
+        ...CHECK_HOST_REACHABLE,
+        description: ['See <a href="#parameter-port"><code>port</code></a> and <a href="?doc=module/wait_for_port#parameter-path"><code>path</code></a>.'],
+      };
+      const r = await open({ doc: 'module/check_host_reachable' }, (fake) =>
+        ansibleDocsFixture(fake, commonFixture({ entries: [linked, bareEntry('module', 'wait_for_port')] })),
+      );
+      const links = [...r.root.querySelectorAll<HTMLAnchorElement>('quader-doc-prose a[data-doc-link]')];
+      expect(links).toHaveLength(2);
+      // The address is the page's own (the test's router stands at the project's packages) with the anchor as its fragment.
+      expect(links[0]!.getAttribute('href')).toMatch(/#parameter-port$/);
+      const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+      links[1]!.click();
+      const url = TestBed.inject(Router).serializeUrl(navigate.mock.calls[0]![0] as never);
+      expect(url).toContain('doc=module%2Fwait_for_port');
+      expect(url).toMatch(/#parameter-path$/);
     });
 
     it('R-UI-060 R-UI-064 the tab passes the accessibility checks with a page open and with a search', async () => {
