@@ -3,6 +3,7 @@ import { describe, it } from 'vitest';
 import { LimitsApi } from '../../api/limits-api';
 import { QuaderDialog } from '../../shared/ui/dialog';
 import { app, dialogPanel, expectState, failAlways, failNext, fill, openDialog, serverFailure, submit } from '../../testing/states';
+import { holdCalls } from '../../testing/screen';
 import { LimitModeDialog } from './limit-mode';
 import { LimitMaximumDialog, MaximumDialogData } from './maximum-dialog';
 import { LimitRuleDialog } from './rule-dialog';
@@ -47,6 +48,17 @@ describe('dialogs of the download limits in a browser (R-UI-177, R-UI-181, R-UI-
 
   it("a project's maximum, whose save failed: the error notice with its request ID", async () => {
     await expectState('limits-maximum-failed', async () => submit(await maximum(true, true)));
+  });
+
+  it('Add rule while its profiles load: the select held, the spinner inside it (R-UI-217)', async () => {
+    await expectState('limits-rule-profiles-loading', () =>
+      openDialog(LimitRuleDialog, {
+        maxWidth: '44rem',
+        width: '44rem',
+        data: { place: { kind: 'instance' }, capped: false },
+        setup: (get) => void holdCalls(get(LimitsApi), 'profiles'),
+      }),
+    );
   });
 
   it('Add rule, submitted without the user it is for: the sentence under the field', async () => {

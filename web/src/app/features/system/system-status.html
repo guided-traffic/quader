@@ -64,6 +64,8 @@
       </span>
     }
   </p>
+} @else if (!failure()) {
+  <quader-loading size="page" i18n="@@system.status.loading">Loading the state of the instance.</quader-loading>
 }
 
 @if (valueOf(info); as i) {

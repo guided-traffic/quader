@@ -20,6 +20,7 @@ import { TokensApi } from '../../api/tokens-api';
 import { AccountRights, actionLabel } from './account-rights';
 import { TechnicalTokens } from './technical-tokens';
 import { Busy } from '../../shared/ui/busy';
+import { Loading } from '../../shared/ui/loading';
 
 /**
  * One service account of the instance, a project or a repository (R-UI-026, R-UI-181): description, for a repository's account its
@@ -29,7 +30,7 @@ import { Busy } from '../../shared/ui/busy';
  */
 @Component({
   selector: 'quader-service-account-detail',
-  imports: [Busy, AccountRights, PageHeader, DatePipe, ErrorNotice, Needs, PrincipalRoles, Disclosure, RouterLink, TextField, TechnicalTokens],
+  imports: [Loading, Busy, AccountRights, PageHeader, DatePipe, ErrorNotice, Needs, PrincipalRoles, Disclosure, RouterLink, TextField, TechnicalTokens],
   template: `
     <quader-page-header [heading]="name()" [name]="true">
       <span meta class="badge" i18n="@@sa.heading">Service account</span>
@@ -150,6 +151,8 @@ import { Busy } from '../../shared/ui/busy';
           </quader-disclosure>
         }
       </div>
+    } @else if (!loadError()) {
+      <quader-loading size="page" i18n="@@sa.loading">Loading the service account.</quader-loading>
     }
   `,
   styleUrl: '../../shared/access/access.scss',

@@ -26,6 +26,7 @@ import { PageHeader } from '../../shared/ui/page-header';
 import { TimeAgo } from '../../shared/ui/time-ago';
 import { SigningIdentitySection } from './signing-identity';
 import { Busy } from '../../shared/ui/busy';
+import { Loading } from '../../shared/ui/loading';
 
 /**
  * **Admin area › Settings › Signatures** (R-SIG-036, Q-SIG-44): for the holder of `settings:read`, its controls for the holder of
@@ -39,7 +40,7 @@ import { Busy } from '../../shared/ui/busy';
  */
 @Component({
   selector: 'quader-signature-settings',
-  imports: [Busy, AnchorTable, Checkbox, DataTable, DatePipe, DecimalPipe, Disclosure, ErrorNotice, Needs, PageHeader, RouterLink, SigningIdentitySection, TechnicalDetails, TimeAgo],
+  imports: [Loading, Busy, AnchorTable, Checkbox, DataTable, DatePipe, DecimalPipe, Disclosure, ErrorNotice, Needs, PageHeader, RouterLink, SigningIdentitySection, TechnicalDetails, TimeAgo],
   templateUrl: './signature-settings.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `

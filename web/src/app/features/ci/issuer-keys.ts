@@ -12,6 +12,7 @@ import { ErrorNotice } from '../../shared/error-notice';
 import { FAILURE_WORDS } from '../../shared/failure-report';
 import { ciKeyErrorFacts, ciKeyErrorText } from './ci-common';
 import { Busy } from '../../shared/ui/busy';
+import { Loading } from '../../shared/ui/loading';
 
 /**
  * The signing keys of an issuer (R-UI-035, R-CI-002, R-CI-003): the cached key set with its fetch time,
@@ -21,7 +22,7 @@ import { Busy } from '../../shared/ui/busy';
  */
 @Component({
   selector: 'quader-ci-issuer-keys',
-  imports: [Busy, DatePipe, ErrorNotice, DataTable, Needs, NoValue],
+  imports: [Loading, Busy, DatePipe, ErrorNotice, DataTable, Needs, NoValue],
   template: `
     <div class="toolbar">
       <button class="btn btn-confirm" type="button" [disabled]="busy() || !session.has('ci:write')" [quaderBusy]="busy()" aria-describedby="needs-ci-keys" (click)="refresh()" i18n="@@ci.keys.refresh">
@@ -100,6 +101,8 @@ import { Busy } from '../../shared/ui/busy';
           </tr>
         }
       </quader-data-table>
+    } @else if (!error()) {
+      <quader-loading i18n="@@ci.keys.loading">Loading the keys.</quader-loading>
     }
   `,
   styleUrl: '../../shared/access/access.scss',

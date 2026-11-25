@@ -16,6 +16,7 @@ import { ErrorNotice } from '../../shared/error-notice';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { PageHeader } from '../../shared/ui/page-header';
 import { Busy } from '../../shared/ui/busy';
+import { Loading } from '../../shared/ui/loading';
 
 /** The tabs of the issuer page, in this order; the query parameter `tab` names the open one. */
 export const ISSUER_TABS = ['settings', 'keys', 'mappings', 'issuances'] as const;
@@ -29,7 +30,7 @@ export type IssuerTab = (typeof ISSUER_TABS)[number];
  */
 @Component({
   selector: 'quader-ci-issuer-detail',
-  imports: [Busy, PageHeader, TabContent, TabGroup, TabPage, RouterLink, ErrorNotice, IssuanceList, IssuerForm, IssuerKeys, MappingList, Disclosure],
+  imports: [Loading, Busy, PageHeader, TabContent, TabGroup, TabPage, RouterLink, ErrorNotice, IssuanceList, IssuerForm, IssuerKeys, MappingList, Disclosure],
   template: `
     <quader-page-header [heading]="issuer()" [name]="true">
       <span meta class="badge" i18n="@@ci.issuer.heading">CI issuer</span>
@@ -85,6 +86,8 @@ export type IssuerTab = (typeof ISSUER_TABS)[number];
           </ng-template>
         </quader-tab>
       </quader-tab-group>
+    } @else if (!error()) {
+      <quader-loading size="page" i18n="@@ci.issuer.loading">Loading the issuer.</quader-loading>
     }
   `,
   styleUrl: '../../shared/access/access.scss',

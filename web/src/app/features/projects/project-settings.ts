@@ -31,6 +31,7 @@ import { PageHeader } from '../../shared/ui/page-header';
 import { ProjectLimitsSection } from '../limits/project-limits-section';
 import { ProjectSignatureAnchors } from './project-signature-anchors';
 import { Busy } from '../../shared/ui/busy';
+import { Loading } from '../../shared/ui/loading';
 
 /**
  * The settings of one project (R-UI-041, R-UI-054, Q-UI-129, Q-UI-215): the display name and the description edited in place by
@@ -42,7 +43,7 @@ import { Busy } from '../../shared/ui/busy';
  */
 @Component({
   selector: 'quader-project-settings',
-  imports: [Busy, PageHeader, DatePipe, ErrorNotice, Needs, Disclosure, ProjectLimitsSection, ProjectSignatureAnchors, TextField, VisibilityLevelControl],
+  imports: [Loading, Busy, PageHeader, DatePipe, ErrorNotice, Needs, Disclosure, ProjectLimitsSection, ProjectSignatureAnchors, TextField, VisibilityLevelControl],
   template: `
     <quader-page-header heading="Settings" i18n-heading="@@project.settings" />
 
@@ -191,6 +192,8 @@ import { Busy } from '../../shared/ui/busy';
           </quader-disclosure>
         }
       </div>
+    } @else if (!loadError()) {
+      <quader-loading size="page" i18n="@@settings.loading">Loading the settings.</quader-loading>
     }
   `,
   styleUrl: '../../shared/access/access.scss',

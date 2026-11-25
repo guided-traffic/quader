@@ -40,7 +40,13 @@ const frame = (): Promise<void> => new Promise((resolve) => requestAnimationFram
 export async function quiet(): Promise<void> {
   await document.fonts.ready;
   for (let i = 0; i < 3; i++) {
-    await Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined)));
+    // A spinner turns for as long as its load runs (R-UI-217): its animation never finishes, and is not waited for.
+    await Promise.all(
+      document
+        .getAnimations()
+        .filter((a) => a.effect?.getComputedTiming().iterations !== Infinity)
+        .map((a) => a.finished.catch(() => undefined)),
+    );
     await frame();
   }
   await frame();

@@ -8341,7 +8341,7 @@
     </unit>
     <unit id="ci.issuer.heading">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:35,36</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:36,37</note>
       </notes>
       <segment>
         <source>CI issuer</source>
@@ -8350,7 +8350,7 @@
     </unit>
     <unit id="ci.issuer.test">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:36,37</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:37,38</note>
       </notes>
       <segment>
         <source>Test with claims</source>
@@ -8359,7 +8359,7 @@
     </unit>
     <unit id="ci.issuer.tab.settings">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:45</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:46</note>
       </notes>
       <segment>
         <source>Settings</source>
@@ -8368,7 +8368,7 @@
     </unit>
     <unit id="ci.issuer.advanced">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:52,53</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:53,54</note>
       </notes>
       <segment>
         <source>Advanced</source>
@@ -8377,7 +8377,7 @@
     </unit>
     <unit id="ci.issuer.advanced-hint">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:54,56</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:55,57</note>
       </notes>
       <segment>
         <source>Delete this issuer.</source>
@@ -8386,7 +8386,7 @@
     </unit>
     <unit id="ci.issuer.delete-note">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:56,57</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:57,58</note>
       </notes>
       <segment>
         <source>Deleting the issuer revokes the tokens issued through it and deletes its mappings.</source>
@@ -8395,7 +8395,7 @@
     </unit>
     <unit id="ci.issuer.delete">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:57,58</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:58,59</note>
       </notes>
       <segment>
         <source>Delete issuer</source>
@@ -8404,7 +8404,7 @@
     </unit>
     <unit id="ci.issuer.tab.keys">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:63</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:64</note>
       </notes>
       <segment>
         <source>Keys</source>
@@ -8413,7 +8413,7 @@
     </unit>
     <unit id="ci.issuer.keys">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:66,67</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:67,68</note>
       </notes>
       <segment>
         <source>Signing keys</source>
@@ -8422,7 +8422,7 @@
     </unit>
     <unit id="ci.issuer.tab.mappings">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:71</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:72</note>
       </notes>
       <segment>
         <source>Mappings</source>
@@ -8431,7 +8431,7 @@
     </unit>
     <unit id="ci.issuer.mappings">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:74,75</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:75,76</note>
       </notes>
       <segment>
         <source>Mappings</source>
@@ -8440,7 +8440,7 @@
     </unit>
     <unit id="ci.issuer.tab.issuances">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:79</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:80</note>
       </notes>
       <segment>
         <source>Issuances</source>
@@ -8449,16 +8449,25 @@
     </unit>
     <unit id="ci.issuer.issuances">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:82,83</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:83,84</note>
       </notes>
       <segment>
         <source>Issued tokens</source>
         <target>Ausgestellte Token</target>
       </segment>
     </unit>
+    <unit id="ci.issuer.loading">
+      <notes>
+        <note category="location">src/app/features/ci/issuer-detail.ts:90,93</note>
+      </notes>
+      <segment>
+        <source>Loading the issuer.</source>
+        <target>Der Aussteller wird geladen.</target>
+      </segment>
+    </unit>
     <unit id="ci.issuer.delete-title">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:161</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:164</note>
       </notes>
       <segment>
         <source>Delete issuer <ph id="0" equiv="name" disp="i.name"/>?</source>
@@ -8467,7 +8476,7 @@
     </unit>
     <unit id="ci.issuer.delete-text">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:163</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:166</note>
       </notes>
       <segment>
         <source>The tokens issued through this issuer are revoked at once and no job of the instance can exchange a token any more.</source>
@@ -8476,7 +8485,7 @@
     </unit>
     <unit id="ci.issuer.delete-mappings">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:165</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:168</note>
       </notes>
       <segment>
         <source>Its <ph id="0" equiv="count" disp="count"/> mappings and their principals are deleted with it.</source>
@@ -8485,7 +8494,7 @@
     </unit>
     <unit id="ci.issuer.delete-confirm">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:168</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:171</note>
       </notes>
       <segment>
         <source>Delete issuer</source>
@@ -8494,7 +8503,7 @@
     </unit>
     <unit id="ci.issuer.deleted">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:175</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:178</note>
       </notes>
       <segment>
         <source>CI issuer deleted.</source>
@@ -8503,7 +8512,7 @@
     </unit>
     <unit id="ci.create.heading">
       <notes>
-        <note category="location">src/app/features/ci/issuer-detail.ts:190</note>
+        <note category="location">src/app/features/ci/issuer-detail.ts:193</note>
       </notes>
       <segment>
         <source>New CI issuer</source>
@@ -8990,7 +8999,7 @@
     </unit>
     <unit id="ci.keys.refresh">
       <notes>
-        <note category="location">src/app/features/ci/issuer-keys.ts:28,30</note>
+        <note category="location">src/app/features/ci/issuer-keys.ts:29,31</note>
       </notes>
       <segment>
         <source> Refresh keys </source>
@@ -8999,7 +9008,7 @@
     </unit>
     <unit id="ci.keys.jwks">
       <notes>
-        <note category="location">src/app/features/ci/issuer-keys.ts:37,38</note>
+        <note category="location">src/app/features/ci/issuer-keys.ts:38,39</note>
       </notes>
       <segment>
         <source>Key set</source>
@@ -9008,7 +9017,7 @@
     </unit>
     <unit id="ci.keys.fetched-at">
       <notes>
-        <note category="location">src/app/features/ci/issuer-keys.ts:39,40</note>
+        <note category="location">src/app/features/ci/issuer-keys.ts:40,41</note>
       </notes>
       <segment>
         <source>Last fetch</source>
@@ -9017,7 +9026,7 @@
     </unit>
     <unit id="ci.keys.next">
       <notes>
-        <note category="location">src/app/features/ci/issuer-keys.ts:41,42</note>
+        <note category="location">src/app/features/ci/issuer-keys.ts:42,43</note>
       </notes>
       <segment>
         <source>Next refresh</source>
@@ -9026,7 +9035,7 @@
     </unit>
     <unit id="ci.keys.last-error">
       <notes>
-        <note category="location">src/app/features/ci/issuer-keys.ts:43,45</note>
+        <note category="location">src/app/features/ci/issuer-keys.ts:44,46</note>
       </notes>
       <segment>
         <source>Last error</source>
@@ -9035,7 +9044,7 @@
     </unit>
     <unit id="ci.keys.error.host">
       <notes>
-        <note category="location">src/app/features/ci/issuer-keys.ts:61,62</note>
+        <note category="location">src/app/features/ci/issuer-keys.ts:62,63</note>
       </notes>
       <segment>
         <source>Host</source>
@@ -9044,7 +9053,7 @@
     </unit>
     <unit id="ci.keys.no-error">
       <notes>
-        <note category="location">src/app/features/ci/issuer-keys.ts:69,70</note>
+        <note category="location">src/app/features/ci/issuer-keys.ts:70,71</note>
       </notes>
       <segment>
         <source>None</source>
@@ -9053,7 +9062,7 @@
     </unit>
     <unit id="ci.keys.empty">
       <notes>
-        <note category="location">src/app/features/ci/issuer-keys.ts:79,81</note>
+        <note category="location">src/app/features/ci/issuer-keys.ts:80,82</note>
       </notes>
       <segment>
         <source>No key has been fetched yet.</source>
@@ -9062,7 +9071,7 @@
     </unit>
     <unit id="ci.keys.ignored">
       <notes>
-        <note category="location">src/app/features/ci/issuer-keys.ts:94,95</note>
+        <note category="location">src/app/features/ci/issuer-keys.ts:95,96</note>
       </notes>
       <segment>
         <source>Ignored</source>
@@ -9071,16 +9080,25 @@
     </unit>
     <unit id="ci.keys.in-use">
       <notes>
-        <note category="location">src/app/features/ci/issuer-keys.ts:97,98</note>
+        <note category="location">src/app/features/ci/issuer-keys.ts:98,99</note>
       </notes>
       <segment>
         <source>In use</source>
         <target>In Verwendung</target>
       </segment>
     </unit>
+    <unit id="ci.keys.loading">
+      <notes>
+        <note category="location">src/app/features/ci/issuer-keys.ts:105,108</note>
+      </notes>
+      <segment>
+        <source>Loading the keys.</source>
+        <target>Die Schlüssel werden geladen.</target>
+      </segment>
+    </unit>
     <unit id="ci.keys.caption">
       <notes>
-        <note category="location">src/app/features/ci/issuer-keys.ts:125</note>
+        <note category="location">src/app/features/ci/issuer-keys.ts:128</note>
       </notes>
       <segment>
         <source>Signing keys of the issuer</source>
@@ -9089,7 +9107,7 @@
     </unit>
     <unit id="ci.keys.col.kid">
       <notes>
-        <note category="location">src/app/features/ci/issuer-keys.ts:127</note>
+        <note category="location">src/app/features/ci/issuer-keys.ts:130</note>
       </notes>
       <segment>
         <source>Key ID</source>
@@ -9098,7 +9116,7 @@
     </unit>
     <unit id="ci.keys.col.kty">
       <notes>
-        <note category="location">src/app/features/ci/issuer-keys.ts:128</note>
+        <note category="location">src/app/features/ci/issuer-keys.ts:131</note>
       </notes>
       <segment>
         <source>Type</source>
@@ -9107,7 +9125,7 @@
     </unit>
     <unit id="ci.keys.col.alg">
       <notes>
-        <note category="location">src/app/features/ci/issuer-keys.ts:129</note>
+        <note category="location">src/app/features/ci/issuer-keys.ts:132</note>
       </notes>
       <segment>
         <source>Algorithm</source>
@@ -9116,7 +9134,7 @@
     </unit>
     <unit id="ci.keys.col.state">
       <notes>
-        <note category="location">src/app/features/ci/issuer-keys.ts:130</note>
+        <note category="location">src/app/features/ci/issuer-keys.ts:133</note>
       </notes>
       <segment>
         <source>State</source>
@@ -9125,7 +9143,7 @@
     </unit>
     <unit id="ci.keys.refreshed">
       <notes>
-        <note category="location">src/app/features/ci/issuer-keys.ts:154</note>
+        <note category="location">src/app/features/ci/issuer-keys.ts:157</note>
       </notes>
       <segment>
         <source>The keys were fetched again.</source>
@@ -9361,7 +9379,7 @@
     <unit id="ci.editor.general">
       <notes>
         <note category="location">src/app/features/ci/mapping-editor.html:38,39</note>
-        <note category="location">src/app/features/ci/mapping-editor.ts:262</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:263</note>
       </notes>
       <segment>
         <source>General</source>
@@ -9380,8 +9398,8 @@
     <unit id="ci.editor.name">
       <notes>
         <note category="location">src/app/features/ci/mapping-editor.html:56,57</note>
-        <note category="location">src/app/features/ci/mapping-editor.ts:160</note>
-        <note category="location">src/app/features/ci/mapping-editor.ts:255</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:161</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:256</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -9391,8 +9409,8 @@
     <unit id="ci.editor.description">
       <notes>
         <note category="location">src/app/features/ci/mapping-editor.html:67,69</note>
-        <note category="location">src/app/features/ci/mapping-editor.ts:161</note>
-        <note category="location">src/app/features/ci/mapping-editor.ts:256</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:162</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:257</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -9402,8 +9420,8 @@
     <unit id="ci.editor.priority">
       <notes>
         <note category="location">src/app/features/ci/mapping-editor.html:76,78</note>
-        <note category="location">src/app/features/ci/mapping-editor.ts:162</note>
-        <note category="location">src/app/features/ci/mapping-editor.ts:257</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:163</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:258</note>
       </notes>
       <segment>
         <source>Priority</source>
@@ -9422,7 +9440,7 @@
     <unit id="ci.editor.enabled">
       <notes>
         <note category="location">src/app/features/ci/mapping-editor.html:86,87</note>
-        <note category="location">src/app/features/ci/mapping-editor.ts:163</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:164</note>
       </notes>
       <segment>
         <source>Enabled</source>
@@ -9432,8 +9450,8 @@
     <unit id="ci.editor.condition">
       <notes>
         <note category="location">src/app/features/ci/mapping-editor.html:91,92</note>
-        <note category="location">src/app/features/ci/mapping-editor.ts:164</note>
-        <note category="location">src/app/features/ci/mapping-editor.ts:259</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:165</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:260</note>
       </notes>
       <segment>
         <source>Condition</source>
@@ -9542,8 +9560,8 @@
     <unit id="ci.editor.grants">
       <notes>
         <note category="location">src/app/features/ci/mapping-editor.html:148,149</note>
-        <note category="location">src/app/features/ci/mapping-editor.ts:165</note>
-        <note category="location">src/app/features/ci/mapping-editor.ts:260</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:166</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:261</note>
       </notes>
       <segment>
         <source>Grants</source>
@@ -9715,7 +9733,7 @@
     <unit id="ci.editor.options">
       <notes>
         <note category="location">src/app/features/ci/mapping-editor.html:251,252</note>
-        <note category="location">src/app/features/ci/mapping-editor.ts:261</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:262</note>
       </notes>
       <segment>
         <source>Options and lifetime</source>
@@ -9725,8 +9743,8 @@
     <unit id="ci.editor.max-ttl">
       <notes>
         <note category="location">src/app/features/ci/mapping-editor.html:256,257</note>
-        <note category="location">src/app/features/ci/mapping-editor.ts:166</note>
-        <note category="location">src/app/features/ci/mapping-editor.ts:258</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:167</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:259</note>
       </notes>
       <segment>
         <source>Maximum token lifetime (seconds)</source>
@@ -9745,7 +9763,7 @@
     <unit id="ci.editor.cross">
       <notes>
         <note category="location">src/app/features/ci/mapping-editor.html:267,268</note>
-        <note category="location">src/app/features/ci/mapping-editor.ts:168</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:169</note>
       </notes>
       <segment>
         <source>Pipelines from other projects</source>
@@ -9755,7 +9773,7 @@
     <unit id="ci.editor.allow-unprotected">
       <notes>
         <note category="location">src/app/features/ci/mapping-editor.html:276,278</note>
-        <note category="location">src/app/features/ci/mapping-editor.ts:171</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:172</note>
       </notes>
       <segment>
         <source> Allow unprotected refs to use write grants </source>
@@ -9870,9 +9888,18 @@
         <target>CI-Snippet</target>
       </segment>
     </unit>
+    <unit id="ci.mapping.loading">
+      <notes>
+        <note category="location">src/app/features/ci/mapping-editor.html:334,336</note>
+      </notes>
+      <segment>
+        <source>Loading the mapping.</source>
+        <target>Die Zuordnung wird geladen.</target>
+      </segment>
+    </unit>
     <unit id="ci.editor.policies-loading">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:115</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:116</note>
       </notes>
       <segment>
         <source>Loading policies…</source>
@@ -9881,7 +9908,7 @@
     </unit>
     <unit id="ci.editor.issuers-loading">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:122</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:123</note>
       </notes>
       <segment>
         <source>Loading issuers…</source>
@@ -9890,7 +9917,7 @@
     </unit>
     <unit id="ci.editor.repositories-hint-project">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:127</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:128</note>
       </notes>
       <segment>
         <source>One key or pattern per line. A template needs literal text next to the claim.</source>
@@ -9899,7 +9926,7 @@
     </unit>
     <unit id="ci.editor.repositories-hint">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:128</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:129</note>
       </notes>
       <segment>
         <source>One project/key or pattern per line, or a class such as @any-local. A template needs literal text next to the claim.</source>
@@ -9908,7 +9935,7 @@
     </unit>
     <unit id="ci.editor.kind.packages">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:143</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:144</note>
       </notes>
       <segment>
         <source>Package names</source>
@@ -9917,7 +9944,7 @@
     </unit>
     <unit id="ci.editor.kind.paths">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:144</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:145</note>
       </notes>
       <segment>
         <source>File paths</source>
@@ -9926,7 +9953,7 @@
     </unit>
     <unit id="ci.editor.ownership.default">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:147</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:148</note>
       </notes>
       <segment>
         <source>Default (bind the project when the actions write)</source>
@@ -9935,7 +9962,7 @@
     </unit>
     <unit id="ci.editor.ownership.bind">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:148</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:149</note>
       </notes>
       <segment>
         <source>Bind the package name to the project</source>
@@ -9944,7 +9971,7 @@
     </unit>
     <unit id="ci.editor.ownership.none">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:149</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:150</note>
       </notes>
       <segment>
         <source>None (the mapping owns the names)</source>
@@ -9953,7 +9980,7 @@
     </unit>
     <unit id="ci.editor.cross.deny">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:152</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:153</note>
       </notes>
       <segment>
         <source>Deny (a fork or merge request from another project gets nothing)</source>
@@ -9962,7 +9989,7 @@
     </unit>
     <unit id="ci.editor.cross.read-only">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:153</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:154</note>
       </notes>
       <segment>
         <source>Read only (such a pipeline can read, never write)</source>
@@ -9971,7 +9998,7 @@
     </unit>
     <unit id="ci.editor.include-hint">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:212</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:213</note>
       </notes>
       <segment>
         <source>One pattern per line, for example <ph id="0" equiv="example" disp="&apos;@{{ namespace_path | slug }}/*&apos;"/></source>
@@ -9980,7 +10007,7 @@
     </unit>
     <unit id="ci.editor.grant-label">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:221</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:222</note>
       </notes>
       <segment>
         <source>Inline grant <ph id="0" equiv="number" disp="i + 1"/></source>
@@ -9989,7 +10016,7 @@
     </unit>
     <unit id="ci.editor.name-hint-project">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:226</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:227</note>
       </notes>
       <segment>
         <source>Unique within the project <ph id="0" equiv="project" disp="key"/> and cannot be changed later. Lower-case letters, digits, dot, underscore and hyphen.</source>
@@ -9998,7 +10025,7 @@
     </unit>
     <unit id="ci.editor.name-hint">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:227</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:228</note>
       </notes>
       <segment>
         <source>It cannot be changed later. Lower-case letters, digits, dot, underscore and hyphen.</source>
@@ -10007,7 +10034,7 @@
     </unit>
     <unit id="ci.editor.name-taken">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:288</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:289</note>
       </notes>
       <segment>
         <source>A mapping of this issuer has this name.</source>
@@ -10016,7 +10043,7 @@
     </unit>
     <unit id="ci.editor.draft-restored">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:334</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:335</note>
       </notes>
       <segment>
         <source>Your entries were restored. Save the mapping again.</source>
@@ -10025,7 +10052,7 @@
     </unit>
     <unit id="ci.editor.issuer-choose">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:373</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:374</note>
       </notes>
       <segment>
         <source>Choose an issuer</source>
@@ -10034,7 +10061,7 @@
     </unit>
     <unit id="ci.editor.json-invalid">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:425</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:426</note>
       </notes>
       <segment>
         <source>This is not a JSON object. The condition keeps the last valid version until it is.</source>
@@ -10043,7 +10070,7 @@
     </unit>
     <unit id="ci.editor.created">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:504</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:505</note>
       </notes>
       <segment>
         <source>Mapping created.</source>
@@ -10052,7 +10079,7 @@
     </unit>
     <unit id="ci.editor.saved">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:535</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:536</note>
       </notes>
       <segment>
         <source>Mapping saved.</source>
@@ -10747,12 +10774,12 @@
     <unit id="repo.col.actions">
       <notes>
         <note category="location">src/app/features/endpoints/endpoint-detail.ts:112</note>
-        <note category="location">src/app/features/guides/guide-format.ts:156</note>
+        <note category="location">src/app/features/guides/guide-format.ts:159</note>
         <note category="location">src/app/features/repositories/content/repository-files.ts:192</note>
         <note category="location">src/app/features/repositories/content/repository-item-versions.ts:225</note>
         <note category="location">src/app/features/repositories/content/repository-items.ts:212</note>
         <note category="location">src/app/features/repositories/repository-list.ts:409</note>
-        <note category="location">src/app/features/system/backups/backups-page.html:154,156</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:156,158</note>
         <note category="location">src/app/features/system/job-table.ts:151</note>
         <note category="location">src/app/features/system/storage/storage-page.ts:98</note>
         <note category="location">src/app/features/system/tasks-card.ts:123</note>
@@ -11942,7 +11969,7 @@
     <unit id="group.name">
       <notes>
         <note category="location">src/app/features/groups/group-detail.html:34</note>
-        <note category="location">src/app/features/groups/group-detail.ts:213</note>
+        <note category="location">src/app/features/groups/group-detail.ts:214</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -11970,7 +11997,7 @@
     <unit id="group.description">
       <notes>
         <note category="location">src/app/features/groups/group-detail.html:38</note>
-        <note category="location">src/app/features/groups/group-detail.ts:214</note>
+        <note category="location">src/app/features/groups/group-detail.ts:215</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -11980,7 +12007,7 @@
     <unit id="group.auto-join">
       <notes>
         <note category="location">src/app/features/groups/group-detail.html:40,41</note>
-        <note category="location">src/app/features/groups/group-detail.ts:215</note>
+        <note category="location">src/app/features/groups/group-detail.ts:216</note>
       </notes>
       <segment>
         <source>Every user joins this group automatically</source>
@@ -12230,9 +12257,18 @@
         <target>Gruppe löschen</target>
       </segment>
     </unit>
+    <unit id="group.loading">
+      <notes>
+        <note category="location">src/app/features/groups/group-detail.html:192,194</note>
+      </notes>
+      <segment>
+        <source>Loading the group.</source>
+        <target>Die Gruppe wird geladen.</target>
+      </segment>
+    </unit>
     <unit id="group.source.all">
       <notes>
-        <note category="location">src/app/features/groups/group-detail.ts:120</note>
+        <note category="location">src/app/features/groups/group-detail.ts:121</note>
       </notes>
       <segment>
         <source>All sources</source>
@@ -12241,7 +12277,7 @@
     </unit>
     <unit id="group.source.manual">
       <notes>
-        <note category="location">src/app/features/groups/group-detail.ts:121</note>
+        <note category="location">src/app/features/groups/group-detail.ts:122</note>
       </notes>
       <segment>
         <source>Manual</source>
@@ -12250,7 +12286,7 @@
     </unit>
     <unit id="group.source.auto">
       <notes>
-        <note category="location">src/app/features/groups/group-detail.ts:122</note>
+        <note category="location">src/app/features/groups/group-detail.ts:123</note>
       </notes>
       <segment>
         <source>Auto-join</source>
@@ -12259,7 +12295,7 @@
     </unit>
     <unit id="group.saved">
       <notes>
-        <note category="location">src/app/features/groups/group-detail.ts:225</note>
+        <note category="location">src/app/features/groups/group-detail.ts:226</note>
       </notes>
       <segment>
         <source>Group saved.</source>
@@ -12268,7 +12304,7 @@
     </unit>
     <unit id="group.delete-title">
       <notes>
-        <note category="location">src/app/features/groups/group-detail.ts:240</note>
+        <note category="location">src/app/features/groups/group-detail.ts:241</note>
       </notes>
       <segment>
         <source>Delete this group?</source>
@@ -12277,7 +12313,7 @@
     </unit>
     <unit id="group.delete-text">
       <notes>
-        <note category="location">src/app/features/groups/group-detail.ts:241</note>
+        <note category="location">src/app/features/groups/group-detail.ts:242</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="group" disp="this.name()"/> and its memberships are removed. Policies and roles that name it stop applying.</source>
@@ -12286,7 +12322,7 @@
     </unit>
     <unit id="group.delete-confirm">
       <notes>
-        <note category="location">src/app/features/groups/group-detail.ts:242</note>
+        <note category="location">src/app/features/groups/group-detail.ts:243</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -12295,7 +12331,7 @@
     </unit>
     <unit id="group.deleted">
       <notes>
-        <note category="location">src/app/features/groups/group-detail.ts:248</note>
+        <note category="location">src/app/features/groups/group-detail.ts:249</note>
       </notes>
       <segment>
         <source>Group deleted.</source>
@@ -12304,7 +12340,7 @@
     </unit>
     <unit id="group.member-added">
       <notes>
-        <note category="location">src/app/features/groups/group-detail.ts:262</note>
+        <note category="location">src/app/features/groups/group-detail.ts:263</note>
       </notes>
       <segment>
         <source>Member added.</source>
@@ -12313,7 +12349,7 @@
     </unit>
     <unit id="group.member-removed">
       <notes>
-        <note category="location">src/app/features/groups/group-detail.ts:268</note>
+        <note category="location">src/app/features/groups/group-detail.ts:269</note>
       </notes>
       <segment>
         <source>Member removed.</source>
@@ -12322,7 +12358,7 @@
     </unit>
     <unit id="group.src.manual">
       <notes>
-        <note category="location">src/app/features/groups/group-detail.ts:297</note>
+        <note category="location">src/app/features/groups/group-detail.ts:298</note>
       </notes>
       <segment>
         <source>Manual</source>
@@ -12331,7 +12367,7 @@
     </unit>
     <unit id="group.src.auto">
       <notes>
-        <note category="location">src/app/features/groups/group-detail.ts:298</note>
+        <note category="location">src/app/features/groups/group-detail.ts:299</note>
       </notes>
       <segment>
         <source>Auto-join</source>
@@ -12340,7 +12376,7 @@
     </unit>
     <unit id="group.src.provider">
       <notes>
-        <note category="location">src/app/features/groups/group-detail.ts:300</note>
+        <note category="location">src/app/features/groups/group-detail.ts:301</note>
       </notes>
       <segment>
         <source>Identity provider</source>
@@ -12512,7 +12548,7 @@
     </unit>
     <unit id="guides.format.description">
       <notes>
-        <note category="location">src/app/features/guides/guide-format.ts:31,35</note>
+        <note category="location">src/app/features/guides/guide-format.ts:32,36</note>
       </notes>
       <segment>
         <source>Choose the repository your package manager uses. Set up client shows its configuration and its commands, with the explanation.</source>
@@ -12521,7 +12557,7 @@
     </unit>
     <unit id="repo.list.loading">
       <notes>
-        <note category="location">src/app/features/guides/guide-format.ts:39,40</note>
+        <note category="location">src/app/features/guides/guide-format.ts:40,41</note>
         <note category="location">src/app/features/repositories/repository-list.html:94,95</note>
       </notes>
       <segment>
@@ -12531,7 +12567,7 @@
     </unit>
     <unit id="guides.format.recommended">
       <notes>
-        <note category="location">src/app/features/guides/guide-format.ts:56,58</note>
+        <note category="location">src/app/features/guides/guide-format.ts:57,59</note>
       </notes>
       <segment>
         <source>Recommended</source>
@@ -12540,7 +12576,7 @@
     </unit>
     <unit id="repo.content.tab.setup">
       <notes>
-        <note category="location">src/app/features/guides/guide-format.ts:74,75</note>
+        <note category="location">src/app/features/guides/guide-format.ts:75,76</note>
         <note category="location">src/app/features/packages/install-panel.html:19,23</note>
         <note category="location">src/app/features/packages/install-panel.html:50,55</note>
         <note category="location">src/app/features/packages/package-list.html:2,5</note>
@@ -12554,7 +12590,7 @@
     </unit>
     <unit id="guides.format.classes">
       <notes>
-        <note category="location">src/app/features/guides/guide-format.ts:84,85</note>
+        <note category="location">src/app/features/guides/guide-format.ts:85,86</note>
       </notes>
       <segment>
         <source>Without a repository</source>
@@ -12563,7 +12599,7 @@
     </unit>
     <unit id="guides.format.classes-text">
       <notes>
-        <note category="location">src/app/features/guides/guide-format.ts:85,87</note>
+        <note category="location">src/app/features/guides/guide-format.ts:86,88</note>
       </notes>
       <segment>
         <source>The guide of a kind of repository explains it before you choose one. Its addresses show where the project and the repository go.</source>
@@ -12572,16 +12608,25 @@
     </unit>
     <unit id="guides.format.unknown">
       <notes>
-        <note category="location">src/app/features/guides/guide-format.ts:95,99</note>
+        <note category="location">src/app/features/guides/guide-format.ts:96,98</note>
       </notes>
       <segment>
         <source>This installation has no guide for this package type.</source>
         <target>Diese Installation hat keine Anleitung für diesen Pakettyp.</target>
       </segment>
     </unit>
+    <unit id="guides.format.loading">
+      <notes>
+        <note category="location">src/app/features/guides/guide-format.ts:98,101</note>
+      </notes>
+      <segment>
+        <source>Loading the guide.</source>
+        <target>Die Anleitung wird geladen.</target>
+      </segment>
+    </unit>
     <unit id="guides.format.heading">
       <notes>
-        <note category="location">src/app/features/guides/guide-format.ts:132</note>
+        <note category="location">src/app/features/guides/guide-format.ts:135</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="format" disp="name"/> repositories</source>
@@ -12590,7 +12635,7 @@
     </unit>
     <unit id="repo.col.repository">
       <notes>
-        <note category="location">src/app/features/guides/guide-format.ts:153</note>
+        <note category="location">src/app/features/guides/guide-format.ts:156</note>
         <note category="location">src/app/features/repositories/repository-list.ts:391</note>
         <note category="location">src/app/features/search/search-results.ts:253</note>
         <note category="location">src/app/features/search/search-results.ts:267</note>
@@ -12602,7 +12647,7 @@
     </unit>
     <unit id="repo.col.project">
       <notes>
-        <note category="location">src/app/features/guides/guide-format.ts:154</note>
+        <note category="location">src/app/features/guides/guide-format.ts:157</note>
         <note category="location">src/app/features/repositories/repository-list.html:37,39</note>
         <note category="location">src/app/features/repositories/repository-list.html:42</note>
         <note category="location">src/app/features/repositories/repository-list.ts:323</note>
@@ -12615,7 +12660,7 @@
     </unit>
     <unit id="repo.col.class">
       <notes>
-        <note category="location">src/app/features/guides/guide-format.ts:155</note>
+        <note category="location">src/app/features/guides/guide-format.ts:158</note>
         <note category="location">src/app/features/repositories/repository-detail.html:54,55</note>
         <note category="location">src/app/features/repositories/repository-detail.html:484,485</note>
         <note category="location">src/app/features/repositories/repository-list.html:65,66</note>
@@ -12631,7 +12676,7 @@
     </unit>
     <unit id="guides.format.empty">
       <notes>
-        <note category="location">src/app/features/guides/guide-format.ts:158</note>
+        <note category="location">src/app/features/guides/guide-format.ts:161</note>
       </notes>
       <segment>
         <source>You can use no repository of this package type. The guides below explain each kind.</source>
@@ -12640,7 +12685,7 @@
     </unit>
     <unit id="guides.format.class.system">
       <notes>
-        <note category="location">src/app/features/guides/guide-format.ts:178</note>
+        <note category="location">src/app/features/guides/guide-format.ts:181</note>
       </notes>
       <segment>
         <source>The system repository: filled by this installation itself</source>
@@ -12649,7 +12694,7 @@
     </unit>
     <unit id="guides.format.class.local">
       <notes>
-        <note category="location">src/app/features/guides/guide-format.ts:180</note>
+        <note category="location">src/app/features/guides/guide-format.ts:183</note>
       </notes>
       <segment>
         <source>A local repository: what you publish to</source>
@@ -12658,7 +12703,7 @@
     </unit>
     <unit id="guides.format.class.remote">
       <notes>
-        <note category="location">src/app/features/guides/guide-format.ts:182</note>
+        <note category="location">src/app/features/guides/guide-format.ts:185</note>
       </notes>
       <segment>
         <source>A remote repository: a cache of another registry</source>
@@ -12667,7 +12712,7 @@
     </unit>
     <unit id="guides.format.class.virtual">
       <notes>
-        <note category="location">src/app/features/guides/guide-format.ts:184</note>
+        <note category="location">src/app/features/guides/guide-format.ts:187</note>
       </notes>
       <segment>
         <source>A virtual repository: several repositories behind one address</source>
@@ -16302,7 +16347,7 @@
     <unit id="list.load-more">
       <notes>
         <note category="location">src/app/features/packages/ansible-import-log.ts:53,54</note>
-        <note category="location">src/app/features/system/backups/backups-page.html:227,228</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:229,230</note>
         <note category="location">src/app/features/system/jobs-page.ts:106,107</note>
         <note category="location">src/app/shared/ui/data-table.ts:154,155</note>
       </notes>
@@ -19259,6 +19304,15 @@
         <target>Beheben Sie zuerst die Probleme in der Vorschau.</target>
       </segment>
     </unit>
+    <unit id="policy.loading">
+      <notes>
+        <note category="location">src/app/features/permissions/policy-editor.html:346,348</note>
+      </notes>
+      <segment>
+        <source>Loading the policy.</source>
+        <target>Die Berechtigungs&#xAD;richtlinie wird geladen.</target>
+      </segment>
+    </unit>
     <unit id="policy.test.packages">
       <notes>
         <note category="location">src/app/features/permissions/policy-editor.ts:193</note>
@@ -20321,16 +20375,25 @@
     </unit>
     <unit id="profile.identity-note">
       <notes>
-        <note category="location">src/app/features/profile/profile.html:23,28</note>
+        <note category="location">src/app/features/profile/profile.html:23,26</note>
       </notes>
       <segment>
         <source> Your name and email come from the identity provider and are replaced at every sign-in. </source>
         <target>Ihr Name und Ihre E-Mail-Adresse stammen vom Identitätsanbieter und werden bei jeder Anmeldung ersetzt.</target>
       </segment>
     </unit>
+    <unit id="profile.loading">
+      <notes>
+        <note category="location">src/app/features/profile/profile.html:27,30</note>
+      </notes>
+      <segment>
+        <source>Loading your account.</source>
+        <target>Ihr Konto wird geladen.</target>
+      </segment>
+    </unit>
     <unit id="profile.preferences">
       <notes>
-        <note category="location">src/app/features/profile/profile.html:31,32</note>
+        <note category="location">src/app/features/profile/profile.html:33,34</note>
       </notes>
       <segment>
         <source>Preferences</source>
@@ -20339,7 +20402,7 @@
     </unit>
     <unit id="profile.preferences-hint">
       <notes>
-        <note category="location">src/app/features/profile/profile.html:33,36</note>
+        <note category="location">src/app/features/profile/profile.html:35,38</note>
       </notes>
       <segment>
         <source>Language, theme and keyboard shortcuts, kept with your account.</source>
@@ -20348,8 +20411,8 @@
     </unit>
     <unit id="profile.pref.locale">
       <notes>
-        <note category="location">src/app/features/profile/profile.html:41</note>
-        <note category="location">src/app/features/profile/profile.ts:153</note>
+        <note category="location">src/app/features/profile/profile.html:43</note>
+        <note category="location">src/app/features/profile/profile.ts:154</note>
       </notes>
       <segment>
         <source>Language</source>
@@ -20358,8 +20421,8 @@
     </unit>
     <unit id="profile.pref.theme">
       <notes>
-        <note category="location">src/app/features/profile/profile.html:42</note>
-        <note category="location">src/app/features/profile/profile.ts:157</note>
+        <note category="location">src/app/features/profile/profile.html:44</note>
+        <note category="location">src/app/features/profile/profile.ts:158</note>
       </notes>
       <segment>
         <source>Theme</source>
@@ -20368,8 +20431,8 @@
     </unit>
     <unit id="profile.pref.shortcuts">
       <notes>
-        <note category="location">src/app/features/profile/profile.html:44,45</note>
-        <note category="location">src/app/features/profile/profile.ts:158</note>
+        <note category="location">src/app/features/profile/profile.html:46,47</note>
+        <note category="location">src/app/features/profile/profile.ts:159</note>
       </notes>
       <segment>
         <source>Keyboard shortcuts with a single key, such as / for the search</source>
@@ -20378,7 +20441,7 @@
     </unit>
     <unit id="profile.pref.save">
       <notes>
-        <note category="location">src/app/features/profile/profile.html:47,49</note>
+        <note category="location">src/app/features/profile/profile.html:49,51</note>
       </notes>
       <segment>
         <source>Save preferences</source>
@@ -20387,7 +20450,7 @@
     </unit>
     <unit id="profile.groups">
       <notes>
-        <note category="location">src/app/features/profile/profile.html:58</note>
+        <note category="location">src/app/features/profile/profile.html:60</note>
       </notes>
       <segment>
         <source>Groups</source>
@@ -20396,7 +20459,7 @@
     </unit>
     <unit id="profile.groups-hint">
       <notes>
-        <note category="location">src/app/features/profile/profile.html:59,60</note>
+        <note category="location">src/app/features/profile/profile.html:61,62</note>
       </notes>
       <segment>
         <source>Your group memberships and where each comes from.</source>
@@ -20405,7 +20468,7 @@
     </unit>
     <unit id="profile.claim.absent">
       <notes>
-        <note category="location">src/app/features/profile/profile.html:68,69</note>
+        <note category="location">src/app/features/profile/profile.html:70,71</note>
       </notes>
       <segment>
         <source> Your last sign-in through <ph id="0" equiv="INTERPOLATION" disp="{{ missing.provider }}"/> carried no group claim, so the groups synchronized from it may be missing. Ask an administrator to check the group mapping of that identity provider. </source>
@@ -20414,7 +20477,7 @@
     </unit>
     <unit id="profile.claim.wrong-type">
       <notes>
-        <note category="location">src/app/features/profile/profile.html:73,74</note>
+        <note category="location">src/app/features/profile/profile.html:75,76</note>
       </notes>
       <segment>
         <source> Your last sign-in through <ph id="0" equiv="INTERPOLATION" disp="{{ missing.provider }}"/> carried a group claim of the wrong type, so the groups synchronized from it may be missing. Ask an administrator to check the group mapping of that identity provider. </source>
@@ -20423,7 +20486,7 @@
     </unit>
     <unit id="profile.claim.overage">
       <notes>
-        <note category="location">src/app/features/profile/profile.html:78,79</note>
+        <note category="location">src/app/features/profile/profile.html:80,81</note>
       </notes>
       <segment>
         <source> Your last sign-in through <ph id="0" equiv="INTERPOLATION" disp="{{ missing.provider }}"/> carried too many groups to fit in the token, so the groups synchronized from it may be missing. Ask an administrator to check the group mapping of that identity provider. </source>
@@ -20432,7 +20495,7 @@
     </unit>
     <unit id="profile.no-groups">
       <notes>
-        <note category="location">src/app/features/profile/profile.html:85,87</note>
+        <note category="location">src/app/features/profile/profile.html:87,89</note>
       </notes>
       <segment>
         <source>You are not a member of any group.</source>
@@ -20441,7 +20504,7 @@
     </unit>
     <unit id="profile.groups-caption">
       <notes>
-        <note category="location">src/app/features/profile/profile.html:88,90</note>
+        <note category="location">src/app/features/profile/profile.html:90,92</note>
       </notes>
       <segment>
         <source>Your groups and where each membership comes from</source>
@@ -20450,7 +20513,7 @@
     </unit>
     <unit id="profile.group">
       <notes>
-        <note category="location">src/app/features/profile/profile.html:91,92</note>
+        <note category="location">src/app/features/profile/profile.html:93,94</note>
       </notes>
       <segment>
         <source>Group</source>
@@ -20459,7 +20522,7 @@
     </unit>
     <unit id="profile.source">
       <notes>
-        <note category="location">src/app/features/profile/profile.html:92,94</note>
+        <note category="location">src/app/features/profile/profile.html:94,96</note>
       </notes>
       <segment>
         <source>Source</source>
@@ -20468,7 +20531,7 @@
     </unit>
     <unit id="profile.roles">
       <notes>
-        <note category="location">src/app/features/profile/profile.html:106</note>
+        <note category="location">src/app/features/profile/profile.html:108</note>
       </notes>
       <segment>
         <source>System roles</source>
@@ -20477,7 +20540,7 @@
     </unit>
     <unit id="profile.roles-hint">
       <notes>
-        <note category="location">src/app/features/profile/profile.html:106,107</note>
+        <note category="location">src/app/features/profile/profile.html:108,109</note>
       </notes>
       <segment>
         <source>The system roles you hold.</source>
@@ -20486,7 +20549,7 @@
     </unit>
     <unit id="profile.no-roles">
       <notes>
-        <note category="location">src/app/features/profile/profile.html:108,110</note>
+        <note category="location">src/app/features/profile/profile.html:110,112</note>
       </notes>
       <segment>
         <source>You hold no system role.</source>
@@ -20523,7 +20586,7 @@
     </unit>
     <unit id="profile.heading">
       <notes>
-        <note category="location">src/app/features/profile/profile.ts:51</note>
+        <note category="location">src/app/features/profile/profile.ts:52</note>
       </notes>
       <segment>
         <source>Profile</source>
@@ -20532,7 +20595,7 @@
     </unit>
     <unit id="profile.pref.locale.browser">
       <notes>
-        <note category="location">src/app/features/profile/profile.ts:73</note>
+        <note category="location">src/app/features/profile/profile.ts:74</note>
       </notes>
       <segment>
         <source>Follow the browser</source>
@@ -20541,7 +20604,7 @@
     </unit>
     <unit id="profile.pref.theme.system">
       <notes>
-        <note category="location">src/app/features/profile/profile.ts:78</note>
+        <note category="location">src/app/features/profile/profile.ts:79</note>
       </notes>
       <segment>
         <source>Follow the system</source>
@@ -20550,7 +20613,7 @@
     </unit>
     <unit id="profile.pref.theme.light">
       <notes>
-        <note category="location">src/app/features/profile/profile.ts:79</note>
+        <note category="location">src/app/features/profile/profile.ts:80</note>
       </notes>
       <segment>
         <source>Light</source>
@@ -20559,7 +20622,7 @@
     </unit>
     <unit id="profile.pref.theme.dark">
       <notes>
-        <note category="location">src/app/features/profile/profile.ts:80</note>
+        <note category="location">src/app/features/profile/profile.ts:81</note>
       </notes>
       <segment>
         <source>Dark</source>
@@ -20568,7 +20631,7 @@
     </unit>
     <unit id="profile.pref.saved">
       <notes>
-        <note category="location">src/app/features/profile/profile.ts:145</note>
+        <note category="location">src/app/features/profile/profile.ts:146</note>
       </notes>
       <segment>
         <source>Preferences saved.</source>
@@ -20633,8 +20696,8 @@
     <unit id="project-dialog.display-name">
       <notes>
         <note category="location">src/app/features/projects/project-dialog.ts:58,60</note>
-        <note category="location">src/app/features/projects/project-settings.ts:63,65</note>
-        <note category="location">src/app/features/projects/project-settings.ts:427</note>
+        <note category="location">src/app/features/projects/project-settings.ts:64,66</note>
+        <note category="location">src/app/features/projects/project-settings.ts:430</note>
       </notes>
       <segment>
         <source>Display name</source>
@@ -20707,7 +20770,7 @@
     <unit id="project-dialog.display-name-invalid">
       <notes>
         <note category="location">src/app/features/projects/project-dialog.ts:163</note>
-        <note category="location">src/app/features/projects/project-settings.ts:400</note>
+        <note category="location">src/app/features/projects/project-settings.ts:403</note>
       </notes>
       <segment>
         <source>The display name is required, 1 to 128 characters.</source>
@@ -21197,7 +21260,7 @@
     </unit>
     <unit id="project.settings">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:47</note>
+        <note category="location">src/app/features/projects/project-settings.ts:48</note>
       </notes>
       <segment>
         <source>Settings</source>
@@ -21206,7 +21269,7 @@
     </unit>
     <unit id="project.key">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:70</note>
+        <note category="location">src/app/features/projects/project-settings.ts:71</note>
       </notes>
       <segment>
         <source>Key</source>
@@ -21215,8 +21278,8 @@
     </unit>
     <unit id="project.description-optional">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:75,77</note>
-        <note category="location">src/app/features/projects/project-settings.ts:428</note>
+        <note category="location">src/app/features/projects/project-settings.ts:76,78</note>
+        <note category="location">src/app/features/projects/project-settings.ts:431</note>
       </notes>
       <segment>
         <source>Description (optional)</source>
@@ -21225,8 +21288,8 @@
     </unit>
     <unit id="project.save-changes">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:83,85</note>
-        <note category="location">src/app/features/projects/project-settings.ts:113,114</note>
+        <note category="location">src/app/features/projects/project-settings.ts:84,86</note>
+        <note category="location">src/app/features/projects/project-settings.ts:114,115</note>
       </notes>
       <segment>
         <source>Save changes</source>
@@ -21235,7 +21298,7 @@
     </unit>
     <unit id="project.visibility">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:91,92</note>
+        <note category="location">src/app/features/projects/project-settings.ts:92,93</note>
       </notes>
       <segment>
         <source>Visibility</source>
@@ -21244,7 +21307,7 @@
     </unit>
     <unit id="project.visibility-level">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:103,105</note>
+        <note category="location">src/app/features/projects/project-settings.ts:104,106</note>
       </notes>
       <segment>
         <source>Visibility level</source>
@@ -21253,7 +21316,7 @@
     </unit>
     <unit id="project.save-visibility">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:114,116</note>
+        <note category="location">src/app/features/projects/project-settings.ts:115,117</note>
       </notes>
       <segment>
         <source> (visibility)</source>
@@ -21262,7 +21325,7 @@
     </unit>
     <unit id="project.visibility-read-only">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:117,120</note>
+        <note category="location">src/app/features/projects/project-settings.ts:118,121</note>
       </notes>
       <segment>
         <source>Only an administrator of Quader sets the visibility of a project.</source>
@@ -21271,7 +21334,7 @@
     </unit>
     <unit id="project.details">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:126</note>
+        <note category="location">src/app/features/projects/project-settings.ts:127</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -21280,7 +21343,7 @@
     </unit>
     <unit id="project.details-hint">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:127,129</note>
+        <note category="location">src/app/features/projects/project-settings.ts:128,130</note>
       </notes>
       <segment>
         <source>Who owns the project, your role in it and what it holds.</source>
@@ -21289,7 +21352,7 @@
     </unit>
     <unit id="project.owners">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:131,133</note>
+        <note category="location">src/app/features/projects/project-settings.ts:132,134</note>
       </notes>
       <segment>
         <source>Owners</source>
@@ -21298,7 +21361,7 @@
     </unit>
     <unit id="project.no-owners">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:134,136</note>
+        <note category="location">src/app/features/projects/project-settings.ts:135,137</note>
       </notes>
       <segment>
         <source>None yet.</source>
@@ -21307,7 +21370,7 @@
     </unit>
     <unit id="project.your-role">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:143,144</note>
+        <note category="location">src/app/features/projects/project-settings.ts:144,145</note>
       </notes>
       <segment>
         <source>Your role</source>
@@ -21316,7 +21379,7 @@
     </unit>
     <unit id="project.counts">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:145,147</note>
+        <note category="location">src/app/features/projects/project-settings.ts:146,148</note>
       </notes>
       <segment>
         <source>Contents</source>
@@ -21325,7 +21388,7 @@
     </unit>
     <unit id="project.counts-text">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:147,148</note>
+        <note category="location">src/app/features/projects/project-settings.ts:148,149</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="INTERPOLATION" disp="{{ p.members }}"/> members, <ph id="1" equiv="INTERPOLATION_1" disp="{{ p.repositories }}"/> repositories, <ph id="2" equiv="INTERPOLATION_2" disp="{{ p.policies }}"/> policies, <ph id="3" equiv="INTERPOLATION_3" disp="{{ p.serviceAccounts }}"/> service accounts</source>
@@ -21334,7 +21397,7 @@
     </unit>
     <unit id="project.storage">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:149,150</note>
+        <note category="location">src/app/features/projects/project-settings.ts:150,151</note>
       </notes>
       <segment>
         <source>Storage</source>
@@ -21343,7 +21406,7 @@
     </unit>
     <unit id="project.updated">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:151,152</note>
+        <note category="location">src/app/features/projects/project-settings.ts:152,153</note>
       </notes>
       <segment>
         <source>Last changed</source>
@@ -21352,7 +21415,7 @@
     </unit>
     <unit id="project.advanced">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:168,169</note>
+        <note category="location">src/app/features/projects/project-settings.ts:169,170</note>
       </notes>
       <segment>
         <source>Advanced</source>
@@ -21361,7 +21424,7 @@
     </unit>
     <unit id="project.advanced-hint">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:170,172</note>
+        <note category="location">src/app/features/projects/project-settings.ts:171,173</note>
       </notes>
       <segment>
         <source>Delete this project.</source>
@@ -21370,7 +21433,7 @@
     </unit>
     <unit id="project.delete-note-empty">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:174,176</note>
+        <note category="location">src/app/features/projects/project-settings.ts:175,177</note>
       </notes>
       <segment>
         <source>The project&apos;s policies are deleted with it.</source>
@@ -21379,7 +21442,7 @@
     </unit>
     <unit id="project.delete-note">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:177,179</note>
+        <note category="location">src/app/features/projects/project-settings.ts:178,180</note>
       </notes>
       <segment>
         <source>A project can be deleted when no repository and no service account belongs to it. Move or delete the repositories and delete the service accounts first.</source>
@@ -21388,16 +21451,29 @@
     </unit>
     <unit id="project.delete">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:189,190</note>
+        <note category="location">src/app/features/projects/project-settings.ts:190,191</note>
       </notes>
       <segment>
         <source> Delete project </source>
         <target> Projekt löschen </target>
       </segment>
     </unit>
+    <unit id="settings.loading">
+      <notes>
+        <note category="location">src/app/features/projects/project-settings.ts:196,199</note>
+        <note category="location">src/app/features/settings/auth-settings.html:182,184</note>
+        <note category="location">src/app/features/settings/malware-settings.html:204,206</note>
+        <note category="location">src/app/features/settings/signature-settings.html:196,198</note>
+        <note category="location">src/app/features/settings/storage-settings.html:254,256</note>
+      </notes>
+      <segment>
+        <source>Loading the settings.</source>
+        <target>Die Einstellungen werden geladen.</target>
+      </segment>
+    </unit>
     <unit id="project.visibility-summary-internal">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:269</note>
+        <note category="location">src/app/features/projects/project-settings.ts:272</note>
       </notes>
       <segment>
         <source>This project is internal.</source>
@@ -21406,7 +21482,7 @@
     </unit>
     <unit id="project.visibility-summary-public">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:271</note>
+        <note category="location">src/app/features/projects/project-settings.ts:274</note>
       </notes>
       <segment>
         <source>This project is public.</source>
@@ -21415,7 +21491,7 @@
     </unit>
     <unit id="project.visibility-summary-private">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:273</note>
+        <note category="location">src/app/features/projects/project-settings.ts:276</note>
       </notes>
       <segment>
         <source>This project is private.</source>
@@ -21424,7 +21500,7 @@
     </unit>
     <unit id="project.storage-title">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:294</note>
+        <note category="location">src/app/features/projects/project-settings.ts:297</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="bytes" disp="bytes"/> bytes. The full size of every file in the project&apos;s repositories, also where another project holds the same content.</source>
@@ -21433,7 +21509,7 @@
     </unit>
     <unit id="project.visibility-saved">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:359</note>
+        <note category="location">src/app/features/projects/project-settings.ts:362</note>
       </notes>
       <segment>
         <source>Visibility saved.</source>
@@ -21442,7 +21518,7 @@
     </unit>
     <unit id="project.visibility-saved-lowered">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:360</note>
+        <note category="location">src/app/features/projects/project-settings.ts:363</note>
       </notes>
       <segment>
         <source>Visibility saved. <ph id="0" equiv="count" disp="result.lowered.length"/> repositories were lowered with it.</source>
@@ -21451,7 +21527,7 @@
     </unit>
     <unit id="project.lower-title">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:374</note>
+        <note category="location">src/app/features/projects/project-settings.ts:377</note>
       </notes>
       <segment>
         <source>Lower project <ph id="0" equiv="key" disp="project.key"/> to <ph id="1" equiv="level" disp="levelName(level)"/>?</source>
@@ -21460,7 +21536,7 @@
     </unit>
     <unit id="project.lower-none">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:377</note>
+        <note category="location">src/app/features/projects/project-settings.ts:380</note>
       </notes>
       <segment>
         <source>No repository is above the new level. Anyone who reads the project only through its visibility loses access.</source>
@@ -21469,7 +21545,7 @@
     </unit>
     <unit id="project.lower-text">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:378</note>
+        <note category="location">src/app/features/projects/project-settings.ts:381</note>
       </notes>
       <segment>
         <source>These repositories are lowered with the project. Anyone who reads them only through their visibility loses access.</source>
@@ -21478,7 +21554,7 @@
     </unit>
     <unit id="project.lower-confirm">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:386</note>
+        <note category="location">src/app/features/projects/project-settings.ts:389</note>
       </notes>
       <segment>
         <source>Lower the visibility</source>
@@ -21487,7 +21563,7 @@
     </unit>
     <unit id="project.saved">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:438</note>
+        <note category="location">src/app/features/projects/project-settings.ts:441</note>
       </notes>
       <segment>
         <source>Project saved.</source>
@@ -21496,7 +21572,7 @@
     </unit>
     <unit id="project.delete-title">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:452</note>
+        <note category="location">src/app/features/projects/project-settings.ts:455</note>
       </notes>
       <segment>
         <source>Delete project <ph id="0" equiv="key" disp="p.key"/>?</source>
@@ -21505,7 +21581,7 @@
     </unit>
     <unit id="project.delete-text">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:454</note>
+        <note category="location">src/app/features/projects/project-settings.ts:457</note>
       </notes>
       <segment>
         <source>The project, its permission policies and its member entries are deleted. The policies stop granting at once on every replica. This cannot be undone.</source>
@@ -21514,7 +21590,7 @@
     </unit>
     <unit id="project.delete-confirm">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:456</note>
+        <note category="location">src/app/features/projects/project-settings.ts:459</note>
       </notes>
       <segment>
         <source>Delete project</source>
@@ -21523,7 +21599,7 @@
     </unit>
     <unit id="project.deleted">
       <notes>
-        <note category="location">src/app/features/projects/project-settings.ts:464</note>
+        <note category="location">src/app/features/projects/project-settings.ts:467</note>
       </notes>
       <segment>
         <source>Project deleted.</source>
@@ -21635,7 +21711,7 @@
     <unit id="sig.anchor.remove-title">
       <notes>
         <note category="location">src/app/features/projects/project-signature-anchors.ts:143</note>
-        <note category="location">src/app/features/settings/signature-settings.ts:232</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:233</note>
       </notes>
       <segment>
         <source>Remove the trust anchor <ph id="0" equiv="title" disp="title"/>?</source>
@@ -21645,7 +21721,7 @@
     <unit id="sig.anchor.remove-text">
       <notes>
         <note category="location">src/app/features/projects/project-signature-anchors.ts:144</note>
-        <note category="location">src/app/features/settings/signature-settings.ts:234</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:235</note>
       </notes>
       <segment>
         <source>The signatures it knows read &quot;Signed · signer not trusted&quot; unless another anchor knows their signer.</source>
@@ -21655,7 +21731,7 @@
     <unit id="sig.anchor.remove-confirm">
       <notes>
         <note category="location">src/app/features/projects/project-signature-anchors.ts:145</note>
-        <note category="location">src/app/features/settings/signature-settings.ts:236</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:237</note>
       </notes>
       <segment>
         <source>Remove trust anchor</source>
@@ -21665,7 +21741,7 @@
     <unit id="sig.anchor.removed">
       <notes>
         <note category="location">src/app/features/projects/project-signature-anchors.ts:156</note>
-        <note category="location">src/app/features/settings/signature-settings.ts:247</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:248</note>
       </notes>
       <segment>
         <source>Trust anchor removed.</source>
@@ -23158,6 +23234,16 @@
       <segment>
         <source>Loading the item.</source>
         <target>Der Eintrag wird geladen.</target>
+      </segment>
+    </unit>
+    <unit id="repo.loading.repository">
+      <notes>
+        <note category="location">src/app/features/repositories/content/repository-content.html:272,274</note>
+        <note category="location">src/app/features/repositories/repository-detail.html:46,47</note>
+      </notes>
+      <segment>
+        <source>Loading the repository.</source>
+        <target>Das Repository wird geladen.</target>
       </segment>
     </unit>
     <unit id="repo.content.sentence.remote">
@@ -29286,15 +29372,6 @@
       <segment>
         <source>Disabled</source>
         <target>Deaktiviert</target>
-      </segment>
-    </unit>
-    <unit id="repo.loading.repository">
-      <notes>
-        <note category="location">src/app/features/repositories/repository-detail.html:46,47</note>
-      </notes>
-      <segment>
-        <source>Loading the repository.</source>
-        <target>Das Repository wird geladen.</target>
       </segment>
     </unit>
     <unit id="repo.detail.consumer">
@@ -35573,7 +35650,7 @@
     <unit id="sa-rights.legend">
       <notes>
         <note category="location">src/app/features/service-accounts/account-rights.ts:37,38</note>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:291</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:294</note>
       </notes>
       <segment>
         <source>Rights on this repository</source>
@@ -35663,7 +35740,7 @@
     </unit>
     <unit id="sa.heading">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:35,36</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:36,37</note>
       </notes>
       <segment>
         <source>Service account</source>
@@ -35672,7 +35749,7 @@
     </unit>
     <unit id="sa.repository">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:39,40</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:40,41</note>
       </notes>
       <segment>
         <source>Service account of repository</source>
@@ -35681,7 +35758,7 @@
     </unit>
     <unit id="sa.project">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:44,45</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:45,46</note>
       </notes>
       <segment>
         <source>Service account of project</source>
@@ -35690,8 +35767,8 @@
     </unit>
     <unit id="sa.description">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:63</note>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:289</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:64</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:292</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -35700,7 +35777,7 @@
     </unit>
     <unit id="sa.id">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:64</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:65</note>
       </notes>
       <segment>
         <source>ID</source>
@@ -35709,7 +35786,7 @@
     </unit>
     <unit id="sa.save-changes">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:70,72</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:71,73</note>
       </notes>
       <segment>
         <source>Save changes</source>
@@ -35718,7 +35795,7 @@
     </unit>
     <unit id="sa.details">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:74</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:75</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -35727,7 +35804,7 @@
     </unit>
     <unit id="sa.status">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:76,78</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:77,79</note>
       </notes>
       <segment>
         <source>Status</source>
@@ -35736,7 +35813,7 @@
     </unit>
     <unit id="sa.active">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:79,80</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:80,81</note>
       </notes>
       <segment>
         <source>Active</source>
@@ -35745,7 +35822,7 @@
     </unit>
     <unit id="sa.disabled">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:81,82</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:82,83</note>
       </notes>
       <segment>
         <source>Disabled</source>
@@ -35754,7 +35831,7 @@
     </unit>
     <unit id="sa.reference">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:84,85</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:85,86</note>
       </notes>
       <segment>
         <source>Reference</source>
@@ -35763,7 +35840,7 @@
     </unit>
     <unit id="sa.admin">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:87,88</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:88,89</note>
       </notes>
       <segment>
         <source>Administrator role</source>
@@ -35772,7 +35849,7 @@
     </unit>
     <unit id="sa.admin.yes">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:90,91</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:91,92</note>
       </notes>
       <segment>
         <source>Held by this account</source>
@@ -35781,7 +35858,7 @@
     </unit>
     <unit id="sa.admin.no">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:92,93</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:93,94</note>
       </notes>
       <segment>
         <source>Not held</source>
@@ -35790,7 +35867,7 @@
     </unit>
     <unit id="sa.created">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:96,97</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:97,98</note>
       </notes>
       <segment>
         <source>Created</source>
@@ -35799,7 +35876,7 @@
     </unit>
     <unit id="sa.technical-tokens">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:108,109</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:109,110</note>
       </notes>
       <segment>
         <source>Technical tokens</source>
@@ -35808,7 +35885,7 @@
     </unit>
     <unit id="sa.technical-tokens-hint">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:110,111</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:111,112</note>
       </notes>
       <segment>
         <source>One token for each system that uses this account, each with a limit of its own.</source>
@@ -35817,7 +35894,7 @@
     </unit>
     <unit id="sa.tokens-denied">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:116,118</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:117,119</note>
       </notes>
       <segment>
         <source>You need the permission to read identities to manage the tokens of this account.</source>
@@ -35826,7 +35903,7 @@
     </unit>
     <unit id="sa.advanced">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:123,124</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:124,125</note>
       </notes>
       <segment>
         <source>Advanced</source>
@@ -35835,7 +35912,7 @@
     </unit>
     <unit id="tokens.revoke-all-note">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:127,129</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:128,130</note>
         <note category="location">src/app/features/tokens/token-manager.ts:140,142</note>
         <note category="location">src/app/features/users/user-detail.html:255,257</note>
       </notes>
@@ -35846,7 +35923,7 @@
     </unit>
     <unit id="tokens.revoke-all">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:129,131</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:130,132</note>
         <note category="location">src/app/features/tokens/token-manager.ts:142,144</note>
         <note category="location">src/app/features/users/user-detail.html:257,260</note>
       </notes>
@@ -35857,7 +35934,7 @@
     </unit>
     <unit id="sa.disable-note">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:135,136</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:136,137</note>
       </notes>
       <segment>
         <source>A disabled account can no longer authenticate; you can also revoke its tokens.</source>
@@ -35866,7 +35943,7 @@
     </unit>
     <unit id="sa.enable-note">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:137,138</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:138,139</note>
       </notes>
       <segment>
         <source>The account is disabled and cannot authenticate. Enabling it lets its tokens work again.</source>
@@ -35875,7 +35952,7 @@
     </unit>
     <unit id="sa.disable">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:142,143</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:143,144</note>
       </notes>
       <segment>
         <source>Disable</source>
@@ -35884,7 +35961,7 @@
     </unit>
     <unit id="sa.enable">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:144,145</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:145,146</note>
       </notes>
       <segment>
         <source>Enable</source>
@@ -35893,7 +35970,7 @@
     </unit>
     <unit id="sa.delete-note">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:147,148</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:148,149</note>
       </notes>
       <segment>
         <source>Deleting the account removes it and its tokens. This cannot be undone.</source>
@@ -35902,16 +35979,25 @@
     </unit>
     <unit id="sa.delete">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:148,150</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:149,151</note>
       </notes>
       <segment>
         <source>Delete</source>
         <target>Löschen</target>
       </segment>
     </unit>
+    <unit id="sa.loading">
+      <notes>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:155,157</note>
+      </notes>
+      <segment>
+        <source>Loading the service account.</source>
+        <target>Das Servicekonto wird geladen.</target>
+      </segment>
+    </unit>
     <unit id="sa.details-hint">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:204</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:207</note>
       </notes>
       <segment>
         <source>Status, administrator role and when the account was created.</source>
@@ -35920,7 +36006,7 @@
     </unit>
     <unit id="sa.details-hint-place">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:205</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:208</note>
       </notes>
       <segment>
         <source>Status, reference and when the account was created.</source>
@@ -35929,7 +36015,7 @@
     </unit>
     <unit id="sa.advanced-hint-tokens">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:209</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:212</note>
       </notes>
       <segment>
         <source>Revoke all tokens, disable or delete this account.</source>
@@ -35938,7 +36024,7 @@
     </unit>
     <unit id="sa.advanced-hint">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:210</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:213</note>
       </notes>
       <segment>
         <source>Disable or delete this account.</source>
@@ -35947,7 +36033,7 @@
     </unit>
     <unit id="sa.saved">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:299</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:302</note>
       </notes>
       <segment>
         <source>Service account saved.</source>
@@ -35956,7 +36042,7 @@
     </unit>
     <unit id="sa.disable-title">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:309</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:312</note>
       </notes>
       <segment>
         <source>Disable this service account?</source>
@@ -35965,7 +36051,7 @@
     </unit>
     <unit id="sa.disable-text">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:310</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:313</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="account" disp="this.name()"/> can no longer authenticate.</source>
@@ -35974,7 +36060,7 @@
     </unit>
     <unit id="sa.disable-confirm">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:311</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:314</note>
       </notes>
       <segment>
         <source>Disable</source>
@@ -35983,7 +36069,7 @@
     </unit>
     <unit id="sa.disable-revoke">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:312</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:315</note>
       </notes>
       <segment>
         <source>Also revoke all tokens of this account</source>
@@ -35992,7 +36078,7 @@
     </unit>
     <unit id="sa.disabled-done">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:319</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:322</note>
       </notes>
       <segment>
         <source>Service account disabled.</source>
@@ -36001,7 +36087,7 @@
     </unit>
     <unit id="sa.enabled-done">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:326</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:329</note>
       </notes>
       <segment>
         <source>Service account enabled.</source>
@@ -36010,7 +36096,7 @@
     </unit>
     <unit id="sa.delete-title">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:331</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:334</note>
       </notes>
       <segment>
         <source>Delete this service account?</source>
@@ -36019,7 +36105,7 @@
     </unit>
     <unit id="sa.delete-text">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:332</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:335</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="account" disp="this.name()"/> and its tokens are removed. This cannot be undone.</source>
@@ -36028,7 +36114,7 @@
     </unit>
     <unit id="sa.delete-confirm">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:333</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:336</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -36037,7 +36123,7 @@
     </unit>
     <unit id="sa.deleted">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:339</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:342</note>
       </notes>
       <segment>
         <source>Service account deleted.</source>
@@ -36046,7 +36132,7 @@
     </unit>
     <unit id="tokens.revoke-all-title">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:357</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:360</note>
         <note category="location">src/app/features/tokens/token-manager.ts:316</note>
       </notes>
       <segment>
@@ -36056,7 +36142,7 @@
     </unit>
     <unit id="tokens.revoke-all-text">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:358</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:361</note>
         <note category="location">src/app/features/tokens/token-manager.ts:317</note>
       </notes>
       <segment>
@@ -36066,7 +36152,7 @@
     </unit>
     <unit id="tokens.revoke-all-confirm">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:359</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:362</note>
         <note category="location">src/app/features/tokens/token-manager.ts:318</note>
       </notes>
       <segment>
@@ -36076,7 +36162,7 @@
     </unit>
     <unit id="tokens.revoked-all">
       <notes>
-        <note category="location">src/app/features/service-accounts/service-account-detail.ts:365</note>
+        <note category="location">src/app/features/service-accounts/service-account-detail.ts:368</note>
         <note category="location">src/app/features/tokens/token-manager.ts:325</note>
       </notes>
       <segment>
@@ -36798,7 +36884,7 @@
     <unit id="auth-settings.new-users-external">
       <notes>
         <note category="location">src/app/features/settings/auth-settings.html:21,23</note>
-        <note category="location">src/app/features/settings/auth-settings.ts:229</note>
+        <note category="location">src/app/features/settings/auth-settings.ts:230</note>
       </notes>
       <segment>
         <source>New users are external</source>
@@ -36854,7 +36940,7 @@
     <unit id="auth-settings.pat">
       <notes>
         <note category="location">src/app/features/settings/auth-settings.html:41,42</note>
-        <note category="location">src/app/features/settings/auth-settings.ts:224</note>
+        <note category="location">src/app/features/settings/auth-settings.ts:225</note>
       </notes>
       <segment>
         <source>Personal tokens</source>
@@ -36864,7 +36950,7 @@
     <unit id="auth-settings.pat-default">
       <notes>
         <note category="location">src/app/features/settings/auth-settings.html:45,47</note>
-        <note category="location">src/app/features/settings/auth-settings.ts:226</note>
+        <note category="location">src/app/features/settings/auth-settings.ts:227</note>
       </notes>
       <segment>
         <source>Default lifetime (days)</source>
@@ -36874,7 +36960,7 @@
     <unit id="auth-settings.pat-max">
       <notes>
         <note category="location">src/app/features/settings/auth-settings.html:56,58</note>
-        <note category="location">src/app/features/settings/auth-settings.ts:227</note>
+        <note category="location">src/app/features/settings/auth-settings.ts:228</note>
       </notes>
       <segment>
         <source>Maximum lifetime (days)</source>
@@ -36884,7 +36970,7 @@
     <unit id="auth-settings.sat">
       <notes>
         <note category="location">src/app/features/settings/auth-settings.html:64,65</note>
-        <note category="location">src/app/features/settings/auth-settings.ts:225</note>
+        <note category="location">src/app/features/settings/auth-settings.ts:226</note>
       </notes>
       <segment>
         <source>Service account tokens</source>
@@ -36894,7 +36980,7 @@
     <unit id="auth-settings.sat-default">
       <notes>
         <note category="location">src/app/features/settings/auth-settings.html:68,70</note>
-        <note category="location">src/app/features/settings/auth-settings.ts:232</note>
+        <note category="location">src/app/features/settings/auth-settings.ts:233</note>
       </notes>
       <segment>
         <source>Default lifetime (days)</source>
@@ -36904,7 +36990,7 @@
     <unit id="auth-settings.sat-max">
       <notes>
         <note category="location">src/app/features/settings/auth-settings.html:79,81</note>
-        <note category="location">src/app/features/settings/auth-settings.ts:233</note>
+        <note category="location">src/app/features/settings/auth-settings.ts:234</note>
       </notes>
       <segment>
         <source>Maximum lifetime (days)</source>
@@ -36923,7 +37009,7 @@
     <unit id="auth-settings.notice-lead">
       <notes>
         <note category="location">src/app/features/settings/auth-settings.html:91,93</note>
-        <note category="location">src/app/features/settings/auth-settings.ts:234</note>
+        <note category="location">src/app/features/settings/auth-settings.ts:235</note>
       </notes>
       <segment>
         <source>Notify this many days before a token expires</source>
@@ -37121,7 +37207,7 @@
     </unit>
     <unit id="auth-settings.draft">
       <notes>
-        <note category="location">src/app/features/settings/auth-settings.ts:105</note>
+        <note category="location">src/app/features/settings/auth-settings.ts:106</note>
       </notes>
       <segment>
         <source>Your entries were restored. Save them again.</source>
@@ -37130,7 +37216,7 @@
     </unit>
     <unit id="auth-settings.ceiling">
       <notes>
-        <note category="location">src/app/features/settings/auth-settings.ts:192</note>
+        <note category="location">src/app/features/settings/auth-settings.ts:193</note>
       </notes>
       <segment>
         <source>Ceiling from the configuration: <ph id="0" equiv="duration" disp="this.duration(seconds)"/></source>
@@ -37139,8 +37225,8 @@
     </unit>
     <unit id="auth-settings.saved">
       <notes>
-        <note category="location">src/app/features/settings/auth-settings.ts:209</note>
-        <note category="location">src/app/features/settings/auth-settings.ts:249</note>
+        <note category="location">src/app/features/settings/auth-settings.ts:210</note>
+        <note category="location">src/app/features/settings/auth-settings.ts:250</note>
       </notes>
       <segment>
         <source>Settings saved.</source>
@@ -37710,7 +37796,7 @@
     <unit id="malware.settings.only-checked">
       <notes>
         <note category="location">src/app/features/settings/malware-settings.html:28,29</note>
-        <note category="location">src/app/features/settings/malware-settings.ts:279</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:280</note>
       </notes>
       <segment>
         <source>Only checked artifacts can be downloaded</source>
@@ -37846,7 +37932,7 @@
     <unit id="malware.rescan.confirm">
       <notes>
         <note category="location">src/app/features/settings/malware-settings.html:99,102</note>
-        <note category="location">src/app/features/settings/malware-settings.ts:300</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:301</note>
       </notes>
       <segment>
         <source>Scan everything again</source>
@@ -38000,7 +38086,7 @@
     </unit>
     <unit id="malware.db.error.missing">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:34</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:35</note>
       </notes>
       <segment>
         <source>No signature database was found.</source>
@@ -38009,7 +38095,7 @@
     </unit>
     <unit id="malware.db.error.invalid">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:36</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:37</note>
       </notes>
       <segment>
         <source>A file of the signature database was refused.</source>
@@ -38018,7 +38104,7 @@
     </unit>
     <unit id="malware.db.error.repository">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:38</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:39</note>
       </notes>
       <segment>
         <source>The repository the configuration names cannot hold the database.</source>
@@ -38027,7 +38113,7 @@
     </unit>
     <unit id="malware.db.error.store">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:40</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:41</note>
       </notes>
       <segment>
         <source>A file of the signature database could not be stored.</source>
@@ -38036,7 +38122,7 @@
     </unit>
     <unit id="malware.db.error.other">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:42</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:43</note>
       </notes>
       <segment>
         <source>The last update of the signature database failed.</source>
@@ -38045,7 +38131,7 @@
     </unit>
     <unit id="malware.settings.backlog-question">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:229</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:230</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="unchecked" disp="n"/> artifacts have no verdict yet and <ph id="1" equiv="notCheckable" disp="m"/> could not be checked. They will wait or be refused until they are scanned or released.</source>
@@ -38054,7 +38140,7 @@
     </unit>
     <unit id="malware.settings.confirm-title">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:239</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:240</note>
       </notes>
       <segment>
         <source>Let only checked artifacts be downloaded?</source>
@@ -38063,7 +38149,7 @@
     </unit>
     <unit id="malware.settings.confirm">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:241</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:242</note>
       </notes>
       <segment>
         <source>Switch on</source>
@@ -38072,7 +38158,7 @@
     </unit>
     <unit id="malware.settings.saved-on">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:251</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:252</note>
       </notes>
       <segment>
         <source>Only checked artifacts can be downloaded now.</source>
@@ -38081,7 +38167,7 @@
     </unit>
     <unit id="malware.settings.saved-off">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:252</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:253</note>
       </notes>
       <segment>
         <source>Artifacts that are not checked can be downloaded again.</source>
@@ -38090,7 +38176,7 @@
     </unit>
     <unit id="malware.rescan.title">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:296</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:297</note>
       </notes>
       <segment>
         <source>Scan every artifact again?</source>
@@ -38099,7 +38185,7 @@
     </unit>
     <unit id="malware.rescan.text">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:298</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:299</note>
       </notes>
       <segment>
         <source>Every verdict is scanned again with the signature database in use, after the work that waits. Each verdict stays in force until its new scan.</source>
@@ -38108,7 +38194,7 @@
     </unit>
     <unit id="malware.rescan.done">
       <notes>
-        <note category="location">src/app/features/settings/malware-settings.ts:308</note>
+        <note category="location">src/app/features/settings/malware-settings.ts:309</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> verdicts are marked to be scanned again.</source>
@@ -38244,7 +38330,7 @@
     <unit id="sig.settings.switch">
       <notes>
         <note category="location">src/app/features/settings/signature-settings.html:71,72</note>
-        <note category="location">src/app/features/settings/signature-settings.ts:313</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:314</note>
       </notes>
       <segment>
         <source>Project owners may add trust anchors for their project</source>
@@ -38434,7 +38520,7 @@
     </unit>
     <unit id="sig.settings.anchors-caption">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:139</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:140</note>
       </notes>
       <segment>
         <source>Trust anchors of the installation</source>
@@ -38443,7 +38529,7 @@
     </unit>
     <unit id="sig.settings.project-caption">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:140</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:141</note>
       </notes>
       <segment>
         <source>Trust anchors of the projects</source>
@@ -38452,7 +38538,7 @@
     </unit>
     <unit id="sig.settings.project-empty">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:141</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:142</note>
       </notes>
       <segment>
         <source>No project has a trust anchor of its own.</source>
@@ -38461,7 +38547,7 @@
     </unit>
     <unit id="sig.settings.blocks-caption">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:142</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:143</note>
       </notes>
       <segment>
         <source>Blocked signers</source>
@@ -38470,7 +38556,7 @@
     </unit>
     <unit id="sig.settings.blocks-empty">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:143</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:144</note>
       </notes>
       <segment>
         <source>No signer is blocked.</source>
@@ -38479,7 +38565,7 @@
     </unit>
     <unit id="sig.settings.blocks-hint">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:144</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:145</note>
       </notes>
       <segment>
         <source>Signers whose signatures read as not trusted, whatever anchor knows them.</source>
@@ -38488,7 +38574,7 @@
     </unit>
     <unit id="sig.settings.root">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:145</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:146</note>
       </notes>
       <segment>
         <source>Public Sigstore root</source>
@@ -38497,7 +38583,7 @@
     </unit>
     <unit id="sig.settings.root-hint">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:146</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:147</note>
       </notes>
       <segment>
         <source>Where the public Sigstore root and npm&apos;s registry keys in use come from.</source>
@@ -38506,7 +38592,7 @@
     </unit>
     <unit id="sig.block.col.signer">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:148</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:149</note>
       </notes>
       <segment>
         <source>Signer</source>
@@ -38515,7 +38601,7 @@
     </unit>
     <unit id="sig.anchor.col.signatures">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:149</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:150</note>
         <note category="location">src/app/shared/signatures/anchor-table.ts:130</note>
       </notes>
       <segment>
@@ -38525,7 +38611,7 @@
     </unit>
     <unit id="sig.block.col.blocked">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:150</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:151</note>
       </notes>
       <segment>
         <source>Blocked</source>
@@ -38534,7 +38620,7 @@
     </unit>
     <unit id="sig.anchor.col.actions">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:151</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:152</note>
         <note category="location">src/app/shared/signatures/anchor-table.ts:135</note>
       </notes>
       <segment>
@@ -38544,7 +38630,7 @@
     </unit>
     <unit id="sig.anchor.off-title">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:203</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:204</note>
       </notes>
       <segment>
         <source>Switch off the trust anchor <ph id="0" equiv="title" disp="title"/>?</source>
@@ -38553,7 +38639,7 @@
     </unit>
     <unit id="sig.anchor.off-confirm">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:204</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:205</note>
       </notes>
       <segment>
         <source>Switch off</source>
@@ -38562,7 +38648,7 @@
     </unit>
     <unit id="sig.anchor.switched-on">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:216</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:217</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="title" disp="title"/> applies again. Its signatures are judged again in the background.</source>
@@ -38571,7 +38657,7 @@
     </unit>
     <unit id="sig.anchor.switched-off">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:217</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:218</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="title" disp="title"/> no longer applies. Its signatures are judged again in the background.</source>
@@ -38580,7 +38666,7 @@
     </unit>
     <unit id="sig.switch.off-title">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:265</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:266</note>
       </notes>
       <segment>
         <source>Switch project trust anchors off?</source>
@@ -38589,7 +38675,7 @@
     </unit>
     <unit id="sig.switch.off-confirm">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:266</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:267</note>
       </notes>
       <segment>
         <source>Switch off</source>
@@ -38598,7 +38684,7 @@
     </unit>
     <unit id="sig.switch.off-text">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:273</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:274</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> project anchors stay stored and stop applying. The signatures only they know read &quot;Signed · signer not trusted&quot;.</source>
@@ -38607,7 +38693,7 @@
     </unit>
     <unit id="sig.switch.saved-on">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:286</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:287</note>
       </notes>
       <segment>
         <source>Project owners may add trust anchors for their project now.</source>
@@ -38616,7 +38702,7 @@
     </unit>
     <unit id="sig.switch.saved-off">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:287</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:288</note>
       </notes>
       <segment>
         <source>Project trust anchors are switched off.</source>
@@ -38625,7 +38711,7 @@
     </unit>
     <unit id="sig.block.lift-title">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:334</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:335</note>
       </notes>
       <segment>
         <source>Lift this block?</source>
@@ -38634,7 +38720,7 @@
     </unit>
     <unit id="sig.block.lift-text">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:335</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:336</note>
       </notes>
       <segment>
         <source>The signer&apos;s signatures are judged by the trust anchors again.</source>
@@ -38643,7 +38729,7 @@
     </unit>
     <unit id="sig.block.lift-confirm">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:336</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:337</note>
       </notes>
       <segment>
         <source>Lift block</source>
@@ -38652,7 +38738,7 @@
     </unit>
     <unit id="sig.block.lifted">
       <notes>
-        <note category="location">src/app/features/settings/signature-settings.ts:344</note>
+        <note category="location">src/app/features/settings/signature-settings.ts:345</note>
       </notes>
       <segment>
         <source>Block lifted.</source>
@@ -39315,9 +39401,18 @@
         <target>Außer Dienst stellen</target>
       </segment>
     </unit>
+    <unit id="signing.loading">
+      <notes>
+        <note category="location">src/app/features/settings/signing-identity.html:240,242</note>
+      </notes>
+      <segment>
+        <source>Loading the signing identity.</source>
+        <target>Die Signaturidentität wird geladen.</target>
+      </segment>
+    </unit>
     <unit id="signing.prev.col.identity">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:171</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:172</note>
       </notes>
       <segment>
         <source>Identity</source>
@@ -39326,7 +39421,7 @@
     </unit>
     <unit id="signing.prev.col.source">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:172</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:173</note>
       </notes>
       <segment>
         <source>Source</source>
@@ -39335,7 +39430,7 @@
     </unit>
     <unit id="signing.prev.col.until">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:173</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:174</note>
       </notes>
       <segment>
         <source>Valid until</source>
@@ -39344,7 +39439,7 @@
     </unit>
     <unit id="signing.prev.col.signed">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:174</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:175</note>
       </notes>
       <segment>
         <source>Signed</source>
@@ -39353,7 +39448,7 @@
     </unit>
     <unit id="signing.prev.col.actions">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:175</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:176</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -39362,7 +39457,7 @@
     </unit>
     <unit id="signing.prev.caption">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:185</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:186</note>
       </notes>
       <segment>
         <source>Previous signing identities</source>
@@ -39371,7 +39466,7 @@
     </unit>
     <unit id="signing.prev.hint">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:186</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:187</note>
       </notes>
       <segment>
         <source>Identities that signed before. Their npm signatures stay valid until you retire them.</source>
@@ -39380,7 +39475,7 @@
     </unit>
     <unit id="signing.copy-fingerprint">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:187</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:188</note>
       </notes>
       <segment>
         <source>Copy fingerprint</source>
@@ -39389,7 +39484,7 @@
     </unit>
     <unit id="signing.copy-keyid">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:188</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:189</note>
       </notes>
       <segment>
         <source>Copy npm key ID</source>
@@ -39398,7 +39493,7 @@
     </unit>
     <unit id="signing.copy-request">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:189</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:190</note>
       </notes>
       <segment>
         <source>Copy request</source>
@@ -39407,8 +39502,8 @@
     </unit>
     <unit id="signing.draft-restored">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:212</note>
-        <note category="location">src/app/features/settings/signing-identity.ts:215</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:213</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:216</note>
       </notes>
       <segment>
         <source>Your entries were restored. Send them again.</source>
@@ -39417,7 +39512,7 @@
     </unit>
     <unit id="signing.key.done">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:242</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:243</note>
       </notes>
       <segment>
         <source>The signing key is made. Have your company&apos;s CA issue a certificate for its request.</source>
@@ -39426,7 +39521,7 @@
     </unit>
     <unit id="signing.installed-announced">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:268</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:269</note>
       </notes>
       <segment>
         <source>The new signing identity is announced. It becomes current after the announce period; until then the current one signs.</source>
@@ -39435,7 +39530,7 @@
     </unit>
     <unit id="signing.installed-current">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:269</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:270</note>
       </notes>
       <segment>
         <source>The signing identity is current. Quader signs with it from now on.</source>
@@ -39444,7 +39539,7 @@
     </unit>
     <unit id="signing.discard.title">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:291</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:292</note>
       </notes>
       <segment>
         <source>Discard the signing key?</source>
@@ -39453,7 +39548,7 @@
     </unit>
     <unit id="signing.discard.text">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:292</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:293</note>
       </notes>
       <segment>
         <source>The key and its request are deleted. A certificate the CA issues for this request can no longer be uploaded.</source>
@@ -39462,7 +39557,7 @@
     </unit>
     <unit id="signing.discard.confirm">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:293</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:294</note>
       </notes>
       <segment>
         <source>Discard</source>
@@ -39471,7 +39566,7 @@
     </unit>
     <unit id="signing.discard.done">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:296</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:297</note>
       </notes>
       <segment>
         <source>The signing key is discarded.</source>
@@ -39480,7 +39575,7 @@
     </unit>
     <unit id="signing.remove.title">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:301</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:302</note>
       </notes>
       <segment>
         <source>Remove the signing identity?</source>
@@ -39489,7 +39584,7 @@
     </unit>
     <unit id="signing.remove.text">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:303</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:304</note>
       </notes>
       <segment>
         <source>It becomes a previous identity and Quader signs nothing until another identity is current. Its npm signatures stay valid, and the attestations it made stay served until its certificate expires.</source>
@@ -39498,7 +39593,7 @@
     </unit>
     <unit id="signing.remove.confirm">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:305</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:306</note>
       </notes>
       <segment>
         <source>Remove</source>
@@ -39507,7 +39602,7 @@
     </unit>
     <unit id="signing.remove.done">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:308</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:309</note>
       </notes>
       <segment>
         <source>The signing identity is removed. Quader signs nothing now.</source>
@@ -39516,7 +39611,7 @@
     </unit>
     <unit id="signing.retire.title">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:313</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:314</note>
       </notes>
       <segment>
         <source>Retire this identity?</source>
@@ -39525,7 +39620,7 @@
     </unit>
     <unit id="signing.retire.text">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:315</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:316</note>
       </notes>
       <segment>
         <source>Its key leaves npm&apos;s keys at once; Quader signs its packages and attestations again with the current identity.</source>
@@ -39534,7 +39629,7 @@
     </unit>
     <unit id="signing.retire.confirm">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:317</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:318</note>
       </notes>
       <segment>
         <source>Retire</source>
@@ -39543,7 +39638,7 @@
     </unit>
     <unit id="signing.retire.done">
       <notes>
-        <note category="location">src/app/features/settings/signing-identity.ts:320</note>
+        <note category="location">src/app/features/settings/signing-identity.ts:321</note>
       </notes>
       <segment>
         <source>The identity is retired.</source>
@@ -39652,7 +39747,7 @@
     <unit id="links.switch">
       <notes>
         <note category="location">src/app/features/settings/storage-settings.html:65,66</note>
-        <note category="location">src/app/features/settings/storage-settings.ts:405</note>
+        <note category="location">src/app/features/settings/storage-settings.ts:406</note>
       </notes>
       <segment>
         <source>Deliver large downloads by signed links of the object store</source>
@@ -39734,7 +39829,7 @@
     <unit id="links.min-size">
       <notes>
         <note category="location">src/app/features/settings/storage-settings.html:100,101</note>
-        <note category="location">src/app/features/settings/storage-settings.ts:407</note>
+        <note category="location">src/app/features/settings/storage-settings.ts:408</note>
       </notes>
       <segment>
         <source>Minimum size in MiB</source>
@@ -39753,7 +39848,7 @@
     <unit id="links.life">
       <notes>
         <note category="location">src/app/features/settings/storage-settings.html:121,122</note>
-        <note category="location">src/app/features/settings/storage-settings.ts:409</note>
+        <note category="location">src/app/features/settings/storage-settings.ts:410</note>
       </notes>
       <segment>
         <source>Link valid for, in seconds</source>
@@ -39897,7 +39992,7 @@
     </unit>
     <unit id="links.reason.encrypted">
       <notes>
-        <note category="location">src/app/features/settings/storage-settings.ts:43</note>
+        <note category="location">src/app/features/settings/storage-settings.ts:44</note>
       </notes>
       <segment>
         <source>The connection <ph id="0" equiv="name" disp="name"/> is encrypted. Quader delivers its content to clients itself.</source>
@@ -39906,7 +40001,7 @@
     </unit>
     <unit id="links.reason.not-https">
       <notes>
-        <note category="location">src/app/features/settings/storage-settings.ts:45</note>
+        <note category="location">src/app/features/settings/storage-settings.ts:46</note>
       </notes>
       <segment>
         <source>The address of <ph id="0" equiv="name" disp="name"/> does not use https. Links need https.</source>
@@ -39915,7 +40010,7 @@
     </unit>
     <unit id="links.reason.quader-host">
       <notes>
-        <note category="location">src/app/features/settings/storage-settings.ts:47</note>
+        <note category="location">src/app/features/settings/storage-settings.ts:48</note>
       </notes>
       <segment>
         <source>The address of <ph id="0" equiv="name" disp="name"/> lies under <ph id="1" equiv="host" disp="detail"/>, an address of Quader. Image clients would send their credentials to it, and the object store refuses such a link.</source>
@@ -39924,7 +40019,7 @@
     </unit>
     <unit id="links.reason.link-check">
       <notes>
-        <note category="location">src/app/features/settings/storage-settings.ts:49</note>
+        <note category="location">src/app/features/settings/storage-settings.ts:50</note>
       </notes>
       <segment>
         <source>The object store of <ph id="0" equiv="name" disp="name"/> did not answer a test link as expected: <ph id="1" equiv="detail" disp="detail"/>. Quader delivers its content itself.</source>
@@ -39933,7 +40028,7 @@
     </unit>
     <unit id="links.reason.quader-host-bastion">
       <notes>
-        <note category="location">src/app/features/settings/storage-settings.ts:61</note>
+        <note category="location">src/app/features/settings/storage-settings.ts:62</note>
       </notes>
       <segment>
         <source>The address of <ph id="0" equiv="name" disp="name"/> lies under <ph id="1" equiv="host" disp="detail"/>, an address of Quader. A Bastion refuses a link there.</source>
@@ -39942,7 +40037,7 @@
     </unit>
     <unit id="links.min-size.invalid">
       <notes>
-        <note category="location">src/app/features/settings/storage-settings.ts:212</note>
+        <note category="location">src/app/features/settings/storage-settings.ts:213</note>
       </notes>
       <segment>
         <source>Enter a size from 0 to 1,048,576 MiB.</source>
@@ -39951,7 +40046,7 @@
     </unit>
     <unit id="links.life.invalid">
       <notes>
-        <note category="location">src/app/features/settings/storage-settings.ts:219</note>
+        <note category="location">src/app/features/settings/storage-settings.ts:220</note>
       </notes>
       <segment>
         <source>Enter a number of seconds from 10 to 3,600.</source>
@@ -39960,7 +40055,7 @@
     </unit>
     <unit id="links.address.invalid">
       <notes>
-        <note category="location">src/app/features/settings/storage-settings.ts:249</note>
+        <note category="location">src/app/features/settings/storage-settings.ts:250</note>
       </notes>
       <segment>
         <source>Enter an https address without a path, such as https://objects.example.com.</source>
@@ -39969,7 +40064,7 @@
     </unit>
     <unit id="links.saved">
       <notes>
-        <note category="location">src/app/features/settings/storage-settings.ts:359</note>
+        <note category="location">src/app/features/settings/storage-settings.ts:360</note>
       </notes>
       <segment>
         <source>Download link settings saved.</source>
@@ -39978,7 +40073,7 @@
     </unit>
     <unit id="conflict.links.address">
       <notes>
-        <note category="location">src/app/features/settings/storage-settings.ts:412</note>
+        <note category="location">src/app/features/settings/storage-settings.ts:413</note>
       </notes>
       <segment>
         <source>Public address of <ph id="0" equiv="connection" disp="c.name"/></source>
@@ -41169,7 +41264,7 @@
     <unit id="backups.status.interval">
       <notes>
         <note category="location">src/app/features/system/backups/backups-page.html:44,45</note>
-        <note category="location">src/app/features/system/backups/backups-page.html:374,375</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:376,377</note>
       </notes>
       <segment>
         <source>Expected interval</source>
@@ -41206,8 +41301,8 @@
     <unit id="backups.col.state">
       <notes>
         <note category="location">src/app/features/system/backups/backups-page.html:69,70</note>
-        <note category="location">src/app/features/system/backups/backups-page.html:147,148</note>
-        <note category="location">src/app/features/system/backups/backups-page.html:250,251</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:149,150</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:252,253</note>
       </notes>
       <segment>
         <source>State</source>
@@ -41217,8 +41312,8 @@
     <unit id="backups.col.operation">
       <notes>
         <note category="location">src/app/features/system/backups/backups-page.html:71,72</note>
-        <note category="location">src/app/features/system/backups/backups-page.html:145,146</note>
-        <note category="location">src/app/features/system/backups/backups-page.html:252,253</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:147,148</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:254,255</note>
       </notes>
       <segment>
         <source>Operation</source>
@@ -41264,8 +41359,8 @@
     <unit id="backups.col.pod">
       <notes>
         <note category="location">src/app/features/system/backups/backups-page.html:98</note>
-        <note category="location">src/app/features/system/backups/backups-page.html:147</note>
-        <note category="location">src/app/features/system/backups/backups-page.html:257</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:149</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:259</note>
       </notes>
       <segment>
         <source>Pod</source>
@@ -41281,9 +41376,18 @@
         <target>Gestartet</target>
       </segment>
     </unit>
+    <unit id="backups.summary.loading">
+      <notes>
+        <note category="location">src/app/features/system/backups/backups-page.html:107,110</note>
+      </notes>
+      <segment>
+        <source>Loading the state of the backups.</source>
+        <target>Der Zustand der Backups wird geladen.</target>
+      </segment>
+    </unit>
     <unit id="backups.runs.heading">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:109,110</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:111,112</note>
       </notes>
       <segment>
         <source>Runs</source>
@@ -41292,7 +41396,7 @@
     </unit>
     <unit id="backups.filter.operation">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:122,124</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:124,126</note>
         <note category="location">src/app/features/system/backups/backups-page.ts:135</note>
       </notes>
       <segment>
@@ -41302,7 +41406,7 @@
     </unit>
     <unit id="backups.filter.state">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:127</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:129</note>
         <note category="location">src/app/features/system/backups/backups-page.ts:137</note>
       </notes>
       <segment>
@@ -41312,7 +41416,7 @@
     </unit>
     <unit id="backups.col.started">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:144,145</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:146,147</note>
       </notes>
       <segment>
         <source>Started</source>
@@ -41321,8 +41425,8 @@
     </unit>
     <unit id="backups.col.backup-id">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:148,149</note>
-        <note category="location">src/app/features/system/backups/backups-page.html:320,321</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:150,151</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:322,323</note>
       </notes>
       <segment>
         <source>Backup ID</source>
@@ -41331,8 +41435,8 @@
     </unit>
     <unit id="backups.col.snapshot">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:149,150</note>
-        <note category="location">src/app/features/system/backups/backups-page.html:321,322</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:151,152</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:323,324</note>
       </notes>
       <segment>
         <source>Snapshot</source>
@@ -41341,7 +41445,7 @@
     </unit>
     <unit id="backups.col.duration">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:150,151</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:152,153</note>
       </notes>
       <segment>
         <source>Duration</source>
@@ -41350,8 +41454,8 @@
     </unit>
     <unit id="backups.col.database">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:151,152</note>
-        <note category="location">src/app/features/system/backups/backups-page.html:324,325</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:153,154</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:326,327</note>
       </notes>
       <segment>
         <source>Database</source>
@@ -41360,7 +41464,7 @@
     </unit>
     <unit id="backups.col.blobs-copied">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:152,153</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:154,155</note>
       </notes>
       <segment>
         <source>Blobs copied</source>
@@ -41369,7 +41473,7 @@
     </unit>
     <unit id="backups.col.warnings">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:153,154</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:155,156</note>
       </notes>
       <segment>
         <source>Warnings</source>
@@ -41378,7 +41482,7 @@
     </unit>
     <unit id="backups.details">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:210,211</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:212,213</note>
       </notes>
       <segment>
         <source> Details </source>
@@ -41387,7 +41491,7 @@
     </unit>
     <unit id="backups.loading">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:233,235</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:235,237</note>
       </notes>
       <segment>
         <source>Loading the backups.</source>
@@ -41396,7 +41500,7 @@
     </unit>
     <unit id="backups.detail.heading">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:241</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:243</note>
       </notes>
       <segment>
         <source>Run</source>
@@ -41405,7 +41509,7 @@
     </unit>
     <unit id="backups.detail.close">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:241,243</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:243,245</note>
       </notes>
       <segment>
         <source>Close</source>
@@ -41414,7 +41518,7 @@
     </unit>
     <unit id="backups.detail.id">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:248,249</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:250,251</note>
       </notes>
       <segment>
         <source>Run ID</source>
@@ -41423,7 +41527,7 @@
     </unit>
     <unit id="backups.detail.trigger">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:254,255</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:256,257</note>
       </notes>
       <segment>
         <source>Trigger</source>
@@ -41432,7 +41536,7 @@
     </unit>
     <unit id="backups.detail.version">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:258,259</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:260,261</note>
       </notes>
       <segment>
         <source>Quader version</source>
@@ -41441,8 +41545,8 @@
     </unit>
     <unit id="backups.detail.target">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:260,261</note>
-        <note category="location">src/app/features/system/backups/backups-page.html:360,361</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:262,263</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:362,363</note>
       </notes>
       <segment>
         <source>Target</source>
@@ -41451,7 +41555,7 @@
     </unit>
     <unit id="backups.detail.heartbeat">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:262,263</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:264,265</note>
       </notes>
       <segment>
         <source>Last heartbeat</source>
@@ -41460,7 +41564,7 @@
     </unit>
     <unit id="backups.detail.finished">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:265,266</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:267,268</note>
       </notes>
       <segment>
         <source>Finished</source>
@@ -41469,7 +41573,7 @@
     </unit>
     <unit id="backups.detail.error">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:270,271</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:272,273</note>
       </notes>
       <segment>
         <source>Error</source>
@@ -41478,7 +41582,7 @@
     </unit>
     <unit id="backups.detail.warnings">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:279,281</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:281,283</note>
       </notes>
       <segment>
         <source>Warnings</source>
@@ -41487,7 +41591,7 @@
     </unit>
     <unit id="backups.detail.result">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:286,288</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:288,290</note>
       </notes>
       <segment>
         <source>Result</source>
@@ -41496,7 +41600,7 @@
     </unit>
     <unit id="backups.detail.no-result">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:290,294</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:292,296</note>
       </notes>
       <segment>
         <source>The run has no result yet.</source>
@@ -41505,7 +41609,7 @@
     </unit>
     <unit id="backups.stored.heading">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:298,299</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:300,301</note>
       </notes>
       <segment>
         <source>Stored backups</source>
@@ -41514,7 +41618,7 @@
     </unit>
     <unit id="backups.stored.as-of">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:302,304</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:304,306</note>
       </notes>
       <segment>
         <source>As recorded by run <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ stored.runId }}"/></pc> at <pc id="2" equivStart="START_TAG_TIME" equivEnd="CLOSE_TAG_TIME" type="other" dispStart="&lt;time [attr.datetime]=&quot;stored.asOf&quot;&gt;" dispEnd="&lt;/time&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ stored.asOf | date: &apos;medium&apos; }}"/></pc>.</source>
@@ -41523,7 +41627,7 @@
     </unit>
     <unit id="backups.stored.note">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:306,307</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:308,309</note>
       </notes>
       <segment>
         <source>Backups written or removed outside Quader appear after the next run; <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;">quader backup list</pc> reads the target itself.</source>
@@ -41532,7 +41636,7 @@
     </unit>
     <unit id="backups.stored.empty">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:311,313</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:313,315</note>
       </notes>
       <segment>
         <source>The target held no complete backup then.</source>
@@ -41541,7 +41645,7 @@
     </unit>
     <unit id="backups.stored.version">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:322,323</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:324,325</note>
       </notes>
       <segment>
         <source>Quader version</source>
@@ -41550,7 +41654,7 @@
     </unit>
     <unit id="backups.stored.schema">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:323,324</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:325,326</note>
       </notes>
       <segment>
         <source>Schema step</source>
@@ -41559,7 +41663,7 @@
     </unit>
     <unit id="backups.stored.blobs">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:325,326</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:327,328</note>
       </notes>
       <segment>
         <source>Blobs</source>
@@ -41568,7 +41672,7 @@
     </unit>
     <unit id="backups.stored.blob-size">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:326,327</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:328,329</note>
       </notes>
       <segment>
         <source>Blob size</source>
@@ -41577,7 +41681,7 @@
     </unit>
     <unit id="backups.stored.damaged">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:327,329</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:329,331</note>
       </notes>
       <segment>
         <source>Damaged</source>
@@ -41586,7 +41690,7 @@
     </unit>
     <unit id="backups.stored.damaged-mark">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:344,345</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:346,347</note>
       </notes>
       <segment>
         <source>Damaged</source>
@@ -41595,7 +41699,7 @@
     </unit>
     <unit id="backups.stored.none">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:357,359</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:359,361</note>
       </notes>
       <segment>
         <source>No run has listed the target yet.</source>
@@ -41604,7 +41708,7 @@
     </unit>
     <unit id="backups.retention.keep-last">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:363,364</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:365,366</note>
       </notes>
       <segment>
         <source>Keep the newest</source>
@@ -41613,7 +41717,7 @@
     </unit>
     <unit id="backups.retention.keep-within">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:365,367</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:367,369</note>
       </notes>
       <segment>
         <source>Keep newer than</source>
@@ -41622,7 +41726,7 @@
     </unit>
     <unit id="backups.retention.keep-within-off">
       <notes>
-        <note category="location">src/app/features/system/backups/backups-page.html:370,373</note>
+        <note category="location">src/app/features/system/backups/backups-page.html:372,375</note>
       </notes>
       <segment>
         <source>Not set</source>
@@ -44076,9 +44180,18 @@
         <target>Nicht drain-sicher</target>
       </segment>
     </unit>
+    <unit id="system.status.loading">
+      <notes>
+        <note category="location">src/app/features/system/system-status.html:68,71</note>
+      </notes>
+      <segment>
+        <source>Loading the state of the instance.</source>
+        <target>Der Zustand der Instanz wird geladen.</target>
+      </segment>
+    </unit>
     <unit id="system.install.heading">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:72,74</note>
+        <note category="location">src/app/features/system/system-status.html:74,76</note>
       </notes>
       <segment>
         <source>Installation</source>
@@ -44087,7 +44200,7 @@
     </unit>
     <unit id="system.install.version">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:74,76</note>
+        <note category="location">src/app/features/system/system-status.html:76,78</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -44096,7 +44209,7 @@
     </unit>
     <unit id="system.install.base-url">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:78,79</note>
+        <note category="location">src/app/features/system/system-status.html:80,81</note>
       </notes>
       <segment>
         <source>Base URL</source>
@@ -44105,7 +44218,7 @@
     </unit>
     <unit id="system.install.base-url-source">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:80,82</note>
+        <note category="location">src/app/features/system/system-status.html:82,84</note>
       </notes>
       <segment>
         <source>Base URL source</source>
@@ -44114,7 +44227,7 @@
     </unit>
     <unit id="system.install.source.config">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:83,85</note>
+        <note category="location">src/app/features/system/system-status.html:85,87</note>
       </notes>
       <segment>
         <source>Configuration</source>
@@ -44123,7 +44236,7 @@
     </unit>
     <unit id="system.install.source.request">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:86,89</note>
+        <note category="location">src/app/features/system/system-status.html:88,91</note>
       </notes>
       <segment>
         <source>Derived from the request (development only)</source>
@@ -44132,7 +44245,7 @@
     </unit>
     <unit id="system.install.maintenance">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:91,93</note>
+        <note category="location">src/app/features/system/system-status.html:93,95</note>
       </notes>
       <segment>
         <source>Maintenance mode</source>
@@ -44141,7 +44254,7 @@
     </unit>
     <unit id="system.install.answered-by">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:97,98</note>
+        <note category="location">src/app/features/system/system-status.html:99,100</note>
       </notes>
       <segment>
         <source>Answered by</source>
@@ -44150,7 +44263,7 @@
     </unit>
     <unit id="system.install.licences">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:101,102</note>
+        <note category="location">src/app/features/system/system-status.html:103,104</note>
       </notes>
       <segment>
         <source>Licences of the bundled software</source>
@@ -44159,7 +44272,7 @@
     </unit>
     <unit id="system.db.heading">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:107,108</note>
+        <note category="location">src/app/features/system/system-status.html:109,110</note>
       </notes>
       <segment>
         <source>Database</source>
@@ -44168,7 +44281,7 @@
     </unit>
     <unit id="system.db.server">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:110,111</note>
+        <note category="location">src/app/features/system/system-status.html:112,113</note>
       </notes>
       <segment>
         <source>Server version</source>
@@ -44177,7 +44290,7 @@
     </unit>
     <unit id="system.db.schema">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:112,114</note>
+        <note category="location">src/app/features/system/system-status.html:114,116</note>
       </notes>
       <segment>
         <source>Schema version</source>
@@ -44186,7 +44299,7 @@
     </unit>
     <unit id="system.db.schema.supported">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:118,120</note>
+        <note category="location">src/app/features/system/system-status.html:120,122</note>
       </notes>
       <segment>
         <source>Supported</source>
@@ -44195,7 +44308,7 @@
     </unit>
     <unit id="system.db.schema.unsupported">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:123,125</note>
+        <note category="location">src/app/features/system/system-status.html:125,127</note>
       </notes>
       <segment>
         <source>Not supported by this build</source>
@@ -44204,7 +44317,7 @@
     </unit>
     <unit id="system.db.unknown">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:129,132</note>
+        <note category="location">src/app/features/system/system-status.html:131,134</note>
       </notes>
       <segment>
         <source>Not read yet by this replica.</source>
@@ -44213,7 +44326,7 @@
     </unit>
     <unit id="system.versions.mixed">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:138,142</note>
+        <note category="location">src/app/features/system/system-status.html:140,144</note>
       </notes>
       <segment>
         <source>Replicas of two versions run side by side: <pc id="0" equivStart="START_TAG_SPAN" equivEnd="CLOSE_TAG_SPAN" type="other" dispStart="&lt;span translate=&quot;no&quot;&gt;" dispEnd="&lt;/span
@@ -44223,7 +44336,7 @@
     </unit>
     <unit id="system.replicas.heading">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:148,149</note>
+        <note category="location">src/app/features/system/system-status.html:150,151</note>
       </notes>
       <segment>
         <source>Replicas by role</source>
@@ -44232,8 +44345,8 @@
     </unit>
     <unit id="system.role.counts">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:154,156</note>
-        <note category="location">src/app/features/system/system-status.html:187,188</note>
+        <note category="location">src/app/features/system/system-status.html:156,158</note>
+        <note category="location">src/app/features/system/system-status.html:189,190</note>
       </notes>
       <segment>
         <source>live <ph id="0" equiv="INTERPOLATION" disp="{{ g.live }}"/>, ready <ph id="1" equiv="INTERPOLATION_1" disp="{{ g.ready }}"/>, degraded <ph id="2" equiv="INTERPOLATION_2" disp="{{ g.degraded }}"/></source>
@@ -44242,7 +44355,7 @@
     </unit>
     <unit id="system.role.no-worker">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:163,165</note>
+        <note category="location">src/app/features/system/system-status.html:165,167</note>
       </notes>
       <segment>
         <source>No live worker replica: jobs and scheduled tasks are queued but nothing runs them.</source>
@@ -44251,7 +44364,7 @@
     </unit>
     <unit id="system.role.no-packages">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:169,171</note>
+        <note category="location">src/app/features/system/system-status.html:171,173</note>
       </notes>
       <segment>
         <source>No live packages replica: package clients and raw downloads get no answer from the edge, while the UI keeps working.</source>
@@ -44260,7 +44373,7 @@
     </unit>
     <unit id="system.pool.main">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:182,183</note>
+        <note category="location">src/app/features/system/system-status.html:184,185</note>
       </notes>
       <segment>
         <source>Main</source>
@@ -44269,7 +44382,7 @@
     </unit>
     <unit id="system.pool.named">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:184</note>
+        <note category="location">src/app/features/system/system-status.html:186</note>
       </notes>
       <segment>
         <source>Pool</source>
@@ -44278,7 +44391,7 @@
     </unit>
     <unit id="system.role.fewer">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:202,204</note>
+        <note category="location">src/app/features/system/system-status.html:204,206</note>
       </notes>
       <segment>
         <source>Fewer than two ready replicas: a node drain or the loss of one pod interrupts this role.</source>
@@ -44287,7 +44400,7 @@
     </unit>
     <unit id="system.role.one-node">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:208,210</note>
+        <note category="location">src/app/features/system/system-status.html:210,212</note>
       </notes>
       <segment>
         <source>All ready replicas on one node: a drain of that node interrupts this role.</source>
@@ -44296,7 +44409,7 @@
     </unit>
     <unit id="system.pool.no-live">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:214,215</note>
+        <note category="location">src/app/features/system/system-status.html:216,217</note>
       </notes>
       <segment>
         <source>No live replica in the pool <ph id="0" equiv="INTERPOLATION" disp="{{ p.pool }}"/>: what it claims or serves waits until one is ready.</source>
@@ -44305,7 +44418,7 @@
     </unit>
     <unit id="system.state.lost">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:241,242</note>
+        <note category="location">src/app/features/system/system-status.html:243,244</note>
       </notes>
       <segment>
         <source>Lost</source>
@@ -44314,7 +44427,7 @@
     </unit>
     <unit id="system.state.ready">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:248,249</note>
+        <note category="location">src/app/features/system/system-status.html:250,251</note>
       </notes>
       <segment>
         <source>Ready</source>
@@ -44323,7 +44436,7 @@
     </unit>
     <unit id="system.state.starting">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:254,255</note>
+        <note category="location">src/app/features/system/system-status.html:256,257</note>
       </notes>
       <segment>
         <source>Starting</source>
@@ -44332,7 +44445,7 @@
     </unit>
     <unit id="system.state.draining">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:260,261</note>
+        <note category="location">src/app/features/system/system-status.html:262,263</note>
       </notes>
       <segment>
         <source>Draining</source>
@@ -44341,7 +44454,7 @@
     </unit>
     <unit id="system.state.unready">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:266,267</note>
+        <note category="location">src/app/features/system/system-status.html:268,269</note>
       </notes>
       <segment>
         <source>Unready</source>
@@ -44350,7 +44463,7 @@
     </unit>
     <unit id="system.checks.failing">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:275</note>
+        <note category="location">src/app/features/system/system-status.html:277</note>
       </notes>
       <segment>
         <source>Failing checks:</source>
@@ -44359,7 +44472,7 @@
     </unit>
     <unit id="system.valkey.available">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:298,299</note>
+        <note category="location">src/app/features/system/system-status.html:300,301</note>
       </notes>
       <segment>
         <source>Available</source>
@@ -44368,7 +44481,7 @@
     </unit>
     <unit id="system.valkey.degraded">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:303,304</note>
+        <note category="location">src/app/features/system/system-status.html:305,306</note>
       </notes>
       <segment>
         <source>Degraded</source>
@@ -44377,7 +44490,7 @@
     </unit>
     <unit id="system.valkey.circuit-open">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:314,316</note>
+        <note category="location">src/app/features/system/system-status.html:316,318</note>
       </notes>
       <segment>
         <source>, circuit open</source>
@@ -44386,8 +44499,8 @@
     </unit>
     <unit id="system.scanner.counts">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:338,339</note>
-        <note category="location">src/app/features/system/system-status.html:344,345</note>
+        <note category="location">src/app/features/system/system-status.html:340,341</note>
+        <note category="location">src/app/features/system/system-status.html:346,347</note>
       </notes>
       <segment>
         <source>live <ph id="0" equiv="INTERPOLATION" disp="{{ scannerCounts().live }}"/>, ready <ph id="1" equiv="INTERPOLATION_1" disp="{{ scannerCounts().ready }}"/></source>
@@ -44396,7 +44509,7 @@
     </unit>
     <unit id="system.scanner.database-lag">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:354,356</note>
+        <note category="location">src/app/features/system/system-status.html:356,358</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {1 of <ph id="0" equiv="INTERPOLATION"/> ready replicas does not hold the database in use yet: the detections it is asked for wait until it has loaded it.} other {<ph id="1" equiv="INTERPOLATION_1"/> of <ph id="2" equiv="INTERPOLATION"/> ready replicas do not hold the database in use yet: the detections they are asked for wait until they have loaded it.}}</source>
@@ -44405,7 +44518,7 @@
     </unit>
     <unit id="system.replicas.limits">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:366,372</note>
+        <note category="location">src/app/features/system/system-status.html:368,374</note>
       </notes>
       <segment>
         <source> This screen cannot see disruption budgets, free capacity on other nodes, or whether the remaining replicas carry the peak load, because Quader holds no Kubernetes permissions. </source>
@@ -44414,7 +44527,7 @@
     </unit>
     <unit id="system.valkey.heading">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:374,375</note>
+        <note category="location">src/app/features/system/system-status.html:376,377</note>
       </notes>
       <segment>
         <source>Valkey</source>
@@ -44423,7 +44536,7 @@
     </unit>
     <unit id="system.valkey.summary.ok">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:378,381</note>
+        <note category="location">src/app/features/system/system-status.html:380,383</note>
       </notes>
       <segment>
         <source>Available on every replica</source>
@@ -44432,7 +44545,7 @@
     </unit>
     <unit id="system.valkey.summary.degraded">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:384,386</note>
+        <note category="location">src/app/features/system/system-status.html:386,388</note>
       </notes>
       <segment>
         <source>Degraded on <ph id="0" equiv="INTERPOLATION" disp="{{ v.degradedReplicas }}"/> of <ph id="1" equiv="INTERPOLATION_1" disp="{{ v.liveReplicas }}"/> replicas</source>
@@ -44441,7 +44554,7 @@
     </unit>
     <unit id="system.valkey.disagree">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:394,397</note>
+        <note category="location">src/app/features/system/system-status.html:396,399</note>
       </notes>
       <segment>
         <source>Replicas disagree about the primary</source>
@@ -44450,7 +44563,7 @@
     </unit>
     <unit id="system.valkey.sentinels">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:401,405</note>
+        <note category="location">src/app/features/system/system-status.html:403,407</note>
       </notes>
       <segment>
         <source>Sentinels unreachable: no failover can happen while this lasts.</source>
@@ -44459,7 +44572,7 @@
     </unit>
     <unit id="system.valkey.mode">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:407,408</note>
+        <note category="location">src/app/features/system/system-status.html:409,410</note>
       </notes>
       <segment>
         <source>Mode</source>
@@ -44468,7 +44581,7 @@
     </unit>
     <unit id="system.valkey.primary-name">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:409,410</note>
+        <note category="location">src/app/features/system/system-status.html:411,412</note>
       </notes>
       <segment>
         <source>Primary name</source>
@@ -44477,7 +44590,7 @@
     </unit>
     <unit id="system.valkey.sentinels-configured">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:411,412</note>
+        <note category="location">src/app/features/system/system-status.html:413,414</note>
       </notes>
       <segment>
         <source>Configured Sentinels</source>
@@ -44486,7 +44599,7 @@
     </unit>
     <unit id="system.valkey.tls">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:413,414</note>
+        <note category="location">src/app/features/system/system-status.html:415,416</note>
       </notes>
       <segment>
         <source>TLS verification</source>
@@ -44495,7 +44608,7 @@
     </unit>
     <unit id="system.valkey.last-change">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:416,418</note>
+        <note category="location">src/app/features/system/system-status.html:418,420</note>
       </notes>
       <segment>
         <source>Last primary change</source>
@@ -44504,7 +44617,7 @@
     </unit>
     <unit id="system.valkey.server-version">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:422,423</note>
+        <note category="location">src/app/features/system/system-status.html:424,425</note>
       </notes>
       <segment>
         <source>Server version</source>
@@ -44513,7 +44626,7 @@
     </unit>
     <unit id="system.keys.heading">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:431,432</note>
+        <note category="location">src/app/features/system/system-status.html:433,434</note>
       </notes>
       <segment>
         <source>Stored-secret keys</source>
@@ -44522,7 +44635,7 @@
     </unit>
     <unit id="system.keys.active">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:436,437</note>
+        <note category="location">src/app/features/system/system-status.html:438,439</note>
         <note category="location">src/app/features/system/system-status.ts:102</note>
       </notes>
       <segment>
@@ -44532,7 +44645,7 @@
     </unit>
     <unit id="system.keys.answered-by">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:439,441</note>
+        <note category="location">src/app/features/system/system-status.html:441,443</note>
       </notes>
       <segment>
         <source>(answered by <ph id="0" equiv="INTERPOLATION" disp="{{ e.answeredBy }}"/>)</source>
@@ -44541,7 +44654,7 @@
     </unit>
     <unit id="system.keys.compatible">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:445,447</note>
+        <note category="location">src/app/features/system/system-status.html:447,449</note>
       </notes>
       <segment>
         <source>Key rings are compatible.</source>
@@ -44550,7 +44663,7 @@
     </unit>
     <unit id="system.keys.incompatible">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:449,453</note>
+        <note category="location">src/app/features/system/system-status.html:451,455</note>
       </notes>
       <segment>
         <source>Key rings are not compatible: a value sealed by one replica cannot be opened by another.</source>
@@ -44559,7 +44672,7 @@
     </unit>
     <unit id="system.keys.canary.ok">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:464,465</note>
+        <note category="location">src/app/features/system/system-status.html:466,467</note>
       </notes>
       <segment>
         <source>OK</source>
@@ -44568,7 +44681,7 @@
     </unit>
     <unit id="system.keys.canary.failed">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:470,472</note>
+        <note category="location">src/app/features/system/system-status.html:472,474</note>
       </notes>
       <segment>
         <source>Failed</source>
@@ -44577,7 +44690,7 @@
     </unit>
     <unit id="system.keys.canary.absent">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:476,478</note>
+        <note category="location">src/app/features/system/system-status.html:478,480</note>
       </notes>
       <segment>
         <source>Absent</source>
@@ -44586,7 +44699,7 @@
     </unit>
     <unit id="system.keys.status.active">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:486,488</note>
+        <note category="location">src/app/features/system/system-status.html:488,490</note>
       </notes>
       <segment>
         <source>Active</source>
@@ -44595,7 +44708,7 @@
     </unit>
     <unit id="system.keys.status.pending">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:492,494</note>
+        <note category="location">src/app/features/system/system-status.html:494,496</note>
       </notes>
       <segment>
         <source>Re-encryption pending</source>
@@ -44604,7 +44717,7 @@
     </unit>
     <unit id="system.keys.status.unused">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:497,499</note>
+        <note category="location">src/app/features/system/system-status.html:499,501</note>
       </notes>
       <segment>
         <source>No values left under this key: its key file can be removed.</source>
@@ -44613,7 +44726,7 @@
     </unit>
     <unit id="system.keys.replicas.heading">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:506,507</note>
+        <note category="location">src/app/features/system/system-status.html:508,509</note>
       </notes>
       <segment>
         <source>Key IDs per replica</source>
@@ -44622,7 +44735,7 @@
     </unit>
     <unit id="system.keys.replicas.missing">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:518</note>
+        <note category="location">src/app/features/system/system-status.html:520</note>
       </notes>
       <segment>
         <source>Lacks</source>
@@ -44631,7 +44744,7 @@
     </unit>
     <unit id="system.keys.replicas.complete">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:525,527</note>
+        <note category="location">src/app/features/system/system-status.html:527,529</note>
       </notes>
       <segment>
         <source>Complete</source>
@@ -44640,7 +44753,7 @@
     </unit>
     <unit id="system.keys.step.incompatible">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:538,542</note>
+        <note category="location">src/app/features/system/system-status.html:540,544</note>
       </notes>
       <segment>
         <source>Next step: give every replica the key files it lacks. Re-encryption stays disabled until all rings hold the same key IDs.</source>
@@ -44649,7 +44762,7 @@
     </unit>
     <unit id="system.keys.step.reencrypt">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:547,551</note>
+        <note category="location">src/app/features/system/system-status.html:549,553</note>
       </notes>
       <segment>
         <source>Next step: re-encrypt the values that are still sealed under an old key ID.</source>
@@ -44658,7 +44771,7 @@
     </unit>
     <unit id="system.keys.step.remove">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:555,558</note>
+        <note category="location">src/app/features/system/system-status.html:557,560</note>
       </notes>
       <segment>
         <source>Next step: no values are left under an old key ID, so its key file can be removed from every replica.</source>
@@ -44667,7 +44780,7 @@
     </unit>
     <unit id="system.keys.last">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:564,565</note>
+        <note category="location">src/app/features/system/system-status.html:566,567</note>
       </notes>
       <segment>
         <source>Last re-encryption</source>
@@ -44676,7 +44789,7 @@
     </unit>
     <unit id="system.keys.reencrypt">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:585,587</note>
+        <note category="location">src/app/features/system/system-status.html:587,589</note>
       </notes>
       <segment>
         <source> Re-encrypt now </source>
@@ -44685,7 +44798,7 @@
     </unit>
     <unit id="system.keys.reencrypt-reason">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:589,593</note>
+        <note category="location">src/app/features/system/system-status.html:591,595</note>
       </notes>
       <segment>
         <source> Disabled while the key rings are not compatible. </source>
@@ -44694,7 +44807,7 @@
     </unit>
     <unit id="system.keys.loading">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:594,598</note>
+        <note category="location">src/app/features/system/system-status.html:596,600</note>
       </notes>
       <segment>
         <source>Loading the key rings.</source>
@@ -44703,7 +44816,7 @@
     </unit>
     <unit id="system.jobs.heading">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:601,602</note>
+        <note category="location">src/app/features/system/system-status.html:603,604</note>
       </notes>
       <segment>
         <source>Recent jobs</source>
@@ -44712,7 +44825,7 @@
     </unit>
     <unit id="jobs.empty-recent">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:606,608</note>
+        <note category="location">src/app/features/system/system-status.html:608,610</note>
       </notes>
       <segment>
         <source>No job has run yet.</source>
@@ -44721,7 +44834,7 @@
     </unit>
     <unit id="system.jobs.loading">
       <notes>
-        <note category="location">src/app/features/system/system-status.html:615,618</note>
+        <note category="location">src/app/features/system/system-status.html:617,620</note>
       </notes>
       <segment>
         <source>Loading the recent jobs.</source>
@@ -48347,7 +48460,7 @@
     <unit id="user.display-name">
       <notes>
         <note category="location">src/app/features/users/user-detail.html:20</note>
-        <note category="location">src/app/features/users/user-detail.ts:197</note>
+        <note category="location">src/app/features/users/user-detail.ts:198</note>
       </notes>
       <segment>
         <source>Display name</source>
@@ -48357,7 +48470,7 @@
     <unit id="user.email">
       <notes>
         <note category="location">src/app/features/users/user-detail.html:21</note>
-        <note category="location">src/app/features/users/user-detail.ts:196</note>
+        <note category="location">src/app/features/users/user-detail.ts:197</note>
       </notes>
       <segment>
         <source>Email</source>
@@ -48386,7 +48499,7 @@
     <unit id="user.external">
       <notes>
         <note category="location">src/app/features/users/user-detail.html:41,42</note>
-        <note category="location">src/app/features/users/user-detail.ts:222</note>
+        <note category="location">src/app/features/users/user-detail.ts:223</note>
       </notes>
       <segment>
         <source>External user</source>
@@ -48861,9 +48974,18 @@
         <target>Sie können Ihr eigenes Konto nicht deaktivieren oder löschen.</target>
       </segment>
     </unit>
+    <unit id="user.loading">
+      <notes>
+        <note category="location">src/app/features/users/user-detail.html:285,287</note>
+      </notes>
+      <segment>
+        <source>Loading the user.</source>
+        <target>Der Benutzer wird geladen.</target>
+      </segment>
+    </unit>
     <unit id="user.advanced-hint-tokens">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:85</note>
+        <note category="location">src/app/features/users/user-detail.ts:86</note>
       </notes>
       <segment>
         <source>Revoke all tokens, disable, unlock or delete this account.</source>
@@ -48872,7 +48994,7 @@
     </unit>
     <unit id="user.advanced-hint">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:86</note>
+        <note category="location">src/app/features/users/user-detail.ts:87</note>
       </notes>
       <segment>
         <source>Disable, unlock or delete this account.</source>
@@ -48881,7 +49003,7 @@
     </unit>
     <unit id="user.sessions-caption">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:97</note>
+        <note category="location">src/app/features/users/user-detail.ts:98</note>
       </notes>
       <segment>
         <source>Open sessions of this user</source>
@@ -48890,7 +49012,7 @@
     </unit>
     <unit id="user.session.created">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:100</note>
+        <note category="location">src/app/features/users/user-detail.ts:101</note>
       </notes>
       <segment>
         <source>Created</source>
@@ -48899,7 +49021,7 @@
     </unit>
     <unit id="user.session.last-seen">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:101</note>
+        <note category="location">src/app/features/users/user-detail.ts:102</note>
       </notes>
       <segment>
         <source>Last seen</source>
@@ -48908,7 +49030,7 @@
     </unit>
     <unit id="user.session.address">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:102</note>
+        <note category="location">src/app/features/users/user-detail.ts:103</note>
       </notes>
       <segment>
         <source>Address</source>
@@ -48917,7 +49039,7 @@
     </unit>
     <unit id="user.session.agent">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:103</note>
+        <note category="location">src/app/features/users/user-detail.ts:104</note>
       </notes>
       <segment>
         <source>Browser</source>
@@ -48926,7 +49048,7 @@
     </unit>
     <unit id="user.saved">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:206</note>
+        <note category="location">src/app/features/users/user-detail.ts:207</note>
       </notes>
       <segment>
         <source>User saved.</source>
@@ -48935,7 +49057,7 @@
     </unit>
     <unit id="user.external-saved">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:232</note>
+        <note category="location">src/app/features/users/user-detail.ts:233</note>
       </notes>
       <segment>
         <source>External flag saved.</source>
@@ -48944,7 +49066,7 @@
     </unit>
     <unit id="user.disable-title">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:238</note>
+        <note category="location">src/app/features/users/user-detail.ts:239</note>
       </notes>
       <segment>
         <source>Disable this user?</source>
@@ -48953,7 +49075,7 @@
     </unit>
     <unit id="user.disable-text">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:239</note>
+        <note category="location">src/app/features/users/user-detail.ts:240</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="user" disp="this.username()"/> can no longer sign in, and their sessions end.</source>
@@ -48962,7 +49084,7 @@
     </unit>
     <unit id="user.disable-confirm">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:240</note>
+        <note category="location">src/app/features/users/user-detail.ts:241</note>
       </notes>
       <segment>
         <source>Disable</source>
@@ -48971,7 +49093,7 @@
     </unit>
     <unit id="user.disable-revoke">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:241</note>
+        <note category="location">src/app/features/users/user-detail.ts:242</note>
       </notes>
       <segment>
         <source>Also revoke all tokens of this user</source>
@@ -48980,7 +49102,7 @@
     </unit>
     <unit id="user.disabled">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:247</note>
+        <note category="location">src/app/features/users/user-detail.ts:248</note>
       </notes>
       <segment>
         <source>User disabled.</source>
@@ -48989,7 +49111,7 @@
     </unit>
     <unit id="user.enabled">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:252</note>
+        <note category="location">src/app/features/users/user-detail.ts:253</note>
       </notes>
       <segment>
         <source>User enabled.</source>
@@ -48998,7 +49120,7 @@
     </unit>
     <unit id="user.unlocked">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:256</note>
+        <note category="location">src/app/features/users/user-detail.ts:257</note>
       </notes>
       <segment>
         <source>Account unlocked.</source>
@@ -49007,7 +49129,7 @@
     </unit>
     <unit id="user.remove-avatar-title">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:262</note>
+        <note category="location">src/app/features/users/user-detail.ts:263</note>
       </notes>
       <segment>
         <source>Remove the avatar of this user?</source>
@@ -49016,7 +49138,7 @@
     </unit>
     <unit id="user.remove-avatar-text">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:264</note>
+        <note category="location">src/app/features/users/user-detail.ts:265</note>
       </notes>
       <segment>
         <source>The avatar of <ph id="0" equiv="user" disp="this.username()"/> is removed and replaced by the generated one. The user can upload a new one.</source>
@@ -49025,7 +49147,7 @@
     </unit>
     <unit id="user.remove-avatar-confirm">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:266</note>
+        <note category="location">src/app/features/users/user-detail.ts:267</note>
       </notes>
       <segment>
         <source>Remove avatar</source>
@@ -49034,7 +49156,7 @@
     </unit>
     <unit id="user.avatar-removed">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:269</note>
+        <note category="location">src/app/features/users/user-detail.ts:270</note>
       </notes>
       <segment>
         <source>Avatar removed.</source>
@@ -49043,7 +49165,7 @@
     </unit>
     <unit id="user.delete-title">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:274</note>
+        <note category="location">src/app/features/users/user-detail.ts:275</note>
       </notes>
       <segment>
         <source>Delete this user?</source>
@@ -49052,7 +49174,7 @@
     </unit>
     <unit id="user.delete-text">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:275</note>
+        <note category="location">src/app/features/users/user-detail.ts:276</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="user" disp="this.username()"/> and their tokens and sessions are removed. This cannot be undone.</source>
@@ -49061,7 +49183,7 @@
     </unit>
     <unit id="user.delete-confirm">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:276</note>
+        <note category="location">src/app/features/users/user-detail.ts:277</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -49070,7 +49192,7 @@
     </unit>
     <unit id="user.deleted">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:282</note>
+        <note category="location">src/app/features/users/user-detail.ts:283</note>
       </notes>
       <segment>
         <source>User deleted.</source>
@@ -49079,7 +49201,7 @@
     </unit>
     <unit id="user.group-added">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:300</note>
+        <note category="location">src/app/features/users/user-detail.ts:301</note>
       </notes>
       <segment>
         <source>Group membership added.</source>
@@ -49088,7 +49210,7 @@
     </unit>
     <unit id="user.group-removed">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:308</note>
+        <note category="location">src/app/features/users/user-detail.ts:309</note>
       </notes>
       <segment>
         <source>Group membership removed.</source>
@@ -49097,7 +49219,7 @@
     </unit>
     <unit id="user.end-sessions-title">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:314</note>
+        <note category="location">src/app/features/users/user-detail.ts:315</note>
       </notes>
       <segment>
         <source>End all sessions of this user?</source>
@@ -49106,7 +49228,7 @@
     </unit>
     <unit id="user.end-sessions-text">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:315</note>
+        <note category="location">src/app/features/users/user-detail.ts:316</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="user" disp="this.username()"/> is signed out of every browser at once.</source>
@@ -49115,7 +49237,7 @@
     </unit>
     <unit id="user.end-sessions-confirm">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:316</note>
+        <note category="location">src/app/features/users/user-detail.ts:317</note>
       </notes>
       <segment>
         <source>End sessions</source>
@@ -49124,7 +49246,7 @@
     </unit>
     <unit id="user.sessions-ended">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:325</note>
+        <note category="location">src/app/features/users/user-detail.ts:326</note>
       </notes>
       <segment>
         <source>Sessions ended.</source>
@@ -49133,7 +49255,7 @@
     </unit>
     <unit id="user.source.manual">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:335</note>
+        <note category="location">src/app/features/users/user-detail.ts:336</note>
       </notes>
       <segment>
         <source>Manual</source>
@@ -49142,7 +49264,7 @@
     </unit>
     <unit id="user.source.auto">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:336</note>
+        <note category="location">src/app/features/users/user-detail.ts:337</note>
       </notes>
       <segment>
         <source>Auto-join</source>
@@ -49151,7 +49273,7 @@
     </unit>
     <unit id="user.source.provider">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:338</note>
+        <note category="location">src/app/features/users/user-detail.ts:339</note>
       </notes>
       <segment>
         <source>Identity provider</source>
@@ -49160,7 +49282,7 @@
     </unit>
     <unit id="user.claim-reason.wrong-type">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:343</note>
+        <note category="location">src/app/features/users/user-detail.ts:344</note>
       </notes>
       <segment>
         <source>a group claim of the wrong type</source>
@@ -49169,7 +49291,7 @@
     </unit>
     <unit id="user.claim-reason.overage">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:344</note>
+        <note category="location">src/app/features/users/user-detail.ts:345</note>
       </notes>
       <segment>
         <source>too many groups for the token</source>
@@ -49178,7 +49300,7 @@
     </unit>
     <unit id="user.claim-reason.absent">
       <notes>
-        <note category="location">src/app/features/users/user-detail.ts:345</note>
+        <note category="location">src/app/features/users/user-detail.ts:346</note>
       </notes>
       <segment>
         <source>no group claim</source>

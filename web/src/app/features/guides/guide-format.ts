@@ -10,6 +10,7 @@ import { PageHeader } from '../../shared/ui/page-header';
 import { VisibilityIcon } from '../../shared/ui/visibility-level';
 import { ProjectLink } from '../../shared/ui/project-mark';
 import { classIcon, classLabel, shownClass } from '../repositories/repository-class';
+import { Loading } from '../../shared/ui/loading';
 
 /**
  * The repositories of one format the reader may use (R-UI-124, Q-UI-481): a tile of **Guides** leads here. The rows are built from
@@ -20,7 +21,7 @@ import { classIcon, classLabel, shownClass } from '../repositories/repository-cl
  */
 @Component({
   selector: 'quader-guide-format',
-  imports: [RouterLink, PageHeader, ErrorNotice, DataTable, VisibilityIcon, ProjectLink],
+  imports: [Loading, RouterLink, PageHeader, ErrorNotice, DataTable, VisibilityIcon, ProjectLink],
   template: `
     @if (formatFailure(); as f) {
       <quader-error-notice [error]="f" (retry)="formatFailure.retry()" />
@@ -93,6 +94,8 @@ import { classIcon, classLabel, shownClass } from '../repositories/repository-cl
       </section>
     } @else if (formats.hasValue()) {
       <p i18n="@@guides.format.unknown">This installation has no guide for this package type.</p>
+    } @else {
+      <quader-loading size="page" i18n="@@guides.format.loading">Loading the guide.</quader-loading>
     }
   `,
   styles: `

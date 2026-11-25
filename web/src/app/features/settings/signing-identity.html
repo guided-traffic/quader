@@ -236,4 +236,6 @@
       </quader-data-table>
     </quader-disclosure>
   }
+} @else if (!loadError()) {
+  <quader-loading size="page" i18n="@@signing.loading">Loading the signing identity.</quader-loading>
 }

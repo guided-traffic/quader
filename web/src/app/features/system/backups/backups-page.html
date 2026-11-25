@@ -103,6 +103,8 @@
       </section>
     }
   </div>
+} @else if (!statusFailure()) {
+  <quader-loading i18n="@@backups.summary.loading">Loading the state of the backups.</quader-loading>
 }
 
   <section class="block" aria-labelledby="bk-runs">

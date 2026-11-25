@@ -11,6 +11,7 @@ import { RemoteDownloadsApi } from '../../api/remote-downloads-api';
 import { FakeRemoteDownloadsApi } from '../../api/testing/fakes-remote-downloads';
 import {
   REQUEST_ID,
+  app,
   click,
   expectState,
   failAlways,
@@ -22,6 +23,9 @@ import {
   submit,
   until,
 } from '../../testing/states';
+import { holdCalls } from '../../testing/screen';
+import { TestBed } from '@angular/core/testing';
+import { QuaderDialog } from '../../shared/ui/dialog';
 import { FolderDialog } from './content/folder-dialog';
 import { DeliveryRulesDialog } from './upstream/delivery-rules-dialog';
 import { DownloadPreviewDialog } from './upstream/download-preview-dialog';
@@ -74,6 +78,27 @@ describe('dialogs of repositories in a browser (R-CUR-005, R-CUR-010, R-CUR-015,
       failNext(get(DeliveryRulesApi), 'put', serverFailure());
       await fill(panel, 'Sub-section', '@platform-engineering/*');
       await click(panel, 'Add rule');
+    });
+  });
+
+  it('a download ahead, whose preview is read: the spinner before the sentence of what loads (R-UI-217)', async () => {
+    // The read is held, so the application never becomes stable: the dialog is opened and ticked until its load stands.
+    await expectState('download-preview-loading', async () => {
+      await app({ setup: (get) => void holdCalls(get(RemoteDownloadsApi), 'preview') });
+      TestBed.inject(QuaderDialog).open(DownloadPreviewDialog, {
+        width: '36rem',
+        data: {
+          repository: 'platform-engineering/npmjs-remote',
+          request: { level: 'package', name: '@platform-engineering/kubernetes-infrastructure-operators' },
+          title: 'Every version of @platform-engineering/kubernetes-infrastructure-operators',
+        },
+      });
+      for (let i = 0; i < 100 && !document.querySelector('.cdk-overlay-container quader-loading'); i++) {
+        TestBed.tick();
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      // Past the delay of every load (Q-UI-1230), so that the picture shows the spinner.
+      await new Promise((resolve) => setTimeout(resolve, 350));
     });
   });
 

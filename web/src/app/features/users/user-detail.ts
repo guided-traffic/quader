@@ -24,6 +24,7 @@ import { PageHeader } from '../../shared/ui/page-header';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { PrincipalField, choiceFromRef } from '../../shared/ui/principal-field';
 import { Busy } from '../../shared/ui/busy';
+import { Loading } from '../../shared/ui/loading';
 
 /**
  * One user (R-UI-024). Attributes from the identity provider are read-only and labelled as such;
@@ -34,7 +35,7 @@ import { Busy } from '../../shared/ui/busy';
  */
 @Component({
   selector: 'quader-user-detail',
-  imports: [Busy, PageHeader, DataTable, DatePipe, RouterLink, Checkbox, ErrorNotice, Needs, PrincipalField, PrincipalRoles, Disclosure, TextField, TokenManager, QuaderAvatar],
+  imports: [Loading, Busy, PageHeader, DataTable, DatePipe, RouterLink, Checkbox, ErrorNotice, Needs, PrincipalField, PrincipalRoles, Disclosure, TextField, TokenManager, QuaderAvatar],
   templateUrl: './user-detail.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `

@@ -23,6 +23,8 @@
       Your name and email come from the identity provider and are replaced at every sign-in.
     </p>
   </div>
+} @else if (!loadError()) {
+  <quader-loading i18n="@@profile.loading">Loading your account.</quader-loading>
 }
 
 <div class="settings">

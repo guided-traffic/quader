@@ -29,7 +29,7 @@
 }
 <quader-ci-warnings [warnings]="warnings()" />
 
-@if (!loadError()) {
+@if (!loadError() && (isNew() || loaded())) {
   <form (submit)="save($event)" novalidate>
     <fieldset class="plain" [disabled]="!writable()">
       <legend class="visually-hidden" i18n="@@ci.editor.legend">Mapping</legend>
@@ -330,4 +330,6 @@
     </section>
     </div>
   }
+} @else if (!loadError()) {
+  <quader-loading size="page" i18n="@@ci.mapping.loading">Loading the mapping.</quader-loading>
 }

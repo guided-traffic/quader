@@ -17,6 +17,7 @@ import { AvatarStore } from '../../core/avatar-store';
 import { ProfileAvatar } from './profile-avatar';
 import { ProfileNav } from './profile-nav';
 import { Busy } from '../../shared/ui/busy';
+import { Loading } from '../../shared/ui/loading';
 
 /**
  * Profile (R-UI-029, R-AUTH-017): identity as the identity provider delivered it (read-only fields), then the quiet sections
@@ -28,7 +29,7 @@ import { Busy } from '../../shared/ui/busy';
  */
 @Component({
   selector: 'quader-profile',
-  imports: [Busy, DatePipe, Checkbox, Disclosure, ErrorNotice, PageHeader, ProfileAvatar, ProfileNav, SelectField, TextField],
+  imports: [Loading, Busy, DatePipe, Checkbox, Disclosure, ErrorNotice, PageHeader, ProfileAvatar, ProfileNav, SelectField, TextField],
   templateUrl: './profile.html',
   styleUrl: '../../shared/access/access.scss',
   styles: `
