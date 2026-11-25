@@ -153,7 +153,12 @@ export class PolicyEditor {
     pathsExclude: this.pathsExclude(),
     entries: this.entries(),
   }));
-  protected readonly body = computed(() => this.inputOf(this.form(), this.isNew()));
+  /**
+   * The policy as the preview validates it, a new one is created and **Try it** evaluates it: with its name, the stored one's too. The
+   * server validates the name of every body (R-AUTHZ-021); without it a stored policy's preview said its name was invalid, and **Review
+   * and save** refused every change of it (2026-11-25). A replace sends the form without the name, which the route carries.
+   */
+  protected readonly body = computed(() => this.inputOf(this.form(), true));
   /** The stored policy as an input, to tell whether anything changed. */
   private readonly baseline = computed(() => {
     const l = this.loaded();

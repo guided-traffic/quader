@@ -150,6 +150,17 @@ describe('Policy editor (R-UI-027)', () => {
     expect(stored.entries).toEqual([{ principal: 'group:web-leads', actions: ['read', 'annotate', 'deploy'] }]);
   });
 
+  it("R-UI-027 a stored policy's preview is validated with its name, which the server checks in every body", async () => {
+    const { fixture, root, get } = await renderScreen(PolicyEditor, { inputs: { name: 'team-web-publish' } });
+    const api = get(PolicyApi) as FakePolicyApi;
+    api.validated.length = 0;
+    typeInto(root, 'Description', 'Publishes the web team’s packages.');
+    await settle(fixture);
+    await afterDebounce();
+    await settle(fixture);
+    expect(api.validated.at(-1)?.name).toBe('team-web-publish');
+  });
+
   it('R-UI-027 saving an existing policy shows the diff, then PUTs with the loaded ETag', async () => {
     const { fixture, root, get } = await renderScreen(PolicyEditor, { inputs: { name: 'team-web-publish' } });
     buttonByText(root, 'Add principal').click();
