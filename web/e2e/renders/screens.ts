@@ -42,6 +42,7 @@ import { mirrorFilled } from './mirror';
 import { damagedBlobs, noDamagedBlob, oneConnection, secondUnreachable, severalConnections, twoConnectionFacts } from './storage';
 import { auditDataKeys, bastionsHandover, bastionsRead, forbiddenLink, seededBastion } from './bastions';
 import { downloadsWalk } from './downloads';
+import { cachedDeb, cachedNpm } from './cached';
 import { accountOfferWalk, registryAccountWalk } from './upstream-accounts';
 import {
   advisorySourceFailures,
@@ -3047,6 +3048,11 @@ export const screens: readonly Screen[] = [
   { id: 'package-version-oci-probed', path: `${ver(O, { format: 'oci', name: remoteImage.name }, probedCache.tag)}?tab=details`, kinds: all },
   { id: 'package-version-nuget', path: ver(O, nugetPackage, nugetPackage.versions[1]), kinds: all },
   { id: 'package-version-deb', path: ver(O, debPackage, debPackage.versions[1]), kinds: all, de: true },
+  // A version a remote cached, described as a published one (R-NPM-050, R-NPM-051, R-DEB-037): the remote alone holds it
+  // (cached.ts). npm: the description, the dependencies and links, and the README of its tarball with headings, a table and
+  // a code block; Debian: the control paragraph with its relation fields and the coordinate of the index that listed it.
+  { id: 'package-version-npm-cached', path: ver(P, cachedNpm, cachedNpm.version), kinds: ['plain'], de: true },
+  { id: 'package-version-deb-cached', path: ver(P, cachedDeb, cachedDeb.version), kinds: ['plain'], de: true },
   // In German as the plain user: the strip of the most tabs with the longest labels of every format's version page, the one strip of
   // in-place tabs they share (Q-UI-1090: 13 px wider than its place at 1,024 px before its tabs stood closer).
   { id: 'package-version-ansible', path: ver(O, { format: 'ansible', name: collectionName }, ansiblePackage.versions[1]), kinds: all, de: ['plain'] },

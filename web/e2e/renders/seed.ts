@@ -70,6 +70,8 @@ export const projects = [
 /** The local repository a remote of the renders caches from, and the remote (W-24). */
 export const remoteSource = { key: 'image-source', prefix: 'vendor' } as const;
 export const remoteCache = { key: 'image-cache' } as const;
+/** The repositories of the cached versions' renders (cached.ts): a local source and a remote of it, per format. */
+export const cachedSources = { npm: 'npm-docs-source', npmCache: 'npm-docs-cache', deb: 'deb-docs-source', debCache: 'deb-docs-cache' } as const;
 /**
  * A remote over the same upstream whose tag arrived by a background download (W-25, R-REPO-065): the seed asks only `HEAD` of the
  * tag `3.0`, an index of three platforms, and the remote downloads in the background the two of its list (`linux/amd64`,
@@ -169,6 +171,12 @@ export const repositories: readonly RepoSeed[] = [
   { project: otherProject, key: 'galaxy', format: 'ansible', class: 'remote' },
   { project: otherProject, key: 'ansible', format: 'ansible', class: 'virtual', members: ['collections', 'galaxy'] },
   { project: longProject, key: 'signed-release-artifacts', format: 'generic', class: 'local', description: 'Signed release archives of the customer portal.' },
+  // A version a remote cached, described as a published one (npm R-NPM-050, Debian R-DEB-037; cached.ts): each remote caches from a
+  // local repository of the other project, which the seed deletes once the remote cached from it: the remote alone holds the version.
+  { project: otherProject, key: cachedSources.npm, format: 'npm', class: 'local', description: 'The upstream of npm-docs-cache.', visibility: { artifacts: 'public', wiki: 'public' } },
+  { project: mainProject, key: cachedSources.npmCache, format: 'npm', class: 'remote', description: 'The packages of npm-docs-source, cached.', url: `${edge}/api/npm/${otherProject}/${cachedSources.npm}/` },
+  { project: otherProject, key: cachedSources.deb, format: 'deb', class: 'local', description: 'The upstream of deb-docs-cache.', visibility: { artifacts: 'public', wiki: 'public' } },
+  { project: mainProject, key: cachedSources.debCache, format: 'deb', class: 'remote', description: 'The packages of deb-docs-source, cached.', url: `${edge}/api/deb/${otherProject}/${cachedSources.deb}/` },
 ];
 
 /** Who is what: the project roles of R-AUTHZ-026 and the system role `admin` (R-AUTHZ-010); see R-UI-067. */
@@ -563,7 +571,7 @@ export const longTechnicalToken = 'nightly-mirror-of-the-customer-portal-artifac
 export const exposureRule = 'customer-releases';
 
 /** One ustar entry: a 512-byte header and the content padded to the block size; a name ending in `/` is a directory. */
-function tarEntry(name: string, content: Buffer): Buffer {
+export function tarEntry(name: string, content: Buffer): Buffer {
   const header = Buffer.alloc(512);
   const octal = (value: number, width: number): string => value.toString(8).padStart(width - 1, '0') + '\0';
   const dir = name.endsWith('/');
@@ -582,7 +590,7 @@ function tarEntry(name: string, content: Buffer): Buffer {
 }
 
 /** A gzip-compressed tar of the entries, with the two empty blocks of its end. */
-function tarGz(entries: readonly (readonly [string, Buffer])[]): Buffer {
+export function tarGz(entries: readonly (readonly [string, Buffer])[]): Buffer {
   return gzipSync(Buffer.concat([...entries.map(([name, content]) => tarEntry(name, content)), Buffer.alloc(1024)]));
 }
 
@@ -770,7 +778,7 @@ async function publishNuget(ctx: APIRequestContext, auth: Record<string, string>
 }
 
 /** An `ar` archive of dpkg: the global header, then a 60-byte header per member and its data padded to an even length. */
-function ar(members: readonly (readonly [string, Buffer])[]): Buffer {
+export function ar(members: readonly (readonly [string, Buffer])[]): Buffer {
   const parts: Buffer[] = [Buffer.from('!<arch>\n')];
   for (const [name, data] of members) {
     const header = `${name.padEnd(16)}${'1767225600'.padEnd(12)}${'0'.padEnd(6)}${'0'.padEnd(6)}${'100644'.padEnd(8)}${String(data.length).padEnd(10)}\u0060\n`;

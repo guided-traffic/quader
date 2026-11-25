@@ -23,6 +23,7 @@ import { seedMalwareContent, seedMalwareVerdicts } from './malware';
 import { seedSignatures, seedSignatureSettings } from './signatures';
 import { seedScannerReplicas } from './scanners';
 import { seedBastion } from './bastions';
+import { removeCachedSources, seedCachedVersions } from './cached';
 
 /**
  * The global setup of `make ui-renders`: waits for the edge (the dev server of the UI development profile), seeds the data
@@ -55,6 +56,7 @@ export default async function setup(): Promise<void> {
     // After the CI issuer (seedLimits) and the group and service accounts (seedGrants) their entries and grants name.
     await seedPoliciesAndMappings(admin);
     await publishAsPowerUser(browser);
+    await removeCachedSources(admin);
     await plainUserToken(browser);
     // After the technical tokens and the sign-ins, whose principals the usage names (R-LIM-001).
     seedUsage();
@@ -173,6 +175,7 @@ async function publishAsPowerUser(browser: Browser): Promise<void> {
     if (!value) throw new Error('the token answer carries no value');
     try {
       await seedContent(context.request, edge, value);
+      await seedCachedVersions(context.request, edge, value);
     } finally {
       await expectStatus(await api.delete(`/api/v1/tokens/${token.id}`), [204, 404], 'revoke the seed token');
     }
