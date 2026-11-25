@@ -1,12 +1,12 @@
 import { describe, it } from 'vitest';
 import { MalwareApi } from '../../api/malware-api';
 import { VulnerabilitiesApi } from '../../api/vulnerabilities-api';
-import { eicarFind } from '../../api/testing/fakes-malware';
+import { eicarFind, goProgramFind } from '../../api/testing/fakes-malware';
 import { SignaturesApi } from '../../api/signatures-api';
 import { AnchorDialog } from '../../shared/signatures/anchor-dialog';
 import { BlockDialog } from '../../shared/signatures/block-dialog';
 import { GateReleaseDialog } from '../../shared/signatures/gate-release-dialog';
-import { LONG_TEXT, expectState, failNext, fieldRefusal, fill, openDialog, serverFailure, submit } from '../../testing/states';
+import { LONG_TEXT, click, expectState, failNext, fieldRefusal, fill, openDialog, serverFailure, submit } from '../../testing/states';
 import { MalwareReleaseDialog } from './malware-release-dialog';
 import { TriageDialog, TriageDialogData, TriageTarget } from './triage-dialog';
 
@@ -33,6 +33,10 @@ const find = eicarFind(['platform-engineering/release-candidates-generic', 'kube
       version: null,
     },
   ],
+});
+/** A layer of an image whose Go program clamd's RAR parser read past the scan-size limit (Q-MAL-106), in two repositories. */
+const goFind = goProgramFind(['platform-engineering/release-candidates-oci', 'kubernetes-infrastrukturbetrieb/dockerhub-remote'], {
+  part: 'usr/local/bin/kubernetes-infrastructure-operator-manager',
 });
 const gate = () =>
   openDialog(GateReleaseDialog, {
@@ -72,6 +76,13 @@ describe('dialogs of the security screens in a browser (R-VULN-022, R-MAL-022, R
       failNext(get(MalwareApi), 'release', serverFailure());
       await fill(panel, 'Reason', LONG_TEXT);
       await submit(panel);
+    });
+  });
+
+  it('Release a layer whose Go program passed the scan-size limit: the limit, the false alarm, the scanner\'s text unfolded', async () => {
+    await expectState('malware-release-go-program', async () => {
+      const { panel } = await openDialog(MalwareReleaseDialog, { maxWidth: '40rem', data: goFind });
+      await click(panel, /Technical details/);
     });
   });
 

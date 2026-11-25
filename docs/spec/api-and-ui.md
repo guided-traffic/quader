@@ -24972,6 +24972,55 @@ Status: **Decided by the development agent** — selected from the options below
 | (b) **Checking** for all three, the cause under it | One word as before | — | The cell's first line tells nothing apart |
 
 **Choice:** (a).
+
+### Q-UI-1204 · A limit is named in plain words with its value
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It follows
+[malware-scanning.md](malware-scanning.md#q-mal-105--the-answer-names-the-bound-by-its-purpose-and-keeps-clamds-name-as-the-signature)
+Q-MAL-105.
+
+Context: **Could not be checked** said "a scan limit was reached inside it" for every bound; a reader could not tell a layer past the
+scan-size limit from an archive nested too deeply, and an auditor could not either.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The reason names the bound by what it bounds, with its configured value where the verdict holds it: "the scanner's limit for the data it reads from one file (2.0 GiB) was passed"; German "die Prüfgrenze des Scanners für die gelesene Datenmenge je Datei (2,0 GiB) wurde überschritten"; content the unpacking cannot read is "a compressed stream or an archive inside it cannot be read", a bound the product does not name "one of the scanner's limits was passed" (chosen) | `malwareLimitText` | A plain user reads what happened; the value says how large; the same sentence on the fact, the cell, the dashboard's row and the dialog, and in the version's banner "`<file>` could not be checked for malware: <why>. Downloads are refused here." | Twelve phrases to translate |
+| (b) clamd's name as the reason (`Heuristics.Limits.Exceeded.MaxScanSize`) | The tool's text | Exact | The tool's English in the main sentence, which R-UI-214 keeps under **Technical details** |
+| (c) The setting's key (`malware.scanner.max_scan_size`) | An administrator's word | Points at the setting | A plain user does not know it, and clamd's own bounds have no key |
+
+**Choice:** (a). A verdict made before the bound was recorded keeps "a scan limit was reached inside it" until its next scan
+(Q-MAL-108). **Applied in the spec:** [malware-scanning.md](malware-scanning.md) R-MAL-024, R-MAL-025. Code:
+[malware-words.ts](../../web/src/app/shared/malware/malware-words.ts).
+
+### Q-UI-1205 · The scanner's text stands under Technical details wherever the verdict does
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Wherever an `unscannable` verdict's reason stands (a file's fact, a version's Files cell, the dashboard's opened row, the release dialog), a closed **Technical details** under it with clamd's name as the server's text and "In `<member>`" before it when the scanner unpacked the member; in the dashboard's list in the opened row, so that the row stays one line (chosen) | `<quader-technical-details>` (R-UI-214) | A reader who has to ask an administrator has the exact name to give; an auditor can search the finds by it (the search matches a signature) | A fold more on a page of facts |
+| (b) In the dashboard only | Fewer places | — | A reader of a version or a file whose download is refused has nothing to give |
+| (c) clamd's name inline as code | Always visible | — | Long English text in a cell, against R-UI-214 |
+
+**Choice:** (a). **Applied in the spec:** [malware-scanning.md](malware-scanning.md) R-MAL-024, R-MAL-025. Code:
+[malware-status.ts](../../web/src/app/shared/malware/malware-status.ts),
+[malware-finds.html](../../web/src/app/features/vulnerabilities/malware-finds.html).
+
+### Q-UI-1206 · The release dialog says the false alarm of a Go program as a fact, with the manual's page
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It follows
+[malware-scanning.md](malware-scanning.md#q-mal-106--a-go-programs-false-alarm-stays-unscannable-and-the-product-says-what-tripped)
+Q-MAL-106.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) For a find past `max_scan_size` only, one sentence under the verdict: "A program written in Go can pass this limit without holding an archive: a known false alarm of the scanner." and the link "What content that could not be checked means" to the manual's section; the warning that nothing checked the bytes stays; no advice (chosen) | What is known, said where the decision is made | The auditor learns the one known cause and where to read more; the product does not decide for him | The sentence also stands for a layer that tripped the limit for another reason |
+| (b) A recommendation ("probably a false alarm, release it") | Advice | Fewer clicks | The product cannot tell the false alarm from content made to pass the limit; deciding is the auditor's (R-MAL-021) |
+| (c) Nothing more | The dialog as before | — | The auditor decides blind, the defect this answers |
+
+**Choice:** (a). **Applied in the spec:** [malware-scanning.md](malware-scanning.md) R-MAL-021, R-MAL-025. Code:
+[malware-release-dialog.ts](../../web/src/app/features/vulnerabilities/malware-release-dialog.ts).
+
 ### Q-UI-1130 · An image is one row with its tags, on the opened item and on the package's page
 
 Status: **The owner's word of 2026-11-25**, as the development agent read it and told him: one row per image (manifest digest) with all its

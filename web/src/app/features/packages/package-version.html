@@ -89,6 +89,11 @@
             >Malware found in <code translate="no">{{ fileName(f.path) }}</code> (<code translate="no">{{ f.malware.signature }}</code>). Downloads are
             refused.</span
           >
+        } @else if (notCheckedWhy(f.malware); as why) {
+          <!-- What passed is said in plain words (Q-UI-1204); the scanner's own name of it is on the file's fact, under Technical details. -->
+          <span i18n="@@pkg.malware.not-checked-why"
+            ><code translate="no">{{ fileName(f.path) }}</code> could not be checked for malware: {{ why }}. Downloads are refused here.</span
+          >
         } @else {
           <span i18n="@@pkg.malware.not-checked"
             ><code translate="no">{{ fileName(f.path) }}</code> could not be checked for malware. Downloads are refused here.</span

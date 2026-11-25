@@ -260,6 +260,8 @@ SELECT i.id, i.repo_id, i.path, i.parent_path, i.kind, i.blob_sha256, i.size, i.
        COALESCE(ms.reason, '')::text AS malware_reason,
        COALESCE(ms.signature, '')::text AS malware_signature,
        COALESCE(ms.part, '')::text AS malware_part,
+       COALESCE(ms.exceeded_limit, '')::text AS malware_exceeded_limit,
+       COALESCE(ms.limits, '')::text AS malware_limits,
        COALESCE(ms.db_version, '')::text AS malware_db_version,
        ms.db_built_at AS malware_db_built_at,
        ms.scanned_at AS malware_scanned_at,
@@ -396,6 +398,8 @@ type GetLiveItemRow struct {
 	MalwareReason         string
 	MalwareSignature      string
 	MalwarePart           string
+	MalwareExceededLimit  string
+	MalwareLimits         string
 	MalwareDbVersion      string
 	MalwareDbBuiltAt      pgtype.Timestamptz
 	MalwareScannedAt      pgtype.Timestamptz
@@ -510,6 +514,8 @@ func (q *Queries) GetLiveItem(ctx context.Context, arg GetLiveItemParams) ([]Get
 			&i.MalwareReason,
 			&i.MalwareSignature,
 			&i.MalwarePart,
+			&i.MalwareExceededLimit,
+			&i.MalwareLimits,
 			&i.MalwareDbVersion,
 			&i.MalwareDbBuiltAt,
 			&i.MalwareScannedAt,

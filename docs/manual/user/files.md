@@ -37,7 +37,7 @@ says what that found; a file Quader writes itself (a Debian index) has none.
 | **Queued** | The file is not checked yet and waits for its scan, since the time named; it is checked in turn | Served, or, where only checked artifacts can be downloaded, the download waits for the scan for up to 25 seconds |
 | **No scanner**, **No signatures** | The file cannot be checked now: no malware scanner is connected, or no ClamAV signature database has been imported yet. It is checked once an administrator provides it | As **Queued** |
 | **Malware found**, with the signature and, inside an archive, the file it was found in | A signature matched | Refused |
-| **Could not be checked**, with the reason: too large, a scan limit was reached inside it, encrypted, or every scan failed | Nothing could check the bytes | Served, or refused where only checked artifacts can be downloaded |
+| **Could not be checked**, with the reason: too large, a limit of the scanner was passed (named, with its value where it has one, such as "the scanner's limit for the data it reads from one file (2.0 GiB) was passed"), encrypted, or every scan failed; under **Technical details** the scanner's own name of what tripped and the file inside the bytes it was in | Nothing could check the bytes. An instance auditor can look at them and release them ([Security dashboard](security-dashboard.md#could-not-be-checked)) | Served, or refused where only checked artifacts can be downloaded |
 | **Released**, by whom and when | An instance auditor released these bytes after looking at them | Served |
 
 **Downloads are refused.** after the state says that the file cannot be downloaded from this repository now; the page then offers no

@@ -13314,6 +13314,17 @@ export interface components {
         MalwareWaiting: "queued" | "no_scanner" | "no_database";
         /** @enum {string} */
         MalwareFindState: "infected" | "unscannable" | "failed";
+        /**
+         * @description The bound an `unscannable` `limits_exceeded` verdict passed, by its purpose (R-MAL-008, Q-MAL-105). clamd's: `max_scan_size`
+         *     (what it reads of one part, archives inside included; `malware.scanner.max_scan_size`), `max_file_size` (one file inside a
+         *     part; `malware.scanner.max_file_size`), `max_stream_length` (one part handed to it; the same setting), `max_recursion` (how
+         *     deeply archives nest), `max_files` (the files of one part), `max_scan_time` (the time for one part), `mail_structure` (a mail
+         *     message's headers and parts), `other` (a bound this list does not name; `signature` names it). The scanner's own unpacking's:
+         *     `max_uncompressed_size`, `max_entries`, `unpack_depth` (two levels), `unreadable_content` (a stream that does not decompress,
+         *     a tar or an `ar` archive that breaks off). The scanner's own name of what tripped is `signature`.
+         * @enum {string}
+         */
+        MalwareLimit: "max_scan_size" | "max_file_size" | "max_stream_length" | "max_recursion" | "max_files" | "max_scan_time" | "mail_structure" | "max_uncompressed_size" | "max_entries" | "unpack_depth" | "unreadable_content" | "other";
         MalwareSwitch: {
             /** @description `malware.enabled`: false means no scan, no verdict and no refusal for malware. */
             enabled: boolean;
@@ -13402,11 +13413,24 @@ export interface components {
              * @description That version's build time, shown as the database's date with **No malware found** (R-MAL-003, Q-MAL-41).
              */
             databaseBuiltAt: string | null;
+            /**
+             * @description The name the scanner gave, as it gave it: the signature of an `infected` verdict, or clamd's heuristic of an `unscannable`
+             *     one (`Heuristics.Limits.Exceeded.MaxScanSize`, `Heuristics.Encrypted.Zip`, Q-MAL-105).
+             */
             signature: string | null;
             /** @description The member of an archive the signature was found in, when the scanner unpacked it. */
             part: string | null;
             /** @description The reason of an unscannable verdict or the code of a failed one. */
             reason: string | null;
+            /** @description The bound an `unscannable` `limits_exceeded` verdict passed; null for any other verdict and for one made before it was recorded. */
+            limit: components["schemas"]["MalwareLimit"] | null;
+            /**
+             * Format: int64
+             * @description The configured value of `limit` the verdict was made under, from the fingerprint of its limits (R-MAL-008): bytes for
+             *     `max_scan_size`, `max_file_size`, `max_stream_length` and `max_uncompressed_size`, a count for `max_entries`; null for a
+             *     bound the fingerprint does not hold.
+             */
+            limitValue: number | null;
             released: boolean;
             /** @description `<kind>:<name>` of the principal who released the blob; null without a release or a principal record. */
             releasedBy: string | null;
@@ -13429,10 +13453,12 @@ export interface components {
             sha256: string;
             reason: string;
             state: components["schemas"]["MalwareFindState"];
-            /** @description The signature of the verdict that was released (infected). */
+            /** @description The name the scanner gave in the verdict that was released (the signature of an infected one, clamd's heuristic of an unscannable one). */
             signature: string | null;
             /** @description The reason of the verdict that was released (unscannable, failed). */
             reasonCode: string | null;
+            /** @description The bound the released verdict passed (unscannable, `limits_exceeded`). */
+            limit: components["schemas"]["MalwareLimit"] | null;
             releasedBy: string | null;
             /** Format: date-time */
             releasedAt: string;
@@ -13447,6 +13473,10 @@ export interface components {
             reason: string | null;
             signature: string | null;
             part: string | null;
+            /** @description As the member `malware`'s (MalwareStatus). */
+            limit: components["schemas"]["MalwareLimit"] | null;
+            /** Format: int64 */
+            limitValue: number | null;
             database: string | null;
             /** Format: date-time */
             databaseBuiltAt: string | null;
@@ -13472,6 +13502,10 @@ export interface components {
             reason: string | null;
             signature: string | null;
             part: string | null;
+            /** @description As the member `malware`'s (MalwareStatus). */
+            limit: components["schemas"]["MalwareLimit"] | null;
+            /** Format: int64 */
+            limitValue: number | null;
             database: string | null;
             /** Format: date-time */
             databaseBuiltAt: string | null;

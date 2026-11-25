@@ -1223,6 +1223,40 @@ async function* malwareVersions(page: Page): AsyncGenerator<string> {
   }
 }
 
+/**
+ * A version whose tarball holds a Go program past clamd's scan-size limit (Q-MAL-105): the banner and the cell as they open, then the
+ * cell's Technical details unfolded. By place, not by words: the German pass walks it too.
+ */
+async function* malwareLimitVersion(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main [data-testid="malware-banner"]')).toBeVisible();
+  yield '';
+  await page.locator('main quader-malware-status quader-technical-details button').first().click();
+  await expect(page.locator('main quader-malware-status [data-testid="technical-details"]').first()).toBeVisible();
+  yield 'details';
+}
+
+/**
+ * The find of that Go program in the malware view (Q-UI-1206): the row, the row opened with the scanner's text unfolded, and the
+ * release dialog with the false alarm and its Technical details unfolded. By place, not by words: the German pass walks it too.
+ */
+async function* malwareLimitFind(page: Page): AsyncGenerator<string> {
+  await expect(page.locator('main tbody tr').first()).toBeVisible();
+  yield '';
+  await page.locator('main .name-cell button[aria-expanded="false"]').first().click();
+  await page.locator('main .find-detail quader-technical-details button').first().click();
+  await expect(page.locator('main .find-detail [data-testid="technical-details"]')).toBeVisible();
+  yield 'opened';
+  await page.locator('main .name-cell button[aria-expanded="true"]').first().click();
+  await page.locator('main td.actions button').first().click();
+  const dialog = page.locator('.cdk-overlay-container [role="dialog"]');
+  await expect(dialog.locator('[data-testid="release-false-alarm"]')).toBeVisible();
+  await dialog.locator('quader-technical-details button').click();
+  await expect(dialog.locator('[data-testid="technical-details"]')).toBeVisible();
+  yield 'release';
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+}
+
 /** A file's fact at its page (R-MAL-024): a long signature in an archive's member, a release, a file that waits. */
 async function* malwareFiles(page: Page): AsyncGenerator<string> {
   await expect(page.locator('main [data-testid="malware-fact"]')).toBeVisible();
@@ -2969,8 +3003,19 @@ export const screens: readonly Screen[] = [
     path: `${P}/repositories/assets/files/${quarantine}/customer-portal-installer-with-a-long-name-for-the-windows-build-agents.exe`,
     kinds: ['plain'],
     walk: malwareFiles,
+    de: true,
   },
   { id: 'package-version-malware', path: `${ver(P, malwarePackage, '2.3.0')}?tab=files`, kinds: ['plain'], walk: malwareVersions, tables: 'quader-data-table.version-files' },
+  // A version whose Go program passed the scan-size limit (Q-MAL-105, Q-MAL-106): the banner names the limit, the cell its value and,
+  // unfolded, the scanner's own name of it and the member; in German too.
+  {
+    id: 'package-version-malware-limit',
+    path: `${ver(P, malwarePackage, '2.4.0-rc.1')}?tab=files`,
+    kinds: ['plain'],
+    walk: malwareLimitVersion,
+    tables: 'quader-data-table.version-files',
+    de: true,
+  },
   // A file whose malware scan waits, by why (Q-UI-1123): queued with its time, no scanner, no signatures.
   {
     id: 'package-version-malware-waiting',
@@ -3014,6 +3059,15 @@ export const screens: readonly Screen[] = [
   { id: 'security-project', path: `/ui/security?project=${mainProject}`, kinds: ['auditor'], tables: 'quader-vulnerability-report > quader-data-table' },
   // The page Malware under Security audit (R-MAL-025, Q-UI-1005): what the auditor assesses and releases; an administrator sees the same.
   { id: 'security-malware', path: '/ui/security/malware', kinds: ['auditor'], walk: malwareFinds, tables: 'quader-malware-finds > quader-data-table' },
+  // The find of that Go program and its release (Q-UI-1206): the limit, the false alarm with the manual's page, the scanner's text.
+  {
+    id: 'security-malware-limit',
+    path: '/ui/security/malware?q=MaxScanSize',
+    kinds: ['auditor'],
+    walk: malwareLimitFind,
+    tables: 'quader-malware-finds > quader-data-table',
+    de: true,
+  },
   // The page Signatures under Security audit (R-SIG-038, Q-UI-1005): invalid signatures and blocked signers; an administrator sees the same.
   { id: 'security-signatures', path: '/ui/security/signatures', kinds: ['auditor'], walk: signatureFindings, tables: 'quader-signature-findings > quader-data-table' },
   // The refused downloads and the releases of the gates (R-SIG-074), with the release's dialog for both who triage.

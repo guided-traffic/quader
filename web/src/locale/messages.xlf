@@ -13962,7 +13962,7 @@
     <unit id="pkg.meta.external">
       <notes>
         <note category="location">src/app/features/packages/ansible-doc-entry.html:190,191</note>
-        <note category="location">src/app/features/packages/package-version.html:417,418</note>
+        <note category="location">src/app/features/packages/package-version.html:422,423</note>
       </notes>
       <segment>
         <source>(opens another site)</source>
@@ -14096,7 +14096,7 @@
         <note category="location">src/app/features/packages/ansible-import-log.ts:21,22</note>
         <note category="location">src/app/features/packages/package-detail.html:28,29</note>
         <note category="location">src/app/features/packages/package-version.html:32,33</note>
-        <note category="location">src/app/features/packages/package-version.html:190,191</note>
+        <note category="location">src/app/features/packages/package-version.html:195,196</note>
         <note category="location">src/app/features/packages/version-signatures.ts:48,51</note>
       </notes>
       <segment>
@@ -14857,7 +14857,7 @@
     <unit id="pkg.ver.never-title">
       <notes>
         <note category="location">src/app/features/packages/package-detail.ts:229</note>
-        <note category="location">src/app/features/packages/package-version.ts:541</note>
+        <note category="location">src/app/features/packages/package-version.ts:550</note>
       </notes>
       <segment>
         <source>No client has downloaded this version through Quader yet.</source>
@@ -15299,9 +15299,17 @@
         <source>Malware found in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ fileName(f.path) }}"/></pc> (<pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.malware.signature }}"/></pc>). Downloads are refused.</source>
       </segment>
     </unit>
+    <unit id="pkg.malware.not-checked-why">
+      <notes>
+        <note category="location">src/app/features/packages/package-version.html:95,97</note>
+      </notes>
+      <segment>
+        <source><pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ fileName(f.path) }}"/></pc> could not be checked for malware: <ph id="2" equiv="INTERPOLATION_1" disp="{{ why }}"/>. Downloads are refused here.</source>
+      </segment>
+    </unit>
     <unit id="pkg.malware.not-checked">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:94,95</note>
+        <note category="location">src/app/features/packages/package-version.html:99,100</note>
       </notes>
       <segment>
         <source><pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ fileName(f.path) }}"/></pc> could not be checked for malware. Downloads are refused here.</source>
@@ -15309,7 +15317,7 @@
     </unit>
     <unit id="pkg.gate.banner.missing">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:108,109</note>
+        <note category="location">src/app/features/packages/package-version.html:113,114</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has no signature of its publisher or its build.</source>
@@ -15317,7 +15325,7 @@
     </unit>
     <unit id="pkg.gate.banner.untrusted">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:111,112</note>
+        <note category="location">src/app/features/packages/package-version.html:116,117</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build whose signer no trust anchor this repository accepts knows.</source>
@@ -15325,7 +15333,7 @@
     </unit>
     <unit id="pkg.gate.banner.not-chosen">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:114,115</note>
+        <note category="location">src/app/features/packages/package-version.html:119,120</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> is verified only by trust anchors this repository does not accept.</source>
@@ -15333,7 +15341,7 @@
     </unit>
     <unit id="pkg.gate.banner.invalid">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:117,118</note>
+        <note category="location">src/app/features/packages/package-version.html:122,123</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build that does not match its content.</source>
@@ -15341,7 +15349,7 @@
     </unit>
     <unit id="pkg.gate.banner.blocked">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:120,121</note>
+        <note category="location">src/app/features/packages/package-version.html:125,126</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> is signed by a signer an administrator blocked.</source>
@@ -15349,7 +15357,7 @@
     </unit>
     <unit id="pkg.gate.banner.not-checked">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:123,124</note>
+        <note category="location">src/app/features/packages/package-version.html:128,129</note>
       </notes>
       <segment>
         <source>Downloads are refused in <pc id="0" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="1" equiv="INTERPOLATION" disp="{{ f.repository }}"/></pc>: it serves only artifacts with a verified signature, and <pc id="2" equivStart="START_TAG_CODE" equivEnd="CLOSE_TAG_CODE" type="other" dispStart="&lt;code translate=&quot;no&quot;&gt;" dispEnd="&lt;/code&gt;"><ph id="3" equiv="INTERPOLATION_1" disp="{{ f.name }}"/></pc> has a signature of its publisher or its build that Quader cannot read or could not check.</source>
@@ -15357,7 +15365,7 @@
     </unit>
     <unit id="sig.release.action">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:130,131</note>
+        <note category="location">src/app/features/packages/package-version.html:135,136</note>
         <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:266</note>
         <note category="location">src/app/shared/signatures/signature-gate.ts:82,83</note>
       </notes>
@@ -15367,7 +15375,7 @@
     </unit>
     <unit id="pkg.deprecated">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:142</note>
+        <note category="location">src/app/features/packages/package-version.html:147</note>
       </notes>
       <segment>
         <source>Deprecated.</source>
@@ -15375,7 +15383,7 @@
     </unit>
     <unit id="pkg.file.sha256">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:215</note>
+        <note category="location">src/app/features/packages/package-version.html:220</note>
       </notes>
       <segment>
         <source>SHA-256</source>
@@ -15383,7 +15391,7 @@
     </unit>
     <unit id="sig.gate.refused-here">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:236,237</note>
+        <note category="location">src/app/features/packages/package-version.html:241,242</note>
         <note category="location">src/app/features/repositories/content/repository-file.ts:109,110</note>
         <note category="location">src/app/shared/signatures/signature-gate.ts:72,73</note>
       </notes>
@@ -15393,7 +15401,7 @@
     </unit>
     <unit id="clamav.signature">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:252,254</note>
+        <note category="location">src/app/features/packages/package-version.html:257,259</note>
       </notes>
       <segment>
         <source>Detached signature</source>
@@ -15401,7 +15409,7 @@
     </unit>
     <unit id="clamav.signature.present">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:255,256</note>
+        <note category="location">src/app/features/packages/package-version.html:260,261</note>
       </notes>
       <segment>
         <source>Present, <ph id="0" equiv="INTERPOLATION" disp="{{ c.detachedSignature.signatures ?? 0 }}"/> signatures. Quader passes it on; ClamAV checks it.</source>
@@ -15409,7 +15417,7 @@
     </unit>
     <unit id="clamav.signature.none">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:257,259</note>
+        <note category="location">src/app/features/packages/package-version.html:262,264</note>
       </notes>
       <segment>
         <source>None</source>
@@ -15417,7 +15425,7 @@
     </unit>
     <unit id="clamav.members.hint">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:263,264</note>
+        <note category="location">src/app/features/packages/package-version.html:268,269</note>
       </notes>
       <segment>
         <source>The signature count of the header is the total; lines of a member are not always signatures.</source>
@@ -15425,7 +15433,7 @@
     </unit>
     <unit id="clamav.members.removed">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:284,286</note>
+        <note category="location">src/app/features/packages/package-version.html:289,291</note>
       </notes>
       <segment>
         <source>The files of this version were removed; its metadata stays as history.</source>
@@ -15433,7 +15441,7 @@
     </unit>
     <unit id="clamav.members.not-read">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:286,288</note>
+        <note category="location">src/app/features/packages/package-version.html:291,293</note>
       </notes>
       <segment>
         <source>Members not read: the container holds more than the bounds allow.</source>
@@ -15441,7 +15449,7 @@
     </unit>
     <unit id="clamav.details.heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:306,307</note>
+        <note category="location">src/app/features/packages/package-version.html:311,312</note>
       </notes>
       <segment>
         <source>Definitions</source>
@@ -15449,7 +15457,7 @@
     </unit>
     <unit id="clamav.fact.built">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:308,310</note>
+        <note category="location">src/app/features/packages/package-version.html:313,315</note>
       </notes>
       <segment>
         <source>Built</source>
@@ -15457,7 +15465,7 @@
     </unit>
     <unit id="clamav.fact.build-text">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:320,321</note>
+        <note category="location">src/app/features/packages/package-version.html:325,326</note>
       </notes>
       <segment>
         <source>Build time as written</source>
@@ -15465,7 +15473,7 @@
     </unit>
     <unit id="clamav.fact.signatures">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:323,324</note>
+        <note category="location">src/app/features/packages/package-version.html:328,329</note>
       </notes>
       <segment>
         <source>Signatures</source>
@@ -15473,7 +15481,7 @@
     </unit>
     <unit id="clamav.fact.level">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:325,327</note>
+        <note category="location">src/app/features/packages/package-version.html:330,332</note>
       </notes>
       <segment>
         <source>Functionality level</source>
@@ -15481,7 +15489,7 @@
     </unit>
     <unit id="clamav.fact.builder">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:333,334</note>
+        <note category="location">src/app/features/packages/package-version.html:338,339</note>
       </notes>
       <segment>
         <source>Builder</source>
@@ -15489,7 +15497,7 @@
     </unit>
     <unit id="clamav.fact.verification">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:335,336</note>
+        <note category="location">src/app/features/packages/package-version.html:340,341</note>
       </notes>
       <segment>
         <source>Verification</source>
@@ -15497,7 +15505,7 @@
     </unit>
     <unit id="clamav.fact.files-removed">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:338,339</note>
+        <note category="location">src/app/features/packages/package-version.html:343,344</note>
       </notes>
       <segment>
         <source>Files removed</source>
@@ -15505,7 +15513,7 @@
     </unit>
     <unit id="clamav.fact.header-md5">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:345,346</note>
+        <note category="location">src/app/features/packages/package-version.html:350,351</note>
       </notes>
       <segment>
         <source>MD5 in the header</source>
@@ -15513,7 +15521,7 @@
     </unit>
     <unit id="clamav.fact.computed-md5">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:347,348</note>
+        <note category="location">src/app/features/packages/package-version.html:352,353</note>
       </notes>
       <segment>
         <source>MD5 computed by Quader</source>
@@ -15521,7 +15529,7 @@
     </unit>
     <unit id="pkg.image.heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:354,355</note>
+        <note category="location">src/app/features/packages/package-version.html:359,360</note>
       </notes>
       <segment>
         <source>Image</source>
@@ -15529,8 +15537,8 @@
     </unit>
     <unit id="pkg.image.digest">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:356,358</note>
-        <note category="location">src/app/features/packages/package-version.ts:535</note>
+        <note category="location">src/app/features/packages/package-version.html:361,363</note>
+        <note category="location">src/app/features/packages/package-version.ts:544</note>
       </notes>
       <segment>
         <source>Digest</source>
@@ -15538,8 +15546,8 @@
     </unit>
     <unit id="pkg.image.media-type">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:362,363</note>
-        <note category="location">src/app/features/packages/package-version.ts:536</note>
+        <note category="location">src/app/features/packages/package-version.html:367,368</note>
+        <note category="location">src/app/features/packages/package-version.ts:545</note>
       </notes>
       <segment>
         <source>Media type</source>
@@ -15547,7 +15555,7 @@
     </unit>
     <unit id="pkg.image.artifact-type">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:366,367</note>
+        <note category="location">src/app/features/packages/package-version.html:371,372</note>
       </notes>
       <segment>
         <source>Artifact type</source>
@@ -15555,7 +15563,7 @@
     </unit>
     <unit id="pkg.image.total-size">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:369,370</note>
+        <note category="location">src/app/features/packages/package-version.html:374,375</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -15563,7 +15571,7 @@
     </unit>
     <unit id="pkg.image.platforms">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:373,374</note>
+        <note category="location">src/app/features/packages/package-version.html:378,379</note>
       </notes>
       <segment>
         <source>Platforms</source>
@@ -15571,7 +15579,7 @@
     </unit>
     <unit id="pkg.image.not-fetched">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:399,400</note>
+        <note category="location">src/app/features/packages/package-version.html:404,405</note>
       </notes>
       <segment>
         <source>Not fetched</source>
@@ -15579,7 +15587,7 @@
     </unit>
     <unit id="pkg.meta.links">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:408,409</note>
+        <note category="location">src/app/features/packages/package-version.html:413,414</note>
       </notes>
       <segment>
         <source>Links</source>
@@ -15587,7 +15595,7 @@
     </unit>
     <unit id="pkg.meta.authors">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:427,428</note>
+        <note category="location">src/app/features/packages/package-version.html:432,433</note>
       </notes>
       <segment>
         <source>Authors</source>
@@ -15595,7 +15603,7 @@
     </unit>
     <unit id="pkg.meta.frameworks">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:452,453</note>
+        <note category="location">src/app/features/packages/package-version.html:457,458</note>
       </notes>
       <segment>
         <source>Dependencies by target framework</source>
@@ -15603,7 +15611,7 @@
     </unit>
     <unit id="pkg.meta.all-frameworks">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:458,460</note>
+        <note category="location">src/app/features/packages/package-version.html:463,465</note>
       </notes>
       <segment>
         <source>All frameworks</source>
@@ -15611,7 +15619,7 @@
     </unit>
     <unit id="pkg.meta.no-dependencies">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:462,464</note>
+        <note category="location">src/app/features/packages/package-version.html:467,469</note>
       </notes>
       <segment>
         <source>No dependencies.</source>
@@ -15619,9 +15627,9 @@
     </unit>
     <unit id="pkg.meta.facts">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:474,475</note>
-        <note category="location">src/app/features/packages/package-version.html:483,484</note>
-        <note category="location">src/app/features/packages/package-version.html:492,493</note>
+        <note category="location">src/app/features/packages/package-version.html:479,480</note>
+        <note category="location">src/app/features/packages/package-version.html:488,489</note>
+        <note category="location">src/app/features/packages/package-version.html:497,498</note>
       </notes>
       <segment>
         <source>Package details</source>
@@ -15629,7 +15637,7 @@
     </unit>
     <unit id="pkg.meta.engines">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:501,502</note>
+        <note category="location">src/app/features/packages/package-version.html:506,507</note>
       </notes>
       <segment>
         <source>Required runtimes</source>
@@ -15637,7 +15645,7 @@
     </unit>
     <unit id="pkg.repo.heading">
       <notes>
-        <note category="location">src/app/features/packages/package-version.html:509,510</note>
+        <note category="location">src/app/features/packages/package-version.html:514,515</note>
       </notes>
       <segment>
         <source>Repositories</source>
@@ -15645,7 +15653,7 @@
     </unit>
     <unit id="pkg.tab.vulnerabilities">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:224</note>
+        <note category="location">src/app/features/packages/package-version.ts:226</note>
       </notes>
       <segment>
         <source>Vulnerabilities</source>
@@ -15653,7 +15661,7 @@
     </unit>
     <unit id="pkg.tab.documentation">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:229</note>
+        <note category="location">src/app/features/packages/package-version.ts:231</note>
       </notes>
       <segment>
         <source>Documentation</source>
@@ -15661,7 +15669,7 @@
     </unit>
     <unit id="pkg.tab.contents">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:234</note>
+        <note category="location">src/app/features/packages/package-version.ts:236</note>
       </notes>
       <segment>
         <source>Contents</source>
@@ -15669,7 +15677,7 @@
     </unit>
     <unit id="pkg.tab.readme">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:239</note>
+        <note category="location">src/app/features/packages/package-version.ts:241</note>
       </notes>
       <segment>
         <source>README</source>
@@ -15677,7 +15685,7 @@
     </unit>
     <unit id="pkg.tab.files">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:240</note>
+        <note category="location">src/app/features/packages/package-version.ts:242</note>
       </notes>
       <segment>
         <source>Files</source>
@@ -15685,7 +15693,7 @@
     </unit>
     <unit id="pkg.tab.signatures">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:242</note>
+        <note category="location">src/app/features/packages/package-version.ts:244</note>
       </notes>
       <segment>
         <source>Signatures</source>
@@ -15693,7 +15701,7 @@
     </unit>
     <unit id="pkg.tab.details">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:243</note>
+        <note category="location">src/app/features/packages/package-version.ts:245</note>
       </notes>
       <segment>
         <source>Details</source>
@@ -15701,7 +15709,7 @@
     </unit>
     <unit id="pkg.tab.import-log">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:245</note>
+        <note category="location">src/app/features/packages/package-version.ts:247</note>
       </notes>
       <segment>
         <source>Import log</source>
@@ -15709,7 +15717,7 @@
     </unit>
     <unit id="clamav.member.name">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:354</note>
+        <note category="location">src/app/features/packages/package-version.ts:356</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -15717,7 +15725,7 @@
     </unit>
     <unit id="pkg.file.size">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:355</note>
+        <note category="location">src/app/features/packages/package-version.ts:357</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -15725,7 +15733,7 @@
     </unit>
     <unit id="clamav.member.lines">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:358</note>
+        <note category="location">src/app/features/packages/package-version.ts:360</note>
       </notes>
       <segment>
         <source>Lines</source>
@@ -15733,7 +15741,7 @@
     </unit>
     <unit id="clamav.member.lines-help">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:360</note>
+        <note category="location">src/app/features/packages/package-version.ts:362</note>
       </notes>
       <segment>
         <source>The member&apos;s lines that are neither empty nor a comment.</source>
@@ -15741,7 +15749,7 @@
     </unit>
     <unit id="clamav.members">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:363</note>
+        <note category="location">src/app/features/packages/package-version.ts:365</note>
       </notes>
       <segment>
         <source>Members</source>
@@ -15749,7 +15757,7 @@
     </unit>
     <unit id="clamav.checksums">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:364</note>
+        <note category="location">src/app/features/packages/package-version.ts:366</note>
       </notes>
       <segment>
         <source>Checksums of the archive</source>
@@ -15757,7 +15765,7 @@
     </unit>
     <unit id="clamav.member.digests">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:365</note>
+        <note category="location">src/app/features/packages/package-version.ts:367</note>
       </notes>
       <segment>
         <source>SHA-256 of each member</source>
@@ -15765,7 +15773,7 @@
     </unit>
     <unit id="pkg.file.path">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:495</note>
+        <note category="location">src/app/features/packages/package-version.ts:504</note>
       </notes>
       <segment>
         <source>File</source>
@@ -15773,7 +15781,7 @@
     </unit>
     <unit id="pkg.file.malware">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:496</note>
+        <note category="location">src/app/features/packages/package-version.ts:505</note>
       </notes>
       <segment>
         <source>Malware scan</source>
@@ -15781,7 +15789,7 @@
     </unit>
     <unit id="pkg.file.signature">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:497</note>
+        <note category="location">src/app/features/packages/package-version.ts:506</note>
       </notes>
       <segment>
         <source>Signature</source>
@@ -15789,7 +15797,7 @@
     </unit>
     <unit id="pkg.file.download-link">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:527</note>
+        <note category="location">src/app/features/packages/package-version.ts:536</note>
       </notes>
       <segment>
         <source>Download</source>
@@ -15797,7 +15805,7 @@
     </unit>
     <unit id="pkg.repo.repository">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:529</note>
+        <note category="location">src/app/features/packages/package-version.ts:538</note>
       </notes>
       <segment>
         <source>Repository</source>
@@ -15805,7 +15813,7 @@
     </unit>
     <unit id="pkg.repo.class">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:530</note>
+        <note category="location">src/app/features/packages/package-version.ts:539</note>
       </notes>
       <segment>
         <source>Class</source>
@@ -15813,7 +15821,7 @@
     </unit>
     <unit id="pkg.repo.published">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:531</note>
+        <note category="location">src/app/features/packages/package-version.ts:540</note>
       </notes>
       <segment>
         <source>Published</source>
@@ -15821,7 +15829,7 @@
     </unit>
     <unit id="pkg.image.platform">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:534</note>
+        <note category="location">src/app/features/packages/package-version.ts:543</note>
       </notes>
       <segment>
         <source>Platform</source>
@@ -15829,7 +15837,7 @@
     </unit>
     <unit id="pkg.image.size">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:537</note>
+        <note category="location">src/app/features/packages/package-version.ts:546</note>
       </notes>
       <segment>
         <source>Size</source>
@@ -15837,7 +15845,7 @@
     </unit>
     <unit id="pkg.image.platforms-caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:539</note>
+        <note category="location">src/app/features/packages/package-version.ts:548</note>
       </notes>
       <segment>
         <source>Platforms of this image index</source>
@@ -15845,7 +15853,7 @@
     </unit>
     <unit id="pkg.image.not-fetched-title">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:540</note>
+        <note category="location">src/app/features/packages/package-version.ts:549</note>
       </notes>
       <segment>
         <source>No client has fetched this platform through Quader yet, so its manifest and its size are not held.</source>
@@ -15853,7 +15861,7 @@
     </unit>
     <unit id="pkg.image.copy-digest">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:542</note>
+        <note category="location">src/app/features/packages/package-version.ts:551</note>
       </notes>
       <segment>
         <source>Copy digest</source>
@@ -15861,7 +15869,7 @@
     </unit>
     <unit id="pkg.file.caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:543</note>
+        <note category="location">src/app/features/packages/package-version.ts:552</note>
       </notes>
       <segment>
         <source>Files of this version</source>
@@ -15869,7 +15877,7 @@
     </unit>
     <unit id="pkg.repo.caption">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:544</note>
+        <note category="location">src/app/features/packages/package-version.ts:553</note>
       </notes>
       <segment>
         <source>Repositories that hold this version</source>
@@ -15877,7 +15885,7 @@
     </unit>
     <unit id="pkg.file.copy-sha">
       <notes>
-        <note category="location">src/app/features/packages/package-version.ts:545</note>
+        <note category="location">src/app/features/packages/package-version.ts:554</note>
       </notes>
       <segment>
         <source>Copy SHA-256</source>
@@ -42300,7 +42308,7 @@
     <unit id="malware.filter.state">
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:32</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:186</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:197</note>
       </notes>
       <segment>
         <source>State</source>
@@ -42310,7 +42318,7 @@
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:39,40</note>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:40</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:193</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:204</note>
       </notes>
       <segment>
         <source>Release</source>
@@ -42327,7 +42335,7 @@
     <unit id="malware.filter.released">
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:42,43</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:194</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:205</note>
       </notes>
       <segment>
         <source>Released</source>
@@ -42336,7 +42344,7 @@
     <unit id="malware.filter.not-released">
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:43,45</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:194</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:205</note>
       </notes>
       <segment>
         <source>Not released</source>
@@ -42346,7 +42354,7 @@
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:46,47</note>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:47</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:198</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:209</note>
         <note category="location">src/app/features/vulnerabilities/signature-findings.ts:72,73</note>
         <note category="location">src/app/features/vulnerabilities/signature-findings.ts:73</note>
         <note category="location">src/app/features/vulnerabilities/signature-findings.ts:217</note>
@@ -42387,7 +42395,7 @@
     <unit id="malware.database-of">
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:111</note>
-        <note category="location">src/app/shared/malware/malware-status.ts:55</note>
+        <note category="location">src/app/shared/malware/malware-status.ts:57</note>
       </notes>
       <segment>
         <source>ClamAV database of</source>
@@ -42396,7 +42404,7 @@
     <unit id="malware.state.released">
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:121,123</note>
-        <note category="location">src/app/shared/malware/malware-status.ts:112</note>
+        <note category="location">src/app/shared/malware/malware-status.ts:131</note>
       </notes>
       <segment>
         <source>Released</source>
@@ -42406,15 +42414,25 @@
       <notes>
         <note category="location">src/app/features/vulnerabilities/malware-finds.html:124</note>
         <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:111</note>
-        <note category="location">src/app/shared/malware/malware-status.ts:42,43</note>
+        <note category="location">src/app/shared/malware/malware-status.ts:44,45</note>
       </notes>
       <segment>
         <source>by <ph id="0" equiv="INTERPOLATION" disp="{{ principal(r.releasedBy) }}"/></source>
       </segment>
     </unit>
+    <unit id="malware.tripped-in">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:147</note>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:45</note>
+        <note category="location">src/app/shared/malware/malware-status.ts:90</note>
+      </notes>
+      <segment>
+        <source>In</source>
+      </segment>
+    </unit>
     <unit id="malware.release.reason-label">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:145,146</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:153,154</note>
       </notes>
       <segment>
         <source>Reason of the release:</source>
@@ -42422,7 +42440,7 @@
     </unit>
     <unit id="malware.items.caption">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:149,150</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:157,158</note>
       </notes>
       <segment>
         <source>Files that hold these bytes</source>
@@ -42430,7 +42448,7 @@
     </unit>
     <unit id="malware.items.more">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:161,162</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:169,170</note>
       </notes>
       <segment>
         <source>More files hold these bytes than the list shows: <ph id="0" equiv="INTERPOLATION" disp="{{ f.itemCount }}"/> in <ph id="1" equiv="INTERPOLATION_1" disp="{{ f.repositoryCount }}"/> repositories.</source>
@@ -42438,7 +42456,7 @@
     </unit>
     <unit id="malware.items.digest">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.html:164</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.html:172</note>
       </notes>
       <segment>
         <source>SHA-256</source>
@@ -42446,7 +42464,7 @@
     </unit>
     <unit id="malware.search">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:203</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:214</note>
       </notes>
       <segment>
         <source>Search by path or signature</source>
@@ -42454,7 +42472,7 @@
     </unit>
     <unit id="malware.list.caption">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:204</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:215</note>
       </notes>
       <segment>
         <source>Malware finds</source>
@@ -42462,7 +42480,7 @@
     </unit>
     <unit id="malware.list.empty-filtered">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:205</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:216</note>
       </notes>
       <segment>
         <source>No find matches the filters.</source>
@@ -42470,7 +42488,7 @@
     </unit>
     <unit id="malware.list.empty">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:209</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:220</note>
       </notes>
       <segment>
         <source>No malware found.</source>
@@ -42478,7 +42496,7 @@
     </unit>
     <unit id="malware.list.empty-dated">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:211</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:222</note>
       </notes>
       <segment>
         <source>No malware found. The signature database in use is ClamAV&apos;s of <ph id="0" equiv="date" disp="date"/>.</source>
@@ -42486,7 +42504,7 @@
     </unit>
     <unit id="malware.col.file">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:217</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:228</note>
       </notes>
       <segment>
         <source>File</source>
@@ -42494,7 +42512,7 @@
     </unit>
     <unit id="malware.col.verdict">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:221</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:232</note>
       </notes>
       <segment>
         <source>Verdict</source>
@@ -42502,7 +42520,7 @@
     </unit>
     <unit id="malware.col.actions">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:222</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:233</note>
         <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:279</note>
         <note category="location">src/app/features/vulnerabilities/signature-refusals.ts:302</note>
       </notes>
@@ -42512,7 +42530,7 @@
     </unit>
     <unit id="malware.row.open">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:269</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:280</note>
       </notes>
       <segment>
         <source>Every file of <ph id="0" equiv="file" disp="findName(f)"/></source>
@@ -42520,8 +42538,8 @@
     </unit>
     <unit id="malware.withdraw">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:292</note>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:357</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:305</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:370</note>
       </notes>
       <segment>
         <source>Withdraw release</source>
@@ -42529,7 +42547,7 @@
     </unit>
     <unit id="malware.release">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:292</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:305</note>
       </notes>
       <segment>
         <source>Release</source>
@@ -42537,7 +42555,7 @@
     </unit>
     <unit id="malware.released">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:348</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:361</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="file" disp="findName(f)"/> is released in every repository that holds it.</source>
@@ -42545,7 +42563,7 @@
     </unit>
     <unit id="malware.withdraw.title">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:354</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:367</note>
       </notes>
       <segment>
         <source>Withdraw the release of <ph id="0" equiv="file" disp="findName(f)"/>?</source>
@@ -42553,7 +42571,7 @@
     </unit>
     <unit id="malware.withdraw.text">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:355</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:368</note>
       </notes>
       <segment>
         <source>Every repository that holds these bytes refuses them again from the next download.</source>
@@ -42561,15 +42579,23 @@
     </unit>
     <unit id="malware.withdrawn">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:362</note>
+        <note category="location">src/app/features/vulnerabilities/malware-finds.ts:375</note>
       </notes>
       <segment>
         <source>The release of <ph id="0" equiv="file" disp="findName(f)"/> is withdrawn.</source>
       </segment>
     </unit>
+    <unit id="malware.release.false-alarm-link">
+      <notes>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:54,58</note>
+      </notes>
+      <segment>
+        <source>What content that could not be checked means</source>
+      </segment>
+    </unit>
     <unit id="malware.release.unchecked-warning">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:40,43</note>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:61,64</note>
       </notes>
       <segment>
         <source>Nothing has checked these bytes. A release serves them whatever they hold.</source>
@@ -42577,7 +42603,7 @@
     </unit>
     <unit id="malware.release.serves">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:43,44</note>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:64,65</note>
       </notes>
       <segment>
         <source>Releasing serves these bytes from every repository that holds them.</source>
@@ -42585,7 +42611,7 @@
     </unit>
     <unit id="malware.release.more-repositories">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:50,52</note>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:71,73</note>
       </notes>
       <segment>
         <source>{VAR_PLURAL, plural, =1 {and 1 more repository} other {and <ph id="0" equiv="INTERPOLATION"/> more repositories}}</source>
@@ -42593,7 +42619,7 @@
     </unit>
     <unit id="malware.release.reason">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:56,57</note>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:77,78</note>
       </notes>
       <segment>
         <source>Reason</source>
@@ -42601,7 +42627,7 @@
     </unit>
     <unit id="malware.release.cancel">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:64,65</note>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:85,86</note>
       </notes>
       <segment>
         <source>Cancel</source>
@@ -42609,7 +42635,7 @@
     </unit>
     <unit id="malware.release.submit">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:65,68</note>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:86,89</note>
       </notes>
       <segment>
         <source>Release</source>
@@ -42617,7 +42643,7 @@
     </unit>
     <unit id="malware.release.reason-hint">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:91</note>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:116</note>
       </notes>
       <segment>
         <source>Why these bytes may be downloaded, for example a signature that ClamAV withdrew. At most 1,000 characters; kept with the release.</source>
@@ -42625,7 +42651,7 @@
     </unit>
     <unit id="malware.release.title">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:92</note>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:117</note>
       </notes>
       <segment>
         <source>Release <ph id="0" equiv="file" disp="findName(this.find)"/>?</source>
@@ -42633,7 +42659,7 @@
     </unit>
     <unit id="malware.release.reason-required">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:103</note>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:129</note>
       </notes>
       <segment>
         <source>A release needs a reason.</source>
@@ -42641,7 +42667,7 @@
     </unit>
     <unit id="malware.release.reason-long">
       <notes>
-        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:104</note>
+        <note category="location">src/app/features/vulnerabilities/malware-release-dialog.ts:130</note>
       </notes>
       <segment>
         <source>The reason is longer than 1,000 characters.</source>
@@ -46490,7 +46516,7 @@
     </unit>
     <unit id="malware.released-signature">
       <notes>
-        <note category="location">src/app/shared/malware/malware-status.ts:47</note>
+        <note category="location">src/app/shared/malware/malware-status.ts:49</note>
       </notes>
       <segment>
         <source>found:</source>
@@ -46498,7 +46524,7 @@
     </unit>
     <unit id="malware.in-part">
       <notes>
-        <note category="location">src/app/shared/malware/malware-status.ts:64</note>
+        <note category="location">src/app/shared/malware/malware-status.ts:66</note>
       </notes>
       <segment>
         <source>in</source>
@@ -46506,7 +46532,7 @@
     </unit>
     <unit id="malware.refused">
       <notes>
-        <note category="location">src/app/shared/malware/malware-status.ts:77,79</note>
+        <note category="location">src/app/shared/malware/malware-status.ts:79,81</note>
       </notes>
       <segment>
         <source>Downloads are refused.</source>
@@ -46514,7 +46540,7 @@
     </unit>
     <unit id="malware.promise">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:11</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:12</note>
       </notes>
       <segment>
         <source>The malware scan compares every artifact with ClamAV&apos;s signatures of known malware. It does not find malware that no signature describes yet, such as a malicious install script published today; for npm and NuGet, the vulnerability scanning blocks known malicious packages by name.</source>
@@ -46522,7 +46548,7 @@
     </unit>
     <unit id="malware.state.clean">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:18</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:19</note>
       </notes>
       <segment>
         <source>No malware found</source>
@@ -46530,8 +46556,8 @@
     </unit>
     <unit id="malware.state.infected">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:20</note>
-        <note category="location">src/app/shared/malware/malware-words.ts:65</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:21</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:66</note>
       </notes>
       <segment>
         <source>Malware found</source>
@@ -46539,7 +46565,7 @@
     </unit>
     <unit id="malware.state.not-checked">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:23</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:24</note>
       </notes>
       <segment>
         <source>Could not be checked</source>
@@ -46547,7 +46573,7 @@
     </unit>
     <unit id="malware.state.pending">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:25</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:26</note>
       </notes>
       <segment>
         <source>Checking</source>
@@ -46555,7 +46581,7 @@
     </unit>
     <unit id="malware.waiting.word.no-scanner">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:36</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:37</note>
       </notes>
       <segment>
         <source>No scanner</source>
@@ -46563,7 +46589,7 @@
     </unit>
     <unit id="malware.waiting.word.no-database">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:38</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:39</note>
       </notes>
       <segment>
         <source>No signatures</source>
@@ -46571,7 +46597,7 @@
     </unit>
     <unit id="malware.waiting.word.queued">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:40</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:41</note>
       </notes>
       <segment>
         <source>Queued</source>
@@ -46579,7 +46605,7 @@
     </unit>
     <unit id="malware.waiting.no-scanner">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:48</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:49</note>
       </notes>
       <segment>
         <source>No malware scanner is connected, so it cannot be checked now. It is checked once one is.</source>
@@ -46587,7 +46613,7 @@
     </unit>
     <unit id="malware.waiting.no-database">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:50</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:51</note>
       </notes>
       <segment>
         <source>No ClamAV signature database has been imported yet, so it cannot be checked now. It is checked once one is there.</source>
@@ -46595,7 +46621,7 @@
     </unit>
     <unit id="malware.waiting.queued">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:52</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:53</note>
       </notes>
       <segment>
         <source>Waits for its malware scan, which runs in turn.</source>
@@ -46603,7 +46629,7 @@
     </unit>
     <unit id="malware.waiting.queued-since">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:56</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:57</note>
       </notes>
       <segment>
         <source>Waits for its malware scan since <ph id="0" equiv="time" disp="at"/>, which runs in turn.</source>
@@ -46611,7 +46637,7 @@
     </unit>
     <unit id="malware.find.unscannable">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:67</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:68</note>
       </notes>
       <segment>
         <source>Not checkable</source>
@@ -46619,15 +46645,135 @@
     </unit>
     <unit id="malware.find.failed">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:69</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:70</note>
       </notes>
       <segment>
         <source>Scan failed</source>
       </segment>
     </unit>
+    <unit id="malware.limit.max-scan-size">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:82</note>
+      </notes>
+      <segment>
+        <source>the data it reads from one file</source>
+      </segment>
+    </unit>
+    <unit id="malware.limit.max-file-size">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:84</note>
+      </notes>
+      <segment>
+        <source>the size of a file inside an archive</source>
+      </segment>
+    </unit>
+    <unit id="malware.limit.max-stream-length">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:86</note>
+      </notes>
+      <segment>
+        <source>the size of one file handed to it</source>
+      </segment>
+    </unit>
+    <unit id="malware.limit.max-recursion">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:88</note>
+      </notes>
+      <segment>
+        <source>how deeply archives nest inside each other</source>
+      </segment>
+    </unit>
+    <unit id="malware.limit.max-files">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:90</note>
+      </notes>
+      <segment>
+        <source>the number of files in one archive</source>
+      </segment>
+    </unit>
+    <unit id="malware.limit.max-scan-time">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:92</note>
+      </notes>
+      <segment>
+        <source>the time it spends on one file</source>
+      </segment>
+    </unit>
+    <unit id="malware.limit.mail-structure">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:94</note>
+      </notes>
+      <segment>
+        <source>the structure of a mail message</source>
+      </segment>
+    </unit>
+    <unit id="malware.limit.max-uncompressed-size">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:96</note>
+      </notes>
+      <segment>
+        <source>the data it unpacks itself</source>
+      </segment>
+    </unit>
+    <unit id="malware.limit.max-entries">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:98</note>
+      </notes>
+      <segment>
+        <source>the number of files it unpacks itself</source>
+      </segment>
+    </unit>
+    <unit id="malware.limit.unpack-depth">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:100</note>
+      </notes>
+      <segment>
+        <source>the layers it unpacks itself</source>
+      </segment>
+    </unit>
+    <unit id="malware.limit.unreadable">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:120</note>
+      </notes>
+      <segment>
+        <source>a compressed stream or an archive inside it cannot be read</source>
+      </segment>
+    </unit>
+    <unit id="malware.limit.other">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:122</note>
+      </notes>
+      <segment>
+        <source>one of the scanner&apos;s limits was passed</source>
+      </segment>
+    </unit>
+    <unit id="malware.limit.passed">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:125</note>
+      </notes>
+      <segment>
+        <source>the scanner&apos;s limit for <ph id="0" equiv="limit" disp="subject"/> was passed</source>
+      </segment>
+    </unit>
+    <unit id="malware.limit.passed-value">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:126</note>
+      </notes>
+      <segment>
+        <source>the scanner&apos;s limit for <ph id="0" equiv="limit" disp="subject"/> (<ph id="1" equiv="value" disp="v"/>) was passed</source>
+      </segment>
+    </unit>
+    <unit id="malware.limit.go-false-alarm">
+      <notes>
+        <note category="location">src/app/shared/malware/malware-words.ts:135</note>
+      </notes>
+      <segment>
+        <source>A program written in Go can pass this limit without holding an archive: a known false alarm of the scanner.</source>
+      </segment>
+    </unit>
     <unit id="malware.reason.too-large">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:80</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:145</note>
       </notes>
       <segment>
         <source>too large to scan</source>
@@ -46635,7 +46781,7 @@
     </unit>
     <unit id="malware.reason.limits">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:82</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:148</note>
       </notes>
       <segment>
         <source>a scan limit was reached inside it</source>
@@ -46643,7 +46789,7 @@
     </unit>
     <unit id="malware.reason.encrypted">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:84</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:150</note>
       </notes>
       <segment>
         <source>an encrypted archive or document</source>
@@ -46651,7 +46797,7 @@
     </unit>
     <unit id="malware.reason.failed-code">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:88</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:154</note>
       </notes>
       <segment>
         <source>every scan failed (<ph id="0" equiv="code" disp="reason"/>)</source>
@@ -46659,7 +46805,7 @@
     </unit>
     <unit id="malware.reason.failed">
       <notes>
-        <note category="location">src/app/shared/malware/malware-words.ts:89</note>
+        <note category="location">src/app/shared/malware/malware-words.ts:155</note>
       </notes>
       <segment>
         <source>every scan failed</source>

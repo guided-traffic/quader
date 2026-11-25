@@ -2359,6 +2359,54 @@ func (e MalwareFindState) Valid() bool {
 	}
 }
 
+// Defines values for MalwareLimit.
+const (
+	MalwareLimitMailStructure       MalwareLimit = "mail_structure"
+	MalwareLimitMaxEntries          MalwareLimit = "max_entries"
+	MalwareLimitMaxFileSize         MalwareLimit = "max_file_size"
+	MalwareLimitMaxFiles            MalwareLimit = "max_files"
+	MalwareLimitMaxRecursion        MalwareLimit = "max_recursion"
+	MalwareLimitMaxScanSize         MalwareLimit = "max_scan_size"
+	MalwareLimitMaxScanTime         MalwareLimit = "max_scan_time"
+	MalwareLimitMaxStreamLength     MalwareLimit = "max_stream_length"
+	MalwareLimitMaxUncompressedSize MalwareLimit = "max_uncompressed_size"
+	MalwareLimitOther               MalwareLimit = "other"
+	MalwareLimitUnpackDepth         MalwareLimit = "unpack_depth"
+	MalwareLimitUnreadableContent   MalwareLimit = "unreadable_content"
+)
+
+// Valid indicates whether the value is a known member of the MalwareLimit enum.
+func (e MalwareLimit) Valid() bool {
+	switch e {
+	case MalwareLimitMailStructure:
+		return true
+	case MalwareLimitMaxEntries:
+		return true
+	case MalwareLimitMaxFileSize:
+		return true
+	case MalwareLimitMaxFiles:
+		return true
+	case MalwareLimitMaxRecursion:
+		return true
+	case MalwareLimitMaxScanSize:
+		return true
+	case MalwareLimitMaxScanTime:
+		return true
+	case MalwareLimitMaxStreamLength:
+		return true
+	case MalwareLimitMaxUncompressedSize:
+		return true
+	case MalwareLimitOther:
+		return true
+	case MalwareLimitUnpackDepth:
+		return true
+	case MalwareLimitUnreadableContent:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for MalwareState.
 const (
 	MalwareStateClean       MalwareState = "clean"
@@ -11933,16 +11981,20 @@ type MalwareBacklog struct {
 // MalwareBlob defines model for MalwareBlob.
 type MalwareBlob struct {
 	// Checking A scan is due; the verdict stays in force until it is made.
-	Checking        bool            `json:"checking"`
-	Database        *string         `json:"database"`
-	DatabaseBuiltAt *time.Time      `json:"databaseBuiltAt"`
-	FirstFoundAt    *time.Time      `json:"firstFoundAt"`
-	Part            *string         `json:"part"`
-	Reason          *string         `json:"reason"`
-	Release         *MalwareRelease `json:"release"`
-	ScannedAt       *time.Time      `json:"scannedAt"`
-	Sha256          string          `json:"sha256"`
-	Signature       *string         `json:"signature"`
+	Checking        bool       `json:"checking"`
+	Database        *string    `json:"database"`
+	DatabaseBuiltAt *time.Time `json:"databaseBuiltAt"`
+	FirstFoundAt    *time.Time `json:"firstFoundAt"`
+
+	// Limit As the member `malware`'s (MalwareStatus).
+	Limit      *MalwareLimit   `json:"limit"`
+	LimitValue *int64          `json:"limitValue"`
+	Part       *string         `json:"part"`
+	Reason     *string         `json:"reason"`
+	Release    *MalwareRelease `json:"release"`
+	ScannedAt  *time.Time      `json:"scannedAt"`
+	Sha256     string          `json:"sha256"`
+	Signature  *string         `json:"signature"`
 
 	// State The state of a blob's verdict (R-MAL-002): `pending` not checked yet (also a blob the scanning has not reached), `clean` no
 	// signature matched, `infected` ClamAV named a signature, `unscannable` nothing could check it (`reason`: `too_large`,
@@ -12000,10 +12052,14 @@ type MalwareFind struct {
 	Items     []MalwareFindItem `json:"items"`
 
 	// ItemsTruncated More items hold the blob than `items` lists (100), or than the answer counted (1,000 per blob).
-	ItemsTruncated bool            `json:"itemsTruncated"`
-	Part           *string         `json:"part"`
-	Reason         *string         `json:"reason"`
-	Release        *MalwareRelease `json:"release"`
+	ItemsTruncated bool `json:"itemsTruncated"`
+
+	// Limit As the member `malware`'s (MalwareStatus).
+	Limit      *MalwareLimit   `json:"limit"`
+	LimitValue *int64          `json:"limitValue"`
+	Part       *string         `json:"part"`
+	Reason     *string         `json:"reason"`
+	Release    *MalwareRelease `json:"release"`
 
 	// Repositories Those repositories by name, sorted, at most 100; the release dialog names them (R-MAL-025).
 	Repositories []string `json:"repositories"`
@@ -12036,9 +12092,20 @@ type MalwareFindPage struct {
 // MalwareFindState defines model for MalwareFindState.
 type MalwareFindState string
 
+// MalwareLimit The bound an `unscannable` `limits_exceeded` verdict passed, by its purpose (R-MAL-008, Q-MAL-105). clamd's: `max_scan_size`
+// (what it reads of one part, archives inside included; `malware.scanner.max_scan_size`), `max_file_size` (one file inside a
+// part; `malware.scanner.max_file_size`), `max_stream_length` (one part handed to it; the same setting), `max_recursion` (how
+// deeply archives nest), `max_files` (the files of one part), `max_scan_time` (the time for one part), `mail_structure` (a mail
+// message's headers and parts), `other` (a bound this list does not name; `signature` names it). The scanner's own unpacking's:
+// `max_uncompressed_size`, `max_entries`, `unpack_depth` (two levels), `unreadable_content` (a stream that does not decompress,
+// a tar or an `ar` archive that breaks off). The scanner's own name of what tripped is `signature`.
+type MalwareLimit string
+
 // MalwareRelease defines model for MalwareRelease.
 type MalwareRelease struct {
-	Reason string `json:"reason"`
+	// Limit The bound the released verdict passed (unscannable, `limits_exceeded`).
+	Limit  *MalwareLimit `json:"limit"`
+	Reason string        `json:"reason"`
 
 	// ReasonCode The reason of the verdict that was released (unscannable, failed).
 	ReasonCode *string   `json:"reasonCode"`
@@ -12046,7 +12113,7 @@ type MalwareRelease struct {
 	ReleasedBy *string   `json:"releasedBy"`
 	Sha256     string    `json:"sha256"`
 
-	// Signature The signature of the verdict that was released (infected).
+	// Signature The name the scanner gave in the verdict that was released (the signature of an infected one, clamd's heuristic of an unscannable one).
 	Signature *string          `json:"signature"`
 	State     MalwareFindState `json:"state"`
 }
@@ -12113,6 +12180,14 @@ type MalwareStatus struct {
 	// DatabaseBuiltAt That version's build time, shown as the database's date with **No malware found** (R-MAL-003, Q-MAL-41).
 	DatabaseBuiltAt *time.Time `json:"databaseBuiltAt"`
 
+	// Limit The bound an `unscannable` `limits_exceeded` verdict passed; null for any other verdict and for one made before it was recorded.
+	Limit *MalwareLimit `json:"limit"`
+
+	// LimitValue The configured value of `limit` the verdict was made under, from the fingerprint of its limits (R-MAL-008): bytes for
+	// `max_scan_size`, `max_file_size`, `max_stream_length` and `max_uncompressed_size`, a count for `max_entries`; null for a
+	// bound the fingerprint does not hold.
+	LimitValue *int64 `json:"limitValue"`
+
 	// Part The member of an archive the signature was found in, when the scanner unpacked it.
 	Part *string `json:"part"`
 
@@ -12131,7 +12206,10 @@ type MalwareStatus struct {
 	// ReleasedBy `<kind>:<name>` of the principal who released the blob; null without a release or a principal record.
 	ReleasedBy *string    `json:"releasedBy"`
 	ScannedAt  *time.Time `json:"scannedAt"`
-	Signature  *string    `json:"signature"`
+
+	// Signature The name the scanner gave, as it gave it: the signature of an `infected` verdict, or clamd's heuristic of an `unscannable`
+	// one (`Heuristics.Limits.Exceeded.MaxScanSize`, `Heuristics.Encrypted.Zip`, Q-MAL-105).
+	Signature *string `json:"signature"`
 
 	// State The state of a blob's verdict (R-MAL-002): `pending` not checked yet (also a blob the scanning has not reached), `clean` no
 	// signature matched, `infected` ClamAV named a signature, `unscannable` nothing could check it (`reason`: `too_large`,

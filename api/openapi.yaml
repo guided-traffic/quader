@@ -29015,6 +29015,17 @@ components:
     MalwareFindState:
       type: string
       enum: [infected, unscannable, failed]
+    MalwareLimit:
+      type: string
+      enum: [max_scan_size, max_file_size, max_stream_length, max_recursion, max_files, max_scan_time, mail_structure, max_uncompressed_size, max_entries, unpack_depth, unreadable_content, other]
+      description: |
+        The bound an `unscannable` `limits_exceeded` verdict passed, by its purpose (R-MAL-008, Q-MAL-105). clamd's: `max_scan_size`
+        (what it reads of one part, archives inside included; `malware.scanner.max_scan_size`), `max_file_size` (one file inside a
+        part; `malware.scanner.max_file_size`), `max_stream_length` (one part handed to it; the same setting), `max_recursion` (how
+        deeply archives nest), `max_files` (the files of one part), `max_scan_time` (the time for one part), `mail_structure` (a mail
+        message's headers and parts), `other` (a bound this list does not name; `signature` names it). The scanner's own unpacking's:
+        `max_uncompressed_size`, `max_entries`, `unpack_depth` (two levels), `unreadable_content` (a stream that does not decompress,
+        a tar or an `ar` archive that breaks off). The scanner's own name of what tripped is `signature`.
     MalwareSwitch:
       type: object
       additionalProperties: false
@@ -29126,7 +29137,7 @@ components:
     MalwareStatus:
       type: object
       additionalProperties: false
-      required: [state, scannedAt, database, databaseBuiltAt, signature, part, reason, released, releasedBy, releasedAt, refused, waiting, queuedSince]
+      required: [state, scannedAt, database, databaseBuiltAt, signature, part, reason, limit, limitValue, released, releasedBy, releasedAt, refused, waiting, queuedSince]
       description: |
         The member `malware` of a stored file (R-MAL-022, R-MAL-024): the verdict of its blob, the release that passes it and
         whether the gate refuses it in the file's repository now. Absent for a generated item and while the scanning is off.
@@ -29146,12 +29157,27 @@ components:
           description: That version's build time, shown as the database's date with **No malware found** (R-MAL-003, Q-MAL-41).
         signature:
           type: [string, "null"]
+          description: |
+            The name the scanner gave, as it gave it: the signature of an `infected` verdict, or clamd's heuristic of an `unscannable`
+            one (`Heuristics.Limits.Exceeded.MaxScanSize`, `Heuristics.Encrypted.Zip`, Q-MAL-105).
         part:
           type: [string, "null"]
           description: The member of an archive the signature was found in, when the scanner unpacked it.
         reason:
           type: [string, "null"]
           description: The reason of an unscannable verdict or the code of a failed one.
+        limit:
+          description: The bound an `unscannable` `limits_exceeded` verdict passed; null for any other verdict and for one made before it was recorded.
+          oneOf:
+            - $ref: "#/components/schemas/MalwareLimit"
+            - type: "null"
+        limitValue:
+          type: [integer, "null"]
+          format: int64
+          description: |
+            The configured value of `limit` the verdict was made under, from the fingerprint of its limits (R-MAL-008): bytes for
+            `max_scan_size`, `max_file_size`, `max_stream_length` and `max_uncompressed_size`, a count for `max_entries`; null for a
+            bound the fingerprint does not hold.
         released:
           type: boolean
         releasedBy:
@@ -29177,7 +29203,7 @@ components:
     MalwareRelease:
       type: object
       additionalProperties: false
-      required: [sha256, reason, state, signature, reasonCode, releasedBy, releasedAt]
+      required: [sha256, reason, state, signature, reasonCode, limit, releasedBy, releasedAt]
       properties:
         sha256:
           type: string
@@ -29188,10 +29214,15 @@ components:
           $ref: "#/components/schemas/MalwareFindState"
         signature:
           type: [string, "null"]
-          description: The signature of the verdict that was released (infected).
+          description: The name the scanner gave in the verdict that was released (the signature of an infected one, clamd's heuristic of an unscannable one).
         reasonCode:
           type: [string, "null"]
           description: The reason of the verdict that was released (unscannable, failed).
+        limit:
+          description: The bound the released verdict passed (unscannable, `limits_exceeded`).
+          oneOf:
+            - $ref: "#/components/schemas/MalwareLimit"
+            - type: "null"
         releasedBy:
           type: [string, "null"]
         releasedAt:
@@ -29212,7 +29243,7 @@ components:
     MalwareBlob:
       type: object
       additionalProperties: false
-      required: [sha256, state, reason, signature, part, database, databaseBuiltAt, scannedAt, firstFoundAt, checking, release]
+      required: [sha256, state, reason, signature, part, limit, limitValue, database, databaseBuiltAt, scannedAt, firstFoundAt, checking, release]
       properties:
         sha256:
           type: string
@@ -29225,6 +29256,14 @@ components:
           type: [string, "null"]
         part:
           type: [string, "null"]
+        limit:
+          description: As the member `malware`'s (MalwareStatus).
+          oneOf:
+            - $ref: "#/components/schemas/MalwareLimit"
+            - type: "null"
+        limitValue:
+          type: [integer, "null"]
+          format: int64
         database:
           type: [string, "null"]
         databaseBuiltAt:
@@ -29262,7 +29301,7 @@ components:
     MalwareFind:
       type: object
       additionalProperties: false
-      required: [sha256, state, reason, signature, part, database, databaseBuiltAt, foundAt, scannedAt, repositoryCount, firstRepository, repositories, itemCount, itemsTruncated, items, release]
+      required: [sha256, state, reason, signature, part, limit, limitValue, database, databaseBuiltAt, foundAt, scannedAt, repositoryCount, firstRepository, repositories, itemCount, itemsTruncated, items, release]
       properties:
         sha256:
           type: string
@@ -29275,6 +29314,14 @@ components:
           type: [string, "null"]
         part:
           type: [string, "null"]
+        limit:
+          description: As the member `malware`'s (MalwareStatus).
+          oneOf:
+            - $ref: "#/components/schemas/MalwareLimit"
+            - type: "null"
+        limitValue:
+          type: [integer, "null"]
+          format: int64
         database:
           type: [string, "null"]
         databaseBuiltAt:

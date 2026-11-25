@@ -118,6 +118,7 @@ func malwareVerdict(d blob.Digest, r q.GetLiveItemRow) malware.Verdict {
 	v := malware.Verdict{Known: r.MalwareKnown}
 	if r.MalwareKnown {
 		v.State, v.Reason, v.Signature, v.Part = malware.State(r.MalwareState), r.MalwareReason, r.MalwareSignature, r.MalwarePart
+		v.Limit, v.Limits = malware.Limit(r.MalwareExceededLimit), r.MalwareLimits
 		v.Database, v.DatabaseBuiltAt = r.MalwareDbVersion, r.MalwareDbBuiltAt.Time.UTC()
 		v.ScannedAt, v.FirstFoundAt, v.Due = r.MalwareScannedAt.Time.UTC(), r.MalwareFirstFoundAt.Time.UTC(), r.MalwareDue
 	}

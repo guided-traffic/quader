@@ -864,34 +864,36 @@ type MalwareDatabase struct {
 }
 
 type MalwareRelease struct {
-	Sha256     []byte
-	Reason     string
-	State      string
-	Signature  pgtype.Text
-	ReasonCode pgtype.Text
-	ReleasedBy pgtype.UUID
-	ReleasedAt pgtype.Timestamptz
+	Sha256        []byte
+	Reason        string
+	State         string
+	Signature     pgtype.Text
+	ReasonCode    pgtype.Text
+	ReleasedBy    pgtype.UUID
+	ReleasedAt    pgtype.Timestamptz
+	ExceededLimit pgtype.Text
 }
 
 type MalwareScan struct {
-	Sha256       []byte
-	State        string
-	Reason       pgtype.Text
-	Signature    pgtype.Text
-	Part         pgtype.Text
-	DbVersion    pgtype.Text
-	DbBuiltAt    pgtype.Timestamptz
-	Limits       pgtype.Text
-	HolderRepoID int64
-	Size         int64
-	Due          bool
-	Priority     int16
-	Attempts     int32
-	NotBefore    pgtype.Timestamptz
-	AskedAt      pgtype.Timestamptz
-	FirstFoundAt pgtype.Timestamptz
-	ScannedAt    pgtype.Timestamptz
-	CreatedAt    pgtype.Timestamptz
+	Sha256        []byte
+	State         string
+	Reason        pgtype.Text
+	Signature     pgtype.Text
+	Part          pgtype.Text
+	DbVersion     pgtype.Text
+	DbBuiltAt     pgtype.Timestamptz
+	Limits        pgtype.Text
+	HolderRepoID  int64
+	Size          int64
+	Due           bool
+	Priority      int16
+	Attempts      int32
+	NotBefore     pgtype.Timestamptz
+	AskedAt       pgtype.Timestamptz
+	FirstFoundAt  pgtype.Timestamptz
+	ScannedAt     pgtype.Timestamptz
+	CreatedAt     pgtype.Timestamptz
+	ExceededLimit pgtype.Text
 }
 
 type MalwareSetting struct {

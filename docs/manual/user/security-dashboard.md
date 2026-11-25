@@ -62,7 +62,7 @@ vulnerability findings of the other view block known malicious packages by name.
 | Column | What it shows |
 |---|---|
 | **File** | The name of the first file that holds the bytes and the first twelve characters of their SHA-256; under it the first repository that holds the bytes, how many more do, and when the scan found them, the newest first. The button before it opens the row: every file that holds the bytes, with its repository, its path and its package and version, and the reason of a release |
-| **Verdict** | **Malware found** with the signature (and the file inside an archive it was found in), **Not checkable** with the reason (too large, a scan limit reached inside it, encrypted), or **Scan failed** with the last error; the date of the ClamAV database; and, for released bytes, **Released** by whom and when |
+| **Verdict** | **Malware found** with the signature (and the file inside an archive it was found in), **Not checkable** with the reason (too large, the limit of the scanner that was passed, encrypted; see [Could not be checked](#could-not-be-checked)), or **Scan failed** with the last error; the date of the ClamAV database; and, for released bytes, **Released** by whom and when |
 
 **Search by path or signature** finds a part of a file's path or of a signature. **Filters** offers **State**, **Release** (released or
 not) and **Repository** (without the system repositories of the project Upstream, which are never scanned for malware); each filter that is set is a chip beside **Filters**, and everything is part of the address. When nothing was
@@ -82,6 +82,36 @@ holder of `delete` on a repository removes its files as any files.
 
 The settings of the scan (the switch, the backlog, the scanners, the signature database) are the administrator's, in the admin area
 under **Settings › Malware scanning** ([Monitoring and operations](../admin/operations.md#malware-scanning)).
+
+### Could not be checked
+
+Content the scan could not read to its end is **Not checkable** here and **Could not be checked** on a file's page. It is never shown
+as checked: under **Only checked artifacts can be downloaded** it is refused until it is released. The verdict says why:
+
+| Reason | What happened |
+|---|---|
+| Too large | The file is larger than the largest file the installation scans at all (`malware.max_size`, 4 GiB by default) |
+| A limit of the scanner was passed | The scanner stopped before the end of the content, at one of its limits. The verdict names which, in words and with its configured value where the installation sets one: the data it reads from one file (`malware.scanner.max_scan_size`, 2 GiB), the size of a file inside an archive or of one file handed to it (`malware.scanner.max_file_size`, 1 GiB), how deeply archives nest inside each other, the number of files in one archive, the time it spends on one file, the structure of a mail message, the data, files or layers the scanner unpacks itself (`malware.scanner.max_uncompressed_size`, `malware.scanner.max_entries`, two layers), or a compressed stream or an archive inside it that cannot be read |
+| Encrypted | An encrypted archive or document, whose content no one but its owner can read |
+| Every scan failed | The scans that may pass did not, as often as the installation tries; the last error is named |
+
+Under **Technical details**, closed, stands what the scanner itself named, as it named it (for example
+`Heuristics.Limits.Exceeded.MaxScanSize` or `Heuristics.Encrypted.Zip`), and the file inside the content it was in when the scanner
+unpacked the content first. Give that text to an administrator when you ask about a verdict; the search of this page finds it too.
+
+**A known false alarm.** A program written in Go can pass the limit for the data the scanner reads from one file without holding any
+archive. Such programs carry the first bytes of a RAR archive in a table of their own; ClamAV reads the bytes after them as an archive
+whose file claims to be far larger than any limit, and stops there. ClamAV's publisher knows of it, and no version is free of it yet. It
+shows as an image layer or a package that ships a Go program, past the limit for the data the scanner reads from one file, often with a
+small file size. The release dialog says so for this limit. It does not tell you that a find is such a false alarm: content can also be
+made to pass the limit on purpose, and nothing has read what lies behind it.
+
+**What you can do.** Open the row: it lists every file that holds the bytes, with its repository and its package and version. Look at
+where the bytes come from (the image and its tag, the package and its publisher), compare their SHA-256 with the one the publisher
+names, and, for an image you build yourself, at what the layer holds. Then either leave the bytes refused, or release them with a reason
+that says what you checked. A release serves the bytes from every repository that holds them, under the switch and without it, until it
+is withdrawn, and nothing has checked them. An administrator can scan everything again under **Settings › Malware scanning** after
+ClamAV's publisher fixes the cause; a verdict made before the scanner named its limits names one after that scan.
 
 ## Signatures
 

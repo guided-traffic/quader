@@ -43,6 +43,8 @@ import {
 import { VersionSize } from './version-size';
 import { NoValue } from '../../shared/ui/no-value';
 import { MalwareStatusView } from '../../shared/malware/malware-status';
+import { malwareReasonText } from '../../shared/malware/malware-words';
+import { MalwareStatus } from '../../api/malware-api';
 import { SignatureGateRefusedReason, SignatureGateReason, SignatureStatus } from '../../api/signatures-api';
 import { repositoryOfContent } from '../../api/files-api';
 import { GateActions } from '../../shared/signatures/gate-releases';
@@ -433,6 +435,13 @@ export class PackageVersionPage {
   protected readonly malwareShown = computed(() => (this.detail()?.files ?? []).some((f) => f.malware !== undefined));
   /** The files the gate refuses now, each with a banner above the tabs (R-MAL-024). */
   protected readonly refusedFiles = computed(() => (this.detail()?.files ?? []).filter((f) => f.malware?.refused === true));
+  /**
+   * Why a refused file could not be checked, the words after "could not be checked for malware:" (R-MAL-024, Q-UI-1204): the limit
+   * it passed in plain words with its configured value, or the reason; empty when the verdict names none.
+   */
+  protected notCheckedWhy(m: MalwareStatus | undefined): string {
+    return m ? malwareReasonText(m.state, m.reason, m.limit, m.limitValue) : '';
+  }
   /** The file name of a path, which the banner names. */
   protected fileName(path: string): string {
     return path.split('/').filter((p) => p !== '').pop() ?? path;
