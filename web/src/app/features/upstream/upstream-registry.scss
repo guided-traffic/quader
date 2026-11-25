@@ -205,28 +205,6 @@
 
 .test-result {
   margin-block-start: var(--quader-space-3);
-
-  // The verdict's icon in a column of its own, so that a sentence that wraps keeps it on its first line (R-UI-170).
-  .verdict {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: start;
-    column-gap: var(--quader-space-2);
-    margin: 0;
-  }
-
-  .ok-icon {
-    color: var(--quader-status-ok);
-  }
-
-  .warn-icon {
-    color: var(--quader-status-warn);
-  }
-
-  .secondary {
-    grid-column: 2;
-    color: var(--quader-text-muted);
-  }
 }
 
 .system-use,

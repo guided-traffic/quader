@@ -975,8 +975,13 @@ order:
 - *Test connection.* `RepositoriesApi.testUpstream` posts `upstreamTestBody(form.upstream, format)`: the format and the section with the URL the repository would
   use and the further hosts as shown, without a stored password. The result is the server's `verdict` in words with its tone (`upstreamVerdictText`
   and `upstreamVerdictTone` of [upstream-test-words.ts](../../web/src/app/features/repositories/upstream-test-words.ts), Q-UI-1225; no screen derives a
-  verdict from the status) plus the facts of `UpstreamTestResult`, the token service among them; any change of the form clears it. A result `foreign_host_denied` with a `tokenService` that is not allowed shows the host and **Allow <host>**
-  (`allow`): the host becomes a further host, receiving the credential unless the authentication is none, and the test runs again.
+  verdict from the status), shown by the one result of every connection test, `quader-upstream-test-result`
+  ([upstream-test-result.ts](../../web/src/app/features/repositories/upstream-test-result.ts), Q-UI-1226): the facts of `UpstreamTestResult`
+  without a click, each built once by `upstreamTestFacts` of [upstream-test-report.ts](../../web/src/app/features/repositories/upstream-test-report.ts)
+  for the page and for **Copy report** (`upstreamTestReport`), the upstream's error answer folded under Technical details. The admin
+  area's registry page uses the same component. Any change of the form clears it. A result `foreign_host_denied` with a `tokenService`
+  that is not allowed shows the host and **Allow <host>** (`allow`, projected into the result): the host becomes a further host,
+  receiving the credential unless the authentication is none, and the test runs again.
 - *Upstream details.* A `btn-tertiary` toggle with `aria-expanded` and `aria-controls` over a `collapse-region`, closed at first and opened by the user or by a
   field error under `/remote/extraHosts`, `/remote/cache` or `/remote/availability` (`detailsOpen`, R-UI-083). It holds **Further hosts** (a row per host: the
   pattern `field-w-name`, **Receives the credential**, **Remove**; **Add host**), the two cache periods (`field-w-duration`) and, with `edit`, **Offline**.
@@ -1197,7 +1202,8 @@ sentence ([Q-UI-1080](../spec/api-and-ui.md#q-ui-1080--a-server-sends-a-code-the
    has no case: `repositoryWarningText` ([repository-warnings.ts](../../web/src/app/features/repositories/repository-warnings.ts)),
    `previewNoteText` ([download-preview-dialog.ts](../../web/src/app/features/repositories/upstream/download-preview-dialog.ts)),
    `upstreamTestErrorText` ([upstream-test-words.ts](../../web/src/app/features/repositories/upstream-test-words.ts)),
-   `ciWarningText` and `ciKeyErrorText` ([ci-common.ts](../../web/src/app/features/ci/ci-common.ts)), `ciFailureText`
+   `ciWarningText` and `ciKeyErrorText` with the line's facts of `ciKeyErrorFacts` ([ci-common.ts](../../web/src/app/features/ci/ci-common.ts),
+   Q-UI-1227), `ciFailureText`
    ([claim-tester.ts](../../web/src/app/features/ci/claim-tester.ts)), `jobErrorText`
    ([job-table.ts](../../web/src/app/features/system/job-table.ts)), `mirrorErrorText`
    ([mirror-status.ts](../../web/src/app/features/repositories/mirror-status.ts)), `valkeyReasonText`

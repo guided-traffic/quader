@@ -12774,6 +12774,13 @@ export interface components {
              * @enum {string}
              */
             verdict: "accepted" | "answered" | "login_asked" | "credential_withheld" | "refused" | "login_required" | "token_service_denied" | "token_service_failed" | "upstream_error" | "unreachable" | "not_sent";
+            /** @description The address the probe asked: scheme, host, port and path, without the query and the user information, which may carry a credential (Q-REPO-489). `null` when no probe was built: the repository or the installation is offline, or the credential cannot be read on this replica. */
+            probeUrl: string | null;
+            /**
+             * @description How the probe carried the repository's credential; `none` when it carried none. Never the credential itself.
+             * @enum {string}
+             */
+            credential: "none" | "basic" | "bearer";
             /** @description The upstream answered with an HTTP response, whatever its status. */
             reachable: boolean;
             httpStatus: number | null;
@@ -12801,6 +12808,21 @@ export interface components {
                 host: string;
                 allowed: boolean;
                 receivesCredential: boolean;
+                /** @description The challenge's realm, the token service's address, without its query (Q-REPO-489). */
+                realm: string;
+                /** @description The challenge's `service`; `null` without one. */
+                service: string | null;
+                /** @description The `extraHosts` pattern that let the test reach the token service; `null` for the upstream's own host and for a host that is not allowed. */
+                extraHost: string | null;
+                /** @description The status of the token service's answer to the login; `null` when it was not asked. Its body, which holds the token, is never kept. */
+                httpStatus: number | null;
+            } | null;
+            /** @description The upstream's own answer to the probe when it answered with a status from 400 on and named no token service (Q-REPO-489); `null` otherwise. `text` is the answer as text when its media type is textual and it is UTF-8, at most 4,000 bytes (`cut` when it held more), with every value of the repository's credential replaced by `[redacted]`; empty for a binary answer. `bytes` counts what the probe read, at most 64 KiB. */
+            body: {
+                contentType: string;
+                bytes: number;
+                text: string;
+                cut: boolean;
             } | null;
             error: {
                 /** @enum {string} */
@@ -26893,6 +26915,8 @@ export interface operations {
                     /**
                      * @example {
                      *       "verdict": "answered",
+                     *       "probeUrl": "https://registry.npmjs.org/-/ping",
+                     *       "credential": "none",
                      *       "reachable": true,
                      *       "httpStatus": 200,
                      *       "authenticated": true,
@@ -26904,6 +26928,7 @@ export interface operations {
                      *       "outboundProxy": null,
                      *       "sourceAddress": null,
                      *       "tokenService": null,
+                     *       "body": null,
                      *       "error": null
                      *     }
                      */

@@ -191,7 +191,12 @@ describe('A CI issuer (R-UI-035, R-CI-001, R-CI-002)', () => {
     });
     await settle(fixture);
     expect(text(root)).toContain('The issuer answered with the error status 502.');
-    expect(text(root.querySelector('[data-testid="technical-details"]')!)).toBe('http_status status=502 host=git.corp.example.com');
+    // The facts of the line stand without a click (Q-UI-1227).
+    const facts = root.querySelector('[data-testid="key-error-facts"]')!;
+    expect(text(facts)).toContain('http_status');
+    expect(text(facts)).toContain('502 Bad Gateway');
+    expect(text(facts)).toContain('git.corp.example.com');
+    expect(text(facts)).toContain('http_status status=502 host=git.corp.example.com');
     expect(text(root)).toContain('Ignored');
     expect(text(root)).toContain('key_too_small');
     buttonByText(root, 'Refresh keys').click();

@@ -27,6 +27,14 @@ type UpstreamTestResult struct {
 	// upstream_error, unreachable, not_sent; Q-REPO-488). Every reader says it as it
 	// is and derives no verdict from the status.
 	Verdict string `json:"verdict"`
+	// ProbeURL is the address the probe asked: scheme, host, port and path, without
+	// the query and the user information, which may carry a credential (R-UI-216,
+	// Q-REPO-489); nil when no probe was built (offline, a credential that cannot be
+	// read).
+	ProbeURL *string `json:"probeUrl"`
+	// Credential is how the probe carried the repository's credential: none, basic or
+	// bearer. It never holds the credential.
+	Credential string `json:"credential"`
 	// Reachable is true when the upstream answered with an HTTP response, whatever
 	// its status.
 	Reachable  bool `json:"reachable"`
@@ -47,7 +55,21 @@ type UpstreamTestResult struct {
 	// TokenService is the token service a Bearer challenge of the upstream named
 	// (R-REPO-064); nil without one.
 	TokenService *UpstreamTokenService `json:"tokenService"`
-	Error        *UpstreamTestError    `json:"error"`
+	// Body is the upstream's answer to the probe when it answered with an error
+	// status of its own and named no token service (Q-REPO-489); nil otherwise.
+	Body  *UpstreamAnswerBody `json:"body"`
+	Error *UpstreamTestError  `json:"error"`
+}
+
+// UpstreamAnswerBody is the excerpt of an upstream's error answer: its media type,
+// the bytes the probe read (at most 64 KiB), and its text when it is text, at most
+// 4,000 bytes, with every value of the repository's credential replaced.
+type UpstreamAnswerBody struct {
+	ContentType string `json:"contentType"`
+	Bytes       int    `json:"bytes"`
+	Text        string `json:"text"`
+	// Cut is true when Text holds less than the probe read.
+	Cut bool `json:"cut"`
 }
 
 // UpstreamTokenService is the realm of a registry's Bearer challenge as the
@@ -59,6 +81,17 @@ type UpstreamTokenService struct {
 	Host               string `json:"host"`
 	Allowed            bool   `json:"allowed"`
 	ReceivesCredential bool   `json:"receivesCredential"`
+	// Realm is the challenge's realm: scheme, host, port and path, without the query
+	// (Q-REPO-489).
+	Realm string `json:"realm"`
+	// Service is the challenge's service; nil without one.
+	Service *string `json:"service"`
+	// ExtraHost is the extraHosts pattern that let the test reach the token service;
+	// nil for the upstream's own host and for a host that is not allowed.
+	ExtraHost *string `json:"extraHost"`
+	// HTTPStatus is the status of the token service's answer to the login; nil when it
+	// was not asked. Its body is never kept.
+	HTTPStatus *int `json:"httpStatus"`
 }
 
 // UpstreamTLS is the leaf certificate of the upstream.

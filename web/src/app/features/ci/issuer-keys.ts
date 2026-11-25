@@ -9,8 +9,8 @@ import { Needs } from '../../shared/access/needs';
 import { asApiError } from '../../shared/paged-resource';
 import { DataTable, TableColumn } from '../../shared/ui/data-table';
 import { ErrorNotice } from '../../shared/error-notice';
-import { TechnicalDetails } from '../../shared/technical-details';
-import { ciKeyErrorText } from './ci-common';
+import { FAILURE_WORDS } from '../../shared/failure-report';
+import { ciKeyErrorFacts, ciKeyErrorText } from './ci-common';
 
 /**
  * The signing keys of an issuer (R-UI-035, R-CI-002, R-CI-003): the cached key set with its fetch time,
@@ -20,7 +20,7 @@ import { ciKeyErrorText } from './ci-common';
  */
 @Component({
   selector: 'quader-ci-issuer-keys',
-  imports: [DatePipe, ErrorNotice, DataTable, Needs, NoValue, TechnicalDetails],
+  imports: [DatePipe, ErrorNotice, DataTable, Needs, NoValue],
   template: `
     <div class="toolbar">
       <button class="btn btn-confirm" type="button" [disabled]="busy() || !session.has('ci:write')" aria-describedby="needs-ci-keys" (click)="refresh()" i18n="@@ci.keys.refresh">
@@ -47,7 +47,23 @@ import { ciKeyErrorText } from './ci-common';
             @if (s.lastErrorAt) {
               <span class="muted">({{ s.lastErrorAt | date: 'medium' }})</span>
             }
-            <quader-technical-details [text]="s.lastError" />
+            <!-- What the fetch learned, without a click (R-UI-216, Q-UI-1227): the code, the status, the host and the line itself. -->
+            @if (keyFacts(s.lastError); as f) {
+              <dl class="facts key-error" data-testid="key-error-facts">
+                <dt>{{ words.code }}</dt>
+                <dd><code translate="no">{{ f.code }}</code></dd>
+                @if (f.status) {
+                  <dt>{{ words.status }}</dt>
+                  <dd><code translate="no">{{ f.status }}</code></dd>
+                }
+                @if (f.host) {
+                  <dt i18n="@@ci.keys.error.host">Host</dt>
+                  <dd><code translate="no">{{ f.host }}</code></dd>
+                }
+                <dt>{{ words.serverMessage }}</dt>
+                <dd><code lang="en" translate="no">{{ errorLine(s) }}</code></dd>
+              </dl>
+            }
           } @else {
             <span class="ok"><span class="material-icons" aria-hidden="true">check_circle</span> <ng-container i18n="@@ci.keys.no-error">None</ng-container></span>
           }
@@ -92,6 +108,12 @@ export class IssuerKeys {
 
   private readonly api = inject(CiApi);
   protected readonly keyError = ciKeyErrorText;
+  protected readonly keyFacts = ciKeyErrorFacts;
+  protected readonly words = FAILURE_WORDS;
+  /** The stored line as it came: the failure class, the status and the host (never bytes of an answer). */
+  protected errorLine(s: CiKeyStatus): string {
+    return s.lastError ?? '';
+  }
   private readonly notifier = inject(Notifier);
   protected readonly session = inject(SessionStore);
 

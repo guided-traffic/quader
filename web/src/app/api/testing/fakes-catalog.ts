@@ -851,6 +851,8 @@ export function sampleMirrorStatus(over: Partial<MirrorStatus> = {}): MirrorStat
 export function sampleUpstreamTestResult(over: Partial<UpstreamTestResult> = {}): UpstreamTestResult {
   return {
     verdict: 'accepted',
+    probeUrl: 'https://registry.npmjs.org/-/ping',
+    credential: 'basic',
     reachable: true,
     httpStatus: 200,
     authenticated: true,
@@ -859,6 +861,7 @@ export function sampleUpstreamTestResult(over: Partial<UpstreamTestResult> = {})
     outboundProxy: null,
     sourceAddress: null,
     tokenService: null,
+    body: null,
     error: null,
     ...over,
   };

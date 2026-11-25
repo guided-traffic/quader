@@ -1,5 +1,6 @@
 import { Component, input } from '@angular/core';
 import { CiWarning } from '../../api/ci-api';
+import { reasonPhrase } from '../../api/problem';
 
 /**
  * The sentence of a warning of a save or a dry run (R-CI-010, R-CI-011), in the screen's language (R-UI-214): by its code and the
@@ -73,6 +74,25 @@ export function ciKeyErrorText(line: string): string {
     default:
       return $localize`:@@ci.keys.error.other:Fetching the keys failed.`;
   }
+}
+
+/** The facts of a stored key error line, shown without a click beside its sentence (R-UI-216, Q-UI-1227). */
+export interface CiKeyErrorFacts {
+  /** The failure class, the line's code. */
+  readonly code: string;
+  /** "502 Bad Gateway", or null when the line names no status. */
+  readonly status: string | null;
+  /** The host the fetch asked, or null. */
+  readonly host: string | null;
+}
+
+/** Reads `http_status status=502 host=gitlab.example.com` into its facts; the line names no credential and no body. */
+export function ciKeyErrorFacts(line: string): CiKeyErrorFacts {
+  const [code = '', ...facts] = line.split(' ');
+  const value = (name: string): string | null => facts.find((f) => f.startsWith(`${name}=`))?.slice(name.length + 1) || null;
+  const status = value('status');
+  const reason = status ? reasonPhrase(Number(status)) : '';
+  return { code, status: status && reason ? `${status} ${reason}` : status, host: value('host') };
 }
 
 /** The warnings a save or a dry run returned (R-CI-010, R-CI-011, R-CI-019): each with an icon, its sentence and the member it concerns. */

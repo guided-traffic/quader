@@ -265,8 +265,12 @@ may already configure a remote repository.
 
 What makes it real: a principal with the capability and an installation whose cluster restricts no egress of Quader's pods
 ([H-516](#h-516--the-chart-restricts-no-egress-of-its-pods)). The body of
-the response is never returned, at most 64 KiB are read and dropped, and the messages never repeat the URL; the status and the timing are
-the channel.
+a successful response is never returned, at most 64 KiB are read, and the messages never repeat the URL; the status and the timing are the
+channel, and since [Q-REPO-489](../spec/repositories-and-proxy.md#q-repo-489--the-upstream-tests-answer-names-what-it-asked-and-what-came-back)
+(2026-11-25) the text of an error answer too: for a status from 400 on without a token service, the result carries at most 4,000 bytes of
+a textual body, so an internal service's error page (a stack trace, a version, an internal host name) is read by the test's caller. What
+the cache never returns, the test now does for an error status; the caller could point a repository at the same address and read its
+successful answers through the cache before ([H-6](../spec/repositories-and-proxy.md#h-6--remote-repositories-reach-private-networks)).
 
 ### H-971 · The upstream test tells its caller whether a credential is accepted, from Quader's address
 

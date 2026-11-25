@@ -2,6 +2,7 @@ package upstream
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -106,7 +107,8 @@ func TestR_REPO_064_TheUpstreamTestRunsTheRegistrysLogin(t *testing.T) {
 			!strings.Contains(res.Error.Message, "example.com") {
 			t.Fatalf("result = %+v, error %+v", res, res.Error)
 		}
-		if res.TokenService == nil || *res.TokenService != (repository.UpstreamTokenService{Host: "example.com"}) {
+		if ts := res.TokenService; ts == nil || ts.Host != "example.com" || ts.Allowed || ts.ReceivesCredential || ts.ExtraHost != nil || ts.HTTPStatus != nil ||
+			ts.Realm != "https://"+h.realmH+"/jwt/auth" || ts.Service == nil || *ts.Service != "registry.test" {
 			t.Fatalf("token service = %+v", res.TokenService)
 		}
 		if n := len(h.ts.requests()); n != 0 {
@@ -118,9 +120,18 @@ func TestR_REPO_064_TheUpstreamTestRunsTheRegistrysLogin(t *testing.T) {
 	})
 	t.Run("R-REPO-064 the right password is accepted by one login without a scope", func(t *testing.T) {
 		res := h.unsaved(t, repository.AuthBasic, "ci", "right", allowed)
-		if res.Verdict != VerdictAccepted || res.Authenticated == nil || !*res.Authenticated || res.Error != nil ||
-			*res.TokenService != (repository.UpstreamTokenService{Host: "example.com", Allowed: true, ReceivesCredential: true}) {
+		ts := res.TokenService
+		if res.Verdict != VerdictAccepted || res.Authenticated == nil || !*res.Authenticated || res.Error != nil || res.Credential != repository.AuthBasic ||
+			ts == nil || ts.Host != "example.com" || !ts.Allowed || !ts.ReceivesCredential || ts.ExtraHost == nil || *ts.ExtraHost != "example.com" ||
+			ts.HTTPStatus == nil || *ts.HTTPStatus != http.StatusOK {
 			t.Fatalf("result = %+v, error %+v, token service %+v", res, res.Error, res.TokenService)
+		}
+		// The address the probe asked, without a query; the answer holds no token and no credential (Q-REPO-489).
+		if res.ProbeURL == nil || *res.ProbeURL != h.reg.URL+"/v2/" {
+			t.Fatalf("probe address %v", res.ProbeURL)
+		}
+		if b, _ := json.Marshal(res); strings.Contains(string(b), "tkn") || strings.Contains(string(b), "right") {
+			t.Fatalf("the answer carries the token or the password: %s", b)
 		}
 		got := h.ts.requests()
 		if len(got) != 1 {
@@ -135,15 +146,16 @@ func TestR_REPO_064_TheUpstreamTestRunsTheRegistrysLogin(t *testing.T) {
 	})
 	t.Run("R-REPO-064 a wrong password is refused", func(t *testing.T) {
 		res := h.unsaved(t, repository.AuthBasic, "ci", "wrong", allowed)
-		if res.Verdict != VerdictRefused || res.Authenticated == nil || *res.Authenticated || res.Error != nil {
+		if res.Verdict != VerdictRefused || res.Authenticated == nil || *res.Authenticated || res.Error != nil ||
+			res.TokenService.HTTPStatus == nil || *res.TokenService.HTTPStatus != http.StatusUnauthorized {
 			t.Fatalf("result = %+v, error %+v", res, res.Error)
 		}
 	})
 	t.Run("R-REPO-064 a host that receives no credential is not asked", func(t *testing.T) {
 		before := len(h.ts.requests())
 		res := h.unsaved(t, repository.AuthBasic, "ci", "right", repository.ExtraHost{Pattern: "example.com"})
-		if res.Verdict != VerdictCredentialWithheld || res.Authenticated != nil || res.Error != nil ||
-			*res.TokenService != (repository.UpstreamTokenService{Host: "example.com", Allowed: true}) {
+		if ts := res.TokenService; res.Verdict != VerdictCredentialWithheld || res.Authenticated != nil || res.Error != nil ||
+			ts == nil || !ts.Allowed || ts.ReceivesCredential || ts.HTTPStatus != nil {
 			t.Fatalf("result = %+v, error %+v, token service %+v", res, res.Error, res.TokenService)
 		}
 		if len(h.ts.requests()) != before {
@@ -153,7 +165,7 @@ func TestR_REPO_064_TheUpstreamTestRunsTheRegistrysLogin(t *testing.T) {
 	t.Run("R-REPO-064 without a credential the token service is not asked", func(t *testing.T) {
 		before := len(h.ts.requests())
 		res := h.unsaved(t, repository.AuthNone, "", "", allowed)
-		if res.Verdict != VerdictLoginAsked || res.Authenticated != nil || res.Error != nil || !res.TokenService.Allowed {
+		if res.Verdict != VerdictLoginAsked || res.Authenticated != nil || res.Error != nil || !res.TokenService.Allowed || res.Credential != repository.AuthNone {
 			t.Fatalf("result = %+v, error %+v", res, res.Error)
 		}
 		if len(h.ts.requests()) != before {

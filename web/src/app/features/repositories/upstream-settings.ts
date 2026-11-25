@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { Component, LOCALE_ID, computed, inject, input, model, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { upstreamName } from '../../core/upstream-project';
@@ -11,7 +10,6 @@ import {
   UpstreamTestResult,
 } from '../../api/repositories-api';
 import { ErrorNotice } from '../../shared/error-notice';
-import { TechnicalDetails } from '../../shared/technical-details';
 import { heldWhileFocused } from '../../shared/held-while-focused';
 import { Disclosure } from '../../shared/ui/disclosure';
 import { fieldMessage, problemsAt } from '../../shared/field-errors';
@@ -29,7 +27,7 @@ import {
   upstreamTestBody,
 } from './upstream-model';
 import { controlIdOf, numberOrText } from './settings-schema';
-import { upstreamTestErrorText, upstreamVerdictText, upstreamVerdictTone } from './upstream-test-words';
+import { UpstreamTestResultView } from './upstream-test-result';
 
 /** The id of the section; a server error at a pointer of the upstream settings that has no control lands here. */
 export const UPSTREAM_SECTION_ID = 'f-remote-upstream';
@@ -93,7 +91,7 @@ export function upstreamPointerLabel(pointer: string): string | null {
  */
 @Component({
   selector: 'quader-upstream-settings',
-  imports: [DatePipe, Disclosure, ErrorNotice, RouterLink, TechnicalDetails],
+  imports: [Disclosure, ErrorNotice, RouterLink, UpstreamTestResultView],
   template: `
     <section class="upstream" [id]="sectionId" tabindex="-1" aria-labelledby="upstream-heading">
       <h2 id="upstream-heading" i18n="@@upstream.heading">Upstream</h2>
@@ -289,52 +287,19 @@ export function upstreamPointerLabel(pointer: string): string | null {
           <quader-error-notice [error]="f" />
         }
         @if (outcome(); as o) {
-          <p class="verdict" [class.ok]="o.good" [class.warn]="o.tone === 'warn' || o.tone === 'error'" data-testid="upstream-test-result">
-            <span class="material-icons inline" aria-hidden="true">{{ o.good ? 'check_circle' : o.tone === 'info' ? 'info' : 'warning' }}</span>
-            <strong>{{ o.summary }}</strong>
-          </p>
-          @if (foreignTokenHost(); as host) {
-            <div class="allow">
-              <p i18n="@@upstream.test.foreign">
-                The registry asks for a login at <code translate="no">{{ host }}</code>, which this repository may not reach.
-                Allow it as a further host if it is the registry's own token service.
-              </p>
-              <button class="btn btn-default" type="button" data-testid="upstream-allow-host" (click)="allow(host)">
-                <ng-container i18n="@@upstream.test.allow">Allow</ng-container>&ngsp;<span translate="no">{{ host }}</span>
-              </button>
-            </div>
-          }
-          <dl class="facts">
-            @if (o.result.httpStatus !== null) {
-              <dt i18n="@@upstream.test.status">HTTP status</dt>
-              <dd>{{ o.result.httpStatus }}</dd>
+          <quader-upstream-test-result [result]="o.result" [at]="o.at">
+            @if (foreignTokenHost(); as host) {
+              <div class="allow">
+                <p i18n="@@upstream.test.foreign">
+                  The registry asks for a login at <code translate="no">{{ host }}</code>, which this repository may not reach.
+                  Allow it as a further host if it is the registry's own token service.
+                </p>
+                <button class="btn btn-default" type="button" data-testid="upstream-allow-host" (click)="allow(host)">
+                  <ng-container i18n="@@upstream.test.allow">Allow</ng-container>&ngsp;<span translate="no">{{ host }}</span>
+                </button>
+              </div>
             }
-            @if (o.result.authenticated !== null) {
-              <dt i18n="@@upstream.test.credentials">Credentials</dt>
-              <dd>{{ o.result.authenticated ? accepted : refused }}</dd>
-            }
-            @if (o.result.tokenService; as ts) {
-              <dt i18n="@@upstream.test.token-service">Token service</dt>
-              <dd>
-                <span translate="no">{{ ts.host }}</span>,&ngsp;{{ tokenServiceState(ts) }}
-              </dd>
-            }
-            <dt i18n="@@upstream.test.duration">Duration</dt>
-            <dd>{{ o.result.durationMs }} ms</dd>
-            @if (o.result.tls; as tls) {
-              <dt i18n="@@upstream.test.tls">Certificate</dt>
-              <dd>
-                <span translate="no">{{ tls.peerSubject }}</span>,&ngsp;<ng-container i18n="@@upstream.test.valid-until">valid until</ng-container>&ngsp;<time [attr.datetime]="tls.notAfter">{{ tls.notAfter | date: 'mediumDate' }}</time>
-              </dd>
-            }
-            @if (o.result.error; as err) {
-              <dt i18n="@@upstream.test.error">Reason</dt>
-              <dd>
-                {{ errorText(err.code) }}
-                <quader-technical-details [text]="err.message" [code]="err.code" />
-              </dd>
-            }
-          </dl>
+          </quader-upstream-test-result>
         }
       </div>
 
@@ -547,9 +512,6 @@ export function upstreamPointerLabel(pointer: string): string | null {
       gap: var(--quader-space-3);
       margin-block: var(--quader-space-4) var(--quader-space-2);
     }
-    .verdict {
-      margin-block: var(--quader-space-2);
-    }
     .allow {
       display: flex;
       flex-direction: column;
@@ -607,12 +569,10 @@ export class UpstreamSettings {
   protected readonly sectionId = UPSTREAM_SECTION_ID;
   protected readonly hostsId = controlIdOf('/remote/extraHosts');
   protected readonly authModes: readonly UpstreamAuthMode[] = ['none', 'basic', 'bearer'];
-  protected readonly errorText = upstreamTestErrorText;
-  protected readonly accepted = $localize`:@@upstream.test.accepted:accepted`;
-  protected readonly refused = $localize`:@@upstream.test.refused:refused`;
 
   protected readonly testing = signal(false);
-  private readonly result = signal<UpstreamTestResult | null>(null);
+  /** The last test's answer and when it came. */
+  private readonly result = signal<{ readonly value: UpstreamTestResult; readonly at: Date } | null>(null);
   protected readonly failure = signal<ApiError | null>(null);
   /** The user opened or closed Upstream details; a field error inside it opens it whatever this says. */
   protected readonly detailsOpened = signal(false);
@@ -658,17 +618,15 @@ export class UpstreamSettings {
     return $localize`:@@upstream.credential-hosts:The credential is sent to ${list}:hosts:.`;
   });
 
-  /** The server's verdict in words, so that the state is not carried by colour alone (R-UI-044, Q-REPO-488): none from the status. */
+  /** The answer of the last test, shown by the shared result (Q-UI-1226): the server's verdict in words and every fact of it. */
   protected readonly outcome = computed(() => {
-    const result = this.result();
-    if (!result) return null;
-    const tone = upstreamVerdictTone(result.verdict);
-    return { result, good: tone === 'ok', tone, summary: upstreamVerdictText(result.verdict) };
+    const r = this.result();
+    return r ? { result: r.value, at: r.at } : null;
   });
 
   /** The host of a token service the repository may not reach, which the user may allow (R-UI-082, Q-UI-346). */
   protected readonly foreignTokenHost = computed(() => {
-    const r = this.result();
+    const r = this.result()?.value;
     return r?.error?.code === 'foreign_host_denied' && r.tokenService && !r.tokenService.allowed ? r.tokenService.host : null;
   });
 
@@ -687,13 +645,6 @@ export class UpstreamSettings {
     this.urlLeft.set(true);
     const def = this.proposed().url;
     if (this.upstream().url.trim() === '' && def !== null) this.set({ url: def });
-  }
-
-  protected tokenServiceState(ts: NonNullable<UpstreamTestResult['tokenService']>): string {
-    if (!ts.allowed) return $localize`:@@upstream.test.token-not-allowed:not allowed for this repository`;
-    return ts.receivesCredential
-      ? $localize`:@@upstream.test.token-credential:allowed, receives the credential`
-      : $localize`:@@upstream.test.token-no-credential:allowed, receives no credential`;
   }
 
   protected authLabel(mode: UpstreamAuthMode): string {
@@ -777,7 +728,8 @@ export class UpstreamSettings {
     this.result.set(null);
     this.failure.set(null);
     try {
-      this.result.set(await this.api.testUpstream(this.project(), upstreamTestBody(this.upstream(), this.format(), this.own())));
+      const value = await this.api.testUpstream(this.project(), upstreamTestBody(this.upstream(), this.format(), this.own()));
+      this.result.set({ value, at: new Date() });
     } catch (e) {
       this.failure.set(asApiError(e));
     } finally {

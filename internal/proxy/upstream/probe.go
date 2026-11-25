@@ -183,7 +183,7 @@ func (c *Clients) offline(s repository.RemoteSettings) (repository.UpstreamTestR
 }
 
 func failed(e *repository.UpstreamTestError) repository.UpstreamTestResult {
-	return concluded(repository.UpstreamTestResult{Error: e}, false)
+	return concluded(repository.UpstreamTestResult{Credential: repository.AuthNone, Error: e}, false)
 }
 
 func mustParse(raw string) *url.URL {
@@ -238,9 +238,13 @@ func (c *Clients) probe(ctx context.Context, cl *Client, format string) reposito
 	}
 	// The hop policy puts the repository's credential on the request to the upstream's origin (R-REPO-033).
 	sent := cl.cred.headers().Get("Authorization") != ""
+	asked := addressOf(target)
 	start := time.Now()
 	resp, err := cl.http.Do(req)
-	res := repository.UpstreamTestResult{DurationMs: time.Since(start).Milliseconds()}
+	res := repository.UpstreamTestResult{ProbeURL: &asked, Credential: repository.AuthNone, DurationMs: time.Since(start).Milliseconds()}
+	if sent {
+		res.Credential = s.AuthMode
+	}
 	if local != "" {
 		res.SourceAddress = &local
 	}
@@ -249,7 +253,7 @@ func (c *Clients) probe(ctx context.Context, cl *Client, format string) reposito
 		return concluded(res, sent)
 	}
 	defer func() { _ = resp.Body.Close() }()
-	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, maxProbeBody))
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, maxProbeBody))
 	res.DurationMs = time.Since(start).Milliseconds()
 	status := resp.StatusCode
 	authed := status != http.StatusUnauthorized && status != http.StatusForbidden
@@ -262,11 +266,21 @@ func (c *Clients) probe(ctx context.Context, cl *Client, format string) reposito
 			c.tokenCheck(ctx, cl, &res, realm, service)
 		}
 	}
+	if status >= http.StatusBadRequest && res.TokenService == nil {
+		// The upstream's own error answer: what it says is what a person reads to find the cause (Q-REPO-489).
+		res.Body = answerBody(resp.Header.Get("Content-Type"), body, len(body), cl.credentialValues())
+	}
 	if resp.TLS != nil && len(resp.TLS.PeerCertificates) > 0 {
 		leaf := resp.TLS.PeerCertificates[0]
 		res.TLS = &repository.UpstreamTLS{PeerSubject: leaf.Subject.String(), NotAfter: leaf.NotAfter.UTC()}
 	}
 	return concluded(res, sent)
+}
+
+// addressOf is an address as a result names it: scheme, host, port and path, without the query, the user information and the
+// fragment, which may carry a credential (a signed address carries one in its query).
+func addressOf(u *url.URL) string {
+	return (&url.URL{Scheme: u.Scheme, Host: u.Host, Path: u.Path, RawPath: u.RawPath}).String()
 }
 
 // maxChallengeBytes bounds a WWW-Authenticate value the test reads; a longer one reads as no challenge.
@@ -284,7 +298,10 @@ func (c *Clients) tokenCheck(ctx context.Context, cl *Client, res *repository.Up
 		return
 	}
 	host := strings.ToLower(u.Hostname())
-	ts := &repository.UpstreamTokenService{Host: host}
+	ts := &repository.UpstreamTokenService{Host: host, Realm: addressOf(u)}
+	if service != "" {
+		ts.Service = &service
+	}
 	res.TokenService = ts
 	if err := cl.Allowed(u); err != nil {
 		code := CodeForeignHostDenied
@@ -298,7 +315,7 @@ func (c *Clients) tokenCheck(ctx context.Context, cl *Client, res *repository.Up
 		res.Error = &repository.UpstreamTestError{Code: code, Message: msg}
 		return
 	}
-	ts.Allowed, ts.ReceivesCredential = true, cl.CredentialHost(u)
+	ts.Allowed, ts.ReceivesCredential, ts.ExtraHost = true, cl.CredentialHost(u), cl.extraHostOf(u)
 	if cl.settings.AuthMode != repository.AuthBasic || !ts.ReceivesCredential || cl.cred.headers().Get("Authorization") == "" {
 		return
 	}
@@ -319,6 +336,7 @@ func (c *Clients) tokenCheck(ctx context.Context, cl *Client, res *repository.Up
 		return
 	}
 	defer func() { _ = resp.Body.Close() }()
+	ts.HTTPStatus = &resp.StatusCode
 	body, err := io.ReadAll(io.LimitReader(resp.Body, maxProbeBody+1))
 	verdict, why := tokenVerdict(resp.StatusCode, body, err)
 	res.Authenticated = verdict

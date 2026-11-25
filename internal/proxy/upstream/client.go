@@ -115,6 +115,22 @@ func (c *Client) Allowed(u *url.URL) error {
 		"The upstream document points to the host "+host+", which is neither the upstream of the repository "+c.key+" nor one of its extraHosts.", refusedTarget(u))
 }
 
+// extraHostOf names the extraHosts pattern that lets a request reach u, for the upstream test's answer (Q-REPO-489); nil for the
+// upstream's own host and for a host that no entry matches.
+func (c *Client) extraHostOf(u *url.URL) *string {
+	if sameHost(c.origin, u) {
+		return nil
+	}
+	host := strings.ToLower(u.Hostname())
+	for _, h := range c.settings.ExtraHosts {
+		if ok, _ := path.Match(h.Pattern, host); ok {
+			p := h.Pattern
+			return &p
+		}
+	}
+	return nil
+}
+
 func refusedTarget(u *url.URL) errs.Option {
 	return errs.WithCause(&RefusedTarget{Address: (&url.URL{Scheme: u.Scheme, Host: u.Host, Path: u.Path, RawPath: u.RawPath}).String()})
 }

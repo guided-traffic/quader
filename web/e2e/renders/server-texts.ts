@@ -79,6 +79,8 @@ export async function* remoteSettingsFailures(page: Page): AsyncGenerator<string
       contentType: 'application/json',
       body: JSON.stringify({
         verdict: 'unreachable',
+        probeUrl: 'https://registry.npm.example-company.com/-/ping',
+        credential: 'none',
         reachable: false,
         httpStatus: null,
         authenticated: null,
@@ -87,6 +89,7 @@ export async function* remoteSettingsFailures(page: Page): AsyncGenerator<string
         outboundProxy: null,
         sourceAddress: null,
         tokenService: null,
+        body: null,
         error: {
           code: 'tls_untrusted',
           message: 'tls: failed to verify certificate: x509: certificate signed by unknown authority (registry.npm.example-company.com:443)',
@@ -95,8 +98,8 @@ export async function* remoteSettingsFailures(page: Page): AsyncGenerator<string
     }),
   );
   await upstream.locator('.test button').click();
-  await expect(upstream.locator('[data-testid="upstream-test-result"]')).toBeVisible();
-  await openDetails(page, upstream.locator('.test-result'));
+  // The facts of the test stand without a click (Q-UI-1226).
+  await expect(upstream.locator('[data-testid="upstream-test-result"] dl')).toBeVisible();
   yield 'test-failed';
   await page.unroute('**/upstream-tests');
 }
@@ -116,6 +119,8 @@ export async function* registryTestFailure(page: Page): AsyncGenerator<string> {
       contentType: 'application/json',
       body: JSON.stringify({
         verdict: 'unreachable',
+        probeUrl: 'https://deb.debian.org/debian/dists/stable/InRelease',
+        credential: 'none',
         reachable: false,
         httpStatus: null,
         authenticated: null,
@@ -124,15 +129,121 @@ export async function* registryTestFailure(page: Page): AsyncGenerator<string> {
         outboundProxy: null,
         sourceAddress: null,
         tokenService: null,
+        body: null,
         error: { code: 'connection_refused', message: 'dial tcp 151.101.2.132:443: connect: connection refused (deb.debian.org)' },
       }),
     }),
   );
   await test.click();
   await expect(page.locator('main .test-result .verdict')).toBeVisible();
-  await openDetails(page, page.locator('main .test-result'));
   yield 'test-failed';
   await page.unroute(tests);
+}
+
+/** GitLab's token service as the test names it. */
+const GITLAB_TOKEN = {
+  host: 'gitlab.example-company.com',
+  allowed: false,
+  receivesCredential: false,
+  realm: 'https://gitlab.example-company.com/jwt/auth',
+  service: 'container_registry',
+  extraHost: null,
+  httpStatus: null,
+};
+
+/** Docker Hub's token service as the test names it, with the status of its answer to the login. */
+const hubToken = (httpStatus: number | null): Record<string, unknown> => ({
+  host: 'auth.docker.io',
+  allowed: true,
+  receivesCredential: true,
+  realm: 'https://auth.docker.io/token',
+  service: 'registry.docker.io',
+  extraHost: 'auth.docker.io',
+  httpStatus,
+});
+
+/** An answer of the test at Docker Hub, as the server gives it (R-REPO-024, R-REPO-064, Q-REPO-488, Q-REPO-489). */
+function hubAnswer(over: Record<string, unknown>): Record<string, unknown> {
+  return {
+    verdict: 'login_asked',
+    probeUrl: 'https://registry-1.docker.io/v2/',
+    credential: 'none',
+    reachable: true,
+    httpStatus: 401,
+    authenticated: null,
+    durationMs: 360,
+    tls: { peerSubject: 'CN=*.docker.com', notAfter: '2027-03-01T00:00:00Z' },
+    outboundProxy: null,
+    sourceAddress: null,
+    tokenService: hubToken(null),
+    body: null,
+    error: null,
+    ...over,
+  };
+}
+
+/**
+ * **Test connection** of an upstream registry (Docker Hub), each answer a person meets, with what the test learned below the verdict
+ * (Q-UI-1225, Q-UI-1226): the owner's case first, an account the token service accepted, then the registry without an account, a
+ * refused account, the upstream's own error with its answer folded open, a name that does not resolve and a token service on a host
+ * the registry may not reach. Answered by the route, so no registry is contacted.
+ */
+export async function* registryTests(page: Page): AsyncGenerator<string> {
+  const test = page.locator('main form .actions button[type="button"]').first();
+  await expect(test).toBeVisible();
+  const tests = (url: URL): boolean => /\/upstream-tests?$/.test(url.pathname);
+  const answers: [string, Record<string, unknown>][] = [
+    ['accepted', hubAnswer({ verdict: 'accepted', credential: 'basic', authenticated: true, tokenService: hubToken(200) })],
+    ['anonymous', hubAnswer({})],
+    ['refused', hubAnswer({ verdict: 'refused', credential: 'basic', authenticated: false, tokenService: hubToken(401) })],
+    [
+      'upstream-error',
+      hubAnswer({
+        verdict: 'upstream_error',
+        httpStatus: 502,
+        authenticated: true,
+        tokenService: null,
+        body: {
+          contentType: 'text/html',
+          bytes: 157,
+          text: '<html>\r\n<head><title>502 Bad Gateway</title></head>\r\n<body>\r\n<center><h1>502 Bad Gateway</h1></center>\r\n<hr><center>nginx</center>\r\n</body>\r\n</html>\r\n',
+          cut: false,
+        },
+      }),
+    ],
+    [
+      'dns',
+      hubAnswer({
+        verdict: 'unreachable',
+        reachable: false,
+        httpStatus: null,
+        durationMs: 12,
+        tls: null,
+        tokenService: null,
+        error: { code: 'dns_error', message: 'The name registry-1.docker.io does not resolve.' },
+      }),
+    ],
+    [
+      'token-foreign',
+      hubAnswer({
+        verdict: 'token_service_denied',
+        credential: 'basic',
+        tokenService: GITLAB_TOKEN,
+        error: {
+          code: 'foreign_host_denied',
+          message: "The registry's token service is on gitlab.example-company.com, which is neither the upstream nor one of the repository's further hosts; Quader did not ask it.",
+        },
+      }),
+    ],
+  ];
+  for (const [state, answer] of answers) {
+    await page.route(tests, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(answer) }));
+    await test.click();
+    await expect(page.locator('main [data-testid="upstream-test-result"] dl').first()).toBeVisible();
+    if (answer['body']) await openDetails(page, page.locator('main .test-result'));
+    yield `test-${state}`;
+    await page.unroute(tests);
+  }
 }
 
 /**
@@ -188,7 +299,8 @@ export async function* issuerKeysFailure(page: Page): AsyncGenerator<string> {
     lastError: 'http_status status=502 host=gitlab.renders.invalid',
     lastErrorAt: at(-7),
   }));
-  await openDetails(page, page.locator('main'));
+  // The line's facts stand without a click (Q-UI-1227).
+  await expect(page.locator('main [data-testid="key-error-facts"]')).toBeVisible();
   yield 'failed';
   await page.unroute(`**/api/v1/ci/issuers/${ciIssuer}/keys`);
 }

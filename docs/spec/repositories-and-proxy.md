@@ -2525,6 +2525,8 @@ API, besides R-REPO-009 to R-REPO-013:
 ```json
 {
   "verdict": "answered",
+  "probeUrl": "https://registry.npmjs.org/-/ping",
+  "credential": "none",
   "reachable": true,
   "httpStatus": 200,
   "authenticated": true,
@@ -2533,6 +2535,7 @@ API, besides R-REPO-009 to R-REPO-013:
   "outboundProxy": null,
   "sourceAddress": null,
   "tokenService": null,
+  "body": null,
   "error": null
 }
 ```
@@ -2566,6 +2569,13 @@ egress rules, proxy and credentials that real fetches use (Q-REPO-90).
   | `upstream_error` | Any other status from 400 on, or a challenge whose realm is no URL |
   | `unreachable` | No answer: `dns_error`, `connection_refused`, `timeout`, `tls_untrusted`, `too_many_redirects`, `insecure_redirect`, `request_failed` |
   | `not_sent` | The probe was not sent: `offline`, `egress_denied`, `source_network_unavailable`, `upstream_secret_unavailable` |
+- The answer names what the test did, so that a person finds a cause without a log
+  ([Q-REPO-489](#q-repo-489--the-upstream-tests-answer-names-what-it-asked-and-what-came-back)): `probeUrl` is the address the probe
+  asked (scheme, host, port and path; never the query or the user information, which may carry a credential; `null` when no probe
+  was built); `credential` is how the probe carried the repository's credential (`none`, `basic`, `bearer`; never its value);
+  `body` is the upstream's own answer when it answered from 400 on and named no token service: its media type, the bytes read
+  (at most 64 KiB), and its text when it is textual UTF-8, at most 4,000 bytes (`cut` when longer), with every value of the
+  repository's credential (the `Authorization` value, its token or Base64 part, a Basic password) replaced by `[redacted]`.
 - `error` is `null` or `{"code", "message"}` with one of `dns_error`, `connection_refused`,
   `timeout`, `tls_untrusted`, `egress_denied`, `source_network_unavailable`,
   `upstream_secret_unavailable`, `offline`, `too_many_redirects`, `insecure_redirect`,
@@ -2690,8 +2700,12 @@ challenge's realm ([Q-REPO-325](#q-repo-325--the-upstream-test-runs-a-registrys-
   request of a client's login). `200` with a token is `authenticated: true`, and the token is dropped, not cached; `401` and `403` are
   `false`; another status is `request_failed`. The egress rules, the TLS trust and the 64 KiB read bound of every token request apply.
 - An allowed realm without a credential, or with a host that receives none: no request to the realm; `authenticated: null`.
-- The result gains `tokenService`: `null`, or `{"host", "allowed", "receivesCredential"}`; the host is the realm's host name,
-  without a port, as an `extraHosts` pattern names it.
+- The result gains `tokenService`: `null`, or `{"host", "allowed", "receivesCredential", "realm", "service", "extraHost",
+  "httpStatus"}`; the host is the realm's host name, without a port, as an `extraHosts` pattern names it; `realm` is the challenge's
+  realm without its query, `service` its service (`null` without one), `extraHost` the `extraHosts` pattern that let the test reach
+  it (`null` for the upstream's own host and a host that is not allowed), and `httpStatus` the status of its answer to the login
+  (`null` when it was not asked). The token service's body, which holds the token, is never kept
+  ([Q-REPO-489](#q-repo-489--the-upstream-tests-answer-names-what-it-asked-and-what-came-back)).
 - `reachable` stays `true` in every case above: the registry answered. A realm reached over `http` from an `https` upstream is
   `insecure_redirect` with `allowed: false`, and a transport failure at the realm is the code of that failure, naming its host.
 - `authMode: bearer` runs no handshake, as before (R-OCI-021), and `tokenService` is `null`.
@@ -10715,6 +10729,39 @@ what R-ARCH-025 makes stable for every reader.
 [verdict.go](../../internal/proxy/upstream/verdict.go). Tests: `TestR_REPO_024_TheVerdictOfTheUpstreamTest` (26 cases, pure, under a
 millisecond), the verdicts asserted in `TestR_REPO_064_TheUpstreamTestRunsTheRegistrysLogin` and `TestUpstreamTest`.
 
+### Q-REPO-489 · The upstream test's answer names what it asked and what came back
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner, 2026-11-25, on a test that said one sentence: "eine Fehlermeldung ohne technische Details, was mich und dich
+überhaupt nicht weiter bringt." R-UI-216 shows every fact of a failed answer; the test's answer held the status, the duration, the
+certificate, the token service's host and two flags, and an error's code and sentence, but not what the test asked or what the
+token service and the upstream said back, which the server knows.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The answer gains `probeUrl`, `credential`, the token service's `realm`, `service`, `extraHost` and `httpStatus`, and `body`, the upstream's own error answer as redacted text (chosen) | A person sees the address that was asked, how the credential went, which further host let the login through, what the token service answered, and what an upstream's error page says | Each is a fact a person needs to find the cause (a wrong path, a host that receives no credential, a proxy's 502 page); none needs a log | A body is content of the upstream: H-282's channel grows from status and timing to an error page's text |
+| (b) The facts without `body` | Addresses and statuses only | H-282 stays as it was | "502" without the page that says which proxy failed; the owner's demand is every piece of information that is available |
+| (c) The UI derives what it can (the reason phrase, the meaning) and the answer stays | No API change | — | The address asked and the token service's answer are only on the server |
+
+**Choice:** (a). What is never in the answer: the query and the user information of an address (a signed address carries a credential
+there), a header, the token service's body (it holds the token), the body of a successful answer, a binary body's bytes, and the
+repository's credential in any form the server sent (replaced in `body.text`). The body is returned for a status from 400 on without a
+token service only, so a registry's ordinary challenge stays quiet.
+
+**Rationale:** the caller is one who may already point the repository at that address (`repositories:write-config`, or the Owner within
+Q-REPO-127 and Q-REPO-128) and read its successful answers through the cache (H-6); the error page adds what the cache never shows, and
+[H-282](../security/egress.md#h-282--the-upstream-test-tells-a-holder-of-repositorieswrite-config-what-it-sees-of-an-address) says so.
+
+**Applied in the spec:** R-REPO-024, R-REPO-064; [api-and-ui.md](api-and-ui.md)
+[Q-UI-1226](api-and-ui.md#q-ui-1226--a-tests-result-shows-what-it-learned-in-one-shared-component-with-copy-report);
+[security/data-and-secret-flow.md](../security/data-and-secret-flow.md#a-connection-tests-result-in-the-browser), H-282. Code:
+`addressOf` and `tokenCheck` of [probe.go](../../internal/proxy/upstream/probe.go), `answerBody` of
+[probe_body.go](../../internal/proxy/upstream/probe_body.go). Tests: `TestR_REPO_024_AnUpstreamsErrorAnswerIsShownWithoutTheCredential`
+(three probes against a TLS test server: an answer that echoes the bearer token, 6,000 bytes cut at 4,000, a binary answer; about
+0.05 s), `TestAnswerBodyReplacesABasicPassword` (pure), and the facts asserted in `TestR_REPO_064_TheUpstreamTestRunsTheRegistrysLogin`
+and `TestUpstreamTest`.
+
 ## What this does not cover
 
 ### H-4 · Malicious content from a legitimate upstream
@@ -10896,3 +10943,11 @@ neither stored nor in a local member starts its download at the first remote mem
 lacks the version, the job's fill fails, one upstream request is charged to the caller, and the member that has it gets nothing ahead.
 Live since Q-REPO-367 is built. What makes it real: a NuGet virtual repository whose first remote member is not the feed of the
 packages its clients ask about; the client's own download still finds the version at the next member.
+
+### H-2002 · The test of a token registry without an account does not tell whether it lets one in
+
+Component: the upstream test of a format with a token handshake (R-REPO-064, OCI). Subject: the verdict `login_asked`. Live: a registry
+that answers with a Bearer challenge and a repository without a credential is `login_asked`; the test sends no anonymous login (an
+anonymous login without a scope answers `200` at Docker Hub, `403` at ghcr.io and GitLab and `401` at Quay, R-REPO-064), so a private
+registry that lets no one in without an account and a public one look the same. What makes it real: a repository without an account
+pointed at a registry whose images are private. The first pull answers the registry's refusal (R-OCI-021).

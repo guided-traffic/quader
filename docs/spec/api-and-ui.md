@@ -6536,8 +6536,10 @@ Priority: **MVP** · Covers: UI-031, RMT-004
   URL's host and every further host that receives it ("The credential is sent to registry.gitlab.com and gitlab.com.").
 - **Test connection** follows the credentials. It sends the unsaved section (`testUpstream`, R-REPO-024, R-REPO-064) and shows the
   server's `verdict` in words (Q-UI-124, [Q-REPO-488](repositories-and-proxy.md#q-repo-488--the-upstream-tests-answer-carries-its-verdict),
-  [Q-UI-1225](#q-ui-1225--a-test-says-the-servers-verdict-with-one-tone-table)); no screen derives a verdict from the status. A result
-  goes when a field of the section changes. When the answer is `foreign_host_denied` with a
+  [Q-UI-1225](#q-ui-1225--a-test-says-the-servers-verdict-with-one-tone-table)); no screen derives a verdict from the status. Below
+  the verdict stands what the test learned, without a click, and **Copy report**, in the one result of every connection test
+  ([Q-UI-1226](#q-ui-1226--a-tests-result-shows-what-it-learned-in-one-shared-component-with-copy-report)). A result goes when a
+  field of the section changes. When the answer is `foreign_host_denied` with a
   `tokenService`, the result names that host and offers **Allow <host>**, which adds it to the further hosts (receiving the credential
   when Authentication is not None) and runs the test again ([Q-UI-346](#q-ui-346--test-connection-names-a-token-service-that-is-not-allowed-and-offers-to-allow-it)).
 - Inside the group, the region **Upstream details** (a toggle with `aria-expanded`, closed by default) holds **Further hosts** (one
@@ -26101,6 +26103,92 @@ Green stays for a positive status only.
 [upstream-test-words.ts](../../web/src/app/features/repositories/upstream-test-words.ts). Tests: `upstream-registry.spec.ts` (the owner's
 case: an accepted account at a token registry, and the same registry without one), `upstream-settings.spec.ts`.
 
+### Q-UI-1226 · A test's result shows what it learned, in one shared component with Copy report
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner, 2026-11-25, at **Admin area › Upstream registries › Docker Hub**: one line with a warning sign and nothing else,
+"eine Fehlermeldung ohne technische Details, was mich und dich überhaupt nicht weiter bringt." His rule of the same morning, R-UI-216,
+is that a failure shows every fact of its answer. The registry's page showed the sentence and, for some errors, the server's text
+folded; the repository's settings showed the status, the credentials, the token service, the duration and the certificate in a list of
+its own. The answer now names what it asked and what came back
+([Q-REPO-489](repositories-and-proxy.md#q-repo-489--the-upstream-tests-answer-names-what-it-asked-and-what-came-back)).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One component, `quader-upstream-test-result`, for every place that tests an upstream: the verdict, the facts without a click, the upstream's error answer folded, **Copy report**; the same facts for a success (chosen) | The three places (a remote's settings, the creation flow, an upstream registry) show one form | One place to change; a person who tests a connection sees what was tested, also when it passed | The settings page's own list goes |
+| (b) The error notice of R-UI-216 for a failed test, the old list for a success | Reuses the notice | — | A test that answered is no failed call: its status is `200`, and the notice's facts (the call, the request ID) are the call's, not the upstream's |
+| (c) Each screen extends its own markup | No new component | — | Three copies, the defect's cause |
+
+**Choice:** (a). The facts, each only where the answer has it, in this order: **Address asked** (`probeUrl`); **HTTP status** with its
+reason phrase and what it means here ("401 Unauthorized, the registry asks for a login at its token service, as it does before every
+login"; a 404 "the upstream has nothing at this address: check the address and the format"), or **No answer**; **Credential sent**
+(None, Username and password, Bearer token: never a value); **Token service** with how the test reached it (the upstream's own host,
+or "allowed by the further host <pattern>") and whether it receives the credential; **Login address** and **Service** of the challenge;
+**Login**, the token service's status with what it said about the account, or why it was not asked; **Duration**; **Certificate** with
+its end; **Outbound proxy** and **Source address**; for an error the **Reason** in words, its **Code** and the **Server's message**
+(English, `lang="en" translate="no"`, R-UI-216); the **Time**. The upstream's own error answer (`body`) is folded under Technical
+details as text, never as markup, with its media type and size. **Copy report** copies the sentence, every fact, the time in the
+reader's form and in UTC, and the answer's text. A screen projects what belongs to it under the sentence (**Allow <host>**, Q-UI-346).
+
+**Applied in the spec:** R-UI-082, R-UI-216. Code: [upstream-test-result.ts](../../web/src/app/features/repositories/upstream-test-result.ts),
+the facts and the report in [upstream-test-report.ts](../../web/src/app/features/repositories/upstream-test-report.ts), used by
+`upstream-settings.ts` and `upstream-registry.html`. Tests: `upstream-test-result.spec.ts` (four cases, about 0.15 s: thirteen answers
+from an anonymous `200` to the egress refusal with their tones, sentences and facts; the rendered result and its report; an error answer
+folded as text; the server's sentence marked English), `upstream-registry.spec.ts` (the owner's case), `upstream-settings.spec.ts`; the
+six states of `upstream-test-result.states.spec.ts` (`make ui-states`, about 6 s) and the render walk `upstream-registry-tests` in
+English and German.
+
+### Q-UI-1227 · An issuer's key error shows its facts without a click
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the issuer's **Keys** tab said the failure of the last fetch in words ("The issuer answered with the error status 502.") and
+folded the stored line (`http_status status=502 host=gitlab.example.com`) under Technical details: the host the fetch asked was a click
+away. The line holds the failure class, the status and the host, never bytes of an answer (R-CI-003).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The line's facts below the sentence: **Code**, **HTTP status** with its reason phrase, **Host**, and the line itself as the server's text (chosen) | The form of R-UI-216 and Q-UI-1226 | Nothing a person needs is folded | A list in a list's value |
+| (b) As it was | — | Compact | The host behind a click, against R-UI-216 |
+
+**Choice:** (a). The list of issuers keeps its one sentence per row, a compact place
+([H-2001](#h-2001--the-list-of-ci-issuers-says-a-key-fetchs-failure-in-a-sentence-only)).
+
+**Applied in the spec:** R-UI-035, R-UI-216. Code: `ciKeyErrorFacts` of [ci-common.ts](../../web/src/app/features/ci/ci-common.ts),
+[issuer-keys.ts](../../web/src/app/features/ci/issuer-keys.ts). Tests: `ci-issuer-screens.spec.ts` (the keys tab), the render walk
+`failure-ci-issuer-keys`.
+
+### Q-UI-1228 · Every place that tests something, and the form of its result
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the owner's rule that a decision at one place holds for every place (2026-11-19) applied to Q-UI-1226: every "Test …" of the UI
+that shows a result was looked up (2026-11-25) and given the form, or recorded with why it has it already.
+
+| Place | What the server answers | What it showed | What it shows now |
+|---|---|---|---|
+| A remote repository's settings › **Upstream** › **Test connection** (`upstream-settings.ts`) | `UpstreamTestResult` of `POST …/upstream-tests` (the unsaved section, never the stored password) | Its own verdict from the status, a list of five facts, the reason with the server's text folded | The shared result (Q-UI-1226) |
+| **New … repository**, class Remote › **Test connection** (the same component) | The same | The same | The shared result |
+| **Admin area › Upstream registries › <registry>** › **Account** › **Test connection** (`upstream-registry.html`) | `UpstreamTestResult` of `POST …/upstream-test` (saved) or `…/upstream-tests` (typed) | One sentence from its own rule, the reason, the server's text folded | The shared result |
+| **Admin area › Upstream registries › Registries of this installation** (`registry-presets.ts`) | No test: a preset holds no credential and is tested where it is used, in the creation form | — | Unchanged |
+| **Admin area › Settings › Storage** › **Test link** (`storage-settings.html`) | `DownloadLinkTest`: a signed link and the `curl` command; the test is the person's fetch | The link and the command; a refusal in the error notice | Unchanged: its failure is the error notice of R-UI-216 already |
+| **Admin area › CI › <issuer>** › **Keys** › **Refresh keys** (`issuer-keys.ts`) | `CiKeyStatus` with the line `lastError` | The sentence, the line folded | The line's facts without a click (Q-UI-1227) |
+| **Admin area › CI** (`issuer-list.ts`) | The same line per issuer | The sentence | Unchanged, a compact row (H-2001) |
+| **CI › Test with claims** › **Evaluate** (`claim-tester.ts`) | `CiEvaluateResult`: every mapping looked at, each condition with expected and actual, the grants, the token | All of it | Unchanged: it shows every fact |
+| An endpoint's exposure rule, the preview (`exposure-rule-editor.ts`) | `ExposureCheck`: the verdict, its reason, the rule, the warnings | All of it, in words | Unchanged |
+| A permission policy, **Validate** (`policy-editor.ts`) | `PolicyValidation`: problems, warnings, the repositories it covers | All of it | Unchanged |
+| **Admin area › System › Storage** › a damaged blob › **Check again** (`storage-page.html`) | `DamagedBlobRecheck`: the copies after the reads | The copies' states | Unchanged |
+
+No place of the UI tests an OIDC provider, a Bastion (`/api/v1/bastion/check` is the Bastion's own call) or a notification: none
+exists.
+
+**Choice:** the table. One component serves the three places of the upstream test; the others answer with every fact already, or
+with the error notice of R-UI-216, and get no component of their own: a shared test result for answers of other shapes would only wrap
+their lists.
+
+**Applied in the spec:** R-UI-082, R-UI-216.
+
 ## What this does not cover
 
 ### H-1964 · A read that fails alone while its page stands is read again only by the person or its next use
@@ -26378,3 +26466,9 @@ from the grades on. Sorting by grade loads the list up to 1,000 entries and sort
 sort by grade; a repository with more items sorts its first 1,000 by name and grade, and the worst item may be the 1,001st. The
 list says so under the table. What makes it real: a remote repository that caches more than 1,000 packages, and a reader who
 looks for its worst one. Hardening: a server sort over a stored grade (Q-UI-373 (b)).
+
+### H-2001 · The list of CI issuers says a key fetch's failure in a sentence only
+
+Stage: the list of **Admin area › CI** ([issuer-list.ts](../../web/src/app/features/ci/issuer-list.ts)). Subject: an issuer whose last
+key fetch failed. Live: the row says the failure in words (Q-UI-1227); its status and host are on the issuer's **Keys** tab, one click
+away. A compact place, as R-UI-216's toast is; the row has no **Details** of its own.

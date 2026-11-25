@@ -314,7 +314,15 @@ describe('An account the configuration declares on a well-known repository (R-UI
   });
 
   it("R-UI-082 R-REPO-064 the registry's 401 with an account its token service accepted is a success, and without an account no error", async () => {
-    const tokenService = { host: 'auth.docker.io', allowed: true, receivesCredential: true };
+    const tokenService = {
+      host: 'auth.docker.io',
+      allowed: true,
+      receivesCredential: true,
+      realm: 'https://auth.docker.io/token',
+      service: 'registry.docker.io',
+      extraHost: 'auth.docker.io',
+      httpStatus: 200,
+    };
     const { fixture, root, api } = await render('docker-hub', {
       setup: (a) => {
         a.set('docker-hub', { account: configuredAccount('readable'), accountRaisesLimit: false });
@@ -326,13 +334,20 @@ describe('An account the configuration declares on a well-known repository (R-UI
     const verdict = root.querySelector('.test-result .verdict')!;
     expect(text(verdict)).toContain('The upstream answered and accepted the credentials.');
     expect(text(verdict)).not.toContain('error');
-    expect(verdict.querySelector('.ok-icon')).not.toBeNull();
+    expect(root.querySelector('.test-result .tone-ok')).not.toBeNull();
+    // What the test learned stands below it without a click (Q-UI-1226).
+    const facts = Object.fromEntries(
+      [...root.querySelectorAll('.test-result dt')].map((dt) => [text(dt), text(dt.nextElementSibling!)]),
+    );
+    expect(facts['HTTP status']).toBe('401 Unauthorized, the registry asks for a login at its token service, as it does before every login');
+    expect(facts['Token service']).toBe("auth.docker.io, allowed by the further host auth.docker.io, receives the credential");
+    expect(facts['Login']).toBe('200 OK, the account was accepted');
 
-    api.testResult = { ...api.testResult, verdict: 'login_asked', httpStatus: 401, authenticated: null, tokenService };
+    api.testResult = { ...api.testResult, verdict: 'login_asked', credential: 'none', httpStatus: 401, authenticated: null, tokenService: { ...tokenService, httpStatus: null } };
     buttonByText(section(root), 'Test connection').click();
     await settle(fixture);
     expect(text(root.querySelector('.test-result .verdict')!)).toContain('The registry answered and asks for a login at its token service.');
-    expect(root.querySelector('.test-result .verdict .warn-icon')).toBeNull();
+    expect(root.querySelector('.test-result .tone-info')).not.toBeNull();
     await expectAccessible(root);
   });
 

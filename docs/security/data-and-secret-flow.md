@@ -261,6 +261,31 @@ The viewer sees nothing the browser did not already hold: the same answer was re
 changes is that **Copy report** puts it into a text that travels, which [H-1960](#h-1960--a-failures-report-carries-what-the-answer-named)
 names.
 
+## A connection test's result in the browser
+
+**Test connection** of a remote repository and of an upstream registry shows what the test learned and copies it as one text
+([Q-UI-1226](../spec/api-and-ui.md#q-ui-1226--a-tests-result-shows-what-it-learned-in-one-shared-component-with-copy-report)). Unlike a
+failed answer, these facts come from the server, which knows the repository's credential, so the server leaves it out
+([Q-REPO-489](../spec/repositories-and-proxy.md#q-repo-489--the-upstream-tests-answer-names-what-it-asked-and-what-came-back),
+`addressOf` of [probe.go](../../internal/proxy/upstream/probe.go), `answerBody` of
+[probe_body.go](../../internal/proxy/upstream/probe_body.go)):
+
+- **An address without its query and its user information**: the address the probe asked and the token service's realm. A signed
+  address carries its credential in the query.
+- **How the credential went, never what it is**: `credential` is `none`, `basic` or `bearer`.
+- **The token service's status, never its body**: the body of a login's answer is the token.
+- **An upstream's error answer as text, with the credential replaced**: for a status from 400 on without a token service, at most
+  4,000 bytes of a textual answer, in which every value the server sent as the credential (the `Authorization` value, its token or
+  Base64 part, a Basic password) reads `[redacted]`; an upstream that echoes the request's headers shows none of it. A binary answer
+  gives its type and size only. The browser writes the text as a text node, never as markup.
+
+Who sees it: whoever may run the test, a holder of `repositories:write-config` or the project's Owner (R-AUTHZ-026), the same who may
+point the repository at that address. An egress refusal names the refused address and the rule (`egress_denied`), and an internal
+service's error page is shown to them and to nobody else; what that adds to the test's channel is
+[H-282](egress.md#h-282--the-upstream-test-tells-a-holder-of-repositorieswrite-config-what-it-sees-of-an-address).
+**Copy report** puts the facts into a text that travels, as [H-1960](#h-1960--a-failures-report-carries-what-the-answer-named) says of a
+failure; a credential the upstream returned in another form is [H-2000](#h-2000--a-credential-an-upstream-returns-in-another-form-is-shown).
+
 ## What a process holds, and what Valkey may hold
 
 A replica holds in memory the key ring and the credentials it has read, for as long as it uses them. The plaintext of a sealed
@@ -499,6 +524,17 @@ credential that a future call of the UI sends in its query under a name the rule
   cursor (`cursor=`) is an opaque position, not a credential. The rule reads names, so a call that put a token into `q=` or into
   `cursor=` would show and copy it.
 - What makes it real: a new call that authenticates by its query. Its parameter's name joins the rule in the same change.
+
+### H-2000 · A credential an upstream returns in another form is shown
+
+Stage: `answerBody` of [probe_body.go](../../internal/proxy/upstream/probe_body.go), which replaces the values of the repository's
+credential in an upstream's error answer (Q-REPO-489). Subject: the repository's credential, in an answer that holds it in a form the
+server did not send: URL-encoded, in another Base64 alphabet, cut by a line break, or a token the upstream derived from it.
+
+- **Dormant.** No registry of the well-known ones echoes a request's headers in an error answer (not verified against each; the fakes
+  of the formats do not). A test pointed at a service that echoes them gets the verbatim values replaced.
+- What makes it real: an upstream, or a proxy in front of it, whose error page reflects the `Authorization` header encoded. The caller
+  is one who typed the credential or may set the repository's address; the report it copies carries what the page showed.
 
 ### H-325 · A moved action tag runs in a job that holds release secrets
 

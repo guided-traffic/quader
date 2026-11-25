@@ -23,11 +23,11 @@ import (
 type answers struct{}
 
 func (answers) TestSaved(context.Context, repository.Repository, repository.RemoteSettings) repository.UpstreamTestResult {
-	return repository.UpstreamTestResult{Verdict: "not_sent"}
+	return repository.UpstreamTestResult{Verdict: "not_sent", Credential: repository.AuthNone}
 }
 
 func (answers) TestUnsaved(context.Context, repository.UnsavedProbe) repository.UpstreamTestResult {
-	return repository.UpstreamTestResult{Verdict: "not_sent"}
+	return repository.UpstreamTestResult{Verdict: "not_sent", Credential: repository.AuthNone}
 }
 
 // ownerFixture is the fixture with a sealing ring and a prober on the repository service of both replicas.

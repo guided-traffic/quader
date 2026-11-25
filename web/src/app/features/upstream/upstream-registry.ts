@@ -20,7 +20,6 @@ import { UPSTREAM_PROJECT, systemWork } from '../../core/upstream-project';
 import { SelectField, SelectOption, TextField } from '../../shared/access/fields';
 import { Confirm } from '../../shared/confirm-dialog';
 import { ErrorNotice } from '../../shared/error-notice';
-import { TechnicalDetails } from '../../shared/technical-details';
 import { FormatIconView } from '../../shared/format-icon';
 import { asApiError, failureOf, valueOf } from '../../shared/paged-resource';
 import { QuaderDialog } from '../../shared/ui/dialog';
@@ -36,7 +35,7 @@ import { ScannerList, SystemApi } from '../../api/system-api';
 import { ScannerReplicas } from '../../shared/scanner/scanner-replicas';
 import { scannerGroup } from '../../shared/scanner/scanner-model';
 import { groupedFingerprint } from '../repositories/deb-signing-keys';
-import { upstreamTestErrorText, upstreamVerdictText, upstreamVerdictTone } from '../repositories/upstream-test-words';
+import { UpstreamTestResultView } from '../repositories/upstream-test-result';
 import { AccountAgainAnswer, AccountAgainData, AccountAgainDialog } from './account-again-dialog';
 import { AuthMode, HostRow, authOptions, credentialHostsOf, hostOf, sameHosts } from './upstream-account';
 import { UpstreamActions } from './upstream-actions';
@@ -86,9 +85,9 @@ function needsAccount(e: ApiError): boolean {
     ScannerReplicas,
     SelectField,
     Switch,
-    TechnicalDetails,
     TextField,
     Tooltip,
+    UpstreamTestResultView,
     VisibilityIcon,
     VisibilityLevelControl,
   ],
@@ -310,17 +309,9 @@ export class UpstreamRegistry {
     return $localize`:@@upstream.credential-hosts:The credential is sent to ${list}:hosts:.`;
   });
   protected readonly testing = signal(false);
-  protected readonly testResult = signal<UpstreamTestResult | null>(null);
+  /** The last test's answer and when it came, shown by the shared result (Q-UI-1226). */
+  protected readonly testResult = signal<{ readonly value: UpstreamTestResult; readonly at: Date } | null>(null);
   protected readonly testError = signal<ApiError | null>(null);
-  protected readonly errorText = upstreamTestErrorText;
-  /** The server's verdict in words (Q-REPO-488): the screen derives none from the status. */
-  protected readonly testSummary = computed(() => {
-    const r = this.testResult();
-    if (!r) return null;
-    const tone = upstreamVerdictTone(r.verdict);
-    return { good: tone === 'ok', tone, text: upstreamVerdictText(r.verdict), error: r.error };
-  });
-
   // ---- Details (R-UI-188 section 4) ----
 
   protected readonly detailsOpen = signal(false);
@@ -647,7 +638,7 @@ export class UpstreamRegistry {
     try {
       // A declared account is the saved repository's: its files take part on the server only (R-REPO-077).
       if (this.configured() || (!this.addressDirty() && !this.accountDirty())) {
-        this.testResult.set(await this.api.testSaved(r.key));
+        this.testResult.set({ value: await this.api.testSaved(r.key), at: new Date() });
       } else {
         const mode = this.authMode();
         const remote: Record<string, unknown> = {
@@ -657,7 +648,7 @@ export class UpstreamRegistry {
           ...(mode === 'basic' ? { username: this.username() } : {}),
           ...(mode !== 'none' && this.password() !== '' ? { password: { value: this.password() } } : {}),
         };
-        this.testResult.set(await this.api.testUnsaved(r.format, remote));
+        this.testResult.set({ value: await this.api.testUnsaved(r.format, remote), at: new Date() });
       }
     } catch (e) {
       this.testError.set(asApiError(e));

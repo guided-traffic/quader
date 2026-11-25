@@ -161,6 +161,8 @@ function notFound(key: string): ApiError {
 /** A test that reached the upstream and was let in. */
 export const REACHED: UpstreamTestResult = {
   verdict: 'accepted',
+  probeUrl: 'https://registry-1.docker.io/v2/',
+  credential: 'basic',
   reachable: true,
   httpStatus: 200,
   authenticated: true,
@@ -169,6 +171,7 @@ export const REACHED: UpstreamTestResult = {
   outboundProxy: null,
   sourceAddress: null,
   tokenService: null,
+  body: null,
   error: null,
 };
 

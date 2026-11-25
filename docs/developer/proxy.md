@@ -129,6 +129,13 @@ from whether the probe carried the repository's credential (the hop policy's hea
 concludes a test (Q-REPO-488). A screen or another reader of the API says the verdict and derives none from `httpStatus`; a new case of the
 probe adds its row to `TestR_REPO_024_TheVerdictOfTheUpstreamTest`.
 
+The result names what the test did (Q-REPO-489): `probeUrl` and the token service's `realm` through `addressOf` (scheme, host, port and
+path: a query or user information never leaves the process), `credential` (how the hop policy's header went, never its value), the
+token service's `service`, `extraHost` (`Client.extraHostOf`, the pattern that let it through) and `httpStatus`, and for an upstream's own
+error status without a token service `body`, built by `answerBody` of [probe_body.go](../../internal/proxy/upstream/probe_body.go): the
+media type, the bytes read, and a textual answer's first 4,000 bytes with every value of `Client.credentialValues` replaced. The token
+service's body is read for the verdict and dropped.
+
 ### Wiring
 
 [wire_proxy.go](../../internal/app/wire_proxy.go) builds `Clients` (the outbound factory, `repository.NewSecretStore`, the key ring, the cache

@@ -281,10 +281,11 @@ describe('The upstream settings of a remote repository (F-54, R-UI-021, R-UI-082
       ]);
       const result = r.root.querySelector('[data-testid="upstream-test-result"]')!;
       expect(text(result)).toContain('The upstream answered and accepted the credentials.');
-      expect(result.className).toContain('ok');
+      expect(result.className).toContain('tone-ok');
       const verdict = facts(r.root.querySelector('.test-result')!);
-      expect(verdict['HTTP status']).toBe('200');
-      expect(verdict['Credentials']).toBe('accepted');
+      expect(verdict['Address asked']).toBe('https://registry.npmjs.org/-/ping');
+      expect(verdict['HTTP status']).toBe('200 OK');
+      expect(verdict['Credential sent']).toBe('Username and password');
       expect(verdict['Duration']).toBe('184 ms');
       expect(verdict['Certificate']).toContain('CN=registry.npmjs.org');
       expect(r.root.textContent).not.toContain(SECRET);
@@ -307,18 +308,20 @@ describe('The upstream settings of a remote repository (F-54, R-UI-021, R-UI-082
       await settle(r.fixture);
       let result = r.root.querySelector('[data-testid="upstream-test-result"]')!;
       expect(text(result)).toContain('The upstream could not be reached.');
-      expect(result.className).toContain('warn');
-      expect(result.className).not.toContain('ok');
-      expect(facts(r.root.querySelector('.test-result')!)['Reason']).toContain("The upstream's host name could not be resolved.");
-      expect(text(r.root.querySelector('.test-result [data-testid="technical-details"]')!)).toBe('npm.internal.example does not resolve dns_error');
+      expect(result.className).toContain('tone-error');
+      const shown = facts(r.root.querySelector('.test-result')!);
+      expect(shown['Reason']).toContain("The upstream's host name could not be resolved.");
+      expect(shown['HTTP status']).toBe('No answer');
+      expect(shown['Code']).toBe('dns_error');
+      expect(shown["Server's message"]).toBe('npm.internal.example does not resolve');
 
       fake.upstreamTestResult = sampleUpstreamTestResult({ verdict: 'refused', httpStatus: 401, authenticated: false });
       button(r.root, 'Test connection').click();
       await settle(r.fixture);
       result = r.root.querySelector('[data-testid="upstream-test-result"]')!;
       expect(text(result)).toContain('refused the credentials');
-      expect(result.className).not.toContain('ok');
-      expect(facts(r.root.querySelector('.test-result')!)['Credentials']).toBe('refused');
+      expect(result.className).toContain('tone-error');
+      expect(facts(r.root.querySelector('.test-result')!)['HTTP status']).toBe('401 Unauthorized, the upstream refused the credential');
       await expectAccessible(r.root);
     });
 
@@ -505,7 +508,15 @@ describe('The upstream settings of a remote repository (F-54, R-UI-021, R-UI-082
             verdict: 'token_service_denied',
             httpStatus: 401,
             authenticated: null,
-            tokenService: { host: 'gitlab.example.com', allowed: false, receivesCredential: false },
+            tokenService: {
+              host: 'gitlab.example.com',
+              allowed: false,
+              receivesCredential: false,
+              realm: 'https://gitlab.example.com/jwt/auth',
+              service: 'container_registry',
+              extraHost: null,
+              httpStatus: null,
+            },
             error: { code: 'foreign_host_denied', message: 'The token service is on gitlab.example.com.' },
           });
         },
@@ -522,13 +533,25 @@ describe('The upstream settings of a remote repository (F-54, R-UI-021, R-UI-082
       const result = r.root.querySelector('[data-testid="upstream-test-result"]')!;
       expect(text(result)).toContain('its login is on a host this repository may not reach');
       expect(text(r.root.querySelector('.allow')!)).toContain('gitlab.example.com');
-      expect(facts(r.root.querySelector('.test-result')!)['Token service']).toBe('gitlab.example.com, not allowed for this repository');
+      const shown = facts(r.root.querySelector('.test-result')!);
+      expect(shown['Token service']).toBe('gitlab.example.com, not allowed for this repository');
+      expect(shown['Login address']).toBe('https://gitlab.example.com/jwt/auth');
+      expect(shown['Login']).toBe('Not asked: the repository may not reach the host.');
       await expectAccessible(r.root);
 
       fake.upstreamTestResult = sampleUpstreamTestResult({
         httpStatus: 401,
         authenticated: true,
-        tokenService: { host: 'gitlab.example.com', allowed: true, receivesCredential: true },
+        verdict: 'accepted',
+        tokenService: {
+          host: 'gitlab.example.com',
+          allowed: true,
+          receivesCredential: true,
+          realm: 'https://gitlab.example.com/jwt/auth',
+          service: 'container_registry',
+          extraHost: 'gitlab.example.com',
+          httpStatus: 200,
+        },
       });
       r.root.querySelector<HTMLButtonElement>('[data-testid="upstream-allow-host"]')!.click();
       await settle(r.fixture);

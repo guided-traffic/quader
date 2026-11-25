@@ -52,6 +52,7 @@ import {
   malwareDatabaseFailure,
   mirrorFailure,
   registryTestFailure,
+  registryTests,
   remoteSettingsFailures,
   signatureNote,
   signatureRootFailure,
@@ -1630,6 +1631,8 @@ const createForms: Screen[] = (['oci', 'npm', 'ansible', 'nuget', 'deb'] as cons
 /** An answer of the upstream test, as the server gives it (R-REPO-024, R-REPO-064), for a state of the upstream section. */
 function testAnswer(over: Record<string, unknown>): Record<string, unknown> {
   return {
+    probeUrl: 'https://registry.gitlab.com/v2/',
+    credential: 'basic',
     reachable: true,
     httpStatus: 401,
     authenticated: null,
@@ -1638,8 +1641,22 @@ function testAnswer(over: Record<string, unknown>): Record<string, unknown> {
     outboundProxy: null,
     sourceAddress: null,
     tokenService: null,
+    body: null,
     error: null,
     ...over,
+  };
+}
+
+/** GitLab's token service as the test names it, with the status of its answer to the login. */
+function gitlabTokenService(httpStatus: number): Record<string, unknown> {
+  return {
+    host: 'gitlab.com',
+    allowed: true,
+    receivesCredential: true,
+    realm: 'https://gitlab.com/jwt/auth',
+    service: 'container_registry',
+    extraHost: 'gitlab.com',
+    httpStatus,
   };
 }
 
@@ -1662,8 +1679,8 @@ function upstreamWalk(preset: string | null, full: boolean): Screen['walk'] {
       await page.locator('#f-remote-password').fill('a-password-of-the-renders');
       yield 'preset-credentials';
       const answers: [string, Record<string, unknown>][] = [
-        ['test-accepted', testAnswer({ verdict: 'accepted', authenticated: true, tokenService: { host: 'gitlab.com', allowed: true, receivesCredential: true } })],
-        ['test-refused', testAnswer({ verdict: 'refused', authenticated: false, tokenService: { host: 'gitlab.com', allowed: true, receivesCredential: true } })],
+        ['test-accepted', testAnswer({ verdict: 'accepted', authenticated: true, tokenService: gitlabTokenService(200) })],
+        ['test-refused', testAnswer({ verdict: 'refused', authenticated: false, tokenService: gitlabTokenService(401) })],
         [
           'test-unreachable',
           testAnswer({
@@ -1678,7 +1695,15 @@ function upstreamWalk(preset: string | null, full: boolean): Screen['walk'] {
           'test-token-foreign',
           testAnswer({
             verdict: 'token_service_denied',
-            tokenService: { host: 'gitlab.example-company.com', allowed: false, receivesCredential: false },
+            tokenService: {
+              host: 'gitlab.example-company.com',
+              allowed: false,
+              receivesCredential: false,
+              realm: 'https://gitlab.example-company.com/jwt/auth',
+              service: 'container_registry',
+              extraHost: null,
+              httpStatus: null,
+            },
             error: {
               code: 'foreign_host_denied',
               message: "The registry's token service is on gitlab.example-company.com, which is neither the upstream nor one of the repository's further hosts; Quader did not ask it.",
@@ -3334,6 +3359,8 @@ export const screens: readonly Screen[] = [
   { id: 'failure-repository-settings', path: `${P}/repositories/npmjs/settings`, kinds: admins, walk: remoteSettingsFailures, de: true },
   { id: 'failure-repository-mirror', path: `${P}/repositories/npmjs/settings`, kinds: admins, walk: mirrorFailure, de: true },
   { id: 'failure-upstream-registry', path: '/ui/admin/upstream/debian', kinds: admins, walk: registryTestFailure, de: true },
+  // Test connection of an upstream registry in each answer a person meets, with what the test learned (Q-UI-1225, Q-UI-1226).
+  { id: 'upstream-registry-tests', path: '/ui/admin/upstream/docker-hub', kinds: admins, walk: registryTests, de: true },
   { id: 'failure-ci-claim-tester', path: `/ui/admin/ci/${ciIssuer}/test`, kinds: admins, walk: claimTesterFailure, de: true },
   { id: 'failure-ci-issuer-keys', path: `/ui/admin/ci/${ciIssuer}?tab=keys`, kinds: admins, walk: issuerKeysFailure, de: true },
   { id: 'failure-ci-issuers', path: '/ui/admin/ci', kinds: admins, walk: issuerListFailure, de: true },

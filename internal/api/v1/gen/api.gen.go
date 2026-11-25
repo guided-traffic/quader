@@ -5797,6 +5797,27 @@ func (e UpstreamRepositoryStateRequestState) Valid() bool {
 	}
 }
 
+// Defines values for UpstreamTestResultCredential.
+const (
+	UpstreamTestResultCredentialBasic  UpstreamTestResultCredential = "basic"
+	UpstreamTestResultCredentialBearer UpstreamTestResultCredential = "bearer"
+	UpstreamTestResultCredentialNone   UpstreamTestResultCredential = "none"
+)
+
+// Valid indicates whether the value is a known member of the UpstreamTestResultCredential enum.
+func (e UpstreamTestResultCredential) Valid() bool {
+	switch e {
+	case UpstreamTestResultCredentialBasic:
+		return true
+	case UpstreamTestResultCredentialBearer:
+		return true
+	case UpstreamTestResultCredentialNone:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for UpstreamTestResultErrorCode.
 const (
 	UpstreamTestResultErrorCodeConnectionRefused         UpstreamTestResultErrorCode = "connection_refused"
@@ -17467,8 +17488,19 @@ type UpstreamTestRequest struct {
 type UpstreamTestResult struct {
 	// Authenticated `false` for `401` and `403`; `null` when there was no response. For the `401` of a container registry that asks for a token (a Bearer challenge) it is the verdict of the registry's token service on the repository's credential, asked once without a scope as a client's login does: `true` for `200`, `false` for `401` and `403`; `null` when no credential was given, when the token service's host does not receive it, or when that host is not allowed (R-REPO-064).
 	Authenticated *bool `json:"authenticated"`
-	DurationMs    int64 `json:"durationMs"`
-	Error         *struct {
+
+	// Body The upstream's own answer to the probe when it answered with a status from 400 on and named no token service (Q-REPO-489); `null` otherwise. `text` is the answer as text when its media type is textual and it is UTF-8, at most 4,000 bytes (`cut` when it held more), with every value of the repository's credential replaced by `[redacted]`; empty for a binary answer. `bytes` counts what the probe read, at most 64 KiB.
+	Body *struct {
+		Bytes       int    `json:"bytes"`
+		ContentType string `json:"contentType"`
+		Cut         bool   `json:"cut"`
+		Text        string `json:"text"`
+	} `json:"body"`
+
+	// Credential How the probe carried the repository's credential; `none` when it carried none. Never the credential itself.
+	Credential UpstreamTestResultCredential `json:"credential"`
+	DurationMs int64                        `json:"durationMs"`
+	Error      *struct {
 		Code    UpstreamTestResultErrorCode `json:"code"`
 		Message string                      `json:"message"`
 	} `json:"error"`
@@ -17476,6 +17508,9 @@ type UpstreamTestResult struct {
 
 	// OutboundProxy The named proxy the request went through; `null` until named proxies exist.
 	OutboundProxy *string `json:"outboundProxy"`
+
+	// ProbeUrl The address the probe asked: scheme, host, port and path, without the query and the user information, which may carry a credential (Q-REPO-489). `null` when no probe was built: the repository or the installation is offline, or the credential cannot be read on this replica.
+	ProbeUrl *string `json:"probeUrl"`
 
 	// Reachable The upstream answered with an HTTP response, whatever its status.
 	Reachable bool `json:"reachable"`
@@ -17494,9 +17529,21 @@ type UpstreamTestResult struct {
 	// is sent to it (the origin, or an entry with `sendCredentials: true`). A host that is not allowed is the error
 	// `foreign_host_denied`, and the token service was not asked.
 	TokenService *struct {
-		Allowed            bool   `json:"allowed"`
-		Host               string `json:"host"`
+		Allowed bool `json:"allowed"`
+
+		// ExtraHost The `extraHosts` pattern that let the test reach the token service; `null` for the upstream's own host and for a host that is not allowed.
+		ExtraHost *string `json:"extraHost"`
+		Host      string  `json:"host"`
+
+		// HttpStatus The status of the token service's answer to the login; `null` when it was not asked. Its body, which holds the token, is never kept.
+		HttpStatus *int `json:"httpStatus"`
+
+		// Realm The challenge's realm, the token service's address, without its query (Q-REPO-489).
+		Realm              string `json:"realm"`
 		ReceivesCredential bool   `json:"receivesCredential"`
+
+		// Service The challenge's `service`; `null` without one.
+		Service *string `json:"service"`
 	} `json:"tokenService"`
 
 	// Verdict What the test concluded from everything it saw (Q-REPO-488). A reader says this and derives no verdict from
@@ -17512,6 +17559,9 @@ type UpstreamTestResult struct {
 	// egress policy, the source network, a credential this replica cannot read).
 	Verdict UpstreamTestResultVerdict `json:"verdict"`
 }
+
+// UpstreamTestResultCredential How the probe carried the repository's credential; `none` when it carried none. Never the credential itself.
+type UpstreamTestResultCredential string
 
 // UpstreamTestResultErrorCode defines model for UpstreamTestResult.Error.Code.
 type UpstreamTestResultErrorCode string

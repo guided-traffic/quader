@@ -926,7 +926,7 @@ func TestR_REPO_024_ABearerChallengeOfAHandshakeFormatIsReachable(t *testing.T) 
 	}
 	// The challenge names a token service the repository does not list (R-REPO-064): the test says so and asks it nothing.
 	if res.Error == nil || res.Error.Code != CodeForeignHostDenied || !strings.Contains(res.Error.Message, "auth.example.com") ||
-		res.TokenService == nil || *res.TokenService != (repository.UpstreamTokenService{Host: "auth.example.com"}) {
+		res.TokenService == nil || res.TokenService.Host != "auth.example.com" || res.TokenService.Allowed || res.TokenService.Realm != "https://auth.example.com/token" {
 		t.Fatalf("a token service on a foreign host: %+v %+v", res.Error, res.TokenService)
 	}
 	// With a stored bearer token there is no handshake: the same answer says the registry refused the token.
@@ -990,6 +990,9 @@ func TestUpstreamTest(t *testing.T) {
 		}
 		if r := got.last(t); r.path != "/-/ping" {
 			t.Fatalf("the probe requested %q: the format's probe path is not used", r.path)
+		}
+		if res.ProbeURL == nil || *res.ProbeURL != srv.URL+"/-/ping" || res.Credential != repository.AuthNone {
+			t.Fatalf("probe address %v, credential %s", res.ProbeURL, res.Credential)
 		}
 	})
 
@@ -1126,7 +1129,7 @@ func TestUpstreamTest(t *testing.T) {
 		s := settings(srv.URL+"/", repository.AuthNone)
 		s.Availability.Mode = repository.AvailabilityOffline
 		res := f.clients.TestSaved(t.Context(), repo(101, "npm-off", 1), s)
-		if res.Reachable || res.Error == nil || res.Error.Code != "offline" || res.Verdict != VerdictNotSent {
+		if res.Reachable || res.Error == nil || res.Error.Code != "offline" || res.Verdict != VerdictNotSent || res.Credential != repository.AuthNone || res.ProbeURL != nil {
 			t.Fatalf("offline: %+v", res)
 		}
 		g := newFixture(t, fixtureOpts{servers: []*httptest.Server{srv}, proxy: config.Proxy{GlobalOffline: true}})
