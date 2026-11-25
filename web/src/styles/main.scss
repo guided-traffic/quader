@@ -41,6 +41,16 @@ body {
   font-family: var(--quader-font-mono);
 }
 
+// A value in running text (a host, a repository's key, a digest, a version, a path, a file name) is a `code` the template marks
+// `translate="no"` (Q-UI-1213): it breaks at none of its hyphens and dots while it fits on a line of its own, and inside itself only where
+// it is longer than the line, so it never runs out of its box. "registry-" / "1.docker.io" broke in a sentence at 390 px; a Secret's name
+// had a rule of its own (`white-space: nowrap`), which would run a name longer than the line out of the page.
+code[translate='no'] {
+  display: inline-block;
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
+}
+
 // A date, a time or both are one value: a line breaks before or after it, never inside it (R-UI-171). A list's cell held this
 // already (`td time`); a fact's "ClamAV database of Nov 24, 2026" broke between "Nov" and "24" at 390 px on the days whose date
 // reached the line's end.

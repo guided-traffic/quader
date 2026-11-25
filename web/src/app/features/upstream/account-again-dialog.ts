@@ -2,11 +2,12 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { UpstreamRepositoryAccount } from '../../api/upstream-api';
 import { SelectField, SelectOption, TextField } from '../../shared/access/fields';
 import { DIALOG_DATA, DialogClose, DialogRef, DialogTitle } from '../../shared/ui/dialog';
+import { ValueList } from '../../shared/value-list';
 import { AuthMode, authOptions } from './upstream-account';
 
 export interface AccountAgainData {
-  /** The hosts the stored account goes to now, as one list in words. */
-  readonly hosts: string;
+  /** The hosts the stored account goes to now; the dialog says them as one list of values (Q-UI-1213). */
+  readonly hosts: readonly string[];
   readonly authMode: AuthMode;
   readonly username: string;
 }
@@ -23,11 +24,11 @@ export interface AccountAgainAnswer {
  */
 @Component({
   selector: 'quader-account-again-dialog',
-  imports: [DialogClose, DialogTitle, SelectField, TextField],
+  imports: [DialogClose, DialogTitle, SelectField, TextField, ValueList],
   template: `
     <h2 quaderDialogTitle i18n="@@wellknown.again.title">Enter the account again</h2>
     <div class="dialog-body">
-      <p i18n="@@wellknown.again.text">The account goes to {{ data.hosts }} only. Enter it again for the new address, or remove it.</p>
+      <p i18n="@@wellknown.again.text">The account goes to <quader-value-list [values]="data.hosts" /> only. Enter it again for the new address, or remove it.</p>
       <form id="account-again" (submit)="save($event)" novalidate>
         <quader-select-field
           i18n-label="@@upstream.auth"

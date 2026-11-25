@@ -173,11 +173,6 @@
   display: flex;
   align-items: flex-start;
   margin: 0 0 var(--quader-space-3);
-
-  // A Secret's name is one word: it never breaks at one of its hyphens.
-  .secret-name {
-    white-space: nowrap;
-  }
 }
 
 .account-facts {

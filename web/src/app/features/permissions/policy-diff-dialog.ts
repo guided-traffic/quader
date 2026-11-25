@@ -20,7 +20,7 @@ export interface PolicyDiffData {
       @if (data.lines.length === 0) {
         <p i18n="@@policy-diff.none">Nothing differs from the stored policy.</p>
       } @else {
-        <p i18n="@@policy-diff.intro">Changes to the policy {{ data.name }} since you opened it:</p>
+        <p i18n="@@policy-diff.intro">Changes to the policy <code translate="no">{{ data.name }}</code> since you opened it:</p>
         <ul class="diff">
           @for (line of data.lines; track $index) {
             <li [class]="line.change">

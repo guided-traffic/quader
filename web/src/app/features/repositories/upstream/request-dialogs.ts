@@ -86,11 +86,11 @@ export interface AllowDialogData {
             <label class="mode-option">
               <input type="radio" name="as" [checked]="scope() === 'package'" (change)="scope.set('package')" />
               <span class="mode-title" i18n="@@upstream.allow.as-package">Every version</span>
-              <span class="hint" i18n="@@upstream.allow.as-package-hint">{{ data.name }} is delivered with every version, future ones included.</span>
+              <span class="hint" i18n="@@upstream.allow.as-package-hint"><code translate="no">{{ data.name }}</code> is delivered with every version, future ones included.</span>
             </label>
           </fieldset>
         } @else {
-          <p i18n="@@upstream.allow.package-text">{{ data.name }} is delivered with every version, future ones included.</p>
+          <p i18n="@@upstream.allow.package-text"><code translate="no">{{ data.name }}</code> is delivered with every version, future ones included.</p>
         }
         <quader-checkbox [checked]="every()" (checkedChange)="every.set($event)">
           <ng-container i18n="@@upstream.allow.download-every">Download every version into the cache now</ng-container>

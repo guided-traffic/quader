@@ -73,7 +73,7 @@ const PANEL_PAGE = 20;
                   @if (r.examined.length > 0) {
                     @for (x of r.examined; track x.version) {
                       <span
-                        ><ng-container i18n="@@requests.examined">Examined {{ x.version }}</ng-container>&ngsp;<a [routerLink]="versionLink(r.name, x.version)" i18n="@@requests.verdicts">Verdicts</a></span
+                        ><ng-container i18n="@@requests.examined">Examined <code translate="no">{{ x.version }}</code></ng-container>&ngsp;<a [routerLink]="versionLink(r.name, x.version)" i18n="@@requests.verdicts">Verdicts</a></span
                       >
                     }
                   }

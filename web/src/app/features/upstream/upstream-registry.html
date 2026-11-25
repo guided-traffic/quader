@@ -406,7 +406,7 @@
               </p>
             }
             @if (credentialLine(); as line) {
-              <p class="hint credential-line">{{ line }}</p>
+              <p class="hint credential-line">{{ line.before }}<quader-value-list [values]="line.hosts" />{{ line.after }}</p>
             }
           } @else {
             <fieldset class="plain" [disabled]="!canWrite()">
@@ -437,7 +437,7 @@
                 />
               }
               @if (credentialLine(); as line) {
-                <p class="hint credential-line">{{ line }}</p>
+                <p class="hint credential-line">{{ line.before }}<quader-value-list [values]="line.hosts" />{{ line.after }}</p>
               }
             </fieldset>
           }

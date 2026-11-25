@@ -8184,6 +8184,11 @@ that is a section's heading wraps as the heading does (Q-UI-810). Not covered: a
 (Q-UI-425), a key a list lets break after its hyphens (`th.wrap-name`, Q-UI-303), and the name of a row that stands as a block
 (R-UI-174).
 
+A value in running text, a host, a repository's key, a digest, a version, a path or a file name, is a `code` the template marks
+`translate="no"`, and breaks at none of its hyphens and dots while it fits on a line of its own: it moves to the next line whole, and
+breaks inside itself only where it is longer than the line ([Q-UI-1213](#q-ui-1213--a-value-in-running-text-is-one-code-that-moves-whole-to-the-next-line-while-it-fits-on-one)).
+A sentence the code builds with a value splits at it (`aroundValue`), and a list of values stands as one (`<quader-value-list>`).
+
 A word of a list's cell does not break inside itself: a column that wraps declares a least width that holds its words (the
 audit log's project broke into "Platfor" / "m enginee" / "ring" beside a target that took the room). A token longer than any
 column (an identifier, a path, a hash) may still break where it must (Q-UI-425). A status whose words are too long for a pill in a
@@ -26256,6 +26261,30 @@ whose rule of Q-UI-764 gave a dialog's links theirs. The filter drawers hold no 
 `listed-link`, the overlay's rules), [_dialog.scss](../../web/src/styles/_dialog.scss). Test: [overlay-links.states.spec.ts](../../web/src/app/shared/overlay-links.states.spec.ts) (the states' browser, milliseconds). Seen on the pictures `topbar-downloads-panel-*`
 of the render set, both schemes, 1,440 and 390 px.
 
+### Q-UI-1213 · A value in running text is one code that moves whole to the next line while it fits on one
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. Found on the
+upstream registry's page at 390 px, English and German: "The credential is sent to auth.docker.io and registry-" / "1.docker.io." The
+sentence was one string with the hosts joined into it, so the browser broke it where it may break any text, at a hyphen. A Secret's
+name on the same page had been held whole that day by a rule of its own (`.secret-name { white-space: nowrap }`, Q-UI-1161), which
+would run a name longer than the line out of the page.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The one mark of a value in running text is the one the templates use most already, `<code translate="no">`; `main.scss` sets it as its own box (`display: inline-block; max-inline-size: 100%; overflow-wrap: anywhere`), so it moves to the next line whole while it fits on one and breaks inside itself only where it is longer than the line; a sentence the code builds with a value is split at it (`aroundValue` of `shared/value-list.ts`) and a list of values is one element (`<quader-value-list>`, the reader's language's "a, b and c"); the Secret's own rule goes (chosen) | One rule for some 130 values of the templates at once; the sentences that held a value as plain text mark it | Exact: a value never breaks while it fits, never runs out of its box; the translation keeps its sentence, the value's place in it moving with the language | A value that stood in the sans face (a host, a package's name in a sentence) now stands in the monospace one |
+| (b) `white-space: nowrap` on each value | As the Secret's name | Short | A value longer than the line runs out of its box; a rule per place |
+| (c) Non-breaking hyphens (U+2011) in the value | Text changed | No markup | A copied host is not the host; a search does not find it |
+
+**Choice:** (a). A lint rule is not added: whether an interpolation of a template or a `$localize` placeholder is a value (a host, a
+key) or a word (a display name) cannot be told exactly from the source. The sentences converted: the credential's hosts of a remote's
+upstream and of an upstream registry's account, the hosts of **Enter the account again**, a well-known repository's key, a policy's
+name in its changes, an examined version of a delivery request, a package's name in **Allow**, and the unknown format of the creation
+form. The sentences of the code that still hold a value as plain text are [H-1990](#h-1990--sentences-built-in-code-still-hold-a-value-as-plain-text).
+**Applied in the spec:** R-UI-171. Code: [main.scss](../../web/src/styles/main.scss), [value-list.ts](../../web/src/app/shared/value-list.ts).
+Test: [value-list.states.spec.ts](../../web/src/app/shared/value-list.states.spec.ts) (the states' browser, milliseconds: a host that
+breaks at its hyphen as plain text at every width that does it stays whole as a value, a longer one stays in its box, a sentence splits
+at its value).
+
 ## What this does not cover
 
 ### H-1964 · A read that fails alone while its page stands is read again only by the person or its next use
@@ -26539,3 +26568,16 @@ looks for its worst one. Hardening: a server sort over a stored grade (Q-UI-373 
 Stage: the list of **Admin area › CI** ([issuer-list.ts](../../web/src/app/features/ci/issuer-list.ts)). Subject: an issuer whose last
 key fetch failed. Live: the row says the failure in words (Q-UI-1227); its status and host are on the issuer's **Keys** tab, one click
 away. A compact place, as R-UI-216's toast is; the row has no **Details** of its own.
+
+### H-1990 · Sentences built in code still hold a value as plain text
+
+Component: the sentences a component builds with `$localize` and a value placeholder (Q-UI-1213). Subject: a reader at 390 px, where a
+host, a key or a path at the end of a line breaks at a hyphen or a dot. Live since the screens. Q-UI-1213 marked the values of the
+templates' sentences and the credential's hosts; these sentences of the code still join their value into the string: the reasons of a
+download link and a Bastion's handover (`links.reason.quader-host`, `links.reason.quader-host-bastion`,
+`bastion.handover.reason.quader-host`), the causes of a failed download (`downloads.why.insecure-redirect-host`,
+`downloads.why.foreign-host-host`, `downloads.why.class.tls-host`, `downloads.why.class.egress-host`), the advisory database's state
+(`vuln.sources.db-*`), the ClamAV lines (`clamav.verification.repository`, `clamav.updater.repository`, `clamav.on.address`), the
+policy explainer (`explain.covered`, `explain.not-covered`) and the install note (`pkg.install.disabled-note`). What makes it real: a
+value with a hyphen or a dot that reaches the end of a line. The remedy is the one of Q-UI-1213 per sentence: the component splits the
+sentence with `aroundValue` and the template sets the value as `<code translate="no">`.

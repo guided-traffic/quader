@@ -43,7 +43,7 @@ describe('dialogs of the upstream registries in a browser (R-UI-187, R-UI-188, R
       openDialog(AccountAgainDialog, {
         maxWidth: '40rem',
         data: {
-          hosts: 'harbor.platform-engineering.eu-central-1.internal.example.com and auth.harbor.platform-engineering.eu-central-1.internal.example.com',
+          hosts: ['harbor.platform-engineering.eu-central-1.internal.example.com', 'auth.harbor.platform-engineering.eu-central-1.internal.example.com'],
           authMode: 'basic',
           username: 'robot$platform-engineering+release-candidates-pull',
         },

@@ -37,6 +37,7 @@ import { scannerGroup } from '../../shared/scanner/scanner-model';
 import { groupedFingerprint } from '../repositories/deb-signing-keys';
 import { UpstreamTestResultView } from '../repositories/upstream-test-result';
 import { AccountAgainAnswer, AccountAgainData, AccountAgainDialog } from './account-again-dialog';
+import { ValueList, aroundValue } from '../../shared/value-list';
 import { AuthMode, HostRow, authOptions, credentialHostsOf, hostOf, sameHosts } from './upstream-account';
 import { UpstreamActions } from './upstream-actions';
 import {
@@ -88,6 +89,7 @@ function needsAccount(e: ApiError): boolean {
     TextField,
     Tooltip,
     UpstreamTestResultView,
+    ValueList,
     VisibilityIcon,
     VisibilityLevelControl,
   ],
@@ -302,11 +304,14 @@ export class UpstreamRegistry {
     if (!a) return false;
     return this.authMode() !== a.authMode || (this.authMode() === 'basic' && this.username() !== (a.username ?? '')) || this.password() !== '';
   });
-  /** "The credential is sent to registry-1.docker.io and auth.docker.io." (R-UI-082) */
+  /**
+   * "The credential is sent to registry-1.docker.io and auth.docker.io." (R-UI-082): the sentence around its hosts, which stand as
+   * values of running text (Q-UI-1213).
+   */
   protected readonly credentialLine = computed(() => {
-    if (this.authMode() === 'none') return '';
-    const list = new Intl.ListFormat(this.locale, { type: 'conjunction' }).format(credentialHostsOf(this.url(), this.hosts()));
-    return $localize`:@@upstream.credential-hosts:The credential is sent to ${list}:hosts:.`;
+    if (this.authMode() === 'none') return null;
+    const hosts = credentialHostsOf(this.url(), this.hosts());
+    return { hosts, ...aroundValue((list) => $localize`:@@upstream.credential-hosts:The credential is sent to ${list}:hosts:.`) };
   });
   protected readonly testing = signal(false);
   /** The last test's answer and when it came, shown by the shared result (Q-UI-1226). */
@@ -564,7 +569,7 @@ export class UpstreamRegistry {
     const a = this.item()?.account;
     const ref = this.dialog.open<AccountAgainDialog, AccountAgainData, AccountAgainAnswer>(AccountAgainDialog, {
       data: {
-        hosts: new Intl.ListFormat(this.locale, { type: 'conjunction' }).format(hosts),
+        hosts,
         authMode: a?.authMode ?? 'basic',
         username: a?.username ?? '',
       },

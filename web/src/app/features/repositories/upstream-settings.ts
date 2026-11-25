@@ -1,3 +1,4 @@
+import { ValueList, aroundValue } from '../../shared/value-list';
 import { Component, LOCALE_ID, computed, inject, input, model, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { upstreamName } from '../../core/upstream-project';
@@ -103,7 +104,7 @@ export function upstreamAuthLabel(mode: string): string {
  */
 @Component({
   selector: 'quader-upstream-settings',
-  imports: [Disclosure, ErrorNotice, RouterLink, UpstreamTestResultView],
+  imports: [Disclosure, ErrorNotice, RouterLink, UpstreamTestResultView, ValueList],
   template: `
     <section class="upstream" [id]="sectionId" tabindex="-1" aria-labelledby="upstream-heading">
       <h2 id="upstream-heading" i18n="@@upstream.heading">Upstream</h2>
@@ -129,7 +130,7 @@ export function upstreamAuthLabel(mode: string): string {
             <!-- The registry is offered to every project already (R-UI-191, Q-UI-836): one line, and nothing stops the create. -->
             @if (centralOf(); as c) {
               <p class="hint central" data-testid="upstream-central">
-                <ng-container i18n="@@wellknown.central">{{ c.displayName }} is offered to every project as <span translate="no">{{ c.name }}</span>. A virtual repository can list it instead of a remote of your own.</ng-container>&ngsp;<a [routerLink]="virtualLink()" [queryParams]="virtualQuery()" i18n="@@wellknown.central.link">New virtual repository</a>
+                <ng-container i18n="@@wellknown.central">{{ c.displayName }} is offered to every project as <code translate="no">{{ c.name }}</code>. A virtual repository can list it instead of a remote of your own.</ng-container>&ngsp;<a [routerLink]="virtualLink()" [queryParams]="virtualQuery()" i18n="@@wellknown.central.link">New virtual repository</a>
               </p>
             }
           </div>
@@ -262,7 +263,11 @@ export function upstreamAuthLabel(mode: string): string {
                 }
               }
             </p>
-            <p id="d-remote-credential-hosts" class="hint credential-hosts">{{ credentialLine() }}</p>
+            @if (credentialLine(); as line) {
+              <p id="d-remote-credential-hosts" class="hint credential-hosts">{{ line.before }}<quader-value-list [values]="line.hosts" />{{ line.after }}</p>
+            } @else {
+              <p id="d-remote-credential-hosts" class="hint credential-hosts"></p>
+            }
             @if (upstream().passwordStored !== 'none') {
               <label class="check-row" for="f-remote-clearPassword">
                 <input
@@ -622,12 +627,14 @@ export class UpstreamSettings {
     () => (this.urlLeft() || this.submitted()) && this.presets().length === 0 && this.upstream().url.trim() === '',
   );
 
-  /** "The credential is sent to registry.gitlab.com and gitlab.com." (R-UI-082) */
+  /**
+   * "The credential is sent to registry.gitlab.com and gitlab.com." (R-UI-082): the sentence around its hosts, which stand as values
+   * of running text (Q-UI-1213).
+   */
   protected readonly credentialLine = computed(() => {
     const hosts = credentialHosts(this.upstream(), this.proposed());
-    if (hosts.length === 0) return '';
-    const list = new Intl.ListFormat(this.locale, { type: 'conjunction' }).format(hosts);
-    return $localize`:@@upstream.credential-hosts:The credential is sent to ${list}:hosts:.`;
+    if (hosts.length === 0) return null;
+    return { hosts, ...aroundValue((list) => $localize`:@@upstream.credential-hosts:The credential is sent to ${list}:hosts:.`) };
   });
 
   /** The answer of the last test, shown by the shared result (Q-UI-1226): the server's verdict in words and every fact of it. */
