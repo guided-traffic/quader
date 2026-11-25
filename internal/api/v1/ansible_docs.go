@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -365,10 +366,35 @@ func (s *Server) GetPackageVersionDocEntry(w http.ResponseWriter, r *http.Reques
 	writeTagged(w, r, entryOf(d, e))
 }
 
-// markupHTML converts the Ansible markup of a prose string and sanitizes the result with the README policy (R-ANS-039).
-type markupHTML struct{ rd *readme.Renderer }
+// markupHTML converts the Ansible markup of a prose string and sanitizes the result with the README policy (R-ANS-039). links is the page the
+// prose is shown on (R-ANS-048), nil for none; addedIn is the collection a version_added counts in when the source names none.
+type markupHTML struct {
+	rd      *readme.Renderer
+	links   *docgen.Links
+	addedIn string
+}
 
-func (m markupHTML) html(s string) string { return m.rd.SanitizeHTML(docgen.RenderMarkup(s)) }
+// keepPageLink keeps a relative link only when it is one of the addresses the converter builds (Q-ANS-94).
+func keepPageLink(href string) (string, bool) { return href, docgen.PageLink(href) }
+
+func (m markupHTML) html(s string) string {
+	return m.rd.SanitizeHTMLLinked(docgen.RenderMarkup(s, m.links), keepPageLink)
+}
+
+// added is the collection of a version_added: the one the source names, else addedIn; nil without a version_added.
+func (m markupHTML) added(o map[string]any) *string {
+	if textOf(o["version_added"]) == nil {
+		return nil
+	}
+	if c := textOf(o["version_added_collection"]); c != nil && *c != "" {
+		return c
+	}
+	if m.addedIn == "" {
+		return nil
+	}
+	c := m.addedIn
+	return &c
+}
 
 func (m markupHTML) list(v any) *[]string {
 	var src []string
@@ -392,7 +418,8 @@ func (m markupHTML) list(v any) *[]string {
 	return &out
 }
 
-// entryOf builds the page of an entry from its row (R-ANS-036): the prose as sanitized HTML, everything else as text and typed values.
+// entryOf builds the page of an entry from its row (R-ANS-036): the prose as sanitized HTML with the links of R-ANS-048, everything else as
+// text and typed values.
 func entryOf(d *docsRead, e rows.DocEntry) gen.PackageDocEntry {
 	m := markupHTML{rd: d.ps.Readme}
 	out := gen.PackageDocEntry{
@@ -426,10 +453,16 @@ func entryOf(d *docsRead, e rows.DocEntry) gen.PackageDocEntry {
 		return out
 	}
 	doc := ds.Doc
-	out.VersionAdded = textOf(doc["version_added"])
+	m.links = d.links(e.Doc, doc["options"], ds.Return)
+	if d.state.Source == rows.DocSourceGenerated {
+		// ansible-doc counts a version_added in the collection being documented when the source names none; the generator is that reader.
+		m.addedIn = d.name
+	}
+	out.VersionAdded, out.VersionAddedCollection = textOf(doc["version_added"]), m.added(doc)
 	out.Description, out.Notes, out.Requirements = m.list(doc["description"]), m.list(doc["notes"]), m.list(doc["requirements"])
 	out.Author = textList(doc["author"])
 	out.ExtendsFragments = textList(doc["extends_documentation_fragment"])
+	out.Positional = positionalOf(doc["positional"])
 	out.Options = optionsOf(m, doc["options"], 0)
 	out.ReturnValues = returnsOf(m, ds.Return, 0)
 	if ds.Examples != "" {
@@ -440,6 +473,127 @@ func entryOf(d *docsRead, e rows.DocEntry) gen.PackageDocEntry {
 	out.Attributes = attributesOf(m, doc["attributes"])
 	out.Deprecated = deprecatedOf(m, doc["deprecated"])
 	return out
+}
+
+// links is the page an entry's prose is shown on (R-ANS-048): the paths of its options (with their aliases) and return values, and the names
+// of the version's tree. The tree is read, one query over the version's rows, only when the entry's source holds a reference to another
+// entry (M(), P(), an O() or RV() with a "#", or a see-also list), and once.
+func (d *docsRead) links(raw []byte, options any, returns []any) *docgen.Links {
+	l := &docgen.Links{Collection: d.name, Options: map[string]bool{}, Returns: map[string]bool{}}
+	pathsOf(l.Options, options, "suboptions", "", 0)
+	pathsOf(l.Returns, returns, "contains", "", 0)
+	if !bytes.Contains(raw, []byte("M(")) && !bytes.Contains(raw, []byte("P(")) && !bytes.Contains(raw, []byte("#")) &&
+		!bytes.Contains(raw, []byte(`"seealso"`)) {
+		return l
+	}
+	var names map[string]bool
+	l.Entries = func(typ, name string) bool {
+		if names == nil {
+			names = map[string]bool{}
+			if tree, err := d.st.DocTree(d.ctx, d.repo.NumericID(), d.name, d.ver, nil); err == nil {
+				for _, h := range tree.Entries {
+					names[h.Type+"/"+h.Name] = true
+				}
+			}
+		}
+		return names[typ+"/"+name]
+	}
+	return l
+}
+
+// pathsOf adds the paths of a list of named objects and of the lists nested below key to set: "name", "name/sub", and an alias in the place
+// of its option's name.
+func pathsOf(set map[string]bool, v any, key, prefix string, depth int) {
+	list, ok := v.([]any)
+	if !ok || depth >= maxDocDepth {
+		return
+	}
+	for _, x := range list {
+		o, ok := x.(map[string]any)
+		name, _ := o["name"].(string)
+		if !ok || name == "" {
+			continue
+		}
+		set[prefix+name] = true
+		if aliases := textList(o["aliases"]); aliases != nil {
+			for _, a := range *aliases {
+				set[prefix+a] = true
+			}
+		}
+		pathsOf(set, o[key], key, prefix+name+"/", depth+1)
+	}
+}
+
+// positionalOf is the list of positional parameters, which a source writes as a list or as one string with commas (R-ANS-050).
+func positionalOf(v any) *[]string {
+	list := textList(v)
+	if list == nil {
+		return nil
+	}
+	var out []string
+	for _, s := range *list {
+		for _, p := range strings.Split(s, ",") {
+			if p = strings.TrimSpace(p); p != "" {
+				out = append(out, p)
+			}
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return &out
+}
+
+// configurationOf is how an option of a plugin is configured besides the task (R-ANS-049): the text members of its ini, env, vars, keyword
+// and cli entries; nil when it has none.
+func configurationOf(o map[string]any) *gen.PackageDocOptionConfiguration {
+	var c gen.PackageDocOptionConfiguration
+	field := func(v any, k string) *string {
+		e, _ := v.(map[string]any)
+		return textOf(e[k])
+	}
+	each := func(key string, f func(v any)) {
+		if list, ok := o[key].([]any); ok {
+			for _, v := range list {
+				f(v)
+			}
+		}
+	}
+	names := func(key string) *[]gen.PackageDocConfigName {
+		var out []gen.PackageDocConfigName
+		each(key, func(v any) {
+			if n := field(v, "name"); n != nil && *n != "" {
+				out = append(out, gen.PackageDocConfigName{Name: *n})
+			}
+		})
+		if out == nil {
+			return nil
+		}
+		return &out
+	}
+	var ini []gen.PackageDocConfigIni
+	each("ini", func(v any) {
+		if s, k := field(v, "section"), field(v, "key"); s != nil || k != nil {
+			ini = append(ini, gen.PackageDocConfigIni{Section: s, Key: k})
+		}
+	})
+	var cli []gen.PackageDocConfigCli
+	each("cli", func(v any) {
+		if n, opt, sw := field(v, "name"), field(v, "option"), field(v, "switch"); n != nil || opt != nil || sw != nil {
+			cli = append(cli, gen.PackageDocConfigCli{Name: n, Option: opt, Switch: sw})
+		}
+	})
+	if ini != nil {
+		c.Ini = &ini
+	}
+	if cli != nil {
+		c.Cli = &cli
+	}
+	c.Env, c.Vars, c.Keyword = names("env"), names("vars"), names("keyword")
+	if c.Ini == nil && c.Cli == nil && c.Env == nil && c.Vars == nil && c.Keyword == nil {
+		return nil
+	}
+	return &c
 }
 
 func textOf(v any) *string {
@@ -488,6 +642,7 @@ func optionsOf(m markupHTML, v any, depth int) *[]gen.PackageDocOption {
 		}
 		opt := gen.PackageDocOption{
 			Name: name, Type: textOf(o["type"]), Elements: textOf(o["elements"]), VersionAdded: textOf(o["version_added"]),
+			VersionAddedCollection: m.added(o), Configuration: configurationOf(o),
 			Default: o["default"], Description: m.list(o["description"]), Aliases: textList(o["aliases"]),
 		}
 		if b, ok := o["required"].(bool); ok {
@@ -518,7 +673,8 @@ func returnsOf(m markupHTML, list []any, depth int) *[]gen.PackageDocReturnValue
 		}
 		rv := gen.PackageDocReturnValue{
 			Name: name, Type: textOf(o["type"]), Elements: textOf(o["elements"]), Returned: textOf(o["returned"]),
-			VersionAdded: textOf(o["version_added"]), Sample: o["sample"], Description: m.list(o["description"]),
+			VersionAdded: textOf(o["version_added"]), VersionAddedCollection: m.added(o), Sample: o["sample"],
+			Description: m.list(o["description"]),
 		}
 		if c, ok := o["contains"].([]any); ok {
 			rv.Contains = returnsOf(m, c, depth+1)
@@ -531,7 +687,29 @@ func returnsOf(m markupHTML, list []any, depth int) *[]gen.PackageDocReturnValue
 	return &out
 }
 
-// seeAlsoOf keeps module, description and link of the entries of seealso; a link only for http and https.
+// seeAlsoTarget is the entry of the tree a see-also entry names, "<type>/<name>", or nil (R-ANS-048): a module by module, a plugin by plugin
+// and plugin_type.
+func seeAlsoTarget(m markupHTML, o map[string]any) *string {
+	full, typ := textOf(o["module"]), "module"
+	if full == nil {
+		full, typ = textOf(o["plugin"]), ""
+		if t := textOf(o["plugin_type"]); t != nil {
+			typ = *t
+		}
+	}
+	if full == nil || typ == "" {
+		return nil
+	}
+	name, ok := m.links.Entry(*full, typ)
+	if !ok {
+		return nil
+	}
+	s := typ + "/" + name
+	return &s
+}
+
+// seeAlsoOf keeps module, description and link of the entries of seealso; a link only for http and https, and the entry of the tree the
+// module or plugin names.
 func seeAlsoOf(m markupHTML, v any) *[]gen.PackageDocSeeAlso {
 	list, ok := v.([]any)
 	if !ok {
@@ -549,6 +727,7 @@ func seeAlsoOf(m markupHTML, v any) *[]gen.PackageDocSeeAlso {
 				item.Module = s
 			}
 		}
+		item.Entry = seeAlsoTarget(m, o)
 		if s, ok := o["description"].(string); ok {
 			h := m.html(s)
 			item.Description = &h

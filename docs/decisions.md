@@ -9025,10 +9025,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 <!-- coverage-gen:begin decisions -->
 ### Q-ANS
 
-81 questions on [spec/formats/ansible.md](spec/formats/ansible.md).
+84 questions on [spec/formats/ansible.md](spec/formats/ansible.md).
 
 <details>
-<summary>Q-ANS: 81 questions</summary>
+<summary>Q-ANS: 84 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9113,6 +9113,9 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ANS-80](spec/formats/ansible.md#q-ans-80--the-version-document-and-a-head-of-an-archive-are-probes) | The version document and a HEAD of an archive are probes | Decided by the development agent | (a) The version document (`GET` and `HEAD`) and a `HEAD` of a collection's or a role's archive; the content is the archive | [ADR-207](#adr-207--a-probe-starts-the-download-of-its-version-in-the-background-the-format-contract-is-at-version-7) |
 | [Q-ANS-91](spec/formats/ansible.md#q-ans-91--a-symbolic-link-that-stays-inside-a-collection-is-admitted-and-never-followed) | A symbolic link that stays inside a collection is admitted and never followed | Decided by the coordinator of the run | (a), with two rules the client's lexical check does not make and its build never needs: a target whose resolution passes through another link before its last step, and an entry below a link, are refused (the rule of npm's [Q-NPM-55](spec/formats/npm.md#q-npm-55--a-link-target-may-not-pass-through-another-link)); a hard link stays refused, as the build writes none. | — |
 | [Q-ANS-92](spec/formats/ansible.md#q-ans-92--a-collection-version-with-a-pre-release-part-is-a-pre-release-on-the-screens) | A collection version with a pre-release part is a pre-release on the screens | Decided by the development agent on 2026-11-25 | (a) A semantic version with a pre-release part (a `-` before any build metadata, R-ANS-002) is a pre-release; build metadata alone is none | — |
+| [Q-ANS-93](spec/formats/ansible.md#q-ans-93--an-anchor-is-parameter--or-return--and-the-path-of-names-and-a-generated-version_added-counts-in-its-own-collection) | An anchor is parameter- or return- and the path of names, and a generated version_added counts in its own collection | Decided by the development agent on 2026-11-25 | (a) `parameter-<path>` and `return-<path>`, the path joined by `/`, an alias an anchor of its own, as a fragment of the page's address | — |
+| [Q-ANS-94](spec/formats/ansible.md#q-ans-94--a-link-to-the-documentation-is-a-page-relative-address-the-server-builds-from-names-it-found) | A link to the documentation is a page-relative address the server builds from names it found | Decided by the development agent on 2026-11-25 | (a) Page-relative addresses of one grammar (`?doc=<type>/<name>`, `#parameter-<path>`, `#return-<path>`, or both), built by the server from the names it found in the tree and the entry; the sanitizer keeps a relative link only in that grammar, the browser's component only in that grammar and turns it into the page's address | — |
+| [Q-ANS-95](spec/formats/ansible.md#q-ans-95--examples-are-highlighted-by-a-tokenizer-of-the-web-application-not-a-library) | Examples are highlighted by a tokenizer of the web application, not a library | Decided by the development agent on 2026-11-25 | (a) A tokenizer of the web application for the YAML Ansible writes, Jinja included, drawn as text in spans | — |
 
 </details>
 
@@ -12327,10 +12330,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-626 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+627 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 626 questions</summary>
+<summary>Q-UI: 627 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12960,6 +12963,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1237](spec/api-and-ui.md#q-ui-1237--under-reduced-motion-no-light-travels-the-first-stone-stays-lit-and-the-mark-breathes) | Under reduced motion no light travels: the first stone stays lit and the mark breathes | Decided by the development agent | (a) The first stone stays lit and the six stones' opacity goes from 1 to 0.45 and back in 2.4 s | — |
 | [Q-UI-1238](spec/api-and-ui.md#q-ui-1238--a-live-views-read-again-shows-no-spinner) | A live view's read again shows no spinner | Decided by the development agent | (a) A read again of what a view shows (`live()`, `PagedResource.refresh`, `refreshResource`, a resource's `reload` while it holds its value) shows no spinner; a first load, a load after the person's act and a busy act do | — |
 | [Q-UI-1239](spec/api-and-ui.md#q-ui-1239--a-lint-rule-refuses-a-load-without-the-spinner-by-its-sentence-its-list-its-button-and-a-spin-of-its-own) | A lint rule refuses a load without the spinner by its sentence, its list, its button and a spin of its own | Decided by the development agent | (a) [busy-rule.mjs](../web/scripts/busy-rule.mjs) in `make web-lint`: a template's element with an i18n ID whose text starts with Loading, Reading, Searching, Checking, Testing, Fetching or Redirecting that is not `quader-loading` (an `option` excepted); a data table that binds `[loading]` without `loadingText`; a button whose `[disabled]` reads a flag of an act (`busy()`, `saving()`, `testing()`, …) without `quaderBusy`, unless it closes or cancels or stands in `allowed` with its reason; a `@keyframes` that rotates | — |
+| [Q-UI-1246](spec/api-and-ui.md#q-ui-1246--an-entrys-parameters-and-return-values-are-two-columns-as-the-documentation-site-has-them) | An entry's parameters and return values are two columns, as the documentation site has them | Decided by the development agent on 2026-11-25 | (a) Two columns: Name (aliases, type, Required, "added in" under it) and Description (the prose, then Choices with the default bold and "(default)", or Default, then Configuration; for a return value Returned and Sample) | — |
 
 </details>
 

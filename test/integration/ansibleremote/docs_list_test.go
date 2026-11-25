@@ -62,6 +62,13 @@ func TestR_ANS_026_ACollectionInstalledThroughARemoteIsListedAndItsDocumentation
 	if entry.Status != http.StatusOK || strings.Contains(string(entry.Body), "<script") || !strings.Contains(string(entry.Body), `"hasDocs":true`) {
 		t.Errorf("entry: %d %s", entry.Status, entry.Body)
 	}
+	// R-ANS-049: the upstream's configuration of a callback's option and its version_added_collection reach the page.
+	cb := e.st.Do(r, http.MethodGet, p+"/docs/entries/callback/timer", e.admin, nil)
+	for _, want := range []string{`"section":"callback_timer"`, `"name":"TIMER_SORT_ORDER"`, `"versionAddedCollection":"acme.tools"`} {
+		if cb.Status != http.StatusOK || !strings.Contains(string(cb.Body), want) {
+			t.Errorf("callback lacks %s: %d %s", want, cb.Status, cb.Body)
+		}
+	}
 	file := e.st.Do(r, http.MethodGet, p+"/docs/files/README.md", e.admin, nil)
 	if file.Status != http.StatusOK || strings.Contains(string(file.Body), "<script") || strings.Contains(string(file.Body), "onerror") {
 		t.Errorf("file: %d %s", file.Status, file.Body)

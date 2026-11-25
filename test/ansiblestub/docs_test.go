@@ -22,7 +22,7 @@ func TestR_ANS_038_TheStubServesTheDocsBlobOfAVersion(t *testing.T) {
 		t.Errorf("blob = %v", blob)
 	}
 	contents := list(blob["contents"])
-	if len(contents) != 3 || obj(contents[0])["doc_strings"] == nil || obj(contents[1])["doc_strings"] != nil || obj(contents[2])["readme_html"] == nil {
+	if len(contents) != 4 || obj(contents[0])["doc_strings"] == nil || obj(contents[1])["doc_strings"] != nil || obj(contents[2])["readme_html"] == nil {
 		t.Errorf("contents = %v", contents)
 	}
 	if n := f.counts().OfKind(ClassDocs, "GET"); n != 1 {

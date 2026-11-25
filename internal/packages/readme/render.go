@@ -169,6 +169,17 @@ func (r *Renderer) SanitizeHTML(src string) string {
 	return out
 }
 
+// SanitizeHTMLLinked is [Renderer.SanitizeHTML] for HTML whose relative links point at pages the caller knows, such as the links the
+// Ansible documentation's converter makes to an entry or an option (R-ANS-048): every link target that is not an absolute address goes
+// through links, which keeps or removes it.
+func (r *Renderer) SanitizeHTMLLinked(src string, links Links) string {
+	if len(src) > MaxHTMLBytes {
+		return plain(src)
+	}
+	out, _ := r.finish(r.policy.SanitizeBytes([]byte(src)), links)
+	return out
+}
+
 // Links resolves the target of a link that is neither an absolute http, https or
 // mailto address: a fragment or a relative reference. It returns the target the
 // link keeps, or false to remove it like any other relative link.

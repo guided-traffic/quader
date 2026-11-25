@@ -59,7 +59,7 @@ func TestR_ANS_035_TheUpstreamsDocumentationIsServedSanitizedAndFetchedOnce(t *t
 		t.Errorf("the stub saw %d requests for the documentation of three reads, want 1", n)
 	}
 	eventually(t, 10*time.Second, "the rows of the fetched document", func() bool { return e.docsState(repo) == "available" })
-	if got := e.st.Text(`SELECT source || ':' || entry_count FROM ansible_version_docs WHERE repo_id = $1`, e.repoID(repo)); got != "upstream:3" {
+	if got := e.st.Text(`SELECT source || ':' || entry_count FROM ansible_version_docs WHERE repo_id = $1`, e.repoID(repo)); got != "upstream:4" {
 		t.Errorf("the rows are %q", got)
 	}
 	if got := e.st.Number(`SELECT count(*) FROM ansible_doc_entries WHERE repo_id = $1 AND content_type = 'role' AND readme_html LIKE '%<script>%'`, e.repoID(repo)); got != 1 {

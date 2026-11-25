@@ -19,6 +19,7 @@ export type PackageDocType = Schema<'PackageDocType'>;
 export type PackageDocEntryHead = Schema<'PackageDocEntryHead'>;
 export type PackageDocEntry = Schema<'PackageDocEntry'>;
 export type PackageDocOption = Schema<'PackageDocOption'>;
+export type PackageDocOptionConfiguration = Schema<'PackageDocOptionConfiguration'>;
 export type PackageDocReturnValue = Schema<'PackageDocReturnValue'>;
 export type PackageDocFile = Schema<'PackageDocFile'>;
 export type PackageVersionDocs = Schema<'PackageVersionDocs'>;

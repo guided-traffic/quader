@@ -89,10 +89,11 @@ type blobDoc struct {
 	} `json:"docs_blob"`
 }
 
-// docKeys are the keys of doc that are kept (R-ANS-035); another key is dropped when the rows are written.
+// docKeys are the keys of doc that are kept (R-ANS-035); another key is dropped when the rows are written. The members of an option and a
+// return value are kept as received, and the operations read only those R-ANS-035 lists (with the configuration of R-ANS-049).
 var docKeys = [...]string{
-	"module", "plugin_type", "short_description", "description", "version_added", "author", "notes", "requirements", "options", "seealso",
-	"attributes", "deprecated", "extends_documentation_fragment",
+	"module", "plugin_type", "short_description", "description", "version_added", "version_added_collection", "author", "notes",
+	"requirements", "options", "seealso", "attributes", "deprecated", "extends_documentation_fragment", "positional",
 }
 
 // ParseUpstreamDocs parses the docs-blob document of an upstream (R-ANS-035) into a [rows.DocSet] with the source upstream and the

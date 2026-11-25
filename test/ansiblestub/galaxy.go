@@ -239,8 +239,8 @@ func acceptsGzip(r *http.Request) bool {
 const DocsBlobHostile = `<script>alert(1)</script><img src="x" onerror="alert(2)"><a href="javascript:alert(3)">link</a>`
 
 // docsDocument is the docs-blob document of a version in the Galaxy's shape (R-ANS-035): the README with HTML an upstream must not be
-// trusted with, a Markdown file rendered, three plugins (a module with a full documentation, a filter without, and a role with a README)
-// and the plugin types besides. mode is Mode.Docs.
+// trusted with, a Markdown file rendered, four items (a module with a full documentation, a filter without, a role with a README and a
+// callback configured by ini and env) and the plugin types besides. mode is Mode.Docs.
 func docsDocument(c *collectionDef, v *versionDef, mode string) map[string]any {
 	module := map[string]any{
 		"content_name": "ping_host", "content_type": "module",
@@ -271,6 +271,21 @@ func docsDocument(c *collectionDef, v *versionDef, mode string) map[string]any {
 		map[string]any{
 			"content_name": "webserver", "content_type": "role", "doc_strings": nil, "readme_file": "README.md",
 			"readme_html": "<h1>webserver</h1>" + DocsBlobHostile,
+		},
+		// A callback configured by an ini entry and an environment variable, as ansible-doc writes it (R-ANS-049).
+		map[string]any{
+			"content_name": "timer", "content_type": "callback", "readme_file": nil, "readme_html": nil,
+			"doc_strings": map[string]any{
+				"doc": map[string]any{
+					"name": "timer", "short_description": "Times the tasks", "version_added": "1.0.0", "version_added_collection": c.fullName(),
+					"options": []map[string]any{{
+						"name": "sort_order", "type": "str", "description": []string{"The order of the summary."},
+						"ini": []map[string]string{{"section": "callback_timer", "key": "sort_order"}},
+						"env": []map[string]string{{"name": "TIMER_SORT_ORDER"}},
+					}},
+				},
+				"return": nil, "examples": nil, "metadata": nil,
+			},
 		},
 	}
 	if mode == DocsInvalid {

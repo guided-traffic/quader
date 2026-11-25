@@ -1319,10 +1319,13 @@ Quader (as the upstream of a remote) read; no client of the matrix does. The ver
      "readme_file": null, "readme_html": null}]}}
 ```
 
-  `doc` keeps these keys: `module` (the plugin's name), `plugin_type`, `short_description`, `description`, `version_added`, `author`, `notes`,
-  `requirements`, `options` (each: `name`, `type`, `elements`, `required`, `default`, `choices`, `aliases`, `description`, `version_added`,
-  `suboptions`), `seealso`, `attributes`, `deprecated`, `extends_documentation_fragment`; `return` is a list (each: `name`, `type`, `elements`,
-  `returned`, `description`, `sample`, `version_added`, `contains`). A key not in this list is dropped when the rows are written. The prose values
+  `doc` keeps these keys: `module` (the plugin's name), `plugin_type`, `short_description`, `description`, `version_added`,
+  `version_added_collection`, `author`, `notes`, `requirements`, `options` (each: `name`, `type`, `elements`, `required`, `default`, `choices`,
+  `aliases`, `description`, `version_added`, `version_added_collection`, the configuration keys `ini`, `env`, `vars`, `keyword` and `cli` of
+  R-ANS-049, `suboptions`), `seealso`, `attributes`, `deprecated`, `extends_documentation_fragment`, `positional` (R-ANS-050); `return` is a list
+  (each: `name`, `type`, `elements`, `returned`, `description`, `sample`, `version_added`, `version_added_collection`, `contains`). A key of `doc`
+  not in this list is dropped when the rows are written; the generator keeps only the listed members of an option and a return value, while an
+  upstream's options and return values are stored as received and the operations of R-ANS-036 read only the listed members. The prose values
   (`description`, `notes`, `requirements`, `short_description`, `seealso[].description`, `options[].description`) are the Ansible markup of
   R-ANS-039 as text, never HTML, **except** in the `html` and `readme_html` members, which are HTML.
 - **Local**: rendered from the rows; `collection_readme.html` and `documentation_files[].html` are the HTML the Host's Markdown renderer makes of the
@@ -1407,13 +1410,14 @@ plan of R-ANS-022. The answer names the repository it was read from.
   reduced to letters and digits for the vector, never put into a query text). Matching entries keep the order above; a `files` item
   matches by its title. `q` is evaluated in SQL over the rows of one version (at most 5,000), no index is needed beyond the primary key and the
   vector's own. The search is **inside the documentation of one version**; Quader has no search across collections here.
-- **The entry** (`getPackageVersionDocEntry`): `{type, name, fullName, shortDescription, hasDocs, source, builtAt, versionAdded, deprecated,
-  description[], notes[], requirements[], author[], options[], returnValues[], examples, seealso[], attributes[], extendsFragments[],
-  readmeHtml}` where `description`, `notes`, `requirements` and the `description` of an option or return value are **arrays of sanitized HTML
-  strings**, one per paragraph; names, types, `returned`, `version_added`, authors, choices, defaults and samples are text and typed JSON
+- **The entry** (`getPackageVersionDocEntry`): `{type, name, fullName, shortDescription, hasDocs, source, builtAt, versionAdded,
+  versionAddedCollection, positional[], deprecated, description[], notes[], requirements[], author[], options[], returnValues[], examples,
+  seealso[], attributes[], extendsFragments[], readmeHtml}` where `description`, `notes`, `requirements` and the `description` of an option or return value are **arrays of sanitized HTML
+  strings**, one per paragraph, whose links to the version's own documentation are those of R-ANS-048; names, types, `returned`, `version_added`, authors, choices, defaults and samples are text and typed JSON
   values (the UI shows them as text, a default of `1000` as `1000`); `options` and `returnValues` are the named lists of R-ANS-035 with
-  `suboptions` and `contains` nested to a depth of 12 (deeper is dropped with the warning kept in the tree's `warnings`); `examples` is the text
-  (the UI shows it in a code block; Quader does not highlight, does not run); `seealso` entries carry `module`, `description` and `link` (a link is kept only
+  `suboptions` and `contains` nested to a depth of 12 (deeper is dropped with the warning kept in the tree's `warnings`), an option with its
+  `configuration` and `versionAddedCollection` and a return value with its `versionAddedCollection` (R-ANS-049); `examples` is the text
+  (the UI highlights it as YAML, R-ANS-050; Quader never runs it); `seealso` entries carry `module`, `entry` (R-ANS-048), `description` and `link` (a link is kept only
   for `http` and `https`); `extendsFragments` is the list of fragment names that were **not** merged (H-891); `readmeHtml` is set for roles. `fullName` is
   `<ns>.<name>.<content name>`. An entry that does not exist is `404 not_found`; one with `hasDocs` false answers 200 with the header
   fields and no sections.
@@ -1533,11 +1537,14 @@ Three kinds of text reach a browser or a client from the documentation, and each
   that has no renderer returning errors, never the input (`NoMarkup`, as `NoVulnerabilityData`). The Ansible format stores the Host's `Markup` in its replica
   (`bind.go`, `Format.Bind`). The three management operations run in `internal/api/v1`, which holds the renderer already (`ps.Readme`) and imports `docgen`
   for `RenderMarkup`; the pure converter is in the leaf `internal/formats/ansible/docgen` so that both can call it.
-- **The Ansible markup.** The converter **escapes all text first**, then recognizes `I(x)` and `E(x)` as emphasis, `B(x)` as strong, `C(x)`, `O(x)`,
-  `V(x)`, `RV(x)`, `M(x)`, `P(x)` and `R(text,ref)` as `code` (a reference is shown as its text and made no link), `U(url)` and `L(text,url)` as a
+- **The Ansible markup.** The converter **escapes all text first**, then recognizes `I(x)` as emphasis, `B(x)` as strong, `C(x)`, `V(x)`, `E(x)`
+  and `R(text,ref)` as `code` (`R()` is shown as its text and made no link), `M(x)`, `P(x)`, `O(x)` and `RV(x)` as `code` inside a link to the
+  entry, the option or the return value when the version's tree holds it and as `code` alone otherwise (R-ANS-048), `U(url)` and `L(text,url)` as a
   link when the URL is `http` or `https` and as the text otherwise, `HORIZONTALLINE` as a rule, and the backslash escapes of the markup. A macro that
   does not close, or nests deeper than 4, is text; the input of one conversion is at most 64 KiB (more is cut and the answer is marked truncated). The
-  output then runs through the sanitizer so that the converter cannot be the weak point; links get `rel="nofollow noopener noreferrer"`.
+  output then runs through the sanitizer so that the converter cannot be the weak point; links that leave Quader get `rel="nofollow noopener
+  noreferrer"`, and a relative link is kept only when it is one of the page-relative addresses the converter builds
+  ([Q-ANS-94](#q-ans-94--a-link-to-the-documentation-is-a-page-relative-address-the-server-builds-from-names-it-found)).
 - **reStructuredText is not rendered**, and neither does the Galaxy's importer (Client and library behaviour): a `README.rst` is no README, a `.rst`
   file below `docs/` is no file, and the page says so in a muted line when `collection_info.readme` names one (the warning `readme_not_markdown`).
 - **No HTML is stored for a generated entry.** A generated row holds Markdown and structured text; HTML exists only in an answer. An upstream's HTML is stored
@@ -1547,8 +1554,8 @@ Three kinds of text reach a browser or a client from the documentation, and each
 Acceptance criteria:
 
 - The table of macros has one case per macro, the hostile inputs of R-ANS-038 produce text that contains no tag the allowlist does not name, and the fuzz target
-  has no finding in the runs of the gate: for any input, the output of `RenderMarkup` followed by the sanitizer contains no `script`, no `on*` attribute and no URL
-  scheme other than `http`, `https` and `mailto`.
+  has no finding in the runs of the gate: for any input, with and without the links of a tree, the output of `RenderMarkup` followed by the sanitizer contains no
+  `script`, no `on*` attribute, no URL scheme other than `http`, `https` and `mailto`, and no relative address other than those of R-ANS-048.
 - A stored upstream `readme_html` with `<script>`, `<img onerror>` and `<a href="javascript:">` is served at `docs-blob/` and by the file operation without them.
 - A kit Host without a renderer makes the Markdown rows of a local `docs-blob/` fail with 500 `internal`, not serve unrendered text.
 
@@ -1783,6 +1790,86 @@ Acceptance criteria:
   refused version is absent from the version list and `meta.count`.
 - End-to-end (the leg `ansible`, about 10 s): with one version of a stub collection allowed, `ansible-galaxy collection install ns.name`
   installs it, and `ns.name:==<refused>` prints the refusal.
+
+## The documentation as the documentation site shows it
+
+The measure of R-ANS-048 to R-ANS-050 is the documentation site's page of a module or a plugin (docs.ansible.com, built by antsibull-docs),
+not the Galaxy's own documentation tab, which shows less (no attributes, no see-also, no anchors, no plugin configuration). Pages compared on
+2026-11-25: `ansible.posix.mount` (module), `ansible.posix.profile_tasks` (callback with configuration), `community.general.dig` (lookup).
+
+### R-ANS-048 · Links and anchors in the documentation
+Priority: **P1** · Covers: quader-only
+
+- **Anchors.** Every option and every return value of an entry's page has an anchor, `parameter-<path>` or `return-<path>`, where the path joins
+  the names from the top with `/` (`parameter-retry/backoff/seconds`, `return-dev/name`), as the documentation site spells them; an alias of an
+  option has an anchor of its own (`parameter-name` beside `parameter-path`). The anchor is the **fragment of the page's own address**
+  (`…?doc=module/mount#parameter-src`, whatever the path of the version's page is): the page opens on the entry, scrolls to the row, marks it and unfolds a folded row above
+  it. A small button on each row copies the link (the page's address with the row's anchor).
+- **Links in the prose.** `M(ns.coll.name)` and `P(ns.coll.name#type)` link to the entry when the name is in this collection and the version's tree
+  holds it, and are code otherwise (another collection, `ansible.builtin` included, or a name the tree does not hold). `O(path)` and
+  `RV(path)` link to the anchor in the same entry when the entry has that option or return value (an alias counts); `O(ns.coll.name#type:path)`
+  and `RV(…)` link to the anchor in the entry they name when the tree holds that entry. `O(path=value)` shows `path=value` and links to `path`;
+  `O(ignore:x)` and an option of a role's entry point (`#role:entry:x`) are code. `E(x)` is code.
+- **See also.** A see-also entry whose `module` (or `plugin` with `plugin_type`) names an entry of the tree carries `entry`
+  (`<type>/<name>`) and links to it.
+- **In place.** A link opens the entry or the anchor in the page, without a reload, and keeps the open tab and the search; it has an address that
+  opens the same in a new tab.
+- **Who builds the address.** The server, from the names it found in the version's own tree and in the entry, never from the text of the markup
+  ([Q-ANS-94](#q-ans-94--a-link-to-the-documentation-is-a-page-relative-address-the-server-builds-from-names-it-found)). The tree is read for an
+  entry only when its source names another entry (one query over the version's rows, R-ANS-036's cost).
+
+Acceptance criteria:
+
+- `TestR_ANS_048_TheMacrosLinkOnlyToWhatTheTreeHolds` (unit): each macro with and without a target, a hostile `M(javascript:alert(1))` and an
+  option name with quotes stay code; `PageLink` accepts exactly the addresses the converter makes.
+- `TestR_ANS_048_AnEntryLinksToTheTreeAndToItsOwnOptions` (unit): the operation's prose holds the links, a see-also module carries its entry,
+  the tree is read once and not at all for an entry without a reference.
+- The web unit tests: the anchors of the rows and the aliases, the target unfolded and marked, a prose link opened in place with its fragment,
+  the README keeping no `?doc=` link.
+
+### R-ANS-049 · Plugin configuration and the collection behind a version number
+Priority: **P1** · Covers: quader-only
+
+- **Configuration.** The keys `ini` (`section`, `key`), `env` (`name`), `vars` (`name`), `keyword` (`name`) and `cli` (`name`, `option`,
+  `switch`) of an option are kept, from the generator and from an upstream, and are shown under the option's description as
+  **Configuration**: "INI entry `[section] key`", "Environment variable `NAME`", "Variable `name`", "Keyword `name`", "Command line
+  `--option`", in that order. A callback, connection, inventory or lookup plugin shows how it is configured, as the documentation site does.
+- **The collection of a version.** `version_added_collection` of the entry, of an option and of a return value is kept and shown as
+  "added in <collection> <version>". The generator is the reader ansible-doc is for a local publish: an entry or an option of a generated
+  version that names a `version_added` and no collection counts in the collection being published
+  ([Q-ANS-93](#q-ans-93--an-anchor-is-parameter--or-return--and-the-path-of-names-and-a-generated-version_added-counts-in-its-own-collection)). An
+  upstream's entry that names none keeps the plain number.
+- `docgen.Version` is 2: the reindex rebuilds the rows of a generated version (R-ANS-044). An upstream's rows are stored as received and need no
+  rebuild.
+
+Acceptance criteria:
+
+- `TestR_ANS_049_TheGeneratorKeepsTheConfigurationOfAnOption` (unit): the five keys with their scalar members, `version_added_collection`,
+  `positional`; another key of an option is dropped.
+- `TestR_ANS_049_AnOptionCarriesItsConfigurationAndTheCollectionOfItsVersion` (unit): the operation's `configuration`, the collection of a
+  generated and of an upstream entry.
+- `ansiblelocal` and `ansibleremote` (integration): a callback plugin's option answers its `configuration` with `ini` and `env`.
+
+### R-ANS-050 · The page's contents, highlighted examples, and the sections of filter, test and lookup plugins
+Priority: **P1** · Covers: quader-only
+
+- **Contents.** A list of the sections the page shows (Synopsis, the parameter tables, Notes, Requirements, Attributes, See also, Examples,
+  Return values, Authors) heads an entry's page when it has more than one; each is a link to the section (a fragment, `#doc-<section>`).
+- **Highlighted YAML.** The examples and a sample of several lines are highlighted as YAML by a tokenizer of the web application
+  (`web/src/app/shared/yaml-highlight.ts`): keys, strings, numbers, booleans and null, comments, the punctuation of lists and flow collections, the
+  text of a block scalar, and Jinja expressions wherever they stand. The tokens are drawn as text; the colours are the code tokens of a snippet's
+  window, each at 4.5:1 or more on its paper in both schemes. No new dependency
+  ([Q-ANS-95](#q-ans-95--examples-are-highlighted-by-a-tokenizer-of-the-web-application-not-a-library)).
+- **Sections of filter, test and lookup plugins.** A lookup's `_terms` is the section **Terms**, a filter's or a test's `_input` the section
+  **Input**, the options named in `positional` (a list, or one string with commas) **Positional parameters**, and the other options of the three
+  types **Keyword parameters**, as the documentation site groups them. Every other type keeps one **Parameters** table.
+
+Acceptance criteria:
+
+- The web unit tests: the tokenizer joins its tokens to the line and gives each kind; the sections of a lookup and a filter; the contents list
+  names the sections the page shows; the examples' text is the source.
+- The renders `ansible-doc-module`, `ansible-doc-anchor`, `ansible-doc-lookup` and `ansible-doc-callback` (light and dark, 1,440, 1,024 and
+  390 px, the first three also in German).
 
 ## Deferred
 
@@ -3160,7 +3247,77 @@ the exact version.
 `TestR_API_029_ACollectionVersionIsAPrereleaseByItsSemanticVersion` (unit), kit check 11 (`TestR_ARCH_010_Conformance`, the sample holds
 `2.0.0-beta.1`), `TestR_HA_020_ThePrereleaseStepRefillsTheRowsWhoseAnswerChanged` (area `postgres`).
 
+### Q-ANS-93 · An anchor is parameter- or return- and the path of names, and a generated version_added counts in its own collection
+
+Status: **Decided by the development agent** on 2026-11-25 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: R-ANS-048 gives every option an anchor, and a link of the documentation site to an option (`…/mount_module.html#parameter-src`) should
+read the same in Quader. The site writes two anchors per row: `parameter-<path>` (the path joined by `/`) and a long one that repeats the
+collection and the plugin.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) `parameter-<path>` and `return-<path>`, the path joined by `/`, an alias an anchor of its own, as a fragment of the page's address (chosen) | `?doc=module/mount#parameter-retry/backoff/seconds` | The site's short anchor, so a reader who knows one knows the other; the address names the version and the entry already | A name outside `[A-Za-z0-9_-]` makes an anchor the converter does not link to (it stays code) |
+| (b) The site's long anchor | `#ansible-collections-ns-coll-mount-module-parameter-src` | Equal to the site's second anchor | Repeats what the address says; longer to read and to share |
+| (c) A query parameter `option=` | `?doc=…&option=src` | No fragment | Not how a reader links to a place in a page; the browser's own scrolling and history do not know it |
+
+**Choice:** (a). **Rationale:** the short anchor is the site's, and a fragment is what a link to a place in a page is. For `version_added`:
+ansible-doc counts a number without a collection in the collection it documents; for a local publish the generator is that reader, so
+it does the same; an upstream's document was made by ansible-doc already and is shown as sent. **Revisit** when the site changes its anchors.
+**Applied in the spec:** R-ANS-048, R-ANS-049.
+
+### Q-ANS-94 · A link to the documentation is a page-relative address the server builds from names it found
+
+Status: **Decided by the development agent** on 2026-11-25 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the prose of an entry is untrusted content of an uploaded or fetched archive, converted on the server and sanitized there
+(R-ANS-039) and again in the browser. A link from `M()`, `P()`, `O()` or `RV()` must open an entry or an option of the same version, and
+the page's address is the UI's (the version page's route, its tab and its search), which the server does not know.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Page-relative addresses of one grammar (`?doc=<type>/<name>`, `#parameter-<path>`, `#return-<path>`, or both), built by the server from the names it found in the tree and the entry; the sanitizer keeps a relative link only in that grammar, the browser's component only in that grammar and turns it into the page's address (chosen) | The server decides what is linked, the UI where the page is | Nothing of the text becomes an address: a hostile `M(javascript:…)` matches no name of the tree and stays code; the grammar admits no other parameter and no path | The UI and the server each hold the grammar (a test on each side) |
+| (b) Structured references (`{kind, type, name, path}` per link) beside the HTML, rendered by the UI | No link in the HTML | The HTML holds no address at all | The prose is HTML with the links inside a sentence; a second structure would have to be woven back into it |
+| (c) Absolute paths of the UI (`/ui/packages/ansible/…?doc=…`) | The server builds the whole address | The link works without the UI's help | The server would know the UI's routes, which change (the version page moved on 2026-11-25) |
+
+**Choice:** (a). **Rationale:** the address is built only from names the server validated against the version's own rows, and the one
+grammar is what both sanitizers keep, so the converter is not the weak point. **Revisit** when the documentation is shown outside the
+version page. **Applied in the spec:** R-ANS-039, R-ANS-048. Code: `docgen.PageLink`, `keepPageLink` in
+[ansible_docs.go](../../../internal/api/v1/ansible_docs.go), `Renderer.SanitizeHTMLLinked`, `DOC_LINK` of
+[package-readme.ts](../../../web/src/app/features/packages/package-readme.ts).
+
+### Q-ANS-95 · Examples are highlighted by a tokenizer of the web application, not a library
+
+Status: **Decided by the development agent** on 2026-11-25 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A tokenizer of the web application for the YAML Ansible writes, Jinja included, drawn as text in spans (chosen) | `shared/yaml-highlight.ts`, about 250 lines | No dependency; no HTML built from the text; the colours are the code tokens whose contrast a test holds | Ours to keep; not a full YAML grammar (anchors, tags and multi-line flow keys are plain text) |
+| (b) A highlighting library (highlight.js, Prism) | A new dependency | Many languages | A dependency for one language; most return HTML strings, which would have to be bound as HTML |
+| (c) The code window's tokenizer (`shared/code/code-syntax.ts`) | One tokenizer | One place | It reads one-line snippets of configuration: no block scalars, no Jinja, no numbers or booleans, and its colours mark a reader's values |
+
+**Choice:** (a). **Rationale:** an example of a module is YAML with Jinja and block scalars, which (c) does not read, and (b) adds a
+dependency and HTML. **Revisit** when a second page highlights YAML: then the code window's YAML moves onto this tokenizer. **Applied in the
+spec:** R-ANS-050.
+
 ## What this does not cover
+
+### H-2100 · A link to an option of another entry is checked against the tree, not against that entry's options
+
+`O(ns.coll.name#type:path)` links to `?doc=type/name#parameter-path` when the tree holds the entry (R-ANS-048); whether that entry has the
+option is not read, because it would cost a read of another entry per reference. A link to an option that entry does not have opens the entry
+at its top. Live for every such reference with a wrong path; the documentation site's build reports it as a broken reference instead.
+
+### H-2101 · A reference to another collection is no link
+
+`M()`, `P()`, `O()` and `RV()` that name another collection, `ansible.builtin` included, are code (R-ANS-048); the documentation site links
+them to its pages of that collection. Quader would link only to a collection this installation holds, which needs a lookup across
+repositories the reader may read. Live for every entry that refers to `ansible.builtin` (most modules' see-also).
+
+### H-2102 · An option of a role's entry point is no link
+
+`O(ns.coll.role#role:entry:option)` is code: the role's argument specs are not read yet (H-892), so a role's page has no option anchors.
+Live for every collection whose prose refers to role options; it ends with the argument specs.
 
 ### H-1970 · A collection document's highest_version counts a pre-release
 

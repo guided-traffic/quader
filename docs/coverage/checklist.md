@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 805 specified, 1,434 open. 1,285 spec requirements:
-791 cover catalog features, 494 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 805 specified, 1,434 open. 1,288 spec requirements:
+791 cover catalog features, 497 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2969,7 +2969,7 @@ Requirements whose `Covers:` line says `quader-only`: Quader's own design work t
 catalog feature measures. They count toward the requirement total, not toward any share.
 
 <details>
-<summary>494 requirements</summary>
+<summary>497 requirements</summary>
 
 | Requirement | Title | Priority | Spec page |
 |---|---|---|---|
@@ -3218,6 +3218,9 @@ catalog feature measures. They count toward the requirement total, not toward an
 | R-ANS-045 | Metrics and audit of the documentation | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
 | R-ANS-046 | End-to-end rows per class | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
 | R-ANS-047 | The upstream catalogue and the delivery rules of an Ansible Galaxy remote | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
+| R-ANS-048 | Links and anchors in the documentation | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
+| R-ANS-049 | Plugin configuration and the collection behind a version number | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
+| R-ANS-050 | The page's contents, highlighted examples, and the sections of filter, test and lookup plugins | P1 | [formats/ansible.md](../spec/formats/ansible.md) |
 | R-CLAMAV-001 | The format `clamav` and its descriptor | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
 | R-CLAMAV-002 | Packages, versions and the layout | P1 | [formats/clamav.md](../spec/formats/clamav.md) |
 | R-CLAMAV-003 | What a version shows | P1 | [formats/clamav.md](../spec/formats/clamav.md) |

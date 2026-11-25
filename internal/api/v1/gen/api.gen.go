@@ -13140,6 +13140,24 @@ type PackageDocAttribute struct {
 	Support     *string   `json:"support,omitempty"`
 }
 
+// PackageDocConfigCli defines model for PackageDocConfigCli.
+type PackageDocConfigCli struct {
+	Name   *string `json:"name,omitempty"`
+	Option *string `json:"option,omitempty"`
+	Switch *string `json:"switch,omitempty"`
+}
+
+// PackageDocConfigIni defines model for PackageDocConfigIni.
+type PackageDocConfigIni struct {
+	Key     *string `json:"key,omitempty"`
+	Section *string `json:"section,omitempty"`
+}
+
+// PackageDocConfigName defines model for PackageDocConfigName.
+type PackageDocConfigName struct {
+	Name string `json:"name"`
+}
+
 // PackageDocDeprecated defines model for PackageDocDeprecated.
 type PackageDocDeprecated struct {
 	// Alternative Sanitized HTML.
@@ -13154,6 +13172,9 @@ type PackageDocDeprecated struct {
 // PackageDocEntry One page of the documentation (R-ANS-036). `description`, `notes`, `requirements` and the `description` of an option or a return
 // value are arrays of sanitized HTML strings, one per paragraph; names, types, `returned`, `versionAdded`, authors, choices, defaults and
 // samples are text and typed JSON values that the client shows as text. An entry without documentation has the header fields only.
+// The sanitized HTML may hold links the server built to the version's own documentation (R-ANS-048): `?doc=<type>/<name>` opens an
+// entry, `#parameter-<path>` and `#return-<path>` an option or a return value of this entry (the path joins the nested names with
+// `/`), and the two together one of another entry. Every other link is `http`, `https` or `mailto`.
 type PackageDocEntry struct {
 	Attributes  *[]PackageDocAttribute `json:"attributes,omitempty"`
 	Author      *[]string              `json:"author,omitempty"`
@@ -13161,7 +13182,7 @@ type PackageDocEntry struct {
 	Deprecated  *PackageDocDeprecated  `json:"deprecated,omitempty"`
 	Description *[]string              `json:"description,omitempty"`
 
-	// Examples Text, shown in a code block; Quader does not highlight or run it.
+	// Examples Text, shown in a code block; the client highlights it as YAML (R-ANS-050), and Quader never runs it.
 	Examples *string `json:"examples,omitempty"`
 
 	// ExtendsFragments The documentation fragments that were not merged into the entry.
@@ -13174,6 +13195,9 @@ type PackageDocEntry struct {
 	Notes    *[]string           `json:"notes,omitempty"`
 	Options  *[]PackageDocOption `json:"options,omitempty"`
 
+	// Positional Filter, test and lookup plugins. The names of the options that are positional parameters, in their order (R-ANS-050).
+	Positional *[]string `json:"positional,omitempty"`
+
 	// ReadmeHtml Roles. The README of the role as sanitized HTML.
 	ReadmeHtml   *string                  `json:"readmeHtml,omitempty"`
 	Requirements *[]string                `json:"requirements,omitempty"`
@@ -13185,6 +13209,9 @@ type PackageDocEntry struct {
 	Source           PackageDocEntrySource `json:"source"`
 	Type             string                `json:"type"`
 	VersionAdded     *string               `json:"versionAdded,omitempty"`
+
+	// VersionAddedCollection The collection `versionAdded` counts in (R-ANS-049); absent when the source names none.
+	VersionAddedCollection *string `json:"versionAddedCollection,omitempty"`
 }
 
 // PackageDocEntrySource defines model for PackageDocEntry.Source.
@@ -13245,6 +13272,10 @@ type PackageDocOption struct {
 	Aliases *[]string      `json:"aliases,omitempty"`
 	Choices *[]interface{} `json:"choices,omitempty"`
 
+	// Configuration How an option of a plugin is configured besides the task (R-ANS-049): an entry of an ini file, an environment variable, a variable,
+	// a play keyword, a command line option. Text; absent members have no entry.
+	Configuration *PackageDocOptionConfiguration `json:"configuration,omitempty"`
+
 	// Default Any JSON value, shown as text.
 	Default     interface{} `json:"default,omitempty"`
 	Description *[]string   `json:"description,omitempty"`
@@ -13253,9 +13284,20 @@ type PackageDocOption struct {
 	Required    *bool       `json:"required,omitempty"`
 
 	// Suboptions Nested to a depth of 12.
-	Suboptions   *[]PackageDocOption `json:"suboptions,omitempty"`
-	Type         *string             `json:"type,omitempty"`
-	VersionAdded *string             `json:"versionAdded,omitempty"`
+	Suboptions             *[]PackageDocOption `json:"suboptions,omitempty"`
+	Type                   *string             `json:"type,omitempty"`
+	VersionAdded           *string             `json:"versionAdded,omitempty"`
+	VersionAddedCollection *string             `json:"versionAddedCollection,omitempty"`
+}
+
+// PackageDocOptionConfiguration How an option of a plugin is configured besides the task (R-ANS-049): an entry of an ini file, an environment variable, a variable,
+// a play keyword, a command line option. Text; absent members have no entry.
+type PackageDocOptionConfiguration struct {
+	Cli     *[]PackageDocConfigCli  `json:"cli,omitempty"`
+	Env     *[]PackageDocConfigName `json:"env,omitempty"`
+	Ini     *[]PackageDocConfigIni  `json:"ini,omitempty"`
+	Keyword *[]PackageDocConfigName `json:"keyword,omitempty"`
+	Vars    *[]PackageDocConfigName `json:"vars,omitempty"`
 }
 
 // PackageDocReturnValue defines model for PackageDocReturnValue.
@@ -13268,15 +13310,19 @@ type PackageDocReturnValue struct {
 	Returned    *string                  `json:"returned,omitempty"`
 
 	// Sample Any JSON value, shown as text.
-	Sample       interface{} `json:"sample,omitempty"`
-	Type         *string     `json:"type,omitempty"`
-	VersionAdded *string     `json:"versionAdded,omitempty"`
+	Sample                 interface{} `json:"sample,omitempty"`
+	Type                   *string     `json:"type,omitempty"`
+	VersionAdded           *string     `json:"versionAdded,omitempty"`
+	VersionAddedCollection *string     `json:"versionAddedCollection,omitempty"`
 }
 
 // PackageDocSeeAlso defines model for PackageDocSeeAlso.
 type PackageDocSeeAlso struct {
 	// Description Sanitized HTML.
 	Description *string `json:"description,omitempty"`
+
+	// Entry `<type>/<name>` of the entry of this version's tree that `module` names (R-ANS-048); absent when the tree holds none.
+	Entry *string `json:"entry,omitempty"`
 
 	// Link Kept only for `http` and `https`.
 	Link   *string `json:"link,omitempty"`

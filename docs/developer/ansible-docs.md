@@ -14,7 +14,10 @@ The backend and the screens are built; the end-to-end rows and the browser journ
 |---|---|---|
 | The neutral form, the file title rule | [rows/docs.go](../../internal/formats/ansible/rows/docs.go), [rows/doctitle.go](../../internal/formats/ansible/rows/doctitle.go) | built |
 | The generator: the literal scanner, the YAML node walker, the shaping of options and return values, the bounds | [docgen](../../internal/formats/ansible/docgen) (`scan.go`, `shape.go`, `docgen.go`) | built; executes nothing (a test lists its dependencies) |
-| The converter of the Ansible markup | [docgen/markup.go](../../internal/formats/ansible/docgen/markup.go) | built; escapes first, a fuzz target holds the tag set |
+| The converter of the Ansible markup | [docgen/markup.go](../../internal/formats/ansible/docgen/markup.go) | built; escapes first, a fuzz target holds the tag set and the addresses |
+| The links of the documentation to itself (R-ANS-048): `docgen.Links` (the collection, the tree, the entry's option and return paths), `docgen.PageLink` (the one grammar of the addresses), `docsRead.links` and `keepPageLink` (the tree read once and only for an entry that names another), `Renderer.SanitizeHTMLLinked` | [docgen/markup.go](../../internal/formats/ansible/docgen/markup.go), [api/v1/ansible_docs.go](../../internal/api/v1/ansible_docs.go), [readme/render.go](../../internal/packages/readme/render.go) | built |
+| The configuration of an option, `version_added_collection`, `positional` (R-ANS-049, R-ANS-050) | `configKeys` in [docgen/shape.go](../../internal/formats/ansible/docgen/shape.go), `docKeys` in [galaxydoc/docs.go](../../internal/formats/ansible/galaxydoc/docs.go), `configurationOf` and `markupHTML.added` in [api/v1/ansible_docs.go](../../internal/api/v1/ansible_docs.go) | built; `docgen.Version` 2 |
+| The anchors, the contents, the sections of filter, test and lookup plugins, the highlighted YAML | `rowAnchor`, `parameterGroups`, `entrySections`, `configLines` in [docs-model.ts](../../web/src/app/features/packages/docs-model.ts); [ansible-doc-entry.ts](../../web/src/app/features/packages/ansible-doc-entry.ts); [shared/yaml-highlight.ts](../../web/src/app/shared/yaml-highlight.ts); the `docLinks` input of [package-readme.ts](../../web/src/app/features/packages/package-readme.ts) | built |
 | The tap of the archive reader | [collection/tap.go](../../internal/formats/ansible/collection/tap.go); `Generator` implements it | built |
 | The port group `DocsStore` and its twin | [store.go](../../internal/formats/ansible/store.go), [ansibletest/docs.go](../../internal/formats/ansible/ansibletest/docs.go) | built |
 | The PostgreSQL implementation, the statements, the reindex step | [docs_store.go](../../internal/formatdata/ansible/docs_store.go), [queries/ansible_docs.sql](../../internal/meta/postgres/queries/ansible_docs.sql), [reindex.go](../../internal/formatdata/ansible/reindex.go) | built |
@@ -41,6 +44,16 @@ The backend and the screens are built; the end-to-end rows and the browser journ
 **Virtual.** `virtualDocs` takes the resolver's plan and tries the members by tier and position (Q-ANS-74).
 
 **Screens.** `resolveDocs` takes the repositories of the version details, local before remote, and the first whose state is not none (Q-API-264).
+
+**Links.** The entry operation converts the prose with a `docgen.Links` of the entry: the paths of its options (with aliases) and return
+values, and, only when the entry's source names another entry (`M(`, `P(`, a `#`, a see-also list), the names of the version's tree, read
+once. The converter writes `?doc=<type>/<name>`, `#parameter-<path>` or `#return-<path>` only for a name it found there; the sanitizer
+keeps a relative link only when `docgen.PageLink` matches it. In the browser, `DocProse` binds the prose with `docLinks`: the README
+component keeps a link of the same grammar (`DOC_LINK`), gives it the page's address (`Router.createUrlTree` with the entry and the
+fragment) and opens it in place. The entry page scrolls to the fragment of the address (`target`, from `ActivatedRoute.fragment` of the
+Documentation tab) once the row is drawn, unfolds a row above it and marks it. **Add a macro that links:** the target's name is checked
+in `reference` of `markup.go`, the address is one of `PageLink`'s grammar (or the grammar grows in `markup.go` and in `DOC_LINK` together),
+and the table of `TestR_ANS_048_TheMacrosLinkOnlyToWhatTheTreeHolds` gets a case with and without the target.
 
 ## The wiki seam
 
@@ -69,7 +82,9 @@ answers `formattest.StandInMarkup`, which escapes: a unit test that uses it prov
 | Test | Proves |
 |---|---|
 | `TestR_ANS_034_*` in [docgen](../../internal/formats/ansible/docgen) | the generator over crafted sources, the bounds, the determinism, `FuzzR_ANS_034_Generator` |
-| `TestR_ANS_039_TheMarkupTableHasACasePerMacro`, `FuzzR_ANS_039_RenderMarkup` | the converter |
+| `TestR_ANS_039_TheMarkupTableHasACasePerMacro`, `FuzzR_ANS_039_RenderMarkup` | the converter, with and without the links of a tree |
+| `TestR_ANS_048_*`, `TestR_ANS_049_*` in [docgen](../../internal/formats/ansible/docgen) and [api/v1](../../internal/api/v1/ansible_docs_links_test.go) | the links only to what the tree holds, the grammar of the addresses, the tree read once, the configuration and the collection of a version |
+| `yaml-highlight.spec.ts`, `docs-model.spec.ts`, `ansible-doc-entry.spec.ts`, `ansible-docs.spec.ts`, `package-readme.spec.ts` (R-ANS-048 to R-ANS-050) | the tokenizer, the anchors, the target, the sections, a prose link opened in place, the README keeping no `?doc=` link |
 | `test/integration/ansiblelocal/docs_test.go` | publish, the operations, the route, the reindex (rows that are missing and rows of an older generator, R-ANS-044), the warnings, the metrics of the generation and the reads (R-ANS-045) |
 | `test/integration/ansibleremote/docs_test.go` | the fetch once, the sanitized serving, the states, the setting, a foreign `href`, the stored document evicted while its rows stay (R-ANS-043), the metrics of the fill (R-ANS-045) |
 | `test/integration/ansiblevirtual/docs_test.go` | the first member that has documentation |

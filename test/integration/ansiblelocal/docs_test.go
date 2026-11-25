@@ -11,15 +11,17 @@ import (
 	"github.com/guided-traffic/quader/internal/formats/ansible/docgen"
 )
 
-// docsSpecBytes is a collection with documentation: 8 modules, 8 filters and 16 module_utils files, a README with a heading, a file of docs/
-// and a role with a README (R-ANS-034 acceptance).
+// docsSpecBytes is a collection with documentation: 8 modules (whose prose names another module and an option of its own), 8 filters,
+// 16 module_utils files, a callback configured by ini and env, a README with a heading, a file of docs/ and a role with a README (R-ANS-034
+// acceptance, R-ANS-048, R-ANS-049).
 func docsSpecBytes(version string) []byte {
 	s := spec(version)
 	for i := range 8 {
 		s.Files[fmt.Sprintf("plugins/modules/mod_%d.py", i)] = fmt.Sprintf(
-			"DOCUMENTATION = r'''\nmodule: mod_%[1]d\nshort_description: Module %[1]d checks a host\ndescription:\n  - C(host) is I(checked).\noptions:\n  host:\n    type: str\n    description: The host.\n    required: true\n  nested:\n    type: dict\n    description: Nested.\n    suboptions:\n      leaf:\n        type: int\n        default: 1000\n        description: A leaf.\n'''\nEXAMPLES = '''\n- mod_%[1]d:\n    host: a\n'''\nRETURN = '''\nok:\n  description: Whether it worked.\n  returned: always\n  type: bool\n''' \n", i)
+			"DOCUMENTATION = r'''\nmodule: mod_%[1]d\nshort_description: Module %[1]d checks a host\ndescription:\n  - C(host) is I(checked).\n  - See M(acme.tools.mod_%[2]d) and O(nested.leaf).\noptions:\n  host:\n    type: str\n    description: The host.\n    required: true\n  nested:\n    type: dict\n    description: Nested.\n    suboptions:\n      leaf:\n        type: int\n        default: 1000\n        description: A leaf.\n'''\nEXAMPLES = '''\n- mod_%[1]d:\n    host: a\n'''\nRETURN = '''\nok:\n  description: Whether it worked.\n  returned: always\n  type: bool\n''' \n", i, 0)
 		s.Files[fmt.Sprintf("plugins/filter/f_%d.py", i)] = "x = 1\n"
 	}
+	s.Files["plugins/callback/timer.py"] = "DOCUMENTATION = r'''\nname: timer\nshort_description: Times tasks\nversion_added: '1.0.0'\noptions:\n  sort_order:\n    type: str\n    description: The order.\n    ini:\n      - section: callback_timer\n        key: sort_order\n    env:\n      - name: TIMER_SORT_ORDER\n'''\n"
 	for i := range 16 {
 		s.Files[fmt.Sprintf("plugins/module_utils/u_%d.py", i)] = "x = 1\n"
 	}
@@ -48,8 +50,8 @@ func TestR_ANS_036_ThePublishedDocumentationIsServedByTheOperationsAndTheRoute(t
 	if a.Status != 202 {
 		t.Fatalf("publish: %d %s", a.Status, a.Body)
 	}
-	if got := e.st.Number(`SELECT entry_count FROM ansible_version_docs WHERE repo_id = $1 AND version = '1.0.0'`, e.repoID()); got != 34 {
-		t.Errorf("entry_count = %d, want 9 modules + 8 filters + 16 module_utils + 1 role", got)
+	if got := e.st.Number(`SELECT entry_count FROM ansible_version_docs WHERE repo_id = $1 AND version = '1.0.0'`, e.repoID()); got != 35 {
+		t.Errorf("entry_count = %d, want 9 modules + 8 filters + 16 module_utils + 1 callback + 1 role", got)
 	}
 	id := e.packageID()
 	p := "/api/v1/packages/" + id + "/versions/1.0.0"
@@ -72,7 +74,7 @@ func TestR_ANS_036_ThePublishedDocumentationIsServedByTheOperationsAndTheRoute(t
 		return out
 	}
 	doc := tree.JSON(t)
-	if c := counts(doc); c["module"] != 9 || c["plugin"] != 24 || c["role"] != 1 || doc["repository"] != project+"/"+repo || doc["state"] != "available" {
+	if c := counts(doc); c["module"] != 9 || c["plugin"] != 25 || c["role"] != 1 || doc["repository"] != project+"/"+repo || doc["state"] != "available" {
 		t.Errorf("tree = %v", doc)
 	}
 	files := doc["files"].([]any)
@@ -81,7 +83,7 @@ func TestR_ANS_036_ThePublishedDocumentationIsServedByTheOperationsAndTheRoute(t
 	}
 	q := e.st.Do(e.r, "GET", p+"/docs?q=mod_3", e.tokC, nil)
 	qd := q.JSON(t)
-	if c := counts(qd); q.Status != 200 || c["module"] != 9 || c["plugin"] != 24 || qd["matchCount"] != float64(1) {
+	if c := counts(qd); q.Status != 200 || c["module"] != 9 || c["plugin"] != 25 || qd["matchCount"] != float64(1) {
 		t.Errorf("search: %d %s", q.Status, q.Body)
 	}
 	if bad := e.st.Do(e.r, "GET", p+"/docs?q=a", e.tokC, nil); bad.Status != 422 || !strings.Contains(string(bad.Body), "invalid_query") {
@@ -94,8 +96,21 @@ func TestR_ANS_036_ThePublishedDocumentationIsServedByTheOperationsAndTheRoute(t
 	if entry.Status != 200 || ed["fullName"] != "acme.tools.mod_2" || ed["hasDocs"] != true || len(opts) != 2 {
 		t.Fatalf("entry: %d %s", entry.Status, entry.Body)
 	}
-	if desc, _ := ed["description"].([]any); len(desc) != 1 || !strings.Contains(desc[0].(string), "<code>host</code>") || !strings.Contains(desc[0].(string), "<em>checked</em>") {
+	if desc, _ := ed["description"].([]any); len(desc) != 2 || !strings.Contains(desc[0].(string), "<code>host</code>") || !strings.Contains(desc[0].(string), "<em>checked</em>") {
 		t.Errorf("description = %v", ed["description"])
+	}
+	// R-ANS-048: the prose links to the entry the tree holds and to the entry's own option, by addresses the server built.
+	if desc, _ := ed["description"].([]any); len(desc) == 2 && (!strings.Contains(desc[1].(string), `<a href="?doc=module/mod_0"><code>acme.tools.mod_0</code></a>`) ||
+		!strings.Contains(desc[1].(string), `<a href="#parameter-nested/leaf"><code>nested.leaf</code></a>`)) {
+		t.Errorf("the links of the description = %v", desc[1])
+	}
+	// R-ANS-049: a callback's option answers its configuration, and a generated version_added counts in the collection.
+	cb := e.st.Do(e.r, "GET", p+"/docs/entries/callback/timer", e.tokC, nil).JSON(t)
+	cbOpt, _ := cb["options"].([]any)
+	if len(cbOpt) != 1 || cb["versionAddedCollection"] != "acme.tools" ||
+		!strings.Contains(fmt.Sprint(cbOpt[0].(map[string]any)["configuration"]), "callback_timer") ||
+		!strings.Contains(fmt.Sprint(cbOpt[0].(map[string]any)["configuration"]), "TIMER_SORT_ORDER") {
+		t.Errorf("callback = %v", cb)
 	}
 	sub := opts[1].(map[string]any)["suboptions"].([]any)[0].(map[string]any)
 	if sub["default"] != float64(1000) {

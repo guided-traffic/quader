@@ -12566,6 +12566,9 @@ export interface components {
          * @description One page of the documentation (R-ANS-036). `description`, `notes`, `requirements` and the `description` of an option or a return
          *     value are arrays of sanitized HTML strings, one per paragraph; names, types, `returned`, `versionAdded`, authors, choices, defaults and
          *     samples are text and typed JSON values that the client shows as text. An entry without documentation has the header fields only.
+         *     The sanitized HTML may hold links the server built to the version's own documentation (R-ANS-048): `?doc=<type>/<name>` opens an
+         *     entry, `#parameter-<path>` and `#return-<path>` an option or a return value of this entry (the path joins the nested names with
+         *     `/`), and the two together one of another entry. Every other link is `http`, `https` or `mailto`.
          */
         PackageDocEntry: {
             type: string;
@@ -12580,6 +12583,10 @@ export interface components {
             /** Format: date-time */
             builtAt?: string;
             versionAdded?: string;
+            /** @description The collection `versionAdded` counts in (R-ANS-049); absent when the source names none. */
+            versionAddedCollection?: string;
+            /** @description Filter, test and lookup plugins. The names of the options that are positional parameters, in their order (R-ANS-050). */
+            positional?: string[];
             deprecated?: components["schemas"]["PackageDocDeprecated"];
             description?: string[];
             notes?: string[];
@@ -12587,7 +12594,7 @@ export interface components {
             author?: string[];
             options?: components["schemas"]["PackageDocOption"][];
             returnValues?: components["schemas"]["PackageDocReturnValue"][];
-            /** @description Text, shown in a code block; Quader does not highlight or run it. */
+            /** @description Text, shown in a code block; the client highlights it as YAML (R-ANS-050), and Quader never runs it. */
             examples?: string;
             seealso?: components["schemas"]["PackageDocSeeAlso"][];
             attributes?: components["schemas"]["PackageDocAttribute"][];
@@ -12615,8 +12622,33 @@ export interface components {
             aliases?: string[];
             description?: string[];
             versionAdded?: string;
+            versionAddedCollection?: string;
+            configuration?: components["schemas"]["PackageDocOptionConfiguration"];
             /** @description Nested to a depth of 12. */
             suboptions?: components["schemas"]["PackageDocOption"][];
+        };
+        /**
+         * @description How an option of a plugin is configured besides the task (R-ANS-049): an entry of an ini file, an environment variable, a variable,
+         *     a play keyword, a command line option. Text; absent members have no entry.
+         */
+        PackageDocOptionConfiguration: {
+            ini?: components["schemas"]["PackageDocConfigIni"][];
+            env?: components["schemas"]["PackageDocConfigName"][];
+            vars?: components["schemas"]["PackageDocConfigName"][];
+            keyword?: components["schemas"]["PackageDocConfigName"][];
+            cli?: components["schemas"]["PackageDocConfigCli"][];
+        };
+        PackageDocConfigIni: {
+            section?: string;
+            key?: string;
+        };
+        PackageDocConfigCli: {
+            name?: string;
+            option?: string;
+            switch?: string;
+        };
+        PackageDocConfigName: {
+            name: string;
         };
         PackageDocReturnValue: {
             name: string;
@@ -12627,11 +12659,14 @@ export interface components {
             /** @description Any JSON value, shown as text. */
             sample?: unknown;
             versionAdded?: string;
+            versionAddedCollection?: string;
             /** @description Nested to a depth of 12. */
             contains?: components["schemas"]["PackageDocReturnValue"][];
         };
         PackageDocSeeAlso: {
             module?: string;
+            /** @description `<type>/<name>` of the entry of this version's tree that `module` names (R-ANS-048); absent when the tree holds none. */
+            entry?: string;
             /** @description Sanitized HTML. */
             description?: string;
             /** @description Kept only for `http` and `https`. */

@@ -24,8 +24,9 @@ import (
 )
 
 // Version is the version of the code that derives the rows, stored as ansible_version_docs.generator: the reindex rebuilds a version whose
-// stored generator is older (R-ANS-044). It is raised with every change of what the generator makes of a source.
-const Version = 1
+// stored generator is older (R-ANS-044). It is raised with every change of what the generator makes of a source: 2 keeps the configuration
+// of an option, version_added_collection and positional (R-ANS-049, R-ANS-050).
+const Version = 2
 
 // Limits are the bounds the generator reads under (R-ANS-031). A bound crossed drops that part, sets Truncated and adds a warning; it
 // never fails a publish (R-ANS-034).

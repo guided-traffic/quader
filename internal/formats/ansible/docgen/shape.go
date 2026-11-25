@@ -203,9 +203,14 @@ func optionList(n *yaml.Node, w *searchWords, depth int) []any {
 		spec := vals[i]
 		o := map[string]any{"name": name}
 		w.add(name)
-		for _, f := range []string{"type", "elements", "version_added"} {
+		for _, f := range []string{"type", "elements", "version_added", "version_added_collection"} {
 			if v := member(spec, f); v != nil && v.Kind == yaml.ScalarNode {
 				o[f] = v.Value
+			}
+		}
+		for _, f := range configKeys {
+			if v := configList(member(spec, f), configFields(f)); v != nil {
+				o[f] = v
 			}
 		}
 		if v := member(spec, "required"); v != nil && v.Kind == yaml.ScalarNode {
@@ -233,6 +238,41 @@ func optionList(n *yaml.Node, w *searchWords, depth int) []any {
 	return out
 }
 
+// configKeys are the keys of a plugin's option that say how it is configured besides the task (R-ANS-049), each with the scalar members
+// of its entries that are kept: an ini section and key, an environment variable, a variable, a play keyword, a command line option.
+var configKeys = [...]string{"ini", "env", "vars", "keyword", "cli"}
+
+// configFields are the members of an entry of a configuration key that are kept.
+func configFields(key string) []string {
+	switch key {
+	case "ini":
+		return []string{"section", "key"}
+	case "cli":
+		return []string{"name", "option", "switch"}
+	}
+	return []string{"name"}
+}
+
+// configList keeps the entries of a configuration key that are mappings, with the scalar members named by fields; nil when none is left.
+func configList(n *yaml.Node, fields []string) []any {
+	if n == nil || n.Kind != yaml.SequenceNode {
+		return nil
+	}
+	var out []any
+	for _, e := range n.Content {
+		item := map[string]any{}
+		for _, f := range fields {
+			if v := member(e, f); v != nil && v.Kind == yaml.ScalarNode && v.Value != "" {
+				item[f] = v.Value
+			}
+		}
+		if len(item) > 0 {
+			out = append(out, item)
+		}
+	}
+	return out
+}
+
 // returnList shapes the RETURN mapping into a list of named objects.
 func returnList(n *yaml.Node, w *searchWords, depth int) []any {
 	keys, vals := pairs(n)
@@ -244,7 +284,7 @@ func returnList(n *yaml.Node, w *searchWords, depth int) []any {
 		spec := vals[i]
 		o := map[string]any{"name": name}
 		w.add(name)
-		for _, f := range []string{"type", "elements", "returned", "version_added"} {
+		for _, f := range []string{"type", "elements", "returned", "version_added", "version_added_collection"} {
 			if v := member(spec, f); v != nil && v.Kind == yaml.ScalarNode {
 				o[f] = v.Value
 			}
@@ -304,10 +344,12 @@ func shapeDoc(n *yaml.Node, contentType, contentName string, w *searchWords) (do
 	short = plainShort(text(member(n, "short_description")))
 	doc["short_description"] = short
 	w.add(PlainText(short))
-	if v := text(member(n, "version_added")); v != "" {
-		doc["version_added"] = v
+	for _, f := range []string{"version_added", "version_added_collection"} {
+		if v := text(member(n, f)); v != "" {
+			doc[f] = v
+		}
 	}
-	for _, f := range []string{"description", "notes", "requirements", "author", "extends_documentation_fragment"} {
+	for _, f := range []string{"description", "notes", "requirements", "author", "extends_documentation_fragment", "positional"} {
 		if v := textList(member(n, f)); v != nil {
 			doc[f] = v
 		}
