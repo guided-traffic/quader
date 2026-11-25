@@ -298,6 +298,10 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | S13 · Small findings of the screens | the monospace token that is used nowhere; the conflict dialog's API names and JSON; links in a drawer in the browser's colours; the grey of the vulnerability cell's failed states beside the malware cell's amber; a host that breaks at its hyphen; the walk `mirrorFilled`'s order; a doubled breadcrumb; H-1871 (the audit log and the security dashboard read too seldom); H-1980 | landed and pushed at 16:48 |
 | S14 · What the product says about its scanners' replicas is true | a "Lost" row of the previous replica after every restart; "1 scan running" beside no place in use; the image scanner's processes under the host's name on the profile (whether two containers of one pod's name register side by side); no malware state in a remote's lists | landed and pushed at 15:11 (eight commits, migration 00127; Q-HA-495, Q-HA-496, Q-MAL-110, Q-MAL-111; gap H-1995; its builder worked from 13:55 to 14:57) |
 | S15 · A connection test says what it learned, and reads a token handshake right | the owner's finding of 14:15 (section 8, Product): the registry's test calls an accepted account an error (the challenge's 401 fails the screen's own rule) and shows one sentence of an answer that holds the status, the duration, the token service, the certificate and an error's code; one verdict at one place, the facts shown as R-UI-216 shows a failed call, for every place that tests something | landed and pushed at 15:50 |
+| W3 · A download ahead takes a range of versions (W-28, package 3) | the owner's task of 15:55 (section 8, Product): `fromVersion`, `toVersion`, `toInclusive` at a package's bulk and its preview, in the format's own order, the dialog's two fields, the bulk's line on the tab Downloads | in work since 16:28 |
+| W1 · Switches for the delivery, the cache's acts, the mode's dialog (W-28, package 1) | R-CUR-024, R-CUR-025 of the plan `.dev/w28-plan.md`; with it the attestation that an upstream version's line lists as a platform | in work since 17:05 |
+| W4 · Downloads kept in sync (W-28, package 4) | R-CUR-027 of the plan | waits for W3 |
+| W2 · A range of versions in a package's allow (W-28, package 2) | R-CUR-026 of the plan | waits for W1 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
 | G3 · Page and shell states on the stack | the 10 menus, 3 drawers, the person search's list in a drawer, about 19 sections, 11 routes, the banner and the maintenance notice, a failure of an action inside a section, the editors' refusals with their summary, two selection states, the command menus of NuGet, Ansible Galaxy and generic | 5 to 6 minutes of the render step (the job at about 61 to 64 of its 75 minutes), about 3 s per format | in work since 14:57 (after G1; the inventory of the morning is brought up to what landed today first) |
 
@@ -1063,6 +1067,9 @@ order is what a user or an operator meets first. The state is kept here.
   answers or a sentence a screen says greps `test/integration` and `web/e2e/tests` for the old value before it is
   pushed. Open, not read to its cause: `TestR_VULN_050_R_MAL_035_ADownloadAheadAndAClientsFillAreScannedAtOnceWithoutASchedule`
   (shard d) failed in the two runs of 11:38 and 11:49 and in none of the nine after them.
+  Also open, seen once: `TestMemoryAdmission` (`test/integration/overload`, shard b; the excess of slow downloads gets
+  503 and the heap stays within its limit) failed in the run of 16:49 for S13, a package that changed no Go of the data
+  path; read as a test that depends on the runner's load until it recurs.
 
 - **Closed on 2026-11-25, 11:11, by S2:** the German pass ends without a finding (81 screens, 8.7 minutes, on its
   builder's instance). A text a person or an upstream wrote is marked as written (`translate="no"`) where it is shown:
@@ -1187,6 +1194,24 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- **Closed on 2026-11-25, LANDTIMEW3, by W3 (W-28, package 3; Q-CUR-190 to Q-CUR-194; gaps H-2010 to H-2013; migration
+  00129): "Download every version…" takes a range of versions.** A bulk at the level `package` and its preview accept
+  `fromVersion` (always included), `toVersion` and `toInclusive` (default true; false is "below"). The order is the
+  format's own (`queue.Order` over the view adapter's `Compare` and the sort key's class, built in the format host and
+  the API, because the domain package may not import formats); no range syntax and no code per format, so the five
+  remote formats go one way. A bound need not be a version the upstream has; one the format cannot rank answers
+  `422 invalid_version` at its field, a range that holds no version `422` at `/toVersion`. A string that is no version
+  (`latest`, `main`) is outside every range, and the preview counts those left out (`notVersions`). Applied in the order
+  range, pre-releases, the newest `maxVersions`, `maxBytes`; the spec's bound "newest" never was in the API and is
+  `maxVersions`, which the spec now says. The dialog has "From version" and "Up to version" with "included" or "below
+  it" above the other bounds, suggests the package's versions and takes any typed one; the tab Downloads names the range
+  on a bulk's row and above its rows, and "Start again" sends it. With a range the preview reads up to ten pages of
+  1,000 versions. Landed LANDNOTEW3 Open: npm orders build metadata after its release, so an inclusive bound `1.0.0`
+  leaves `1.0.0+b` out (H-2010, the format's order); a package past about 10,000 versions shows "more versions" in a
+  ranged preview (H-2011); the suggestions are the first 100 versions, not what "Load more" added (H-2012, for W1's head
+  to hand in); a sub-section takes no range (H-2013). Not verified: a ranged bulk of NuGet, OCI, Debian or Ansible
+  against an upstream (the unit table and each format's own order tests carry it).
+
 - **Closed on 2026-11-25, 16:48, by S13 (Q-UI-1210 to Q-UI-1219; new gap H-1990): ten small findings of the
   screens.** (1) `code`, `kbd`, `pre` and `samp` take the theme's monospace token once in `main.scss` (they fell back to
   the browser's Courier; four stylesheets wrote faces of their own); a lint rule (`mono-rule.mjs`) refuses a hand-written
@@ -1248,6 +1273,27 @@ records the recorder that tells such a stall apart).
   package 3 (`fromVersion`, `toVersion`, `toInclusive` at a package's bulk; Q-CUR-190 to 194, migration 00129, gaps
   H-2010 to 2014) and a planner for packages 1, 2 and 4 under the favourites, with what changes per alternative
   (Q-CUR-200 to 259, migrations 00130 to 00132).
+  **State at 16:59:** the planner's plan is `.dev/w28-plan.md` of the main checkout (not in git; 78 KB: requirement texts
+  R-CUR-024 to 027, decisions, migrations, files, tests, what changes per alternative). What it corrects in the proposal:
+  (1) 50,000 rules need three changes with them (one statement for the bulk allow, the store compiling only the rules
+  that decide a subject, a package's version rules as a sorted slice), else a rule write is quadratic and the worst case
+  is about 20 MB a repository and replica; (2) "what the repository delivers today" can only be what it stores (its
+  package rows); (3) who may change the mode may not always write rules (`repository-admin`): that caller gets the
+  dialog without the offer; (4) the server, not the screen, decides whether a switch equals what is inherited (one call
+  `delivery-rules/switch`); (5) a range needs a third refusal reason (`outsideRange`), makes every OCI manifest by digest
+  of such an image walk its tags, and the mirror must count its newest N after the rules; (6) a repeated bulk plans every
+  version again (a moved tag is fetched, by a HEAD that is no counted pull; npm, NuGet and Ansible would send one
+  conditional request per version and run), so a sync leaves out what is stored as a version and queues only tags
+  again; (7) a queue row never asks the rules today, so a sync needs an origin of its own; (8) under d5 (a) a
+  `docker pull image` without a tag is refused under a range until `latest` has its own switch. For Debian a range
+  refuses `apt install pkg` as soon as the upstream's newest is outside it, unless the client uses the virtual
+  repository over the remote. Missing and named as gaps: no byte bound of a repository for queue work (the plan adds
+  `remote.syncs.maxBytes`), no request budget over time for background work. Order: P1 beside P4 (P4 after package 3
+  landed), then P2 after P1. The builders of P1, P2 and P4 wait for the owner's answer.
+  **Answered at 17:04:** the owner, asked whether all five favourites hold: "Favoriten". So d1 = b, d2 = a, d3 = a,
+  d4 = a, d5 = a, none against a favourite; the paper's store stayed empty, the answer is this sentence of the chat. The
+  builder of P1 (switches, the cache's acts, the mode's dialog; R-CUR-024, R-CUR-025, Q-CUR-200 to 209) started at 17:04;
+  P4 starts when package 3 has landed, P2 when P1 has.
 
 - **Open since 2026-11-25, 15:40 (seen by me in the owner's picture of an opened upstream image, not named by him):
   an upstream version's line lists the attestation as a platform.** The version rows of
@@ -1255,7 +1301,7 @@ records the recorder that tells such a stall apart).
   built with provenance the list holds `unknown/unknown` beside `linux/amd64`; that entry is the index's attestation
   manifest and no platform (`rows.AttestationPlatform`, which the stored image's view already leaves out). To do: the
   upstream catalogue's answer leaves the attestation out of the platforms, for every format's catalogue that names
-  platforms; goes into the next batch of small UI findings.
+  platforms; given to W1 (W-28, package 1), which rewrites that row.
 
 - **Closed on 2026-11-25, 10:13, by G2: twelve defects in dialogs that no picture had shown, and the tier that shows
   them (section 12 A's states, the overlays' part).** `make ui-states` opens 69 states of dialogs in the unit-test
