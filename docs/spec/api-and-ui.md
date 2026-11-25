@@ -26286,7 +26286,9 @@ would run a name longer than the line out of the page.
 | (b) `white-space: nowrap` on each value | As the Secret's name | Short | A value longer than the line runs out of its box; a rule per place |
 | (c) Non-breaking hyphens (U+2011) in the value | Text changed | No markup | A copied host is not the host; a search does not find it |
 
-**Choice:** (a). A lint rule is not added: whether an interpolation of a template or a `$localize` placeholder is a value (a host, a
+**Choice:** (a). A value that carries its own places to break, a Debian key's fingerprint grouped by fours, stays inline text, so it
+breaks between its groups and its copy button follows its last line (`deb-signing-keys.ts`; the render check `off-line` found the button
+beside the box's two lines at 390 px). A lint rule is not added: whether an interpolation of a template or a `$localize` placeholder is a value (a host, a
 key) or a word (a display name) cannot be told exactly from the source. The sentences converted: the credential's hosts of a remote's
 upstream and of an upstream registry's account, the hosts of **Enter the account again**, a well-known repository's key, a policy's
 name in its changes, an examined version of a delivery request, a package's name in **Allow**, and the unknown format of the creation

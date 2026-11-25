@@ -242,6 +242,11 @@ export function keyErrorText(error: ApiError): string | null {
     .keys {
       margin-block-end: var(--quader-space-6);
     }
+    /* A fingerprint grouped by fours breaks between its groups like running text, and its copy button follows its last line; as one box
+       of the value rule (Q-UI-1213) the button stood beside the box's two lines at 390 px. */
+    th > code {
+      display: inline;
+    }
     h3 {
       margin-block: var(--quader-space-4) var(--quader-space-2);
       font: var(--quader-type-title-small);

@@ -92,6 +92,8 @@ let nextDisclosureId = 1;
     .inline-toggle {
       font-weight: 600;
       text-align: start;
+      /* A button's label stays on one line (R-UI-171): in a narrow cell (a replica's Valkey state) "Technical details" broke in two. */
+      white-space: nowrap;
     }
     .toggle:focus-visible,
     .inline-toggle:focus-visible {
