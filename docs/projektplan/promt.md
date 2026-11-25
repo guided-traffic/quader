@@ -305,10 +305,12 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | S16 · A retired system repository is removed, and a retired preset says so | the owner's finding of 19:09 (section 8, Product): `upstream/scanner-clamav` stays listed as "Off" | landed and pushed at 20:40 |
 | S17 · Every load shows the spinner the owner picked (W-29) | the owner's task of 19:15 and his choice of 19:19 (section 8, Product): the mark's six stones, lighting up in sandstone | in work since 19:19 |
 | S18 · No signed address in a log or a record | my finding of 19:23 (section 8, Product): the upstream log writes redirect targets with their signatures | landed and pushed at 20:40 |
-| S19 · The command behind its button on a version's page, clients as tabs, a collection opens in its documentation (W-30) | the owner's task of 20:39 (section 8, Product): every format's version page, the panel of the command, the target of a collection's name, the sentence why a format is not checked for vulnerabilities | in work since 20:39 |
-| W-30 planner · Ansible as an equal of Galaxy; general and specific properties per format | the owner's task of 20:39: a comparison screen by screen and answer by answer, and the table of properties per format | in work since 20:39 |
+| S19 · The command behind its button on a version's page, clients as tabs, a collection opens in its documentation (W-30) | the owner's task of 20:39 (section 8, Product): every format's version page, the panel of the command, the target of a collection's name, the sentence why a format is not checked for vulnerabilities | built at 21:25 (four commits on its branch, gates green there); waits for its landing behind G3 |
+| W30-A1 · A collection's documentation reads like the documentation site (W-30) | R-ANS-048 to R-ANS-050 of the plan `.dev/w30-plan.md`: anchors and links, a plugin's configuration, the page's contents, highlighted examples | in work since 21:25 |
+| W-30 planner · Ansible as an equal of Galaxy; general and specific properties per format | the owner's task of 20:39: a comparison screen by screen and answer by answer, and the table of properties per format | plan written at 21:05 (`.dev/w30-plan.md`) |
+| W30-G1 · A remote's cached version of npm and Debian carries its facts (W-30) | R-NPM-050, R-NPM-051, R-DEB-037 of the plan `.dev/w30-plan.md`; the README of an npm version from the stored tarball | in work since 21:09 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
-| G3 · Page and shell states on the stack | the 10 menus, 3 drawers, the person search's list in a drawer, about 19 sections, 11 routes, the banner and the maintenance notice, a failure of an action inside a section, the editors' refusals with their summary, two selection states, the command menus of NuGet, Ansible Galaxy and generic | 5 to 6 minutes of the render step (the job at about 61 to 64 of its 75 minutes), about 3 s per format | in work since 14:57 (after G1; the inventory of the morning is brought up to what landed today first) |
+| G3 · Page and shell states on the stack | the 10 menus, 3 drawers, the person search's list in a drawer, about 19 sections, 11 routes, the banner and the maintenance notice, a failure of an action inside a section, the editors' refusals with their summary, two selection states, the command menus of NuGet, Ansible Galaxy and generic | 5 to 6 minutes of the render step (the job at about 61 to 64 of its 75 minutes), about 3 s per format | landed and pushed at 21:59 |
 
 Not built, by the plan: hover and loading states, a rule against an overlay covering a control, a walk per place of the
 confirm dialog or of the error notice (one component each: its shapes and its containers are rendered). A table of refused
@@ -1059,6 +1061,28 @@ order is what a user or an operator meets first. The state is kept here.
 
 ### Tests and tools
 
+- **Closed on 2026-11-25, 21:59, by G3 (Q-UI-1231 to Q-UI-1233; gaps H-2005 to H-2007; no Go code): the states of pages
+  and of the shell that no walk opened are pictured, and the pictures found 19 defects in 12 components, one of them no
+  layout defect: a stored permission policy could not be saved.** The policy editor sent a stored policy to the preview
+  without its name, the preview called the name invalid, and **Review and save** refused every change (`b893f3f9f`,
+  with a unit case that fails without the fix). The others: a user's sessions ran 167 px past a phone and a linked
+  identity's badge touched its name; a finding's history ran 89 px past a phone; a long name in a person search's chip,
+  a CI name chip or a policy's repository button pushed the page 132 px sideways (cut on one line now, Q-UI-1233); the
+  banner's icon, its full stop and its place on the sign-in page; an Ansible import's messages a word a line; a CI
+  mapping's warning icon 28 px above its sentence; an exposure rule's note off its buttons' line; the summary of a
+  refused save named fields by JSON pointers; the banner's message and a repository's description counted as
+  untranslated on a German page. Added to the renders: the shell's menus, the maintenance notice and the banner, the
+  page menus, the drawers of jobs, backups and signature refusals, two selections, ten screens with every section
+  open, the 11 routes without a screen, the refused saves of three editors; 27 screens, 206 pictures, about +2.2 min
+  of the render step (estimated), nothing per format. At the landing: the state of a version's menu on the tab
+  Upstream is gone (W1 dissolved that menu); the helper that opens every section now opens the sections before the
+  folds of their rows (on the landing's instance the Ansible repository held 50 import tasks with a fold each, and the
+  helper stopped after 60 clicks, before Details, API and Advanced; no defect of the product); the web gates green, the
+  full renders 565 passed and that one screen green after the correction, the German pass 108 passed, no layout
+  finding. Open: the command menus of NuGet, Ansible and generic are not pictured (H-2005; S19 pictures the first
+  two); the bulk revoke's question without a real count (H-2006); at 390 px the Language submenu covers the start of
+  its word (H-2007). Not verified: the full render set after the helper's correction (the corrected screen ran alone).
+
 - **Closed on 2026-11-25, 20:13: `integration (shard b)` was red on the push of 19:12 (W4), by an expectation the
   landing had made stale; no release was held (Q-ARCH-457).** `TestRemoteSettings`, the case "a remote created with only
   url reads back every member with its default" (`test/integration/repository/remote_test.go`), compares the whole
@@ -1212,6 +1236,41 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- **Open since 2026-11-25, 21:09: the plan of W-30 is there (`.dev/w30-plan.md` of the main checkout, 83 KB; recovered
+  from the planner's record, its worktree was cleaned with the file in it), 14 build packages in four waves and five
+  decisions of the owner's.** What it found, read in code and in Galaxy's answers and source (not on screens unless
+  said): (1) a version a remote cached has its format row for NuGet, OCI and Ansible, not for npm and Debian, so their
+  remote packages show no description, licence, dependencies or README, and with S19 a remote npm package would open on
+  an empty documentation; (2) a plugin's documentation drops how the plugin is configured (`ini`, `env`, `vars`,
+  `keyword`, `cli`); (3) the documentation has no links between entries and no anchor per option; (4) Quader shows
+  attributes and see-also, which Galaxy's own renderer does not, so the measure for "ebenbürdig" is the documentation
+  site, Galaxy the minimum; (5) a local collection's fragments are not merged, a role's argument spec is not read,
+  there is no changelog; (6) a cached role reads `role/<id>` without name and README, `role search` is not served;
+  (7) deprecation reaches a screen only for npm; (8) finding collections is weaker than Galaxy's search (no namespace
+  filter, no ranking, the tab Upstream without tags, counts, signed state); (9) "used by" exists in no format; (10)
+  stored and not shown: an image's annotations and config, Debian's relation fields and long description, npm's
+  unpacked size, scripts and publisher, NuGet's icon, licence file, frameworks and five of eight install forms. The
+  packages, named W30-A1 to W30-A5 (Ansible) and W30-G1 to W30-G9 (every format) here, since G3 is taken: A1 the
+  documentation reads like the documentation site; A2 the generator reads fragments, argument specs and the
+  changelog; A3 finding collections; A4 roles by name (after D1); A5 upload from the screen with the import's log;
+  G1 a remote's cached version of npm and Debian carries its facts, npm's README per version from the tarball; G2 the
+  upstream's documentation of a package not stored yet; G3 one way to show a version's facts; G4 deprecation in
+  every format that has it; G5 used by; G6 NuGet complete; G7 an image's facts; G8 Debian complete; G9 generic
+  files with the command panel. Waves: (1) A1, A2, G1, G7's server part; (2) after S19: A3, G3, G4, G6; (3) A5, G2,
+  G5, G8; (4) A4, G9, G7's chart part. G1 is started (it makes S19's page hold for a remote); the others take a
+  builder's place as one frees. His decisions, put to him as a working paper: D1 how far roles are served (favourite:
+  readable through a remote, no local publish); D2 a namespace, scope or path prefix as a page (favourite: a page from
+  what exists, in every format, no new entity); D3 the documentation searchable across collections (favourite: across
+  the newest version of each); D4 a Helm chart in an OCI repository shown as a chart (favourite: its facts, README and
+  values, read-only, no Helm format; parked in FULL.md, so his word); D5 an approval before a publish (first his
+  fact: does his hub require one). Decided by us and written in the plan's C.4; one of them revises a requirement and
+  is told to him: a Debian package's data archive is read under bounds for the changelog, the copyright and the file
+  list (R-DEB-007 revised by his rule of today). Not verified: the plan's C.5 (Galaxy's namespace page, the site's
+  changelog page, frequencies of READMEs and annotations, the client's `download`, `verify` and `role info` against
+  Quader, the remote gap on a screen). The working paper with d1 to d5 is his private page since 21:11
+  (https://claude.ai/artifact/RWmHZ9r8BrJJ54KCxgCAQ2; his choices are read from its store or come as letters in the
+  chat); A4 waits for d1, the chart's part of G7 for d4, nothing else waits for him.
+
 - **Open since 2026-11-25, 20:39, the owner's task at `upstream/galaxy` and at `upstream/docker-hub` (W-30; S19 builds
   the three things he named, a planner works out the rest).** His words: "Wenn man auf eine Collection klickt, sollte
   man meiner Meinung nach direkt in der Doku der neusten Version landen. Das wäre das normale Verhalten in Ansible
@@ -1234,7 +1293,13 @@ records the recorder that tells such a stall apart).
   versions' table is lost; (4) whether npm and NuGet, whose versions carry a README, follow (3) reverses his walk of
   2026-11-18 for them and is put to him as one decision. The planner compares every Ansible screen and answer with
   what Galaxy offers for the same task and lists, per format, the general and the specific properties and which of
-  them a screen shows.
+  them a screen shows. His answer to (4) at 20:48: "Ja sollen sie, wenn die dafür notwendigen
+  Metainformationen vorhanden sind, soll sie von uns verwendet und dargestellt werden. Das gilt immer: Doku die mit
+  zum Format gehört und regelmäßig vorhanden ist, soll auch bei uns umgesetzt werden. Schau zum Beispiel bei Ansible
+  Galaxy: hier wird erst die Doku eingeblendet (neuste Version) und man von dort aus in den Versionen zurück blättern
+  wenn gewünscht." So npm and NuGet open like a collection (S19 builds it with (3); told at 20:48), and the rule is
+  general: documentation that belongs to a format and is regularly present is stored, shown and shown first, and the
+  meta information a format carries is used and shown. The planner applies it to every format (told at 20:48).
 
 - **Open since 2026-11-25, 20:12, the owner's question at an Ansible collection's tab Vulnerabilities ("Not scanned.
   Packages of this type are not scanned for vulnerabilities."): "Ansible package werden nicht gescant? Sind das keine
@@ -1332,7 +1397,7 @@ records the recorder that tells such a stall apart).
   Q-REPO-490 reads that as a rule about callers (`DELETE` still answers `409 managed_by_product`), and the product
   removes what it no longer declares. Verified by the builder on a development instance of its own with his exact row
   (migrate logged `removed:["scanner-clamav"]`, the job succeeded, the row is gone); on his profile at the restart of
-  this landing: PROFILENOTE Open: the project's list offers **Set up client** on a retired registry's row, which answers 404
+  this landing: migrate logged `removed:["scanner-clamav"]`, the job `repository-delete` succeeded and no repository of that key is left in its database (read at 20:42; this line stood as a placeholder in the plan commit of the landing, my slip, and is corrected with the next one). Open: the project's list offers **Set up client** on a retired registry's row, which answers 404
   (H-2040); a system key declared again while its deletion runs is created only at the following start (H-2041); the
   integration case runs the job's two statements by hand, the upstream area has no worker (H-2042); older records of
   decisions and runs still name `scanner-clamav`, left as history (H-2043). Not verified: his installation (the same
