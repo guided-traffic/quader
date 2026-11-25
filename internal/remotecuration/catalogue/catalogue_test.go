@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/url"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -108,7 +109,28 @@ func (fakeCatalogue) Package(ctx context.Context, u discover.Upstream, name stri
 	if name == "absent" {
 		return discover.PackageInfo{}, nil
 	}
+	if name == "library/nginx" {
+		// Docker Hub's tag list names an index's attestation manifests among the images' platforms.
+		return discover.PackageInfo{Found: true, Name: name, Done: true, Versions: []discover.VersionFacts{
+			{Version: "1.27", Platforms: []string{"linux/amd64", attestationPlatform, "linux/arm64/v8", attestationPlatform}},
+			{Version: "1.26", Platforms: []string{"linux/amd64"}},
+		}}, nil
+	}
 	return discover.PackageInfo{Found: true, Name: name, Versions: []discover.VersionFacts{{Version: "1.0.0"}}, Done: true}, nil
+}
+
+// TestR_CUR_009_AnAttestationIsNoPlatformOfAVersion holds that the catalogue's answer names an image's platforms without its attestation
+// manifests ("unknown/unknown"), whichever format's catalogue named them.
+func TestR_CUR_009_AnAttestationIsNoPlatformOfAVersion(t *testing.T) {
+	e := newEngine(t, &fakeCatalogue{}, &fakeLender{}, defaults(), time.Now)
+	p, err := e.Package(context.Background(), Target{RepoID: 7, Repo: "it/oci-remote", Format: "npm", Upstream: "https://registry.example/"}, "library/nginx", discover.VersionsRequest{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := [][]string{p.Versions[0].Platforms, p.Versions[1].Platforms}
+	if want := [][]string{{"linux/amd64", "linux/arm64/v8"}, {"linux/amd64"}}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("platforms %v, want %v", got, want)
+	}
 }
 
 // indexCatalogue answers from rows Quader holds of the upstream, as Debian's parsed indexes (R-DEB-036): no request reaches the network.

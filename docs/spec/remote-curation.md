@@ -649,9 +649,14 @@ Below `/api/v1/projects/{projectKey}/repositories/{repoKey}` (tag `remote-curati
   (Q-CUR-14).
 - A name in the answers is the format's normalized name; a version the canonical one (R-CUR-006); every text from the upstream is plain
   text.
+- **A version's platforms** are the images' platforms or a package's architectures as the upstream names them, without the platform
+  `unknown/unknown` an OCI index gives its attestation manifests (a provenance, an SBOM), which Docker Hub's tag list names among the
+  images: the catalogue's engine leaves it out for every format's catalogue that names platforms (`platformsOf` of the catalogue engine).
 
 Acceptance criteria:
 
+- Unit (`internal/remotecuration/catalogue`, `TestR_CUR_009_AnAttestationIsNoPlatformOfAVersion`, milliseconds): an image whose tag list
+  names `unknown/unknown` twice among its platforms is answered with its two real platforms.
 - Integration (area `repository` with the npm stub, `TestR_CUR_009_…`, about 3 s): a search answers the stub's hits with their states (one
   stored, one blocked, one with an open request); in mode `onlyAllowed` the Reader of `web` sees one hit and `withheld: 2`, the Maintainer
   three; a lookup of a not-allowed package answers its versions to the Reader; `upstream/vulnerabilities` answers the verdict of a test

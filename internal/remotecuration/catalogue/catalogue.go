@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -285,6 +286,10 @@ func (e *Engine) pkg(ctx context.Context, t Target, name string, rq discover.Ver
 		if len(p.Versions) > rq.Limit {
 			p.Versions = p.Versions[:rq.Limit]
 		}
+		// An attestation manifest is no platform of the image, whichever format's catalogue named it.
+		for i := range p.Versions {
+			p.Versions[i].Platforms = platformsOf(p.Versions[i].Platforms)
+		}
 		return p, nil
 	})
 	if err != nil {
@@ -554,4 +559,17 @@ func assign(v any, into any) error {
 		return fmt.Errorf("catalogue: no page of type %T", into)
 	}
 	return nil
+}
+
+// attestationPlatform is the platform an OCI image index names an attestation manifest with (a provenance, an SBOM): no image of a
+// platform, which an upstream's tag list names among the platforms all the same (Docker Hub's "images").
+const attestationPlatform = "unknown/unknown"
+
+// platformsOf is the platforms a version's row shows (R-CUR-009): without attestationPlatform, for every format's catalogue that names
+// platforms. Nil stays nil.
+func platformsOf(ps []string) []string {
+	if !slices.Contains(ps, attestationPlatform) {
+		return ps
+	}
+	return slices.DeleteFunc(slices.Clone(ps), func(p string) bool { return p == attestationPlatform })
 }
