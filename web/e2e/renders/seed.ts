@@ -661,6 +661,7 @@ export async function seedContent(ctx: APIRequestContext, edge: string, token: s
     await expectStatus(res, [200, 201], `folder ${f.repo}/${f.path}`);
   }
   for (const image of images) await pushImage(ctx, edge, token, image);
+  await seedImageFacts(ctx, edge, token);
   await seedRemoteImages(ctx, edge, token);
 }
 
@@ -1239,6 +1240,240 @@ async function pushImage(ctx: APIRequestContext, edge: string, pat: string, imag
       );
       await expectStatus(res, [201], `push ${repo}:${tag}`);
     }
+  }
+}
+
+/**
+ * The images of an image's facts (formats/oci.md R-OCI-039 to R-OCI-041) in `images`: `facts/web-api`, an index of six platforms and
+ * a BuildKit attestation, whose platforms have twenty layers each and a configuration with thirty environment entries of long values,
+ * labels with addresses and a history of forty steps with long `RUN` commands, under three tags; `facts/bare`, an image without any
+ * annotation or label; and two Helm charts, one with its README and one deprecated without (R-OCI-042). Every layer is a tar of a few bytes; a run again
+ * pushes the same bytes.
+ */
+export const factsImages = { index: 'facts/web-api', tags: ['2.4.1', '2.4', 'latest'], bare: 'facts/bare', chart: 'charts/web-api', oldChart: 'charts/web-api-legacy' } as const;
+
+export async function seedImageFacts(ctx: APIRequestContext, edge: string, pat: string): Promise<void> {
+  const digestOf = (b: Buffer): string => `sha256:${createHash('sha256').update(b).digest('hex')}`;
+  const push = async (name: string): Promise<{ blob: (b: Buffer) => Promise<string>; manifest: (ref: string, body: Buffer, type: string) => Promise<void> }> => {
+    const repo = `${mainProject}/images/${name}`;
+    const auth = { Authorization: `Bearer ${await registryToken(ctx, edge, pat, repo)}` };
+    return {
+      blob: async (b: Buffer): Promise<string> => {
+        const digest = digestOf(b);
+        if ((await ctx.head(`/v2/${repo}/blobs/${digest}`, { headers: auth })).status() === 200) return digest;
+        const start = await ctx.post(`/v2/${repo}/blobs/uploads/`, { headers: auth });
+        await expectStatus(start, [202], `start upload ${repo}`);
+        const location = new URL(start.headers()['location'] ?? '', edge);
+        location.searchParams.set('digest', digest);
+        const put = await ctx.put(location.pathname + location.search, { data: b, headers: { ...auth, 'Content-Type': 'application/octet-stream' } });
+        await expectStatus(put, [201], `upload blob ${repo}`);
+        return digest;
+      },
+      manifest: async (ref: string, body: Buffer, type: string): Promise<void> => {
+        const res = await patient(() => ctx.put(`/v2/${repo}/manifests/${ref}`, { data: body, headers: { ...auth, 'Content-Type': type } }));
+        await expectStatus(res, [201], `push ${repo}:${ref}`);
+      },
+    };
+  };
+  const json = (v: unknown): Buffer => Buffer.from(JSON.stringify(v));
+  const ociManifest = 'application/vnd.oci.image.manifest.v1+json';
+  const layerType = 'application/vnd.oci.image.layer.v1.tar+gzip';
+
+  // facts/web-api: six platforms and an attestation.
+  const api = await push(factsImages.index);
+  const platforms: Record<string, string>[] = [
+    { os: 'linux', architecture: 'amd64' },
+    { os: 'linux', architecture: 'arm64', variant: 'v8' },
+    { os: 'linux', architecture: 'arm', variant: 'v7' },
+    { os: 'linux', architecture: 'ppc64le' },
+    { os: 'linux', architecture: 's390x' },
+    { os: 'linux', architecture: '386' },
+  ];
+  const created = '2026-11-20T09:14:07.512Z';
+  const env = [
+    'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/web-api/bin:/opt/web-api/node_modules/.bin',
+    'NODE_VERSION=24.11.1',
+    'NODE_ENV=production',
+    'APP_HOME=/opt/web-api',
+    `JAVA_TOOL_OPTIONS=${['-XX:+UseContainerSupport', '-XX:MaxRAMPercentage=75.0', '-XX:+ExitOnOutOfMemoryError', '-Dfile.encoding=UTF-8', '-Duser.timezone=UTC', '-Djava.security.egd=file:/dev/./urandom'].join(' ')}`,
+    `NODE_OPTIONS=--max-old-space-size=1536 --enable-source-maps --unhandled-rejections=strict --dns-result-order=ipv4first --trace-warnings`,
+    'TZ=UTC',
+    'LANG=C.UTF-8',
+    ...Array.from({ length: 22 }, (_, i) => `WEB_API_FEATURE_${String(i + 1).padStart(2, '0')}=${i % 3 === 0 ? 'enabled' : `https://config.example-company.com/web-api/feature-flags/${i + 1}?environment=production&region=eu-central-1&fallback=disabled`}`),
+  ];
+  const labels = {
+    'org.opencontainers.image.title': 'web-api',
+    'org.opencontainers.image.description': 'The web API of the portal: REST and GraphQL behind the edge, with the session store and the job queue.',
+    'org.opencontainers.image.source': 'https://git.example-company.com/portal/web-api',
+    'org.opencontainers.image.url': 'https://portal.example-company.com/developers/web-api',
+    'org.opencontainers.image.documentation': 'https://docs.example-company.com/portal/web-api/2.4/',
+    'org.opencontainers.image.licenses': 'Apache-2.0',
+    'org.opencontainers.image.vendor': 'Example Company',
+    'org.opencontainers.image.revision': '71e0b3a5c2d94f18a6b0e3c7d9f2a4b6c8e0f1a3',
+    'org.opencontainers.image.version': '2.4.1',
+    'org.opencontainers.image.base.name': 'docker.io/library/node:24-bookworm-slim',
+    'com.example-company.team': 'portal-platform',
+    'com.example-company.oncall': 'https://oncall.example-company.com/schedules/portal-platform',
+  };
+  const runs = [
+    'apt-get update && apt-get install -y --no-install-recommends ca-certificates curl tini dumb-init libssl3 libstdc++6 && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*.deb && update-ca-certificates --fresh',
+    'groupadd --system --gid 10001 web-api && useradd --system --uid 10001 --gid web-api --home-dir /opt/web-api --shell /usr/sbin/nologin web-api',
+    'npm ci --omit=dev --no-audit --no-fund --ignore-scripts && npm cache clean --force && find /opt/web-api/node_modules -name "*.md" -delete -o -name "*.ts" -not -name "*.d.ts" -delete',
+    'node scripts/build.mjs --target=node24 --minify --sourcemap=external --define:process.env.NODE_ENV=\\"production\\" --outdir=/opt/web-api/dist',
+  ];
+  const history: { created: string; created_by: string; comment?: string; empty_layer?: boolean }[] = [];
+  for (let i = 0; i < 40; i++) {
+    const empty = i % 2 === 1;
+    history.push({
+      created,
+      created_by: empty
+        ? `ENV WEB_API_FEATURE_${String(i).padStart(2, '0')}=enabled`
+        : `RUN /bin/sh -c ${runs[(i / 2) % runs.length]} # step ${i / 2 + 1}`,
+      comment: 'buildkit.dockerfile.v0',
+      ...(empty ? { empty_layer: true } : {}),
+    });
+  }
+  const children: { mediaType: string; digest: string; size: number; platform: Record<string, string>; annotations?: Record<string, string> }[] = [];
+  for (const p of platforms) {
+    const arch = [p.architecture, p.variant].filter(Boolean).join('');
+    const layers = [];
+    for (let i = 0; i < 20; i++) {
+      const layer = gzipSync(tarEntry(`opt/web-api/layer-${i}-${arch}`, Buffer.from(`${arch} ${i}\n`)));
+      layers.push({ mediaType: layerType, digest: await api.blob(layer), size: layer.length });
+    }
+    const config = json({
+      ...p,
+      created,
+      config: {
+        User: 'web-api:web-api',
+        ExposedPorts: { '8080/tcp': {}, '9464/tcp': {} },
+        Env: env,
+        Entrypoint: ['/usr/bin/tini', '--', 'node'],
+        Cmd: ['/opt/web-api/dist/server.js', '--listen=0.0.0.0:8080', '--metrics=0.0.0.0:9464'],
+        WorkingDir: '/opt/web-api',
+        Labels: labels,
+        Volumes: { '/var/lib/web-api/uploads': {} },
+        StopSignal: 'SIGTERM',
+        Healthcheck: { Test: ['CMD', 'node', '/opt/web-api/dist/health.js'], Interval: 30_000_000_000, Timeout: 5_000_000_000, Retries: 3 },
+      },
+      rootfs: { type: 'layers', diff_ids: [] },
+      history,
+    });
+    const manifest = json({
+      schemaVersion: 2,
+      mediaType: ociManifest,
+      config: { mediaType: 'application/vnd.oci.image.config.v1+json', digest: await api.blob(config), size: config.length },
+      layers,
+    });
+    const digest = digestOf(manifest);
+    await api.manifest(digest, manifest, ociManifest);
+    children.push({ mediaType: ociManifest, digest, size: manifest.length, platform: p });
+  }
+  // BuildKit's attestation of the first platform: an image manifest of the platform unknown/unknown whose layer is an in-toto statement.
+  const statement = json({ _type: 'https://in-toto.io/Statement/v0.1', predicateType: 'https://slsa.dev/provenance/v0.2', subject: [{ name: factsImages.index, digest: { sha256: children[0]!.digest.slice(7) } }] });
+  const empty = json({});
+  const attestation = json({
+    schemaVersion: 2,
+    mediaType: ociManifest,
+    config: { mediaType: 'application/vnd.oci.image.config.v1+json', digest: await api.blob(empty), size: empty.length },
+    layers: [{ mediaType: 'application/vnd.in-toto+json', digest: await api.blob(statement), size: statement.length, annotations: { 'in-toto.io/predicate-type': 'https://slsa.dev/provenance/v0.2' } }],
+  });
+  const attDigest = digestOf(attestation);
+  await api.manifest(attDigest, attestation, ociManifest);
+  children.push({
+    mediaType: ociManifest,
+    digest: attDigest,
+    size: attestation.length,
+    platform: { os: 'unknown', architecture: 'unknown' },
+    annotations: { 'vnd.docker.reference.digest': children[0]!.digest, 'vnd.docker.reference.type': 'attestation-manifest' },
+  });
+  const index = json({
+    schemaVersion: 2,
+    mediaType: 'application/vnd.oci.image.index.v1+json',
+    manifests: children,
+    annotations: {
+      'org.opencontainers.image.description': 'The web API of the portal, for six platforms.',
+      'org.opencontainers.image.created': created,
+    },
+  });
+  for (const tag of factsImages.tags) await api.manifest(tag, index, 'application/vnd.oci.image.index.v1+json');
+
+  // facts/bare: no annotation, no label, one layer.
+  const bare = await push(factsImages.bare);
+  const bareLayer = gzipSync(tarEntry('bin/hello', Buffer.from('hello\n')));
+  const bareConfig = json({ architecture: 'amd64', os: 'linux', config: { Cmd: ['/bin/hello'] }, rootfs: { type: 'layers', diff_ids: [] } });
+  const bareManifest = json({
+    schemaVersion: 2,
+    mediaType: ociManifest,
+    config: { mediaType: 'application/vnd.oci.image.config.v1+json', digest: await bare.blob(bareConfig), size: bareConfig.length },
+    layers: [{ mediaType: layerType, digest: await bare.blob(bareLayer), size: bareLayer.length }],
+  });
+  await bare.manifest('1.0', bareManifest, ociManifest);
+
+  // facts/chart: a Helm chart (R-OCI-042): its Chart.yaml as the config, a package with a README of a table and code and values of 200
+  // lines, two dependencies; facts/chart-old: a deprecated chart without a README.
+  const readme = [
+    '# web-api',
+    '',
+    'The portal\'s web API for Kubernetes: a Deployment, its Service, an Ingress and the job queue\'s worker.',
+    '',
+    '## Installing',
+    '',
+    '```console',
+    'helm install web-api oci://registry.example-company.com/charts/web-api --version 0.3.0 --set ingress.enabled=true',
+    '```',
+    '',
+    '## Parameters',
+    '',
+    '| Key | Type | Default | Description |',
+    '|---|---|---|---|',
+    '| `replicaCount` | int | `2` | How many pods serve the API. |',
+    '| `image.repository` | string | `registry.example-company.com/portal/web-api` | The image. |',
+    '| `ingress.enabled` | bool | `false` | Whether an Ingress routes the host to the Service. |',
+    '| `resources.limits.memory` | string | `1536Mi` | The memory limit of a pod. |',
+    '',
+  ].join('\n');
+  const values = ['# Default values for web-api.', 'replicaCount: 2', 'image:', '  repository: registry.example-company.com/portal/web-api', '  tag: ""', '  pullPolicy: IfNotPresent'];
+  for (let i = 1; values.length < 200; i++) {
+    values.push(`# Feature ${i}: switched by the operator of the installation, documented at https://docs.example-company.com/portal/web-api/features#feature-${i}`);
+    values.push(`feature${i}:`, `  enabled: ${i % 2 === 0}`, `  timeoutSeconds: ${i * 5}`);
+  }
+  const chartConfig = (name: string, deprecated: boolean): Buffer =>
+    json({
+      apiVersion: 'v2',
+      name,
+      version: '0.3.0',
+      appVersion: '2.4.1',
+      description: deprecated ? 'The web API of the portal, as a chart of the old layout.' : "The portal's web API for Kubernetes.",
+      type: 'application',
+      kubeVersion: '>=1.29.0-0',
+      keywords: ['portal', 'api', 'graphql'],
+      home: 'https://portal.example-company.com/developers/web-api',
+      sources: ['https://git.example-company.com/portal/web-api'],
+      maintainers: [{ name: 'Portal platform team', email: 'portal-platform@example-company.com' }],
+      dependencies: [
+        { name: 'redis', version: '^19.6.0', repository: 'oci://registry.example-company.com/charts', condition: 'redis.enabled' },
+        { name: 'postgresql', version: '~15.5.0', repository: 'oci://registry.example-company.com/charts', alias: 'db' },
+      ],
+      annotations: { 'artifacthub.io/license': 'Apache-2.0' },
+      ...(deprecated ? { deprecated: true } : {}),
+    });
+  for (const [name, deprecated] of [[factsImages.chart, false], [factsImages.oldChart, true]] as const) {
+    const chart = await push(name);
+    const dir = name.split('/').pop()!;
+    const files: [string, Buffer][] = [[`${dir}/Chart.yaml`, Buffer.from(`apiVersion: v2\nname: ${dir}\nversion: 0.3.0\n`)]];
+    if (!deprecated) files.push([`${dir}/README.md`, Buffer.from(readme)]);
+    files.push([`${dir}/values.yaml`, Buffer.from(values.join('\n') + '\n')]);
+    const content = tarGz(files);
+    const config = chartConfig(dir, deprecated);
+    const manifest = json({
+      schemaVersion: 2,
+      mediaType: ociManifest,
+      config: { mediaType: 'application/vnd.cncf.helm.config.v1+json', digest: await chart.blob(config), size: config.length },
+      layers: [{ mediaType: 'application/vnd.cncf.helm.chart.content.v1.tar+gzip', digest: await chart.blob(content), size: content.length }],
+      annotations: { 'org.opencontainers.image.title': dir, 'org.opencontainers.image.version': '0.3.0', 'org.opencontainers.image.created': created },
+    });
+    await chart.manifest('0.3.0', manifest, ociManifest);
   }
 }
 

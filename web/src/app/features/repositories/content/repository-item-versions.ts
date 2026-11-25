@@ -107,6 +107,7 @@ export const OPENED_OTHER_TAGS = 4;
                 [format]="pkg().format"
                 [name]="pkg().name"
                 [version]="v.version"
+                [digest]="v.digest ?? null"
                 [repository]="repository()"
                 [verb]="shape().commandVerb"
               />

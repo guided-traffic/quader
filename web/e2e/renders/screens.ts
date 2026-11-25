@@ -7,6 +7,7 @@ import {
   deepFolder,
   emptyProject,
   exposureRule,
+  factsImages,
   group,
   longDebKey,
   longNamePackage,
@@ -2758,6 +2759,48 @@ async function* imageNotChecked(page: Page): AsyncGenerator<string> {
 }
 
 /** A version's tab Vulnerabilities as it opens, its grade card shown, and no other tab. */
+/**
+ * An image's facts on the tab Details (formats/oci.md R-OCI-040): the first platform's row opened, with its configuration, environment,
+ * labels, layers and history; then the second opened beside it. The rows are found by their place, so the German pass walks the same.
+ */
+async function* imagePlatformOpened(page: Page): AsyncGenerator<string> {
+  const openers = page.locator('main quader-data-table tr:not(.expansion) th button[aria-expanded]');
+  await expect(openers.first()).toBeVisible();
+  await openers.first().click();
+  await expect(page.locator('main quader-image-details').first()).toBeVisible();
+  yield 'first-platform';
+  await openers.nth(1).click();
+  await expect(page.locator('main quader-image-details')).toHaveCount(2);
+  yield 'two-platforms';
+}
+
+/** A single image's configuration, layers and history behind the section that opens them (R-OCI-040). */
+async function* imageDetailsOpened(page: Page): AsyncGenerator<string> {
+  const fold = page.locator('main quader-disclosure.image-details-fold button[aria-expanded]');
+  await expect(fold).toBeVisible();
+  yield 'closed';
+  await fold.click();
+  await expect(page.locator('main quader-image-details')).toBeVisible();
+  yield 'open';
+}
+
+/**
+ * The page of a reader who may read the version and not the image's config blob (Q-OCI-273): the server leaves out the configurations
+ * and the labels' facts, and the opened platform says to whom they are shown.
+ */
+async function* imageConfigHidden(page: Page): AsyncGenerator<string> {
+  await answerWith(page, `**/versions/${factsImages.tags[0]}`, (b) => {
+    const md = { ...(b['metadata'] as Record<string, unknown>) };
+    delete md['configs'];
+    delete md['labeled'];
+    return { ...b, metadata: md };
+  });
+  const openers = page.locator('main quader-data-table tr:not(.expansion) th button[aria-expanded]');
+  await openers.first().click();
+  await expect(page.locator('main quader-image-details')).toBeVisible();
+  yield '';
+}
+
 async function* vulnerabilitiesTab(page: Page): AsyncGenerator<string> {
   await expect(page.locator('quader-package-vulnerabilities quader-grade-card').first()).toBeVisible();
   yield '';
@@ -3048,6 +3091,16 @@ export const screens: readonly Screen[] = [
   // The tab's findings narrowed by a segment of the card's bar (Q-UI-379).
   { id: 'package-version-npm-graded-critical', path: `${ver(P, gradedPackage, gradedPackage.version)}?severity=critical`, kinds: ['plain'] },
   { id: 'package-version-oci', path: ver(P, ociPackage, '1.4.0'), kinds: all, tables: 'quader-data-table.version-files', de: true },
+  // An image's facts (formats/oci.md R-OCI-039 to R-OCI-041): six platforms and an attestation, twenty layers each, a configuration of
+  // thirty environment entries, labels with addresses and forty steps of history, under three tags; every tab, then the platforms
+  // opened; a reader who may not read the config; an image without any annotation; a Helm chart, which is no image.
+  { id: 'package-version-oci-facts', path: ver(P, { format: 'oci', name: factsImages.index }, factsImages.tags[0]), kinds: all, tables: 'quader-data-table.version-files', de: true },
+  { id: 'package-version-oci-facts-open', path: `${ver(P, { format: 'oci', name: factsImages.index }, factsImages.tags[0])}?tab=details`, kinds: ['plain'], walk: imagePlatformOpened, de: true },
+  { id: 'package-version-oci-facts-hidden', path: `${ver(P, { format: 'oci', name: factsImages.index }, factsImages.tags[0])}?tab=details`, kinds: ['plain'], walk: imageConfigHidden },
+  { id: 'package-version-oci-bare', path: `${ver(P, { format: 'oci', name: factsImages.bare }, '1.0')}?tab=details`, kinds: ['plain'], walk: imageDetailsOpened, de: true },
+  // A Helm chart (R-OCI-042): it opens on its README; its values, its facts; a deprecated chart without a README.
+  { id: 'package-version-oci-chart', path: ver(P, { format: 'oci', name: factsImages.chart }, '0.3.0'), kinds: all, de: true },
+  { id: 'package-version-oci-chart-deprecated', path: `${ver(P, { format: 'oci', name: factsImages.oldChart }, '0.3.0')}?tab=details`, kinds: ['plain'], de: true },
   // An image refused while it is not checked: the notice names the state of its scan and what happens next (Q-VULN-272).
   { id: 'package-version-oci-not-checked', path: `${ver(P, ociPackage, '1.4.0')}?tab=vulnerabilities`, kinds: ['plain'], walk: imageNotChecked, de: true },
   // An image the render database has no database for images to scan with, in a repository that does not block it: the card says it

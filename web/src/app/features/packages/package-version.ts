@@ -26,7 +26,10 @@ import { ClientCommandMenu } from './client-command-menu';
 import { VersionSwitch } from './version-switch';
 import { clamavInstallNote, versionCommand } from './version-command';
 import { contentShapeOf, leadsWithDocumentation } from '../repositories/content/content-shape';
-import { EXTERNAL_REL, packageCommands } from './package-links';
+import { EXTERNAL_REL, packageCommands, versionCommands } from './package-links';
+import { ImageDetails } from './image-details';
+import { ImagePart, chartOf, chartValues, cutDigest, imageFact, imageFactList, imageLinks, imageParts, kindWord } from './image-facts';
+import { CodeWindow } from '../../shared/code/code-window';
 import { PackageMemory } from './package-memory';
 import { PackageReadmeView } from './package-readme';
 import { distTagsOf } from './package-versions-model';
@@ -88,6 +91,7 @@ export type VersionTab =
   | 'documentation'
   | 'contents'
   | 'readme'
+  | 'values'
   | 'files'
   | 'signatures'
   | 'details'
@@ -132,6 +136,8 @@ interface TabEntry {
     TabPage,
     PageHeader,
     CopyButton,
+    ImageDetails,
+    CodeWindow,
     DataTable,
     ErrorNotice,
     FormatIconView,
@@ -279,6 +285,8 @@ export class PackageVersionPage {
           ]
         : []),
       ...(this.leads() ? [] : readme),
+      // A Helm chart's values.yaml, its documentation beside the README (R-OCI-042).
+      ...(this.chartValues() ? [{ id: 'values' as const, label: $localize`:@@pkg.tab.values:Values` }] : []),
       { id: 'files', label: $localize`:@@pkg.tab.files:Files` },
       // The details of the signatures while the installation checks them (R-SIG-035): the member is absent while they are off.
       ...(d?.signatures !== undefined ? [{ id: 'signatures' as const, label: $localize`:@@pkg.tab.signatures:Signatures` }] : []),
@@ -393,10 +401,19 @@ export class PackageVersionPage {
     const d = this.detail();
     return d ? ansibleFacts(d, valueOf(this.summary)?.keywords ?? []) : [];
   });
-  protected readonly deprecated = computed(() => deprecationOf(this.metadata()));
+  /** The deprecation of a version: npm's message; a Helm chart its Chart.yaml marks deprecated (R-OCI-042). */
+  protected readonly deprecated = computed(() =>
+    this.chart()?.deprecated ? $localize`:@@pkg.chart.deprecated:This chart is deprecated.` : deprecationOf(this.metadata()),
+  );
+  /** A Helm chart's facts (R-OCI-042); null for anything else. */
+  protected readonly chart = computed(() => (this.format() === 'oci' ? chartOf(this.metadata()) : null));
+  /** A Helm chart's values.yaml (R-OCI-042). */
+  protected readonly chartValues = computed(() => (this.format() === 'oci' ? chartValues(this.metadata()) : null));
+  protected readonly copyValues = $localize`:@@pkg.chart.copy-values:Copy values.yaml`;
   protected readonly links = computed(() => {
     const d = this.detail();
-    return d ? metadataLinks(d) : [];
+    if (!d) return [];
+    return d.format === 'oci' ? imageLinks(d.metadata) : metadataLinks(d);
   });
   /** The digest, media type, artifact type and size of an OCI tag, and the platforms of an index (R-OCI-031). */
   protected readonly image = computed(() => imageFacts(this.metadata()));
@@ -421,6 +438,81 @@ export class PackageVersionPage {
   });
   /** The tab the switch keeps for the version it switches to: the one in the address (the same tab of the other version). */
   protected readonly switchTab = computed(() => this.tab() ?? null);
+
+  // ---- An image's facts (formats/oci.md R-OCI-039 to R-OCI-041) ----
+
+  /**
+   * The description under the name: an image's own, from its annotations or else its labels (R-OCI-039), the package's for every
+   * other format and for an image that has none.
+   */
+  protected readonly description = computed(() => {
+    const own = this.format() === 'oci' ? imageFact(this.metadata(), 'description') : '';
+    return own !== '' ? own : this.pkg()?.description;
+  });
+  /** The licence of the facts line: the version's, or an image's from its labels. */
+  protected readonly licenses = computed<readonly string[]>(() => {
+    const d = this.detail();
+    if (!d) return [];
+    if (d.licenses.length > 0 || d.format !== 'oci') return d.licenses;
+    const labeled = imageFact(d.metadata, 'licenses');
+    return labeled !== '' ? [labeled] : [];
+  });
+  /** An OCI artifact's kind (`image`, `helm-chart`, …): the head's panel offers its kind's clients (R-OCI-042); null for other formats. */
+  protected readonly artifactKind = computed(() => {
+    const k = this.format() === 'oci' ? this.metadata()['kind'] : undefined;
+    return typeof k === 'string' ? k : null;
+  });
+  /** An image's digest, the panel's pull by digest (R-OCI-041). */
+  protected readonly imageDigest = computed(() => {
+    const d = this.metadata()['digest'];
+    return typeof d === 'string' && d.startsWith('sha256:') ? d : null;
+  });
+  /** The other tags of the image's digest (R-OCI-041), each a link to its page. */
+  protected readonly otherTags = computed(() => this.detail()?.aliases ?? []);
+  protected readonly otherTagsMore = computed(() => this.detail()?.aliasesMore === true);
+  protected tagLink(tag: string): string[] {
+    return versionCommands(this.project(), this.format(), this.name(), tag);
+  }
+  protected readonly otherTagsLabel = $localize`:@@pkg.image.other-tags:Other tags of this image`;
+  /** The facts of the image's annotations and labels: title, version, revision, created, vendor, base image. */
+  protected readonly imageFacts = computed(() => (this.format() === 'oci' ? imageFactList(this.metadata()) : []));
+  /** The authors of an image, from its annotations or else its labels; every other format's list. */
+  protected readonly authorList = computed(() => {
+    if (this.format() !== 'oci') return this.authors();
+    const a = imageFact(this.metadata(), 'authors');
+    return a !== '' ? [a] : [];
+  });
+  /** The word for what the tag holds, with its media type as the title (R-OCI-041). */
+  protected readonly kind = computed(() => kindWord(typeof this.metadata()['kind'] === 'string' ? (this.metadata()['kind'] as string) : ''));
+  /** The images of the version: the tag's own, or each platform of an index the repository holds, with its configuration and layers. */
+  protected readonly parts = computed<readonly ImagePart[]>(() => {
+    const img = this.image();
+    return img ? imageParts(this.metadata(), img.platforms) : [];
+  });
+  /** The image of a platform's row, when the repository holds it. */
+  protected partOf(digest: string): ImagePart | null {
+    return this.parts().find((p) => p.digest === digest) ?? null;
+  }
+  /** The platforms whose row is opened. */
+  protected readonly openPlatforms = signal<ReadonlySet<string>>(new Set());
+  protected togglePlatform(digest: string): void {
+    const next = new Set(this.openPlatforms());
+    if (next.has(digest)) next.delete(digest);
+    else next.add(digest);
+    this.openPlatforms.set(next);
+  }
+  protected platformOpenLabel(platform: string): string {
+    return $localize`:@@pkg.image.open-platform:Configuration and layers of ${platform}:platform:`;
+  }
+  protected readonly imageDetailsHeading = $localize`:@@pkg.image.details:Configuration, layers and history`;
+  protected readonly cut = cutDigest;
+  protected readonly copyManifest = $localize`:@@pkg.file.copy-manifest:Copy the manifest's digest`;
+  protected readonly copyConfig = $localize`:@@pkg.file.copy-config:Copy the config's digest`;
+  protected copyLayerOf(platform: string | null, n: number): string {
+    return platform === null
+      ? $localize`:@@pkg.layers.copy:Copy the digest of layer ${n}:number:`
+      : $localize`:@@pkg.file.copy-platform-layer:Copy the digest of layer ${n}:number: of ${platform}:platform:`;
+  }
 
   // ---- The ClamAV definitions (R-UI-194, R-CLAMAV-003) ----
 
@@ -644,6 +736,16 @@ export class PackageVersionPage {
     { id: 'size', label: $localize`:@@pkg.image.size:Size`, numeric: true },
   ];
   protected readonly tableCaptionPlatforms = $localize`:@@pkg.image.platforms-caption:Platforms of this image index`;
+  protected readonly imageFileColumns: readonly TableColumn[] = [
+    { id: 'part', label: $localize`:@@pkg.file.part:Part`, width: '6rem' },
+    { id: 'digest', label: $localize`:@@pkg.image.digest:Digest`, prefer: true },
+    { id: 'size', label: $localize`:@@pkg.image.size:Size`, numeric: true, width: '6rem' },
+  ];
+  protected imageFilesCaption(platform: string | null): string {
+    return platform === null
+      ? $localize`:@@pkg.file.image-caption:Manifest, config and layers of the image`
+      : $localize`:@@pkg.file.platform-caption:Manifest, config and layers of ${platform}:platform:`;
+  }
   protected readonly notFetchedTitle = $localize`:@@pkg.image.not-fetched-title:No client has fetched this platform through Quader yet, so its manifest and its size are not held.`;
   protected readonly neverTitle = $localize`:@@pkg.ver.never-title:No client has downloaded this version through Quader yet.`;
   protected readonly copyImageDigest = $localize`:@@pkg.image.copy-digest:Copy digest`;

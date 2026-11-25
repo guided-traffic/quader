@@ -13,8 +13,11 @@ export const COLLAPSE_AFTER_LINES = 3;
  * The install command of one version in one repository for one client (R-UI-009): the install snippet of the client setup answer
  * (R-API-030) for that client, with the package and the version filled in and quoted by the server. It asks with
  * `credentials=none`, so it never holds a token. A command of one line is one copyable field (Q-UI-320), a longer one the snippet's
- * window (Q-UI-801), collapsed after three lines. The panel of a version's commands (`<quader-client-command-menu>`, Q-UI-1066,
- * Q-UI-1240), in a repository's list and in the head of a version's page, shows it once per client of the format, a tab each.
+ * window (Q-UI-801), collapsed after three lines. With a `digest` (an image's, formats/oci.md R-OCI-041) it is the pull by digest: the
+ * command of the image without its tag, and `@<digest>` after the reference, which ends the command's line (the digest is `sha256:` and
+ * hex digits, nothing a shell reads). The panel of a version's commands (`<quader-client-command-menu>`, Q-UI-1066, Q-UI-1240), in a
+ * repository's list and in the head of a version's page, shows it once per client of the format, a tab each, and an image's pull by
+ * digest as the second line of the tab.
  */
 @Component({
   selector: 'quader-client-command',
@@ -78,6 +81,8 @@ export class ClientCommand {
   readonly repository = input.required<string | null>();
   /** The client of R-API-030 (`npm`, `podman`, …); null while none is chosen. */
   readonly client = input.required<string | null>();
+  /** An image's digest: the command pulls the image by it instead of by the tag. */
+  readonly digest = input<string | null>(null);
   /** The accessible name of the one-line field; the menu names the client in it. */
   readonly commandLabel = input($localize`:@@pkg.install.command:Install command`);
   /** The accessible name and title of the copy button. */
@@ -89,7 +94,8 @@ export class ClientCommand {
     params: () => {
       const repository = this.repository();
       const client = this.client();
-      const version = this.version();
+      // A pull by digest asks for the image without a version: the digest follows the reference.
+      const version = this.digest() ? '' : this.version();
       return repository && client && version !== null ? { repository, client, name: this.name(), version } : undefined;
     },
     loader: ({ params }) =>
@@ -97,12 +103,16 @@ export class ClientCommand {
         client: params.client,
         credentials: 'none',
         package: params.name,
-        version: params.version,
+        ...(params.version !== '' ? { version: params.version } : {}),
       }),
   });
 
   protected readonly snippet = computed(() => valueOf(this.answer)?.snippets.find((s) => s.tab === 'install') ?? null);
-  protected readonly command = computed(() => this.snippet()?.content.trimEnd() ?? '');
+  protected readonly command = computed(() => {
+    const text = this.snippet()?.content.trimEnd() ?? '';
+    const digest = this.digest();
+    return digest && text !== '' && !text.includes('\n') ? `${text}@${digest}` : text;
+  });
   protected readonly lines = computed(() => this.command().split('\n'));
   protected readonly collapsible = computed(() => this.lines().length > COLLAPSE_AFTER_LINES);
   /**

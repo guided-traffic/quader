@@ -4,7 +4,7 @@ import { Component, DestroyRef, ElementRef, computed, inject, input, linkedSigna
 import { RouterLink } from '@angular/router';
 import { setupCommands } from '../../core/project-links';
 import { TabGroup, TabPage } from '../../shared/ui/tabs';
-import { ClientChoice, clientsOf } from '../setup/clients';
+import { ClientChoice, clientsOfKind } from '../setup/clients';
 import { ClientCommand } from './client-command';
 
 let nextId = 0;
@@ -121,6 +121,21 @@ const MARGIN = { start: 16, end: 0, top: 16, bottom: 16 };
                     [commandLabel]="fieldLabel(c)"
                     [copyLabel]="copyLabel(c)"
                   />
+                  <!-- An image pulled by its digest, the second line of Docker's and Podman's tab (R-OCI-041). -->
+                  @if (digest(); as d) {
+                    <p class="by-digest" i18n="@@pkg.command-menu.by-digest">By digest</p>
+                    <quader-client-command
+                      class="in-menu"
+                      [format]="format()"
+                      [name]="name()"
+                      [version]="version()"
+                      [digest]="d"
+                      [repository]="chosenRepository()"
+                      [client]="c.id"
+                      [commandLabel]="digestFieldLabel(c)"
+                      [copyLabel]="digestCopyLabel(c)"
+                    />
+                  }
                 </div>
               </quader-tab>
             }
@@ -226,6 +241,11 @@ const MARGIN = { start: 16, end: 0, top: 16, bottom: 16 };
     .command-body {
       padding-block-start: var(--quader-space-3);
     }
+    .by-digest {
+      margin: var(--quader-space-2) 0 var(--quader-space-1);
+      color: var(--quader-text-muted);
+      font-size: 0.8125rem;
+    }
   `,
 })
 export class ClientCommandMenu {
@@ -243,12 +263,16 @@ export class ClientCommandMenu {
   readonly verb = input.required<string>();
   /** `row`: the small button at the end of a list's row; `page`: the button of a page's head (Q-UI-1241). */
   readonly size = input<'row' | 'page'>('row');
+  /** An image's digest: each client has a second command that pulls by it (formats/oci.md R-OCI-041). */
+  readonly digest = input<string | null>(null);
 
   protected readonly positions = POSITIONS;
   protected readonly margin = MARGIN;
   protected readonly panelId = `client-command-${nextId++}`;
   protected readonly open = signal(false);
-  protected readonly clients = computed<readonly ClientChoice[]>(() => clientsOf(this.format()));
+  /** The kind of an OCI artifact where it is known: a Helm chart's commands are Helm's alone (R-OCI-042). */
+  readonly kind = input<string | null>(null);
+  protected readonly clients = computed<readonly ClientChoice[]>(() => clientsOfKind(this.format(), this.kind()));
   /** The chosen tab, kept while the button stands (Q-UI-1240): the panel opens again on the client last chosen. */
   protected readonly chosenTab = signal(0);
   protected readonly chosenClient = computed(() => this.clients()[this.chosenTab()] ?? this.clients()[0] ?? null);
@@ -275,6 +299,14 @@ export class ClientCommandMenu {
 
   protected copyLabel(c: ClientChoice): string {
     return $localize`:@@pkg.command-menu.copy:Copy the command for ${c.label}:client:`;
+  }
+
+  protected digestFieldLabel(c: ClientChoice): string {
+    return $localize`:@@pkg.command-menu.digest-field:Command for ${c.label}:client: by digest`;
+  }
+
+  protected digestCopyLabel(c: ClientChoice): string {
+    return $localize`:@@pkg.command-menu.digest-copy:Copy the command for ${c.label}:client: by digest`;
   }
 
   protected pickRepository(event: Event): void {

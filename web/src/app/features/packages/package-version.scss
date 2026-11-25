@@ -210,3 +210,39 @@ dl.digests {
   display: block;
   margin-block-start: var(--quader-space-3);
 }
+
+// An image's other tags in the head (R-OCI-041): links on the line of the badges, muted after the version, dot-separated.
+.other-tags {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+// A platform's row opens its configuration, layers and history in the row under it (R-OCI-040): the chevron before the platform, the
+// details under the row at the table's width, set off by the room of a block and nothing that scrolls by itself (R-UI-215).
+.platform-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--quader-space-1);
+}
+
+tr.expansion td {
+  padding: 0;
+  border-block-end: 0;
+}
+
+.platform-details {
+  padding: var(--quader-space-3) var(--quader-space-3) var(--quader-space-4) var(--quader-space-6);
+}
+
+.image-details-fold {
+  margin-block-start: var(--quader-space-4);
+}
+
+// The manifest, the config and the layers of each image under the files (R-OCI-041).
+.image-files-heading {
+  margin-block-start: var(--quader-space-6);
+}
+
+.image-files .digest-cell {
+  white-space: nowrap;
+}

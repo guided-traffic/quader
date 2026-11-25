@@ -15,8 +15,9 @@ export interface ClientChoice {
  * The clients per format (R-UI-016, R-UI-009). The server owns the snippets and rejects a client
  * it does not know; this table only decides what the pickers offer. A format without an entry has
  * no setup screen yet and is not offered. NuGet offers the .NET CLI, nuget.exe
- * and Visual Studio (R-UI-018, Q-UI-93). OCI offers the Docker CLI and Podman (R-OCI-030); a Kubernetes cluster
- * signs in with the image pull secret of the Docker CLI's configure section. Debian offers APT: apt and apt-get read
+ * and Visual Studio (R-UI-018, Q-UI-93). OCI offers the Docker CLI and Podman (R-OCI-030), and Helm for the Helm charts it holds
+ * (R-OCI-042; a chart's commands offer Helm alone, an image's never: `clientsOfKind`); a Kubernetes cluster signs in with the image pull
+ * secret of the Docker CLI's configure section. Debian offers APT: apt and apt-get read
  * one source format, so they are one client (R-DEB-029). Ansible Galaxy offers ansible-galaxy (R-ANS-025).
  */
 export const FORMAT_CLIENTS: Readonly<Record<string, readonly ClientChoice[]>> = {
@@ -35,6 +36,7 @@ export const FORMAT_CLIENTS: Readonly<Record<string, readonly ClientChoice[]>> =
   oci: [
     { id: 'docker', label: $localize`:@@setup.client.docker:Docker CLI (with Buildx)`, tab: 'Docker' },
     { id: 'podman', label: 'Podman', tab: 'Podman' },
+    { id: 'helm', label: 'Helm', tab: 'Helm' },
   ],
   deb: [{ id: 'apt', label: 'APT (apt, apt-get)', tab: 'APT' }],
   ansible: [{ id: 'ansible-galaxy', label: 'Ansible Galaxy (ansible-galaxy)', tab: 'ansible-galaxy' }],
@@ -43,6 +45,16 @@ export const FORMAT_CLIENTS: Readonly<Record<string, readonly ClientChoice[]>> =
 
 export function clientsOf(format: string): readonly ClientChoice[] {
   return FORMAT_CLIENTS[format] ?? [];
+}
+
+/**
+ * The clients of one artifact of a format (formats/oci.md R-OCI-042, Q-UI-1250): an OCI Helm chart is pulled and installed by Helm
+ * alone, and an image (or an artifact whose kind is not known) by every client but Helm. Every other format's clients are its own.
+ */
+export function clientsOfKind(format: string, kind: string | null): readonly ClientChoice[] {
+  const all = clientsOf(format);
+  if (format !== 'oci') return all;
+  return kind === 'helm-chart' ? all.filter((c) => c.id === 'helm') : all.filter((c) => c.id !== 'helm');
 }
 
 /** Who reads the page, as far as the words of a snippet depend on it (R-UI-123). */
@@ -102,6 +114,7 @@ export function snippetText(id: string, reader: SnippetReader = { anonymous: fal
     case 'nuget.install':
     case 'docker.install':
     case 'podman.install':
+    case 'helm.install':
     case 'curl.install':
     case 'apt.install':
     case 'ansible-galaxy.install.collection':
@@ -140,6 +153,7 @@ export function snippetText(id: string, reader: SnippetReader = { anonymous: fal
       return text($localize`:@@setup.caption.curl-publish:Replacing a file also needs the overwrite permission.`);
     case 'docker.configure.shell':
     case 'podman.configure.shell':
+    case 'helm.configure.shell':
       // A pull of a public repository needs no credential: the page does not ask a visitor to sign in for it.
       return text(
         reader.anonymous
@@ -155,6 +169,8 @@ export function snippetText(id: string, reader: SnippetReader = { anonymous: fal
     case 'docker.publish':
     case 'podman.publish':
       return text($localize`:@@setup.caption.oci-push:Name a local image below this repository, then push it.`);
+    case 'helm.publish':
+      return text($localize`:@@setup.caption.helm-push:Package the chart, then push it below this repository.`);
     case 'docker.publish.buildx':
       return text($localize`:@@setup.caption.oci-buildx:Or build for two platforms and push in one go.`);
     case 'apt.configure.shell':

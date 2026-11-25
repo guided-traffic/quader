@@ -1,10 +1,21 @@
-<quader-page-header [heading]="heading()" [name]="true" [description]="pkg()?.description" [descriptionAsWritten]="true">
+<quader-page-header [heading]="heading()" [name]="true" [description]="description()" [descriptionAsWritten]="true">
   <span meta class="pkg-meta">
     <span class="type-badge">
       <quader-format-icon [format]="format()" />
       <span translate="no">{{ formatName() }}</span>
     </span>
     <quader-dist-tags [tags]="tags()" [package]="name()" [limit]="null" />
+    <!-- The other tags of the image's digest (R-OCI-041), each the page of its tag; a tag the reader may not read is not named. -->
+    @if (otherTags().length > 0) {
+      <span class="other-tags dot-separated" role="group" [attr.aria-label]="otherTagsLabel">
+        @for (t of otherTags(); track t) {
+          <a [routerLink]="tagLink(t)" translate="no">{{ t }}</a>
+        }
+        @if (otherTagsMore()) {
+          <span class="muted" i18n="@@pkg.ver.more-tags-unnamed">+ more</span>
+        }
+      </span>
+    }
     @if (detail()?.prerelease) {
       <span class="badge" i18n="@@pkg.badge.prerelease">Pre-release</span>
     }
@@ -53,6 +64,8 @@
           [repository]="c.repository"
           [repositories]="c.repositories"
           [verb]="verb()"
+          [kind]="artifactKind()"
+          [digest]="artifactKind() === 'image' ? imageDigest() : null"
         />
       } @else if (c.kind === 'clamav') {
         <a class="btn btn-default" [routerLink]="c.setup" [queryParams]="{ client: 'freshclam' }" i18n="@@repo.content.tab.setup">Set up client</a>
@@ -86,8 +99,8 @@
           }</span
         >
         <span i18n="@@pkg.fact.download-count">{d.downloadCount, plural, =1 {1 download} other {{{ d.downloadCount | number }} downloads}}</span>
-        @if (d.licenses.length > 0) {
-          <span translate="no">{{ d.licenses.join(', ') }}</span>
+        @if (licenses().length > 0) {
+          <span translate="no">{{ licenses().join(', ') }}</span>
         }
       </span>
     </p>
@@ -243,6 +256,15 @@
                 <quader-package-readme [readme]="readme.hasValue() ? (readme.value() ?? null) : null" />
               }
             }
+            @case ('values') {
+              <!-- A Helm chart's values.yaml as text, highlighted as YAML by the code window every snippet uses (R-OCI-042). -->
+              @if (chartValues(); as v) {
+                <quader-code-window class="chart-values" [content]="v.text" language="yaml" fileName="values.yaml" [downloadable]="false" [copyLabel]="copyValues" />
+                @if (v.cut) {
+                  <p class="hint" i18n="@@pkg.chart.values-cut">The values are longer than 64 KiB; the rest is not shown.</p>
+                }
+              }
+            }
             @case ('files') {
               <quader-data-table class="version-files" [caption]="tableCaptionFiles" [columns]="fileColumns()" [empty]="d.files.length === 0">
                 @for (f of d.files; track f.path) {
@@ -252,7 +274,12 @@
                            the word Download pushed the table into blocks at 1,024 px beside the widest signature badge. A file the malware
                            scan's gate or a repository's signature gate refuses offers none, its fact says why (Q-UI-882, R-SIG-074); nor
                            does a file of a system repository or of a disabled one (Q-UI-898, Q-UI-965), whose install panel says why. -->
-                      @if (offersDownload(f)) {
+                      <!-- An image's file is its manifest document: named as what it is, not by the tag item's path (R-OCI-041). -->
+                      @if (image() && offersDownload(f)) {
+                        <a class="file-path" [href]="f.contentUrl" download quaderDownload [attr.title]="downloadTitle" i18n="@@pkg.file.manifest">Manifest</a>
+                      } @else if (image()) {
+                        <span class="file-path" i18n="@@pkg.file.manifest">Manifest</span>
+                      } @else if (offersDownload(f)) {
                         <a class="file-path" [href]="f.contentUrl" download quaderDownload [attr.title]="downloadTitle" translate="no">{{ f.path }}</a>
                       } @else {
                         <span class="file-path" translate="no">{{ f.path }}</span>
@@ -297,6 +324,47 @@
                   </tr>
                 }
               </quader-data-table>
+              <!-- What the image is made of (R-OCI-041): per image the repository holds, its manifest, its config and its layers in the
+                   manifest's order, by digest and size. -->
+              @for (part of parts(); track part.digest) {
+                @if (part.platform !== null) {
+                  <h2 class="image-files-heading" translate="no">{{ part.platform }}</h2>
+                } @else {
+                  <h2 class="image-files-heading" i18n="@@pkg.file.image-content">Content of the image</h2>
+                }
+                <quader-data-table class="image-files" [caption]="imageFilesCaption(part.platform)" [columns]="imageFileColumns" [empty]="false">
+                  @if (part.platform !== null) {
+                    <tr>
+                      <th scope="row" i18n="@@pkg.file.manifest">Manifest</th>
+                      <td class="digest-cell">
+                        <code translate="no" [attr.title]="part.digest">{{ cut(part.digest) }}</code>
+                        <quader-copy-button [value]="part.digest" [label]="copyManifest" />
+                      </td>
+                      <td class="num nowrap"><quader-no-value /></td>
+                    </tr>
+                  }
+                  @if (part.config; as cfg) {
+                    <tr>
+                      <th scope="row" i18n="@@pkg.file.config">Config</th>
+                      <td class="digest-cell">
+                        <code translate="no" [attr.title]="cfg.digest">{{ cut(cfg.digest) }}</code>
+                        <quader-copy-button [value]="cfg.digest" [label]="copyConfig" />
+                      </td>
+                      <td class="num nowrap">@if (cfg.size !== null) {<span [attr.title]="cfg.size + ' B'">{{ size(cfg.size) }}</span>} @else {<quader-no-value />}</td>
+                    </tr>
+                  }
+                  @for (l of part.layers; track $index; let i = $index) {
+                    <tr>
+                      <th scope="row" i18n="@@pkg.file.layer">Layer {{ i + 1 }}</th>
+                      <td class="digest-cell">
+                        <code translate="no" [attr.title]="l.digest">{{ cut(l.digest) }}</code>
+                        <quader-copy-button [value]="l.digest" [label]="copyLayerOf(part.platform, i + 1)" />
+                      </td>
+                      <td class="num nowrap">@if (l.size !== null) {<span [attr.title]="l.size + ' B'">{{ size(l.size) }}</span>} @else {<quader-no-value />}</td>
+                    </tr>
+                  }
+                </quader-data-table>
+              }
               <!-- A definition container's detached signature and its member files (R-UI-194, R-CLAMAV-003). -->
               @if (clamav(); as c) {
                 <dl class="facts clamav-files">
@@ -430,9 +498,45 @@
                   </quader-disclosure>
                 }
               }
+              <!-- A Helm chart's facts from its Chart.yaml (R-OCI-042): the facts, its maintainers and its dependencies as every format's. -->
+              @if (chart(); as c) {
+                <h2 i18n="@@pkg.chart.heading">Chart</h2>
+                <dl class="facts" data-testid="chart-facts">
+                  @for (f of c.facts; track f[0]) {
+                    <dt>{{ f[0] }}</dt>
+                    <dd translate="no">{{ f[1] }}</dd>
+                  }
+                </dl>
+                @if (c.maintainers.length > 0) {
+                  <h2 i18n="@@pkg.chart.maintainers">Maintainers</h2>
+                  <ul class="plain" translate="no">
+                    @for (m of c.maintainers; track $index) {
+                      <li>{{ m }}</li>
+                    }
+                  </ul>
+                }
+                @if (c.dependencies.length > 0) {
+                  <h2 i18n="@@pkg.meta.dependencies">Dependencies</h2>
+                  <dl class="facts" translate="no">
+                    @for (dep of c.dependencies; track $index) {
+                      <dt>{{ dep.name }}</dt>
+                      <dd>
+                        {{ dep.range }}
+                        @if (dep.repository) {
+                          <span class="secondary block">{{ dep.repository }}</span>
+                        }
+                      </dd>
+                    }
+                  </dl>
+                }
+              }
               @if (image(); as img) {
                 <h2 i18n="@@pkg.image.heading">Image</h2>
                 <dl class="facts">
+                  @if (kind() !== '') {
+                    <dt i18n="@@pkg.image.kind">Kind</dt>
+                    <dd [attr.title]="img.artifactType || img.mediaType">{{ kind() }}</dd>
+                  }
                   <dt i18n="@@pkg.image.digest">Digest</dt>
                   <dd>
                     <code translate="no">{{ img.digest }}</code>
@@ -455,7 +559,23 @@
                     @for (p of img.platforms; track $index) {
                       <tr>
                         <th scope="row">
-                          <span translate="no">{{ p.platform }}</span>
+                          <!-- A platform the repository holds opens its configuration, layers and history in the row under it
+                               (R-OCI-040, details on demand); the page grows, nothing in it scrolls (R-UI-215). -->
+                          <span class="platform-cell">
+                            @if (partOf(p.digest); as part) {
+                              <button
+                                type="button"
+                                class="btn btn-tertiary btn-icon on-line"
+                                [attr.aria-expanded]="openPlatforms().has(p.digest)"
+                                [attr.aria-controls]="'platform-' + $index"
+                                [attr.aria-label]="platformOpenLabel(p.platform)"
+                                (click)="togglePlatform(p.digest)"
+                              >
+                                <span class="material-icons expand-chevron" aria-hidden="true">expand_more</span>
+                              </button>
+                            }
+                            <span translate="no">{{ p.platform }}</span>
+                          </span>
                           @if (p.hint !== '') {
                             <span class="visually-hidden" translate="no">{{ ' (' + p.hint + ')' }}</span>
                           }
@@ -480,8 +600,34 @@
                           </td>
                         }
                       </tr>
+                      @if (partOf(p.digest); as part) {
+                        <tr class="expansion">
+                          <td [attr.colspan]="platformColumns.length">
+                            <div [id]="'platform-' + $index" class="collapse-region" [class.open]="openPlatforms().has(p.digest)">
+                              <div>
+                                @if (openPlatforms().has(p.digest)) {
+                                  <quader-image-details class="platform-details" [part]="part" />
+                                }
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      }
                     }
                   </quader-data-table>
+                } @else if (parts()[0]; as part) {
+                  <quader-disclosure class="image-details-fold" [heading]="imageDetailsHeading">
+                    <quader-image-details [part]="part" />
+                  </quader-disclosure>
+                }
+                @if (imageFacts().length > 0) {
+                  <h2 i18n="@@pkg.meta.facts">Package details</h2>
+                  <dl class="facts" data-testid="image-facts">
+                    @for (f of imageFacts(); track f[0]) {
+                      <dt>{{ f[0] }}</dt>
+                      <dd translate="no">{{ f[1] }}</dd>
+                    }
+                  </dl>
                 }
               }
               @if (links().length > 0) {
@@ -503,10 +649,10 @@
                   }
                 </dl>
               }
-              @if (authors().length > 0) {
+              @if (authorList().length > 0) {
                 <h2 i18n="@@pkg.meta.authors">Authors</h2>
                 <ul class="plain" translate="no">
-                  @for (a of authors(); track a) {
+                  @for (a of authorList(); track a) {
                     <li>{{ a }}</li>
                   }
                 </ul>
