@@ -171,55 +171,13 @@ func (s *Store) SwitchTx(ctx context.Context, tx meta.Tx, t Target, c Caller, in
 		}
 	}
 	var w switchWrite
-	var ruleID string
-	switch {
-	case in.Delivered == inherited.Delivered && have != nil:
-		// The asked state is what the subject inherits: its own rule goes (Q-CUR-200).
-		if _, err := qs.DeliveryRuleDelete(ctx, q.DeliveryRuleDeleteParams{RepoID: t.ID, ID: have.ID.String()}); err != nil {
-			return Switched{}, err
-		}
-		if err := w.removedRule(t, c, storedOf(q.DeliveryRuleGetRow(*have))); err != nil {
-			return Switched{}, err
-		}
-	case in.Delivered != inherited.Delivered && have == nil:
-		if err := s.withinLimits(ctx, qs, t.ID, kind, 1); err != nil {
-			return Switched{}, err
-		}
-		ruleID = uuid.Must(uuid.NewV7()).String()
-		if err := qs.DeliveryRuleInsert(ctx, q.DeliveryRuleInsertParams{
-			ID: ruleID, RepoID: t.ID, Kind: string(kind), Name: r.Name, Version: r.Version, Effect: string(effect), Note: in.Note, CreatedBy: c.PrincipalID,
-		}); err != nil {
-			return Switched{}, err
-		}
-		if err := w.event(t, c, audit.EventRemoteRuleCreated, ruleID, r, "", in.Note, ""); err != nil {
-			return Switched{}, err
-		}
-		w.wrote(r, "")
-	case in.Delivered != inherited.Delivered:
-		ruleID = have.ID.String()
-		if rc.Effect(have.Effect) != effect {
-			if err := qs.DeliveryRuleReplace(ctx, q.DeliveryRuleReplaceParams{ID: ruleID, Effect: string(effect), Note: in.Note}); err != nil {
-				return Switched{}, err
-			}
-			if err := w.event(t, c, audit.EventRemoteRuleUpdated, ruleID, r, rc.Effect(have.Effect), in.Note, ""); err != nil {
-				return Switched{}, err
-			}
-			w.wrote(r, rc.Effect(have.Effect))
-		}
+	ruleID, err := s.switchOwnRule(ctx, qs, t, c, in, r, inherited.Delivered, have, &w)
+	if err != nil {
+		return Switched{}, err
 	}
 	if in.ResetVersions {
-		rows, err := qs.DeliveryRulesDeleteVersions(ctx, q.DeliveryRulesDeleteVersionsParams{RepoID: t.ID, Name: r.Name})
-		if err != nil {
+		if err := resetVersionRules(ctx, qs, t, c, r.Name, &w); err != nil {
 			return Switched{}, err
-		}
-		for _, row := range rows {
-			st := storedOf(q.DeliveryRuleGetRow{
-				ID: row.ID, Kind: row.Kind, Pattern: row.Pattern, Name: row.Name, Version: row.Version, Effect: row.Effect, Note: row.Note,
-				RequestID: row.RequestID, CreatedBy: row.CreatedBy, CreatedAt: row.CreatedAt,
-			})
-			if err := w.removedRule(t, c, st); err != nil {
-				return Switched{}, err
-			}
 		}
 	}
 	out := Switched{Removed: w.removed, Revision: locked.DeliveryRulesRevision}
@@ -231,23 +189,92 @@ func (s *Store) SwitchTx(ctx context.Context, tx meta.Tx, t Target, c Caller, in
 			return Switched{}, err
 		}
 	}
+	return s.switched(ctx, qs, t, r, ruleID, out)
+}
+
+// switchOwnRule writes what the asked state needs of the subject's own rule (Q-CUR-200): the state the subject inherits removes its
+// rule; the other state writes the rule with that effect, or replaces one of the other effect. It answers the ID of the rule the
+// subject has after the write, "" where it has none.
+func (s *Store) switchOwnRule(
+	ctx context.Context, qs *q.Queries, t Target, c Caller, in SwitchInput, r rules.Rule, inherits bool,
+	have *q.DeliveryRulesOfPackageRow, w *switchWrite,
+) (string, error) {
+	switch {
+	case in.Delivered == inherits && have != nil:
+		if _, err := qs.DeliveryRuleDelete(ctx, q.DeliveryRuleDeleteParams{RepoID: t.ID, ID: have.ID.String()}); err != nil {
+			return "", err
+		}
+		return "", w.removedRule(t, c, storedOf(q.DeliveryRuleGetRow(*have)))
+	case in.Delivered != inherits && have == nil:
+		if err := s.withinLimits(ctx, qs, t.ID, r.Kind, 1); err != nil {
+			return "", err
+		}
+		ruleID := uuid.Must(uuid.NewV7()).String()
+		if err := qs.DeliveryRuleInsert(ctx, q.DeliveryRuleInsertParams{
+			ID: ruleID, RepoID: t.ID, Kind: string(r.Kind), Name: r.Name, Version: r.Version, Effect: string(r.Effect), Note: in.Note, CreatedBy: c.PrincipalID,
+		}); err != nil {
+			return "", err
+		}
+		if err := w.event(t, c, audit.EventRemoteRuleCreated, ruleID, r, "", in.Note, ""); err != nil {
+			return "", err
+		}
+		w.wrote(r, "")
+		return ruleID, nil
+	case in.Delivered != inherits:
+		ruleID := have.ID.String()
+		if rc.Effect(have.Effect) == r.Effect {
+			return ruleID, nil
+		}
+		if err := qs.DeliveryRuleReplace(ctx, q.DeliveryRuleReplaceParams{ID: ruleID, Effect: string(r.Effect), Note: in.Note}); err != nil {
+			return "", err
+		}
+		if err := w.event(t, c, audit.EventRemoteRuleUpdated, ruleID, r, rc.Effect(have.Effect), in.Note, ""); err != nil {
+			return "", err
+		}
+		w.wrote(r, rc.Effect(have.Effect))
+		return ruleID, nil
+	}
+	return "", nil
+}
+
+// resetVersionRules removes every version rule of a package and records each (R-CUR-024, "Reset them").
+func resetVersionRules(ctx context.Context, qs *q.Queries, t Target, c Caller, name string, w *switchWrite) error {
+	rows, err := qs.DeliveryRulesDeleteVersions(ctx, q.DeliveryRulesDeleteVersionsParams{RepoID: t.ID, Name: name})
+	if err != nil {
+		return err
+	}
+	for _, row := range rows {
+		st := storedOf(q.DeliveryRuleGetRow{
+			ID: row.ID, Kind: row.Kind, Pattern: row.Pattern, Name: row.Name, Version: row.Version, Effect: row.Effect, Note: row.Note,
+			RequestID: row.RequestID, CreatedBy: row.CreatedBy, CreatedAt: row.CreatedAt,
+		})
+		if err := w.removedRule(t, c, st); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// switched completes a switch's answer: the decision of the subject after the write and the subject's rule, where it has one.
+func (s *Store) switched(ctx context.Context, qs *q.Queries, t Target, r rules.Rule, ruleID string, out Switched) (Switched, error) {
 	after, _, err := s.compileSubject(ctx, qs, t, r.Name)
 	if err != nil {
 		return Switched{}, err
 	}
 	out.Decision = after.Level(r.Name)
-	if kind == rc.KindVersion {
+	if r.Kind == rc.KindVersion {
 		out.Decision = after.Decide(r.Name, r.Version)
 	}
-	if ruleID != "" {
-		rows, err := qs.DeliveryRuleGet(ctx, q.DeliveryRuleGetParams{RepoID: t.ID, ID: ruleID})
-		if err != nil {
-			return Switched{}, err
-		}
-		if len(rows) > 0 {
-			st := storedOf(rows[0])
-			out.Rule = &st
-		}
+	if ruleID == "" {
+		return out, nil
+	}
+	rows, err := qs.DeliveryRuleGet(ctx, q.DeliveryRuleGetParams{RepoID: t.ID, ID: ruleID})
+	if err != nil {
+		return Switched{}, err
+	}
+	if len(rows) > 0 {
+		st := storedOf(rows[0])
+		out.Rule = &st
 	}
 	return out, nil
 }
