@@ -14,9 +14,9 @@ Use the address as it is. There is no separate path for the API: the address its
 
 | Class | Collections | Roles |
 |---|---|---|
-| Local | the collections you publish | not served: `ansible-galaxy role install` against a local repository alone fails with the client's message that the v1 API is not available |
-| Remote | a cache of a Galaxy, the public one by default | served by translation of the Galaxy's role API, the archive fetched from the hosts the administrator allowed |
-| Virtual | the union of its members | answered by the first remote member that knows the role |
+| Local | the collections you publish | not served: `ansible-galaxy role install` against a local repository alone fails with the client's message that the v1 API is not available; a role is published inside a collection ([Publish a role](#publish-a-role-put-it-into-a-collection)) |
+| Remote | a cache of a Galaxy, the public one by default | served by translation of the Galaxy's role API, the archive fetched from the hosts the administrator allowed; `role search` and `role info` ask the Galaxy ([Roles from a Galaxy](#roles-from-a-galaxy)) |
+| Virtual | the union of its members | answered by the first remote member that knows the role; `role search` by the first remote member that answers it |
 
 A collection name is `namespace.name` in lower case; a version is a semantic version such as `1.2.3` or `1.0.0-rc.1`.
 
@@ -99,6 +99,34 @@ The collection's `galaxy.yml` names the namespace, name and version, so the comm
 - A first publish of a name that a remote member of a virtual repository already serves is refused unless you may manage the repository.
 
 The web interface shows the import tasks of a local repository on its **Import tasks** tab, and the version with the Ansible versions it needs, its dependencies, licenses and tags on the page of the version.
+
+## Publish a role: put it into a collection
+
+Quader takes no role of its own: `ansible-galaxy role import` asks a Galaxy to fetch a role from GitHub, which Quader does not do. Put the
+role into the `roles/` directory of a collection and publish the collection, as Ansible recommends since 2.10:
+
+```shell
+ansible-galaxy collection init acme.platform              # a collection skeleton with a roles/ directory
+cp -r ./my-role acme/platform/roles/agent                 # the role, under the name the collection gives it
+ansible-galaxy collection build acme/platform && ansible-galaxy collection publish acme-platform-1.0.0.tar.gz --server … --token "${QUADER_TOKEN}"
+```
+
+A playbook then uses the role as `acme.platform.agent`, and the collection's documentation lists it under **Roles**.
+
+## Roles from a Galaxy
+
+A remote repository of a Galaxy shows every role a client installed through it by its owner and name, `geerlingguy.pip`, with what the
+Galaxy says of it: the description, the tags, the repository on GitHub, the downloads at the Galaxy, the dependencies and the README, which
+is the first thing on the role's page. The README is fetched from the Galaxy once a client installed the role and again when the Galaxy
+names a new commit of it; until it is there the page says so. The install command of the page is `ansible-galaxy role install
+geerlingguy.pip,<version>`.
+
+Delivery rules, include and exclude patterns and permissions see a role by the Galaxy's number, `role/16`, which the role's page names: a
+rule for `geerlingguy.pip` would name a collection. The tab **Upstream** of the repository finds a role by that name (the refusal of a rule
+links there) with every version the Galaxy has and what the rules say of each.
+
+`ansible-galaxy role search <words>` asks the Galaxy through the repository and lists the roles you could install from it: a role the rules
+of the repository refuse is not listed. `ansible-galaxy role info geerlingguy.pip` shows what the Galaxy says of the role.
 
 ## Sign a collection
 

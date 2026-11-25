@@ -126,8 +126,9 @@ func TestRealDocsReproduceTheMeasuredNumbers(t *testing.T) {
 		// two P1 requirements of W-30).
 		// 1294 since an image's facts (R-OCI-039 to R-OCI-041, three P1 requirements of W-30, G7).
 		// 1295 since a Helm chart's view (R-OCI-042, one P1 requirement, the owner's d4 of W-30).
-		if len(m.Reqs) != 1295 || count[prioMVP] != 721 || count[prioP1] != 535 || count[prioP2] != 39 {
-			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1295 (721, 535, 39)",
+		// 1296 since a role read through a remote reads like a role (R-ANS-056, one P1 requirement of W-30).
+		if len(m.Reqs) != 1296 || count[prioMVP] != 721 || count[prioP1] != 536 || count[prioP2] != 39 {
+			t.Errorf("requirements: got %d (MVP %d, P1 %d, P2 %d), want 1296 (721, 536, 39)",
 				len(m.Reqs), count[prioMVP], count[prioP1], count[prioP2])
 		}
 	})

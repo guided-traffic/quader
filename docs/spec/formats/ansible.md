@@ -594,10 +594,14 @@ version and digest that a registry could validate. Hence ([Q-ANS-6](#q-ans-6--ro
 | `ansible-galaxy role install <owner>.<role>` (Galaxy role) | **Served by a remote repository** of a Galaxy (and by a virtual repository over one), by translation of the role API and pull-through of the archive (R-ANS-020) |
 | `requirements.yml` `roles:` entry with `name: <owner>.<role>` or `src: <owner>.<role>` | As above |
 | `src: https://…/x.git` or `git+https://…` with or without `scm: git`; `src: <url>.tar.gz` | **Not served and not seen by Quader**: the client clones or downloads on its own; Quader has no Git format ([H-844](#h-844--git-and-url-roles-bypass-quader)) |
-| Publish of a role (`ansible-galaxy role import`, `role init` plus upload) | **Not offered**: a local repository has no `v1` API and no role route; the guide tells the author to wrap the role into a collection (`roles/` directory of a collection) |
+| `ansible-galaxy role search <words>` (`--tag`, `--platform`, `--author`) | **Served by a remote repository** of a Galaxy by passing the search through, and by a virtual repository through its first remote member that answers it (R-ANS-056) |
+| `ansible-galaxy role info <owner>.<role>` | **Served** by the lookup of R-ANS-020, which names the role's description, repository and download count |
+| Publish of a role (`ansible-galaxy role import`, `role init` plus upload) | **Not offered**: a local repository has no `v1` API and no role route; the guide, the manual and the page of a role tell the author to put the role into a collection (`roles/` directory of a collection), as Ansible itself recommends since 2.10 ([Q-ANS-110](#q-ans-110--roles-are-readable-through-a-remote-and-published-inside-a-collection)) |
 | A role in the content of the existing Galaxy instance | **Not imported**: reported as `notKept` (R-ANS-027) |
 
 - A **collection** that contains roles (`roles/` in the archive) installs as a collection; its roles are used by their collection name.
+- A **role read through a remote** reads like a role on the screens: by its owner and name, with its description, tags, repository, the
+  upstream's download count, its versions and its README (R-ANS-056).
 - The local class answers `GET v1/…` with 404 in the `v1` shape and `{"default":"This repository does not serve roles; …"}`.
 
 ### R-ANS-015 · Credentials for role archives
@@ -788,8 +792,13 @@ serves the three role operations of the client, in the `v1` shape:
   refused with 502 `upstream_digest_missing`, as the policy says.
 - **Names** ([Q-ANS-36](#q-ans-36--a-role-is-a-package-of-the-cores-name-machinery-named-role-and-its-id)). A role document has no `<ns>.<name>` package. The version pages and the archives of a role are classified as
   metadata and artifacts of the package `role/<id>`, which no collection can have, and the format's name rule takes that name: the URL map of
-  the archive, the include and exclude patterns of the repository, the grants and the shadowing check treat a role like any package. The
-  lookup document names no role and has no package.
+  the archive, the include and exclude patterns of the repository, the delivery rules, the grants and the shadowing check treat a role
+  like any package. The lookup document and a role search name no role's package; the content document of a role is metadata of its
+  package. The screens show the package by its display name `<owner>.<name>` and say which name the rules see (R-ANS-056).
+- **What a remote keeps of a role** (R-ANS-056). The fill of a lookup records the facts of its roles (owner, name, description, tags,
+  repository, download count, commit), the fill of a role archive records the package `role/<id>` and the version, as a cached
+  collection's are (Q-ANS-76), and the README is the stored content document `roles/<id>/content.json` of `v1/roles/<id>/content/`,
+  fetched by the job of R-ANS-042. None of it changes a document a client is served.
 - **Not mirrored.** The mirror (R-ANS-021) never reads the role index.
 - A remote whose upstream has no `v1` answers 404 in the `v1` shape for these routes.
 
@@ -932,6 +941,8 @@ The setup templates (R-API-030) and the guide (R-UI-049) of the format ([Q-ANS-2
 | `ansible-galaxy.netrc.configure` | configure | shell | `touch ~/.netrc && chmod 600 ~/.netrc` and a `printf` that appends `machine <host name> login quader password ${QUADER_TOKEN}` (the host name alone, by the template function `hostname`); a command and not a file, because netrc expands no variable (needed for roles, R-ANS-015; Q-ANS-54); for a repository that is not anonymously readable |
 | `ansible-galaxy.collection.install` | install | shell | `ansible-galaxy collection install <package>` with the version spec `:<version>`; the package placeholder is the collection |
 | `ansible-galaxy.requirements.install` | install | yaml, `requirements.yml` | `collections:` with the package, `source: quader` naming the server and the version as a key of the entry; the `roles:` example is a comment (remote and virtual repositories only) |
+| `ansible-galaxy.role.install` | install, for a role's package `role/<id>` (`Packages: "role/"`) | shell | `ansible-galaxy role install <owner>.<name>` with the version spec `,<version>`: the package written by its display name (R-ANS-056, Q-ANS-114) |
+| `ansible-galaxy.role-requirements.install` | install, for a role's package | yaml, `requirements.yml` | `roles:` with the role by its display name and the version as a key of the entry |
 | `ansible-galaxy.collection.publish` | publish | shell | `ansible-galaxy collection publish <archive> --server <repo URL> --token=${QUADER_TOKEN}`, shown only to a caller who holds `deploy` on the publish target |
 
 - **Why the token is an environment variable, not a line in `ansible.cfg`.** The setup never receives a credential (R-API-030) and
@@ -1613,6 +1624,10 @@ Priority: **P1** · Covers: quader-only
   `queued` fetch row and the job, `EnqueueDocsFill(ctx, tx, ...)`, as `Reindex` enqueues in a transaction), when the version has no `available` rows
   or the version document's digest changed; the mirror pass (R-ANS-040). Nothing else: not a UI read, not a request for the route (that one fetches
   inline).
+- **A role's README** (R-ANS-056, Q-ANS-111). The same job, named by the role's package `role/<id>` and no version (the key
+  `ansible-docs:<repoId>:role/<id>:`), fetches the role's content document `roles/<id>/content.json`, whose fill records the README in
+  `ansible_roles`. It is queued (`EnqueueRoleReadme`) by the fill of a role archive and by a lookup's fill, for a role whose package exists and that
+  has no README for its commit; a 404 records `absent`, a failure `unavailable` with the reasons above, and a role whose facts went ends the job.
 - **Outcome.** `available` rows (the fill wrote them); an upstream 404 or a `href` that fails the origin check: the fetch row `none` and the job
   succeeds; `upstream_error`: the job fails and retries; `too_large`, `invalid_document`: the fetch row says so and the job ends permanently (a retry would
   repeat it). A job for a version that was deleted ends at once.
@@ -1880,6 +1895,77 @@ Acceptance criteria:
 - The renders `ansible-doc-module`, `ansible-doc-anchor`, `ansible-doc-lookup` and `ansible-doc-callback` (light and dark, 1,440, 1,024 and
   390 px, the first three also in German).
 
+## Roles through a remote
+
+### R-ANS-056 · A role read through a remote reads like a role, and `role search` passes through
+Priority: **P1** · Covers: PKG-ANSIBLE-007
+
+The owner chose on 2026-11-25 that roles are readable through a remote and published inside a collection
+([Q-ANS-110](#q-ans-110--roles-are-readable-through-a-remote-and-published-inside-a-collection)). A role a remote of a Galaxy reads is shown
+by its owner and name with what the Galaxy says of it, its README first, and `ansible-galaxy role search` passes through. Nothing of this
+changes what a client is served (R-ANS-020).
+
+What the role's page of the public Galaxy shows, what the client's three commands show, and what Quader shows (answers of the public
+Galaxy of 2026-11-25, recorded in `internal/formats/ansible/testdata/roles/`):
+
+| Element | The Galaxy | Quader |
+|---|---|---|
+| Owner and name | `username` and `name` of the role document | The display name `<owner>.<name>` of the package `role/<id>` in the list, the search (which finds the owner and name), the title and the version's page; the page is addressed by `role/<id>` ([api-and-ui.md](../api-and-ui.md) Q-UI-1261) and says that the rules, the patterns and the grants see the role as `role/<id>` |
+| Delivery | — | A version the remote's rules do not deliver says so at the top of its page with the reason and the way to the tab Upstream, and offers no install command ([api-and-ui.md](../api-and-ui.md) Q-UI-1260, for every format) |
+| Description | `description` | The description of the package and of each version |
+| Install command | `ansible-galaxy role install <owner>.<name>` | The install snippets of the client setup for the role's package: `ansible-galaxy role install <owner>.<name>,<version>` and a `requirements.yml` with `roles:` (R-API-030, [Q-ANS-114](#q-ans-114--a-roles-install-snippets-are-its-own-and-name-it-by-its-display-name)); for a role whose owner and name the remote has not read, `<owner>.<name>` stands as the reader's to fill |
+| Tags | `summary_fields.tags` | The keywords of the package, shown as on every format's page |
+| Repository | `github_user` and `github_repo` | The link "Source repository" (`repositoryUrl`), an `https://github.com/<user>/<repo>` address built from the two names, never an address the upstream sent; the branch as a fact |
+| Versions | the versions document (all) and `summary_fields.versions` (the newest) | The versions the remote cached, in the version switch; every version of the upstream with what the delivery rules say of it in the tab Upstream, looked up as `role/<id>` ([Q-ANS-115](#q-ans-115--a-role-is-looked-up-in-the-tab-upstream-by-the-name-the-rules-see)) |
+| README | `v1/roles/<id>/content/`: `readme` (the file name) and `readme_html` (the HTML the Galaxy rendered; no Markdown is answered) | The README, the first thing of the page, the upstream's HTML sanitized on every serving (R-ANS-039) |
+| Download count | `download_count` | "Downloads at the upstream", named apart from Quader's own downloads |
+| Dependencies | `summary_fields.dependencies` | The dependencies, as names |
+| Minimum Ansible version, platforms, licence | not in the API: the role's `meta/main.yml` holds them | Not shown ([H-2120](#h-2120--a-roles-minimum-ansible-version-platforms-and-licence-are-not-shown)) |
+| `role info` | the lookup | Served (R-ANS-020) |
+| `role search` | `v1/search/roles/` | Passed through (below) |
+
+- **The facts.** The fill of a lookup writes, in the transaction that stores it, one row per role of the answer in `ansible_roles`: the
+  upstream's id, the owner (`username`, else `summary_fields.namespace.name`), the name (both of the lookup's grammar), the description (at
+  most 4,096 characters), the GitHub user, repository and branch (at most 256 bytes each, no control character), the tags and the
+  dependencies (at most 64 of 64 and 129 bytes), the download count and the commit. A role the upstream sends without a usable id, owner or
+  name is left out. A role whose package exists gets the display name `<owner>.<name>` there and then.
+- **The package.** The fill of a role archive records the package `role/<id>` (display name `<owner>.<name>` when the facts are there,
+  `role/<id>` otherwise) and the version named as the upstream names it, with the archive as its file, as a cached collection's are
+  (Q-ANS-76). A version that is no semantic version sorts before the others (the order of R-ANS-002).
+- **The README.** The content document `roles/<id>/content.json` is a metadata document of the role's package, fetched through the engine
+  from `<v1>roles/<id>/content/` by the job ansible-docs-fill (R-ANS-042) with the role's package as its name, and never served to a client.
+  Its fill records the HTML (at most 512 KiB; a larger one is `unavailable` with the reason `too_large`) and the file name; a document
+  without `readme_html` is a role without a README. The job is queued when a role has a page and no README for its commit: at the fill of
+  an archive, and at a lookup that names another commit ([Q-ANS-111](#q-ans-111--a-roles-readme-is-fetched-by-the-documentation-job-once-per-commit-of-a-role-with-a-page)).
+  `ansible.fetchDocumentation: false` fetches none. The README is wiki content, as a collection's (R-ANS-037).
+- **The search.** `GET v1/search/roles/` of a remote passes the client's `autocomplete`, `tags_autocomplete`, `platforms_autocomplete` and
+  `username_autocomplete` (each at most 128 characters of text) and `page` and `page_size` (1 to 1,000) to the upstream's
+  `<v1>search/roles/`, through the engine's pass-through of a Volatile request (its egress rules, credential policy, fetch slots and
+  circuit; an answer kept per replica for a minute, never stored; [Q-ANS-112](#q-ans-112--role-search-passes-through-and-keeps-what-the-caller-may-see));
+  any other parameter is dropped and a value outside its bound is 400 in the `v1` shape without an upstream request. The answer keeps a hit
+  whose package `role/<id>` the repository's patterns admit, its rules deliver and the caller may read; a hit's `url` and `related` are the
+  repository's, a hit names no `download_url`, `count` is the upstream's less the hits left out of the page (none for a page left empty, on which `ansible-galaxy` would fail), and the page links are the
+  repository's search with the words that passed. A repository that may not ask its upstream answers 503. A virtual repository answers by
+  its first remote member that answers (a member without the `v1` API is passed over), with the member's id in every hit (Q-ANS-19).
+- **Roles cached before.** A role whose archive was cached before the remote kept facts has no package: it appears when its archive is
+  filled again, and a role whose package came without facts gets its name and README at its next lookup
+  ([Q-ANS-113](#q-ans-113--a-role-cached-before-is-named-by-its-next-lookup-and-no-pass-fills-it)).
+- **Publishing.** No role is published into Quader: the page of a role, the guide and the manual say that a role is published inside a
+  collection's `roles/` directory (Q-ANS-110).
+
+Acceptance criteria:
+
+- Unit (milliseconds): the facts of the recorded lookup, the README of the recorded content, the bounds of a search's words, the
+  rendering of the recorded search answer, the facts of a role's version, the queueing of a README once per commit, the role in the
+  catalogue, a virtual repository's search through its first answering member, a role's install snippets.
+- Integration `ansibleremote` (about 3 s, bytes of the stub): a role installed through a remote is listed as `geerlingguy.pip` with its
+  description, its page shows its tags, repository, the upstream's download count and the name the rules see, its README is fetched once
+  and served without script; a role cached without facts is named by its next lookup; `role search` passes through once per search and
+  replica, refuses a page size above its bound without an upstream request, leaves out a role the rules block, whose install is refused
+  with the rules' reason; `role info` names the description.
+- End-to-end (the set `ansible`, one case, about 5 s): `ansible-galaxy role search pip` through a remote of the stub prints
+  `geerlingguy.pip` and its description.
+
 ## Deferred
 
 | Catalog ID or topic | Priority | Note |
@@ -1888,9 +1974,9 @@ Acceptance criteria:
 | Signing with Quader-held keys | P2 | Quader does not sign local collections ([signatures.md](../signatures.md) Q-SIG-68); uploaded signatures and the verification of a remote's signatures are built ([signatures.md](../signatures.md) R-SIG-031), and only the gate of stage 3 refuses by them (H-839) |
 | Vulnerability evaluation of collections | P2 | H-841; needs an advisory source |
 | Exposure rules for the format | P2 | Q-ANS-25; the Bastion: *superseded on 2026-11-22*, [bastion.md](../bastion.md#r-bas-050--every-formats-read-paths-at-the-bastions-host) R-BAS-050 (MVP; built) |
-| Git and URL roles through a proxy; role publish | P2 | Not offered by design (R-ANS-014) |
+| Git and URL roles through a proxy; role publish | P2 | Not offered by design (R-ANS-014); the owner's choice of 2026-11-25 ([Q-ANS-110](#q-ans-110--roles-are-readable-through-a-remote-and-published-inside-a-collection)) |
 | Automation Hub certified content beyond the token exchange (per-repository `content/<repo>/` paths, approval workflows) | P2 | Only the hub as an upstream is specified |
-| Search over collections (`v3/plugin/…/search`, `ansible-galaxy collection list --remote`) | P2 | The client's `search` is for roles and uses `v1/search/roles`, not offered |
+| Search over collections (`v3/plugin/…/search`, `ansible-galaxy collection list --remote`) | P2 | The client's `search` is for roles and uses `v1/search/roles`, which a remote passes through (R-ANS-056); collections are found on the screens (the tab Upstream, R-ANS-047) |
 | The federated repository form | P2 | No federation exists |
 
 ## Security notes
@@ -1906,6 +1992,9 @@ Acceptance criteria:
   policy says, keeps the first digest it recorded for a version and writes an event when the upstream changes it (R-ANS-018).
 - **Roles come from GitHub through Quader only from hosts the operator named, and without a digest.** A role version whose
   archive is on an unlisted host is dropped from the list (R-ANS-020, H-840).
+- **What the upstream says of a role is untrusted** (R-ANS-056). Its words are text cut to bounds, its repository becomes a link only as
+  an `https://github.com/` address built from its two names, its README is the upstream's HTML sanitized on every serving (R-ANS-039),
+  and a role search passes only the client's bounded words and never a credential of the caller; a hit names no `download_url`.
 - **Dependency confusion.** A collection's `dependencies` are resolved by the client through the same server, so claims, pin rules and
   the shadowing check (R-ANS-022, R-ANS-024) keep an internal name away from a public member; a role named in `requirements.yml` by Git
   URL bypasses all of it (H-844).
@@ -2500,6 +2589,11 @@ same non-empty package. The name has no slash-free form, so it cannot collide wi
 role and has no package. Include and exclude patterns of a remote match `role/<id>` (the format's pattern subject is the name), so an
 operator who limits a remote to `acme.*` also hides every role ([H-856](../../security/ansible-remote.md#h-856--the-patterns-of-a-remote-see-a-role-by-its-id-and-not-by-owner-and-name)). Revisit when
 an operator needs to select roles by owner and name: the lookup then has to be stored per role.
+
+**Revised on 2026-11-25** (R-ANS-056, [Q-ANS-110](#q-ans-110--roles-are-readable-through-a-remote-and-published-inside-a-collection)): the
+lookup is now stored per role, for the screens. The package stays `role/<id>` for the patterns, the rules and the grants: a rule written as
+`geerlingguy.pip` would name a collection, and the owner and name of a role can change at the upstream while its id stays. The screens show
+the package by its display name `<owner>.<name>`, say which name the rules see, and the tab Upstream looks a role up by it (Q-ANS-115).
 
 **Applied in the spec:** R-ANS-020.
 
@@ -3309,7 +3403,127 @@ Status: **Decided by the development agent** on 2026-11-25 — selected from the
 dependency and HTML. **Revisit** when a second page highlights YAML: then the code window's YAML moves onto this tokenizer. **Applied in the
 spec:** R-ANS-050.
 
+### Q-ANS-110 · Roles are readable through a remote and published inside a collection
+
+Status: **Decided by the owner on 2026-11-25** — option (b), the favourite of the working paper W-30 (its decision d1; his words: "überall
+Favorit. Genau so umsetzen wie dort im Fav beschrieben").
+
+Context: a role is the older way of sharing Ansible content, a folder in a GitHub repository the Galaxy only points to (R-ANS-014). A remote
+installed roles by translation (R-ANS-020), and the screens showed a cached role as `role/<id>`, without its name or README; `role search`
+was not served; nobody can publish a role into Quader, because `role import` asks the Galaxy to fetch from GitHub.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) As built | Nothing to do | No cost | The screen stays unreadable for roles |
+| (b) Roles readable through a remote (chosen) | Name, description, README, versions and `role search` pass through; publishing stays with collections; a role can be put into a collection's `roles/` folder, which Ansible itself recommends since 2.10 | It makes what is used readable and builds no path no client takes | One table, one e2e case |
+| (c) Also a local upload of a role archive | Quader invents an upload | Teams that publish roles to a hub of their own could publish to Quader | No client sends such an upload (galaxy_ng serves roles only as an import from GitHub), and a role carries no name, version or digest of its own (R-ANS-014) |
+
+**Choice:** (b). **Applied in the spec:** R-ANS-014, R-ANS-020, R-ANS-056, [H-856](../../security/ansible-remote.md#h-856--the-patterns-of-a-remote-see-a-role-by-its-id-and-not-by-owner-and-name).
+If his teams still publish roles to a hub of their own, (c) comes back to him as a decision.
+
+### Q-ANS-111 · A role's README is fetched by the documentation job once per commit of a role with a page
+
+Status: **Decided by the development agent** on 2026-11-25 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the Galaxy answers a role's README at `v1/roles/<id>/content/` as the HTML it rendered (R-ANS-056). A fill may not ask the upstream
+inside its transaction (R-ARCH-019), and a screen never makes Quader query an upstream (R-ANS-039).
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The content document is a metadata document of the role's package, fetched by the job ansible-docs-fill when a role has a page and no README for its commit; its fill writes the README (chosen) | The archive's fill and a lookup that names another commit queue it | One path for a collection's documentation and a role's README; one request per role and commit; a role only looked up (`role info`) costs nothing | The README arrives a moment after the first install |
+| (b) Fetch it at every lookup | The lookup's fill queues it | Fresh | A request per lookup, also for roles never installed |
+| (c) Read it through when the page is opened | No storage | Always current | A screen would make Quader query the upstream, and the page could not be read offline |
+
+**Choice:** (a). **Rationale:** the README changes with the role's commit, which the lookup names; a role with a page is one a client
+installed. Revisit if the Galaxy answers a README's own validator. **Applied in the spec:** R-ANS-042, R-ANS-056.
+
+### Q-ANS-112 · Role search passes through and keeps what the caller may see
+
+Status: **Decided by the development agent** on 2026-11-25 — selected from the options below; the owner reviews it at the walkthrough.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The client's bounded words pass through the engine's Volatile pass-through; the answer keeps the hits whose package the patterns admit, the rules deliver and the caller may read (chosen) | As NuGet's forwarded search keeps its results (R-NUGET-016) | The upstream's ranking and paging; a hit the client lists is one it may install, the others are not named | `count` and a page can be short by the hits left out ([H-2121](#h-2121--a-role-search-counts-and-pages-as-the-upstream-did)) |
+| (b) Pass the answer as it came | Simplest | — | Names roles the repository refuses, and the upstream's addresses |
+| (c) Search the roles a remote cached | No upstream request | Offline | Finds almost nothing: a remote holds the roles its clients installed |
+
+**Choice:** (a). **Applied in the spec:** R-ANS-056.
+
+### Q-ANS-113 · A role cached before is named by its next lookup, and no pass fills it
+
+Status: **Decided by the development agent** on 2026-11-25 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: before R-ANS-056, a cached role archive got no package (R-ANS-020 recorded none), and nothing kept a lookup's facts. Quader has no
+installation that must keep working (pre-alpha). The task `remote-describe` describes npm and Debian versions cached earlier from what is
+stored; a role's facts are the upstream's lookup, which a maintenance task would have to ask the upstream for.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) No pass: an archive filled again records its package, the next lookup of a role writes its facts, renames its package and queues its README (chosen) | What a client does fills it | No request to the upstream that no client caused | A role cached before stays off the list until its archive is filled again |
+| (b) A step of `remote-describe` that records the package of every cached role archive and asks the upstream for its lookup | Everything at once | Complete | A loop of requests to the Galaxy, and a migration path the owner's rule of no backward compatibility forbids |
+
+**Choice:** (a). **Applied in the spec:** R-ANS-056.
+
+### Q-ANS-114 · A role's install snippets are its own and name it by its display name
+
+Status: **Decided by the development agent** on 2026-11-25 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the server owns the snippets (R-API-030), and the install command of a version's page is the first install snippet of the
+client. `ansible-galaxy role install` names a role `<owner>.<name>`, which is the display name of the package `role/<id>`.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An install template declares the package names it is for (`Packages`, a prefix of the normalized name); for a package it claims, the unprefixed install templates are left out and the package is written by its display name, read in the caller's scope (chosen) | `ansible-galaxy role install <owner>.<name>,<version>` and a `requirements.yml` with `roles:` | Every format may have kinds of packages with commands of their own; the name is the one the client knows | A contract field (ADR-285) |
+| (b) The page builds the command | No server change | — | The server owns the snippets (R-API-030) |
+
+**Choice:** (a). **Applied in the spec:** R-ANS-025, R-ANS-056, [api-and-ui.md](../api-and-ui.md) R-API-030.
+
+### Q-ANS-115 · A role is looked up in the tab Upstream by the name the rules see
+
+Status: **Decided by the development agent** on 2026-11-25 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the refusal of a rule names `role/<id>` and sends the person to the tab Upstream (`…/upstream?name=role%2F16`), whose lookup
+answered "not found" for a role.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The catalogue's lookup of `role/<id>` lists every version of the role's list, newest first by its date, and a download from the tab names the version's archive (chosen) | The rules' switch, ranges and downloads work for a role | The link of the refusal leads somewhere; one name for a role everywhere a rule is made | The tab shows `role/<id>`, not the owner and name ([H-856](../../security/ansible-remote.md#h-856--the-patterns-of-a-remote-see-a-role-by-its-id-and-not-by-owner-and-name)) |
+| (b) Roles stay out of the tab | Nothing | — | A role can be blocked by an API call only |
+
+**Choice:** (a). **Applied in the spec:** R-ANS-047, R-ANS-056.
+
 ## What this does not cover
+
+### H-2120 · A role's minimum Ansible version, platforms and licence are not shown
+
+Stage: the page of a role a remote read (R-ANS-056). The Galaxy's role document and content document name neither; the role's
+`meta/main.yml` in the archive does (`galaxy_info.min_ansible_version`, `platforms`, `license`), and the archive is read only to check it
+(R-ANS-020). Live for every role. What makes it real: a person who picks a role by the platforms it supports.
+
+### H-2121 · A role search counts and pages as the upstream did
+
+Stage: the role search of a remote (R-ANS-056, Q-ANS-112). The hits a repository leaves out (patterns, rules, grants) are left out of the
+page the upstream answered: `count` drops by them, and a page can hold fewer hits than `page_size` while the next one holds more. Live where
+a remote refuses roles. What makes it real: a client that reads the count; `ansible-galaxy` prints it and the first page only.
+
+### H-2122 · A role sorts among the packages by its package name, not by its owner and name
+
+Stage: the list of packages sorted by name (R-UI-007, [api-and-ui.md](../api-and-ui.md) Q-UI-1261). The list sorts by the normalized name, so
+the roles of a remote stand together under `role/…` and not among the collections where their owner and name would put them. Live for every
+remote that cached roles. What makes it real: a list of many collections and roles that a person reads by name; the text filter finds a
+role by its owner and name.
+
+### H-2123 · The tab Upstream lists a role's versions on hosts a repository does not allow
+
+Stage: the catalogue's lookup of `role/<id>` (Q-ANS-115). The catalogue does not know the repository's extra hosts, so a version whose
+archive is on an unlisted host is listed, while a client is never offered it (R-ANS-020). Live where an upstream names such a host. What
+makes it real: a person who allows such a version and wonders why no client gets it.
+
+### H-2124 · The breadcrumb of a role's page names it by its package
+
+Stage: the trail above a package's and a version's page (R-UI-002), which takes the address's name: for a role it reads `role/16` while the
+title reads `geerlingguy.pip` ([api-and-ui.md](../api-and-ui.md) Q-UI-1261). The trail is built from the route alone and reads no package.
+Live for every role a remote cached. What makes it real: a person who reads the trail rather than the title.
 
 ### H-2100 · A link to an option of another entry is checked against the tree, not against that entry's options
 

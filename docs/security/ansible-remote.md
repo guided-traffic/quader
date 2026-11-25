@@ -77,6 +77,26 @@ A role is not an archive the Galaxy stores: each version names a `download_url`,
   with a Quader token as the password and answers 401 with `WWW-Authenticate: Basic realm="quader"` without one (R-ANS-015). Git and URL roles bypass Quader
   ([H-844](../spec/formats/ansible.md#h-844--git-and-url-roles-bypass-quader)).
 
+## What a remote shows of a role, and the role search
+
+A remote keeps what the upstream says of a role to show it ([R-ANS-056](../spec/formats/ansible.md#r-ans-056--a-role-read-through-a-remote-reads-like-a-role-and-role-search-passes-through)):
+the facts of a lookup ([roles.go](../../internal/formats/ansible/roles.go), the table `ansible_roles` of [roles_store.go](../../internal/formatdata/ansible/roles_store.go))
+and the README of the role's content document. Every part of it is untrusted, and none of it decides a request.
+
+| What the upstream sends | What Quader does with it | Where |
+|---|---|---|
+| Owner, name, description, tags, dependencies, branch, commit | Text within the bounds of the table (an owner and a name of the lookup's grammar, a description of at most 4,096 characters, at most 64 tags and dependencies, no control character); a role without a usable id, owner or name is left out. The screens bind it as text | `roleFacts` |
+| `github_user`, `github_repo` | A link only as `https://github.com/<user>/<repo>`, built from two names of GitHub's grammar; no address the upstream sent becomes a link | `roleRepositoryURL` |
+| `readme_html` of `v1/roles/<id>/content/` | Stored as received (at most 512 KiB), sanitized by the README renderer's policy on every serving ([R-ANS-039](../spec/formats/ansible.md#r-ans-039--rendering-and-sanitizing-markdown-html-and-the-ansible-markup)), wiki content of the repository | `parseRoleContent`, the README operation (`Renderer.RenderHTML`) |
+| A role search's answer | The hits the repository's patterns admit, its delivery rules deliver and the caller may read; their `url` and `related` on the repository; no `download_url`; the page links on the repository | `renderRoleSearch`, `roleSearchKeep` |
+
+The search passes the client's words through ([role_search.go](../../internal/formats/ansible/role_search.go)): only `autocomplete`, `tags_autocomplete`,
+`platforms_autocomplete`, `username_autocomplete` (each at most 128 characters of text, no control character), `page` and `page_size` (1 to 1,000)
+pass; any other parameter is dropped and a value outside its bound is 400 before the upstream is asked. The request is built from `remote.url`
+and the `v1` prefix of the API root, never from the client's host or path, and goes through the engine's pass-through of a Volatile request, so
+the egress rules, the hop policy of the remote's credential and the circuit apply as to every fetch; the caller's own credential is never part of
+it. A caller who may not fill the repository is served from the replica's cache only (R-ARCH-013).
+
 ## The hub's credential
 
 A hub repository stores an offline token (a refresh token) as its credential and `ansible.authUrl`, the token endpoint of the realm
@@ -102,8 +122,14 @@ Stage: the include and exclude patterns of a remote repository (R-REPO-005) and 
 ([Q-ANS-36](../spec/formats/ansible.md#q-ans-36--a-role-is-a-package-of-the-cores-name-machinery-named-role-and-its-id)).
 
 Live today for every remote of the format. An operator who limits a remote to `acme.*` hides every role, because no role is named `acme.…`; an
-operator who wants to hide one role writes `role/16`, the upstream's id, which no document of Quader shows. What makes it real: a repository
-that must serve roles of some owners only. A role that is excluded answers 404 like any package that is not admitted.
+operator who wants to hide one role writes `role/16`, the upstream's id. What makes it real: a repository that must serve roles of some owners
+only. A role that is excluded answers 404 like any package that is not admitted.
+
+Revised on 2026-11-25 ([R-ANS-056](../spec/formats/ansible.md#r-ans-056--a-role-read-through-a-remote-reads-like-a-role-and-role-search-passes-through)):
+the id is no longer hidden. The page of a role says that the rules, the patterns and the grants see it as `role/<id>`, the refusal of a rule
+names it, and the tab Upstream looks the role up by it and offers its switch ([Q-ANS-115](../spec/formats/ansible.md#q-ans-115--a-role-is-looked-up-in-the-tab-upstream-by-the-name-the-rules-see)).
+What stays: a pattern or a rule by owner (`geerlingguy.*`) cannot be written, and a role search or a lookup is answered whole by a virtual
+repository's first answering member, whose own patterns decide the hits; the virtual repository's own patterns do not see a role.
 
 ### H-857 · A republished version whose archive was evicted is trusted at its new digest
 

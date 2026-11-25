@@ -2755,6 +2755,31 @@ per platform is larger than the versions table, which asks `ViewDetails` for eve
 and nothing else. A list reads none of it. The OCI view is the first user; a Debian control file or a chart's `values.yaml` would be the
 next.
 
+### ADR-285 · A package can be renamed on the screens, take an upstream's HTML README and have install snippets of its own
+
+**Status:** Decided by the development agent on 2026-11-25 — owner review at the walkthrough
+([Q-ANS-110](spec/formats/ansible.md#q-ans-110--roles-are-readable-through-a-remote-and-published-inside-a-collection), the owner's choice it
+builds; [Q-ANS-114](spec/formats/ansible.md#q-ans-114--a-roles-install-snippets-are-its-own-and-name-it-by-its-display-name)). It adds to
+the frozen format contract and keeps `ContractVersion` 14.
+
+**Context.** A role a remote of a Galaxy reads is the package `role/<id>`, the name its patterns, rules and grants decide on
+([Q-ANS-36](spec/formats/ansible.md#q-ans-36--a-role-is-a-package-of-the-cores-name-machinery-named-role-and-its-id)). Its owner and name
+can arrive after its package (a lookup that comes later, a role renamed at the upstream), its README is HTML the upstream rendered (no
+Markdown is answered), and its client installs it with `ansible-galaxy role install <owner>.<name>,<version>`, not with the collection's
+command.
+
+**Decision.**
+- `PackageWriter.SetDisplayName(ctx, repo, name, displayName)` gives an existing package another display name and raises its revision; the
+  normalized name stays.
+- `ViewData.ReadmeHTML` says that the README is an upstream's HTML: the README operation sanitizes it with the renderer's policy
+  (`Renderer.RenderHTML`, the allowlist, link and image rules of a rendered Markdown source) and answers `contentType: text/html`.
+- `SetupTemplate.Packages` is the prefix of the normalized names an install template is for: for a package it claims, the client's
+  unprefixed install templates are left out and the package is written by its display name, read in the caller's scope.
+
+**Consequences.** Three additions a format uses where it needs them; every other format's behaviour is unchanged (no install template of
+theirs has a prefix, no README of theirs is HTML, none renames a package). The conformance kit's writer and the test fakes implement the
+new method.
+
 ## Design invariants
 
 The invariants of [spec/README.md](spec/README.md#design-invariants) are the baseline every spec
@@ -9047,10 +9072,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 <!-- coverage-gen:begin decisions -->
 ### Q-ANS
 
-84 questions on [spec/formats/ansible.md](spec/formats/ansible.md).
+90 questions on [spec/formats/ansible.md](spec/formats/ansible.md).
 
 <details>
-<summary>Q-ANS: 84 questions</summary>
+<summary>Q-ANS: 90 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -9089,7 +9114,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ANS-33](spec/formats/ansible.md#q-ans-33--the-data-port-speaks-repository-ids-and-the-values-of-a-rows-leaf) | The data port speaks repository ids and the values of a rows leaf | Decided by the development agent | (a) The port's methods take the repository id (`int64`) and the values of `internal/formats/ansible/rows`, a leaf | — |
 | [Q-ANS-34](spec/formats/ansible.md#q-ans-34--a-collection-is-published-through-the-galaxy-route-only-a-raw-body-is-the-scripted-form) | A collection is published through the Galaxy route only; a raw body is the scripted form | Decided by the development agent | (a) The publish route takes the multipart form and, besides it, the archive as the raw body; `/files/` takes nothing | — |
 | [Q-ANS-35](spec/formats/ansible.md#q-ans-35--a-document-is-computed-per-request-and-its-validator-is-a-digest-of-its-bytes) | A document is computed per request and its validator is a digest of its bytes | Decided by the development agent | (a) No rendition cache; the weak `ETag` is a digest of the rendered bytes | — |
-| [Q-ANS-36](spec/formats/ansible.md#q-ans-36--a-role-is-a-package-of-the-cores-name-machinery-named-role-and-its-id) | A role is a package of the core's name machinery, named role/ and its id | Decided by the development agent | (a) `Classify` gives the paths of a role's version pages and archive the package `role/<id>`, and the format's name rule takes that name | — |
+| [Q-ANS-36](spec/formats/ansible.md#q-ans-36--a-role-is-a-package-of-the-cores-name-machinery-named-role-and-its-id) | A role is a package of the core's name machinery, named role/ and its id | Decided by the development agent | (a) `Classify` gives the paths of a role's version pages and archive the package `role/<id>`, and the format's name rule takes that name | [ADR-285](#adr-285--a-package-can-be-renamed-on-the-screens-take-an-upstreams-html-readme-and-have-install-snippets-of-its-own) |
 | [Q-ANS-37](spec/formats/ansible.md#q-ans-37--a-fetched-archive-is-held-to-the-identity-of-its-path-requires_ansible-is-not-compared) | A fetched archive is held to the identity of its path; `requires_ansible` is not compared | Decided by the development agent | (a) The fill hook compares the archive's namespace, name and version with the path and nothing else | — |
 | [Q-ANS-38](spec/formats/ansible.md#q-ans-38--the-first-digest-of-a-version-stays-only-while-its-archive-is-cached) | The first digest of a version stays only while its archive is cached | Decided by the development agent | (a) `RecordAnnounced` keeps the recorded digest while a live item exists at the archive's path, and follows the document when there is none | — |
 | [Q-ANS-39](spec/formats/ansible.md#q-ans-39--a-remote-reads-the-version-list-at-the-upstreams-page-size-starting-with-the-first-page) | A remote reads the version list at the upstream's page size, starting with the first page | Decided by the development agent | (a) Every request reads page 0 for the count, takes the page size from it when the upstream answers fewer than 100 entries, and reads the stored pages that cover the range | — |
@@ -9138,6 +9163,12 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-ANS-93](spec/formats/ansible.md#q-ans-93--an-anchor-is-parameter--or-return--and-the-path-of-names-and-a-generated-version_added-counts-in-its-own-collection) | An anchor is parameter- or return- and the path of names, and a generated version_added counts in its own collection | Decided by the development agent on 2026-11-25 | (a) `parameter-<path>` and `return-<path>`, the path joined by `/`, an alias an anchor of its own, as a fragment of the page's address | — |
 | [Q-ANS-94](spec/formats/ansible.md#q-ans-94--a-link-to-the-documentation-is-a-page-relative-address-the-server-builds-from-names-it-found) | A link to the documentation is a page-relative address the server builds from names it found | Decided by the development agent on 2026-11-25 | (a) Page-relative addresses of one grammar (`?doc=<type>/<name>`, `#parameter-<path>`, `#return-<path>`, or both), built by the server from the names it found in the tree and the entry; the sanitizer keeps a relative link only in that grammar, the browser's component only in that grammar and turns it into the page's address | — |
 | [Q-ANS-95](spec/formats/ansible.md#q-ans-95--examples-are-highlighted-by-a-tokenizer-of-the-web-application-not-a-library) | Examples are highlighted by a tokenizer of the web application, not a library | Decided by the development agent on 2026-11-25 | (a) A tokenizer of the web application for the YAML Ansible writes, Jinja included, drawn as text in spans | — |
+| [Q-ANS-110](spec/formats/ansible.md#q-ans-110--roles-are-readable-through-a-remote-and-published-inside-a-collection) | Roles are readable through a remote and published inside a collection | Decided by the owner on 2026-11-25 | (b) Roles readable through a remote | [ADR-285](#adr-285--a-package-can-be-renamed-on-the-screens-take-an-upstreams-html-readme-and-have-install-snippets-of-its-own) |
+| [Q-ANS-111](spec/formats/ansible.md#q-ans-111--a-roles-readme-is-fetched-by-the-documentation-job-once-per-commit-of-a-role-with-a-page) | A role's README is fetched by the documentation job once per commit of a role with a page | Decided by the development agent on 2026-11-25 | (a) The content document is a metadata document of the role's package, fetched by the job ansible-docs-fill when a role has a page and no README for its commit; its fill writes the README | — |
+| [Q-ANS-112](spec/formats/ansible.md#q-ans-112--role-search-passes-through-and-keeps-what-the-caller-may-see) | Role search passes through and keeps what the caller may see | Decided by the development agent on 2026-11-25 | (a) The client's bounded words pass through the engine's Volatile pass-through; the answer keeps the hits whose package the patterns admit, the rules deliver and the caller may read | — |
+| [Q-ANS-113](spec/formats/ansible.md#q-ans-113--a-role-cached-before-is-named-by-its-next-lookup-and-no-pass-fills-it) | A role cached before is named by its next lookup, and no pass fills it | Decided by the development agent on 2026-11-25 | (a) No pass: an archive filled again records its package, the next lookup of a role writes its facts, renames its package and queues its README | — |
+| [Q-ANS-114](spec/formats/ansible.md#q-ans-114--a-roles-install-snippets-are-its-own-and-name-it-by-its-display-name) | A role's install snippets are its own and name it by its display name | Decided by the development agent on 2026-11-25 | (a) An install template declares the package names it is for (`Packages`, a prefix of the normalized name); for a package it claims, the unprefixed install templates are left out and the package is written by its display name, read in the caller's scope | [ADR-285](#adr-285--a-package-can-be-renamed-on-the-screens-take-an-upstreams-html-readme-and-have-install-snippets-of-its-own) |
+| [Q-ANS-115](spec/formats/ansible.md#q-ans-115--a-role-is-looked-up-in-the-tab-upstream-by-the-name-the-rules-see) | A role is looked up in the tab Upstream by the name the rules see | Decided by the development agent on 2026-11-25 | (a) The catalogue's lookup of `role/<id>` lists every version of the role's list, newest first by its date, and a download from the tab names the version's archive | — |
 
 </details>
 
@@ -12364,10 +12395,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-637 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+639 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 637 questions</summary>
+<summary>Q-UI: 639 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -13005,6 +13036,8 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1245](spec/api-and-ui.md#q-ui-1245--a-version-without-documentation-opens-on-its-first-tab-with-content-and-its-readme-tab-says-so) | A version without documentation opens on its first tab with content, and its README tab says so | Decided by the development agent | (a) The name opens the newest version's page all the same, on its first tab with content; the README tab stays and says "This version has no README to show." | — |
 | [Q-UI-1246](spec/api-and-ui.md#q-ui-1246--an-entrys-parameters-and-return-values-are-two-columns-as-the-documentation-site-has-them) | An entry's parameters and return values are two columns, as the documentation site has them | Decided by the development agent on 2026-11-25 | (a) Two columns: Name (aliases, type, Required, "added in" under it) and Description (the prose, then Choices with the default bold and "(default)", or Default, then Configuration; for a return value Returned and Sample) | — |
 | [Q-UI-1250](spec/api-and-ui.md#q-ui-1250--the-commands-of-an-oci-artifact-are-its-kinds-helm-for-a-chart-docker-and-podman-for-an-image) | The commands of an OCI artifact are its kind's: Helm for a chart, Docker and Podman for an image | Decided by the development agent on 2026-11-25 | (a) The panel of a version's commands (Q-UI-1240) offers the tabs of its kind's clients (`clientsOfKind`): a Helm chart the one client Helm, named as the row's label, with **Set up client** leading to Helm's setup; an image the tabs Docker and Podman, never Helm; the client setup of the repository lists all three; an image's tab adds the pull by digest as its second line, at every place the panel stands (the head of a version's page, a list's row, a version's row) | — |
+| [Q-UI-1260](spec/api-and-ui.md#q-ui-1260--a-version-a-remote-holds-and-does-not-deliver-says-so-at-the-top-of-its-page-for-every-format) | A version a remote holds and does not deliver says so at the top of its page, for every format | Decided by the development agent on 2026-11-26 | (a) A note at the top of the version's page per remote that holds the version and does not deliver it: "Not delivered by `<repository>`: `<reason>`. A client cannot install this version through it." with the way to the tab Upstream under the name the rules see; the install panel offers no command for it and says that no repository delivers the version | — |
+| [Q-UI-1261](spec/api-and-ui.md#q-ui-1261--a-packages-address-is-its-key-its-title-its-name-and-the-search-finds-the-name) | A package's address is its key, its title its name, and the search finds the name | Decided by the development agent on 2026-11-26 | (a) The summary carries `key`, the normalized name; a list, the search and the recent packages link by it, the page's title is the summary's name, and the list's text filter matches the display name too | — |
 | [Q-UI-1270](spec/api-and-ui.md#q-ui-1270--a-debian-packages-relations-are-the-dependency-block-one-line-per-group-its-alternatives-side-by-side) | A Debian package's relations are the dependency block, one line per group, its alternatives side by side | Decided by the development agent on 2026-11-26 | (a) A heading per relation field and a plain list, one line per group: the names linked where the installation holds the package, the alternatives with "or" between them, the constraint after each name, muted | — |
 | [Q-UI-1271](spec/api-and-ui.md#q-ui-1271--the-source-package-of-a-debian-version-links-to-the-package-list-of-its-binaries) | The source package of a Debian version links to the package list of its binaries | Decided by the development agent on 2026-11-26 | (a) A link to the package list filtered by the keyword, which Debian answers with the source package; the filter's chip says "Source package" while the list shows Debian alone | — |
 | [Q-UI-1272](spec/api-and-ui.md#q-ui-1272--a-debian-packages-changelog-is-a-tab-its-copyright-a-fold-its-files-a-section-of-files) | A Debian package's changelog is a tab, its copyright a fold, its files a section of Files | Decided by the development agent on 2026-11-26 | (a) A tab **Changelog** after Details; the copyright file a closed fold under Package details (its licence stands on the facts line); the installed files a section under the package files of **Files**: the first 100, a filter on the path, "Show more" by 500, an architecture choice when the version has several | — |

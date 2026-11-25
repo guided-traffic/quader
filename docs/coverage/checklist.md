@@ -15,8 +15,8 @@ rendered from it ([checklist.md there](https://github.com/guided-traffic/quader/
 requirement lists the feature in its `Covers:` line. *open*: no requirement does. For entries with priority
 *Out of scope*, open is the intended end state.
 
-**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,295 spec requirements:
-794 cover catalog features, 501 cover none (`quader-only`, [listed at the
+**Totals.** 2,239 catalog features on 60 pages: 806 specified, 1,433 open. 1,296 spec requirements:
+795 cover catalog features, 501 cover none (`quader-only`, [listed at the
 end](#requirements-that-cover-no-catalog-feature)).
 
 ## Pages
@@ -2184,7 +2184,7 @@ Catalog page: [formats/ansible.md](../features/formats/ansible.md) · specified 
 | PKG-ANSIBLE-004 | Deploy collection archives through the UI or plain HTTP | P1 | specified | [R-ANS-008](../spec/formats/ansible.md), [R-ANS-026](../spec/formats/ansible.md) |
 | PKG-ANSIBLE-005 | Install collections | P1 | specified | [R-ANS-005](../spec/formats/ansible.md), [R-ANS-013](../spec/formats/ansible.md) |
 | PKG-ANSIBLE-006 | Collection metadata calculation and recalculation | P1 | specified | [R-ANS-002](../spec/formats/ansible.md), [R-ANS-010](../spec/formats/ansible.md), [R-ANS-011](../spec/formats/ansible.md), [R-ANS-012](../spec/formats/ansible.md) |
-| PKG-ANSIBLE-007 | Install legacy roles through remote repositories | P1 | specified | [R-ANS-014](../spec/formats/ansible.md), [R-ANS-020](../spec/formats/ansible.md) |
+| PKG-ANSIBLE-007 | Install legacy roles through remote repositories | P1 | specified | [R-ANS-014](../spec/formats/ansible.md), [R-ANS-020](../spec/formats/ansible.md), [R-ANS-056](../spec/formats/ansible.md) |
 | PKG-ANSIBLE-008 | No browsing of uncached remote content | P1 | specified | [R-ANS-017](../spec/formats/ansible.md) |
 | PKG-ANSIBLE-009 | Remote repositories for Ansible Galaxy | P1 | specified | [R-ANS-016](../spec/formats/ansible.md), [R-ANS-017](../spec/formats/ansible.md), [R-ANS-018](../spec/formats/ansible.md), [R-ANS-021](../spec/formats/ansible.md) |
 | PKG-ANSIBLE-010 | Proxy Red Hat Ansible Automation Hub | P1 | specified | [R-ANS-019](../spec/formats/ansible.md) |

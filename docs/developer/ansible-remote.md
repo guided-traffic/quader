@@ -24,9 +24,14 @@ whole is [ansible.md](ansible.md).
 | Role lookup | `roles/lookup.json` | `owner=<o>&name=<n>` | `<v1>roles/?owner__username=<o>&name=<n>` |
 | A role's versions, one page | `roles/<id>/versions.json` | `page=<n>` | `<v1>roles/<id>/versions/?page_size=50&page=<n>` |
 | Role archive | `roles/<id>/<ref>.tar.gz` | none | the `download_url` of the version entry (URL map) |
+| A role's content (its README) | `roles/<id>/content.json` | `doc` | `<v1>roles/<id>/content/` |
+| A role search (passed through, never stored) | `roles/search` (the key of the replica's cache) | the parameters | `<v1>search/roles/?<the client's bounded words>` |
 
 - **The package of a role is `role/<id>`** ([Q-ANS-36](../spec/formats/ansible.md#q-ans-36--a-role-is-a-package-of-the-cores-name-machinery-named-role-and-its-id)): `Classify`,
-  `PackageDocumentPath` and `Names.Normalize` know it, which is what lets the URL map record the archive a version page names.
+  `PackageDocumentPath` and `Names.Normalize` know it, which is what lets the URL map record the archive a version page names. Its display
+  name is `<owner>.<name>` once a lookup's facts are kept ([R-ANS-056](../spec/formats/ansible.md#r-ans-056--a-role-read-through-a-remote-reads-like-a-role-and-role-search-passes-through)):
+  the fill of a lookup writes the facts (`onRoleLookup`), the fill of a role archive the package and the version (`commitRole`), the job
+  ansible-docs-fill the README (`roleReadme` in [docs_job.go](../../internal/formatdata/ansible/docs_job.go)).
 - **One request per document.** However many clients and replicas ask, the engine fetches a document once while it is fresh and once per period
   after; the collapsing across replicas needs Valkey (the integration test starts the stack with it).
 
@@ -40,7 +45,10 @@ whole is [ansible.md](ansible.md).
 | [`remote_target.go`](../../internal/formats/ansible/remote_target.go) | a canonical path taken apart, the variants and their grammar, the paging bounds |
 | [`remote_docs.go`](../../internal/formats/ansible/remote_docs.go) | the upstream collection and page documents, the role documents and their rendering, the host rules |
 | [`remote_gate.go`](../../internal/formats/ansible/remote_gate.go) | `BeforeArtifact`: the recorded digest of a version, the revalidation of a document that was never stored |
-| [`remote_fill.go`](../../internal/formats/ansible/remote_fill.go) | `FillInspector`: the identity of a collection archive, the shape of a role archive |
+| [`remote_fill.go`](../../internal/formats/ansible/remote_fill.go) | `FillInspector`: the identity of a collection archive, the shape of a role archive; `CommitFill` and `commitRole`, the package rows of what a remote cached |
+| [`roles.go`](../../internal/formats/ansible/roles.go) | a role's facts from a lookup, its README from its content document, the queueing of the README, what the screens show of a role (`describeRole`, R-ANS-056) |
+| [`role_search.go`](../../internal/formats/ansible/role_search.go) | `role search`: the bounds of the client's words, `UpstreamQuery`, the hits the caller may see (`renderRoleSearch`) |
+| [`catalogue_roles.go`](../../internal/formats/ansible/catalogue_roles.go) | a role in the tab Upstream by `role/<id>` and the version probe of its download (Q-ANS-115) |
 | [`mirror.go`](../../internal/formats/ansible/mirror.go) | `discover.Lister`: the methods, the index listing by offset, the exact names, the plan of a collection |
 | [`hub.go`](../../internal/formats/ansible/hub.go) | `formats.CredentialExchanger`: the refresh-token grant at `ansible.authUrl` and the reading of its answer |
 | [`internal/repository/validate_ansible.go`](../../internal/repository/validate_ansible.go) | the rules of `ansible.authUrl` when a document is saved |
@@ -86,7 +94,7 @@ a dummy token (400 `invalid_grant`, 401 `invalid_client`, H-842); `exchangeFailu
 
 | Tier | Where | What |
 |---|---|---|
-| Unit | `internal/formats/ansible/remote*_test.go` | the API root, the upstream addresses, the checks of a version document, the role rendering and its host rule, the role archive bound, the fill hook |
+| Unit | `internal/formats/ansible/remote*_test.go`, `roles_test.go` | the API root, the upstream addresses, the checks of a version document, the role rendering and its host rule, the role archive bound, the fill hook; a role's facts, README and search against the answers of the public Galaxy recorded in `testdata/roles/` |
 | Kit | `conformance_test.go`, `remote_fixture_test.go` | `Rewrite` (deterministic, idempotent, no upstream address left), the discovery documents of check 6, the name `role/16` |
 | Integration | `test/integration/ansibleremote`, `test/integration/mirror/ansible_test.go` | against the stub through the slot wrapper (`hub_test.go` for the realm); the role routes of the kit's content check are listed in `NoContent` because the kit's host is a local repository |
 
@@ -125,7 +133,7 @@ command. It answers over TLS only ([R-ANS-032](../spec/formats/ansible.md#r-ans-
 | [`stub.go`](../../test/ansiblestub/stub.go) | `Config`, `Server`, `New`, resets, `AddVersion`/`DropVersion`, `Corpus`, which archive a mode serves |
 | [`corpus.go`](../../test/ansiblestub/corpus.go) | the collections and roles, the archive cache |
 | [`route.go`](../../test/ansiblestub/route.go) | host dispatch (five hosts), the path grammar of the Galaxy host |
-| [`galaxy.go`](../../test/ansiblestub/galaxy.go), [`roles.go`](../../test/ansiblestub/roles.go) | the v3 and v1 documents |
+| [`galaxy.go`](../../test/ansiblestub/galaxy.go), [`roles.go`](../../test/ansiblestub/roles.go) | the v3 and v1 documents, a role's content (its README) and the role search |
 | [`serve.go`](../../test/ansiblestub/serve.go) | the handler, the counters, the gate of the switches, archives |
 | [`mode.go`](../../test/ansiblestub/mode.go), [`throttle.go`](../../test/ansiblestub/throttle.go), [`realm.go`](../../test/ansiblestub/realm.go) | the switches, the rate limit, the hub's realm |
 | [`counts.go`](../../test/ansiblestub/counts.go), [`inflight.go`](../../test/ansiblestub/inflight.go), [`control.go`](../../test/ansiblestub/control.go) | counters, open requests, the control API |

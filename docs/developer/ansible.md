@@ -91,6 +91,7 @@ internal/config/ansible.go     # the ansible: section
 | `ansible.roles.find` | `GET v1/roles/` | Volatile | read | remote, virtual |
 | `ansible.role.versions` | `GET v1/roles/{id}/versions/` | Metadata | read | remote, virtual |
 | `ansible.role.archive` | `GET v1/roles/archives/{id}/{file}` | Download | read | remote, virtual |
+| `ansible.roles.search` | `GET v1/search/roles/` | Volatile | read | remote, virtual |
 
 The trailing slash is optional on every path and no route redirects: a redirect would drop the `Authorization` header of some clients.
 
@@ -135,7 +136,8 @@ header with that scheme. Everywhere else the header is "not a Quader token" and 
 
 [00068_ansible_collections](../../internal/meta/postgres/migrations/00068_ansible_collections.sql) and
 [00069_ansible_import_tasks](../../internal/meta/postgres/migrations/00069_ansible_import_tasks.sql) create the tables of R-ANS-011; the
-table of the announced digests of a remote, [00070_ansible_upstream_versions](../../internal/meta/postgres/migrations/00070_ansible_upstream_versions.sql), comes with the remote class. The port is `Store` in [store.go](../../internal/formats/ansible/store.go),
+table of the announced digests of a remote, [00070_ansible_upstream_versions](../../internal/meta/postgres/migrations/00070_ansible_upstream_versions.sql), comes with the remote class, and the facts of the roles a remote read
+(`ansible_roles`, the migration `ansible_roles`, R-ANS-056) with the group `RoleStore` of the port ([roles_store.go](../../internal/formatdata/ansible/roles_store.go)). The port is `Store` in [store.go](../../internal/formats/ansible/store.go),
 implemented by [internal/formatdata/ansible](../../internal/formatdata/ansible/port.go). It speaks repository ids and the values of the `rows` leaf
 (Q-ANS-33), carries no revision column (Q-ANS-31), and its reindex step is `RebuildRows`, the enqueue being the `Reindexer` the endpoint
 already finds (Q-ANS-32). The job kinds `ansible-reindex` and `ansible-import-task-sweep` are registered in [jobs.go](../../internal/formatdata/ansible/jobs.go).

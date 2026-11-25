@@ -851,6 +851,17 @@ and the config's bytes; the table keeps its export class `data` ([tables.go](../
 The statements are `OCIPutManifest`, `OCIConfigWaiting`, `OCIDescribeTarget`, `OCIPutBlobs`, `OCIPutConfigFacts`,
 `OCIUndescribedManifests` and `OCITagFacts` in [oci_manifests.sql](../../internal/meta/postgres/queries/oci_manifests.sql).
 
+## The roles an Ansible remote read (00132)
+
+[00132_ansible_roles](../../internal/meta/postgres/migrations/00132_ansible_roles.sql) adds `ansible_roles`, the facts of the roles a
+remote Ansible Galaxy repository read ([ansible.md](../spec/formats/ansible.md) R-ANS-056): a row per repository and upstream role id with
+the owner and name (1 to 64 characters), the description (at most 4,096), the GitHub user, repository and branch, the tags and the
+dependencies (JSON arrays), the upstream's download count, the commit and the import time, and the README's state (`none`, `queued`,
+`available`, `absent`, `unavailable` with a reason), file name, HTML (at most 512 KiB) and the commit it was fetched for. The statements
+are [ansible_roles.sql](../../internal/meta/postgres/queries/ansible_roles.sql); the view joins it to the package `role/<id>` by
+`'role/' || role_id`. Export class `transient` ([roles_store.go](../../internal/formatdata/ansible/roles_store.go)): it is derived from
+upstream documents, a restore leaves it empty and the next lookup writes it; a restore without the remote caches deletes it with them.
+
 ## What the reader of a Debian data archive kept (00132)
 
 [00132_deb_contents](../../internal/meta/postgres/migrations/00132_deb_contents.sql) adds `deb_contents`, one row per Debian package file

@@ -1593,7 +1593,7 @@ remain as their owners define them.)
 
 | Method | Path | Purpose | Permission |
 |---|---|---|---|
-| GET | `/api/v1/packages` | Packages; filters `format`, `repository` (both repeatable; the qualified name `<projectKey>/<repoKey>`), `project`, `q` (name and description), `namePrefix`, `keyword`, `createdFrom` / `createdTo` (first visible version); `sort` `name`, `createdAt`, `updatedAt` and their descending forms (default `name`); `include=vulnerabilities` (R-UI-052) | visible versions (below); anonymous where allowed |
+| GET | `/api/v1/packages` | Packages; filters `format`, `repository` (both repeatable; the qualified name `<projectKey>/<repoKey>`), `project`, `q` (name, display name and description), `namePrefix`, `keyword`, `createdFrom` / `createdTo` (first visible version); `sort` `name`, `createdAt`, `updatedAt` and their descending forms (default `name`); `include=vulnerabilities` (R-UI-052) | visible versions (below); anonymous where allowed |
 | GET | `/api/v1/packages/lookup?format=npm&name=@team-a/ui` | Resolve a name to the package | as list |
 | GET | `/api/v1/packages/{packageId}` | Package summary | as list |
 | GET | `/api/v1/packages/{packageId}/versions` | Versions; filters `prerelease`, `repository`; `sort` `-version` (default, the format's version precedence, newest first), `version`, `-publishedAt`, `publishedAt`; `group=content` (one entry per content, below); `include=digest` (R-UI-052), `include=state` (R-UI-194), `include=kind` ([formats/oci.md](formats/oci.md) R-OCI-041) | as list |
@@ -1602,8 +1602,10 @@ remain as their owners define them.)
 | GET | `/api/v1/packages/{packageId}/versions/{version}/docs`, `…/docs/entries/{type}/{name}`, `…/docs/files/{file}` | The documentation of a version of a format that has one (Ansible Galaxy: the tree with search, one plugin's page, a Markdown file): `getPackageVersionDocs`, `getPackageVersionDocEntry`, `getPackageVersionDocFile`, [formats/ansible.md](formats/ansible.md) R-ANS-036; wiki content (Q-API-260, Q-API-261); 404 for a format without documentation | as list, then the wiki check of R-AUTHZ-034 ([formats/ansible.md](formats/ansible.md) R-ANS-037) |
 
 - A package is identified by format plus normalized name (npm names as stored; NuGet IDs
-  case-insensitive, displayed in their original casing). Version strings are percent-encoded in the
-  path.
+  case-insensitive, displayed in their original casing). The summary carries both: `name`, what a screen shows, and `key`, the
+  normalized name a screen addresses the package by (an Ansible role's display name `<owner>.<name>` and its key `role/<id>`,
+  [formats/ansible.md](formats/ansible.md) R-ANS-056, Q-UI-1261); `q` matches the name, the display name and the description. Version
+  strings are percent-encoded in the path.
 - A version is visible to a caller who holds `read` on a repository containing it, by a grant, a role or the repository's
   artifacts level ([authorization.md](authorization.md) R-AUTHZ-035), with the package-name narrowing of INV-9 applied. A package is listed when at least one version is
   visible, and `latestVersion` is computed from visible versions only, so a hidden newer version
@@ -1730,7 +1732,8 @@ remain as their owners define them.)
   for `If-None-Match`. The README tag is computed from its source, the renderer version and the hash of the
   origin list before the rendering, so a request that holds it costs no rendering (Q-API-167).
 - README answer: `{"contentType": "text/markdown", "html": "<h1>…</h1>", "truncated": false, "externalImagesBlocked": 2}`;
-  404 when the version has none, with the answer of a version that is not visible, and the same 404 when the caller may read
+  `contentType` is `text/html` for a README that is an upstream's HTML (an Ansible role's, [ansible.md](formats/ansible.md) R-ANS-056,
+  ADR-285), sanitized by the same policy and not rendered; 404 when the version has none, with the answer of a version that is not visible, and the same 404 when the caller may read
   the version but not the wiki of the repository that holds it: the README is wiki content (R-AUTHZ-034). Rendering and sanitizing follow R-UI-008; README extraction (npm:
   the tarball's first top-level README, stored at publish and read from the cached tarball for a version a remote cached,
   [R-NPM-051](formats/npm.md#r-npm-051--the-readme-of-a-version-is-read-from-its-tarball-when-it-is-not-stored); NuGet: the `<readme>` file
@@ -27016,6 +27019,37 @@ Status: **Decided by the development agent** on 2026-11-25 — selected from the
 [repository-items.ts](../../web/src/app/features/repositories/content/repository-items.ts) and
 [repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts) (`[kind]`). The product-wide
 package list and the search offer no command and need no kind.
+
+### Q-UI-1260 · A version a remote holds and does not deliver says so at the top of its page, for every format
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+Found while building [ansible.md](formats/ansible.md) R-ANS-056: a role a remote's rules block had a page that looked like any other, and
+its install panel said that the remote was disabled. The version details carried the reason already (`repositories[].unavailableReason`,
+R-CUR-014), and no screen read it.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) A note at the top of the version's page per remote that holds the version and does not deliver it: "Not delivered by `<repository>`: `<reason>`. A client cannot install this version through it." with the way to the tab Upstream under the name the rules see; the install panel offers no command for it and says that no repository delivers the version (chosen) | Every format, from the field the details carry | One sentence where a person looks first; the reasons are the tab Upstream's words; no request of its own | — |
+| (b) Only the role's page says it | Narrower | — | The same defect stays for every other format |
+
+**Choice:** (a). **Applied in the spec:** R-UI-111, [remote-curation.md](remote-curation.md) R-CUR-014. Code:
+[delivery-note.ts](../../web/src/app/features/packages/delivery-note.ts), [install-panel.ts](../../web/src/app/features/packages/install-panel.ts).
+
+### Q-UI-1261 · A package's address is its key, its title its name, and the search finds the name
+
+Status: **Decided by the development agent** on 2026-11-26 — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: a role a remote read is the package `role/<id>` with the display name `<owner>.<name>` ([ansible.md](formats/ansible.md) R-ANS-056).
+The lists linked a package by its display name, which the lookup normalizes by the format's name rule: `geerlingguy.pip` is read as a
+collection, `geerlingguy.php-versions` as no name at all, so the link led nowhere.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The summary carries `key`, the normalized name; a list, the search and the recent packages link by it, the page's title is the summary's name, and the list's text filter matches the display name too (chosen) | `/packages/ansible/role/16`, titled `geerlingguy.pip` | One address per package whatever it is called; a person finds a role by its owner | A NuGet package's address is its lower-case ID, its title keeps the casing |
+| (b) The lookup also finds a package by its display name | Addresses stay names | — | Two packages of two repositories can share a display name and differ in key; a lookup that guesses is a lookup that can lead elsewhere |
+
+**Choice:** (a). **Applied in the spec:** R-API-029, R-UI-007. Code: `summaryOf` in [packages_api.go](../../internal/api/v1/packages_api.go),
+`PackageViewList` in [package_view.sql](../../internal/meta/postgres/queries/package_view.sql).
 
 ### Q-UI-1270 · A Debian package's relations are the dependency block, one line per group, its alternatives side by side
 
