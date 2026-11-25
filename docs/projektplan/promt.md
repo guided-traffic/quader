@@ -306,9 +306,10 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | S17 · Every load shows the spinner the owner picked (W-29) | the owner's task of 19:15 and his choice of 19:19 (section 8, Product): the mark's six stones, lighting up in sandstone | landed and pushed at 23:00 |
 | S18 · No signed address in a log or a record | my finding of 19:23 (section 8, Product): the upstream log writes redirect targets with their signatures | landed and pushed at 20:40 |
 | S19 · The command behind its button on a version's page, clients as tabs, a collection opens in its documentation (W-30) | the owner's task of 20:39 (section 8, Product): every format's version page, the panel of the command, the target of a collection's name, the sentence why a format is not checked for vulnerabilities | built at 21:25; its builder rebases it onto the spinner and the range since about 23:03, with R-UI-218 and Q-UI-1240 to Q-UI-1245 |
-| W30-A1 · A collection's documentation reads like the documentation site (W-30) | R-ANS-048 to R-ANS-050 of the plan `.dev/w30-plan.md`: anchors and links, a plugin's configuration, the page's contents, highlighted examples | built at about 22:28; its builder rebases it since about 23:03, with Q-UI-1246 |
+| W30-A1 · A collection's documentation reads like the documentation site (W-30) | R-ANS-048 to R-ANS-050 of the plan `.dev/w30-plan.md`: anchors and links, a plugin's configuration, the page's contents, highlighted examples | landed and pushed at 23:55 |
 | W30-G7 · An image's facts: annotations and labels, the config, the layers, the history (W-30) | R-OCI-039 to R-OCI-041 of the plan `.dev/w30-plan.md`; with a Helm chart's facts since the owner's d4 = b; Q-UI-1250 to Q-UI-1259, R-UI-219, migration 00132 | in work since 22:06 |
 | W30-A4 · A role read through a remote reads like a role (W-30, the owner's d1 = b) | R-ANS-056 of the plan `.dev/w30-plan.md`: owner and name, description, README, `role search`; no local publish of a role; Q-ANS-110 to Q-ANS-119, Q-UI-1260 to Q-UI-1269, H-2120 to H-2129, migration 00133 | in work since 23:18 |
+| W30-G8 · A Debian package shows its relations, long description, changelog, copyright and file list (W-30) | R-DEB-038, R-DEB-039 of the plan `.dev/w30-plan.md`; the data archive read under bounds, which revises R-DEB-007; Q-DEB-140 to Q-DEB-149, Q-UI-1270 to Q-UI-1279, H-2130 to H-2139, migration 00134 | in work since 23:30 |
 | W-30 planner · Ansible as an equal of Galaxy; general and specific properties per format | the owner's task of 20:39: a comparison screen by screen and answer by answer, and the table of properties per format | plan written at 21:05 (`.dev/w30-plan.md`) |
 | W30-G1 · A remote's cached version of npm and Debian carries its facts (W-30) | R-NPM-050, R-NPM-051, R-DEB-037 of the plan `.dev/w30-plan.md`; the README of an npm version from the stored tarball | landed and pushed at 23:27 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
@@ -1063,6 +1064,13 @@ order is what a user or an operator meets first. The state is kept here.
 
 ### Tests and tools
 
+- **Closed on 2026-11-25, 23:55: a unit test of the tab Downloads failed every night from 23:20 to midnight.** The case
+  "an upstream's rate limit is said above the list, on its waiting rows and on the bulk" sets the limit's end 40 minutes
+  from now and expected "Rate limit until" followed by a digit; when that end lies past midnight the line carries the
+  date ("Rate limit until Nov 26, 12:15 AM"), which is right, and the expectation was wrong. Found at 23:37 by the
+  landing's gates of A1; the expectation takes both forms now. A pipeline that ran in those 40 minutes was red in the
+  web job by it; not looked up which runs.
+
 - **Open since 2026-11-25, 22:33, found by two builders: the lock of the integration stack hands out an instance whose
   containers are down.** Instance 3's containers had exited 37 hours earlier (exit 255, all at once: the container
   runtime's restart), its env file stood, and `test/integration/locked.sh` took it as free; every test of two builders'
@@ -1246,6 +1254,29 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- **Closed on 2026-11-25, 23:55, by W30-A1 (W-30; R-ANS-048 to R-ANS-050; Q-ANS-93 to Q-ANS-95; Q-UI-1246; gaps H-2100
+  to H-2105; no migration): a collection's documentation reads like the documentation site.** The owner: "Ansible-
+  Collections haben die spezifische Eigenschaft einer Dokumenation die hervorzuheben ist." Measured against the site's
+  pages of `ansible.posix.mount`, the callback `profile_tasks` and the lookup `community.general.dig`: every option and
+  return value has an anchor in the site's form (`#parameter-<path>`, `#return-<path>`) with a button that copies its
+  link, and an address that ends in one opens the entry at that row; `M()`, `P()`, `O()` and `RV()` link to what this
+  version's tree and this entry hold, a see-also entry of the tree links to it; the keys `ini`, `env`, `vars`,
+  `keyword` and `cli` of a plugin's option are kept and shown as Configuration; "added in <collection> <version>";
+  the page's head lists its sections; examples and samples are highlighted as YAML by a tokenizer of the web
+  application (`web/src/app/shared/yaml-highlight.ts`, no dependency); a lookup's `_terms` and a filter's `_input`
+  are the sections Terms and Input. Departed from the plan: the two tables of options and return values have the
+  site's two columns (the six columns stood as blocks at 1,440 and at 1,024 px beside the tree; Q-UI-1246, R-UI-061
+  revised); an upstream's option members are stored as received and only the listed ones are read (the spec said they
+  were dropped). Hostile markup: the server builds an address only from a name it found in the version's tree or the
+  entry, both sanitizers keep only that grammar, `M(javascript:alert(1))` stays code without a link, and the fuzz
+  target runs with the link's context (it found one case in the builder's own check, `Http://`, fixed). The landing:
+  the count of requirements 1,288; the 13 gates (one web test of another screen failed for the hour, see Tests and tools), the dialog states, the whole areas `ansiblelocal`, `ansibleremote` and `ansiblevirtual` and the Ansible renders in English and German green; the renders first failed four screens on the landing's own instance, which held the seed's collection in an older form, and passed on a fresh one; looked at: the module's page opened at an anchor in light at 1,440 px (the list of sections, the two-column table with its marked row, the highlighted examples, the return values). Open: a link to another entry's option is checked against the tree, not
+  against that entry's options (H-2100); a reference to another collection, `ansible.builtin` included, is no link
+  (H-2101); an option of a role's entry point is no link until the generator reads argument specs (H-2102, W30-A2);
+  the deep link on the routes S19 brings is S19's to keep and test (H-2104); the code window keeps its own one-line
+  YAML tokenizer (H-2105). Not verified: the kind legs with the journey's new step; real upstream documents with
+  `ini` and `env` keys beyond the stub.
+
 - **Closed on 2026-11-25, 23:27, by W30-G1 (W-30; R-NPM-050, R-NPM-051, R-DEB-037; Q-NPM-91, Q-NPM-92, Q-DEB-135; gaps
   H-2090 to H-2094; no migration): a version an npm or a Debian remote cached shows its facts as a published one, also
   what was cached before.** The planner's finding, reproduced first by the builder on the unchanged code: a version
@@ -1270,7 +1301,9 @@ records the recorder that tells such a stall apart).
   again); every README request of a cached npm version inflates the tarball up to the file (H-2092); a Debian file the
   reader refuses shows only its index row (H-2093); Debian's Recommends, Suggests and long description are stored
   and not shown (W30-G8). Not verified: a later deprecation at the upstream reaching a cached version end to end;
-  large real documents and tarballs; the owner's installation.
+  large real documents and tarballs; the owner's installation. On his development profile at the restart of this
+  landing (read at 23:30): the task ran and queued nothing (`queued: 0`), and rightly: the profile's npm, NuGet and Debian
+  remotes hold no item (its 1,805 remote items are images, 4 are Ansible's).
 
 - **Closed on 2026-11-25, 23:00, by W2 (W-28, package 2; R-CUR-026; Q-CUR-220 to Q-CUR-230; ADR-283; gaps H-2070 to
   H-2075; migration 00131): a package can be allowed with a range of its versions, from one version up to or below
