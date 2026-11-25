@@ -194,10 +194,6 @@ export const ADDRESS_PATTERN = /^(?:(?:\d{1,3}\.){3}\d{1,3}(?:\/\d{1,2})?|[0-9a-
     .remove {
       margin-inline-end: auto;
     }
-    quader-error-notice {
-      display: block;
-      margin-block-end: var(--quader-space-3);
-    }
     .field {
       display: flex;
       flex-direction: column;

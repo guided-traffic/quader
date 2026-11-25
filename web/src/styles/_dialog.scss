@@ -76,6 +76,14 @@
   }
 }
 
+// The shared error notice in a dialog stands apart from what is above and below it, as a paragraph does: a field's label stood
+// against its border, and a field's hint against its top (the dialog states of the component tier, Q-UI-1144). At the body's top
+// the first child's rule above keeps it at the title's distance.
+.dialog-body quader-error-notice {
+  display: block;
+  margin-block: var(--quader-space-3);
+}
+
 .dialog-actions {
   display: flex;
   flex: none;

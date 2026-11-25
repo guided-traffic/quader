@@ -14454,8 +14454,8 @@
     </unit>
     <unit id="limits.rule.loading-profiles">
       <notes>
-        <note category="location">src/app/features/limits/maximum-dialog.ts:95</note>
-        <note category="location">src/app/features/limits/rule-dialog.ts:242</note>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:91</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:238</note>
       </notes>
       <segment>
         <source>Loading profiles…</source>
@@ -14464,7 +14464,7 @@
     </unit>
     <unit id="limits.maximum.choose-project">
       <notes>
-        <note category="location">src/app/features/limits/maximum-dialog.ts:98</note>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:94</note>
       </notes>
       <segment>
         <source>Choose a project</source>
@@ -14473,8 +14473,8 @@
     </unit>
     <unit id="limits.rule.choose-profile">
       <notes>
-        <note category="location">src/app/features/limits/maximum-dialog.ts:105</note>
-        <note category="location">src/app/features/limits/rule-dialog.ts:277</note>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:101</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:273</note>
       </notes>
       <segment>
         <source>Choose a profile</source>
@@ -14483,7 +14483,7 @@
     </unit>
     <unit id="limits.maximum.project-required">
       <notes>
-        <note category="location">src/app/features/limits/maximum-dialog.ts:154</note>
+        <note category="location">src/app/features/limits/maximum-dialog.ts:150</note>
       </notes>
       <segment>
         <source>Choose a project.</source>
@@ -14842,7 +14842,7 @@
     </unit>
     <unit id="limits.rule.change-limit-title">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:232</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:228</note>
       </notes>
       <segment>
         <source>Change limit</source>
@@ -14851,7 +14851,7 @@
     </unit>
     <unit id="limits.rule.change-title">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:233</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:229</note>
       </notes>
       <segment>
         <source>Change rule</source>
@@ -14860,7 +14860,7 @@
     </unit>
     <unit id="limits.rule.set-title">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:235</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:231</note>
       </notes>
       <segment>
         <source>Set limit</source>
@@ -14869,7 +14869,7 @@
     </unit>
     <unit id="limits.rule.add-title">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:236</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:232</note>
       </notes>
       <segment>
         <source>Add rule</source>
@@ -14878,7 +14878,7 @@
     </unit>
     <unit id="limits.rule.save">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:238</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:234</note>
       </notes>
       <segment>
         <source>Save rule</source>
@@ -14887,7 +14887,7 @@
     </unit>
     <unit id="limits.rule.set">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:240</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:236</note>
       </notes>
       <segment>
         <source>Set limit</source>
@@ -14896,7 +14896,7 @@
     </unit>
     <unit id="limits.rule.add">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:241</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:237</note>
       </notes>
       <segment>
         <source>Add rule</source>
@@ -14905,7 +14905,7 @@
     </unit>
     <unit id="limits.rule.who-user">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:246</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:242</note>
       </notes>
       <segment>
         <source>A user</source>
@@ -14914,7 +14914,7 @@
     </unit>
     <unit id="limits.rule.who-group">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:247</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:243</note>
       </notes>
       <segment>
         <source>A group</source>
@@ -14923,7 +14923,7 @@
     </unit>
     <unit id="limits.rule.who-token">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:248</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:244</note>
       </notes>
       <segment>
         <source>A technical token</source>
@@ -14932,7 +14932,7 @@
     </unit>
     <unit id="limits.rule.who-ci">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:249</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:245</note>
       </notes>
       <segment>
         <source>A CI project</source>
@@ -14941,7 +14941,7 @@
     </unit>
     <unit id="limits.rule.who-address">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:250</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:246</note>
       </notes>
       <segment>
         <source>An address or range</source>
@@ -14950,7 +14950,7 @@
     </unit>
     <unit id="limits.rule.who-every">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:251</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:247</note>
       </notes>
       <segment>
         <source>Every caller of a kind</source>
@@ -14959,7 +14959,7 @@
     </unit>
     <unit id="limits.rule.one-changed">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:290</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:286</note>
       </notes>
       <segment>
         <source>1 changed</source>
@@ -14968,7 +14968,7 @@
     </unit>
     <unit id="limits.rule.n-changed">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:290</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:286</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> changed</source>
@@ -14977,7 +14977,7 @@
     </unit>
     <unit id="limits.rule.group">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:369</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:365</note>
       </notes>
       <segment>
         <source>Group</source>
@@ -14986,7 +14986,7 @@
     </unit>
     <unit id="limits.rule.token">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:371</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:367</note>
       </notes>
       <segment>
         <source>Technical token</source>
@@ -14995,7 +14995,7 @@
     </unit>
     <unit id="limits.rule.ci">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:373</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:369</note>
       </notes>
       <segment>
         <source>CI project</source>
@@ -15004,7 +15004,7 @@
     </unit>
     <unit id="limits.rule.user">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:375</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:371</note>
       </notes>
       <segment>
         <source>User</source>
@@ -15013,7 +15013,7 @@
     </unit>
     <unit id="limits.rule.token-hint">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:382</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:378</note>
       </notes>
       <segment>
         <source>Type the token&apos;s name or its account.</source>
@@ -15022,7 +15022,7 @@
     </unit>
     <unit id="limits.rule.ci-hint">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:384</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:380</note>
       </notes>
       <segment>
         <source>Type the project&apos;s path.</source>
@@ -15031,7 +15031,7 @@
     </unit>
     <unit id="limits.rule.group-hint">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:386</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:382</note>
       </notes>
       <segment>
         <source>Type the group&apos;s name.</source>
@@ -15040,7 +15040,7 @@
     </unit>
     <unit id="limits.rule.user-hint">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:388</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:384</note>
       </notes>
       <segment>
         <source>Type a name or a username.</source>
@@ -15049,7 +15049,7 @@
     </unit>
     <unit id="limits.rule.who-required">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:396</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:392</note>
       </notes>
       <segment>
         <source>Choose who the rule applies to.</source>
@@ -15058,7 +15058,7 @@
     </unit>
     <unit id="limits.rule.address-required">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:405</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:401</note>
       </notes>
       <segment>
         <source>Type an address or a range.</source>
@@ -15067,7 +15067,7 @@
     </unit>
     <unit id="limits.rule.address-invalid">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:406</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:402</note>
       </notes>
       <segment>
         <source>An IPv4 or IPv6 address, optionally with a prefix length such as /24.</source>
@@ -15076,7 +15076,7 @@
     </unit>
     <unit id="limits.rule.above-cap">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:493</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:489</note>
       </notes>
       <segment>
         <source>Above what you may set here.</source>
@@ -15085,7 +15085,7 @@
     </unit>
     <unit id="limits.rule.at-most">
       <notes>
-        <note category="location">src/app/features/limits/rule-dialog.ts:494</note>
+        <note category="location">src/app/features/limits/rule-dialog.ts:490</note>
       </notes>
       <segment>
         <source>At most <ph id="0" equiv="limit" disp="limitText(figure, cap, this.locale)"/> here.</source>

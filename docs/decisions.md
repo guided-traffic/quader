@@ -12202,10 +12202,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-UI
 
-559 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
+560 questions on [spec/api-and-ui.md](spec/api-and-ui.md).
 
 <details>
-<summary>Q-UI: 559 questions</summary>
+<summary>Q-UI: 560 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -12768,6 +12768,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-UI-1141](spec/api-and-ui.md#q-ui-1141--the-runners-browser-is-configured-in-a-runner-file-of-its-own-with-the-one-playwright-and-text-without-hinting) | The runner's browser is configured in a runner file of its own, with the one Playwright and text without hinting | Decided by the development agent | (a) `runnerConfig` of the target names [vitest.states.config.mts](../web/vitest.states.config.mts): the provider with `CHROMIUM_TEXT` from the renders' [paths.ts](../web/e2e/renders/paths.ts), the light scheme, English and UTC, scale 1 | — |
 | [Q-UI-1142](spec/api-and-ui.md#q-ui-1142--a-state-is-measured-in-two-windows-in-the-light-scheme-and-fails-on-any-finding) | A state is measured in two windows, in the light scheme, and fails on any finding | Decided by the development agent | (a) Each state opened afresh at 390x844 and at 1440x900, light, the page behind an open dialog hidden, `layoutFindings` once per window; any finding fails, nothing is allowed by a list; a picture only with `UI_STATES_PICTURES=1` | — |
 | [Q-UI-1143](spec/api-and-ui.md#q-ui-1143--a-dialogs-failure-is-shown-in-its-longest-shape-and-its-validation-by-the-refusal-a-person-meets) | A dialog's failure is shown in its longest shape, and its validation by the refusal a person meets | Decided by the development agent | (a) A failure is a 500 with a code the screen has no sentence for: the shared error notice shows the server's English text, the request ID of 32 characters and Copy (`serverFailure()`); a validation is the dialog's own rule after a submit, or the server's 422 with its sentences under the fields where the dialog checks nothing itself (`fieldRefusal()`) | — |
+| [Q-UI-1144](spec/api-and-ui.md#q-ui-1144--the-error-notice-in-a-dialog-keeps-a-paragraphs-distance-from-what-is-above-and-below-it) | The error notice in a dialog keeps a paragraph's distance from what is above and below it | Decided by the development agent | (a) One rule of the dialog's look: a notice in a dialog's body is a block with 12 px above and below, none above as the body's first child | — |
 
 </details>
 

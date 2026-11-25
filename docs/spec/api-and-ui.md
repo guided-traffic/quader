@@ -24490,6 +24490,25 @@ Status: **Decided by the development agent** — selected from the options below
 **Applied in the spec:** R-UI-176. Code: `serverFailure`, `fieldRefusal`, `failNext` and `failAlways` in
 [states.ts](../../web/src/app/testing/states.ts).
 
+### Q-UI-1144 · The error notice in a dialog keeps a paragraph's distance from what is above and below it
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the dialog states showed the shared error notice of a failure touching what stands next to it in 13 dialogs (New user, New
+group, New service account, New project, both Bastion dialogs, the issued CI token, a technical token's description, New folder, the
+three signing dialogs, Block signer, Delivery rules): a field's label right under its border, a field's hint right on its top. The
+notice is an inline element without a margin; two dialogs (the download limits' rule and maximum) gave it one of their own.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) One rule of the dialog's look: a notice in a dialog's body is a block with 12 px above and below, none above as the body's first child (chosen) | `_dialog.scss` | Every dialog at once, the one place; the two dialogs' own rules go | — |
+| (b) A margin in the notice itself | `error-notice.ts` | Every placement | The 197 placements in pages stand in boxes with gaps of their own, which a margin would double |
+| (c) Each dialog's own rule | 13 rules | | The next dialog forgets it, as 13 did |
+
+**Choice:** (a).
+
+**Applied in the spec:** R-UI-042. Code: [_dialog.scss](../../web/src/styles/_dialog.scss).
+
 ### Q-UI-1040 · Projects and Repositories leave the admin area; the main area holds what they held
 
 Status: **Decided by the owner, 2026-11-23** (T-25, 19:30, whole: "Ich finde Projects und Repositories haben im Admin-Mneü nichts

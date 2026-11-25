@@ -72,10 +72,6 @@ export interface MaximumDialogData {
     </form>
   `,
   styles: `
-    quader-error-notice {
-      display: block;
-      margin-block-end: var(--quader-space-3);
-    }
     .hint {
       margin: 0 0 var(--quader-space-3);
     }
