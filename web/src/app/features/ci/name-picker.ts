@@ -20,7 +20,7 @@ let nextPickerId = 1;
         <ul class="chips" [attr.aria-labelledby]="id + '-label'">
           @for (v of value(); track v) {
             <li class="chip">
-              <span translate="no">{{ v }}</span>
+              <span class="chip-name" translate="no" [attr.title]="v">{{ v }}</span>
               @if (!readonly()) {
                 <button type="button" class="chip-remove" (click)="remove(v)" [attr.aria-label]="removeLabel(v)">
                   <span class="material-icons" aria-hidden="true">close</span>
@@ -79,16 +79,27 @@ let nextPickerId = 1;
       padding: 0;
       list-style: none;
     }
+    /* A chip is one line, at most as wide as the field: a long name is cut with an ellipsis, the whole in its title; a policy of 47
+       characters broke its chip into two lines at 390 px (2026-11-25). */
     .chip {
       display: inline-flex;
       align-items: center;
       gap: var(--quader-space-1);
+      max-inline-size: 100%;
+      min-inline-size: 0;
+      white-space: nowrap;
       padding: 0 var(--quader-space-2);
       border: 1px solid var(--quader-border-strong);
       border-radius: var(--quader-radius-full);
       background: var(--quader-surface-raised);
     }
+    .chip-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-inline-size: 0;
+    }
     .chip-remove {
+      flex: none;
       display: inline-flex;
       padding: 0;
       border: 0;

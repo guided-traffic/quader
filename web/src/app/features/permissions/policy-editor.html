@@ -166,7 +166,7 @@
             <span class="muted" i18n="@@policy.project-repos">Repositories of the project:</span>
             @for (r of projectRepositories(); track r) {
               <button class="btn btn-default" type="button" (click)="addSelector(r)">
-                <span class="visually-hidden" i18n="@@policy.add-selector">Add selector</span> <span translate="no">{{ r }}</span>
+                <span class="visually-hidden" i18n="@@policy.add-selector">Add selector</span> <span translate="no" [attr.title]="r">{{ r }}</span>
               </button>
             }
           </div>

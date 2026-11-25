@@ -157,7 +157,7 @@ function placeList(popup: HTMLElement, anchor: HTMLElement): void {
                       <span class="material-icons">{{ iconOf(c) }}</span>
                     }
                   </span>
-                  <span class="chip-name" translate="no">{{ primaryOf(c) }}</span>
+                  <span class="chip-name" translate="no" [attr.title]="primaryOf(c)">{{ primaryOf(c) }}</span>
                   <span class="visually-hidden">{{ secondaryOf(c) }}</span>
                   @if (!readonly()) {
                     <button type="button" class="chip-remove" [attr.aria-label]="removeLabel(c)" (click)="remove(c, $event)">
@@ -305,11 +305,13 @@ function placeList(popup: HTMLElement, anchor: HTMLElement): void {
       display: flex;
       flex-wrap: wrap;
       gap: var(--quader-space-1);
+      max-inline-size: 100%;
       margin: 0;
       padding: 0;
       list-style: none;
     }
     .chip {
+      box-sizing: border-box;
       display: inline-flex;
       align-items: center;
       gap: var(--quader-space-1);
@@ -319,12 +321,16 @@ function placeList(popup: HTMLElement, anchor: HTMLElement): void {
       background: var(--quader-badge-neutral-bg);
       color: var(--quader-badge-neutral-fg);
     }
+    /* A flex item is as wide as its content unless it may shrink: without it a principal of 70 characters (a CI mapping's) made a
+       policy's page scroll 119 px sideways at 390 px instead of cutting the name (2026-11-25). */
     .chip-name {
+      min-inline-size: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
     .chip-remove {
+      flex: none;
       display: inline-flex;
       padding: 0;
       border: 0;
