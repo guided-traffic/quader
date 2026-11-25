@@ -524,7 +524,9 @@ quader-root {
       line-height: 1rem;
     }
 
-    li + li::before {
+    // The separator ends the step before it, so a wrapped line starts with a step, never with a slash (R-UI-171: "/ Set up client"
+    // started the second line of Set up client's bar at 390 px).
+    li:not(:last-child)::after {
       content: '/';
       margin-inline: var(--quader-space-2);
       color: var(--quader-control-disabled-fg);

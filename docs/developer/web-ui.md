@@ -507,7 +507,7 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    `main`) is opened in turn; each view is taken light and dark (`prefers-color-scheme`, which the app follows while no theme is
    stored, the theme button's "Follow the system"). A view is taken when no call of the app's API has been open for 400 ms (at most
    15 s; a new document drops the calls of the one before it, which Chromium cancels without a word to the run). The window grows by what the content panel hides (the one thing of a page
-   that scrolls, R-UI-215) and what a box or a navigation column that keeps a scroll of its own hides, so a picture shows the whole length; not for a boxed list that `inner-scroll` allows (framed, at most 24 rem high), which keeps its height whatever the window's (the profile's usage table grew to the cap of 16,000 px before). A flow is a screen with a `walk`: the creation form is walked for OCI, npm, Ansible, NuGet and Debian,
+   that scrolls, R-UI-215) and what a box or a navigation column that keeps a scroll of its own hides, so a picture shows the whole length; not for a boxed list that `inner-scroll` allows (framed, at most 24 rem high), which keeps its height whatever the window's (the profile's usage table grew to the cap of 16,000 px before). It does not grow while a pane of the overlay container holds content (a dialog, a drawer, a menu, a tooltip): such a state is pictured and measured in the window a person has, where a dialog's body scrolls and a drawer is the window's height ([Q-UI-1171](../spec/api-and-ui.md#q-ui-1171--a-state-with-an-open-overlay-is-pictured-and-measured-in-the-window-a-person-has)). A flow is a screen with a `walk`: the creation form is walked for OCI, npm, Ansible, NuGet and Debian,
    local, remote and virtual, as the power user in a project and as the administrator in the admin area: as it opens, with two
    members for a virtual repository, with Advanced settings open, and with the key's error (`new-<format>-<class>-…`); the format
    chooser as it opens and with a search that leaves no tile (`repository-new-…`); nothing is created. A repository's settings are
@@ -570,11 +570,14 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    | `empty-cell` | A cell of a table with a head (`table.data`) that shows nothing (R-UI-146, Q-UI-561): a cell without a value is the dash, heard as "None"; empty, it reads as not loaded. The start page's **Your role** was empty for an administrator who is a member of no project (2026-11-23) | The cell of a column whose header is for assistive technology only (an action, a check box, a download), which a row without that action leaves empty; `td.actions`; a cell across the row (an opened row's region); a table without a head |
    | `heading-broken` | A heading (`h1` to `h6`, `role="heading"`) broken between two letters or digits of a word (R-UI-171, [Q-UI-1091](../spec/api-and-ui.md#q-ui-1091--a-long-german-word-carries-soft-hyphens-at-the-joints-of-its-compound-and-a-heading-never-breaks-inside-a-word)): the German heading of the authentication settings read "Authentifizierungseinstellung" / "en" at 390 px. Measured letter by letter in each heading of two lines or more, by each letter's last box (Chromium gives the first letter after a soft hyphen a second box, the hyphen's, on the line above) | A break after a hyphen or at a soft hyphen, where the browser draws the hyphen; a name (`translate="no"`) or `code` longer than 16 characters, a token that breaks where it must (Q-UI-425); a text that is not a heading (`broken` measures a cell's and a fact's short words) |
    | `stacked-fits` | A data table that stands as blocks although its columns at their least widths fit its region (measured as the table measures itself, Q-UI-680) | Raw tables that stack by their own rules |
-   | `sideways` | The panel or the page scrolls sideways (any width); a region inside it scrolls sideways (from 1,024 px) | A region that scrolls at 390 px (a code block, a table that cannot stack scrolls there by design); allowed with their reason: a code block (`pre.code-block`, its lines as they are copied) up to 4,000 px (`atMost` of the allowed finding, `CODE_BLOCK_SCROLL`; a wider one is a value the page should have shortened, Q-UI-995) and a document's table (`div.readme-table`) scroll in their own region at every width |
+   | `sideways` | The panel or the page scrolls sideways (any width); a region inside it scrolls sideways (from 1,024 px); from 1,024 px a region inside a dialog, a drawer or a pane of the overlay container that scrolls sideways (in `layoutFindings`, so `make ui-states` measures it too, [Q-UI-1170](../spec/api-and-ui.md#q-ui-1170--the-render-checks-see-overlays-and-clipping-as-a-person-does-correcting-q-ui-1060)): a table wider than its dialog scrolled in the dialog's body (the states of 2026-11-25) | A region that scrolls at 390 px (a code block, a table that cannot stack scrolls there by design); allowed with their reason: a code block (`pre.code-block`, its lines as they are copied) up to 4,000 px (`atMost` of the allowed finding, `CODE_BLOCK_SCROLL`; a wider one is a value the page should have shortened, Q-UI-995) and a document's table (`div.readme-table`) scroll in their own region at every width |
    | `empty-scroll` | In the window's first height, the window scrolls at all, or the panel scrolls more than 24 px past its last visible content: a positioned element (a text for assistive technology only) whose containing block is not the box it belongs to | Empty room inside the content (a gap between sections) |
    | `inner-scroll` | In the window's first height, light scheme, `innerScroll`: a box in the page (`main.content`) that scrolls up and down by itself, its `overflow-y` `auto` or `scroll` with content more than 1 px taller than its box or a `max-block-size` that caps it (R-UI-215, [Q-UI-1113](../spec/api-and-ui.md#q-ui-1113--the-render-check-inner-scroll-measures-every-box-that-scrolls-by-itself-in-the-windows-first-height)); and in the page or an overlay a box that scrolls inside another that does (the owner's picture of 2026-11-25: an opened image's tags inside the list's region inside the page) | A framed box of at most 24 rem inside no other box that scrolls (the trend's and the usage history's tables, the members' list box); a navigation column that sticks (the element or an ancestor below `main` sticky, holding `nav`, `[role=navigation]` or `[role=tree]`); a popup (absolutely or fixed placed), judged as an overlay; an overlay's one scroll (`.cdk-overlay-container`); a text area, a select, an input; the side bar, the window, a tab strip, a sideways scroll |
    | `tab-scrollbar` | A tab strip (`.tab-nav`, a `tablist`) with a scrollbar that takes room under its tabs (R-UI-173, Q-UI-1074): a strip wider than its place scrolls without one, with a fade at the edge (`shared/ui/tab-strip.ts`); a version's tabs in German at 390 px showed one under **Schwachstellen** | An overlay scrollbar, which takes no room (the fixtures' Chromium hides its scrollbars and Firefox overlays them, so the fixture that finds one finds it in WebKit; the renders' Chromium draws them); a strip that scrolls without its fades (`check-rules.mjs` refuses a strip without `quaderTabStrip` and a component with one that does not import `TabStrip`) |
    | `english` | In a page whose language is German (the German pass), a shown text of six words or more with three English function words, outside code and outside a text marked `lang="en"` or `translate="no"` (R-UI-214): a server's English sentence shown as the screen's own, as the vulnerability trend's basis stood on 2026-11-24 | A short English phrase; an English text marked `translate="no"` (the lint rule of [server-text-rule.mjs](../../web/scripts/server-text-rule.mjs) refuses a server's sentence bound in a template); every English page |
+   | `overlay-out` | Measured in the window a person has (the window does not grow while an overlay holds content, above). A box over the page (a pane of the overlay container: a dialog, a drawer, a menu, a tooltip; a box placed `fixed`; a list in the top layer, `:popover-open`) that holds a text or a unit and reaches more than 1 px past the window's edge; inside a pane or a dialog, the outermost element that reaches more than 1 px past the pane's sides, and past its top or bottom unless it is placed over the page itself (R-UI-173, [Q-UI-1170](../spec/api-and-ui.md#q-ui-1170--the-render-checks-see-overlays-and-clipping-as-a-person-does-correcting-q-ui-1060)): W-12's person-search list, 24 rem wide in a drawer of 21 rem (2026-11-18); a row's menu hung past a phone's window | What a region of the pane scrolls or cuts (that region's `sideways`, `inner-scroll`, `cut`), unless the element is placed over the page, which no region cuts; a list placed over the page that hangs below a dialog's last field past the dialog's bottom, as a list opens; an overlay over a control of the page (overlap is the design of an overlay, and stays to the eye); a box placed `absolute` outside a pane (a skip link) |
+   | `cut` | A line of a text that reaches more than 1 px past the box of its nearest ancestor that cuts sideways: an `overflow-x` of `hidden` or `clip` (its padding box) or a `clip-path: inset(…)` (the inset of its border box) (R-UI-173, Q-UI-1170): "ov 18, 2026", a part of a line of facts (`.dot-separated`) that wrapped inside itself and started its second line under the clip that hides each line's first dot (2026-11-19). The text's nearest box that cuts, scrolls or is placed out of the flow decides | A text cut with an ellipsis (`clipped`'s); a text in a region that scrolls (`sideways`); a line above or below the box (a closed section, a height cut on purpose); text for assistive technology only; an icon's glyph; a text inside a box placed `absolute` or `fixed`, which an ancestor's clip need not hold |
+   | `separator-start` | A separator drawn before the thing it separates (the middle dot of `.dot-before` and of a part of `.dot-separated`, _controls.scss) that stands at the start of a line: the text before it in its line's box ends on an earlier line, or nothing stands before it (R-UI-171, Q-UI-1170): "repositories" / "· found 1 hour ago" on the page Malware (2026-11-23). The pseudo-element has no box: it is replaced for the measurement by a span of its text with its box's properties, put back in the same task | A dot the clip of `.dot-separated` hides (each line's first). Any other separator ends its item (`:not(:last-child)::after`, a breadcrumb's slash, a folder's path) and never starts a line; the lint rule of [separator-rule.mjs](../../web/scripts/separator-rule.mjs) refuses a separator drawn by CSS in any third way, so the check's list is complete |
 
    </details>
 
@@ -593,21 +596,37 @@ running and stops only what it started: Quader with the sign-in provider (`serve
    line rule without a stack, [Q-UI-725](../spec/api-and-ui.md#q-ui-725--the-guard-without-a-stack-renders-the-shared-patterns-with-the-global-stylesheet-and-a-lint-rule-refuses-the-off-line-declarations)).
    A new check, or a change of one, gets a fixture that fails without it. `make ui-renders` runs them before the screens.
 
-   **What the checks leave to the eye, on purpose** (the reading of 2026-11-23, G5-21, G5-24, G5-25). An offset of 1 px or less passes:
-   the threshold is R-UI-175's ("within 1 px"), which the fixtures hold from both sides (1.5 px fails, 0.5 px passes), not a blind spot.
-   A text cut at the start of a wrapped line and a stacked label that stands off its control have no check: no defect of either shape has
-   been seen on a render, and a check of every wrapped line's first glyph or of every label's distance would measure each text node of
-   every picture for a shape the look at the pictures that every UI change gets (rule 11) catches. A check is added when such a defect
-   is seen, with the fixture of that defect. The rest of the blind spots, decided on 2026-11-24
-   ([Q-UI-1060](../spec/api-and-ui.md#q-ui-1060--what-a-layout-check-can-hold-of-the-render-sets-blind-spots-and-what-stays-to-the-eye)):
-   a control beside a framed box and absolutely placed elements could be measured and have no check, since no defect of either has
-   been seen; text drawn by CSS (`::before`, `::after`) has no node and cannot be measured, and stays to the eye; the states the set
-   does not render are screens, not checks; two words for one thing is vocabulary. The one check it decided, `cramped` (the table
-   above), landed with the fixture of the defect W-5 saw and a run of the whole render set.
+   **What the checks leave to the eye, on purpose** (the readings of 2026-11-23 and 2026-11-25;
+   [Q-UI-1060](../spec/api-and-ui.md#q-ui-1060--what-a-layout-check-can-hold-of-the-render-sets-blind-spots-and-what-stays-to-the-eye),
+   corrected by [Q-UI-1170](../spec/api-and-ui.md#q-ui-1170--the-render-checks-see-overlays-and-clipping-as-a-person-does-correcting-q-ui-1060)).
+   A check is added when a defect of its shape is seen, with the fixture of that defect; each shape the record of 2026-11-12 to
+   2026-11-25 showed has one now: an overlay past the window or its content past the overlay (`overlay-out`, W-12), a text cut at the
+   start of a wrapped line (`cut`, "ov 18, 2026"), a separator at a line's start (`separator-start`; a separator drawn by CSS is
+   measured through a span in its place, as a stacked cell's column name is). What stays to the eye:
+   - **An offset of 1 px or less** passes: the threshold is R-UI-175's ("within 1 px"), which the fixtures hold from both sides
+     (1.5 px fails, 0.5 px passes); a picture at 1x cannot show less, and engines differ by 1 to 2 px in a line's box.
+   - **A control beside a framed box** stands on the box and is not measured (Q-UI-724); the address field's joined button is held by
+     `joined`. The general rule, `on-box` (beside a box at most 1.5 times the control's height their middles agree within 1 px, beside
+     a taller box their tops do), was measured once over the whole English render set on 2026-11-25 and is not a check:
+     576 pairs of a control and a framed box in 3,478 measured pictures, 18 flagged, in three places: the copy button on the top of a one-line code block in a guide and in the backups' manual run (13, 6 to 7 px above the block's middle; Q-UI-724's form), and the Add button beside an open person-search list (5, which the frame search takes for a box); no defect among them. It is built when a second defect of the shape is seen.
+   - **Overlap:** an overlay covers the page by design (a menu over a row, the toasts over the side bar's control), so no rule tells a
+     wrong cover from a right one.
+   - **Colour** (the pale tooltip in dark): the checks measure the light scheme's layout.
+   - **What CSS draws that never was wrong:** the letter of a project's mark (`attr(data-letter)`), a code window's line numbers and
+     prompts.
+   - **Room between columns** (the address field that took all of a list's room, T-20), beyond what `cramped` measures.
+   - **A stacked label off its control** in a form (no defect seen; `label-apart`, `stacked-offset` and `stacked-place` hold a stacked
+     row's facts), **two words for one thing** (vocabulary, not layout), and **the states the set does not open** (screens, not checks:
+     a walk in `screens.ts`, or a state of `make ui-states`).
 
    A screen can add widths of its own (`widths` in `screens.ts`) where a list changes its form between the run's three: the
    start page's projects and a project's repositories at 1,100 px, the start page with its administrator's columns and the list of
-   every project's repositories at 1,100 and 1,280 px.
+   every project's repositories at 1,100 and 1,280 px. A walk's state can be taken at some widths only, and its dark picture at some
+   widths only (`states` in `screens.ts`, by the name the walk yields: `{ menu: { widths: [1440, 390], dark: [1440] } }`; the light
+   picture is taken wherever the state is, since the checks measure it): a state that only an overlay changes shows at 1,024 px
+   nothing that 1,440 and 390 px do not, and its dark picture only a colour
+   ([Q-UI-1172](../spec/api-and-ui.md#q-ui-1172--a-walks-state-is-taken-at-the-widths-and-in-the-schemes-its-screen-names-for-it)). The
+   states the set takes today keep every width and both schemes.
 
 **Add a screen.** A new route gets a line in `screens.ts` with the kinds that reach it from the navigation and the seed's
 parameters; data the screen needs goes into `seed.ts`, idempotent and through the API; a flow gets a `walk` that yields the name
@@ -666,11 +685,12 @@ dialog's call site, named in a comment. Look at each picture (`UI_STATES_PICTURE
 [checklist](ui-style-guide.md#checklist): a state passes the checks and can still be wrong to the eye.
 
 **What it does not do.** It is English only: a German dialog is seen in the render set's German pass. The page behind a dialog is
-hidden for the measurement; whether an overlay stands inside the window and whether a region of a dialog scrolls sideways is
-measured by no check yet (`sideways` looks at `main` only), so a table wider than its dialog was found in the pictures, not by the
-checks. Focus rings show where a state's dialog put the focus (the CDK's
-first tabbable element): what a keyboard user sees. Pictures are never written in the pipeline and never committed. The gaps are
-H-1910 to H-1912 of [api-and-ui.md](../spec/api-and-ui.md#h-1910--the-dialog-states-are-measured-in-english-only).
+hidden for the measurement. The checks of the overlays are `layoutFindings`' own, so they hold here as in the renders: an overlay
+inside the window and its content inside the overlay (`overlay-out`), and from 1,024 px no region of a dialog that scrolls sideways
+(`sideways`; a table wider than its dialog had been found in these pictures before the check existed). Focus rings show where a
+state's dialog put the focus (the CDK's first tabbable element): what a keyboard user sees. Pictures are never written in the
+pipeline and never committed. The gaps are H-1910 and H-1911 of
+[api-and-ui.md](../spec/api-and-ui.md#h-1910--the-dialog-states-are-measured-in-english-only).
 
 ## How the build reaches the binary
 

@@ -11,7 +11,7 @@ export interface LayoutFinding {
   /**
    * Which check found it: `icon-apart`, `broken`, `row-offset`, `row-actions`, `stacked-offset`, `stacked-place`, `label-apart`,
    * `empty-cell`, `cell-overflow`, `clipped`, `cramped`, `stacked-fits`, `sideways`, `empty-scroll`, `tab-scrollbar`, `english`,
-   * `inner-scroll`, `heading-broken`.
+   * `inner-scroll`, `heading-broken`, `overlay-out`, `cut`, `separator-start`.
    */
   readonly check: string;
   /** The element, as a path of up to four tags with their first two classes. */
@@ -981,6 +981,252 @@ export function layoutFindings(): LayoutFinding[] {
     host.classList.add('stacked');
     if (need <= has) add('stacked-fits', host, host.querySelector('caption')?.textContent ?? '', `stacked, but its columns need ${Math.round(need)} px and have ${has}`);
   }
+
+  // One walk over every element's style for the checks below: what stands over the page (a box placed `fixed`, a list in the top
+  // layer), what cuts its content (an `overflow-x` of `hidden` or `clip`, a `clip-path: inset(…)`), and the regions of an overlay that
+  // scroll sideways.
+  let topLayer = true;
+  try {
+    document.querySelector(':popover-open');
+  } catch {
+    // An engine without popovers has no top layer to measure.
+    topLayer = false;
+  }
+  const OVERLAY = `.cdk-overlay-pane, [role="dialog"]${topLayer ? ', :popover-open' : ''}`;
+  const fixedBoxes: Element[] = [];
+  const clippers: Element[] = [];
+  const winWidth = document.documentElement.clientWidth;
+  const winHeight = document.documentElement.clientHeight;
+  for (const el of Array.from(document.body.querySelectorAll('*'))) {
+    const s = getComputedStyle(el);
+    if (s.display === 'none') continue;
+    if (s.position === 'fixed') fixedBoxes.push(el);
+    const ox = s.overflowX;
+    if (ox === 'hidden' || ox === 'clip' || s.clipPath.startsWith('inset(')) clippers.push(el);
+    // ---- sideways in an overlay: a region of a dialog, a drawer or a menu that scrolls sideways (R-UI-173) -------------------
+    // From 1,024 px, as a region of the page: a table wider than its dialog scrolled in the dialog's body (the states of 2026-11-25).
+    // Named as `sideways` names a region of the page (its tag, its classes, its label), so a code block is allowed by the same entry.
+    if (winWidth >= 1024 && (ox === 'auto' || ox === 'scroll') && el.clientWidth > 0 && el.scrollWidth - el.clientWidth > 1 && el.closest(OVERLAY)) {
+      const label = el.getAttribute('aria-label') ?? el.getAttribute('aria-labelledby') ?? '';
+      const what = `${el.tagName.toLowerCase()}.${Array.from(el.classList).join('.')}${label ? ` [${label}]` : ''}`;
+      found.set(`sideways ${what}`, { check: 'sideways', what, text: '', detail: `the region scrolls ${el.scrollWidth - el.clientWidth} px sideways in an overlay`, count: 1 });
+    }
+  }
+  /** Whether an element holds something to see: a text or a unit. */
+  const holds = (el: Element): boolean => /\S/.test(el.textContent ?? '') || el.matches(UNIT) || el.querySelector(UNIT) !== null;
+  /**
+   * The box an element shows its content in, horizontally: its padding box where it clips its overflow, and the inset of its
+   * `clip-path` from its border box (`inset(t r b l)` in px or %, without its rounding).
+   */
+  function clipBox(el: Element): { left: number; right: number; top: number; bottom: number } {
+    const r = el.getBoundingClientRect();
+    const s = getComputedStyle(el);
+    let left = r.left;
+    let right = r.right;
+    let top = r.top;
+    let bottom = r.bottom;
+    if (s.overflowX === 'hidden' || s.overflowX === 'clip') {
+      left = r.left + parseFloat(s.borderLeftWidth);
+      right = r.right - parseFloat(s.borderRightWidth);
+    }
+    const inset = /^inset\(([^)]*)\)/.exec(s.clipPath);
+    if (inset) {
+      const parts = inset[1]!.split(/\s+round\s+/)[0]!.trim().split(/\s+/);
+      const [t, rr = t, b = t, l = rr] = parts;
+      const len = (v: string | undefined, of: number): number => (!v ? 0 : v.endsWith('%') ? (parseFloat(v) / 100) * of : parseFloat(v) || 0);
+      left = Math.max(left, r.left + len(l, r.width));
+      right = Math.min(right, r.right - len(rr, r.width));
+      top = Math.max(top, r.top + len(t, r.height));
+      bottom = Math.min(bottom, r.bottom - len(b, r.height));
+    }
+    return { left, right, top, bottom };
+  }
+  const clipsOrScrolls = (s: CSSStyleDeclaration): boolean => s.overflowX !== 'visible' || s.overflowY !== 'visible' || s.clipPath.startsWith('inset(');
+
+  // ---- overlay-out: an overlay outside the window, or its content outside the overlay (R-UI-173) ----------------------------------
+  // Measured in the window's first size: the render does not grow the window while an overlay holds content (render.spec.ts). A box
+  // over the page (a pane of the overlay container: a dialog, a drawer, a menu, a tooltip; a box placed `fixed`; a list in the top
+  // layer) that holds a text or a unit stands inside the window, within 1 px. Inside a pane or a dialog no element reaches more than
+  // 1 px past the pane's sides, nor past its top and bottom unless it is itself placed over the page (a field's list hangs below a
+  // dialog's last field, as a list opens): W-12's person-search list, 24 rem wide in a drawer of 21 (2026-11-18), stood past the
+  // drawer's edge. What a region inside it scrolls or cuts is that region's (`sideways`, `inner-scroll`, `cut`), unless the element
+  // is placed over the page, which no region cuts. The outermost element that reaches past is named, not each one inside it.
+  const overBoxes = new Set<Element>([...fixedBoxes, ...Array.from(document.querySelectorAll(`.cdk-overlay-pane${topLayer ? ', :popover-open' : ''}`))]);
+  for (const box of overBoxes) {
+    if (!shown(box) || !holds(box)) continue;
+    const r = box.getBoundingClientRect();
+    const past = [
+      ['left', -r.left],
+      ['right', r.right - winWidth],
+      ['top', -r.top],
+      ['bottom', r.bottom - winHeight],
+    ].filter(([, px]) => (px as number) > 1) as [string, number][];
+    if (past.length > 0) {
+      add('overlay-out', box, textOf(box), `${past.map(([side, px]) => `${Math.round(px)} px past the window's ${side} edge`).join(', ')} (the window ${winWidth} x ${winHeight} px)`);
+    }
+  }
+  const over = (el: Element): boolean => overBoxes.has(el) || getComputedStyle(el).position === 'fixed';
+  const panes = Array.from(document.querySelectorAll(OVERLAY)).filter((p) => !p.parentElement?.closest(OVERLAY) && shown(p));
+  for (const pane of panes) {
+    const pr = pane.getBoundingClientRect();
+    /** How far an element reaches past the pane, or null where a region between them cuts or scrolls it. */
+    const reachPast = (el: Element): { side: string; px: number } | null => {
+      // Placed over the page itself or inside a box that is: no region of the pane cuts it. Otherwise a box between it and the
+      // pane, or the pane itself, that cuts or scrolls holds it.
+      let placed = over(el);
+      for (let e: Element | null = el.parentElement; e; e = e.parentElement) {
+        if (!placed && clipsOrScrolls(getComputedStyle(e))) return null;
+        if (e === pane) break;
+        if (over(e)) placed = true;
+      }
+      const r = el.getBoundingClientRect();
+      const sides: [string, number][] = [
+        ['left', pr.left - r.left],
+        ['right', r.right - pr.right],
+      ];
+      if (!placed) sides.push(['top', pr.top - r.top], ['bottom', r.bottom - pr.bottom]);
+      const worst = sides.reduce((a, b) => (b[1] > a[1] ? b : a));
+      return worst[1] > 1 ? { side: worst[0], px: worst[1] } : null;
+    };
+    for (const el of Array.from(pane.querySelectorAll('*'))) {
+      if (!shown(el) || inIcon(el.parentElement)) continue;
+      const out = reachPast(el);
+      if (!out) continue;
+      const parent = el.parentElement;
+      if (parent && parent !== pane && !over(el) && shown(parent) && reachPast(parent)) continue;
+      add('overlay-out', el, textOf(el), `${Math.round(out.px)} px past the ${out.side} edge of the ${pathOf(pane).split(' > ').at(-1)} it stands in`);
+    }
+  }
+
+  // ---- cut: a text cut by the box that holds it (R-UI-173) -------------------------------------------------------------------------
+  // A line of a text reaches more than 1 px past the box of its nearest ancestor that cuts it sideways (an `overflow-x` of `hidden`
+  // or `clip`: its padding box; a `clip-path: inset(…)`: the inset of its border box). "ov 18, 2026": a part of a line of facts that
+  // wrapped inside itself started its second line where the clip hides the separating dot, and lost its first letters (2026-11-19,
+  // `.dot-separated` of _controls.scss). Left out: a text cut with an ellipsis (the check `clipped`), a text in a region that scrolls
+  // (`sideways`), a line outside the box above or below it (a closed section), text for assistive technology only, an icon's glyph,
+  // and a text inside a box placed out of the flow, which the clip of an ancestor need not hold.
+  for (const clipper of clippers) {
+    if (!shown(clipper) || getComputedStyle(clipper).textOverflow === 'ellipsis') continue;
+    const v = clipBox(clipper);
+    const walker = document.createTreeWalker(clipper, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (!/\S/.test(n.nodeValue ?? '')) continue;
+      const parent = n.parentElement;
+      if (!parent || inIcon(parent) || !shown(parent)) continue;
+      // The nearest box between the text and the clipper that cuts, scrolls or is placed out of the flow decides instead.
+      let mine = true;
+      for (let e: Element | null = parent; e && e !== clipper; e = e.parentElement) {
+        const s = getComputedStyle(e);
+        if (clipsOrScrolls(s) || s.textOverflow === 'ellipsis' || s.position === 'absolute' || s.position === 'fixed') {
+          mine = false;
+          break;
+        }
+      }
+      if (!mine) continue;
+      range.selectNodeContents(n);
+      for (const r of Array.from(range.getClientRects())) {
+        if (r.width <= 0.5 || Math.min(r.bottom, v.bottom) - Math.max(r.top, v.top) < r.height / 2) continue;
+        const left = v.left - r.left;
+        const right = r.right - v.right;
+        if (left <= 1 && right <= 1) continue;
+        add(
+          'cut',
+          parent,
+          n.nodeValue ?? '',
+          left > right
+            ? `a line of its text starts ${Math.round(left)} px left of where ${pathOf(clipper).split(' > ').at(-1)} shows it, and loses its first letters`
+            : `a line of its text ends ${Math.round(right)} px right of where ${pathOf(clipper).split(' > ').at(-1)} shows it, and loses its last letters`,
+        );
+        break;
+      }
+    }
+  }
+
+  // ---- separator-start: a separator drawn by CSS at the start of a line (R-UI-171) --------------------------------------------------
+  // The app draws a separator before the thing it separates only as the middle dot of `.dot-before` and of each part of `.dot-separated`
+  // (_controls.scss); any other is the `::after` of the thing before it (a breadcrumb's slash), which ends a line and never starts one.
+  // The lint rule of check-rules.mjs (separator-rule.mjs) refuses a separator drawn any other way, so this list is complete. A separator
+  // stands at the start of a line when the text before it in its line's box stands on an earlier line, or nothing does:
+  // "repositories" / "· found 1 hour ago" on the page Malware (2026-11-23).
+  // The pseudo-element has no box: for the measurement every one is replaced by a span of its text with its box's properties, all at
+  // once, measured in one layout and put back in the same task (one span at a time cost two layouts each: 4 s for the downloads panel's
+  // rows). A separator the clip of an ancestor hides (each line's first dot of `.dot-separated`) is no finding.
+  const SEPARATORS = ['"·"', '"/"', '"›"'];
+  const SEPARATOR = 'data-quader-layout-separator';
+  const STAND_IN = 'data-quader-layout-separator-span';
+  const separatorStyle = document.createElement('style');
+  separatorStyle.textContent = `[${SEPARATOR}]::before { content: none !important; }`;
+  const separators = Array.from(document.querySelectorAll('.dot-before, .dot-separated > *'))
+    .filter((el) => SEPARATORS.includes(getComputedStyle(el, '::before').content) && shown(el))
+    .map((el) => {
+      const before = getComputedStyle(el, '::before');
+      const span = document.createElement('span');
+      span.setAttribute(STAND_IN, '');
+      span.textContent = before.content.slice(1, -1);
+      for (const p of ['display', 'inline-size', 'margin-inline-start', 'margin-inline-end', 'text-indent', 'text-align']) {
+        if (p === 'inline-size' && before.display === 'inline') continue;
+        span.style.setProperty(p, before.getPropertyValue(p));
+      }
+      return { el, span, glyph: span.textContent };
+    });
+  if (separators.length > 0) document.head.append(separatorStyle);
+  for (const { el, span } of separators) {
+    el.setAttribute(SEPARATOR, '');
+    el.prepend(span);
+  }
+  const startLines: { el: Element; glyph: string; detail: string }[] = [];
+  for (const { el, span, glyph } of separators) {
+    range.selectNodeContents(span.firstChild!);
+    const sep = Array.from(range.getClientRects()).find((r) => r.width > 0.5);
+    if (!sep) continue;
+    // Hidden by a clip: its middle outside the visible box of an ancestor that cuts.
+    let hidden = false;
+    for (let e: Element | null = el; e && e !== document.body; e = e.parentElement) {
+      const s = getComputedStyle(e);
+      if (s.overflowX !== 'hidden' && s.overflowX !== 'clip' && !s.clipPath.startsWith('inset(')) continue;
+      const v = clipBox(e);
+      const mid = (sep.left + sep.right) / 2;
+      if (mid < v.left || mid > v.right) {
+        hidden = true;
+        break;
+      }
+    }
+    if (hidden) continue;
+    // The box whose lines hold it: the nearest ancestor that is not an inline box.
+    let lineBox: Element | null = el.parentElement;
+    while (lineBox && /^(inline|contents)$/.test(getComputedStyle(lineBox).display)) lineBox = lineBox.parentElement;
+    if (!lineBox) continue;
+    // The last line of visible text before it in that box, the other separators' spans left out.
+    let last: DOMRect | null = null;
+    let lastText = '';
+    const walker = document.createTreeWalker(lineBox, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (el.contains(n) || el.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING) break;
+      if (!/\S/.test(n.nodeValue ?? '')) continue;
+      const parent = n.parentElement;
+      if (!parent || parent.hasAttribute(STAND_IN) || inIcon(parent) || !shown(parent)) continue;
+      range.selectNodeContents(n);
+      const rects = Array.from(range.getClientRects()).filter((r) => r.width > 0.5);
+      if (rects.length > 0) {
+        last = rects[rects.length - 1]!;
+        lastText = n.nodeValue ?? '';
+      }
+    }
+    if (last && sameLine(last, sep)) continue;
+    startLines.push({
+      el,
+      glyph,
+      detail: last
+        ? `the separator "${glyph}" starts a line at y ${Math.round(sep.top)}; what it follows ("${lastText.replace(/\s+/g, ' ').trim().slice(-30)}") ends on the line at y ${Math.round(last.top)}`
+        : `the separator "${glyph}" starts the first line of its box, with nothing before it`,
+    });
+  }
+  for (const { el, span } of separators) {
+    span.remove();
+    el.removeAttribute(SEPARATOR);
+  }
+  separatorStyle.remove();
+  for (const f of startLines) add('separator-start', f.el, textOf(f.el), f.detail);
 
   // An English sentence in a German page (R-UI-214): three English server sentences stood in German pages on one day (the
   // upstream search's hint, a failed bulk's detail, the vulnerability trend's basis). In a page whose language is German, a shown

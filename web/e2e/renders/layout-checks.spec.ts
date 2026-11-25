@@ -976,6 +976,166 @@ test.describe('an English sentence in a German page (R-UI-214)', () => {
   });
 });
 
+test.describe('an overlay inside the window, and its content inside the overlay (R-UI-173)', () => {
+  /** The overlay container as the CDK writes it, with one pane placed by `paneCss`. */
+  const overlay = (paneCss: string, content: string): string =>
+    `<p>The page</p><div class="cdk-overlay-container" style="position: fixed; inset: 0; z-index: 1000">` +
+    `<div class="cdk-overlay-pane" style="position: absolute; box-sizing: border-box; background: #fff; ${paneCss}">${content}</div></div>`;
+  /**
+   * W-12 (2026-11-18): the owner filter of the tokens, a drawer of 21 rem, its field's list of matches 24 rem wide in the top layer.
+   * The list is placed under its field by the page, as the person-search field places it (`placeList`), at `width` or the field's.
+   */
+  const drawer = (width: string | null, right = 0): string =>
+    overlay(
+      `top: 0; right: ${right}px; inline-size: 21rem; block-size: 100%`,
+      `<div role="dialog" aria-label="Filters" style="display: flex; flex-direction: column; block-size: 100%">
+         <h2 style="margin: 0; padding: 12px 24px">Filters</h2>
+         <div class="body" style="flex: 1; overflow: auto; padding: 8px 24px">
+           <label for="owner">Owner</label>
+           <input id="owner" class="text-input" style="box-sizing: border-box; display: block; inline-size: 100%" value="pri">
+           <div class="popup" popover="manual" style="position: fixed; inset: auto; margin: 0; padding: 4px; border: 1px solid #888; box-sizing: border-box">
+             <div role="listbox" aria-label="Matches"><div role="option">Priya Raman-Oberhauser</div><div role="option">platform-release-bot</div></div>
+           </div>
+         </div>
+       </div>
+       <script>{
+         // A block: the page's global scope outlives setContent, and a second fixture would declare the names again.
+         const field = document.getElementById('owner').getBoundingClientRect();
+         const list = document.querySelector('.popup');
+         list.style.left = field.left + 'px';
+         list.style.top = field.bottom + 4 + 'px';
+         list.style.inlineSize = ${width === null ? "field.width + 'px'" : `'${width}'`};
+         list.showPopover();
+       }</script>`,
+    );
+
+  test("R-UI-173 W-12: a person-search list 24 rem wide in a drawer of 21 rem is found past the drawer's edge", async ({ page }) => {
+    // At the window's right edge, as the drawer stands, the list reaches past the window too; the finding names the first measured.
+    const found = only(await check(page, drawer('24rem')), 'overlay-out');
+    expect(found.map((f) => `${f.what}: ${f.detail}`), describe(found)).toEqual([expect.stringMatching(/div\.popup: 72 px past the window's right edge/)]);
+    // Away from the window's edge, the drawer's edge alone.
+    const inside = only(await check(page, drawer('24rem', 200)), 'overlay-out');
+    expect(inside.map((f) => `${f.what}: ${f.detail}`), describe(inside)).toEqual([expect.stringMatching(/div\.popup: 72 px past the right edge of the div\.cdk-overlay-pane it stands in$/)]);
+  });
+
+  test("R-UI-173 the same list as wide as its field stays inside the drawer and passes", async ({ page }) => {
+    const found = await check(page, drawer(null));
+    expect(only(found, 'overlay-out'), describe(found)).toEqual([]);
+  });
+
+  /** A row's menu of 160 px hung from its button at x `left` in a phone's window. */
+  const menu = (left: number): string =>
+    overlay(
+      `top: 120px; left: ${left}px; inline-size: 160px; padding: 4px 0`,
+      '<div role="menu" aria-label="Actions for npm-internal"><div role="menuitem">Settings</div><div role="menuitem">Move to another project</div></div>',
+    );
+
+  test("R-UI-173 a menu of 160 px at x 300 in a window of 390 px is found past the window's edge; flipped to its button's right end it passes", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const out = only(await check(page, menu(300)), 'overlay-out');
+    expect(out.map((f) => f.detail), describe(out)).toEqual([expect.stringMatching(/^70 px past the window's right edge \(the window 390 x 844 px\)$/)]);
+    const flipped = await check(page, menu(214));
+    expect(only(flipped, 'overlay-out'), describe(flipped)).toEqual([]);
+  });
+
+  /** A dialog of 36 rem whose body scrolls and holds `body`. */
+  const dialog = (body: string): string =>
+    overlay(
+      'top: 40px; left: 50%; transform: translateX(-50%); inline-size: min(36rem, calc(100vw - 2rem)); max-block-size: calc(100vh - 80px); display: flex',
+      `<div role="dialog" aria-label="Rules" style="display: flex; flex-direction: column; min-inline-size: 0; inline-size: 100%">
+         <h2 style="margin: 0; padding: 24px 24px 8px">Rules</h2><div class="dialog-body" style="overflow: auto; padding: 8px 24px">${body}</div></div>`,
+    );
+  const wideTable =
+    '<table style="inline-size: 900px"><tbody><tr><th scope="row">release-candidates</th><td>Allow</td><td>web-frontend/npm-internal</td></tr></tbody></table>';
+
+  test("R-UI-173 a table of 900 px in a dialog's body scrolls sideways at 1,024 px and is found; at 390 px a region may scroll", async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
+    const wide = only(await check(page, dialog(wideTable)), 'sideways');
+    expect(wide.map((f) => `${f.what}: ${f.detail}`), describe(wide)).toEqual([expect.stringMatching(/^div\.dialog-body: the region scrolls \d+ px sideways in an overlay$/)]);
+    await page.setViewportSize({ width: 390, height: 844 });
+    const phone = await check(page, dialog(wideTable));
+    expect(phone.filter((f) => /^(sideways|overlay-out)$/.test(f.check)), describe(phone)).toEqual([]);
+  });
+
+  test('R-UI-173 a code block that scrolls a long command in a dialog is allowed as in a page', async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
+    const command = `<pre class="code-block" style="overflow-x: auto">docker pull localhost:4200/web-frontend/images/${'portal-'.repeat(30)}api:1.4.0</pre>`;
+    const found = only(await check(page, dialog(command)), 'sideways');
+    expect(found, describe(found)).toHaveLength(1);
+    expect(judge('repository-settings-oci-local', found).defects).toEqual([]);
+  });
+});
+
+test.describe('a text cut by the box that holds it (R-UI-173)', () => {
+  /**
+   * A version's facts as one line of `.dot-separated` (_controls.scss) in a column of 220 px: the version, then when it was published,
+   * a part that wraps inside itself. Before 3d3fd6618 (2026-11-19) a part had no `padding-inline-start` and no `text-indent`: its
+   * second line started under the clip that hides each line's first dot, and lost its first letters ("ov 18, 2026").
+   */
+  const facts =
+    '<div style="inline-size: 220px"><span class="dot-separated"><span translate="no">4.0.1</span><span>published 4 minutes ago (Nov 18, 2026, 1:29:28 PM)</span></span></div>';
+  const before = '.dot-separated > * { padding-inline-start: 0; text-indent: 0; }';
+
+  test("R-UI-173 a part's second line under the clip of its line of facts is found", async ({ page }) => {
+    const found = only(await check(page, facts, before, true), 'cut');
+    expect(found.map((f) => f.detail), describe(found)).toEqual([expect.stringMatching(/^a line of its text starts \d+ px left of where span\.dot-separated shows it, and loses its first letters$/)]);
+  });
+
+  test("R-UI-173 with the app's stylesheet the part's lines start where the clip shows them, and pass", async ({ page }) => {
+    const found = await check(page, facts, '', true);
+    expect(only(found, 'cut'), describe(found)).toEqual([]);
+  });
+
+  test('R-UI-173 a text cut with an ellipsis (clipped is its check) and a text in a region that scrolls are not cut', async ({ page }) => {
+    const long = 'sha256:b2b6838dabe5159c6022b1f94626ab13d2615ce27c554a7b94b7cc3d4b20cf0a';
+    const found = await check(
+      page,
+      `<div style="inline-size: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">${long}</div>` +
+        `<div style="inline-size: 200px; overflow-x: auto; white-space: nowrap">${long}</div>`,
+    );
+    expect(only(found, 'cut'), describe(found)).toEqual([]);
+    const bare = await check(page, `<div style="inline-size: 200px; overflow: hidden; white-space: nowrap">${long}</div>`);
+    expect(only(bare, 'cut'), describe(bare)).toHaveLength(1);
+  });
+});
+
+test.describe('a separator drawn by CSS at the start of a line (R-UI-171)', () => {
+  /**
+   * A malware find's place and time as before 4c4486c62 (2026-11-23): the repositories, then "· found 1 hour ago" with the dot of
+   * `.dot-before`, in a cell as wide as the repositories and a little more, so that the time wrapped and its dot started the line.
+   */
+  const find = (room: string): string =>
+    `<div class="cell"><span class="find-where"><a href="#" translate="no" style="white-space: nowrap">web-frontend/assets-quarantine</a>` +
+    ` <span class="dot-before">found <span>1 hour ago</span></span></span></div>` +
+    `<script>{ const a = document.querySelector('.cell a').getBoundingClientRect(); document.querySelector('.cell').style.inlineSize = ${room}; }</script>`;
+
+  test('R-UI-171 the dot before "found 1 hour ago" at the start of the wrapped line is found', async ({ page }) => {
+    const found = only(await check(page, find("a.width + 30 + 'px'"), '', true), 'separator-start');
+    expect(found.map((f) => f.detail), describe(found)).toEqual([expect.stringMatching(/^the separator "·" starts a line at y \d+; what it follows \("web-frontend\/assets-quarantine"\) ends on the line at y \d+$/)]);
+  });
+
+  test('R-UI-171 the same find on one line, the place and the time a line each, and a wrapped line of facts whose dots the clip hides pass', async ({ page }) => {
+    const wide = await check(page, find("'600px'"), '', true);
+    expect(only(wide, 'separator-start'), describe(wide)).toEqual([]);
+    const lines = await check(
+      page,
+      '<div style="inline-size: 240px"><span style="display: block"><a href="#">web-frontend/assets-quarantine</a></span><span style="display: block">found 1 hour ago</span></div>',
+      '',
+      true,
+    );
+    expect(only(lines, 'separator-start'), describe(lines)).toEqual([]);
+    const facts = await check(
+      page,
+      '<div style="inline-size: 160px"><span class="dot-separated"><span>4.0.1</span><span>web-frontend</span><span>npm-internal</span><span>4 minutes ago</span></span></div>',
+      '',
+      true,
+    );
+    expect(only(facts, 'separator-start'), describe(facts)).toEqual([]);
+    // The fixture wraps: three lines of facts, so their first dots are those the clip hides.
+    expect(await page.locator('.dot-separated').evaluate((el) => el.getBoundingClientRect().height)).toBeGreaterThan(40);
+  });
+});
+
 test.describe('one scrollbar per page (R-UI-215)', () => {
   /** A page whose `main.content` is the shell's panel, the one thing that scrolls, 600 px high; measured by `innerScroll`. */
   async function scrolls(page: Page, body: string, css = '', withShared = false): Promise<LayoutFinding[]> {

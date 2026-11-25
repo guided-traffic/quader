@@ -577,6 +577,21 @@ component and unit tests in jsdom without data, milliseconds each: `paged-resour
 `session-store.spec.ts`, and the lint rule's case in `lint-rules.test.mjs` (2 ms); together under 1 s of `make web-test`, nothing per
 format.
 
+### 3.5b The checks of overlays and clipping (Q-UI-1170, measured 2026-11-25 on the development machine)
+
+`overlay-out`, `sideways` in an overlay, `cut` and `separator-start` run inside `layoutFindings`, once per light picture; a state
+with an open overlay is no longer grown (Q-UI-1171). Measured on the 20-core development machine at a load of 14 to 19 [V]:
+
+| Part | Cost |
+|---|---|
+| The fixtures (`make ui-layout-test`, three engines, 2 workers) | +30 tests (10 per engine), +5.3 s of summed test time, +2.8 s wall (34.6 s at eb6481b94, 37.4 s after) |
+| The new checks per measured picture (timed inside the page) | Over the whole English set (3,478 measured pictures) about 16 s: median 2 ms, the 95th percentile 12 ms; the downloads panel and the findings lists, the pages with the most separators, about 60 and 25 ms once the separators are measured all at once (4 s and 0.5 s when each was replaced alone) |
+| The render step as a whole | Not set against a run of the base commit on the same machine [not measured]. The full English run took 44.0 min on the development machine at a load of 14 to 19, beside other builders. 373 light pictures of an open overlay (and their dark twins) are no longer grown, which saves their rounds of growing and their larger screenshots [I: a few seconds to a minute]; within the budget of +60 s |
+| `make ui-states` | 71 states and proofs unchanged at about 21 s wall; one proof case more (a table of 900 px in a dialog), a fraction of a second |
+
+Data: no new picture, no new screen; the fixtures are pages of a few elements. Per format: 0 (the checks measure every picture
+the same; a format adds no fixture).
+
 ### 3.6 Nightly legs, per test
 
 

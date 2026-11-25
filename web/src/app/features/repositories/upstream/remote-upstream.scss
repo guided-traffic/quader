@@ -84,9 +84,10 @@
   padding: 0;
   list-style: none;
 
-  li + li::before {
+  // The chevron ends the part before it, so a wrapped line starts with a part, never with a chevron (R-UI-171).
+  li:not(:last-child)::after {
     content: '›';
-    margin-inline-end: var(--quader-space-1);
+    margin-inline-start: var(--quader-space-1);
     color: var(--quader-text-muted);
   }
 }

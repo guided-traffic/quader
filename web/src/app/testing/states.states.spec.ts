@@ -11,6 +11,8 @@ interface Broken {
   readonly low: boolean;
   /** A block of 40 lines capped at 6 rem in a body that scrolls itself: a scroll inside the dialog's one scroll. */
   readonly capped: boolean;
+  /** A table of 900 px in the body, which scrolls it sideways: a region of the dialog that scrolls sideways. */
+  readonly wide?: boolean;
 }
 
 /**
@@ -30,6 +32,13 @@ interface Broken {
       @if (data.capped) {
         <pre class="capped" tabindex="0">{{ lines }}</pre>
         <p class="tall">The claims of the job.</p>
+      }
+      @if (data.wide) {
+        <table class="wide">
+          <tbody>
+            <tr><th scope="row">release-candidates</th><td>web-frontend/npm-internal</td></tr>
+          </tbody>
+        </table>
       }
     </div>
     <div class="dialog-actions">
@@ -53,6 +62,9 @@ interface Broken {
     .tall {
       block-size: 120vh;
     }
+    .wide {
+      inline-size: 900px;
+    }
   `,
 })
 class BrokenDialog {
@@ -69,12 +81,17 @@ async function findingsOf(data: Broken): Promise<string[]> {
   return found;
 }
 
-describe('the layout checks in the states browser (R-UI-175, R-UI-176, R-UI-215)', () => {
+describe('the layout checks in the states browser (R-UI-173, R-UI-175, R-UI-176, R-UI-215)', () => {
   it('a button 8 px under its name in a dialog is off-line, and the same button on the line is no finding', async () => {
     await page.viewport(390, 844);
     const broken = await findingsOf({ low: true, capped: false });
     expect(broken).toEqual([expect.stringMatching(/^off-line: the middle of "Copy" \(\d+ px high\) is 8\.0 px below the middle of its text's first line$/)]);
     expect(await findingsOf({ low: false, capped: false })).toEqual([]);
+  });
+
+  it("R-UI-173 a table of 900 px that a dialog's body scrolls sideways at 1,440 px is sideways", async () => {
+    await page.viewport(1440, 900);
+    expect(await findingsOf({ low: false, capped: false, wide: true })).toEqual([expect.stringMatching(/^sideways: the region scrolls \d+ px sideways in an overlay$/)]);
   });
 
   it("a block that scrolls inside a dialog's scrolling body is inner-scroll", async () => {

@@ -89,8 +89,12 @@ for (const screen of locale === 'de' ? screens.filter((s) => s.de) : screens) {
           if (screen.walk) {
             // A flow: one picture of each state it names; an empty name is the screen as it opens.
             for await (const state of screen.walk(page)) {
+              // A state the screen takes at some widths only, or in dark at some widths only (`states` of the screen).
+              const take = screen.states?.[state];
+              if (take?.widths && !take.widths.includes(width)) continue;
               await settle(page);
               for (const scheme of schemes) {
+                if (scheme === 'dark' && take?.dark && !take.dark.includes(width)) continue;
                 await page.emulateMedia({ colorScheme: scheme });
                 shots.push(await shoot(page, kind, screen, state || null, scheme, width));
               }
@@ -200,7 +204,9 @@ async function settle(page: Page): Promise<void> {
 /**
  * The whole content: the panel `main` scrolls inside the shell, the one thing of a page that does (R-UI-215), with a height that
  * follows the window, so the window grows by what it hides and by what a box or a navigation column that keeps a scroll of its own
- * hides (a few rounds, at most 16,000 px), then shrinks back.
+ * hides (a few rounds, at most 16,000 px), then shrinks back. Not while an overlay holds content (a dialog, a drawer, a menu, a
+ * tooltip): such a state is pictured and measured in the window a person has, where a dialog's body scrolls and a drawer is the
+ * window's height, and the checks of the overlays (`overlay-out`) measure it against that window.
  */
 async function shoot(page: Page, kind: Kind, screen: Screen, tab: string | null, scheme: Shot['scheme'], width: number): Promise<Shot> {
   const view = page.viewportSize() ?? { width, height: 900 };
@@ -212,7 +218,13 @@ async function shoot(page: Page, kind: Kind, screen: Screen, tab: string | null,
   const empty = view.height <= heightOf(width) ? await page.evaluate(emptyScroll) : { window: 0, panel: 0 };
   // One scrollbar per page (R-UI-215), measured where a region whose height follows the window still scrolls; one layout for both schemes.
   const scrolls = view.height <= heightOf(width) && scheme === 'light' ? await page.evaluate(innerScroll) : [];
-  for (let round = 0; round < 4; round++) {
+  const overlaid = await page.evaluate(() =>
+    Array.from(document.querySelectorAll('.cdk-overlay-pane')).some((p) => {
+      const r = p.getBoundingClientRect();
+      return r.width > 1 && r.height > 1 && /\S/.test(p.textContent ?? '');
+    }),
+  );
+  for (let round = 0; !overlaid && round < 4; round++) {
     const { hidden, by } = await page.evaluate(() => {
       const vertical = (el: Element | null): number => (el ? Math.max(0, el.scrollHeight - el.clientHeight) : 0);
       const main = document.querySelector('main');
@@ -274,10 +286,13 @@ async function shoot(page: Page, kind: Kind, screen: Screen, tab: string | null,
     if (!same) regions.push({ ...r, what: `${r.what} (window's first height)` });
     else if (r.overflowX > same.overflowX) regions.splice(regions.indexOf(same), 1, r);
   }
-  // The layout checks, in the grown window the picture shows. The two schemes have one layout, so the light one is measured.
+  // The layout checks, in the window the picture shows: grown, or the first one while an overlay is open. The two schemes have one
+  // layout, so the light one is measured.
   let findings: LayoutFinding[] = [];
   if (scheme === 'light') {
+    const t0 = Date.now();
     findings = await page.evaluate(layoutFindings);
+    if (process.env['UI_RENDERS_DEBUG']) console.log(`checks: ${Date.now() - t0} ms`);
     // The page scrolls sideways at any width; a region inside it from 1024 px (at a phone's width a code block or a table that
     // cannot stack scrolls in its region by design).
     if (measured.overflowX > 1) {

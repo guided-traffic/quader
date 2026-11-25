@@ -99,6 +99,12 @@ export interface Screen {
    */
   readonly widths?: readonly number[];
   /**
+   * Where a state of the walk is taken, by the name the walk yields: at the widths of `widths` only, and its dark picture at those of
+   * `dark` only (the light one is taken wherever the state is, since the checks measure it). A state that an overlay alone changes (a
+   * menu, a drawer, a dialog) shows at 1,024 px nothing that 1,440 and 390 do not. Without an entry: every width, both schemes.
+   */
+  readonly states?: Readonly<Record<string, { readonly widths?: readonly number[]; readonly dark?: readonly number[] }>>;
+  /**
    * Rendered in the German pass too (UI_RENDERS_LOCALE=de, Q-UI-1048), into `.out/ui-renders-de`: a screen whose German words were
    * not looked at otherwise. Its walk finds its controls by their place (a selector, a test id, an ID), never by an English word.
    * A list of kinds renders it as those kinds only in the German pass, where one kind shows what the pass is for (Q-UI-1090).

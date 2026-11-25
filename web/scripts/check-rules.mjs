@@ -17,6 +17,8 @@
 //    and the code's words for it are messages.xlf's (journey-texts-rule.mjs).
 //  - Q-UI-1074: a tab strip (class tab-nav) carries quaderTabStrip and its component imports TabStrip, which scrolls it
 //    (tab-strip-rule.mjs).
+//  - R-UI-171: a separator drawn by CSS (a middle dot, a slash, a chevron) only by the app's separator rules, which the render check
+//    separator-start measures (separator-rule.mjs).
 //  - R-UI-214: no template interpolates a server's English sentence (`{{ x.detail }}`, `{{ x.basis }}`, …): the screen says a
 //    code in its own words, a raw text goes through <quader-technical-details> (server-text-rule.mjs).
 //  - R-UI-216: a failed read's notice stays in place while the read is tried again: a resource's failure is failureOf, never made
@@ -31,6 +33,7 @@ import { linksToRemovedRoutes } from './removed-routes-rule.mjs';
 import { bareIconsInCells } from './status-rule.mjs';
 import { wordActionsSideBySide } from './row-actions-rule.mjs';
 import { offTheLine } from './line-rule.mjs';
+import { separatorsOutsideTheRules } from './separator-rule.mjs';
 import { journeyTextFindings } from './journey-texts-rule.mjs';
 import { decisionNumbersInTestNames } from './test-names-rule.mjs';
 import { tabStripFindings } from './tab-strip-rule.mjs';
@@ -141,6 +144,14 @@ for (const file of sources.filter((p) => /\.(ts|scss|css)$/.test(p) && !p.endsWi
   for (const { line, text } of offTheLine(readFileSync(file, 'utf8'))) {
     failed = true;
     console.error(`R-UI-175: ${relative(root, file)}:${line}: a box placed off the line of its text; use the line rule of _controls.scss (vertical-align: top and margins from --quader-line): ${text}`);
+  }
+}
+
+// A separator drawn by CSS is one the render check separator-start knows, so none starts a line unseen (R-UI-171).
+for (const file of sources.filter((p) => /\.(ts|scss|css)$/.test(p) && !p.endsWith('.spec.ts'))) {
+  for (const { line, text } of separatorsOutsideTheRules(readFileSync(file, 'utf8'))) {
+    failed = true;
+    console.error(`R-UI-171: ${relative(root, file)}:${line}: a separator drawn by CSS outside the separator rules; use .dot-before, .dot-separated or a breadcrumb's li + li::before: ${text}`);
   }
 }
 

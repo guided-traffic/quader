@@ -9,6 +9,7 @@ import { linksToRemovedRoutes } from './removed-routes-rule.mjs';
 import { bareIconsInCells } from './status-rule.mjs';
 import { wordActionsSideBySide } from './row-actions-rule.mjs';
 import { offTheLine } from './line-rule.mjs';
+import { separatorsOutsideTheRules } from './separator-rule.mjs';
 import { LONG_WORD, compare, longWords, rewrite } from './i18n-check.mjs';
 import { journeyTextFindings } from './journey-texts-rule.mjs';
 import { decisionNumbersInTestNames } from './test-names-rule.mjs';
@@ -264,6 +265,27 @@ test('R-UI-175 vertical-align: middle and align-items: last baseline fail the ch
     '// at `vertical-align: middle` they stood 1.5 px under it.\n.x { vertical-align: top; }',
   ];
   for (const css of good) assert.deepEqual(offTheLine(css), [], css);
+});
+
+test("R-UI-171 a separator drawn by CSS outside the app's separator rules fails the check; a measured dot and a separator that ends its item pass", () => {
+  const bad = [
+    ".find-where > span::before {\n  content: '·';\n  margin-inline: 8px;\n}",
+    '.trail a + a::before {\n  content: "/";\n}',
+    ".crumbs {\n  span + span::before {\n    content: '›';\n  }\n}",
+    ".meta::after {\n  content: '\\00b7';\n}",
+    ".dot-before::before,\n.facts > *::before {\n  content: '·';\n}",
+    "nav ol {\n  li + li::before {\n    content: '/';\n  }\n}",
+  ];
+  for (const css of bad) assert.equal(separatorsOutsideTheRules(css).length, 1, css);
+  const good = [
+    ".dot-before::before {\n  content: '·';\n  color: var(--quader-text-muted);\n}",
+    ".dot-separated {\n  display: inline-flex;\n\n  > *::before {\n    content: '·';\n  }\n}",
+    ".level-trail {\n  display: flex;\n\n  li:not(:last-child)::after {\n    content: '›';\n  }\n}",
+    ".path {\n  .seg:not(:last-child)::after {\n    content: '/';\n  }\n}",
+    ".sort::after {\n  content: 'arrow_upward';\n}",
+    "// a line that starts with content: '·' in a comment\n.x { content: ''; }",
+  ];
+  for (const css of good) assert.deepEqual(separatorsOutsideTheRules(css), [], css);
 });
 
 test("a journey's text named by its ID must be a plain unit of the translation files and the code's words", () => {

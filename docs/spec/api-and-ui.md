@@ -8168,10 +8168,18 @@ hyphen wherever its line is too short (a heading, a label of the sidebar); a nam
 longer than 16 characters is a token that may break where it must (Q-UI-425)
 ([Q-UI-1091](#q-ui-1091--a-long-german-word-carries-soft-hyphens-at-the-joints-of-its-compound-and-a-heading-never-breaks-inside-a-word)).
 
+No line starts with a separator: a separator drawn before its item (the middle dot of `.dot-before` and of a line of facts) stands on
+the line of what it follows, or a clip hides it at a line's start (`.dot-separated`); any other separator ends the item before it, as a
+breadcrumb's slash does ([Q-UI-1173](#q-ui-1173--a-breadcrumbs-separator-ends-the-step-before-it)): "· found 1 hour ago" started a line
+on the page Malware, "/ Set up client" the second line of a breadcrumb at 390 px.
+
 Acceptance criteria:
 
-- The render run's report names no `broken` finding (the check `broken` of [layout.ts](../../web/e2e/renders/layout.ts)) and no
-  `heading-broken` finding (a heading broken between two letters of a word).
+- The render run's report names no `broken` finding (the check `broken` of [layout.ts](../../web/e2e/renders/layout.ts)), no
+  `heading-broken` finding (a heading broken between two letters of a word) and no `separator-start` finding.
+- Fixtures (`layout-checks.spec.ts`, three engines): a malware find's "· found 1 hour ago" wrapped to the start of a line is found; the
+  same on one line, the place and the time a line each, and a wrapped line of facts whose first dots the clip hides pass. The web lint
+  refuses a separator drawn by CSS in any other way (`separator-rule.mjs`, tested by `lint-rules.test.mjs`).
 - Fixtures (`layout-checks.spec.ts`, Chromium, Firefox and WebKit): "Authentifizierungseinstellungen" in a heading of 358 px at the
   first heading's size is found; with a soft hyphen at its joint it breaks there and passes; a heading that wraps between its words and a
   long name pass.
@@ -8218,11 +8226,25 @@ Priority: **MVP** · Covers: quader-only
 - The renders take a screen at a further width where a list changes its form between the run's three (the start page at 1,100 px,
   the list of every project's repositories at 1,100 and 1,280 px; `widths` of a screen in
   [screens.ts](../../web/e2e/renders/screens.ts)).
+- An overlay (a dialog, a drawer, a menu, a tooltip, a list that opens under its field) stands inside the window, and what it holds
+  stands inside it: W-12's person-search list, 24 rem wide in a drawer of 21 rem, stood past the drawer's edge. From 1,024 px no region
+  of an overlay scrolls sideways either (a table wider than its dialog). A state with an open overlay is rendered and measured in the
+  window a person has, not in one grown to the page's length
+  ([Q-UI-1171](#q-ui-1171--a-state-with-an-open-overlay-is-pictured-and-measured-in-the-window-a-person-has)).
+- No text is cut by the box that holds it without an ellipsis: a line of a part of a line of facts that wrapped inside itself started
+  under the clip that hides each line's first dot and lost its first letters ("ov 18, 2026"; the check `cut`,
+  [Q-UI-1170](#q-ui-1170--the-render-checks-see-overlays-and-clipping-as-a-person-does-correcting-q-ui-1060)).
 
 Acceptance criteria:
 
-- The render run's report names no `clipped`, no `cramped`, no `sideways` and no `tab-scrollbar` finding (the checks of the same
-  names in [layout.ts](../../web/e2e/renders/layout.ts) and [render.spec.ts](../../web/e2e/renders/render.spec.ts)).
+- The render run's report names no `clipped`, no `cramped`, no `sideways`, no `tab-scrollbar`, no `overlay-out` and no `cut` finding
+  (the checks of the same names in [layout.ts](../../web/e2e/renders/layout.ts) and [render.spec.ts](../../web/e2e/renders/render.spec.ts));
+  `make ui-states` measures the dialogs' states by the same `overlay-out` and `sideways`.
+- Fixtures (`layout-checks.spec.ts`, Chromium, Firefox and WebKit): the list 24 rem wide in a drawer of 21 rem is found, the list as
+  wide as its field passes; a menu of 160 px at x 300 in a window of 390 px is found, flipped to x 214 it passes; a table of 900 px in a
+  dialog's body is found at 1,024 px and not at 390 px, a code block that scrolls a long command there is allowed as in a page; the
+  line of facts as it was before 2026-11-19 is found with its second line cut, the app's stylesheet passes; a text cut with an ellipsis
+  or in a region that scrolls is not `cut`'s, the same text cut bare is.
 - Unit (`tab-strip.spec.ts`): a strip whose tabs fit keeps their padding and shows no fade; one whose tabs fit only closer together
   takes them closer and shows none; a wider one shows a fade at each edge beyond which tabs lie and
   a click on it scrolls by the strip's width less the fades; the current tab and a focused tab are scrolled clear of the fades;
@@ -23647,6 +23669,10 @@ Elsewhere: [e2e.md](../developer/e2e.md#what-a-journey-is).
 
 Status: **Decided by the development agent on 2026-11-24** — selected from the options below; the owner reviews it at the walkthrough.
 Continues the reading of 2026-11-23 ([web-ui.md](../developer/web-ui.md#renders-of-every-screen), "What the checks leave to the eye").
+**Corrected in three points by [Q-UI-1170](#q-ui-1170--the-render-checks-see-overlays-and-clipping-as-a-person-does-correcting-q-ui-1060)**
+(2026-11-25): a control beside a framed box, text drawn by CSS and a text cut at the start of a wrapped line had each been seen, and
+`overlay-out`, `cut` and `separator-start` hold what this decision left to the eye of absolutely placed elements, CSS-drawn
+separators and clipped lines.
 
 Context: two lists of the plan named what the layout checks of the renders do not see. The builder of W-23: a control beside a framed
 box, absolutely placed elements and text drawn by CSS, the states the set does not render, an offset of 1 px or less. The builder of
@@ -25779,6 +25805,107 @@ Context: a Secret that does not exist yet starts every pod and fails that regist
 keys; a Secret reaches the pods within two minutes."
 
 **Applied in the spec:** R-UI-188. Code: [upstream-words.ts](../../web/src/app/features/upstream/upstream-words.ts).
+
+### Q-UI-1170 · The render checks see overlays and clipping as a person does, correcting Q-UI-1060
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below; the owner reviews it at the walkthrough.
+Corrects [Q-UI-1060](#q-ui-1060--what-a-layout-check-can-hold-of-the-render-sets-blind-spots-and-what-stays-to-the-eye) in three points.
+
+Context: a reading of the layout defects found by eye from 2026-11-12 to 2026-11-25 (the owner's objections, the plan's W-items, the
+commits that repaired them) against what the checks of [layout.ts](../../web/e2e/renders/layout.ts) measure. Three of its shapes had no
+check: W-12's person-search list, 24 rem wide inside a drawer of 21 rem (2026-11-18); a part of a line of facts that wrapped inside
+itself and lost its first letters under the clip that hides each line's first dot, "ov 18, 2026" (3d3fd6618, 2026-11-19); a separating
+dot at the start of a line, "· found 1 hour ago" (4c4486c62, 2026-11-23). `sideways` measured the regions of `main` alone, and the
+render grew the window by the panel's hidden length while a dialog's height is capped at the window's and a drawer is the window's
+height, so an overlay was measured and pictured in a window no person has. The record also contradicts Q-UI-1060 in three points:
+
+| Q-UI-1060 said | The record shows | Now |
+|---|---|---|
+| A control beside a framed box: no such defect seen | One was seen on 2026-11-19: the copy button joined to a field, 46 px beside a field of 32 (W-23), for which `joined` was built (10a28fbda) | Held for the address field by `joined`; the general rule `on-box` was measured over the whole render set and is not built (below) |
+| Text drawn by CSS has no node and cannot be measured | `nameBox` has measured a stacked cell's `td[data-label]::before` through a span in its place since 2026-11-19, and two defects of that shape were seen ("Ended" half a line high, Q-UI-762; "Veröffentli" / "cht", Q-UI-1068) | Measurable by the same substitution: `separator-start` measures the separators drawn by CSS so |
+| A text cut at the start of a wrapped line: no defect seen | One was seen on 2026-11-19 ("ov 18, 2026"), a kindred separator on 2026-11-23 | The checks `cut` and `separator-start` |
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Three checks in `layoutFindings`: `overlay-out` (an overlay inside the window, its content inside the overlay), `sideways` also for a region inside a dialog, a drawer or a pane of the overlay container from 1,024 px, `cut` (a line of a text past the box of its nearest ancestor that cuts sideways) and `separator-start` (a separator drawn before its item at the start of a line), with a lint rule that keeps the separators drawn by CSS to the forms the check knows; `on-box` measured, not built (chosen) | One walk over every element's style per measured picture; a fixture per defect in three engines; `make ui-states` measures the overlays by the same function | Each shape that was seen gets the check of its fixture; the dialogs' states without the stack are held by the same checks | Every new finding on a real screen is repaired or allowed by its place |
+| (b) The overlay checks only; the cut and the separator stay to the eye | | Fewer checks | Both shapes were seen, and the look of rule 11 missed them before a person did |
+| (c) (a) and a general `on-box` check | | The framed box held too | Its first run counted 479 cases as known layouts (W-23); no second defect seen |
+| (d) Q-UI-1060 as it was | | Nothing to build | Three of its reasons are contradicted by the record |
+
+**Choice:** (a). **Rationale:** the reading of 2026-11-23 set that a check follows a seen defect; all three shapes were seen, and each
+check comes with the fixture of the defect it holds. `on-box` was measured once over the whole English render set, as the plan of the
+package asked: 576 pairs of a control and a framed box in 3,478 measured pictures, 18 that the rule would flag, in three places: the copy button that stands on the top of a one-line code block in a guide and in the backups' manual run (13; 6 to 7 px above the block's middle, the form Q-UI-724 sets for a block of any length), and the Add button beside an open person-search list (5), which the search for a framed box took for one; no defect. It is built when a second defect of the shape is seen. What stays to the eye: an overlay over a control of the
+page (overlap is the overlay's design), a colour (the pale tooltip in dark), the letter of a project's mark and a code window's line
+numbers drawn by CSS (nothing seen wrong), the distribution of room between columns, and an offset of 1 px or less (R-UI-175's
+threshold). The first run of the whole English set with the checks found one shape on real screens: `separator-start` found the breadcrumb's slash at the start of its second line at 390 px (Set up client, a repository's Details), repaired by [Q-UI-1173](#q-ui-1173--a-breadcrumbs-separator-ends-the-step-before-it); `overlay-out` and `cut` found nothing, and no place is allowed by a list. The same run measured the cost: replacing each separator by its span one at a time cost two layouts each, about 4 s per picture of the downloads panel and 0.5 s of the findings, so all are replaced at once (about 60 ms and 25 ms now); the new checks cost about 16 s of the whole set on the development machine. It also found the jobs list's Result empty for a job that runs (`empty-cell`, R-UI-146, whenever a job ran at the picture's moment): it shows the dash now. Closes H-1912 of this page.
+
+**Applied in the spec:** R-UI-171 (`separator-start`), R-UI-173 (`overlay-out`, `sideways` in an overlay, `cut`). Code:
+[layout.ts](../../web/e2e/renders/layout.ts), [separator-rule.mjs](../../web/scripts/separator-rule.mjs). Tests:
+[layout-checks.spec.ts](../../web/e2e/renders/layout-checks.spec.ts), `lint-rules.test.mjs`, the harness's case of
+[states.states.spec.ts](../../web/src/app/testing/states.states.spec.ts). Docs: [web-ui.md](../developer/web-ui.md#renders-of-every-screen).
+
+### Q-UI-1171 · A state with an open overlay is pictured and measured in the window a person has
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the render grows the window by what the content panel hides, so that a picture shows a page's whole length. A dialog is at
+most the window's height less 2 rem (`_dialog.scss`), its body scrolls; a drawer is the window's height (`100dvh`, `drawer.ts`); a
+menu and a tooltip are placed against the window's edges. In a window grown to the page's length a dialog's body stood whole, a drawer
+was as long as the page, and a menu had room below it that no window has.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The window does not grow while a pane of the overlay container holds content; that state's picture and its measurement are the window's first size (chosen) | One look at the overlay container per picture | The picture is what a person sees; `overlay-out` measures against the window an overlay is placed in; smaller pictures | The page below the window is not in that state's picture; it is in the picture of the state before |
+| (b) Grow as before, and measure the overlays in a second pass in the first window | | The page's whole length in every picture | Two measurements per picture; a picture of a dialog that no window shows |
+| (c) Close the overlay before growing | | | The state is gone |
+
+**Choice:** (a). The page behind an overlay is the screen's own state, taken before the overlay opens, at every width.
+
+**Applied in the spec:** R-UI-173. Code: `shoot` of [render.spec.ts](../../web/e2e/renders/render.spec.ts). Docs:
+[web-ui.md](../developer/web-ui.md#renders-of-every-screen).
+
+### Q-UI-1172 · A walk's state is taken at the widths and in the schemes its screen names for it
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: every state of a walk is taken at the run's three widths and the screen's own, light and dark. A state that only an overlay
+changes (a menu, a drawer, a dialog) shows nothing at 1,024 px that 1,440 and 390 px do not (a dialog is at most 52 rem, a drawer 24 rem,
+a menu hangs from its button), and its dark picture shows a colour, which no check measures. The plan of the render set's next states
+(menus, drawers and sections no walk opens) adds about 60 of them.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) An optional `states` of a screen in [screens.ts](../../web/e2e/renders/screens.ts): for a state's name the widths it is taken at and the widths its dark picture is taken at; the light one is taken wherever the state is, since the checks measure it (chosen) | About 40 % fewer pictures per such state | Each walk says what its state needs; a screen without the entry is taken as before | A state left out at a width is not seen there |
+| (b) One rule for every state with an open overlay | | Nothing to write per screen | A menu whose button moves with the side bar between 1,024 and 1,440 px would lose its 1,024 px without a word |
+| (c) A screen of its own per overlay state with `widths` | | The field exists | A walk to the overlay runs again for each such screen |
+
+**Choice:** (a). The states the set takes today keep every width and both schemes: the field is for the states added after it, each
+with its reason in the walk.
+
+**Applied in the spec:** none (test tooling). Code: `Screen.states` of [screens.ts](../../web/e2e/renders/screens.ts), the walk's loop of
+[render.spec.ts](../../web/e2e/renders/render.spec.ts). Docs: [web-ui.md](../developer/web-ui.md#renders-of-every-screen).
+
+### Q-UI-1173 · A breadcrumb's separator ends the step before it
+
+Status: **Decided by the development agent on 2026-11-25** — selected from the options below; the owner reviews it at the walkthrough.
+
+Context: the check `separator-start` found the slash of the breadcrumb bar at the start of its second line at 390 px: "Projects /
+platform / Repositories / collections" over "/ Set up client" (Set up client, a repository's Details). The separator was the `::before`
+of each step after the first (`li + li::before`), so the step that wrapped took its slash along. The same form drew the slash of the
+browse view's path and the chevron of an upstream level's trail.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The separator is the `::after` of every step but the last (`li:not(:last-child)::after`), as the folder path already draws it; a wrapped line ends with the separator and starts with a step (chosen) | Three rules of the stylesheets | No line starts with a separator, whatever wraps; one form for every separator drawn after its item, which the lint rule allows | A line ends with a slash |
+| (b) The clip of `.dot-separated`: each step carries its separator in front, the bar starts the separator's width further left and its clip hides each line's first one | | One form for every separator | A clip on the bar that holds the focus ring of a link; more CSS for a bar of links |
+| (c) Keep `li + li::before` and allow the finding | | | A line that starts with a slash reads as a path of its own |
+
+**Choice:** (a). **Rationale:** a separator that belongs to the step before it cannot start a line; the folder path (`.seg`) was built
+so for that reason.
+
+**Applied in the spec:** R-UI-171. Code: `.breadcrumbs` of [_shell.scss](../../web/src/styles/_shell.scss), `.path` of
+[_browse.scss](../../web/src/styles/_browse.scss), `.level-trail` of
+[remote-upstream.scss](../../web/src/app/features/repositories/upstream/remote-upstream.scss).
 ## What this does not cover
 
 ### H-1964 · A read that fails alone while its page stands is read again only by the person or its next use
@@ -25922,14 +26049,6 @@ Component: `make ui-states` (Q-UI-1142). Subject: a reader in the dark scheme. L
 a layout that differs by scheme has not been seen; a colour that is wrong only in dark (the pale tooltip of 2026-11-13) is seen in the
 render set's dark pictures of the states it opens, not in these. What would close it: a picture of each state in dark beside the light
 one with `UI_STATES_PICTURES=1`, looked at, at about a tenth of a second per state.
-
-### H-1912 · An overlay outside the window and a dialog's region that scrolls sideways are found by eye only
-
-Component: the layout checks ([layout.ts](../../web/e2e/renders/layout.ts)) as the dialog states run them. Subject: every reader of a
-dialog, a drawer or a list that opens over the page. Live: `sideways` measures `main` alone, and no check measures whether an overlay
-stands inside the window, so the states' pictures, not their checks, showed a dialog's table wider than the dialog (2026-11-25); a
-scroll inside a dialog's one scroll is measured (`innerScroll`, R-UI-215). What would close it: the checks of the overlays planned
-for the render set, imported here as they land.
 
 ### H-1860 · A heading narrower than 20 letters, and a heading of a screen outside the German pass, are held by no check
 
