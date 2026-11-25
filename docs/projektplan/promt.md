@@ -302,9 +302,11 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | W1 · Switches for the delivery, the cache's acts, the mode's dialog (W-28, package 1) | R-CUR-024, R-CUR-025 of the plan `.dev/w28-plan.md`; with it the attestation that an upstream version's line lists as a platform | landed and pushed at 20:13 |
 | W4 · Downloads kept in sync (W-28, package 4) | R-CUR-027 of the plan | landed and pushed at 19:11 |
 | W2 · A range of versions in a package's allow (W-28, package 2) | R-CUR-026 of the plan | in work since 20:13 |
-| S16 · A retired system repository is removed, and a retired preset says so | the owner's finding of 19:09 (section 8, Product): `upstream/scanner-clamav` stays listed as "Off" | in work since 19:09 |
+| S16 · A retired system repository is removed, and a retired preset says so | the owner's finding of 19:09 (section 8, Product): `upstream/scanner-clamav` stays listed as "Off" | landed and pushed at 20:40 |
 | S17 · Every load shows the spinner the owner picked (W-29) | the owner's task of 19:15 and his choice of 19:19 (section 8, Product): the mark's six stones, lighting up in sandstone | in work since 19:19 |
-| S18 · No signed address in a log or a record | my finding of 19:23 (section 8, Product): the upstream log writes redirect targets with their signatures | in work since 19:23 |
+| S18 · No signed address in a log or a record | my finding of 19:23 (section 8, Product): the upstream log writes redirect targets with their signatures | landed and pushed at 20:40 |
+| S19 · The command behind its button on a version's page, clients as tabs, a collection opens in its documentation (W-30) | the owner's task of 20:39 (section 8, Product): every format's version page, the panel of the command, the target of a collection's name, the sentence why a format is not checked for vulnerabilities | in work since 20:39 |
+| W-30 planner · Ansible as an equal of Galaxy; general and specific properties per format | the owner's task of 20:39: a comparison screen by screen and answer by answer, and the table of properties per format | in work since 20:39 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
 | G3 · Page and shell states on the stack | the 10 menus, 3 drawers, the person search's list in a drawer, about 19 sections, 11 routes, the banner and the maintenance notice, a failure of an action inside a section, the editors' refusals with their summary, two selection states, the command menus of NuGet, Ansible Galaxy and generic | 5 to 6 minutes of the render step (the job at about 61 to 64 of its 75 minutes), about 3 s per format | in work since 14:57 (after G1; the inventory of the morning is brought up to what landed today first) |
 
@@ -1210,6 +1212,30 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- **Open since 2026-11-25, 20:39, the owner's task at `upstream/galaxy` and at `upstream/docker-hub` (W-30; S19 builds
+  the three things he named, a planner works out the rest).** His words: "Wenn man auf eine Collection klickt, sollte
+  man meiner Meinung nach direkt in der Doku der neusten Version landen. Das wäre das normale Verhalten in Ansible
+  Galaxy." At the version's page, the box Install: "ich finde der eingerahmte Platz ist verschwendet, dieses Feld, in
+  dem die Installation der Collection beschreiben ist, gehört hinter einen Button wie bei docker image 'pull' mit einer
+  hover-maske. Du musst dir solche Angaben von mir echt selbstständig merken und auch auf andere Registries anwenden.
+  Ich habe nicht die Zeit dir das 30mal zu erklären." At an image's panel Pull: "der pull-hover soll mit einem Reiter
+  ausgestattet sein, links docker, rechts daneben podman, dann platz und daneben ein button set up client, der einen
+  weiterleitet." And the frame: "Ich finde es wichtig, dass du selbstständig generalle Eigenschaften unser Registry
+  identifizierst und auch spezifische Eigenschaften identifizierst. Ansible-Collections haben die spezifische
+  Eigenschaft einer Dokumenation die hervorzuheben ist. Wir versuchen im Raum 'Ansible' die Galaxy vollständig und
+  ebenbürdig zu ersetzen." Read in the code: the box Install is `install-panel` of every format's version page; the
+  button with the panel is `client-command-menu` (a section per client, no tabs, no link to the setup); a package's
+  name leads to the package's page, which is its table of versions with the newest version's README below it (his
+  walk of 2026-11-18, R-UI-110). My decisions: (1) the command stands behind the verb's button on a version's page
+  too, in every format, and the box goes; (2) the panel has a tab per client of the format and **Set up client** at
+  the row's end, in every format and at every place the button stands; a format with one client shows no tab row of
+  one tab, its client's name and the link; (3) a collection's name leads to the newest version's page with the
+  documentation open, the page has a switch between versions and a way to the whole list, and nothing of the
+  versions' table is lost; (4) whether npm and NuGet, whose versions carry a README, follow (3) reverses his walk of
+  2026-11-18 for them and is put to him as one decision. The planner compares every Ansible screen and answer with
+  what Galaxy offers for the same task and lists, per format, the general and the specific properties and which of
+  them a screen shows.
+
 - **Open since 2026-11-25, 20:12, the owner's question at an Ansible collection's tab Vulnerabilities ("Not scanned.
   Packages of this type are not scanned for vulnerabilities."): "Ansible package werden nicht gescant? Sind das keine
   Python implementierungen die auch Schwachstellen enthalten können oder wieso hast du hier so entschieden?"** The
@@ -1222,18 +1248,33 @@ records the recorder that tells such a stall apart).
   holds: a collection is code, and collections have had vulnerabilities. Put to him as one decision: (a) the state
   stays and the screen says why (my recommendation); (b) a source of our own from the national database, matched by
   text; (c) a scan of the archive's content by the image scanner, which finds lock files a collection does not
-  carry. Waits for his answer; nothing is built.
+  carry. His answer at 20:39: "Wir bleiben erstmal bei A, ich komme aber nochmal auf diese
+  Entscheidung zurück, aber nicht jetzt." So: the state stays, and the screens say why (built with S19); not reopened
+  by me. Told him with it: for Debian the same state is a deferral of mine (Q-DEB-26), the advisory data exists.
 
-- **Open since 2026-11-25, 19:23, found by me in the owner's development profile's log: the upstream log writes
-  signed addresses with their signatures (S18, in work).** The log `upstream` holds every request's whole URL; a
-  download an upstream redirects to a signed address leaves the signature in clear (two lines with `X-Amz-Signature=`,
-  one with Galaxy's `validate_token=` in that log; the scrubber's list of query parameters does not name them). Such
-  an address fetches the file for its lifetime without the upstream's account: harmless for a public collection, not
-  for a private upstream reached with a stored account. The builder finds every place an upstream's address is
-  written, kept or shown (logs, failures, events, usage rows, traces, the connection test's report), brings them to one
-  function (the names of the query's parameters stay, a value only where the product wrote it), and checks the
-  product's own signed links the same way. Not verified: whether the installation's logs hold such lines (same code,
-  so they do wherever a download was redirected).
+- **Closed on 2026-11-25, 20:40, by S18 (R-OPS-013 rule 7, Q-OPS-426; gaps H-2060 to H-2064; no migration): no log,
+  no stored record and no answer keeps the signature of an address a download was redirected to.** My finding of 19:23
+  was half wrong: the two lines with `X-Amz-Signature=` in his profile's log were redacted already (counted again at
+  20:07: two of two); only Galaxy's `validate_token=` stood in clear, its name was not on the list. The builder found
+  the larger leak, which the log had not shown: the fill stored the address a download finally came from, with its
+  whole query, as `upstream_url` of the item and of the cache entry, and from there it reached the audit event
+  `artifact.cached`, the answers of the item and the cache, the signature's origin and the provenance statement Quader
+  signs. The rule as built: an address keeps scheme, host, port, path and the names of its query; a value stays only
+  for a name on the one list of parameters Quader writes itself (`ProductQueryParams`), not on the redaction list, and
+  only on a first hop; a redirect's hop keeps no value on any host; free text (every log field, span attribute and
+  error text) gets the same rule for every absolute address in it. The redaction list gains `X-Goog-Signature`,
+  `X-Goog-Credential`, `validate_token`, `verify`, `jwt`, `hmac` and `cf_sign`; short names such as `se` or `sv` stay
+  out (they open nothing without the signature and would hide parameters of Quader's own API). The places that cut
+  the query by hand (a download's failure, the connection test, the importer) take the form from the same package. The
+  product's own signed links were read in code and needed nothing: the link stands only in the `Location` of the 307,
+  no log and no event holds it. Guards: eight kinds of signed redirect through the real client (30 ms), and a
+  convention check that a log field `url` comes from these functions (about 6 s in the archtest). Open: rows stored
+  before this change keep the full address, and the events and statements made from them (H-2060; live on his
+  installation and the profiles until each path is fetched again; the links expire within minutes to days); a relative
+  address or a bare token in free text is held only by the list (H-2061); a first hop to an address an upstream named
+  keeps the values of Quader's own parameter names (H-2062); an API problem's detail is scrubbed where it is composed
+  (H-2063); `remote_url_map` keeps an upstream-named address whole, the fetch needs it, nothing shows it (H-2064). Not
+  verified: a redirect to a signed address in an integration test (the guard is the client test in process).
 
 - **Open since 2026-11-25, 19:15, the owner's task: every load of remote content is accompanied by a spinner he
   picks (working paper W-29; built once he has chosen).** His words, at an opened upstream package that reads "Reading
@@ -1272,16 +1313,30 @@ records the recorder that tells such a stall apart).
   previous answer under the new question's words and never the empty sentence; the shared table makes "loading a new
   question" win over "empty"; every list with a filter or a search is checked for it.
 
-- **Open since 2026-11-25, 19:09, the owner's finding on his development profile: a retired system repository stays in
-  the list as "Off" (S16, in work).** His words: "Wieso sehe ich auf localhost noch das Uplink repo scanner-clamav Off".
-  Verified: `upstream/scanner-clamav` (generic, local) was the product's repository of ClamAV's database for half a day
-  (`100cccbbb`, 2026-11-21) until `upstream/clamav` replaced it (`97eb59149`); the reconcile retires a row no
-  declaration names and keeps it as a tombstone without content (R-REPO-067 step 5, Q-REPO-376); his row was created on
-  2026-11-21 05:11, retired at 13:46 and holds no package. The tombstone's reasons (a virtual repository may list a
-  preset; an administrator's rules on it) do not hold for a system repository, and the list shows a retired repository
-  with the badge of one an administrator switched off. My decision, for his objection: a retired system repository is
-  removed by the reconcile; a retired preset stays and reads "Retired" wherever it is listed. Not verified: whether his
-  installation holds the same row (the same history says it does).
+- **Closed on 2026-11-25, 20:40, by S16 (Q-REPO-490, which revises Q-REPO-376 for system repositories; gaps H-2040 to
+  H-2043; no migration): a system repository the product no longer declares is deleted at the next start, and a retired
+  registry says so on its page.** The owner's finding of 19:09 on his development profile: "Wieso sehe ich auf localhost
+  noch das Uplink repo scanner-clamav Off". `upstream/scanner-clamav` (generic, local) was the product's repository of
+  ClamAV's database for half a day (`100cccbbb`, 2026-11-21) until `upstream/clamav` replaced it; the reconcile retired
+  the row and kept it as a tombstone (R-REPO-067 step 5, Q-REPO-376), and the list showed it with the badge of a
+  repository an administrator switched off. The tombstone's reasons (a virtual repository may list a preset; an
+  administrator's rules on it) do not hold for a system repository. Built: the stored row's `kind` tells a system
+  repository from a preset; the reconcile's plan gains the step `OpRemove`, which hands an undeclared system row,
+  retired before or not, to the ordinary deletion (reason `retired`, actor `system:catalog`, the event
+  `repository.deleted`, the job `repository-delete`, whose last step deletes the row of `upstream_repository` before the
+  repository's); an undeclared preset is retired as before; a row whose deletion runs is left to its job and out of the
+  admin list. The word for a retired registry stays the spec's "No longer offered" (R-UI-187, R-UI-190), not "Retired" as
+  I had written at 19:09: the project's list and the registries page said it already; new is the badge with its sentence
+  on the repository's content page for callers who may read the configuration (others read "Disabled", Q-UI-840). A
+  reading that is new and his to object to: R-REPO-066 quotes him that upstream's repositories "cannot be deleted";
+  Q-REPO-490 reads that as a rule about callers (`DELETE` still answers `409 managed_by_product`), and the product
+  removes what it no longer declares. Verified by the builder on a development instance of its own with his exact row
+  (migrate logged `removed:["scanner-clamav"]`, the job succeeded, the row is gone); on his profile at the restart of
+  this landing: PROFILENOTE Open: the project's list offers **Set up client** on a retired registry's row, which answers 404
+  (H-2040); a system key declared again while its deletion runs is created only at the following start (H-2041); the
+  integration case runs the job's two statements by hand, the upstream area has no worker (H-2042); older records of
+  decisions and runs still name `scanner-clamav`, left as history (H-2043). Not verified: his installation (the same
+  history says it holds the row; the next release removes it at its start).
 
 - **Closed on 2026-11-25, 20:13, by W1 (W-28, package 1; R-CUR-024, R-CUR-025; Q-CUR-200 to Q-CUR-209; gaps H-2020
   to H-2023; no migration): an upstream package and each of its versions have a switch, and a change of the delivery
