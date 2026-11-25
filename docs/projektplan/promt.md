@@ -295,7 +295,7 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | S10 · An upstream package's npm tags stand on their versions | the owner's finding of 11:22 (section 8, Product): the unlabelled run of dist-tags above an opened upstream package goes; a tag stands as a badge on its version's row, as on the package's page, says what it is, and the filter finds a version by it; the package's state is not said twice | landed and pushed at 12:37 (two commits; its builder worked from 11:23 to 12:26) |
 | S11 · A system-only format is offered nowhere for something new | the owner's finding of 12:36 (section 8, Product): the chooser of "New repository" offers ClamAV definitions although R-CLAMAV-001 says it must not; no code of the UI reads `systemOnly`; an audit of every place that lists formats and of every write that takes one | landed and pushed at 14:55 (one commit; Q-UI-1200 to Q-UI-1203, Q-CLAMAV-19, H-1980; its builder worked from 12:36 to 13:20) |
 | S12 · A scan that could not be read to its end says which limit was passed | the research of 13:20 (section 8, Tests and tools, under the malware scanner on the owner's profile): the scanner's answer, the row, the API and the screens carry the heuristic's name; the release dialog says that a Go program can trip the scan-size limit; nothing of the limits changes | landed and pushed at 15:30 (one commit, migration 00128; its builder worked from 13:52 to 15:14) |
-| S13 · Small findings of the screens | the monospace token that is used nowhere; the conflict dialog's API names and JSON; links in a drawer in the browser's colours; the grey of the vulnerability cell's failed states beside the malware cell's amber; a host that breaks at its hyphen; the walk `mirrorFilled`'s order; a doubled breadcrumb; H-1871 (the audit log and the security dashboard read too seldom); H-1980 | in work since 13:54 |
+| S13 · Small findings of the screens | the monospace token that is used nowhere; the conflict dialog's API names and JSON; links in a drawer in the browser's colours; the grey of the vulnerability cell's failed states beside the malware cell's amber; a host that breaks at its hyphen; the walk `mirrorFilled`'s order; a doubled breadcrumb; H-1871 (the audit log and the security dashboard read too seldom); H-1980 | landed and pushed at 16:48 |
 | S14 · What the product says about its scanners' replicas is true | a "Lost" row of the previous replica after every restart; "1 scan running" beside no place in use; the image scanner's processes under the host's name on the profile (whether two containers of one pod's name register side by side); no malware state in a remote's lists | landed and pushed at 15:11 (eight commits, migration 00127; Q-HA-495, Q-HA-496, Q-MAL-110, Q-MAL-111; gap H-1995; its builder worked from 13:55 to 14:57) |
 | S15 · A connection test says what it learned, and reads a token handshake right | the owner's finding of 14:15 (section 8, Product): the registry's test calls an accepted account an error (the challenge's 401 fails the screen's own rule) and shows one sentence of an answer that holds the status, the duration, the token service, the certificate and an error's code; one verdict at one place, the facts shown as R-UI-216 shows a failed call, for every place that tests something | landed and pushed at 15:50 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
@@ -1173,6 +1173,76 @@ records the recorder that tells such a stall apart).
 
 ### Product
 
+- **Closed on 2026-11-25, 16:48, by S13 (Q-UI-1210 to Q-UI-1219; new gap H-1990): ten small findings of the
+  screens.** (1) `code`, `kbd`, `pre` and `samp` take the theme's monospace token once in `main.scss` (they fell back to
+  the browser's Courier; four stylesheets wrote faces of their own); a lint rule (`mono-rule.mjs`) refuses a hand-written
+  monospace face. No new font is shipped: the token's system stack stays. (2) The conflict dialog names each field as
+  its form does and shows a list as its entries, a switch as On or Off, a choice as the option's text, an empty value as
+  a dash and a secret as "Hidden", at all 18 call sites; the review before an exposure rule's save uses the same table.
+  (3) Links in a drawer and every other overlay stand in the page's link colour (one mixin `page-link`; overlays render
+  outside `.content`). (4) A vulnerability scan's state that an administrator has to mend is amber, as the malware
+  scan's (no scanner, no database, no advisory data, failed, over limits, unreadable); none is green. On a stack without
+  a scanner every such cell is amber now, the UI development profile among them. (5) A value in a sentence
+  (`code translate="no"`) moves whole to the next line while it fits and breaks only when longer than a line; S8a's
+  single `nowrap` is gone; `aroundValue` and `<quader-value-list>` mark the credential's hosts. (6) The walk
+  `mirrorFilled` reads one entry per image in the server's tag order. (7) A route title that repeats the step before it
+  adds no step to the breadcrumb (unit test only; no render opens an unknown format). (8) H-1871, above. (9) The admin
+  dashboard counts a system-only format under System, by the catalog's fact, as a fourth class (H-1980 closed). (10)
+  "Gestartet von Ihnen", above. With them: a Debian key's fingerprint keeps its copy button on its last line, and the
+  toggle "Technical details" stays on one line in a narrow cell (two findings of the builder's full render). Landed
+  with the thirteen gates green, the dialog states and a render of the screens the three packages landed before it had changed (upstream, malware, security, downloads, dashboards, failures: English 76 walks, German 16; 0 failed, 0 layout findings); the builder's own full render ran on its tip before the rebase (530 walks, German too). The new rule of the monospace face caught one face S15 had written by hand in the connection test's raw answer, mended at the landing. S15's and S13's changes of the two upstream settings screens were joined by hand, and the German translation file was merged unit by unit (7 changed, 17 new, 5 removed by S13; none changed on both sides). Open: about 15 sentences built in code still hold a host, a key or a path as plain text (H-1990). Not
+  verified: the conflict and diff dialogs in German and in dark (H-1910, H-1911); the unknown format's breadcrumb on a
+  picture; the toggle's `nowrap` with long German labels outside the rendered screens.
+
+- **Open since 2026-11-25, 15:55, the owner's task: the acts of an opened upstream package are rebuilt, and downloads, a sync
+  and blocks take a range of versions (working paper W-28; nothing is built before he has chosen).** His words: "Wir
+  brauchen einen Weg um einen Regelmäßigen sync einzurichten und dass auch mit bestimmten Versionen. Was ich von dir will
+  ist ein Refactoring dieses Interfaces. Aktuell 3 Button einfach hingeknallt, sieht scheiße aus. Besser wäre doch man
+  könnte zwischen 'Allow every version' und 'block every version' switchen ... und wenn der Delivery-Mode auf auf
+  black-listing steht, dann sind erstmal alle repos auf 'Allow every version' […] diese Toggel gehört separiert vom
+  Download-Button. Lass uns mal versuchen diesen Toggel auf die Rechte Seite zu bringen und einzelne Versionen brauchen
+  dann natürlich auch den Toggel […] Das drei-punkt-menü bei einzelnen Versionen lösen wir dazu auf. Nur was passiert,
+  wenn zu einem späteren Zeitpunkt der Delivery-Mode für ein repo gewechselt wird? Vielleicht sollten wir intern die
+  Zustände so speichern, dass es immer ein explizites allow und block gibt ... Ich möchte, dass du dieses Problem einmal
+  komplett durchdenkst und dann mit Lösungsoptionen zu mir kommst. Dann erst bauen wir." and "Es muss möglich sein, nur
+  einfach alle versionen herunterzuladen, sondern alle Versionen ab einer bestimmten Version UND es muss auch möglich
+  sein, einen sync einzuschalten bei dem wir regelmäßig und automatisch erneut syncronisieren aber auch hier wieder..
+  ggf. AB einer bestimmten Version, oder bis zu einer bestimmten Version. Oder blockieren aller Versionen unterhalb einer
+  bestimten Version ODER oberhalb einer bestimmten Version."
+  The proposal, as his private working paper with a sketch he can click (published 16:10; his choices are read from its
+  store on "bitte auslesen"): a switch per package and per version at the right that shows what holds and names who
+  decided (the mode, the package, the range, this version); a range is two bounds (from, up to) in the order the format
+  already declares (`ViewAdapter.Compare`), no range syntax, which removes the objection of Q-CUR-3 (c); the same two
+  bounds say what a package delivers, what a download fetches and what a sync keeps current; a sync is a download that
+  repeats, on the queue of R-CUR-011, which reverses Q-CUR-25. Five decisions wait, my favourite first: d1 what is stored
+  and what a change of the mode does (b: rules stay exceptions, and the change to `onlyAllowed` offers to allow what the
+  repository delivered so far; a: without that offer; c: every package explicit from its first use); d2 ranges in the
+  rules (a: one range per package; b: free range rules; c: none); d3 the sync's engine (a: a repeating download; b: the
+  mirror with per-package entries; c: the mirror alone); d4 who sets a sync up (a: the holders of `manage`, bounded; b:
+  administrators); d5 a tag without a version under a range (a: not delivered, switchable alone; b: follows the package;
+  c: follows the version it points at). Decided by me and listed in the paper for his objection: a package's switch
+  resets its versions' own settings on request; the row's menu goes, Download and Discard stand in the cache's cell; the
+  upper bound is "included" or "below"; a sync stores only what the rules deliver (else it fetches again every 30 days
+  what the examination's retention discarded) and removes nothing; one interval per repository; a sub-section has no
+  range; the mirror stays. Not verified: the cost of comparing versions on the data path, whether a repeated download
+  fetches a tag that moved, how much storage syncs add. Build packages once chosen: 1 the switches, the cache's acts and
+  the mode's dialog; 2 the range at the package rule for the five remote formats; 3 a download's bounds; 4 the sync.
+  **State at 16:28:** the owner wrote "kannst einlesen und den build dafür starten"; the paper's store was empty (a
+  choice was saved only by the button under its card, which the page did not make plain: my fault). The page saves a
+  choice at the click now, has one button that saves all five, and says beside the button when a save fails. He was
+  asked whether all five favourites hold. Started without his answer, because neither depends on it: the builder of
+  package 3 (`fromVersion`, `toVersion`, `toInclusive` at a package's bulk; Q-CUR-190 to 194, migration 00129, gaps
+  H-2010 to 2014) and a planner for packages 1, 2 and 4 under the favourites, with what changes per alternative
+  (Q-CUR-200 to 259, migrations 00130 to 00132).
+
+- **Open since 2026-11-25, 15:40 (seen by me in the owner's picture of an opened upstream image, not named by him):
+  an upstream version's line lists the attestation as a platform.** The version rows of
+  `web/src/app/features/repositories/upstream/upstream-package.html` print `v.platforms.join(', ')`, and for an image
+  built with provenance the list holds `unknown/unknown` beside `linux/amd64`; that entry is the index's attestation
+  manifest and no platform (`rows.AttestationPlatform`, which the stored image's view already leaves out). To do: the
+  upstream catalogue's answer leaves the attestation out of the platforms, for every format's catalogue that names
+  platforms; goes into the next batch of small UI findings.
+
 - **Closed on 2026-11-25, 10:13, by G2: twelve defects in dialogs that no picture had shown, and the tier that shows
   them (section 12 A's states, the overlays' part).** `make ui-states` opens 69 states of dialogs in the unit-test
   builder's browser mode, without the stack (every dialog no walk opened, the confirm dialog's shapes "type to confirm"
@@ -1304,7 +1374,12 @@ records the recorder that tells such a stall apart).
   - At the landing: the lint of the rebased commits found four places its builder's lint had not (three files' formatting,
     one inferred type), repaired in the commit; the migration became 00121 behind S3's 00120.
 
-- **The audit log and the security dashboard's findings sent no read during 60 and 75 s of a seen tab (H-1871; M1,
+- **Closed on 2026-11-25, 16:48, by S13 (Q-UI-1216; H-1871 closed): both lists did read on time.** Traced with
+  temporary logging: the measurement counted `requestfinished` only, and Angular's fetch backend aborts a request that
+  was answered already when its reader unsubscribes, so the two large answers showed as `ERR_ABORTED`. The measurement
+  counts every call that got an answer; the findings list reads every 30 s like the audit log (it read every 60 s).
+  Measured again: audit events and findings each read twice a minute while seen. As it stood:
+  **The audit log and the security dashboard's findings sent no read during 60 and 75 s of a seen tab (H-1871; M1,
   2026-11-25, two runs in a browser on the UI profile):** both read at once when the window is seen again and their unit
   tests pass. Not read to its cause: which interval each uses (`LIVE_SLOW_MS` is 30 s, `LIVE_IDLE_MS` 60 s) and whether a
   list of events that others write may wait that long under R-UI-213.
@@ -1335,7 +1410,14 @@ records the recorder that tells such a stall apart).
   his picture shows `3.8.51, sha-5ccfd1a, 3.8.52, …`, oldest first with the commit tags between. To do (S5): every list
   of versions defaults to the format's own version order, newest first, in every format.
 
-- **"Gestartet von Sie" (owner, 2026-11-25, 14:25, his installation in German, the head of a bulk download on the tab
+- **Closed on 2026-11-25, 16:48, by S13 (Q-UI-1219): "Gestartet von Ihnen".** A sentence that names the reader is a
+  unit of its own ("Started by you" / "Gestartet von Ihnen"; the fact's value alone reads "Ihnen"). Two more places of the
+  same kind were found and changed: the steps of "Which limit applies" put a list's label into a sentence ("the rule for
+  Every signed-in user", in German lowercased to "alle angemeldeten benutzer"), and one phrase of the budget rule stood in
+  two German sentences that need two cases ("Es gilt: der Regel"); each case is a sentence of its own now. No lint rule:
+  the flow of a value into a sentence cannot be read exactly from the source. The render's tab Downloads has a bulk the
+  reader started, looked at in German and English. As it stood:
+  **"Gestartet von Sie" (owner, 2026-11-25, 14:25, his installation in German, the head of a bulk download on the tab
   Downloads of `upstream/docker-hub`; his words: ""Gestartet von Sie" ist falsch. "Gestartet von Ihnen""):** verified in
   the code: the one word "You" (German "Sie", right where it stands alone as a cell's value) is put into the sentence
   "Started by …" of another unit (`remote-downloads.ts`, `starterText`; the template's lines 84, 224 and 419), where
@@ -1387,7 +1469,7 @@ records the recorder that tells such a stall apart).
   the API's existing parameters), and Local no longer answers it. The server's writes were audited: one accepted what
   it must not, a package owner on `upstream/clamav` (201), and answers 404 now as for any repository without
   ownership. Looked at by the development agent at the landing: the repository's page dark at 1,440 px (the badge
-  System, the sentence) and the chooser (6 of 6). Open: the admin dashboard counts it under Local (H-1980, in S13);
+  System, the sentence) and the chooser (6 of 6). The admin dashboard counted it under Local (H-1980, closed by S13);
   the tooltip's bubble was in no picture. **G1 landed with it:** the render checks `overlay-out`, `sideways` in an
   overlay, `cut` and `separator-start` (with a lint rule), no growth of the window while an overlay holds content; on
   the real screens they found one defect, a breadcrumb's second line that began with its slash at 390 px (the
