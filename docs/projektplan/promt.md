@@ -255,11 +255,11 @@ and are up again since 06:19 on `main` (instance 1, `https://localhost:4200/ui/`
 
 | Package | What it closes | State |
 |---|---|---|
-| S1 · A screen says a server's failure in its own language | the thirteen screens of section 8, Product ("Thirteen more screens show a server's English text as their own"), from the kept diff `.dev/server-sentences-full-scope.diff`, which no longer applies to `main` as it is | in work since 06:17 |
+| S1 · A screen says a server's failure in its own language | the thirteen screens of section 8, Product ("Thirteen more screens show a server's English text as their own"), from the kept diff `.dev/server-sentences-full-scope.diff`, which no longer applies to `main` as it is | back at 07:18 (one commit, 9efb7e4df; its builder worked from 06:17, every gate exit 0 after one repair); at the landing's gates |
 | S2 · German layout findings and the mirror's filled row | the two German layout findings of section 8, Product (the tab strip of `package-version-ansible` at 1,024 px, the heading of `admin-settings-auth` at 390 px, with a check for a heading that breaks inside a word); the row of a remote's list that a mirror pass filled, in the render set (section 12 C, W-24) | in work since 06:17 |
-| M1 · Three measurements | `package_write` under a push of two platforms with more than 65 distinct layers each (Q-LIM-56, section 12 B); the write load of the download overview under the reference load; the request cost of the live views at many open tabs (H-1847) | landed at 07:25 (eight commits; its builder worked from 06:17 to 07:12, every gate exit 0); what it measured and changed is below |
+| M1 · Three measurements | `package_write` under a push of two platforms with more than 65 distinct layers each (Q-LIM-56, section 12 B); the write load of the download overview under the reference load; the request cost of the live views at many open tabs (H-1847) | landed and pushed at 07:14 (eight commits, Test and Release 45559185462; its builder worked from 06:17 to 07:12, every gate exit 0); what it measured and changed is below |
 | S3 · A download queue that waits for the upstream's rate limit says so | the owner's finding of 06:31 (section 8, Product): the queue of `upstream/docker-hub` stood at Docker Hub's 429 and neither the tab Downloads nor the administrators' overview said so | in work since 06:40 |
-| S4 · One scrollbar per page | the owner's finding of 06:45 (section 8, Product): three scrollbars side by side on a remote's tab Images with an opened image; his rule: one scrollbar per page, the outermost | the plan is back at 07:12 (P2, 25 minutes, read-only; kept in the session's scratch directory as `p2-one-scrollbar-per-page-plan.md`): one package, see below; a builder when a place is free, ahead of G2 |
+| S4 · One scrollbar per page | the owner's finding of 06:45 (section 8, Product): three scrollbars side by side on a remote's tab Images with an opened image; his rule: one scrollbar per page, the outermost | the plan is back at 07:12 (P2, 25 minutes, read-only; kept in the session's scratch directory as `p2-one-scrollbar-per-page-plan.md`): one package, see below; a builder in M1's place since 07:16 |
 | S5 · One row per image, versions newest first | the owner's findings of 06:55 (section 8, Product): several tags of one image are several rows, a signed image is told by a mark on its row; every list of versions defaults to the format's version order, newest first, in every format | a planner (P3) since 06:58; a builder when a place is free |
 | S6 · "Not scanned" says why and what comes | the owner's finding of 06:55 (section 8, Product): a list's cell "not scanned" gives no cause and no hint whether a scan is planned; the UI profile runs no scanner at all, so he never sees a scan where he looks | a builder when a place is free |
 | P1 · The render guard's blind spots (a plan) | section 12 A: which states the render set never shows, what a check could hold of a control beside a framed box, of absolutely placed elements and of text drawn by CSS, and what each costs the render job | back at 06:42 (a planner, 25 minutes, read-only; kept in the session's scratch directory as `p1-render-guard-blind-spots-plan.md`); its three packages are G1 to G3 below |
@@ -306,7 +306,7 @@ Q-UI-427 and revises Q-UI-241, Q-UI-4 and Q-UI-997. Cost by its planner's estima
 most a minute more, nothing per format. It meets S5 in one file (the opened item's list): S4 sets its bound and its link,
 S5 its rows and their order; the second to land rebases.
 
-**The three measurements (M1, landed at 07:25; each is repeatable by the command on its developer page and runs in no
+**The three measurements (M1, landed at 07:14; each is repeatable by the command on its developer page and runs in no
 normal run).**
 - **`package_write` under a push of several platforms: a defect, repaired.** With the default burst of 400 a `docker push`
   of two platforms with 70 layers each got its first 429 at the 400th write, 2.5 s in (`Retry-After` 26 to 32 s); the
@@ -796,6 +796,18 @@ order is what a user or an operator meets first. The state is kept here.
 | W11 · Readings and statements (the development agent) | the stall family of the runs before 2026-11-18; pipeline artifacts to read before they expire (from 2026-12-02); entries that close by a reasoned statement | the statements landed at 09:39, the readings of runs are back and both are marked in the lists; left: two single sets to dispatch in the pipeline window, a count of a cold load's requests, a trace of the Bastion's answers by kind |
 
 ### Tests and tools
+
+- **`SBOM generator` red in the run of M1's push: Docker Hub's limit of the site's address, used up by a bulk on the UI
+  profile (2026-11-25; Test and Release 45559185462, job 139018489252, read at 07:17):** the job's `docker run` of the
+  pinned `registry` image was answered "429 Too Many Requests" by `registry-1.docker.io`. The job gates Semantic Release
+  and was the only job with Docker pulls that did not log in to Docker Hub (the others carry the step "Log in to Docker
+  Hub"). **Verified:** Docker Hub reports the development machine's address at 0 of 100 pulls an hour left (07:18); the
+  owner's bulk of 315 tags on the UI profile, which runs on that machine, had pulled until its 429 at 06:30:51 and its
+  four running rows ask again about once a minute. **Inferred, not verified:** the runners leave through the same
+  address (the machine is in 10.18.10.x, the runners' nodes in 10.18.45.x). **Repaired at 07:25:** the job logs in like
+  the others, so its pulls count against the account. Not started again: a re-run meets the same limit. Open: whether
+  another job pulls without the account (the run of the repair shows it), and the profile's queue, which takes each new
+  hour's 100 pulls as long as its 206 rows wait (the owner's test; S3 changes what a limited queue does).
 
 - **Two red jobs of R5b's push (2026-11-24; Test and Release 45324445298, read at 06:25):** `UI layout checks`: the
   renders `repository-npm-remote-upstream` as power and admin ended with eight `cramped` findings at 1440 px (the
