@@ -305,11 +305,12 @@ wrapped line was seen (2026-11-19), so its condition to build a check is met.
 | S16 · A retired system repository is removed, and a retired preset says so | the owner's finding of 19:09 (section 8, Product): `upstream/scanner-clamav` stays listed as "Off" | landed and pushed at 20:40 |
 | S17 · Every load shows the spinner the owner picked (W-29) | the owner's task of 19:15 and his choice of 19:19 (section 8, Product): the mark's six stones, lighting up in sandstone | landed and pushed at 23:00 |
 | S18 · No signed address in a log or a record | my finding of 19:23 (section 8, Product): the upstream log writes redirect targets with their signatures | landed and pushed at 20:40 |
-| S19 · The command behind its button on a version's page, clients as tabs, a collection opens in its documentation (W-30) | the owner's task of 20:39 (section 8, Product): every format's version page, the panel of the command, the target of a collection's name, the sentence why a format is not checked for vulnerabilities | built at 21:25 (four commits on its branch, gates green there); waits for its landing behind G3 |
-| W30-A1 · A collection's documentation reads like the documentation site (W-30) | R-ANS-048 to R-ANS-050 of the plan `.dev/w30-plan.md`: anchors and links, a plugin's configuration, the page's contents, highlighted examples | in work since 21:25 |
-| W30-G7 · An image's facts: annotations and labels, the config, the layers, the history (W-30) | R-OCI-039 to R-OCI-041 of the plan `.dev/w30-plan.md`; a chart's facts wait for the owner's d4 | in work since 22:06 |
+| S19 · The command behind its button on a version's page, clients as tabs, a collection opens in its documentation (W-30) | the owner's task of 20:39 (section 8, Product): every format's version page, the panel of the command, the target of a collection's name, the sentence why a format is not checked for vulnerabilities | built at 21:25; its builder rebases it onto the spinner and the range since about 23:03, with R-UI-218 and Q-UI-1240 to Q-UI-1245 |
+| W30-A1 · A collection's documentation reads like the documentation site (W-30) | R-ANS-048 to R-ANS-050 of the plan `.dev/w30-plan.md`: anchors and links, a plugin's configuration, the page's contents, highlighted examples | built at about 22:28; its builder rebases it since about 23:03, with Q-UI-1246 |
+| W30-G7 · An image's facts: annotations and labels, the config, the layers, the history (W-30) | R-OCI-039 to R-OCI-041 of the plan `.dev/w30-plan.md`; with a Helm chart's facts since the owner's d4 = b; Q-UI-1250 to Q-UI-1259, R-UI-219, migration 00132 | in work since 22:06 |
+| W30-A4 · A role read through a remote reads like a role (W-30, the owner's d1 = b) | R-ANS-056 of the plan `.dev/w30-plan.md`: owner and name, description, README, `role search`; no local publish of a role; Q-ANS-110 to Q-ANS-119, Q-UI-1260 to Q-UI-1269, H-2120 to H-2129, migration 00133 | in work since 23:18 |
 | W-30 planner · Ansible as an equal of Galaxy; general and specific properties per format | the owner's task of 20:39: a comparison screen by screen and answer by answer, and the table of properties per format | plan written at 21:05 (`.dev/w30-plan.md`) |
-| W30-G1 · A remote's cached version of npm and Debian carries its facts (W-30) | R-NPM-050, R-NPM-051, R-DEB-037 of the plan `.dev/w30-plan.md`; the README of an npm version from the stored tarball | in work since 21:09 |
+| W30-G1 · A remote's cached version of npm and Debian carries its facts (W-30) | R-NPM-050, R-NPM-051, R-DEB-037 of the plan `.dev/w30-plan.md`; the README of an npm version from the stored tarball | landed and pushed at 23:27 |
 | G1 · The checks see overlays and clipping as a person does | an overlay is measured in the window a person has and a modal state is not pictured in a grown window; `sideways` inside dialogs and drawers; the new checks `overlay-out` (the person search's list wider than its drawer, W-12), `cut` (a text cut at the start of a wrapped line) and `separator-start` (a separator dot that starts a line); a state's own widths and schemes; the correction of Q-UI-1060 | about 5 s of fixtures, at most 60 s of the render step | landed and pushed at 14:55 (two commits; Q-UI-1170 to Q-UI-1173, H-1912 closed; its builder worked from 11:13 to 13:17; with S11 on one landing: thirteen gates, `make ui-states`, the whole English set (532 screens, 43.1 minutes) and the German pass (98 screens, 9.2 minutes) each without a failure or a finding, the new checks over every screen that landed today) |
 | G3 · Page and shell states on the stack | the 10 menus, 3 drawers, the person search's list in a drawer, about 19 sections, 11 routes, the banner and the maintenance notice, a failure of an action inside a section, the editors' refusals with their summary, two selection states, the command menus of NuGet, Ansible Galaxy and generic | 5 to 6 minutes of the render step (the job at about 61 to 64 of its 75 minutes), about 3 s per format | landed and pushed at 21:59 |
 
@@ -1244,6 +1245,32 @@ records the recorder that tells such a stall apart).
   that failed between 07:39 and 09:00 is no finding of the code.
 
 ### Product
+
+- **Closed on 2026-11-25, 23:27, by W30-G1 (W-30; R-NPM-050, R-NPM-051, R-DEB-037; Q-NPM-91, Q-NPM-92, Q-DEB-135; gaps
+  H-2090 to H-2094; no migration): a version an npm or a Debian remote cached shows its facts as a published one, also
+  what was cached before.** The planner's finding, reproduced first by the builder on the unchanged code: a version
+  installed through an npm remote had no row of its format (no licence, no dependencies, no deprecation, the README
+  answered 404), and a cached Debian file had no control field. Built, and departed from the plan for both: the facts
+  are not written in the fill's commit (that would parse up to 128 MiB inside the fill's transaction, under the
+  package's lock) but by a job the commit queues: `npm-remote-describe` reads the stored package document and each
+  cached tarball once (file count, unpacked size, install script, the README's file name), `deb-remote-describe` reads
+  the stored file's control archive with ranged reads (the index rows hold no control paragraph, as the plan had
+  assumed), never the data archive. The README of a cached npm version is read from the stored tarball on demand (at
+  most 64 KiB, the reader Ansible's README uses); a cached npm version shows the dist-tags of the stored document,
+  read up to that member, without a write. What was cached before the change, my addition at about 22:20 after the first
+  report (the owner's profile and installation hold such packages, and a package whose upstream never changes would
+  have stayed bare): a maintenance task `remote-describe` queues the two jobs for every remote package that holds a
+  version or file without its row, by itself at a worker's start while one exists, daily at 04:23, and at an
+  operator's `POST /api/v1/system/tasks/remote-describe/run`; 100 packages a batch, 1,000 jobs a run, it stops while
+  200 describe jobs wait and goes on five minutes later from its cursor, at a priority below a fill's jobs; no request
+  to an upstream. A version or file the reader refuses gets the facts the document or the index row gives and is not
+  tried again. NuGet, OCI and Ansible wrote their rows at the fill already (read in code). The landing: the count of
+  requirements 1,285; the 13 gates, the renders of the two cached versions' pages and the whole integration areas `npm`, `debremote`, `repository`, `packages` and `conventions` green; looked at: a cached Debian version's Details in light at 1,440 px (description, homepage, architecture, suite and component, maintainer, section, priority, installed size, Depends). Open: a store with tens of thousands of cached packages is described over hours
+  (H-2090); a freshly cached version shows its facts seconds after the fill (H-2091, H-2094; the page reads itself
+  again); every README request of a cached npm version inflates the tarball up to the file (H-2092); a Debian file the
+  reader refuses shows only its index row (H-2093); Debian's Recommends, Suggests and long description are stored
+  and not shown (W30-G8). Not verified: a later deprecation at the upstream reaching a cached version end to end;
+  large real documents and tarballs; the owner's installation.
 
 - **Closed on 2026-11-25, 23:00, by W2 (W-28, package 2; R-CUR-026; Q-CUR-220 to Q-CUR-230; ADR-283; gaps H-2070 to
   H-2075; migration 00131): a package can be allowed with a range of its versions, from one version up to or below
