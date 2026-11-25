@@ -2307,7 +2307,7 @@ to `enforce` by the owner's Q-LIM-4 (2026-11-19): in `audit` nothing on a protoc
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) `package_write` (10 per second, burst 50; the burst is 400 since Q-LIM-56) holds in `enforce` on every protocol path (chosen) | — | A publish's cost (spool, validation) stays bounded; uploads are Later by the owner | Writes count against the request figures and `package_write` both |
+| (a) `package_write` (10 per second, burst 50; the burst is 400 since Q-LIM-56, 1,600 since Q-LIM-292) holds in `enforce` on every protocol path (chosen) | — | A publish's cost (spool, validation) stays bounded; uploads are Later by the owner | Writes count against the request figures and `package_write` both |
 | (b) Writes under the request figures only | — | One system | A publish loop gets 200 per second under Standard |
 
 **Choice:** (a). **Applied in the spec:** R-LIM-005; [api-and-ui.md](api-and-ui.md) R-API-016.
@@ -2598,6 +2598,10 @@ buildx (about 130 with `docker push`, three per blob); a push of two platforms w
 `docker push`, or four platforms with more than 30, meets it, and docker exits 1. The class is not changed here: the owner's decision
 18 is about the profiles' request figures, and an image of that size per platform was not measured.
 
+Measured on 2026-11-25 and changed by [Q-LIM-292](#q-lim-292--the-burst-of-package_write-holds-the-push-of-the-largest-image-on-four-platforms):
+a push of two platforms of 70 distinct layers through `docker push`'s requests met the burst of 400 at its 400th unsafe request, 2.5 s in;
+the burst is 1,600 since.
+
 **Applied in the spec:** [api-and-ui.md](api-and-ui.md) R-API-016's configuration. Code: `APIRateLimitPackageWrite` in
 [m1.go](../../internal/config/m1.go).
 
@@ -2723,10 +2727,10 @@ Restricted 25 bursts, Standard 25, Technical 50 (a system runs all day); each is
 caller that stays at its rate meets the hour figure, not the burst. Only the request figures change: the byte, upstream, parallel and
 refused figures keep the estimates of the first migration.
 
-**`package_write`** (Q-LIM-56, a burst of 400 at 10 a second): a pull spends one unit (the `POST` of the token); it still holds every
-single-platform push and the measured multi-platform push (95 unsafe requests); it does not hold a push of two platforms with more
-than about 65 distinct layers each through `docker push` (three unsafe requests per blob), which was not measured and is noted in
-Q-LIM-56.
+**`package_write`** (Q-LIM-56, a burst of 400 at 10 a second, 1,600 since Q-LIM-292): a pull spends one unit (the `POST` of the
+token); it holds every single-platform push and the measured multi-platform push (95 unsafe requests). The burst of 400 did not hold a
+push of two platforms with more than 65 distinct layers each through `docker push` (three unsafe requests per blob), measured on
+2026-11-25; the burst of 1,600 holds four platforms of 127 layers ([Q-LIM-292](#q-lim-292--the-burst-of-package_write-holds-the-push-of-the-largest-image-on-four-platforms)).
 
 **Rationale:** the owner's rule asks that normal use never reaches a figure; the measurement shows normal use is dense (a pull of
 48 requests in a third of a second, an install of 475 in 2.5 s), so a burst, not the rate, is what a client meets first. The
@@ -3154,6 +3158,44 @@ to a minute does not pass them. **Applied in the spec:** R-LIM-020 (the table of
 in [errors.go](../../internal/limits/errors.go). Test: `TestR_LIM_020_TheDetailAndRetryAfterNameOneWait`
 ([errors_test.go](../../internal/limits/errors_test.go)): every code that carries a wait, 21 waits from 0 to 47 hours, the detail read back
 against `Retry-After`, `retryAfterSeconds` and the RateLimit policy (unit, microseconds).
+
+### Q-LIM-292 · The burst of package_write holds the push of the largest image on four platforms
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. It changes the
+default of Q-LIM-56, a number of the development agent's; the upload figures stay Later by the owner's decision (Q-LIM-27), and this is
+not one of them.
+
+Context: Q-LIM-56 set the burst to 400 so that it holds the push of the largest image docker builds (127 layers, 385 unsafe requests)
+and computed, without measuring, that a push of two platforms with more than about 65 distinct layers each would meet it. Measured on
+2026-11-25 on the integration stack with the registry's real routes, as one token of a person under the built-in profiles, in Enforce
+(`TestMeasurePackageWriteUnderAMultiPlatformPush`, [usage-and-limits.md](../developer/usage-and-limits.md#a-multi-platform-push-against-package_write-measured)):
+docker push's requests (a `HEAD`, then `POST`, `PATCH`, `PUT` per blob, five blobs at a time, a manifest per platform, the index) of two
+platforms of 65 layers are 400 unsafe requests and pass; of 70 layers 430, and the 400th is answered 429 after 2.5 s with `Retry-After`
+of 26 to 32 s; of 100 layers 610. A client that ends at the first 429, as docker did on the kind cluster on 2026-11-20 (Q-LIM-56), fails
+the push; one that waits each `Retry-After` and sends again finishes in 35 s (70 layers) and 51 s (100 layers). buildx's requests (no
+`PATCH`) of two platforms of 100 layers are 408 and meet it too. A platform of up to 127 layers is an image docker builds; several
+platforms of one image are what `docker buildx build --platform` and a containerd image store push in one command.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) Keep 400 | A second run of the push, or a client that honours `Retry-After`, finishes | No change | `docker push` of an image of two platforms of 66 to 127 layers, or four of 33 to 127, exits 1 on its first run; a pipeline that pushes such an image fails |
+| (b) 800 at 10 a second | Two platforms of the largest image (772) | The case measured | Four platforms of more than 65 layers still fail |
+| (c) 1,600 at 10 a second (chosen) | Four platforms of the largest image through `docker push` (1,542), eight platforms of up to 98 layers through buildx | One number, as Q-LIM-56; the sustained rate a publish loop gets stays 10 a second; still below the request burst of the profile Standard (4,000), so the figures bound a caller's requests first | A caller may send 1,600 writes at once on every format; the window is 160 s, so a caller that used the burst up waits up to that long |
+| (d) The upload session's `PATCH` and `PUT` not counted, Q-LIM-56 (b) | A blob costs one unit | Counts a push as blobs | A rule of its own for one format's routes in the request path; not a default |
+| (e) Rate and burst together, 40 a second and 1,600 | The window stays 40 s | A shorter wait after the burst | A publish loop gets 40 a second |
+
+**Choice:** (c). **Rationale:** the measurement shows what Q-LIM-56 found for one platform: the refusal is the burst, a push is short and
+dense, and docker does not retry it. A burst that holds the largest image on four platforms keeps the class's purpose (a publish loop runs
+at 10 a second once its burst is spent) and removes the failure without a new concept. After the change the same measurement passed every push of two platforms of 100 and 127
+layers and of four platforms of 127 layers (1,542 unsafe requests through docker push's, 10.7 s, no 429); five platforms of 127 layers met
+the burst at its 1,600th unsafe request with `Retry-After` 140 s, and a client that honours it finished in 2 min 52 s. The development agent would revisit it
+when the upload figures of Q-LIM-27 come, when a client is found that pushes more than four platforms of very many layers through
+`docker push`, or when a caller is seen to spend the burst of 1,600 on writes that cost the installation more than a registry's blob
+steps (a loop of publishes of large packages).
+
+**Applied in the spec:** [api-and-ui.md](api-and-ui.md) R-API-016's configuration; Q-LIM-27, Q-LIM-56, Q-LIM-59. Code:
+`APIRateLimitPackageWrite` in [m1.go](../../internal/config/m1.go). Test: `TestAPISection` "R-API-016 the default burst of package_write
+holds a push of the largest image on four platforms" ([api_test.go](../../internal/config/api_test.go), unit).
 
 ## What this does not cover
 

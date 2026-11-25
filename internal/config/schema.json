@@ -134,8 +134,8 @@
               "additionalProperties": false,
               "properties": {
                 "burst": {
-                  "default": 400,
-                  "description": "Most writes one window admits: a registry push sends three per layer, and an image has at most 127 layers.",
+                  "default": 1600,
+                  "description": "Most writes one window admits: a registry push sends three per blob, an image has at most 127 layers per platform, and the default holds four platforms.",
                   "minimum": 1,
                   "type": "integer",
                   "x-quader-env": "QUADER_API_RATE_LIMITS_PACKAGE_WRITE_BURST"

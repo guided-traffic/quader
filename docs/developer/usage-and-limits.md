@@ -136,6 +136,43 @@ of a cached download against counting in-memory counters: **2 round trips per do
 second runs off it), about 6 µs and 71 allocations of the engine per download on the development machine. A miss adds the round trip
 of step 9a. No PostgreSQL statement runs on a request: the index is in memory, the usage store is written by the buffer.
 
+## A multi-platform push against package_write, measured
+
+Measured once on 2026-11-25, a measurement and not a test (Q-LIM-56's open question), repeated by
+
+```shell
+QUADER_TEST_MEASURE_PUSH=2x65,2x70,2x100 test/integration/run.sh -run TestMeasurePackageWriteUnderAMultiPlatformPush -v ./test/integration/limits/
+```
+
+([push_measure_test.go](../../test/integration/limits/push_measure_test.go); without the variable it is skipped). The set-up: the integration
+stack (instance 1, then instance 2), one replica with Valkey, the classes of R-API-016 at their defaults
+(`QUADER_API_RATE_LIMITS_ENABLED=true` and nothing else), the built-in profiles, Enforce; a local OCI repository; per push a person of its
+own with a token of the default scope (the class's bucket is the subject). The client sends what a registry client sends: the version check
+without a credential (the challenge, not charged), the token by the password grant (`POST /v2/_token`, one unsafe request), per platform the
+configuration and the layers, five blobs at a time, each a `HEAD` and then docker push's `POST`, `PATCH`, `PUT` or buildx's `POST`, `PUT`
+with the body, then a manifest per platform and the index. Every layer is a few dozen bytes. Each push runs once as a client that ends at
+the first 429 (docker did on the kind cluster on 2026-11-20) and once as one that waits each `Retry-After` and sends the request again. The
+development host has 20 cores; load average 8 to 11 from two other builders.
+
+| Push (platforms × layers, requests per blob) | Unsafe requests | Burst 400 (06:25, load 8): a client that ends at the first 429 | Burst 400: a client that honours `Retry-After` | Burst 1,600 (06:34, load 11) |
+|---|---|---|---|---|
+| 2 × 65, docker push | 400 | passes, 2.9 s | passes, 3.0 s | — |
+| 2 × 70, docker push | 430 | 429 at the 400th, after 2.5 s, `Retry-After` 32 s | finishes in 34.9 s, 15 answers 429 | — |
+| 2 × 100, docker push | 610 | 429 at the 400th, after 2.5 s, `Retry-After` 30 s | finishes in 51.1 s, 101 answers 429 | passes, 4.7 s |
+| 2 × 70, buildx | 288 | passes, 2.6 s | passes | — |
+| 2 × 100, buildx | 408 | 429 at the 400th, after 3.6 s, `Retry-After` 15 s | finishes in 15.9 s, 4 answers 429 | passes, 4.9 s |
+| 2 × 127, docker push / buildx | 772 / 516 | — | — | passes, 6.2 s / 4.8 s |
+| 4 × 127, docker push / buildx | 1,542 / 1,030 | — | — | passes, 10.7 s / 9.8 s |
+| 5 × 127, docker push | 1,927 | — | — | 429 at the 1,600th after 11.4 s, `Retry-After` 140 s; a client that honours it finishes in 2 min 52 s |
+
+The busiest second held 105 to 166 unsafe requests in every run: the rate of 10 a second never decides a push, the burst does. The 429
+names the class (`RateLimit: "package_write";r=0;t=30`, `RateLimit-Policy: "package_write";q=400;w=40`); the profile's request figures
+(Standard, 4,000 in 20 s) had room left in each run. What it meant: with the burst of 400, docker's first run of a push of an image of two
+platforms with 66 or more distinct layers each failed, and a second run or a client that waits finished within a minute. The burst is
+1,600 since [Q-LIM-292](../spec/usage-and-limits.md#q-lim-292--the-burst-of-package_write-holds-the-push-of-the-largest-image-on-four-platforms):
+four platforms of the largest image docker builds. Not measured: the real clients against the new default (the kind cluster's case of
+Q-LIM-56 pushes one platform of 40 layers), and whether a client other than docker retries a 429 of a push.
+
 ## Tests
 
 | Test | What it holds |

@@ -21,8 +21,21 @@ func TestAPISection(t *testing.T) {
 			rl.Read.RequestsPerSecond != 50 || rl.Read.Burst != 200 ||
 			rl.Write.RequestsPerSecond != 10 || rl.Write.Burst != 50 ||
 			rl.Anonymous.RequestsPerSecond != 5 || rl.Anonymous.Burst != 20 ||
-			rl.PackageWrite.RequestsPerSecond != 10 || rl.PackageWrite.Burst != 400 {
+			rl.PackageWrite.RequestsPerSecond != 10 || rl.PackageWrite.Burst != 1600 {
 			t.Fatalf("%+v", rl)
+		}
+	})
+	t.Run("R-API-016 the default burst of package_write holds a push of the largest image on four platforms", func(t *testing.T) {
+		l, err := load()
+		if err != nil {
+			t.Fatal(err)
+		}
+		// Q-LIM-292: docker push sends three unsafe requests per blob (POST, PATCH, PUT), an image docker builds has at most 127
+		// layers and a configuration per platform, and the push ends with a manifest per platform, the index and the token's POST.
+		const platforms, layers = 4, 127
+		push := platforms*(layers+1)*3 + platforms + 1 + 1
+		if b := l.Config.API.RateLimits.PackageWrite.Burst; b < push {
+			t.Fatalf("the burst %d does not hold the %d unsafe requests of a push of %d platforms of %d layers", b, push, platforms, layers)
 		}
 	})
 	t.Run("R-API-018 allowed_origins must be exact origins", func(t *testing.T) {

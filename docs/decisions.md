@@ -10788,10 +10788,10 @@ row. A conflict between two branches in the generated part is resolved by runnin
 
 ### Q-LIM
 
-63 questions on [spec/usage-and-limits.md](spec/usage-and-limits.md).
+64 questions on [spec/usage-and-limits.md](spec/usage-and-limits.md).
 
 <details>
-<summary>Q-LIM: 63 questions</summary>
+<summary>Q-LIM: 64 questions</summary>
 
 | ID | Question | Status | Choice | ADR |
 |---|---|---|---|---|
@@ -10821,7 +10821,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-LIM-24](spec/usage-and-limits.md#q-lim-24--the-format-contract-moves-to-version-6-hostserve-admits-and-the-route-kind-is-the-declaration) | The format contract moves to version 6: Host.Serve admits, and the route kind is the declaration | Decided by the development agent | (a) The existing `RouteKind` declares download, document and write; `Host.Serve` admits; a kit check and a pinned table | [ADR-205](#adr-205--the-format-contract-declares-what-a-fetch-of-a-version-is-and-a-size-may-be-partial-or-not-known-the-contract-is-at-version-5) |
 | [Q-LIM-25](spec/usage-and-limits.md#q-lim-25--the-usage-of-a-deleted-user-is-erased-by-the-daily-task-within-a-day) | The usage of a deleted user is erased by the daily task within a day | Decided by the development agent | (a) The daily `limits-cleanup` deletes rows of subjects that no longer exist | — |
 | [Q-LIM-26](spec/usage-and-limits.md#q-lim-26--the-new-figures-send-ratelimit-fields-only-in-enforce-mode) | The new figures send RateLimit fields only in Enforce mode | Decided by the development agent | (a) Only in `enforce` | — |
-| [Q-LIM-27](spec/usage-and-limits.md#q-lim-27--uploads-stay-under-package_write-in-enforce-until-the-upload-figures-exist) | Uploads stay under package_write in Enforce until the upload figures exist | Decided by the development agent | (a) `package_write` (10 per second, burst 50; the burst is 400 since Q-LIM-56) holds in `enforce` on every protocol path | [ADR-206](#adr-206--download-limits-budgets-per-caller-and-repository-technical-tokens-on-three-levels-audit-and-enforce) |
+| [Q-LIM-27](spec/usage-and-limits.md#q-lim-27--uploads-stay-under-package_write-in-enforce-until-the-upload-figures-exist) | Uploads stay under package_write in Enforce until the upload figures exist | Decided by the development agent | (a) `package_write` (10 per second, burst 50; the burst is 400 since Q-LIM-56, 1,600 since Q-LIM-292) holds in `enforce` on every protocol path | [ADR-206](#adr-206--download-limits-budgets-per-caller-and-repository-technical-tokens-on-three-levels-audit-and-enforce) |
 | [Q-LIM-40](spec/usage-and-limits.md#q-lim-40--the-counting-writer-sits-at-stage-7-the-dispatcher-the-raw-file-handler-and-the-registry-mark-only-refusals-and-the-serving-repository) | The counting writer sits at stage 7; the dispatcher, the raw-file handler and the registry mark only refusals and the serving repository | Decided by the development agent | (a) Stage 7 wraps the response of every protocol request once; the three entry points mark a refusal and the repository that served | — |
 | [Q-LIM-41](spec/usage-and-limits.md#q-lim-41--the-registrys-addresses-are-read-by-a-parser-of-their-own) | The registry's addresses are read by a parser of their own | Decided by the development agent | (a) `qname.ParseRegistryAddress` beside `ParseAddress`, and `ParseProtocolAddress` over both | — |
 | [Q-LIM-42](spec/usage-and-limits.md#q-lim-42--a-requests-charge-travels-in-its-context-not-in-a-field-of-the-remote-engines-request) | A request's charge travels in its context, not in a field of the remote engine's request | Decided by the development agent | (a) `limits.FromContext(ctx)` in the remote engine | — |
@@ -10858,6 +10858,7 @@ row. A conflict between two branches in the generated part is resolved by runnin
 | [Q-LIM-111](spec/usage-and-limits.md#q-lim-111--a-replica-reports-the-epoch-of-the-limits-it-decides-with) | A replica reports the epoch of the limits it decides with | Decided by the development agent on 2026-11-23 | (a) The index's load reads the area's epoch first, in the transaction of its snapshot, and the replica reports it as the gauge `quader_limits_index_epoch`; a test waits until every replica's gauge reaches the epoch the database holds after its change | — |
 | [Q-LIM-112](spec/usage-and-limits.md#q-lim-112--a-replica-counts-the-rounds-of-its-charge-buffer) | A replica counts the rounds of its charge buffer | Decided by the development agent on 2026-11-24 | (a) A counter `quader_limits_flushes_total` of the rounds that ended; a test reads it on every serving replica after the request and waits for two more rounds | — |
 | [Q-LIM-291](spec/usage-and-limits.md#q-lim-291--a-refusal-names-one-wait-in-the-unit-its-text-names-it-in) | A refusal names one wait, in the unit its text names it in | Decided by the development agent | (a) One value: the wait rounded up to whole seconds below two minutes and to whole minutes from there; the detail names it exactly ("2 hours 1 minute"), and `Retry-After`, `retryAfterSeconds` and the refusal's RateLimit policy carry it | — |
+| [Q-LIM-292](spec/usage-and-limits.md#q-lim-292--the-burst-of-package_write-holds-the-push-of-the-largest-image-on-four-platforms) | The burst of package_write holds the push of the largest image on four platforms | Decided by the development agent | (c) 1,600 at 10 a second | — |
 
 </details>
 
