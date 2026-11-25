@@ -26,7 +26,7 @@ func TestR_ANS_026_ThePackageScreensShowACollection(t *testing.T) {
 		t.Fatalf("list: %d %s", list.Status, list.Body)
 	}
 	first := items[0].(map[string]any)
-	if first["name"] != "acme.tools" || first["description"] != "A test collection." || first["latestVersion"] != "2.0.0-rc.1" {
+	if first["name"] != "acme.tools" || first["description"] != "A test collection." || first["latestVersion"] != "1.10.0" {
 		t.Errorf("the list shows %v", first)
 	}
 	if found := e.st.Do(e.r, "GET", "/api/v1/packages?format=ansible&q=test+collection", e.tokC, nil); found.Status != 200 || len(found.JSON(t)["items"].([]any)) != 1 {

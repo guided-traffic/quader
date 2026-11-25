@@ -205,7 +205,7 @@ test('F-54 R-UI-021 R-REPO-024 R-REPO-033 a remote with a non-default upstream, 
 
     await page.getByRole('checkbox', { name: 'Offline' }).check();
     await page.getByRole('button', { name: 'Test connection' }).click();
-    await expect(page.getByTestId('upstream-test-result')).toContainText('The upstream could not be reached.');
+    await expect(page.getByTestId('upstream-test-result')).toContainText('No request was sent to the upstream.');
     await expect(page.locator('.test-result')).toContainText('offline');
     await page.getByRole('button', { name: 'Save changes (Upstream)' }).click();
     await expect(page.getByText('Repository saved.')).toBeVisible();
