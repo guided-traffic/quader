@@ -446,8 +446,8 @@ export async function* policyStates(page: Page): AsyncGenerator<string> {
   await page.route('**/api/v1/projects/*/policies/*', (route) =>
     route.request().method() === 'PUT'
       ? refused(route, [
-          { pointer: '/description', code: 'too_long', detail: 'description: at most 1024 characters' },
-          { pointer: '/entries/2', code: 'unknown_principal', detail: 'sa:web-frontend/release-pipeline: no such service account' },
+          { pointer: '/description', code: 'invalid_description', detail: 'The description has at most 1024 characters.' },
+          { pointer: '/entries/2/principal', code: 'unknown_principal', detail: 'No principal sa:web-frontend/release-pipeline exists.' },
         ])
       : route.fallback(),
   );
@@ -480,9 +480,13 @@ export async function* mappingStates(page: Page): AsyncGenerator<string> {
   await page.route('**/api/v1/projects/*/ci/mappings/**', (route) =>
     route.request().method() === 'PUT' || route.request().method() === 'PATCH'
       ? refused(route, [
-          { pointer: '/priority', code: 'conflict', detail: 'priority 20 is taken by the mapping web-frontend-nightly-builds of this tier' },
-          { pointer: '/match/all/1', code: 'invalid_request', detail: 'ref_type: equals takes branch or tag' },
-          { pointer: '/grants/policies/0', code: 'not_found', detail: `policy ${projectPolicy}: not found in project ${mainProject}` },
+          { pointer: '/priority', code: 'out_of_range', detail: 'The priority is between 1 and 1000000.' },
+          { pointer: '/match/all/1', code: 'condition_invalid', detail: 'ref_type: equals takes one of branch and tag.' },
+          {
+            pointer: '/grants/policies/0',
+            code: 'policy_outside_project',
+            detail: `The project "${mainProject}" has no policy named "${projectPolicy}"; a project's mapping names the project's own policies.`,
+          },
         ])
       : route.fallback(),
   );

@@ -26464,7 +26464,7 @@ issuance has expired by the time the walk runs, so the count is 0); the "Technic
 and **+N more** of 2026-11-25 are a component's state, taken by `make ui-states` (`dist-tags.states.spec.ts`). The policies and the CI
 mappings the routes show are seeded through the API (`seedPoliciesAndMappings` of [seed.ts](../../web/e2e/renders/seed.ts)). A phone's
 scrollbars take no room on every load of a width, a walk's own loads too (an init script of the run instead of a style added after the
-screen's first load). The first runs found sixteen defects in eleven components, each repaired in the screen by a commit of its own; one was not of layout: a stored policy could not be saved, its preview calling its own name invalid.
+screen's first load). The first runs found seventeen defects in eleven components, each repaired in the screen by a commit of its own; one was not of layout: a stored policy could not be saved, its preview calling its own name invalid.
 
 **Applied in the spec:** R-UI-173, R-UI-175 (no change of their rules). Code: [states.ts](../../web/e2e/renders/states.ts),
 [screens.ts](../../web/e2e/renders/screens.ts), [seed.ts](../../web/e2e/renders/seed.ts),
