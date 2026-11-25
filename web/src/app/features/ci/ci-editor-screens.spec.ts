@@ -260,6 +260,22 @@ describe('The mapping editor (R-UI-035, R-CI-009 to R-CI-013)', () => {
     expect(text(leaf)).toContain('The condition is not valid');
   });
 
+  it('R-UI-041 the summary of a refused save names each problem by its field or section, never by its pointer', async () => {
+    const { root, fixture, get } = await renderScreen(MappingEditor, { inputs: { issuer: 'gitlab-com' } });
+    await fillMinimalNewMapping(root, fixture, false);
+    ci(get).failure = new ApiError(
+      422,
+      { code: 'validation_failed', errors: [{ pointer: '/priority', code: 'conflict' }, { pointer: '/match/all/0', code: 'condition_invalid' }] },
+      'r',
+    );
+    buttonByText(root, 'Create mapping').click();
+    await sleep(fixture, 100);
+    const summary = text(root.querySelector('quader-error-summary')!);
+    expect(summary).toContain('Priority: ');
+    expect(summary).toContain('Condition');
+    expect(summary).not.toContain('/match');
+  });
+
   it('R-UI-035 the builder offers all, any and not, the operators and ignore case, and the JSON view shows and takes the same condition', async () => {
     const { root, fixture } = await renderScreen(MappingEditor, { inputs: { issuer: 'gitlab-com' } });
     buttonByText(root, 'Add negation').click();

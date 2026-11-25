@@ -9325,6 +9325,7 @@
     <unit id="ci.editor.general">
       <notes>
         <note category="location">src/app/features/ci/mapping-editor.html:38,39</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:261</note>
       </notes>
       <segment>
         <source>General</source>
@@ -9344,6 +9345,7 @@
       <notes>
         <note category="location">src/app/features/ci/mapping-editor.html:56,57</note>
         <note category="location">src/app/features/ci/mapping-editor.ts:159</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:254</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -9354,6 +9356,7 @@
       <notes>
         <note category="location">src/app/features/ci/mapping-editor.html:67,69</note>
         <note category="location">src/app/features/ci/mapping-editor.ts:160</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:255</note>
       </notes>
       <segment>
         <source>Description</source>
@@ -9364,6 +9367,7 @@
       <notes>
         <note category="location">src/app/features/ci/mapping-editor.html:76,78</note>
         <note category="location">src/app/features/ci/mapping-editor.ts:161</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:256</note>
       </notes>
       <segment>
         <source>Priority</source>
@@ -9393,6 +9397,7 @@
       <notes>
         <note category="location">src/app/features/ci/mapping-editor.html:91,92</note>
         <note category="location">src/app/features/ci/mapping-editor.ts:163</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:258</note>
       </notes>
       <segment>
         <source>Condition</source>
@@ -9502,6 +9507,7 @@
       <notes>
         <note category="location">src/app/features/ci/mapping-editor.html:148,149</note>
         <note category="location">src/app/features/ci/mapping-editor.ts:164</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:259</note>
       </notes>
       <segment>
         <source>Grants</source>
@@ -9673,6 +9679,7 @@
     <unit id="ci.editor.options">
       <notes>
         <note category="location">src/app/features/ci/mapping-editor.html:251,252</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:260</note>
       </notes>
       <segment>
         <source>Options and lifetime</source>
@@ -9683,6 +9690,7 @@
       <notes>
         <note category="location">src/app/features/ci/mapping-editor.html:256,257</note>
         <note category="location">src/app/features/ci/mapping-editor.ts:165</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:257</note>
       </notes>
       <segment>
         <source>Maximum token lifetime (seconds)</source>
@@ -9963,7 +9971,7 @@
     </unit>
     <unit id="ci.editor.name-taken">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:272</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:287</note>
       </notes>
       <segment>
         <source>A mapping of this issuer has this name.</source>
@@ -9972,7 +9980,7 @@
     </unit>
     <unit id="ci.editor.draft-restored">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:318</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:333</note>
       </notes>
       <segment>
         <source>Your entries were restored. Save the mapping again.</source>
@@ -9981,7 +9989,7 @@
     </unit>
     <unit id="ci.editor.issuer-choose">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:357</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:372</note>
       </notes>
       <segment>
         <source>Choose an issuer</source>
@@ -9990,7 +9998,7 @@
     </unit>
     <unit id="ci.editor.json-invalid">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:409</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:424</note>
       </notes>
       <segment>
         <source>This is not a JSON object. The condition keeps the last valid version until it is.</source>
@@ -9999,7 +10007,7 @@
     </unit>
     <unit id="ci.editor.created">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:488</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:503</note>
       </notes>
       <segment>
         <source>Mapping created.</source>
@@ -10008,7 +10016,7 @@
     </unit>
     <unit id="ci.editor.saved">
       <notes>
-        <note category="location">src/app/features/ci/mapping-editor.ts:519</note>
+        <note category="location">src/app/features/ci/mapping-editor.ts:534</note>
       </notes>
       <segment>
         <source>Mapping saved.</source>
@@ -10261,7 +10269,7 @@
     </unit>
     <unit id="ci.picker.remove">
       <notes>
-        <note category="location">src/app/features/ci/name-picker.ts:147</note>
+        <note category="location">src/app/features/ci/name-picker.ts:158</note>
       </notes>
       <segment>
         <source>Remove <ph id="0" equiv="name" disp="name"/></source>
@@ -18516,7 +18524,7 @@
     <unit id="policy.general">
       <notes>
         <note category="location">src/app/features/permissions/policy-editor.html:44,45</note>
-        <note category="location">src/app/features/permissions/policy-editor.ts:413</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:418</note>
       </notes>
       <segment>
         <source>General</source>
@@ -18526,7 +18534,7 @@
     <unit id="policy.name">
       <notes>
         <note category="location">src/app/features/permissions/policy-editor.html:50,51</note>
-        <note category="location">src/app/features/permissions/policy-editor.ts:407</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:412</note>
       </notes>
       <segment>
         <source>Name</source>
@@ -18536,7 +18544,7 @@
     <unit id="policy.description">
       <notes>
         <note category="location">src/app/features/permissions/policy-editor.html:60,62</note>
-        <note category="location">src/app/features/permissions/policy-editor.ts:408</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:413</note>
         <note category="location">src/app/features/permissions/policy-model.ts:117</note>
       </notes>
       <segment>
@@ -18620,7 +18628,7 @@
     <unit id="policy.resources">
       <notes>
         <note category="location">src/app/features/permissions/policy-editor.html:139,140</note>
-        <note category="location">src/app/features/permissions/policy-editor.ts:412</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:417</note>
       </notes>
       <segment>
         <source>Repositories and patterns</source>
@@ -18639,7 +18647,7 @@
     <unit id="policy.repositories">
       <notes>
         <note category="location">src/app/features/permissions/policy-editor.html:147,149</note>
-        <note category="location">src/app/features/permissions/policy-editor.ts:409</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:414</note>
         <note category="location">src/app/features/permissions/policy-model.ts:118</note>
       </notes>
       <segment>
@@ -18713,7 +18721,7 @@
     <unit id="policy.packages">
       <notes>
         <note category="location">src/app/features/permissions/policy-editor.html:190,191</note>
-        <note category="location">src/app/features/permissions/policy-editor.ts:410</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:415</note>
         <note category="location">src/app/features/permissions/policy-model.ts:114</note>
       </notes>
       <segment>
@@ -18753,7 +18761,7 @@
     <unit id="policy.paths">
       <notes>
         <note category="location">src/app/features/permissions/policy-editor.html:198,199</note>
-        <note category="location">src/app/features/permissions/policy-editor.ts:411</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:416</note>
         <note category="location">src/app/features/permissions/policy-model.ts:115</note>
       </notes>
       <segment>
@@ -19060,7 +19068,7 @@
     </unit>
     <unit id="policy.test.packages">
       <notes>
-        <note category="location">src/app/features/permissions/policy-editor.ts:186</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:191</note>
       </notes>
       <segment>
         <source>Package name</source>
@@ -19069,7 +19077,7 @@
     </unit>
     <unit id="policy.test.paths">
       <notes>
-        <note category="location">src/app/features/permissions/policy-editor.ts:187</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:192</note>
       </notes>
       <segment>
         <source>Path</source>
@@ -19078,7 +19086,7 @@
     </unit>
     <unit id="policy.preset">
       <notes>
-        <note category="location">src/app/features/permissions/policy-editor.ts:210</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:215</note>
       </notes>
       <segment>
         <source>Preset</source>
@@ -19087,7 +19095,7 @@
     </unit>
     <unit id="policy.draft-restored">
       <notes>
-        <note category="location">src/app/features/permissions/policy-editor.ts:254</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:259</note>
       </notes>
       <segment>
         <source>Your entries were restored. Save the policy again.</source>
@@ -19096,7 +19104,7 @@
     </unit>
     <unit id="policy.name-hint-project">
       <notes>
-        <note category="location">src/app/features/permissions/policy-editor.ts:279</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:284</note>
       </notes>
       <segment>
         <source>Unique within the project <ph id="0" equiv="project" disp="key"/> and cannot be changed later.</source>
@@ -19105,7 +19113,7 @@
     </unit>
     <unit id="policy.name-hint">
       <notes>
-        <note category="location">src/app/features/permissions/policy-editor.ts:280</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:285</note>
       </notes>
       <segment>
         <source>Cannot be changed later.</source>
@@ -19114,7 +19122,7 @@
     </unit>
     <unit id="policy.repositories-hint-project">
       <notes>
-        <note category="location">src/app/features/permissions/policy-editor.ts:285</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:290</note>
       </notes>
       <segment>
         <source>One per line: a key (npm-internal), a pattern (npm-team-*) or a class (@any-local, @any-remote, @any-virtual, @any), optionally with a format (@any-local:npm).</source>
@@ -19123,7 +19131,7 @@
     </unit>
     <unit id="policy.repositories-hint">
       <notes>
-        <note category="location">src/app/features/permissions/policy-editor.ts:286</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:291</note>
       </notes>
       <segment>
         <source>One per line: project/key (web/npm-internal), a pattern (web/npm-team-*, */npm-remote) or a class of every project (@any-local, @any), optionally with a format (@any-local:npm, */*:npm).</source>
@@ -19132,7 +19140,7 @@
     </unit>
     <unit id="policy.project-repos-label">
       <notes>
-        <note category="location">src/app/features/permissions/policy-editor.ts:288</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:293</note>
       </notes>
       <segment>
         <source>Repositories of the project</source>
@@ -19141,7 +19149,7 @@
     </unit>
     <unit id="policy.pointer-entry">
       <notes>
-        <note category="location">src/app/features/permissions/policy-editor.ts:405</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:410</note>
       </notes>
       <segment>
         <source>Entry <ph id="0" equiv="n" disp="n"/></source>
@@ -19150,7 +19158,7 @@
     </unit>
     <unit id="policy.name-invalid">
       <notes>
-        <note category="location">src/app/features/permissions/policy-editor.ts:418</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:423</note>
       </notes>
       <segment>
         <source>Use lower-case letters, digits, dots, hyphens and underscores, starting with a letter or digit, at most 128 characters.</source>
@@ -19159,7 +19167,7 @@
     </unit>
     <unit id="policy.test.unrestricted">
       <notes>
-        <note category="location">src/app/features/permissions/policy-editor.ts:432</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:437</note>
       </notes>
       <segment>
         <source>Matches: this list has no include pattern, so it is not restricted.</source>
@@ -19168,7 +19176,7 @@
     </unit>
     <unit id="policy.test.included">
       <notes>
-        <note category="location">src/app/features/permissions/policy-editor.ts:434</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:439</note>
       </notes>
       <segment>
         <source>Matches: included by <ph id="0" equiv="pattern" disp="v.pattern"/>.</source>
@@ -19177,7 +19185,7 @@
     </unit>
     <unit id="policy.test.excluded">
       <notes>
-        <note category="location">src/app/features/permissions/policy-editor.ts:436</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:441</note>
       </notes>
       <segment>
         <source>Does not match: excluded by <ph id="0" equiv="pattern" disp="v.pattern"/>.</source>
@@ -19186,7 +19194,7 @@
     </unit>
     <unit id="policy.test.not-included">
       <notes>
-        <note category="location">src/app/features/permissions/policy-editor.ts:438</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:443</note>
       </notes>
       <segment>
         <source>Does not match: no include pattern matches.</source>
@@ -19195,7 +19203,7 @@
     </unit>
     <unit id="policy.test.invalid">
       <notes>
-        <note category="location">src/app/features/permissions/policy-editor.ts:440</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:445</note>
       </notes>
       <segment>
         <source>The pattern <ph id="0" equiv="pattern" disp="v.pattern"/> is not valid.</source>
@@ -19204,7 +19212,7 @@
     </unit>
     <unit id="policy.created">
       <notes>
-        <note category="location">src/app/features/permissions/policy-editor.ts:513</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:518</note>
       </notes>
       <segment>
         <source>Policy created.</source>
@@ -19213,9 +19221,9 @@
     </unit>
     <unit id="policy.saved">
       <notes>
-        <note category="location">src/app/features/permissions/policy-editor.ts:519</note>
-        <note category="location">src/app/features/permissions/policy-editor.ts:577</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:524</note>
         <note category="location">src/app/features/permissions/policy-editor.ts:582</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:587</note>
       </notes>
       <segment>
         <source>Policy saved.</source>
@@ -19224,7 +19232,7 @@
     </unit>
     <unit id="policy.epoch-stored">
       <notes>
-        <note category="location">src/app/features/permissions/policy-editor.ts:556</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:561</note>
       </notes>
       <segment>
         <source>The change is stored.</source>
@@ -19233,7 +19241,7 @@
     </unit>
     <unit id="policy.epoch-maybe">
       <notes>
-        <note category="location">src/app/features/permissions/policy-editor.ts:560</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:565</note>
       </notes>
       <segment>
         <source>Your change may not have been saved. The policy is shown as it is stored now.</source>
@@ -19242,7 +19250,7 @@
     </unit>
     <unit id="policy.delete-title">
       <notes>
-        <note category="location">src/app/features/permissions/policy-editor.ts:593</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:598</note>
       </notes>
       <segment>
         <source>Delete this policy?</source>
@@ -19251,7 +19259,7 @@
     </unit>
     <unit id="policy.delete-text">
       <notes>
-        <note category="location">src/app/features/permissions/policy-editor.ts:594</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:599</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="policy" disp="l.policy.name"/> stops granting access at once on every replica.</source>
@@ -19260,7 +19268,7 @@
     </unit>
     <unit id="policy.delete-confirm">
       <notes>
-        <note category="location">src/app/features/permissions/policy-editor.ts:595</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:600</note>
       </notes>
       <segment>
         <source>Delete</source>
@@ -19269,7 +19277,7 @@
     </unit>
     <unit id="policy.deleted">
       <notes>
-        <note category="location">src/app/features/permissions/policy-editor.ts:600</note>
+        <note category="location">src/app/features/permissions/policy-editor.ts:605</note>
       </notes>
       <segment>
         <source>Policy deleted.</source>
@@ -21753,7 +21761,7 @@
     </unit>
     <unit id="ansible.imports.caption">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:101</note>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:103</note>
       </notes>
       <segment>
         <source>Import tasks of this repository, newest first</source>
@@ -21762,7 +21770,7 @@
     </unit>
     <unit id="ansible.imports.one-message">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:104</note>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:106</note>
       </notes>
       <segment>
         <source>1 message</source>
@@ -21771,7 +21779,7 @@
     </unit>
     <unit id="ansible.imports.messages">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:104</note>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:106</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="count"/> messages</source>
@@ -21780,7 +21788,7 @@
     </unit>
     <unit id="ansible.imports.empty">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:106</note>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:108</note>
       </notes>
       <segment>
         <source>No collection has been published to this repository yet, or the tasks have been deleted.</source>
@@ -21789,7 +21797,7 @@
     </unit>
     <unit id="ansible.imports.col.collection">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:108</note>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:110</note>
       </notes>
       <segment>
         <source>Collection</source>
@@ -21798,7 +21806,7 @@
     </unit>
     <unit id="ansible.imports.col.version">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:109</note>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:113</note>
       </notes>
       <segment>
         <source>Version</source>
@@ -21807,7 +21815,7 @@
     </unit>
     <unit id="ansible.imports.col.state">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:110</note>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:114</note>
       </notes>
       <segment>
         <source>State</source>
@@ -21816,7 +21824,7 @@
     </unit>
     <unit id="ansible.imports.col.created">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:111</note>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:115</note>
       </notes>
       <segment>
         <source>Published</source>
@@ -21825,7 +21833,7 @@
     </unit>
     <unit id="ansible.imports.col.messages">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:114</note>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:118</note>
       </notes>
       <segment>
         <source>Messages</source>
@@ -21834,7 +21842,7 @@
     </unit>
     <unit id="ansible.imports.help.messages">
       <notes>
-        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:115</note>
+        <note category="location">src/app/features/repositories/ansible-import-tasks.ts:119</note>
       </notes>
       <segment>
         <source>The number of messages of the import. Open the row to read them.</source>
@@ -24224,7 +24232,7 @@
     </unit>
     <unit id="deb.keys.certificate">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:117,118</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:119,120</note>
       </notes>
       <segment>
         <source>Public certificate</source>
@@ -24233,7 +24241,7 @@
     </unit>
     <unit id="deb.keys.promote">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:152,153</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:154,155</note>
       </notes>
       <segment>
         <source>Promote</source>
@@ -24242,7 +24250,7 @@
     </unit>
     <unit id="deb.keys.remove">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:153,154</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:155,156</note>
       </notes>
       <segment>
         <source>Remove</source>
@@ -24251,7 +24259,7 @@
     </unit>
     <unit id="deb.keys.reinstate">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:155,156</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:157,158</note>
       </notes>
       <segment>
         <source>Reinstate</source>
@@ -24260,7 +24268,7 @@
     </unit>
     <unit id="deb.keys.confirm-retirement">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:156,158</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:158,160</note>
       </notes>
       <segment>
         <source>Confirm retirement</source>
@@ -24269,7 +24277,7 @@
     </unit>
     <unit id="deb.keys.next.heading">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:176,178</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:178,180</note>
       </notes>
       <segment>
         <source>Next key</source>
@@ -24278,7 +24286,7 @@
     </unit>
     <unit id="deb.keys.next.exists">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:179,181</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:181,183</note>
       </notes>
       <segment>
         <source> A next key exists. Promote it or remove it before you create another. </source>
@@ -24287,7 +24295,7 @@
     </unit>
     <unit id="deb.keys.next.intro">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:183,185</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:185,187</note>
       </notes>
       <segment>
         <source> Creating a next key starts the overlap: from the next build both keys sign every index. </source>
@@ -24296,7 +24304,7 @@
     </unit>
     <unit id="deb.keys.generate">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:187,188</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:189,190</note>
       </notes>
       <segment>
         <source> Generate a next key </source>
@@ -24305,7 +24313,7 @@
     </unit>
     <unit id="deb.keys.import">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:190,191</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:192,193</note>
       </notes>
       <segment>
         <source> Import a key </source>
@@ -24314,7 +24322,7 @@
     </unit>
     <unit id="deb.keys.import.key">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:197,198</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:199,200</note>
       </notes>
       <segment>
         <source>Armored secret key</source>
@@ -24323,7 +24331,7 @@
     </unit>
     <unit id="deb.keys.import.hint">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:209,210</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:211,212</note>
       </notes>
       <segment>
         <source> For an archive whose clients already trust a key. It is sent once over this connection and sealed on the server; it is never shown again. </source>
@@ -24332,7 +24340,7 @@
     </unit>
     <unit id="deb.keys.import.pass">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:214,216</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:216,218</note>
       </notes>
       <segment>
         <source>Passphrase</source>
@@ -24341,7 +24349,7 @@
     </unit>
     <unit id="deb.keys.import.pass-hint">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:225,226</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:227,228</note>
       </notes>
       <segment>
         <source> Only if the key is protected. It is used once and never stored. </source>
@@ -24350,7 +24358,7 @@
     </unit>
     <unit id="deb.keys.import.submit">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:229,230</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:231,232</note>
       </notes>
       <segment>
         <source> Import as next key </source>
@@ -24359,7 +24367,7 @@
     </unit>
     <unit id="deb.keys.loading">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:237,240</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:239,242</note>
       </notes>
       <segment>
         <source>Loading the keys.</source>
@@ -24368,7 +24376,7 @@
     </unit>
     <unit id="deb.keys.copy-fingerprint">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:293</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:308</note>
       </notes>
       <segment>
         <source>Copy fingerprint</source>
@@ -24377,7 +24385,7 @@
     </unit>
     <unit id="deb.keys.origin.imported">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:294</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:309</note>
       </notes>
       <segment>
         <source>Imported</source>
@@ -24386,7 +24394,7 @@
     </unit>
     <unit id="deb.keys.origin.generated">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:295</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:310</note>
       </notes>
       <segment>
         <source>Generated</source>
@@ -24395,7 +24403,7 @@
     </unit>
     <unit id="deb.keys.caption">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:296</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:311</note>
       </notes>
       <segment>
         <source>Signing keys of this repository</source>
@@ -24404,7 +24412,7 @@
     </unit>
     <unit id="deb.keys.col.fingerprint">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:300</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:315</note>
       </notes>
       <segment>
         <source>Fingerprint</source>
@@ -24413,7 +24421,7 @@
     </unit>
     <unit id="deb.keys.col.state">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:301</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:316</note>
       </notes>
       <segment>
         <source>State</source>
@@ -24422,7 +24430,7 @@
     </unit>
     <unit id="deb.keys.col.type">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:302</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:317</note>
       </notes>
       <segment>
         <source>Type</source>
@@ -24431,7 +24439,7 @@
     </unit>
     <unit id="deb.keys.col.origin">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:303</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:318</note>
       </notes>
       <segment>
         <source>Origin</source>
@@ -24440,7 +24448,7 @@
     </unit>
     <unit id="deb.keys.col.created">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:304</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:319</note>
       </notes>
       <segment>
         <source>Key created</source>
@@ -24449,7 +24457,7 @@
     </unit>
     <unit id="deb.keys.col.since">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:305</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:320</note>
       </notes>
       <segment>
         <source>In this state since</source>
@@ -24458,7 +24466,7 @@
     </unit>
     <unit id="deb.keys.col.actions">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:307</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:322</note>
       </notes>
       <segment>
         <source>Actions</source>
@@ -24467,7 +24475,7 @@
     </unit>
     <unit id="deb.keys.actions-of">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:324</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:339</note>
       </notes>
       <segment>
         <source>Actions for <ph id="0" equiv="fingerprint" disp="groupedFingerprint(k.fingerprint)"/></source>
@@ -24476,7 +24484,7 @@
     </unit>
     <unit id="deb.keys.done.created">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:377</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:392</note>
       </notes>
       <segment>
         <source>The next key was created. Both keys sign from the next build.</source>
@@ -24485,7 +24493,7 @@
     </unit>
     <unit id="deb.keys.done.imported">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:387</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:402</note>
       </notes>
       <segment>
         <source>The key was imported as the next key. Both keys sign from the next build.</source>
@@ -24494,7 +24502,7 @@
     </unit>
     <unit id="deb.keys.promote.title">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:397</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:412</note>
       </notes>
       <segment>
         <source>Promote the next key</source>
@@ -24503,7 +24511,7 @@
     </unit>
     <unit id="deb.keys.promote.line1">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:399</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:414</note>
       </notes>
       <segment>
         <source>The next key <ph id="0" equiv="fingerprint" disp="groupedFingerprint(k.fingerprint)"/> becomes the primary key. The old primary key is retired: it stops signing, leaves the key file clients fetch and its private key is erased.</source>
@@ -24512,7 +24520,7 @@
     </unit>
     <unit id="deb.keys.promote.line2">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:400</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:415</note>
       </notes>
       <segment>
         <source>A client that never replaced its key file fails to update from then on.</source>
@@ -24521,7 +24529,7 @@
     </unit>
     <unit id="deb.keys.promote.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:402</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:417</note>
       </notes>
       <segment>
         <source>Promote</source>
@@ -24530,7 +24538,7 @@
     </unit>
     <unit id="deb.keys.done.promoted">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:407</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:422</note>
       </notes>
       <segment>
         <source>The key was promoted.</source>
@@ -24539,7 +24547,7 @@
     </unit>
     <unit id="deb.keys.confirm.title">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:416</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:431</note>
       </notes>
       <segment>
         <source>Confirm the retirement of the key</source>
@@ -24548,7 +24556,7 @@
     </unit>
     <unit id="deb.keys.remove.title">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:417</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:432</note>
       </notes>
       <segment>
         <source>Remove the next key</source>
@@ -24557,7 +24565,7 @@
     </unit>
     <unit id="deb.keys.confirm.line1">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:420</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:435</note>
       </notes>
       <segment>
         <source>The key <ph id="0" equiv="fingerprint" disp="groupedFingerprint(k.fingerprint)"/> is retired and its private key is erased. This cannot be undone.</source>
@@ -24566,7 +24574,7 @@
     </unit>
     <unit id="deb.keys.remove.line1">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:421</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:436</note>
       </notes>
       <segment>
         <source>The next key <ph id="0" equiv="fingerprint" disp="groupedFingerprint(k.fingerprint)"/> stops signing and leaves the key file clients fetch. Its private key is erased and the key cannot be imported again.</source>
@@ -24575,7 +24583,7 @@
     </unit>
     <unit id="deb.keys.confirm.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:424</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:439</note>
       </notes>
       <segment>
         <source>Retire the key</source>
@@ -24584,7 +24592,7 @@
     </unit>
     <unit id="deb.keys.remove.confirm">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:425</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:440</note>
       </notes>
       <segment>
         <source>Remove the key</source>
@@ -24593,7 +24601,7 @@
     </unit>
     <unit id="deb.keys.done.retired">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:430</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:445</note>
       </notes>
       <segment>
         <source>The key was retired.</source>
@@ -24602,7 +24610,7 @@
     </unit>
     <unit id="deb.keys.done.reinstated">
       <notes>
-        <note category="location">src/app/features/repositories/deb-signing-keys.ts:438</note>
+        <note category="location">src/app/features/repositories/deb-signing-keys.ts:453</note>
       </notes>
       <segment>
         <source>The key was reinstated.</source>
@@ -53100,7 +53108,7 @@
     </unit>
     <unit id="banner.maintenance-label">
       <notes>
-        <note category="location">src/app/shared/banner.ts:84</note>
+        <note category="location">src/app/shared/banner.ts:89</note>
       </notes>
       <segment>
         <source>Maintenance notice</source>
@@ -53109,7 +53117,7 @@
     </unit>
     <unit id="banner.label">
       <notes>
-        <note category="location">src/app/shared/banner.ts:85</note>
+        <note category="location">src/app/shared/banner.ts:90</note>
       </notes>
       <segment>
         <source>System notice</source>
@@ -53118,7 +53126,7 @@
     </unit>
     <unit id="banner.maintenance-lead">
       <notes>
-        <note category="location">src/app/shared/banner.ts:91</note>
+        <note category="location">src/app/shared/banner.ts:96</note>
       </notes>
       <segment>
         <source>Read-only maintenance mode.</source>
@@ -53127,7 +53135,7 @@
     </unit>
     <unit id="banner.critical">
       <notes>
-        <note category="location">src/app/shared/banner.ts:97</note>
+        <note category="location">src/app/shared/banner.ts:102</note>
       </notes>
       <segment>
         <source>Critical.</source>
@@ -53136,7 +53144,7 @@
     </unit>
     <unit id="banner.critical-title">
       <notes>
-        <note category="location">src/app/shared/banner.ts:98</note>
+        <note category="location">src/app/shared/banner.ts:103</note>
       </notes>
       <segment>
         <source>Critical: <ph id="0" equiv="title" disp="title"/>.</source>
@@ -53145,7 +53153,7 @@
     </unit>
     <unit id="banner.warning">
       <notes>
-        <note category="location">src/app/shared/banner.ts:101</note>
+        <note category="location">src/app/shared/banner.ts:106</note>
       </notes>
       <segment>
         <source>Warning.</source>
@@ -53154,7 +53162,7 @@
     </unit>
     <unit id="banner.warning-title">
       <notes>
-        <note category="location">src/app/shared/banner.ts:102</note>
+        <note category="location">src/app/shared/banner.ts:107</note>
       </notes>
       <segment>
         <source>Warning: <ph id="0" equiv="title" disp="title"/>.</source>
@@ -53163,7 +53171,7 @@
     </unit>
     <unit id="banner.info">
       <notes>
-        <note category="location">src/app/shared/banner.ts:105</note>
+        <note category="location">src/app/shared/banner.ts:110</note>
       </notes>
       <segment>
         <source>Notice.</source>
@@ -53172,7 +53180,7 @@
     </unit>
     <unit id="banner.info-title">
       <notes>
-        <note category="location">src/app/shared/banner.ts:106</note>
+        <note category="location">src/app/shared/banner.ts:111</note>
       </notes>
       <segment>
         <source>Notice: <ph id="0" equiv="title" disp="title"/>.</source>
@@ -57372,7 +57380,7 @@
     </unit>
     <unit id="principal-field.failed">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:504</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:510</note>
       </notes>
       <segment>
         <source>The search failed. Change the text to try again.</source>
@@ -57381,7 +57389,7 @@
     </unit>
     <unit id="principal-field.searching">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:505</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:511</note>
       </notes>
       <segment>
         <source>Searching…</source>
@@ -57390,7 +57398,7 @@
     </unit>
     <unit id="principal-field.none-user">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:510</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:516</note>
       </notes>
       <segment>
         <source>Nobody matches “<ph id="0" equiv="text" disp="text"/>”. A person can be found after their first sign-in.</source>
@@ -57399,7 +57407,7 @@
     </unit>
     <unit id="principal-field.none">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:511</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:517</note>
       </notes>
       <segment>
         <source>Nothing matches “<ph id="0" equiv="text" disp="text"/>”.</source>
@@ -57408,7 +57416,7 @@
     </unit>
     <unit id="principal-field.more">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:515</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:521</note>
       </notes>
       <segment>
         <source>More match. Type more of the name.</source>
@@ -57417,7 +57425,7 @@
     </unit>
     <unit id="principal-field.one-match">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:524</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:530</note>
       </notes>
       <segment>
         <source>1 match.</source>
@@ -57426,7 +57434,7 @@
     </unit>
     <unit id="principal-field.matches">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:524</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:530</note>
       </notes>
       <segment>
         <source><ph id="0" equiv="count" disp="n"/> matches.</source>
@@ -57435,7 +57443,7 @@
     </unit>
     <unit id="principal-field.list">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:577</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:583</note>
       </notes>
       <segment>
         <source>Matches for <ph id="0" equiv="field" disp="this.label()"/></source>
@@ -57444,7 +57452,7 @@
     </unit>
     <unit id="principal-field.chosen">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:581</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:587</note>
       </notes>
       <segment>
         <source>Chosen for <ph id="0" equiv="field" disp="this.label()"/></source>
@@ -57453,7 +57461,7 @@
     </unit>
     <unit id="principal-field.remove">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:585</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:591</note>
       </notes>
       <segment>
         <source>Remove <ph id="0" equiv="name" disp="this.primaryOf(c)"/></source>
@@ -57462,7 +57470,7 @@
     </unit>
     <unit id="principal-field.kind-group">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:609</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:615</note>
       </notes>
       <segment>
         <source>Group</source>
@@ -57471,7 +57479,7 @@
     </unit>
     <unit id="principal-field.kind-other">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:610</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:616</note>
       </notes>
       <segment>
         <source>CI identity</source>
@@ -57480,7 +57488,7 @@
     </unit>
     <unit id="principal-field.kind-technical-token">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:611</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:617</note>
       </notes>
       <segment>
         <source>Technical token</source>
@@ -57489,7 +57497,7 @@
     </unit>
     <unit id="principal-field.kind-ci-project">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:612</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:618</note>
       </notes>
       <segment>
         <source>CI project</source>
@@ -57498,7 +57506,7 @@
     </unit>
     <unit id="principal-field.kind-project-account">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:614</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:620</note>
       </notes>
       <segment>
         <source>Service account of <ph id="0" equiv="project" disp="c.project"/></source>
@@ -57507,7 +57515,7 @@
     </unit>
     <unit id="principal-field.kind-account">
       <notes>
-        <note category="location">src/app/shared/ui/principal-field.ts:615</note>
+        <note category="location">src/app/shared/ui/principal-field.ts:621</note>
       </notes>
       <segment>
         <source>Service account</source>

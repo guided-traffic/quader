@@ -243,8 +243,23 @@ export class MappingEditor implements HasUnsavedChanges {
           : pointer.startsWith('/options') || pointer === '/maxTtlSeconds'
             ? 'ci-m-options'
             : 'ci-m-general';
-    return [...e.fieldErrors].map(([pointer, problem]) => ({ label: pointer, message: fieldMessage(problem), targetId: section(pointer) }));
+    return [...e.fieldErrors].map(([pointer, problem]) => ({ label: this.fieldName(pointer), message: fieldMessage(problem), targetId: section(pointer) }));
   });
+
+  /**
+   * The name a person reads for the field or the section of a problem: its label, or for a condition, a grant or an option its section's
+   * heading. The summary named them by their JSON pointer ("/match/all/1"), which no person reads (2026-11-25).
+   */
+  private fieldName(pointer: string): string {
+    if (pointer === '/name') return $localize`:@@ci.editor.name:Name`;
+    if (pointer === '/description') return $localize`:@@ci.editor.description:Description`;
+    if (pointer === '/priority') return $localize`:@@ci.editor.priority:Priority`;
+    if (pointer === '/maxTtlSeconds') return $localize`:@@ci.editor.max-ttl:Maximum token lifetime (seconds)`;
+    if (pointer.startsWith('/match')) return $localize`:@@ci.editor.condition:Condition`;
+    if (pointer.startsWith('/grants')) return $localize`:@@ci.editor.grants:Grants`;
+    if (pointer.startsWith('/options')) return $localize`:@@ci.editor.options:Options and lifetime`;
+    return $localize`:@@ci.editor.general:General`;
+  }
 
   protected fieldError(pointer: string): string | null {
     return fieldErrorAt(this.saveError(), pointer);

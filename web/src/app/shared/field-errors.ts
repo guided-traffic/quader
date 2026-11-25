@@ -48,11 +48,9 @@ export function problemsAt(
         <h2 class="title" i18n="@@field-errors.title">Some entries are not valid</h2>
         <ul>
           @for (item of items(); track item.targetId + item.message) {
+            <!-- The colon follows the field's name: the line breaks around the button put a space before it ("Priority : …"). -->
             <li>
-              <button type="button" class="link" (click)="focus(item.targetId)">
-                {{ item.label }}
-              </button>
-              : {{ item.message }}
+              <button type="button" class="link" (click)="focus(item.targetId)">{{ item.label }}</button>:&ngsp;{{ item.message }}
             </li>
           }
         </ul>
