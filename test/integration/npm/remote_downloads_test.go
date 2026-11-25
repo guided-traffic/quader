@@ -21,11 +21,13 @@ import (
 // the role all runs the rows; the dispatch task is run through the system tasks' API where a test waits for a next attempt instead of
 // the minute of its schedule.
 
-// downloadsEnv is newRemoteEnv with lead as a Maintainer (manage) of npm-remote and one replica of the role all.
+// downloadsEnv is newRemoteEnv with lead as a Maintainer (manage) of npm-remote and one replica of the role all, which keeps at most two
+// downloads in sync per repository (R-CUR-027's bound, reached by TestR_CUR_027_…).
 func downloadsEnv(t *testing.T) (*renv, *testenv.Replica) {
 	t.Helper()
 	r := newRemoteEnv(t, remoteOptions{Valkey: true, Env: []string{
 		"QUADER_LIMITS_FLUSH_INTERVAL=200ms", "QUADER_LIMITS_USAGE_FLUSH_INTERVAL=1s", "QUADER_JOBS_POLL_INTERVAL=200ms",
+		"QUADER_PROXY_DOWNLOADS_MAX_SYNCS_PER_REPOSITORY=2",
 	}})
 	r.st.Policy("npm-remote-managers", []string{"read", "manage"}, []string{rRemote}, r.lead)
 	rep := r.st.Start(t, testenv.ReplicaOptions{Name: "all-1", Role: "all", Endpoints: customersEndpoint})
