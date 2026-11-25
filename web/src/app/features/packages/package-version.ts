@@ -128,7 +128,8 @@ interface TabEntry {
  */
 @Component({
   selector: 'quader-package-version',
-  imports: [Loading, 
+  imports: [
+    Loading,
     TimeAgo,
     DecimalPipe,
     RouterLink,

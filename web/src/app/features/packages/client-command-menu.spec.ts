@@ -20,6 +20,24 @@ class Host {}
 })
 class OneClient {}
 
+const DIGEST = 'sha256:' + 'ab'.repeat(32);
+
+@Component({
+  imports: [ClientCommandMenu],
+  template: `
+    <quader-client-command-menu format="oci" name="team/app" version="1.2.0" repository="web/oci-local" verb="Pull" kind="image" [digest]="digest" />
+  `,
+})
+class AnImage {
+  protected readonly digest = DIGEST;
+}
+
+@Component({
+  imports: [ClientCommandMenu],
+  template: `<quader-client-command-menu format="oci" name="charts/web" version="0.3.0" repository="web/oci-local" verb="Pull" kind="helm-chart" />`,
+})
+class AChart {}
+
 async function render() {
   const r = await renderScreen(Host);
   document.body.appendChild(r.root);
@@ -103,6 +121,37 @@ describe('The commands menu of a version', () => {
     expect(text(panel.querySelector('.command-client')!)).toBe('APT');
     expect(panel.querySelector('a.setup-link')!.getAttribute('href')).toBe('/projects/web/repositories/apt-local/setup?client=apt');
     await expectAccessible(panel);
+    trigger.click();
+    await settle(r.fixture);
+  });
+
+  it('R-OCI-041 an image\'s tabs are Docker and Podman, each with the pull by its digest as the second line', async () => {
+    const r = await renderScreen(AnImage);
+    document.body.appendChild(r.root);
+    const trigger = r.root.querySelector<HTMLButtonElement>('quader-client-command-menu button')!;
+    trigger.click();
+    await settle(r.fixture);
+    const panel = document.getElementById(trigger.getAttribute('aria-controls')!)!;
+    expect([...panel.querySelectorAll('[role="tab"]')].map((t) => text(t))).toEqual(['Docker', 'Podman']);
+    const shown = [...panel.querySelectorAll<HTMLInputElement>('[role="tabpanel"]:not([inert]) quader-address-field input')];
+    expect(shown.map((f) => f.getAttribute('aria-label'))).toEqual(['Command for Docker CLI (with Buildx)', 'Command for Docker CLI (with Buildx) by digest']);
+    expect(shown[1]!.value).toMatch(new RegExp(`team/app@${DIGEST}$`));
+    await expectAccessible(panel);
+    trigger.click();
+    await settle(r.fixture);
+  });
+
+  it('R-OCI-042 a chart offers Helm alone, its setup Helm\'s, and no pull by digest', async () => {
+    const r = await renderScreen(AChart);
+    document.body.appendChild(r.root);
+    const trigger = r.root.querySelector<HTMLButtonElement>('quader-client-command-menu button')!;
+    trigger.click();
+    await settle(r.fixture);
+    const panel = document.getElementById(trigger.getAttribute('aria-controls')!)!;
+    expect(panel.querySelector('[role="tablist"]')).toBeNull();
+    expect(text(panel.querySelector('.command-client')!)).toBe('Helm');
+    expect(panel.querySelector('a.setup-link')!.getAttribute('href')).toBe('/projects/web/repositories/oci-local/setup?client=helm');
+    expect(panel.querySelectorAll('quader-client-command')).toHaveLength(1);
     trigger.click();
     await settle(r.fixture);
   });

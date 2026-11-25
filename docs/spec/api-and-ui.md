@@ -27004,13 +27004,15 @@ Status: **Decided by the development agent** on 2026-11-25 — selected from the
 
 | Option | What it means | For | Against |
 |---|---|---|---|
-| (a) The pickers of a version offer the clients of its kind (`clientsOfKind`): a Helm chart Helm alone, an image every client but Helm; **Set up client** lists all three; an image's panel adds the pull by digest under the pull by tag (chosen) | One command that works per kind | A reader never copies a `docker pull` of a chart or a `helm pull` of an image | The kind must be known: the package list's entries carry `kind` and a repository's list by content asks `include=kind` |
+| (a) The panel of a version's commands (Q-UI-1240) offers the tabs of its kind's clients (`clientsOfKind`): a Helm chart the one client Helm, named as the row's label, with **Set up client** leading to Helm's setup; an image the tabs Docker and Podman, never Helm; the client setup of the repository lists all three; an image's tab adds the pull by digest as its second line, at every place the panel stands (the head of a version's page, a list's row, a version's row) (chosen) | One command that works per kind | A reader never copies a `docker pull` of a chart or a `helm pull` of an image | The kind must be known: the package list's entries carry `kind` and a repository's list by content asks `include=kind` |
 | (b) Every client for every artifact | One list | Nothing to decide | Two of three commands fail for each artifact |
 | (c) A format of its own for charts | Separate pages | Clear | A new format, which the owner excluded (Q-OCI-275) |
 
 **Choice:** (a). **Applied in the spec:** R-OCI-041, R-OCI-042. Code: `clientsOfKind` in
-[clients.ts](../../web/src/app/features/setup/clients.ts), [install-panel.ts](../../web/src/app/features/packages/install-panel.ts),
-[client-command.ts](../../web/src/app/features/packages/client-command.ts) (the digest line), the menus of a repository's rows
+[clients.ts](../../web/src/app/features/setup/clients.ts) (Helm's `tab` "Helm"), `kind` and `digest` of
+[client-command-menu.ts](../../web/src/app/features/packages/client-command-menu.ts),
+[client-command.ts](../../web/src/app/features/packages/client-command.ts) (the digest line), the head of
+[package-version.html](../../web/src/app/features/packages/package-version.html) (`artifactKind`, `imageDigest`), the menus of a repository's rows
 [repository-items.ts](../../web/src/app/features/repositories/content/repository-items.ts) and
 [repository-item-versions.ts](../../web/src/app/features/repositories/content/repository-item-versions.ts) (`[kind]`). The product-wide
 package list and the search offer no command and need no kind.

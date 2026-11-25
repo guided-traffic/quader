@@ -1810,8 +1810,9 @@ Priority: **P1** · Covers: quader-only
 - **The other tags of the digest** stand in the version page's head beside the tag (the tags the lists show of the same image, R-API-029
   `group=content`), each a link to its own page. The version details carry them as `aliases` and `aliasesMore`, read and decided as the
   list by content reads an entry's ([api-and-ui.md](../api-and-ui.md) R-API-029): a tag the reader may not read is not named.
-- **Pull by digest** is a second line of the command panel: `docker pull <host>/<project>/<repo>/<name>@sha256:…`, and Podman's alike;
-  the digest is the version's.
+- **Pull by digest** is the second line of Docker's and of Podman's tab in the panel of a version's commands ([api-and-ui.md](../api-and-ui.md)
+  Q-UI-1240), wherever the panel stands (the head of the version's page, a repository's row, a version's row):
+  `docker pull <host>/<project>/<repo>/<name>@sha256:…`, and Podman's alike; the digest is the version's. A chart's panel has none.
 - **The tab Files** lists what the image is made of by digest and size: the manifest (an index's and each held platform's), each
   platform's config and its layers, in the manifest's order, with the digest cut in the middle and its copy button; the tag item's path
   (`<name>/_tags/<tag>`) is no longer shown there.
@@ -4493,6 +4494,13 @@ whose package list and versions are an image's.
 development agent would revisit it when the version pages of every format share one way to lead (the package that unifies them).
 **Applied in the spec:** R-OCI-042. Code: the order of `announcedTabs` in `package-version.ts`, whose first tab the page opens on: the
 README stands before Files, and a chart is not scanned, so nothing stands before it.
+
+**Relation to R-UI-218** (checked on 2026-11-26, after the version page's head of Q-UI-1241): R-UI-218 switches per format
+(`leadsWithDocumentation` of the content shape), and OCI stays off: an OCI package's address keeps its table of tags, an image's version
+page keeps its first tab (Files, or Vulnerabilities where graded), and the head has no version switch. A chart leads with its README
+inside that rule, on its version page only: the README tab is the first a chart's page has, so the page opens on it as R-UI-218's pages
+do; the package's address and the lists do not lead to it. Making OCI a format that leads would send an image's reader to an empty
+README; a per-kind switch of the address waits for the package that unifies the version pages (above).
 
 ## What this does not cover
 

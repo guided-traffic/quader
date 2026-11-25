@@ -27,7 +27,9 @@ const POSITIONS: ConnectedPosition[] = [
  * | NuGet CLI | Visual Studio), the product's tabs (`<quader-tab-group>`: the arrow keys, the tab remembered while the button stands),
  * then free room and, at the row's end, **Set up client**, which opens the client setup of the repository with the chosen client
  * (`?client=`); under the row the chosen client's command as a read-only field with the joined copy button (`<quader-client-command>`).
- * A format with one client (APT, ansible-galaxy, curl) shows no strip of one tab: the client's name is the row's label. Where the
+ * A format with one client (APT, ansible-galaxy, curl) shows no strip of one tab: the client's name is the row's label. An OCI
+ * artifact's `kind` picks its kind's clients (`clientsOfKind`, R-OCI-042: a Helm chart Helm alone, an image Docker and Podman), and an
+ * image's `digest` adds the pull by digest as the second line of each tab (R-OCI-041). Where the
  * version is held by more than one repository a client can use (the version's page), a select **Repository** stands above the row, and
  * the command and the setup follow it.
  *

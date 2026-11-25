@@ -295,7 +295,8 @@ describe('Repository content page', () => {
     });
     const imageRow = [...r.root.querySelectorAll('tbody tr')].find((tr) => tr.textContent?.includes('team/app'))!;
     const latest = await openMenu(r, imageRow.querySelector<HTMLButtonElement>('quader-client-command-menu button')!);
-    expect([...latest.querySelectorAll('.menu-heading')].map((h) => text(h))).toEqual(['Helm']);
+    expect(text(latest.querySelector('.command-client')!)).toBe('Helm');
+    expect(latest.querySelector('[role=tablist]')).toBeNull();
     expect(commands(latest).some((c) => c.startsWith('docker') || c.startsWith('podman'))).toBe(false);
     imageRow.querySelector<HTMLButtonElement>('quader-client-command-menu button')!.click();
     await settle(r.fixture);
@@ -305,7 +306,7 @@ describe('Repository content page', () => {
     expect(fake!.versionFilters.at(-1)).toMatchObject({ group: 'content', include: ['kind'] });
     const rows = [...r.root.querySelectorAll('quader-repository-item-versions tbody tr')];
     const tag = await openMenu(r, rows[0]!.querySelector<HTMLButtonElement>('quader-client-command-menu button')!);
-    expect([...tag.querySelectorAll('.menu-heading')].map((h) => text(h))).toEqual(['Helm']);
+    expect(text(tag.querySelector('.command-client')!)).toBe('Helm');
   });
 
   it('R-UI-052 R-UI-094 R-UI-143 an npm repository shows the packages with the grade of their latest version and the install command of the version, and grades each version of an opened row, in the words of the versions table', async () => {
