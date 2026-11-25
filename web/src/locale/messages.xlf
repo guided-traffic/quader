@@ -24668,6 +24668,7 @@
     <unit id="repo.class.system">
       <notes>
         <note category="location">src/app/features/repositories/repository-class.ts:40</note>
+        <note category="location">src/app/features/system/dashboard.ts:64</note>
       </notes>
       <segment>
         <source>System</source>
@@ -36749,7 +36750,7 @@
     </unit>
     <unit id="dashboard.class.local">
       <notes>
-        <note category="location">src/app/features/system/dashboard.ts:58</note>
+        <note category="location">src/app/features/system/dashboard.ts:61</note>
       </notes>
       <segment>
         <source>Local</source>
@@ -36757,7 +36758,7 @@
     </unit>
     <unit id="dashboard.class.remote">
       <notes>
-        <note category="location">src/app/features/system/dashboard.ts:59</note>
+        <note category="location">src/app/features/system/dashboard.ts:62</note>
       </notes>
       <segment>
         <source>Remote</source>
@@ -36765,7 +36766,7 @@
     </unit>
     <unit id="dashboard.class.virtual">
       <notes>
-        <note category="location">src/app/features/system/dashboard.ts:60</note>
+        <note category="location">src/app/features/system/dashboard.ts:63</note>
       </notes>
       <segment>
         <source>Virtual</source>
@@ -51104,7 +51105,7 @@
     </unit>
     <unit id="vuln.grade.fact.scanned">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-card.ts:114</note>
+        <note category="location">src/app/shared/vulnerability/grade-card.ts:119</note>
       </notes>
       <segment>
         <source>Scanned</source>
@@ -51112,7 +51113,7 @@
     </unit>
     <unit id="vuln.grade.fact.checked">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-card.ts:114</note>
+        <note category="location">src/app/shared/vulnerability/grade-card.ts:119</note>
       </notes>
       <segment>
         <source>Checked</source>
@@ -51170,7 +51171,7 @@
       <notes>
         <note category="location">src/app/shared/vulnerability/grade-words.ts:91</note>
         <note category="location">src/app/shared/vulnerability/grade-words.ts:113</note>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:269</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:290</note>
       </notes>
       <segment>
         <source>OS end of life</source>
@@ -51386,7 +51387,7 @@
     </unit>
     <unit id="vuln.check.checked">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:217</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:238</note>
       </notes>
       <segment>
         <source>Checked for vulnerabilities</source>
@@ -51394,7 +51395,7 @@
     </unit>
     <unit id="vuln.check.queued-since">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:220</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:241</note>
       </notes>
       <segment>
         <source>Waits for its vulnerability scan since <ph id="0" equiv="time" disp="since"/>. It is scanned in turn, without anyone having to act.</source>
@@ -51402,7 +51403,7 @@
     </unit>
     <unit id="vuln.check.queued">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:221</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:242</note>
       </notes>
       <segment>
         <source>Waits for its vulnerability scan. It is scanned in turn, without anyone having to act.</source>
@@ -51410,7 +51411,7 @@
     </unit>
     <unit id="vuln.check.scanning-since">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:224</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:245</note>
       </notes>
       <segment>
         <source>Being scanned for vulnerabilities, since <ph id="0" equiv="time" disp="since"/>.</source>
@@ -51418,7 +51419,7 @@
     </unit>
     <unit id="vuln.check.scanning">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:225</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:246</note>
       </notes>
       <segment>
         <source>Being scanned for vulnerabilities.</source>
@@ -51426,7 +51427,7 @@
     </unit>
     <unit id="vuln.check.no-scanner">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:227</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:248</note>
       </notes>
       <segment>
         <source>No vulnerability scanner is connected, so it cannot be scanned now. It is scanned once one is.</source>
@@ -51434,7 +51435,7 @@
     </unit>
     <unit id="vuln.check.no-database">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:229</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:250</note>
       </notes>
       <segment>
         <source>No vulnerability database for images has been imported yet, so it cannot be scanned now. It is scanned once the database is there.</source>
@@ -51442,7 +51443,7 @@
     </unit>
     <unit id="vuln.check.no-advisory-data">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:231</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:252</note>
       </notes>
       <segment>
         <source>The advisory data of its ecosystem has not been imported yet. It is checked once the data is there.</source>
@@ -51450,7 +51451,7 @@
     </unit>
     <unit id="vuln.check.scan-failed">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:233</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:254</note>
       </notes>
       <segment>
         <source>The scan did not finish and is tried again.</source>
@@ -51458,7 +51459,7 @@
     </unit>
     <unit id="vuln.check.over-limits">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:235</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:256</note>
       </notes>
       <segment>
         <source>The image exceeds the limits of the scan. It is scanned once an administrator raises them.</source>
@@ -51466,7 +51467,7 @@
     </unit>
     <unit id="vuln.check.unreadable">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:237</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:258</note>
       </notes>
       <segment>
         <source>The scan could not read the image. It is scanned again by a release of Quader that reads it.</source>
@@ -51474,7 +51475,7 @@
     </unit>
     <unit id="vuln.check.off-installation">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:239</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:260</note>
       </notes>
       <segment>
         <source>Vulnerability scanning is switched off for this installation.</source>
@@ -51482,7 +51483,7 @@
     </unit>
     <unit id="vuln.check.off-repository">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:241</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:262</note>
       </notes>
       <segment>
         <source>Vulnerability scanning is switched off for this repository.</source>
@@ -51490,7 +51491,7 @@
     </unit>
     <unit id="vuln.check.not-matched">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:243</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:264</note>
       </notes>
       <segment>
         <source>This repository is set not to match public advisories.</source>
@@ -51498,7 +51499,7 @@
     </unit>
     <unit id="vuln.check.unknown-upstream">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:245</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:266</note>
       </notes>
       <segment>
         <source>Its upstream is not a known public registry, so public advisories are not matched. The repository&apos;s settings can match them.</source>
@@ -51506,7 +51507,7 @@
     </unit>
     <unit id="vuln.check.internal">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:247</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:268</note>
       </notes>
       <segment>
         <source>An internal name: public advisories do not apply.</source>
@@ -51514,7 +51515,7 @@
     </unit>
     <unit id="vuln.check.not-an-image">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:249</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:270</note>
       </notes>
       <segment>
         <source>Not a container image: this kind of artifact is not scanned for vulnerabilities.</source>
@@ -51522,7 +51523,7 @@
     </unit>
     <unit id="vuln.check.format-not-scanned">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:251</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:272</note>
       </notes>
       <segment>
         <source>Packages of this type are not scanned for vulnerabilities.</source>
@@ -51530,7 +51531,7 @@
     </unit>
     <unit id="vuln.grade.count.critical">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:263</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:284</note>
         <note category="location">src/app/shared/vulnerability/severity-bar.ts:26</note>
       </notes>
       <segment>
@@ -51539,7 +51540,7 @@
     </unit>
     <unit id="vuln.grade.count.high">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:264</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:285</note>
         <note category="location">src/app/shared/vulnerability/severity-bar.ts:28</note>
       </notes>
       <segment>
@@ -51548,7 +51549,7 @@
     </unit>
     <unit id="vuln.grade.count.medium">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:265</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:286</note>
         <note category="location">src/app/shared/vulnerability/severity-bar.ts:30</note>
       </notes>
       <segment>
@@ -51557,7 +51558,7 @@
     </unit>
     <unit id="vuln.grade.count.low">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:266</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:287</note>
         <note category="location">src/app/shared/vulnerability/severity-bar.ts:32</note>
       </notes>
       <segment>
@@ -51566,7 +51567,7 @@
     </unit>
     <unit id="vuln.grade.count.unknown">
       <notes>
-        <note category="location">src/app/shared/vulnerability/grade-words.ts:267</note>
+        <note category="location">src/app/shared/vulnerability/grade-words.ts:288</note>
         <note category="location">src/app/shared/vulnerability/severity-bar.ts:34</note>
       </notes>
       <segment>

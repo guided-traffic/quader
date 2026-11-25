@@ -71,6 +71,9 @@ describe('Admin dashboard (R-UI-038)', () => {
     expect(t).toContain('2.4 ms');
     expect(t).toContain('8.5 GiB');
     expect(t).toContain('Repositories');
+    // The classes as the lists show them: the system repository is System, not one of Local (Q-UI-1203, Q-UI-1217).
+    const classes = [...root.querySelectorAll<HTMLElement>('.card:has(#dash-repos) .kv > div')].map((d) => text(d));
+    expect(classes).toEqual(['Local3', 'Remote3', 'Virtual1', 'System1']);
     // The repositories of every project are the main area's, and a new one is created in its project (Q-UI-1040).
     expect(root.querySelector('a[href="/repositories"]')).toBeTruthy();
     expect(root.querySelector('a[href^="/admin/repositories"], a[href^="/admin/projects"]')).toBeNull();

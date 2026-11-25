@@ -5,12 +5,13 @@
 -- counts are cast to int or bigint.
 
 -- name: OverviewRepositories :many
--- The repositories per class. A repository whose deletion runs (lifecycle 'deleting') no longer counts.
-SELECT class, count(*)::int AS repositories
+-- The repositories per class and format: the handler counts a repository of a system-only format as `system` by the catalog's fact
+-- (Q-UI-1217). A repository whose deletion runs (lifecycle 'deleting') no longer counts.
+SELECT class, format, count(*)::int AS repositories
   FROM repositories
  WHERE lifecycle = 'active'
- GROUP BY class
- ORDER BY class;
+ GROUP BY class, format
+ ORDER BY class, format;
 
 -- name: OverviewPrincipals :many
 -- The principals of the kinds the overview names, disabled ones included: users, groups, service accounts and Bastion

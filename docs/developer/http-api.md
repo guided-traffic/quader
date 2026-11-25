@@ -568,7 +568,7 @@ in [wire_exposure.go](../../internal/app/wire_exposure.go)), not a count of the 
 
 | Member | Statement | What counts | Cost |
 |---|---|---|---|
-| `counts.repositories` | `OverviewRepositories` | `lifecycle = 'active'`, grouped by `class`; `byClass` always holds `local`, `remote` and `virtual`, 0 for a class without a repository | a scan of `repositories`, one row per repository |
+| `counts.repositories` | `OverviewRepositories` | `lifecycle = 'active'`, grouped by `class` and `format`; the handler counts a format the catalog marks system only as `system` (`shownClass`, Q-UI-1217); `byClass` always holds `local`, `remote`, `virtual` and `system`, 0 for a class without a repository | a scan of `repositories`, one row per repository |
 | `counts.users`, `groups`, `serviceAccounts`, `bastions` | `OverviewPrincipals` | the principals of the kinds `user`, `group`, `service_account` and `bastion`, disabled ones included | the unique index on `principal (kind, name)` matches the predicate |
 | `counts.packages`, `packageVersions`, `activeTokens`, `projects` | `OverviewContent` | every package; versions with `trashed_at IS NULL`; tokens with `revoked_at IS NULL AND (expires_at IS NULL OR expires_at > now())`, of every type; every project | linear in packages and in live versions (the predicate is that of `package_versions_live`); the token predicate lies within the partial index `api_token_expiry_active` (`WHERE revoked_at IS NULL`); `project` is small |
 | `storage.blobs`, `bytes` | `OverviewStorage` | the single row of `storage_usage_totals` that the usage fold maintains (live blobs, R-STOR-003), never a sum over `blobs`; it trails the deltas by the fold's interval | one row by primary key |

@@ -8341,7 +8341,7 @@ export interface components {
             counts: {
                 repositories: {
                     total: number;
-                    /** @description Per repository class (`local`, `remote`, `virtual`). */
+                    /** @description Per class as the screens show it (`local`, `remote`, `virtual`, and `system` for a repository of a system-only format, which the document keeps as `local`; R-CLAMAV-001, Q-UI-1217). */
                     byClass: {
                         [key: string]: number;
                     };

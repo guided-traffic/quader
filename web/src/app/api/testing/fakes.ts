@@ -478,7 +478,7 @@ export function sampleOverview(over: Partial<SystemOverview> = {}): SystemOvervi
     computedAt: '2026-11-06T10:00:00Z',
     cacheSeconds: 30,
     counts: {
-      repositories: { total: 7, byClass: { local: 3, remote: 3, virtual: 1 } },
+      repositories: { total: 8, byClass: { local: 3, remote: 3, virtual: 1, system: 1 } },
       packages: 412,
       packageVersions: 1870,
       users: 24,

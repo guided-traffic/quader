@@ -24935,8 +24935,8 @@ facts; the admin area's page of the registry says **System repository** where it
 badge or a cell its tooltip says "Filled by this installation itself, on a schedule; nobody publishes to it." (German "Von dieser
 Installation selbst befüllt, nach Zeitplan; niemand veröffentlicht dorthin."), and the repository's page says the same sentence under
 its key. Where a row's class cell says **System**, the key's badge **System** of R-UI-193 is left out (one mark, not two). A format's
-guide names its class link "The system repository: filled by this installation itself". The admin dashboard counts repositories by the
-API's class and counts it under **Local** (H-1980). Decided by the catalog's fact, never by a format's name; one place names every class
+guide names its class link "The system repository: filled by this installation itself". The admin dashboard counts it under **System**
+by the server's count ([Q-UI-1217](#q-ui-1217--the-overview-counts-a-repository-as-the-screens-show-its-class)). Decided by the catalog's fact, never by a format's name; one place names every class
 (`classLabel`, `classIcon`, `classHelp`, `shownClass` of [repository-class.ts](../../web/src/app/features/repositories/repository-class.ts)).
 
 **Applied in the spec:** R-UI-020, R-UI-052, R-UI-193; [formats/clamav.md](formats/clamav.md) R-CLAMAV-001.
@@ -26385,16 +26385,29 @@ the spec:** R-UI-213. Code: [vulnerability-report.ts](../../web/src/app/features
 [vulnerability-report.spec.ts](../../web/src/app/features/vulnerabilities/vulnerability-report.spec.ts) and R-UI-213's case of
 [audit-log.spec.ts](../../web/src/app/features/audit/audit-log.spec.ts) (unit, fake clock, milliseconds).
 
+### Q-UI-1217 · The overview counts a repository as the screens show its class
+
+Status: **Decided by the development agent** — selected from the options below; the owner reviews it at the walkthrough. The gap
+H-1980: the card **Repositories** of the admin dashboard counted `upstream/clamav` under **Local**, while every list shows it as
+**System** (Q-UI-1203) and the list filtered by Local leaves it out, one repository apart. The count is the server's
+(`GET /api/v1/system/overview`, `counts.repositories.byClass`), by the document's class.
+
+| Option | What it means | For | Against |
+|---|---|---|---|
+| (a) The server counts by class and format and answers a repository of a format the catalog marks system only as `system` (`shownClass` of `overview_api.go`, the catalog's fact as the screens' `shownClass` reads it from `GET /api/v1/formats`); the card shows **System** as its fourth class (chosen) | One more key of `byClass`, one more column of the statement's grouping | Local on the card is the list filtered by Local; the fact is the catalog's on both sides, never a format's name | The statement groups by format too: a row per class and format, a handful |
+| (b) The card subtracts the system repositories it reads from another call | A second read | No API change | The browser repeats the server's count with another answer of another time |
+| (c) Leave Local as the document's class | — | — | The card and the lists disagree, the finding |
+
+**Choice:** (a). **Applied in the spec:** R-OPS-004 ([operations-and-observability.md](operations-and-observability.md)), R-UI-038,
+Q-UI-1203. Code: [overview_api.go](../../internal/api/v1/overview_api.go) (`shownClass`, `overviewCounts`), the statement
+`OverviewRepositories` of [overview.sql](../../internal/meta/postgres/queries/overview.sql), the API's description of `byClass`,
+[dashboard.ts](../../web/src/app/features/system/dashboard.ts). Tests: `TestR_OPS_004_SystemOverview` (unit, the fake store's rows with a
+ClamAV repository; milliseconds) and the dashboard's case of R-UI-038 in
+[dashboard.spec.ts](../../web/src/app/features/system/dashboard.spec.ts) (unit, milliseconds).
+
 ## What this does not cover
 
 ### H-1964 · A read that fails alone while its page stands is read again only by the person or its next use
-
-### H-1980 · The admin dashboard counts the repository of a system-only format as Local
-
-Stage: the card **Repositories** of `/admin/dashboard` (`GET /api/v1/system/overview`, `counts.repositories.byClass`). Subject: an
-administrator who compares its count **Local** with the list filtered by Local (Q-UI-1202). The server counts by the API's class, so
-`upstream/clamav` is one of **Local** there and not in the list. Live today, one repository off. The remedy would be a count by the
-catalog's fact in the overview (Q-UI-1203); not built, because the card's counts are of the API's classes and lead to no filter.
 
 ### H-1962 · A read that fails without a notice of its own is not read again with its page
 

@@ -16537,7 +16537,7 @@ type SystemOverview struct {
 		Packages        int64 `json:"packages"`
 		Projects        int   `json:"projects"`
 		Repositories    struct {
-			// ByClass Per repository class (`local`, `remote`, `virtual`).
+			// ByClass Per class as the screens show it (`local`, `remote`, `virtual`, and `system` for a repository of a system-only format, which the document keeps as `local`; R-CLAMAV-001, Q-UI-1217).
 			ByClass map[string]int `json:"byClass"`
 			Total   int            `json:"total"`
 		} `json:"repositories"`

@@ -130,7 +130,7 @@ func (s *overviewStore) failWith(err error) { s.mu.Lock(); s.fail = err; s.mu.Un
 
 func newOverviewStore() *overviewStore {
 	return &overviewStore{db: overviewDB{rows: map[string][][]any{
-		"OverviewRepositories": {{"local", int32(4)}, {"remote", int32(2)}},
+		"OverviewRepositories": {{"local", "clamav", int32(1)}, {"local", "npm", int32(3)}, {"remote", "npm", int32(2)}},
 		"OverviewPrincipals":   {{"bastion", int32(1)}, {"group", int32(3)}, {"service_account", int32(5)}, {"user", int32(12)}},
 		"OverviewContent":      {{int64(140), int64(1830), int32(9), int32(2)}},
 		"OverviewStorage":      {{int64(2210), int64(7_340_032_000), int64(17)}},
@@ -165,7 +165,8 @@ func TestR_OPS_004_SystemOverview(t *testing.T) {
 			t.Fatal(err)
 		}
 		c := got.Counts
-		if c.Repositories.Total != 6 || !reflect.DeepEqual(c.Repositories.ByClass, map[string]int{"local": 4, "remote": 2, "virtual": 0}) {
+		// The repository of a system-only format (ClamAV's) counts as System, not as Local, by the catalog's fact (Q-UI-1217).
+		if c.Repositories.Total != 6 || !reflect.DeepEqual(c.Repositories.ByClass, map[string]int{"local": 3, "remote": 2, "virtual": 0, "system": 1}) {
 			t.Errorf("repositories = %+v (a class without a repository is 0)", c.Repositories)
 		}
 		if c.Users != 12 || c.Groups != 3 || c.ServiceAccounts != 5 || c.Bastions != 1 {

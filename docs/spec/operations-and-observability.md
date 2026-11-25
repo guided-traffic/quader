@@ -845,7 +845,8 @@ replica registry (R-OPS-003) holds the per-replica view of every replica.
   replica registry, and it never affects readiness.
 
 **Overview** (Q-OPS-175). `GET /api/v1/system/overview` (`settings:read`) answers what the admin
-dashboard counts besides the registry: repositories per class (`lifecycle` active), packages,
+dashboard counts besides the registry: repositories per class as the screens show it (`lifecycle` active; a repository of a
+system-only format as `system` by the catalog's fact, [api-and-ui.md](api-and-ui.md) Q-UI-1217), packages,
 package versions that are not in the trash, users, groups and service accounts (disabled ones
 included), active tokens of every type (neither revoked nor expired), projects, the endpoints of the configuration, Bastions; the stored
 content from the maintained totals `storage_usage_totals` of [storage.md](storage.md) R-STOR-003 (objects and bytes, one per

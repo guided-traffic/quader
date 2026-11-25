@@ -53,11 +53,15 @@ export class Dashboard {
     return summary ? lastBackup(summary) : null;
   });
   protected readonly paused = signal(false);
-  /** The repository classes in the order the repository screens name them. */
+  /**
+   * The classes as the repository screens show them, in their order (Q-UI-1203): the server counts a repository of a system-only format
+   * as System by the catalog's fact (`byClass.system`, Q-UI-1217), so Local is the count of the list filtered by Local.
+   */
   protected readonly classes = [
     { key: 'local', label: $localize`:@@dashboard.class.local:Local` },
     { key: 'remote', label: $localize`:@@dashboard.class.remote:Remote` },
     { key: 'virtual', label: $localize`:@@dashboard.class.virtual:Virtual` },
+    { key: 'system', label: $localize`:@@repo.class.system:System` },
   ] as const;
 
   private readonly groups = computed(() => {

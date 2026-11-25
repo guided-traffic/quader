@@ -97,15 +97,16 @@ func (q *Queries) OverviewPrincipals(ctx context.Context) ([]OverviewPrincipalsR
 
 const overviewRepositories = `-- name: OverviewRepositories :many
 
-SELECT class, count(*)::int AS repositories
+SELECT class, format, count(*)::int AS repositories
   FROM repositories
  WHERE lifecycle = 'active'
- GROUP BY class
- ORDER BY class
+ GROUP BY class, format
+ ORDER BY class, format
 `
 
 type OverviewRepositoriesRow struct {
 	Class        string
+	Format       string
 	Repositories int32
 }
 
@@ -114,7 +115,8 @@ type OverviewRepositoriesRow struct {
 // again on every request. A count is linear in the rows it counts; where a predicate matches a partial index, the
 // statement says which. The cost per count is in docs/developer/http-api.md (System overview). Plain Go types only:
 // counts are cast to int or bigint.
-// The repositories per class. A repository whose deletion runs (lifecycle 'deleting') no longer counts.
+// The repositories per class and format: the handler counts a repository of a system-only format as `system` by the catalog's fact
+// (Q-UI-1217). A repository whose deletion runs (lifecycle 'deleting') no longer counts.
 func (q *Queries) OverviewRepositories(ctx context.Context) ([]OverviewRepositoriesRow, error) {
 	rows, err := q.db.Query(ctx, overviewRepositories)
 	if err != nil {
@@ -124,7 +126,7 @@ func (q *Queries) OverviewRepositories(ctx context.Context) ([]OverviewRepositor
 	items := []OverviewRepositoriesRow{}
 	for rows.Next() {
 		var i OverviewRepositoriesRow
-		if err := rows.Scan(&i.Class, &i.Repositories); err != nil {
+		if err := rows.Scan(&i.Class, &i.Format, &i.Repositories); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

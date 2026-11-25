@@ -8,6 +8,7 @@ import (
 
 	"github.com/guided-traffic/quader/internal/api/v1/gen"
 	"github.com/guided-traffic/quader/internal/errs"
+	"github.com/guided-traffic/quader/internal/formats/catalog"
 	"github.com/guided-traffic/quader/internal/httpserver"
 	"github.com/guided-traffic/quader/internal/meta/postgres/q"
 )
@@ -109,6 +110,16 @@ func (s *Server) countOverview(ctx context.Context) (gen.SystemOverview, error) 
 	return out, nil
 }
 
+// shownClass is the class the screens show a repository as (api-and-ui.md R-UI-033, Q-UI-1203, Q-UI-1217): its class, or `system` for a
+// repository of a format the catalog marks system only (R-CLAMAV-001), which the document keeps as `local` though nobody publishes to it.
+// The catalog's fact decides, never a format's name.
+func shownClass(class, format string) string {
+	if e, ok := catalog.Default().Lookup(format); ok && e.SystemOnly {
+		return "system"
+	}
+	return class
+}
+
 // overviewCounts fills the members of out that PostgreSQL counts.
 func overviewCounts(ctx context.Context, qs *q.Queries, out *gen.SystemOverview) error {
 	repos, err := qs.OverviewRepositories(ctx)
@@ -116,9 +127,9 @@ func overviewCounts(ctx context.Context, qs *q.Queries, out *gen.SystemOverview)
 		return err
 	}
 	c := &out.Counts
-	c.Repositories.ByClass = map[string]int{"local": 0, "remote": 0, "virtual": 0}
+	c.Repositories.ByClass = map[string]int{"local": 0, "remote": 0, "virtual": 0, "system": 0}
 	for _, r := range repos {
-		c.Repositories.ByClass[r.Class] += int(r.Repositories)
+		c.Repositories.ByClass[shownClass(r.Class, r.Format)] += int(r.Repositories)
 		c.Repositories.Total += int(r.Repositories)
 	}
 	principals, err := qs.OverviewPrincipals(ctx)
